@@ -17,7 +17,7 @@
  */
 export async function purgeOGCache(sessionId: string, baseUrl: string): Promise<boolean> {
   try {
-    const cache = caches.default;
+    const cache = (caches as CacheStorage & { readonly default: Cache }).default;
     const cacheKey = new Request(`${baseUrl}/og/${sessionId}.png`);
     const deleted = await cache.delete(cacheKey);
     if (deleted) {

@@ -5,7 +5,6 @@ import { createDefaultTrack, createInitialState } from '../shared/state-mutation
 import { sessionTracksToTracks } from '../types';
 import { McpSessionEditError } from './mcp-edits';
 import {
-  createIdempotencyKeyName,
   describeUnsupportedMidiFeatures,
   exportSessionToMidi,
   sessionRef,
@@ -64,15 +63,6 @@ describe('sessionRef', () => {
       name: 'MCP test',
       remixed_from: 'source-id',
     });
-  });
-});
-
-describe('createIdempotencyKeyName', () => {
-  it('cannot collide with a stored session', () => {
-    const key = createIdempotencyKeyName(SESSION_ID);
-
-    expect(key).not.toBe(`session:${SESSION_ID}`);
-    expect(key.startsWith('mcp-idempotency:create:')).toBe(true);
   });
 });
 

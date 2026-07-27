@@ -25,8 +25,10 @@ import type {
   EffectsState,
   ScaleState,
   FMParams,
+  ValidStepCount,
 } from './types';
 import { isStateMutatingMessage, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
+import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { getSession, updateSession, updateSessionName } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
 // Observability 2.0: Wide events
@@ -168,7 +170,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private players: Map<WebSocket, PlayerInfo> = new Map();
   // Observability 2.0: Track observability data for each player (not serialized)
   private playerObservability: Map<WebSocket, PlayerObservability> = new Map();
-  private state: SessionState | null = null;
+  public state: SessionState | null = null;
   private sessionId: string | null = null;
   // Phase 22: Track playback state per-player (not session-wide)
   // Multiple players can be playing simultaneously with independent audio
@@ -543,11 +545,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           this.broadcast({
             type: 'snapshot',
             state: this.state,
-            players: Array.from(this.players.values()).map(p => ({
-              id: p.id,
-              name: p.name,
-              color: p.color,
-            })),
+            players: Array.from(this.players.values()),
+            playerId: 'rest-api',
             immutable: this.immutable,
           });
         }
@@ -1296,7 +1295,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
   // Migrated to use createGlobalMutationHandler factory
   private handleSetTempo = createGlobalMutationHandler<
-    { tempo: number },
+    { tempo: number; seq?: number },
     ServerMessage
   >({
     validate: (msg) => ({ ...msg, tempo: clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO) }),
@@ -1309,7 +1308,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   });
 
   private handleSetSwing = createGlobalMutationHandler<
-    { swing: number },
+    { swing: number; seq?: number },
     ServerMessage
   >({
     validate: (msg) => ({ ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }),
@@ -1510,7 +1509,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Copy steps, parameterLocks, and stepCount from source to target
     toTrack.steps = [...fromTrack.steps];
     toTrack.parameterLocks = [...fromTrack.parameterLocks];
-    toTrack.stepCount = fromTrack.stepCount;
+    toTrack.stepCount = fromTrack.stepCount ?? DEFAULT_STEP_COUNT;
 
     // Validate state after mutation
     this.validateAndRepairState('handleCopySequence');
@@ -1525,7 +1524,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       toTrackId: msg.toTrackId,
       steps: toTrack.steps,
       parameterLocks: toTrack.parameterLocks,
-      stepCount: toTrack.stepCount,
+      stepCount: toTrack.stepCount ?? DEFAULT_STEP_COUNT,
       playerId: player.id,
     }, undefined, msg.seq);
 
@@ -1550,7 +1549,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Copy steps, parameterLocks, and stepCount from source to target
     toTrack.steps = [...fromTrack.steps];
     toTrack.parameterLocks = [...fromTrack.parameterLocks];
-    toTrack.stepCount = fromTrack.stepCount;
+    toTrack.stepCount = fromTrack.stepCount ?? DEFAULT_STEP_COUNT;
 
     // Clear source track (that's what makes it a "move" vs "copy")
     fromTrack.steps = fromTrack.steps.map(() => false);
@@ -1568,7 +1567,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       toTrackId: msg.toTrackId,
       steps: toTrack.steps,
       parameterLocks: toTrack.parameterLocks,
-      stepCount: toTrack.stepCount,
+      stepCount: toTrack.stepCount ?? DEFAULT_STEP_COUNT,
       playerId: player.id,
     }, undefined, msg.seq);
 
@@ -2059,12 +2058,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     // Validate step count (Phase 29F: added odd counts for polyrhythm support)
     // Uses VALID_STEP_COUNTS_SET from shared/sync-types.ts (single source of truth)
-    if (!VALID_STEP_COUNTS_SET.has(msg.stepCount)) {
+    if (!VALID_STEP_COUNTS_SET.has(msg.stepCount as ValidStepCount)) {
       console.warn(`[WS] Invalid stepCount ${msg.stepCount} from ${player.id}`);
       return;
     }
 
-    track.stepCount = msg.stepCount;
+    track.stepCount = msg.stepCount as ValidStepCount;
     // Arrays stay at MAX_STEPS (128) length - stepCount indicates active steps only
     // Invariant: track.steps.length === MAX_STEPS (see worker/invariants.ts)
     // This preserves user data when reducing stepCount (non-destructive editing)
@@ -2453,7 +2452,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * @param exclude - Optional WebSocket to exclude (usually the sender)
    * @param clientSeq - Optional client sequence number for request-response correlation
    */
-  private broadcast(message: ServerMessage, exclude?: WebSocket, clientSeq?: number): void {
+  public broadcast(message: ServerMessage, exclude?: WebSocket, clientSeq?: number): void {
     // Phase 26: Only add sequence numbers to state-mutating broadcasts
     // Non-mutating messages (cursor_moved, player_joined, etc.) don't need
     // sequence numbers because missing them doesn't cause state drift

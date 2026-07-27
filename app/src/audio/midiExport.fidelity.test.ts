@@ -39,6 +39,12 @@ interface ProgramChange {
   track: number;
 }
 
+interface NoteSpan {
+  note: number;
+  startTick: number;
+  durationTicks: number;
+}
+
 function createTrack(overrides: Partial<Track> = {}): Track {
   return {
     id: 'test-track',
@@ -90,6 +96,29 @@ function extractNoteEvents(midi: MidiData): NoteEvent[] {
   });
 
   return notes;
+}
+
+function extractNoteSpans(midi: MidiData): NoteSpan[] {
+  const spans: NoteSpan[] = [];
+  for (const track of midi.tracks) {
+    let absoluteTick = 0;
+    const active = new Map<string, number>();
+    for (const event of track) {
+      absoluteTick += event.deltaTime;
+      if (!('channel' in event) || !('noteNumber' in event)) continue;
+      const key = `${event.channel}:${event.noteNumber}`;
+      if (event.type === 'noteOn' && event.velocity > 0) {
+        active.set(key, absoluteTick);
+      } else if (event.type === 'noteOff' || (event.type === 'noteOn' && event.velocity === 0)) {
+        const startTick = active.get(key);
+        if (startTick !== undefined) {
+          spans.push({ note: event.noteNumber, startTick, durationTicks: absoluteTick - startTick });
+          active.delete(key);
+        }
+      }
+    }
+  }
+  return spans;
 }
 
 function extractTempo(midi: MidiData): number | null {
@@ -298,6 +327,26 @@ describe('MIDI Note Timing', () => {
     expect(notes[0].startTick).toBe(0);
     expect(notes[1].startTick).toBe(2 * TICKS_PER_STEP);
     expect(notes[2].startTick).toBe(4 * TICKS_PER_STEP);
+  });
+
+  it('exports tied steps as one extended note rather than reattacks', () => {
+    const steps = Array(128).fill(false);
+    steps[0] = true;
+    steps[1] = true;
+    const parameterLocks: (ParameterLock | null)[] = Array(128).fill(null);
+    parameterLocks[1] = { tie: true };
+
+    const { _midiData } = exportToMidi(createState({
+      tracks: [createTrack({ sampleId: 'lead', steps, parameterLocks })],
+    }));
+    const spans = extractNoteSpans(parseMidiData(_midiData));
+
+    expect(spans).toHaveLength(1);
+    expect(spans[0]).toMatchObject({
+      note: BASE_NOTE,
+      startTick: 0,
+      durationTicks: 2 * TICKS_PER_STEP - 1,
+    });
   });
 });
 

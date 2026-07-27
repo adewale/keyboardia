@@ -43,6 +43,8 @@ function generateSessionId(): string {
  * Options for creating a new session
  */
 export interface CreateSessionOptions {
+  /** Pre-reserved by the allocation Durable Object for idempotent creates. */
+  id?: string;
   /** Initial session state (tracks, tempo, swing) */
   initialState?: Partial<SessionState>;
   /** Optional session name */
@@ -56,7 +58,7 @@ export async function createSession(
   env: Env,
   options?: CreateSessionOptions
 ): Promise<SessionResult<Session>> {
-  const id = generateSessionId();
+  const id = options?.id ?? generateSessionId();
   const now = Date.now();
 
 

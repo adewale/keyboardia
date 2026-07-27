@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { analyzeSession } from '../music/session-analysis';
 import { MAX_STEPS, MAX_TEMPO, MIN_TEMPO } from '../shared/constants';
 import type { Session } from '../shared/state';
+import { PatternExpansionError } from '../shared/pattern-expansion';
 import { MAX_SESSION_NAME_LENGTH, MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 import type { Env } from './types';
 import {
@@ -14,33 +15,16 @@ import {
   type McpSessionEdit,
 } from './mcp-edits';
 import {
-  MCP_CREATE_IDEMPOTENCY_TTL_SECONDS,
-  createIdempotencyKeyName,
   exportSessionToMidi,
   sessionRef,
   sessionUrl,
 } from './mcp-lifecycle';
 import { purgeOGCache } from './og-cache';
-import { checkRateLimit, resolveRateLimit } from './rate-limit';
-import {
-  createSession as createStoredSession,
-  getSession as getStoredSession,
-  publishSessionFromState,
-  remixSessionFromState,
-} from './sessions';
+import { requestSessionAllocation, type SessionAllocationRequest } from './session-allocator';
+import { getSession as getStoredSession } from './sessions';
 
 interface DurableObjectStubLike {
   fetch(request: Request): Promise<Response>;
-}
-
-/**
- * The idempotency records this module stores. Env's KV binding is typed as an
- * empty stub in worker/types.ts so worker code can be imported by Node tests,
- * which is why the binding is narrowed here rather than used directly.
- */
-interface KeyValueStore {
-  get(key: string): Promise<string | null>;
-  put(key: string, value: string, options?: { expirationTtl: number }): Promise<void>;
 }
 
 interface DurableObjectNamespaceLike {
@@ -114,17 +98,6 @@ async function parseSessionResponse(response: Response): Promise<Session> {
  * Turns a failed create/remix/publish into the same described error shape the
  * edit path produces, so every tool reports failure identically.
  */
-function storageError(message: string, quotaExceeded: boolean): never {
-  if (quotaExceeded) {
-    throw new McpSessionAdapterError(
-      'Keyboardia has reached its daily storage quota. Try again after it resets at midnight UTC.',
-      'QUOTA_EXCEEDED',
-      503
-    );
-  }
-  throw new McpSessionAdapterError(message, 'SESSION_WRITE_FAILED', 500);
-}
-
 export function createDurableObjectSessionAdapter(
   env: Env,
   baseUrl: string,
@@ -161,6 +134,14 @@ export function createDurableObjectSessionAdapter(
     }
   }
 
+  async function allocate(request: SessionAllocationRequest): Promise<Session> {
+    const result = await requestSessionAllocation(env, request);
+    if (!result.success) {
+      throw new McpSessionAdapterError(result.message, result.code, result.status);
+    }
+    return result.session;
+  }
+
   return {
     getSession,
 
@@ -178,73 +159,20 @@ export function createDurableObjectSessionAdapter(
     },
 
     async createSession({ name, tempo, idempotencyKey }) {
-      const keyName = createIdempotencyKeyName(idempotencyKey);
-      const namespace = env.SESSIONS as KeyValueStore;
-
-      // A retried create must not leave a pile of near-identical sessions
-      // behind. The first call records its session under the caller's key; a
-      // replay resolves to that session instead of making another.
-      const existingId = await namespace.get(keyName);
-      if (existingId) {
-        try {
-          return await readSourceSession(existingId);
-        } catch (error) {
-          // Only a genuinely missing session makes the key stale. Answering a
-          // transient read failure by creating another session is the exact
-          // outcome the key exists to prevent, so anything else propagates.
-          if (!(error instanceof McpSessionAdapterError && error.status === 404)) {
-            throw error;
-          }
-          console.error(`[MCP] Create key ${idempotencyKey} pointed at missing session ${existingId}`);
-        }
-      }
-
-      // Creating through /mcp writes to the same KV namespace and the same
-      // daily quota as POST /api/sessions, so it goes through the same per-IP
-      // budget. Charged only for a real create: a replay writes nothing.
-      //
-      // This is not the deferred `/mcp` rate limiting, which still has to cover
-      // the whole endpoint. It only keeps this tool from being a way around the
-      // limit the REST route already enforces.
-      if (clientIp) {
-        const decision = checkRateLimit('sessionCreate', clientIp, resolveRateLimit(env, 'sessionCreate'));
-        if (!decision.allowed) {
-          throw new McpSessionAdapterError(
-            `Too many sessions created. Try again in ${Math.ceil(decision.resetIn / 1000)} seconds.`,
-            'RATE_LIMITED',
-            429
-          );
-        }
-      }
-
-      const result = await createStoredSession(env, {
-        name: name ?? null,
-        initialState: tempo === undefined ? undefined : { tempo },
+      return allocate({
+        operation: 'create',
+        clientIp,
+        idempotencyKey,
+        options: {
+          name: name ?? null,
+          initialState: tempo === undefined ? undefined : { tempo },
+        },
       });
-      if (!result.success) {
-        storageError(result.error, result.quotaExceeded);
-      }
-
-      // Recorded after the session exists. A failure here costs idempotency for
-      // that key, never the session itself.
-      try {
-        await namespace.put(keyName, result.data.id, {
-          expirationTtl: MCP_CREATE_IDEMPOTENCY_TTL_SECONDS,
-        });
-      } catch (error) {
-        console.error('[MCP] Failed to record create idempotency key:', error);
-      }
-
-      return result.data;
     },
 
     async remixSession(sessionId) {
       const source = await readSourceSession(sessionId);
-      const result = await remixSessionFromState(env, sessionId, source);
-      if (!result.success) {
-        storageError(result.error, result.quotaExceeded);
-      }
-      return result.data;
+      return allocate({ operation: 'remix', clientIp, sourceId: sessionId, source });
     },
 
     async publishSession(sessionId) {
@@ -257,23 +185,25 @@ export function createDurableObjectSessionAdapter(
         );
       }
 
-      const result = await publishSessionFromState(env, sessionId, source);
-      if (!result.success) {
-        storageError(result.error, result.quotaExceeded);
-      }
+      const published = await allocate({
+        operation: 'publish',
+        clientIp,
+        sourceId: sessionId,
+        source,
+      });
 
       // Same cache invalidation the REST publish route performs: the source's
       // cached preview predates publication, and the snapshot must not inherit
       // a stale entry. Never allowed to fail the publish it follows.
       const purge = Promise.all([
         purgeOGCache(sessionId, baseUrl),
-        purgeOGCache(result.data.id, baseUrl),
+        purgeOGCache(published.id, baseUrl),
       ])
         .then(() => undefined)
         .catch((error) => console.error('[OG] Cache purge failed:', error));
       ctx?.waitUntil(purge);
 
-      return result.data;
+      return published;
     },
   };
 }
@@ -365,6 +295,15 @@ function lifecycleSuccess(
  * carry runtime, storage, or parser internals that an agent must not receive.
  */
 function toolError(error: unknown) {
+  if (error instanceof PatternExpansionError) {
+    return {
+      isError: true,
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({ error: error.message, code: error.code }),
+      }],
+    };
+  }
   if (error instanceof McpSessionEditError || error instanceof McpSessionAdapterError) {
     return {
       isError: true,

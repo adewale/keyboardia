@@ -52,6 +52,10 @@
     "samples:pipeline:contract": "RUN_REAL_SAMPLE_PIPELINE=1 vitest run test/sample-pipeline-real-contract.test.ts",
     "validate:all": "tsx scripts/validate-all.ts",
     "check:mcp-bot-protection": "tsx scripts/check-mcp-bot-protection.ts",
+    "typecheck:worker": "tsc -b tsconfig.worker.json --pretty false",
+    "bundle:worker": "wrangler deploy --dry-run --env= --outdir .wrangler/worker-check",
+    "check:worker-bundle": "node scripts/check-worker-bundle.mjs .wrangler/worker-check",
+    "check:worker": "npm run typecheck:worker && npm run bundle:worker && npm run check:worker-bundle",
     "analyze:pitch-shift": "tsx scripts/analyze-pitch-shift-quality.ts",
     "audit:range": "vitest run src/audio/instrument-range-simulation.test.ts src/audio/instrument-range-render.test.ts && tsx scripts/instrument-range-report.ts",
     "audit:range:render": "vitest run src/audio/instrument-range-render.test.ts",
@@ -90,6 +94,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260629.1",
     "@eslint/js": "^9.39.1",
     "@modelcontextprotocol/client": "2.0.0-beta.5",
     "@playwright/test": "^1.57.0",

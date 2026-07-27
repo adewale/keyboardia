@@ -10,26 +10,17 @@ import {
   exportToMidi,
   isDrumTrack,
 } from '../audio/midiExport';
-import { parseInstrumentId } from '../audio/instrument-types';
+import { instrumentPresetId } from '../shared/instrument-classification';
 import type { Session, SessionTrack } from '../shared/state';
+import { hasActiveSteps } from '../shared/pattern-expansion';
 import { sessionTracksToTracks } from '../types';
 import { McpSessionEditError } from './mcp-edits';
-
-/**
- * Replayed creates are looked up under this prefix in the sessions KV
- * namespace. It cannot collide with `session:{id}`.
- */
-export const MCP_CREATE_IDEMPOTENCY_PREFIX = 'mcp-idempotency:create:';
 
 /**
  * How long a create key keeps resolving to the same session. An agent's retry
  * happens within seconds; a day is generous and bounds the stored keys.
  */
 export const MCP_CREATE_IDEMPOTENCY_TTL_SECONDS = 24 * 60 * 60;
-
-export function createIdempotencyKeyName(idempotencyKey: string): string {
-  return `${MCP_CREATE_IDEMPOTENCY_PREFIX}${idempotencyKey}`;
-}
 
 /**
  * The canonical URL an agent hands back to a person.
@@ -98,10 +89,6 @@ export interface McpMidiExport {
   unsupported: McpMidiUnsupportedFeature[];
 }
 
-function hasSteps(track: SessionTrack): boolean {
-  return track.steps.some(Boolean);
-}
-
 /**
  * Mirrors the track selection in exportToMidi(), which in turn mirrors the
  * audio scheduler: solo wins over mute, and silent tracks are skipped.
@@ -124,7 +111,7 @@ function classifyTracks(tracks: SessionTrack[]): {
       });
       continue;
     }
-    if (!hasSteps(track)) {
+    if (!hasActiveSteps(track)) {
       omitted.push({ track_id: track.id, name: track.name, reason: 'empty' });
       continue;
     }
@@ -173,7 +160,7 @@ export function describeUnsupportedMidiFeatures(
 
   const unmappedInstruments = exportedTracks.filter((track) => {
     if (isDrumTrack(sessionTracksToTracks([track])[0]!)) return false;
-    const { presetId } = parseInstrumentId(track.sampleId.toLowerCase());
+    const presetId = instrumentPresetId(track.sampleId);
     return !(presetId in SYNTH_PROGRAM_MAP);
   });
   if (unmappedInstruments.length > 0) {

@@ -10,8 +10,14 @@ export default defineConfig({
       // Exclude staging tests - they require a live server (run explicitly with vitest run test/staging/)
       'test/staging/**',
     ],
-    // Include test files in src directory (both .ts and .tsx)
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts'],
+    // Include product tests plus pure deployment-check classifiers whose
+    // failure modes must remain in the ordinary unit-test gate.
+    include: [
+      'src/**/*.test.ts',
+      'src/**/*.test.tsx',
+      'test/**/*.test.ts',
+      'scripts/mcp-bot-protection-classifier.test.ts',
+    ],
     // pool: 'threads' is the default; we keep isolation on so module-
     // level state doesn't leak between files. `vmThreads` is faster but
     // requires every test to be isolation-safe — given how many of our

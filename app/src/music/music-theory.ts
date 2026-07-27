@@ -342,15 +342,16 @@ export interface DetectedChord {
  * Common chord interval patterns (semitones from root)
  */
 const CHORD_PATTERNS: Record<string, number[]> = {
+  // More-specific sets must be tried before the triad they contain.
+  '7': [0, 4, 7, 10],
+  'maj7': [0, 4, 7, 11],
+  'min7': [0, 3, 7, 10],
   'maj': [0, 4, 7],
   'min': [0, 3, 7],
   'dim': [0, 3, 6],
   'aug': [0, 4, 8],
   'sus2': [0, 2, 7],
   'sus4': [0, 5, 7],
-  '7': [0, 4, 7, 10],
-  'maj7': [0, 4, 7, 11],
-  'min7': [0, 3, 7, 10],
 };
 
 /**

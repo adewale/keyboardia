@@ -145,6 +145,27 @@ describe('analyzeSession', () => {
     expect(analysis.pattern_steps).toBe(48);
   });
 
+  it('derives every rhythm metadata field from all tracks, even an empty one', () => {
+    const analysis = analyzeSession(session([
+      track('empty', 'kick', {}, { stepCount: 12, muted: true }),
+    ]));
+
+    expect(analysis.pattern_steps).toBe(12);
+    expect(analysis.loop_lengths).toEqual([12]);
+    expect(analysis.polyrhythm).toBe(false);
+  });
+
+  it('classifies sampled and Tone.js percussion as drums', () => {
+    const analysis = analyzeSession(session([
+      track('808', 'sampled:808-kick', { 0: true }),
+      track('metal', 'tone:metal-hihat', { 2: true }),
+    ]));
+
+    expect(analysis.rhythm.map(({ role }) => role)).toEqual(['drum', 'drum']);
+    expect(analysis.pitch).toEqual([]);
+    expect(analysis.inferred_keys).toEqual([]);
+  });
+
   it('reports a single loop length as not polyrhythmic', () => {
     const analysis = analyzeSession(session([
       track('a', 'kick', { 0: true }),
@@ -178,6 +199,32 @@ describe('analyzeSession', () => {
       fit: 1,
     });
     expect(analysis.pitch_class_names).toEqual(['C', 'D#', 'F', 'G', 'A#']);
+  });
+
+  it('weights local onsets by how often their loops repeat in the full pattern', () => {
+    const analysis = analyzeSession(session(
+      [
+        track('short-c', LEAD, { 0: 0 }, { stepCount: 4 }),
+        track('long-f-sharp', LEAD, { 0: 6 }, { stepCount: 16 }),
+      ],
+      { scale: { root: 'C', scaleId: 'major', locked: false } }
+    ));
+
+    expect(analysis.pattern_steps).toBe(16);
+    expect(analysis.declared_key?.fit).toBeCloseTo(4 / 5);
+  });
+
+  it('does not count zero-gain tracks or zero-gain steps as sounding notes', () => {
+    const silentStepLocks = Array(MAX_STEPS).fill(null);
+    silentStepLocks[0] = { pitch: 6, volume: 0 };
+    const analysis = analyzeSession(session([
+      track('audible', LEAD, { 0: 0 }),
+      track('silent-track', LEAD, { 0: 6 }, { volume: 0 }),
+      track('silent-step', LEAD, { 0: true }, { parameterLocks: silentStepLocks }),
+    ]));
+
+    expect(analysis.pitch_classes).toEqual([0]);
+    expect(analysis.chords).toEqual([]);
   });
 
   it('says nothing about key when only drums are present', () => {

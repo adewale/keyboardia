@@ -109,6 +109,9 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Type-check and dry-run the Worker bundle
+        run: npm run check:worker
+
   instrument-validation:
     name: Instrument Validation
     runs-on: ubuntu-latest
@@ -220,7 +223,7 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const { stats } = JSON.parse(fs.readFileSync('test-results/offline-results.json', 'utf8'));
-          const expected = { expected: 157, skipped: 88, flaky: 0, unexpected: 0 };
+          const expected = { expected: 157, skipped: 89, flaky: 0, unexpected: 0 };
           const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error(`Offline Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
@@ -329,7 +332,7 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const { stats } = JSON.parse(fs.readFileSync('test-results/visual-results.json', 'utf8'));
-          const expected = { expected: 2, skipped: 0, flaky: 0, unexpected: 0 };
+          const expected = { expected: 3, skipped: 0, flaky: 0, unexpected: 0 };
           const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error(`Visual Playwright contract failed: ${JSON.stringify({ expected, actual })}`);

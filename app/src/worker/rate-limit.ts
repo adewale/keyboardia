@@ -1,12 +1,15 @@
 /**
- * Phase 21.5: in-memory per-IP rate limiting.
+ * Loose in-memory per-IP rate limiting for request classes that should shed
+ * abusive traffic before expensive work begins.
  *
  * The map lives in the isolate, so limits reset when a Worker restarts and are
  * per-colo rather than global. That is accepted: this exists to keep one
- * visitor from burning the KV daily quota, not to defeat a distributed attack.
+ * visitor from burning compute or render budget, not to defeat a distributed
+ * attack. Permanent session allocation uses the global SessionAllocator
+ * Durable Object instead, where the write budget is serialized and persisted.
  *
- * @see specs/STATELESS-MCP.md - "Deferred hardening" for the durable
- *      replacement this mechanism is expected to grow into.
+ * @see specs/STATELESS-MCP.md - "Deferred hardening" for the remaining WAF
+ *      and authenticated-identity layers.
  */
 
 import type { Env } from './types';
@@ -24,6 +27,8 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
 export const RATE_LIMIT_DEFAULTS = {
   // Each create is a KV write against a daily quota.
   sessionCreate: 10,
+  // Covers every MCP exchange, including read-only tools and malformed calls.
+  mcpRequest: 120,
   // Each miss renders an image; edge caching means the origin sees far fewer
   // requests than a crawler makes.
   ogImage: 100,
@@ -33,6 +38,7 @@ export type RateLimitBucket = keyof typeof RATE_LIMIT_DEFAULTS;
 
 const RATE_LIMIT_VARS: Record<RateLimitBucket, keyof Env> = {
   sessionCreate: 'SESSION_CREATE_RATE_LIMIT_PER_MINUTE',
+  mcpRequest: 'MCP_RATE_LIMIT_PER_MINUTE',
   ogImage: 'OG_IMAGE_RATE_LIMIT_PER_MINUTE',
 };
 

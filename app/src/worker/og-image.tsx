@@ -35,8 +35,9 @@ export async function loadFont(env: Env): Promise<ArrayBuffer> {
     throw new Error(`Failed to load font: ${response.status}`);
   }
 
-  fontCache = await response.arrayBuffer();
-  return fontCache;
+  const font = await response.arrayBuffer();
+  fontCache = font;
+  return font;
 }
 
 // Brand colors
@@ -241,7 +242,7 @@ export async function handleOGImageRequest(
 
   // Check cache first
   const cacheKey = new Request(url.toString());
-  const cache = caches.default;
+  const cache = (caches as CacheStorage & { readonly default: Cache }).default;
   const cachedResponse = await cache.match(cacheKey);
 
   if (cachedResponse) {

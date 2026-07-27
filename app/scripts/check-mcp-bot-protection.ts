@@ -7,7 +7,7 @@
  * /mcp without any code change. Every Keyboardia MCP client is, by any
  * reasonable definition, a bot — so the zone must be configured to skip /mcp.
  *
- * This sends real `initialize` requests to a deployed origin under several user
+ * This sends real `tools/list` requests to a deployed origin under several user
  * agents and fails if any of them is blocked, challenged, or answered by the
  * bot layer instead of by the Worker.
  *
@@ -17,6 +17,11 @@
  *
  * @see specs/STATELESS-MCP.md - "Deferred hardening"
  */
+
+import {
+  classifyProbeResponse,
+  type ProbeResult,
+} from './mcp-bot-protection-classifier';
 
 const DEFAULT_ORIGIN = 'https://keyboardia.dev';
 
@@ -53,13 +58,6 @@ const PROBE_BODY = JSON.stringify({
   },
 });
 
-interface ProbeResult {
-  label: string;
-  ok: boolean;
-  status: number;
-  detail: string;
-}
-
 /**
  * A probe passes when the Worker answered, not when the call succeeded: this
  * script tests the zone, not the endpoint's health. A JSON-RPC error is still
@@ -92,57 +90,13 @@ async function probe(origin: string, label: string, userAgent: string | null): P
     };
   }
 
-  const mitigated = response.headers.get('cf-mitigated');
-  if (mitigated) {
-    return { label, ok: false, status: response.status, detail: `cf-mitigated: ${mitigated}` };
-  }
-
-  const contentType = response.headers.get('content-type') ?? '';
-  if (contentType.includes('text/html')) {
-    return {
-      label,
-      ok: false,
-      status: response.status,
-      detail: 'HTML response — a challenge or block page, not the Worker',
-    };
-  }
-
-  if (response.status === 403 || response.status === 503) {
-    return { label, ok: false, status: response.status, detail: `blocked with HTTP ${response.status}` };
-  }
-
   const body = await response.text();
-  let parsed: { jsonrpc?: string; result?: { tools?: Array<{ name: string }> }; error?: { message?: string } };
-  try {
-    parsed = JSON.parse(body) as typeof parsed;
-  } catch {
-    // An SSE-framed answer is still the Worker answering.
-    if (body.includes('"jsonrpc"')) {
-      return { label, ok: true, status: response.status, detail: 'event-stream response from the Worker' };
-    }
-    return { label, ok: false, status: response.status, detail: `unparseable body: ${body.slice(0, 120)}` };
-  }
-
-  if (parsed.jsonrpc !== '2.0') {
-    return { label, ok: false, status: response.status, detail: `not a JSON-RPC response: ${body.slice(0, 120)}` };
-  }
-
-  if (parsed.error) {
-    // Reached the Worker, which is what this script asserts, but worth seeing.
-    return {
-      label,
-      ok: true,
-      status: response.status,
-      detail: `reached the Worker; it answered with a JSON-RPC error: ${parsed.error.message ?? 'unknown'}`,
-    };
-  }
-
-  return {
-    label,
-    ok: true,
+  return classifyProbeResponse(label, {
     status: response.status,
-    detail: `listed ${parsed.result?.tools?.length ?? 0} tools`,
-  };
+    contentType: response.headers.get('content-type') ?? '',
+    mitigated: response.headers.get('cf-mitigated'),
+    body,
+  });
 }
 
 async function main(): Promise<void> {

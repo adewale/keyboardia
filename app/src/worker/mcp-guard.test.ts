@@ -32,44 +32,79 @@ describe('isJsonContentType', () => {
 });
 
 describe('guardMcpRequest', () => {
-  it('lets a well-formed POST through', () => {
-    expect(guardMcpRequest(mcpRequest())).toBeNull();
+  it('lets a well-formed POST through', async () => {
+    const guarded = await guardMcpRequest(mcpRequest({ body: '{"jsonrpc":"2.0"}' }));
+
+    expect(guarded).toBeInstanceOf(Request);
+    expect(await (guarded as Request).text()).toBe('{"jsonrpc":"2.0"}');
   });
 
-  it.each(['GET', 'PUT', 'DELETE', 'PATCH', 'HEAD'])('rejects %s with 405 and Allow', (method) => {
-    const response = guardMcpRequest(mcpRequest({ method }))!;
+  it.each(['GET', 'PUT', 'DELETE', 'PATCH', 'HEAD'])('rejects %s with 405 and Allow', async (method) => {
+    const response = await guardMcpRequest(mcpRequest({ method })) as Response;
 
     expect(response.status).toBe(405);
     expect(response.headers.get('Allow')).toBe('POST');
   });
 
   it('rejects an oversized declared body before parsing it', async () => {
-    const response = guardMcpRequest(mcpRequest({
+    const response = await guardMcpRequest(mcpRequest({
       headers: { 'Content-Type': 'application/json', 'Content-Length': String(1024 * 1024) },
-    }))!;
+    })) as Response;
 
     expect(response.status).toBe(413);
     expect(await response.json()).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' });
   });
 
   it('rejects a non-JSON content type', async () => {
-    const response = guardMcpRequest(mcpRequest({
+    const response = await guardMcpRequest(mcpRequest({
       headers: { 'Content-Type': 'text/plain' },
-    }))!;
+    })) as Response;
 
     expect(response.status).toBe(415);
     expect(await response.json()).toMatchObject({ code: 'UNSUPPORTED_MEDIA_TYPE' });
   });
 
-  it('rejects a POST with no content type at all', () => {
+  it('rejects a POST with no content type at all', async () => {
     const request = new Request('https://keyboardia.dev/mcp', { method: 'POST', body: '{}' });
     request.headers.delete('Content-Type');
 
-    expect(guardMcpRequest(request)?.status).toBe(415);
+    expect((await guardMcpRequest(request) as Response).status).toBe(415);
+  });
+
+  it('rejects oversized bytes when Content-Length is absent', async () => {
+    const request = mcpRequest({ body: 'x'.repeat(64 * 1024 + 1) });
+    request.headers.delete('Content-Length');
+
+    const response = await guardMcpRequest(request) as Response;
+    expect(response.status).toBe(413);
+    expect(await response.json()).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' });
+  });
+
+  it('cancels a chunked body as soon as its measured bytes exceed the limit', async () => {
+    let cancelled = false;
+    let pulls = 0;
+    const body = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls++;
+        if (pulls <= 2) controller.enqueue(new Uint8Array(32 * 1024 + 1));
+        else controller.enqueue(new Uint8Array(32 * 1024));
+      },
+      cancel() {
+        cancelled = true;
+      },
+    });
+    const request = mcpRequest({ body, duplex: 'half' } as RequestInit);
+    request.headers.delete('Content-Length');
+
+    const response = await guardMcpRequest(request) as Response;
+
+    expect(response.status).toBe(413);
+    expect(cancelled).toBe(true);
+    expect(pulls).toBe(2);
   });
 
   it('reports failures as JSON an agent can read, never HTML', async () => {
-    const response = guardMcpRequest(mcpRequest({ method: 'GET' }))!;
+    const response = await guardMcpRequest(mcpRequest({ method: 'GET' })) as Response;
 
     expect(response.headers.get('Content-Type')).toBe('application/json');
     expect(await response.json()).toEqual({
@@ -119,12 +154,12 @@ describe('the guard and a real MCP client', () => {
       {
         fetch: async (input, init) => {
           const request = new Request(input, init);
-          const rejected = guardMcpRequest(request.clone());
-          if (rejected) {
-            guardRejections.push({ method: request.method, status: rejected.status });
-            return rejected;
+          const guarded = await guardMcpRequest(request.clone());
+          if (guarded instanceof Response) {
+            guardRejections.push({ method: request.method, status: guarded.status });
+            return guarded;
           }
-          return handler.fetch(request);
+          return handler.fetch(guarded);
         },
       }
     );

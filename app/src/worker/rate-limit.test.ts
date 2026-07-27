@@ -14,6 +14,7 @@ function env(vars: Partial<Env> = {}): Env {
 describe('resolveRateLimit', () => {
   it('uses the production defaults when nothing is configured', () => {
     expect(resolveRateLimit(env(), 'sessionCreate')).toBe(10);
+    expect(resolveRateLimit(env(), 'mcpRequest')).toBe(120);
     expect(resolveRateLimit(env(), 'ogImage')).toBe(100);
   });
 
@@ -22,6 +23,8 @@ describe('resolveRateLimit', () => {
       .toBe(100);
     expect(resolveRateLimit(env({ OG_IMAGE_RATE_LIMIT_PER_MINUTE: '250' }), 'ogImage'))
       .toBe(250);
+    expect(resolveRateLimit(env({ MCP_RATE_LIMIT_PER_MINUTE: '300' }), 'mcpRequest'))
+      .toBe(300);
   });
 
   it('keeps the buckets independent', () => {

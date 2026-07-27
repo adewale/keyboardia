@@ -258,15 +258,19 @@ unrelated callers, and a session UUID is the only access control Keyboardia has,
 so a collision would hand one agent another agent's session. For the same
 reason, session IDs are not derived from the key: they stay unguessable.
 
-If the recorded session no longer exists, the key is treated as stale and a
-fresh session is created. The record is written after the session exists, so a
-failure to record costs idempotency for that key, never the session.
+The idempotency reservation is written to a single global allocator Durable
+Object *before* KV is touched. It contains the random session UUID and the
+original create options. Concurrent calls, an uncertain KV failure, and a later
+retry therefore all converge on the same identity. If the KV object is missing,
+the allocator recreates that same UUID with the original options; it never mints
+a second result for a committed key. A Durable Object alarm removes reservations
+after 24 hours and expired rate windows, since its storage has no per-key TTL.
 
-This is the one tool that writes to KV without an existing session UUID, so it
-is charged against the same per-IP `sessionCreate` budget as
-`POST /api/sessions` — the same namespace and the same daily quota. A replay is
-free, because it writes nothing. That is a guard on this tool, not the deferred
-`/mcp` rate limiting, which still has to cover the whole endpoint.
+Every operation that allocates a permanent session — REST or MCP create, remix,
+and publish — goes through that allocator and the same persisted per-IP
+`sessionCreate` budget. A successful idempotent replay is free because it writes
+nothing. The entire `/mcp` request surface also has a separate loose outer
+budget before parsing.
 
 ### `remix_session`
 
@@ -763,20 +767,19 @@ These are not partly implemented MCP features:
 Unlike the version 2 journeys below, these are not demand-gated. They are known
 gaps in the shipped surface.
 
-- [ ] **Rate limit `/mcp`.** The endpoint is unauthenticated and currently
-  unlimited, while `/og/*` and session creation both go through the in-memory
-  `checkRateLimit()` in `app/src/worker/rate-limit.ts`. `initialize` and
-  `tools/list` need no session ID at all, and every call constructs an MCP
-  server, a Durable Object fetch, and a KV read.
+- [x] **Rate limit `/mcp`.** Done at the Worker boundary before body parsing or
+  the dynamic MCP SDK import. Every exchange — including malformed requests,
+  `tools/list`, reads, edits, and exports — is charged to a separate
+  `mcpRequest` budget (120/minute/IP by default) and a rejection is JSON with
+  `429`, `Retry-After`, and `X-RateLimit-Remaining`.
 
-  This is the largest remaining gap. `create_session` sharpened it: before it,
-  every `/mcp` KV write was bounded by a session UUID the caller already held.
-  That specific hole is closed — `create_session` is charged against the same
-  per-IP `sessionCreate` budget as the REST route — but reads, edits, and
-  exports on a known session ID are still unlimited, and the per-IP key is a
-  weak one for hosted agent runtimes egressing from shared NAT.
+  The outer counter is intentionally loose and in-memory: it is per-isolate and
+  per-colo, and the IP key is a weak identity for hosted agent runtimes behind
+  shared NAT. Permanent session allocations have the stronger control: one
+  global Durable Object serializes create/remix/publish and persists their
+  shared per-IP write budget. Authentication remains the real long-term fix.
 
-  Recommended shape, in order of value:
+  Further defence-in-depth, in order of value:
 
   1. **Per-session token bucket inside `LiveSessionDurableObject`.** This is the
      control that protects the resource. It is free — it runs inside the
@@ -799,31 +802,28 @@ gaps in the shipped surface.
      matching needs Business. The action must be `block`, never a challenge —
      MCP clients cannot solve challenges.
 
-  Failure modes to design against: hosted agent runtimes egress from shared NAT
+  Failure modes to keep in view: hosted agent runtimes egress from shared NAT
   pools, so an IP-keyed limit collapses independent agents into one bucket and
-  should stay deliberately loose; MCP clients retry, so a 429 without
-  `Retry-After` invites a storm; and rejections are invisible in the dashboard,
-  so each one should emit a wide event through the existing observability path.
-
-  Authentication is the real long-term fix, because it makes the rate limit key
-  meaningful rather than a proxy. That stays out of scope for version 1.
+  should stay deliberately loose; rejections are invisible in the dashboard,
+  so they should emit wide events through the existing observability path.
 
 - [x] **Resolve the stale limit in `app/src/worker/index.ts`.** Done. The
-  production budgets now live in `RATE_LIMIT_DEFAULTS` — 10 session creates and
-  100 OG images per minute per IP — and a load test raises
-  `SESSION_CREATE_RATE_LIMIT_PER_MINUTE` or `OG_IMAGE_RATE_LIMIT_PER_MINUTE` in
-  `wrangler.jsonc` instead of editing the constant. Staging carries the raised
-  create limit. Fixing this surfaced a second defect: both endpoints shared one
-  counter keyed only by IP, so OG image traffic consumed a visitor's
-  session-create budget. Buckets are now keyed per limit.
+  production budgets now live in `RATE_LIMIT_DEFAULTS` — 10 permanent session
+  allocations, 120 MCP exchanges, and 100 OG images per minute per IP — and a
+  load test raises the corresponding environment variable instead of editing a
+  constant. Staging carries the raised allocation limit. Fixing this surfaced a
+  second defect: OG image traffic consumed a visitor's session-create budget.
+  Request classes are now keyed separately, while permanent allocations use the
+  persisted global allocator budget described above.
 
 - [x] **Guard `/mcp` before parsing.** Done, in
   `app/src/worker/mcp-guard.ts`. Non-POST is rejected with 405 and `Allow: POST`,
-  an oversized `Content-Length` with 413 through the existing
-  `isBodySizeValid()`, and a non-JSON content type with 415. The guard runs
-  before the dynamic `import('./mcp')`, so a rejected request never evaluates
-  the SDK, zod, or the schema validator, and never reaches a Durable Object or
-  KV. It must not import `./mcp`, or the dynamic import stops buying anything.
+  an oversized declared or measured body with 413, and a non-JSON content type
+  with 415. Chunked bodies are read through a bounded stream and cancelled as
+  soon as they cross the limit. The guard runs before the dynamic
+  `import('./mcp')`, so a rejected request never evaluates the SDK, zod, or the
+  schema validator, and never reaches a Durable Object or KV. It must not import
+  `./mcp`, or the dynamic import stops buying anything.
 
 - [ ] **Check that zone-level bot protection excludes `/mcp`.** Super Bot Fight
   Mode and "Block AI bots" operate on the zone and would plausibly classify
@@ -832,7 +832,7 @@ gaps in the shipped surface.
 
   This one is Cloudflare dashboard state, not repository state, so the code
   change is a probe rather than a fix: `npm run check:mcp-bot-protection`
-  (`app/scripts/check-mcp-bot-protection.ts`) sends real `initialize` requests
+  (`app/scripts/check-mcp-bot-protection.ts`) sends real `tools/list` requests
   to a deployed origin — default, generic-client, and AI-crawler user agents —
   and fails if any is blocked, challenged, or answered by the bot layer instead
   of by the Worker. Run it against production and staging after any zone

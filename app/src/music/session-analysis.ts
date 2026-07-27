@@ -20,10 +20,10 @@
 
 import {
   BASE_NOTE,
-  calculatePatternLength,
   isDrumTrack,
 } from '../audio/midiExport';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
+import { boundedPatternLength } from '../shared/pattern-expansion';
 import type { SessionState, SessionTrack } from '../shared/state';
 import { sessionTrackToTrack } from '../types';
 import {
@@ -165,6 +165,12 @@ function onsetsOf(track: SessionTrack): number[] {
   return track.steps.slice(0, count).flatMap((active, step) => active ? [step] : []);
 }
 
+/** An active grid cell with zero effective gain does not sound. */
+function audibleOnsetsOf(track: SessionTrack): number[] {
+  if (track.volume <= 0) return [];
+  return onsetsOf(track).filter((step) => (track.parameterLocks[step]?.volume ?? 1) > 0);
+}
+
 /**
  * Mirrors the audio scheduler and MIDI export: solo wins over mute. A muted
  * track is still described, but it contributes no notes to key inference,
@@ -200,7 +206,7 @@ function analyzeRhythm(track: SessionTrack): TrackRhythmAnalysis {
 }
 
 function analyzePitch(track: SessionTrack): TrackPitchAnalysis | null {
-  const onsets = onsetsOf(track);
+  const onsets = audibleOnsetsOf(track);
   if (onsets.length === 0) return null;
 
   const pitches = [...new Set(onsets.map((step) => stepPitch(track, step)))]
@@ -292,7 +298,13 @@ function findChords(tracks: SessionTrack[], patternSteps: number): ChordMoment[]
     for (const track of tracks) {
       const count = stepCountOf(track);
       const local = step % count;
-      if (track.steps[local]) sounding.push(stepPitch(track, local));
+      if (
+        track.volume > 0 &&
+        track.steps[local] &&
+        (track.parameterLocks[local]?.volume ?? 1) > 0
+      ) {
+        sounding.push(stepPitch(track, local));
+      }
     }
 
     if (sounding.length < 2) continue;
@@ -345,20 +357,22 @@ export function analyzeSession(state: SessionState): SessionAnalysis {
   const pitchedAudible = audible.filter(isPitched);
   const caveats: string[] = [];
 
-  // Weighted by onset count: the note a pattern leans on should outvote a note
-  // played once.
+  // Rhythm metadata has one definition: every track participates, including
+  // empty and muted tracks. Muting changes what sounds, not the loop geometry.
+  const patternSteps = boundedPatternLength(state.tracks.map(stepCountOf));
+  const loopLengths = [...new Set(state.tracks.map(stepCountOf))].sort((a, b) => a - b);
+
+  // Weight across the full realignment pattern, not just each track's local
+  // loop. A note in a 4-step loop sounds four times while a 16-step loop plays
+  // once, so it must carry four times the inference weight.
   const pitchClassWeights = new Map<number, number>();
   for (const track of pitchedAudible) {
-    for (const step of onsetsOf(track)) {
+    const repetitions = patternSteps / stepCountOf(track);
+    for (const step of audibleOnsetsOf(track)) {
       const cls = pitchClass(stepPitch(track, step));
-      pitchClassWeights.set(cls, (pitchClassWeights.get(cls) ?? 0) + 1);
+      pitchClassWeights.set(cls, (pitchClassWeights.get(cls) ?? 0) + repetitions);
     }
   }
-
-  const patternSteps = state.tracks.length === 0
-    ? 0
-    : calculatePatternLength(state.tracks.map(sessionTrackToTrack));
-  const loopLengths = [...new Set(state.tracks.map(stepCountOf))].sort((a, b) => a - b);
 
   const inferred = inferKeys(pitchClassWeights).slice(0, KEY_CANDIDATE_LIMIT);
   const ambiguous = inferred.length > 1
@@ -399,7 +413,7 @@ export function analyzeSession(state: SessionState): SessionAnalysis {
     polyrhythm: loopLengths.length > 1,
     loop_lengths: loopLengths,
     rhythm: state.tracks.map(analyzeRhythm),
-    pitch: state.tracks.filter(isPitched)
+    pitch: pitchedAudible
       .map(analyzePitch)
       .filter((entry): entry is TrackPitchAnalysis => entry !== null),
     pitch_classes: [...pitchClassWeights.keys()].sort((a, b) => a - b),

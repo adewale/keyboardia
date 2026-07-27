@@ -258,6 +258,19 @@ describe('PitchOverview', () => {
 
       expect(screen.getByText(/2 tracks.*128 steps/)).toBeTruthy();
     });
+
+    it('renders scientific-pitch octaves in both the range and step tooltip', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+      const { container } = render(<PitchOverview tracks={[
+        createTestTrack({ sampleId: 'sampled:piano', steps, stepCount: 16 }),
+      ]} />);
+
+      expect(container.querySelector('.pitch-overview-info')?.textContent)
+        .toContain('16 steps • C3 – C5');
+      expect(container.querySelector('.pitch-bar-cell')?.getAttribute('title'))
+        .toBe('Step 1: C4');
+    });
   });
 
   describe('playhead indicator', () => {
@@ -420,6 +433,12 @@ describe('PitchOverview', () => {
 
     it('should exclude tone:membrane-kick (drum tone synth)', () => {
       const track = createTestTrack({ sampleId: 'tone:membrane-kick' });
+      const { container } = render(<PitchOverview tracks={[track]} />);
+      expect(container.firstChild).toBeNull();
+    });
+
+    it('should exclude sampled drum kits', () => {
+      const track = createTestTrack({ sampleId: 'sampled:808-kick' });
       const { container } = render(<PitchOverview tracks={[track]} />);
       expect(container.firstChild).toBeNull();
     });

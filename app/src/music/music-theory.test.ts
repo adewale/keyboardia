@@ -14,12 +14,23 @@ import {
   SCALES,
   isInScale,
   getScaleDegree,
+  detectChord,
   isRoot,
   isFifth,
   isFourth,
   type ScaleId,
   type NoteName,
 } from './music-theory';
+
+describe('detectChord', () => {
+  it.each([
+    [[0, 4, 7, 11], 'maj7'],
+    [[0, 4, 7, 10], '7'],
+    [[0, 3, 7, 10], 'min7'],
+  ] as const)('prefers the complete seventh chord for %j', (pitches, quality) => {
+    expect(detectChord([...pitches])).toMatchObject({ root: 'C', quality });
+  });
+});
 
 describe('getScaleNotes', () => {
   it('should return valid numeric array for C minor pentatonic', () => {

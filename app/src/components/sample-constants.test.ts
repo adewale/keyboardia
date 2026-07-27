@@ -6,7 +6,22 @@ import {
   TONE_SYNTH_NAMES,
   ADVANCED_SYNTH_CATEGORIES,
   ADVANCED_SYNTH_NAMES,
+  INSTRUMENT_CATEGORIES,
 } from './sample-constants';
+import { isDrumInstrument } from '../shared/instrument-classification';
+
+describe('shared instrument roles', () => {
+  it('classifies the entire picker catalogue by musical role', () => {
+    for (const [category, details] of Object.entries(INSTRUMENT_CATEGORIES)) {
+      for (const instrument of details.instruments) {
+        expect(
+          isDrumInstrument(instrument.id),
+          `${instrument.id} should ${category === 'drums' ? '' : 'not '}be a drum`
+        ).toBe(category === 'drums');
+      }
+    }
+  });
+});
 
 /**
  * Verification Tests for Sample Constants

@@ -6,7 +6,8 @@
 import type { Env, SessionState, CreateSessionResponse, RemixSessionResponse, ErrorResponse } from './types';
 
 import { checkRateLimit, resolveRateLimit } from './rate-limit';
-import { createSession, getSession, remixSessionFromState, publishSessionFromState, getSecondsUntilMidnightUTC } from './sessions';
+import { getSession, getSecondsUntilMidnightUTC } from './sessions';
+import { requestSessionAllocation } from './session-allocator';
 import {
   isValidUUID,
   validateSessionState,
@@ -45,6 +46,7 @@ import type { Session } from '../shared/state';
 
 // Phase 8: Export Durable Object class
 export { LiveSessionDurableObject } from './live-session';
+export { SessionAllocatorDurableObject } from './session-allocator';
 
 // Security headers for static assets
 // Note: _headers file is a Pages convention; Workers need headers added in code
@@ -135,13 +137,36 @@ export default {
     // serve /mcp, instead of on every cold start behind a session page or a
     // WebSocket upgrade.
     if (path === '/mcp' || path === '/mcp/') {
+      const clientIP = request.headers.get('CF-Connecting-IP');
+      let mcpResponse: Response | undefined;
+      if (clientIP) {
+        const decision = checkRateLimit('mcpRequest', clientIP, resolveRateLimit(env, 'mcpRequest'));
+        if (!decision.allowed) {
+          mcpResponse = new Response(JSON.stringify({
+            error: 'Too many MCP requests. Please wait before trying again.',
+            code: 'RATE_LIMITED',
+          }), {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': String(Math.ceil(decision.resetIn / 1000)),
+              'X-RateLimit-Remaining': String(decision.remaining),
+            },
+          });
+        }
+      }
+
       // Guard before parsing, and before the SDK module is even evaluated: a
       // wrong method, oversized body, or wrong content type costs nothing but
       // this check. guardMcpRequest deliberately does not import './mcp'.
-      let mcpResponse = guardMcpRequest(request);
       if (!mcpResponse) {
-        const { handleMcpRequest } = await import('./mcp');
-        mcpResponse = await handleMcpRequest(request, env, ctx);
+        const guarded = await guardMcpRequest(request);
+        if (guarded instanceof Response) {
+          mcpResponse = guarded;
+        } else {
+          const { handleMcpRequest } = await import('./mcp');
+          mcpResponse = await handleMcpRequest(guarded, env, ctx);
+        }
       }
 
       // The SDK returns bare protocol responses, and this branch runs before
@@ -338,27 +363,7 @@ async function handleApiRequest(
 
   // POST /api/sessions - Create new session
   if (path === '/api/sessions' && method === 'POST') {
-    // Phase 21.5: Rate limiting to prevent KV quota abuse
-    // CF-Connecting-IP is always set in production by Cloudflare
-    // When missing (test/local env), skip rate limiting
     const clientIP = request.headers.get('CF-Connecting-IP');
-    if (clientIP) {
-      const rateLimit = checkRateLimit('sessionCreate', clientIP, resolveRateLimit(env, 'sessionCreate'));
-      if (!rateLimit.allowed) {
-        emitEvent(429, { error: 'Rate limit exceeded', errorSlug: 'rate-limited', errorExpected: true });
-        return new Response(JSON.stringify({
-          error: 'Too many requests. Please wait before creating more sessions.',
-          retryAfter: Math.ceil(rateLimit.resetIn / 1000),
-        }), {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/json',
-            'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000)),
-            'X-RateLimit-Remaining': String(rateLimit.remaining),
-          },
-        });
-      }
-    }
 
     // Phase 13A: Validate body size before parsing
     if (!isBodySizeValid(request.headers.get('content-length'))) {
@@ -426,19 +431,36 @@ async function handleApiRequest(
         }
       }
 
-      metrics.kvWrites++;
-      const result = await createSession(env, { initialState, name: sessionName });
+      metrics.doRequests++;
+      const result = await requestSessionAllocation(env, {
+        operation: 'create',
+        clientIp: clientIP,
+        options: { initialState, name: sessionName },
+      });
 
       if (!result.success) {
-        if (result.quotaExceeded) {
+        if (result.code === 'RATE_LIMITED') {
+          emitEvent(429, { error: result.message, errorSlug: 'rate-limited', errorExpected: true });
+          return new Response(JSON.stringify({
+            error: result.message,
+            retryAfter: result.retryAfter,
+          }), {
+            status: 429,
+            headers: {
+              'Content-Type': 'application/json',
+              'Retry-After': String(result.retryAfter ?? 60),
+            },
+          });
+        }
+        if (result.code === 'QUOTA_EXCEEDED') {
           emitEvent(503, { error: 'KV quota exceeded', errorSlug: 'kv-quota-exceeded', errorExpected: false });
           return quotaExceededResponse();
         }
-        emitEvent(500, { error: result.error, errorSlug: 'session-create-failed', errorExpected: false });
+        emitEvent(500, { error: result.message, errorSlug: 'session-create-failed', errorExpected: false });
         return jsonError('Failed to create session', 500);
       }
 
-      const session = result.data;
+      const session = result.session;
 
       const response: CreateSessionResponse = {
         id: session.id,
@@ -599,19 +621,31 @@ async function handleApiRequest(
     }
 
     // Create remix using the DO-provided state
-    metrics.kvWrites++;
-    const result = await remixSessionFromState(env, sourceId, sourceSession);
+    metrics.doRequests++;
+    const result = await requestSessionAllocation(env, {
+      operation: 'remix',
+      clientIp: request.headers.get('CF-Connecting-IP'),
+      sourceId,
+      source: sourceSession,
+    });
 
     if (!result.success) {
-      if (result.quotaExceeded) {
+      if (result.code === 'RATE_LIMITED') {
+        emitEvent(429, { sourceSessionId: sourceId, error: result.message, errorSlug: 'rate-limited', errorExpected: true });
+        return new Response(JSON.stringify({ error: result.message, retryAfter: result.retryAfter }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': String(result.retryAfter ?? 60) },
+        });
+      }
+      if (result.code === 'QUOTA_EXCEEDED') {
         emitEvent(503, { sourceSessionId: sourceId, error: 'KV quota exceeded', errorSlug: 'kv-quota-exceeded', errorExpected: false });
         return quotaExceededResponse();
       }
-      emitEvent(500, { sourceSessionId: sourceId, error: result.error, errorSlug: 'remix-failed', errorExpected: false });
+      emitEvent(500, { sourceSessionId: sourceId, error: result.message, errorSlug: 'remix-failed', errorExpected: false });
       return jsonError('Failed to remix session', 500);
     }
 
-    const remixed = result.data;
+    const remixed = result.session;
 
     const response: RemixSessionResponse = {
       id: remixed.id,
@@ -676,24 +710,36 @@ async function handleApiRequest(
     }
 
     // Publish using the DO-provided state
-    metrics.kvWrites++;
-    const result = await publishSessionFromState(env, publishSourceId, sourceSession);
+    metrics.doRequests++;
+    const result = await requestSessionAllocation(env, {
+      operation: 'publish',
+      clientIp: request.headers.get('CF-Connecting-IP'),
+      sourceId: publishSourceId,
+      source: sourceSession,
+    });
 
     if (!result.success) {
-      if (result.quotaExceeded) {
+      if (result.code === 'RATE_LIMITED') {
+        emitEvent(429, { sourceSessionId: publishSourceId, error: result.message, errorSlug: 'rate-limited', errorExpected: true });
+        return new Response(JSON.stringify({ error: result.message, retryAfter: result.retryAfter }), {
+          status: 429,
+          headers: { 'Content-Type': 'application/json', 'Retry-After': String(result.retryAfter ?? 60) },
+        });
+      }
+      if (result.code === 'QUOTA_EXCEEDED') {
         emitEvent(503, { sourceSessionId: publishSourceId, error: 'KV quota exceeded', errorSlug: 'kv-quota-exceeded', errorExpected: false });
         return quotaExceededResponse();
       }
       // Handle trying to publish from an already-published session
-      if (result.error.includes('already-published')) {
-        emitEvent(400, { sourceSessionId: publishSourceId, error: result.error, errorSlug: 'already-published', errorExpected: true });
-        return jsonError(result.error, 400);
+      if (result.code === 'ALREADY_PUBLISHED') {
+        emitEvent(400, { sourceSessionId: publishSourceId, error: result.message, errorSlug: 'already-published', errorExpected: true });
+        return jsonError(result.message, 400);
       }
-      emitEvent(500, { sourceSessionId: publishSourceId, error: result.error, errorSlug: 'publish-failed', errorExpected: false });
+      emitEvent(500, { sourceSessionId: publishSourceId, error: result.message, errorSlug: 'publish-failed', errorExpected: false });
       return jsonError('Failed to publish session', 500);
     }
 
-    const published = result.data;
+    const published = result.session;
 
     // Purge OG image cache for both source and published sessions
     // Source: may have stale cached OG from before publish
