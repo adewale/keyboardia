@@ -16,6 +16,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Live MCP Sampled-Instrument Readiness (July 2026)
+
+**Fixed (browser audio readiness):**
+- Sampled tracks introduced through MCP, WebSocket, REST, multiplayer, or
+  recovery while playback is already active now enter the browser's existing
+  idempotent preloader. The scheduler remains free of network/decode work.
+- Readiness-blocking failures receive three bounded retries after 250 ms,
+  1 second, and 4 seconds. Stop, unmount, or relevant membership replacement
+  cancels obsolete work.
+- Membership identity now serializes sorted `[track.id, sampleId]` tuples
+  instead of joining unescaped strings, preventing distinct valid REST states
+  from colliding and suppressing a required preload.
+- Lifecycle cleanup clears the signature owned by its cancelled generation, so
+  development StrictMode replay re-establishes retry ownership when mounted
+  during active playback.
+
+**Added (regression proof):**
+- Focused hook coverage for MCP and delimiter-bearing REST transitions,
+  resolved-unready and rejected preloads, the complete bounded schedule,
+  StrictMode replay, and cancellation on stop, unmount, or membership change.
+- A Worker-backed Playwright journey authors the affected sampled tracks through
+  the official MCP client after playback starts once, then verifies persisted
+  state, WebSocket UI, real asset requests, registry readiness, and isolated
+  non-zero output on every affected track bus.
+
 #### Stateless MCP: Session Lifecycle, Analysis, Export & Hardening (July 2026)
 
 **Added (MCP tool surface, `/mcp`):** four session-lifecycle tools and one

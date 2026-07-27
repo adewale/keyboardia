@@ -628,6 +628,7 @@ it('preloads piano from sampled:piano track', () => {
 ## #008: Mid-Playback Sampled Instrument Not Preloaded
 
 **Date**: 2024-12-17
+**Updated**: 2026-07-27 (MCP ingress regression)
 **Severity**: high
 **Category**: race-condition
 
@@ -684,7 +685,7 @@ const handleSelect = useCallback(async (instrumentId: string) => {
     // Fire and forget - don't block UI
     getAudioEngine().then(engine => {
       engine.preloadInstrumentsForTracks([{ sampleId: instrumentId }]);
-    }).catch(() => {}); // Ignore errors, scheduler will retry
+    }).catch(() => {}); // Historical bug: errors were ignored; the scheduler did not retry
   }
 
   const name = getInstrumentName(instrumentId);
@@ -693,13 +694,22 @@ const handleSelect = useCallback(async (instrumentId: string) => {
 ```
 
 ### Prevention
-1. **Preload at point of selection** - Don't wait for play to start
-2. **Test mid-playback scenarios** - Add tests that add tracks during playback
-3. **Consider useEffect watcher** - Watch track changes and preload new sampled instruments
+1. **Attach preload to the live-state invariant** - Watch readiness-gated track
+   membership while playing, regardless of whether UI, MCP, WebSocket, REST, or
+   recovery produced the state.
+2. **Test the production ordering** - Start playback first, then introduce the
+   sampled track through the real mutation boundary.
+3. **Measure every decisive layer** - Assert the persisted MCP state, browser
+   state, sample requests, registry readiness, uninterrupted transport state,
+   and per-track audio output.
+4. **Keep the watcher selective** - Key it by collision-free, structured
+   `[track.id, sampleId]` tuples for sampled, Tone, and advanced instruments so
+   step, volume, mute, and solo edits do not retrigger loading. Delimiter-joined
+   strings are unsafe when another ingress accepts arbitrary non-empty IDs.
 
 ### Related Files
 - src/components/SamplePicker.tsx - Where tracks are added
-- src/components/StepSequencer.tsx - Where preload currently happens (only on play)
+- src/components/StepSequencer.tsx - Where play-start preload and the live-state watcher run
 - src/audio/scheduler.ts - Where "not ready" warning originates
 - src/audio/instrument-types.ts - getSampledInstrumentId helper
 
@@ -711,6 +721,56 @@ grep -r "ADD_TRACK\|add_track" src/ --include="*.ts" --include="*.tsx"
 # Find calls to signalMusicIntent that might need preloading
 grep -r "signalMusicIntent" src/ --include="*.ts" --include="*.tsx"
 ```
+
+### 2026-07-27 MCP Regression: The Original Fix Covered Only One Ingress
+
+The 2024 fix preloaded in `SamplePicker.handleSelect()`. That fixed tracks added
+through the picker, but MCP can add a track to the Durable Object and broadcast
+it over WebSocket without executing `SamplePicker`. The browser rendered the
+correct track and active steps, yet `useTrackPrewarm` watched only `tone:` and
+`advanced:` tracks. The AudioWorklet scheduler then saw an unready sampled
+instrument and silently skipped every note. Stop/Play happened to recover the
+track because play-start preloads the complete current track list.
+
+The smallest behavioral regression test renders `useTrackPrewarm` with a plain
+track while playback is already active, rerenders it with an MCP-style
+`sampled:brushes-snare` track, and expects exactly one preload. Rerendering after
+only a solo change must not preload again. Before the fix this test failed with
+zero calls; after widening the readiness-gated signature with
+`getSampledInstrumentId()`, it passes.
+
+The live-state watcher also owns a bounded readiness-failure policy. If preload
+rejects, or resolves while a manifest or priority sample has left the registry
+unready, it retries after 250 ms, 1 second, and 4 seconds. Later background-file
+failures are a separate degraded-fidelity condition: the priority root remains
+playable and the loader falls back to it. A stop, unmount, or readiness-gated
+membership change cancels obsolete retries. The scheduler itself still never
+loads or retries: its real-time hot path only plays ready instruments or skips
+the note.
+
+The correctness audit found two lifecycle traps in the first implementation.
+The original `track.id:sampleId|...` signature could collide for distinct REST
+states because REST accepts arbitrary non-empty track IDs, and StrictMode effect
+replay cancelled a generation without clearing the signature it owned. The
+watcher now serializes sorted `[track.id, sampleId]` tuples with JSON and resets
+the memoized signature whenever lifecycle cleanup invalidates its generation.
+Tests cover the collision, StrictMode replay, rejection and resolved-unready
+recovery, all three retry delays, and cancellation on stop, unmount, and
+membership replacement.
+
+The full acceptance test drives `create_session`, `edit_session`, and
+`get_session` through the official MCP client against Wrangler, while a real
+Chromium page is already playing. MCP adds `sampled:brushes-snare`,
+`sampled:acoustic-ride`, and `sampled:alto-sax`. The test proves that playback
+never restarted, the browser received active tracks, real instrument assets
+were requested, all registries became ready, and per-track Web Audio analysers
+measured non-zero output.
+
+**Corrected rule:** when several ingress paths can establish the same state,
+put required side effects at the shared state-observation boundary. An ingress-
+specific optimization may remain, but it cannot be the correctness mechanism.
+Derive observer identity with structured, injective serialization, and test its
+setup/cleanup symmetry under framework lifecycle replay.
 
 ---
 

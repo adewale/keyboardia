@@ -1,5 +1,6 @@
 e2e/chromatic-grid.spec.ts
 e2e/connection-storm.spec.ts
+e2e/mcp-sampled-instrument-lifecycle.spec.ts
 e2e/multiplayer.spec.ts
 e2e/new-session.spec.ts
 e2e/phase3-refactoring.spec.ts
