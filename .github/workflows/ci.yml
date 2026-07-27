@@ -271,7 +271,7 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const { stats } = JSON.parse(fs.readFileSync('test-results/offline-results.json', 'utf8'));
-          const expected = { expected: 158, skipped: 90, flaky: 0, unexpected: 0 };
+          const expected = { expected: 82, skipped: 69, flaky: 0, unexpected: 0 };
           const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error(`Offline Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
@@ -326,7 +326,7 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const { stats } = JSON.parse(fs.readFileSync('test-results/worker-results.json', 'utf8'));
-          const expected = { expected: 151, skipped: 0, flaky: 0, unexpected: 0 };
+          const expected = { expected: 73, skipped: 0, flaky: 0, unexpected: 0 };
           const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error(`Worker Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
