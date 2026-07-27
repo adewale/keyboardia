@@ -100,17 +100,21 @@ export async function createSessionWithRetry(
 ): Promise<{ id: string }> {
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const res = await request.post(`${API_BASE}/api/sessions`, { data });
-    if (res.ok()) {
-      return res.json();
+    try {
+      const res = await request.post(`${API_BASE}/api/sessions`, { data });
+      if (res.ok()) {
+        return res.json();
+      }
+      lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
     }
-    lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
     // Don't sleep after the last attempt
     if (attempt < maxRetries - 1) {
       const delay = calculateBackoffDelay(attempt);
       console.log(
         `[TEST] Session create attempt ${attempt + 1} failed: ` +
-        `${res.status()} ${res.statusText()}; retrying in ${delay}ms...`,
+        `${lastError.message}; retrying in ${delay}ms...`,
       );
       await new Promise((r) => setTimeout(r, delay));
     }
