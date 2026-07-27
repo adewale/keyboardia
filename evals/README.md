@@ -70,6 +70,7 @@ model with itself is a known way to flatter it.
 | `adversarial` | 3 | `with_skill`, `without_skill` | regex / not_regex + judge |
 | `negative` | 4 | `with_skill`, `without_skill` | regex / not_regex + judge |
 | `trigger` | 4 | catalog selection | whether the model chooses the skill |
+| hidden (`holdout` 4, `holdback` 2) | 6 | `with_skill`, `without_skill` | regex / not_regex + judge |
 
 Both answer arms receive `fixtures/keyboardia-mcp-schema.json`, the exact
 `tools/list` output of the live Worker. The baseline is therefore never
@@ -94,7 +95,19 @@ clone still runs the full tune split.
 
 ```bash
 node evals/run-benchmark.mjs --agent stub --split holdout
+node evals/run-benchmark.mjs --agent stub --split all
 ```
+
+Every hidden case targets a SKILL.md rule that no tune case drills and that the
+attached schema cannot teach — grouped `set_steps` calls, the no-duplicate-step
+rule, refusing to claim it heard the audio, and asking before touching a track
+the user did not name. A hidden case the fixture can answer measures the
+fixture, and a hidden case that restates a tune case measures nothing new.
+
+**The discipline is the point, not the file layout.** Hidden results are read
+once and not tuned against. The moment you edit the skill to raise a holdout
+score, that case has become a tune case; relabel it rather than keep reporting
+it as held out.
 
 ## Other commands
 
@@ -135,6 +148,11 @@ in the Node suite, so the always-on floor needs no Python.
   attachment. A `without_skill` arm outscoring `with_skill` is the signal for
   either — the runner prints those under "non-discriminating assertion(s)", and
   the manifest test fails the build on the second kind.
+- A `not_regex` both arms always satisfy is reported separately, as a regression
+  guard holding, not as a non-discriminating assertion. It is supposed to read
+  100/100 forever: `no-invented-operation` earns its keep the day a model starts
+  fabricating a `"delete_track"` payload, not today. Pooling guards with broken
+  checks buries the ones worth opening.
 - Per-assertion deltas at three repeats are inside the noise floor. The exact
   paired sign test cannot reach p≤0.05 below six matched pairs at all, so read
   per-model aggregates, not single assertions.

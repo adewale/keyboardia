@@ -688,22 +688,43 @@ function summarize(runs, options, manifest) {
     }
   }
 
-  // An assertion the baseline passes at least as often as the skilled arm is
-  // measuring something other than the skill. Surfacing it is the whole point.
-  const nonDiscriminating = Object.entries(assertionBreakdown)
+  // An assertion the baseline passes at least as often as the skilled arm is not
+  // measuring the skill — but two very different things look like that, and
+  // pooling them buries the real ones.
+  //
+  //   A `not_regex` both arms always satisfy is a regression guard holding. It
+  //   is supposed to read 100/100 forever; it earns its keep the day someone
+  //   reintroduces the payload it forbids.
+  //
+  //   A `regex` the baseline matches as often as the skilled arm is either a
+  //   saturated case or a broken assertion, and is worth opening.
+  const guardTypes = new Set(['not_regex']);
+  const typeOf = new Map();
+  for (const run of answer) {
+    for (const assertion of run.assertions ?? []) {
+      typeOf.set(`${run.case}:${assertion.name}`, assertion.type);
+    }
+  }
+  const flat = Object.entries(assertionBreakdown)
     .filter(([, arms]) => arms.with_skill && arms.without_skill)
-    .filter(([, arms]) =>
-      arms.with_skill.passed / arms.with_skill.total <= arms.without_skill.passed / arms.without_skill.total)
-    .map(([key, arms]) => ({
-      assertion: key,
+    .map(([assertion, arms]) => ({
+      assertion,
+      type: typeOf.get(assertion),
       with_skill: arms.with_skill.passed / arms.with_skill.total,
       without_skill: arms.without_skill.passed / arms.without_skill.total,
-    }));
+    }))
+    .filter((entry) => entry.with_skill <= entry.without_skill);
+
+  const holdingGuards = flat.filter(
+    (entry) => guardTypes.has(entry.type) && entry.with_skill === 1 && entry.without_skill === 1
+  );
+  const nonDiscriminating = flat.filter((entry) => !holdingGuards.includes(entry));
 
   return {
     byModel,
     assertionBreakdown,
     nonDiscriminating,
+    holdingGuards,
     splits: [...new Set(runs.map((run) => run.split))],
     errors: runs.filter((run) => !run.ok).length,
   };
@@ -751,10 +772,14 @@ function renderSummary(summary, options) {
     }
   }
   if (summary.nonDiscriminating.length > 0) {
-    lines.push('', `${summary.nonDiscriminating.length} non-discriminating assertion(s) (baseline >= skill):`);
+    lines.push('', `${summary.nonDiscriminating.length} non-discriminating assertion(s) — saturated case or broken check:`);
     for (const entry of summary.nonDiscriminating) {
       lines.push(`  ${entry.assertion}  ${percent(entry.with_skill)} / ${percent(entry.without_skill)}`);
     }
+  }
+  if (summary.holdingGuards?.length > 0) {
+    // Listed, not warned about: a guard at 100/100 is doing its job.
+    lines.push('', `${summary.holdingGuards.length} regression guard(s) holding at 100% in both arms.`);
   }
   if (summary.errors > 0) {
     lines.push('', `${summary.errors} agent call(s) failed after one retry.`);
