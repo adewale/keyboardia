@@ -9,6 +9,4 @@ e2e/playback.spec.ts
 e2e/session-api-contract.spec.ts
 e2e/session-persistence.spec.ts
 e2e/session-race.spec.ts
-e2e/track-reorder-bug-fixes.spec.ts
-e2e/track-reorder-comprehensive.spec.ts
 e2e/track-reorder.spec.ts

@@ -3,361 +3,159 @@ import {
   expect,
   waitForAppReady,
   waitForCollaborationReady,
-  waitForDragComplete,
   useMockAPI,
 } from './global-setup';
-
-// ============================================================================
-// Reorder coverage moved down a tier
-// ============================================================================
-//
-// `reorder_tracks` is a pure array splice (src/shared/state-mutations.ts:318).
-// Verifying which index ends up where does not need a browser, and doing it
-// through HTML5 drag-and-drop made it the slowest and most fragile part of the
-// suite. The following were removed in favour of coverage that already existed:
-//
-// e2e/track-reorder-precision.spec.ts (deleted, 26 tests)
-//   The whole file was a from->to index matrix. src/state/grid.test.ts:2112
-//   `precise position validation (covers track-reorder-precision.spec.ts)` was
-//   written to replace it — naming this file — and then it was never deleted.
-//   That unit test walks a full 5x5 matrix asserting both exact target
-//   placement and that no track is lost, in microseconds.
-//
-// track-reorder-comprehensive.spec.ts (12 tests)
-//   - "Basic Reorder Operations"  -> grid.test.ts:2112 (matrix)
-//   - "Same Position Edge Cases"  -> grid.test.ts:2526 same-position no-op, and
-//                                    sync-convergence `reorder_tracks is no-op
-//                                    for invalid trackId or toIndex`
-//   - "Rapid Consecutive Drags"   -> grid.test.ts:2147 chained operations, and
-//                                    `50 rapid consecutive reorders without
-//                                    data loss`
-//
-// track-reorder-bug-fixes.spec.ts (4 tests)
-//   - "Two Track Scenarios"       -> grid.test.ts:2090 two tracks
-//   - "Maximum Tracks Scenario"   -> grid.test.ts createMultiTrackState(16)
-//
-// Track-count edge cases (1, 2, 8, 16) and no-track-loss invariants are also
-// covered as properties over arbitrary states in
-// src/sync/sync-convergence.property.test.ts.
-//
-// What stays in e2e is what a browser is actually required for: that the drag
-// handle is the only drag affordance, that drag-target/dragging classes appear
-// and clear, that duplicate HTML5 DnD events do not produce ghost tracks, that
-// one drag causes exactly one reorder, and that order survives a page reload.
-// ============================================================================
-
+import type { Page } from './global-setup';
 
 /**
- * Track Reorder Tests (Phase 31G)
+ * Browser-only track reorder contracts.
  *
- * Tests for the drag-and-drop track reordering feature.
- * Uses Playwright best practices with proper waits.
- *
- * NOTE: These tests are desktop-only as they require mouse drag operations.
- * Mobile browsers (mobile-chrome, mobile-safari) are skipped.
- *
- * Features tested:
- * - Drag handle visibility and accessibility
- * - Dragging tracks to new positions
- * - Visual feedback during drag
- * - Drag cancellation behavior
- * - Edge cases (drag to same position, first/last track)
+ * Reducer position matrices, track-count boundaries, repeated reorder stress,
+ * and no-loss invariants live in grid.test.ts and
+ * sync-convergence.property.test.ts. The deleted comprehensive, bug-fix, and
+ * single-track-visual specs repeated those pure state contracts through 37
+ * slow drag gestures. This suite keeps only behavior that requires a browser:
+ * the drag affordance, exact DOM-to-action targeting, single dispatch, visual
+ * ownership/cleanup, cancellation, handle-only initiation, and persistence.
  */
 
-/**
- * Check if running on a mobile browser project.
- */
 function isMobileProject(projectName: string): boolean {
   return projectName.startsWith('mobile-');
 }
 
-/**
- * Check if running on WebKit browser.
- * WebKit drag-and-drop is broken in Playwright: https://github.com/microsoft/playwright/issues/31539
- */
 function isWebkit(browserName: string): boolean {
   return browserName === 'webkit';
 }
 
-test.describe('Track Reorder', () => {
+async function getTrackNames(page: Page): Promise<string[]> {
+  return page.locator('.track-row').evaluateAll((rows) => rows.map((row) => {
+    const name = row.querySelector('.track-name, .track-label')?.textContent?.trim();
+    if (!name) throw new Error('Rendered track is missing its name');
+    return name;
+  }));
+}
+
+async function expectTrackOrder(page: Page, expected: string[]): Promise<void> {
+  await expect.poll(() => getTrackNames(page)).toEqual(expected);
+}
+
+test.describe('Track reorder browser contract', () => {
   test.beforeEach(async ({ page, browserName }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
-    test.skip(isWebkit(browserName), 'WebKit drag-and-drop broken in Playwright - see issue #31539');
-    // Go to home page and start a new session
+    test.skip(isWebkit(browserName), 'WebKit drag-and-drop is not supported by Playwright');
+
     await page.goto('/');
-
-    // Click "Start Session" to enter the app (homepage -> sequencer)
-    const startButton = page.getByRole('button', { name: /start session/i })
-      .or(page.locator('button:has-text("Start Session")'));
-    if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await startButton.click();
-    }
-
-    // Wait for the instrument picker to be visible (session loads empty)
-    await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
-
-    // CRITICAL: Wait for WebSocket connection before adding tracks.
-    // Without this wait, tracks added before the initial snapshot arrives
-    // will be lost when LOAD_STATE overwrites local state.
-    // See: grid.test.ts "LOAD_STATE race condition" tests for documentation.
+    await page.getByRole('button', { name: /start session/i }).click();
+    await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible();
     await waitForCollaborationReady(page);
 
-    // Add 3 tracks by clicking instrument buttons directly
-    await page.getByRole('button', { name: /808 Hat/ }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole('button', { name: /808 Kick/ }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole('button', { name: /808 Snare/ }).first().click();
-    await page.waitForTimeout(300);
-
-    // Wait for tracks to be rendered
-    await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
-    await expect(page.locator('.track-row').nth(2)).toBeVisible({ timeout: 5000 });
-  });
-
-  test('should display drag handle on each track', async ({ page }) => {
-    const trackRows = page.locator('.track-row');
-    const trackCount = await trackRows.count();
-
-    for (let i = 0; i < trackCount; i++) {
-      const dragHandle = trackRows.nth(i).locator('.track-drag-handle');
-      await expect(dragHandle).toBeVisible();
-      // Verify it has the grab cursor
-      await expect(dragHandle).toHaveAttribute('title', 'Drag to reorder');
+    const instruments: Array<[RegExp, number]> = [
+      [/808 Hat/, 1],
+      [/808 Kick/, 2],
+      [/808 Snare/, 3],
+    ];
+    for (const [instrument, expectedCount] of instruments) {
+      await page.getByRole('button', { name: instrument }).first().click();
+      await expect(page.locator('.track-row')).toHaveCount(expectedCount);
     }
   });
 
-  test('should have accessible drag handles', async ({ page }) => {
-    const dragHandle = page.locator('.track-drag-handle').first();
-    await expect(dragHandle).toHaveAttribute('aria-label', 'Drag to reorder track');
+  test('exposes one accessible drag handle per track', async ({ page }) => {
+    const handles = page.locator('.track-drag-handle');
+    await expect(handles).toHaveCount(3);
+
+    for (const handle of await handles.all()) {
+      await expect(handle).toBeVisible();
+      await expect(handle).toHaveAttribute('title', 'Drag to reorder');
+      await expect(handle).toHaveAttribute('aria-label', 'Drag to reorder track');
+    }
   });
 
-  test('should reorder tracks when dragged to new position', async ({ page }) => {
-    // Get initial track order by reading track names
-    const getTrackNames = async () => {
-      const trackRows = page.locator('.track-row');
-      const count = await trackRows.count();
-      const names: string[] = [];
-      for (let i = 0; i < count; i++) {
-        const nameElement = trackRows.nth(i).locator('.track-name, .track-label');
-        const name = await nameElement.textContent();
-        names.push(name || `Track ${i}`);
-      }
-      return names;
-    };
+  test('lands on the exact target once without losing or duplicating tracks', async ({ page }) => {
+    const initial = await getTrackNames(page);
+    const expected = [initial[1], initial[2], initial[0]];
 
-    const initialOrder = await getTrackNames();
-    expect(initialOrder.length).toBeGreaterThanOrEqual(3);
+    await page.locator('.track-drag-handle').first().dragTo(
+      page.locator('.track-row-wrapper').nth(2),
+    );
 
-    // Get the drag handles
-    const firstTrackHandle = page.locator('.track-row').first().locator('.track-drag-handle');
-    const thirdTrackWrapper = page.locator('.track-row-wrapper').nth(2);
+    await expectTrackOrder(page, expected);
+    await expect(page.locator('.track-row-wrapper.dragging, .track-row-wrapper.drag-target'))
+      .toHaveCount(0);
 
-    // Drag first track to third position
-    await firstTrackHandle.dragTo(thirdTrackWrapper);
-
-    // Wait for reorder to complete
-    await waitForDragComplete(page);
-
-    // Verify the order changed
-    const newOrder = await getTrackNames();
-
-    // First track should now be at a different position
-    // The exact position depends on the drop behavior, but order should be different
-    expect(newOrder).not.toEqual(initialOrder);
+    // A historical double-dragend bug dispatched a second reorder after the
+    // first render. Wait through that event window and pin the exact order.
+    await page.waitForTimeout(300);
+    const stableOrder = await getTrackNames(page);
+    expect(stableOrder).toEqual(expected);
+    expect(new Set(stableOrder)).toEqual(new Set(initial));
   });
 
-  test('should show visual feedback when dragging', async ({ page }) => {
-    const firstTrackHandle = page.locator('.track-row').first().locator('.track-drag-handle');
-    const firstTrackWrapper = page.locator('.track-row-wrapper').first();
-
-    // Start drag
-    const box = await firstTrackHandle.boundingBox();
-    if (!box) throw new Error('Could not get drag handle bounding box');
+  test('marks only the active track as dragging and clears it on release', async ({ page }) => {
+    const handle = page.locator('.track-drag-handle').first();
+    const box = await handle.boundingBox();
+    if (!box) throw new Error('Drag handle has no layout box');
 
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
     await page.mouse.down();
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 100);
 
-    // Move slightly to trigger drag
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 50);
-    await waitForDragComplete(page);
+    await expect(page.locator('.track-row-wrapper.dragging')).toHaveCount(1);
+    await expect(page.locator('.track-row-wrapper').first()).toHaveClass(/dragging/);
 
-    // The dragged track should have the 'dragging' class
-    await expect(firstTrackWrapper).toHaveClass(/dragging/);
-
-    // Clean up - finish the drag
     await page.mouse.up();
+    await expect(page.locator('.track-row-wrapper.dragging, .track-row-wrapper.drag-target'))
+      .toHaveCount(0);
   });
 
-  test('should complete drag operation successfully with visual state cleanup', async ({ page }) => {
-    // Note: Testing drag-target visual during hover requires HTML5 drag events
-    // (dragenter, dragover) which aren't triggered by Playwright's mouse events.
-    // Instead, we verify that a complete drag operation works and cleans up state.
+  test('cancels outside the track list without reordering or leaking visual state', async ({ page }) => {
+    const initial = await getTrackNames(page);
+    const handle = page.locator('.track-drag-handle').first();
+    const target = page.locator('.track-row-wrapper').nth(2);
+    const handleBox = await handle.boundingBox();
+    const targetBox = await target.boundingBox();
+    if (!handleBox || !targetBox) throw new Error('Drag source or target has no layout box');
 
-    const firstTrackHandle = page.locator('.track-row').first().locator('.track-drag-handle');
-    const secondTrackWrapper = page.locator('.track-row-wrapper').nth(1);
-
-    // Get initial order
-    const getFirstTrackName = async () => {
-      const nameEl = page.locator('.track-row').first().locator('.track-name');
-      return await nameEl.textContent();
-    };
-    const initialFirst = await getFirstTrackName();
-
-    // Perform complete drag operation using dragTo (triggers HTML5 drag events)
-    await firstTrackHandle.dragTo(secondTrackWrapper);
-    await page.waitForTimeout(200);
-
-    // Verify drag completed (order changed)
-    const newFirst = await getFirstTrackName();
-    expect(newFirst).not.toBe(initialFirst);
-
-    // Verify all visual states are cleared after drag
-    const draggingCount = await page.locator('.track-row-wrapper.dragging').count();
-    const targetCount = await page.locator('.track-row-wrapper.drag-target').count();
-    expect(draggingCount).toBe(0);
-    expect(targetCount).toBe(0);
-  });
-
-  test('should not reorder when drag is canceled', async ({ page }) => {
-    const getTrackNames = async () => {
-      const trackRows = page.locator('.track-row');
-      const count = await trackRows.count();
-      const names: string[] = [];
-      for (let i = 0; i < count; i++) {
-        const nameElement = trackRows.nth(i).locator('.track-name, .track-label');
-        const name = await nameElement.textContent();
-        names.push(name || `Track ${i}`);
-      }
-      return names;
-    };
-
-    const initialOrder = await getTrackNames();
-
-    const firstTrackHandle = page.locator('.track-row').first().locator('.track-drag-handle');
-    const box = await firstTrackHandle.boundingBox();
-    if (!box) throw new Error('Could not get drag handle bounding box');
-
-    // Start drag
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
     await page.mouse.down();
+    await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
+    await page.mouse.move(0, 0);
+    await page.mouse.up();
 
-    // Move over second track
-    const secondTrackWrapper = page.locator('.track-row-wrapper').nth(1);
-    const targetBox = await secondTrackWrapper.boundingBox();
-    if (!targetBox) throw new Error('Could not get target bounding box');
+    await expectTrackOrder(page, initial);
+    await expect(page.locator('.track-row-wrapper.dragging, .track-row-wrapper.drag-target'))
+      .toHaveCount(0);
+  });
 
+  test('does not initiate a drag from the track name', async ({ page }) => {
+    const initial = await getTrackNames(page);
+    const name = page.locator('.track-name, .track-label').first();
+    const target = page.locator('.track-row-wrapper').nth(2);
+    const nameBox = await name.boundingBox();
+    const targetBox = await target.boundingBox();
+    if (!nameBox || !targetBox) throw new Error('Track name or target has no layout box');
+
+    await page.mouse.move(nameBox.x + nameBox.width / 2, nameBox.y + nameBox.height / 2);
+    await page.mouse.down();
     await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
 
-    // Move away from all tracks (cancel area)
-    await page.mouse.move(0, 0);
-
-    // Release mouse (cancel drag)
+    await expect(page.locator('.track-row-wrapper.dragging')).toHaveCount(0);
     await page.mouse.up();
-    await waitForDragComplete(page);
-
-    // Order should remain unchanged
-    const finalOrder = await getTrackNames();
-    expect(finalOrder).toEqual(initialOrder);
+    await expectTrackOrder(page, initial);
   });
 
-  test('should not trigger drag from non-handle areas', async ({ page }) => {
-    const getTrackNames = async () => {
-      const trackRows = page.locator('.track-row');
-      const count = await trackRows.count();
-      const names: string[] = [];
-      for (let i = 0; i < count; i++) {
-        const nameElement = trackRows.nth(i).locator('.track-name, .track-label');
-        const name = await nameElement.textContent();
-        names.push(name || `Track ${i}`);
-      }
-      return names;
-    };
+  test('persists the exact order after reload', async ({ page }) => {
+    test.skip(useMockAPI, 'Persistence requires real Worker storage');
+    const initial = await getTrackNames(page);
+    const expected = [initial[1], initial[0], initial[2]];
 
-    const initialOrder = await getTrackNames();
+    await page.locator('.track-drag-handle').nth(1).dragTo(
+      page.locator('.track-row-wrapper').first(),
+    );
+    await expectTrackOrder(page, expected);
 
-    // Try to drag from the track name (not the handle)
-    const trackName = page.locator('.track-row').first().locator('.track-name, .track-label');
-    const thirdTrackWrapper = page.locator('.track-row-wrapper').nth(2);
-
-    try {
-      await trackName.dragTo(thirdTrackWrapper, { timeout: 1000 });
-    } catch {
-      // Drag may fail which is expected
-    }
-
-    await waitForDragComplete(page);
-
-    // Order should remain unchanged
-    const finalOrder = await getTrackNames();
-    expect(finalOrder).toEqual(initialOrder);
-  });
-
-  test('should handle dragging to same position gracefully', async ({ page }) => {
-    const getTrackNames = async () => {
-      const trackRows = page.locator('.track-row');
-      const count = await trackRows.count();
-      const names: string[] = [];
-      for (let i = 0; i < count; i++) {
-        const nameElement = trackRows.nth(i).locator('.track-name, .track-label');
-        const name = await nameElement.textContent();
-        names.push(name || `Track ${i}`);
-      }
-      return names;
-    };
-
-    const initialOrder = await getTrackNames();
-
-    // Drag first track back to first position
-    const firstTrackHandle = page.locator('.track-row').first().locator('.track-drag-handle');
-    const firstTrackWrapper = page.locator('.track-row-wrapper').first();
-
-    await firstTrackHandle.dragTo(firstTrackWrapper);
-    await waitForDragComplete(page);
-
-    // Order should remain unchanged
-    const finalOrder = await getTrackNames();
-    expect(finalOrder).toEqual(initialOrder);
-  });
-
-  test('should persist track order after reorder', async ({ page }) => {
-    test.skip(useMockAPI, 'Persistence tests require real backend storage');
-    // Get initial order
-    const getFirstTrackName = async () => {
-      const nameElement = page.locator('.track-row').first().locator('.track-name, .track-label');
-      return await nameElement.textContent();
-    };
-
-    const initialFirstTrack = await getFirstTrackName();
-
-    // Drag second track to first position
-    const secondTrackHandle = page.locator('.track-row').nth(1).locator('.track-drag-handle');
-    const firstTrackWrapper = page.locator('.track-row-wrapper').first();
-
-    await secondTrackHandle.dragTo(firstTrackWrapper);
-    await waitForDragComplete(page);
-
-    // Wait for order change using web-first assertion
-    await expect(async () => {
-      const newFirst = await getFirstTrackName();
-      expect(newFirst).not.toEqual(initialFirstTrack);
-    }).toPass({ timeout: 2000 });
-
-    const newFirstTrack = await getFirstTrackName();
-
-    // First track should be different
-    expect(newFirstTrack).not.toEqual(initialFirstTrack);
-
-    // Wait for state to persist
-    await page.waitForLoadState('networkidle');
-
-    // Reload the page to verify persistence
     await page.reload();
-    await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
     await waitForAppReady(page);
-
-    // Verify the order persisted
-    const reloadedFirstTrack = await getFirstTrackName();
-    expect(reloadedFirstTrack).toEqual(newFirstTrack);
+    await expectTrackOrder(page, expected);
   });
 });

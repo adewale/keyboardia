@@ -45,14 +45,11 @@ describe('Preset Validation', () => {
     });
 
     it('all SYNTH_PRESETS have required properties', () => {
-      for (const [name, preset] of Object.entries(SYNTH_PRESETS)) {
+      for (const preset of Object.values(SYNTH_PRESETS)) {
         // SynthParams structure: waveform, filterCutoff, attack, decay, sustain, release
         expect(preset).toHaveProperty('waveform');
         expect(preset).toHaveProperty('attack');
         expect(preset).toHaveProperty('release');
-        // Name should be a valid key
-        expect(typeof name).toBe('string');
-        expect(name.length).toBeGreaterThan(0);
       }
     });
   });
@@ -64,25 +61,19 @@ describe('Preset Validation', () => {
     });
 
     it('all ADVANCED_SYNTH_PRESETS have required properties', () => {
-      for (const [name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+      for (const preset of Object.values(ADVANCED_SYNTH_PRESETS)) {
         // AdvancedSynthPreset structure: name, oscillator1, oscillator2, amplitudeEnvelope, filter
         expect(preset).toHaveProperty('name');
         expect(preset).toHaveProperty('oscillator1');
         expect(preset).toHaveProperty('oscillator2');
         expect(preset).toHaveProperty('amplitudeEnvelope');
-        // Name should be a valid key
-        expect(typeof name).toBe('string');
-        expect(name.length).toBeGreaterThan(0);
+        expect(preset.name.trim().length).toBeGreaterThan(0);
       }
     });
 
     it('preset names are URL-safe', () => {
       for (const name of Object.keys(ADVANCED_SYNTH_PRESETS)) {
-        // Should not contain problematic characters
-        expect(name).not.toContain(' ');
-        expect(name).not.toContain('/');
-        expect(name).not.toContain('\\');
-        expect(name).not.toContain(':'); // Would conflict with prefix parsing
+        expect(name).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
       }
     });
   });

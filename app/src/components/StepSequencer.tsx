@@ -30,6 +30,7 @@ import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import { detectMirrorDirection } from '../utils/patternOps';
 import { AsyncActionLatch } from '../utils/AsyncActionLatch';
+import { resolveTrackReorder } from './track-reorder';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -345,24 +346,18 @@ export function StepSequencer() {
     // This prevents race conditions where state hasn't updated yet during rapid drags
     const targetTrackId = targetTrackIdFromDrop ?? dragState.targetTrackId;
 
-    // Only perform reorder if droppedTrackId was provided from handleDrop.
-    // This ensures reorder only happens on valid drop, not on drag cancel.
-    if (droppedTrackId && targetTrackId && droppedTrackId !== targetTrackId) {
-      // Calculate current indices from track IDs
-      const fromIndex = state.tracks.findIndex(t => t.id === droppedTrackId);
-      const toIndex = state.tracks.findIndex(t => t.id === targetTrackId);
-
-      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
-        // Dispatch to local grid state
-        dispatch({ type: 'REORDER_TRACKS', fromIndex, toIndex });
-        // Sync to multiplayer using trackId for commutativity
-        multiplayer?.handleTrackReorder(droppedTrackId, toIndex);
-      } else if (fromIndex === -1 || toIndex === -1) {
-        // BUG4-FIX: Notify user when reorder fails due to track modification by remote player
-        import('../utils/toastEvents').then(({ dispatchToastEvent }) => {
-          dispatchToastEvent('Track reorder failed - track was modified by another player', 'error');
-        });
-      }
+    const resolution = resolveTrackReorder(state.tracks, droppedTrackId, targetTrackId);
+    if (resolution.kind === 'reorder') {
+      dispatch({
+        type: 'REORDER_TRACKS',
+        fromIndex: resolution.fromIndex,
+        toIndex: resolution.toIndex,
+      });
+      multiplayer?.handleTrackReorder(resolution.trackId, resolution.toIndex);
+    } else if (resolution.kind === 'missing-track') {
+      import('../utils/toastEvents').then(({ dispatchToastEvent }) => {
+        dispatchToastEvent('Track reorder failed - track was modified by another player', 'error');
+      });
     }
     setDragState({ draggingTrackId: null, targetTrackId: null });
   }, [dragState.targetTrackId, state.tracks, dispatch, multiplayer]);
