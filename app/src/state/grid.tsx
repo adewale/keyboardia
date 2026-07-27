@@ -5,12 +5,12 @@ import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, DEFAULT_TEMPO, DEFAULT_SWING } from '../types';
 import { detectMirrorDirection } from '../utils/patternOps';
-// Import DEFAULT_EFFECTS_STATE from canonical source (toneEffects.ts)
-import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
+// Serializable defaults must not pull the Tone.js runtime into state.
+import { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
 // Re-export for backwards compatibility
-export { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
+export { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
 // Phase 3 refactoring: Delegate SYNCED actions to applyMutation
-import { delegateToApplyMutation, maybeInvalidateSelection } from '../shared/state-adapters';
+import { delegateToApplyMutation, maybeInvalidateSelection } from './state-adapters';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 
 // Default scale state - C minor pentatonic, unlocked (Phase 29E)
@@ -36,7 +36,7 @@ function createInitialState(): GridState {
 // Reducer - exported for testing
 // Phase 3: SYNCED actions delegate to applyMutation via delegateToApplyMutation()
 // This ensures client and server apply mutations identically.
-// See shared/state-adapters.ts for the delegation pattern.
+// See state/state-adapters.ts for the delegation pattern.
 export function gridReducer(state: GridState, action: GridAction): GridState {
   switch (action.type) {
     // =========================================================================

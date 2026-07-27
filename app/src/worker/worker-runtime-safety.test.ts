@@ -12,7 +12,7 @@ import { describe, expect, it } from 'vitest';
  * Vite, and so does vitest-pool-workers, so the global is always defined under
  * test even though it is absent in the deployed Worker.
  *
- * This caught a real 500 on every /mcp request: MIDI export reaches
+ * This caught a real 500 on every /mcp request: MIDI export used to reach
  * src/utils/logger.ts through instrument-ID parsing, and that module read
  * `import.meta.env.DEV` at the top level.
  */
@@ -85,7 +85,8 @@ describe('worker runtime safety', () => {
     // A resolution regression would silently empty this test.
     expect(modules.size).toBeGreaterThan(20);
     expect([...modules.keys()].some((path) => path.endsWith('/worker/mcp.ts'))).toBe(true);
-    expect([...modules.keys()].some((path) => path.endsWith('/audio/midiExport.ts'))).toBe(true);
+    expect([...modules.keys()].some((path) => path.endsWith('/shared/midi-core.ts'))).toBe(true);
+    expect([...modules.keys()].some((path) => path.includes('/audio/'))).toBe(false);
   });
 
   it('never reads import.meta.env without a guard', () => {

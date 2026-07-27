@@ -6,10 +6,8 @@
  */
 
 import type { GridState } from '../types';
-
-export interface MidiExportOptions {
-  sessionName?: string | null;
-}
+import type { MidiExportOptions } from '../shared/midi-core';
+export type { MidiExportOptions } from '../shared/midi-core';
 
 export interface MidiWorkerRequest {
   state: Pick<GridState, 'tracks' | 'tempo' | 'swing'>;

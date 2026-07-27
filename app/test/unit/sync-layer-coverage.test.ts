@@ -22,7 +22,7 @@ import {
   LOCAL_ONLY_ACTIONS,
   INTERNAL_ACTIONS,
   isSyncedAction as _isSyncedAction,
-} from '../../src/shared/sync-classification';
+} from '../../src/sync/sync-classification';
 import { actionToMessage } from '../../src/sync/multiplayer';
 import { applyMutation as _applyMutation } from '../../src/shared/state-mutations';
 import type { GridAction, Track, ParameterLock, EffectsState, ScaleState, FMParams } from '../../src/types';

@@ -28,10 +28,10 @@
  */
 
 import type { GridState, Track, SelectionState } from '../types';
-import type { SessionState, SessionTrack } from './state';
-import type { ClientMessageBase } from './message-types';
-import { DEFAULT_STEP_COUNT } from './constants';
-import { applyMutation } from './state-mutations';
+import type { SessionState, SessionTrack } from '../shared/state';
+import type { ClientMessageBase } from '../shared/message-types';
+import { DEFAULT_STEP_COUNT } from '../shared/constants';
+import { applyMutation } from '../shared/state-mutations';
 
 /**
  * Convert GridState to SessionState for mutation application.

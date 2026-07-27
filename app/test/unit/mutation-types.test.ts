@@ -248,7 +248,7 @@ describe('Published Session Protection', () => {
  * 2. Every ClientMessage type has a handler in the DO
  * 3. The naming conventions are consistent (SCREAMING_CASE → snake_case → snake_case)
  */
-import { SYNCED_ACTIONS } from '../../src/shared/sync-classification';
+import { SYNCED_ACTIONS } from '../../src/sync/sync-classification';
 import { STATE_MUTATING_BROADCASTS } from '../../src/shared/messages';
 
 describe('Bidirectional Message Mapping', () => {

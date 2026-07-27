@@ -1,4 +1,4 @@
-import { VALID_SAMPLE_IDS, getInstrumentName } from '../components/sample-constants';
+import { VALID_SAMPLE_IDS, getInstrumentName } from '../shared/instrument-catalog';
 import { DEFAULT_STEP_COUNT, MAX_STEPS, MAX_TRACKS, MAX_TEMPO, MIN_TEMPO } from '../shared/constants';
 import type { Session, SessionState, SessionTrack } from '../shared/state';
 import { createDefaultTrack } from '../shared/state-mutations';
