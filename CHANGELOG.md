@@ -16,97 +16,109 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
-#### Stateless MCP: Session Lifecycle Tools & Endpoint Hardening (July 2026)
+#### Stateless MCP: Session Lifecycle, Analysis, Export & Hardening (July 2026)
 
-**Added (MCP tool surface, `/mcp`):** four session-lifecycle tools alongside the
-existing `get_session` and `edit_session`. Each wraps the authoritative
-Keyboardia operation rather than reimplementing it, and returns the canonical
-`/s/{session_id}` URL.
-- **`create_session`** — a new editable session with normal defaults. Requires a
-  caller-generated UUID `idempotency_key`, recorded in KV for 24 hours, so a
-  retried create resolves to the session the first attempt made instead of
-  leaving duplicates behind. The key must be a UUID because it is a lookup into
-  created sessions: a memorable key would collide across unrelated callers, and
-  a session UUID is the only access control Keyboardia has.
-- **`remix_session`** — wraps `remixSessionFromState()`. Reads the source from
-  the Durable Object so pending edits are included, never modifies it, and
-  records lineage. This is how an agent continues from published work.
-- **`publish_session`** — wraps `publishSessionFromState()`. Returns the new
-  immutable URL plus the still-editable `source_url`, purges both cached social
-  previews, and rejects publishing an already-published session. Never an
-  implicit side effect of editing or exporting.
-- **`export_midi`** — runs the same `exportToMidi()` as the browser's Export
-  MIDI button, so identical state produces identical bytes. Returns the file
-  base64-encoded, reports skipped tracks with a reason, and lists what a
-  Standard MIDI File cannot carry — per-track swing, track mix levels,
-  microphone recordings, instruments with no GM mapping, effects, loop region —
-  rather than approximating them silently.
+**Added (MCP tool surface, `/mcp`):** four session-lifecycle tools and one
+read-only analysis tool alongside `get_session` and `edit_session`. Each wraps
+an authoritative Keyboardia operation and returns canonical session URLs.
+- **`create_session`** — creates an editable session with normal defaults. A
+  caller-generated UUID `idempotency_key` is reserved for 24 hours in the
+  allocator Durable Object *before* KV is written. Concurrent calls and retries
+  therefore converge on one session UUID, including when the first KV write has
+  an uncertain outcome.
+- **`remix_session`** — reads the source from its live Durable Object so pending
+  edits are included, creates an editable copy without modifying the source,
+  and records lineage.
+- **`publish_session`** — returns a new immutable URL plus the still-editable
+  `source_url`, purges both social-preview cache entries, and rejects publishing
+  an already-published session. Publishing is never an implicit side effect of
+  editing or exporting.
+- **`export_midi`** — uses the browser's authoritative `exportToMidi()` path, so
+  identical state produces identical bytes. It returns base64-encoded Standard
+  MIDI, reports skipped tracks, and lists features MIDI cannot represent rather
+  than approximating them silently.
+- **`analyze_session`** — describes rhythm, pitch content, inferred key, and
+  chords without mutation. Key inference weights audible repetitions, excludes
+  the chromatic scale as an uninformative perfect fit, marks ambiguity, and
+  returns caveats when the evidence is thin.
 
-**Added (musical analysis):**
-- **`analyze_session`** — a read-only tool describing a session's rhythm, pitch
-  content, inferred key, and chords. New shared module
-  `src/music/session-analysis.ts`, built on the existing `music-theory.ts` (the
-  same scale table, chord detector, and note naming the Key Assistant and
-  Chromatic Grid use) plus the track selection and pitch arithmetic in
-  `midiExport.ts`, so an agent's description and what a person sees cannot
-  drift. Key inference weights each pitch class by how often it is played,
-  breaks ties by how tightly a scale describes the notes rather than merely
-  containing them, and excludes the chromatic scale — it fits everything, so it
-  would cap the metric at 1 for every session. Only audible tracks vote, using
-  the scheduler's solo-wins-over-mute rule. A `caveats` list and a
-  `key_ambiguous` flag state where the analysis is thin instead of presenting a
-  guess as a finding.
+**Added (allocation correctness):**
+- A single named `SessionAllocatorDurableObject` is the write gate for every
+  permanent session allocation from REST and MCP: create, remix, and publish.
+  It serializes callers across isolates and colos, persists the shared per-IP
+  window, and returns fixed public errors instead of storage/runtime details.
+- Idempotent create is reservation-first. Once an idempotency key owns a UUID,
+  a missing KV record causes the same write to be retried with the original
+  options and UUID; a replacement identity is never minted.
+- One alarm removes expired one-minute rate windows and 24-hour idempotency
+  reservations. Production and staging both carry the Durable Object binding
+  and the `v2` SQLite migration.
 
-**Fixed (music theory):**
-- **`pitchToNoteName()` named every note an octave sharp.** Its own doc comment
-  specified scientific pitch notation ("C4 = 60"), but the octave arithmetic
-  omitted the `-1`, so middle C rendered as `C5`. This reached users through
-  PitchOverview's range labels and tooltips, and would have shipped into the new
-  analysis output. No test pinned the old behaviour; the corrected one now has
-  four.
+**Fixed (MIDI, analysis, and shared music semantics):**
+- A catalogue-backed instrument classifier now supplies drum/melodic roles to
+  MIDI, analysis, and PitchOverview. Sampled and Tone drums use the General MIDI
+  percussion channel and mappings instead of being inferred from namespace
+  prefixes or scattered lists.
+- Hidden cells beyond `stepCount` are state history, not sounding steps. MIDI
+  and analysis now ignore them; MIDI ties become one extended note rather than
+  repeated attacks.
+- Pattern expansion is planned before allocation. Checked LCM arithmetic caps a
+  combined loop at 16,384 steps, and MIDI export rejects plans above 100,000
+  note events with a structured error.
+- Analysis includes empty and muted tracks in loop metadata while allowing only
+  audible, non-zero-volume melodic events to vote on pitch. Repetitions are
+  weighted across the full loop, and seventh chords are detected before their
+  triad subsets.
+- **`pitchToNoteName()` named every note an octave sharp.** The octave arithmetic
+  omitted scientific pitch notation's `-1`, so middle C rendered as `C5` and the
+  Holby overview showed `C4–D6`. Exact unit and visual assertions now pin the
+  corrected `C3–D5` range for that fixture and exclude percussion.
 
 **Fixed (rate limiting):**
-- **The session-create limit had been stuck at a test value.**
-  `RATE_LIMIT_MAX_REQUESTS` sat at 100 behind a "revert after testing" comment
-  that was never acted on, so a temporary value was the production limit.
-  Budgets now live in `RATE_LIMIT_DEFAULTS` (10 creates, 100 OG images per
-  minute per IP), and a load test raises
-  `SESSION_CREATE_RATE_LIMIT_PER_MINUTE` / `OG_IMAGE_RATE_LIMIT_PER_MINUTE` in
-  `wrangler.jsonc` instead of editing the constant. Staging carries the raised
-  create limit.
-- **OG image traffic consumed a visitor's session-create budget.** Both
-  endpoints shared one counter keyed only by IP. Buckets are now keyed per
-  limit.
-- `create_session` writes to the same KV namespace and daily quota as
-  `POST /api/sessions`, so it is charged against the same per-IP budget — an
-  unauthenticated endpoint must not be a way around it. A replay is free
-  because it writes nothing.
+- The production session-create limit had been left at a temporary test value.
+  Defaults are now explicit: 10 session allocations, 120 MCP exchanges, and 100
+  OG images per minute per IP. Invalid environment overrides fall back rather
+  than disabling a limit.
+- Session allocation uses the persistent global allocator window, so REST and
+  MCP cannot bypass each other's write budget. A valid idempotent replay is
+  free because it allocates nothing new.
+- The loose compute-shedding limits for MCP and OG rendering remain per-isolate
+  by design, but their counters are separated by bucket so unrelated traffic
+  cannot consume another endpoint's budget.
 
 **Added (endpoint hardening):**
-- **Pre-parse guards on `/mcp`** (`worker/mcp-guard.ts`): non-POST is rejected
-  with 405 and `Allow: POST`, an oversized `Content-Length` with 413, and a
-  non-JSON content type with 415. The guard runs before the dynamic
-  `import('./mcp')`, so a rejected request never evaluates the SDK, zod, or the
-  schema validator, and never reaches a Durable Object or KV.
-- **`npm run check:mcp-bot-protection`** probes a deployed origin under four
-  user agents, including an AI-crawler signature, and fails if any is blocked,
-  challenged, or answered by Cloudflare's bot layer instead of the Worker. Zone
-  bot protection is dashboard state that can break `/mcp` with no code change.
+- `/mcp` rejects non-POST methods with 405/`Allow`, non-JSON media types with
+  415, and oversized bodies with 413 before dynamically importing the MCP SDK.
+  `Content-Length` is only an early hint: the guard counts streamed bytes,
+  cancels at the limit, and reconstructs the one-shot request for the SDK.
+- Every `/mcp` exchange — including malformed and read-only calls — is charged
+  to its own JSON rate-limit bucket before parsing, with `Retry-After` and
+  remaining-budget headers on 429 responses.
+- **`npm run check:mcp-bot-protection`** sends a real `tools/list` request under
+  four user-agent profiles and fails if Cloudflare's bot/WAF layer intercepts
+  it. Zone policy is deployment-dashboard state, so this probe must run after
+  deployment or policy changes.
 
-**Fixed (Workers runtime):**
-- **`import.meta.env.DEV` crashed every `/mcp` request.** Reusing the browser
-  MIDI exporter brought `src/utils/logger.ts` into the Worker through
-  instrument-ID parsing, and that Vite-only global does not exist in workerd, so
-  the read threw during module evaluation. All 4,881 unit and 280 integration
-  tests passed regardless — both layers transform through Vite, which defines
-  it. Guarded, and `worker-runtime-safety.test.ts` now walks the Worker's
-  import graph and fails on an unguarded read. See LESSONS-LEARNED Lesson 50.
+**Fixed (Workers runtime and deployment proof):**
+- **`import.meta.env.DEV` crashed every `/mcp` request.** Browser MIDI reuse
+  reached a Vite-only global during Worker module evaluation. Unit and
+  workerd-based integration tests both transformed through Vite and missed it;
+  `worker-runtime-safety.test.ts` now walks the Worker import graph and rejects
+  unguarded reads. See Lessons 50–54 in `docs/LESSONS-LEARNED.md`.
+- The Worker now has a dedicated TypeScript target and Workers runtime types.
+  CI performs a Wrangler dry run, ratchets JavaScript/upload sizes, and rejects
+  browser-audio markers in the deployment artifact.
 
-**Changed (internal):**
-- Rate limiting moved from `worker/index.ts` into `worker/rate-limit.ts`.
-- `purgeOGCache()` moved into `worker/og-cache.ts`, re-exported from
-  `og-image.tsx`. Invalidating a cache entry no longer drags in React, Satori,
-  and a Yoga WASM binary.
+**Changed (tests and internal boundaries):**
+- Worker-backed E2E tests create populated state through the public API instead
+  of assuming a production UUID exists in fresh local storage. Connected-state
+  visuals wait for explicit state and mask the random avatar.
+- Keyboard navigation assertions use DOM focus, with WebKit's `Option+Tab`
+  full-keyboard-access behaviour modelled explicitly.
+- Rate limiting moved into `worker/rate-limit.ts`; shared instrument roles and
+  bounded expansion moved into pure modules that do not import browser audio.
+- `purgeOGCache()` moved into `worker/og-cache.ts`, so invalidation no longer
+  imports React, Satori, or Yoga WASM.
 
 #### Durable Object Hibernation Reload Fixes & Integration Test Upgrade (June 2026)
 
