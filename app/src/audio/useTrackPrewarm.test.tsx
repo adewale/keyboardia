@@ -1,13 +1,12 @@
 // @vitest-environment jsdom
 /**
- * Regression test for #4: tone/advanced tracks added or changed
- * mid-playback dropped their first note because preloadInstrumentsForTracks
- * only ran at play-start.
+ * Regression tests for instruments added or changed mid-playback. Every
+ * instrument family whose scheduler hot path requires readiness must cross
+ * preloadInstrumentsForTracks when it first appears in live grid state.
  *
- * The hook keeps tone/advanced track instances pre-warmed by re-running
- * preload whenever the tracks list changes during playback. The
- * registry's getOrCreate is idempotent, so repeated calls for the same
- * trackId are no-ops.
+ * The hook keeps readiness-gated sampled/tone/advanced instruments warm by
+ * re-running preload whenever their live track membership changes during
+ * playback. The registries are idempotent, so repeated calls are cheap.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
@@ -30,7 +29,7 @@ function track(id: string, sampleId: string): Track {
   return { id, sampleId } as unknown as Track;
 }
 
-describe('useTrackPrewarm (#4)', () => {
+describe('useTrackPrewarm', () => {
   beforeEach(() => {
     preload.mockClear();
     preload.mockImplementation(async () => {});
@@ -94,9 +93,39 @@ describe('useTrackPrewarm (#4)', () => {
     expect(preload).toHaveBeenCalledTimes(1);
   });
 
-  it('skips prewarm when no tracks are tone/advanced', () => {
-    const state = makeState([track('A', '808-kick'), track('B', 'sampled:piano')]);
+  it('skips prewarm when every track is an immediately playable plain sample', () => {
+    const state = makeState([track('A', '808-kick'), track('B', 'snare')]);
     renderHook(() => useTrackPrewarm(state, true));
     expect(preload).not.toHaveBeenCalled();
+  });
+
+  it('prewarms a sampled track arriving through MCP during playback exactly once', () => {
+    const beforeMcpEdit = makeState([track('existing-kick', 'kick')]);
+    const afterMcpEdit = makeState([
+      track('existing-kick', 'kick'),
+      track('mcp-brush-snare', 'sampled:brushes-snare'),
+    ]);
+    const afterSoloToggle = makeState([
+      track('existing-kick', 'kick'),
+      { ...track('mcp-brush-snare', 'sampled:brushes-snare'), soloed: true } as Track,
+    ]);
+
+    const { rerender } = renderHook(
+      ({ s }: { s: GridState }) => useTrackPrewarm(s, true),
+      { initialProps: { s: beforeMcpEdit } },
+    );
+
+    rerender({ s: afterMcpEdit });
+    expect(preload).toHaveBeenCalledTimes(1);
+    expect(preload).toHaveBeenLastCalledWith([
+      { id: 'existing-kick', sampleId: 'kick' },
+      { id: 'mcp-brush-snare', sampleId: 'sampled:brushes-snare' },
+    ]);
+
+    rerender({ s: afterSoloToggle });
+
+    // A mix-only change must not refetch or rebuild an already-warming
+    // instrument. The relevant id/sampleId membership did not change.
+    expect(preload).toHaveBeenCalledTimes(1);
   });
 });

@@ -628,6 +628,7 @@ it('preloads piano from sampled:piano track', () => {
 ## #008: Mid-Playback Sampled Instrument Not Preloaded
 
 **Date**: 2024-12-17
+**Updated**: 2026-07-27 (MCP ingress regression)
 **Severity**: high
 **Category**: race-condition
 
@@ -693,9 +694,17 @@ const handleSelect = useCallback(async (instrumentId: string) => {
 ```
 
 ### Prevention
-1. **Preload at point of selection** - Don't wait for play to start
-2. **Test mid-playback scenarios** - Add tests that add tracks during playback
-3. **Consider useEffect watcher** - Watch track changes and preload new sampled instruments
+1. **Attach preload to the live-state invariant** - Watch readiness-gated track
+   membership while playing, regardless of whether UI, MCP, WebSocket, REST, or
+   recovery produced the state.
+2. **Test the production ordering** - Start playback first, then introduce the
+   sampled track through the real mutation boundary.
+3. **Measure every decisive layer** - Assert the persisted MCP state, browser
+   state, sample requests, registry readiness, uninterrupted transport state,
+   and per-track audio output.
+4. **Keep the watcher selective** - Key it by `track.id:sampleId` for sampled,
+   Tone, and advanced instruments so step, volume, mute, and solo edits do not
+   retrigger loading.
 
 ### Related Files
 - src/components/SamplePicker.tsx - Where tracks are added
@@ -711,6 +720,35 @@ grep -r "ADD_TRACK\|add_track" src/ --include="*.ts" --include="*.tsx"
 # Find calls to signalMusicIntent that might need preloading
 grep -r "signalMusicIntent" src/ --include="*.ts" --include="*.tsx"
 ```
+
+### 2026-07-27 MCP Regression: The Original Fix Covered Only One Ingress
+
+The 2024 fix preloaded in `SamplePicker.handleSelect()`. That fixed tracks added
+through the picker, but MCP can add a track to the Durable Object and broadcast
+it over WebSocket without executing `SamplePicker`. The browser rendered the
+correct track and active steps, yet `useTrackPrewarm` watched only `tone:` and
+`advanced:` tracks. The AudioWorklet scheduler then saw an unready sampled
+instrument and silently skipped every note. Stop/Play happened to recover the
+track because play-start preloads the complete current track list.
+
+The smallest behavioral regression test renders `useTrackPrewarm` with a plain
+track while playback is already active, rerenders it with an MCP-style
+`sampled:brushes-snare` track, and expects exactly one preload. Rerendering after
+only a solo change must not preload again. Before the fix this test failed with
+zero calls; after widening the readiness-gated signature with
+`getSampledInstrumentId()`, it passes.
+
+The full acceptance test drives `create_session`, `edit_session`, and
+`get_session` through the official MCP client against Wrangler, while a real
+Chromium page is already playing. MCP adds `sampled:brushes-snare`,
+`sampled:acoustic-ride`, and `sampled:alto-sax`. The test proves that playback
+never restarted, the browser received active tracks, real instrument assets
+were requested, all registries became ready, and per-track Web Audio analysers
+measured non-zero output.
+
+**Corrected rule:** when several ingress paths can establish the same state,
+put required side effects at the shared state-observation boundary. An ingress-
+specific optimization may remain, but it cannot be the correctness mechanism.
 
 ---
 

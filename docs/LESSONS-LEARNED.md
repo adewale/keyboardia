@@ -5364,3 +5364,43 @@ Abstract platform-specific input, not the expected outcome. Browser tests
 should assert the user-visible semantic property — which element owns focus —
 and treat focus rings, class names, and traversal counts as implementation
 details unless those pixels are themselves the requirement.
+
+---
+
+## Lesson 57: Correctness Side Effects Belong to State, Not One Ingress
+
+**Date:** 2026-07-27 (MCP mid-playback sampled-instrument regression)
+
+### The Problem
+
+Sampled instruments selected in the browser were explicitly preloaded, so the
+original mid-playback silence bug appeared fixed. MCP later introduced another
+valid way to add tracks. An MCP edit reached the Durable Object, persisted a
+complete track, crossed WebSocket, and rendered correctly in the browser, but
+it never ran the picker callback. During already-active playback, the registry
+therefore remained unready and the AudioWorklet skipped the sampled notes. The
+visible track and steps were true while the audible result was silence.
+
+### The Fix
+
+`useTrackPrewarm` now observes the shared live grid state. While playing, a
+change to the `track.id:sampleId` membership of any readiness-gated sampled,
+Tone, or advanced instrument invokes the existing idempotent preloader. Mix and
+pattern changes are excluded from the signature. This makes UI, MCP,
+multiplayer, and recovery paths obey the same audio-readiness invariant without
+putting audio behavior into the Worker or the MCP adapter.
+
+The narrow red test models the exact transition and initially observed zero
+preload calls. The green full-stack test creates and authors a session through
+the official MCP client, starts a real browser once, adds the three affected
+instruments through MCP during playback, and verifies MCP state, WebSocket UI,
+asset requests, registry readiness, uninterrupted transport, and per-track
+audio samples.
+
+### The Rule
+
+If multiple inputs can create the same domain state, attach correctness-critical
+side effects to the shared state transition or invariant, not to a convenient
+button handler. Test the smallest state transition first, then repeat the real
+production ordering from the outermost protocol and measure the user-visible
+effect at the system boundary.

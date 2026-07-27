@@ -1,27 +1,29 @@
 /**
- * useTrackPrewarm — keep tone/advanced track synth instances warm
- * during playback so the first scheduled note is never dropped.
+ * useTrackPrewarm — keep readiness-gated instruments warm during playback so
+ * tracks introduced after Play do not remain silent.
  *
- * `preloadInstrumentsForTracks` runs at play-start, but a user can
- * add or change a track to `tone:*` / `advanced:*` mid-playback. The
- * scheduler's hot path uses `getIfReady`, which returns null for any
- * track the registry hasn't built yet — and the note is skipped.
+ * `preloadInstrumentsForTracks` runs at play-start, but UI, multiplayer, and
+ * MCP edits can add or change sampled/tone/advanced tracks mid-playback. Their
+ * scheduler hot paths refuse unready instruments and skip the note.
  *
- * This hook re-runs preload whenever the tone/advanced track membership
- * changes. The registry's `getOrCreate` is idempotent so already-warmed
- * tracks pay only a Map lookup.
+ * This hook re-runs preload whenever readiness-gated track membership changes.
+ * The registries are idempotent, so already-loaded instruments are cheap.
  */
 
 import { useEffect, useRef } from 'react';
 import type { GridState } from '../types';
 import { audioEngine } from './engine';
+import { getSampledInstrumentId } from './instrument-types';
 
-function toneOrAdvancedSignature(state: GridState): string {
-  // Stable signature of "which tracks need warming". Deliberately
-  // includes only tone:/advanced: tracks so unrelated state changes
-  // (volume, swing, p-locks) don't trigger prewarm.
+function prewarmSignature(state: GridState): string {
+  // Stable signature of "which tracks need warming". Deliberately excludes
+  // immediately playable plain samples and unrelated state such as volume,
+  // swing, steps, p-locks, mute, and solo.
   return state.tracks
-    .filter((t) => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:'))
+    .filter((t) =>
+      getSampledInstrumentId(t.sampleId) !== null
+      || t.sampleId.startsWith('tone:')
+      || t.sampleId.startsWith('advanced:'))
     .map((t) => `${t.id}:${t.sampleId}`)
     .sort()
     .join('|');
@@ -36,18 +38,18 @@ export function useTrackPrewarm(state: GridState, isPlaying: boolean): void {
       return;
     }
 
-    const signature = toneOrAdvancedSignature(state);
+    const signature = prewarmSignature(state);
     if (signature === lastSignatureRef.current) return;
     if (signature === '') {
-      // No tone/advanced tracks; nothing to warm.
+      // No readiness-gated tracks; nothing to warm.
       lastSignatureRef.current = signature;
       return;
     }
 
     lastSignatureRef.current = signature;
     audioEngine.preloadInstrumentsForTracks(state.tracks).catch((err) => {
-      // Swallow — the next scheduled note will retry via getOrCreate.
-      // Errors here would already be logged by preloadInstrumentsForTracks.
+      // Errors here are already logged by preloadInstrumentsForTracks. A later
+      // relevant state transition or Play transition can retry the preload.
       void err;
     });
   }, [state, isPlaying]);
