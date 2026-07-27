@@ -424,7 +424,8 @@ it('broadcasts validated effects and recovers them from durable storage', async 
 
 it('accepts ten collaborators and rejects the eleventh through the Worker route', async () => {
   const sessionId = await createSession();
-  for (let index = 0; index < 10; index++) {
+  const first = await connect(sessionId, 'player-0');
+  for (let index = 1; index < 10; index++) {
     await connect(sessionId, `player-${index}`);
   }
 
@@ -435,6 +436,18 @@ it('accepts ten collaborators and rejects the eleventh through the Worker route'
   expect(overflow.status).toBe(503);
   expect(overflow.headers.get('Access-Control-Allow-Origin')).toBe('*');
   await expect(overflow.text()).resolves.toContain('Session full');
+  // The upgrade must be refused outright. Accepting the socket and closing it
+  // afterwards looks identical to a healthy connection until the client sends
+  // something, and the 503 alone does not rule that out.
+  expect(overflow.webSocket, 'a refused upgrade must not carry a socket').toBeFalsy();
+
+  // Refusing the eleventh must not disturb the ten already in the session.
+  first.socket.send(JSON.stringify({ type: 'set_tempo', tempo: 141, seq: 901 }));
+  const acknowledged = await first.inbox.waitFor(
+    (message) => message.type === 'tempo_changed' && message.clientSeq === 901,
+    'the session still serving player-0 after the refusal',
+  );
+  expect(acknowledged).toBeDefined();
 });
 
 it('keeps collaborative state that a REST replacement does not carry', async () => {

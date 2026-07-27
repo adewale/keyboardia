@@ -1201,25 +1201,40 @@ rest from this branch's own rewrites). No file disappears, so nothing draws the
 eye, and a rewrite that drops an assertion looks the same in a diff as one that
 restates it.
 
-Sweeping those surfaced the sharpest case in this audit. `MAX_PLAYERS` is
-enforced at `live-session.ts:727`, and grepping the suite for it finds a test —
-so it reads as covered. It is not. The check that ran in CI, *"should reject the
-11th connection"*, lived in `mock-durable-object.test.ts` and went with the
-double in `62f0650`. What remains is `test/staging/failure-modes.test.ts`, and
-`staging` appears in `ci.yml` exactly once, as `! -path 'e2e/staging/*'` — an
-exclusion. Since `62f0650`, no lane has verified the connection limit.
+Sweeping those produced one apparent finding and one real methodological lesson,
+and the lesson is the more valuable of the two.
 
-Worse, the surviving staging test is the `assertion-swallowed-by-own-catch`
-instance from Family G above. Had a lane run it, it would have passed either
-way. Two independent defects — never scheduled, and always green — on the same
-assertion, each of which hides the other.
+`MAX_PLAYERS` is enforced at `live-session.ts:727`. The check that ran in CI,
+*"should reject the 11th connection"*, lived in `mock-durable-object.test.ts`
+and went with the double in `62f0650`. What survives under that name is in
+`test/staging/failure-modes.test.ts`, and `staging` appears in `ci.yml` exactly
+once, as `! -path 'e2e/staging/*'` — an exclusion. That staging test is also the
+`assertion-swallowed-by-own-catch` instance from Family G above, so even where
+it runs it was, until this audit fixed it, green either way.
 
-Closed by an integration test: the tier drives a real Durable Object over a real
-WebSocket upgrade, which is exactly where the limit is enforced, and unlike
-staging it needs no deployed backend. It asserts the upgrade is *refused* rather
-than accepted-then-closed — indistinguishable to a client until it sends
-something — and that the session keeps serving the ten it took. Sabotage-verified:
-removing the check fails, relaxing `>=` to `>` fails.
+**And none of that left the limit uncovered.** `da28094` restored it the day
+after `62f0650`, in `collaboration-contract.test.ts`, as *"accepts ten
+collaborators and rejects the eleventh through the Worker route"* — an
+integration test CI runs, asserting the 503, the CORS header, and the body. I
+missed it and wrote a duplicate, because I searched for the identifier
+`MAX_PLAYERS` and that test spells the limit as `10` and "eleventh". The gap was
+one day wide and was already closed.
+
+The lesson §20 draws below is that a grep is not evidence of coverage. I then
+used a grep as evidence of its *absence*, which is the same error pointed the
+other way and the more dangerous direction: a false negative adds a redundant
+test, a false positive of absence would have had me "fix" something that was not
+broken. Searching by identifier finds tests that name the constant; it cannot
+find tests that assert the behaviour. **Establish coverage by running the lane
+against sabotaged production code, not by grepping the suite.** Applied here,
+that check answers correctly in one step: break the limit, watch
+`collaboration-contract.test.ts` go red.
+
+The duplicate was reverted. What survives is the part of it that was genuinely
+new, folded into `da28094`'s test: that refusing the eleventh does not disturb
+the ten already in the session, and that the refused upgrade carries no socket.
+Sabotage-verified — making the refusal path call `this.players.clear()` leaves
+the status, header and body assertions all passing and fails only the new one.
 
 ### The lesson, sharpened
 
@@ -1234,11 +1249,12 @@ number does. Three ways it survives, all seen here:
 
 The failure is a fourth case: **evaporated**, where the assertion was the only
 statement of a fact and nothing replaced it. That is what happened to
-`recording-123`, what nearly happened to the synth enumeration, and what
-happened to `MAX_PLAYERS` — which adds the nastiest variant, because a
-replacement *did* exist. It simply lived somewhere no lane runs. A grep is not
-evidence of coverage; the question is which lane executes the file, and whether
-that lane's assertion can fail.
+`recording-123`, and what nearly happened to the synth enumeration.
+
+`MAX_PLAYERS` looked like a third instance and was not. It is worth keeping as
+the counter-example: the question is never "does a test mention this?" but
+"which lane executes an assertion that can fail when this breaks?" — and that
+question is answered by sabotage, in both directions. Grep answers neither.
 
 Checking for it is cheap. `deleted-test-knowledge.ts` took minutes to write and
 its output needed about twenty minutes of triage for a month of deletions —
@@ -1250,3 +1266,102 @@ Several suites build their cases from `readdirSync` over the instrument
 directories, so the total moves with which sample assets are present — 5,110
 here, 5,183 in an earlier run of the same tree. Only "zero failures" is a
 contract; the count is not, and should not be quoted as one.
+
+## §21 — Widening the deletion sweep to the whole recorded history
+
+§20 covered a month. Seven months covers everything `origin/main` records: the
+history begins 2026-01-14. **22 deleted test files, 386 test titles removed from
+surviving files.** Only four of the deletions predate July, and all four are
+clean — but one of them is the best piece of evidence this audit has produced,
+and it is three months old.
+
+### The four pre-July deletions
+
+| Commit | Date | File | Verdict |
+|---|---|---|---|
+| `8f02760` | 03-09 | `lazyAudioLoader.test.ts` | **Superseded** — the module went with it; consumers import `audioEngine` from `engine.ts` directly. Its titles were *"returns a boolean"*, *"can be called multiple times without error"*, *"is idempotent"*: a shim tested at the shim's own level. |
+| `6d97bf1` | 04-25 | `worklets/lfo-waveforms.property.test.ts` | **Superseded, and see below.** |
+| `61f392a` | 04-26 | `shared-synth-routing.test.ts` | **Superseded** — asserted a broken method *no longer exists*, the same expiring-negative shape as the recovery enum. |
+| `b4018a9` | 06-24 | `e2e/instrument-range-render.spec.ts` | **Re-expressed, and strengthened.** |
+
+Two of those were verified rather than taken on trust, which is the whole point
+of the exercise. `61f392a`'s body names its replacement — so the replacement was
+opened: `per-track-synths.test.ts` asserts *"never disconnects a shared output
+when a different track plays (the hijack bug)"*, in the unit lane, on the
+behaviour rather than the absence of a method. `b4018a9` moved a Playwright spec
+to a node test; the e2e had asserted only `report.length === ids.length`, a
+shape check, while the node version asserts that no instrument renders an
+`AudioBufferSourceNode` below the silence threshold and that the default
+dropped-step pitch is audible. The migration made it stronger.
+
+### The LFO worklet: both halves of the linkage failure in one file
+
+`shared-lfo.worklet.ts` arrived 2026-03-08 in `85cb130`, *"Wire in shared LFO
+worklet for AdvancedSynthEngine"*. Its property test opened by explaining
+itself:
+
+> These test the pure math functions extracted from `shared-lfo.worklet.ts`.
+> Since worklet code can't be imported directly (it runs in a different global
+> scope), we re-implement the identical math here and verify its properties.
+> Any fix in the worklet must be mirrored here and vice versa.
+
+It was deleted 2026-04-25 in `6d97bf1`, whose body says why:
+
+> Removed unwired shared-LFO worklet code. `AdvancedSynthEngine` created and
+> configured a `sharedLfoNode` that was never `.connect()`-ed.
+
+**Forty-eight days.** The test was green throughout and would have stayed green
+under any change to the worklet, because it never imported the worklet — and it
+would have stayed green under deletion of the worklet, because the worklet was
+never connected to the audio graph. Both linkage failures at once: a test not
+linked to production, guarding production not linked to anything. Five hundred
+property runs per assertion, on a function defined twenty lines above them.
+
+This is the clearest instance in the repository's history of the family drafted
+in `docs/upstream-issue-test-linkage.md`, and it argues the case better than the
+July examples do, because the file states the anti-pattern in its own docblock
+as though it were a design constraint. It is not: the fix is to extract the math
+into an importable module the worklet also imports. That is what
+`pitch-shift-engine.ts` does now, and it has a differential test against the
+worklet to prove the two agree.
+
+### Which files does no lane run?
+
+More literal-hunting had diminishing returns, so the sweep turned to the
+structural question underneath it. Of **278** test and spec files on disk, the
+unit lane collects 225, the integration lane 9, and Playwright 44. That leaves
+**6 files — 103 tests, 226 assertions — that no lane executes**: the five in
+`test/staging/` and `e2e/staging/vu-meters.spec.ts`.
+
+Every limit those files exercise was then cross-checked against the lanes that
+do run:
+
+| Constant | Files asserting it in a running lane |
+|---|---|
+| `MAX_STEPS` | 21 |
+| `MAX_TEMPO` / `MIN_TEMPO` | 8 |
+| `MAX_TRACKS` | 6 |
+| `MAX_SWING` | 4 |
+| `MAX_MESSAGE_SIZE` | 3 |
+| `MAX_VOLUME`, `MAX_TRANSPOSE` | 2 |
+| `MAX_PLAYERS` | 1 (`collaboration-contract.test.ts`) |
+
+The staging tier is duplicated, not load-bearing — the correct outcome for a
+tier that needs a deployed backend. But 103 unrun tests are 103 tests nobody
+maintains, and their assertions rot unobserved: the Family G
+`assertion-swallowed-by-own-catch` instance had been sitting in
+`failure-modes.test.ts` for months precisely because nothing ever ran it. Either
+schedule the tier or accept that it is documentation.
+
+### What bounds this audit
+
+`origin/main` has **two root commits**: `58bb046` (2026-01-14) and `ba99b4d`
+(2026-03-08). The second is titled *"refactor: Remove dead note-player.ts module
+and test"* and its recorded diff is 775 files and 234,408 insertions with **zero
+deletions**. The history is grafted, so the deletion named in that commit's own
+subject line is invisible to `--diff-filter=D`.
+
+Every technique here reads recorded diffs, so every technique here inherits that
+limit. A deletion audit answers "what did we throw away that git remembers us
+throwing away" — which is not the same question, and the gap between them is
+exactly as large as the history rewriting that has happened.
