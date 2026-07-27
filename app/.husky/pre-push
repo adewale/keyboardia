@@ -2,7 +2,7 @@
 
 # Pre-push hook: Four-phase testing
 # Phase 1: Unit tests (fast, ~11s)
-# Phase 2: Full E2E test (comprehensive, Chromium + WebKit)
+# Phase 2: Full functional E2E test (Chromium, including real Web Audio)
 # Phase 3: Mobile Safari test (iPhone viewport + touch)
 #
 # The full-stack runner owns its Wrangler process. This keeps the backend
@@ -97,9 +97,9 @@ else
     exit 1
 fi
 
-# Phase 2: Full Test (comprehensive, desktop browsers)
+# Phase 2: Full Test (comprehensive functional and audio contracts)
 echo "----------------------------------------"
-echo "Phase 2: Full E2E Test (Chromium + WebKit)"
+echo "Phase 2: Full E2E Test (Chromium)"
 echo "----------------------------------------"
 echo ""
 
@@ -107,7 +107,7 @@ FULL_START=$(date +%s)
 
 # Screenshot contracts have runner-specific baselines and a dedicated CI lane;
 # the functional gate must not generate or bless developer-machine snapshots.
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 npm run test:e2e:full-stack -- --project=chromium --project=webkit; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 npm run test:e2e:full-stack -- --project=chromium; then
     FULL_END=$(date +%s)
     FULL_DURATION=$((FULL_END - FULL_START))
     echo ""
@@ -117,7 +117,7 @@ else
     echo ""
     echo "❌ Full test FAILED"
     echo ""
-    echo "Some tests failed on Chromium or WebKit."
+    echo "Some Chromium functional or real-audio tests failed."
     echo "Review the failures above."
     echo "Fix the issues above before pushing."
     echo "To skip: git push --no-verify"

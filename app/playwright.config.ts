@@ -4,6 +4,17 @@ const ignoredSpecs: RegExp[] = [];
 if (!process.env.RUN_STAGING_E2E) ignoredSpecs.push(/e2e\/staging\//);
 if (process.env.E2E_FUNCTIONAL_ONLY === '1') ignoredSpecs.push(/e2e\/visual\.spec\.ts$/);
 
+// Playwright's headless WebKit process does not provide a stable real-time
+// audio-analysis environment. These exhaustive AnalyserNode probes can wedge
+// one WebKit worker for minutes and then make unrelated UI contracts time out.
+// Chromium remains the audio-capable browser lane; WebKit still runs the UI,
+// collaboration, layout and lightweight metering contracts below.
+const headlessWebkitAudioProbes = [
+  /e2e\/advanced-sub-bass-session\.spec\.ts$/,
+  /e2e\/all-instruments-master-output\.spec\.ts$/,
+  /e2e\/instrument-range-session\.spec\.ts$/,
+];
+
 /**
  * Playwright E2E Test Configuration
  *
@@ -76,8 +87,16 @@ export default defineConfig({
     // Note: Firefox removed - see comment at top of file
     {
       name: 'webkit',
-      use: { ...devices['Desktop Safari'] },
+      // Recording every headless WebKit context keeps a media pipeline alive
+      // while the app creates its own Web Audio graph. That combination can
+      // wedge the browser process; traces and failure screenshots still retain
+      // deterministic diagnostics for this lane.
+      use: { ...devices['Desktop Safari'], video: 'off' },
       dependencies: ['chromium'],
+      // A second headless WebKit audio process can starve the first process and
+      // create deterministic 30-40 second cascades in otherwise fast tests.
+      workers: 1,
+      testIgnore: [...ignoredSpecs, ...headlessWebkitAudioProbes],
     },
     {
       name: 'mobile-chrome',
@@ -86,7 +105,11 @@ export default defineConfig({
     },
     {
       name: 'mobile-safari',
-      use: { ...devices['iPhone 14'] },
+      // Serialize the focused mobile WebKit contract. Multiple native audio
+      // contexts in one headless WebKit process can starve one another, and
+      // video capture keeps an additional media pipeline alive.
+      workers: 1,
+      use: { ...devices['iPhone 14'], video: 'off' },
       // Can run independently for local testing; CI still runs chromium first via workflow order
     },
     {
