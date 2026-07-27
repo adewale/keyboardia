@@ -110,8 +110,22 @@ describe('isDrumInstrument', () => {
     }
   });
 
-  it('treats microphone recordings as unpitched', () => {
+  it('treats user-supplied audio as unpitched, in the forms actually produced', () => {
+    // Recorder.tsx mints these two; `mic:` is consumed by midiExport and
+    // mcp-lifecycle but produced by nothing, so testing only `mic:` — as the
+    // deleted instrument-types test effectively did — misses every real
+    // recording. The ids below are the literal template shapes from
+    // Recorder.tsx:193 and :201.
+    expect(isDrumInstrument(`recording-${1730000000000}`)).toBe(true);
+    expect(isDrumInstrument(`slice-${1730000000000}-3`)).toBe(true);
     expect(isDrumInstrument('mic:recording-1')).toBe(true);
+  });
+
+  it('does not swallow catalogue instruments whose id merely contains those words', () => {
+    // The prefixes are anchored, so a hypothetical 'sampled:slice-guitar'
+    // stays pitched.
+    expect(isDrumInstrument('sampled:slice-guitar')).toBe(false);
+    expect(isDrumInstrument('synth:recording-pad')).toBe(false);
   });
 
   it('normalises case and surrounding whitespace', () => {

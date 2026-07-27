@@ -32,7 +32,7 @@
     "smoke:mcp:staging": "tsx scripts/mcp-smoke.ts https://staging.keyboardia.dev",
     "smoke:mcp:production": "tsx scripts/mcp-smoke.ts https://keyboardia.dev",
     "validate:e2e-inventories": "node scripts/check-e2e-inventories.mjs",
-    "validate:test-quality": "npm run validate:test-antipatterns && npm run validate:test-links",
+    "validate:test-quality": "npm run validate:test-antipatterns && npm run validate:test-links && npm run validate:dead-exports",
     "validate:test-antipatterns": "tsx scripts/check-test-antipatterns.ts",
     "validate:test-links": "tsx scripts/check-test-subject-links.ts",
     "validate:sync": "tsx scripts/validate-sync-checklist.ts",
@@ -79,7 +79,8 @@
     "prepare": "cd .. && husky app/.husky",
     "deploy": "npm run build && wrangler deploy --env staging",
     "deploy:production": "tsx scripts/deploy-production.ts",
-    "test:mutation": "stryker run"
+    "test:mutation": "stryker run",
+    "validate:dead-exports": "tsx scripts/check-dead-exports.ts"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --fix"

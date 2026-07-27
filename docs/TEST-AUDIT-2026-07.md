@@ -996,3 +996,98 @@ Every instance of both families was in code whose entire job was validation.
 The fixes shipped one pair at a time, which is why per-track swing survived two
 rounds of fixing its own neighbours. Fixing by family instead of by symptom took
 one search per family and found six more instances of A alone.
+
+---
+
+## §18 — Why the checker missed it, and what else it was missing
+
+`instrument-types.isMelodicInstrument` was a dead, wrong export inside a
+live module. `check-test-subject-links.ts` could not have found it, because it
+asks *does anything import this module* — and `instrument-types.ts` has six
+other exports that six production modules import. I wrote that limitation into
+the checker's own comment when `slicer.ts` showed it, and then left it there:
+
+> A module can pass that on the strength of one live export while the rest of
+> its surface is unreachable — `src/audio/slicer.ts` did.
+
+Knowing about a gap is not the same as closing it. Two bugs went through it.
+
+`scripts/check-dead-exports.ts` closes it at export granularity. It reports
+**98 findings across 226 production modules**, in two groups, because they are
+not the same problem:
+
+| Group | Count | Meaning |
+|---|---|---|
+| **Tested but unreachable** | 44 | Imported by tests, by no production code. Green ticks on code nothing runs. |
+| **Exported but unimported** | 54 | No consumer at all. Over-exported, or genuinely dead. |
+
+The first group is the dangerous one, and the reason this check is worth having
+rather than relying on a bundler's tree-shaking report: **tests are what keep a
+dead export alive.** They import it, so it looks used; they pass, so it looks
+correct. Both bugs found this way — the slicer's units error and this one — sat
+behind passing tests for exactly that reason.
+
+Validated three independent ways before publishing the number, because a
+checker that over-reports gets muted (see §13). For a sample of findings —
+`createInitialState`, `calculateStepTime`, `TONE_SYNTH_CATEGORIES` — there is
+no production import statement, no production text reference, and no occurrence
+in the built bundles.
+
+Advisory, not gating. A newly-added export whose caller has not landed yet is a
+normal state, and 98 findings is a backlog to work through, not a build to
+break.
+
+### Two things the scan surfaced immediately
+
+**`SAMPLED_CATEGORIES` and `TONE_SYNTH_CATEGORIES` are now test-only** — a
+direct consequence of consolidating onto `isDrumInstrument` (§17). Their last
+production reader was the classifier that got deleted. The drum knowledge now
+lives in `DRUM_INSTRUMENT_IDS`, and the category tables are UI grouping data
+that nothing groups by. Left in place because
+`instrument-classification.test.ts` uses them as an independent oracle — the
+tests assert the two lists agree — which is a legitimate use, but it should be
+a deliberate one rather than an accident.
+
+**`shared/state-mutations.createInitialState` is a test fixture in production
+code.** Seven test files build their starting `SessionState` with it; no
+production code does. The app's own initial state comes from a *different*
+function of the same name, local to `src/state/grid.tsx`, which returns a
+`GridState` with `effects`, `scale`, `isPlaying` and `currentStep`. The two are
+not duplicates — different layers, different shapes — but the property tests
+explore a state built by a factory the application never calls. Worth moving to
+a fixtures module, and worth checking that its shape still matches what the
+server actually creates.
+
+### §18a — The value that was salvageable
+
+Before deleting the four `isMelodicInstrument` tests, the question was whether
+any of them knew something the replacement does not. Three asserted claims
+`instrument-classification.test.ts` already covers. The fourth did:
+
+```ts
+expect(isMelodicInstrument('recording-123')).toBe(false);
+```
+
+`isDrumInstrument` treated user recordings as **pitched**. It handles a `mic:`
+prefix — and nothing produces one. `Recorder.tsx` mints
+`recording-${Date.now()}` for a whole take and `slice-${Date.now()}-${i}` for
+each auto-slice, so every real recording fell past the check. Consequences, all
+live:
+
+- **MIDI export** put recordings on a melodic channel with a General MIDI
+  program instead of channel 10 — `isDrumTrack` delegates to this function.
+- **`mcp-lifecycle`** counts recordings by filtering for `mic:`, so it reported
+  none.
+- The chromatic keyboard was offered for arbitrary recorded audio.
+
+`mic:` is consumed in three modules and produced in zero — a prefix the
+codebase agreed on and never adopted. The classifier now matches the forms the
+recorder actually emits, with the ids in the test taken from the literal
+template strings at `Recorder.tsx:193` and `:201` so they cannot drift apart
+silently. Sabotage-verified both ways: reverting to `mic:`-only fails, and
+unanchoring `startsWith` to `includes` fails.
+
+That is the whole case for reading deleted tests before deleting them. Four
+tests, three redundant and one that was the only thing in the codebase that
+knew user recordings are not pitched — inside a helper that was itself wrong
+about 24 of 99 ids.

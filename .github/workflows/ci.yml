@@ -48,6 +48,16 @@ jobs:
         run: npm run validate:test-links
         continue-on-error: true
 
+      # Advisory. The linkage check above asks whether anything imports a
+      # *module*; this asks the same of each exported symbol, which is the
+      # granularity two bugs in this repo hid at — slicer.ts had one live
+      # export and four dead ones carrying a units bug, and instrument-types.ts
+      # had one dead export answering "is this melodic?" wrongly for 24 of 99
+      # catalogue ids. Both had passing tests, which is what kept them alive.
+      - name: Check for unreachable exports
+        run: npm run validate:dead-exports
+        continue-on-error: true
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
