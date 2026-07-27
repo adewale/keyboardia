@@ -5384,17 +5384,21 @@ visible track and steps were true while the audible result was silence.
 ### The Fix
 
 `useTrackPrewarm` now observes the shared live grid state. While playing, a
-change to the `track.id:sampleId` membership of any readiness-gated sampled,
-Tone, or advanced instrument invokes the existing idempotent preloader. Mix and
-pattern changes are excluded from the signature. This makes UI, MCP,
-multiplayer, and recovery paths obey the same audio-readiness invariant without
-putting audio behavior into the Worker or the MCP adapter.
+change to the collision-free, structured `[track.id, sampleId]` membership of
+any readiness-gated sampled, Tone, or advanced instrument invokes the existing
+idempotent preloader. Mix and pattern changes are excluded from the signature.
+This makes UI, MCP, multiplayer, REST, and recovery paths obey the same
+audio-readiness invariant without putting audio behavior into the Worker or the
+MCP adapter.
 
 Preload completion is not sufficient evidence for sampled instruments because
-the registry reports asset failures as an unready result rather than a rejected
-promise. The watcher therefore verifies sampled readiness and performs three
-bounded retries (250 ms, 1 second, and 4 seconds). The scheduler remains a pure
-real-time consumer: it never starts network or decode work from its note path.
+readiness-blocking manifest or priority-sample failures resolve with an unready
+registry rather than rejecting the aggregate preload. The watcher therefore
+verifies sampled readiness and performs three bounded retries (250 ms, 1 second,
+and 4 seconds). Later background-file failures degrade fidelity but retain a
+playable priority root; they are not part of the whole-track-silence invariant.
+The scheduler remains a pure real-time consumer: it never starts network or
+decode work from its note path.
 
 The narrow red test models the exact transition and initially observed zero
 preload calls. The green full-stack test creates and authors a session through
@@ -5410,3 +5414,42 @@ side effects to the shared state transition or invariant, not to a convenient
 button handler. Test the smallest state transition first, then repeat the real
 production ordering from the outermost protocol and measure the user-visible
 effect at the system boundary.
+
+---
+
+## Lesson 58: Derived Signatures Must Be Injective and Replay-Safe
+
+**Date:** 2026-07-27 (PR #76 multi-agent correctness audit)
+
+### The Problem
+
+The first live-membership watcher joined raw `track.id:sampleId` strings with
+`|`. MCP track IDs exclude those delimiters, but REST session validation accepts
+any non-empty string. Two different valid REST memberships could therefore
+produce the same signature, suppress the new preload, and leave an introduced
+sampled track silent. Separately, lifecycle cleanup invalidated the active retry
+generation without clearing its memoized signature. Development StrictMode's
+setup/cleanup/setup replay then refused to establish a replacement generation.
+
+The initial tests proved one MCP transition, one retry, and stop cancellation.
+They did not exercise adversarial identifiers, framework lifecycle replay,
+unmount, membership replacement, rejection, or the complete retry schedule.
+
+### The Fix
+
+The watcher sorts `[track.id, sampleId]` tuples and serializes the nested array
+with JSON, which preserves boundaries for every valid string. Lifecycle cleanup
+clears both the retry and the signature owned by the cancelled generation, so a
+replayed setup performs its idempotent preload again. Focused tests now assert
+the two former failures plus the exact attempts at 0, 250, 1,250, and 5,250 ms,
+then prove there are no remaining timers. Stop, unmount, and readiness-gated
+membership replacement each cancel obsolete work.
+
+### The Rule
+
+Never build correctness identity by joining uncontrolled strings with a chosen
+delimiter; encode structure so distinct inputs cannot collapse to one key. For
+effects with asynchronous generations, cleanup must invalidate every memoized
+claim made by that generation, and tests must replay the framework lifecycle as
+well as the ordinary user journey. When a policy promises a bounded schedule,
+assert every boundary and prove that work actually stops after the bound.

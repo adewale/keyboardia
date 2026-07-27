@@ -702,9 +702,10 @@ const handleSelect = useCallback(async (instrumentId: string) => {
 3. **Measure every decisive layer** - Assert the persisted MCP state, browser
    state, sample requests, registry readiness, uninterrupted transport state,
    and per-track audio output.
-4. **Keep the watcher selective** - Key it by `track.id:sampleId` for sampled,
-   Tone, and advanced instruments so step, volume, mute, and solo edits do not
-   retrigger loading.
+4. **Keep the watcher selective** - Key it by collision-free, structured
+   `[track.id, sampleId]` tuples for sampled, Tone, and advanced instruments so
+   step, volume, mute, and solo edits do not retrigger loading. Delimiter-joined
+   strings are unsafe when another ingress accepts arbitrary non-empty IDs.
 
 ### Related Files
 - src/components/SamplePicker.tsx - Where tracks are added
@@ -738,11 +739,24 @@ only a solo change must not preload again. Before the fix this test failed with
 zero calls; after widening the readiness-gated signature with
 `getSampledInstrumentId()`, it passes.
 
-The live-state watcher also owns a bounded transient-failure policy. If preload
-rejects, or resolves while a sampled registry is still unready, it retries after
-250 ms, 1 second, and 4 seconds. A stop, unmount, or readiness-gated membership
-change cancels obsolete retries. The scheduler itself still never loads or
-retries: its real-time hot path only plays ready instruments or skips the note.
+The live-state watcher also owns a bounded readiness-failure policy. If preload
+rejects, or resolves while a manifest or priority sample has left the registry
+unready, it retries after 250 ms, 1 second, and 4 seconds. Later background-file
+failures are a separate degraded-fidelity condition: the priority root remains
+playable and the loader falls back to it. A stop, unmount, or readiness-gated
+membership change cancels obsolete retries. The scheduler itself still never
+loads or retries: its real-time hot path only plays ready instruments or skips
+the note.
+
+The correctness audit found two lifecycle traps in the first implementation.
+The original `track.id:sampleId|...` signature could collide for distinct REST
+states because REST accepts arbitrary non-empty track IDs, and StrictMode effect
+replay cancelled a generation without clearing the signature it owned. The
+watcher now serializes sorted `[track.id, sampleId]` tuples with JSON and resets
+the memoized signature whenever lifecycle cleanup invalidates its generation.
+Tests cover the collision, StrictMode replay, rejection and resolved-unready
+recovery, all three retry delays, and cancellation on stop, unmount, and
+membership replacement.
 
 The full acceptance test drives `create_session`, `edit_session`, and
 `get_session` through the official MCP client against Wrangler, while a real
@@ -755,6 +769,8 @@ measured non-zero output.
 **Corrected rule:** when several ingress paths can establish the same state,
 put required side effects at the shared state-observation boundary. An ingress-
 specific optimization may remain, but it cannot be the correctness mechanism.
+Derive observer identity with structured, injective serialization, and test its
+setup/cleanup symmetry under framework lifecycle replay.
 
 ---
 

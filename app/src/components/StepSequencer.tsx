@@ -122,9 +122,9 @@ export function StepSequencer() {
   // AudioWorklet host uses them to refresh its serialized snapshot.
   useSchedulerStateSync(scheduler, state, state.isPlaying);
 
-  // Re-warm tone/advanced synth instances when tracks are added or
-  // changed mid-playback. Without this, the first scheduled note for a
-  // newly-introduced track is dropped because getIfReady returns null.
+  // Prewarm sampled/tone/advanced instruments when readiness-gated track
+  // membership changes mid-playback. Without this, scheduler hot paths skip
+  // notes until the browser-owned instrument instance becomes ready.
   // See review finding #4.
   useTrackPrewarm(state, state.isPlaying);
 

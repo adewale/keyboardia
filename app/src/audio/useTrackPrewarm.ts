@@ -15,23 +15,24 @@ import type { GridState } from '../types';
 import { audioEngine } from './engine';
 import { getSampledInstrumentId } from './instrument-types';
 
-// A failed manifest/sample request should recover without requiring the user to
-// stop playback. Keep the policy bounded so a permanently unavailable asset
-// cannot create an endless request loop.
+// A readiness-blocking manifest or priority-sample failure should recover
+// without requiring the user to stop playback. Keep the policy bounded so a
+// permanently unavailable asset cannot create an endless request loop.
 const PREWARM_RETRY_DELAYS_MS = [250, 1_000, 4_000] as const;
 
 function prewarmSignature(state: GridState): string {
   // Stable signature of "which tracks need warming". Deliberately excludes
   // immediately playable plain samples and unrelated state such as volume,
   // swing, steps, p-locks, mute, and solo.
-  return state.tracks
+  const members = state.tracks
     .filter((t) =>
       getSampledInstrumentId(t.sampleId) !== null
       || t.sampleId.startsWith('tone:')
       || t.sampleId.startsWith('advanced:'))
-    .map((t) => `${t.id}:${t.sampleId}`)
-    .sort()
-    .join('|');
+    .map((t) => [t.id, t.sampleId] as const)
+    .sort(([leftId, leftSampleId], [rightId, rightSampleId]) =>
+      leftId.localeCompare(rightId) || leftSampleId.localeCompare(rightSampleId));
+  return members.length === 0 ? '' : JSON.stringify(members);
 }
 
 export function useTrackPrewarm(state: GridState, isPlaying: boolean): void {
@@ -107,6 +108,10 @@ export function useTrackPrewarm(state: GridState, isPlaying: boolean): void {
 
   useEffect(() => () => {
     generationRef.current += 1;
+    // Effect replay must not retain the signature owned by the generation it
+    // just cancelled. React StrictMode performs this setup/cleanup/setup cycle
+    // in development, and a real unmount has no reason to preserve the value.
+    lastSignatureRef.current = null;
     if (retryTimeoutRef.current !== null) {
       clearTimeout(retryTimeoutRef.current);
       retryTimeoutRef.current = null;

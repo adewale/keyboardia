@@ -8,6 +8,7 @@
  * re-running preload whenever their live track membership changes during
  * playback. The registries are idempotent, so repeated calls are cheap.
  */
+import { StrictMode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { act, renderHook } from '@testing-library/react';
 import type { GridState, Track } from '../types';
@@ -137,6 +138,47 @@ describe('useTrackPrewarm', () => {
     expect(preload).toHaveBeenCalledTimes(1);
   });
 
+  it('distinguishes valid REST memberships containing signature delimiters', () => {
+    const beforeRestEdit = makeState([
+      track('x:sampled:alto-sax|y', 'sampled:piano'),
+    ]);
+    const afterRestEdit = makeState([
+      track('x', 'sampled:alto-sax'),
+      track('y', 'sampled:piano'),
+    ]);
+
+    const { rerender } = renderHook(
+      ({ s }: { s: GridState }) => useTrackPrewarm(s, true),
+      { initialProps: { s: beforeRestEdit } },
+    );
+    rerender({ s: afterRestEdit });
+
+    expect(preload).toHaveBeenCalledTimes(2);
+    expect(preload).toHaveBeenLastCalledWith(afterRestEdit.tracks);
+  });
+
+  it('re-establishes retry ownership after StrictMode replays an active mount', async () => {
+    vi.useFakeTimers();
+    sampledReady.mockReturnValue(false);
+    const state = makeState([
+      track('mcp-brush-snare', 'sampled:brushes-snare'),
+    ]);
+
+    renderHook(() => useTrackPrewarm(state, true), { wrapper: StrictMode });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    // StrictMode runs setup, cleanup, then setup again. The replayed setup must
+    // own a live generation rather than inheriting the cancelled signature.
+    expect(preload).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(250);
+    });
+    expect(preload).toHaveBeenCalledTimes(3);
+  });
+
   it('retries the same sampled membership after a transient preload failure', async () => {
     vi.useFakeTimers();
     sampledReady.mockReturnValueOnce(false).mockReturnValue(true);
@@ -157,6 +199,74 @@ describe('useTrackPrewarm', () => {
     });
 
     expect(preload).toHaveBeenCalledTimes(2);
+  });
+
+  it('retries when the preloader rejects', async () => {
+    vi.useFakeTimers();
+    preload
+      .mockRejectedValueOnce(new Error('transient preload rejection'))
+      .mockResolvedValue(undefined);
+    const state = makeState([
+      track('mcp-brush-snare', 'sampled:brushes-snare'),
+    ]);
+
+    renderHook(() => useTrackPrewarm(state, true));
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(250);
+    });
+
+    expect(preload).toHaveBeenCalledTimes(2);
+  });
+
+  it('uses exactly three bounded retries at 250ms, 1s, and 4s', async () => {
+    vi.useFakeTimers();
+    sampledReady.mockReturnValue(false);
+    const state = makeState([
+      track('mcp-brush-snare', 'sampled:brushes-snare'),
+    ]);
+
+    renderHook(() => useTrackPrewarm(state, true));
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(preload).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(249);
+    });
+    expect(preload).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(preload).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(999);
+    });
+    expect(preload).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(preload).toHaveBeenCalledTimes(3);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3_999);
+    });
+    expect(preload).toHaveBeenCalledTimes(3);
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1);
+    });
+    expect(preload).toHaveBeenCalledTimes(4);
+    expect(vi.getTimerCount()).toBe(0);
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(preload).toHaveBeenCalledTimes(4);
   });
 
   it('cancels a pending retry when playback stops', async () => {
@@ -181,5 +291,58 @@ describe('useTrackPrewarm', () => {
     });
 
     expect(preload).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels a pending retry when the hook unmounts', async () => {
+    vi.useFakeTimers();
+    sampledReady.mockReturnValue(false);
+    const state = makeState([
+      track('mcp-brush-snare', 'sampled:brushes-snare'),
+    ]);
+    const { unmount } = renderHook(() => useTrackPrewarm(state, true));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(preload).toHaveBeenCalledTimes(1);
+
+    unmount();
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    expect(preload).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('cancels the obsolete retry when readiness-gated membership changes', async () => {
+    vi.useFakeTimers();
+    sampledReady.mockReturnValue(false);
+    const brushes = makeState([
+      track('sampled-track', 'sampled:brushes-snare'),
+    ]);
+    const altoSax = makeState([
+      track('sampled-track', 'sampled:alto-sax'),
+    ]);
+    const { rerender } = renderHook(
+      ({ s }: { s: GridState }) => useTrackPrewarm(s, true),
+      { initialProps: { s: brushes } },
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(preload).toHaveBeenCalledTimes(1);
+
+    sampledReady.mockImplementation(instrumentId => instrumentId === 'alto-sax');
+    rerender({ s: altoSax });
+    await act(async () => {
+      await Promise.resolve();
+      await vi.runAllTimersAsync();
+    });
+
+    expect(preload).toHaveBeenCalledTimes(2);
+    expect(preload).toHaveBeenLastCalledWith(altoSax.tracks);
+    expect(vi.getTimerCount()).toBe(0);
   });
 });
