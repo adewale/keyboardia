@@ -685,7 +685,7 @@ const handleSelect = useCallback(async (instrumentId: string) => {
     // Fire and forget - don't block UI
     getAudioEngine().then(engine => {
       engine.preloadInstrumentsForTracks([{ sampleId: instrumentId }]);
-    }).catch(() => {}); // Ignore errors, scheduler will retry
+    }).catch(() => {}); // Historical bug: errors were ignored; the scheduler did not retry
   }
 
   const name = getInstrumentName(instrumentId);
@@ -708,7 +708,7 @@ const handleSelect = useCallback(async (instrumentId: string) => {
 
 ### Related Files
 - src/components/SamplePicker.tsx - Where tracks are added
-- src/components/StepSequencer.tsx - Where preload currently happens (only on play)
+- src/components/StepSequencer.tsx - Where play-start preload and the live-state watcher run
 - src/audio/scheduler.ts - Where "not ready" warning originates
 - src/audio/instrument-types.ts - getSampledInstrumentId helper
 
@@ -737,6 +737,12 @@ track while playback is already active, rerenders it with an MCP-style
 only a solo change must not preload again. Before the fix this test failed with
 zero calls; after widening the readiness-gated signature with
 `getSampledInstrumentId()`, it passes.
+
+The live-state watcher also owns a bounded transient-failure policy. If preload
+rejects, or resolves while a sampled registry is still unready, it retries after
+250 ms, 1 second, and 4 seconds. A stop, unmount, or readiness-gated membership
+change cancels obsolete retries. The scheduler itself still never loads or
+retries: its real-time hot path only plays ready instruments or skips the note.
 
 The full acceptance test drives `create_session`, `edit_session`, and
 `get_session` through the official MCP client against Wrangler, while a real

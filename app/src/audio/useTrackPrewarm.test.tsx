@@ -8,16 +8,18 @@
  * re-running preload whenever their live track membership changes during
  * playback. The registries are idempotent, so repeated calls are cheap.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { act, renderHook } from '@testing-library/react';
 import type { GridState, Track } from '../types';
 import { useTrackPrewarm } from './useTrackPrewarm';
 
 const preload = vi.fn<(tracks: { id?: string; sampleId: string }[]) => Promise<void>>();
+const sampledReady = vi.fn<(instrumentId: string) => boolean>();
 
 vi.mock('./engine', () => ({
   audioEngine: {
     preloadInstrumentsForTracks: (tracks: { id?: string; sampleId: string }[]) => preload(tracks),
+    isSampledInstrumentReady: (instrumentId: string) => sampledReady(instrumentId),
   },
 }));
 
@@ -33,6 +35,12 @@ describe('useTrackPrewarm', () => {
   beforeEach(() => {
     preload.mockClear();
     preload.mockImplementation(async () => {});
+    sampledReady.mockReset();
+    sampledReady.mockReturnValue(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('does not prewarm when paused', () => {
@@ -126,6 +134,52 @@ describe('useTrackPrewarm', () => {
 
     // A mix-only change must not refetch or rebuild an already-warming
     // instrument. The relevant id/sampleId membership did not change.
+    expect(preload).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries the same sampled membership after a transient preload failure', async () => {
+    vi.useFakeTimers();
+    sampledReady.mockReturnValueOnce(false).mockReturnValue(true);
+    const state = makeState([
+      track('mcp-brush-snare', 'sampled:brushes-snare'),
+    ]);
+
+    renderHook(() => useTrackPrewarm(state, true));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(preload).toHaveBeenCalledTimes(1);
+    expect(sampledReady).toHaveBeenCalledWith('brushes-snare');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(250);
+    });
+
+    expect(preload).toHaveBeenCalledTimes(2);
+  });
+
+  it('cancels a pending retry when playback stops', async () => {
+    vi.useFakeTimers();
+    sampledReady.mockReturnValue(false);
+    const state = makeState([
+      track('mcp-brush-snare', 'sampled:brushes-snare'),
+    ]);
+    const { rerender } = renderHook(
+      ({ playing }: { playing: boolean }) => useTrackPrewarm(state, playing),
+      { initialProps: { playing: true } },
+    );
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(preload).toHaveBeenCalledTimes(1);
+
+    rerender({ playing: false });
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
     expect(preload).toHaveBeenCalledTimes(1);
   });
 });

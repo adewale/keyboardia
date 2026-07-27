@@ -5390,6 +5390,12 @@ pattern changes are excluded from the signature. This makes UI, MCP,
 multiplayer, and recovery paths obey the same audio-readiness invariant without
 putting audio behavior into the Worker or the MCP adapter.
 
+Preload completion is not sufficient evidence for sampled instruments because
+the registry reports asset failures as an unready result rather than a rejected
+promise. The watcher therefore verifies sampled readiness and performs three
+bounded retries (250 ms, 1 second, and 4 seconds). The scheduler remains a pure
+real-time consumer: it never starts network or decode work from its note path.
+
 The narrow red test models the exact transition and initially observed zero
 preload calls. The green full-stack test creates and authors a session through
 the official MCP client, starts a real browser once, adds the three affected

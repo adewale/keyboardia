@@ -15,6 +15,11 @@ import type { GridState } from '../types';
 import { audioEngine } from './engine';
 import { getSampledInstrumentId } from './instrument-types';
 
+// A failed manifest/sample request should recover without requiring the user to
+// stop playback. Keep the policy bounded so a permanently unavailable asset
+// cannot create an endless request loop.
+const PREWARM_RETRY_DELAYS_MS = [250, 1_000, 4_000] as const;
+
 function prewarmSignature(state: GridState): string {
   // Stable signature of "which tracks need warming". Deliberately excludes
   // immediately playable plain samples and unrelated state such as volume,
@@ -31,9 +36,20 @@ function prewarmSignature(state: GridState): string {
 
 export function useTrackPrewarm(state: GridState, isPlaying: boolean): void {
   const lastSignatureRef = useRef<string | null>(null);
+  const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const generationRef = useRef(0);
 
   useEffect(() => {
+    const cancelPendingRetry = () => {
+      if (retryTimeoutRef.current !== null) {
+        clearTimeout(retryTimeoutRef.current);
+        retryTimeoutRef.current = null;
+      }
+    };
+
     if (!isPlaying) {
+      generationRef.current += 1;
+      cancelPendingRetry();
       lastSignatureRef.current = null;
       return;
     }
@@ -42,15 +58,58 @@ export function useTrackPrewarm(state: GridState, isPlaying: boolean): void {
     if (signature === lastSignatureRef.current) return;
     if (signature === '') {
       // No readiness-gated tracks; nothing to warm.
+      generationRef.current += 1;
+      cancelPendingRetry();
       lastSignatureRef.current = signature;
       return;
     }
 
+    generationRef.current += 1;
+    const generation = generationRef.current;
+    cancelPendingRetry();
     lastSignatureRef.current = signature;
-    audioEngine.preloadInstrumentsForTracks(state.tracks).catch((err) => {
-      // Errors here are already logged by preloadInstrumentsForTracks. A later
-      // relevant state transition or Play transition can retry the preload.
-      void err;
-    });
+    const tracks = state.tracks;
+    const sampledInstrumentIds = new Set<string>();
+    for (const track of tracks) {
+      const instrumentId = getSampledInstrumentId(track.sampleId);
+      if (instrumentId !== null) sampledInstrumentIds.add(instrumentId);
+    }
+
+    const attemptPrewarm = (retryIndex: number): void => {
+      if (generation !== generationRef.current) return;
+      retryTimeoutRef.current = null;
+
+      const scheduleRetry = () => {
+        if (generation !== generationRef.current) return;
+        const delay = PREWARM_RETRY_DELAYS_MS[retryIndex];
+        if (delay === undefined) return;
+        retryTimeoutRef.current = setTimeout(
+          () => attemptPrewarm(retryIndex + 1),
+          delay,
+        );
+      };
+
+      audioEngine.preloadInstrumentsForTracks(tracks).then(() => {
+        if (generation !== generationRef.current) return;
+        const sampledReady = Array.from(sampledInstrumentIds).every(
+          instrumentId => audioEngine.isSampledInstrumentReady(instrumentId),
+        );
+        if (!sampledReady) scheduleRetry();
+      }).catch(() => {
+        // The preloader logs the underlying error. This hook owns retry timing
+        // because scheduler hot paths must remain free of loading side effects.
+        scheduleRetry();
+      });
+    };
+
+    attemptPrewarm(0);
   }, [state, isPlaying]);
+
+  useEffect(() => () => {
+    generationRef.current += 1;
+    if (retryTimeoutRef.current !== null) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+  }, []);
 }

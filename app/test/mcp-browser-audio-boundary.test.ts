@@ -1,8 +1,16 @@
+/**
+ * Cross-runtime contract: an MCP-created shared track must retain the identity
+ * and defaults that the browser audio classifier consumes.
+ *
+ * This deliberately imports both Worker edit logic and browser adapters, so it
+ * lives outside src rather than implying that either production runtime may
+ * depend on the other.
+ */
 import { describe, expect, it } from 'vitest';
-import { getSampledInstrumentId, parseInstrumentId } from '../audio/instrument-types';
-import { createInitialState } from '../shared/state-mutations';
-import { sessionTrackToTrack } from '../types';
-import { applyMcpSessionEdit } from './mcp-edits';
+import { getSampledInstrumentId, parseInstrumentId } from '../src/audio/instrument-types';
+import { createInitialState } from '../src/shared/state-mutations';
+import { sessionTrackToTrack } from '../src/types';
+import { applyMcpSessionEdit } from '../src/worker/mcp-edits';
 
 const MCP_SAMPLED_INSTRUMENTS = [
   ['jazz-brush-snare', 'sampled:brushes-snare', 'brushes-snare'],
