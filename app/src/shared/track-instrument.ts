@@ -143,6 +143,10 @@ export function setTrackInstrument(
   // Build the replacement locally, then never touch it again. Dropped engine
   // state is deleted rather than set to `undefined` so the resulting track has
   // the same shape as a track that never had FM parameters at all.
+  //
+  // Today's policy always drops here — the same-instrument case returned above.
+  // The assigning branch stays so a future policy that carries parameters
+  // between compatible presets is a change to carryOverEngineState alone.
   const track: SessionTrack = { ...current, sampleId };
   const carried = carryOverEngineState(current, sampleId);
   if (carried.fmParams === undefined) {

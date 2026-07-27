@@ -88,6 +88,15 @@ describe('TrackRow change instrument', () => {
     expect(panel.getAttribute('aria-hidden')).toBe('true');
     expect(screen.getByTestId('change-instrument-track-1').getAttribute('aria-expanded'))
       .toBe('false');
+
+    // The catalog itself is not in the document while closed. Leaving it there
+    // duplicates the Add Track picker's accessible names, so a query for an
+    // instrument by name resolves into this zero-height panel instead of the
+    // add-track control — which is exactly how it broke the drag-reorder and
+    // multiplayer suites.
+    expect(screen.queryByText('Change Instrument')).toBeNull();
+    expect(screen.queryByTestId('set-instrument-kick')).toBeNull();
+    expect(document.querySelectorAll('.instrument-btn')).toHaveLength(0);
   });
 
   it('opens the picker from the desktop toggle and marks the current instrument', () => {

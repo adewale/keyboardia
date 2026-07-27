@@ -68,6 +68,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 43: A Test Frame Matcher Must Consume Frames](#lesson-43-a-test-frame-matcher-must-consume-frames-or-it-reads-stale-values)
 - [Lesson 55: A Production Fixture Is Not a Test Fixture](#lesson-55-a-production-fixture-is-not-a-test-fixture)
 - [Lesson 56: Browser Navigation Tests Must Assert Focus, Not Styling](#lesson-56-browser-navigation-tests-must-assert-focus-not-styling)
+- [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5541,3 +5542,69 @@ packages/resources/intrinsic globals as capabilities too. Define layers by
 allowed capabilities, walk every owned root transitively, make resolution
 failure loud, retain a real-runtime oracle, and mutation-test the guard with the
 exact syntax and bridge paths an adversarial change would use.
+## Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries
+
+**Date:** July 2026
+**Context:** Change Instrument ([#63](https://github.com/adewale/keyboardia/issues/63))
+
+### What happened
+
+The new per-track instrument picker was rendered inside a collapsed
+`panel-animation-container` — `grid-template-rows: 0fr`, `overflow: hidden`,
+`aria-hidden="true"`, `inert`. Zero pixels, no layout, not focusable. It looked
+free.
+
+It was not. The panel contained the whole instrument catalog: about a hundred
+buttons per track, with accessible names — "808 Hat", "Kick", "FM Bass" —
+**identical to the Add Track picker's**. Track rows come before that picker in
+the DOM, so the moment a session had one track:
+
+```ts
+// Meant the Add Track picker. Now resolves into a zero-height panel.
+await page.getByRole('button', { name: /808 Hat/ }).first().click();
+
+// Two matches instead of one → Playwright strict-mode violation.
+await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible();
+```
+
+Twelve tests failed across the drag-reorder and multiplayer suites — none of
+which had been touched, and none of which mention instruments in their intent.
+The symptoms pointed nowhere near the cause: `locator.click` timeouts (the
+element was real but zero-height) and assertion mismatches on track names.
+
+`aria-hidden` and `inert` did not save it. They govern the accessibility tree
+and interaction; they do not remove an element from a selector's candidate set
+in the way this assumed.
+
+### The lesson
+
+**A hidden subtree is still in the document.** Anything that queries by role,
+accessible name, text, or label sees it. If a panel duplicates names that exist
+elsewhere on the page, hiding is not enough — do not render it.
+
+Mount large or name-colliding panel content only while open:
+
+```tsx
+<div className={`panel-animation-container ${isOpen ? 'expanded' : ''}`}>
+  <div className="panel-animation-content">
+    {isOpen && <SamplePicker variant="change" … />}
+  </div>
+</div>
+```
+
+The collapse animation loses its exit transition, which nobody noticed. In
+exchange a ten-track session stops rendering the catalog ten times.
+
+### Why the narrow tests missed it
+
+Component tests rendered one `TrackRow` in isolation, where there is no Add
+Track picker to collide with, and used `data-testid` rather than accessible
+names. The unit and Durable Object suites do not build a page at all. Only the
+real-Worker E2E lane assembles the whole document — which is the argument for
+keeping that lane, and for reading a broad unexplained failure as a signal about
+your own change before assuming the suite is flaky.
+
+### Heuristic
+
+Before rendering a panel closed rather than unmounted, ask what names it puts
+in the document, and whether anything else on the page already answers to them.

@@ -186,11 +186,15 @@ The picker is the same component in both roles. `SamplePicker` takes
 `variant: 'add' | 'change'`; the `add` variant renders byte-identically to
 before so the existing `sample-picker.png` baseline still matches.
 
-| Surface | Entry point | Panel |
-|---|---|---|
-| Desktop | `♪` toggle in `track-left` | picker panel below the row, same pattern as pattern tools |
-| Mobile portrait width | "Instrument" row in the existing `InlineDrawer` | picker inside the drawer |
-| Landscape mobile | "Instrument" button in `TrackDrawer` | reuses the desktop panel, opened from the drawer |
+All three surfaces open the **same** panel, which `TrackRow` renders once below
+the row using the existing `panel-animation-container` mechanics that pattern
+tools already use. There is no second picker built for a narrow viewport.
+
+| Surface | Entry point |
+|---|---|
+| Desktop | `♪` toggle in `track-left`, beside the pattern-tools toggle |
+| Mobile portrait width | "Instrument" row in the existing `InlineDrawer`, labelled with the current instrument |
+| Landscape mobile | "Sound" button in `TrackDrawer` |
 
 Preview before committing is inherited: `SamplePicker` previews on hover and on
 keyboard focus-then-Enter without committing, and only `onClick` commits.
@@ -251,6 +255,19 @@ Each of these was identified in the existing code before implementation.
 9. **Losing a rejected edit's state.** Returning a fresh object on the error
    path would let a caller assign it and drop concurrent edits. `setTrackInstrument`
    returns the original reference on rejection.
+
+10. **A collapsed panel poisoning accessible-name queries.** This one was not
+    predicted; it was caught by the real-Worker E2E lane and is recorded here
+    because the fix is part of the design. Rendering the picker while the panel
+    was closed left ~100 buttons per track in the document whose accessible
+    names ("808 Hat", "Kick", …) are identical to the Add Track picker's. Track
+    rows precede the Add Track picker in the DOM, so
+    `getByRole('button', { name: /808 Hat/ }).first()` resolved into a
+    zero-height panel — clicks timed out, and unqualified queries hit Playwright
+    strict-mode violations. Twelve drag-reorder and multiplayer tests failed
+    without touching any of their code. `aria-hidden` and `inert` did not
+    prevent it. The picker is now mounted only while the panel is open, which
+    also stops a ten-track session from rendering the catalog ten times.
 
 ## 10. Test plan
 

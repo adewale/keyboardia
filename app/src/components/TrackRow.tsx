@@ -886,13 +886,21 @@ export const TrackRow = React.memo(function TrackRow({
           inert={!isInstrumentPickerOpen}
         >
           <div className="panel-animation-content">
-            <SamplePicker
-              variant="change"
-              selectedSampleId={track.sampleId}
-              onSelectSample={handleSelectInstrument}
-              disabled={readOnly}
-              previewsDisabled={readOnly}
-            />
+            {/* Mounted only while open. A closed panel must not leave ~100
+                instrument buttons in the document: they would duplicate the
+                Add Track picker's accessible names, so any query for an
+                instrument by name would resolve into a zero-height panel
+                instead of the add-track control. It also keeps a session with
+                many tracks from rendering the whole catalog per track. */}
+            {isInstrumentPickerOpen && (
+              <SamplePicker
+                variant="change"
+                selectedSampleId={track.sampleId}
+                onSelectSample={handleSelectInstrument}
+                disabled={readOnly}
+                previewsDisabled={readOnly}
+              />
+            )}
           </div>
         </div>
       )}
