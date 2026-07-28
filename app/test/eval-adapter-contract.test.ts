@@ -10,6 +10,10 @@ import { execFileSync } from 'node:child_process';
 import { readdirSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
+// @ts-expect-error -- dependency-free ESM adapter helper, checked here rather than by tsc
+import { numericUsage } from '../../evals/adapters/usage.mjs';
+// @ts-expect-error -- dependency-free ESM adapter helper, checked here rather than by tsc
+import { toolResultSucceeded } from '../../evals/adapters/mcp-trace.mjs';
 
 const adaptersDir = resolve('../evals/adapters');
 
@@ -64,5 +68,28 @@ describe('eval adapter contract', () => {
       expect(readme, field).toContain(field);
     }
     expect(readme).toContain('run-subagent --agent-cmd');
+  });
+
+  it('keeps provider labels out of numeric harness telemetry', () => {
+    expect(numericUsage({
+      input_tokens: 12,
+      output_tokens: 4,
+      service_tier: 'standard',
+      cache: { read_tokens: 3, mode: 'ephemeral' },
+    })).toEqual({
+      input_tokens: 12,
+      output_tokens: 4,
+      cache: { read_tokens: 3 },
+    });
+  });
+
+  it('correlates tool results without mistaking user text for MCP errors', () => {
+    expect(toolResultSucceeded({ is_error: true, content: 'failed' })).toBe(false);
+    expect(toolResultSucceeded({
+      content: [{ type: 'text', text: '{"isError":true}' }],
+    })).toBe(false);
+    expect(toolResultSucceeded({
+      content: [{ type: 'text', text: '{"structuredContent":{"name":"{\\"isError\\":true}"}}' }],
+    })).toBe(true);
   });
 });

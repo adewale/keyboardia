@@ -65,10 +65,10 @@ Each is falsifiable and checked in the report at the end.
 
 **Agent access.** A new adapter, `evals/adapters/claude-mcp.mjs`, points the
 agent at a local `/mcp` endpoint through the client's own MCP configuration and
-returns `{answer, trace}`, where `trace` is the ordered list of tool calls. The
-adapter contract already carries `trace`; nothing about the contract changes, so
-other agents remain first-class — an adapter for any MCP-capable client returns
-the same envelope.
+returns `{answer, trace}`, where `trace` is the ordered list of tool calls and
+each entry carries `{name, arguments, success}`. Execution process assertions
+require a correlated successful tool result; an attempted call is not evidence.
+Other clients remain first-class when their adapter emits the same envelope.
 
 **Per-case isolation.** Each run creates its own session from the case's
 declared `setup` state, so runs cannot contaminate each other and the baseline
@@ -94,6 +94,12 @@ for scoring is exactly known.
   means a buggy case can leave junk state. Sessions are per-run and disposable.
 
 ## Outcome
+
+> Historical result, not current evidence. On 2026-07-28 the trace contract was
+> tightened so a process assertion requires a correlated successful tool result,
+> not merely a tool attempt. These runs predate the `success` field and cannot be
+> re-scored under the corrected contract. Do not cite the numbers below until a
+> fresh live sweep replaces them.
 
 Executed 2026-07-27. Three cases, three models, three repeats, 54 runs plus an
 18-run re-measurement of the injection case, zero errors.
@@ -132,6 +138,9 @@ skill loaded — while the execution case shows no model ever *sends* that call.
 Plan and act diverge here, and only running both catches it.
 
 ## Re-measured after the surface drift
+
+This re-measurement also predates the successful-tool-result trace contract and
+is retained only as historical context.
 
 `main` shipped five new MCP tools mid-spike and the published skill was still
 denying three of them. Correcting the skill and the three eval cases that

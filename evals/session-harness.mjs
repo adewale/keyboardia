@@ -36,6 +36,42 @@ function buildTrack({ id, name, sample_id, active_steps = [], step_count = DEFAU
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const FETCH_TIMEOUT_MS = 30_000;
+const MAX_RETRY_WAIT_MS = 60_000;
+
+function parsesAsRateLimitError(text) {
+  if (typeof text !== 'string' || !text.trimStart().startsWith('{')) return false;
+  try {
+    const value = JSON.parse(text);
+    return value?.code === 'RATE_LIMITED' && typeof value?.error === 'string';
+  } catch {
+    return false;
+  }
+}
+
+function envelopeReportsRateLimit(value) {
+  if (!value || typeof value !== 'object') return false;
+  if (value.code === 'RATE_LIMITED' && typeof value.error === 'string') return true;
+  if (value.error?.code === 'RATE_LIMITED') return true;
+  const result = value.result;
+  if (!result || typeof result !== 'object') return false;
+  return (result.content ?? []).some((item) => parsesAsRateLimitError(item?.text));
+}
+
+export function isRateLimited(status, text) {
+  if (status === 429) return true;
+  const candidates = [text, ...text.split('\n')
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice('data:'.length).trim())];
+  for (const candidate of candidates) {
+    try {
+      if (envelopeReportsRateLimit(JSON.parse(candidate))) return true;
+    } catch {
+      // Non-JSON response fragments cannot carry a structured error code.
+    }
+  }
+  return false;
+}
 
 /**
  * Every Keyboardia endpoint an execution sweep touches is rate limited per IP,
@@ -48,11 +84,11 @@ async function withRetry(label, attempts, send) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     const response = await send();
     const text = await response.text();
-    if (response.ok && !text.includes('"RATE_LIMITED"')) {
+    const throttled = isRateLimited(response.status, text);
+    if (response.ok && !throttled) {
       return text;
     }
     lastError = `${response.status} ${text.slice(0, 160)}`;
-    const throttled = response.status === 429 || text.includes('"RATE_LIMITED"');
     if (!throttled) {
       break;
     }
@@ -65,7 +101,7 @@ async function withRetry(label, attempts, send) {
     } catch {
       // fall back to the backoff above
     }
-    await sleep(waitMs);
+    await sleep(Math.min(waitMs, MAX_RETRY_WAIT_MS));
   }
   throw new Error(`${label} failed: ${lastError}`);
 }
@@ -91,6 +127,7 @@ export async function createSession(baseUrl, setup, { attempts = 8 } = {}) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     }));
   return JSON.parse(text).id;
 }
@@ -114,6 +151,7 @@ export async function readCompactSession(baseUrl, sessionId, { attempts = 8 } = 
         method: 'tools/call',
         params: { name: 'get_session', arguments: { session_id: sessionId } },
       }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     }));
 
   // The endpoint answers as SSE; the payload is the last `data:` line.
@@ -133,7 +171,9 @@ export async function readCompactSession(baseUrl, sessionId, { attempts = 8 } = 
 
 export async function isReachable(baseUrl) {
   try {
-    const response = await fetch(new URL('/api/health', baseUrl));
+    const response = await fetch(new URL('/api/health', baseUrl), {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
     return response.ok;
   } catch {
     return false;

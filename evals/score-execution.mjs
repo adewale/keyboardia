@@ -84,11 +84,15 @@ export function scoreTraceAssertion(assertion, trace) {
 
   switch (assertion.check) {
     // Every listed name appears, in this relative order, allowing other calls
-    // in between.
+    // in between. An attempted call is not evidence: every call in the chain
+    // must have a correlated successful tool_result.
     case 'call_order': {
+      const successfulNames = calls
+        .filter((call) => call.success === true)
+        .map((call) => call.name);
       let cursor = 0;
       for (const expected of assertion.value) {
-        const found = names.indexOf(expected, cursor);
+        const found = successfulNames.indexOf(expected, cursor);
         if (found === -1) {
           return false;
         }

@@ -13,6 +13,7 @@
  * Requires the `claude` CLI on PATH. Override with KEYBOARDIA_CLAUDE_BIN.
  */
 import { spawn } from 'node:child_process';
+import { numericUsage } from './usage.mjs';
 
 const binary = process.env.KEYBOARDIA_CLAUDE_BIN ?? 'claude';
 
@@ -56,7 +57,10 @@ child.on('close', (code) => {
   }
   try {
     const parsed = JSON.parse(stdout);
-    process.stdout.write(JSON.stringify({ answer: String(parsed.result ?? ''), usage: parsed.usage }));
+    process.stdout.write(JSON.stringify({
+      answer: String(parsed.result ?? ''),
+      usage: numericUsage(parsed.usage),
+    }));
   } catch {
     process.stderr.write('claude adapter: could not parse CLI output as JSON\n');
     process.exit(1);

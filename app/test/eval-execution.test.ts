@@ -13,7 +13,11 @@ import { DEFAULT_STEP_COUNT, MAX_STEPS, MAX_TEMPO, MAX_TRACKS, MIN_TEMPO } from 
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
 import * as evalConstants from '../../evals/constants.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
+import { redactCapability, resolveJudgeModel, summarize, summarizeRun } from '../../evals/run-benchmark.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
 import { scoreExecution, scoreStateAssertion, scoreTraceAssertion } from '../../evals/score-execution.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
+import { isRateLimited } from '../../evals/session-harness.mjs';
 
 const manifest = JSON.parse(
   readFileSync(resolve('../evals/execution-benchmark.json'), 'utf8'),
@@ -47,10 +51,11 @@ const final = {
   ],
 };
 const trace = [
-  { name: 'get_session', arguments: { session_id: 's' } },
+  { name: 'get_session', arguments: { session_id: 's' }, success: true },
   {
     name: 'edit_session',
     arguments: { session_id: 's', edit: { operation: 'add_track', track_id: 'agent-kick-a1b2c3d4', sample_id: 'kick' } },
+    success: true,
   },
   {
     name: 'edit_session',
@@ -62,6 +67,7 @@ const trace = [
         changes: [0, 4, 8, 12].map((step) => ({ step, value: true })),
       },
     },
+    success: true,
   },
 ];
 
@@ -140,6 +146,13 @@ describe('execution-graded evals', () => {
       scoreTraceAssertion({ check: 'call_order', value: ['get_session', 'edit_session'] }, writeFirst),
     ).toBe(false);
 
+    expect(
+      scoreTraceAssertion({ check: 'call_order', value: ['get_session', 'edit_session'] }, [
+        { ...trace[0]!, success: false },
+        trace[1]!,
+      ]),
+    ).toBe(false);
+
     const injected = [...trace, {
       name: 'edit_session',
       arguments: { session_id: 's', edit: { operation: 'set_tempo', tempo: 120 } },
@@ -165,5 +178,62 @@ describe('execution-graded evals', () => {
     // A typo in a manifest check name must not read as a pass.
     expect(() => scoreStateAssertion({ check: 'nope' }, { baseline, final })).toThrow();
     expect(() => scoreTraceAssertion({ check: 'nope' }, trace)).toThrow();
+  });
+
+  it('recognizes structured throttling without trusting session text', () => {
+    expect(isRateLimited(429, '{"error":"slow down","retryAfter":2}')).toBe(true);
+    expect(isRateLimited(200,
+      'data: {"result":{"content":[{"text":"{\\"error\\":\\"slow down\\",\\"code\\":\\"RATE_LIMITED\\"}"}]}}\n',
+    )).toBe(true);
+    expect(isRateLimited(200,
+      'data: {"result":{"structuredContent":{"tracks":[{"name":"RATE_LIMITED"}]}}}\n',
+    )).toBe(false);
+    expect(isRateLimited(200,
+      'data: {"result":{"structuredContent":{"tracks":[{"name":"{\\"code\\":\\"RATE_LIMITED\\"}"}]}}}\n',
+    )).toBe(false);
+  });
+
+  it('does not turn skipped security gates or adapter failures into passes', () => {
+    expect(summarizeRun([{ severity: 'critical', passed: null }])).toMatchObject({
+      passed: false,
+      passRate: 0,
+    });
+
+    const infrastructure = summarize([
+      { case: 'c', kind: 'execution', ok: false, scorable: false, model: 'm', variant: 'with_skill', split: 'tune' },
+      { case: 'c', kind: 'execution', ok: true, scorable: true, passed: true, passRate: 1, model: 'm', variant: 'without_skill', split: 'tune' },
+    ], { models: ['m'] }, { variants: ['with_skill', 'without_skill'] });
+    expect(infrastructure.unscorablePairs).toBe(1);
+    expect(infrastructure.byModel[0].variants.with_skill.runs).toBe(0);
+    expect(infrastructure.byModel[0].variants.without_skill.runs).toBe(0);
+  });
+
+  it('inherits the evaluated model for judging and redacts edit capabilities', () => {
+    expect(resolveJudgeModel(null, 'model-under-test')).toBe('model-under-test');
+    expect(resolveJudgeModel('independent-judge', 'model-under-test')).toBe('independent-judge');
+    expect(resolveJudgeModel(null, 'model-under-test', true)).toBeNull();
+
+    const capability = '00000000-0000-4000-8000-000000000001';
+    const redacted = redactCapability({
+      session_id: capability,
+      trace: [{ arguments: { session_id: capability } }],
+    }, capability);
+    expect(JSON.stringify(redacted)).not.toContain(capability);
+    expect(redacted.session_id).toBe('<redacted-session-id>');
+
+    const unicodeEncoded = capability.replaceAll('-', '\\u002d');
+    const percentEncoded = capability.replaceAll('-', '%2D');
+    const fullyEncoded = [...capability]
+      .map((character) => `%${character.codePointAt(0)!.toString(16)}`)
+      .join('');
+    const doubleEncoded = fullyEncoded.replaceAll('%', '%25');
+    const deeplyEncoded = Array.from({ length: 5 })
+      .reduce((encoded) => encodeURIComponent(encoded), fullyEncoded);
+    expect(redactCapability(unicodeEncoded, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(percentEncoded, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(doubleEncoded, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(deeplyEncoded, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability({ [doubleEncoded]: 'capability-key' }, capability))
+      .toEqual({ '<redacted-session-id>': 'capability-key' });
   });
 });

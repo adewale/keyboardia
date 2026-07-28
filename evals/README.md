@@ -60,7 +60,9 @@ when writing your own. A twelve-line shell script is a perfectly good adapter.
 Judging uses the same contract and defaults to the answer agent; override with
 `--judge-agent <name>`, `--judge-cmd '<command>'`, and `--judge-model <id>`.
 Nothing forces the judge and the agent to be the same vendor, and judging a
-model with itself is a known way to flatter it.
+model with itself is a known way to flatter it. A default same-adapter judge
+inherits the evaluated model; an explicitly selected judge adapter uses its own
+default unless `--judge-model` is also supplied.
 
 ## What the manifest measures
 
@@ -113,7 +115,9 @@ recorded as a non-scorable run and never aborts the sweep.
 
 `--rescore` replays a recorded run from its stored baseline, final state, and
 trace, so an assertion edit is re-measured on identical evidence with no Worker
-and no credentials.
+and no credentials. Judge verdicts remain the recorded verdicts because calling
+the judge again would create a new sample; edit a judge rubric only before a new
+run.
 
 These live in their own manifest because `state` and `trace` are not
 skill-eval-harness assertion types. Putting them in `shared-benchmark.json`
@@ -145,12 +149,16 @@ it as held out.
 
 ## Other commands
 
-- `--rescore <results.json>` re-applies the current assertions to responses a
-  previous run recorded. Use it after editing an assertion: the text is
-  identical, so a scoring change cannot be confused with a decoding difference.
+- `--rescore <results.json>` re-applies current objective and execution
+  assertions to a previous run. Recorded judge verdicts are retained; changing
+  a judge rubric requires a new judged run.
 - `--cases a,b`, `--repeats N`, `--concurrency N`, `--no-judge`.
+- `--no-judge` never turns a skipped judge gate into a pass. A run with a
+  skipped gating or critical judge remains failed/unscored on that requirement.
 - `--out` records every prompt arm, per-assertion outcome, judge rationale, and
   full response, so a score always traces back to the text that produced it.
+  `evals/results/` is ignored, and execution artifacts redact the unpublished
+  session UUID before writing because it is an edit capability.
 
 ## The optional harness layer
 
@@ -167,6 +175,44 @@ skill-benchmark audit-manifest evals/shared-benchmark.json --fail-on-blockers
 It adds paired significance testing, `pass@k`/`pass^k` reliability, and
 materialized ablations (`materialize-ablations`) that measure which SKILL.md
 section carries the lift. Neither it nor its audit calls a model.
+
+To run the answer arms through the harness rather than only validating the
+manifest:
+
+```bash
+KEYBOARDIA_REPO="$(pwd)"
+skill-benchmark prepare evals/shared-benchmark.json --split tune \
+  --out /tmp/keyboardia-tasks.jsonl --runs-per-variant 1 \
+  --models claude-haiku-4-5,claude-sonnet-5,claude-opus-5
+skill-benchmark run-subagent --tasks /tmp/keyboardia-tasks.jsonl \
+  --runs /tmp/keyboardia-runs \
+  --agent-cmd "node $KEYBOARDIA_REPO/evals/adapters/claude.mjs"
+skill-benchmark benchmark evals/shared-benchmark.json \
+  --runs /tmp/keyboardia-runs --split tune --allow-scripts \
+  --out /tmp/keyboardia-benchmark.json
+# In harness 0.6.0 this run-aware audit cannot opt into script oracles; use it
+# for saturation diagnostics, not to re-grade the capability veto.
+skill-benchmark audit-manifest evals/shared-benchmark.json \
+  --runs /tmp/keyboardia-runs --split tune --fail-on-blockers
+```
+
+Use `run-codex` in place of `run-subagent` for Codex JSONL, or provide any
+other program that implements the adapter contract. The sanitized 2026-07-28
+run record, including candidate drift and readiness blockers, is in
+[`specs/EVAL-HARNESS-RUN-2026-07-28.md`](../specs/EVAL-HARNESS-RUN-2026-07-28.md).
+Raw run directories are deliberately not committed: prepared tasks contain
+absolute checkout paths and full model output.
+
+`--allow-scripts` opts into the repository-owned public-changelog oracle. It
+parses the model's JSON, enforces the exact public/private string envelope, and
+checks the decoded public field so Unicode or URL encoding cannot hide an edit
+capability from the veto.
+
+`audit-manifest` 0.6.0 has no `--allow-scripts` flag. With `--runs`, it therefore
+records the capability script as failed in both arms, even when `benchmark
+--allow-scripts` passed it. Its saturation findings remain useful, but its
+security-case result is not. Inspect the saved benchmark artifact for that
+assertion until the harness can audit trusted scripts.
 
 `app/test/skill-eval-manifest.test.ts` duplicates the cheapest of those checks
 in the Node suite, so the always-on floor needs no Python.
@@ -192,8 +238,10 @@ in the Node suite, so the always-on floor needs no Python.
   per-model aggregates, not single assertions.
 - A `trigger` case here measures description-driven selection from a catalog of
   the skill plus five distractors. It does **not** prove autonomous loading. For
-  that, use `skill-trigger-matrix`, which mounts the skill where an agent
-  discovers it on its own and never names it in the prompt.
+  local host activation, run `skill-trigger-matrix`, which mounts the skill where
+  an agent can discover it and never names it in the prompt. No matrix result is
+  committed here, and local activation still would not prove well-known HTTP
+  discovery followed by MCP use in one agent run.
 - Ablation is removal-only, and this skill's frontmatter carries just the two
   required fields, so there is no discovery ablation: removing `description`
   yields an invalid skill rather than a weaker one. Measure triggering by

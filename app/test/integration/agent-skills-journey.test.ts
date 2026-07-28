@@ -1,9 +1,11 @@
 /**
- * Agent Skills discovery-to-MCP walking skeleton.
+ * Model-free Agent Skills discovery-to-MCP protocol contract.
  *
- * The public index is the only starting point. This test downloads and verifies
- * the indexed skill, extracts its published edit_session examples, and executes
- * them through the official MCP client against the real Worker/session stack.
+ * Deterministic host code downloads and verifies the indexed skill, extracts
+ * its published edit_session examples, and executes them through the official
+ * MCP client against the real Worker/session stack. This proves the advertised
+ * bytes and protocol compose; it does not prove an agent discovers them on its
+ * own.
  */
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { SELF } from 'cloudflare:test';
@@ -111,8 +113,8 @@ function expectToolSuccess(result: ToolResult): void {
   expect(result.isError).not.toBe(true);
 }
 
-describe('Agent Skills discovery journey', () => {
-  it('discovers a digest-verified skill and executes its exact MCP examples', async () => {
+describe('Agent Skills host protocol journey', () => {
+  it('fetches a digest-verified skill and executes its exact MCP examples', async () => {
     const indexUrl = 'http://localhost/.well-known/agent-skills/index.json';
     const indexResponse = await SELF.fetch(indexUrl);
 

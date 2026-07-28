@@ -28,11 +28,12 @@
  *   node evals/run-benchmark.mjs --agent-cmd './my-adapter.sh' --models gpt-5.4
  *   node evals/run-benchmark.mjs --rescore results.json --out regraded.json
  */
-import { spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { spawn, spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { extractFirstJsonObject } from './oracles/public-changelog-safe.mjs';
 import { scoreExecution } from './score-execution.mjs';
 import { createSession, isReachable, readCompactSession } from './session-harness.mjs';
 
@@ -112,6 +113,7 @@ function parseArgs(argv) {
     mcpBaseUrl: process.env.KEYBOARDIA_BASE_URL ?? 'http://localhost:8787',
     agentCmd: null,
     judgeCmd: null,
+    judgeCmdOverridden: false,
     judgeModel: null,
     judge: true,
   };
@@ -129,10 +131,12 @@ function parseArgs(argv) {
         break;
       case '--judge-agent':
         options.judgeCmd = bundledAdapter(value);
+        options.judgeCmdOverridden = true;
         index += 1;
         break;
       case '--judge-cmd':
         options.judgeCmd = value;
+        options.judgeCmdOverridden = true;
         index += 1;
         break;
       case '--judge-model':
@@ -233,14 +237,79 @@ export function isJudgeAssertion(assertion) {
   return assertion.type === 'judge' || assertion.type === 'rubric';
 }
 
-function scoreObjectiveAssertions(assertions, response) {
+function schemaErrors(value, schema, path = '$') {
+  const errors = [];
+  const expected = schema.type;
+  const matchesType = expected === undefined
+    || (expected === 'object' && value && typeof value === 'object' && !Array.isArray(value))
+    || (expected === 'array' && Array.isArray(value))
+    || (expected === 'string' && typeof value === 'string')
+    || (expected === 'number' && typeof value === 'number' && Number.isFinite(value))
+    || (expected === 'integer' && Number.isInteger(value))
+    || (expected === 'boolean' && typeof value === 'boolean')
+    || (expected === 'null' && value === null);
+  if (!matchesType) return [`${path}: expected ${expected}`];
+  if (expected === 'object') {
+    const properties = schema.properties ?? {};
+    for (const key of schema.required ?? []) {
+      if (!(key in value)) errors.push(`${path}: missing ${key}`);
+    }
+    if (schema.additionalProperties === false) {
+      for (const key of Object.keys(value)) {
+        if (!(key in properties)) errors.push(`${path}: unexpected ${key}`);
+      }
+    }
+    for (const [key, childSchema] of Object.entries(properties)) {
+      if (key in value) errors.push(...schemaErrors(value[key], childSchema, `${path}.${key}`));
+    }
+  }
+  if (expected === 'array' && schema.items) {
+    value.forEach((entry, index) => errors.push(...schemaErrors(entry, schema.items, `${path}[${index}]`)));
+  }
+  return errors;
+}
+
+function runScriptAssertion(assertion, response) {
+  const directory = mkdtempSync(resolve(tmpdir(), 'keyboardia-oracle-'));
+  const outputPath = resolve(directory, 'output.md');
+  try {
+    writeFileSync(outputPath, response);
+    const command = assertion.command.map((part) => String(part)
+      .replaceAll('{output_dir}', directory)
+      .replaceAll('{output_path}', outputPath));
+    const result = spawnSync(command[0], command.slice(1), {
+      cwd: evalsDir,
+      encoding: 'utf8',
+      timeout: (assertion.timeout_s ?? 30) * 1000,
+    });
+    return result.status === (assertion.pass_exit_code ?? 0);
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+}
+
+export function scoreObjectiveAssertions(assertions, response) {
   return assertions.filter((assertion) => !isJudgeAssertion(assertion)).map((assertion) => {
-    const matched = compilePattern(assertion.pattern).test(response);
+    let passed;
+    if (assertion.type === 'regex' || assertion.type === 'not_regex') {
+      const matched = compilePattern(assertion.pattern).test(response);
+      passed = assertion.type === 'not_regex' ? !matched : matched;
+    } else if (assertion.type === 'structured_output') {
+      try {
+        passed = schemaErrors(extractFirstJsonObject(response), assertion.schema).length === 0;
+      } catch {
+        passed = false;
+      }
+    } else if (assertion.type === 'script') {
+      passed = runScriptAssertion(assertion, response);
+    } else {
+      throw new Error(`Unsupported objective assertion type: ${assertion.type}`);
+    }
     return {
       name: assertion.name,
       type: assertion.type,
       severity: assertionSeverity(assertion),
-      passed: assertion.type === 'not_regex' ? !matched : matched,
+      passed,
     };
   });
 }
@@ -279,76 +348,158 @@ async function runExecutionCase({ testCase, casePrompt, model, options }) {
   } catch (error) {
     // A harness-side failure is a non-scorable run, not a model result, and
     // certainly not a reason to discard the rest of the sweep.
-    return { ok: false, error: `setup: ${error.message}` };
+    const message = `setup: ${error.message}`;
+    return {
+      ok: false,
+      scorable: false,
+      error: sessionId ? redactCapability(message, sessionId) : message,
+    };
   }
 
   const prompt = casePrompt.replaceAll('{{session_id}}', sessionId);
-  let result = await runAdapter({
+  const result = await runAdapter({
     command: options.agentCmd,
     prompt,
     model,
     timeoutMs: options.timeoutMs,
   });
   if (!result.ok) {
-    result = await runAdapter({
-      command: options.agentCmd,
-      prompt,
-      model,
-      timeoutMs: options.timeoutMs,
-    });
-  }
-  if (!result.ok) {
-    return { ok: false, error: result.error };
+    // An adapter may have completed edits before its process or output failed.
+    // Retrying against this session would score two attempts as one run.
+    return { ok: false, scorable: false, error: redactCapability(result.error, sessionId) };
   }
 
   let final;
   try {
     final = await readCompactSession(baseUrl, sessionId);
   } catch (error) {
-    return { ok: false, error: `final read: ${error.message}` };
+    return {
+      ok: false,
+      scorable: false,
+      error: redactCapability(`final read: ${error.message}`, sessionId),
+    };
   }
   const assertions = scoreExecution(testCase.assertions ?? [], {
     baseline,
     final,
     trace: result.trace,
   });
+  const recorded = redactCapability({
+    response: result.text,
+    execution: { baseline, final, trace: result.trace ?? [] },
+  }, sessionId);
   return {
     ok: true,
+    scorable: true,
     ...summarizeRun(assertions),
     assertions,
-    response: result.text,
-    // Recorded so the run can be re-scored later with no Worker and no agent.
-    execution: { session_id: sessionId, baseline, final, trace: result.trace ?? [] },
+    response: recorded.response,
+    // Enough to re-score with no Worker or agent, without persisting the live
+    // edit capability that identified the disposable session.
+    execution: recorded.execution,
   };
+}
+
+function regexEscape(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function encodedCapabilityPattern(sessionId) {
+  const source = [...sessionId].map((character) => {
+    const codePoint = character.codePointAt(0);
+    const unicode = `\\\\u${codePoint.toString(16).padStart(4, '0')}`;
+    const percent = `%${codePoint.toString(16).padStart(2, '0')}`;
+    return `(?:${regexEscape(character)}|${unicode}|${percent})`;
+  }).join('');
+  return new RegExp(source, 'gi');
+}
+
+function decodePercentRuns(value) {
+  return value.replace(/(?:%[0-9a-f]{2})+/gi, (encoded) => {
+    try {
+      return decodeURIComponent(encoded);
+    } catch {
+      return encoded;
+    }
+  });
+}
+
+export function redactCapability(value, sessionId) {
+  if (typeof value === 'string') {
+    const pattern = encodedCapabilityPattern(sessionId);
+    const direct = value.replace(pattern, '<redacted-session-id>');
+    if (direct !== value) return direct;
+
+    let decoded = value;
+    while (true) {
+      const next = decodePercentRuns(decoded);
+      if (next === decoded) break;
+      decoded = next;
+    }
+    return decoded.replace(encodedCapabilityPattern(sessionId), '<redacted-session-id>');
+  }
+  if (Array.isArray(value)) {
+    return value.map((entry) => redactCapability(entry, sessionId));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, entry]) => [
+        redactCapability(key, sessionId),
+        redactCapability(entry, sessionId),
+      ])
+    );
+  }
+  return value;
 }
 
 function runAdapter({ command, prompt, model, timeoutMs }) {
   const workspace = mkdtempSync(resolve(tmpdir(), 'keyboardia-eval-'));
   return new Promise((resolvePromise) => {
+    const detached = process.platform !== 'win32';
     const child = spawn(command, {
       shell: true,
       cwd: workspace,
       stdio: ['pipe', 'pipe', 'pipe'],
+      detached,
     });
 
     let stdout = '';
     let stderr = '';
-    const timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs);
+    let timedOut = false;
+    let settled = false;
+    const finish = (value) => {
+      if (settled) return;
+      settled = true;
+      resolvePromise(value);
+    };
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try {
+        if (detached && child.pid) process.kill(-child.pid, 'SIGKILL');
+        else child.kill('SIGKILL');
+      } catch {
+        // The process may have exited between the timer and the signal.
+      }
+    }, timeoutMs);
 
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
     child.on('error', (error) => {
       clearTimeout(timer);
-      resolvePromise({ ok: false, text: '', error: String(error.message ?? error) });
+      finish({ ok: false, text: '', error: String(error.message ?? error) });
     });
     child.on('close', (code) => {
       clearTimeout(timer);
+      if (timedOut) {
+        finish({ ok: false, text: '', error: `adapter timed out after ${timeoutMs}ms` });
+        return;
+      }
       if (code !== 0) {
-        resolvePromise({ ok: false, text: '', error: stderr.trim() || `adapter exited ${code}` });
+        finish({ ok: false, text: '', error: stderr.trim() || `adapter exited ${code}` });
         return;
       }
       const { answer, trace } = extractAnswer(stdout);
-      resolvePromise({ ok: true, text: answer, trace });
+      finish({ ok: true, text: answer, trace });
     });
 
     child.stdin.end(JSON.stringify({ prompt, model: model ?? null, workspace }));
@@ -529,7 +680,7 @@ function scoreTrigger(testCase, response, skillName) {
   return { selected, loaded, shouldLoad, passed: loaded === shouldLoad };
 }
 
-async function judgeRun({ testCase, casePrompt, answer, options }) {
+async function judgeRun({ testCase, casePrompt, answer, model, options }) {
   const judged = [];
   for (const assertion of testCase.assertions ?? []) {
     if (!isJudgeAssertion(assertion)) {
@@ -537,13 +688,14 @@ async function judgeRun({ testCase, casePrompt, answer, options }) {
     }
     const severity = assertionSeverity(assertion);
     if (!options.judge) {
-      judged.push({ name: assertion.name, type: assertion.type, severity, skipped: true, passed: true });
+      // A skipped security/process gate is unknown, never a silent pass.
+      judged.push({ name: assertion.name, type: assertion.type, severity, skipped: true, passed: null });
       continue;
     }
     const result = await runAdapter({
       command: options.judgeCmd,
       prompt: buildJudgePrompt(assertion, casePrompt, answer),
-      model: options.judgeModel,
+      model: resolveJudgeModel(options.judgeModel, model, options.judgeCmdOverridden),
       timeoutMs: options.timeoutMs,
     });
     const verdict = result.ok ? parseJudgeVerdict(result.text, assertion) : null;
@@ -559,6 +711,10 @@ async function judgeRun({ testCase, casePrompt, answer, options }) {
     });
   }
   return judged;
+}
+
+export function resolveJudgeModel(configuredModel, evaluatedModel, judgeCmdOverridden = false) {
+  return configuredModel ?? (judgeCmdOverridden ? null : evaluatedModel);
 }
 
 async function main() {
@@ -683,7 +839,7 @@ async function main() {
     );
 
     if (!result.ok) {
-      return { ...base, ok: false, error: result.error };
+      return { ...base, ok: false, scorable: false, error: result.error };
     }
 
     if (isTrigger) {
@@ -696,6 +852,7 @@ async function main() {
       testCase: job.testCase,
       casePrompt,
       answer: result.text,
+      model: job.model,
       options,
     });
     const assertions = [...objective, ...judged];
@@ -753,9 +910,25 @@ function rate(passed, total) {
   return total === 0 ? null : passed / total;
 }
 
-function summarize(runs, options, manifest) {
-  const answer = runs.filter((run) => run.kind !== 'trigger' && run.ok);
-  const trigger = runs.filter((run) => run.kind === 'trigger' && run.ok);
+export function summarize(runs, options, manifest) {
+  const comparisonKey = (run) => JSON.stringify([
+    run.model ?? null,
+    run.case,
+    run.split ?? 'tune',
+    run.repeat ?? 0,
+  ]);
+  const unscorablePairKeys = new Set(
+    runs
+      .filter((run) => run.kind !== 'trigger' && run.scorable === false)
+      .map(comparisonKey)
+  );
+  // If infrastructure prevents either arm from being observed, exclude its
+  // matched counterpart too. An adapter error has no trustworthy model result,
+  // so it cannot be used to create lift in either direction.
+  const answer = runs.filter((run) =>
+    run.kind !== 'trigger' && !unscorablePairKeys.has(comparisonKey(run)));
+  const successfulAnswers = answer.filter((run) => run.ok);
+  const trigger = runs.filter((run) => run.kind === 'trigger');
   const models = options.models ?? [...new Set(runs.map((run) => run.model))];
 
   const byModel = models.map((model) => {
@@ -766,7 +939,9 @@ function summarize(runs, options, manifest) {
       variants[variant] = {
         runs: subset.length,
         casePassRate: rate(subset.filter((run) => run.passed).length, subset.length),
-        assertionPassRate: mean(subset.map((run) => run.passRate)),
+        // A provider failure is a failed sample, not a hard case that vanishes
+        // from one arm's denominator.
+        assertionPassRate: mean(subset.map((run) => run.ok ? run.passRate : 0)),
         gradedScore: mean(subset.map((run) => run.gradedScore)),
       };
     }
@@ -787,7 +962,7 @@ function summarize(runs, options, manifest) {
   });
 
   const assertionBreakdown = {};
-  for (const run of answer) {
+  for (const run of successfulAnswers) {
     for (const assertion of run.assertions ?? []) {
       const key = `${run.case}:${assertion.name}`;
       assertionBreakdown[key] ??= {};
@@ -809,7 +984,7 @@ function summarize(runs, options, manifest) {
   //   saturated case or a broken assertion, and is worth opening.
   const guardTypes = new Set(['not_regex']);
   const typeOf = new Map();
-  for (const run of answer) {
+  for (const run of successfulAnswers) {
     for (const assertion of run.assertions ?? []) {
       typeOf.set(`${run.case}:${assertion.name}`, assertion.type);
     }
@@ -834,6 +1009,7 @@ function summarize(runs, options, manifest) {
     assertionBreakdown,
     nonDiscriminating,
     holdingGuards,
+    unscorablePairs: unscorablePairKeys.size,
     splits: [...new Set(runs.map((run) => run.split))],
     errors: runs.filter((run) => !run.ok).length,
   };
@@ -891,7 +1067,10 @@ function renderSummary(summary, options) {
     lines.push('', `${summary.holdingGuards.length} regression guard(s) holding at 100% in both arms.`);
   }
   if (summary.errors > 0) {
-    lines.push('', `${summary.errors} agent call(s) failed after one retry.`);
+    lines.push('', `${summary.errors} run(s) failed.`);
+  }
+  if (summary.unscorablePairs > 0) {
+    lines.push(`${summary.unscorablePairs} matched pair(s) excluded after an infrastructure failure.`);
   }
   lines.push('', `splits=${summary.splits.join(',')} repeats=${options.repeats} concurrency=${options.concurrency}`);
   return lines.join('\n');

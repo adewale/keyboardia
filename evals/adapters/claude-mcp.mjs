@@ -10,7 +10,8 @@
  * Contract (the same one every adapter speaks; `trace` is an optional field the
  * contract already carries):
  *   stdin   {"prompt": string, "model": string|null, "workspace": string}
- *   stdout  {"answer": string, "trace": [{"name": string, "arguments": object}]}
+ *   stdout  {"answer": string, "trace": [{"name": string, "arguments": object,
+ *             "success": boolean}]}
  *
  * Nothing here is Claude-specific except the argv and the stream parsing. Any
  * MCP-capable client can supply the same envelope; the runner does not care
@@ -21,6 +22,8 @@
  *   KEYBOARDIA_CLAUDE_BIN  override the executable
  */
 import { spawn } from 'node:child_process';
+import { toolResultSucceeded } from './mcp-trace.mjs';
+import { numericUsage } from './usage.mjs';
 
 const binary = process.env.KEYBOARDIA_CLAUDE_BIN ?? 'claude';
 const endpoint = process.env.KEYBOARDIA_MCP_URL ?? 'http://localhost:8787/mcp';
@@ -69,6 +72,7 @@ child.on('close', (code) => {
     process.exit(code ?? 1);
   }
   const trace = [];
+  const byToolUseId = new Map();
   let answer = '';
   let usage;
 
@@ -89,16 +93,25 @@ child.on('close', (code) => {
         // decision the skill influences, and counting it would corrupt any
         // call-count assertion.
         if (block.type === 'tool_use' && String(block.name).startsWith('mcp__keyboardia__')) {
-          trace.push({
+          const call = {
             name: String(block.name).replace('mcp__keyboardia__', ''),
             arguments: block.input ?? {},
-          });
+            success: null,
+          };
+          trace.push(call);
+          if (block.id) byToolUseId.set(block.id, call);
         }
+      }
+    }
+    if (event.type === 'user') {
+      for (const block of event.message?.content ?? []) {
+        if (block.type !== 'tool_result' || !byToolUseId.has(block.tool_use_id)) continue;
+        byToolUseId.get(block.tool_use_id).success = toolResultSucceeded(block);
       }
     }
     if (event.type === 'result') {
       answer = String(event.result ?? '');
-      usage = event.usage;
+      usage = numericUsage(event.usage);
     }
   }
 
