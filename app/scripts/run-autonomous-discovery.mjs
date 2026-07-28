@@ -208,6 +208,7 @@ async function main() {
   mkdirSync(workspace, { recursive: true });
   let worker;
   let workerStderr = '';
+  let completed = false;
   try {
     if (!options.skipBuild) {
       const built = spawnSync('npm', ['run', 'build'], {
@@ -306,13 +307,18 @@ async function main() {
     const output = options.out ?? resolve(tmpdir(), `keyboardia-autonomous-${options.model}-${Date.now()}.json`);
     mkdirSync(dirname(output), { recursive: true });
     writeFileSync(output, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 });
+    completed = true;
     process.stdout.write(`Autonomous discovery: PASS (${validation.event_count} events)\n${output}\n`);
   } catch (error) {
     const detail = workerStderr.trim() ? `\nWrangler: ${workerStderr.slice(-1000)}` : '';
     throw new Error(`${error.message}${detail}`);
   } finally {
     await stopWorker(worker);
-    rmSync(tempRoot, { recursive: true, force: true });
+    if (!completed && process.env.KEYBOARDIA_KEEP_AUTONOMOUS_TEMP === '1') {
+      process.stderr.write(`Preserved failed autonomous run at ${tempRoot}\n`);
+    } else {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
   }
 }
 
