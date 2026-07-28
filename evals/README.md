@@ -96,11 +96,20 @@ an answer cannot move a score — `app/test/eval-execution.test.ts` holds that
 line, along with the scorer's failure modes.
 
 ```bash
-cd app && npx wrangler dev --port 8787 --local     # in one shell
+# in one shell. Session creation is rate limited to 10/minute in production
+# defaults, and a sweep creates one session per run, so raise it locally.
+cd app && npx wrangler dev --port 8787 --local \
+  --var SESSION_CREATE_RATE_LIMIT_PER_MINUTE:2000 \
+  --var MCP_RATE_LIMIT_PER_MINUTE:2000
+
 node evals/run-benchmark.mjs \
   --manifest evals/execution-benchmark.json \
   --agent claude-mcp --models claude-sonnet-5 --no-judge
 ```
+
+The harness honours a 429's `retryAfter` and backs off regardless, so an
+unraised limit makes a sweep slow rather than broken. A setup failure is
+recorded as a non-scorable run and never aborts the sweep.
 
 `--rescore` replays a recorded run from its stored baseline, final state, and
 trace, so an assertion edit is re-measured on identical evidence with no Worker

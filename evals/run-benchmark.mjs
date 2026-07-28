@@ -271,8 +271,16 @@ export function summarizeRun(assertions) {
  */
 async function runExecutionCase({ testCase, casePrompt, model, options }) {
   const baseUrl = options.mcpBaseUrl;
-  const sessionId = await createSession(baseUrl, testCase.setup);
-  const baseline = await readCompactSession(baseUrl, sessionId);
+  let sessionId;
+  let baseline;
+  try {
+    sessionId = await createSession(baseUrl, testCase.setup);
+    baseline = await readCompactSession(baseUrl, sessionId);
+  } catch (error) {
+    // A harness-side failure is a non-scorable run, not a model result, and
+    // certainly not a reason to discard the rest of the sweep.
+    return { ok: false, error: `setup: ${error.message}` };
+  }
 
   const prompt = casePrompt.replaceAll('{{session_id}}', sessionId);
   let result = await runAdapter({
@@ -293,7 +301,12 @@ async function runExecutionCase({ testCase, casePrompt, model, options }) {
     return { ok: false, error: result.error };
   }
 
-  const final = await readCompactSession(baseUrl, sessionId);
+  let final;
+  try {
+    final = await readCompactSession(baseUrl, sessionId);
+  } catch (error) {
+    return { ok: false, error: `final read: ${error.message}` };
+  }
   const assertions = scoreExecution(testCase.assertions ?? [], {
     baseline,
     final,

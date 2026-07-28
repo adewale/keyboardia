@@ -35,24 +35,64 @@ function buildTrack({ id, name, sample_id, active_steps = [], step_count = DEFAU
   };
 }
 
-export async function createSession(baseUrl, setup) {
-  const response = await fetch(new URL('/api/sessions', baseUrl), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      name: setup.name ?? 'eval session',
-      state: {
-        tracks: (setup.tracks ?? []).map(buildTrack),
-        tempo: setup.tempo ?? 120,
-        swing: 0,
-        version: 1,
-      },
-    }),
-  });
-  if (!response.ok) {
-    throw new Error(`create session failed: ${response.status} ${await response.text()}`);
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/**
+ * Every Keyboardia endpoint an execution sweep touches is rate limited per IP,
+ * and a sweep is exactly the traffic shape those limits exist to stop. Honour
+ * the server's own retry hint instead of treating throttling as a result: a
+ * throttled eval should be slow, never wrong.
+ */
+async function withRetry(label, attempts, send) {
+  let lastError = '';
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    const response = await send();
+    const text = await response.text();
+    if (response.ok && !text.includes('"RATE_LIMITED"')) {
+      return text;
+    }
+    lastError = `${response.status} ${text.slice(0, 160)}`;
+    const throttled = response.status === 429 || text.includes('"RATE_LIMITED"');
+    if (!throttled) {
+      break;
+    }
+    let waitMs = 1000 * 2 ** attempt;
+    try {
+      const { retryAfter } = JSON.parse(text);
+      if (Number.isFinite(retryAfter)) {
+        waitMs = Math.max(waitMs, (retryAfter + 1) * 1000);
+      }
+    } catch {
+      // fall back to the backoff above
+    }
+    await sleep(waitMs);
   }
-  return (await response.json()).id;
+  throw new Error(`${label} failed: ${lastError}`);
+}
+
+/**
+ * Session creation is rate limited, and an execution sweep creates one session
+ * per run. Honour the server's own `retryAfter` rather than hammering it: a
+ * throttled eval should take longer, not report failures that are really the
+ * harness's impatience.
+ */
+export async function createSession(baseUrl, setup, { attempts = 8 } = {}) {
+  const body = JSON.stringify({
+    name: setup.name ?? 'eval session',
+    state: {
+      tracks: (setup.tracks ?? []).map(buildTrack),
+      tempo: setup.tempo ?? 120,
+      swing: 0,
+      version: 1,
+    },
+  });
+  const text = await withRetry('create session', attempts, () =>
+    fetch(new URL('/api/sessions', baseUrl), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body,
+    }));
+  return JSON.parse(text).id;
 }
 
 /**
@@ -60,21 +100,22 @@ export async function createSession(baseUrl, setup) {
  * the same compact shape the agent saw rather than a parallel REST projection
  * that could drift from it.
  */
-export async function readCompactSession(baseUrl, sessionId) {
-  const response = await fetch(new URL('/mcp', baseUrl), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Accept: 'application/json, text/event-stream',
-    },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: 1,
-      method: 'tools/call',
-      params: { name: 'get_session', arguments: { session_id: sessionId } },
-    }),
-  });
-  const text = await response.text();
+export async function readCompactSession(baseUrl, sessionId, { attempts = 8 } = {}) {
+  const text = await withRetry('get_session', attempts, () =>
+    fetch(new URL('/mcp', baseUrl), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: { name: 'get_session', arguments: { session_id: sessionId } },
+      }),
+    }));
+
   // The endpoint answers as SSE; the payload is the last `data:` line.
   const payloads = text.split('\n')
     .filter((line) => line.startsWith('data:'))
