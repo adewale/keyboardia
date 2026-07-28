@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   sanitizeForReceipt,
   validateAutonomousReceipt,
+  validateAutonomousReceipt,
   validateAutonomousTrace,
   validateOriginOnlyPrompt,
 } from '../scripts/autonomous-discovery-validator.mjs';
@@ -204,15 +205,36 @@ describe('autonomous discovery trace oracle', () => {
       .toThrow(/target path/);
   });
 
+  it('rejects a receipt whose exact prompt or trace hash drifted', () => {
+    const prompt = `The only location you know is:\n${ORIGIN}\n\nUse the Agent Skills discovery standard.`;
+    const trace = validTrace();
+    const receipt = {
+      target_mcp_preconfigured: false,
+      origin: ORIGIN,
+      prompt,
+      prompt_sha256: createHash('sha256').update(prompt).digest('hex'),
+      trace,
+      trace_sha256: createHash('sha256').update(JSON.stringify(trace)).digest('hex'),
+      adapter_argv: ['--tools', 'ToolSearch'],
+    };
+    expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
+    expect(() => validateAutonomousReceipt({ ...receipt, prompt_sha256: '0'.repeat(64) }))
+      .toThrow(/prompt SHA-256/);
+    expect(() => validateAutonomousReceipt({ ...receipt, trace_sha256: '0'.repeat(64) }))
+      .toThrow(/trace SHA-256/);
+  });
+
   it('binds the exact origin-only prompt into the receipt', () => {
     const prompt = `The only site location you know is:\n${ORIGIN}\n\nDiscover its standards-based agent instructions and verify exact bytes before acting.`;
+    const trace = validTrace();
     const receipt = {
       target_mcp_preconfigured: false,
       origin: ORIGIN,
       prompt,
       prompt_sha256: createHash('sha256').update(prompt).digest('hex'),
       adapter_argv: ['--strict-mcp-config', 'generic-discovery-transport'],
-      trace: validTrace(),
+      trace,
+      trace_sha256: createHash('sha256').update(JSON.stringify(trace)).digest('hex'),
     };
     expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
     receipt.prompt_sha256 = '0'.repeat(64);

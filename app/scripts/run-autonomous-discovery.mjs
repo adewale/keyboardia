@@ -236,7 +236,7 @@ async function main() {
       created_at: new Date().toISOString(),
       origin,
       prompt,
-      prompt_sha256: transcriptHash(prompt),
+      prompt_sha256: createHash('sha256').update(prompt).digest('hex'),
       agent: { adapter: 'claude-discovery', model: options.model, usage: run.value.usage ?? null },
       source,
       validation: sanitizedValidation,

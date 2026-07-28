@@ -214,6 +214,9 @@ export function validateAutonomousReceipt(receipt) {
   validateOriginOnlyPrompt(receipt.prompt, { origin: receipt.origin });
   invariant(receipt.prompt_sha256 === createHash('sha256').update(receipt.prompt).digest('hex'),
     'prompt SHA-256 does not match the recorded prompt');
+  invariant(receipt.trace_sha256 === createHash('sha256')
+    .update(JSON.stringify(receipt.trace)).digest('hex'),
+  'trace SHA-256 does not match the recorded trace');
   const targetEndpoint = new URL('/mcp', receipt.origin).href;
   const argv = JSON.stringify(receipt.adapter_argv ?? []);
   invariant(!argv.includes(targetEndpoint), 'adapter argv preconfigured the target endpoint');
