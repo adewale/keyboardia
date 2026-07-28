@@ -5500,7 +5500,8 @@ constructors, getters, and IIFEs, while recognizing locally shadowed names and
 erased ambient declarations. Instead of maintaining a partial browser API list,
 the guard derives runtime values and namespaces from TypeScript's DOM and Web
 Worker libraries and subtracts ECMAScript plus the values declared by the
-installed Cloudflare Workers types. Source-declared ambient runtime values are
+installed Cloudflare Workers types. Ambient runtime values declared inline,
+inside `declare global` augmentations, or by project `.d.ts` files are
 capabilities too. Unapproved `globalThis`/`self` roots are rejected at their
 source, so aliases, assignment destructuring, default parameters, and expression
 wrappers cannot bypass a property-taint list. Syntax-only identifiers such as

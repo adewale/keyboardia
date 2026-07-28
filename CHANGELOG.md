@@ -40,12 +40,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Runtime safety uses symbol-aware AST checks over every neutral-owned module,
   deriving browser-only runtime values and namespaces from TypeScript's
   DOM/Worker libraries, then subtracting ECMAScript and installed workerd
-  globals. It catches browser APIs and source-declared ambient values in
-  callbacks, constructors, getters, and IIFEs without mistaking runtime locals,
-  labels, binding property names, or erased declarations for reads. Neutral
-  modules reject unapproved global-object access and every `import.meta`
-  capability, including Vite glob loading, rather than relying on incomplete
-  alias tainting.
+  globals. It catches browser APIs and ambient values declared inline, inside
+  `declare global` augmentations, or by project declaration files in callbacks,
+  constructors, getters, and IIFEs without mistaking runtime locals, labels,
+  binding property names, or erased declarations for reads. Neutral modules
+  reject unapproved global-object access and every `import.meta` capability,
+  including Vite glob loading, rather than relying on incomplete alias tainting.
 - A real Chromium test constructs `midiExport.worker.ts`, receives its response,
   downloads the result, and verifies a non-trivial Standard MIDI `MThd` header.
 - The real-Wrangler MCP lifecycle now invokes `export_midi` and validates its

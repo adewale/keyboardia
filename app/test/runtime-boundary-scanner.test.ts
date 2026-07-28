@@ -15,6 +15,9 @@ import {
 import { fileURLToPath } from 'node:url';
 
 const SRC_ROOT = fileURLToPath(new URL('../src/', import.meta.url));
+const AMBIENT_FIXTURE_ROOT = fileURLToPath(
+  new URL('./fixtures/runtime-boundary/', import.meta.url),
+);
 
 describe('runtime boundary scanner', () => {
   it('parses imports as syntax rather than matching comments and strings', () => {
@@ -374,6 +377,33 @@ describe('runtime boundary scanner', () => {
     `);
 
     expect(offenders.map(({ global }) => global)).toEqual(['CSS', 'chrome']);
+  });
+
+  it('finds runtime capabilities declared inside global augmentations', () => {
+    const source = `
+      export {};
+      declare global {
+        const chrome: { runtime: unknown };
+        const window: { document: unknown };
+      }
+      void chrome.runtime;
+      void window.document;
+    `;
+
+    expect(findBrowserGlobalReferences(source).map(({ global }) => global))
+      .toEqual(['chrome', 'window']);
+    expect(findModuleEvaluationBrowserGlobals(source).map(({ global }) => global))
+      .toEqual(['chrome', 'window']);
+  });
+
+  it('finds runtime capabilities supplied by project declaration files', () => {
+    const offenders = findBrowserGlobalReferences(
+      'void browserSdk.version;',
+      'module.ts',
+      { ambientDeclarationRoots: [AMBIENT_FIXTURE_ROOT] },
+    );
+
+    expect(offenders.map(({ global }) => global)).toEqual(['browserSdk']);
   });
 
   it('does not confuse ECMAScript globals, labels, or local globalThis bindings with browser APIs', () => {

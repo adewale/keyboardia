@@ -581,6 +581,68 @@ export function findResourceImportViolations(policy: ResourceImportPolicy): stri
     .sort();
 }
 
+function hasAmbientContext(node: ts.Node): boolean {
+  if (node.getSourceFile().isDeclarationFile) return true;
+  for (let current: ts.Node | undefined = node; current; current = current.parent) {
+    if (ts.canHaveModifiers(current)
+      && ts.getModifiers(current)?.some(modifier =>
+        modifier.kind === ts.SyntaxKind.DeclareKeyword)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function ambientRuntimeValueNames(
+  sourceFile: ts.SourceFile,
+  includeExternalModuleTopLevel: boolean,
+): Set<string> {
+  const values = new Set<string>();
+  const includeTopLevel = includeExternalModuleTopLevel || !ts.isExternalModule(sourceFile);
+
+  const collect = (
+    statements: ts.NodeArray<ts.Statement>,
+    insideGlobalAugmentation: boolean,
+  ): void => {
+    const visible = includeTopLevel || insideGlobalAugmentation;
+    for (const statement of statements) {
+      if (ts.isVariableStatement(statement)) {
+        if (!visible) continue;
+        for (const declaration of statement.declarationList.declarations) {
+          if (hasAmbientContext(declaration)) addBindingNames(declaration.name, values);
+        }
+        continue;
+      }
+      if ((ts.isFunctionDeclaration(statement)
+          || ts.isClassDeclaration(statement)
+          || ts.isEnumDeclaration(statement))
+        && visible
+        && statement.name
+        && hasAmbientContext(statement)) {
+        values.add(statement.name.text);
+        continue;
+      }
+      if (!ts.isModuleDeclaration(statement)) continue;
+
+      const isGlobalAugmentation = (statement.flags & ts.NodeFlags.GlobalAugmentation) !== 0;
+      if (isGlobalAugmentation) {
+        if (statement.body && ts.isModuleBlock(statement.body)) {
+          collect(statement.body.statements, true);
+        }
+        continue;
+      }
+      if (visible
+        && ts.isIdentifier(statement.name)
+        && hasAmbientContext(statement)) {
+        values.add(statement.name.text);
+      }
+    }
+  };
+
+  collect(sourceFile.statements, false);
+  return values;
+}
+
 function ambientRuntimeValues(fileName: string): Set<string> {
   const source = readFileSync(fileName, 'utf8');
   const sourceFile = ts.createSourceFile(
@@ -590,23 +652,22 @@ function ambientRuntimeValues(fileName: string): Set<string> {
     true,
     ts.ScriptKind.TS,
   );
+  return ambientRuntimeValueNames(sourceFile, false);
+}
+
+function declarationFiles(directory: string): string[] {
+  return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
+    const path = resolve(directory, entry.name);
+    if (entry.isDirectory()) return declarationFiles(path);
+    return /\.d\.(?:[cm]?ts|tsx)$/.test(entry.name) ? [path] : [];
+  });
+}
+
+function ambientRuntimeValuesUnder(roots: readonly string[]): Set<string> {
   const values = new Set<string>();
-  for (const statement of sourceFile.statements) {
-    if (ts.isVariableStatement(statement)) {
-      for (const declaration of statement.declarationList.declarations) {
-        if (ts.isIdentifier(declaration.name)) values.add(declaration.name.text);
-      }
-      continue;
-    }
-    if ((ts.isFunctionDeclaration(statement)
-        || ts.isClassDeclaration(statement)
-        || ts.isEnumDeclaration(statement))
-      && statement.name) {
-      values.add(statement.name.text);
-      continue;
-    }
-    if (ts.isModuleDeclaration(statement) && ts.isIdentifier(statement.name)) {
-      values.add(statement.name.text);
+  for (const root of roots) {
+    for (const fileName of declarationFiles(root)) {
+      for (const value of ambientRuntimeValues(fileName)) values.add(value);
     }
   }
   return values;
@@ -617,6 +678,7 @@ function browserGlobalsUnavailableInWorkerd(): Set<string> {
   const browserGlobals = new Set([
     ...ambientRuntimeValues(resolve(typescriptLib, 'lib.dom.d.ts')),
     ...ambientRuntimeValues(resolve(typescriptLib, 'lib.webworker.d.ts')),
+    ...ambientRuntimeValuesUnder([resolve(APP_ROOT, 'src')]),
   ]);
   const workerdGlobals = ambientRuntimeValues(resolve(
     APP_ROOT,
@@ -653,6 +715,11 @@ export interface BrowserGlobalReference {
   column: number;
 }
 
+export interface BrowserGlobalAnalysisOptions {
+  /** Additional project declaration roots, used by scanner contract tests. */
+  ambientDeclarationRoots?: readonly string[];
+}
+
 function isPropertyName(node: ts.Identifier): boolean {
   const parent = node.parent;
   if (ts.isPropertyAccessExpression(parent) && parent.name === node) return true;
@@ -673,8 +740,7 @@ function isDeclarationName(node: ts.Identifier): boolean {
 }
 
 function declarationCreatesRuntimeBinding(declaration: ts.Declaration): boolean {
-  if (declaration.getSourceFile().isDeclarationFile) return false;
-  return (ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Ambient) === 0;
+  return !hasAmbientContext(declaration);
 }
 
 function addBindingNames(name: ts.BindingName, names: Set<string>): void {
@@ -731,27 +797,7 @@ function moduleScopeRuntimeBindingNames(sourceFile: ts.SourceFile): Set<string> 
 }
 
 function sourceAmbientRuntimeValueNames(sourceFile: ts.SourceFile): Set<string> {
-  const names = new Set<string>();
-  for (const statement of sourceFile.statements) {
-    if (ts.isVariableStatement(statement)) {
-      for (const declaration of statement.declarationList.declarations) {
-        if (!declarationCreatesRuntimeBinding(declaration)) {
-          addBindingNames(declaration.name, names);
-        }
-      }
-      continue;
-    }
-    if ((ts.isFunctionDeclaration(statement)
-        || ts.isClassDeclaration(statement)
-        || ts.isEnumDeclaration(statement)
-        || ts.isModuleDeclaration(statement))
-      && statement.name
-      && ts.isIdentifier(statement.name)
-      && !declarationCreatesRuntimeBinding(statement)) {
-      names.add(statement.name.text);
-    }
-  }
-  return names;
+  return ambientRuntimeValueNames(sourceFile, true);
 }
 
 function isImmediatelyInvokedFunction(node: ts.FunctionLikeDeclaration): boolean {
@@ -783,6 +829,7 @@ function analyzeBrowserGlobals(
   source: string,
   fileName: string,
   includeDeferredFunctions: boolean,
+  options: BrowserGlobalAnalysisOptions,
 ): BrowserGlobalReference[] {
   const absoluteFileName = resolve(APP_ROOT, fileName);
   const sourceFile = ts.createSourceFile(
@@ -814,6 +861,10 @@ function analyzeBrowserGlobals(
   const checker = program.getTypeChecker();
   const moduleRuntimeBindings = moduleScopeRuntimeBindingNames(sourceFile);
   const sourceAmbientValues = sourceAmbientRuntimeValueNames(sourceFile);
+  const runtimeGlobals = new Set([
+    ...BROWSER_GLOBALS,
+    ...ambientRuntimeValuesUnder(options.ambientDeclarationRoots ?? []),
+  ]);
   const references: BrowserGlobalReference[] = [];
 
   const add = (global: string, node: ts.Node): void => {
@@ -848,7 +899,7 @@ function analyzeBrowserGlobals(
         const global = ts.isIdentifier(property) || ts.isStringLiteral(property)
           ? property.text
           : null;
-        if (global && BROWSER_GLOBALS.has(global)) add(global, element);
+        if (global && runtimeGlobals.has(global)) add(global, element);
       }
       return;
     }
@@ -856,7 +907,7 @@ function analyzeBrowserGlobals(
       && ts.isIdentifier(node.expression)
       && node.expression.text === 'globalThis'
       && isUnshadowed(node.expression)
-      && BROWSER_GLOBALS.has(node.name.text)) {
+      && runtimeGlobals.has(node.name.text)) {
       add(node.name.text, node);
       return;
     }
@@ -865,13 +916,13 @@ function analyzeBrowserGlobals(
       && node.expression.text === 'globalThis'
       && isUnshadowed(node.expression)) {
       const global = stringLiteralText(node.argumentExpression);
-      if (global && BROWSER_GLOBALS.has(global)) {
+      if (global && runtimeGlobals.has(global)) {
         add(global, node);
         return;
       }
     }
     if (ts.isIdentifier(node)
-      && (BROWSER_GLOBALS.has(node.text) || sourceAmbientValues.has(node.text))
+      && (runtimeGlobals.has(node.text) || sourceAmbientValues.has(node.text))
       && !isPropertyName(node)
       && !isDeclarationName(node)
       && isUnshadowed(node)) {
@@ -889,16 +940,18 @@ function analyzeBrowserGlobals(
 export function findBrowserGlobalReferences(
   source: string,
   fileName = 'module.ts',
+  options: BrowserGlobalAnalysisOptions = {},
 ): BrowserGlobalReference[] {
-  return analyzeBrowserGlobals(source, fileName, true);
+  return analyzeBrowserGlobals(source, fileName, true, options);
 }
 
 /** Finds browser-only globals that are read while a module is being evaluated. */
 export function findModuleEvaluationBrowserGlobals(
   source: string,
   fileName = 'module.ts',
+  options: BrowserGlobalAnalysisOptions = {},
 ): BrowserGlobalReference[] {
-  return analyzeBrowserGlobals(source, fileName, false);
+  return analyzeBrowserGlobals(source, fileName, false, options);
 }
 
 function isImportMeta(node: ts.Node | undefined): node is ts.MetaProperty {
