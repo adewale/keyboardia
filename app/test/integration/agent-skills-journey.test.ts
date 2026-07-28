@@ -149,7 +149,7 @@ describe('Agent Skills discovery journey', () => {
     const mcpEndpoint = extractMcpEndpoint(skill);
     const toolNames = extractToolNames(skill);
     expect(mcpEndpoint.href).toBe('https://keyboardia.dev/mcp');
-    expect(toolNames).toHaveLength(2);
+    expect(toolNames.length).toBeGreaterThan(0);
 
     const head = await SELF.fetch(indexUrl, { method: 'HEAD' });
     expect(head.status).toBe(200);
@@ -164,7 +164,14 @@ describe('Agent Skills discovery journey', () => {
       .slice(0, 12);
     const client = await connectAgent(mcpEndpoint, indexUrl);
     const listed = await client.listTools();
-    expect(listed.tools.map(({ name }) => name)).toEqual(toolNames);
+    // Every tool the skill gives payloads for must exist on the server. This is
+    // deliberately a subset check, not an equality one: the server may grow
+    // tools the skill does not walk through, and pinning the full surface here
+    // only guarantees this test breaks every time the product ships something.
+    const live = new Set(listed.tools.map(({ name }) => name));
+    for (const name of toolNames) {
+      expect(live.has(name), `skill documents a tool the server does not expose: ${name}`).toBe(true);
+    }
 
     const [readToolName, editToolName] = toolNames;
 

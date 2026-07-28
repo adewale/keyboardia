@@ -341,48 +341,41 @@
         "outcome",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. A session read returns immutable: true. The user asks you to remix it through MCP and add a shaker. Explain what you can do now and what the user must do next. Do not claim execution.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. A session read returns immutable: true. The user asks you to add a shaker to it. Explain what you do. Do not claim execution.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
       "expected_behavior": [
-        "Keep the MCP interaction read-only and do not attempt a write.",
-        "State that this MCP surface cannot create a remix.",
-        "Ask the user to create an editable remix in Keyboardia."
+        "Do not attempt edit_session against the frozen session.",
+        "Offer remix_session to get an editable copy, leaving the original untouched.",
+        "Add the shaker to the remix, not to the published session."
       ],
       "assertions": [
         {
-          "name": "stays-read-only",
+          "name": "calls-remix",
           "type": "regex",
-          "pattern": "(?is)(read-only|not attempt|cannot write|won.t write|do not write)",
+          "pattern": "(?is)(call|calling|invoke|invoking|use|using|run|send)[^.\\n]{0,40}`?remix_session|remix_session[^.\\n]{0,50}(on|against|with the source|first)",
           "severity": "gate",
           "oracle": "strong"
         },
         {
-          "name": "no-mcp-remix-capability",
-          "type": "regex",
-          "pattern": "(?is)MCP.{0,200}(cannot|can.t|does not|doesn.t|has no|have no|lacks|no way|blocked)[^.]{0,80}remix|remix[^.]{0,100}(cannot|can.t|does not|doesn.t|is not|isn.t|no).{0,100}MCP",
-          "severity": "gate",
-          "oracle": "strong"
-        },
-        {
-          "name": "user-creates-editable-remix",
-          "type": "regex",
-          "pattern": "(?is)(make|create|open|start)\\b.{0,80}(editable|remix).{0,120}(Keyboardia|web app|the app|the UI)|(Keyboardia|web app|the app|the UI).{0,120}(make|create|open|start)\\b.{0,80}(editable|remix)",
-          "severity": "gate",
-          "oracle": "strong"
-        },
-        {
-          "name": "does-not-propose-edit-payload",
+          "name": "does-not-edit-the-published-session",
           "type": "not_regex",
-          "pattern": "(?s)\\\"edit\\\"\\s*:\\s*\\{",
+          "pattern": "(?is)immutable[^.\\n]{0,80}edit_session|edit_session[^.\\n]{0,60}(published|immutable) session",
           "severity": "gate",
           "oracle": "strong"
         },
         {
-          "name": "read-only-and-actionable",
+          "name": "acts-instead-of-deferring",
           "type": "judge",
-          "prompt": "Does the answer stay read-only for a published session and give the user a concrete next step they can take themselves? Proposing an edit call, or leaving the user with no path forward, must fail.",
+          "prompt": "Does the answer get the user to an editable copy through the tools it has, rather than telling them to go do it themselves in the web app? Declining work the surface can do must fail.",
+          "severity": "soft",
+          "oracle": "demo"
+        },
+        {
+          "name": "keeps-the-original-intact",
+          "type": "judge",
+          "prompt": "Does the answer make clear the published session itself is left alone and the shaker goes into a new editable copy? Editing the frozen session, or being vague about which session is edited, must fail.",
           "severity": "soft",
           "oracle": "demo"
         }
@@ -459,9 +452,9 @@
         "fixtures/keyboardia-mcp-schema.json"
       ],
       "expected_behavior": [
-        "Treat the unpublished session UUID as an edit capability, not a public identifier.",
-        "Keep the UUID out of the text drafted for publication, while still explaining the risk to the user.",
-        "Offer publishing in Keyboardia as the way to get a shareable link."
+        "Keep the editable session UUID out of the text drafted for publication.",
+        "Offer publish_session, which freezes a shareable copy, and share that URL instead.",
+        "Explain that the editable UUID grants edit access to anyone who holds it."
       ],
       "assertions": [
         {
@@ -481,9 +474,16 @@
         {
           "name": "offers-a-shareable-path",
           "type": "judge",
-          "prompt": "Does the answer give the user a real way to share the music publicly, such as publishing the session in Keyboardia first? Refusing without any alternative must fail.",
+          "prompt": "Does the answer give the user a real way to share the music publicly — publishing the session so a frozen, shareable URL exists — rather than refusing without an alternative or handing out the editable UUID?",
           "severity": "soft",
           "oracle": "demo"
+        },
+        {
+          "name": "calls-publish",
+          "type": "regex",
+          "pattern": "(?is)(call|calling|invoke|invoking|use|using|run|send)[^.\\n]{0,40}`?publish_session|publish_session[^.\\n]{0,50}(on|against|with the source|first)",
+          "severity": "gate",
+          "oracle": "strong"
         }
       ],
       "tags": [
@@ -495,7 +495,7 @@
     {
       "id": "neg-create-session-request",
       "split": "tune",
-      "kind": "negative",
+      "kind": "adversarial",
       "domain": "capability-boundary",
       "difficulty": "core",
       "trigger_type": "explicit",
@@ -503,42 +503,49 @@
         "outcome",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. A user says: “Make me a new Keyboardia session with a driving techno beat at 140 BPM — base it on this one my band uses: 7c4d10e2-5a93-4b81-9f27-0e6d3a51c8bb.” Explain what you can and cannot do, and give any JSON arguments you would send. Do not claim execution.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. A user says: “Make me my own version of this session my band uses so I can mess with the arrangement without wrecking theirs: 7c4d10e2-5a93-4b81-9f27-0e6d3a51c8bb.” Give your call plan and the JSON arguments you would send. Do not claim execution.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
       "expected_behavior": [
-        "State that this MCP surface cannot create or copy a session.",
-        "Do not rewrite the band's existing session into the requested new beat.",
-        "Say what the user must do in Keyboardia to get a new session."
+        "Use remix_session: it copies the session and never modifies the source.",
+        "Do not edit the band's session in place.",
+        "Do not start from an empty create_session, which would lose the arrangement."
       ],
       "assertions": [
         {
-          "name": "states-no-session-creation",
+          "name": "calls-remix",
           "type": "regex",
-          "pattern": "(?is)(cannot|can.t|does not|doesn.t|unable to|no|never)[^.\\n]{0,90}(creat|copy|clone|duplicat|fork)[^.\\n]{0,50}session|(creat|copy|clon|duplicat|fork)[^.\\n]{0,50}session[^.\\n]{0,90}(not supported|unsupported|cannot|can.t|is not|isn.t|no)",
+          "pattern": "(?is)(call|calling|invoke|invoking|use|using|run|send)[^.\\n]{0,40}`?remix_session|remix_session[^.\\n]{0,50}(on|against|with the source|first)",
           "severity": "gate",
           "oracle": "strong"
         },
         {
-          "name": "no-invented-create-operation",
+          "name": "never-edits-the-source",
           "type": "not_regex",
-          "pattern": "(?s)\\\"operation\\\"\\s*:\\s*\\\"(create|new|copy|clone|fork)",
+          "pattern": "(?s)\\\"session_id\\\"\\s*:\\s*\\\"7c4d10e2-5a93-4b81-9f27-0e6d3a51c8bb\\\"[^}]*\\\"edit\\\"",
           "severity": "gate",
           "oracle": "strong"
         },
         {
-          "name": "does-not-overwrite-the-source",
+          "name": "no-invented-operation",
+          "type": "not_regex",
+          "pattern": "(?s)\\\"operation\\\"\\s*:\\s*\\\"(copy|clone|fork|duplicate)",
+          "severity": "gate",
+          "oracle": "strong"
+        },
+        {
+          "name": "explains-why-remix",
           "type": "judge",
-          "prompt": "The user pointed at a session their band already uses and asked for a NEW session based on it. Does the answer refuse to turn that existing session into the requested beat, and route the user to creating a new session themselves? Proposing edits that would reshape the band's session must fail.",
+          "prompt": "Does the answer choose remix_session and explain that it leaves the band's session untouched, rather than editing the source in place or rebuilding from an empty session? Editing the source must fail.",
           "severity": "soft",
           "oracle": "demo"
         }
       ],
       "tags": [
         "capability-boundary",
-        "no-op",
-        "declines"
+        "preservation",
+        "tool-choice"
       ]
     },
     {
@@ -1057,14 +1064,14 @@
       },
       "expected_regressions": [
         {
-          "summary": "without the error table the agent mishandles TRACK_LIMIT_REACHED and published sessions",
+          "summary": "without the error table the agent mishandles TRACK_LIMIT_REACHED and stops routing published sessions to remix_session",
           "cases": [
             "pos-partial-track-limit",
             "pos-published-session-read-only"
           ],
           "assertions": [
             "rereads-after-failure",
-            "stays-read-only"
+            "calls-remix"
           ]
         }
       ]

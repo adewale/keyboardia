@@ -16,8 +16,8 @@ another agent did not ask you to change.
   `sample_id` values. Refresh it when a cached schema rejects an input.
 - If the server is unavailable in the current toolset, ask the user to configure
   it. Do not emulate writes through Keyboardia's REST API.
-- Require an existing session UUID from a Keyboardia `/s/{session_id}` URL.
-  The MCP server does not create sessions.
+- Most work needs an existing session UUID from a Keyboardia `/s/{session_id}`
+  URL. Ask for one rather than inventing it.
 - Treat an unpublished session UUID as an edit capability. Do not reveal it,
   derive public identifiers from it, log it unnecessarily, or place it in
   public output.
@@ -91,10 +91,11 @@ example track ID into a live session.
 - `set_steps` assigns booleans only to entries in `changes`; unnamed steps
   remain unchanged.
 - `set_tempo` assigns 60 through 180 BPM.
-- Do not claim support for session creation, full-pattern replacement, track
-  deletion, renaming a track that already exists, reordering, instrument
-  changes, pitch or note editing, volume, mute, solo, swing, effects, parameter
-  locks, undo, or publishing.
+- Never invent an operation. If `tools/list` does not name it, the surface
+  cannot do it, and saying so plainly beats guessing. Track deletion, renaming
+  an existing track, reordering, instrument changes, pitch and note editing,
+  volume, mute, solo, swing, effects, and parameter locks are all Keyboardia UI
+  work, not MCP work.
 
 ## Follow the collaboration workflow
 
@@ -149,7 +150,8 @@ work. Never hide or automatically undo a partial result.
 ## Collaborate musically
 
 - Explain structure from the current tempo, loop lengths, instruments, and
-  active steps.
+  active steps. For key, chords, or harmonic questions, call `analyze_session`
+  rather than inferring them yourself; it reports its own uncertainty.
 - Add complementary agent-created parts instead of duplicating an existing role
   unless the user asks for layering.
 - Keep multi-agent roles separate with distinct collision-resistant IDs.
@@ -165,8 +167,9 @@ groove.
 ## Handle expected errors
 
 - On `SESSION_NOT_FOUND`, verify the UUID with the user.
-- On `SESSION_PUBLISHED`, keep the task read-only. Explain that MCP cannot
-  create a remix and ask the user to make an editable remix in Keyboardia.
+- On `SESSION_PUBLISHED`, stop editing that session: it is frozen. Offer
+  `remix_session`, which copies it into a new editable session and leaves the
+  original untouched, and edit the remix once the user agrees.
 - On `TRACK_ID_CONFLICT` after a definite rejection, generate a new
   collision-resistant ID for the intended new track.
 - On `TRACK_LIMIT_REACHED`, stop, re-read, and report any partial additions.

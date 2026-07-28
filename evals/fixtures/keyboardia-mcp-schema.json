@@ -8,8 +8,8 @@
       "title": "Get Keyboardia session",
       "description": "Read the current tempo and compact track patterns from an existing Keyboardia session.",
       "inputSchema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "properties": {
           "session_id": {
             "type": "string",
@@ -35,8 +35,8 @@
       "title": "Edit Keyboardia session",
       "description": "Make one narrow, retry-safe edit to an existing collaborative session. Supported operations: add_track, set_steps, and set_tempo. set_steps changes only the named steps; it never replaces a track or session.",
       "inputSchema": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
         "properties": {
           "session_id": {
             "type": "string",
@@ -249,6 +249,153 @@
       "annotations": {
         "readOnlyHint": false,
         "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_session",
+      "title": "Create Keyboardia session",
+      "description": "Create a new editable Keyboardia session with the normal defaults and return its shareable URL. The session starts with no tracks; use edit_session to add them. Pass the same idempotency_key when retrying so an uncertain attempt cannot leave duplicate sessions behind.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "A UUID you generate for this creation attempt. Reusing it returns the session the first attempt created instead of making another one."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Optional display name for the new session."
+          },
+          "tempo": {
+            "description": "Starting tempo in BPM. Defaults to Keyboardia's own default.",
+            "type": "number",
+            "minimum": 60,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "idempotency_key"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "remix_session",
+      "title": "Remix Keyboardia session",
+      "description": "Copy an existing session — published or editable — into a new editable session that records the original as its source. The source is never modified, so this is how to continue from published work.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "publish_session",
+      "title": "Publish Keyboardia session",
+      "description": "Freeze the current music into a new immutable session and return its URL. The source session stays editable at its own URL. Only call this when someone explicitly asks to publish; it is never a side effect of editing or exporting.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "export_midi",
+      "title": "Export Keyboardia session as MIDI",
+      "description": "Export the session as a base64-encoded Standard MIDI File, matching what Keyboardia's own Export MIDI produces for the same music. The session is not modified. The result lists any session features a MIDI file cannot carry rather than approximating them silently.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "analyze_session",
+      "title": "Analyze Keyboardia session",
+      "description": "Describe what is happening musically in a session — rhythm, pitch content, inferred key, and chords — without changing anything. Use this to explain music rather than to edit it. Results come from the same music-theory module the browser's Key Assistant and Chromatic Grid use, and report where the analysis is uncertain instead of guessing.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
         "idempotentHint": true,
         "openWorldHint": false
       }

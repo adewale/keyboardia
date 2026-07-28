@@ -78,6 +78,57 @@ describe('Cloudflare Agent Skills discovery', () => {
     expect(headers).toContain('Content-Type: text/markdown; charset=utf-8');
   });
 
+  it('never tells an agent the surface cannot do something it can', () => {
+    // The published skill once said "The MCP server does not create sessions"
+    // and "MCP cannot create a remix". Both were true when written and false a
+    // week later, and an agent reading them would decline work the product
+    // supports. Prose that enumerates missing capabilities rots; this fails the
+    // build when it does.
+    //
+    // The claim shape that matters names the server, a capability, and a
+    // negation in one sentence. "Never call edit_session for a read-only task"
+    // has no server noun and is guidance, not a denial, so it is not flagged.
+    const skill = readFileSync(skillPath, 'utf8');
+    const fixture = JSON.parse(
+      readFileSync(resolve('../evals/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
+    ) as { tools: Array<{ name: string }> };
+
+    const negation = /\b(cannot|can't|can not|does not|doesn't|do not|don't|unable to|no support for|lacks|never)\b/i;
+    const serverNoun = /\b(MCP|server|surface|endpoint|this API|the API)\b/i;
+    const sentences = skill.split(/(?<=[.!?])\s+|\n\n/);
+
+    const denials: string[] = [];
+    for (const tool of fixture.tools.map((entry) => entry.name)) {
+      const verb = tool.replace(/_session$|_midi$/, '');
+      const mentions = new RegExp(`\\b${verb}`, 'i');
+      for (const sentence of sentences) {
+        if (mentions.test(sentence) && negation.test(sentence) && serverNoun.test(sentence)) {
+          denials.push(`${tool}: ${sentence.trim().slice(0, 90)}`);
+        }
+      }
+    }
+
+    expect(denials, 'SKILL.md denies a capability the live surface provides').toEqual([]);
+  });
+
+  it('only names tools the server actually exposes', () => {
+    const skill = readFileSync(skillPath, 'utf8');
+    const fixture = JSON.parse(
+      readFileSync(resolve('../evals/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
+    ) as { tools: Array<{ name: string }> };
+    const live = new Set(fixture.tools.map((tool) => tool.name));
+
+    // Backticked snake_case identifiers in the skill that look like tool names.
+    const named = new Set(
+      Array.from(skill.matchAll(/`([a-z][a-z0-9]*_[a-z0-9_]+)`/g), ([, name]) => name)
+        .filter((name) => name.endsWith('_session') || name.endsWith('_midi')),
+    );
+
+    for (const name of named) {
+      expect(live.has(name), `skill references a tool that does not exist: ${name}`).toBe(true);
+    }
+  });
+
   it('keeps both artifacts on the asset-router path those headers need', () => {
     // Cloudflare applies _headers only to assets served straight from the asset
     // router, never to a response this Worker builds around env.ASSETS.fetch.
