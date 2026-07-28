@@ -51,12 +51,12 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      # Run through the same real Worker and serial Chromium contract as CI.
       # --update-snapshots writes a baseline for every @visual test: missing ones
       # are created, existing ones are overwritten with what this runner renders.
       - name: Regenerate @visual baselines
-        run: npx playwright test --project=chromium --grep @visual --update-snapshots
+        run: npm run test:e2e:full-stack -- --project=chromium --grep @visual --workers=1 --update-snapshots
         env:
-          USE_MOCK_API: '1'
           CI: 'true'
 
       - name: Show what changed

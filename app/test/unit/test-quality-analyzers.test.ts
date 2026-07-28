@@ -1,3 +1,7 @@
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   analyzeExportReachability,
@@ -8,6 +12,26 @@ import {
 } from '../../scripts/test-quality-analyzers';
 
 const rules = (source: string) => scanTestSource('fixture.test.ts', source).map((finding) => finding.rule);
+
+function runChecker(script: string, files: Record<string, string>) {
+  const fixture = mkdtempSync(path.join(tmpdir(), 'keyboardia-quality-gate-'));
+  try {
+    mkdirSync(path.join(fixture, 'src'), { recursive: true });
+    mkdirSync(path.join(fixture, 'test'), { recursive: true });
+    for (const [file, source] of Object.entries(files)) {
+      const target = path.join(fixture, file);
+      mkdirSync(path.dirname(target), { recursive: true });
+      writeFileSync(target, source);
+    }
+    return spawnSync(
+      process.execPath,
+      ['--import', path.resolve('node_modules/tsx/dist/loader.mjs'), path.resolve('scripts', script)],
+      { cwd: fixture, encoding: 'utf8' },
+    );
+  } finally {
+    rmSync(fixture, { recursive: true, force: true });
+  }
+}
 
 describe('test anti-pattern analyzer', () => {
   it('finds a zero-assertion test whose whole body is on the declaration line', () => {
@@ -181,6 +205,48 @@ describe('module linkage analyzer', () => {
     expect(analyzeExportReachability(units)).toContainEqual({
       file: 'src/value.ts', name: 'value', kind: 'const', testFiles: 0, status: 'build-only',
     });
+  });
+});
+
+describe('quality gate CLIs', () => {
+  it('fails the test/subject linkage command on a real orphan fixture', () => {
+    const result = runChecker('check-test-subject-links.ts', {
+      'src/widget.ts': 'export const widget = 1;',
+      'src/widget.test.ts': `it('checks widget', () => expect(1).toBe(1));`,
+    });
+
+    expect(result.status, result.stderr).toBe(1);
+    expect(result.stdout).toContain('ORPHAN (1)');
+  });
+
+  it('passes the test/subject linkage command on a clean fixture', () => {
+    const result = runChecker('check-test-subject-links.ts', {
+      'src/widget.ts': 'export const widget = 1;',
+      'src/main.ts': `import { widget } from './widget'; consume(widget);`,
+      'src/widget.test.ts': `import { widget } from './widget'; it('checks widget', () => expect(widget).toBe(1));`,
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('Every test file is linked');
+  });
+
+  it('fails the dead-export command on a real unreachable export fixture', () => {
+    const result = runChecker('check-dead-exports.ts', {
+      'src/main.ts': 'void 0;',
+      'src/dead.ts': 'export const abandoned = 1;',
+    });
+
+    expect(result.status, result.stderr).toBe(1);
+    expect(result.stdout).toContain('EXPORTED BUT UNIMPORTED (1)');
+  });
+
+  it('passes the dead-export command on a clean fixture', () => {
+    const result = runChecker('check-dead-exports.ts', {
+      'src/main.ts': 'void 0;',
+    });
+
+    expect(result.status, result.stderr).toBe(0);
+    expect(result.stdout).toContain('No dead runtime exports');
   });
 });
 

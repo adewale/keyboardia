@@ -204,12 +204,11 @@ jobs:
   # need a backend meant no E2E failure could ever break the build, and the
   # backend-dependent specs still never ran anywhere in CI.
   #
-  #   e2e-tests          mock API, gating       — the everyday regression net
-  #   e2e-real-backend   wrangler dev, advisory — specs that skip under USE_MOCK_API
-  #   e2e-visual         screenshots, advisory  — pending baseline confirmation
+  #   e2e-tests          mock API, gating     — the everyday regression net
+  #   e2e-real-backend   wrangler dev, gating — the complete production path
+  #   e2e-visual         screenshots, gating  — runner-owned Linux baselines
   #
-  # See docs/TEST-AUDIT-2026-07.md for the reasoning and for what has to be true
-  # before the two advisory jobs become gating.
+  # See docs/TEST-AUDIT-2026-07.md for the audit and lane ownership rationale.
   e2e-tests:
     name: E2E Tests (mock API)
     runs-on: ubuntu-latest
@@ -459,13 +458,9 @@ jobs:
       # every one of them skips, so they run in no other CI job.
       #
       # This complements the `test:e2e:collaboration:worker` step in e2e-tests:
-      # that runs the collaboration contract subset against a real Worker and is
-      # gating; this runs the *whole* real-backend suite and is advisory.
-      #
-      # Advisory only because this job is brand new here — wrangler dev startup on
-      # a hosted runner is unproven, and these specs have not run in CI before, so
-      # the first runs are expected to surface real failures. Once it has been
-      # green for a few runs, delete continue-on-error and this comment.
+      # that runs the collaboration contract subset against a real Worker; this
+      # runs the complete functional Chromium suite against the same production
+      # path. The first audit runs proved Wrangler stable here, so failures gate.
       # --project=chromium matters: the script's default scope runs every
       # project, including the webkit-backed mobile profiles, and this job only
       # installs chromium. Without it the run dies on a missing webkit binary
@@ -475,18 +470,37 @@ jobs:
       # Running the default worker count against it produced a wave of
       # ECONNREFUSED partway through a local trial — the backend, not the tests,
       # was the bottleneck.
-      - name: Run E2E tests against wrangler dev
-        run: npm run test:e2e:full-stack -- --project=chromium --workers=2
-        continue-on-error: true
+      # Screenshot contracts have a separate real-Worker lane below. Keeping
+      # them out here prevents Linux pixel diffs from being reported as backend
+      # failures, which previously hid ten failed tests behind continue-on-error.
+      - name: Run functional E2E tests against wrangler dev
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=chromium --workers=2
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const { stats } = JSON.parse(fs.readFileSync('test-results/real-backend-results.json', 'utf8'));
+          const expected = { expected: 199, skipped: 17, flaky: 0, unexpected: 0 };
+          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Real-backend Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
+          }
+          NODE
         env:
           CI: 'true'
+          E2E_FUNCTIONAL_ONLY: '1'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/real-backend-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/real-backend-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-real-backend'
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-real-backend
-          path: app/playwright-report/
+          path: |
+            app/playwright-report-real-backend/
+            app/test-results/real-backend-results.json
           retention-days: 7
 
   e2e-visual:
@@ -512,28 +526,36 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      # visual.spec.ts used to carry a file-level `test.skip(isCI, ...)` whose
-      # stated reason was that only local macOS baselines existed. That is no
-      # longer true: *-chromium-linux.png baselines are committed under
-      # e2e/visual.spec.ts-snapshots/ and this job runs chromium on Linux.
-      #
-      # Advisory because those Linux baselines were generated on a developer
-      # machine and font rasterisation can differ from the runner image. If it
-      # is consistently green, drop continue-on-error. If it is consistently red
-      # on antialiasing alone, regenerate the baselines on this image via
-      # `npx playwright test e2e/visual.spec.ts --update-snapshots` in a
-      # throwaway workflow run and commit the result.
+      # visual.spec.ts used to skip in CI, then ran against Vite's mock backend
+      # with developer-generated Linux baselines under continue-on-error. Nine
+      # of eleven tests failed on every run while the check stayed green. The
+      # baselines now come from this runner and the production-like Worker path;
+      # every image and the exact result inventory gate.
       - name: Run visual regression tests
-        run: npx playwright test --project=chromium --grep @visual
-        continue-on-error: true
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=chromium --grep @visual --workers=1
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const { stats } = JSON.parse(fs.readFileSync('test-results/visual-results.json', 'utf8'));
+          const expected = { expected: 11, skipped: 0, flaky: 0, unexpected: 0 };
+          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Visual Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
+          }
+          NODE
         env:
-          USE_MOCK_API: '1'
           CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/visual-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/visual-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-visual'
 
       - name: Upload visual diff report
         uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report-visual
-          path: app/playwright-report/
+          path: |
+            app/playwright-report-visual/
+            app/test-results/visual-results.json
           retention-days: 7

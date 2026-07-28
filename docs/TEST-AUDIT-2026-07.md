@@ -202,10 +202,14 @@ That makes the finding narrower but not less real:
   those nine tests pass, so the local hook is green too. Only a human reading
   the file would notice, and CI never forced anyone to.
 
-**Fixed.** The single `continue-on-error` job is now three jobs: `e2e-tests`
-(mock API, **gating**), `e2e-real-backend` (`wrangler dev` via the existing but
-never-CI-wired `test:e2e:full-stack` script, advisory pending a few green runs),
-and `e2e-visual` (advisory pending baseline confirmation on the runner image).
+**Fixed.** The single `continue-on-error` job is now three gating jobs:
+`e2e-tests` (mock API), `e2e-real-backend` (`wrangler dev` via the existing but
+never-CI-wired `test:e2e:full-stack` script), and `e2e-visual` (runner-owned
+Linux baselines against the same real Worker path). The latter two were briefly
+left advisory and proved why that is unsafe: the real-backend lane duplicated
+visual coverage in the wrong environment, and the visual lane failed 9/11 while
+GitHub still reported green. They now have disjoint ownership and exact result
+contracts (199 pass + 17 declared skips for functional; 11/11 for visual).
 The real count of `test.skip(useMockAPI, …)` guards is **19 across 14 files**,
 not the 13 first reported — that number came from too narrow a grep.
 
@@ -497,10 +501,10 @@ broken) and `e2e/multiplayer.spec.ts` (12 sites). Genuine environmental skips �
 `isWebkit`, `isMobileProject`, the 18 in `drag-to-paint.spec.ts` — are correct as
 they are and should stay.
 
-**2c. Un-skip `e2e/visual.spec.ts` in CI** or delete it. Committing chromium
-baselines and running them on the pinned CI image makes 12 screenshot assertions
-real; leaving `test.skip(isCI)` in place means the file is dead weight. Either is
-defensible — the status quo is not.
+**2c. Resolved: `e2e/visual.spec.ts` is gating in CI.** The suite no longer has
+the file-level `test.skip(isCI)`, its four formerly unreachable screenshots have
+runner-generated baselines, and all 11 tests run serially against a real Worker.
+The baseline regeneration workflow uses that identical environment.
 
 ### Phase 3 — Strengthen weak properties (3a, 3b, 3c OPEN; seeding done)
 
@@ -553,7 +557,7 @@ Wire these as warnings first, get to zero, then promote to errors.
 | Phase | Status | Outcome |
 |---|---|---|
 | 1 — tests that cannot fail | ✅ done | 15 always-green tests fixed or deleted; SC-005 now kills the sabotage mutant |
-| 2 — make E2E mean something | ✅ done | mock-API job gating (91 failures → 2 environmental); 12 specs correctly labelled real-backend; `visual.spec.ts` runs in CI for the first time |
+| 2 — make E2E mean something | ✅ done | mock, real-Worker functional, and runner-owned visual jobs all gate; exact reporter contracts reject new failures, retries, or undeclared skips |
 | §10 — seeding | ✅ done | global fixed seed, `FC_SEED` override, `Math.random()` removed from assertion paths, `fc.sample` given per-draw seeds (§10a) |
 | 3a — witnesses for weak properties | open | would take `sync-convergence` from 7/22 to ≈20/22 under sabotage |
 | 3b — rewrite TEST-05 | resolved upstream | main deleted `test/integration/multiplayer-sync.test.ts` in the "remove-test-theatre" PR |
@@ -620,23 +624,22 @@ USE_MOCK_API would cut it substantially and sharpen what a red result means;
 that needs per-test tagging, since the guards are `test.skip(useMockAPI, ...)`
 calls rather than tags.
 
-The job stays advisory for one remaining reason: these specs have never run in
-CI, so the first runs are expected to surface genuine failures. That is the job
-working. Promote it by deleting `continue-on-error` once it has been green a few
-times.
+The initial advisory runs completed the experiment: Wrangler was stable, while
+ten visual failures polluted this functional lane because `visual.spec.ts` was
+also selected. The lane now sets `E2E_FUNCTIONAL_ONLY=1`, requires exactly 199
+passes and 17 declared skips, and no longer has `continue-on-error`.
 
 Note it complements, rather than duplicates, the `test:e2e:collaboration:worker`
 step already in `e2e-tests`: that runs the collaboration contract subset and is
 gating; this runs the whole real-backend suite.
 
-**2. Missing visual baselines.** Resolved structurally by
-`.github/workflows/visual-baselines.yml` — a `workflow_dispatch` job that
-regenerates baselines *on the runner image*, so they never have to come from a
-developer machine (the original reason `visual.spec.ts` was skipped in CI at
-all). It uploads them as an artifact by default, and can push them to a branch
-for image-by-image review. It deliberately never runs automatically: a baseline
-that updates itself is the blind-snapshot-update anti-pattern, where a real
-regression is absorbed into the expected output.
+**2. Missing and stale visual baselines.** Resolved structurally and verified
+from the runner artifact. Ten Linux baselines were replaced with the runner's
+exact actual images, including four that had never existed because their tests
+previously took no screenshot. `.github/workflows/visual-baselines.yml` remains
+manual, but now regenerates through the same serial Chromium + real Worker path
+as the gating job. It uploads by default and can push a review branch; it never
+updates automatically, which would be the blind-snapshot-update anti-pattern.
 
 **3. The audio-decode tests** (the caveat behind the caveat). The root cause is
 now pinned precisely: MP3 decodes fine, **AAC/m4a does not**, on Chromium builds
@@ -703,10 +706,16 @@ TypeScript parser that is already a build dependency:
 | Script | npm | Detects | CI |
 |---|---|---|---|
 | `scripts/check-test-antipatterns.ts` | `validate:test-antipatterns` | nullified assertions, runtime self-skips, tautologies, self-comparisons, always-defined coercions, zero-assertion tests including `test.each` | **gating** |
-| `scripts/check-test-subject-links.ts` | `validate:test-links` | ORPHAN (names a module it never imports), REIMPL (copies the logic it claims to test), DEAD (module imported only by its tests) | advisory |
-| `scripts/check-dead-exports.ts` | `validate:dead-exports` | exported symbols with no exact production importer | advisory |
+| `scripts/check-test-subject-links.ts` | `validate:test-links` | ORPHAN (names a module it never imports), REIMPL (copies the logic it claims to test), DEAD (module imported only by its tests) | **gating** |
+| `scripts/check-dead-exports.ts` | `validate:dead-exports` | exported symbols unreachable from a runtime entry point | **gating** |
+| `scripts/check-unrun-tests.ts` | `validate:unrun-tests` | test files no Vitest or Playwright lane collects, plus stale allowlist entries | **gating** |
 
-All three run in the `lint` job. `npm run validate:test-quality` runs the trio.
+All four run in the `lint` job. `npm run validate:test-quality` runs the four.
+The two reachability CLIs also have process-level fixtures proving a real
+finding returns status 1 and a clean repository returns status 0. This matters:
+the first promotion from advisory to gating changed the workflow but left both
+CLIs returning success on findings, so their required CI steps were still
+false-green. The audit caught and closed that second-order failure.
 
 **The lesson from building the first one.** Its first run reported 17 findings,
 13 of which were *this document* and the explanatory comments written during
@@ -1032,9 +1041,9 @@ Unlike the original name-only implementation, imports are resolved to their
 exact relative module. Importing `createFoo` from module A no longer marks an
 unrelated `createFoo` export in module B as live.
 
-Advisory, not gating. A newly-added export whose caller has not landed yet is a
-normal state, and 99 findings is a backlog to work through, not a build to
-break.
+This was initially advisory because 99 findings represented a backlog rather
+than a useful build gate. The final disposition below cleared the backlog, at
+which point new dead runtime exports became blocking.
 
 ### Two things the scan surfaced immediately
 
@@ -1117,10 +1126,30 @@ logic found several more:
   constants were removed. Existing production-linked suites cover the live
   message set, pitch range/engine and image layout.
 
-The 52 “tested but unreachable” exports remain an explicit advisory backlog,
-not proof that all 52 tests are worthless: some are test utilities, diagnostic
-APIs or independent catalogue oracles. Each needs a caller-or-delete decision;
-the checker intentionally does not make that semantic decision automatically.
+### Final disposition of the 52 + 47 findings
+
+The original **52 tested-but-unreachable + 47 exported-but-unimported** figures
+were raw output from an import heuristic, not the final semantic result. After
+replacing it with entry-point graph reachability, the 99 reconcile to:
+
+| Disposition | Count | Resolution |
+|---|---:|---|
+| True test-only production exports | 43 | Connected to a shipped caller when the behavior was real; otherwise deleted with copied/self-testing coverage |
+| Truly unreferenced exports | 54 | Un-exported or deleted, including obsolete wrappers, constants, hooks and Worker paths |
+| Analyzer false positives | 2 | `midiToNoteName` and `sanitizeSessionName` were consumed by build scripts, a root class the old scan never loaded |
+
+All **97 real findings** received a caller-or-delete decision. This was not a
+mechanical export purge: scheduler timing and pitch-shifting became shared
+production kernels tested through their registered worklets; platform cache
+limits and sample generation moved behind real runtime constructors; genuine
+build/config consumers were classified as build-only; copied catalogue,
+message, reducer, retry, audio and UI implementations were removed.
+
+The corrected graph starts at the browser and Worker entry points and follows
+used named/default/namespace imports, re-exports, dynamic imports, and URL-loaded
+Worker/AudioWorklet modules. Unused imports and dead-to-dead call chains do not
+make a symbol live. Its final report is **523 runtime, 59 legitimate build-only,
+0 dead runtime exports**, and any regression now fails CI.
 
 ## §20 — Auditing a month of test deletions
 

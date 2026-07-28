@@ -7,7 +7,9 @@
  * accidentally marked every unrelated `createFoo` export as live. The pure
  * analyzer and its adversarial fixtures live in test-quality-analyzers.ts.
  *
- * Advisory: a new export may legitimately land before its caller.
+ * This is a blocking gate. Land a caller with a new runtime export, keep a
+ * tooling-only export reachable from an explicit build root, or do not export
+ * the symbol yet.
  *
  * Run: npx tsx scripts/check-dead-exports.ts
  */
@@ -78,5 +80,6 @@ show('EXPORTED BUT UNIMPORTED', findings.filter((finding) => finding.status === 
 if (!findings.length) {
   console.log(`\n✅ No dead runtime exports (${runtimeCount} runtime, ${buildOnly.length} build-only).`);
 } else {
-  console.log(`\n${findings.length} dead export finding(s). Advisory; see docs/TEST-AUDIT-2026-07.md.`);
+  console.log(`\n${findings.length} dead runtime export finding(s).`);
+  process.exit(1);
 }

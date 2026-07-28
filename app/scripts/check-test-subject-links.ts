@@ -121,5 +121,4 @@ for (const kind of ['REIMPL', 'DEAD', 'ORPHAN'] as const) {
   for (const f of group) console.log(`  ${f.file}\n      ${f.detail}`);
 }
 console.log(`\n${findings.length} finding(s). See docs/TEST-PLACEMENT-ANALYSIS.md.`);
-// Informational for now — the existing findings are catalogued, not yet fixed.
-process.exit(0);
+process.exit(1);
