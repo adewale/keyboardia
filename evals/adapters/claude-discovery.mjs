@@ -69,6 +69,7 @@ const argv = [
   '--max-turns', '24',
   '--strict-mcp-config',
   '--mcp-config', JSON.stringify(mcpConfig),
+  '--tools', 'ToolSearch',
   '--allowed-tools', [...genericTools, 'ToolSearch'].join(','),
   '--permission-mode', 'dontAsk',
   '--disable-slash-commands',

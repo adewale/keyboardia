@@ -89,7 +89,7 @@ function buildPrompt(origin) {
     'The only location you know for this music site is its origin:',
     origin,
     '',
-    'Discover any standards-based agent instructions the site publishes. Fetch the selected instructions as exact bytes and cryptographically verify them against the catalog digest before following them. Derive every service endpoint from those verified bytes and inspect the live service capabilities instead of assuming a cached contract.',
+    'Use the Agent Skills discovery standard to discover any agent instructions the site publishes. Fetch the selected instructions as exact bytes and cryptographically verify them against the catalog digest before following them. Derive every service endpoint from those verified bytes and inspect the live service capabilities instead of assuming a cached contract.',
     '',
     'Create exactly one new disposable, unpublished session. Inspect its state before editing. Add one kick track whose active steps are exactly 0, 4, 8, and 12 without changing the tempo or anything unrelated, then inspect the state again to verify the result. Do not publish, remix, or export. Do not reveal the editable URL or session capability in your final answer.',
   ].join('\n');
