@@ -1185,7 +1185,11 @@ function schemaErrors(value, schema, path = '$') {
 }
 
 function materializeEmbeddedSources(sourceFiles) {
-  const root = mkdtempSync(resolve(tmpdir(), 'keyboardia-receipt-oracles-'));
+  // Node's permission model checks canonical filesystem paths. On macOS,
+  // os.tmpdir() commonly returns /var/... while imported modules resolve via
+  // /private/var/.... Bind the canonical root so a declared oracle dependency
+  // is readable without broadening the sandbox.
+  const root = realpathSync(mkdtempSync(resolve(tmpdir(), 'keyboardia-receipt-oracles-')));
   try {
     for (const file of sourceFiles) {
       if (typeof file.path !== 'string' || isAbsolute(file.path) || file.path.split('/').includes('..')
@@ -1212,7 +1216,7 @@ export function scoreObjectiveAssertions(evalCase, output, manifestPath, sourceF
     .filter((assertion) => !['judge', 'rubric'].includes(assertion.type));
   const needsScripts = assertions.some((assertion) => assertion.type === 'script');
   const root = needsScripts ? materializeEmbeddedSources(sourceFiles) : null;
-  const outputDir = mkdtempSync(resolve(tmpdir(), 'keyboardia-receipt-output-'));
+  const outputDir = realpathSync(mkdtempSync(resolve(tmpdir(), 'keyboardia-receipt-output-')));
   const outputPath = resolve(outputDir, 'output.md');
   writeFileSync(outputPath, output);
   try {

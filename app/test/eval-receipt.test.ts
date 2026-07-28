@@ -695,6 +695,37 @@ describe('eval receipts', () => {
     }, 'output', 'evals/manifest.json', source.files)).toThrow(/unsafe script assertion command/);
   });
 
+  it('regrades a bound oracle with an imported dependency under canonical temp paths', () => {
+    const sourceFiles = [{
+      role: 'oracle',
+      path: 'evals/oracle.mjs',
+      content: [
+        "import { readFileSync } from 'node:fs';",
+        "import { expected } from './oracle-dependency.mjs';",
+        "process.exitCode = readFileSync(process.argv[2], 'utf8') === expected ? 0 : 1;",
+        '',
+      ].join('\n'),
+    }, {
+      role: 'oracle_dependency',
+      path: 'evals/oracle-dependency.mjs',
+      content: "export const expected = 'safe';\n",
+    }];
+    expect(scoreObjectiveAssertions({
+      assertions: [{
+        name: 'dependent', type: 'script',
+        command: ['node', 'oracle.mjs', '{output_path}'], severity: 'critical',
+      }],
+    }, 'safe', 'evals/manifest.json', sourceFiles)).toEqual([{
+      name: 'dependent', type: 'script', severity: 'critical', passed: true,
+    }]);
+    expect(() => scoreObjectiveAssertions({
+      assertions: [{
+        name: 'dependency-is-not-a-root', type: 'script',
+        command: ['node', 'oracle-dependency.mjs', '{output_path}'], severity: 'critical',
+      }],
+    }, 'safe', 'evals/manifest.json', sourceFiles)).toThrow(/not a bound oracle/);
+  });
+
   it('rejects incomplete importer matrices and end-of-run worktree drift', () => {
     const manifest = {
       variants: ['with_skill', 'without_skill'],

@@ -199,7 +199,9 @@ function sourceBinding() {
     { role: 'answer_matrix_policy', path: 'evals/answer-matrix-policy.json' },
     { role: 'fixture', path: 'evals/fixtures/keyboardia-mcp-schema.json' },
     { role: 'oracle', path: 'evals/oracles/capability-answer.mjs' },
-    { role: 'oracle_dependency', path: 'evals/oracles/public-changelog-safe.mjs' },
+    // This module is both imported by capability-answer.mjs and invoked
+    // directly by the public changelog case, so it is an oracle root too.
+    { role: 'oracle', path: 'evals/oracles/public-changelog-safe.mjs' },
     { role: 'answer_adapter', path: 'evals/adapters/claude.mjs' },
     { role: 'answer_adapter_dependency', path: 'evals/adapters/usage.mjs' },
     { role: 'runner', path: 'evals/import-harness-receipt.mjs' },
