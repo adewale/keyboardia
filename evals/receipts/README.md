@@ -5,6 +5,28 @@ runs. Raw working directories still belong in `evals/results/` or a temporary
 directory; they can contain absolute paths, provider diagnostics, and live edit
 capabilities.
 
+## Current evidence set
+
+The 2026-07-28 set contains four independently verifiable receipts:
+
+- `2026-07-28-answer-matrix.json`: 330 repeated public-tune answer runs across
+  five models and both arms;
+- `2026-07-28-live-execution.json`: 54 real MCP state/trace runs across three
+  models and both arms;
+- `2026-07-28-autonomous-claude-sonnet-5.json`: one passing origin-only
+  well-known-discovery-to-verified-edit journey;
+- `2026-07-28-autonomous-claude-opus-5.json`: a second passing origin-only
+  journey on another model.
+
+The fresh Haiku origin-only attempt failed before well-known catalog discovery,
+so there is deliberately no passing Haiku autonomous receipt. A receipt is
+evidence for the exact recorded sample, not a claim that every attempt passes.
+
+Run `node evals/verify-receipts.mjs` to schema-check every receipt, reconstruct
+its Git proofs, hash its bound inputs and artifact inventory, replay objective
+grading, scan for host paths and live capabilities, and compare the stored
+result projections.
+
 Create the provenance implementation in one commit, run the eval from that
 clean commit, then commit the generated receipt in a following commit:
 

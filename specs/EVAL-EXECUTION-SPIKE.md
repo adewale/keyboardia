@@ -2,95 +2,49 @@
 
 ## Current result
 
-The historical attempted-call runs have been replaced. On 2026-07-28, the
-three-case execution suite ran fresh under the corrected trace contract, where
-a tool call counts only when its correlated MCP result succeeded.
+On 2026-07-28 the three-case execution suite ran fresh under the corrected
+trace contract. A call counts only after the runner correlates it with a
+successful MCP result. The matrix covered both arms, Claude Haiku 4.5, Sonnet
+5, and Opus 5, and three repeats per arm: 54 completed runs, zero errors, and
+zero unscorable pairs.
 
-The matrix covered:
-
-- `exec-four-on-the-floor`;
-- `exec-preserve-collaborator`;
-- `exec-injected-track-name`;
-- with-skill and without-skill arms;
-- Claude Haiku 4.5, Sonnet 5, and Opus 5;
-- three repeats per arm.
-
-All 54 runs completed against a disposable local Worker. There were zero
-runner errors and zero unscorable pairs.
-
-| Model | with-skill whole-case | baseline whole-case | with-skill assertions | baseline assertions |
+| Model | with-skill whole-case | baseline whole-case | with assertions | baseline assertions |
 | --- | ---: | ---: | ---: | ---: |
-| Claude Haiku 4.5 | 0.0% | 0.0% | 86.3% | 78.0% |
-| Claude Sonnet 5 | 22.2% | 0.0% | 88.6% | 83.0% |
+| Claude Haiku 4.5 | 66.7% | 0.0% | 95.2% | 78.3% |
+| Claude Sonnet 5 | 100.0% | 0.0% | 100.0% | 83.0% |
 | Claude Opus 5 | 100.0% | 0.0% | 100.0% | 83.0% |
 
-The receipt is
-`evals/receipts/2026-07-28-live-execution.json`. It binds the skill,
-execution manifest, runner, scorer, session harness, receipt runtime/schema,
-and MCP adapter to Git commit `9c492c0`, then content-addresses the exact
-prompts, model outputs, successful-result traces, and pre/post session states.
+The receipt is `evals/receipts/2026-07-28-live-execution.json`. It binds the
+skill, manifest, runner, scorer, session harness, receipt schema/runtime, MCP
+adapter, Worker source closure, package and lock bytes to Keyboardia commit
+`5291c90`, tree `db70579d2d013616f534ffeb3a298980b551dc87`.
 
 ## What the suite proves
 
-### Real execution
+Each run created a fresh editable session, applied its setup, exposed only the
+allowed Keyboardia tools, and read final Durable Object state for scoring. The
+trace scorer uses correlated successful calls; attempted, failed, unmatched,
+or prose-only calls cannot pass. State and trace gates cover requested edits,
+collaborator preservation, exact track counts, read-before-write, forbidden
+operations, step bounds, duplicate assignments, and collision-resistant IDs.
 
-Each run created a fresh editable session, applied the case setup, allowed only
-Keyboardia `get_session` and `edit_session`, and read the final Durable
-Object state back for scoring. No prose assertion can make a failed tool call
-pass.
+After the live matrix, the owned Worker stopped and all runs were rescored from
+saved evidence. Live and offline projections matched at SHA-256
+`41cc449141f438130d82c68f3ae1bdc58c5fdc205db2b2ad6a9aa01e76ff67b4`.
+`node evals/verify-receipts.mjs` independently repeats the deterministic replay.
 
-### Correlated successful results
+## Interpretation and limits
 
-The adapter records an ordered call only after matching the MCP tool-use ID to
-its tool result. A trace assertion rejects `success: false` and
-`success: null`; every trace assertion uses that same successful-call set. The
-contract is guarded by focused tests.
+The skill materially improves the harsh whole-case score in this small live
+slice. The main discrimination is read-before-write and collision-resistant
+IDs. Eighteen assertions are 100% in both arms. Those state-preservation and
+injection-resistance checks remain useful regression guards, but they must not
+be cited as lift.
 
-### State and trace grading
-
-All gates are structural:
-
-- final active steps and tempo;
-- byte-for-byte preservation of collaborator tracks;
-- exact track-count changes;
-- read-before-write order;
-- forbidden operation absence;
-- step bounds and duplicate assignments;
-- collision-resistant new track IDs.
-
-Replacing answer prose cannot change an execution score.
-
-### Deterministic offline replay
-
-After the live matrix completed, the Worker was stopped and all 54 runs were
-rescored from the saved transcript. The live and offline projections of model,
-case, arm, repeat, result, assertions, trace, and execution state produced the
-same SHA-256:
-
-`b343389de3e27d270c5bad407aabc533eccacf641c9dec1ca04e16e7f22a8355`.
-
-The committed receipt independently verifies offline with
-`node evals/verify-receipts.mjs`.
-
-## Interpretation
-
-The skill changes execution, but not uniformly.
-
-- Collision-resistant IDs discriminate strongly.
-- Read-before-write improves in the with-skill arm but remains inconsistent on
-  Haiku and Sonnet.
-- Opus follows the complete process reliably in this small slice.
-- Seventeen assertions are 100% in both arms. Those safety/state-preservation
-  checks show that the baseline already behaves well; they must not be cited as
-  skill lift.
-
-Whole-case scoring is deliberately harsh: one missed ordering gate fails the
-case. That explains why Haiku can improve assertion-level behaviour while
-remaining at 0% whole-case success.
-
-This is fresh execution evidence, not proof that every model will apply the
-skill reliably. It complements the origin-only autonomous trace and the
-330-run answer matrix; neither can substitute for the others.
+This is fresh execution evidence, not broad reliability evidence: there are
+only three public cases, three repeats, and three related model families. It
+complements the origin-only discovery traces and 330-run answer matrix; none
+substitutes for the others.
 
 ## Reproduction
 
@@ -102,12 +56,12 @@ node evals/run-benchmark.mjs \
   --repeats 3 --concurrency 1 --no-judge \
   --launch-local-worker \
   --out /tmp/keyboardia-live.json \
-  --receipt evals/receipts/live-execution.json
+  --receipt /tmp/keyboardia-live-receipt.json
 
 # The owned Worker has stopped before replay starts.
 node evals/run-benchmark.mjs \
   --manifest evals/execution-benchmark.json \
   --rescore /tmp/keyboardia-live.json \
   --out /tmp/keyboardia-replayed.json
-node evals/verify-receipts.mjs evals/receipts/live-execution.json
+node evals/verify-receipts.mjs /tmp/keyboardia-live-receipt.json
 ```

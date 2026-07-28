@@ -2,163 +2,178 @@
 
 ## Verdict
 
-The five evidence gaps that previously blocked review are closed:
+The four missing-evidence objections are fixed:
 
-1. A model completed an origin-only discovery-to-edit journey.
-2. A fresh live MCP matrix ran under the successful-result trace contract.
-3. The current skill received a repeated five-model answer matrix.
-4. The run-aware audit has no base-saturated capability case or readiness
-   blocker.
-5. All three evidence sets are committed, content-addressed, capability
-   sanitized, and bound to immutable Git inputs.
+1. The autonomous trace validator requires one continuous journey from an
+   origin-only prompt through well-known discovery, exact-byte digest
+   verification, MCP initialization, `tools/list`, read, edit, and verification.
+   Claude Sonnet 5 and Opus 5 each completed that journey against a disposable
+   live Worker.
+2. A fresh 54-run live MCP execution sweep ran under the corrected
+   successful-result trace contract.
+3. The final skill received a fresh 330-run, five-model, repeated answer matrix;
+   this is not the earlier narrow safety rerun.
+4. All promoted receipts are schema-validated, content-addressed, capability
+   sanitized, and bound to immutable skill, manifest, runner, oracle, adapter,
+   source-commit, and source-tree bytes.
 
-That is not an all-clear to merge. The broad run still contains one with-skill
-critical capability leak, a negative read-only-session slice, substantial
-repeated-run variance, and weak lift on Sonnet. These are behavioural findings,
-not missing-evidence caveats.
+This closes provenance and coverage gaps. It does not make the behavioral
+results merge-ready: Haiku still failed origin discovery, the public answer
+matrix has no hidden split, repeated runs remain noisy, and several assertions
+are saturated in both arms.
 
 ## Immutable provenance
 
 - Delivered skill SHA-256:
-  `4d70889f4744a9d6320f00845b4e2a20fdf5ab79bb89f2ecb53d52051c791db7`.
-- Answer manifest SHA-256:
-  `2a20459482875e82b2ae62abd678290308f27d172031d504c05aaa785708819c`.
-- Canonical skill-tree SHA-256:
-  `eec6c9acf70248f1e6b06fef75fdb817baf8814198b1f5c4d690b888b7d25507`.
-- External harness: `adewale/skill-eval-harness` 0.6.0, public parent
-  `9c1365a`, locally patched commit `01b4e84`, tree `4c35aae`.
-- The answer receipt embeds the exact binary patch from the public parent and
-  content-addresses both prepared task files and the final benchmark.
+  `1431f92b0284f46aae3255d7249d8afbaeed02df7787ee924fb70abd92589dbe`.
+- Canonical skill-tree SHA-256 used to prepare the answer matrix:
+  `25f360d0715de6bbdb1b810aca406cba90db15ebe3f5a4b07cde1893fdde9be2`.
+- Answer-manifest revision:
+  `4ac9b0043b9bd2398c028d8391cfa376ede7ae2577e50717a82f8bf24d5ef555`.
+- Answer and live receipts bind Keyboardia commit `5291c90`, tree
+  `db70579d2d013616f534ffeb3a298980b551dc87`.
+- Autonomous receipts bind Keyboardia commit `1672265`, tree
+  `451ebdac70d69d0fd480660dd50158a380dff79b`.
+- External harness: `skill-eval-harness` 0.6.0, public parent `9c1365a`,
+  evaluated commit `a27427d`, tree
+  `632326040b0b4c5ab8fc2c812211899bd8e8aa05`.
+- The answer receipt embeds the harness parent and patched commit/tree proof,
+  binary patch, exact source blobs, prepared-task inventories, outputs,
+  metrics, benchmark, and audit. Verification reconstructs those identities
+  without trusting the local checkout.
 
-The committed receipts are:
+Committed receipts:
 
 - `evals/receipts/2026-07-28-autonomous-claude-sonnet-5.json`
+- `evals/receipts/2026-07-28-autonomous-claude-opus-5.json`
 - `evals/receipts/2026-07-28-live-execution.json`
 - `evals/receipts/2026-07-28-answer-matrix.json`
 
-`node evals/verify-receipts.mjs` verifies all three offline.
+`node evals/verify-receipts.mjs` verifies all four offline. The receipts contain
+no host-specific checkout path or live edit capability.
 
 ## Origin-only autonomous discovery
 
-Claude Sonnet 5 received only a random local origin and the name of the Agent
-Skills discovery standard. The target MCP URL, well-known path, tool names,
-session UUID, and tool schemas were not preconfigured.
+Sonnet and Opus received only a random local origin plus a reference to the
+Agent Skills discovery standard. The target MCP URL, well-known path, skill
+URL, tool names, session UUID, and tool schemas were not preconfigured.
 
-The successful receipt contains 33 correlated transport events:
+Each successful receipt proves the same continuous chain:
 
-- 23 same-origin discovery fetches, including harmless failed probes;
-- the well-known catalog and indexed skill fetch;
-- exact-byte SHA-256 verification against the catalog digest;
-- MCP initialization derived from the verified skill bytes;
-- live `tools/list`;
-- exactly one disposable session creation;
-- initial `get_session`;
-- `add_track` and `set_steps`;
-- final `get_session` proving one kick on steps 0, 4, 8, and 12 with tempo
-  unchanged.
+1. fetch the same-origin well-known catalog;
+2. fetch the indexed skill;
+3. verify its exact bytes against the catalog SHA-256 digest;
+4. derive and initialize the same-origin MCP endpoint from verified bytes;
+5. call `tools/list`;
+6. create one disposable session;
+7. call `get_session`;
+8. call `add_track`, then immediately `get_session`;
+9. call `set_steps`, then immediately `get_session`;
+10. verify kick steps `[0, 4, 8, 12]` and unchanged tempo.
 
-All five target MCP calls succeeded. Three UUIDs were redacted, and the
-journey-specific verifier rechecks the prompt, answer, CLI-trace, adapter-argv,
-and transport-trace hashes; call correlation; final state;
-non-preconfiguration; pre-sanitization capability scan; source commit/tree;
-and bound Git blobs.
+Sonnet recorded 15 correlated transport events and Opus 22. Both made exactly
+six target calls. Three live capability UUIDs were found before sanitization,
+redacted structurally, and rechecked after sanitization. The journey verifier
+also rejects a preconfigured target, a failed or unmatched MCP result, a second
+edit before verification, digest mismatch, endpoint not derived from verified
+skill bytes, or a final-state mismatch.
+
+Haiku did not fetch the well-known catalog in its fresh origin-only attempt.
+The runner correctly emitted no passing receipt. Therefore these results prove
+the path is usable, not that every supported agent discovers it reliably.
 
 ## Fresh live MCP matrix
 
 The repository runner executed three state/trace cases, both arms, three
-repeats, and three Claude models: 54/54 runs, zero execution errors.
+repeats, and three Claude models: 54/54 completed runs, zero execution errors,
+and zero unscorable pairs.
 
-| Model | with-skill whole-case | baseline whole-case | assertion lift |
-| --- | ---: | ---: | ---: |
-| Claude Haiku 4.5 | 0.0% | 0.0% | +8.4 pp |
-| Claude Sonnet 5 | 22.2% | 0.0% | +5.6 pp |
-| Claude Opus 5 | 100.0% | 0.0% | +17.0 pp |
+| Model | with-skill whole-case | baseline whole-case | with assertions | baseline assertions | assertion lift |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Claude Haiku 4.5 | 66.7% | 0.0% | 95.2% | 78.3% | +17.0 pp |
+| Claude Sonnet 5 | 100.0% | 0.0% | 100.0% | 83.0% | +17.0 pp |
+| Claude Opus 5 | 100.0% | 0.0% | 100.0% | 83.0% | +17.0 pp |
 
-The Worker was stopped before replay. Live and offline-rescored run state,
-traces, and assertions produced the same SHA-256:
-`b343389de3e27d270c5bad407aabc533eccacf641c9dec1ca04e16e7f22a8355`.
+The owned Worker stopped before replay. Live and offline-rescored state, traces,
+and assertions produced the same projection SHA-256:
+`41cc449141f438130d82c68f3ae1bdc58c5fdc205db2b2ad6a9aa01e76ff67b4`.
 
-Seventeen execution assertions were 100% in both arms. They are state-preserving
-safety guards the baseline already performs, not evidence of lift. The observed
-lift is concentrated in collision-resistant IDs, read-before-write ordering,
-and a small number of requested edits.
+Eighteen live assertions were 100% in both arms. They remain useful regression
+guards for state preservation and injection resistance, but they are not
+evidence of skill lift. The strongest observed discrimination is
+read-before-write ordering and collision-resistant track IDs.
 
 ## Repeated five-model answer matrix
 
-The external harness ran all 11 public tune answer cases, both arms, three
-repeats, and five models: 330/330 scorable runs, zero missing outputs, zero
-execution errors.
+The external harness ran all 11 public tune cases, both arms, three repeats,
+and five models: 330/330 complete runs with no missing output, metadata
+mismatch, duplicate tuple, extra tuple, or non-zero agent exit.
 
-| Model | with skill | without skill | lift | paired p |
-| --- | ---: | ---: | ---: | ---: |
-| Claude Haiku 4.5 | 47.73% | 28.79% | +18.94 pp | 0.125000 |
-| Claude Sonnet 5 | 59.09% | 57.58% | +1.52 pp | 1.000000 |
-| Claude Opus 5 | 86.36% | 51.52% | +34.85 pp | 0.035156 |
-| GPT-5.4 Mini | 50.76% | 30.30% | +20.45 pp | 0.250000 |
-| GPT-5.4 | 65.91% | 34.85% | +31.06 pp | 0.093750 |
-| **Pooled** | **61.97%** | **40.61%** | **+21.36 pp** | **0.000244** |
+| Model | with skill | without skill | lift |
+| --- | ---: | ---: | ---: |
+| Claude Haiku 4.5 | 18.18% | 18.18% | 0.00 pp |
+| Claude Opus 5 | 86.36% | 58.33% | +28.03 pp |
+| Claude Sonnet 5 | 78.79% | 54.55% | +24.24 pp |
+| GPT-5.4 | 64.39% | 31.82% | +32.58 pp |
+| GPT-5.4 Mini | 58.84% | 21.21% | +37.63 pp |
+| **Pooled mean** | **61.31%** | **36.82%** | **+24.49 pp** |
 
-The run-aware audit was repeated with script oracles enabled. It exits zero:
+The result projection SHA-256 is
+`1e0bcedeb4fad6a68f57ba5bfc656ef1581e38b8a916c968dc3a85c0eea8f672`.
 
-- readiness blockers: 0;
-- base-saturated capability cases: 0;
-- explicitly classified regression guards holding: 1;
-- identical arm-rate assertions: 5, down from the earlier dozens.
+The run-aware harness audit has no readiness blocker, base-saturated case, or
+leak-saturated case. It does report 21 findings: 19 required repeated-run
+variance findings, one required missing-hidden-splits finding, and one
+recommended finding covering six assertions with identical arm rates. Both
+declared ablations are materialized, but this run did not execute an ablation
+matrix, so it is not empirical section-attribution evidence.
 
-Four of the five identical assertions belong to regression-intent safety cases.
-The fifth is a redundant public-copy separation check; the critical capability
-withholding assertion on that same case remains discriminating.
+## Why this still should not merge
 
-The attribution case initially scored 0/15 in both arms because its oracle
-required an undocumented `change` wrapper although the prompt requested
-`{step, value}`. The corrected structural oracle accepts the prompt-compliant
-encodings but still rejects tempo or snare as agent-observed work. Regrading the
-same immutable outputs changed that case to 2/15 versus 0/15 and removed the
-last saturation blocker without another model call.
+- Haiku has zero answer-matrix lift and failed the fresh autonomous well-known
+  discovery attempt.
+- There is no private holdout or holdback result. Public tune prompts and
+  public oracles can co-adapt with the skill and cannot establish
+  generalization.
+- Nineteen required audit findings record repeated-run variance across affected
+  answer cases and arms; one successful sample per autonomous model is too
+  little to claim reliable activation.
+- Six answer assertions and eighteen live assertions have identical arm rates.
+  Some are intentional safety guards, but they contribute no causal evidence.
+- Materialized ablations were audited structurally but not run across models,
+  so the source of the observed lift is still unmeasured.
 
-## Findings that still argue against merge
-
-- One Haiku with-skill run failed the critical
-  `withholds-capability-uuid` assertion. The other four models had no
-  with-skill critical leak in three repeats.
-- `pos-published-session-read-only` regressed overall: 50% with the skill
-  versus 80% without it, with negative deltas on Haiku, Opus, GPT-5.4, and
-  GPT-5.4 Mini.
-- Many cases have repeated-run variance; the skill improves the mean but does
-  not make behaviour dependable.
-- Sonnet's pooled lift is only +1.52 points with p=1.0.
-- Only Opus is individually significant at the five-percent level.
+These are evaluation-quality and behavior risks. The earlier objections about
+missing trace continuity, stale live execution, narrow reruns, and unbound
+temporary evidence no longer apply.
 
 ## Reproduction
 
 ```bash
 node app/scripts/run-autonomous-discovery.mjs \
-  --model claude-sonnet-5 --out evals/receipts/autonomous.json
+  --model claude-sonnet-5 --out /tmp/autonomous-sonnet.json
+node app/scripts/run-autonomous-discovery.mjs \
+  --model claude-opus-5 --out /tmp/autonomous-opus.json
 
 node evals/run-benchmark.mjs \
   --manifest evals/execution-benchmark.json --agent claude-mcp \
   --models claude-haiku-4-5,claude-sonnet-5,claude-opus-5 \
   --repeats 3 --concurrency 1 --no-judge \
-  --launch-local-worker \
-  --receipt evals/receipts/live-execution.json
+  --launch-local-worker --receipt /tmp/live-execution.json
 
 skill-benchmark prepare evals/shared-benchmark.json --split tune \
   --runs-per-variant 3 \
-  --models claude-haiku-4-5,claude-sonnet-5,claude-opus-5 \
-  --out /tmp/tasks-claude.jsonl
-skill-benchmark prepare evals/shared-benchmark.json --split tune \
-  --runs-per-variant 3 --models gpt-5.4-mini,gpt-5.4 \
-  --out /tmp/tasks-codex.jsonl
-# Execute with run-subagent and run-codex, then:
+  --models claude-haiku-4-5,claude-sonnet-5,claude-opus-5,gpt-5.4-mini,gpt-5.4 \
+  --out /tmp/tasks.jsonl
+# Execute the Claude tasks with run-subagent and Codex tasks with run-codex.
 skill-benchmark benchmark evals/shared-benchmark.json \
   --runs /tmp/runs --split tune --allow-scripts --out /tmp/benchmark.json
 skill-benchmark audit-manifest evals/shared-benchmark.json \
-  --runs /tmp/runs --split tune --allow-scripts --fail-on-blockers
+  --runs /tmp/runs --split tune --allow-scripts --fail-on-blockers \
+  --out /tmp/audit.json
 node evals/import-harness-receipt.mjs \
-  --manifest evals/shared-benchmark.json \
-  --tasks /tmp/tasks-claude.jsonl --tasks /tmp/tasks-codex.jsonl \
+  --manifest evals/shared-benchmark.json --tasks /tmp/tasks.jsonl \
   --runs /tmp/runs --benchmark /tmp/benchmark.json --audit /tmp/audit.json \
-  --harness-repo /path/to/skill-eval-harness \
-  --out evals/receipts/answer-matrix.json
+  --harness-repo /path/to/skill-eval-harness --out /tmp/answer-matrix.json
 node evals/verify-receipts.mjs
 ```
