@@ -131,21 +131,16 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
 
     // The full row is wider than the desktop viewport. Locator screenshots
     // therefore scrolled it under the sticky app header and captured the
-    // random presence avatar instead of any track pixels. Scroll the real last
-    // step into reach, then prove the sticky actions do not cover its hit area.
+    // random presence avatar instead of any track pixels. Drive the shared
+    // tracks scroller to its real end, then prove the sticky actions do not
+    // cover the last step's hit area. `scrollIntoViewIfNeeded()` is insufficient
+    // here: sticky controls can occlude an element that is still geometrically
+    // inside the viewport, so Chromium correctly decides no scroll is needed.
     const stepStrip = trackRow.locator('.steps');
     const stickyActions = trackRow.locator('.track-right');
     await expect(stickyActions).toBeVisible();
     const lastStep = stepStrip.locator('.step-cell').last();
-    // scrollIntoViewIfNeeded stops as soon as the cell is inside the
-    // scrollport, which is not the same as being clear of the sticky actions:
-    // it leaves the cell's right edge at 1189 against an actions edge of
-    // 1026.6, i.e. 162px underneath an opaque overlay. Scrolling the container
-    // to its maximum is the position a user reaches by scrolling right, and
-    // there the cell clears (1019 vs 1026.6) and hit-tests as itself.
-    await tracksScroller.evaluate((element) => {
-      element.scrollLeft = element.scrollWidth;
-    });
+    await tracksScroller.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
     await expect(lastStep).toBeVisible();
     const maxScroll = await tracksScroller.evaluate((element) => element.scrollLeft);
     expect(maxScroll, 'the step strip did not scroll, so reachability is untested')
@@ -168,12 +163,25 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
       return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
     })).toBe(true);
 
-    // Reachability is proven above at maximum scroll; the screenshot is a
-    // separate contract about how the strip renders. Return to 0, the position
-    // the app opens in, so the capture does not depend on the scrolling done
-    // for the reachability check.
+    // Reset to the stable origin view for the visual contract. Screenshot the
+    // first three unobscured beat groups; the assertions above independently
+    // cover the cells behind the sticky controls. This keeps the controls in
+    // the real DOM state without making their OS-rendered text part of a step
+    // cell baseline.
     await tracksScroller.evaluate((element) => { element.scrollLeft = 0; });
-    await expect(stepStrip).toHaveScreenshot('track-row-with-steps.png', {
+    const [firstVisibleStepBox, lastVisibleStepBox] = await Promise.all([
+      stepStrip.locator('.step-cell').first().boundingBox(),
+      stepStrip.locator('.step-cell').nth(11).boundingBox(),
+    ]);
+    expect(firstVisibleStepBox).not.toBeNull();
+    expect(lastVisibleStepBox).not.toBeNull();
+    await expect(page).toHaveScreenshot('track-row-with-steps.png', {
+      clip: {
+        x: firstVisibleStepBox!.x,
+        y: firstVisibleStepBox!.y,
+        width: lastVisibleStepBox!.x + lastVisibleStepBox!.width - firstVisibleStepBox!.x,
+        height: firstVisibleStepBox!.height,
+      },
       maxDiffPixels: 100,
       threshold: 0.2,
     });
