@@ -665,6 +665,14 @@ const LANDING_SAMPLES = ['kick', 'snare', 'hihat', 'clap'];
 function App() {
   const [showLanding, setShowLanding] = useState(() => !hasSessionInUrl());
 
+  // This is a client-side view transition, so the browser does not apply the
+  // normal document-navigation scroll reset for us. Without an explicit reset,
+  // scroll anchoring can preserve a landing-page offset and open a newly
+  // created session partway down its sequencer.
+  useEffect(() => {
+    if (!showLanding) window.scrollTo(0, 0);
+  }, [showLanding]);
+
   // Warm the lazily-loaded session chunks while the landing page idles, so
   // starting a session mounts the real UI directly instead of flashing
   // mismatched Suspense skeletons for a few hundred ms.
