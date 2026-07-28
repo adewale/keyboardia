@@ -330,6 +330,14 @@ describe('skill eval manifest', () => {
       unattributed: [...attribution.unattributed].reverse(),
     })).toBe(true);
     expect(score('pos-unattributed-concurrent-delta', {
+      attempted: [{ field: 'kick_active_steps', step: 0, value: true }],
+      observed: [{ kick_active_steps: { value: [0] } }],
+      unattributed: [
+        { tempo: { before: 120, after: 126 } },
+        { snare_active_steps: { before: [4, 12], after: [0, 4, 8, 12] } },
+      ],
+    })).toBe(true);
+    expect(score('pos-unattributed-concurrent-delta', {
       ...attribution,
       observed: [...attribution.observed, { field: 'tempo', value: 126 }],
     })).toBe(false);

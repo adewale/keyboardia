@@ -45,6 +45,37 @@ function parse(text) {
   }
 }
 
+function namedEntries(value) {
+  const source = Array.isArray(value) ? value : [value];
+  const entries = [];
+  for (const item of source) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) return null;
+    if (typeof item.field === 'string' || typeof item.type === 'string') {
+      const field = item.field ?? item.type;
+      const payload = { ...item };
+      delete payload.field;
+      delete payload.type;
+      entries.push({ field, payload });
+      continue;
+    }
+    const keys = Object.keys(item);
+    if (keys.length !== 1) return null;
+    entries.push({ field: keys[0], payload: item[keys[0]] });
+  }
+  return entries;
+}
+
+function unwrapSinglePayload(value) {
+  let payload = value;
+  if (Array.isArray(payload) && payload.length === 1) payload = payload[0];
+  for (const key of ['change', 'value']) {
+    if (exactKeys(payload, [key]) && payload[key] && typeof payload[key] === 'object') {
+      payload = payload[key];
+    }
+  }
+  return payload;
+}
+
 export function humanStepsAnswer(text) {
   const parsed = parse(text);
   if (parsed.error) return fail(parsed.error);
@@ -171,21 +202,25 @@ export function concurrentDeltaAnswer(text) {
   if (!exactKeys(value, ['attempted', 'observed', 'unattributed'])) {
     return fail('expected separate attempted, observed, and unattributed fields');
   }
-  const expectedAttempted = [{ field: 'kick_active_steps', change: { step: 0, value: true } }];
-  const expectedObserved = [{ field: 'kick_active_steps', value: [0] }];
+  const attempted = namedEntries(value.attempted);
+  if (!attempted || attempted.length !== 1 || attempted[0].field !== 'kick_active_steps'
+      || !isDeepStrictEqual(unwrapSinglePayload(attempted[0].payload), { step: 0, value: true })) {
+    return fail('attempted must contain only the requested kick step assignment');
+  }
+  const observed = namedEntries(value.observed);
+  if (!observed || observed.length !== 1 || observed[0].field !== 'kick_active_steps'
+      || !isDeepStrictEqual(unwrapSinglePayload(observed[0].payload), [0])) {
+    return fail('observed must contain only the confirmed kick post-state');
+  }
   const expectedUnattributed = [
     { field: 'tempo', before: 120, after: 126 },
     { field: 'snare_active_steps', before: [4, 12], after: [0, 4, 8, 12] },
   ];
-  if (!isDeepStrictEqual(value.attempted, expectedAttempted)) {
-    return fail('attempted must contain only the requested kick step assignment');
-  }
-  if (!isDeepStrictEqual(value.observed, expectedObserved)) {
-    return fail('observed must contain only the confirmed kick post-state');
-  }
-  const sortedUnattributed = Array.isArray(value.unattributed)
-    ? [...value.unattributed].sort((left, right) => String(left?.field).localeCompare(String(right?.field)))
-    : value.unattributed;
+  const unattributed = namedEntries(value.unattributed);
+  const sortedUnattributed = unattributed?.map(({ field, payload }) => ({
+    field,
+    ...(payload && typeof payload === 'object' && !Array.isArray(payload) ? payload : {}),
+  })).sort((left, right) => String(left.field).localeCompare(String(right.field)));
   const sortedExpected = [...expectedUnattributed]
     .sort((left, right) => left.field.localeCompare(right.field));
   if (!isDeepStrictEqual(sortedUnattributed, sortedExpected)) {
