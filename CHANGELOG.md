@@ -16,6 +16,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Runtime-Neutral Dependency Boundaries (July 2026)
+
+**Changed:**
+- Canonical instrument data, serializable effects defaults, deterministic MIDI
+  encoding, and pure pattern transformations now live in runtime-neutral shared
+  modules. Browser UI/audio delivery and Cloudflare Worker/MCP adapters consume
+  those cores without importing one another.
+- Browser MIDI export retains Blob, browser Worker, file-picker, and download
+  behavior; MCP exports the identical shared MIDI bytes directly.
+- Client-only state and sync adapters now live under their owning client layers.
+
+**Added (regression proof):**
+- Runtime boundary tests parse the TypeScript AST, use bundler-equivalent module
+  resolution (including `.js` to `.ts`, Vite Worker query specifiers, and
+  `new URL(..., import.meta.url)` Worker references), derive compiler-emitted
+  module imports from TypeScript itself (including per-file JSX pragmas), fail on
+  unresolved or excluded code imports, classify package asset subpaths and Vite
+  loader queries as resource capabilities, ignore comments and strings, and
+  enforce explicit Worker, shared, music, and state capabilities across closed
+  transitive graphs. State policies carry those capabilities through
+  intermediary modules.
+- Runtime safety uses symbol-aware AST checks over every neutral-owned module,
+  deriving browser-only runtime values and namespaces from TypeScript's
+  DOM/Worker libraries, then subtracting ECMAScript and installed workerd
+  globals. It catches browser APIs and ambient values declared inline, inside
+  `declare global` augmentations, or by project declaration files in callbacks,
+  constructors, getters, and IIFEs without mistaking runtime locals, labels,
+  binding property names, or erased declarations for reads. Neutral modules
+  reject unapproved global-object access and every `import.meta` capability,
+  including Vite glob loading, rather than relying on incomplete alias tainting.
+- A real Chromium test constructs `midiExport.worker.ts`, receives its response,
+  downloads the result, and verifies a non-trivial Standard MIDI `MThd` header.
+- The real-Wrangler MCP lifecycle now invokes `export_midi` and validates its
+  base64 MIDI header in workerd, not only in transformed unit/integration tests.
+
 #### Live MCP Sampled-Instrument Readiness (July 2026)
 
 **Fixed (browser audio readiness):**
@@ -58,7 +93,7 @@ an authoritative Keyboardia operation and returns canonical session URLs.
   `source_url`, purges both social-preview cache entries, and rejects publishing
   an already-published session. Publishing is never an implicit side effect of
   editing or exporting.
-- **`export_midi`** — uses the browser's authoritative `exportToMidi()` path, so
+- **`export_midi`** — uses the same runtime-neutral encoder as the browser, so
   identical state produces identical bytes. It returns base64-encoded Standard
   MIDI, reports skipped tracks, and lists features MIDI cannot represent rather
   than approximating them silently.
@@ -125,10 +160,11 @@ an authoritative Keyboardia operation and returns canonical session URLs.
   deployment or policy changes.
 
 **Fixed (Workers runtime and deployment proof):**
-- **`import.meta.env.DEV` crashed every `/mcp` request.** Browser MIDI reuse
-  reached a Vite-only global during Worker module evaluation. Unit and
+- **`import.meta.env.DEV` crashed every `/mcp` request.** The former browser MIDI
+  reuse reached a Vite-only global during Worker module evaluation. Unit and
   workerd-based integration tests both transformed through Vite and missed it;
-  `worker-runtime-safety.test.ts` now walks the Worker import graph and rejects
+  the MIDI core is now runtime-neutral and `worker-runtime-safety.test.ts` walks
+  the resolved Worker import graph and rejects
   unguarded reads. See Lessons 50–54 in `docs/LESSONS-LEARNED.md`.
 - The Worker now has a dedicated TypeScript target and Workers runtime types.
   CI performs a Wrangler dry run, ratchets JavaScript/upload sizes, and rejects

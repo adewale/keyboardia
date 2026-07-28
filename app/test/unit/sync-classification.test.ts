@@ -20,7 +20,7 @@ import {
   isSyncedAction,
   isLocalOnlyAction,
   isInternalAction,
-} from '../../src/shared/sync-classification';
+} from '../../src/sync/sync-classification';
 import { actionToMessage } from '../../src/sync/multiplayer';
 import { MUTATING_MESSAGE_TYPES, READONLY_MESSAGE_TYPES } from '../../src/shared/messages';
 import type { GridAction, Track, ParameterLock, EffectsState, FMParams } from '../../src/types';

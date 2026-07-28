@@ -352,7 +352,7 @@ Remove from message type lists:
   ] as const;
 ```
 
-#### `app/src/shared/sync-classification.ts`
+#### `app/src/sync/sync-classification.ts`
 
 Remove from synced actions:
 

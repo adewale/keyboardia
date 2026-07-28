@@ -239,6 +239,20 @@ test('MCP-created sampled tracks become audible when added during uninterrupted 
       }));
     }
 
+    // Execute MIDI generation inside the real Wrangler/workerd runtime. Unit
+    // and Vite integration tests cannot prove that this adapter is free of
+    // browser-only module-evaluation dependencies.
+    const exportedMidi = await callMcpTool(mcp, 'export_midi', { session_id: sessionId });
+    const midiBytes = Buffer.from(exportedMidi.data as string, 'base64');
+    expect(exportedMidi.mime_type).toBe('audio/midi');
+    expect(exportedMidi.encoding).toBe('base64');
+    expect(midiBytes.length).toBeGreaterThan(20);
+    expect(midiBytes.subarray(0, 4).toString('ascii')).toBe('MThd');
+    expect(exportedMidi.exported_track_ids).toEqual([
+      CONTROL_TRACK.trackId,
+      ...MCP_SAMPLED_TRACKS.map(({ trackId }) => trackId),
+    ]);
+
     const probedTrackIds = [
       CONTROL_TRACK.trackId,
       ...MCP_SAMPLED_TRACKS.map(({ trackId }) => trackId),
@@ -255,6 +269,10 @@ test('MCP-created sampled tracks become audible when added during uninterrupted 
       peaks,
       instrumentRequests,
       compactTracks,
+      exportedMidi: {
+        byteLength: midiBytes.length,
+        header: midiBytes.subarray(0, 4).toString('ascii'),
+      },
     };
     console.log('MCP_LIVE_SAMPLED_ACCEPTANCE', JSON.stringify(observation, null, 2));
 

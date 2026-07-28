@@ -159,7 +159,8 @@ Currently pattern operations (ROTATE, INVERT, REVERSE, MIRROR, EUCLIDEAN) are **
 
 **Shared Mutations** (`app/src/shared/state-mutations.ts`):
 ```typescript
-import { rotateLeft, rotateRight, invertPattern, reversePattern, mirrorPattern, applyEuclidean } from '../utils/patternOps';
+// Current runtime-neutral owner; the old utils/patternOps path is a client facade.
+import { rotateLeft, rotateRight, invertPattern, reversePattern, mirrorPattern, applyEuclidean } from './pattern-operations';
 
 case 'rotate_pattern': {
   const tracks = state.tracks.map((track) => {
@@ -342,7 +343,8 @@ export function sessionStateToGridState(
 **Completed**: 2026-01-04
 
 **Implementation Summary**:
-- Created `app/src/shared/state-adapters.ts` with:
+- Created `app/src/shared/state-adapters.ts`, later moved to the client-owned
+  `app/src/state/state-adapters.ts`, with:
   - `gridStateToSessionState()` - Convert client state to session state
   - `applySessionToGridState()` - Merge session changes back, preserving local-only fields
   - `delegateToApplyMutation()` - Core delegation helper

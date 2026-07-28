@@ -168,6 +168,7 @@ If you have more than 15 synth tracks, channels wrap around (though Keyboardia t
 ## Technical Reference
 
 For implementation details, see:
-- Source: [`app/src/audio/midiExport.ts`](../app/src/audio/midiExport.ts)
+- Encoder: [`app/src/shared/midi-core.ts`](../app/src/shared/midi-core.ts)
+- Browser delivery: [`app/src/audio/midiExport.ts`](../app/src/audio/midiExport.ts)
 - Spec: [`specs/MIDI-EXPORT.md`](../specs/MIDI-EXPORT.md)
 - Tests: [`app/src/audio/midiExport.test.ts`](../app/src/audio/midiExport.test.ts)

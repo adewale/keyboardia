@@ -19,6 +19,8 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
+import { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
+export { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
 // Re-export EffectsState from canonical source for type parity
 export type { EffectsState } from '../shared/sync-types';
 import type { EffectsState } from '../shared/sync-types';
@@ -51,19 +53,6 @@ export function musicalTimeToSeconds(notation: string, bpm: number): number {
   const noteSeconds = (4 / amount) * quarterSeconds;
   return unit === 't' ? noteSeconds * (2 / 3) : noteSeconds;
 }
-
-/**
- * Default effects state - all effects dry (wet = 0)
- * Users must explicitly enable effects.
- * bypass: false means effects are active (can hear wet signal when wet > 0)
- */
-export const DEFAULT_EFFECTS_STATE: EffectsState = {
-  bypass: false,  // Effects enabled by default (respects wet values)
-  reverb: { decay: 2.0, wet: 0 },
-  delay: { time: '8n', feedback: 0.3, wet: 0 },
-  chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
-  distortion: { amount: 0.4, wet: 0 },
-};
 
 /**
  * ToneEffectsChain - Manages Tone.js effects for the hybrid audio engine

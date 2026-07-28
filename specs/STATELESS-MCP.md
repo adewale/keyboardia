@@ -316,8 +316,8 @@ and the snapshot's cached social previews are purged, as in the REST route.
 }
 ```
 
-Runs the same `exportToMidi()` behind the browser's Export MIDI button, so
-identical state yields identical bytes. The session is not modified. Output:
+Calls the runtime-neutral `encodeMidi()` core used by the browser export adapter,
+so identical state yields identical bytes. The session is not modified. Output:
 
 ```json
 {
@@ -410,17 +410,23 @@ Determinism is part of the contract, because these results feed evals:
 candidate ordering is fixed, ties are broken explicitly, and no output depends
 on object iteration order.
 
-Reusing the browser exporter pulls `src/audio/midiExport.ts` and its
-instrument-ID parsing into the Worker. That is the intended tradeoff — one
-exporter, identical bytes — but it moves frontend modules across a runtime
-boundary, and the first attempt shipped a module-scope `import.meta.env.DEV`
-read that does not exist in workerd and 500'd every `/mcp` request while all
-4,881 unit tests and 280 integration tests passed. Both layers transform through
-Vite, which defines the global. `worker-runtime-safety.test.ts` now walks the
-Worker's import graph and fails on an unguarded read; see
-[Lesson 50](../docs/LESSONS-LEARNED.md). Verify new cross-boundary imports
-against a running `wrangler dev`, not against the test suite. Tone.js is not
-pulled in — only pure instrument-ID logic and `midi-writer-js`.
+Browser and MCP export now share `src/shared/midi-core.ts`, a runtime-neutral
+encoder that returns bytes and metadata. The browser adapter alone owns Blob,
+Web Worker, file-picker, and download behavior; MCP base64-encodes the same
+bytes without importing the browser adapter. This split followed a production
+failure in which the old cross-runtime graph reached a module-scope
+`import.meta.env.DEV` read that does not exist in workerd and 500'd every
+`/mcp` request while the Vite-transformed unit and integration layers passed.
+See [Lesson 50](../docs/LESSONS-LEARNED.md).
+
+The boundary suite parses TypeScript syntax, resolves imports with the same
+bundler semantics as the application (including Vite URL Worker references and
+TypeScript-emitted imports selected by per-file JSX pragmas), rejects unresolved
+code imports, and checks every Worker/shared/music entry transitively.
+Runtime-neutral modules reject unapproved browser globals and every `import.meta` capability;
+`worker-runtime-safety.test.ts` separately rejects module-evaluation browser
+globals throughout the real Worker entry graph. A dry Worker bundle and a
+running `wrangler dev` remain the final runtime proof.
 
 ## 5. Collaboration semantics
 
@@ -1013,9 +1019,11 @@ stop and reconsider whether Keyboardia already has the required primitive.
 - `app/src/shared/message-types.ts`
 - `app/src/shared/messages.ts`
 - `app/src/shared/state-mutations.ts`
-- `app/src/shared/state-adapters.ts`
-- `app/src/shared/sync-classification.ts`
+- `app/src/shared/pattern-operations.ts`
+- `app/src/state/state-adapters.ts`
+- `app/src/sync/sync-classification.ts`
 - `app/src/sync/multiplayer.ts`
-- `app/src/components/sample-constants.ts`
+- `app/src/shared/instrument-catalog.ts`
+- `app/src/shared/midi-core.ts`
 - `specs/ROADMAP.md`
 - `specs/SHARED-MUTATION-REFACTORING-PLAN.md`

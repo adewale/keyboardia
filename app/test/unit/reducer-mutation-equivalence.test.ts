@@ -21,7 +21,7 @@ import fc from 'fast-check';
 import { gridReducer } from '../../src/state/grid';
 import { applyMutation } from '../../src/shared/state-mutations';
 import { actionToMessage } from '../../src/sync/multiplayer';
-import { SYNCED_ACTIONS } from '../../src/shared/sync-classification';
+import { SYNCED_ACTIONS } from '../../src/sync/sync-classification';
 import type { GridState, GridAction, Track } from '../../src/types';
 import type { SessionState, SessionTrack } from '../../src/shared/state';
 import type { ClientMessageBase } from '../../src/shared/message-types';

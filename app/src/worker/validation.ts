@@ -20,7 +20,7 @@ import {
   VALID_DELAY_TIMES,
   isValidIntegerInRange,
 } from './invariants';
-import { LEGACY_UNAVAILABLE_SAMPLE_IDS, VALID_SAMPLE_IDS } from '../components/sample-constants';
+import { LEGACY_UNAVAILABLE_SAMPLE_IDS, VALID_SAMPLE_IDS } from '../shared/instrument-catalog';
 import {
   REVERB_MIN_DECAY,
   REVERB_MAX_DECAY,

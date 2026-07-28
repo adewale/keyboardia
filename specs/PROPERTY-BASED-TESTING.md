@@ -502,7 +502,7 @@ fc.assert(fc.property(
 
 #### 4.3.1 Euclidean Rhythm Distribution
 
-**Location:** `app/src/utils/patternOps.ts:107-165`
+**Implementation:** `app/src/shared/pattern-operations.ts` (`euclidean`)
 
 **Properties:**
 ```typescript
@@ -570,7 +570,7 @@ fc.assert(fc.property(
 
 #### 4.3.3 Pattern Operations Composition
 
-**Location:** `app/src/utils/patternOps.ts`
+**Implementation:** `app/src/shared/pattern-operations.ts`
 
 **Properties:**
 ```typescript
@@ -979,7 +979,7 @@ When a property fails:
 
 ## Appendix: Property Catalog
 
-### A.1 Pattern Operations (`patternOps.ts`)
+### A.1 Pattern Operations (`app/src/shared/pattern-operations.ts`)
 
 | Property ID | Description | Implementation |
 |------------|-------------|----------------|

@@ -22,7 +22,7 @@
  * NOTE: mute_track and solo_track are intentionally EXCLUDED.
  * Mute/solo are local-only per "My Ears, My Control" philosophy.
  * Each user controls their own mix - these are never synced to shared state.
- * See: src/shared/sync-classification.ts for full sync classification.
+ * See: src/sync/sync-classification.ts for full sync classification.
  */
 export const MUTATING_MESSAGE_TYPES = new Set([
   'toggle_step',

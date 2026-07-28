@@ -380,20 +380,22 @@ The library always uses 128 ticks per quarter note. This is sufficient for step-
 
 ### Conceptual Overview
 
-The reference implementation below is simplified for clarity. See `app/src/audio/midiExport.ts` for the actual implementation, which includes:
+The reference implementation below is simplified for clarity. See
+`app/src/shared/midi-core.ts` for the actual runtime-neutral encoder and
+`app/src/audio/midiExport.ts` for browser delivery. Together they include:
 
 - Full polyrhythm support (LCM calculation, loop expansion)
 - Proper channel assignment (dedicated counter that skips channel 10)
 - Separate functions for drum vs synth note pitch
 - Note clamping to 0-127 range (prevents wrap-around)
-- `MidiExportResult` return type with blob and filename
+- deterministic byte output plus the browser `MidiExportResult` Blob adapter
 - `Pick<GridState, 'tracks' | 'tempo' | 'swing'>` for minimal type requirements
 - ArrayBuffer workaround for TypeScript Blob compatibility
 
 ```typescript
 import MidiWriter from 'midi-writer-js';
 
-// Conceptual implementation - see midiExport.ts for actual code
+// Conceptual implementation - see shared/midi-core.ts for actual encoding
 function exportToMidi(state: GridState): MidiExportResult {
   const tracks: MidiTrack[] = [];
 
@@ -517,12 +519,12 @@ GM program changes are included for compatibility with GM-compatible hardware an
 When adding new samples or synth presets to Keyboardia, update the MIDI export mappings:
 
 **For new drum samples:**
-1. Add to `DRUM_NOTE_MAP` in `app/src/audio/midiExport.ts`
+1. Add to `DRUM_NOTE_MAP` in `app/src/shared/midi-core.ts`
 2. Use standard GM drum notes (35-81) when possible
 3. Add test case to `getDrumNote` test suite
 
 **For new synth presets:**
-1. Add to `SYNTH_PROGRAM_MAP` in `app/src/audio/midiExport.ts`
+1. Add to `SYNTH_PROGRAM_MAP` in `app/src/shared/midi-core.ts`
 2. Choose closest GM program number (see [General MIDI spec](https://en.wikipedia.org/wiki/General_MIDI))
 3. Add test case to `getSynthProgram` test suite
 
@@ -540,19 +542,20 @@ return SYNTH_PROGRAM_MAP[preset] ?? SYNTH_PROGRAM_MAP.default;
 | `app/src/audio/synth.ts` | `SYNTH_PRESETS` (32 presets) |
 | `app/src/audio/toneSynths.ts` | `TONE_SYNTH_PRESETS` |
 | `app/src/audio/advancedSynth.ts` | `ADVANCED_SYNTH_PRESETS` (8 presets) |
-| `app/src/audio/midiExport.ts` | `DRUM_NOTE_MAP`, `SYNTH_PROGRAM_MAP` |
+| `app/src/shared/midi-core.ts` | `DRUM_NOTE_MAP`, `SYNTH_PROGRAM_MAP`, deterministic MIDI bytes |
+| `app/src/audio/midiExport.ts` | Browser Blob, Web Worker, and download adapter |
 
 ### Recommended: Coverage Test
 
 To prevent silent fallbacks, add a test that verifies all presets have explicit MIDI mappings.
 
-**Implementation Note:** `SYNTH_PROGRAM_MAP` is currently not exported. To enable this test:
-1. Export `SYNTH_PROGRAM_MAP` from `midiExport.ts`, OR
+**Implementation Note:** `SYNTH_PROGRAM_MAP` is exported from the shared core. A coverage test can:
+1. Import `SYNTH_PROGRAM_MAP` from `shared/midi-core.ts`, OR
 2. Add a helper function `hasExplicitMapping(presetId: string): boolean`
 
 ```typescript
 import { SYNTH_PRESETS } from './synth';
-import { SYNTH_PROGRAM_MAP } from './midiExport'; // requires export
+import { SYNTH_PROGRAM_MAP } from '../shared/midi-core';
 
 describe('MIDI Export: Preset Coverage', () => {
   it('all synth presets have explicit MIDI program mappings', () => {
@@ -830,7 +833,8 @@ This is a known consideration for Phase 25+ features.
 | File | Purpose |
 |------|---------|
 | `app/src/audio/scheduler.ts` | Canonical track filtering logic (search: `@spec: track-selection`) |
-| `app/src/audio/midiExport.ts` | Reference implementation |
+| `app/src/shared/midi-core.ts` | Canonical MIDI planning and byte encoder |
+| `app/src/audio/midiExport.ts` | Browser Blob, Web Worker, file picker, and download adapter |
 | `app/src/audio/midiExport.test.ts` | Behavioral parity tests |
 
 ### Dependent Features

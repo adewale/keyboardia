@@ -328,7 +328,7 @@ expect(allActions.sort()).toEqual(definedActions.sort());
 | `app/src/types.ts` | `GridAction` type definitions |
 | `app/src/state/grid.tsx` | gridReducer implementation |
 | `app/src/sync/multiplayer.ts` | `actionToMessage()` mapping |
-| `app/src/shared/sync-classification.ts` | `SYNCED_ACTIONS` / `LOCAL_ONLY_ACTIONS` |
+| `app/src/sync/sync-classification.ts` | `SYNCED_ACTIONS` / `LOCAL_ONLY_ACTIONS` |
 | `app/src/worker/live-session.ts` | Server message handlers (e.g., `handleToggleStep()`, `handleAddTrack()`) |
 | `app/src/shared/message-types.ts` | ClientMessage types |
 | `app/src/components/StepSequencer.tsx` | UI dispatch calls |

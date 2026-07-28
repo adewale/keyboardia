@@ -7,7 +7,7 @@
  *
  * Everything here is built on `music-theory.ts` — the same scale table, chord
  * detector, and note naming the Key Assistant and Chromatic Grid use — and on
- * the track selection and pitch arithmetic in `midiExport.ts`. Nothing
+ * the track selection and pitch arithmetic in `shared/midi-core.ts`. Nothing
  * reimplements musical inference, so an agent's description of a session and
  * what a person sees in the browser cannot drift apart.
  *
@@ -21,11 +21,10 @@
 import {
   BASE_NOTE,
   isDrumTrack,
-} from '../audio/midiExport';
+} from '../shared/midi-core';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { boundedPatternLength } from '../shared/pattern-expansion';
 import type { SessionState, SessionTrack } from '../shared/state';
-import { sessionTrackToTrack } from '../types';
 import {
   NOTE_NAMES,
   SCALES,
@@ -144,7 +143,7 @@ export interface SessionAnalysis {
 /**
  * The sounding pitch of a step, as a semitone offset from middle C.
  *
- * Deliberately the same arithmetic as `getSynthNotePitch()` in midiExport,
+ * Deliberately the same arithmetic as `getSynthNotePitch()` in midi-core,
  * minus its MIDI base, so analysis and export agree on what note a step plays.
  */
 function stepPitch(track: SessionTrack, step: number): number {
@@ -182,7 +181,7 @@ function audibleTracks(tracks: SessionTrack[]): SessionTrack[] {
 }
 
 function isPitched(track: SessionTrack): boolean {
-  return !isDrumTrack(sessionTrackToTrack(track));
+  return !isDrumTrack(track);
 }
 
 function analyzeRhythm(track: SessionTrack): TrackRhythmAnalysis {

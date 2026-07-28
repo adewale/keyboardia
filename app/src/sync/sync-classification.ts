@@ -1,5 +1,5 @@
 /**
- * Sync Classification Manifest
+ * Client Sync Classification Manifest
  *
  * This is the SINGLE SOURCE OF TRUTH for what should sync in multiplayer.
  * Tests verify that actual code behavior matches this manifest.

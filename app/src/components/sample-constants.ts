@@ -1,203 +1,59 @@
 /**
- * Constants for sample and synth picker
- * Organized by MUSICAL FUNCTION (not engine type) for intuitive browsing
- *
- * COLORS: Each category has a CSS variable name for use in stylesheets.
- * The color values here match the design system in index.css.
- * Prefer using the CSS variables (--color-drums, --color-bass, etc.)
+ * Browser presentation metadata for the runtime-neutral instrument catalogue.
+ * Canonical IDs and names live in shared/instrument-catalog.ts.
  */
+import {
+  INSTRUMENT_GROUPS,
+  INSTRUMENT_CATEGORY_ORDER,
+  VALID_SAMPLE_IDS as CATALOG_SAMPLE_IDS,
+  LEGACY_UNAVAILABLE_SAMPLE_IDS as CATALOG_LEGACY_SAMPLE_IDS,
+  getInstrumentName as getCatalogInstrumentName,
+  isValidSampleId as isCatalogSampleId,
+  getCanonicalSampleId as getCatalogSampleId,
+} from '../shared/instrument-catalog';
 
-// Unified instrument organization by musical function
-// Users don't care about the engine - they want sounds that fit their track
 export const INSTRUMENT_CATEGORIES = {
   drums: {
-    label: 'Drums',
-    color: '#e67e22',      // Orange - matches --color-drums / --color-orange
+    ...INSTRUMENT_GROUPS.drums,
+    color: '#e67e22',
     cssVar: '--color-drums',
-    instruments: [
-      // 808 Kit (Phase 29A)
-      { id: 'sampled:808-kick', name: '808 Kick', type: 'sampled' },
-      { id: 'sampled:808-snare', name: '808 Snare', type: 'sampled' },
-      { id: 'sampled:808-hihat-closed', name: '808 Hat', type: 'sampled' },
-      { id: 'sampled:808-hihat-open', name: '808 Open', type: 'sampled' },
-      { id: 'sampled:808-clap', name: '808 Clap', type: 'sampled' },
-      // Acoustic Kit (Phase 29A)
-      { id: 'sampled:acoustic-kick', name: 'Ac. Kick', type: 'sampled' },
-      { id: 'sampled:acoustic-snare', name: 'Ac. Snare', type: 'sampled' },
-      { id: 'sampled:acoustic-hihat-closed', name: 'Ac. Hat', type: 'sampled' },
-      { id: 'sampled:acoustic-hihat-open', name: 'Ac. Open', type: 'sampled' },
-      { id: 'sampled:acoustic-ride', name: 'Ride', type: 'sampled' },
-      { id: 'sampled:acoustic-crash', name: 'Crash', type: 'sampled' },
-      { id: 'sampled:brushes-snare', name: 'Brush Snare', type: 'sampled' },
-      // Procedural kit (legacy)
-      { id: 'kick', name: 'Kick', type: 'sample' },
-      { id: 'snare', name: 'Snare', type: 'sample' },
-      { id: 'hihat', name: 'Hi-Hat', type: 'sample' },
-      { id: 'clap', name: 'Clap', type: 'sample' },
-      { id: 'tom', name: 'Tom', type: 'sample' },
-      { id: 'rim', name: 'Rim', type: 'sample' },
-      { id: 'cowbell', name: 'Cowbell', type: 'sample' },
-      { id: 'openhat', name: 'Open Hat', type: 'sample' },
-      // World/Latin percussion
-      { id: 'shaker', name: 'Shaker', type: 'sample' },
-      { id: 'conga', name: 'Conga', type: 'sample' },
-      { id: 'tambourine', name: 'Tamb', type: 'sample' },
-      { id: 'clave', name: 'Clave', type: 'sample' },
-      { id: 'cabasa', name: 'Cabasa', type: 'sample' },
-      { id: 'woodblock', name: 'Wood', type: 'sample' },
-      // Synthesized drums
-      { id: 'tone:membrane-kick', name: 'Synth Kick', type: 'tone' },
-      { id: 'tone:membrane-tom', name: 'Synth Tom', type: 'tone' },
-      { id: 'tone:metal-cymbal', name: 'Cymbal', type: 'tone' },
-      { id: 'tone:metal-hihat', name: 'Metal Hat', type: 'tone' },
-    ],
   },
   bass: {
-    label: 'Bass',
-    color: '#9b59b6',      // Purple - matches --color-bass / --color-purple
+    ...INSTRUMENT_GROUPS.bass,
+    color: '#9b59b6',
     cssVar: '--color-bass',
-    instruments: [
-      // Sampled (Phase 29A + 29E)
-      { id: 'sampled:finger-bass', name: 'Finger', type: 'sampled' },
-      { id: 'sampled:slap-bass', name: 'Slap', type: 'sampled' },
-      // Procedural samples
-      { id: 'bass', name: 'Bass', type: 'sample' },
-      { id: 'subbass', name: 'Sub', type: 'sample' },
-      // Web Audio synths
-      { id: 'synth:bass', name: 'Synth', type: 'synth' },
-      { id: 'synth:acid', name: 'Acid', type: 'synth' },
-      { id: 'synth:sub', name: 'Deep Sub', type: 'synth' },
-      { id: 'synth:funkbass', name: 'Funk', type: 'synth' },
-      { id: 'synth:discobass', name: 'Disco', type: 'synth' },
-      { id: 'synth:reese', name: 'Reese', type: 'synth' },
-      { id: 'synth:hoover', name: 'Hoover', type: 'synth' },
-      // Tone.js
-      { id: 'tone:fm-bass', name: 'FM Bass', type: 'tone' },
-      // Advanced
-      { id: 'advanced:sub-bass', name: 'Sub Bass', type: 'advanced' },
-      { id: 'advanced:wobble-bass', name: 'Wobble Bass', type: 'advanced' },
-      { id: 'advanced:acid-bass', name: 'Acid 303', type: 'advanced' },
-    ],
   },
   keys: {
-    label: 'Keys',
-    color: '#3498db',      // Blue - matches --color-keys / --color-blue
+    ...INSTRUMENT_GROUPS.keys,
+    color: '#3498db',
     cssVar: '--color-keys',
-    instruments: [
-      // Sampled
-      { id: 'sampled:piano', name: 'Piano', type: 'sampled' },
-      { id: 'sampled:vibraphone', name: 'Vibes', type: 'sampled' },
-      { id: 'sampled:marimba', name: 'Marimba', type: 'sampled' },
-      { id: 'sampled:kalimba', name: 'Kalimba', type: 'sampled' },
-      { id: 'sampled:steel-drums', name: 'Steel Pan', type: 'sampled' },
-      { id: 'sampled:hammond-organ', name: 'Hammond', type: 'sampled' },
-      // Electric pianos (synthesized)
-      { id: 'synth:rhodes', name: 'Synth Rhodes', type: 'synth' },
-      { id: 'synth:wurlitzer', name: 'Wurli', type: 'synth' },
-      { id: 'synth:epiano', name: 'E-Piano', type: 'synth' },
-      { id: 'synth:vibes', name: 'Synth Vibes', type: 'synth' },
-      { id: 'tone:fm-epiano', name: 'FM Piano', type: 'tone' },
-      // Organs
-      { id: 'synth:organ', name: 'Organ', type: 'synth' },
-      { id: 'synth:organphase', name: 'Phaser', type: 'synth' },
-      // Other keys
-      { id: 'synth:clavinet', name: 'Clav', type: 'synth' },
-    ],
   },
   leads: {
-    label: 'Leads',
-    color: '#e91e63',      // Pink - matches --color-leads / --color-pink
+    ...INSTRUMENT_GROUPS.leads,
+    color: '#e91e63',
     cssVar: '--color-leads',
-    instruments: [
-      // Sampled (Phase 29C/29D)
-      { id: 'sampled:alto-sax', name: 'Alto Sax', type: 'sampled' },
-      { id: 'sampled:clean-guitar', name: 'Clean Guitar', type: 'sampled' },
-      { id: 'sampled:acoustic-guitar', name: 'Acoustic', type: 'sampled' },
-      // Sample
-      { id: 'lead', name: 'Lead', type: 'sample' },
-      { id: 'pluck', name: 'Pluck', type: 'sample' },
-      // Synth leads
-      { id: 'synth:lead', name: 'Classic', type: 'synth' },
-      { id: 'synth:pluck', name: 'Synth Pluck', type: 'synth' },
-      { id: 'synth:supersaw', name: 'Supersaw', type: 'synth' },
-      { id: 'synth:hypersaw', name: 'Hypersaw', type: 'synth' },
-      // Tone.js
-      { id: 'tone:pluck-string', name: 'String', type: 'tone' },
-      { id: 'tone:duo-lead', name: 'Duo', type: 'tone' },
-      // Advanced
-      { id: 'advanced:supersaw', name: 'Fat Saw', type: 'advanced' },
-      { id: 'advanced:thick-lead', name: 'Thick', type: 'advanced' },
-      { id: 'advanced:vibrato-lead', name: 'Vibrato', type: 'advanced' },
-    ],
   },
   pads: {
-    label: 'Pads',
-    color: '#2ecc71',      // Green - matches --color-pads / --color-green
+    ...INSTRUMENT_GROUPS.pads,
+    color: '#2ecc71',
     cssVar: '--color-pads',
-    instruments: [
-      // Sampled (Phase 29C)
-      { id: 'sampled:string-section', name: 'Strings', type: 'sampled' },
-      { id: 'sampled:french-horn', name: 'Horn', type: 'sampled' },
-      // Samples
-      { id: 'pad', name: 'Pad', type: 'sample' },
-      { id: 'chord', name: 'Chord', type: 'sample' },
-      // Synth pads
-      { id: 'synth:pad', name: 'Soft', type: 'synth' },
-      { id: 'synth:warmpad', name: 'Warm', type: 'synth' },
-      { id: 'synth:strings', name: 'Synth Str', type: 'synth' },
-      { id: 'synth:shimmer', name: 'Shimmer', type: 'synth' },
-      { id: 'synth:dreampop', name: 'Dream', type: 'synth' },
-      { id: 'synth:glass', name: 'Glass', type: 'synth' },
-      { id: 'synth:jangle', name: 'Jangle', type: 'synth' },
-      { id: 'synth:evolving', name: 'Evolve', type: 'synth' },
-      { id: 'synth:sweep', name: 'Sweep', type: 'synth' },
-      // Advanced
-      { id: 'advanced:warm-pad', name: 'Lush', type: 'advanced' },
-      { id: 'advanced:tremolo-strings', name: 'Trem Str', type: 'advanced' },
-    ],
   },
   fx: {
-    label: 'FX',
-    color: '#00bcd4',      // Cyan - matches --color-fx / --color-cyan
+    ...INSTRUMENT_GROUPS.fx,
+    color: '#00bcd4',
     cssVar: '--color-fx',
-    instruments: [
-      // Sampled (Phase 29A)
-      { id: 'sampled:vinyl-crackle', name: 'Vinyl', type: 'sampled' },
-      // Procedural samples
-      { id: 'zap', name: 'Zap', type: 'sample' },
-      { id: 'noise', name: 'Noise', type: 'sample' },
-      // Synth FX
-      { id: 'synth:bell', name: 'Bell', type: 'synth' },
-      { id: 'synth:stab', name: 'Stab', type: 'synth' },
-      { id: 'synth:brass', name: 'Brass', type: 'synth' },
-      { id: 'synth:wobble', name: 'Wobble', type: 'synth' },
-      { id: 'synth:growl', name: 'Growl', type: 'synth' },
-      // Tone.js bells
-      { id: 'tone:fm-bell', name: 'FM Bell', type: 'tone' },
-      { id: 'tone:am-bell', name: 'AM Bell', type: 'tone' },
-      { id: 'tone:am-tremolo', name: 'Tremolo', type: 'tone' },
-    ],
   },
 } as const;
 
 // Category order for rendering
-export const CATEGORY_ORDER = ['drums', 'bass', 'keys', 'leads', 'pads', 'fx'] as const;
+export const CATEGORY_ORDER = INSTRUMENT_CATEGORY_ORDER;
 
 // Type definitions
 export type InstrumentCategory = keyof typeof INSTRUMENT_CATEGORIES;
 export type Instrument = typeof INSTRUMENT_CATEGORIES[InstrumentCategory]['instruments'][number];
 
 // Helper to get display name for any instrument ID
-export function getInstrumentName(id: string): string {
-  for (const category of Object.values(INSTRUMENT_CATEGORIES)) {
-    const instrument = category.instruments.find(i => i.id === id);
-    if (instrument) return instrument.name;
-  }
-  const legacyName = SAMPLED_NAMES[id] ?? SYNTH_NAMES[id] ?? TONE_SYNTH_NAMES[id] ?? ADVANCED_SYNTH_NAMES[id];
-  if (legacyName) return legacyName;
-  // Fallback: extract name from ID
-  return id.split(':').pop() || id;
-}
+export const getInstrumentName = getCatalogInstrumentName;
 
 // Phase 31C: Helper to get category key for an instrument ID
 export function getInstrumentCategory(id: string): InstrumentCategory | null {
@@ -213,34 +69,23 @@ export function getInstrumentCategory(id: string): InstrumentCategory | null {
  * Set of all valid sample/instrument IDs for validation
  * Used to validate session data before upload
  */
-export const VALID_SAMPLE_IDS: Set<string> = new Set(
-  Object.values(INSTRUMENT_CATEGORIES).flatMap(category =>
-    category.instruments.map(instrument => instrument.id)
-  )
-);
+export const VALID_SAMPLE_IDS: Set<string> = CATALOG_SAMPLE_IDS;
 
 /** Persisted-only IDs: accepted by session validation, never by the picker. */
-export const LEGACY_UNAVAILABLE_SAMPLE_IDS: ReadonlySet<string> = new Set([
-  'sampled:rhodes-ep',
-  'synth:rhodes-ep',
-]);
+export const LEGACY_UNAVAILABLE_SAMPLE_IDS: ReadonlySet<string> = CATALOG_LEGACY_SAMPLE_IDS;
 
 /**
  * Check if a sampleId is valid (exists in the instrument catalog)
  * @param sampleId - The ID to validate (e.g., 'kick', 'sampled:808-kick', 'synth:bass')
  * @returns true if the sampleId is a known instrument
  */
-export function isValidSampleId(sampleId: string): boolean {
-  return VALID_SAMPLE_IDS.has(sampleId);
-}
+export const isValidSampleId = isCatalogSampleId;
 
 /**
  * Get the canonical ID for debugging/tooltips
  * This is the same as the input ID - just validates and returns it
  */
-export function getCanonicalSampleId(sampleId: string): string | null {
-  return VALID_SAMPLE_IDS.has(sampleId) ? sampleId : null;
-}
+export const getCanonicalSampleId = getCatalogSampleId;
 
 // Phase 31C: Get category color CSS variable for an instrument ID
 export function getInstrumentCategoryColor(id: string): string {

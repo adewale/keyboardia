@@ -52,6 +52,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson: Historical Layering Creates Hidden Duplication](#lesson-historical-layering-creates-hidden-duplication)
 - [Lesson: Read the Spec Before Implementing](#lesson-read-the-spec-before-implementing)
 - [Lesson: Test the Spec, Not Your Mental Model](#lesson-test-the-spec-not-your-mental-model)
+- [Lesson 59: An Architectural Guard Is a Compiler Front End](#lesson-59-an-architectural-guard-is-a-compiler-front-end)
 
 ### Process
 - [Process: Spec-First Development Checklist](#process-spec-first-development-checklist)
@@ -5453,3 +5454,90 @@ effects with asynchronous generations, cleanup must invalidate every memoized
 claim made by that generation, and tests must replay the framework lifecycle as
 well as the ordinary user journey. When a policy promises a bounded schedule,
 assert every boundary and prove that work actually stops after the bound.
+
+---
+
+## Lesson 59: An Architectural Guard Is a Compiler Front End
+
+**Date:** 2026-07-28 (PR #79 multi-agent correctness audit)
+
+### The Problem
+
+The first runtime-boundary test searched raw source with a regular expression
+and resolved only extensionless `.ts`/`.tsx` candidates. It silently ignored an
+unresolved relative import, treated commented examples as dependencies, missed
+TypeScript bundler resolution such as `../audio/engine.js` resolving to
+`engine.ts`, and checked transitive reachability only from `worker/index.ts`.
+Its shared rule also named a few forbidden directories instead of defining the
+shared layer's allowed capabilities. A `shared -> utils -> audio` bridge could
+therefore remain green.
+
+Strengthening the test exposed one more real dependency: shared state mutations
+and Worker handlers imported the client-owned `utils/patternOps.ts`. The
+functions were pure, but their location made the dependency direction false.
+
+### The Fix
+
+The scanner now parses the TypeScript AST, so comments and strings are not code,
+loads the application and Worker tsconfigs, and asks TypeScript's Bundler
+resolver for the same source module the build will use. Resolution happens before
+classifying dotted basenames, so names such as `midiExport.types` and Vite query
+imports cannot disappear. Every unresolved code import, production-to-excluded
+test/story edge, graph-closure failure, and parse failure is loud. Package and
+resource imports are separate capability edges with explicit allow-lists rather
+than invisible strings.
+
+Policies start from every Worker, shared, music, and state module and walk
+transitive paths with readable provenance. Shared is an allow-list (`shared/**`
+only); music permits only music and shared; Worker permits only Worker, shared,
+and explicitly pure music modules. State cannot transitively reach live audio,
+and its package, resource, and intrinsic-capability checks follow intermediary
+modules rather than stopping at the `state/**` directory boundary.
+
+Intrinsic capabilities are checked too: a symbol-aware AST pass scans every
+neutral-owned or state-reachable module, including deferred callbacks,
+constructors, getters, and IIFEs, while recognizing locally shadowed names and
+erased ambient declarations. Instead of maintaining a partial browser API list,
+the guard derives runtime values and namespaces from TypeScript's DOM and Web
+Worker libraries and subtracts ECMAScript plus the values declared by the
+installed Cloudflare Workers types. Ambient runtime values declared inline,
+inside `declare global` augmentations, or by project `.d.ts` files are
+capabilities too. Unapproved `globalThis`/`self` roots are rejected at their
+source, so aliases, assignment destructuring, default parameters, and expression
+wrappers cannot bypass a property-taint list. Syntax-only identifiers such as
+labels and locally shadowed global-object names remain exempt.
+
+Because no neutral module has an approved `import.meta` capability, the reliable
+rule is likewise to reject `import.meta` wholesale instead of attempting partial
+alias taint analysis. Vite globs are loud unanalyzable graph references; literal
+`new URL(..., import.meta.url)` Worker/asset references are graph edges. The
+scanner asks TypeScript to transpile each source and records module imports added
+by the compiler, including per-file JSX runtime/classic pragmas. Package asset
+subpaths and Vite loader queries remain resource capabilities even when their
+underlying filename looks like code. The real workerd MCP journey remains the
+deployed-bundle module-evaluation oracle. Pure pattern operations moved into
+shared, with the old client path retained only as a compatibility facade.
+
+The guard itself has adversarial tests for `.js` and dotted specifiers, Vite
+query and URL imports, compiler-emitted and pragma-selected JSX imports, inline
+versus clause-level type imports, commented imports, unresolved and excluded
+imports, bare-package and Vite-query resource escapes, package/resource escapes
+through intermediary modules, indirect music bridges, shadowed and ambient
+globals/namespaces, eager/deferred browser APIs, aliased global roots, labels,
+and arbitrary `import.meta` syntax. A browser MIDI test was mutation-checked by
+corrupting only the real Web Worker response: it failed on the downloaded bytes,
+then passed after the mutation was removed. It records the MIDI Worker's own
+response—without coupling the proof to unrelated page Workers—so synchronous
+fallback cannot masquerade as off-thread success. The real-Wrangler MCP journey
+invokes `export_midi` and validates `MThd`, covering the Worker adapter in
+workerd.
+
+### The Rule
+
+An import-boundary test is a small compiler front end. If its parser or resolver
+disagrees with the production toolchain, green means only that the test did not
+see the program. Resolve before classifying, require a closed graph, and model
+packages/resources/intrinsic globals as capabilities too. Define layers by
+allowed capabilities, walk every owned root transitively, make resolution
+failure loud, retain a real-runtime oracle, and mutation-test the guard with the
+exact syntax and bridge paths an adversarial change would use.

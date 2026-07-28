@@ -7,13 +7,12 @@
 
 import {
   SYNTH_PROGRAM_MAP,
-  exportToMidi,
+  encodeMidi,
   isDrumTrack,
-} from '../audio/midiExport';
+} from '../shared/midi-core';
 import { instrumentPresetId } from '../shared/instrument-classification';
 import type { Session, SessionTrack } from '../shared/state';
 import { hasActiveSteps } from '../shared/pattern-expansion';
-import { sessionTracksToTracks } from '../types';
 import { McpSessionEditError } from './mcp-edits';
 
 /**
@@ -159,7 +158,7 @@ export function describeUnsupportedMidiFeatures(
   }
 
   const unmappedInstruments = exportedTracks.filter((track) => {
-    if (isDrumTrack(sessionTracksToTracks([track])[0]!)) return false;
+    if (isDrumTrack(track)) return false;
     const presetId = instrumentPresetId(track.sampleId);
     return !(presetId in SYNTH_PROGRAM_MAP);
   });
@@ -203,7 +202,7 @@ export function toBase64(bytes: Uint8Array): string {
 
 /**
  * Runs Keyboardia's authoritative exporter over a session. The same
- * exportToMidi() the browser's Export MIDI button uses, so the bytes match for
+ * encodeMidi() the browser's Export MIDI button uses, so the bytes match for
  * identical state.
  */
 export function exportSessionToMidi(session: Session): McpMidiExport {
@@ -217,9 +216,9 @@ export function exportSessionToMidi(session: Session): McpMidiExport {
     );
   }
 
-  const { filename, _midiData } = exportToMidi(
+  const { filename, midiData } = encodeMidi(
     {
-      tracks: sessionTracksToTracks(session.state.tracks),
+      tracks: session.state.tracks,
       tempo: session.state.tempo,
       swing: session.state.swing,
     },
@@ -231,8 +230,8 @@ export function exportSessionToMidi(session: Session): McpMidiExport {
     filename,
     mime_type: 'audio/midi',
     encoding: 'base64',
-    data: toBase64(_midiData),
-    byte_length: _midiData.byteLength,
+    data: toBase64(midiData),
+    byte_length: midiData.byteLength,
     tempo: session.state.tempo,
     swing: session.state.swing,
     exported_track_ids: exported.map((track) => track.id),
