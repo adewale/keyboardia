@@ -16,6 +16,7 @@ import {
   createSourceBinding,
   assertSourceBindingStillClean,
   redactCapability,
+  sanitizeReceiptValue,
   scoreObjectiveAssertions,
   sha256,
   skillEvalInputBundleHash,
@@ -693,6 +694,18 @@ describe('eval receipts', () => {
         name: 'unsafe', type: 'script', command: ['sh', '-c', 'exit 0'], severity: 'gate',
       }],
     }, 'output', 'evals/manifest.json', source.files)).toThrow(/unsafe script assertion command/);
+  });
+
+  it('sanitizes nested JSON arguments without corrupting their structure', () => {
+    const value = {
+      adapter_argv: [
+        '{"mcpServers":{"transport":{"env":{"TRACE":"/var/folders/example/run.jsonl"}}}}',
+      ],
+    };
+    const sanitized = sanitizeReceiptValue(value);
+    expect(JSON.parse(sanitized.adapter_argv[0])).toEqual({
+      mcpServers: { transport: { env: { TRACE: '<temp-path>' } } },
+    });
   });
 
   it('regrades a bound oracle with an imported dependency under canonical temp paths', () => {

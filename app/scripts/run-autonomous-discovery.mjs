@@ -10,6 +10,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import {
   createSourceBinding,
   sanitizeReceiptText,
+  sanitizeReceiptValue,
 } from '../../evals/receipt.mjs';
 import {
   sanitizeForReceipt,
@@ -275,8 +276,8 @@ async function main() {
       adapter_argv: run.value.adapter_argv,
     }, { onlyUuids: sensitiveUuids });
     sanitized.answer = sanitizeReceiptText(sanitized.answer);
-    sanitized.cli_trace = JSON.parse(sanitizeReceiptText(JSON.stringify(sanitized.cli_trace)));
-    sanitized.adapter_argv = JSON.parse(sanitizeReceiptText(JSON.stringify(sanitized.adapter_argv)));
+    sanitized.cli_trace = sanitizeReceiptValue(sanitized.cli_trace);
+    sanitized.adapter_argv = sanitizeReceiptValue(sanitized.adapter_argv);
     const sanitizedValidation = validateAutonomousTrace(sanitized.trace, { origin });
     const receipt = {
       version: 1,

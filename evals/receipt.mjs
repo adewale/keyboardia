@@ -43,7 +43,7 @@ export function sanitizeReceiptText(value) {
     .replace(/[A-Za-z]:\\Users\\[^\\\s"'`]+\\[^\s"'`]+/g, '<workspace-path>');
 }
 
-function sanitizeReceiptValue(value) {
+export function sanitizeReceiptValue(value) {
   if (typeof value === 'string') return sanitizeReceiptText(value);
   if (Array.isArray(value)) return value.map(sanitizeReceiptValue);
   if (value && typeof value === 'object') {
