@@ -11,12 +11,14 @@ another agent did not ask you to change.
 
 ## Complete the minimum live workflow
 
-For every mutation, complete this sequence before claiming success:
+For every mutation, complete this sequence before starting another mutation or
+claiming success:
 
 1. Connect to the same-origin `/mcp` endpoint and inspect its live `tools/list`.
 2. Call `get_session` and use the returned state and schemas, not assumptions.
 3. Call `edit_session` with one narrow, live-schema operation.
-4. Call `get_session` again and verify the requested post-state.
+4. Call `get_session` again and verify the requested post-state. Do not send
+   another `edit_session` until this verification read succeeds.
 
 If any step cannot be completed, say what is unverified; never report the edit
 as done from an attempted call or its immediate response alone. A read-only
@@ -150,8 +152,9 @@ example track ID into a live session.
    call `get_session` again.
 6. Call `edit_session` with one narrow operation. Group related assignments
    for one track into one `set_steps` call.
-7. Use the returned compact session, then call `get_session` after the
-   requested sequence to confirm the affected fields.
+7. Use the returned compact session, then immediately call `get_session` to
+   verify that operation before starting another edit. Repeat steps 5 through
+   7 for every additional operation in the request.
 8. Report the assignments attempted and their observed post-state. Label any
    other before/after differences as concurrent and unattributed; do not claim
    that the agent caused them.

@@ -95,7 +95,7 @@ function buildPrompt(origin) {
     '',
     'Use the Agent Skills discovery standard to discover any agent instructions the site publishes. Fetch the selected instructions as exact bytes and cryptographically verify them against the catalog digest before following them. Derive every service endpoint from those verified bytes and inspect the live service capabilities instead of assuming a cached contract.',
     '',
-    'Create exactly one new disposable, unpublished session. Inspect its state before editing. Add one kick track whose active steps are exactly 0, 4, 8, and 12 without changing the tempo or anything unrelated, then inspect the state again to verify the result. Do not publish, remix, or export. Do not reveal the editable URL or session capability in your final answer.',
+    'Create exactly one new disposable, unpublished session. Inspect its state before editing. Add one kick track whose active steps are exactly 0, 4, 8, and 12 without changing the tempo or anything unrelated. Treat the requested result as potentially requiring more than one state-changing operation. After each individual state-changing operation, inspect the live state and verify that operation’s post-state before issuing the next state-changing operation. Finish only after a final inspection confirms the whole request. Do not publish, remix, or export. Do not reveal the editable URL or session capability in your final answer.',
   ].join('\n');
 }
 
