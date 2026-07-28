@@ -119,10 +119,13 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
       await expect(stepCells.nth(index)).toHaveClass(/active/);
     }
 
-    await waitForAnimation(page);
-
     const trackRow = page.locator('.track-row').first();
     await expect(trackRow).toBeVisible();
+    // Real-Worker edits carry the product's 600ms attribution flash. Waiting
+    // for the class to disappear observes the actual state instead of using a
+    // shorter generic animation delay and snapshotting four different ages.
+    await expect(trackRow.locator('.step-cell.remote-flash')).toHaveCount(0, { timeout: 2000 });
+
     const tracksScroller = page.locator('.tracks');
     await tracksScroller.evaluate((element) => { element.scrollLeft = 0; });
 
@@ -132,6 +135,10 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
     // without scrolling; assert that it is below the header and wholly inside
     // the viewport before treating its pixels as the visual contract.
     const stepStrip = trackRow.locator('.steps');
+    const stickyActions = trackRow.locator('.track-right');
+    await expect(stickyActions).toBeVisible();
+    await stickyActions.evaluate((element) => { element.style.display = 'none'; });
+
     const [stripBox, headerBox] = await Promise.all([
       stepStrip.boundingBox(),
       page.locator('.app-header').boundingBox(),
@@ -140,6 +147,10 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
     expect(headerBox).not.toBeNull();
     expect(stripBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
     expect(stripBox!.x + stripBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+    expect(await stepStrip.locator('.step-cell').last().evaluate((element) => {
+      const box = element.getBoundingClientRect();
+      return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
+    })).toBe(true);
 
     await expect(stepStrip).toHaveScreenshot('track-row-with-steps.png', {
       maxDiffPixels: 100,

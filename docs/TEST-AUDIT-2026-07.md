@@ -214,7 +214,11 @@ The first blocking visual run then exposed a screenshot with the wrong subject:
 the 1,355px track row was wider than its 1,280px viewport, so Playwright moved
 it under the sticky header and compared the random presence avatar. The test
 now captures the in-viewport step strip and asserts its geometry is below the
-header before comparing pixels.
+header before comparing pixels. Artifact review caught two further occlusions:
+the sticky action buttons covered the last four cells, and the 600ms remote
+change flash outlived the generic 450ms animation wait. The screenshot now
+isolates those unrelated actions, waits for the real flash class to expire, and
+hit-tests the last cell to prove all 16 cells are exposed.
 The real count of `test.skip(useMockAPI, …)` guards is **19 across 14 files**,
 not the 13 first reported — that number came from too narrow a grep.
 
