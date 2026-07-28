@@ -130,8 +130,9 @@ matrix, so it is not empirical section-attribution evidence.
 
 ## Why this still should not merge
 
-- Haiku has zero answer-matrix lift and failed the fresh autonomous well-known
-  discovery attempt.
+- Only Sonnet and Opus have auditable passing autonomous receipts. An
+  uncommitted Haiku diagnostic attempt failed, but it cannot support a
+  phase-specific finding without a failure receipt.
 - There is no private holdout or holdback result. Public tune prompts and
   public oracles can co-adapt with the skill and cannot establish
   generalization.

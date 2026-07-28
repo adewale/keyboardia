@@ -443,6 +443,8 @@ describe('skill eval manifest', () => {
       compensating_edits: [{ operation: 'remove_track', track_id: 'agent-hat-a1b2c3d4' }],
     })).toBe(false);
 
+    expect(manifest.cases.find((entry) => entry.id === 'pos-published-session-read-only')?.prompt)
+      .toContain('source_action must be exactly the string leave_unchanged');
     expect(score('pos-published-session-read-only',
       {
         source_action: 'leave_unchanged',

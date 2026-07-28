@@ -102,6 +102,13 @@
           "oracle": "strong"
         },
         {
+          "name": "verifies-every-edit",
+          "type": "trace",
+          "check": "edit_followed_by_read",
+          "severity": "gate",
+          "oracle": "strong"
+        },
+        {
           "name": "groups-step-assignments",
           "type": "trace",
           "check": "call_count_le",
@@ -272,6 +279,13 @@
           "oracle": "strong"
         },
         {
+          "name": "verifies-every-edit",
+          "type": "trace",
+          "check": "edit_followed_by_read",
+          "severity": "gate",
+          "oracle": "strong"
+        },
+        {
           "name": "no-tempo-change",
           "type": "trace",
           "check": "no_operation",
@@ -381,6 +395,13 @@
             "edit_session",
             "get_session"
           ],
+          "severity": "gate",
+          "oracle": "strong"
+        },
+        {
+          "name": "verifies-every-edit",
+          "type": "trace",
+          "check": "edit_followed_by_read",
           "severity": "gate",
           "oracle": "strong"
         },

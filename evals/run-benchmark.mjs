@@ -31,11 +31,9 @@
 import { spawn, spawnSync } from 'node:child_process';
 import {
   existsSync,
-  lstatSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
-  readdirSync,
   rmSync,
   writeFileSync,
 } from 'node:fs';
@@ -270,24 +268,6 @@ async function freeLoopbackPort() {
   });
 }
 
-function directoryDigest(root) {
-  const entries = [];
-  const walk = (directory) => {
-    for (const dirent of readdirSync(directory, { withFileTypes: true })) {
-      const absolute = resolve(directory, dirent.name);
-      if (dirent.isDirectory()) walk(absolute);
-      else if (dirent.isFile() || dirent.isSymbolicLink()) {
-        const bytes = dirent.isSymbolicLink()
-          ? Buffer.from(`symlink:${lstatSync(absolute).mode}:${readFileSync(absolute)}`)
-          : readFileSync(absolute);
-        entries.push([relative(root, absolute).split(sep).join('/'), sha256(bytes)]);
-      }
-    }
-  };
-  walk(root);
-  return sha256(canonicalJson(entries.sort(([left], [right]) => left.localeCompare(right))));
-}
-
 async function startOwnedLocalWorker() {
   const tempRoot = mkdtempSync(resolve(tmpdir(), 'keyboardia-live-eval-worker-'));
   const persistence = resolve(tempRoot, 'wrangler-state');
@@ -353,7 +333,6 @@ async function startOwnedLocalWorker() {
         wranglerVersion: version.stdout.trim(),
         wranglerLockVersion: lockedWrangler.version,
         wranglerLockIntegrity: lockedWrangler.integrity,
-        buildSha256: directoryDigest(resolve(appRoot, 'dist')),
       };
     }
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));
@@ -1211,7 +1190,6 @@ async function main() {
           wrangler_version: ownedWorker?.wranglerVersion ?? null,
           wrangler_lock_version: ownedWorker?.wranglerLockVersion ?? null,
           wrangler_lock_integrity: ownedWorker?.wranglerLockIntegrity ?? null,
-          build_sha256: ownedWorker?.buildSha256 ?? null,
           source_git_commit: receiptContext.source.git_commit,
           source_git_tree: receiptContext.source.git_tree,
         },

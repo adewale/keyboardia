@@ -767,6 +767,98 @@ function verifySourceGitProof(source, errors) {
   }
 }
 
+/** Verify an embedded source bundle without relying on local Git history. */
+export function verifySourceProvenance(source, { requiredRoles = [] } = {}) {
+  const errors = [];
+  requireValue(source && typeof source === 'object', 'source binding is required', errors);
+  requireValue(isHex(source?.git_commit, 40),
+    'source.git_commit must be 40 lowercase hex characters', errors);
+  requireValue(isHex(source?.git_tree, 40),
+    'source.git_tree must be 40 lowercase hex characters', errors);
+  requireValue(isHex(source?.bundle_sha256, 64),
+    'source.bundle_sha256 must be 64 lowercase hex characters', errors);
+  requireValue(Array.isArray(source?.files) && source.files.length > 0,
+    'source.files must be non-empty', errors);
+  const roles = new Set();
+  const paths = new Set();
+  for (const file of source?.files ?? []) {
+    roles.add(file?.role);
+    requireValue(typeof file?.role === 'string' && file.role.length > 0,
+      'source file role is required', errors);
+    const parts = typeof file?.path === 'string' ? file.path.split('/') : [];
+    requireValue(typeof file?.path === 'string' && file.path.length > 0
+      && !isAbsolute(file.path) && !file.path.includes('\\')
+      && parts.every((part) => part.length > 0 && part !== '.' && part !== '..'),
+    `invalid source file path: ${file?.path}`, errors);
+    requireValue(isHex(file?.sha256, 64), `invalid SHA-256 for ${file?.path}`, errors);
+    requireValue(isHex(file?.git_blob, 40), `invalid git blob for ${file?.path}`, errors);
+    requireValue(file?.encoding === 'utf-8', `${file?.path} source encoding must be utf-8`, errors);
+    requireValue(typeof file?.content === 'string', `${file?.path} must embed its source content`, errors);
+    if (typeof file?.content === 'string') {
+      const bytes = Buffer.from(file.content, 'utf8');
+      requireValue(sha256(bytes) === file.sha256,
+        `${file.path} embedded source SHA-256 mismatch`, errors);
+      requireValue(gitBlobSha1(bytes) === file.git_blob,
+        `${file.path} embedded source Git blob mismatch`, errors);
+    }
+    requireValue(!paths.has(file?.path), `duplicate embedded source path ${file?.path}`, errors);
+    paths.add(file?.path);
+  }
+  for (const role of requiredRoles) {
+    requireValue(roles.has(role), `source.files is missing role ${role}`, errors);
+  }
+  if (Array.isArray(source?.files)) {
+    requireValue(canonicalSourceBundleHash(source.files) === source.bundle_sha256,
+      'source bundle SHA-256 mismatch', errors);
+  }
+  verifySourceGitProof(source, errors);
+  return errors;
+}
+
+function embeddedModuleCandidates(importer, specifier) {
+  const base = posix.normalize(posix.join(posix.dirname(importer), specifier));
+  const suffixes = ['.mjs', '.js', '.ts', '.tsx', '.json'];
+  const candidates = [base];
+  if (!posix.extname(base)) candidates.push(...suffixes.map((suffix) => `${base}${suffix}`));
+  if (/\.(?:m?js)$/.test(base)) {
+    candidates.push(base.replace(/\.(?:m?js)$/, '.ts'), base.replace(/\.(?:m?js)$/, '.tsx'));
+  }
+  candidates.push(...suffixes.map((suffix) => `${base}/index${suffix}`));
+  return candidates;
+}
+
+/** Require every relative import reachable from an entry point to be embedded. */
+export function verifySourceModuleClosure(source, entryPaths) {
+  const errors = [];
+  const files = new Map((source?.files ?? []).map((file) => [file.path, file]));
+  const visited = new Set();
+  const visit = (path) => {
+    if (visited.has(path)) return;
+    visited.add(path);
+    const file = files.get(path);
+    if (!file) {
+      errors.push(`source module closure is missing ${path}`);
+      return;
+    }
+    const imports = [
+      ...file.content.matchAll(/\b(?:import|export)[\s\S]*?\bfrom\s+['"](\.[^'"]+)['"]/g),
+      ...file.content.matchAll(/\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g),
+      ...file.content.matchAll(/\bimport\s+['"](\.[^'"]+)['"]/g),
+    ];
+    for (const match of imports) {
+      const dependency = embeddedModuleCandidates(path, match[1])
+        .find((candidate) => files.has(candidate));
+      if (!dependency) {
+        errors.push(`source module closure cannot resolve ${match[1]} from ${path}`);
+      } else {
+        visit(dependency);
+      }
+    }
+  };
+  for (const path of entryPaths) visit(path);
+  return errors;
+}
+
 function reconstructPatchedTree(
   snapshot,
   patch,
@@ -815,7 +907,10 @@ function reconstructPatchedTree(
     git(tempRoot, ['apply', '--index', '--binary', '--whitespace=nowarn', '-'], {
       input: Buffer.from(patch, 'utf8'),
     });
-    return git(tempRoot, ['write-tree']);
+    const pyproject = readFileSync(resolve(tempRoot, 'pyproject.toml'), 'utf8');
+    const version = pyproject.match(/^version\s*=\s*["']([^"']+)["']/m)?.[1];
+    if (!version) throw new Error('reconstructed harness pyproject has no project version');
+    return { tree: git(tempRoot, ['write-tree']), version };
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -897,8 +992,10 @@ function verifyPatchedHarness(receipt, errors) {
       parentCommit,
       harness.parent_git_commit,
     );
-    requireValue(reconstructed === harness.git_tree,
+    requireValue(reconstructed.tree === harness.git_tree,
       'harness patch does not reconstruct harness.git_tree', errors);
+    requireValue(reconstructed.version === harness.version,
+      'harness.version does not match the reconstructed pyproject', errors);
   } catch (error) {
     errors.push(`harness reconstruction failed: ${error.message}`);
   }
@@ -1385,14 +1482,17 @@ function verifyAnswerMatrix(receipt, errors) {
   const audit = jsonArtifact(receipt, receipt.invocation?.audit_ref, 'invocation.audit_ref', errors);
   if (!benchmark || !audit) return;
   requireValue(Array.isArray(benchmark.results), 'answer benchmark requires results', errors);
-  requireValue(benchmark.version === 1
-    && canonicalJson(Object.keys(benchmark).sort()) === canonicalJson(['results', 'version']),
-  'answer benchmark evidence must contain only independently checked run results', errors);
-  requireValue(audit.version === 1 && isHex(audit.external_report_sha256, 64)
-    && Array.isArray(audit.reported_blockers),
-  'answer audit evidence is invalid', errors);
-  requireValue(audit.reported_blockers?.length === 0,
+  requireValue(benchmark.summary && Array.isArray(benchmark.case_flags),
+    'answer benchmark evidence is missing its aggregate report', errors);
+  requireValue(Array.isArray(audit.readiness?.blockers)
+    && audit.benchmark?.summary && Array.isArray(audit.benchmark?.case_flags),
+  'answer audit evidence is missing its independently generated benchmark projection', errors);
+  requireValue(audit.readiness?.blockers?.length === 0,
     'answer audit contains readiness blockers', errors);
+  requireValue(canonicalJson(audit.benchmark?.summary) === canonicalJson(benchmark.summary),
+    'answer audit summary does not match the embedded benchmark', errors);
+  requireValue(canonicalJson(audit.benchmark?.case_flags) === canonicalJson(benchmark.case_flags),
+    'answer audit case flags do not match the embedded benchmark', errors);
   if (!Array.isArray(benchmark.results)) return;
   requireValue(tasks.length > 0, 'answer receipt has no prepared tasks', errors);
   requireValue(tasks.length === benchmark.results.length && tasks.length === receipt.runs.length,
@@ -1403,6 +1503,14 @@ function verifyAnswerMatrix(receipt, errors) {
   const sourceManifest = (receipt.source?.files ?? []).find((file) => file.role === 'manifest');
   requireValue(sourceManifest?.sha256 === receipt.invocation?.manifest_revision,
     'answer manifest revision does not match embedded source', errors);
+  for (const adapter of receipt.invocation?.adapters ?? []) {
+    if (adapter.role !== 'answer' || adapter.path === null) continue;
+    const matches = (receipt.source?.files ?? []).filter((file) =>
+      file.role === 'answer_adapter' && file.path === adapter.path);
+    requireValue(matches.length === 1,
+      `answer adapter ${adapter.id} must bind ${adapter.path} exactly once`, errors);
+    errors.push(...verifySourceModuleClosure(receipt.source, [adapter.path]));
+  }
   let manifest = null;
   try {
     manifest = JSON.parse(sourceManifest?.content);
@@ -1611,6 +1719,22 @@ export function verifyReceipt(receipt, { repoRoot = null } = {}) {
       'source bundle SHA-256 mismatch', errors);
   }
   verifySourceGitProof(receipt.source, errors);
+  const moduleRootRoles = new Set([
+    'runner',
+    'receipt_runtime',
+    'receipt_schema_validator',
+    'execution_receipt_verifier',
+    'oracle',
+    'answer_adapter',
+    'judge_adapter',
+    'system_under_test_entry',
+  ]);
+  errors.push(...verifySourceModuleClosure(
+    receipt.source,
+    (receipt.source?.files ?? [])
+      .filter((file) => moduleRootRoles.has(file.role))
+      .map((file) => file.path),
+  ));
 
   const artifacts = receipt.artifacts ?? {};
   for (const [ref, artifact] of Object.entries(artifacts)) {

@@ -64,6 +64,7 @@ const trace = [
     arguments: { session_id: 's', edit: { operation: 'add_track', track_id: 'agent-kick-a1b2c3d4', sample_id: 'kick' } },
     success: true,
   },
+  { name: 'get_session', arguments: { session_id: 's' }, success: true },
   {
     name: 'edit_session',
     arguments: {
@@ -76,6 +77,7 @@ const trace = [
     },
     success: true,
   },
+  { name: 'get_session', arguments: { session_id: 's' }, success: true },
 ];
 
 describe('execution-graded evals', () => {
@@ -108,6 +110,7 @@ describe('execution-graded evals', () => {
         { name: 'steps', type: 'state', check: 'active_steps_equal', sample_id: 'kick', value: [0, 4, 8, 12] },
         { name: 'preserved', type: 'state', check: 'tracks_preserved', track_ids: ['user-snare'] },
         { name: 'order', type: 'trace', check: 'call_order', value: ['get_session', 'edit_session'] },
+        { name: 'verify', type: 'trace', check: 'edit_followed_by_read' },
         { name: 'id', type: 'trace', check: 'added_track_id_matches', value: '[0-9a-fA-F]{8,}$' },
       ],
       { baseline, final, trace },
@@ -182,6 +185,11 @@ describe('execution-graded evals', () => {
         success: true,
       }]),
     ).toBe(false);
+
+    expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, [
+      trace[0]!, trace[1]!, trace[3]!, trace[4]!,
+    ])).toBe(false);
+    expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, trace)).toBe(true);
   });
 
   it('ignores failed tool results for every trace assertion', () => {

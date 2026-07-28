@@ -108,10 +108,21 @@ function validTrace() {
     toolCall(8, 'edit_session', {
       session_id: SESSION,
       edit: { operation: 'add_track', track_id: 'agent-kick-a7f3c29d', sample_id: 'kick' },
-    }, { ...initial, tracks: [{ track_id: 'agent-kick-a7f3c29d', sample_id: 'kick', active_steps: [] }] }),
+    }, { ...initial, tracks: [{
+      track_id: 'agent-kick-a7f3c29d',
+      name: 'Kick',
+      sample_id: 'kick',
+      step_count: 16,
+      active_steps: [],
+    }] }),
     toolCall(9, 'get_session', { session_id: SESSION }, {
-      ...initial,
-      tracks: [{ track_id: 'agent-kick-a7f3c29d', sample_id: 'kick', active_steps: [] }],
+      ...initial, tracks: [{
+        track_id: 'agent-kick-a7f3c29d',
+        name: 'Kick',
+        sample_id: 'kick',
+        step_count: 16,
+        active_steps: [],
+      }],
     }),
     toolCall(10, 'edit_session', {
       session_id: SESSION,
@@ -134,6 +145,66 @@ function cliTraceFor(trace: ReturnType<typeof validTrace>) {
     mcp_tool_call: 'mcp__discovery_transport__call_mcp_tool',
   };
   return trace.map((entry) => ({ name: names[entry.phase] }));
+}
+
+function autonomousReceipt(
+  prompt = `The only location you know is:\n${ORIGIN}\n\nUse the Agent Skills discovery standard.`,
+) {
+  const trace = validTrace();
+  const cliTrace = cliTraceFor(trace);
+  const adapterArgv = ['--model', 'claude-sonnet-5', '--tools', 'ToolSearch'];
+  const answer = 'Done without sharing the capability.';
+  const { sanitized, redacted_uuids } = sanitizeForReceipt({
+    trace,
+    answer,
+    cli_trace: cliTrace,
+    adapter_argv: adapterArgv,
+  }, { onlyUuids: new Set([SESSION, IDEMPOTENCY]) });
+  const sha256 = (value: string) => createHash('sha256').update(value).digest('hex');
+  const sourceFile = (role: string, path: string, content: string) => ({
+    role,
+    path,
+    sha256: sha256(content),
+    git_blob: '1'.repeat(40),
+    encoding: 'utf-8',
+    content,
+  });
+  return {
+    $schema: '../autonomous-receipt.schema.json',
+    version: 1,
+    kind: 'origin-only-autonomous-skill-discovery',
+    target_mcp_preconfigured: false,
+    created_at: '2026-07-28T12:00:00.000Z',
+    origin: ORIGIN,
+    prompt,
+    prompt_sha256: sha256(prompt),
+    agent: { adapter: 'claude-discovery', model: 'claude-sonnet-5', usage: null },
+    source: {
+      repository: 'https://github.com/adewale/keyboardia.git',
+      git_commit: '2'.repeat(40),
+      git_tree: '3'.repeat(40),
+      commit_content: 'tree 3333333333333333333333333333333333333333\n',
+      tree_objects: [{ object: '3'.repeat(40), content_base64: 'dHJlZQ==' }],
+      bundle_sha256: '4'.repeat(64),
+      files: [
+        sourceFile('manifest', 'app/public/.well-known/agent-skills/index.json',
+          trace[0].response.value.body as string),
+        sourceFile('skill',
+          'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md', SKILL),
+      ],
+    },
+    validation: validateAutonomousTrace(sanitized.trace, { origin: ORIGIN }),
+    trace_sha256: sha256(JSON.stringify(sanitized.trace)),
+    answer_sha256: sha256(sanitized.answer),
+    cli_trace_sha256: sha256(JSON.stringify(sanitized.cli_trace)),
+    adapter_argv_sha256: sha256(JSON.stringify(sanitized.adapter_argv)),
+    raw_answer_capability_scan: { registered_capabilities: 2, passed: true },
+    redacted_uuids,
+    trace: sanitized.trace,
+    answer: sanitized.answer,
+    cli_trace: sanitized.cli_trace,
+    adapter_argv: sanitized.adapter_argv,
+  };
 }
 
 describe('autonomous discovery trace oracle', () => {
@@ -197,7 +268,17 @@ describe('autonomous discovery trace oracle', () => {
     };
     result.structuredContent.tracks[0].active_steps = [0, 4, 8];
     expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
-      .toThrow(/exactly 0,4,8,12/);
+      .toThrow(/requested assignments|exactly 0,4,8,12/);
+  });
+
+  it('rejects a post-edit read that does not prove the mutation post-state', () => {
+    const trace = validTrace();
+    const postAdd = trace[8].response.value.result as {
+      structuredContent: { tracks: Array<{ sample_id: string }> };
+    };
+    postAdd.structuredContent.tracks[0].sample_id = 'snare';
+    expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
+      .toThrow(/wrong instrument/);
   });
 
   it('redacts capabilities consistently before a receipt is written', () => {
@@ -228,25 +309,7 @@ describe('autonomous discovery trace oracle', () => {
   });
 
   it('rejects a receipt whose exact prompt or trace hash drifted', () => {
-    const prompt = `The only location you know is:\n${ORIGIN}\n\nUse the Agent Skills discovery standard.`;
-    const trace = validTrace();
-    const cliTrace = cliTraceFor(trace);
-    const adapterArgv = ['--tools', 'ToolSearch'];
-    const receipt = {
-      target_mcp_preconfigured: false,
-      origin: ORIGIN,
-      prompt,
-      prompt_sha256: createHash('sha256').update(prompt).digest('hex'),
-      answer: 'Done without sharing the capability.',
-      answer_sha256: createHash('sha256').update('Done without sharing the capability.').digest('hex'),
-      cli_trace: cliTrace,
-      cli_trace_sha256: createHash('sha256').update(JSON.stringify(cliTrace)).digest('hex'),
-      trace,
-      trace_sha256: createHash('sha256').update(JSON.stringify(trace)).digest('hex'),
-      adapter_argv: adapterArgv,
-      adapter_argv_sha256: createHash('sha256').update(JSON.stringify(adapterArgv)).digest('hex'),
-      raw_answer_capability_scan: { registered_capabilities: 2, passed: true },
-    };
+    const receipt = autonomousReceipt();
     expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
     expect(() => validateAutonomousReceipt({ ...receipt, prompt_sha256: '0'.repeat(64) }))
       .toThrow(/prompt SHA-256/);
@@ -269,24 +332,7 @@ describe('autonomous discovery trace oracle', () => {
 
   it('binds the exact origin-only prompt into the receipt', () => {
     const prompt = `The only site location you know is:\n${ORIGIN}\n\nDiscover its standards-based agent instructions and verify exact bytes before acting.`;
-    const trace = validTrace();
-    const cliTrace = cliTraceFor(trace);
-    const adapterArgv = ['--strict-mcp-config', 'generic-discovery-transport'];
-    const receipt = {
-      target_mcp_preconfigured: false,
-      origin: ORIGIN,
-      prompt,
-      prompt_sha256: createHash('sha256').update(prompt).digest('hex'),
-      adapter_argv: adapterArgv,
-      adapter_argv_sha256: createHash('sha256').update(JSON.stringify(adapterArgv)).digest('hex'),
-      answer: 'Done without sharing the capability.',
-      answer_sha256: createHash('sha256').update('Done without sharing the capability.').digest('hex'),
-      cli_trace: cliTrace,
-      cli_trace_sha256: createHash('sha256').update(JSON.stringify(cliTrace)).digest('hex'),
-      trace,
-      trace_sha256: createHash('sha256').update(JSON.stringify(trace)).digest('hex'),
-      raw_answer_capability_scan: { registered_capabilities: 2, passed: true },
-    };
+    const receipt = autonomousReceipt(prompt);
     expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
     receipt.prompt_sha256 = '0'.repeat(64);
     expect(() => validateAutonomousReceipt(receipt)).toThrow(/prompt SHA-256/);
@@ -301,6 +347,29 @@ describe('autonomous discovery trace oracle', () => {
       `Editable: /s/${SESSION.replaceAll('-', '%2D')}`,
       new Set([SESSION]),
     )).toThrow(/disclosed/);
+    expect(() => validateRawAnswerCapabilities(
+      `Editable token: ${Buffer.from(SESSION).toString('base64url')}`,
+      new Set([SESSION]),
+    )).toThrow(/disclosed/);
     expect(() => validateRawAnswerCapabilities('safe', new Set())).toThrow(/empty registry/);
+  });
+
+  it('binds schema, model, source bytes, validation, and redaction metadata', () => {
+    const receipt = autonomousReceipt();
+    expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
+    expect(() => validateAutonomousReceipt({ ...receipt, unexpected: true }))
+      .toThrow(/additional properties/);
+    expect(() => validateAutonomousReceipt({
+      ...receipt,
+      agent: { ...receipt.agent, model: 'claude-opus-5' },
+    })).toThrow(/model does not match/);
+    expect(() => validateAutonomousReceipt({
+      ...receipt,
+      validation: { ...receipt.validation, event_count: 999 },
+    })).toThrow(/stored autonomous validation/);
+    const source = structuredClone(receipt.source);
+    source.files.find((file) => file.role === 'skill')!.content += '\nchanged';
+    expect(() => validateAutonomousReceipt({ ...receipt, source }))
+      .toThrow(/served skill bytes/);
   });
 });

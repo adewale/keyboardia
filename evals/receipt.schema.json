@@ -153,7 +153,6 @@
                 "wrangler_version",
                 "wrangler_lock_version",
                 "wrangler_lock_integrity",
-                "build_sha256",
                 "source_git_commit",
                 "source_git_tree"
               ],
@@ -162,7 +161,6 @@
                 "wrangler_version": { "type": "string", "minLength": 1 },
                 "wrangler_lock_version": { "type": "string", "minLength": 1 },
                 "wrangler_lock_integrity": { "type": "string", "minLength": 1 },
-                "build_sha256": { "$ref": "#/$defs/sha256" },
                 "source_git_commit": { "$ref": "#/$defs/gitObject" },
                 "source_git_tree": { "$ref": "#/$defs/gitObject" }
               }

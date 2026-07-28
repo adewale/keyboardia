@@ -444,15 +444,16 @@ async function main() {
   );
   receipt.invocation.prepared_tasks_refs = rawFiles.map(({ raw }) =>
     addArtifact(receipt.artifacts, raw, 'text/plain'));
-  receipt.invocation.benchmark_ref = addArtifact(receipt.artifacts, canonicalJson({
-    version: 1,
-    results: benchmark.results,
-  }), 'application/json');
-  receipt.invocation.audit_ref = addArtifact(receipt.artifacts, canonicalJson({
-    version: 1,
-    external_report_sha256: sha256(auditRaw),
-    reported_blockers: audit.readiness.blockers,
-  }), 'application/json');
+  receipt.invocation.benchmark_ref = addArtifact(
+    receipt.artifacts,
+    exactUtf8(benchmarkRaw, 'benchmark report'),
+    'application/json',
+  );
+  receipt.invocation.audit_ref = addArtifact(
+    receipt.artifacts,
+    exactUtf8(auditRaw, 'audit report'),
+    'application/json',
+  );
   writeReceipt(options.out, receipt);
   process.stdout.write(`Imported ${runs.length} immutable harness runs\n${options.out}\n`);
 }

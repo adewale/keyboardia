@@ -101,6 +101,19 @@ export function scoreTraceAssertion(assertion, trace) {
       return true;
     }
 
+    // Every successful mutation is immediately closed by a successful read of
+    // the same session before any later mutation can count as compliant.
+    case 'edit_followed_by_read': {
+      const edits = calls
+        .map((call, index) => [call, index])
+        .filter(([call]) => call.name === 'edit_session');
+      return edits.length > 0 && edits.every(([edit, index]) => {
+        const read = calls[index + 1];
+        return read?.name === 'get_session'
+          && read.arguments?.session_id === edit.arguments?.session_id;
+      });
+    }
+
     case 'call_count_le':
       return names.filter((name) => name === assertion.call).length <= assertion.value;
 

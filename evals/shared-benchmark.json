@@ -265,7 +265,7 @@
         "outcome",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. A session read returns immutable: true. The user asks you to add a shaker to it. Do not claim execution. Return one JSON object and no prose with exactly source_action, first_call, and then_call. source_action must state what happens to the immutable source. first_call is the exact remix_session call using [SOURCE_SESSION_ID]. then_call is the exact edit_session add_track call using [REMIX_SESSION_ID], sample_id shaker, and a fresh agent-owned track_id with at least eight random hexadecimal suffix characters and at most 64 total characters.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. A session read returns immutable: true. The user asks you to add a shaker to it. Do not claim execution. Return one JSON object and no prose with exactly source_action, first_call, and then_call. source_action must be exactly the string leave_unchanged. first_call is the exact remix_session call using [SOURCE_SESSION_ID]. then_call is the exact edit_session add_track call using [REMIX_SESSION_ID], sample_id shaker, and a fresh agent-owned track_id with at least eight random hexadecimal suffix characters and at most 64 total characters.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],

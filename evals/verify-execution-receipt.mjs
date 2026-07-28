@@ -1,4 +1,4 @@
-import { canonicalJson, sha256 } from './receipt.mjs';
+import { canonicalJson, sha256, verifySourceModuleClosure } from './receipt.mjs';
 import { verifyExecutionReplayEvidence } from './run-benchmark.mjs';
 
 function artifactJson(receipt, ref, label, errors) {
@@ -50,6 +50,15 @@ function sourceFile(receipt, role, expectedPath, errors) {
   const matches = (receipt.source?.files ?? []).filter((file) => file.role === role);
   if (matches.length !== 1 || matches[0].path !== expectedPath) {
     errors.push(`execution receipt source role ${role} must bind ${expectedPath} exactly once`);
+    return null;
+  }
+  return matches[0];
+}
+
+function exactSourcePath(receipt, expectedPath, errors) {
+  const matches = (receipt.source?.files ?? []).filter((file) => file.path === expectedPath);
+  if (matches.length !== 1) {
+    errors.push(`execution receipt must bind ${expectedPath} exactly once`);
     return null;
   }
   return matches[0];
@@ -113,6 +122,8 @@ export function verifyExecutionReceipt(receipt) {
   }
   const manifestFile = sourceFile(receipt, 'manifest', 'evals/execution-benchmark.json', errors);
   sourceFile(receipt, 'execution_receipt_verifier', 'evals/verify-execution-receipt.mjs', errors);
+  exactSourcePath(receipt, 'evals/score-execution.mjs', errors);
+  exactSourcePath(receipt, 'evals/session-harness.mjs', errors);
   sourceFile(receipt, 'system_under_test_entry', 'app/src/worker/index.ts', errors);
   sourceFile(receipt, 'system_under_test_config', 'app/wrangler.jsonc', errors);
   sourceFile(receipt, 'system_under_test_typescript_config', 'app/tsconfig.worker.json', errors);
@@ -121,6 +132,16 @@ export function verifyExecutionReceipt(receipt) {
   const manifest = parseSourceJson(manifestFile, 'execution manifest', errors);
   parseSourceJson(packageFile, 'execution package', errors);
   const lock = parseSourceJson(lockFile, 'execution package lock', errors);
+  for (const adapter of invocation.adapters ?? []) {
+    if (adapter.role !== 'answer' || adapter.path === null) continue;
+    const matches = (receipt.source?.files ?? []).filter((file) =>
+      file.role === 'answer_adapter' && file.path === adapter.path);
+    if (matches.length !== 1) {
+      errors.push(`execution answer adapter ${adapter.id} must bind ${adapter.path} exactly once`);
+    } else {
+      errors.push(...verifySourceModuleClosure(receipt.source, [adapter.path]));
+    }
+  }
   const lockedWrangler = lock?.packages?.['node_modules/wrangler'];
   if (!lockedWrangler?.version || !lockedWrangler?.integrity
       || system.launch?.wrangler_lock_version !== lockedWrangler.version

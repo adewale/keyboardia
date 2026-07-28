@@ -8,6 +8,7 @@ import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
 import {
+  assertSourceBindingStillClean,
   createSourceBinding,
   sanitizeReceiptText,
   sanitizeReceiptValue,
@@ -15,6 +16,7 @@ import {
 import {
   sanitizeForReceipt,
   sensitiveUuidsFromTrace,
+  validateAutonomousReceipt,
   validateAutonomousTrace,
   validateOriginOnlyPrompt,
   validateRawAnswerCapabilities,
@@ -190,6 +192,9 @@ function sourceBinding() {
     { role: 'dependency_lock', path: 'app/package-lock.json' },
     { role: 'receipt_runtime', path: 'evals/receipt.mjs' },
     { role: 'receipt_schema', path: 'evals/receipt.schema.json' },
+    { role: 'receipt_schema_validator', path: 'evals/validate-receipt-schema.mjs' },
+    { role: 'autonomous_receipt_schema', path: 'evals/autonomous-receipt.schema.json' },
+    { role: 'autonomous_receipt_schema_validator', path: 'evals/validate-autonomous-receipt-schema.mjs' },
     ...sourceClosure(['app/src/worker/index.ts']),
   ];
   const unique = [...new Map(inputs.map((input) => [input.path, input])).values()];
@@ -280,6 +285,7 @@ async function main() {
     sanitized.adapter_argv = sanitizeReceiptValue(sanitized.adapter_argv);
     const sanitizedValidation = validateAutonomousTrace(sanitized.trace, { origin });
     const receipt = {
+      $schema: '../autonomous-receipt.schema.json',
       version: 1,
       kind: 'origin-only-autonomous-skill-discovery',
       target_mcp_preconfigured: false,
@@ -305,6 +311,8 @@ async function main() {
     if ([...sensitiveUuids].some((uuid) => receiptJson.includes(uuid))) {
       throw new Error('sanitized receipt still contains a UUID capability or request token');
     }
+    validateAutonomousReceipt(receipt);
+    assertSourceBindingStillClean(repoRoot, source);
     const output = options.out ?? resolve(tmpdir(), `keyboardia-autonomous-${options.model}-${Date.now()}.json`);
     mkdirSync(dirname(output), { recursive: true });
     writeFileSync(output, `${JSON.stringify(receipt, null, 2)}\n`, { mode: 0o600 });

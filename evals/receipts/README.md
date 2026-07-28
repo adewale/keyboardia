@@ -18,9 +18,10 @@ The 2026-07-28 set contains four independently verifiable receipts:
 - `2026-07-28-autonomous-claude-opus-5.json`: a second passing origin-only
   journey on another model.
 
-The fresh Haiku origin-only attempt failed before well-known catalog discovery,
-so there is deliberately no passing Haiku autonomous receipt. A receipt is
-evidence for the exact recorded sample, not a claim that every attempt passes.
+An uncommitted Haiku diagnostic attempt failed, but without a failure receipt
+it is not auditable enough to support a phase-specific claim. There is
+deliberately no passing Haiku autonomous receipt. A receipt is evidence for the
+exact recorded sample, not a claim that every attempt passes.
 
 Run `node evals/verify-receipts.mjs` to schema-check every receipt, reconstruct
 its Git proofs, hash its bound inputs and artifact inventory, replay objective
@@ -62,12 +63,19 @@ prepared row, run metadata, or benchmark result. For a locally patched harness,
 the receipt embeds the public parent tree and commit bytes, the patched commit,
 and the binary patch. Verification reconstructs both Git identities and applies
 the patch offline, so a depth-1 or squash checkout does not need old objects.
+The receipt embeds the complete sanitized benchmark and audit reports, checks
+that their aggregate projections agree, and independently regrades every result
+from the committed manifest, oracle, task, and output evidence. The harness
+version is derived again from the reconstructed `pyproject.toml`.
 
 The origin-only autonomous discovery receipt uses a stricter journey-specific
-format. The same verifier dispatches it through the discovery oracle and checks
-the exact prompt and trace hashes, target-MCP non-preconfiguration, successful
-correlated protocol chain, capability redaction, and immutable Git source
-binding.
+JSON Schema. The same verifier dispatches it through the discovery oracle and
+checks the exact prompt and trace hashes, target-MCP non-preconfiguration,
+served catalog and skill bytes, successful correlated protocol chain, immediate
+post-state verification after every edit, model/argv correlation, structural
+capability redaction including base64 encodings, and self-contained Git source
+binding. Receipt creation also checks the bound worktree again immediately
+before writing.
 
 `--receipt` fails before making agent calls when the skill, manifest, fixture,
 runner, receipt runtime, oracle, or bundled adapter bytes differ from `HEAD`.

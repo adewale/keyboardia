@@ -68,9 +68,9 @@ default unless `--judge-model` is also supplied.
 
 | Case kind | Count | Arms | Scored by |
 | --- | --- | --- | --- |
-| `positive` | 7 | `with_skill`, `without_skill` | regex / not_regex + judge |
-| `adversarial` | 3 | `with_skill`, `without_skill` | regex / not_regex + judge |
-| `negative` | 4 | `with_skill`, `without_skill` | regex / not_regex + judge |
+| `positive` | 5 | `with_skill`, `without_skill` | script / structured / regex + soft judge |
+| `adversarial` | 4 | `with_skill`, `without_skill` | script / structured / regex + soft judge |
+| `negative` | 2 | `with_skill`, `without_skill` | script / regex + soft judge |
 | `trigger` | 4 | catalog selection | whether the model chooses the skill |
 | hidden (`holdout` 4, `holdback` 2) | 6 | `with_skill`, `without_skill` | regex / not_regex + judge |
 
@@ -219,12 +219,14 @@ in the Node suite, so the always-on floor needs no Python.
 - `tune` cases are public and were iterated against. They are regression and
   tuning evidence; the hidden splits are what would make a score generalization
   evidence.
-- Assertions are regexes over free text. Two failure modes have already bitten
-  this suite: an assertion that only one word order satisfies scores writing
-  style, and an assertion the attached fixture already answers scores the
-  attachment. A `without_skill` arm outscoring `with_skill` is the signal for
-  either — the runner prints those under "non-discriminating assertion(s)", and
-  the manifest test fails the build on the second kind.
+- The public tune slice has ten script assertions and one structured-output
+  assertion in addition to six regexes, four negative regexes, and eight soft
+  judges. Free-text assertions still carry two familiar failure modes: a check
+  that only one word order satisfies scores writing style, and a check the
+  attached fixture already answers scores the attachment. A `without_skill`
+  arm outscoring `with_skill` is the signal for either; the runner prints those
+  under "non-discriminating assertion(s)", and the manifest test fails the
+  build on the second kind.
 - A `not_regex` both arms always satisfy is reported separately, as a regression
   guard holding, not as a non-discriminating assertion. It is supposed to read
   100/100 forever: `no-invented-operation` earns its keep the day a model starts
@@ -240,9 +242,10 @@ in the Node suite, so the always-on floor needs no Python.
   committed here, and local activation still would not prove well-known HTTP
   discovery followed by MCP use in one agent run.
 - The committed origin-only receipts prove that full HTTP-discovery-to-MCP
-  journey for one Sonnet and one Opus sample. A fresh Haiku sample failed before
-  catalog discovery, so autonomous activation is not yet reliable across the
-  evaluated models.
+  journey for one Sonnet and one Opus sample. An uncommitted Haiku diagnostic
+  attempt failed, but without a failure receipt it is not auditable enough to
+  support a phase-specific claim. Autonomous activation is not yet established
+  across the evaluated models.
 - Ablation is removal-only, and this skill's frontmatter carries just the two
   required fields, so there is no discovery ablation: removing `description`
   yields an invalid skill rather than a weaker one. Measure triggering by

@@ -5,6 +5,14 @@ import { spawnSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  capabilityPresent,
+  receiptContainsHostPath,
+  redactCapability,
+  verifySourceModuleClosure,
+  verifySourceProvenance,
+} from '../../evals/receipt.mjs';
+import { validateAutonomousReceiptSchema } from '../../evals/validate-autonomous-receipt-schema.mjs';
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi;
 const BLOCKED_TARGET = /(?:^|_)(?:publish|remix|export)(?:_|$)/i;
@@ -31,6 +39,55 @@ function compactState(event) {
   invariant(result.structuredContent && typeof result.structuredContent === 'object',
     `${event.request?.name} returned no structuredContent`);
   return result.structuredContent;
+}
+
+function trackMap(state) {
+  return new Map((state?.tracks ?? []).map((track) => [track.track_id, track]));
+}
+
+function applyStepChanges(activeSteps, changes) {
+  const steps = new Set(activeSteps ?? []);
+  for (const change of changes ?? []) {
+    if (change.value === true) steps.add(change.step);
+    else if (change.value === false) steps.delete(change.step);
+  }
+  return [...steps].sort((left, right) => left - right);
+}
+
+function verifyEditPostState(editCall, before, after) {
+  invariant(before.tempo === after.tempo, 'post-edit verification observed an unrelated tempo change');
+  const edit = editCall.request.arguments?.edit;
+  const beforeTracks = trackMap(before);
+  const afterTracks = trackMap(after);
+  if (edit.operation === 'add_track') {
+    invariant(!beforeTracks.has(edit.track_id) && afterTracks.has(edit.track_id),
+      'post-add verification did not observe the added track');
+    invariant(afterTracks.size === beforeTracks.size + 1,
+      'post-add verification observed an unexpected track-count change');
+    invariant(afterTracks.get(edit.track_id).sample_id === edit.sample_id,
+      'post-add verification observed the wrong instrument');
+  } else if (edit.operation === 'set_steps') {
+    invariant(beforeTracks.has(edit.track_id) && afterTracks.has(edit.track_id),
+      'post-step verification could not correlate the target track');
+    const expected = applyStepChanges(beforeTracks.get(edit.track_id).active_steps, edit.changes);
+    const observed = [...(afterTracks.get(edit.track_id).active_steps ?? [])]
+      .sort((left, right) => left - right);
+    invariant(JSON.stringify(observed) === JSON.stringify(expected),
+      'post-step verification did not observe the requested assignments');
+  }
+  for (const [trackId, beforeTrack] of beforeTracks) {
+    const afterTrack = afterTracks.get(trackId);
+    invariant(afterTrack, `post-edit verification lost track ${trackId}`);
+    if (edit.operation === 'set_steps' && trackId === edit.track_id) {
+      const { active_steps: _beforeSteps, ...beforeRest } = beforeTrack;
+      const { active_steps: _afterSteps, ...afterRest } = afterTrack;
+      invariant(JSON.stringify(beforeRest) === JSON.stringify(afterRest),
+        'post-step verification observed unrelated target-track changes');
+    } else {
+      invariant(JSON.stringify(beforeTrack) === JSON.stringify(afterTrack),
+        `post-edit verification observed unrelated changes to ${trackId}`);
+    }
+  }
 }
 
 function deriveEndpoint(skill, origin) {
@@ -166,6 +223,11 @@ export function validateAutonomousTrace(events, { origin }) {
     'every edit_session must be followed immediately by a verification get_session');
     invariant(compactState(verificationRead).session_id === sessionId,
       'post-edit verification read returned a different session');
+    const priorRead = calls[editPosition - 1];
+    invariant(priorRead?.request.name === 'get_session'
+      && priorRead.request.arguments?.session_id === sessionId,
+    'every edit_session must be preceded by the state it intends to change');
+    verifyEditPostState(calls[editPosition], compactState(priorRead), compactState(verificationRead));
   }
 
   const operations = edits.map(([call]) => call.request.arguments?.edit?.operation);
@@ -220,15 +282,23 @@ export function validateRawAnswerCapabilities(answer, capabilities) {
   invariant(typeof answer === 'string', 'raw autonomous answer is not text');
   const registered = [...capabilities];
   invariant(registered.length > 0, 'raw-answer capability scan has an empty registry');
-  const decoded = decodeEscapes(answer).toLowerCase();
   for (const capability of registered) {
-    invariant(!decoded.includes(String(capability).toLowerCase()),
+    invariant(!capabilityPresent(answer, String(capability)),
       'raw autonomous answer disclosed an editable session capability');
   }
   return { registered_capabilities: registered.length, passed: true };
 }
 
 export function validateAutonomousReceipt(receipt) {
+  const schemaErrors = validateAutonomousReceiptSchema(receipt);
+  invariant(schemaErrors.length === 0, schemaErrors.join('; '));
+  invariant(receipt?.version === 1, 'unsupported autonomous receipt version');
+  invariant(receipt?.kind === 'origin-only-autonomous-skill-discovery',
+    'unexpected autonomous receipt kind');
+  invariant(typeof receipt.created_at === 'string' && !Number.isNaN(Date.parse(receipt.created_at)),
+    'autonomous receipt created_at is invalid');
+  invariant(receipt.agent?.adapter === 'claude-discovery',
+    'autonomous receipt has an unexpected agent adapter');
   invariant(receipt?.target_mcp_preconfigured === false,
     'receipt does not prove the target MCP was unconfigured');
   validateOriginOnlyPrompt(receipt.prompt, { origin: receipt.origin });
@@ -248,6 +318,9 @@ export function validateAutonomousReceipt(receipt) {
   invariant(receipt.raw_answer_capability_scan?.passed === true
     && receipt.raw_answer_capability_scan.registered_capabilities > 0,
   'receipt does not attest a non-empty raw-answer capability scan');
+  invariant(Number.isInteger(receipt.redacted_uuids) && receipt.redacted_uuids > 0
+    && receipt.raw_answer_capability_scan.registered_capabilities === receipt.redacted_uuids,
+  'receipt redaction count does not match its pre-sanitization capability registry');
   const phaseToTool = new Map([
     ['fetch', 'mcp__discovery_transport__fetch_url'],
     ['digest_verify', 'mcp__discovery_transport__verify_sha256'],
@@ -268,7 +341,46 @@ export function validateAutonomousReceipt(receipt) {
   invariant(!argv.includes(targetEndpoint), 'adapter argv preconfigured the target endpoint');
   invariant(!/\b(?:create|get|edit|publish|remix|export)_session\b/i.test(argv),
     'adapter argv preconfigured a target tool');
-  return validateAutonomousTrace(receipt.trace, { origin: receipt.origin });
+  const modelIndex = receipt.adapter_argv.indexOf('--model');
+  invariant(modelIndex >= 0 && receipt.adapter_argv[modelIndex + 1] === receipt.agent?.model,
+    'autonomous receipt model does not match the adapter invocation');
+
+  const sourceSkill = (receipt.source?.files ?? []).filter((file) => file.role === 'skill');
+  const sourceCatalog = (receipt.source?.files ?? []).filter((file) => file.role === 'manifest');
+  invariant(sourceSkill.length === 1 && sourceCatalog.length === 1,
+    'autonomous receipt must bind exactly one skill and discovery catalog');
+  const catalogFetch = receipt.trace.find((event) => event.phase === 'fetch'
+    && new URL(event.request.url).pathname === '/.well-known/agent-skills/index.json'
+    && event.response?.success === true);
+  const skillFetch = receipt.trace.find((event) => event.phase === 'fetch'
+    && new URL(event.request.url).pathname.endsWith('/SKILL.md')
+    && event.response?.success === true);
+  invariant(catalogFetch?.response?.value?.body === sourceCatalog[0].content,
+    'served discovery catalog bytes do not match the bound source');
+  invariant(skillFetch?.response?.value?.body === sourceSkill[0].content,
+    'served skill bytes do not match the bound source');
+
+  const liveFields = {
+    answer: receipt.answer,
+    cli_trace: receipt.cli_trace,
+    adapter_argv: receipt.adapter_argv,
+    trace: receipt.trace.filter((event) => ['mcp_tool_call', 'random_uuid'].includes(event.phase)),
+  };
+  invariant(sensitiveUuidsFromValue(liveFields).size === 0,
+    'sanitized autonomous receipt still contains a UUID capability');
+  const placeholders = [...JSON.stringify(liveFields).matchAll(/<redacted-uuid-(\d+)>/g)]
+    .map((match) => Number(match[1]));
+  const uniquePlaceholders = [...new Set(placeholders)].sort((left, right) => left - right);
+  invariant(JSON.stringify(uniquePlaceholders)
+    === JSON.stringify(Array.from({ length: receipt.redacted_uuids }, (_, index) => index + 1)),
+  'receipt redaction placeholders do not match redacted_uuids');
+  invariant(receiptContainsHostPath(receipt) === false,
+    'autonomous receipt contains a host-specific path');
+
+  const computed = validateAutonomousTrace(receipt.trace, { origin: receipt.origin });
+  invariant(JSON.stringify(receipt.validation) === JSON.stringify(computed),
+    'stored autonomous validation does not match the recomputed projection');
+  return computed;
 }
 
 function decodeEscapes(value) {
@@ -294,6 +406,36 @@ export function sensitiveUuidsFromTrace(events) {
   return values;
 }
 
+function sensitiveUuidsFromValue(value) {
+  const values = new Set();
+  const visit = (entry) => {
+    if (typeof entry === 'string') {
+      const decoded = decodeEscapes(entry);
+      for (const match of decoded.matchAll(UUID)) values.add(match[0].toLowerCase());
+      for (const candidate of decoded.matchAll(/[A-Za-z0-9+/_-]{32,}={0,2}/g)) {
+        for (const encoding of ['base64', 'base64url']) {
+          try {
+            const unpacked = Buffer.from(candidate[0], encoding).toString('utf8');
+            for (const match of unpacked.matchAll(UUID)) values.add(match[0].toLowerCase());
+          } catch {
+            // Not valid in this base64 alphabet.
+          }
+        }
+      }
+      return;
+    }
+    if (Array.isArray(entry)) return entry.forEach(visit);
+    if (entry && typeof entry === 'object') {
+      for (const [key, child] of Object.entries(entry)) {
+        visit(key);
+        visit(child);
+      }
+    }
+  };
+  visit(value);
+  return values;
+}
+
 export function sanitizeForReceipt(value, { onlyUuids } = {}) {
   const replacements = new Map();
   const allowed = onlyUuids ? new Set([...onlyUuids].map((uuid) => uuid.toLowerCase())) : null;
@@ -304,7 +446,15 @@ export function sanitizeForReceipt(value, { onlyUuids } = {}) {
     return replacements.get(key);
   }
   function visit(entry) {
-    if (typeof entry === 'string') return decodeEscapes(entry).replace(UUID, token);
+    if (typeof entry === 'string') {
+      let redacted = decodeEscapes(entry).replace(UUID, token);
+      for (const capability of allowed ?? []) {
+        if (!capabilityPresent(redacted, capability)) continue;
+        redacted = redactCapability(redacted, capability)
+          .replaceAll('<redacted-session-id>', token(capability));
+      }
+      return redacted;
+    }
     if (Array.isArray(entry)) return entry.map(visit);
     if (entry && typeof entry === 'object') {
       return Object.fromEntries(Object.entries(entry).map(([key, child]) => [visit(key), visit(child)]));
@@ -334,23 +484,19 @@ function git(repoRoot, args, { bytes = false, optional = false } = {}) {
 }
 
 export function verifySourceBinding(source, repoRoot) {
-  invariant(source && /^[0-9a-f]{40}$/.test(source.git_commit), 'receipt has no immutable source commit');
-  invariant(/^[0-9a-f]{40}$/.test(source.git_tree), 'receipt has no immutable source tree');
-  invariant(Array.isArray(source.files) && source.files.length > 0, 'receipt has no source files');
-  for (const file of source.files) {
-    invariant(typeof file.path === 'string' && !file.path.split('/').includes('..'),
-      `invalid source path: ${file.path}`);
-    invariant(file.encoding === 'utf-8' && typeof file.content === 'string',
-      `${file.path} does not embed UTF-8 source bytes`);
-    const embedded = Buffer.from(file.content, 'utf8');
-    invariant(createHash('sha256').update(embedded).digest('hex') === file.sha256,
-      `${file.path} embedded source SHA-256 mismatch`);
-    const blob = createHash('sha1')
-      .update(Buffer.from(`blob ${embedded.length}\0`, 'utf8'))
-      .update(embedded)
-      .digest('hex');
-    invariant(blob === file.git_blob, `${file.path} embedded source Git blob mismatch`);
-  }
+  const requiredRoles = [
+    'skill', 'manifest', 'transport', 'validator', 'runner', 'answer_adapter',
+    'system_under_test_config', 'dependency_manifest', 'dependency_lock',
+    'receipt_runtime', 'receipt_schema', 'receipt_schema_validator', 'autonomous_receipt_schema',
+    'autonomous_receipt_schema_validator',
+  ];
+  const proofErrors = verifySourceProvenance(source, { requiredRoles });
+  invariant(proofErrors.length === 0, proofErrors.join('; '));
+  const roots = (source.files ?? [])
+    .filter((file) => ['transport', 'validator', 'runner', 'answer_adapter'].includes(file.role))
+    .map((file) => file.path);
+  const closureErrors = verifySourceModuleClosure(source, roots);
+  invariant(closureErrors.length === 0, closureErrors.join('; '));
   if (git(repoRoot, ['cat-file', '-e', `${source.git_commit}^{commit}`], { optional: true }) !== null) {
     const tree = git(repoRoot, ['show', '-s', '--format=%T', source.git_commit]);
     invariant(tree === source.git_tree, 'source git tree does not match source commit');

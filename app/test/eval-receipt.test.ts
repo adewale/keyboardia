@@ -21,6 +21,7 @@ import {
   sha256,
   skillEvalInputBundleHash,
   verifyReceipt,
+  verifySourceProvenance,
   writeReceipt,
 } from '../../evals/receipt.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
@@ -100,12 +101,15 @@ function committedInputs({ execution = false } = {}) {
     ['receipt_runtime', 'evals/receipt.mjs', 'export {};\n'],
     ['receipt_schema', 'evals/receipt.schema.json', '{}\n'],
     ['answer_adapter', 'evals/adapter.mjs', 'export {};\n'],
+    ['harness_manifest', 'pyproject.toml', '[project]\nversion = "test"\n'],
     ['oracle', 'evals/oracle.mjs', [
       "import { readFileSync } from 'node:fs';",
       "process.exitCode = readFileSync(process.argv[2], 'utf8') === '{\"ok\":true}' ? 0 : 1;",
       '',
     ].join('\n')],
     ['execution_receipt_verifier', 'evals/verify-execution-receipt.mjs', 'export {};\n'],
+    ['runner_dependency', 'evals/score-execution.mjs', 'export {};\n'],
+    ['runner_dependency', 'evals/session-harness.mjs', 'export {};\n'],
     ['system_under_test_entry', 'app/src/worker/index.ts', 'export {};\n'],
     ['system_under_test_config', 'app/wrangler.jsonc', '{}\n'],
     ['system_under_test_typescript_config', 'app/tsconfig.worker.json', '{}\n'],
@@ -285,14 +289,12 @@ function answerReceiptFixture() {
   ];
   receipt.invocation.benchmark_ref = addArtifact(
     receipt.artifacts,
-    JSON.stringify({ version: 1, results: benchmark.results }),
+    JSON.stringify(benchmark),
     'application/json',
   );
   receipt.invocation.audit_ref = addArtifact(
     receipt.artifacts,
-    JSON.stringify({
-      version: 1, external_report_sha256: 'c'.repeat(64), reported_blockers: [],
-    }),
+    JSON.stringify(audit),
     'application/json',
   );
   writeFileSync(resolve(root, 'evals/adapter.mjs'), 'export const patched = true;\n');
@@ -394,8 +396,24 @@ describe('eval receipts', () => {
     }])).toThrow(/dirty|does not match/);
   });
 
+  it('self-verifies embedded source Git objects without local history', () => {
+    const { source } = committedInputs();
+    expect(verifySourceProvenance(source)).toEqual([]);
+
+    const fabricatedCommit = structuredClone(source);
+    fabricatedCommit.git_commit = 'f'.repeat(40);
+    expect(verifySourceProvenance(fabricatedCommit).join('\n'))
+      .toContain('commit object does not match');
+
+    const fabricatedTree = structuredClone(source);
+    fabricatedTree.tree_objects[0].content_base64 = Buffer.from('not a tree').toString('base64');
+    expect(verifySourceProvenance(fabricatedTree).join('\n'))
+      .toContain('failed self-verification');
+  });
+
   it('reconstructs a patched external harness without trusting Git history', () => {
     const { root, receipt } = exampleReceipt();
+    receipt.harness.version = 'test';
     writeFileSync(resolve(root, 'evals/adapter.mjs'), 'export const patched = true;\n');
     git(root, 'add', 'evals/adapter.mjs');
     execFileSync('git', [
@@ -405,6 +423,10 @@ describe('eval receipts', () => {
     const binding = createPatchedGitBinding(root);
     attachPatchedHarness(receipt, binding);
     expect(verifyReceipt(receipt, { repoRoot: root })).toEqual([]);
+
+    const fabricatedVersion = structuredClone(receipt);
+    fabricatedVersion.harness.version = '999.0.0';
+    expect(verifyReceipt(fabricatedVersion).join('\n')).toContain('reconstructed pyproject');
 
     const fabricatedId = structuredClone(receipt);
     fabricatedId.harness.git_commit = 'f'.repeat(40);
@@ -433,8 +455,12 @@ describe('eval receipts', () => {
     expect(verifyReceipt(fabricatedRun).join('\n')).toContain('scoring does not match');
 
     const blockedAudit = structuredClone(receipt);
+    const benchmark = JSON.parse(
+      blockedAudit.artifacts[blockedAudit.invocation.benchmark_ref].content,
+    );
     const audit = {
-      version: 1, external_report_sha256: 'c'.repeat(64), reported_blockers: ['blocked'],
+      readiness: { blockers: ['blocked'] },
+      benchmark: { summary: benchmark.summary, case_flags: benchmark.case_flags },
     };
     blockedAudit.invocation.audit_ref = addArtifact(
       blockedAudit.artifacts,
@@ -466,22 +492,25 @@ describe('eval receipts', () => {
       .toContain('independently regraded output');
 
     const coordinatedAggregate = structuredClone(receipt);
-    const benchmark = JSON.parse(
+    const coordinatedBenchmark = JSON.parse(
       coordinatedAggregate.artifacts[coordinatedAggregate.invocation.benchmark_ref].content,
     );
-    benchmark.summary = { fabricated: true };
-    benchmark.by_model = { fabricated: true };
-    benchmark.paired_summary = { fabricated: true };
-    benchmark.case_flags = [{ case_id: 'case-1', flags: ['fabricated'] }];
-    benchmark.reliability = { fabricated: true };
+    coordinatedBenchmark.summary = { fabricated: true };
+    coordinatedBenchmark.by_model = { fabricated: true };
+    coordinatedBenchmark.paired_summary = { fabricated: true };
+    coordinatedBenchmark.case_flags = [{ case_id: 'case-1', flags: ['fabricated'] }];
+    coordinatedBenchmark.reliability = { fabricated: true };
     coordinatedAggregate.invocation.benchmark_ref = addArtifact(
       coordinatedAggregate.artifacts,
-      JSON.stringify(benchmark),
+      JSON.stringify(coordinatedBenchmark),
       'application/json',
     );
     const auditArtifact = {
       counts: { fabricated: 999 }, readiness: { blockers: [] },
-      benchmark: { summary: benchmark.summary, case_flags: benchmark.case_flags },
+      benchmark: {
+        summary: coordinatedBenchmark.summary,
+        case_flags: coordinatedBenchmark.case_flags,
+      },
     };
     coordinatedAggregate.invocation.audit_ref = addArtifact(
       coordinatedAggregate.artifacts,
@@ -559,7 +588,6 @@ describe('eval receipts', () => {
           launch: {
             mode: 'runner-owned-wrangler-local', wrangler_version: 'wrangler 4.53.0',
             wrangler_lock_version: '4.53.0', wrangler_lock_integrity: 'sha512-test',
-            build_sha256: 'b'.repeat(64),
             source_git_commit: source.git_commit, source_git_tree: source.git_tree,
           },
           tools_list: tools, tools_list_sha256: sha256(canonicalJson(tools)),
@@ -571,6 +599,17 @@ describe('eval receipts', () => {
     });
     expect(verifyReceipt(receipt)).toEqual([]);
     expect(verifyExecutionReceipt(receipt)).toEqual([]);
+
+    const missingScorer = structuredClone(receipt);
+    missingScorer.source.files = missingScorer.source.files
+      .filter((file) => file.path !== 'evals/score-execution.mjs');
+    expect(verifyExecutionReceipt(missingScorer).join('\n'))
+      .toContain('must bind evals/score-execution.mjs');
+
+    const adapterMismatch = structuredClone(receipt);
+    adapterMismatch.invocation.adapters[0].path = 'evals/unbound-adapter.mjs';
+    expect(verifyExecutionReceipt(adapterMismatch).join('\n'))
+      .toContain('answer adapter stub must bind');
 
     const fabricatedRun = structuredClone(receipt);
     fabricatedRun.runs[0].assertions[0].passed = false;
