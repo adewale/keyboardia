@@ -68,7 +68,7 @@ default unless `--judge-model` is also supplied.
 
 | Case kind | Count | Arms | Scored by |
 | --- | --- | --- | --- |
-| `positive` | 5 | `with_skill`, `without_skill` | script / structured / regex + soft judge |
+| `positive` | 4 | `with_skill`, `without_skill` | script / structured / regex + soft judge |
 | `adversarial` | 4 | `with_skill`, `without_skill` | script / structured / regex + soft judge |
 | `negative` | 2 | `with_skill`, `without_skill` | script / regex + soft judge |
 | `trigger` | 4 | catalog selection | whether the model chooses the skill |
@@ -219,7 +219,7 @@ in the Node suite, so the always-on floor needs no Python.
 - `tune` cases are public and were iterated against. They are regression and
   tuning evidence; the hidden splits are what would make a score generalization
   evidence.
-- The public tune slice has ten script assertions and one structured-output
+- The public tune slice has nine script assertions and one structured-output
   assertion in addition to six regexes, four negative regexes, and eight soft
   judges. Free-text assertions still carry two familiar failure modes: a check
   that only one word order satisfies scores writing style, and a check the

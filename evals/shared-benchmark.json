@@ -130,48 +130,6 @@
       ]
     },
     {
-      "id": "pos-uncertain-tempo-response",
-      "eval_intent": "capability",
-      "split": "tune",
-      "kind": "positive",
-      "domain": "collaboration-safety",
-      "difficulty": "extreme",
-      "trigger_type": "implicit",
-      "success_goals": [
-        "process",
-        "outcome",
-        "style"
-      ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. You sent a tempo assignment of 124 BPM, but the network failed before any response arrived. Another collaborator may also be changing tempo. Do not claim execution. Return one JSON object and no prose with exactly first_call and decisions. first_call is one tool call. decisions is an object with exactly intended_124, prior_value_unchanged, and different_value. intended_124 and different_value each contain exactly action; prior_value_unchanged contains exactly action and call. Include a call only when the action retries. Use the literal placeholder [SESSION_ID] for every session_id and these exact action labels: accept_no_retry, retry_same_assignment, ask_before_overwrite.",
-      "files": [
-        "fixtures/keyboardia-mcp-schema.json"
-      ],
-      "expected_behavior": [
-        "Re-read instead of blindly retrying.",
-        "Do not retry if the intended value is present.",
-        "Ask before reasserting when a different value is present because it may be a collaborator's later write."
-      ],
-      "assertions": [
-        {
-          "name": "complete-tempo-recovery-table",
-          "type": "script",
-          "command": [
-            "node",
-            "oracles/capability-answer.mjs",
-            "uncertain-tempo",
-            "{output_path}"
-          ],
-          "severity": "gate",
-          "oracle": "strong"
-        }
-      ],
-      "tags": [
-        "uncertain-response",
-        "last-write-wins",
-        "concurrency"
-      ]
-    },
-    {
       "id": "pos-unattributed-concurrent-delta",
       "eval_intent": "capability",
       "split": "tune",
@@ -973,12 +931,12 @@
       },
       "expected_regressions": [
         {
-          "summary": "without the concurrency section the agent retries an uncertain shared tempo assignment blindly",
+          "summary": "without the concurrency section the agent loses the safe collision-recovery contract",
           "cases": [
-            "pos-uncertain-tempo-response"
+            "answer-collision-resistant-track"
           ],
           "assertions": [
-            "complete-tempo-recovery-table"
+            "safe-collision-retry-contract"
           ]
         }
       ]

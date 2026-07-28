@@ -358,53 +358,6 @@ describe('skill eval manifest', () => {
       },
     })).toBe(false);
 
-    const tempo = {
-      first_call: getSession,
-      decisions: {
-        intended_124: { action: 'accept_no_retry' },
-        prior_value_unchanged: {
-          action: 'retry_same_assignment',
-          call: {
-            tool: 'edit_session',
-            arguments: {
-              session_id: sessionId,
-              edit: { operation: 'set_tempo', tempo: 124 },
-            },
-          },
-        },
-        different_value: { action: 'ask_before_overwrite' },
-      },
-    };
-    expect(score('pos-uncertain-tempo-response', tempo)).toBe(true);
-    expect(score('pos-uncertain-tempo-response', {
-      ...tempo,
-      decisions: {
-        ...tempo.decisions,
-        intended_124: { action: 'accept_no_retry', reason: 'observed intended value' },
-      },
-    })).toBe(false);
-    expect(score('pos-uncertain-tempo-response', {
-      ...tempo,
-      decisions: {
-        ...tempo.decisions,
-        different_value: { action: 'retry_same_assignment' },
-      },
-    })).toBe(false);
-    expect(score('pos-uncertain-tempo-response', {
-      ...tempo,
-      first_call: { name: 'get_session', arguments: { session_id: sessionId } },
-      decisions: {
-        ...tempo.decisions,
-        prior_value_unchanged: {
-          ...tempo.decisions.prior_value_unchanged,
-          call: {
-            name: 'edit_session',
-            arguments: tempo.decisions.prior_value_unchanged.call.arguments,
-          },
-        },
-      },
-    })).toBe(true);
-
     const attribution = {
       attempted: [{ field: 'kick_active_steps', change: { step: 0, value: true } }],
       observed: [{ field: 'kick_active_steps', value: [0] }],

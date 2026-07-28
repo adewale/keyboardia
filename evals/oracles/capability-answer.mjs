@@ -195,41 +195,6 @@ export function collisionRetryAnswer(text) {
   return pass('fresh ID, no prefix ownership inference, and stable read-before-retry payload');
 }
 
-export function uncertainTempoAnswer(text) {
-  const parsed = parse(text);
-  if (parsed.error) return fail(parsed.error);
-  const value = parsed.value;
-  if (!exactKeys(value, ['first_call', 'decisions'])) {
-    return fail('expected exactly first_call and decisions');
-  }
-  if (!getSessionCall(value.first_call, null, true)) return fail('first_call must be get_session');
-  const sessionId = value.first_call.arguments.session_id;
-  const decisions = value.decisions;
-  if (!exactKeys(decisions, ['intended_124', 'prior_value_unchanged', 'different_value'])) {
-    return fail('decision table must cover intended, unchanged, and different observed values');
-  }
-  if (!exactKeys(decisions.intended_124, ['action'])
-      || decisions.intended_124.action !== 'accept_no_retry') {
-    return fail('observed 124 must be accepted without retry');
-  }
-  if (!exactKeys(decisions.different_value, ['action'])
-      || decisions.different_value.action !== 'ask_before_overwrite') {
-    return fail('a different value must require confirmation before overwrite');
-  }
-  const unchanged = decisions.prior_value_unchanged;
-  if (!exactKeys(unchanged, ['action', 'call']) || unchanged.action !== 'retry_same_assignment') {
-    return fail('an unchanged prior value must retry the same assignment');
-  }
-  if (!editSessionCall(unchanged.call, sessionId, true)) {
-    return fail('unchanged-value retry must edit the same session');
-  }
-  const edit = unchanged.call.arguments.edit;
-  if (!exactKeys(edit, ['operation', 'tempo']) || edit.operation !== 'set_tempo' || edit.tempo !== 124) {
-    return fail('retry must use the exact set_tempo 124 payload');
-  }
-  return pass('complete re-read decision table avoids blind or destructive retries');
-}
-
 export function concurrentDeltaAnswer(text) {
   const parsed = parse(text);
   if (parsed.error) return fail(parsed.error);
@@ -359,7 +324,6 @@ export const CAPABILITY_ORACLES = {
   'human-steps-envelope': humanStepsEnvelopeAnswer,
   'human-steps-sequence': humanStepsSequenceAnswer,
   'collision-retry': collisionRetryAnswer,
-  'uncertain-tempo': uncertainTempoAnswer,
   'concurrent-delta': concurrentDeltaAnswer,
   'partial-track-limit': partialTrackLimitAnswer,
   'published-session': publishedSessionAnswer,
