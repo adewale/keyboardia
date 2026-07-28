@@ -5479,24 +5479,42 @@ functions were pure, but their location made the dependency direction false.
 ### The Fix
 
 The scanner now parses the TypeScript AST, so comments and strings are not code,
-and asks TypeScript's Bundler resolver for the same source module the build will
-use. Every unresolved code import and parse failure is a test failure. Policies
-start from every Worker, shared, and state module and walk transitive paths with
-readable provenance. Shared is an allow-list (`shared/**` only); Worker permits
-only Worker, shared, and explicitly pure music modules; state cannot transitively
-reach live audio. Pure pattern operations moved into shared, with the old client
-path retained only as a compatibility facade.
+loads the application and Worker tsconfigs, and asks TypeScript's Bundler
+resolver for the same source module the build will use. Resolution happens before
+classifying dotted basenames, so names such as `midiExport.types` and Vite query
+imports cannot disappear. Every unresolved code import, production-to-excluded
+test/story edge, graph-closure failure, and parse failure is loud. Package and
+resource imports are separate capability edges with explicit allow-lists rather
+than invisible strings.
 
-The guard itself has adversarial tests for `.js` specifiers, Vite query imports,
-commented imports, unresolved imports, indirect bridges, and module-scope browser
-API calls. A browser MIDI test was also mutation-checked by corrupting only the
-real Web Worker response: it failed on the downloaded bytes, then passed after
-the mutation was removed.
+Policies start from every Worker, shared, music, and state module and walk
+transitive paths with readable provenance. Shared is an allow-list (`shared/**`
+only); Worker permits only Worker, shared, and explicitly pure music modules;
+state cannot transitively reach live audio. Intrinsic capabilities are checked
+too: a symbol-aware AST pass scans every neutral-owned module, including deferred
+callbacks, constructors, getters, and IIFEs, while recognizing locally shadowed
+names. It covers storage, browser Workers, Web Audio, computed `globalThis`
+properties, and direct/computed/aliased `import.meta.env` reads. The real workerd
+MCP journey remains the deployed-bundle module-evaluation oracle. Pure pattern
+operations moved into shared, with the old client path retained only as a
+compatibility facade.
+
+The guard itself has adversarial tests for `.js` and dotted specifiers, Vite
+query imports, inline versus clause-level type imports, commented imports,
+unresolved and excluded imports, package/resource escapes, indirect bridges,
+shadowed globals, eager/deferred browser APIs, and `import.meta.env` syntax. A
+browser MIDI test was mutation-checked by corrupting only the real Web Worker
+response: it failed on the downloaded bytes, then passed after the mutation was
+removed. It also records a real Worker response so synchronous fallback cannot
+masquerade as off-thread success. The real-Wrangler MCP journey invokes
+`export_midi` and validates `MThd`, covering the Worker adapter in workerd.
 
 ### The Rule
 
 An import-boundary test is a small compiler front end. If its parser or resolver
 disagrees with the production toolchain, green means only that the test did not
-see the program. Define layers by allowed capabilities, walk every owned root
-transitively, make resolution failure loud, and mutation-test the guard with the
+see the program. Resolve before classifying, require a closed graph, and model
+packages/resources/intrinsic globals as capabilities too. Define layers by
+allowed capabilities, walk every owned root transitively, make resolution
+failure loud, retain a real-runtime oracle, and mutation-test the guard with the
 exact syntax and bridge paths an adversarial change would use.

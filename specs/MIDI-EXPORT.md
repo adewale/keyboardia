@@ -380,20 +380,22 @@ The library always uses 128 ticks per quarter note. This is sufficient for step-
 
 ### Conceptual Overview
 
-The reference implementation below is simplified for clarity. See `app/src/audio/midiExport.ts` for the actual implementation, which includes:
+The reference implementation below is simplified for clarity. See
+`app/src/shared/midi-core.ts` for the actual runtime-neutral encoder and
+`app/src/audio/midiExport.ts` for browser delivery. Together they include:
 
 - Full polyrhythm support (LCM calculation, loop expansion)
 - Proper channel assignment (dedicated counter that skips channel 10)
 - Separate functions for drum vs synth note pitch
 - Note clamping to 0-127 range (prevents wrap-around)
-- `MidiExportResult` return type with blob and filename
+- deterministic byte output plus the browser `MidiExportResult` Blob adapter
 - `Pick<GridState, 'tracks' | 'tempo' | 'swing'>` for minimal type requirements
 - ArrayBuffer workaround for TypeScript Blob compatibility
 
 ```typescript
 import MidiWriter from 'midi-writer-js';
 
-// Conceptual implementation - see midiExport.ts for actual code
+// Conceptual implementation - see shared/midi-core.ts for actual encoding
 function exportToMidi(state: GridState): MidiExportResult {
   const tracks: MidiTrack[] = [];
 
@@ -831,7 +833,8 @@ This is a known consideration for Phase 25+ features.
 | File | Purpose |
 |------|---------|
 | `app/src/audio/scheduler.ts` | Canonical track filtering logic (search: `@spec: track-selection`) |
-| `app/src/audio/midiExport.ts` | Reference implementation |
+| `app/src/shared/midi-core.ts` | Canonical MIDI planning and byte encoder |
+| `app/src/audio/midiExport.ts` | Browser Blob, Web Worker, file picker, and download adapter |
 | `app/src/audio/midiExport.test.ts` | Behavioral parity tests |
 
 ### Dependent Features

@@ -30,12 +30,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Added (regression proof):**
 - Runtime boundary tests parse the TypeScript AST, use bundler-equivalent module
   resolution (including `.js` to `.ts` and Vite Worker query specifiers), fail on
-  unresolved code imports, ignore comments and strings, and enforce Worker,
-  shared, and state capabilities across complete transitive graphs.
-- Worker runtime safety detects top-level browser API calls rather than only
-  column-zero variable declarations.
+  unresolved or excluded code imports, record package and resource edges, ignore
+  comments and strings, and enforce explicit Worker, shared, music, and state
+  capabilities across closed transitive graphs.
+- Runtime safety uses symbol-aware AST checks over every neutral-owned module,
+  catching browser APIs in callbacks, constructors, getters, IIFEs, computed
+  `globalThis` properties, and Vite `import.meta.env` syntax without mistaking
+  shadowed local names for globals.
 - A real Chromium test constructs `midiExport.worker.ts`, receives its response,
   downloads the result, and verifies a non-trivial Standard MIDI `MThd` header.
+- The real-Wrangler MCP lifecycle now invokes `export_midi` and validates its
+  base64 MIDI header in workerd, not only in transformed unit/integration tests.
 
 #### Live MCP Sampled-Instrument Readiness (July 2026)
 

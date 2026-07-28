@@ -15,10 +15,13 @@ test('exports a valid MIDI download through the real browser Worker', async ({ p
 
     const BrowserWorker = window.Worker;
     const observedWorkerUrls: string[] = [];
+    const respondedWorkerUrls: string[] = [];
     class ObservedWorker extends BrowserWorker {
       constructor(scriptURL: string | URL, options?: WorkerOptions) {
         super(scriptURL, options);
-        observedWorkerUrls.push(String(scriptURL));
+        const url = String(scriptURL);
+        observedWorkerUrls.push(url);
+        this.addEventListener('message', () => respondedWorkerUrls.push(url), { once: true });
       }
     }
     Object.defineProperty(window, 'Worker', {
@@ -28,6 +31,10 @@ test('exports a valid MIDI download through the real browser Worker', async ({ p
     Object.defineProperty(window, '__observedWorkerUrls', {
       configurable: true,
       value: observedWorkerUrls,
+    });
+    Object.defineProperty(window, '__respondedWorkerUrls', {
+      configurable: true,
+      value: respondedWorkerUrls,
     });
   });
 
@@ -62,8 +69,17 @@ test('exports a valid MIDI download through the real browser Worker', async ({ p
   expect(download.suggestedFilename()).toMatch(/\.mid$/);
   expect(midi.length).toBeGreaterThan(20);
   expect(midi.subarray(0, 4).toString('ascii')).toBe('MThd');
-  const observedWorkerUrls = await page.evaluate(() => (
-    window as typeof window & { __observedWorkerUrls: string[] }
-  ).__observedWorkerUrls);
+  const workerEvidence = await page.evaluate(() => {
+    const observedWindow = window as typeof window & {
+      __observedWorkerUrls: string[];
+      __respondedWorkerUrls: string[];
+    };
+    return {
+      constructed: observedWindow.__observedWorkerUrls,
+      responded: observedWindow.__respondedWorkerUrls,
+    };
+  });
+  const observedWorkerUrls = workerEvidence.constructed;
   expect(observedWorkerUrls).toContainEqual(expect.stringContaining('midiExport.worker'));
+  expect(workerEvidence.responded).toEqual(observedWorkerUrls);
 });

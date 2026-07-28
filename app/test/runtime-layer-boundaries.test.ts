@@ -1,8 +1,13 @@
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  findBrowserGlobalReferences,
+  findExternalImportViolations,
+  findImportMetaEnvReferences,
   findReachabilityViolations,
+  findResourceImportViolations,
   reachableModules,
   scanProductionGraph,
 } from './runtime-boundary-scanner';
@@ -14,6 +19,17 @@ const graph = scanProductionGraph(SRC_ROOT);
 const workerRoots = graph.modules.filter(module => module.startsWith('worker/'));
 const sharedRoots = graph.modules.filter(module => module.startsWith('shared/'));
 const stateRoots = graph.modules.filter(module => module.startsWith('state/'));
+const runtimeNeutralRoots = graph.modules.filter(module => /^(?:worker|shared|music)\//.test(module));
+
+const WORKER_PACKAGES = new Set([
+  '@modelcontextprotocol/server',
+  'cloudflare:workers',
+  'react',
+  'workers-og',
+  'zod',
+]);
+const SHARED_PACKAGES = new Set(['midi-writer-js']);
+const STATE_PACKAGES = new Set(['react']);
 
 describe('runtime dependency boundaries', () => {
   it('parses and resolves the real production graph without blind spots', () => {
@@ -24,6 +40,7 @@ describe('runtime dependency boundaries', () => {
     expect(graph.parseFailures).toEqual([]);
     expect(graph.unresolvedRelativeImports).toEqual([]);
     expect(graph.unanalyzableModuleReferences).toEqual([]);
+    expect(graph.excludedInternalImports).toEqual([]);
   });
 
   it('keeps every Worker module inside Worker, shared, and pure music capabilities', () => {
@@ -48,6 +65,52 @@ describe('runtime dependency boundaries', () => {
       edges: graph.edges,
       isAllowed: module => module.startsWith('shared/'),
     })).toEqual([]);
+  });
+
+  it('keeps external packages and runtime resources inside explicit capability allow-lists', () => {
+    expect(findExternalImportViolations({
+      policyName: 'Worker packages',
+      imports: graph.externalImports,
+      appliesTo: module => module.startsWith('worker/'),
+      isAllowed: specifier => WORKER_PACKAGES.has(specifier),
+    })).toEqual([]);
+    expect(findExternalImportViolations({
+      policyName: 'Shared packages',
+      imports: graph.externalImports,
+      appliesTo: module => module.startsWith('shared/'),
+      isAllowed: specifier => SHARED_PACKAGES.has(specifier),
+    })).toEqual([]);
+    expect(findExternalImportViolations({
+      policyName: 'Music packages',
+      imports: graph.externalImports,
+      appliesTo: module => module.startsWith('music/'),
+      isAllowed: () => false,
+    })).toEqual([]);
+    expect(findExternalImportViolations({
+      policyName: 'State packages',
+      imports: graph.externalImports,
+      appliesTo: module => module.startsWith('state/'),
+      isAllowed: specifier => STATE_PACKAGES.has(specifier),
+    })).toEqual([]);
+    expect(findResourceImportViolations({
+      policyName: 'Runtime-neutral resources',
+      imports: graph.resourceImports,
+      appliesTo: module => /^(?:worker|shared|music|state)\//.test(module),
+    })).toEqual([]);
+  });
+
+  it('keeps intrinsic browser and Vite capabilities out of every neutral-owned module', () => {
+    const offenders: string[] = [];
+    for (const module of runtimeNeutralRoots) {
+      const source = readFileSync(resolve(SRC_ROOT, module), 'utf8');
+      for (const reference of [
+        ...findBrowserGlobalReferences(source, module),
+        ...findImportMetaEnvReferences(source, module),
+      ]) {
+        offenders.push(`src/${module}:${reference.line}:${reference.column}: ${reference.global}`);
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 
   it('keeps every state module transitively out of the live audio runtime', () => {
