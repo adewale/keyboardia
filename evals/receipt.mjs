@@ -1566,6 +1566,10 @@ function normalizedAuditFindings(audit, benchmark, counts) {
         expected.push({ kind: 'flaky-eval', severity: 'required', evidence: flag });
       }
     }
+    if (flag.eval_intent !== 'regression'
+      && (flag.flags ?? []).includes('no objective lift')) {
+      expected.push({ kind: 'no-lift-eval', severity: 'recommended', evidence: flag });
+    }
   }
   const identical = expectedNonDiscriminatingAssertions(benchmark);
   if (identical.length > 0) {

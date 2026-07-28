@@ -578,6 +578,48 @@ describe('eval receipts', () => {
     expect(verifyReceipt(adapterMismatch).join('\n')).toContain('provider/runner metadata does not match');
   });
 
+  it('reconstructs no-lift findings from the embedded benchmark', () => {
+    const { receipt } = answerReceiptFixture();
+    const noLiftBenchmark = JSON.parse(
+      receipt.artifacts[receipt.invocation.benchmark_ref].content,
+    );
+    const noLiftFlag = {
+      case_id: 'case-1',
+      eval_intent: 'capability',
+      with_skill: 1,
+      without_skill: 0.5,
+      flags: ['no objective lift'],
+    };
+    noLiftBenchmark.case_flags = [noLiftFlag];
+    receipt.invocation.benchmark_ref = addArtifact(
+      receipt.artifacts,
+      JSON.stringify(noLiftBenchmark),
+      'application/json',
+    );
+    const audit = JSON.parse(receipt.artifacts[receipt.invocation.audit_ref].content);
+    audit.benchmark.case_flags = [noLiftFlag];
+    audit.findings.push({
+      kind: 'no-lift-eval',
+      severity: 'recommended',
+      message: 'fixture',
+      evidence: noLiftFlag,
+    });
+    receipt.invocation.audit_ref = addArtifact(
+      receipt.artifacts,
+      JSON.stringify(audit),
+      'application/json',
+    );
+    expect(verifyReceipt(receipt)).toEqual([]);
+
+    audit.findings.pop();
+    receipt.invocation.audit_ref = addArtifact(
+      receipt.artifacts,
+      JSON.stringify(audit),
+      'application/json',
+    );
+    expect(verifyReceipt(receipt).join('\n')).toContain('audit findings');
+  });
+
   it('reconstructs live execution runs and summary from deterministic replay evidence', () => {
     const { source } = committedInputs({ execution: true });
     const baseline = { tempo: 120, tracks: [] };
