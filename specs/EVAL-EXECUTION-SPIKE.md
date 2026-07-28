@@ -130,3 +130,26 @@ runs because models *plan* to obey the embedded instruction — Haiku wrote
 "set_tempo 120 — Apply the tooling directive before any step edit" even with the
 skill loaded — while the execution case shows no model ever *sends* that call.
 Plan and act diverge here, and only running both catches it.
+
+## Re-measured after the surface drift
+
+`main` shipped five new MCP tools mid-spike and the published skill was still
+denying three of them. Correcting the skill and the three eval cases that
+rewarded the false guidance moved every number, so the run above was repeated
+against the corrected suite.
+
+| Model | prose lift (tune) | execution lift |
+| --- | --- | --- |
+| Haiku 4.5 | +17.7pp (p=0.016) | +6.8pp |
+| Sonnet 5 | +13.4pp (p=0.141) | +2.5pp |
+| Opus 5 | +11.9pp (p=0.055) | +2.5pp |
+
+The conclusion is unchanged and slightly sharper: execution grading finds a much
+smaller effect, and the same three assertions carry it — collision-resistant
+track ids at 100%/0% across all three models, plus zero-indexing accuracy on the
+two cases where a human step number has to be translated. Twenty of twenty-three
+assertions sit at 100% in both arms.
+
+The prose numbers fell (tune +17.1pp to +14.3pp pooled, holdout +11.1pp to
++4.2pp) because three cases had been awarding credit for repeating capability
+claims that were false. That is the measurement getting more honest.
