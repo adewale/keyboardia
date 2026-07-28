@@ -1501,3 +1501,68 @@ says `// Only affects metadata, not session state`.
 Every test file that imports the reducer every multiplayer mutation flows
 through now fails when it stops working. That is the number worth tracking —
 not the test count, which moves with the sample assets on disk.
+
+## §23 — A rebase is a place where coverage disappears
+
+Rebasing this branch onto `12d85a2` produced five conflicts. Four were the
+same shape, and it is a shape worth naming: **main moved modules; this branch's
+commits still named the old paths; git merged the text without noticing.**
+
+| moved by `d67de16` | to |
+|---|---|
+| `shared/sync-classification` | `sync/sync-classification` |
+| `shared/state-adapters` | `state/state-adapters` |
+| `utils/patternOps` | `shared/pattern-operations` |
+| `midiExport` constants | `shared/midi-core` |
+| `sample-constants` | a re-export shim over `shared/instrument-catalog` |
+
+Three of those conflicted and were resolved as *main's path plus this branch's
+content*. The interesting failures are the two that did **not** conflict.
+
+### Silent reversion
+
+`midiExport.ts` and `sample-constants.ts` were restructured on main, so taking
+main's side wholesale was the only sane resolution — and doing so silently
+undid the dead exports `bc88b7d` had deleted. Nothing in the diff said so. The
+`validate:dead-exports` gate said so, immediately, which is the entire argument
+for having promoted it from advisory to blocking one commit earlier.
+
+Re-applied against the new layout: eleven exports from `sample-constants`,
+`NOTE_DURATION_TICKS` from `midi-core`, and the cascade that exposed —
+`isValidSampleId` and `getCanonicalSampleId` in `instrument-catalog` were reachable
+only through the `sample-constants` aliases, so removing the aliases stranded
+them too. A gate that reports *symbols* rather than modules is what makes that
+second hop visible.
+
+`preset-doc-sync.test.ts` guarded `SYNTH_NAMES` and `ADVANCED_SYNTH_NAMES` —
+display-name maps nothing renders, since the picker gets its names from
+`INSTRUMENT_GROUPS` via `getInstrumentName`. Both describe blocks went with the
+maps. The contract survives more strictly than before: the same file still
+checks every picker tile resolves to a real preset, and
+`instrument-catalogue-coverage` asserts set equality between engine and picker
+in both directions.
+
+### The verification that was not verifying
+
+Two imports pointed at modules that had moved out from under them —
+`multiplayer.ts` → `shared/sync-classification`, and `state-adapters.test.ts` →
+`./state-adapters`. Both should have been impossible to miss, because this
+session ran `npx tsc --noEmit` after every change and reported it clean.
+
+`tsconfig.json` here is a **solution file**: `"files": []` plus four
+`references`. Bare `tsc --noEmit` type-checks the empty root project and exits
+0 without looking at a single source file. The correct invocation is `tsc -b`,
+which is what `npm run build` has always used — so CI was never fooled, only
+the local checks were.
+
+That is this audit's own subject matter, in its own method: a green tick from a
+command that could not fail. Added `npm run typecheck` (`tsc -b`) so the
+working command is the discoverable one. Under it, the branch is clean and the
+two broken imports are fixed — `state-adapters.test.ts` now lives beside its
+subject in `src/state/`.
+
+The general lesson is narrower than "rebases are risky". It is that **a rename
+on one side and an edit on the other is exactly the case three-way merge cannot
+see**, and the only things that catch it are checks that resolve symbols rather
+than compare text: the typechecker, and an export-reachability gate that fails
+closed.

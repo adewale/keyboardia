@@ -81,7 +81,8 @@
     "deploy:production": "tsx scripts/deploy-production.ts",
     "test:mutation": "stryker run",
     "validate:dead-exports": "tsx scripts/check-dead-exports.ts",
-    "validate:unrun-tests": "tsx scripts/check-unrun-tests.ts"
+    "validate:unrun-tests": "tsx scripts/check-unrun-tests.ts",
+    "typecheck": "tsc -b"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --fix"
