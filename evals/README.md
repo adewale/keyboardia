@@ -98,19 +98,18 @@ an answer cannot move a score — `app/test/eval-execution.test.ts` holds that
 line, along with the scorer's failure modes.
 
 ```bash
-# in one shell. Session creation is rate limited to 10/minute in production
-# defaults, and a sweep creates one session per run, so raise it locally.
-cd app && npx wrangler dev --port 8787 --local \
-  --var SESSION_CREATE_RATE_LIMIT_PER_MINUTE:2000 \
-  --var MCP_RATE_LIMIT_PER_MINUTE:2000
-
 node evals/run-benchmark.mjs \
   --manifest evals/execution-benchmark.json \
-  --agent claude-mcp --models claude-sonnet-5 --no-judge
+  --agent claude-mcp --models claude-sonnet-5 --no-judge \
+  --launch-local-worker
 ```
 
-The harness honours a 429's `retryAfter` and backs off regardless, so an
-unraised limit makes a sweep slow rather than broken. A setup failure is
+`--launch-local-worker` builds the current checkout, starts and later stops an
+isolated loopback Wrangler, and forces the adapter and state harness to its
+exact `/mcp` endpoint. Execution receipts require this owned lifecycle. They
+bind the Worker source closure, Wrangler config, TypeScript config, package and
+lock bytes; record the live `tools/list` bytes and endpoint; and include a
+content-addressed deterministic replay input and projection. A setup failure is
 recorded as a non-scorable run and never aborts the sweep.
 
 `--rescore` replays a recorded run from its stored baseline, final state, and
@@ -190,10 +189,9 @@ skill-benchmark run-subagent --tasks /tmp/keyboardia-tasks.jsonl \
 skill-benchmark benchmark evals/shared-benchmark.json \
   --runs /tmp/keyboardia-runs --split tune --allow-scripts \
   --out /tmp/keyboardia-benchmark.json
-# In harness 0.6.0 this run-aware audit cannot opt into script oracles; use it
-# for saturation diagnostics, not to re-grade the capability veto.
 skill-benchmark audit-manifest evals/shared-benchmark.json \
-  --runs /tmp/keyboardia-runs --split tune --fail-on-blockers
+  --runs /tmp/keyboardia-runs --split tune --allow-scripts \
+  --fail-on-blockers --out /tmp/keyboardia-audit.json
 ```
 
 Use `run-codex` in place of `run-subagent` for Codex JSONL, or provide any
@@ -208,11 +206,10 @@ parses the model's JSON, enforces the exact public/private string envelope, and
 checks the decoded public field so Unicode or URL encoding cannot hide an edit
 capability from the veto.
 
-`audit-manifest` 0.6.0 has no `--allow-scripts` flag. With `--runs`, it therefore
-records the capability script as failed in both arms, even when `benchmark
---allow-scripts` passed it. Its saturation findings remain useful, but its
-security-case result is not. Inspect the saved benchmark artifact for that
-assertion until the harness can audit trusted scripts.
+The exact external harness patch used for durable receipts adds
+`audit-manifest --allow-scripts` and immutable input-bundle hashes. The receipt
+embeds that patch and its parent tree, then verifies the patched tree offline;
+the stock 0.6.0 package remains sufficient for CI's manifest-only audit.
 
 `app/test/skill-eval-manifest.test.ts` duplicates the cheapest of those checks
 in the Node suite, so the always-on floor needs no Python.

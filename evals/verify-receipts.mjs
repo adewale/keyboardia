@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyReceipt } from './receipt.mjs';
+import { verifyExecutionReceipt } from './verify-execution-receipt.mjs';
 import {
   validateAutonomousReceipt,
   verifySourceBinding as verifyAutonomousSourceBinding,
@@ -13,7 +14,10 @@ const repoRoot = resolve(evalsDir, '..');
 
 function verifyAnyReceipt(receipt) {
   if (receipt?.kind !== 'origin-only-autonomous-skill-discovery') {
-    return verifyReceipt(receipt, { repoRoot });
+    return [
+      ...verifyReceipt(receipt, { repoRoot }),
+      ...verifyExecutionReceipt(receipt),
+    ];
   }
   try {
     validateAutonomousReceipt(receipt);

@@ -79,7 +79,9 @@ export function scoreStateAssertion(assertion, { baseline, final }) {
  * becomes an observation.
  */
 export function scoreTraceAssertion(assertion, trace) {
-  const calls = trace ?? [];
+  // A tool attempt becomes evaluation evidence only after its correlated
+  // result succeeds. Every trace assertion uses this same closed set.
+  const calls = (trace ?? []).filter((call) => call.success === true);
   const names = calls.map((call) => call.name);
 
   switch (assertion.check) {
@@ -87,9 +89,7 @@ export function scoreTraceAssertion(assertion, trace) {
     // in between. An attempted call is not evidence: every call in the chain
     // must have a correlated successful tool_result.
     case 'call_order': {
-      const successfulNames = calls
-        .filter((call) => call.success === true)
-        .map((call) => call.name);
+      const successfulNames = names;
       let cursor = 0;
       for (const expected of assertion.value) {
         const found = successfulNames.indexOf(expected, cursor);

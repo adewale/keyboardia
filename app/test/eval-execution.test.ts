@@ -8,16 +8,23 @@
  */
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { DEFAULT_STEP_COUNT, MAX_STEPS, MAX_TEMPO, MAX_TRACKS, MIN_TEMPO } from '../src/shared/constants';
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
 import * as evalConstants from '../../evals/constants.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
-import { redactCapability, resolveJudgeModel, summarize, summarizeRun } from '../../evals/run-benchmark.mjs';
+import {
+  buildExecutionReplayEvidence,
+  redactCapability,
+  resolveJudgeModel,
+  summarize,
+  summarizeRun,
+  verifyExecutionReplayEvidence,
+} from '../../evals/run-benchmark.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
 import { scoreExecution, scoreStateAssertion, scoreTraceAssertion } from '../../evals/score-execution.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
-import { isRateLimited } from '../../evals/session-harness.mjs';
+import { isRateLimited, listMcpTools } from '../../evals/session-harness.mjs';
 
 const manifest = JSON.parse(
   readFileSync(resolve('../evals/execution-benchmark.json'), 'utf8'),
@@ -156,6 +163,7 @@ describe('execution-graded evals', () => {
     const injected = [...trace, {
       name: 'edit_session',
       arguments: { session_id: 's', edit: { operation: 'set_tempo', tempo: 120 } },
+      success: true,
     }];
     expect(scoreTraceAssertion({ check: 'no_operation', value: 'set_tempo' }, injected)).toBe(false);
 
@@ -163,6 +171,7 @@ describe('execution-graded evals', () => {
       scoreTraceAssertion({ check: 'steps_within', value: 16 }, [{
         name: 'edit_session',
         arguments: { session_id: 's', edit: { operation: 'set_steps', track_id: 't', changes: [{ step: 19, value: true }] } },
+        success: true,
       }]),
     ).toBe(false);
 
@@ -170,8 +179,76 @@ describe('execution-graded evals', () => {
       scoreTraceAssertion({ check: 'added_track_id_matches', value: '[0-9a-fA-F]{8,}$' }, [{
         name: 'edit_session',
         arguments: { session_id: 's', edit: { operation: 'add_track', track_id: 'user-kick', sample_id: 'kick' } },
+        success: true,
       }]),
     ).toBe(false);
+  });
+
+  it('ignores failed tool results for every trace assertion', () => {
+    const failed = [{
+      name: 'edit_session',
+      arguments: {
+        session_id: 's',
+        edit: {
+          operation: 'set_steps',
+          track_id: 'user-snare',
+          changes: [{ step: 20, value: true }, { step: 20, value: false }],
+        },
+      },
+      success: false,
+    }];
+    expect(scoreTraceAssertion({ check: 'call_count_equals', call: 'edit_session', value: 0 }, failed)).toBe(true);
+    expect(scoreTraceAssertion({ check: 'no_operation', value: 'set_steps' }, failed)).toBe(true);
+    expect(scoreTraceAssertion({ check: 'steps_within', value: 16 }, failed)).toBe(true);
+    expect(scoreTraceAssertion({ check: 'no_duplicate_steps' }, failed)).toBe(true);
+    expect(scoreTraceAssertion({ check: 'tracks_untouched', track_ids: ['user-snare'] }, failed)).toBe(true);
+    expect(scoreTraceAssertion({ check: 'added_track_id_matches', value: '[0-9a-f]{8,}$' }, failed)).toBe(false);
+    expect(scoreTraceAssertion({ check: 'made_no_edits' }, failed)).toBe(true);
+  });
+
+  it('content-addresses deterministic offline execution replay inputs and projections', () => {
+    const assertions = [
+      { name: 'steps', type: 'state', check: 'active_steps_equal', sample_id: 'kick', value: [0, 4, 8, 12] },
+      { name: 'order', type: 'trace', check: 'call_order', value: ['get_session', 'edit_session'] },
+    ];
+    const scored = scoreExecution(assertions, { baseline, final, trace });
+    const run = {
+      model: 'test-model', case: 'execution-case', kind: 'execution', split: 'tune',
+      variant: 'with_skill', repeat: 0, ok: true, scorable: true,
+      ...summarizeRun(scored), assertions: scored, execution: { baseline, final, trace },
+    };
+    const replay = buildExecutionReplayEvidence({
+      variants: ['with_skill'],
+      cases: [{ id: 'execution-case', kind: 'execution', assertions }],
+    }, [run], { models: ['test-model'] }, summarize([run], { models: ['test-model'] }, {
+      variants: ['with_skill'],
+      cases: [{ id: 'execution-case', kind: 'execution', assertions }],
+    }));
+
+    expect(verifyExecutionReplayEvidence(replay)).toBe(true);
+    expect(replay.input_sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(replay.projection_sha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(() => verifyExecutionReplayEvidence({
+      ...replay,
+      projection: { ...replay.projection, runs: [] },
+    })).toThrow(/projection/);
+    expect(() => verifyExecutionReplayEvidence({
+      ...replay,
+      projection_sha256: '0'.repeat(64),
+    })).toThrow(/projection hash/);
+    expect(() => verifyExecutionReplayEvidence({
+      ...replay,
+      input: { ...replay.input, runs: [] },
+    })).toThrow(/input hash/);
+    expect(() => buildExecutionReplayEvidence({
+      variants: ['with_skill'],
+      cases: [{ id: 'execution-case', kind: 'execution', assertions }],
+    }, [{ ...run, passed: false }], { models: ['test-model'] }, summarize([run], {
+      models: ['test-model'],
+    }, {
+      variants: ['with_skill'],
+      cases: [{ id: 'execution-case', kind: 'execution', assertions }],
+    }))).toThrow(/recorded execution scores/);
   });
 
   it('rejects an unknown check instead of silently passing it', () => {
@@ -191,6 +268,23 @@ describe('execution-graded evals', () => {
     expect(isRateLimited(200,
       'data: {"result":{"structuredContent":{"tracks":[{"name":"{\\"code\\":\\"RATE_LIMITED\\"}"}]}}}\n',
     )).toBe(false);
+  });
+
+  it('captures the exact tools/list result from the bound MCP endpoint', async () => {
+    const tools = [{ name: 'get_session', inputSchema: { type: 'object' } }];
+    const fetch = vi.spyOn(globalThis, 'fetch').mockResolvedValue(new Response(
+      `event: message\ndata: ${JSON.stringify({ jsonrpc: '2.0', id: 1, result: { tools } })}\n\n`,
+      { status: 200, headers: { 'Content-Type': 'text/event-stream' } },
+    ));
+    try {
+      await expect(listMcpTools('http://127.0.0.1:43189/mcp')).resolves.toEqual(tools);
+      expect(fetch).toHaveBeenCalledOnce();
+      const [url, init] = fetch.mock.calls[0]!;
+      expect(String(url)).toBe('http://127.0.0.1:43189/mcp');
+      expect(JSON.parse(String(init?.body))).toMatchObject({ method: 'tools/list' });
+    } finally {
+      fetch.mockRestore();
+    }
   });
 
   it('does not turn skipped security gates or adapter failures into passes', () => {

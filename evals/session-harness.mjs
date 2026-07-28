@@ -169,6 +169,29 @@ export async function readCompactSession(baseUrl, sessionId, { attempts = 8 } = 
   return structured;
 }
 
+export async function listMcpTools(mcpEndpoint, { attempts = 8 } = {}) {
+  const text = await withRetry('tools/list', attempts, () =>
+    fetch(new URL(mcpEndpoint), {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json, text/event-stream',
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list', params: {} }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    }));
+  const payloads = text.split('\n')
+    .filter((line) => line.startsWith('data:'))
+    .map((line) => line.slice('data:'.length).trim());
+  const payload = payloads.at(-1) ?? text.trim();
+  if (!payload) throw new Error('tools/list returned an empty MCP response');
+  const message = JSON.parse(payload);
+  if (!Array.isArray(message.result?.tools)) {
+    throw new Error(`tools/list returned no tools: ${JSON.stringify(message).slice(0, 300)}`);
+  }
+  return message.result.tools;
+}
+
 export async function isReachable(baseUrl) {
   try {
     const response = await fetch(new URL('/api/health', baseUrl), {

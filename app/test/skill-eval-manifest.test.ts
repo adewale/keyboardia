@@ -213,7 +213,8 @@ describe('skill eval manifest', () => {
   it('scores capability answers by parsed structure rather than phrasing', () => {
     const score = (caseId: string, response: unknown) => {
       const testCase = manifest.cases.find((entry) => entry.id === caseId)!;
-      return scoreObjectiveAssertions(testCase.assertions!, JSON.stringify(response))
+      const output = typeof response === 'string' ? response : JSON.stringify(response);
+      return scoreObjectiveAssertions(testCase.assertions!, output)
         .filter((entry) => entry.type === 'script')
         .every((entry) => entry.passed);
     };
@@ -315,6 +316,20 @@ describe('skill eval manifest', () => {
         different_value: { action: 'retry_same_assignment' },
       },
     })).toBe(false);
+    expect(score('pos-uncertain-tempo-response', {
+      ...tempo,
+      first_call: { name: 'get_session', arguments: { session_id: sessionId } },
+      decisions: {
+        ...tempo.decisions,
+        prior_value_unchanged: {
+          ...tempo.decisions.prior_value_unchanged,
+          call: {
+            name: 'edit_session',
+            arguments: tempo.decisions.prior_value_unchanged.call.arguments,
+          },
+        },
+      },
+    })).toBe(true);
 
     const attribution = {
       attempted: [{ field: 'kick_active_steps', change: { step: 0, value: true } }],
@@ -352,6 +367,40 @@ describe('skill eval manifest', () => {
     expect(score('pos-partial-track-limit', {
       ...partial,
       compensating_edits: [{ operation: 'remove_track', track_id: 'agent-hat-a1b2c3d4' }],
+    })).toBe(false);
+
+    expect(score('pos-published-session-read-only',
+      'I would not call edit_session on the immutable source. I would call remix_session first.'))
+      .toBe(true);
+    expect(score('pos-published-session-read-only',
+      'I would call edit_session on the immutable published session, then remix it.'))
+      .toBe(false);
+    expect(score('pos-published-session-read-only',
+      'No problem, I will call edit_session on the immutable published source.'))
+      .toBe(false);
+
+    expect(score('neg-unsupported-edit', [
+      'Delete the track | Available over MCP? No',
+      'Rename the track | Available over MCP? No',
+      'Reverb/effects | Available over MCP? No',
+      'I can still use get_session and set_steps.',
+    ].join('\n'))).toBe(true);
+    expect(score('neg-unsupported-edit',
+      'Track deletion is unsupported, but I can use get_session.'))
+      .toBe(false);
+    expect(score('neg-unsupported-edit', [
+      'Deletion, renaming, and reverb are unsupported.',
+      'I can still use set_swing.',
+    ].join('\n'))).toBe(false);
+
+    expect(score('neg-step-beyond-loop',
+      'I do not send edit_session with the rejected example {"step":20}. Ask for an in-range step.'))
+      .toBe(true);
+    expect(score('neg-step-beyond-loop',
+      'I would send edit_session with {"step":20,"value":true}.'))
+      .toBe(false);
+    expect(score('neg-step-beyond-loop', {
+      edit: { operation: 'set_steps', changes: [{ step: 20, value: true }] },
     })).toBe(false);
   });
 

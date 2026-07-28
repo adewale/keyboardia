@@ -43,7 +43,8 @@ pass.
 
 The adapter records an ordered call only after matching the MCP tool-use ID to
 its tool result. A trace assertion rejects `success: false` and
-`success: null`. The contract is guarded by focused tests.
+`success: null`; every trace assertion uses that same successful-call set. The
+contract is guarded by focused tests.
 
 ### State and trace grading
 
@@ -94,24 +95,16 @@ skill reliably. It complements the origin-only autonomous trace and the
 ## Reproduction
 
 ```bash
-# Start a disposable Worker.
-cd app
-npx wrangler dev --port 8787 --local \
-  --var SESSION_CREATE_RATE_LIMIT_PER_MINUTE:2000 \
-  --var MCP_RATE_LIMIT_PER_MINUTE:2000
-
-# In another shell, from the repository root:
-KEYBOARDIA_MCP_URL=http://localhost:8787/mcp \
 node evals/run-benchmark.mjs \
   --manifest evals/execution-benchmark.json \
   --agent claude-mcp \
   --models claude-haiku-4-5,claude-sonnet-5,claude-opus-5 \
   --repeats 3 --concurrency 1 --no-judge \
-  --mcp-base-url http://localhost:8787 \
+  --launch-local-worker \
   --out /tmp/keyboardia-live.json \
   --receipt evals/receipts/live-execution.json
 
-# Stop the Worker before replay.
+# The owned Worker has stopped before replay starts.
 node evals/run-benchmark.mjs \
   --manifest evals/execution-benchmark.json \
   --rescore /tmp/keyboardia-live.json \

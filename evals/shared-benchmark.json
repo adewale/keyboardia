@@ -272,8 +272,13 @@
         },
         {
           "name": "does-not-edit-the-published-session",
-          "type": "not_regex",
-          "pattern": "(?is)immutable[^.\\n]{0,80}edit_session|edit_session[^.\\n]{0,60}(published|immutable) session",
+          "type": "script",
+          "command": [
+            "node",
+            "oracles/capability-answer.mjs",
+            "published-session",
+            "{output_path}"
+          ],
           "severity": "gate",
           "oracle": "strong"
         },
@@ -514,8 +519,13 @@
       "assertions": [
         {
           "name": "declines-unsupported-operations",
-          "type": "regex",
-          "pattern": "(?is)(cannot|can.t|not supported|unsupported|no support|does not support|doesn.t support|not available)[^.\\n]{0,140}(delet|renam|reverb|effect)|(delet|renam|reverb|effect)[^.\\n]{0,140}(cannot|can.t|not supported|unsupported|no support|is not available|isn.t available)",
+          "type": "script",
+          "command": [
+            "node",
+            "oracles/capability-answer.mjs",
+            "unsupported-edits",
+            "{output_path}"
+          ],
           "severity": "gate",
           "oracle": "strong"
         },
@@ -571,8 +581,13 @@
         },
         {
           "name": "no-out-of-range-assignment",
-          "type": "not_regex",
-          "pattern": "(?s)\\\"step\\\"\\s*:\\s*(1[6-9]|[2-9][0-9]|1[0-2][0-9])\\b",
+          "type": "script",
+          "command": [
+            "node",
+            "oracles/capability-answer.mjs",
+            "step-beyond-loop",
+            "{output_path}"
+          ],
           "severity": "gate",
           "oracle": "strong"
         },

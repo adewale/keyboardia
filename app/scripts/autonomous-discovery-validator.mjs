@@ -208,6 +208,18 @@ export function validateOriginOnlyPrompt(prompt, { origin }) {
   return true;
 }
 
+export function validateRawAnswerCapabilities(answer, capabilities) {
+  invariant(typeof answer === 'string', 'raw autonomous answer is not text');
+  const registered = [...capabilities];
+  invariant(registered.length > 0, 'raw-answer capability scan has an empty registry');
+  const decoded = decodeEscapes(answer).toLowerCase();
+  for (const capability of registered) {
+    invariant(!decoded.includes(String(capability).toLowerCase()),
+      'raw autonomous answer disclosed an editable session capability');
+  }
+  return { registered_capabilities: registered.length, passed: true };
+}
+
 export function validateAutonomousReceipt(receipt) {
   invariant(receipt?.target_mcp_preconfigured === false,
     'receipt does not prove the target MCP was unconfigured');
@@ -217,6 +229,32 @@ export function validateAutonomousReceipt(receipt) {
   invariant(receipt.trace_sha256 === createHash('sha256')
     .update(JSON.stringify(receipt.trace)).digest('hex'),
   'trace SHA-256 does not match the recorded trace');
+  invariant(receipt.answer_sha256 === createHash('sha256').update(receipt.answer).digest('hex'),
+    'answer SHA-256 does not match the recorded answer');
+  invariant(receipt.cli_trace_sha256 === createHash('sha256')
+    .update(JSON.stringify(receipt.cli_trace)).digest('hex'),
+  'CLI trace SHA-256 does not match the recorded trace');
+  invariant(receipt.adapter_argv_sha256 === createHash('sha256')
+    .update(JSON.stringify(receipt.adapter_argv)).digest('hex'),
+  'adapter argv SHA-256 does not match the recorded argv');
+  invariant(receipt.raw_answer_capability_scan?.passed === true
+    && receipt.raw_answer_capability_scan.registered_capabilities > 0,
+  'receipt does not attest a non-empty raw-answer capability scan');
+  const phaseToTool = new Map([
+    ['fetch', 'mcp__discovery_transport__fetch_url'],
+    ['digest_verify', 'mcp__discovery_transport__verify_sha256'],
+    ['mcp_initialize', 'mcp__discovery_transport__connect_mcp'],
+    ['mcp_tools_list', 'mcp__discovery_transport__list_mcp_tools'],
+    ['mcp_tool_call', 'mcp__discovery_transport__call_mcp_tool'],
+    ['random_uuid', 'mcp__discovery_transport__random_uuid'],
+  ]);
+  const transportCalls = receipt.trace.map((event) => phaseToTool.get(event.phase));
+  invariant(transportCalls.every(Boolean), 'trace contains an unknown transport phase');
+  const cliCalls = receipt.cli_trace
+    .map((event) => event.name)
+    .filter((name) => name !== 'ToolSearch');
+  invariant(JSON.stringify(cliCalls) === JSON.stringify(transportCalls),
+    'CLI tool trace does not correlate to the audited transport trace');
   const targetEndpoint = new URL('/mcp', receipt.origin).href;
   const argv = JSON.stringify(receipt.adapter_argv ?? []);
   invariant(!argv.includes(targetEndpoint), 'adapter argv preconfigured the target endpoint');
@@ -272,12 +310,13 @@ export function sha256File(path) {
   return createHash('sha256').update(readFileSync(path)).digest('hex');
 }
 
-function git(repoRoot, args, { bytes = false } = {}) {
+function git(repoRoot, args, { bytes = false, optional = false } = {}) {
   const result = spawnSync('git', ['-C', repoRoot, ...args], {
     encoding: bytes ? null : 'utf8',
     maxBuffer: 16 * 1024 * 1024,
   });
   if (result.status !== 0) {
+    if (optional) return null;
     const stderr = Buffer.isBuffer(result.stderr)
       ? result.stderr.toString('utf8').trim()
       : String(result.stderr ?? '').trim();
@@ -290,16 +329,28 @@ export function verifySourceBinding(source, repoRoot) {
   invariant(source && /^[0-9a-f]{40}$/.test(source.git_commit), 'receipt has no immutable source commit');
   invariant(/^[0-9a-f]{40}$/.test(source.git_tree), 'receipt has no immutable source tree');
   invariant(Array.isArray(source.files) && source.files.length > 0, 'receipt has no source files');
-  const tree = git(repoRoot, ['show', '-s', '--format=%T', source.git_commit]);
-  invariant(tree === source.git_tree, 'source git tree does not match source commit');
   for (const file of source.files) {
     invariant(typeof file.path === 'string' && !file.path.split('/').includes('..'),
       `invalid source path: ${file.path}`);
-    const bytes = git(repoRoot, ['show', `${source.git_commit}:${file.path}`], { bytes: true });
-    invariant(createHash('sha256').update(bytes).digest('hex') === file.sha256,
-      `${file.path} does not match its source commit`);
-    invariant(git(repoRoot, ['rev-parse', `${source.git_commit}:${file.path}`]) === file.git_blob,
-      `${file.path} git blob mismatch`);
+    invariant(file.encoding === 'utf-8' && typeof file.content === 'string',
+      `${file.path} does not embed UTF-8 source bytes`);
+    const embedded = Buffer.from(file.content, 'utf8');
+    invariant(createHash('sha256').update(embedded).digest('hex') === file.sha256,
+      `${file.path} embedded source SHA-256 mismatch`);
+    const blob = createHash('sha1')
+      .update(Buffer.from(`blob ${embedded.length}\0`, 'utf8'))
+      .update(embedded)
+      .digest('hex');
+    invariant(blob === file.git_blob, `${file.path} embedded source Git blob mismatch`);
+  }
+  if (git(repoRoot, ['cat-file', '-e', `${source.git_commit}^{commit}`], { optional: true }) !== null) {
+    const tree = git(repoRoot, ['show', '-s', '--format=%T', source.git_commit]);
+    invariant(tree === source.git_tree, 'source git tree does not match source commit');
+    for (const file of source.files) {
+      const bytes = git(repoRoot, ['show', `${source.git_commit}:${file.path}`], { bytes: true });
+      invariant(createHash('sha256').update(bytes).digest('hex') === file.sha256,
+        `${file.path} does not match its source commit`);
+    }
   }
   return true;
 }

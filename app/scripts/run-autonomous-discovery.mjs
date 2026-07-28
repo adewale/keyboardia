@@ -4,15 +4,19 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:net';
 import { tmpdir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn, spawnSync } from 'node:child_process';
-import { createSourceBinding } from '../../evals/receipt.mjs';
+import {
+  createSourceBinding,
+  sanitizeReceiptText,
+} from '../../evals/receipt.mjs';
 import {
   sanitizeForReceipt,
   sensitiveUuidsFromTrace,
   validateAutonomousTrace,
   validateOriginOnlyPrompt,
+  validateRawAnswerCapabilities,
 } from './autonomous-discovery-validator.mjs';
 
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
@@ -140,18 +144,55 @@ function readTrace(path) {
   return readFileSync(path, 'utf8').split('\n').filter(Boolean).map((line) => JSON.parse(line));
 }
 
+function sourceClosure(entryPaths) {
+  const found = new Set();
+  const visit = (absolutePath) => {
+    const absolute = resolve(absolutePath);
+    if (found.has(absolute)) return;
+    found.add(absolute);
+    const source = readFileSync(absolute, 'utf8');
+    const imports = [
+      ...source.matchAll(/\bfrom\s+['"](\.[^'"]+)['"]/g),
+      ...source.matchAll(/\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g),
+      ...source.matchAll(/\bimport\s+['"](\.[^'"]+)['"]/g),
+    ];
+    for (const match of imports) {
+      const imported = resolve(dirname(absolute), match[1]);
+      const candidates = [
+        imported,
+        `${imported}.ts`, `${imported}.tsx`, `${imported}.mjs`, `${imported}.js`, `${imported}.json`,
+        resolve(imported, 'index.ts'), resolve(imported, 'index.tsx'), resolve(imported, 'index.js'),
+      ];
+      const dependency = candidates.find((candidate) => existsSync(candidate));
+      if (dependency) visit(dependency);
+    }
+  };
+  for (const entryPath of entryPaths) visit(resolve(repoRoot, entryPath));
+  return [...found].sort().map((absolute) => ({
+    role: 'system_under_test_dependency',
+    path: relative(repoRoot, absolute).split(sep).join('/'),
+  }));
+}
+
 function sourceBinding() {
-  return createSourceBinding(repoRoot, [
+  const inputs = [
     { role: 'skill', path: 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md' },
     { role: 'manifest', path: 'app/public/.well-known/agent-skills/index.json' },
-    { role: 'worker', path: 'app/src/worker/mcp.ts' },
     { role: 'transport', path: 'app/scripts/autonomous-discovery-transport.mjs' },
     { role: 'validator', path: 'app/scripts/autonomous-discovery-validator.mjs' },
     { role: 'runner', path: 'app/scripts/run-autonomous-discovery.mjs' },
     { role: 'answer_adapter', path: 'evals/adapters/claude-discovery.mjs' },
+    { role: 'answer_adapter_dependency', path: 'evals/adapters/usage.mjs' },
+    { role: 'system_under_test_config', path: 'app/wrangler.jsonc' },
+    { role: 'system_under_test_typescript_config', path: 'app/tsconfig.worker.json' },
+    { role: 'dependency_manifest', path: 'app/package.json' },
+    { role: 'dependency_lock', path: 'app/package-lock.json' },
     { role: 'receipt_runtime', path: 'evals/receipt.mjs' },
     { role: 'receipt_schema', path: 'evals/receipt.schema.json' },
-  ]);
+    ...sourceClosure(['app/src/worker/index.ts']),
+  ];
+  const unique = [...new Map(inputs.map((input) => [input.path, input])).values()];
+  return createSourceBinding(repoRoot, unique);
 }
 
 function transcriptHash(value) {
@@ -222,12 +263,19 @@ async function main() {
     const rawTrace = readTrace(tracePath);
     const validation = validateAutonomousTrace(rawTrace, { origin });
     const sensitiveUuids = sensitiveUuidsFromTrace(rawTrace);
+    const rawAnswerCapabilityScan = validateRawAnswerCapabilities(
+      run.value.answer,
+      sensitiveUuids,
+    );
     const { sanitized, redacted_uuids: redactedUuids } = sanitizeForReceipt({
       trace: rawTrace,
       answer: run.value.answer,
       cli_trace: run.value.cli_trace,
       adapter_argv: run.value.adapter_argv,
     }, { onlyUuids: sensitiveUuids });
+    sanitized.answer = sanitizeReceiptText(sanitized.answer);
+    sanitized.cli_trace = JSON.parse(sanitizeReceiptText(JSON.stringify(sanitized.cli_trace)));
+    sanitized.adapter_argv = JSON.parse(sanitizeReceiptText(JSON.stringify(sanitized.adapter_argv)));
     const sanitizedValidation = validateAutonomousTrace(sanitized.trace, { origin });
     const receipt = {
       version: 1,
@@ -241,6 +289,10 @@ async function main() {
       source,
       validation: sanitizedValidation,
       trace_sha256: transcriptHash(sanitized.trace),
+      answer_sha256: createHash('sha256').update(sanitized.answer).digest('hex'),
+      cli_trace_sha256: transcriptHash(sanitized.cli_trace),
+      adapter_argv_sha256: transcriptHash(sanitized.adapter_argv),
+      raw_answer_capability_scan: rawAnswerCapabilityScan,
       redacted_uuids: redactedUuids,
       trace: sanitized.trace,
       answer: sanitized.answer,

@@ -21,17 +21,21 @@ function nonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
-function getSessionCall(value, sessionId = null) {
-  return exactKeys(value, ['tool', 'arguments'])
-    && value.tool === 'get_session'
+function callName(value, allowName = false) {
+  if (exactKeys(value, ['tool', 'arguments'])) return value.tool;
+  if (allowName && exactKeys(value, ['name', 'arguments'])) return value.name;
+  return null;
+}
+
+function getSessionCall(value, sessionId = null, allowName = false) {
+  return callName(value, allowName) === 'get_session'
     && exactKeys(value.arguments, ['session_id'])
     && nonEmptyString(value.arguments.session_id)
     && (sessionId === null || value.arguments.session_id === sessionId);
 }
 
-function editSessionCall(value, sessionId = null) {
-  return exactKeys(value, ['tool', 'arguments'])
-    && value.tool === 'edit_session'
+function editSessionCall(value, sessionId = null, allowName = false) {
+  return callName(value, allowName) === 'edit_session'
     && exactKeys(value.arguments, ['session_id', 'edit'])
     && nonEmptyString(value.arguments.session_id)
     && (sessionId === null || value.arguments.session_id === sessionId);
@@ -167,7 +171,7 @@ export function uncertainTempoAnswer(text) {
   if (!exactKeys(value, ['first_call', 'decisions'])) {
     return fail('expected exactly first_call and decisions');
   }
-  if (!getSessionCall(value.first_call)) return fail('first_call must be get_session');
+  if (!getSessionCall(value.first_call, null, true)) return fail('first_call must be get_session');
   const sessionId = value.first_call.arguments.session_id;
   const decisions = value.decisions;
   if (!exactKeys(decisions, ['intended_124', 'prior_value_unchanged', 'different_value'])) {
@@ -185,7 +189,7 @@ export function uncertainTempoAnswer(text) {
   if (!exactKeys(unchanged, ['action', 'call']) || unchanged.action !== 'retry_same_assignment') {
     return fail('an unchanged prior value must retry the same assignment');
   }
-  if (!editSessionCall(unchanged.call, sessionId)) {
+  if (!editSessionCall(unchanged.call, sessionId, true)) {
     return fail('unchanged-value retry must edit the same session');
   }
   const edit = unchanged.call.arguments.edit;
@@ -252,12 +256,90 @@ export function partialTrackLimitAnswer(text) {
   return pass('re-read, honest partial result, and no compensating rollback');
 }
 
+function proseClauses(text) {
+  return String(text)
+    .split(/(?<=[.!])\s+|[\n;]+/)
+    .map((clause) => clause.replace(/[`*]/g, '').trim().toLowerCase())
+    .filter(Boolean);
+}
+
+function negatesOperation(clause, operation = '') {
+  const target = operation ? `[^.!?;\\n]{0,100}${operation}` : '[^.!?;\\n]{0,100}';
+  return new RegExp(`(?:\\bdo\\s+not\\b|\\bdon't\\b|\\bnever\\b|\\bwould\\s+not\\b|\\bwon't\\b|\\bcannot\\b|\\bcan't\\b|\\bmust\\s+not\\b|\\bshould\\s+not\\b|\\bnot\\s+(?:available|supported)\\b|\\bunsupported\\b|\\bno\\s+support\\b|\\bdoes(?:n't|\\s+not)\\s+(?:support|expose)\\b|\\boutside\\s+(?:the\\s+)?mcp\\s+surface\\b|\\bavoid(?:s|ed|ing)?\\b|\\brefus(?:e|es|ed|ing)\\s+to\\b)${target}`).test(clause);
+}
+
+export function publishedSessionAnswer(text) {
+  for (const clause of proseClauses(text)) {
+    if (!clause.includes('edit_session')
+        || !/(immutable|published|frozen|source)/.test(clause)) continue;
+    const attemptsEdit = /\b(?:call|use|invoke|run|send|attempt(?:ing)?(?:\s+to)?)\b[^.!?;\n]{0,50}\bedit_session\b/.test(clause)
+      || /\bedit_session\b[^.!?;\n]{0,60}\b(?:on|against|for)\b[^.!?;\n]{0,30}\b(?:the\s+)?(?:immutable|published|frozen|source)\b/.test(clause);
+    const negated = /(?:\bdo\s+not\b|\bdon't\b|\bnever\b|\bwould\s+not\b|\bwon't\b|\bcannot\b|\bcan't\b|\bmust\s+not\b|\bshould\s+not\b|\bavoid(?:s|ed|ing)?\b|\brefus(?:e|es|ed|ing)\s+to\b)[^.!?;\n]{0,100}\bedit_session\b/.test(clause)
+      || /\bedit_session\b[^.!?;\n]{0,80}(?:\bnot\s+(?:allowed|available|supported)\b|\bcannot\b|\bcan't\b|\bwon't\b|\bnever\b)/.test(clause);
+    if (attemptsEdit && !negated) {
+      return fail('answer attempts edit_session against the immutable source');
+    }
+  }
+  return pass('no affirmative edit_session attempt targets the immutable source');
+}
+
+export function unsupportedEditsAnswer(text) {
+  const clauses = proseClauses(text);
+  const requirements = [
+    ['track deletion', /\b(delet(?:e|ion|ing)?|remov(?:e|al|ing)?)\b/],
+    ['track rename', /\brenam(?:e|ing)?\b/],
+    ['reverb/effects', /\b(reverb|effects?)\b/],
+  ];
+  for (const [label, pattern] of requirements) {
+    const declined = clauses.some((clause) => pattern.test(clause)
+      && (negatesOperation(clause) || /\bavailable\s+over\s+mcp\??\s*(?:\||:)?\s*no\b/.test(clause)));
+    if (!declined) return fail(`answer does not explicitly decline ${label}`);
+  }
+  if (!/\b(get_session|edit_session|create_session|remix_session|publish_session|export_midi|analyze_session|add_track|set_steps|set_tempo|set_track_instrument)\b/.test(String(text))) {
+    return fail('answer does not identify anything the MCP can still do');
+  }
+  return pass('all three unsupported requests are declined and supported work is identified');
+}
+
+export function stepBeyondLoopAnswer(text) {
+  const source = String(text);
+  if (source.trimStart().startsWith('{')) {
+    const parsed = parse(source);
+    if (!parsed.error) {
+      const pending = [parsed.value];
+      while (pending.length > 0) {
+        const value = pending.pop();
+        if (!value || typeof value !== 'object') continue;
+        if (value.operation === 'set_steps' && Array.isArray(value.changes)
+            && value.changes.some((change) => Number.isInteger(change?.step) && change.step >= 16)) {
+          return fail('structured set_steps payload assigns an out-of-loop step');
+        }
+        pending.push(...(Array.isArray(value) ? value : Object.values(value)));
+      }
+    }
+  }
+  const assignment = /["']?step["']?\s*:\s*(1[6-9]|[2-9][0-9]|1[0-2][0-9])\b/gi;
+  for (const match of source.matchAll(assignment)) {
+    const start = Math.max(0, (match.index ?? 0) - 180);
+    const end = Math.min(source.length, (match.index ?? 0) + match[0].length + 180);
+    const clause = source.slice(start, end).replace(/[`*]/g, '').toLowerCase();
+    const affirmative = /\b(?:call|use|invoke|run|send|submit|set|assign|attempt(?:ing)?(?:\s+to)?)\b[^.!?;\n]{0,120}\b(?:edit_session|step)\b/.test(clause);
+    if (affirmative && !negatesOperation(clause)) {
+      return fail('answer affirmatively assigns an out-of-loop step');
+    }
+  }
+  return pass('no affirmative out-of-loop step assignment is proposed');
+}
+
 export const CAPABILITY_ORACLES = {
   'human-steps': humanStepsAnswer,
   'collision-retry': collisionRetryAnswer,
   'uncertain-tempo': uncertainTempoAnswer,
   'concurrent-delta': concurrentDeltaAnswer,
   'partial-track-limit': partialTrackLimitAnswer,
+  'published-session': publishedSessionAnswer,
+  'unsupported-edits': unsupportedEditsAnswer,
+  'step-beyond-loop': stepBeyondLoopAnswer,
 };
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

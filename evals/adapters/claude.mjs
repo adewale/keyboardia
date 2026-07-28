@@ -13,6 +13,8 @@
  * Requires the `claude` CLI on PATH. Override with KEYBOARDIA_CLAUDE_BIN.
  */
 import { spawn } from 'node:child_process';
+import { statSync } from 'node:fs';
+import { isAbsolute } from 'node:path';
 import { numericUsage } from './usage.mjs';
 
 const binary = process.env.KEYBOARDIA_CLAUDE_BIN ?? 'claude';
@@ -25,7 +27,12 @@ async function readStdin() {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'));
 }
 
-const { prompt, model } = await readStdin();
+const { prompt, model, workspace } = await readStdin();
+if (typeof prompt !== 'string' || typeof workspace !== 'string'
+    || !isAbsolute(workspace) || !statSync(workspace).isDirectory()) {
+  process.stderr.write('claude adapter: prompt and an absolute workspace directory are required\n');
+  process.exit(2);
+}
 
 const argv = [
   '--print',
@@ -43,7 +50,10 @@ if (model) {
   argv.push('--model', model);
 }
 
-const child = spawn(binary, argv, { stdio: ['pipe', 'pipe', 'inherit'] });
+const child = spawn(binary, argv, {
+  cwd: workspace,
+  stdio: ['pipe', 'pipe', 'inherit'],
+});
 
 let stdout = '';
 child.stdout.on('data', (chunk) => { stdout += chunk; });

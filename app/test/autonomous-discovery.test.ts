@@ -5,6 +5,7 @@ import {
   validateAutonomousReceipt,
   validateAutonomousTrace,
   validateOriginOnlyPrompt,
+  validateRawAnswerCapabilities,
 } from '../scripts/autonomous-discovery-validator.mjs';
 
 const ORIGIN = 'http://127.0.0.1:43189';
@@ -120,6 +121,17 @@ function validTrace() {
   ];
 }
 
+function cliTraceFor(trace: ReturnType<typeof validTrace>) {
+  const names: Record<string, string> = {
+    fetch: 'mcp__discovery_transport__fetch_url',
+    digest_verify: 'mcp__discovery_transport__verify_sha256',
+    mcp_initialize: 'mcp__discovery_transport__connect_mcp',
+    mcp_tools_list: 'mcp__discovery_transport__list_mcp_tools',
+    mcp_tool_call: 'mcp__discovery_transport__call_mcp_tool',
+  };
+  return trace.map((entry) => ({ name: names[entry.phase] }));
+}
+
 describe('autonomous discovery trace oracle', () => {
   it('accepts one correlated origin-to-discovery-to-read-edit-read journey', () => {
     expect(validateAutonomousTrace(validTrace(), { origin: ORIGIN })).toMatchObject({
@@ -207,36 +219,77 @@ describe('autonomous discovery trace oracle', () => {
   it('rejects a receipt whose exact prompt or trace hash drifted', () => {
     const prompt = `The only location you know is:\n${ORIGIN}\n\nUse the Agent Skills discovery standard.`;
     const trace = validTrace();
+    const cliTrace = cliTraceFor(trace);
+    const adapterArgv = ['--tools', 'ToolSearch'];
     const receipt = {
       target_mcp_preconfigured: false,
       origin: ORIGIN,
       prompt,
       prompt_sha256: createHash('sha256').update(prompt).digest('hex'),
+      answer: 'Done without sharing the capability.',
+      answer_sha256: createHash('sha256').update('Done without sharing the capability.').digest('hex'),
+      cli_trace: cliTrace,
+      cli_trace_sha256: createHash('sha256').update(JSON.stringify(cliTrace)).digest('hex'),
       trace,
       trace_sha256: createHash('sha256').update(JSON.stringify(trace)).digest('hex'),
-      adapter_argv: ['--tools', 'ToolSearch'],
+      adapter_argv: adapterArgv,
+      adapter_argv_sha256: createHash('sha256').update(JSON.stringify(adapterArgv)).digest('hex'),
+      raw_answer_capability_scan: { registered_capabilities: 2, passed: true },
     };
     expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
     expect(() => validateAutonomousReceipt({ ...receipt, prompt_sha256: '0'.repeat(64) }))
       .toThrow(/prompt SHA-256/);
     expect(() => validateAutonomousReceipt({ ...receipt, trace_sha256: '0'.repeat(64) }))
       .toThrow(/trace SHA-256/);
+    expect(() => validateAutonomousReceipt({ ...receipt, answer_sha256: '0'.repeat(64) }))
+      .toThrow(/answer SHA-256/);
+    expect(() => validateAutonomousReceipt({ ...receipt, cli_trace_sha256: '0'.repeat(64) }))
+      .toThrow(/CLI trace SHA-256/);
+    expect(() => validateAutonomousReceipt({ ...receipt, adapter_argv_sha256: '0'.repeat(64) }))
+      .toThrow(/adapter argv SHA-256/);
+    const reorderedCliTrace = [...receipt.cli_trace].reverse();
+    expect(() => validateAutonomousReceipt({
+      ...receipt,
+      cli_trace: reorderedCliTrace,
+      cli_trace_sha256: createHash('sha256')
+        .update(JSON.stringify(reorderedCliTrace)).digest('hex'),
+    })).toThrow(/does not correlate/);
   });
 
   it('binds the exact origin-only prompt into the receipt', () => {
     const prompt = `The only site location you know is:\n${ORIGIN}\n\nDiscover its standards-based agent instructions and verify exact bytes before acting.`;
     const trace = validTrace();
+    const cliTrace = cliTraceFor(trace);
+    const adapterArgv = ['--strict-mcp-config', 'generic-discovery-transport'];
     const receipt = {
       target_mcp_preconfigured: false,
       origin: ORIGIN,
       prompt,
       prompt_sha256: createHash('sha256').update(prompt).digest('hex'),
-      adapter_argv: ['--strict-mcp-config', 'generic-discovery-transport'],
+      adapter_argv: adapterArgv,
+      adapter_argv_sha256: createHash('sha256').update(JSON.stringify(adapterArgv)).digest('hex'),
+      answer: 'Done without sharing the capability.',
+      answer_sha256: createHash('sha256').update('Done without sharing the capability.').digest('hex'),
+      cli_trace: cliTrace,
+      cli_trace_sha256: createHash('sha256').update(JSON.stringify(cliTrace)).digest('hex'),
       trace,
       trace_sha256: createHash('sha256').update(JSON.stringify(trace)).digest('hex'),
+      raw_answer_capability_scan: { registered_capabilities: 2, passed: true },
     };
     expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
     receipt.prompt_sha256 = '0'.repeat(64);
     expect(() => validateAutonomousReceipt(receipt)).toThrow(/prompt SHA-256/);
+  });
+
+  it('rejects a raw autonomous answer that discloses a capability in encoded form', () => {
+    expect(validateRawAnswerCapabilities('Done without a session link.', new Set([SESSION])))
+      .toEqual({ registered_capabilities: 1, passed: true });
+    expect(() => validateRawAnswerCapabilities(`Editable: /s/${SESSION}`, new Set([SESSION])))
+      .toThrow(/disclosed/);
+    expect(() => validateRawAnswerCapabilities(
+      `Editable: /s/${SESSION.replaceAll('-', '%2D')}`,
+      new Set([SESSION]),
+    )).toThrow(/disclosed/);
+    expect(() => validateRawAnswerCapabilities('safe', new Set())).toThrow(/empty registry/);
   });
 });

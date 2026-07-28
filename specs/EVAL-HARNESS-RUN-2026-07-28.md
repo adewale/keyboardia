@@ -58,8 +58,9 @@ The successful receipt contains 33 correlated transport events:
   unchanged.
 
 All five target MCP calls succeeded. Three UUIDs were redacted, and the
-journey-specific verifier rechecks the prompt hash, trace hash, call order,
-correlation, final state, non-preconfiguration, redaction, source commit/tree,
+journey-specific verifier rechecks the prompt, answer, CLI-trace, adapter-argv,
+and transport-trace hashes; call correlation; final state;
+non-preconfiguration; pre-sanitization capability scan; source commit/tree;
 and bound Git blobs.
 
 ## Fresh live MCP matrix
@@ -134,11 +135,11 @@ last saturation blocker without another model call.
 node app/scripts/run-autonomous-discovery.mjs \
   --model claude-sonnet-5 --out evals/receipts/autonomous.json
 
-KEYBOARDIA_MCP_URL=http://localhost:8787/mcp \
 node evals/run-benchmark.mjs \
   --manifest evals/execution-benchmark.json --agent claude-mcp \
   --models claude-haiku-4-5,claude-sonnet-5,claude-opus-5 \
   --repeats 3 --concurrency 1 --no-judge \
+  --launch-local-worker \
   --receipt evals/receipts/live-execution.json
 
 skill-benchmark prepare evals/shared-benchmark.json --split tune \
@@ -156,7 +157,7 @@ skill-benchmark audit-manifest evals/shared-benchmark.json \
 node evals/import-harness-receipt.mjs \
   --manifest evals/shared-benchmark.json \
   --tasks /tmp/tasks-claude.jsonl --tasks /tmp/tasks-codex.jsonl \
-  --runs /tmp/runs --benchmark /tmp/benchmark.json \
+  --runs /tmp/runs --benchmark /tmp/benchmark.json --audit /tmp/audit.json \
   --harness-repo /path/to/skill-eval-harness \
   --out evals/receipts/answer-matrix.json
 node evals/verify-receipts.mjs

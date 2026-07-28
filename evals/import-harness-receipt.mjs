@@ -12,9 +12,14 @@ import { dirname, isAbsolute, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   addArtifact,
+  answerHarnessPrompt,
+  answerMatrixSummary,
   buildReceipt,
+  canonicalJson,
+  createPatchedGitBinding,
   createSourceBinding,
   sha256,
+  skillEvalInputBundleHash,
   writeReceipt,
 } from './receipt.mjs';
 
@@ -37,12 +42,13 @@ function parseArgs(argv) {
     else if (flag === '--manifest') options.manifest = resolve(value);
     else if (flag === '--runs') options.runs = resolve(value);
     else if (flag === '--benchmark') options.benchmark = resolve(value);
+    else if (flag === '--audit') options.audit = resolve(value);
     else if (flag === '--harness-repo') options.harnessRepo = resolve(value);
     else if (flag === '--out') options.out = resolve(value);
     else fail(`unknown argument: ${flag}`);
     index += 1;
   }
-  for (const name of ['manifest', 'runs', 'benchmark', 'harnessRepo', 'out']) {
+  for (const name of ['manifest', 'runs', 'benchmark', 'audit', 'harnessRepo', 'out']) {
     if (!options[name]) fail(`--${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)} is required`);
   }
   if (options.tasks.length === 0) fail('at least one --tasks file is required');
@@ -173,18 +179,12 @@ function verifyArtifactSet(runDir) {
 }
 
 function harnessBinding(harnessRepo) {
-  if (git(harnessRepo, ['status', '--porcelain', '--untracked-files=no'])) {
-    fail('skill-eval-harness has uncommitted tracked changes');
-  }
-  const gitCommit = git(harnessRepo, ['rev-parse', 'HEAD']);
-  const parent = git(harnessRepo, ['rev-parse', 'HEAD^']);
-  const gitTree = git(harnessRepo, ['show', '-s', '--format=%T', gitCommit]);
+  const binding = createPatchedGitBinding(harnessRepo);
   const repository = git(harnessRepo, ['config', '--get', 'remote.origin.url'], { optional: true }) ?? 'local';
   const pyproject = readFileSync(resolve(harnessRepo, 'pyproject.toml'), 'utf8');
   const version = pyproject.match(/^version\s*=\s*["']([^"']+)["']/m)?.[1];
   if (!version) fail('cannot determine skill-eval-harness version');
-  const patch = git(harnessRepo, ['diff', '--binary', parent, gitCommit], { bytes: true });
-  return { gitCommit, parent, gitTree, repository, version, patch };
+  return { ...binding, repository, version };
 }
 
 function sourceBinding() {
@@ -193,19 +193,43 @@ function sourceBinding() {
     { role: 'manifest', path: 'evals/shared-benchmark.json' },
     { role: 'fixture', path: 'evals/fixtures/keyboardia-mcp-schema.json' },
     { role: 'oracle', path: 'evals/oracles/capability-answer.mjs' },
+    { role: 'oracle_dependency', path: 'evals/oracles/public-changelog-safe.mjs' },
     { role: 'answer_adapter', path: 'evals/adapters/claude.mjs' },
+    { role: 'answer_adapter_dependency', path: 'evals/adapters/usage.mjs' },
     { role: 'runner', path: 'evals/import-harness-receipt.mjs' },
     { role: 'receipt_runtime', path: 'evals/receipt.mjs' },
     { role: 'receipt_schema', path: 'evals/receipt.schema.json' },
   ]);
 }
 
-function runEvidence(task, result, runsRoot, expectedManifestRevision, expectedSkillHash) {
+function runEvidence(
+  task,
+  result,
+  runsRoot,
+  expectedCase,
+  manifest,
+  expectedManifestRevision,
+  expectedSkillHash,
+  expectedInputBundleHash,
+) {
+  if (!expectedCase) fail(`${task.run_dir} has no case in the supplied manifest`);
+  if (task.prompt !== expectedCase.prompt) {
+    fail(`${task.run_dir} prompt does not match the supplied manifest case`);
+  }
+  if (task.kind !== (expectedCase.kind ?? 'behavior')) {
+    fail(`${task.run_dir} kind does not match the supplied manifest case`);
+  }
+  if (task.split !== (expectedCase.split ?? 'tune')) {
+    fail(`${task.run_dir} split does not match the supplied manifest case`);
+  }
   if (task.manifest_revision !== expectedManifestRevision) {
     fail(`${task.run_dir} was prepared from a different manifest revision`);
   }
   if (task.skill_tree_hash !== expectedSkillHash) {
     fail(`${task.run_dir} was prepared from a different skill tree`);
+  }
+  if (task.input_bundle_hash !== expectedInputBundleHash) {
+    fail(`${task.run_dir} was prepared from a different input bundle`);
   }
   const runDir = checkedChild(runsRoot, task.run_dir);
   if (resolve(result.run_base) !== resolve(runDir)) fail(`${task.run_dir} does not match its benchmark result`);
@@ -217,16 +241,22 @@ function runEvidence(task, result, runsRoot, expectedManifestRevision, expectedS
   if (result.missing_output || result.execution_valid !== true) fail(`${task.run_dir} is not a complete scorable run`);
   const { commit, inventory } = verifyArtifactSet(runDir);
   const metadata = json(resolve(runDir, 'metadata.json'));
-  if (metadata.manifest_revision !== expectedManifestRevision || metadata.skill_tree_hash !== expectedSkillHash) {
+  if (metadata.manifest_revision !== expectedManifestRevision
+      || metadata.skill_tree_hash !== expectedSkillHash
+      || metadata.input_bundle_hash !== expectedInputBundleHash) {
     fail(`${task.run_dir} metadata is not bound to the prepared inputs`);
   }
   const traceFiles = {};
   for (const name of Object.keys(inventory).sort()) {
-    if (!['prompt.md', 'output.md'].includes(name)) {
+    if (name !== 'output.md') {
       traceFiles[name] = readFileSync(resolve(runDir, name), 'utf8');
     }
   }
   traceFiles[ARTIFACT_COMMIT] = JSON.stringify(commit);
+  const prompt = traceFiles['prompt.md'];
+  if (prompt !== answerHarnessPrompt(task, expectedCase, manifest)) {
+    fail(`${task.run_dir} prompt.md does not match its prepared task and manifest`);
+  }
   return {
     model: task.model ?? null,
     case: task.case_id,
@@ -235,7 +265,7 @@ function runEvidence(task, result, runsRoot, expectedManifestRevision, expectedS
     variant: task.variant,
     repeat: task.run_number,
     ok: true,
-    prompt: readFileSync(resolve(runDir, 'prompt.md'), 'utf8'),
+    prompt: task.prompt,
     response: readFileSync(resolve(runDir, 'output.md'), 'utf8'),
     trace: { artifact_files: traceFiles },
     assertions: result.assertions ?? [],
@@ -245,7 +275,14 @@ function runEvidence(task, result, runsRoot, expectedManifestRevision, expectedS
     objective_pass_rate: result.objective_pass_rate,
     critical_failures: result.critical_failures ?? [],
     vetoed: result.vetoed === true,
+    input_bundle_hash: expectedInputBundleHash,
   };
+}
+
+function exactUtf8(bytes, label) {
+  const text = bytes.toString('utf8');
+  if (!Buffer.from(text, 'utf8').equals(bytes)) fail(`${label} is not exact UTF-8 text`);
+  return text;
 }
 
 async function main() {
@@ -258,8 +295,34 @@ async function main() {
   if (tasks.length === 0) fail('prepared task set is empty');
   const benchmarkRaw = readFileSync(options.benchmark, 'utf8');
   const benchmark = JSON.parse(benchmarkRaw);
+  const auditRaw = readFileSync(options.audit, 'utf8');
+  const audit = JSON.parse(auditRaw);
   if (!Array.isArray(benchmark.results) || benchmark.results.length !== tasks.length) {
     fail(`benchmark has ${benchmark.results?.length ?? 0} results for ${tasks.length} tasks`);
+  }
+  if (!Array.isArray(audit.readiness?.blockers)) fail('run-aware audit has no readiness blockers array');
+  if (audit.readiness.blockers.length > 0) fail('run-aware audit contains readiness blockers');
+  if (canonicalJson(audit.benchmark?.summary) !== canonicalJson(benchmark.summary)
+      || canonicalJson(audit.benchmark?.case_flags) !== canonicalJson(benchmark.case_flags)) {
+    fail('run-aware audit was not produced from the supplied benchmark');
+  }
+  const source = sourceBinding();
+  const sourceManifest = source.files.find((file) => file.role === 'manifest');
+  if (sourceManifest.sha256 !== expectedManifestRevision) {
+    fail('supplied manifest does not match the embedded source manifest');
+  }
+  const inputBundleByCase = new Map();
+  const manifestCases = new Map((manifest.cases ?? []).map((evalCase) => [evalCase.id, evalCase]));
+  for (const task of tasks) {
+    if (!manifestCases.has(task.case_id)) fail(`prepared task has unknown case: ${task.case_id}`);
+    if (!inputBundleByCase.has(task.case_id)) {
+      inputBundleByCase.set(task.case_id, skillEvalInputBundleHash({
+        manifestPath: sourceManifest.path,
+        manifestContent: sourceManifest.content,
+        caseId: task.case_id,
+        sourceFiles: source.files,
+      }));
+    }
   }
   const resultByRun = new Map();
   for (const result of benchmark.results) {
@@ -274,10 +337,18 @@ async function main() {
     seenRunDirs.add(runDir);
     const result = resultByRun.get(resolve(runDir));
     if (!result) fail(`no benchmark result for ${task.run_dir}`);
-    return runEvidence(task, result, options.runs, expectedManifestRevision, expectedSkillHash);
+    return runEvidence(
+      task,
+      result,
+      options.runs,
+      manifestCases.get(task.case_id),
+      manifest,
+      expectedManifestRevision,
+      expectedSkillHash,
+      inputBundleByCase.get(task.case_id),
+    );
   });
   const harness = harnessBinding(options.harnessRepo);
-  const source = sourceBinding();
   const models = [...new Set(tasks.map((task) => task.model ?? null))].sort();
   const repeats = Math.max(...tasks.map((task) => Number(task.run_number)));
   const receipt = buildReceipt({
@@ -303,21 +374,39 @@ async function main() {
       skill_tree_hash: expectedSkillHash,
     },
     runs,
-    summary: {
-      results: benchmark.results.length,
-      summary: benchmark.summary,
-      paired_summary: benchmark.paired_summary,
-      by_model: benchmark.by_model,
-      case_flags: benchmark.case_flags,
-      reliability: benchmark.reliability,
-    },
+    summary: answerMatrixSummary(benchmark, audit),
   });
   receipt.harness.git_tree = harness.gitTree;
-  receipt.harness.parent_git_commit = harness.parent;
-  receipt.harness.patch_ref = addArtifact(receipt.artifacts, harness.patch, 'text/plain');
+  receipt.harness.parent_git_commit = harness.parentGitCommit;
+  receipt.harness.parent_git_tree = harness.parentGitTree;
+  receipt.harness.patch_ref = addArtifact(
+    receipt.artifacts,
+    exactUtf8(harness.patch, 'harness patch'),
+    'text/plain',
+    { sanitize: false },
+  );
+  receipt.harness.parent_tree_ref = addArtifact(
+    receipt.artifacts,
+    canonicalJson(harness.parentTreeSnapshot),
+    'application/json',
+    { sanitize: false },
+  );
+  receipt.harness.commit_ref = addArtifact(
+    receipt.artifacts,
+    exactUtf8(harness.commit, 'harness commit'),
+    'text/plain',
+    { sanitize: false },
+  );
+  receipt.harness.parent_commit_ref = addArtifact(
+    receipt.artifacts,
+    exactUtf8(harness.parentCommit, 'harness parent commit'),
+    'text/plain',
+    { sanitize: false },
+  );
   receipt.invocation.prepared_tasks_refs = rawFiles.map(({ raw }) =>
     addArtifact(receipt.artifacts, raw, 'text/plain'));
   receipt.invocation.benchmark_ref = addArtifact(receipt.artifacts, benchmarkRaw, 'application/json');
+  receipt.invocation.audit_ref = addArtifact(receipt.artifacts, auditRaw, 'application/json');
   writeReceipt(options.out, receipt);
   process.stdout.write(`Imported ${runs.length} immutable harness runs\n${options.out}\n`);
 }

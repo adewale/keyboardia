@@ -26,6 +26,7 @@ node evals/import-harness-receipt.mjs \
   --tasks /tmp/tasks-codex.jsonl \
   --runs /tmp/runs \
   --benchmark /tmp/benchmark.json \
+  --audit /tmp/audit.json \
   --harness-repo /path/to/skill-eval-harness \
   --out evals/receipts/2026-07-28-answer-matrix.json
 node evals/verify-receipts.mjs \
@@ -36,8 +37,9 @@ The importer rejects a missing or stale `artifact-commit.json`, any file that
 does not match its artifact inventory, incomplete/unscorable benchmark rows,
 and any disagreement among the manifest bytes, canonical skill-tree hash,
 prepared row, run metadata, or benchmark result. For a locally patched harness,
-the receipt also embeds a content-addressed binary patch and records its public
-parent commit, resulting commit, and Git tree.
+the receipt embeds the public parent tree and commit bytes, the patched commit,
+and the binary patch. Verification reconstructs both Git identities and applies
+the patch offline, so a depth-1 or squash checkout does not need old objects.
 
 The origin-only autonomous discovery receipt uses a stricter journey-specific
 format. The same verifier dispatches it through the discovery oracle and checks

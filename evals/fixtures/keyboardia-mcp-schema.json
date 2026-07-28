@@ -15,7 +15,7 @@
             "type": "string",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
           }
         },
         "required": [
@@ -37,17 +37,20 @@
       "inputSchema": {
         "type": "object",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "description": "The target session and one retry-safe edit to apply.",
         "properties": {
           "session_id": {
             "type": "string",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
           },
           "edit": {
+            "description": "Exactly one narrow session edit.",
             "oneOf": [
               {
                 "type": "object",
+                "description": "Add one track. Retrying the same track_id and definition is a no-op; a conflicting reuse is rejected.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -56,10 +59,11 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "A caller-chosen stable ID. Reuse it when retrying add_track."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
                   },
                   "sample_id": {
                     "type": "string",
+                    "description": "The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.",
                     "enum": [
                       "advanced:acid-bass",
                       "advanced:sub-bass",
@@ -165,7 +169,8 @@
                   "name": {
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 32
+                    "maxLength": 32,
+                    "description": "Optional display name. The instrument name is used when omitted."
                   }
                 },
                 "required": [
@@ -177,6 +182,7 @@
               },
               {
                 "type": "object",
+                "description": "Replace only an existing track's sound source while preserving its name, pattern, mix, and timing.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -185,10 +191,11 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "A caller-chosen stable ID. Reuse it when retrying add_track."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
                   },
                   "sample_id": {
                     "type": "string",
+                    "description": "The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.",
                     "enum": [
                       "advanced:acid-bass",
                       "advanced:sub-bass",
@@ -301,6 +308,7 @@
               },
               {
                 "type": "object",
+                "description": "Change only the listed steps on an existing track. Read get_session first to obtain its track_id and step_count.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -309,22 +317,25 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "A caller-chosen stable ID. Reuse it when retrying add_track."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
                   },
                   "changes": {
                     "minItems": 1,
                     "maxItems": 128,
                     "type": "array",
+                    "description": "Assignments for named steps only. Every unmentioned step is preserved.",
                     "items": {
                       "type": "object",
                       "properties": {
                         "step": {
                           "type": "integer",
                           "minimum": 0,
-                          "maximum": 127
+                          "maximum": 127,
+                          "description": "Zero-based step index. It must be within this track's current step_count."
                         },
                         "value": {
-                          "type": "boolean"
+                          "type": "boolean",
+                          "description": "true activates the step; false clears it."
                         }
                       },
                       "required": [
@@ -344,6 +355,7 @@
               },
               {
                 "type": "object",
+                "description": "Set the session-wide tempo without changing any track.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -352,7 +364,8 @@
                   "tempo": {
                     "type": "number",
                     "minimum": 60,
-                    "maximum": 180
+                    "maximum": 180,
+                    "description": "Session tempo in beats per minute (60-180)."
                   }
                 },
                 "required": [
@@ -428,7 +441,7 @@
             "type": "string",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
           }
         },
         "required": [
@@ -455,7 +468,7 @@
             "type": "string",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
           }
         },
         "required": [
@@ -482,7 +495,7 @@
             "type": "string",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
           }
         },
         "required": [
@@ -509,7 +522,7 @@
             "type": "string",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
-            "description": "The UUID in a Keyboardia /s/{session_id} URL."
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
           }
         },
         "required": [

@@ -9,6 +9,25 @@ Use Keyboardia's MCP server as a live collaborative instrument. Make narrow,
 schema-valid assignments and preserve music that the user, another person, or
 another agent did not ask you to change.
 
+## Complete the minimum live workflow
+
+For every mutation, complete this sequence before claiming success:
+
+1. Connect to the same-origin `/mcp` endpoint and inspect its live `tools/list`.
+2. Call `get_session` and use the returned state and schemas, not assumptions.
+3. Call `edit_session` with one narrow, live-schema operation.
+4. Call `get_session` again and verify the requested post-state.
+
+If any step cannot be completed, say what is unverified; never report the edit
+as done from an attempted call or its immediate response alone. A read-only
+request stops after the read. An immutable published session must not reach the
+mutation step.
+
+Before sending any response, remove the working session UUID and editable
+`/s/{session_id}` URL from all prose, JSON, examples, notes, and public copy.
+Share only a verified immutable public URL, such as the URL returned by
+`publish_session`; never construct one from the editable capability.
+
 ## Connect and discover
 
 - Connect a standards-compliant MCP client to `/mcp` on the same origin that

@@ -33,20 +33,24 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync
 import { tmpdir } from 'node:os';
 import { basename, dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createServer } from 'node:net';
 import { extractFirstJsonObject } from './oracles/public-changelog-safe.mjs';
 import {
   buildReceipt,
+  canonicalJson,
   createSourceBinding,
   redactCapability,
+  sha256,
   writeReceipt,
 } from './receipt.mjs';
 import { scoreExecution } from './score-execution.mjs';
-import { createSession, isReachable, readCompactSession } from './session-harness.mjs';
+import { createSession, isReachable, listMcpTools, readCompactSession } from './session-harness.mjs';
 
 export { redactCapability } from './receipt.mjs';
 
 const evalsDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(evalsDir, '..');
+const appRoot = resolve(repoRoot, 'app');
 
 const ANSWER_PREAMBLE = [
   'You are an AI assistant connected to a Model Context Protocol (MCP) client.',
@@ -119,6 +123,7 @@ function parseArgs(argv) {
     rescore: null,
     manifest: resolve(evalsDir, 'shared-benchmark.json'),
     receipt: null,
+    launchLocalWorker: false,
     mcpBaseUrl: process.env.KEYBOARDIA_BASE_URL ?? 'http://localhost:8787',
     agentCmd: null,
     agentAdapter: null,
@@ -203,6 +208,9 @@ function parseArgs(argv) {
         options.receipt = resolve(process.cwd(), value);
         index += 1;
         break;
+      case '--launch-local-worker':
+        options.launchLocalWorker = true;
+        break;
       case '--mcp-base-url':
         options.mcpBaseUrl = value;
         index += 1;
@@ -239,6 +247,94 @@ function bundledAdapter(name) {
   return { id: name, path, command: `node ${JSON.stringify(path)}` };
 }
 
+async function freeLoopbackPort() {
+  return await new Promise((resolvePort, reject) => {
+    const server = createServer();
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address();
+      const port = typeof address === 'object' && address ? address.port : null;
+      server.close((error) => error ? reject(error) : resolvePort(port));
+    });
+  });
+}
+
+async function startOwnedLocalWorker() {
+  const tempRoot = mkdtempSync(resolve(tmpdir(), 'keyboardia-live-eval-worker-'));
+  const persistence = resolve(tempRoot, 'wrangler-state');
+  const build = spawnSync('npm', ['run', 'build'], {
+    cwd: appRoot,
+    stdio: 'inherit',
+    env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },
+  });
+  if (build.status !== 0) {
+    rmSync(tempRoot, { recursive: true, force: true });
+    throw new Error(`local Worker build failed with status ${build.status}`);
+  }
+  const version = spawnSync('npx', ['wrangler', '--version'], {
+    cwd: appRoot,
+    encoding: 'utf8',
+    env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },
+  });
+  if (version.status !== 0) {
+    rmSync(tempRoot, { recursive: true, force: true });
+    throw new Error(`could not identify the locked Wrangler: ${String(version.stderr).trim()}`);
+  }
+  const port = await freeLoopbackPort();
+  const origin = `http://127.0.0.1:${port}`;
+  const child = spawn('npx', [
+    'wrangler', 'dev', '--local', '--port', String(port),
+    '--persist-to', persistence,
+    '--show-interactive-dev-session', 'false',
+    '--var', 'SESSION_CREATE_RATE_LIMIT_PER_MINUTE:2000',
+    '--var', 'MCP_RATE_LIMIT_PER_MINUTE:2000',
+  ], {
+    cwd: appRoot,
+    stdio: ['ignore', 'ignore', 'pipe'],
+    env: {
+      ...process.env,
+      WRANGLER_SEND_METRICS: 'false',
+      WRANGLER_LOG: 'none',
+    },
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => { stderr += chunk; });
+  const deadline = Date.now() + 120_000;
+  while (Date.now() < deadline) {
+    if (child.exitCode !== null) {
+      rmSync(tempRoot, { recursive: true, force: true });
+      throw new Error(`owned Wrangler exited ${child.exitCode}: ${stderr.slice(-1000)}`);
+    }
+    if (await isReachable(origin)) {
+      return {
+        child,
+        origin,
+        tempRoot,
+        wranglerVersion: version.stdout.trim(),
+      };
+    }
+    await new Promise((resolveWait) => setTimeout(resolveWait, 500));
+  }
+  child.kill('SIGKILL');
+  rmSync(tempRoot, { recursive: true, force: true });
+  throw new Error(`owned Wrangler did not become ready: ${stderr.slice(-1000)}`);
+}
+
+async function stopOwnedLocalWorker(worker) {
+  if (!worker) return;
+  if (worker.child.exitCode === null) {
+    await new Promise((resolveStop) => {
+      const forced = setTimeout(() => worker.child.kill('SIGKILL'), 5000);
+      worker.child.once('exit', () => {
+        clearTimeout(forced);
+        resolveStop();
+      });
+      worker.child.kill('SIGTERM');
+    });
+  }
+  rmSync(worker.tempRoot, { recursive: true, force: true });
+}
+
 function repoRelativePath(path) {
   return relative(repoRoot, resolve(path)).split(sep).join('/');
 }
@@ -268,9 +364,19 @@ function snapshotRunInputs(manifest, options, manifestBytes) {
     if (capturedModules.has(absolute)) return;
     capturedModules.add(absolute);
     const source = snapshots.get(absolute).text;
-    for (const match of source.matchAll(/\bfrom\s+['"](\.[^'"]+)['"]/g)) {
+    const imports = [
+      ...source.matchAll(/\bfrom\s+['"](\.[^'"]+)['"]/g),
+      ...source.matchAll(/\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g),
+      ...source.matchAll(/\bimport\s+['"](\.[^'"]+)['"]/g),
+    ];
+    for (const match of imports) {
       const imported = resolve(dirname(absolute), match[1]);
-      const candidates = [imported, `${imported}.mjs`, `${imported}.js`];
+      const candidates = [
+        imported,
+        `${imported}.mjs`, `${imported}.js`, `${imported}.ts`, `${imported}.tsx`, `${imported}.json`,
+        resolve(imported, 'index.mjs'), resolve(imported, 'index.js'),
+        resolve(imported, 'index.ts'), resolve(imported, 'index.tsx'),
+      ];
       const dependency = candidates.find((candidate) => existsSync(candidate));
       if (dependency) captureModule(`${role}_dependency`, dependency);
     }
@@ -279,6 +385,7 @@ function snapshotRunInputs(manifest, options, manifestBytes) {
   capture('manifest', options.manifest, manifestBytes);
   captureModule('runner', fileURLToPath(import.meta.url));
   captureModule('receipt_runtime', resolve(evalsDir, 'receipt.mjs'));
+  captureModule('execution_receipt_verifier', resolve(evalsDir, 'verify-execution-receipt.mjs'));
   capture('receipt_schema', resolve(evalsDir, 'receipt.schema.json'));
   for (const skillPath of manifest.skill_paths) {
     capture('skill', resolve(repoRoot, skillPath));
@@ -303,6 +410,13 @@ function snapshotRunInputs(manifest, options, manifestBytes) {
   if (options.agentAdapter?.path) captureModule('answer_adapter', options.agentAdapter.path);
   if (options.judge && options.judgeAdapter?.path) {
     captureModule('judge_adapter', options.judgeAdapter.path);
+  }
+  if (manifest.cases.some((testCase) => testCase.kind === 'execution')) {
+    captureModule('system_under_test_entry', resolve(repoRoot, 'app/src/worker/index.ts'));
+    capture('system_under_test_config', resolve(repoRoot, 'app/wrangler.jsonc'));
+    capture('system_under_test_typescript_config', resolve(repoRoot, 'app/tsconfig.worker.json'));
+    capture('system_under_test_package', resolve(repoRoot, 'app/package.json'));
+    capture('system_under_test_lock', resolve(repoRoot, 'app/package-lock.json'));
   }
   return { snapshots, boundInputs };
 }
@@ -446,6 +560,119 @@ export function summarizeRun(assertions) {
   };
 }
 
+function replayRunIdentity(run) {
+  return {
+    model: run.model ?? null,
+    case: run.case,
+    kind: run.kind,
+    split: run.split ?? 'tune',
+    variant: run.variant,
+    repeat: run.repeat ?? 0,
+  };
+}
+
+function replayInputRun(run) {
+  return {
+    ...replayRunIdentity(run),
+    ok: run.ok === true,
+    scorable: run.scorable === true,
+    error: run.error ?? null,
+    execution: run.execution ?? null,
+  };
+}
+
+function replayProjectedRun(run) {
+  return {
+    ...replayRunIdentity(run),
+    ok: run.ok === true,
+    scorable: run.scorable === true,
+    error: run.error ?? null,
+    passed: run.passed ?? null,
+    passRate: run.passRate ?? null,
+    gradedScore: run.gradedScore ?? null,
+    assertions: run.assertions ?? [],
+    execution: run.execution ?? null,
+  };
+}
+
+export function projectExecutionReplay(input) {
+  if (input?.version !== 1 || !Array.isArray(input.cases) || !Array.isArray(input.runs)) {
+    throw new Error('invalid execution replay input');
+  }
+  const cases = new Map(input.cases.map((testCase) => [testCase.id, testCase]));
+  const runs = input.runs.map((run) => {
+    if (!run.ok || !run.scorable) return replayProjectedRun(run);
+    const testCase = cases.get(run.case);
+    if (!testCase || testCase.kind !== 'execution' || !run.execution) {
+      throw new Error(`execution replay input is missing case or state for ${run.case}`);
+    }
+    const assertions = scoreExecution(testCase.assertions ?? [], run.execution);
+    return replayProjectedRun({
+      ...run,
+      ...summarizeRun(assertions),
+      assertions,
+    });
+  });
+  const manifest = { variants: input.variants, cases: input.cases };
+  const options = { models: input.models };
+  return {
+    version: 1,
+    runs,
+    summary: summarize(runs, options, manifest),
+  };
+}
+
+export function verifyExecutionReplayEvidence(evidence) {
+  if (evidence?.version !== 1) throw new Error('unsupported execution replay evidence');
+  const inputHash = sha256(canonicalJson(evidence.input));
+  if (inputHash !== evidence.input_sha256) throw new Error('execution replay input hash mismatch');
+  const projection = projectExecutionReplay(evidence.input);
+  if (canonicalJson(projection) !== canonicalJson(evidence.projection)) {
+    throw new Error('execution replay projection does not match its input');
+  }
+  const projectionHash = sha256(canonicalJson(projection));
+  if (projectionHash !== evidence.projection_sha256) {
+    throw new Error('execution replay projection hash mismatch');
+  }
+  return true;
+}
+
+export function buildExecutionReplayEvidence(manifest, runs, options, reportedSummary) {
+  const executionRuns = runs.filter((run) => run.kind === 'execution');
+  if (executionRuns.length === 0) return null;
+  const input = {
+    version: 1,
+    models: options.models,
+    variants: manifest.variants,
+    cases: manifest.cases
+      .filter((testCase) => testCase.kind === 'execution')
+      .map((testCase) => ({
+        id: testCase.id,
+        kind: testCase.kind,
+        assertions: testCase.assertions ?? [],
+      })),
+    runs: executionRuns.map(replayInputRun),
+  };
+  const projection = projectExecutionReplay(input);
+  const recordedProjection = {
+    version: 1,
+    runs: executionRuns.map(replayProjectedRun),
+    summary: reportedSummary,
+  };
+  if (canonicalJson(projection) !== canonicalJson(recordedProjection)) {
+    throw new Error('recorded execution scores do not match deterministic replay');
+  }
+  const evidence = {
+    version: 1,
+    input,
+    input_sha256: sha256(canonicalJson(input)),
+    projection,
+    projection_sha256: sha256(canonicalJson(projection)),
+  };
+  verifyExecutionReplayEvidence(evidence);
+  return evidence;
+}
+
 /**
  * Runs one execution case: build a disposable session from the case's setup,
  * hand the agent live MCP tools, then score the session it left behind and the
@@ -453,6 +680,7 @@ export function summarizeRun(assertions) {
  */
 async function runExecutionCase({ testCase, casePrompt, model, options, capabilities }) {
   const baseUrl = options.mcpBaseUrl;
+  const mcpEndpoint = new URL('/mcp', baseUrl).href;
   let sessionId;
   let baseline;
   try {
@@ -476,6 +704,7 @@ async function runExecutionCase({ testCase, casePrompt, model, options, capabili
     prompt,
     model,
     timeoutMs: options.timeoutMs,
+    env: { KEYBOARDIA_MCP_URL: mcpEndpoint },
   });
   if (!result.ok) {
     // An adapter may have completed edits before its process or output failed.
@@ -527,7 +756,7 @@ async function runExecutionCase({ testCase, casePrompt, model, options, capabili
   };
 }
 
-function runAdapter({ command, prompt, model, timeoutMs }) {
+function runAdapter({ command, prompt, model, timeoutMs, env = {} }) {
   const workspace = mkdtempSync(resolve(tmpdir(), 'keyboardia-eval-'));
   return new Promise((resolvePromise) => {
     const detached = process.platform !== 'win32';
@@ -536,6 +765,7 @@ function runAdapter({ command, prompt, model, timeoutMs }) {
       cwd: workspace,
       stdio: ['pipe', 'pipe', 'pipe'],
       detached,
+      env: { ...process.env, ...env },
     });
 
     let stdout = '';
@@ -879,14 +1109,42 @@ async function main() {
     );
   }
   const runnable = selected.filter((testCase) => prompts.has(testCase.id));
+  const hasExecution = runnable.some((testCase) => testCase.kind === 'execution');
+  if (receiptContext && hasExecution && !options.launchLocalWorker) {
+    throw new Error(
+      'Execution receipts require --launch-local-worker so the runner owns the bound Worker process.'
+    );
+  }
+  let ownedWorker = null;
+  try {
+    if (hasExecution && options.launchLocalWorker) {
+      ownedWorker = await startOwnedLocalWorker();
+      options.mcpBaseUrl = ownedWorker.origin;
+    }
 
-  if (runnable.some((testCase) => testCase.kind === 'execution')) {
+  if (hasExecution) {
     if (!await isReachable(options.mcpBaseUrl)) {
       throw new Error(
         `Execution cases need a running Keyboardia at ${options.mcpBaseUrl}. ` +
         'Start one with `cd app && npx wrangler dev --port 8787 --local`, ' +
         'or point elsewhere with --mcp-base-url.'
       );
+    }
+    const mcpEndpoint = new URL('/mcp', options.mcpBaseUrl).href;
+    const tools = await listMcpTools(mcpEndpoint);
+    if (receiptContext) {
+      receiptContext.invocation.system_under_test = {
+        base_url: new URL(options.mcpBaseUrl).origin,
+        mcp_endpoint: mcpEndpoint,
+        launch: {
+          mode: ownedWorker ? 'runner-owned-wrangler-local' : 'external-unattested',
+          wrangler_version: ownedWorker?.wranglerVersion ?? null,
+          source_git_commit: receiptContext.source.git_commit,
+          source_git_tree: receiptContext.source.git_tree,
+        },
+        tools_list: tools,
+        tools_list_sha256: sha256(canonicalJson(tools)),
+      };
     }
   }
 
@@ -1011,6 +1269,9 @@ async function main() {
   });
 
   emit(runs, options, manifest, receiptContext);
+  } finally {
+    await stopOwnedLocalWorker(ownedWorker);
+  }
 }
 
 function rescore(options, manifest) {
@@ -1048,6 +1309,8 @@ function emit(runs, options, manifest, receiptContext = null) {
   const summary = summarize(runs, options, manifest);
   if (receiptContext) {
     assertBoundInputsUnchanged(receiptContext.boundInputs);
+    const executionReplay = buildExecutionReplayEvidence(manifest, runs, options, summary);
+    if (executionReplay) receiptContext.invocation.execution_replay = executionReplay;
     const receipt = buildReceipt({
       source: receiptContext.source,
       harness: receiptContext.harness,
