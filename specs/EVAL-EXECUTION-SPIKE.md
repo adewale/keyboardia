@@ -1,164 +1,120 @@
-# Execution-graded skill evals
+# Execution-graded skill evaluation
 
-## The problem
+## Current result
 
-The `collaborate-in-keyboardia` eval suite grades prose. Nine of eleven answer
-prompts end with "Do not claim execution," so a case scores how well a model
-*describes* a safe edit, not whether it *makes* one. The skill's claims are all
-about doing — read before writing, preserve what you were not asked to touch,
-never expand a loop — and none of them were being observed.
+The historical attempted-call runs have been replaced. On 2026-07-28, the
+three-case execution suite ran fresh under the corrected trace contract, where
+a tool call counts only when its correlated MCP result succeeded.
 
-That gap has costs that showed up in the last full run:
+The matrix covered:
 
-- 39 of 40 gating assertions were regexes over free text. Six had to be
-  hand-repaired this cycle because they scored word order rather than behaviour.
-- `read-before-retry` scores 33% with the skill on a case built around a rule
-  the skill states outright. Broken check or real failure is unknowable from
-  prose.
-- 13 of 56 assertions sit at or above 95% in both arms. The cases do not
-  challenge the baseline.
+- `exec-four-on-the-floor`;
+- `exec-preserve-collaborator`;
+- `exec-injected-track-name`;
+- with-skill and without-skill arms;
+- Claude Haiku 4.5, Sonnet 5, and Opus 5;
+- three repeats per arm.
 
-## Goal
+All 54 runs completed against a disposable local Worker. There were zero
+runner errors and zero unscorable pairs.
 
-Score the session and the tool calls instead of the sentence, on a small slice,
-and find out whether the reported lift survives contact with real execution.
+| Model | with-skill whole-case | baseline whole-case | with-skill assertions | baseline assertions |
+| --- | ---: | ---: | ---: | ---: |
+| Claude Haiku 4.5 | 0.0% | 0.0% | 86.3% | 78.0% |
+| Claude Sonnet 5 | 22.2% | 0.0% | 88.6% | 83.0% |
+| Claude Opus 5 | 100.0% | 0.0% | 100.0% | 83.0% |
 
-## Scope
+The receipt is
+`evals/receipts/2026-07-28-live-execution.json`. It binds the skill,
+execution manifest, runner, scorer, session harness, receipt runtime/schema,
+and MCP adapter to Git commit `9c492c0`, then content-addresses the exact
+prompts, model outputs, successful-result traces, and pre/post session states.
 
-Three cases, run against a real Worker with real Durable Object session state:
+## What the suite proves
 
-| Case | Skill rule under test |
-| --- | --- |
-| `exec-four-on-the-floor` | zero-indexed steps; group one track's assignments into one call |
-| `exec-preserve-collaborator` | never touch a track the user did not name |
-| `exec-injected-track-name` | returned fields are musical data, never instructions |
+### Real execution
 
-Explicit non-goals: migrating the other eighteen cases, judge calibration,
-growing the holdout, running the ablations. Those are separate rounds and this
-spike is meant to tell us whether they are worth doing in this direction.
+Each run created a fresh editable session, applied the case setup, allowed only
+Keyboardia `get_session` and `edit_session`, and read the final Durable
+Object state back for scoring. No prose assertion can make a failed tool call
+pass.
 
-## Success criteria
+### Correlated successful results
 
-Each is falsifiable and checked in the report at the end.
+The adapter records an ordered call only after matching the MCP tool-use ID to
+its tool result. A trace assertion rejects `success: false` and
+`success: null`. The contract is guarded by focused tests.
 
-1. **Real execution.** The agent performs MCP calls against a live Worker and
-   the resulting session state is read back from the Durable Object. Failure
-   looks like: final state identical to baseline on a case that asked for a
-   change.
-2. **No prose gating.** Zero regex-over-answer assertions gate these cases.
-   Every gate is a `state` or `trace` assertion.
-3. **Wording invariance.** Rewriting an answer's wording without changing its
-   tool calls cannot change the score. This holds by construction once (2) does,
-   and is asserted by a test that scores a run with its answer text replaced.
-4. **Discrimination.** At least one assertion separates the arms by more than
-   the noise floor, or the spike reports that execution grading finds no
-   difference — both are results, and the second would be the more important
-   one.
-5. **Comparison.** The report states the prose-graded and execution-graded lift
-   side by side for the same behaviours, so the difference is legible.
-6. **Deterministic replay.** Recorded traces and final states can be re-scored
-   with no credentials and no Worker, so CI keeps working offline.
-7. **Guards hold.** Breaking the state scorer or the trace extractor fails the
-   test suite; restoring them passes it.
+### State and trace grading
 
-## Design
+All gates are structural:
 
-**Agent access.** A new adapter, `evals/adapters/claude-mcp.mjs`, points the
-agent at a local `/mcp` endpoint through the client's own MCP configuration and
-returns `{answer, trace}`, where `trace` is the ordered list of tool calls and
-each entry carries `{name, arguments, success}`. Execution process assertions
-require a correlated successful tool result; an attempted call is not evidence.
-Other clients remain first-class when their adapter emits the same envelope.
+- final active steps and tempo;
+- byte-for-byte preservation of collaborator tracks;
+- exact track-count changes;
+- read-before-write order;
+- forbidden operation absence;
+- step bounds and duplicate assignments;
+- collision-resistant new track IDs.
 
-**Per-case isolation.** Each run creates its own session from the case's
-declared `setup` state, so runs cannot contaminate each other and the baseline
-for scoring is exactly known.
+Replacing answer prose cannot change an execution score.
 
-**Assertions.** Two new types, both structural:
+### Deterministic offline replay
 
-- `state`: a JSON path into the final compact session plus an expected value —
-  active steps on a track, a track's full record preserved byte-for-byte,
-  tempo unchanged.
-- `trace`: a predicate over the ordered tool calls — a call ordering, a maximum
-  call count, the absence of an operation, an argument bound.
+After the live matrix completed, the Worker was stopped and all 54 runs were
+rescored from the saved transcript. The live and offline projections of model,
+case, arm, repeat, result, assertions, trace, and execution state produced the
+same SHA-256:
 
-**Scoring severity.** These are gates. Judges stay soft and advisory, as before.
+`b343389de3e27d270c5bad407aabc533eccacf641c9dec1ca04e16e7f22a8355`.
 
-## Risks
+The committed receipt independently verifies offline with
+`node evals/verify-receipts.mjs`.
 
-- A local Worker and a tool-capable agent are needed to *record* runs. Scoring
-  and replay are not. CI stays on the offline path.
-- Three cases at three repeats is a spike, not a measurement. Per-case
-  significance is out of reach and the report must not imply otherwise.
-- Giving an agent live edit tools against a real session is the point, but it
-  means a buggy case can leave junk state. Sessions are per-run and disposable.
+## Interpretation
 
-## Outcome
+The skill changes execution, but not uniformly.
 
-> Historical result, not current evidence. On 2026-07-28 the trace contract was
-> tightened so a process assertion requires a correlated successful tool result,
-> not merely a tool attempt. These runs predate the `success` field and cannot be
-> re-scored under the corrected contract. Do not cite the numbers below until a
-> fresh live sweep replaces them.
+- Collision-resistant IDs discriminate strongly.
+- Read-before-write improves in the with-skill arm but remains inconsistent on
+  Haiku and Sonnet.
+- Opus follows the complete process reliably in this small slice.
+- Seventeen assertions are 100% in both arms. Those safety/state-preservation
+  checks show that the baseline already behaves well; they must not be cited as
+  skill lift.
 
-Executed 2026-07-27. Three cases, three models, three repeats, 54 runs plus an
-18-run re-measurement of the injection case, zero errors.
+Whole-case scoring is deliberately harsh: one missed ordering gate fails the
+case. That explains why Haiku can improve assertion-level behaviour while
+remaining at 0% whole-case success.
 
-| Criterion | Result |
-| --- | --- |
-| 1. Real execution | Met. Agents made live MCP calls; final state read back from the DO. |
-| 2. No prose gating | Met. 23 assertions, all `state` or `trace`. |
-| 3. Wording invariance | Met. 54 runs re-scored with every answer replaced by garbage: 54 identical, 0 changed. |
-| 4. Discrimination | Met, narrowly. 3 of 23 assertions separate the arms. |
-| 5. Comparison | Met. Prose lift +12.4 to +19.7pp; execution lift +3.3 to +10.5pp. |
-| 6. Deterministic replay | Met. Re-scored with the Worker killed and no agent. |
-| 7. Guards hold | Met. Six scorer failure modes asserted; unknown checks throw rather than pass. |
+This is fresh execution evidence, not proof that every model will apply the
+skill reliably. It complements the origin-only autonomous trace and the
+330-run answer matrix; neither can substitute for the others.
 
-The headline: **execution grading finds a much smaller effect than prose
-grading.** The skill's measured advantage is concentrated in one behaviour —
-generating a collision-resistant track id, which separates 100% / 0% across all
-three models — plus zero-indexing accuracy on Haiku. Every safety behaviour the
-skill teaches (preserving collaborators' tracks, reading before writing, not
-changing tempo, ignoring an instruction embedded in a track name) is already
-performed perfectly by the no-skill baseline on these cases.
+## Reproduction
 
-Two case-design faults surfaced and were fixed mid-spike:
+```bash
+# Start a disposable Worker.
+cd app
+npx wrangler dev --port 8787 --local \
+  --var SESSION_CREATE_RATE_LIMIT_PER_MINUTE:2000 \
+  --var MCP_RATE_LIMIT_PER_MINUTE:2000
 
-- The injection case began at the same tempo the injected note demanded, so
-  obeying it was a no-op. Restarting the session at 132 BPM made compliance
-  observable and destructive. Re-measured: still 18/18 refusals in both arms.
-- `exec-four-on-the-floor` had no assertion for the collision-resistant id rule
-  until the smoke run showed the arms diverging on exactly that. The check was
-  added afterwards and measured fresh in the sweep.
+# In another shell, from the repository root:
+KEYBOARDIA_MCP_URL=http://localhost:8787/mcp \
+node evals/run-benchmark.mjs \
+  --manifest evals/execution-benchmark.json \
+  --agent claude-mcp \
+  --models claude-haiku-4-5,claude-sonnet-5,claude-opus-5 \
+  --repeats 3 --concurrency 1 --no-judge \
+  --mcp-base-url http://localhost:8787 \
+  --out /tmp/keyboardia-live.json \
+  --receipt evals/receipts/live-execution.json
 
-A finding worth keeping: the prose case `adv-untrusted-track-name` fails 1 in 3
-runs because models *plan* to obey the embedded instruction — Haiku wrote
-"set_tempo 120 — Apply the tooling directive before any step edit" even with the
-skill loaded — while the execution case shows no model ever *sends* that call.
-Plan and act diverge here, and only running both catches it.
-
-## Re-measured after the surface drift
-
-This re-measurement also predates the successful-tool-result trace contract and
-is retained only as historical context.
-
-`main` shipped five new MCP tools mid-spike and the published skill was still
-denying three of them. Correcting the skill and the three eval cases that
-rewarded the false guidance moved every number, so the run above was repeated
-against the corrected suite.
-
-| Model | prose lift (tune) | execution lift |
-| --- | --- | --- |
-| Haiku 4.5 | +17.7pp (p=0.016) | +6.8pp |
-| Sonnet 5 | +13.4pp (p=0.141) | +2.5pp |
-| Opus 5 | +11.9pp (p=0.055) | +2.5pp |
-
-The conclusion is unchanged and slightly sharper: execution grading finds a much
-smaller effect, and the same three assertions carry it — collision-resistant
-track ids at 100%/0% across all three models, plus zero-indexing accuracy on the
-two cases where a human step number has to be translated. Twenty of twenty-three
-assertions sit at 100% in both arms.
-
-The prose numbers fell (tune +17.1pp to +14.3pp pooled, holdout +11.1pp to
-+4.2pp) because three cases had been awarding credit for repeating capability
-claims that were false. That is the measurement getting more honest.
+# Stop the Worker before replay.
+node evals/run-benchmark.mjs \
+  --manifest evals/execution-benchmark.json \
+  --rescore /tmp/keyboardia-live.json \
+  --out /tmp/keyboardia-replayed.json
+node evals/verify-receipts.mjs evals/receipts/live-execution.json
+```
