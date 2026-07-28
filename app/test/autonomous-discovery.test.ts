@@ -141,7 +141,24 @@ describe('autonomous discovery trace oracle', () => {
     trace[8].response.success = false;
     trace[8].response.error = 'target returned isError';
     expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
-      .toThrow(/trace event 9 failed/);
+      .toThrow(/target call edit_session failed/);
+  });
+
+  it('retains harmless failed discovery probes before the successful chain', () => {
+    const trace = validTrace().map((entry) => ({
+      ...entry,
+      sequence: entry.sequence + 1,
+      request_id: `transport-${entry.sequence + 1}`,
+    }));
+    trace.unshift({
+      sequence: 1,
+      request_id: 'transport-1',
+      phase: 'fetch',
+      request: { url: `${ORIGIN}/.well-known/agents.json` },
+      response: { success: false, error: 'fetch failed: HTTP 404' },
+    });
+
+    expect(validateAutonomousTrace(trace, { origin: ORIGIN })).toMatchObject({ passed: true });
   });
 
   it('rejects an edit without a final verification read', () => {

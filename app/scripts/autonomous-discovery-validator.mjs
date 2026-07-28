@@ -59,7 +59,6 @@ export function validateAutonomousTrace(events, { origin }) {
     requestIds.add(event.request_id);
     invariant(event.response && typeof event.response.success === 'boolean',
       `trace event ${event.sequence} has no correlated result`);
-    invariant(event.response.success, `trace event ${event.sequence} failed: ${event.response.error ?? event.phase}`);
   }
 
   const indexIndex = events.findIndex((event) => {
@@ -126,6 +125,8 @@ export function validateAutonomousTrace(events, { origin }) {
   const calls = events.slice(listIndex + 1).filter((event) => event.phase === 'mcp_tool_call');
   invariant(calls.length > 0, 'agent made no target MCP calls');
   for (const call of calls) {
+    invariant(call.response.success === true,
+      `target call ${call.request.name} failed: ${call.response.error ?? 'unknown error'}`);
     invariant(call.request.connection_id === connectionId, 'target call used a different connection');
     invariant(liveNames.has(call.request.name), `target call ${call.request.name} was not listed`);
     invariant(!BLOCKED_TARGET.test(call.request.name), `forbidden target call: ${call.request.name}`);
