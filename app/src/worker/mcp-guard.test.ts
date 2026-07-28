@@ -3,7 +3,12 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialSessionState } from '../shared/session-defaults';
 import type { Session } from '../shared/state';
 import { createKeyboardiaMcpHandler, type McpSessionAdapter } from './mcp';
-import { guardMcpRequest, isJsonContentType } from './mcp-guard';
+import {
+  guardMcpRequest,
+  isJsonContentType,
+  mcpCorsHeaders,
+  validateMcpOrigin,
+} from './mcp-guard';
 
 const SESSION_ID = '00000000-0000-4000-8000-000000000001';
 
@@ -12,6 +17,13 @@ function mcpRequest(init: RequestInit = {}): Request {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     ...init,
+  });
+}
+
+function mcpRequestFor(target: string, origin: string): Request {
+  return new Request(`${target}/mcp`, {
+    method: 'POST',
+    headers: { Origin: origin },
   });
 }
 
@@ -28,6 +40,97 @@ describe('isJsonContentType', () => {
     expect(isJsonContentType('application/jsonl')).toBe(false);
     expect(isJsonContentType('text/json')).toBe(false);
     expect(isJsonContentType('application/x-www-form-urlencoded')).toBe(false);
+  });
+});
+
+describe('MCP browser origin validation', () => {
+  it('allows non-browser clients that omit Origin', () => {
+    expect(validateMcpOrigin(mcpRequest())).toBeUndefined();
+  });
+
+  it.each([
+    'https://keyboardia.dev',
+    'https://www.keyboardia.dev',
+  ])('allows the production browser origin %s on production', (origin) => {
+    const request = mcpRequest({ headers: { Origin: origin } });
+    expect(validateMcpOrigin(request)).toBeUndefined();
+  });
+
+  it.each([
+    ['https://staging.keyboardia.dev', 'https://staging.keyboardia.dev'],
+    ['https://staging.keyboardia.dev', 'https://keyboardia.dev'],
+    ['http://localhost:8787', 'http://localhost:5173'],
+    ['http://127.0.0.1:8787', 'http://[::1]:5173'],
+  ])('allows %s to be called by its approved %s origin', (target, origin) => {
+    expect(validateMcpOrigin(mcpRequestFor(target, origin))).toBeUndefined();
+  });
+
+  it.each([
+    'https://staging.keyboardia.dev',
+    'http://localhost:5173',
+    'http://127.0.0.1:8787',
+    'http://[::1]:8787',
+  ])('does not grant the lower-trust origin %s access to production', (origin) => {
+    expect(validateMcpOrigin(mcpRequest({ headers: { Origin: origin } }))?.status).toBe(403);
+  });
+
+  it('allows the exact HTTPS origin of a workers.dev preview', () => {
+    const request = new Request('https://keyboardia-preview.owner.workers.dev/mcp', {
+      method: 'POST',
+      headers: { Origin: 'https://keyboardia-preview.owner.workers.dev' },
+    });
+
+    expect(validateMcpOrigin(request)).toBeUndefined();
+  });
+
+  it('rejects a sibling workers.dev preview origin', () => {
+    const request = new Request('https://keyboardia-preview.owner.workers.dev/mcp', {
+      method: 'POST',
+      headers: { Origin: 'https://other-preview.owner.workers.dev' },
+    });
+
+    expect(validateMcpOrigin(request)?.status).toBe(403);
+  });
+
+  it.each([
+    'null',
+    'not a URL',
+    'https://agent.example',
+    'https://keyboardia.dev.evil.example',
+    'http://keyboardia.dev',
+    'https://keyboardia.dev:444',
+    'https://keyboardia.dev/path',
+    'file://keyboardia.dev',
+  ])('rejects the unapproved or malformed origin %s', async (origin) => {
+    const response = validateMcpOrigin(mcpRequest({ headers: { Origin: origin } }));
+
+    expect(response?.status).toBe(403);
+    expect(response?.headers.get('Content-Type')).toBe('application/json');
+    expect(await response?.json()).toEqual({
+      jsonrpc: '2.0',
+      error: { code: -32000, message: `Invalid Origin: ${origin}` },
+      id: null,
+    });
+  });
+
+  it('reflects an approved origin and exposes the negotiated protocol header', () => {
+    const headers = mcpCorsHeaders(mcpRequest({
+      headers: { Origin: 'https://www.keyboardia.dev' },
+    }));
+
+    expect(headers.get('Access-Control-Allow-Origin')).toBe('https://www.keyboardia.dev');
+    expect(headers.get('Access-Control-Allow-Methods')).toBe('POST, OPTIONS');
+    expect(headers.get('Access-Control-Allow-Headers')).toContain('MCP-Protocol-Version');
+    expect(headers.get('Access-Control-Expose-Headers')).toBe('MCP-Protocol-Version');
+    expect(headers.get('Vary')).toBe('Origin');
+  });
+
+  it('never grants CORS access to an invalid origin', () => {
+    const headers = mcpCorsHeaders(mcpRequest({
+      headers: { Origin: 'https://agent.example' },
+    }));
+
+    expect(headers.get('Access-Control-Allow-Origin')).toBeNull();
   });
 });
 

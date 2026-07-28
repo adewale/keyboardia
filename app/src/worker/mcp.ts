@@ -209,10 +209,17 @@ export function createDurableObjectSessionAdapter(
 }
 
 const sampleIds = MCP_SAMPLE_IDS as [string, ...string[]];
-const sessionIdSchema = z.uuid().describe('The UUID in a Keyboardia /s/{session_id} URL.');
+const sessionIdSchema = z.uuid().describe(
+  'The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL.'
+);
 const trackIdSchema = z.string()
   .regex(TRACK_ID_PATTERN)
-  .describe('A caller-chosen stable ID. Reuse it when retrying add_track.');
+  .describe(
+    'For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session.'
+  );
+const sampleIdSchema = z.enum(sampleIds).describe(
+  'The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.'
+);
 
 const editSchema = z.object({
   session_id: sessionIdSchema,
@@ -220,20 +227,26 @@ const editSchema = z.object({
     z.object({
       operation: z.literal('add_track'),
       track_id: trackIdSchema,
-      sample_id: z.enum(sampleIds),
-      name: z.string().trim().min(1).max(MAX_TRACK_NAME_LENGTH).optional(),
-    }).strict(),
+      sample_id: sampleIdSchema,
+      name: z.string().trim().min(1).max(MAX_TRACK_NAME_LENGTH).optional()
+        .describe('Optional display name. The instrument name is used when omitted.'),
+    }).strict().describe(
+      'Add one track. Retrying the same track_id and definition is a no-op; a conflicting reuse is rejected.'
+    ),
     z.object({
       operation: z.literal('set_track_instrument'),
       track_id: trackIdSchema,
-      sample_id: z.enum(sampleIds),
-    }).strict(),
+      sample_id: sampleIdSchema,
+    }).strict().describe(
+      'Replace only an existing track\'s sound source while preserving its name, pattern, mix, and timing.'
+    ),
     z.object({
       operation: z.literal('set_steps'),
       track_id: trackIdSchema,
       changes: z.array(z.object({
-        step: z.number().int().min(0).max(MAX_STEPS - 1),
-        value: z.boolean(),
+        step: z.number().int().min(0).max(MAX_STEPS - 1)
+          .describe('Zero-based step index. It must be within this track\'s current step_count.'),
+        value: z.boolean().describe('true activates the step; false clears it.'),
       }).strict()).min(1).max(MAX_STEPS).superRefine((changes, context) => {
         const seen = new Set<number>();
         for (const change of changes) {
@@ -245,14 +258,17 @@ const editSchema = z.object({
           }
           seen.add(change.step);
         }
-      }),
-    }).strict(),
+      }).describe('Assignments for named steps only. Every unmentioned step is preserved.'),
+    }).strict().describe(
+      'Change only the listed steps on an existing track. Read get_session first to obtain its track_id and step_count.'
+    ),
     z.object({
       operation: z.literal('set_tempo'),
-      tempo: z.number().min(MIN_TEMPO).max(MAX_TEMPO),
-    }).strict(),
-  ]),
-}).strict();
+      tempo: z.number().min(MIN_TEMPO).max(MAX_TEMPO)
+        .describe(`Session tempo in beats per minute (${MIN_TEMPO}-${MAX_TEMPO}).`),
+    }).strict().describe('Set the session-wide tempo without changing any track.'),
+  ]).describe('Exactly one narrow session edit.'),
+}).strict().describe('The target session and one retry-safe edit to apply.');
 
 const idempotencyKeySchema = z.uuid().describe(
   'A UUID you generate for this creation attempt. Reusing it returns the session the first attempt created instead of making another one.'
@@ -261,7 +277,8 @@ const idempotencyKeySchema = z.uuid().describe(
 const sessionNameSchema = z.string().trim().min(1).max(MAX_SESSION_NAME_LENGTH)
   .describe('Optional display name for the new session.');
 
-const tempoSchema = z.number().min(MIN_TEMPO).max(MAX_TEMPO);
+const tempoSchema = z.number().min(MIN_TEMPO).max(MAX_TEMPO)
+  .describe(`Tempo in beats per minute (${MIN_TEMPO}-${MAX_TEMPO}).`);
 
 function toolSuccess(session: CompactMcpSession) {
   return {
@@ -336,6 +353,13 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
   const server = new McpServer({
     name: 'keyboardia',
     version: '1.0.0',
+  }, {
+    instructions: [
+      'Read an existing session with get_session before editing it.',
+      'Step indexes are zero-based; preserve every track and step the user did not ask to change.',
+      'For add_track, choose a stable unique track_id and reuse it on retry. For set_steps and set_track_instrument, use a track_id returned by get_session.',
+      'Only publish when the user explicitly asks. A session UUID grants the same access as its share URL, so do not expose it unnecessarily.',
+    ].join(' '),
   });
 
   server.registerTool(
@@ -374,7 +398,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       inputSchema: editSchema,
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: false,
       },
@@ -400,7 +424,8 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       inputSchema: z.object({
         idempotency_key: idempotencyKeySchema,
         name: sessionNameSchema.optional(),
-        tempo: tempoSchema.optional().describe('Starting tempo in BPM. Defaults to Keyboardia\'s own default.'),
+        tempo: tempoSchema.optional()
+          .describe('Starting tempo in BPM. Defaults to Keyboardia\'s own default.'),
       }).strict(),
       annotations: {
         readOnlyHint: false,

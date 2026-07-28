@@ -81,8 +81,9 @@ The [Microsoft App Service article](https://techcommunity.microsoft.com/blog/app
 is useful deployment commentary, but the MCP project documents above are the
 protocol authorities.
 
-The v2 SDK is still a beta dependency. Before production deployment, update to
-the final compatible release and rerun the protocol tests.
+The server and test client are pinned to the stable v2.0.0 SDK. Protocol tests
+exercise both the official client transport and raw modern requests so an SDK
+upgrade cannot silently fall back to the legacy negotiation path.
 
 ## 3. Access and user exposure
 
@@ -157,6 +158,11 @@ interface EditSessionInput {
 
 Every successful call returns the same compact current-session shape as
 `get_session`.
+
+The tool is annotated `destructiveHint: true`: although each operation is
+narrow and retry-safe, clearing a step, overwriting an instrument, or changing
+tempo can destroy a value the user cares about. Clients must not interpret
+idempotence as non-destructiveness.
 
 #### `add_track`
 
@@ -506,6 +512,17 @@ endpoint. The route is matched before Keyboardia's `/api/` response decoration
 and the SDK emits bare protocol responses, so these headers are applied at the
 route itself.
 
+A browser `Origin` is validated against the requested deployment before rate
+limiting, body reads, or SDK loading. Production accepts only the production
+and www origins; staging accepts itself plus those higher-trust production
+origins; a local target accepts loopback origins on any port; and an HTTPS
+preview accepts only its exact own origin. In particular, staging and localhost
+never gain write access to production. Successful browser responses reflect
+the canonical trusted origin and include `Vary: Origin`; they never use wildcard
+CORS. Opaque (`Origin: null`), malformed, insecure production, and foreign
+origins receive HTTP 403 with a JSON-RPC error. Non-browser MCP clients normally
+omit `Origin` and are unaffected.
+
 ## 6. Errors and unsupported work
 
 Application errors return MCP tool errors without mutation. The full set is
@@ -523,7 +540,7 @@ Unsupported operations are not advertised and do not have placeholder
 handlers:
 
 - calling an unknown tool receives the standard MCP unknown-tool error;
-- supplying an edit other than the three schema variants receives the
+- supplying an edit other than the four schema variants receives the
   standard invalid-parameters error;
 - there is no custom `unsupported_for_now` response matrix.
 
@@ -536,7 +553,7 @@ This is smaller and gives agents an exact capability description through
 |---|---|
 | HTTP MCP protocol | Official `@modelcontextprotocol/server` v2 handler |
 | Tool definitions and DO adapter | `app/src/worker/mcp.ts` |
-| Compact representation and three pure edits | `app/src/worker/mcp-edits.ts` |
+| Compact representation and four pure edits | `app/src/worker/mcp-edits.ts` |
 | Endpoint routing | `app/src/worker/index.ts` |
 | Serialization, persistence, immutable check, browser broadcast | `app/src/worker/live-session.ts` |
 | Instrument enum | Existing `VALID_SAMPLE_IDS` |
@@ -565,14 +582,27 @@ An eval runner:
 5. passes baseline, result, and expectation to
    `scoreMcpRhythmResult()`.
 
-The initial cases cover:
+The cases cover:
 
 - adding a four-on-the-floor kick and setting tempo;
-- adding a rhythm while preserving an existing collaborator's track.
+- adding a rhythm while preserving an existing collaborator's track;
+- editing and clearing steps on specifically named existing tracks;
+- clearing a track's last active step to a valid silent pattern;
+- changing tempo without touching the pattern; and
+- creating two different patterns with the same instrument.
 
-The scorer measures tempo, required instrument presence, active-step F1, and
-explicit preservation. An agent cannot get a perfect score by creating the
-requested part while deleting somebody else's work.
+Every case carries its explicit starting tempo and tracks, so a runner does not
+have to reverse-engineer setup from the expected output. Fixture validation
+rejects invalid instruments, duplicate IDs, impossible steps and loop lengths,
+and objectives that make no reachable change. Expectations distinguish new
+tracks from named existing tracks, so an additive task cannot claim work that
+was already present. The scorer uses a globally optimal one-to-one assignment,
+measures active-step F1 and step count independently, rejects extra tracks as
+litter, and automatically protects every baseline track, track order, unnamed
+step, and unnamed tempo value. Safety checks do not award positive objective
+credit. Session replacement, publication, duplicate IDs, or unrequested damage
+is a hard failure with a diagnostic reason; an agent cannot trade collaborator
+damage for a high musical average.
 
 Run the protocol, collaboration, and scorer checks with:
 
@@ -643,10 +673,20 @@ cd app
 npm run smoke:mcp:staging
 npm run smoke:mcp:production
 npm run smoke:mcp -- http://localhost:8787          # against wrangler dev
+npm run smoke:mcp -- http://localhost:8787 --browser-origin https://keyboardia.dev
 ```
 
-It exits non-zero on any failure, so it can gate a deploy. Run it against
-staging, then production, after every deployment that touches the MCP surface.
+Wrangler may expose a configured custom-domain route in `request.url` even
+while listening on localhost. In that mode, pass `--browser-origin` to name an
+origin trusted by that configured deployment; the smoke still sends traffic to
+the local base URL and never mutates the remote deployment.
+
+It exits non-zero on any failure, so it gates the repository's deploy commands.
+`npm run deploy` runs the MCP contract tests, builds, deploys staging, and then
+smokes staging. The production command discloses that whole sequence and asks
+for a `staging` confirmation before the first mutation. Only after staging is
+green does it disclose the production mutation and require a separate
+`production` confirmation before promoting the same checkout and smoking it.
 
 The journey is section 9's onboarding path with the acceptance criteria that
 can only be checked against real infrastructure:
@@ -654,8 +694,10 @@ can only be checked against real infrastructure:
 1. the target answers `/api/health`, and `POST /mcp` is not a 404 — that
    specific failure is reported as "merged but not deployed" rather than
    surfacing later as a protocol error;
-2. CORS headers are present on a **successful exchange**, and
-   `MCP-Protocol-Version` is in the expose list;
+2. a real cross-origin `OPTIONS` request allows every modern MCP request header,
+   a successful modern `server/discover` exchange reflects the same exact
+   origin, `MCP-Protocol-Version` is exposed, and `Origin: null` is rejected
+   with HTTP 403 before protocol parsing;
 3. the official client negotiates `2026-07-28` with an explicit pin, and no
    response carries `Mcp-Session-Id`;
 4. `tools/list` advertises exactly the v1 surface, with the instrument enum in
@@ -728,8 +770,9 @@ options differ more than they appear:
   which fails preflight against any server that does not allow it. Keyboardia
   deliberately does not, since it ignores the header; adding it to
   `Access-Control-Allow-Headers` would be a pure convenience for that tool.
-- **Hosted third-party inspectors** may or may not connect browser-direct.
-  Treat any of them as an unverified CORS test unless proven otherwise.
+- **Hosted third-party inspectors** are intentionally rejected in browser-direct
+  mode because their foreign origin is not trusted. A proxy mode that sends no
+  browser `Origin` still behaves like any other non-browser MCP client.
 - The official **`@modelcontextprotocol/client` bundles and runs in a browser**.
   Its `browser` export condition selects a `new Function`-free schema validator
   in place of ajv, which also keeps it inside Keyboardia's CSP. A Playwright
@@ -856,8 +899,10 @@ gaps in the shipped surface.
 - [x] **Guard `/mcp` before parsing.** Done, in
   `app/src/worker/mcp-guard.ts`. Non-POST is rejected with 405 and `Allow: POST`,
   an oversized declared or measured body with 413, and a non-JSON content type
-  with 415. Chunked bodies are read through a bounded stream and cancelled as
-  soon as they cross the limit. The guard runs before the dynamic
+  with 415. Present browser origins are checked against the trusted origin set;
+  opaque, malformed, insecure production, and foreign origins return 403.
+  Chunked bodies are read through a bounded stream and cancelled as soon as
+  they cross the limit. The guard runs before the dynamic
   `import('./mcp')`, so a rejected request never evaluates the SDK, zod, or the
   schema validator, and never reaches a Durable Object or KV. It must not import
   `./mcp`, or the dynamic import stops buying anything.
@@ -1039,10 +1084,12 @@ stop and reconsider whether Keyboardia already has the required primitive.
 - An unexpected failure returns a fixed `INTERNAL_ERROR` message and never the
   underlying error text.
 - An agent-only edit leaves KV consistent with Durable Object storage.
-- `/mcp` responses carry CORS headers and expose `MCP-Protocol-Version`.
+- Trusted `/mcp` browser responses reflect the exact origin, expose
+  `MCP-Protocol-Version`, and invalid or opaque origins receive 403.
 - The MCP SDK is not evaluated on cold starts that never serve `/mcp`.
-- The eval scorer penalizes loss of a preserved collaborator track, and cannot
-  be gamed by scattering duplicate near-miss tracks.
+- The eval scorer hard-fails unrequested baseline damage, uses globally optimal
+  one-to-one matching, and cannot be gamed by scattering duplicate near-miss
+  tracks.
 - Every shipped eval case is exercised against the scorer and the real
   instrument catalog, tempo range, and default loop length.
 - The documented version 1 tools and edit operations match `tools/list`.

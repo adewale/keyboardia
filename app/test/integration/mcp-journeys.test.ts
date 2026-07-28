@@ -425,12 +425,15 @@ describe('MCP v1 onboarding journeys', () => {
   });
 
   it('answers browser MCP clients with usable CORS headers', async () => {
+    const browserOrigin = 'http://localhost:5173';
     const seen: Array<{ status: number; allowOrigin: string | null; expose: string | null }> = [];
     const transport = new StreamableHTTPClientTransport(
       new URL('http://localhost/mcp'),
       {
         fetch: async (input, init) => {
-          const response = await SELF.fetch(input as RequestInfo, init);
+          const request = new Request(input, init);
+          request.headers.set('Origin', browserOrigin);
+          const response = await SELF.fetch(request);
           seen.push({
             status: response.status,
             allowOrigin: response.headers.get('Access-Control-Allow-Origin'),
@@ -453,19 +456,20 @@ describe('MCP v1 onboarding journeys', () => {
     expect(seen.length).toBeGreaterThan(0);
     for (const exchange of seen) {
       expect(exchange.status).toBeLessThan(400);
-      expect(exchange.allowOrigin).toBe('*');
+      expect(exchange.allowOrigin).toBe(browserOrigin);
       expect(exchange.expose).toContain('MCP-Protocol-Version');
     }
 
     const preflight = await SELF.fetch('http://localhost/mcp', {
       method: 'OPTIONS',
       headers: {
-        Origin: 'https://agent.example',
+        Origin: browserOrigin,
         'Access-Control-Request-Method': 'POST',
         'Access-Control-Request-Headers': 'content-type,mcp-protocol-version',
       },
     });
-    expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe(browserOrigin);
     expect(preflight.headers.get('Access-Control-Allow-Headers'))
       .toContain('MCP-Protocol-Version');
   });
@@ -477,7 +481,7 @@ describe('MCP endpoint guards', () => {
 
     expect(response.status).toBe(405);
     expect(response.headers.get('Allow')).toBe('POST');
-    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
     expect(await response.json()).toMatchObject({ code: 'METHOD_NOT_ALLOWED' });
   });
 
@@ -491,6 +495,25 @@ describe('MCP endpoint guards', () => {
     expect(response.status).toBe(415);
     expect(await response.json()).toMatchObject({ code: 'UNSUPPORTED_MEDIA_TYPE' });
   });
+
+  it.each(['null', 'https://agent.example'])(
+    'rejects browser Origin %s with 403 before the SDK runs',
+    async (origin) => {
+      const response = await SELF.fetch('http://localhost/mcp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Origin: origin },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+      });
+
+      expect(response.status).toBe(403);
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+      expect(await response.json()).toMatchObject({
+        jsonrpc: '2.0',
+        error: { code: -32000 },
+        id: null,
+      });
+    }
+  );
 
   it('rejects an oversized declared body with 413', async () => {
     const response = await SELF.fetch('http://localhost/mcp', {

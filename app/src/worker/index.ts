@@ -32,7 +32,7 @@ import {
 } from './observability';
 import { matchRoute, extractSessionId } from './route-patterns';
 import { isSessionPagePath } from './routing';
-import { guardMcpRequest } from './mcp-guard';
+import { guardMcpRequest, mcpCorsHeaders, validateMcpOrigin } from './mcp-guard';
 
 // State hashing utilities (still needed for debug endpoints)
 import {
@@ -88,6 +88,7 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
+    const isMcpPath = path === '/mcp' || path === '/mcp/';
 
     // CORS headers for API requests
     const corsHeaders = {
@@ -96,15 +97,13 @@ export default {
       'Access-Control-Allow-Headers': 'Content-Type, Accept, MCP-Protocol-Version, MCP-Method, MCP-Name, Mcp-Session-Id, Last-Event-ID',
     };
 
-    // Browser MCP clients read the negotiated revision off the response, and
-    // cross-origin JavaScript cannot see a header unless it is exposed.
-    const mcpCorsHeaders = {
-      ...corsHeaders,
-      'Access-Control-Expose-Headers': 'MCP-Protocol-Version, Mcp-Session-Id',
-    };
-
     // Handle CORS preflight
     if (request.method === 'OPTIONS') {
+      if (isMcpPath) {
+        const rejected = validateMcpOrigin(request);
+        if (rejected) return rejected;
+        return new Response(null, { status: 204, headers: mcpCorsHeaders(request) });
+      }
       return new Response(null, { headers: corsHeaders });
     }
 
@@ -137,10 +136,12 @@ export default {
     // and the schema validator) is evaluated only in isolates that actually
     // serve /mcp, instead of on every cold start behind a session page or a
     // WebSocket upgrade.
-    if (path === '/mcp' || path === '/mcp/') {
+    if (isMcpPath) {
       const clientIP = request.headers.get('CF-Connecting-IP');
-      let mcpResponse: Response | undefined;
-      if (clientIP) {
+      // Origin validation is a transport requirement and is intentionally
+      // cheaper than rate limiting, body reads, and the dynamic SDK import.
+      let mcpResponse: Response | undefined = validateMcpOrigin(request);
+      if (!mcpResponse && clientIP) {
         const decision = checkRateLimit('mcpRequest', clientIP, resolveRateLimit(env, 'mcpRequest'));
         if (!decision.allowed) {
           mcpResponse = new Response(JSON.stringify({
@@ -174,7 +175,7 @@ export default {
       // the /api/ block that decorates responses, so CORS is applied here or
       // not at all. Rebuilding the response preserves streamed SSE bodies.
       const headers = new Headers(mcpResponse.headers);
-      for (const [header, value] of Object.entries(mcpCorsHeaders)) {
+      for (const [header, value] of mcpCorsHeaders(request)) {
         headers.set(header, value);
       }
       return new Response(mcpResponse.body, {

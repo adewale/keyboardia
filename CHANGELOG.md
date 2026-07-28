@@ -16,6 +16,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Stateless MCP compliance and eval hardening (July 2026)
+
+**Fixed:**
+- Browser authorization is deployment-scoped: staging and loopback origins can
+  no longer write to production, while previews trust only their exact origin.
+- `edit_session` now advertises its destructive potential, and the tool schema
+  gives instrument changes the same canonical enum and guidance as track adds.
+- The deployment smoke sends a modern `server/discover`, exercises a genuine
+  cross-origin preflight, and verifies every required request/response header.
+- Production promotion now requires separate confirmations before staging and
+  production mutations, with the green staging result disclosed between them.
+
+**Changed:**
+- MCP server and client dependencies are pinned to the stable v2.0.0 SDK.
+- Rhythm evals distinguish new from existing track objectives, validate that
+  every fixture is reachable, include clear-to-silence coverage, and hard-fail
+  collateral edits, extra tracks, duplicate IDs, or reordered baseline work.
+- Preservation checks no longer inflate objective scores, so a safe no-op earns
+  zero on an unfinished one-step edit.
+
 #### Change Instrument — browser, WebSocket, and MCP (July 2026)
 
 Issue [#63](https://github.com/adewale/keyboardia/issues/63). Full design and

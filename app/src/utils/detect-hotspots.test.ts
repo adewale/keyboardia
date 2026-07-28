@@ -67,8 +67,16 @@ describe('detect-main-thread-hotspots script', { timeout: 60000 }, () => {
 
     if (run.status === 1) {
       expect(run.stdout).toContain('potential hotspot');
-    } else {
-      expect(run.stdout).toContain('No hotspots detected.');
+      expect(run.stdout).toMatch(/Summary: [1-9]\d* high,/);
+      return;
+    }
+
+    // A zero exit means there are no high-severity findings. Medium/low
+    // findings are still reported, so both a completely clean report and a
+    // report whose summary starts with zero high findings are valid.
+    if (!run.stdout.includes('No hotspots detected.')) {
+      expect(run.stdout).toContain('potential hotspot');
+      expect(run.stdout).toMatch(/Summary: 0 high, \d+ medium, \d+ low/);
     }
   });
 
