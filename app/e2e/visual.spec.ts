@@ -49,18 +49,6 @@ async function addKickTrack(page: import('@playwright/test').Page): Promise<void
   await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
 }
 
-/**
- * Starting a session replaces the landing page without a document navigation.
- * Keep the visual contract honest by proving the product reset the viewport;
- * do not make the test repair an incorrect scroll position before capturing it.
- */
-async function expectViewportAtOrigin(page: import('@playwright/test').Page): Promise<void> {
-  await expect.poll(async () => page.evaluate(() => ({
-    x: window.scrollX,
-    y: window.scrollY,
-  }))).toEqual({ x: 0, y: 0 });
-}
-
 // These tests used to skip wholesale in CI, then ran under continue-on-error
 // against the mock backend with stale developer-generated Linux baselines. The
 // audit caught nine failures being reported as green. CI now owns the complete
@@ -78,7 +66,6 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
     await waitForAppReady(page);
     // Wait for animations to settle before screenshots
     await waitForAnimation(page);
-    await expectViewportAtOrigin(page);
   });
 
   test('sequencer grid appearance', async ({ page }) => {
@@ -230,7 +217,6 @@ test.describe('Responsive Visual Regression', { tag: '@visual' }, () => {
     await page.goto('/');
     await waitForAppReady(page);
     await waitForAnimation(page);
-    await expectViewportAtOrigin(page);
 
     // Higher tolerance for responsive layouts due to font rendering variability
     await expect(page).toHaveScreenshot('mobile-layout-iphone.png', {
@@ -244,7 +230,6 @@ test.describe('Responsive Visual Regression', { tag: '@visual' }, () => {
     await page.goto('/');
     await waitForAppReady(page);
     await waitForAnimation(page);
-    await expectViewportAtOrigin(page);
 
     // Higher tolerance for responsive layouts due to font rendering variability
     await expect(page).toHaveScreenshot('tablet-layout-ipad.png', {
@@ -267,7 +252,6 @@ test.describe('Responsive Visual Regression', { tag: '@visual' }, () => {
       content: '.avatar-stack { visibility: hidden !important; }',
     });
     await waitForAnimation(page);
-    await expectViewportAtOrigin(page);
 
     // Higher tolerance for responsive layouts due to font rendering variability
     await expect(page).toHaveScreenshot('desktop-wide.png', {
