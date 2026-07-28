@@ -144,6 +144,68 @@ describe('runtime boundary scanner', () => {
       'export const View = () => <div />;',
       'view.jsx',
     )).toEqual([{ specifier: 'react/jsx-runtime', typeOnly: false }]);
+
+    expect(extractModuleImports(`
+      /** @jsxImportSource tone */
+      export const View = () => <div />;
+    `, 'worker-view.tsx')).toEqual([
+      { specifier: 'tone/jsx-runtime', typeOnly: false },
+    ]);
+
+    expect(extractModuleImports(`
+      /** @jsxRuntime classic */
+      export const View = () => <div />;
+    `, 'classic-view.tsx')).toEqual([]);
+  });
+
+  it('classifies package asset subpaths as both package and resource capabilities', () => {
+    const graph = scanProductionGraph(SRC_ROOT, {
+      sourceOverrides: new Map([
+        ['shared/constants.ts', "import 'midi-writer-js/package.json';"],
+      ]),
+    });
+
+    expect(graph.externalImports).toContainEqual({
+      importer: 'shared/constants.ts',
+      specifier: 'midi-writer-js/package.json',
+      typeOnly: false,
+    });
+    expect(graph.resourceImports).toContainEqual({
+      importer: 'shared/constants.ts',
+      specifier: 'midi-writer-js/package.json',
+    });
+    expect(findResourceImportViolations({
+      policyName: 'Shared resources',
+      imports: graph.resourceImports,
+      appliesTo: module => module === 'shared/constants.ts',
+    })).toContain(
+      'Shared resources: shared/constants.ts -> resource:midi-writer-js/package.json',
+    );
+  });
+
+  it('rejects a Worker JSX pragma that selects an unapproved runtime package', () => {
+    const graph = scanProductionGraph(SRC_ROOT, {
+      sourceOverrides: new Map([
+        ['worker/og-image.tsx', `
+          /** @jsxImportSource tone */
+          export const Image = () => <div />;
+        `],
+      ]),
+    });
+
+    expect(graph.externalImports).toContainEqual({
+      importer: 'worker/og-image.tsx',
+      specifier: 'tone/jsx-runtime',
+      typeOnly: false,
+    });
+    expect(findExternalImportViolations({
+      policyName: 'Worker packages',
+      imports: graph.externalImports,
+      appliesTo: module => module.startsWith('worker/'),
+      isAllowed: specifier => specifier === 'react' || specifier.startsWith('react/'),
+    })).toContain(
+      'Worker packages: worker/og-image.tsx -> package:tone/jsx-runtime',
+    );
   });
 
   it('makes Vite module references loud when their target cannot be statically resolved', () => {
@@ -255,8 +317,19 @@ describe('runtime boundary scanner', () => {
       new BrowserWorker('/worker.js');
       const { Worker: SelfWorker } = self;
       new SelfWorker('/self-worker.js');
+      const root = globalThis;
+      root.document.title = 'ready';
+      (globalThis as unknown as { window: Window }).window.location;
+      let AssignedWorker;
+      ({ Worker: AssignedWorker } = globalThis);
+      function createWorker({ Worker: DefaultWorker } = globalThis) {
+        return new DefaultWorker('/default-worker.js');
+      }
       new OfflineAudioContext(2, 128, 44100);
       new SharedWorker('/shared-worker.js');
+      new Audio('/sample.mp3');
+      new XMLHttpRequest();
+      new DOMParser();
       indexedDB.open('session');
       void location.href;
       const { navigator: nav } = source;
@@ -267,8 +340,15 @@ describe('runtime boundary scanner', () => {
       'window',
       'Worker',
       'self',
+      'globalThis',
+      'globalThis',
+      'globalThis',
+      'globalThis',
       'OfflineAudioContext',
       'SharedWorker',
+      'Audio',
+      'XMLHttpRequest',
+      'DOMParser',
       'indexedDB',
       'location',
     ]);

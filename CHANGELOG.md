@@ -30,17 +30,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Added (regression proof):**
 - Runtime boundary tests parse the TypeScript AST, use bundler-equivalent module
   resolution (including `.js` to `.ts`, Vite Worker query specifiers, and
-  `new URL(..., import.meta.url)` Worker references), account for compiler-emitted
-  JSX runtime imports, fail on unresolved or excluded code imports, record package
-  and resource edges, ignore comments and strings, and enforce explicit Worker,
-  shared, music, and state capabilities across closed transitive graphs. State
-  policies carry package and resource capabilities through intermediary modules.
+  `new URL(..., import.meta.url)` Worker references), derive compiler-emitted
+  module imports from TypeScript itself (including per-file JSX pragmas), fail on
+  unresolved or excluded code imports, classify package asset subpaths as both
+  package and resource capabilities, ignore comments and strings, and enforce
+  explicit Worker, shared, music, and state capabilities across closed transitive
+  graphs. State policies carry those capabilities through intermediary modules.
 - Runtime safety uses symbol-aware AST checks over every neutral-owned module,
-  catching browser APIs in callbacks, constructors, getters, IIFEs, computed
-  and destructured `globalThis` properties without mistaking runtime locals,
-  binding property names, or erased ambient declarations for shadows. Neutral
-  modules reject every unapproved `import.meta` capability, including Vite glob
-  loading, rather than relying on incomplete alias tainting.
+  deriving browser-only runtime values by subtracting installed workerd globals
+  from TypeScript's DOM/Worker libraries. It catches browser APIs in callbacks,
+  constructors, getters, and IIFEs without mistaking runtime locals, binding
+  property names, or erased ambient declarations for shadows. Neutral modules
+  reject unapproved global-object access and every `import.meta` capability,
+  including Vite glob loading, rather than relying on incomplete alias tainting.
 - A real Chromium test constructs `midiExport.worker.ts`, receives its response,
   downloads the result, and verifies a non-trivial Standard MIDI `MThd` header.
 - The real-Wrangler MCP lifecycle now invokes `export_midi` and validates its

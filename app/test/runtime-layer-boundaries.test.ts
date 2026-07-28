@@ -58,6 +58,11 @@ describe('runtime dependency boundaries', () => {
       imported: 'audio/midiExport.worker.ts',
       typeOnly: false,
     });
+    expect(graph.externalImports).toContainEqual({
+      importer: 'worker/og-image.tsx',
+      specifier: 'react/jsx-runtime',
+      typeOnly: false,
+    });
     expect(graph.parseFailures).toEqual([]);
     expect(graph.unresolvedRelativeImports).toEqual([]);
     expect(graph.unanalyzableModuleReferences).toEqual([]);

@@ -1,5 +1,5 @@
 import { readFileSync, readdirSync } from 'node:fs';
-import { extname, relative, resolve } from 'node:path';
+import { dirname, extname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
 
@@ -161,15 +161,18 @@ function isImportMetaProperty(
     && stringLiteralText(node.argumentExpression) === property;
 }
 
-function jsxRuntimeSpecifier(
-  sourceFile: ts.SourceFile,
+function compilerEmittedModuleSpecifiers(
+  source: string,
+  fileName: string,
   compilerOptions: ts.CompilerOptions,
-): string | null {
-  if (compilerOptions.jsx !== ts.JsxEmit.ReactJSX
-    && compilerOptions.jsx !== ts.JsxEmit.ReactJSXDev) {
-    return null;
-  }
-
+): string[] {
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKindFor(fileName),
+  );
   let containsJsx = false;
   const findJsx = (node: ts.Node): void => {
     if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) {
@@ -179,13 +182,36 @@ function jsxRuntimeSpecifier(
     ts.forEachChild(node, findJsx);
   };
   findJsx(sourceFile);
-  if (!containsJsx) return null;
+  if (!containsJsx && !compilerOptions.importHelpers) return [];
 
-  const source = (compilerOptions.jsxImportSource ?? 'react').replace(/\/$/, '');
-  const runtime = compilerOptions.jsx === ts.JsxEmit.ReactJSXDev
-    ? 'jsx-dev-runtime'
-    : 'jsx-runtime';
-  return `${source}/${runtime}`;
+  const result = ts.transpileModule(source, {
+    compilerOptions: {
+      ...compilerOptions,
+      allowImportingTsExtensions: false,
+      declaration: false,
+      emitDeclarationOnly: false,
+      inlineSourceMap: false,
+      noEmit: false,
+      sourceMap: false,
+    },
+    fileName,
+    reportDiagnostics: false,
+  });
+  const emitted = ts.createSourceFile(
+    `${fileName}.emitted.js`,
+    result.outputText,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.JS,
+  );
+  const specifiers: string[] = [];
+  for (const statement of emitted.statements) {
+    if (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) {
+      const specifier = stringLiteralText(statement.moduleSpecifier);
+      if (specifier !== null) specifiers.push(specifier);
+    }
+  }
+  return specifiers;
 }
 
 /** Extracts real module references from the TypeScript syntax tree. */
@@ -244,7 +270,15 @@ export function extractModuleImports(
   };
 
   visit(sourceFile);
-  add(jsxRuntimeSpecifier(sourceFile, compilerOptionsFor(fileName)), false);
+  for (const specifier of compilerEmittedModuleSpecifiers(
+    source,
+    fileName,
+    compilerOptionsFor(fileName),
+  )) {
+    if (!imports.some(edge => edge.specifier === specifier && !edge.typeOnly)) {
+      add(specifier, false);
+    }
+  }
   return imports;
 }
 
@@ -392,6 +426,9 @@ export function scanProductionGraph(
           specifier: importedReference.specifier,
           typeOnly: importedReference.typeOnly,
         });
+        if (!importedReference.typeOnly && isResourceSpecifier(importedReference.specifier)) {
+          resourceImports.push({ importer, specifier: importedReference.specifier });
+        }
         continue;
       }
 
@@ -538,29 +575,56 @@ export function findResourceImportViolations(policy: ResourceImportPolicy): stri
     .sort();
 }
 
+function ambientRuntimeValues(fileName: string): Set<string> {
+  const source = readFileSync(fileName, 'utf8');
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    ts.ScriptKind.TS,
+  );
+  const values = new Set<string>();
+  for (const statement of sourceFile.statements) {
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (ts.isIdentifier(declaration.name)) values.add(declaration.name.text);
+      }
+      continue;
+    }
+    if ((ts.isFunctionDeclaration(statement)
+        || ts.isClassDeclaration(statement)
+        || ts.isEnumDeclaration(statement))
+      && statement.name) {
+      values.add(statement.name.text);
+    }
+  }
+  return values;
+}
+
+function browserGlobalsUnavailableInWorkerd(): Set<string> {
+  const typescriptLib = dirname(ts.getDefaultLibFilePath(APP_COMPILER_OPTIONS));
+  const browserGlobals = new Set([
+    ...ambientRuntimeValues(resolve(typescriptLib, 'lib.dom.d.ts')),
+    ...ambientRuntimeValues(resolve(typescriptLib, 'lib.webworker.d.ts')),
+  ]);
+  const workerdGlobals = ambientRuntimeValues(resolve(
+    APP_ROOT,
+    'node_modules/@cloudflare/workers-types/index.d.ts',
+  ));
+  return new Set([...browserGlobals].filter(global => !workerdGlobals.has(global)));
+}
+
 const BROWSER_GLOBALS = new Set([
-  'AudioContext',
-  'OfflineAudioContext',
-  'AudioWorkletNode',
-  'HTMLAnchorElement',
-  'HTMLElement',
-  'Image',
-  'MediaRecorder',
-  'MutationObserver',
-  'ResizeObserver',
-  'SharedWorker',
-  'Worker',
-  'cancelAnimationFrame',
-  'document',
-  'indexedDB',
-  'localStorage',
-  'location',
-  'navigator',
+  ...browserGlobalsUnavailableInWorkerd(),
+  // No neutral-owned module currently has an approved reason to inspect a
+  // global object. Rejecting the roots makes aliases and expression wrappers
+  // safe without fragile property-taint propagation.
+  'globalThis',
   'self',
-  'sessionStorage',
+  // Safari's legacy constructor is not declared by TypeScript's standard DOM
+  // library but remains a browser-only runtime value.
   'webkitAudioContext',
-  'window',
-  'requestAnimationFrame',
 ]);
 
 export interface BrowserGlobalReference {

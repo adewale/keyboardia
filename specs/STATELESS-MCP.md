@@ -316,8 +316,8 @@ and the snapshot's cached social previews are purged, as in the REST route.
 }
 ```
 
-Runs the same `exportToMidi()` behind the browser's Export MIDI button, so
-identical state yields identical bytes. The session is not modified. Output:
+Calls the runtime-neutral `encodeMidi()` core used by the browser export adapter,
+so identical state yields identical bytes. The session is not modified. Output:
 
 ```json
 {
@@ -421,9 +421,9 @@ See [Lesson 50](../docs/LESSONS-LEARNED.md).
 
 The boundary suite parses TypeScript syntax, resolves imports with the same
 bundler semantics as the application (including Vite URL Worker references and
-compiler-emitted JSX runtime imports), rejects unresolved code imports, and
-checks every Worker/shared/music entry transitively. Runtime-neutral modules
-reject unapproved browser globals and every `import.meta` capability;
+TypeScript-emitted imports selected by per-file JSX pragmas), rejects unresolved
+code imports, and checks every Worker/shared/music entry transitively.
+Runtime-neutral modules reject unapproved browser globals and every `import.meta` capability;
 `worker-runtime-safety.test.ts` separately rejects module-evaluation browser
 globals throughout the real Worker entry graph. A dry Worker bundle and a
 running `wrangler dev` remain the final runtime proof.
