@@ -480,7 +480,7 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const { stats } = JSON.parse(fs.readFileSync('test-results/real-backend-results.json', 'utf8'));
-          const expected = { expected: 199, skipped: 17, flaky: 0, unexpected: 0 };
+          const expected = { expected: 200, skipped: 17, flaky: 0, unexpected: 0 };
           const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error(`Real-backend Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
