@@ -135,7 +135,7 @@
 .expand-toggle { grid-column: pitch-view; }
 .velocity-toggle { grid-column: velocity; }
 /*
- * Two invariants, both learned the hard way (docs/LESSONS-LEARNED.md 45, 46):
+ * Two invariants, both learned the hard way (docs/LESSONS-LEARNED.md 61, 62):
  *
  * 1. Every child of .track-left MUST have an explicit grid-column. The template
  *    is fully allocated, so an unplaced child is auto-placed into an implicit
@@ -1695,7 +1695,7 @@
 .instrument-toggle {
   /* 24px, not the siblings' 36px: the column is funded entirely from
      measured slack (name 100→80, badge 36→28) so .track-left stays 508px and
-     no existing control changes size. See lesson 46. */
+     no existing control changes size. See lesson 62. */
   width: 24px;
   height: 36px;
   padding: 0;

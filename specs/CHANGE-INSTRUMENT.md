@@ -279,7 +279,7 @@ Each of these was identified in the existing code before implementation.
     jsdom computes no layout, so no component test could see it, and the
     screenshot baselines load a session with zero tracks. Fixed by adding an
     `[instrument]` column; the stylesheet now states the invariant where the
-    assignments live. See docs/LESSONS-LEARNED.md lesson 45.
+    assignments live. See docs/LESSONS-LEARNED.md lesson 61.
 
 12. **Widening the track row breaking drag during playback.** The third
     unpredicted one. With the row height restored, one test still failed:
@@ -296,7 +296,7 @@ Each of these was identified in the existing code before implementation.
     40px from the name column instead kept the geometry right but made names
     overflow into the mute button — caught by a screenshot, not by a number.) Full reorder suite: 75/75, matching baseline. The underlying
     drag/auto-scroll fragility is untouched and remains a real issue; see
-    docs/LESSONS-LEARNED.md lesson 46.
+    docs/LESSONS-LEARNED.md lesson 62.
 
 13. **Reserving the new column on rows that never render the control.** Caught
     by CI's macOS visual job, which this branch had predicted would be

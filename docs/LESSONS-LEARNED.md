@@ -69,9 +69,6 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 55: A Production Fixture Is Not a Test Fixture](#lesson-55-a-production-fixture-is-not-a-test-fixture)
 - [Lesson 56: Browser Navigation Tests Must Assert Focus, Not Styling](#lesson-56-browser-navigation-tests-must-assert-focus-not-styling)
 - [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
-- [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
-- [Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row](#lesson-61-an-unplaced-child-of-a-full-grid-silently-adds-a-row)
-- [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
 - [Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row](#lesson-61-an-unplaced-child-of-a-full-grid-silently-adds-a-row)
 - [Lesson 62: Track Row Width Is Load-Bearing for Drag During Playback](#lesson-62-track-row-width-is-load-bearing-for-drag-during-playback)
 
