@@ -5,6 +5,7 @@ import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
 import {
+  addArtifact,
   buildReceipt,
   canonicalJson,
   createSourceBinding,
@@ -114,6 +115,26 @@ describe('eval receipts', () => {
       path: 'skill/SKILL.md',
       bytes: readFileSync(resolve(root, 'skill/SKILL.md')),
     }])).toThrow(/does not match/);
+  });
+
+  it('binds a patched external harness and its prepared task artifacts', () => {
+    const { root, receipt } = exampleReceipt();
+    receipt.harness.git_tree = receipt.source.git_tree;
+    receipt.harness.parent_git_commit = receipt.source.git_commit;
+    receipt.harness.patch_ref = addArtifact(receipt.artifacts, 'exact harness patch');
+    receipt.invocation.prepared_tasks_refs = [
+      addArtifact(receipt.artifacts, '{"task":"exact"}\n'),
+    ];
+    receipt.invocation.benchmark_ref = addArtifact(
+      receipt.artifacts,
+      '{"results":[]}',
+      'application/json',
+    );
+    expect(verifyReceipt(receipt, { repoRoot: root })).toEqual([]);
+
+    delete receipt.artifacts[receipt.harness.patch_ref];
+    expect(verifyReceipt(receipt, { repoRoot: root }).join('\n'))
+      .toContain('harness.patch_ref has a dangling artifact reference');
   });
 
   it('fails closed when a registered capability survives in any encoding or key', () => {

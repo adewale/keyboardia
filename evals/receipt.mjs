@@ -283,6 +283,19 @@ export function verifyReceipt(receipt, { repoRoot = null } = {}) {
   requireValue(typeof receipt.harness?.name === 'string', 'harness.name is required', errors);
   requireValue(typeof receipt.harness?.version === 'string', 'harness.version is required', errors);
   requireValue(isHex(receipt.harness?.git_commit, 40), 'harness.git_commit must be 40 lowercase hex characters', errors);
+  const harnessPatchBinding = [
+    receipt.harness?.git_tree,
+    receipt.harness?.parent_git_commit,
+    receipt.harness?.patch_ref,
+  ];
+  if (harnessPatchBinding.some((value) => value !== undefined && value !== null)) {
+    requireValue(isHex(receipt.harness?.git_tree, 40),
+      'harness.git_tree must be 40 lowercase hex characters', errors);
+    requireValue(isHex(receipt.harness?.parent_git_commit, 40),
+      'harness.parent_git_commit must be 40 lowercase hex characters', errors);
+    requireValue(typeof receipt.harness?.patch_ref === 'string',
+      'harness.patch_ref is required for a patched harness', errors);
+  }
   requireValue(typeof receipt.invocation?.suite === 'string', 'invocation.suite is required', errors);
   requireValue(Array.isArray(receipt.invocation?.models), 'invocation.models must be an array', errors);
   requireValue(Array.isArray(receipt.invocation?.adapters) && receipt.invocation.adapters.length > 0,
@@ -317,6 +330,16 @@ export function verifyReceipt(receipt, { repoRoot = null } = {}) {
       requireValue(typeof ref === 'string' && Object.hasOwn(artifacts, ref), `${label} has a dangling artifact reference`, errors);
     }
   };
+  checkRef(receipt.harness?.patch_ref, 'harness.patch_ref');
+  checkRef(receipt.invocation?.benchmark_ref, 'invocation.benchmark_ref');
+  if (receipt.invocation?.prepared_tasks_refs !== undefined) {
+    requireValue(Array.isArray(receipt.invocation.prepared_tasks_refs) &&
+      receipt.invocation.prepared_tasks_refs.length > 0,
+    'invocation.prepared_tasks_refs must be a non-empty array', errors);
+    for (const [index, ref] of (receipt.invocation.prepared_tasks_refs ?? []).entries()) {
+      checkRef(ref, `invocation.prepared_tasks_refs[${index}]`);
+    }
+  }
   requireValue(Array.isArray(receipt.runs), 'runs must be an array', errors);
   for (const [index, run] of (receipt.runs ?? []).entries()) {
     checkRef(run.prompt_ref, `runs[${index}].prompt_ref`);

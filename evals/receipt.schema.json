@@ -56,6 +56,9 @@
         "repository": { "type": "string", "minLength": 1 },
         "version": { "type": "string", "minLength": 1 },
         "git_commit": { "$ref": "#/$defs/gitObject" },
+        "git_tree": { "$ref": "#/$defs/gitObject" },
+        "parent_git_commit": { "$ref": "#/$defs/gitObject" },
+        "patch_ref": { "$ref": "#/$defs/artifactRef" },
         "mode": { "type": "string", "minLength": 1 }
       }
     },
