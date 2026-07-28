@@ -52,10 +52,10 @@ function extractExample(skill: string, name: string): Record<string, unknown> {
   return JSON.parse(fenced![1]) as Record<string, unknown>;
 }
 
-function extractMcpEndpoint(skill: string): URL {
-  const match = skill.match(/`(https:\/\/[^`\s]+\/mcp)`/);
+function extractMcpEndpoint(skill: string, discoveryUrl: string): URL {
+  const match = skill.match(/`(\/mcp)`/);
   expect(match, 'skill must publish its MCP endpoint').not.toBeNull();
-  return new URL(match![1]);
+  return new URL(match![1], discoveryUrl);
 }
 
 function extractToolNames(skill: string): string[] {
@@ -148,9 +148,9 @@ describe('Agent Skills host protocol journey', () => {
     const skillBytes = await skillResponse.arrayBuffer();
     expect(entry.digest).toBe('sha256:' + await sha256(skillBytes));
     const skill = new TextDecoder().decode(skillBytes);
-    const mcpEndpoint = extractMcpEndpoint(skill);
+    const mcpEndpoint = extractMcpEndpoint(skill, indexUrl);
     const toolNames = extractToolNames(skill);
-    expect(mcpEndpoint.href).toBe('https://keyboardia.dev/mcp');
+    expect(mcpEndpoint.href).toBe('http://localhost/mcp');
     expect(toolNames.length).toBeGreaterThan(0);
 
     const head = await SELF.fetch(indexUrl, { method: 'HEAD' });
@@ -184,7 +184,12 @@ describe('Agent Skills host protocol journey', () => {
     expect(schemaText).toContain('"changes"');
     expect(schemaText).toContain('"cowbell"');
 
-    for (const exampleName of ['add-track', 'set-steps', 'set-tempo']) {
+    for (const exampleName of [
+      'add-track',
+      'set-track-instrument',
+      'set-steps',
+      'set-tempo',
+    ]) {
       const argumentsFromSkill = materializeExample(
         skill,
         exampleName,
@@ -210,7 +215,7 @@ describe('Agent Skills host protocol journey', () => {
       tracks: [{
         track_id: generatedTrackId,
         name: 'Kick',
-        sample_id: 'kick',
+        sample_id: 'sampled:808-kick',
         step_count: 16,
         active_steps: [0, 4, 8, 12],
       }],

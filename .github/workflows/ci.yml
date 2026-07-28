@@ -147,6 +147,9 @@ jobs:
       - name: Run the eval pipeline offline
         run: node evals/run-benchmark.mjs --agent stub --repeats 1 --out "$RUNNER_TEMP/stub-run.json"
 
+      - name: Verify committed eval receipts
+        run: node evals/verify-receipts.mjs
+
       - name: Install uv
         uses: astral-sh/setup-uv@v7
 

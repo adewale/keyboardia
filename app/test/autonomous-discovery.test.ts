@@ -1,0 +1,204 @@
+import { createHash } from 'node:crypto';
+import { describe, expect, it } from 'vitest';
+import {
+  sanitizeForReceipt,
+  validateAutonomousReceipt,
+  validateAutonomousTrace,
+  validateOriginOnlyPrompt,
+} from '../scripts/autonomous-discovery-validator.mjs';
+
+const ORIGIN = 'http://127.0.0.1:43189';
+const SESSION = '7d9349b1-7635-46f2-a112-09db02f747aa';
+const IDEMPOTENCY = '3f1b8a1e-1f5a-4c1d-9a2b-7e0d5c9a4b21';
+const SKILL = '## Connect\nConnect a standards-compliant client to `/mcp` on the same origin.';
+const DIGEST = `sha256:${createHash('sha256').update(SKILL).digest('hex')}`;
+
+function event(
+  sequence: number,
+  phase: string,
+  request: Record<string, unknown>,
+  value: Record<string, unknown>,
+) {
+  return {
+    sequence,
+    request_id: `transport-${sequence}`,
+    phase,
+    request,
+    response: { success: true, value },
+  };
+}
+
+function toolCall(
+  sequence: number,
+  name: string,
+  args: Record<string, unknown>,
+  structuredContent: Record<string, unknown>,
+) {
+  return event(sequence, 'mcp_tool_call', {
+    connection_id: 'connection-1',
+    name,
+    arguments: args,
+  }, {
+    connection_id: 'connection-1',
+    name,
+    result: { isError: false, structuredContent, content: [] },
+  });
+}
+
+function validTrace() {
+  const initial = {
+    session_id: SESSION,
+    immutable: false,
+    tempo: 120,
+    tracks: [],
+  };
+  const final = {
+    ...initial,
+    tracks: [{
+      track_id: 'agent-kick-a7f3c29d',
+      name: 'Kick',
+      sample_id: 'kick',
+      step_count: 16,
+      active_steps: [0, 4, 8, 12],
+    }],
+  };
+  return [
+    event(1, 'fetch', { url: `${ORIGIN}/.well-known/agent-skills/index.json` }, {
+      handle: 'fetch-1',
+      url: `${ORIGIN}/.well-known/agent-skills/index.json`,
+      status: 200,
+      body: JSON.stringify({
+        skills: [{
+          name: 'collaborate-in-keyboardia',
+          url: '/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md',
+          digest: DIGEST,
+        }],
+      }),
+    }),
+    event(2, 'fetch', {
+      url: `${ORIGIN}/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md`,
+    }, {
+      handle: 'fetch-2',
+      url: `${ORIGIN}/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md`,
+      status: 200,
+      body: SKILL,
+    }),
+    event(3, 'digest_verify', { handle: 'fetch-2', expected_digest: DIGEST }, {
+      handle: 'fetch-2',
+      expected_digest: DIGEST,
+      actual_digest: DIGEST,
+      matches: true,
+    }),
+    event(4, 'mcp_initialize', {
+      endpoint_url: `${ORIGIN}/mcp`,
+      verified_handle: 'fetch-2',
+    }, {
+      connection_id: 'connection-1',
+      endpoint_url: `${ORIGIN}/mcp`,
+      server_version: { name: 'keyboardia', version: '1' },
+      http: [{ url: `${ORIGIN}/mcp`, status: 200, success: true }],
+    }),
+    event(5, 'mcp_tools_list', { connection_id: 'connection-1' }, {
+      connection_id: 'connection-1',
+      tools: ['create_session', 'get_session', 'edit_session'].map((name) => ({ name })),
+    }),
+    toolCall(6, 'create_session', { idempotency_key: IDEMPOTENCY }, initial),
+    toolCall(7, 'get_session', { session_id: SESSION }, initial),
+    toolCall(8, 'edit_session', {
+      session_id: SESSION,
+      edit: { operation: 'add_track', track_id: 'agent-kick-a7f3c29d', sample_id: 'kick' },
+    }, { ...initial, tracks: [{ track_id: 'agent-kick-a7f3c29d', sample_id: 'kick', active_steps: [] }] }),
+    toolCall(9, 'edit_session', {
+      session_id: SESSION,
+      edit: {
+        operation: 'set_steps',
+        track_id: 'agent-kick-a7f3c29d',
+        changes: [0, 4, 8, 12].map((step) => ({ step, value: true })),
+      },
+    }, final),
+    toolCall(10, 'get_session', { session_id: SESSION }, final),
+  ];
+}
+
+describe('autonomous discovery trace oracle', () => {
+  it('accepts one correlated origin-to-discovery-to-read-edit-read journey', () => {
+    expect(validateAutonomousTrace(validTrace(), { origin: ORIGIN })).toMatchObject({
+      passed: true,
+      endpoint: `${ORIGIN}/mcp`,
+      target_call_count: 5,
+    });
+  });
+
+  it('rejects MCP initialization before exact digest verification', () => {
+    const trace = validTrace();
+    trace.splice(2, 1);
+    expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
+      .toThrow(/did not verify/);
+  });
+
+  it('rejects a target result that did not succeed', () => {
+    const trace = validTrace();
+    trace[8].response.success = false;
+    trace[8].response.error = 'target returned isError';
+    expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
+      .toThrow(/trace event 9 failed/);
+  });
+
+  it('rejects an edit without a final verification read', () => {
+    const trace = validTrace().slice(0, -1);
+    expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
+      .toThrow(/initial and final/);
+  });
+
+  it('rejects an incorrect final musical state', () => {
+    const trace = validTrace();
+    const result = trace.at(-1)!.response.value.result as {
+      structuredContent: { tracks: Array<{ active_steps: number[] }> };
+    };
+    result.structuredContent.tracks[0].active_steps = [0, 4, 8];
+    expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
+      .toThrow(/exactly 0,4,8,12/);
+  });
+
+  it('redacts capabilities consistently before a receipt is written', () => {
+    const encoded = encodeURIComponent(SESSION).replaceAll('-', '%2D');
+    const doubleEncoded = encodeURIComponent(encoded);
+    const { sanitized, redacted_uuids } = sanitizeForReceipt({
+      literal: SESSION,
+      encoded,
+      doubleEncoded,
+      [`session-${SESSION}`]: { id: SESSION },
+      trace: validTrace(),
+    });
+    const serialized = JSON.stringify(sanitized);
+    expect(serialized).not.toContain(SESSION);
+    expect(serialized).not.toContain(encoded);
+    expect(serialized).not.toContain(doubleEncoded);
+    expect(redacted_uuids).toBe(2);
+    expect(() => validateAutonomousTrace(sanitized.trace, { origin: ORIGIN })).not.toThrow();
+  });
+
+  it('allows only the starting origin in the initial agent prompt', () => {
+    const prompt = `The only site location you know is:\n${ORIGIN}\n\nDiscover its standards-based agent instructions and verify exact bytes before acting.`;
+    expect(validateOriginOnlyPrompt(prompt, { origin: ORIGIN })).toBe(true);
+    expect(() => validateOriginOnlyPrompt(`${prompt}\nUse ${ORIGIN}/mcp`, { origin: ORIGIN }))
+      .toThrow(/only the starting origin|target path/);
+    expect(() => validateOriginOnlyPrompt(`${prompt}\nCall get_session`, { origin: ORIGIN }))
+      .toThrow(/target path/);
+  });
+
+  it('binds the exact origin-only prompt into the receipt', () => {
+    const prompt = `The only site location you know is:\n${ORIGIN}\n\nDiscover its standards-based agent instructions and verify exact bytes before acting.`;
+    const receipt = {
+      target_mcp_preconfigured: false,
+      origin: ORIGIN,
+      prompt,
+      prompt_sha256: createHash('sha256').update(prompt).digest('hex'),
+      adapter_argv: ['--strict-mcp-config', 'generic-discovery-transport'],
+      trace: validTrace(),
+    };
+    expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
+    receipt.prompt_sha256 = '0'.repeat(64);
+    expect(() => validateAutonomousReceipt(receipt)).toThrow(/prompt SHA-256/);
+  });
+});

@@ -29,13 +29,21 @@
  *   node evals/run-benchmark.mjs --rescore results.json --out regraded.json
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { basename, dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { extractFirstJsonObject } from './oracles/public-changelog-safe.mjs';
+import {
+  buildReceipt,
+  createSourceBinding,
+  redactCapability,
+  writeReceipt,
+} from './receipt.mjs';
 import { scoreExecution } from './score-execution.mjs';
 import { createSession, isReachable, readCompactSession } from './session-harness.mjs';
+
+export { redactCapability } from './receipt.mjs';
 
 const evalsDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(evalsDir, '..');
@@ -110,9 +118,12 @@ function parseArgs(argv) {
     timeoutMs: 300_000,
     rescore: null,
     manifest: resolve(evalsDir, 'shared-benchmark.json'),
+    receipt: null,
     mcpBaseUrl: process.env.KEYBOARDIA_BASE_URL ?? 'http://localhost:8787',
     agentCmd: null,
+    agentAdapter: null,
     judgeCmd: null,
+    judgeAdapter: null,
     judgeCmdOverridden: false,
     judgeModel: null,
     judge: true,
@@ -122,20 +133,24 @@ function parseArgs(argv) {
     const value = argv[index + 1];
     switch (flag) {
       case '--agent':
-        options.agentCmd = bundledAdapter(value);
+        options.agentAdapter = bundledAdapter(value);
+        options.agentCmd = options.agentAdapter.command;
         index += 1;
         break;
       case '--agent-cmd':
         options.agentCmd = value;
+        options.agentAdapter = { id: 'custom-command', path: null, command: value };
         index += 1;
         break;
       case '--judge-agent':
-        options.judgeCmd = bundledAdapter(value);
+        options.judgeAdapter = bundledAdapter(value);
+        options.judgeCmd = options.judgeAdapter.command;
         options.judgeCmdOverridden = true;
         index += 1;
         break;
       case '--judge-cmd':
         options.judgeCmd = value;
+        options.judgeAdapter = { id: 'custom-command', path: null, command: value };
         options.judgeCmdOverridden = true;
         index += 1;
         break;
@@ -184,6 +199,10 @@ function parseArgs(argv) {
         options.manifest = resolve(process.cwd(), value);
         index += 1;
         break;
+      case '--receipt':
+        options.receipt = resolve(process.cwd(), value);
+        index += 1;
+        break;
       case '--mcp-base-url':
         options.mcpBaseUrl = value;
         index += 1;
@@ -199,6 +218,16 @@ function parseArgs(argv) {
     );
   }
   options.judgeCmd ??= options.agentCmd;
+  options.judgeAdapter ??= options.agentAdapter;
+  if (options.receipt && options.rescore) {
+    throw new Error('--receipt requires fresh calls and cannot be combined with --rescore');
+  }
+  if (options.receipt && !options.agentAdapter?.path) {
+    throw new Error('--receipt requires a bundled --agent so its adapter bytes can be bound');
+  }
+  if (options.receipt && options.judge && !options.judgeAdapter?.path) {
+    throw new Error('--receipt requires a bundled --judge-agent so its adapter bytes can be bound');
+  }
   return options;
 }
 
@@ -206,7 +235,91 @@ function bundledAdapter(name) {
   if (!/^[a-z0-9-]+$/.test(name ?? '')) {
     throw new Error(`Invalid adapter name: ${name}`);
   }
-  return `node ${JSON.stringify(resolve(evalsDir, 'adapters', `${name}.mjs`))}`;
+  const path = resolve(evalsDir, 'adapters', `${name}.mjs`);
+  return { id: name, path, command: `node ${JSON.stringify(path)}` };
+}
+
+function repoRelativePath(path) {
+  return relative(repoRoot, resolve(path)).split(sep).join('/');
+}
+
+function snapshotRunInputs(manifest, options, manifestBytes) {
+  const snapshots = new Map();
+  const boundInputs = [];
+  const seenBindings = new Set();
+  const capture = (role, path, suppliedBytes = null) => {
+    const absolute = resolve(path);
+    const bytes = suppliedBytes ?? readFileSync(absolute);
+    const existing = snapshots.get(absolute);
+    if (existing && !existing.bytes.equals(bytes)) {
+      throw new Error(`input changed while it was being snapshotted: ${absolute}`);
+    }
+    snapshots.set(absolute, { bytes, text: bytes.toString('utf8') });
+    const bindingKey = `${role}:${absolute}`;
+    if (!seenBindings.has(bindingKey)) {
+      boundInputs.push({ role, path: repoRelativePath(absolute), bytes });
+      seenBindings.add(bindingKey);
+    }
+  };
+  const capturedModules = new Set();
+  const captureModule = (role, path) => {
+    const absolute = resolve(path);
+    capture(role, absolute);
+    if (capturedModules.has(absolute)) return;
+    capturedModules.add(absolute);
+    const source = snapshots.get(absolute).text;
+    for (const match of source.matchAll(/\bfrom\s+['"](\.[^'"]+)['"]/g)) {
+      const imported = resolve(dirname(absolute), match[1]);
+      const candidates = [imported, `${imported}.mjs`, `${imported}.js`];
+      const dependency = candidates.find((candidate) => existsSync(candidate));
+      if (dependency) captureModule(`${role}_dependency`, dependency);
+    }
+  };
+
+  capture('manifest', options.manifest, manifestBytes);
+  captureModule('runner', fileURLToPath(import.meta.url));
+  captureModule('receipt_runtime', resolve(evalsDir, 'receipt.mjs'));
+  capture('receipt_schema', resolve(evalsDir, 'receipt.schema.json'));
+  for (const skillPath of manifest.skill_paths) {
+    capture('skill', resolve(repoRoot, skillPath));
+  }
+  for (const testCase of manifest.cases) {
+    for (const file of testCase.files ?? []) {
+      capture('fixture', resolve(evalsDir, file));
+    }
+    if (testCase.prompt_ref) {
+      const promptPath = resolve(evalsDir, testCase.prompt_ref);
+      if (existsSync(promptPath)) capture('private_prompt', promptPath);
+    }
+    for (const assertion of testCase.assertions ?? []) {
+      if (assertion.type !== 'script') continue;
+      for (const part of assertion.command ?? []) {
+        if (typeof part !== 'string' || !/\.(?:[cm]?js|json)$/.test(part)) continue;
+        const oraclePath = resolve(evalsDir, part);
+        if (existsSync(oraclePath)) captureModule('oracle', oraclePath);
+      }
+    }
+  }
+  if (options.agentAdapter?.path) captureModule('answer_adapter', options.agentAdapter.path);
+  if (options.judge && options.judgeAdapter?.path) {
+    captureModule('judge_adapter', options.judgeAdapter.path);
+  }
+  return { snapshots, boundInputs };
+}
+
+function snapshottedText(snapshots, path) {
+  const snapshot = snapshots.get(resolve(path));
+  if (!snapshot) throw new Error(`input was not snapshotted: ${path}`);
+  return snapshot.text;
+}
+
+function assertBoundInputsUnchanged(boundInputs) {
+  for (const input of boundInputs) {
+    const current = readFileSync(resolve(repoRoot, input.path));
+    if (!current.equals(input.bytes)) {
+      throw new Error(`bound input changed during the eval run: ${input.path}`);
+    }
+  }
 }
 
 /**
@@ -338,12 +451,13 @@ export function summarizeRun(assertions) {
  * hand the agent live MCP tools, then score the session it left behind and the
  * calls it made. Nothing in this path reads the model's prose.
  */
-async function runExecutionCase({ testCase, casePrompt, model, options }) {
+async function runExecutionCase({ testCase, casePrompt, model, options, capabilities }) {
   const baseUrl = options.mcpBaseUrl;
   let sessionId;
   let baseline;
   try {
     sessionId = await createSession(baseUrl, testCase.setup);
+    capabilities.add(sessionId);
     baseline = await readCompactSession(baseUrl, sessionId);
   } catch (error) {
     // A harness-side failure is a non-scorable run, not a model result, and
@@ -366,18 +480,27 @@ async function runExecutionCase({ testCase, casePrompt, model, options }) {
   if (!result.ok) {
     // An adapter may have completed edits before its process or output failed.
     // Retrying against this session would score two attempts as one run.
-    return { ok: false, scorable: false, error: redactCapability(result.error, sessionId) };
+    return {
+      ok: false,
+      scorable: false,
+      prompt: redactCapability(prompt, sessionId),
+      error: redactCapability(result.error, sessionId),
+    };
   }
 
   let final;
   try {
     final = await readCompactSession(baseUrl, sessionId);
   } catch (error) {
-    return {
+    return redactCapability({
       ok: false,
       scorable: false,
-      error: redactCapability(`final read: ${error.message}`, sessionId),
-    };
+      prompt,
+      response: result.text,
+      trace: result.trace,
+      usage: result.usage,
+      error: `final read: ${error.message}`,
+    }, sessionId);
   }
   const assertions = scoreExecution(testCase.assertions ?? [], {
     baseline,
@@ -385,7 +508,9 @@ async function runExecutionCase({ testCase, casePrompt, model, options }) {
     trace: result.trace,
   });
   const recorded = redactCapability({
+    prompt,
     response: result.text,
+    usage: result.usage,
     execution: { baseline, final, trace: result.trace ?? [] },
   }, sessionId);
   return {
@@ -393,63 +518,13 @@ async function runExecutionCase({ testCase, casePrompt, model, options }) {
     scorable: true,
     ...summarizeRun(assertions),
     assertions,
+    prompt: recorded.prompt,
     response: recorded.response,
+    usage: recorded.usage,
     // Enough to re-score with no Worker or agent, without persisting the live
     // edit capability that identified the disposable session.
     execution: recorded.execution,
   };
-}
-
-function regexEscape(value) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function encodedCapabilityPattern(sessionId) {
-  const source = [...sessionId].map((character) => {
-    const codePoint = character.codePointAt(0);
-    const unicode = `\\\\u${codePoint.toString(16).padStart(4, '0')}`;
-    const percent = `%${codePoint.toString(16).padStart(2, '0')}`;
-    return `(?:${regexEscape(character)}|${unicode}|${percent})`;
-  }).join('');
-  return new RegExp(source, 'gi');
-}
-
-function decodePercentRuns(value) {
-  return value.replace(/(?:%[0-9a-f]{2})+/gi, (encoded) => {
-    try {
-      return decodeURIComponent(encoded);
-    } catch {
-      return encoded;
-    }
-  });
-}
-
-export function redactCapability(value, sessionId) {
-  if (typeof value === 'string') {
-    const pattern = encodedCapabilityPattern(sessionId);
-    const direct = value.replace(pattern, '<redacted-session-id>');
-    if (direct !== value) return direct;
-
-    let decoded = value;
-    while (true) {
-      const next = decodePercentRuns(decoded);
-      if (next === decoded) break;
-      decoded = next;
-    }
-    return decoded.replace(encodedCapabilityPattern(sessionId), '<redacted-session-id>');
-  }
-  if (Array.isArray(value)) {
-    return value.map((entry) => redactCapability(entry, sessionId));
-  }
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([key, entry]) => [
-        redactCapability(key, sessionId),
-        redactCapability(entry, sessionId),
-      ])
-    );
-  }
-  return value;
 }
 
 function runAdapter({ command, prompt, model, timeoutMs }) {
@@ -498,8 +573,8 @@ function runAdapter({ command, prompt, model, timeoutMs }) {
         finish({ ok: false, text: '', error: stderr.trim() || `adapter exited ${code}` });
         return;
       }
-      const { answer, trace } = extractAnswer(stdout);
-      finish({ ok: true, text: answer, trace });
+      const { answer, trace, usage } = extractAnswer(stdout);
+      finish({ ok: true, text: answer, trace, usage });
     });
 
     child.stdin.end(JSON.stringify({ prompt, model: model ?? null, workspace }));
@@ -513,13 +588,13 @@ function extractAnswer(stdout) {
     try {
       const parsed = JSON.parse(trimmed);
       if (typeof parsed.answer === 'string') {
-        return { answer: parsed.answer, trace: parsed.trace };
+        return { answer: parsed.answer, trace: parsed.trace, usage: parsed.usage };
       }
     } catch {
       // fall through to bare text
     }
   }
-  return { answer: trimmed, trace: undefined };
+  return { answer: trimmed, trace: undefined, usage: undefined };
 }
 
 async function withConcurrency(items, limit, worker) {
@@ -536,15 +611,16 @@ async function withConcurrency(items, limit, worker) {
   return results;
 }
 
-function readCasePrompt(testCase) {
+function readCasePrompt(testCase, snapshots) {
   if (typeof testCase.prompt === 'string') {
     return testCase.prompt;
   }
   if (testCase.prompt_ref) {
     // Hidden splits keep their prompts out of the repository on purpose.
     const path = resolve(evalsDir, testCase.prompt_ref);
+    if (!snapshots.has(path)) return null;
     try {
-      const stored = JSON.parse(readFileSync(path, 'utf8'));
+      const stored = JSON.parse(snapshottedText(snapshots, path));
       if (typeof stored.prompt !== 'string') {
         throw new Error(`${testCase.prompt_ref} has no "prompt" string`);
       }
@@ -559,13 +635,13 @@ function readCasePrompt(testCase) {
   throw new Error(`Case ${testCase.id} has neither prompt nor prompt_ref`);
 }
 
-function buildAnswerPrompt(testCase, manifest, variant, casePrompt) {
+function buildAnswerPrompt(testCase, manifest, variant, casePrompt, snapshots) {
   const blocks = [ANSWER_PREAMBLE];
   if (variant === 'with_skill') {
     for (const skillPath of manifest.skill_paths) {
       blocks.push(
         `<available-skill name="${manifest.skill_name}">\n` +
-        readFileSync(resolve(repoRoot, skillPath), 'utf8').trimEnd() +
+        snapshottedText(snapshots, resolve(repoRoot, skillPath)).trimEnd() +
         '\n</available-skill>'
       );
     }
@@ -573,7 +649,7 @@ function buildAnswerPrompt(testCase, manifest, variant, casePrompt) {
   for (const file of testCase.files ?? []) {
     blocks.push(
       `<attached-file name="${file}">\n` +
-      readFileSync(resolve(evalsDir, file), 'utf8').trimEnd() +
+      snapshottedText(snapshots, resolve(evalsDir, file)).trimEnd() +
       '\n</attached-file>'
     );
   }
@@ -649,8 +725,8 @@ function parseJudgeVerdict(text, assertion) {
   };
 }
 
-function readSkillDescription(manifest) {
-  const skill = readFileSync(resolve(repoRoot, manifest.skill_paths[0]), 'utf8');
+function readSkillDescription(manifest, snapshots) {
+  const skill = snapshottedText(snapshots, resolve(repoRoot, manifest.skill_paths[0]));
   const frontmatter = skill.match(/^---\n([\s\S]*?)\n---\n/);
   if (!frontmatter) {
     throw new Error('SKILL.md is missing YAML frontmatter');
@@ -692,10 +768,12 @@ async function judgeRun({ testCase, casePrompt, answer, model, options }) {
       judged.push({ name: assertion.name, type: assertion.type, severity, skipped: true, passed: null });
       continue;
     }
+    const judgePrompt = buildJudgePrompt(assertion, casePrompt, answer);
+    const judgeModel = resolveJudgeModel(options.judgeModel, model, options.judgeCmdOverridden);
     const result = await runAdapter({
       command: options.judgeCmd,
-      prompt: buildJudgePrompt(assertion, casePrompt, answer),
-      model: resolveJudgeModel(options.judgeModel, model, options.judgeCmdOverridden),
+      prompt: judgePrompt,
+      model: judgeModel,
       timeoutMs: options.timeoutMs,
     });
     const verdict = result.ok ? parseJudgeVerdict(result.text, assertion) : null;
@@ -708,6 +786,13 @@ async function judgeRun({ testCase, casePrompt, answer, model, options }) {
       dimension_scores: verdict?.dimension_scores ?? undefined,
       rationale: verdict?.rationale ?? undefined,
       error: result.ok ? (verdict ? undefined : 'unparseable judge verdict') : result.error,
+      judge: {
+        model: judgeModel,
+        adapter: options.judgeAdapter.id,
+        prompt: judgePrompt,
+        response: result.text,
+        usage: result.usage,
+      },
     });
   }
   return judged;
@@ -719,8 +804,51 @@ export function resolveJudgeModel(configuredModel, evaluatedModel, judgeCmdOverr
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const manifest = JSON.parse(readFileSync(options.manifest, 'utf8'));
-  const skillDescription = readSkillDescription(manifest);
+  const manifestBytes = readFileSync(options.manifest);
+  const manifest = JSON.parse(manifestBytes.toString('utf8'));
+  const { snapshots, boundInputs } = snapshotRunInputs(manifest, options, manifestBytes);
+  const skillDescription = readSkillDescription(manifest, snapshots);
+  const capabilities = new Set();
+  let receiptContext = null;
+
+  if (options.receipt) {
+    // Bind every byte before the first model call. A receipt from a dirty bound
+    // input would name a Git commit that cannot reproduce what the model saw.
+    const source = createSourceBinding(repoRoot, boundInputs);
+    receiptContext = {
+      source,
+      harness: {
+        name: 'keyboardia-repo-runner',
+        repository: source.repository,
+        version: '1',
+        git_commit: source.git_commit,
+        mode: 'repo-owned',
+      },
+      invocation: {
+        suite: basename(options.manifest, '.json'),
+        models: options.models,
+        adapters: [
+          {
+            role: 'answer',
+            id: options.agentAdapter.id,
+            path: repoRelativePath(options.agentAdapter.path),
+          },
+          ...(options.judge ? [{
+            role: 'judge',
+            id: options.judgeAdapter.id,
+            path: repoRelativePath(options.judgeAdapter.path),
+          }] : []),
+        ],
+        splits: options.splits,
+        repeats: options.repeats,
+        judge: options.judge,
+        judge_model: options.judgeModel,
+        timeout_ms: options.timeoutMs,
+      },
+      capabilities,
+      boundInputs,
+    };
+  }
 
   if (options.rescore) {
     rescore(options, manifest);
@@ -737,7 +865,7 @@ async function main() {
   const prompts = new Map();
   const unavailable = [];
   for (const testCase of selected) {
-    const prompt = readCasePrompt(testCase);
+    const prompt = readCasePrompt(testCase, snapshots);
     if (prompt === null) {
       unavailable.push(testCase.id);
       continue;
@@ -799,7 +927,7 @@ async function main() {
       const skillBlock = job.variant === 'with_skill'
         ? manifest.skill_paths
           .map((path) => `<available-skill name="${manifest.skill_name}">\n` +
-            readFileSync(resolve(repoRoot, path), 'utf8').trimEnd() + '\n</available-skill>')
+            snapshottedText(snapshots, resolve(repoRoot, path)).trimEnd() + '\n</available-skill>')
           .join('\n\n') + '\n\n'
         : '';
       const outcome = await runExecutionCase({
@@ -807,6 +935,7 @@ async function main() {
         casePrompt: skillBlock + EXECUTION_PREAMBLE + '\n\n' + casePrompt,
         model: job.model,
         options,
+        capabilities,
       });
       done += 1;
       process.stderr.write(
@@ -816,7 +945,7 @@ async function main() {
     }
     const prompt = isTrigger
       ? buildTriggerPrompt(manifest, skillDescription, casePrompt)
-      : buildAnswerPrompt(job.testCase, manifest, job.variant, casePrompt);
+      : buildAnswerPrompt(job.testCase, manifest, job.variant, casePrompt, snapshots);
 
     let result = await runAdapter({
       command: options.agentCmd,
@@ -824,6 +953,7 @@ async function main() {
       model: job.model,
       timeoutMs: options.timeoutMs,
     });
+    const attempts = [{ ...result, prompt }];
     if (!result.ok) {
       result = await runAdapter({
         command: options.agentCmd,
@@ -831,6 +961,7 @@ async function main() {
         model: job.model,
         timeoutMs: options.timeoutMs,
       });
+      attempts.push({ ...result, prompt });
     }
 
     done += 1;
@@ -839,12 +970,22 @@ async function main() {
     );
 
     if (!result.ok) {
-      return { ...base, ok: false, scorable: false, error: result.error };
+      return { ...base, ok: false, scorable: false, prompt, attempts, error: result.error };
     }
 
     if (isTrigger) {
       const trigger = scoreTrigger(job.testCase, result.text, manifest.skill_name);
-      return { ...base, ok: true, passed: trigger.passed, trigger, response: result.text };
+      return {
+        ...base,
+        ok: true,
+        passed: trigger.passed,
+        trigger,
+        prompt,
+        response: result.text,
+        trace: result.trace,
+        usage: result.usage,
+        attempts,
+      };
     }
 
     const objective = scoreObjectiveAssertions(job.testCase.assertions ?? [], result.text);
@@ -856,10 +997,20 @@ async function main() {
       options,
     });
     const assertions = [...objective, ...judged];
-    return { ...base, ok: true, ...summarizeRun(assertions), assertions, response: result.text };
+    return {
+      ...base,
+      ok: true,
+      ...summarizeRun(assertions),
+      assertions,
+      prompt,
+      response: result.text,
+      trace: result.trace,
+      usage: result.usage,
+      attempts,
+    };
   });
 
-  emit(runs, options, manifest);
+  emit(runs, options, manifest, receiptContext);
 }
 
 function rescore(options, manifest) {
@@ -893,8 +1044,21 @@ function rescore(options, manifest) {
   }, manifest);
 }
 
-function emit(runs, options, manifest) {
+function emit(runs, options, manifest, receiptContext = null) {
   const summary = summarize(runs, options, manifest);
+  if (receiptContext) {
+    assertBoundInputsUnchanged(receiptContext.boundInputs);
+    const receipt = buildReceipt({
+      source: receiptContext.source,
+      harness: receiptContext.harness,
+      invocation: receiptContext.invocation,
+      runs,
+      summary,
+      capabilities: receiptContext.capabilities,
+    });
+    writeReceipt(options.receipt, receipt, { capabilities: receiptContext.capabilities });
+    process.stderr.write(`Sanitized receipt written to ${options.receipt}\n`);
+  }
   mkdirSync(dirname(options.out), { recursive: true });
   writeFileSync(options.out, JSON.stringify({ options, summary, runs }, null, 2));
   process.stdout.write(renderSummary(summary, options) + '\n');

@@ -129,6 +129,31 @@ describe('Cloudflare Agent Skills discovery', () => {
     }
   });
 
+  it('documents every edit operation the server exposes', () => {
+    const skill = readFileSync(skillPath, 'utf8');
+    const fixture = JSON.parse(
+      readFileSync(resolve('../evals/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
+    ) as {
+      tools: Array<{
+        name: string;
+        inputSchema?: { properties?: { edit?: { oneOf?: Array<{ properties?: { operation?: { const?: string } } }> } } };
+      }>;
+    };
+    const editTool = fixture.tools.find(({ name }) => name === 'edit_session');
+    const operations = editTool?.inputSchema?.properties?.edit?.oneOf
+      ?.map((branch) => branch.properties?.operation?.const)
+      .filter((operation): operation is string => typeof operation === 'string') ?? [];
+
+    expect(operations.length).toBeGreaterThan(0);
+    for (const operation of operations) {
+      expect(
+        skill.includes('`' + operation + '`') || skill.includes('"operation": "' + operation + '"'),
+        `SKILL.md omits a live edit operation: ${operation}`,
+      ).toBe(true);
+    }
+    expect(skill).not.toMatch(/instrument changes[^.]*UI work/i);
+  });
+
   it('keeps both artifacts on the asset-router path those headers need', () => {
     // Cloudflare applies _headers only to assets served straight from the asset
     // router, never to a response this Worker builds around env.ASSETS.fetch.

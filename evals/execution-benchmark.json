@@ -95,7 +95,8 @@
           "check": "call_order",
           "value": [
             "get_session",
-            "edit_session"
+            "edit_session",
+            "get_session"
           ],
           "severity": "gate",
           "oracle": "strong"
@@ -264,7 +265,8 @@
           "check": "call_order",
           "value": [
             "get_session",
-            "edit_session"
+            "edit_session",
+            "get_session"
           ],
           "severity": "gate",
           "oracle": "strong"
@@ -376,7 +378,8 @@
           "check": "call_order",
           "value": [
             "get_session",
-            "edit_session"
+            "edit_session",
+            "get_session"
           ],
           "severity": "gate",
           "oracle": "strong"

@@ -123,10 +123,10 @@ describe('skill eval manifest', () => {
   });
 
   it('has no assertion a model can satisfy by quoting the attached fixture', () => {
-    // stable-retry-id once passed on models echoing the schema's own
-    // "Reuse it when retrying add_track" description, so the without_skill arm
-    // scored higher than the with_skill arm. An assertion the attachment
-    // already answers measures the attachment, not the skill.
+    // The former stable-retry-id phrasing regex once passed on models echoing
+    // the schema's own "Reuse it when retrying add_track" description, so the
+    // without_skill arm scored higher than the with_skill arm. An assertion the
+    // attachment already answers measures the attachment, not the skill.
     const leaky: string[] = [];
 
     for (const { testCase, assertion } of objectiveAssertions) {
@@ -210,18 +210,160 @@ describe('skill eval manifest', () => {
     expect(extraField.find((entry) => entry.name === 'separates-public-copy')?.passed).toBe(false);
   });
 
-  it('scores the skill\'s own published payloads as passing', () => {
-    // The exact-payload assertions encode the SKILL.md examples. If an example is
-    // reworded or reordered, the eval silently starts measuring something else.
-    const skill = readFileSync(resolve('..', manifest.skill_paths[0]!), 'utf8');
-    const addTrack = skill.slice(skill.indexOf('<!-- mcp-example:add-track -->'));
-    const collision = manifest.cases.find(
-      (testCase) => testCase.id === 'answer-collision-resistant-track',
-    );
-    const nestedAdd = collision!.assertions!.find(
-      (assertion) => assertion.name === 'nested-add-payload',
-    );
+  it('scores capability answers by parsed structure rather than phrasing', () => {
+    const score = (caseId: string, response: unknown) => {
+      const testCase = manifest.cases.find((entry) => entry.id === caseId)!;
+      return scoreObjectiveAssertions(testCase.assertions!, JSON.stringify(response))
+        .filter((entry) => entry.type === 'script')
+        .every((entry) => entry.passed);
+    };
+    const sessionId = '00000000-0000-4000-8000-000000000001';
+    const getSession = { tool: 'get_session', arguments: { session_id: sessionId } };
 
-    expect(compilePattern(nestedAdd!.pattern!).test(addTrack)).toBe(true);
+    const humanSteps = {
+      calls: [
+        getSession,
+        {
+          tool: 'edit_session',
+          arguments: {
+            session_id: sessionId,
+            edit: {
+              operation: 'set_steps',
+              track_id: 'user-kick',
+              changes: [{ step: 4, value: true }, { step: 12, value: true }],
+            },
+          },
+        },
+        getSession,
+      ],
+      preserve_unmentioned_steps: true,
+    };
+    expect(score('pos-human-steps-exact-envelope', humanSteps)).toBe(true);
+    expect(score('pos-human-steps-exact-envelope', {
+      ...humanSteps,
+      calls: humanSteps.calls.slice(0, 2),
+    })).toBe(false);
+
+    const addArguments = {
+      session_id: sessionId,
+      edit: {
+        operation: 'add_track',
+        track_id: 'agent-kick-a1b2c3d4',
+        sample_id: 'kick',
+        name: 'Agent kick',
+      },
+    };
+    const collision = {
+      ownership_from_prefix: false,
+      new_track_id: 'agent-kick-a1b2c3d4',
+      initial_add: { tool: 'edit_session', arguments: addArguments },
+      uncertain_response: {
+        first_call: getSession,
+        if_track_present: 'do_not_retry',
+        if_track_absent_retry: { tool: 'edit_session', arguments: addArguments },
+      },
+    };
+    expect(score('answer-collision-resistant-track', collision)).toBe(true);
+    expect(score('answer-collision-resistant-track', {
+      ...collision,
+      uncertain_response: {
+        ...collision.uncertain_response,
+        if_track_absent_retry: {
+          tool: 'edit_session',
+          arguments: {
+            ...addArguments,
+            edit: { ...addArguments.edit, track_id: 'agent-kick-deadbeef' },
+          },
+        },
+      },
+    })).toBe(false);
+    const wrongInstrumentArguments = {
+      ...addArguments,
+      edit: { ...addArguments.edit, sample_id: 'hihat' },
+    };
+    expect(score('answer-collision-resistant-track', {
+      ...collision,
+      initial_add: { tool: 'edit_session', arguments: wrongInstrumentArguments },
+      uncertain_response: {
+        ...collision.uncertain_response,
+        if_track_absent_retry: { tool: 'edit_session', arguments: wrongInstrumentArguments },
+      },
+    })).toBe(false);
+
+    const tempo = {
+      first_call: getSession,
+      decisions: {
+        intended_124: { action: 'accept_no_retry' },
+        prior_value_unchanged: {
+          action: 'retry_same_assignment',
+          call: {
+            tool: 'edit_session',
+            arguments: {
+              session_id: sessionId,
+              edit: { operation: 'set_tempo', tempo: 124 },
+            },
+          },
+        },
+        different_value: { action: 'ask_before_overwrite' },
+      },
+    };
+    expect(score('pos-uncertain-tempo-response', tempo)).toBe(true);
+    expect(score('pos-uncertain-tempo-response', {
+      ...tempo,
+      decisions: {
+        ...tempo.decisions,
+        different_value: { action: 'retry_same_assignment' },
+      },
+    })).toBe(false);
+
+    const attribution = {
+      attempted: [{ field: 'kick_active_steps', change: { step: 0, value: true } }],
+      observed: [{ field: 'kick_active_steps', value: [0] }],
+      unattributed: [
+        { field: 'tempo', before: 120, after: 126 },
+        { field: 'snare_active_steps', before: [4, 12], after: [0, 4, 8, 12] },
+      ],
+    };
+    expect(score('pos-unattributed-concurrent-delta', attribution)).toBe(true);
+    expect(score('pos-unattributed-concurrent-delta', {
+      ...attribution,
+      unattributed: [...attribution.unattributed].reverse(),
+    })).toBe(true);
+    expect(score('pos-unattributed-concurrent-delta', {
+      ...attribution,
+      observed: [...attribution.observed, { field: 'tempo', value: 126 }],
+    })).toBe(false);
+
+    const partial = {
+      next_calls: [getSession],
+      completed: [{ part: 'hi-hat', status: 'confirmed' }],
+      unfinished: [{ part: 'cowbell', status: 'track_limit_reached' }],
+      compensating_edits: [],
+    };
+    expect(score('pos-partial-track-limit', partial)).toBe(true);
+    expect(score('pos-partial-track-limit', {
+      ...partial,
+      compensating_edits: [{ operation: 'remove_track', track_id: 'agent-hat-a1b2c3d4' }],
+    })).toBe(false);
+  });
+
+  it('keeps the skill\'s published edit examples on the fixture surface', () => {
+    const skill = readFileSync(resolve('..', manifest.skill_paths[0]!), 'utf8');
+    const fixture = JSON.parse(
+      readFileSync(resolve('../evals/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
+    ) as {
+      tools: Array<{
+        name: string;
+        inputSchema?: { properties?: { edit?: { oneOf?: Array<{ properties?: { operation?: { const?: string } } }> } } };
+      }>;
+    };
+    const operations = fixture.tools.find(({ name }) => name === 'edit_session')
+      ?.inputSchema?.properties?.edit?.oneOf
+      ?.map((branch) => branch.properties?.operation?.const)
+      .filter((operation): operation is string => typeof operation === 'string') ?? [];
+
+    for (const operation of operations) {
+      expect(skill).toContain('"operation": "' + operation + '"');
+    }
   });
 });

@@ -11,7 +11,9 @@ another agent did not ask you to change.
 
 ## Connect and discover
 
-- Connect a standards-compliant MCP client to `https://keyboardia.dev/mcp`.
+- Connect a standards-compliant MCP client to `/mcp` on the same origin that
+  served these digest-verified bytes. The canonical production endpoint is
+  `https://keyboardia.dev/mcp`.
 - Use the live `tools/list` result as the authority for tool inputs and
   `sample_id` values. Refresh it when a cached schema rejects an input.
 - If the server is unavailable in the current toolset, ask the user to configure
@@ -62,6 +64,18 @@ example track ID into a live session.
 }
 ```
 
+<!-- mcp-example:set-track-instrument -->
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "set_track_instrument",
+    "track_id": "agent-kick-<random-8-hex>",
+    "sample_id": "sampled:808-kick"
+  }
+}
+```
+
 <!-- mcp-example:set-steps -->
 ```json
 {
@@ -93,14 +107,15 @@ example track ID into a live session.
 - `add_track` adds a live-schema catalog instrument with safe defaults. Its
   optional `name` labels the new track at creation, and a session holds at most
   16 tracks.
+- `set_track_instrument` changes only an existing track's sound source. It
+  preserves that track's pattern, mix, timing, and custom name.
 - `set_steps` assigns booleans only to entries in `changes`; unnamed steps
   remain unchanged.
 - `set_tempo` assigns 60 through 180 BPM.
 - Never invent an operation. If `tools/list` does not name it, the surface
   cannot do it, and saying so plainly beats guessing. Track deletion, renaming
-  an existing track, reordering, instrument changes, pitch and note editing,
-  volume, mute, solo, swing, effects, and parameter locks are all Keyboardia UI
-  work, not MCP work.
+  an existing track, reordering, pitch and note editing, volume, mute, solo,
+  swing, effects, and parameter locks are all Keyboardia UI work, not MCP work.
 
 ## Follow the collaboration workflow
 
