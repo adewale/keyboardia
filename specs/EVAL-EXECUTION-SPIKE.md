@@ -43,7 +43,7 @@ be cited as lift.
 
 This is fresh execution evidence, not broad reliability evidence: there are
 only three public cases, three repeats, and three related model families. It
-complements the origin-only discovery traces and 330-run answer matrix; none
+complements the origin-only discovery traces and 300-run answer matrix; none
 substitutes for the others.
 
 ## Reproduction

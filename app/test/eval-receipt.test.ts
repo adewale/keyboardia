@@ -100,7 +100,7 @@ function committedInputs({ execution = false } = {}) {
     ['runner', 'evals/run.mjs', 'export {};\n'],
     ['receipt_runtime', 'evals/receipt.mjs', 'export {};\n'],
     ['receipt_schema', 'evals/receipt.schema.json', '{}\n'],
-    ['answer_adapter', 'evals/adapter.mjs', 'export {};\n'],
+    ['answer_adapter', execution ? 'evals/adapters/claude-mcp.mjs' : 'evals/adapter.mjs', 'export {};\n'],
     ['harness_manifest', 'pyproject.toml', '[project]\nversion = "test"\n'],
     ['oracle', 'evals/oracle.mjs', [
       "import { readFileSync } from 'node:fs';",
@@ -247,8 +247,18 @@ function answerReceiptFixture() {
     reliability: { errors: 0 },
   };
   const audit = {
-    counts: { cases: 1 },
-    readiness: { blockers: [] },
+    counts: {
+      cases: 1, positive: 1, negative: 0, adversarial: 0, holdout: 0, holdback: 0,
+      trigger: 0, trigger_positive: 0, trigger_negative: 0, ablations: 0,
+      objective_assertions: 4, process_assertions: 0, efficiency_assertions: 0,
+      judge_assertions: 0, fixture_cases: 1, input_files: 1, domain_tagged: 0,
+      difficulty_tagged: 0, success_goal_tagged: 0, trigger_type_tagged: 0,
+    },
+    readiness: { blockers: [], base_saturated_cases: [] },
+    findings: [
+      { kind: 'missing-positive-evals', severity: 'required', message: 'fixture' },
+      { kind: 'missing-hidden-splits', severity: 'required', message: 'fixture' },
+    ],
     benchmark: { summary: benchmark.summary, case_flags: benchmark.case_flags },
   };
   const parsedManifest = JSON.parse(manifest.content);
@@ -469,6 +479,20 @@ describe('eval receipts', () => {
     );
     expect(verifyReceipt(blockedAudit).join('\n')).toContain('readiness blockers');
 
+    const strippedAudit = structuredClone(receipt);
+    const strippedAuditValue = JSON.parse(
+      strippedAudit.artifacts[strippedAudit.invocation.audit_ref].content,
+    );
+    strippedAuditValue.counts = {};
+    strippedAuditValue.findings = [];
+    strippedAudit.invocation.audit_ref = addArtifact(
+      strippedAudit.artifacts,
+      JSON.stringify(strippedAuditValue),
+      'application/json',
+    );
+    expect(verifyReceipt(strippedAudit).join('\n'))
+      .toMatch(/audit counts|audit findings/);
+
     const fabricatedPrompt = structuredClone(receipt);
     const task = {
       ...JSON.parse(fabricatedPrompt.artifacts[fabricatedPrompt.invocation.prepared_tasks_refs[0]].content),
@@ -565,13 +589,13 @@ describe('eval receipts', () => {
     const scored = scoreExecution(assertions, { baseline, final, trace });
     const manifest = parsedManifestFor(source);
     const run = {
-      model: 'test-model', case: 'execution-case', kind: 'execution', split: 'tune',
+      model: 'claude-test-model', case: 'execution-case', kind: 'execution', split: 'tune',
       variant: 'with_skill', repeat: 0, ok: true, scorable: true,
       ...summarizeRun(scored), assertions: scored, execution: { baseline, final, trace },
       prompt: 'Execute', response: 'done',
     };
-    const summary = summarize([run], { models: ['test-model'] }, manifest);
-    const replay = buildExecutionReplayEvidence(manifest, [run], { models: ['test-model'] }, summary);
+    const summary = summarize([run], { models: ['claude-test-model'] }, manifest);
+    const replay = buildExecutionReplayEvidence(manifest, [run], { models: ['claude-test-model'] }, summary);
     const tools = [{ name: 'get_session', inputSchema: { type: 'object' } }];
     const receipt = buildReceipt({
       source,
@@ -580,8 +604,8 @@ describe('eval receipts', () => {
         git_commit: source.git_commit, mode: 'repo-owned',
       },
       invocation: {
-        suite: 'execution-benchmark', models: ['test-model'],
-        adapters: [{ role: 'answer', id: 'stub', path: 'evals/adapter.mjs' }],
+        suite: 'execution-benchmark', models: ['claude-test-model'],
+        adapters: [{ role: 'answer', id: 'claude-mcp', path: 'evals/adapters/claude-mcp.mjs' }],
         splits: ['tune'], repeats: 1, judge: false,
         system_under_test: {
           base_url: 'http://127.0.0.1:43189', mcp_endpoint: 'http://127.0.0.1:43189/mcp',
@@ -607,9 +631,9 @@ describe('eval receipts', () => {
       .toContain('must bind evals/score-execution.mjs');
 
     const adapterMismatch = structuredClone(receipt);
-    adapterMismatch.invocation.adapters[0].path = 'evals/unbound-adapter.mjs';
+    adapterMismatch.invocation.adapters[0] = { role: 'answer', id: 'untrusted', path: null };
     expect(verifyExecutionReceipt(adapterMismatch).join('\n'))
-      .toContain('answer adapter stub must bind');
+      .toContain('exactly the bound claude-mcp answer adapter');
 
     const fabricatedRun = structuredClone(receipt);
     fabricatedRun.runs[0].assertions[0].passed = false;
@@ -662,6 +686,11 @@ describe('eval receipts', () => {
     const rootPath = structuredClone(receipt);
     rootPath.summary.host = '/root/private/eval-output.json';
     expect(verifyReceipt(rootPath).join('\n')).toContain('unsanitized host path');
+
+    const encodedPath = structuredClone(receipt);
+    encodedPath.summary.host = Buffer.from('/Users/example/private/eval-output.json')
+      .toString('base64url');
+    expect(verifyReceipt(encodedPath).join('\n')).toContain('unsanitized host path');
   });
 
   it('fails closed when a registered capability survives in any encoding or key', () => {
@@ -801,6 +830,14 @@ describe('eval receipts', () => {
     const { receipt } = exampleReceipt();
     const unexpected = { ...receipt, unexpected: true };
     expect(verifyReceipt(unexpected).join('\n')).toContain('must NOT have additional properties');
+    const unexpectedInvocation = structuredClone(receipt);
+    unexpectedInvocation.invocation.unexpected = true;
+    expect(verifyReceipt(unexpectedInvocation).join('\n'))
+      .toContain('must NOT have additional properties');
+    const unexpectedRun = structuredClone(receipt);
+    unexpectedRun.runs[0].unexpected = true;
+    expect(verifyReceipt(unexpectedRun).join('\n'))
+      .toContain('must NOT have additional properties');
   });
 
   it('canonicalizes JSON independently of object insertion order', () => {

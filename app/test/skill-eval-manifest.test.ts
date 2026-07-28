@@ -307,6 +307,10 @@ describe('skill eval manifest', () => {
         name: 'Agent kick',
       },
     };
+    const collisionPrompt = manifest.cases
+      .find((entry) => entry.id === 'answer-collision-resistant-track')?.prompt;
+    expect(collisionPrompt).toContain('must start with agent-');
+    expect(collisionPrompt).toContain('exact action label do_not_retry');
     const collision = {
       ownership_from_prefix: false,
       new_track_id: 'agent-kick-a1b2c3d4',

@@ -12,6 +12,7 @@ import {
   addArtifact,
   answerHarnessPrompt,
   answerMatrixSummary,
+  assertSourceBindingStillClean,
   buildReceipt,
   canonicalJson,
   canonicalSkillTreeHashFromSource,
@@ -454,6 +455,7 @@ async function main() {
     exactUtf8(auditRaw, 'audit report'),
     'application/json',
   );
+  assertSourceBindingStillClean(repoRoot, source);
   writeReceipt(options.out, receipt);
   process.stdout.write(`Imported ${runs.length} immutable harness runs\n${options.out}\n`);
 }

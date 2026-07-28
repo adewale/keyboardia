@@ -19,6 +19,29 @@ function sameSteps(left, right) {
     left.length === right.length && left.every((step, index) => step === right[index]);
 }
 
+function readConfirmsEdit(editCall, session) {
+  const edit = editCall.arguments?.edit;
+  const tracks = session?.tracks ?? [];
+  if (!edit || !Array.isArray(tracks)) return false;
+  const track = tracks.find((candidate) => candidate.track_id === edit.track_id);
+  switch (edit.operation) {
+    case 'add_track':
+      return track?.sample_id === edit.sample_id;
+    case 'set_steps': {
+      if (!track || !Array.isArray(track.active_steps)) return false;
+      const active = new Set(track.active_steps);
+      return (edit.changes ?? []).every((change) =>
+        change.value === true ? active.has(change.step) : !active.has(change.step));
+    }
+    case 'set_track_instrument':
+      return track?.sample_id === edit.sample_id;
+    case 'set_tempo':
+      return session.tempo === edit.tempo;
+    default:
+      return false;
+  }
+}
+
 /**
  * `state` assertions compare the post-run session against the case's baseline.
  * Each returns a plain boolean; there is no partial credit, because "mostly
@@ -101,16 +124,21 @@ export function scoreTraceAssertion(assertion, trace) {
       return true;
     }
 
-    // Every successful mutation is immediately closed by a successful read of
-    // the same session before any later mutation can count as compliant.
+    // Every attempted mutation is immediately closed by a successful read of
+    // the same session. Successful edits must also be visible in that read;
+    // after a failed edit, the read re-establishes current state before retry.
     case 'edit_followed_by_read': {
-      const edits = calls
+      const allCalls = trace ?? [];
+      const edits = allCalls
         .map((call, index) => [call, index])
         .filter(([call]) => call.name === 'edit_session');
-      return edits.length > 0 && edits.every(([edit, index]) => {
-        const read = calls[index + 1];
+      return edits.some(([edit]) => edit.success === true) && edits.every(([edit, index]) => {
+        const read = allCalls[index + 1];
         return read?.name === 'get_session'
-          && read.arguments?.session_id === edit.arguments?.session_id;
+          && read.success === true
+          && read.arguments?.session_id === edit.arguments?.session_id
+          && read.result?.session_id === edit.arguments?.session_id
+          && (edit.success !== true || readConfirmsEdit(edit, read.result));
       });
     }
 

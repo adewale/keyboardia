@@ -13,7 +13,10 @@ import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- dependency-free ESM adapter helper, checked here rather than by tsc
 import { numericUsage } from '../../evals/adapters/usage.mjs';
 // @ts-expect-error -- dependency-free ESM adapter helper, checked here rather than by tsc
-import { toolResultSucceeded } from '../../evals/adapters/mcp-trace.mjs';
+import {
+  toolResultStructuredContent,
+  toolResultSucceeded,
+} from '../../evals/adapters/mcp-trace.mjs';
 
 const adaptersDir = resolve('../evals/adapters');
 
@@ -91,5 +94,8 @@ describe('eval adapter contract', () => {
     expect(toolResultSucceeded({
       content: [{ type: 'text', text: '{"structuredContent":{"name":"{\\"isError\\":true}"}}' }],
     })).toBe(true);
+    expect(toolResultStructuredContent({
+      content: [{ type: 'text', text: '{"session_id":"s","tempo":120,"tracks":[]}' }],
+    })).toEqual({ session_id: 's', tempo: 120, tracks: [] });
   });
 });

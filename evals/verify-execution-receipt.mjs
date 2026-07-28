@@ -132,15 +132,23 @@ export function verifyExecutionReceipt(receipt) {
   const manifest = parseSourceJson(manifestFile, 'execution manifest', errors);
   parseSourceJson(packageFile, 'execution package', errors);
   const lock = parseSourceJson(lockFile, 'execution package lock', errors);
-  for (const adapter of invocation.adapters ?? []) {
-    if (adapter.role !== 'answer' || adapter.path === null) continue;
-    const matches = (receipt.source?.files ?? []).filter((file) =>
-      file.role === 'answer_adapter' && file.path === adapter.path);
-    if (matches.length !== 1) {
-      errors.push(`execution answer adapter ${adapter.id} must bind ${adapter.path} exactly once`);
-    } else {
-      errors.push(...verifySourceModuleClosure(receipt.source, [adapter.path]));
-    }
+  const expectedAdapter = {
+    role: 'answer',
+    id: 'claude-mcp',
+    path: 'evals/adapters/claude-mcp.mjs',
+  };
+  if (canonicalJson(invocation.adapters) !== canonicalJson([expectedAdapter])) {
+    errors.push('execution receipt must use exactly the bound claude-mcp answer adapter');
+  }
+  if (!(invocation.models ?? []).every((model) => /^claude-/i.test(model))) {
+    errors.push('execution claude-mcp adapter is bound only to Claude model identifiers');
+  }
+  const adapterMatches = (receipt.source?.files ?? []).filter((file) =>
+    file.role === 'answer_adapter' && file.path === expectedAdapter.path);
+  if (adapterMatches.length !== 1) {
+    errors.push(`execution answer adapter ${expectedAdapter.id} must bind ${expectedAdapter.path} exactly once`);
+  } else {
+    errors.push(...verifySourceModuleClosure(receipt.source, [expectedAdapter.path]));
   }
   const lockedWrangler = lock?.packages?.['node_modules/wrangler'];
   if (!lockedWrangler?.version || !lockedWrangler?.integrity

@@ -9,7 +9,7 @@ capabilities.
 
 The 2026-07-28 set contains four independently verifiable receipts:
 
-- `2026-07-28-answer-matrix.json`: 330 repeated public-tune answer runs across
+- `2026-07-28-answer-matrix.json`: 300 repeated public-tune answer runs across
   five models and both arms;
 - `2026-07-28-live-execution.json`: 54 real MCP state/trace runs across three
   models and both arms;
@@ -18,10 +18,10 @@ The 2026-07-28 set contains four independently verifiable receipts:
 - `2026-07-28-autonomous-claude-opus-5.json`: a second passing origin-only
   journey on another model.
 
-An uncommitted Haiku diagnostic attempt failed, but without a failure receipt
-it is not auditable enough to support a phase-specific claim. There is
-deliberately no passing Haiku autonomous receipt. A receipt is evidence for the
-exact recorded sample, not a claim that every attempt passes.
+Sonnet passed one of two observed attempts and Opus passed its one observed
+attempt. The failed Sonnet attempt emitted no receipt and is not independently
+auditable. There is deliberately no Haiku autonomous receipt. A receipt is
+evidence for the exact recorded sample, not a claim that every attempt passes.
 
 Run `node evals/verify-receipts.mjs` to schema-check every receipt, reconstruct
 its Git proofs, hash its bound inputs and artifact inventory, replay objective
@@ -68,6 +68,9 @@ that their aggregate projections agree, and independently regrades every result
 from the committed manifest, oracle, task, and output evidence. The harness
 version is derived again from the reconstructed `pyproject.toml`.
 
+These hashes provide offline tamper evidence and source closure, not provider
+signatures, runtime attestation, or a transparency log.
+
 The origin-only autonomous discovery receipt uses a stricter journey-specific
 JSON Schema. The same verifier dispatches it through the discovery oracle and
 checks the exact prompt and trace hashes, target-MCP non-preconfiguration,
@@ -84,9 +87,11 @@ bound input, exact sanitized prompts and outputs, available traces, models,
 adapters, and judge transcripts.
 
 Live editable Keyboardia session UUIDs are registered in memory, replaced with
-`<redacted-session-id>` in prompts, responses, traces, errors, and state, and
-checked again immediately before the receipt is written. The UUIDs and hashes
-of the UUIDs are never serialized.
+`<redacted-session-id>` in standard receipts or numbered `<redacted-uuid-N>`
+tokens in autonomous receipts, and checked again immediately before the receipt
+is written. The bounded scanner recursively normalizes percent, Unicode,
+base64, and base64url encodings. The UUIDs and hashes of the UUIDs are never
+serialized.
 
 Do not commit receipts for private holdout or holdback prompts: exact prompts
 are intentionally part of the receipt. A receipt proves what was evaluated; it

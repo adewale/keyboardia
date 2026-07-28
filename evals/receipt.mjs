@@ -65,7 +65,10 @@ const HOST_PATHS = [
 ];
 
 function hostPathPresent(value) {
-  if (typeof value === 'string') return HOST_PATHS.some((pattern) => pattern.test(value));
+  if (typeof value === 'string') {
+    return reversibleDecodedStrings(value)
+      .some((candidate) => HOST_PATHS.some((pattern) => pattern.test(candidate)));
+  }
   if (Array.isArray(value)) return value.some(hostPathPresent);
   if (value && typeof value === 'object') {
     return Object.entries(value).some(([key, entry]) =>
@@ -78,6 +81,10 @@ export function receiptContainsHostPath(receipt) {
   if (!receipt || typeof receipt !== 'object') return false;
   const copy = structuredClone(receipt);
   for (const tree of copy.source?.tree_objects ?? []) delete tree.content_base64;
+  const parentTreeRef = copy.harness?.parent_tree_ref;
+  if (typeof parentTreeRef === 'string' && copy.artifacts?.[parentTreeRef]) {
+    delete copy.artifacts[parentTreeRef].content;
+  }
   return hostPathPresent(copy);
 }
 
@@ -280,15 +287,58 @@ function decodedPercentValue(value) {
   }
 }
 
+const MAX_REVERSIBLE_DECODE_DEPTH = 8;
+const MAX_REVERSIBLE_DECODE_VARIANTS = 64;
+const MAX_REVERSIBLE_TOKEN_LENGTH = 8192;
+
+function decodedUnicodePercentValue(value) {
+  let decoded = value;
+  for (let attempt = 0; attempt < MAX_REVERSIBLE_DECODE_DEPTH; attempt += 1) {
+    const unicode = decoded.replace(/\\u([0-9a-f]{4})/gi,
+      (_, hex) => String.fromCharCode(Number.parseInt(hex, 16)));
+    const percent = decodePercentRuns(unicode);
+    if (percent === decoded) return decoded;
+    decoded = percent;
+  }
+  return decoded;
+}
+
+function decodeCanonicalBase64(value) {
+  if (value.length < 16 || value.length > MAX_REVERSIBLE_TOKEN_LENGTH) return null;
+  const normalized = value.replaceAll('-', '+').replaceAll('_', '/').replace(/=+$/, '');
+  if (normalized.length % 4 === 1) return null;
+  const padded = `${normalized}${'='.repeat((4 - (normalized.length % 4)) % 4)}`;
+  const bytes = Buffer.from(padded, 'base64');
+  if (bytes.toString('base64').replace(/=+$/, '') !== normalized) return null;
+  const decoded = bytes.toString('utf8');
+  if (!Buffer.from(decoded, 'utf8').equals(bytes)) return null;
+  return decoded;
+}
+
+export function reversibleDecodedStrings(value) {
+  const variants = new Set([value]);
+  const queue = [{ value, depth: 0 }];
+  while (queue.length > 0 && variants.size < MAX_REVERSIBLE_DECODE_VARIANTS) {
+    const current = queue.shift();
+    if (current.depth >= MAX_REVERSIBLE_DECODE_DEPTH) continue;
+    const candidates = [decodedUnicodePercentValue(current.value)];
+    for (const match of current.value.matchAll(/[A-Za-z0-9+/_-]{16,}={0,2}/g)) {
+      const decoded = decodeCanonicalBase64(match[0]);
+      if (decoded !== null) candidates.push(decoded);
+    }
+    for (const candidate of candidates) {
+      if (candidate === current.value || variants.has(candidate)) continue;
+      variants.add(candidate);
+      queue.push({ value: candidate, depth: current.depth + 1 });
+      if (variants.size >= MAX_REVERSIBLE_DECODE_VARIANTS) break;
+    }
+  }
+  return [...variants];
+}
+
 function stringContainsCapability(value, sessionId) {
-  if (encodedCapabilityPattern(sessionId).test(value)) return true;
-  if (encodedCapabilityPattern(sessionId).test(decodedPercentValue(value))) return true;
-  const bytes = Buffer.from(sessionId, 'utf8');
-  const encodings = [
-    bytes.toString('base64'),
-    bytes.toString('base64url'),
-  ];
-  return encodings.some((encoded) => value.includes(encoded));
+  return reversibleDecodedStrings(value)
+    .some((candidate) => encodedCapabilityPattern(sessionId).test(candidate));
 }
 
 export function capabilityPresent(value, sessionId) {
@@ -311,8 +361,10 @@ export function redactCapability(value, sessionId) {
       : value;
     if (decodedRedaction !== value) return decodedRedaction;
     const bytes = Buffer.from(sessionId, 'utf8');
-    return [bytes.toString('base64'), bytes.toString('base64url')]
+    const simple = [bytes.toString('base64'), bytes.toString('base64url')]
       .reduce((text, encoded) => text.replaceAll(encoded, REDACTED_CAPABILITY), value);
+    if (simple !== value) return simple;
+    return stringContainsCapability(value, sessionId) ? REDACTED_CAPABILITY : value;
   }
   if (Array.isArray(value)) {
     return value.map((entry) => redactCapability(entry, sessionId));
@@ -1439,6 +1491,106 @@ function expectedAnswerMatrixIdentities(manifest, policy) {
   return identities.sort();
 }
 
+function expectedAuditCounts(manifest, splits) {
+  const selected = (manifest.cases ?? []).filter((evalCase) =>
+    new Set(splits ?? []).has(evalCase.split ?? 'tune'));
+  const assertions = selected.flatMap((evalCase) => evalCase.assertions ?? []);
+  const countKind = (kind) => selected.filter((evalCase) => evalCase.kind === kind).length;
+  const triggerCases = selected.filter((evalCase) => evalCase.kind === 'trigger');
+  return {
+    cases: selected.length,
+    positive: countKind('positive'),
+    negative: countKind('negative') + triggerCases.length,
+    adversarial: countKind('adversarial'),
+    holdout: selected.filter((evalCase) => evalCase.split === 'holdout').length,
+    holdback: selected.filter((evalCase) => evalCase.split === 'holdback').length,
+    trigger: triggerCases.length,
+    trigger_positive: triggerCases.filter((evalCase) =>
+      (evalCase.tags ?? []).includes('positive')).length,
+    trigger_negative: triggerCases.filter((evalCase) =>
+      (evalCase.tags ?? []).includes('negative')).length,
+    ablations: (manifest.ablations ?? []).length,
+    objective_assertions: assertions.filter((assertion) =>
+      !['judge', 'process', 'efficiency'].includes(assertion.type)).length,
+    process_assertions: assertions.filter((assertion) => assertion.type === 'process').length,
+    efficiency_assertions: assertions.filter((assertion) => assertion.type === 'efficiency').length,
+    judge_assertions: assertions.filter((assertion) => assertion.type === 'judge').length,
+    fixture_cases: selected.filter((evalCase) => (evalCase.files ?? []).length > 0).length,
+    input_files: selected.reduce((total, evalCase) => total + (evalCase.files ?? []).length, 0),
+    domain_tagged: selected.filter((evalCase) => typeof evalCase.domain === 'string').length,
+    difficulty_tagged: selected.filter((evalCase) => typeof evalCase.difficulty === 'string').length,
+    success_goal_tagged: selected.filter((evalCase) =>
+      Array.isArray(evalCase.success_goals) && evalCase.success_goals.length > 0).length,
+    trigger_type_tagged: selected.filter((evalCase) => typeof evalCase.trigger_type === 'string').length,
+  };
+}
+
+function expectedNonDiscriminatingAssertions(benchmark) {
+  const groups = new Map();
+  for (const result of benchmark.results ?? []) {
+    for (const assertion of result.assertions ?? []) {
+      const key = `${result.case_id}\0${assertion.name}`;
+      if (!groups.has(key)) groups.set(key, {
+        case_id: result.case_id,
+        assertion: assertion.name,
+        with_skill: [],
+        without_skill: [],
+      });
+      if (['with_skill', 'without_skill'].includes(result.variant)) {
+        groups.get(key)[result.variant].push(assertion.passed === true);
+      }
+    }
+  }
+  return [...groups.values()].flatMap((group) => {
+    if (group.with_skill.length === 0 || group.without_skill.length === 0) return [];
+    const rates = {
+      with_skill: group.with_skill.filter(Boolean).length / group.with_skill.length,
+      without_skill: group.without_skill.filter(Boolean).length / group.without_skill.length,
+    };
+    return rates.with_skill === rates.without_skill
+      ? [{ case_id: group.case_id, assertion: group.assertion, rates }] : [];
+  });
+}
+
+function normalizedAuditFindings(audit, benchmark, counts) {
+  const expected = [];
+  if (counts.positive < 5) {
+    expected.push({ kind: 'missing-positive-evals', severity: 'required' });
+  }
+  if (counts.holdout === 0 || counts.holdback === 0) {
+    expected.push({ kind: 'missing-hidden-splits', severity: 'required' });
+  }
+  for (const flag of benchmark.case_flags ?? []) {
+    for (const variant of ['with_skill', 'without_skill']) {
+      if ((flag.flags ?? []).includes(`flaky repeated pass rates: ${variant}`)) {
+        expected.push({ kind: 'flaky-eval', severity: 'required', evidence: flag });
+      }
+    }
+  }
+  const identical = expectedNonDiscriminatingAssertions(benchmark);
+  if (identical.length > 0) {
+    expected.push({
+      kind: 'non-discriminating-assertions',
+      severity: 'recommended',
+      evidence: identical.slice(0, 20),
+    });
+  }
+  const project = (finding) => {
+    const evidence = Array.isArray(finding.evidence)
+      ? [...finding.evidence].sort((left, right) => canonicalJson(left).localeCompare(canonicalJson(right)))
+      : finding.evidence;
+    return {
+      kind: finding.kind,
+      severity: finding.severity,
+      ...(evidence === undefined ? {} : { evidence }),
+    };
+  };
+  return {
+    actual: (audit.findings ?? []).map(project).map(canonicalJson).sort(),
+    expected: expected.map(project).map(canonicalJson).sort(),
+  };
+}
+
 function verifyAnswerModelProvenance(task, metadata, invocation, label, errors) {
   const basis = metadata?.telemetry?.basis;
   let adapter;
@@ -1516,6 +1668,22 @@ function verifyAnswerMatrix(receipt, errors) {
     manifest = JSON.parse(sourceManifest?.content);
   } catch (error) {
     errors.push(`answer embedded manifest is not valid JSON: ${error.message}`);
+  }
+  if (manifest) {
+    const expectedCounts = expectedAuditCounts(manifest, receipt.invocation?.splits);
+    requireValue(canonicalJson(audit.counts) === canonicalJson(expectedCounts),
+      'answer audit counts do not match the embedded manifest', errors);
+    const findings = normalizedAuditFindings(audit, benchmark, expectedCounts);
+    requireValue(canonicalJson(findings.actual) === canonicalJson(findings.expected),
+      'answer audit findings do not match the embedded manifest and benchmark', errors);
+    const expectedBaseSaturated = (benchmark.case_flags ?? [])
+      .filter((flag) => flag.eval_intent !== 'regression'
+        && typeof flag.with_skill === 'number'
+        && flag.with_skill === flag.without_skill)
+      .map((flag) => flag.case_id).sort();
+    requireValue(canonicalJson(audit.readiness?.base_saturated_cases ?? [])
+      === canonicalJson(expectedBaseSaturated),
+    'answer audit base-saturated cases do not match the embedded benchmark', errors);
   }
   const manifestCases = new Map((manifest?.cases ?? []).map((evalCase) => [evalCase.id, evalCase]));
   const sourceFiles = receipt.source?.files ?? [];

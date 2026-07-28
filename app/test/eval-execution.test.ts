@@ -57,14 +57,21 @@ const final = {
     { track_id: 'agent-kick-a1b2c3d4', name: 'Kick', sample_id: 'kick', step_count: 16, active_steps: [0, 4, 8, 12] },
   ],
 };
+const afterAdd = {
+  ...final,
+  tracks: [
+    final.tracks[0]!,
+    { ...final.tracks[1]!, active_steps: [] },
+  ],
+};
 const trace = [
-  { name: 'get_session', arguments: { session_id: 's' }, success: true },
+  { name: 'get_session', arguments: { session_id: 's' }, success: true, result: baseline },
   {
     name: 'edit_session',
     arguments: { session_id: 's', edit: { operation: 'add_track', track_id: 'agent-kick-a1b2c3d4', sample_id: 'kick' } },
     success: true,
   },
-  { name: 'get_session', arguments: { session_id: 's' }, success: true },
+  { name: 'get_session', arguments: { session_id: 's' }, success: true, result: afterAdd },
   {
     name: 'edit_session',
     arguments: {
@@ -77,7 +84,7 @@ const trace = [
     },
     success: true,
   },
-  { name: 'get_session', arguments: { session_id: 's' }, success: true },
+  { name: 'get_session', arguments: { session_id: 's' }, success: true, result: final },
 ];
 
 describe('execution-graded evals', () => {
@@ -188,6 +195,16 @@ describe('execution-graded evals', () => {
 
     expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, [
       trace[0]!, trace[1]!, trace[3]!, trace[4]!,
+    ])).toBe(false);
+    expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, [
+      trace[0]!, trace[1]!, {
+        name: 'edit_session',
+        arguments: { session_id: 's', edit: { operation: 'set_tempo', tempo: 140 } },
+        success: false,
+      }, trace[2]!,
+    ])).toBe(false);
+    expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, [
+      trace[0]!, trace[1]!, { ...trace[2]!, result: baseline },
     ])).toBe(false);
     expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, trace)).toBe(true);
   });
@@ -331,10 +348,16 @@ describe('execution-graded evals', () => {
     const doubleEncoded = fullyEncoded.replaceAll('%', '%25');
     const deeplyEncoded = Array.from({ length: 5 })
       .reduce((encoded) => encodeURIComponent(encoded), fullyEncoded);
+    const nestedBase64 = Buffer.from(Buffer.from(capability).toString('base64')).toString('base64');
+    const base64Percent = Buffer.from(percentEncoded).toString('base64url');
+    const base64Unicode = Buffer.from(unicodeEncoded).toString('base64');
     expect(redactCapability(unicodeEncoded, capability)).toBe('<redacted-session-id>');
     expect(redactCapability(percentEncoded, capability)).toBe('<redacted-session-id>');
     expect(redactCapability(doubleEncoded, capability)).toBe('<redacted-session-id>');
     expect(redactCapability(deeplyEncoded, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(nestedBase64, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(base64Percent, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(base64Unicode, capability)).toBe('<redacted-session-id>');
     expect(redactCapability({ [doubleEncoded]: 'capability-key' }, capability))
       .toEqual({ '<redacted-session-id>': 'capability-key' });
   });

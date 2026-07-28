@@ -144,7 +144,10 @@ function cliTraceFor(trace: ReturnType<typeof validTrace>) {
     mcp_tools_list: 'mcp__discovery_transport__list_mcp_tools',
     mcp_tool_call: 'mcp__discovery_transport__call_mcp_tool',
   };
-  return trace.map((entry) => ({ name: names[entry.phase] }));
+  return trace.map((entry) => ({
+    name: names[entry.phase],
+    arguments: structuredClone(entry.request),
+  }));
 }
 
 function autonomousReceipt(
@@ -328,6 +331,16 @@ describe('autonomous discovery trace oracle', () => {
       cli_trace_sha256: createHash('sha256')
         .update(JSON.stringify(reorderedCliTrace)).digest('hex'),
     })).toThrow(/does not correlate/);
+    const mismatchedCliTrace = structuredClone(receipt.cli_trace);
+    const connect = mismatchedCliTrace.find((event) =>
+      event.name === 'mcp__discovery_transport__connect_mcp')!;
+    connect.arguments.endpoint_url = 'https://attacker.invalid/mcp';
+    expect(() => validateAutonomousReceipt({
+      ...receipt,
+      cli_trace: mismatchedCliTrace,
+      cli_trace_sha256: createHash('sha256')
+        .update(JSON.stringify(mismatchedCliTrace)).digest('hex'),
+    })).toThrow(/does not correlate/);
   });
 
   it('binds the exact origin-only prompt into the receipt', () => {
@@ -351,6 +364,23 @@ describe('autonomous discovery trace oracle', () => {
       `Editable token: ${Buffer.from(SESSION).toString('base64url')}`,
       new Set([SESSION]),
     )).toThrow(/disclosed/);
+    const percentEncoded = SESSION.replaceAll('-', '%2D');
+    const unicodeEncoded = SESSION.replaceAll('-', '\\u002d');
+    const nestedEncodings = [
+      Buffer.from(Buffer.from(SESSION).toString('base64')).toString('base64'),
+      Buffer.from(percentEncoded).toString('base64url'),
+      Buffer.from(unicodeEncoded).toString('base64'),
+    ];
+    for (const nested of nestedEncodings) {
+      expect(() => validateRawAnswerCapabilities(
+        `Editable nested token: ${nested}`,
+        new Set([SESSION]),
+      )).toThrow(/disclosed/);
+      const receipt = autonomousReceipt();
+      receipt.answer = nested;
+      receipt.answer_sha256 = createHash('sha256').update(nested).digest('hex');
+      expect(() => validateAutonomousReceipt(receipt)).toThrow(/UUID capability/);
+    }
     expect(() => validateRawAnswerCapabilities('safe', new Set())).toThrow(/empty registry/);
   });
 

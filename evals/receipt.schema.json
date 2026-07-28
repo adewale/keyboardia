@@ -109,7 +109,7 @@
     },
     "invocation": {
       "type": "object",
-      "additionalProperties": true,
+      "additionalProperties": false,
       "required": ["suite", "models", "adapters", "splits", "repeats", "judge"],
       "properties": {
         "suite": { "type": "string", "minLength": 1 },
@@ -131,6 +131,10 @@
         "splits": { "type": "array", "items": { "type": "string" } },
         "repeats": { "type": "integer", "minimum": 1 },
         "judge": { "type": "boolean" },
+        "judge_model": { "type": ["string", "null"] },
+        "timeout_ms": { "type": "integer", "minimum": 1 },
+        "manifest_revision": { "$ref": "#/$defs/sha256" },
+        "skill_tree_hash": { "$ref": "#/$defs/sha256" },
         "benchmark_ref": { "$ref": "#/$defs/artifactKey" },
         "audit_ref": { "$ref": "#/$defs/artifactKey" },
         "prepared_tasks_refs": {
@@ -213,6 +217,7 @@
       "minItems": 1,
       "items": {
         "type": "object",
+        "additionalProperties": false,
         "required": ["model", "case", "kind", "split", "variant", "repeat", "ok", "assertions", "prompt_ref", "output_ref", "trace_ref", "execution_ref"],
         "properties": {
           "model": { "type": "string", "minLength": 1 },
@@ -226,14 +231,33 @@
             "type": "array",
             "items": {
               "type": "object",
+              "additionalProperties": false,
               "required": ["name", "type", "passed"],
               "properties": {
                 "name": { "type": "string", "minLength": 1 },
                 "type": { "type": "string", "minLength": 1 },
-                "passed": { "type": "boolean" }
+                "passed": { "type": "boolean" },
+                "severity": { "type": "string" },
+                "oracle": { "type": "string" },
+                "score": { "type": "number" },
+                "evidence": { "type": "string" }
               }
             }
           },
+          "attempts": { "type": "array", "items": { "type": "object" } },
+          "usage": { "type": ["object", "null"] },
+          "passed": { "type": "boolean" },
+          "scorable": { "type": "boolean" },
+          "passRate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "gradedScore": { "type": ["number", "null"] },
+          "objective_passed": { "type": "integer", "minimum": 0 },
+          "objective_total": { "type": "integer", "minimum": 0 },
+          "objective_pass_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "critical_failures": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "vetoed": { "type": "boolean" },
           "input_bundle_hash": { "$ref": "#/$defs/sha256" },
           "complete_input_bundle_hash": { "$ref": "#/$defs/sha256" },
           "prompt_ref": { "$ref": "#/$defs/artifactRef" },

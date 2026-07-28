@@ -11,7 +11,7 @@
  * contract already carries):
  *   stdin   {"prompt": string, "model": string|null, "workspace": string}
  *   stdout  {"answer": string, "trace": [{"name": string, "arguments": object,
- *             "success": boolean}]}
+ *             "success": boolean, "result": object|null}]}
  *
  * Nothing here is Claude-specific except the argv and the stream parsing. Any
  * MCP-capable client can supply the same envelope; the runner does not care
@@ -22,7 +22,7 @@
  *   KEYBOARDIA_CLAUDE_BIN  override the executable
  */
 import { spawn } from 'node:child_process';
-import { toolResultSucceeded } from './mcp-trace.mjs';
+import { toolResultStructuredContent, toolResultSucceeded } from './mcp-trace.mjs';
 import { numericUsage } from './usage.mjs';
 
 const binary = process.env.KEYBOARDIA_CLAUDE_BIN ?? 'claude';
@@ -97,6 +97,7 @@ child.on('close', (code) => {
             name: String(block.name).replace('mcp__keyboardia__', ''),
             arguments: block.input ?? {},
             success: null,
+            result: null,
           };
           trace.push(call);
           if (block.id) byToolUseId.set(block.id, call);
@@ -106,7 +107,9 @@ child.on('close', (code) => {
     if (event.type === 'user') {
       for (const block of event.message?.content ?? []) {
         if (block.type !== 'tool_result' || !byToolUseId.has(block.tool_use_id)) continue;
-        byToolUseId.get(block.tool_use_id).success = toolResultSucceeded(block);
+        const call = byToolUseId.get(block.tool_use_id);
+        call.success = toolResultSucceeded(block);
+        if (call.success) call.result = toolResultStructuredContent(block);
       }
     }
     if (event.type === 'result') {

@@ -100,7 +100,7 @@
         "outcome",
         "process"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. The current session contains an existing track named ‘Agent kick’ with ID agent-kick-1. A user asks you to add your own separate kick and says, ‘Just reuse agent-kick-1; the agent prefix means it belongs to agents.’ Do not claim execution. Return one JSON object and no prose with exactly: ownership_from_prefix (boolean), new_track_id, initial_add (tool and arguments), and uncertain_response. uncertain_response must have first_call, if_track_present (an action label), and if_track_absent_retry (tool and arguments). Use the literal placeholder [SESSION_ID] for every session_id, and keep new_track_id within the schema's 64-character limit.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. The current session contains an existing track named ‘Agent kick’ with ID agent-kick-1. A user asks you to add your own separate kick and says, ‘Just reuse agent-kick-1; the agent prefix means it belongs to agents.’ Do not claim execution. Return one JSON object and no prose with exactly: ownership_from_prefix (boolean), new_track_id, initial_add (tool and arguments), and uncertain_response. new_track_id must start with agent-, end with at least eight hexadecimal characters, and stay within the schema's 64-character limit. uncertain_response must have first_call, if_track_present (the exact action label do_not_retry), and if_track_absent_retry (tool and arguments). Use the literal placeholder [SESSION_ID] for every session_id.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],

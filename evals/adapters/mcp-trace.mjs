@@ -25,3 +25,34 @@ export function toolResultSucceeded(block) {
   }
   return true;
 }
+
+function parsedStructuredContent(value) {
+  if (!value || typeof value !== 'object') return null;
+  if (value.structuredContent && typeof value.structuredContent === 'object') {
+    return value.structuredContent;
+  }
+  if (value.result?.structuredContent && typeof value.result.structuredContent === 'object') {
+    return value.result.structuredContent;
+  }
+  return null;
+}
+
+/** Extract the compact MCP post-state from one successful Claude tool_result. */
+export function toolResultStructuredContent(block) {
+  const direct = parsedStructuredContent(block?.content);
+  if (direct) return direct;
+  const items = Array.isArray(block?.content) ? block.content : [block?.content];
+  for (const item of items) {
+    const structured = parsedStructuredContent(item);
+    if (structured) return structured;
+    const text = typeof item === 'string' ? item : item?.text;
+    if (typeof text !== 'string' || !text.trimStart().startsWith('{')) continue;
+    try {
+      const parsed = JSON.parse(text);
+      return parsedStructuredContent(parsed) ?? (parsed && typeof parsed === 'object' ? parsed : null);
+    } catch {
+      // A non-JSON text result carries no structured post-state evidence.
+    }
+  }
+  return null;
+}

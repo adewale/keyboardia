@@ -196,6 +196,7 @@ function sourceBinding() {
     { role: 'autonomous_receipt_schema', path: 'evals/autonomous-receipt.schema.json' },
     { role: 'autonomous_receipt_schema_validator', path: 'evals/validate-autonomous-receipt-schema.mjs' },
     ...sourceClosure(['app/src/worker/index.ts']),
+    { role: 'system_under_test_entry', path: 'app/src/worker/index.ts' },
   ];
   const unique = [...new Map(inputs.map((input) => [input.path, input])).values()];
   return createSourceBinding(repoRoot, unique);

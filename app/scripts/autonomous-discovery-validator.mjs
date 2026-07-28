@@ -7,8 +7,10 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   capabilityPresent,
+  canonicalJson,
   receiptContainsHostPath,
   redactCapability,
+  reversibleDecodedStrings,
   verifySourceModuleClosure,
   verifySourceProvenance,
 } from '../../evals/receipt.mjs';
@@ -329,13 +331,20 @@ export function validateAutonomousReceipt(receipt) {
     ['mcp_tool_call', 'mcp__discovery_transport__call_mcp_tool'],
     ['random_uuid', 'mcp__discovery_transport__random_uuid'],
   ]);
-  const transportCalls = receipt.trace.map((event) => phaseToTool.get(event.phase));
-  invariant(transportCalls.every(Boolean), 'trace contains an unknown transport phase');
-  const cliCalls = receipt.cli_trace
-    .map((event) => event.name)
-    .filter((name) => name !== 'ToolSearch');
-  invariant(JSON.stringify(cliCalls) === JSON.stringify(transportCalls),
+  const transportCalls = receipt.trace.map((event) => ({
+    name: phaseToTool.get(event.phase),
+    arguments: event.request,
+  }));
+  invariant(transportCalls.every((event) => event.name), 'trace contains an unknown transport phase');
+  const cliCalls = receipt.cli_trace.filter((event) => event.name !== 'ToolSearch');
+  invariant(cliCalls.length === transportCalls.length,
     'CLI tool trace does not correlate to the audited transport trace');
+  for (let index = 0; index < transportCalls.length; index += 1) {
+    invariant(cliCalls[index].name === transportCalls[index].name
+      && canonicalJson(cliCalls[index].arguments ?? {})
+        === canonicalJson(transportCalls[index].arguments ?? {}),
+    `CLI tool trace event ${index + 1} does not correlate to the audited transport request`);
+  }
   const targetEndpoint = new URL('/mcp', receipt.origin).href;
   const argv = JSON.stringify(receipt.adapter_argv ?? []);
   invariant(!argv.includes(targetEndpoint), 'adapter argv preconfigured the target endpoint');
@@ -410,17 +419,8 @@ function sensitiveUuidsFromValue(value) {
   const values = new Set();
   const visit = (entry) => {
     if (typeof entry === 'string') {
-      const decoded = decodeEscapes(entry);
-      for (const match of decoded.matchAll(UUID)) values.add(match[0].toLowerCase());
-      for (const candidate of decoded.matchAll(/[A-Za-z0-9+/_-]{32,}={0,2}/g)) {
-        for (const encoding of ['base64', 'base64url']) {
-          try {
-            const unpacked = Buffer.from(candidate[0], encoding).toString('utf8');
-            for (const match of unpacked.matchAll(UUID)) values.add(match[0].toLowerCase());
-          } catch {
-            // Not valid in this base64 alphabet.
-          }
-        }
+      for (const decoded of reversibleDecodedStrings(entry)) {
+        for (const match of decoded.matchAll(UUID)) values.add(match[0].toLowerCase());
       }
       return;
     }
@@ -486,14 +486,16 @@ function git(repoRoot, args, { bytes = false, optional = false } = {}) {
 export function verifySourceBinding(source, repoRoot) {
   const requiredRoles = [
     'skill', 'manifest', 'transport', 'validator', 'runner', 'answer_adapter',
-    'system_under_test_config', 'dependency_manifest', 'dependency_lock',
+    'system_under_test_entry', 'system_under_test_config', 'dependency_manifest', 'dependency_lock',
     'receipt_runtime', 'receipt_schema', 'receipt_schema_validator', 'autonomous_receipt_schema',
     'autonomous_receipt_schema_validator',
   ];
   const proofErrors = verifySourceProvenance(source, { requiredRoles });
   invariant(proofErrors.length === 0, proofErrors.join('; '));
   const roots = (source.files ?? [])
-    .filter((file) => ['transport', 'validator', 'runner', 'answer_adapter'].includes(file.role))
+    .filter((file) => [
+      'transport', 'validator', 'runner', 'answer_adapter', 'system_under_test_entry',
+    ].includes(file.role))
     .map((file) => file.path);
   const closureErrors = verifySourceModuleClosure(source, roots);
   invariant(closureErrors.length === 0, closureErrors.join('; '));
