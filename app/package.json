@@ -12,7 +12,7 @@
     "test": "npm run test:unit",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
-    "test:mcp": "vitest run src/worker/mcp-edits.test.ts src/worker/mcp.test.ts src/worker/mcp-evals.test.ts",
+    "test:mcp": "vitest run src/worker/mcp-edits.test.ts src/worker/mcp-guard.test.ts src/worker/mcp.test.ts src/worker/mcp-evals.test.ts",
     "test:bench": "vitest bench --run",
     "test:integration": "cd test/integration && npm test",
     "test:all": "npm run test:unit && npm run test:integration",
@@ -74,7 +74,7 @@
     "post-fix": "tsx scripts/post-fix-analysis.ts",
     "bug:capture": "tsx scripts/bug-capture.ts --interactive",
     "prepare": "cd .. && husky app/.husky",
-    "deploy": "npm run build && wrangler deploy --env staging",
+    "deploy": "npm run test:mcp && npm run build && wrangler deploy --env staging && npm run smoke:mcp:staging",
     "deploy:production": "tsx scripts/deploy-production.ts",
     "test:mutation": "stryker run"
   },
@@ -82,7 +82,7 @@
     "*.{ts,tsx}": "eslint --fix"
   },
   "dependencies": {
-    "@modelcontextprotocol/server": "2.0.0-beta.5",
+    "@modelcontextprotocol/server": "2.0.0",
     "@types/qrcode": "^1.5.6",
     "lucide-react": "1.25.0",
     "midi-writer-js": "^3.1.1",
@@ -96,7 +96,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20260629.1",
     "@eslint/js": "^9.39.1",
-    "@modelcontextprotocol/client": "2.0.0-beta.5",
+    "@modelcontextprotocol/client": "2.0.0",
     "@playwright/test": "^1.57.0",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/typescript-checker": "^9.6.1",

@@ -16,6 +16,109 @@ import { isBodySizeValid } from './validation';
 /** The only method the stateless endpoint serves. */
 export const MCP_ALLOWED_METHODS = 'POST';
 
+const PRODUCTION_ORIGINS = new Set([
+  'https://keyboardia.dev',
+  'https://www.keyboardia.dev',
+]);
+const STAGING_ORIGIN = 'https://staging.keyboardia.dev';
+
+function isLoopbackHostname(hostname: string): boolean {
+  return hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+}
+
+/**
+ * Browser authorization is target-aware: development and staging origins must
+ * never inherit write access to production. Staging additionally accepts the
+ * production app as a higher-trust caller so the deployment smoke can exercise
+ * a real cross-origin preflight. CLI clients normally omit Origin entirely.
+ */
+function isOriginAllowedForTarget(origin: URL, target: URL): boolean {
+  const targetHostname = target.hostname.toLowerCase();
+  if (targetHostname === 'keyboardia.dev' || targetHostname === 'www.keyboardia.dev') {
+    return PRODUCTION_ORIGINS.has(origin.origin);
+  }
+  if (targetHostname === 'staging.keyboardia.dev') {
+    return origin.origin === STAGING_ORIGIN || PRODUCTION_ORIGINS.has(origin.origin);
+  }
+  if (isLoopbackHostname(targetHostname)) {
+    return isLoopbackHostname(origin.hostname.toLowerCase());
+  }
+
+  // Preview and other deployments do not trust sibling deployments: only the
+  // exact HTTPS origin serving this endpoint may call it from a browser.
+  return target.protocol === 'https:' && origin.origin === target.origin;
+}
+
+function parsedAllowedOrigin(request: Request): URL | null {
+  const origin = request.headers.get('origin');
+  if (!origin) return null;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    return null;
+  }
+
+  if (
+    (parsed.protocol !== 'https:' && parsed.protocol !== 'http:')
+    || parsed.username !== ''
+    || parsed.password !== ''
+    || parsed.pathname !== '/'
+    || parsed.search !== ''
+    || parsed.hash !== ''
+  ) {
+    return null;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const isLocal = isLoopbackHostname(hostname);
+  if (!isLocal && parsed.protocol !== 'https:') return null;
+  if (!isLocal && parsed.port !== '') return null;
+  if (!isOriginAllowedForTarget(parsed, new URL(request.url))) return null;
+
+  return parsed;
+}
+
+/**
+ * MCP Streamable HTTP requires a present Origin to be validated. Missing
+ * Origin is valid because non-browser clients do not send one; a malformed,
+ * opaque (`null`), or unapproved browser origin is rejected before parsing.
+ */
+export function validateMcpOrigin(request: Request): Response | undefined {
+  const origin = request.headers.get('origin');
+  if (!origin) return undefined;
+  if (parsedAllowedOrigin(request)) return undefined;
+
+  return new Response(JSON.stringify({
+    jsonrpc: '2.0',
+    error: {
+      code: -32000,
+      message: `Invalid Origin: ${origin}`,
+    },
+    id: null,
+  }), {
+    status: 403,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/** CORS metadata for a validated browser origin. */
+export function mcpCorsHeaders(request: Request): Headers {
+  const headers = new Headers({
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, MCP-Protocol-Version, MCP-Method, MCP-Name',
+    'Access-Control-Expose-Headers': 'MCP-Protocol-Version',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  });
+  const parsed = parsedAllowedOrigin(request);
+  if (parsed) {
+    headers.set('Access-Control-Allow-Origin', parsed.origin);
+  }
+  return headers;
+}
+
 /**
  * The stateless transport has no SSE stream to attach to and no MCP session to
  * terminate, so GET and DELETE are as unserviceable as PUT. The SDK answers
@@ -100,6 +203,9 @@ async function readBoundedBody(request: Request): Promise<ArrayBuffer | null> {
  * the same way.
  */
 export async function guardMcpRequest(request: Request): Promise<Response | Request> {
+  const originRejection = validateMcpOrigin(request);
+  if (originRejection) return originRejection;
+
   if (request.method !== 'POST') {
     return methodNotAllowed();
   }

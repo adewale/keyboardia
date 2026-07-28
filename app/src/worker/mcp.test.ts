@@ -1,4 +1,10 @@
-import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import {
+  CLIENT_CAPABILITIES_META_KEY,
+  CLIENT_INFO_META_KEY,
+  Client,
+  PROTOCOL_VERSION_META_KEY,
+  StreamableHTTPClientTransport,
+} from '@modelcontextprotocol/client';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '../shared/state-mutations';
@@ -11,6 +17,41 @@ import {
 } from './mcp';
 
 const SESSION_ID = '00000000-0000-4000-8000-000000000001';
+const PROTOCOL_VERSION = '2026-07-28';
+
+function modernRequest(
+  method: string,
+  options: {
+    protocolVersion?: string;
+    methodHeader?: string | null;
+  } = {}
+): Request {
+  const protocolVersion = options.protocolVersion ?? PROTOCOL_VERSION;
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+    Accept: 'application/json, text/event-stream',
+    'MCP-Protocol-Version': protocolVersion,
+  });
+  if (options.methodHeader !== null) {
+    headers.set('Mcp-Method', options.methodHeader ?? method);
+  }
+  return new Request('https://keyboardia.test/mcp', {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({
+      jsonrpc: '2.0',
+      id: 'raw-modern-request',
+      method,
+      params: {
+        _meta: {
+          [PROTOCOL_VERSION_META_KEY]: protocolVersion,
+          [CLIENT_INFO_META_KEY]: { name: 'keyboardia-test', version: '1.0.0' },
+          [CLIENT_CAPABILITIES_META_KEY]: {},
+        },
+      },
+    }),
+  });
+}
 
 function memorySession(id: string, overrides: Partial<Session> = {}): Session {
   return {
@@ -175,6 +216,12 @@ describe('stateless MCP endpoint', () => {
     expect(client.getServerCapabilities()?.prompts).toBeUndefined();
     expect(JSON.stringify(listed.tools.find((tool) => tool.name === 'edit_session')?.inputSchema))
       .toContain('"kick"');
+    expect(JSON.stringify(listed.tools.find((tool) => tool.name === 'edit_session')?.inputSchema))
+      .toContain('Zero-based step index');
+    expect(listed.tools.find((tool) => tool.name === 'edit_session')?.annotations)
+      .toMatchObject({ destructiveHint: true, idempotentHint: true });
+    expect(client.getInstructions()).toContain('Read an existing session with get_session');
+    expect(client.getInstructions()).toContain('Only publish when the user explicitly asks');
     expect(listed.ttlMs).toBeTypeOf('number');
     expect(listed.cacheScope).toBeDefined();
     expect(observed.some(({ request }) =>
@@ -186,6 +233,63 @@ describe('stateless MCP endpoint', () => {
     expect(observed.every(({ response }) =>
       response.headers.get('Mcp-Session-Id') === null
     )).toBe(true);
+  });
+
+  it('requires Mcp-Method on modern requests', async () => {
+    const handler = createKeyboardiaMcpHandler(new MemorySessionAdapter());
+    const response = await handler.fetch(modernRequest('server/discover', {
+      methodHeader: null,
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      jsonrpc: '2.0',
+      error: { code: -32020 },
+      id: 'raw-modern-request',
+    });
+  });
+
+  it('rejects modern header/body disagreements', async () => {
+    const handler = createKeyboardiaMcpHandler(new MemorySessionAdapter());
+    const response = await handler.fetch(modernRequest('server/discover', {
+      methodHeader: 'tools/list',
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      jsonrpc: '2.0',
+      error: { code: -32020 },
+      id: 'raw-modern-request',
+    });
+  });
+
+  it('rejects an unsupported modern protocol revision', async () => {
+    const handler = createKeyboardiaMcpHandler(new MemorySessionAdapter());
+    const response = await handler.fetch(modernRequest('server/discover', {
+      protocolVersion: '2099-01-01',
+    }));
+
+    expect(response.status).toBe(400);
+    expect(await response.json()).toMatchObject({
+      jsonrpc: '2.0',
+      error: {
+        code: -32022,
+        data: { supported: [PROTOCOL_VERSION], requested: '2099-01-01' },
+      },
+      id: 'raw-modern-request',
+    });
+  });
+
+  it('returns JSON-RPC Method not found for an unknown modern method', async () => {
+    const handler = createKeyboardiaMcpHandler(new MemorySessionAdapter());
+    const response = await handler.fetch(modernRequest('keyboardia/unknown'));
+
+    expect(response.status).toBe(404);
+    expect(await response.json()).toMatchObject({
+      jsonrpc: '2.0',
+      error: { code: -32601 },
+      id: 'raw-modern-request',
+    });
   });
 
   it('keeps the documented v1 tool surface synchronized with tools/list', async () => {
