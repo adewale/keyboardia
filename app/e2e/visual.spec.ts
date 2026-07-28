@@ -137,7 +137,19 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
     const stickyActions = trackRow.locator('.track-right');
     await expect(stickyActions).toBeVisible();
     const lastStep = stepStrip.locator('.step-cell').last();
-    await lastStep.scrollIntoViewIfNeeded();
+    // scrollIntoViewIfNeeded stops as soon as the cell is inside the
+    // scrollport, which is not the same as being clear of the sticky actions:
+    // it leaves the cell's right edge at 1189 against an actions edge of
+    // 1026.6, i.e. 162px underneath an opaque overlay. Scrolling the container
+    // to its maximum is the position a user reaches by scrolling right, and
+    // there the cell clears (1019 vs 1026.6) and hit-tests as itself.
+    await tracksScroller.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+    });
+    await expect(lastStep).toBeVisible();
+    const maxScroll = await tracksScroller.evaluate((element) => element.scrollLeft);
+    expect(maxScroll, 'the step strip did not scroll, so reachability is untested')
+      .toBeGreaterThan(0);
 
     const [stripBox, headerBox, actionsBox, lastStepBox] = await Promise.all([
       stepStrip.boundingBox(),
@@ -156,6 +168,11 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
       return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
     })).toBe(true);
 
+    // Reachability is proven above at maximum scroll; the screenshot is a
+    // separate contract about how the strip renders. Return to 0, the position
+    // the app opens in, so the capture does not depend on the scrolling done
+    // for the reachability check.
+    await tracksScroller.evaluate((element) => { element.scrollLeft = 0; });
     await expect(stepStrip).toHaveScreenshot('track-row-with-steps.png', {
       maxDiffPixels: 100,
       threshold: 0.2,
