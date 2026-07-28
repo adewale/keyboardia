@@ -80,15 +80,14 @@
   display: grid;
   grid-template-columns:
     [drag] 20px
-    [name] 80px
+    [name] 100px
     [mute] 36px
     [solo] 36px
     [transpose] 60px
-    [badge] 28px
+    [badge] 36px
     [step-count] 60px
     [pitch-view] 36px
     [velocity] 36px
-    [instrument] 24px
     [tools] 36px;
   column-gap: 4px;
   align-items: center;
@@ -101,6 +100,30 @@
   background: var(--color-surface);
   /* Subtle shadow to show content scrolling behind */
   box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.2);
+}
+
+/*
+ * Change instrument (issue #63): only an editable row carries the extra column.
+ *
+ * A published or read-only row does not render the toggle, so reserving its
+ * column there would leave a visible empty gap and shift every control from
+ * `mute` rightward — a 3557-pixel diff on the published Holby baseline for a
+ * button that is not even on screen. The total stays 508px either way, so the
+ * drag geometry documented in lesson 62 is unchanged in both templates.
+ */
+.track-left.has-instrument-toggle {
+  grid-template-columns:
+    [drag] 20px
+    [name] 80px
+    [mute] 36px
+    [solo] 36px
+    [transpose] 60px
+    [badge] 28px
+    [step-count] 60px
+    [pitch-view] 36px
+    [velocity] 36px
+    [instrument] 24px
+    [tools] 36px;
 }
 
 /* Grid column assignments for track controls */

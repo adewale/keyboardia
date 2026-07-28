@@ -298,6 +298,18 @@ Each of these was identified in the existing code before implementation.
     drag/auto-scroll fragility is untouched and remains a real issue; see
     docs/LESSONS-LEARNED.md lesson 46.
 
+13. **Reserving the new column on rows that never render the control.** Caught
+    by CI's macOS visual job, which this branch had predicted would be
+    unaffected. Funding the column from `[name]` and `[badge]` slack changed the
+    *default* template, so a published or read-only row — which withholds
+    `onSetInstrument` and therefore renders no toggle — still paid for it:
+    `mute` and everything right of it shifted 20px left, with a visible empty
+    gap where the button would be. 3557 pixels differed on the published Holby
+    pitch-overview baseline, for a control that was not on screen. The
+    11-column template now lives behind a `.has-instrument-toggle` modifier that
+    only an editable row carries; both templates total 508px, so the drag
+    geometry in bug 12 holds either way.
+
 ## 10. Test plan
 
 Layered so that each check runs at the narrowest seam that still executes

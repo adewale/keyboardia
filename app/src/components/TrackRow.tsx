@@ -616,7 +616,7 @@ export const TrackRow = React.memo(function TrackRow({
         data-category={instrumentCategory}
       >
         {/* LEFT STICKY: Controls that stay fixed during horizontal scroll */}
-        <div className="track-left">
+        <div className={`track-left${canChangeInstrument ? ' has-instrument-toggle' : ''}`}>
           {/* Phase 31G: Drag handle for track reordering */}
           <span
             className="track-drag-handle"

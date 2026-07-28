@@ -5752,3 +5752,16 @@ from each. Then bisect the diff — collapse the column, re-run, compare — unt
 one variable explains the result.
 
 **A flaky-looking failure deserves a baseline before it deserves a theory.**
+
+### Coda: the same mistake, one layer up
+
+Funding the column out of `[name]` and `[badge]` slack was measured against an
+**editable** row, and verified against editable-session tests. It changed the
+default template, so a published row — which renders no toggle — still paid for
+the column: every control right of the name shifted 20px left, around an empty
+gap. CI's macOS visual job caught it on the published Holby baseline.
+
+Layout changes have to be checked against every state that renders the layout,
+not just the state the new control appears in. The template that carries a new
+control now sits behind a modifier class that only the rows rendering it carry.
+
