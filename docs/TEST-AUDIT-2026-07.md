@@ -210,6 +210,11 @@ left advisory and proved why that is unsafe: the real-backend lane duplicated
 visual coverage in the wrong environment, and the visual lane failed 9/11 while
 GitHub still reported green. They now have disjoint ownership and exact result
 contracts (199 pass + 17 declared skips for functional; 11/11 for visual).
+The first blocking visual run then exposed a screenshot with the wrong subject:
+the 1,355px track row was wider than its 1,280px viewport, so Playwright moved
+it under the sticky header and compared the random presence avatar. The test
+now captures the in-viewport step strip and asserts its geometry is below the
+header before comparing pixels.
 The real count of `test.skip(useMockAPI, …)` guards is **19 across 14 files**,
 not the 13 first reported — that number came from too narrow a grep.
 

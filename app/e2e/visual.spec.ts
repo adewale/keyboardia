@@ -123,7 +123,25 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
 
     const trackRow = page.locator('.track-row').first();
     await expect(trackRow).toBeVisible();
-    await expect(trackRow).toHaveScreenshot('track-row-with-steps.png', {
+    const tracksScroller = page.locator('.tracks');
+    await tracksScroller.evaluate((element) => { element.scrollLeft = 0; });
+
+    // The full row is wider than the desktop viewport. Locator screenshots
+    // therefore scrolled it under the sticky app header and captured the
+    // random presence avatar instead of any track pixels. The step strip fits
+    // without scrolling; assert that it is below the header and wholly inside
+    // the viewport before treating its pixels as the visual contract.
+    const stepStrip = trackRow.locator('.steps');
+    const [stripBox, headerBox] = await Promise.all([
+      stepStrip.boundingBox(),
+      page.locator('.app-header').boundingBox(),
+    ]);
+    expect(stripBox).not.toBeNull();
+    expect(headerBox).not.toBeNull();
+    expect(stripBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
+    expect(stripBox!.x + stripBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
+
+    await expect(stepStrip).toHaveScreenshot('track-row-with-steps.png', {
       maxDiffPixels: 100,
       threshold: 0.2,
     });
