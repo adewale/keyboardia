@@ -273,7 +273,7 @@ export function StepSequencer() {
   const handleSetFMParams = useCallback((trackId: string, fmParams: FMParams) => {
     dispatch({ type: 'SET_FM_PARAMS', trackId, fmParams });
     // Also apply FM params to the audio engine immediately for real-time preview
-    audioEngine.setFMParams(fmParams.harmonicity, fmParams.modulationIndex);
+    audioEngine.setFMParams(trackId, fmParams.harmonicity, fmParams.modulationIndex);
   }, [dispatch]);
 
   // Phase 25: Handle track volume changes
@@ -317,9 +317,9 @@ export function StepSequencer() {
   // audio engine is reconciled by useTrackInstrumentReconcile, which sees this
   // change and a collaborator's or an agent's identically.
   const handleSetInstrument = useCallback((trackId: string, sampleId: string) => {
-    signalMusicIntent('add_track');
-    dispatch({ type: 'SET_TRACK_INSTRUMENT', trackId, sampleId });
-  }, [dispatch]);
+    const name = state.tracks.find((track) => track.id === trackId)?.name ?? sampleId;
+    dispatch({ type: 'SET_TRACK_INSTRUMENT', trackId, sampleId, name });
+  }, [dispatch, state.tracks]);
 
   // Phase 31D: Per-track swing handler
   const handleSetTrackSwing = useCallback((trackId: string, swing: number) => {

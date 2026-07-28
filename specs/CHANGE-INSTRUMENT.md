@@ -49,7 +49,8 @@ throwing:
   rejected edit.
 - `{ ok: true, changed: false, state }` — the track already plays that
   instrument. Returns the **same state reference**, which is what makes the
-  operation retry-safe for MCP and no-op-quiet for the broadcast path.
+  operation retry-safe for MCP and storage-quiet. WebSocket callers still get
+  an ordered acknowledgement so optimistic mutation tracking can settle.
 - `{ ok: true, changed: true, state, track }` — a new state with one new track
   object.
 
@@ -61,9 +62,10 @@ Every caller funnels through it:
 | Durable Object WebSocket | `handleSetTrackInstrument` → `setTrackInstrument` |
 | Durable Object MCP edit | `applyMcpSessionEdit('set_track_instrument')` → `setTrackInstrument` |
 
-Because the browser reducer and the Durable Object run the same function, the
-granular broadcast only has to carry `{ trackId, sampleId }`. Both sides derive
-the same resulting track, including the engine-state decision.
+Because the browser reducer and the Durable Object run the same function, peers
+derive the same resulting track, including the engine-state decision. During
+the rolling-deploy window the broadcast also carries the authoritative existing
+name for older clients; current clients deliberately ignore that field.
 
 ## 3. Reuse inventory
 
@@ -80,7 +82,7 @@ column.
 | Disposing stale per-track synths | `audioEngine.clearTrackSynths` | Reuse — it existed and documented this exact use, with **no caller** |
 | Mid-playback synth warming | `useTrackPrewarm` | Reuse; its signature already keys on `${id}:${sampleId}` |
 | Published-session rejection | `MUTATING_MESSAGE_TYPES` + `immutable` checks | Reuse; the new type joins the set and is blocked automatically |
-| Granular broadcast plumbing | `createTrackMutationHandler`, `createRemoteHandler` | Reuse `createRemoteHandler`; the DO handler needs the pure op, so it follows `handleMcpEdit`'s shape instead |
+| Granular broadcast plumbing | `createRemoteHandler` pattern + shared message switch | Add `createAuthoritativeHandler` so own ordered acknowledgements apply; the DO handler needs the pure op, so it follows `handleMcpEdit`'s shape instead |
 | MCP transport, error shaping | `mcp.ts` `toolError`, `McpSessionEditError` | Reuse |
 | MCP durable write + broadcast | `handleMcpEdit` | Reuse; one new event variant |
 | Sync completeness enforcement | `sync-classification.ts` exhaustiveness check, `validate:sync` | Reuse; the compiler names every site that still needs wiring |
@@ -126,24 +128,27 @@ does not lose their edits.
 
 ## 5. Wire protocol
 
-Added:
+The public operation names are still accepted for forward compatibility:
 
 - client → server `{ type: 'set_track_instrument', trackId, sampleId }`
 - server → client `{ type: 'track_instrument_set', trackId, sampleId, playerId }`
 
-`set_track_sample` / `track_sample_set` are **retained as a compatibility
-alias**. They keep their `name` field and their existing behavior, are still
-accepted by the Durable Object, and are still applied by the browser. Nothing in
-the product emits them any more:
+Product traffic deliberately uses the existing envelopes during the
+rolling-deploy window:
 
-- no UI ever dispatched `SET_TRACK_SAMPLE`, so no deployed client sends the old
-  message;
-- `getInstrumentName` derivation moved to the UI layer, where the picker already
-  has the catalog entry.
+- client → server `{ type: 'set_track_sample', trackId, sampleId, name }`
+- server → client `{ type: 'track_sample_set', trackId, sampleId, name, playerId }`
 
-They stay because removing a message type from `MUTATING_MESSAGE_TYPES` would
-silently start *accepting* it on published sessions, and because a persisted
-session never stores messages, so there is nothing to migrate.
+The client supplies the track's current name so an older server preserves it.
+A current server never trusts that value: both request envelopes run
+`setTrackInstrument`, and the response carries `result.track.name`. Current
+clients ignore the response name and run the same shared operation. The server
+uses `track_sample_set` even for a direct new-format request or an MCP edit, so
+one request cannot crash older open tabs with an unknown exhaustive-switch arm.
+
+An unchanged request skips persistence but still broadcasts this authoritative
+response with `clientSeq`; otherwise the sender's tracked optimistic mutation
+would be reported as lost after its timeout.
 
 The DO rejects an invalid `sampleId` or an unknown `trackId` by ignoring the
 message: no mutation, no broadcast, no `error` frame. That matches every other
@@ -186,14 +191,14 @@ The picker is the same component in both roles. `SamplePicker` takes
 `variant: 'add' | 'change'`; the `add` variant renders byte-identically to
 before so the existing `sample-picker.png` baseline still matches.
 
-All three surfaces open the **same** panel, which `TrackRow` renders once below
-the row using the existing `panel-animation-container` mechanics that pattern
-tools already use. There is no second picker built for a narrow viewport.
+Both editable product surfaces open the **same** panel, which `TrackRow` renders
+once below the row using the existing `panel-animation-container` mechanics that
+pattern tools already use. There is no second picker built for a narrow viewport.
 
 | Surface | Entry point |
 |---|---|
 | Desktop | `♪` toggle in `track-left`, beside the pattern-tools toggle, in its own `[instrument]` grid column, paid for from the name column so the row's total width is unchanged |
-| Mobile portrait width | "Instrument" row in the existing `InlineDrawer`, labelled with the current instrument |
+| Narrow portrait | No edit entry: the intentional read-only `PortraitGrid` asks the person to rotate for the full sequencer |
 | Landscape mobile | "Sound" button in `TrackDrawer` |
 
 Preview before committing is inherited: `SamplePicker` previews on hover and on
@@ -335,27 +340,31 @@ production code, per `specs/TESTING.md`.
   `arbitraries.ts`, so commutativity and convergence are exercised
 
 **Durable Object + WebSocket** — `app/test/integration/collaboration-contract.test.ts`
-- a second connected browser receives `track_instrument_set` and the persisted
+- a second connected browser receives rollout-compatible `track_sample_set` and the persisted
   state changed
 - steps, p-locks, volume, transpose, stepCount, swing, and a custom name all
   survive
 - an invalid `sampleId` and an unknown `trackId` produce no broadcast and no
   state change
+- the compatibility name is ignored, engine state is cleaned, and a no-op is
+  acknowledged without a durable write
 - a published session rejects the message
 - the DO's result is identical to the pure operation's result (policy parity)
 
 **MCP** — `mcp-edits.test.ts`, `mcp.test.ts`, `app/test/integration/mcp-journeys.test.ts`
 - schema rejects an unknown enum member before the adapter is reached
 - retry-safe: repeating the edit is a no-op
-- a real DO-backed edit broadcasts `track_instrument_set` to a connected browser
+- a real DO-backed edit broadcasts rollout-compatible `track_sample_set` to a connected browser
 - published sessions reject; published sessions stay readable
 - documented `#### \`set_track_instrument\`` heading matches `tools/list`
   (enforced by the existing spec-sync test)
 
-**Component** — `SamplePicker.variant.test.tsx`, `TrackRow` / `TrackDrawer` tests
+**Component** — `SamplePicker.change-variant.test.tsx`, `TrackRow` / `TrackDrawer` tests
 - the `add` variant's markup is unchanged (guards the visual baseline)
 - the `change` variant marks the current instrument and commits the catalog ID
 - the toggle is absent when the session is published
+- keyboard selection restores focus, landscape dismissal closes the picker,
+  and Chromium covers landscape plus long-pattern horizontal scrolling
 
 **Audio** — `useTrackInstrumentReconcile.test.ts`
 - a changed `sampleId` clears and re-preloads, for local *and* remote origin

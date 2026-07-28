@@ -200,6 +200,7 @@ export const TrackRow = React.memo(function TrackRow({
   // HTML5 DnD e.target is always the [draggable] element, not the clicked child
   const dragHandleClickedRef = useRef(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const instrumentOpenerRef = useRef<HTMLElement | null>(null);
   const remoteChanges = useRemoteChanges();
 
   // Phase 31B: Calculate active step count for Euclidean slider
@@ -372,15 +373,42 @@ export const TrackRow = React.memo(function TrackRow({
   // drawer that could have opened it, so the person sees the result.
   const canChangeInstrument = !!onSetInstrument && !readOnly;
 
-  const handleToggleInstrumentPicker = useCallback(() => {
-    setShowInstrumentPicker(open => !open);
+  const handleToggleInstrumentPicker = useCallback((opener?: HTMLElement) => {
+    setShowInstrumentPicker(open => {
+      if (!open && opener) instrumentOpenerRef.current = opener;
+      return !open;
+    });
   }, []);
 
   const handleSelectInstrument = useCallback((sampleId: string) => {
+    const opener = instrumentOpenerRef.current;
     onSetInstrument?.(sampleId);
     setShowInstrumentPicker(false);
     setIsMenuOpen(false);
-  }, [onSetInstrument]);
+    requestAnimationFrame(() => {
+      const focusIfVisible = (element: HTMLElement | null | undefined): boolean => {
+        if (!element?.isConnected) return false;
+        const style = window.getComputedStyle(element);
+        if (element.hidden || style.display === 'none' || style.visibility === 'hidden') {
+          return false;
+        }
+        element.focus();
+        return document.activeElement === element;
+      };
+      const landscapeOpener = Array.from(
+        document.querySelectorAll<HTMLElement>('[data-testid^="landscape-change-instrument-"]'),
+      ).find(element => element.dataset.testid === `landscape-change-instrument-${track.id}`);
+      const fallbackCandidates = [
+        opener,
+        landscapeOpener,
+        wrapperRef.current?.querySelector<HTMLElement>('.instrument-toggle'),
+        wrapperRef.current?.querySelector<HTMLElement>('.track-name'),
+      ];
+      for (const candidate of fallbackCandidates) {
+        if (focusIfVisible(candidate)) return;
+      }
+    });
+  }, [onSetInstrument, track.id]);
 
   // Derived rather than stored, so a session that becomes read-only while the
   // picker is open closes it without an effect that re-renders to catch up.
@@ -575,6 +603,7 @@ export const TrackRow = React.memo(function TrackRow({
   }, [onDragLeave]);
 
   const handleCloseLandscapeDrawer = useCallback((reason: 'outside' | 'escape') => {
+    setShowInstrumentPicker(false);
     onToggleLandscapeDrawer?.();
     if (reason === 'escape') {
       requestAnimationFrame(() => {
@@ -727,7 +756,7 @@ export const TrackRow = React.memo(function TrackRow({
           {canChangeInstrument && (
             <button
               className={`instrument-toggle ${isInstrumentPickerOpen ? 'active' : ''}`}
-              onClick={handleToggleInstrumentPicker}
+              onClick={(event) => handleToggleInstrumentPicker(event.currentTarget)}
               title={`Change instrument (currently ${getInstrumentName(track.sampleId)})`}
               aria-label="Change instrument"
               aria-expanded={isInstrumentPickerOpen}
@@ -1004,7 +1033,7 @@ export const TrackRow = React.memo(function TrackRow({
             <span className="drawer-label">Instrument</span>
             <button
               className={`drawer-instrument-btn ${isInstrumentPickerOpen ? 'active' : ''}`}
-              onClick={handleToggleInstrumentPicker}
+              onClick={(event) => handleToggleInstrumentPicker(event.currentTarget)}
               aria-expanded={isInstrumentPickerOpen}
               aria-controls={isInstrumentPickerOpen ? `instrument-panel-${track.id}` : undefined}
               data-testid={`drawer-change-instrument-${track.id}`}

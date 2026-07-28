@@ -5761,4 +5761,3 @@ gap. CI's macOS visual job caught it on the published Holby baseline.
 Layout changes have to be checked against every state that renders the layout,
 not just the state the new control appears in. The template that carries a new
 control now sits behind a modifier class that only the rows rendering it carry.
-

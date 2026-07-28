@@ -14,7 +14,7 @@ import { sessionTrackToTrack, sessionTracksToTracks, DEFAULT_STEP_COUNT } from '
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
-import { createRemoteHandler } from './handler-factory';
+import { createAuthoritativeHandler, createRemoteHandler } from './handler-factory';
 import { createConnectionStormDetector, type ConnectionStormDetector } from '../utils/connection-storm';
 import { SyncHealth, type SyncHealthMetrics } from './sync-health';
 import { MutationTracker, type MutationStats } from './mutation-tracker';
@@ -1736,10 +1736,10 @@ export class MultiplayerConnection {
     }
   };
 
-  // Change instrument (issue #63). The broadcast carries only the sound source;
-  // the reducer runs the same shared operation the server ran, so both sides
-  // reach the same track without the wire having to describe the result.
-  private handleTrackInstrumentSet = createRemoteHandler<{
+  // Instrument values are server-ordered last-writer-wins state. Apply every
+  // ordered result, including our own acknowledgement, so a remote write that
+  // the server placed before ours cannot leave this browser stale.
+  private handleTrackInstrumentSet = createAuthoritativeHandler<{
     trackId: string;
     sampleId: string;
     playerId: string;
@@ -1747,16 +1747,19 @@ export class MultiplayerConnection {
     type: 'SET_TRACK_INSTRUMENT',
     trackId: msg.trackId,
     sampleId: msg.sampleId,
+    // Inbound new-format events carry no name. This remote action is never
+    // serialized, and the reducer intentionally ignores the compatibility field.
+    name: msg.sampleId,
   }));
 
-  /** Legacy alias of handleTrackInstrumentSet; nothing emits track_sample_set. */
-  private handleTrackSampleSet = createRemoteHandler<{
+  /** Rolling-deploy alias; `name` is deliberately ignored by current clients. */
+  private handleTrackSampleSet = createAuthoritativeHandler<{
     trackId: string;
     sampleId: string;
     name: string;
     playerId: string;
   }>((msg) => ({
-    type: 'SET_TRACK_SAMPLE',
+    type: 'SET_TRACK_INSTRUMENT',
     trackId: msg.trackId,
     sampleId: msg.sampleId,
     name: msg.name,
@@ -2268,9 +2271,13 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
       return { type: 'clear_track', trackId: action.trackId };
     case 'SET_TRACK_INSTRUMENT':
       return {
-        type: 'set_track_instrument',
+        // Use the legacy envelope during the rolling-deploy window. Older
+        // servers understand it, while current servers treat it as a validated
+        // alias of set_track_instrument and preserve the authoritative name.
+        type: 'set_track_sample',
         trackId: action.trackId,
         sampleId: action.sampleId,
+        name: action.name,
       };
     case 'SET_TRACK_SAMPLE':
       return {

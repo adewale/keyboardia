@@ -274,6 +274,18 @@ describe('ToneSynthManager', () => {
       expect(toneTestState.fmSynths[0].set).toHaveBeenCalledTimes(1);
     });
 
+    it('resets FM overrides to the active preset without replacing the synth', () => {
+      manager.playNote('fm-bass', 'C4', '8n', 0);
+      manager.setFMParams(9, 19);
+
+      manager.resetFMParams();
+      manager.playNote('fm-bass', 'E4', '8n', 0.1);
+
+      expect(toneTestState.fmSynths).toHaveLength(1);
+      expect(manager.getFMParams()).toEqual({ harmonicity: 2, modulationIndex: 8 });
+      expect(toneTestState.fmSynths[0].set).toHaveBeenCalledTimes(1);
+    });
+
     it('applies velocity to pluck-string at the scheduled note time', () => {
       manager.playNote('pluck-string', 'C4', '8n', 0.2, 0.35);
 

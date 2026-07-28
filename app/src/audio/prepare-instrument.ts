@@ -10,9 +10,9 @@
  * what lets the change-instrument path reuse it instead of growing a second,
  * drifting copy.
  *
- * Fire-and-forget by design: the scheduler's hot path falls back to
- * `getOrCreate` for anything not yet warm, so a slow or failed preload costs
- * latency, never correctness. See docs/DEBUGGING-LESSONS-LEARNED.md #008.
+ * Callers may fire-and-forget, but the work inside is deliberately sequenced:
+ * base audio, then Tone.js when required, then the track-specific preload.
+ * Warming before Tone.js is ready is a no-op and can otherwise lose a note.
  */
 
 import { audioEngine } from './engine';
@@ -30,18 +30,26 @@ function requiresTone(sampleId: string): boolean {
  *                 synths are warmed too. Omit for preview-style calls, which
  *                 use the engine's shared preview synths instead.
  */
-export function prepareInstrument(sampleId: string, trackId?: string): void {
-  if (requiresTone(sampleId) && !audioEngine.isToneInitialized()) {
-    audioEngine.initializeTone().catch(() => {
-      // Ignore - the scheduler warns on the next play.
-    });
-  }
+export async function prepareInstrument(sampleId: string, trackId?: string): Promise<void> {
+  try {
+    // Remote state changes must not create an AudioContext outside a user
+    // gesture. A picker click starts initialization first via signalMusicIntent;
+    // if that work is still in flight, join its promise before preloading.
+    if (!audioEngine.isInitialized()) {
+      if (!audioEngine.isInitializing()) return;
+      await audioEngine.initialize();
+    }
 
-  // preloadInstrumentsForTracks handles both sampled buffer loading and
-  // per-track synth warming, and is a no-op for plain procedural samples.
-  audioEngine.preloadInstrumentsForTracks(
-    trackId === undefined ? [{ sampleId }] : [{ id: trackId, sampleId }]
-  ).catch(() => {
-    // Ignore - preloadInstrumentsForTracks already logs its own failures.
-  });
+    if (requiresTone(sampleId) && !audioEngine.isToneInitialized()) {
+      await audioEngine.initializeTone();
+    }
+
+    // Handles sampled buffers and per-track synth warming; plain procedural
+    // samples make this a cheap no-op.
+    await audioEngine.preloadInstrumentsForTracks(
+      trackId === undefined ? [{ sampleId }] : [{ id: trackId, sampleId }]
+    );
+  } catch {
+    // Non-blocking preparation: playback owns user-visible readiness errors.
+  }
 }

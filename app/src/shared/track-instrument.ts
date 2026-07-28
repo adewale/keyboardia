@@ -17,10 +17,12 @@
  *   concurrent edits.
  * - An unchanged instrument returns `changed: false` with the original state
  *   reference, which is what makes the operation retry-safe for agents and
- *   silent for the broadcast path.
+ *   avoids a durable write. WebSocket callers still receive an ordered
+ *   acknowledgement so their optimistic mutation tracker can settle.
  * - The result is a function of `(track, sampleId)` alone. That is what lets the
- *   granular broadcast carry only `{ trackId, sampleId }` and still converge:
- *   every peer recomputes the same track.
+ *   granular broadcast carry the sound-source fields and still converge: every
+ *   peer recomputes the same track. The rollout envelope also carries the
+ *   authoritative existing name solely for older clients.
  */
 
 import { VALID_SAMPLE_IDS } from './instrument-catalog';

@@ -239,6 +239,7 @@ describe('MCP rhythm domain', () => {
         type: 'track_instrument_set',
         trackId: 'lead-1',
         sampleId: 'sampled:808-kick',
+        name: 'Ada’s Lead',
       }]);
 
       const after = result.state.tracks[0]!;

@@ -13,6 +13,7 @@ import fc from 'fast-check';
 import { VALID_SAMPLE_IDS } from '../components/sample-constants';
 import { MAX_STEPS } from './constants';
 import type { SessionState, SessionTrack } from './state';
+import { applyMutation } from './state-mutations';
 import { carryOverEngineState, setTrackInstrument } from './track-instrument';
 
 const CATALOG_IDS = [...VALID_SAMPLE_IDS].sort();
@@ -47,6 +48,28 @@ function stateWith(...tracks: SessionTrack[]): SessionState {
 }
 
 describe('setTrackInstrument', () => {
+  it('routes the legacy wire alias through validation and field cleanup', () => {
+    const before = fullTrack();
+    const state = stateWith(before);
+    const changed = applyMutation(state, {
+      type: 'set_track_sample',
+      trackId: 'track-1',
+      sampleId: 'sampled:808-kick',
+      name: 'Untrusted rename',
+    });
+
+    expect(changed.tracks[0].sampleId).toBe('sampled:808-kick');
+    expect(changed.tracks[0].name).toBe('My Custom Label');
+    expect(changed.tracks[0].fmParams).toBeUndefined();
+
+    expect(applyMutation(state, {
+      type: 'set_track_sample',
+      trackId: 'track-1',
+      sampleId: 'not-in-the-catalog',
+      name: 'Untrusted rename',
+    })).toBe(state);
+  });
+
   it('replaces only the sound source', () => {
     const before = fullTrack();
     const result = setTrackInstrument(stateWith(before), {

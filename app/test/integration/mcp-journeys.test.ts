@@ -313,12 +313,13 @@ describe('MCP v1 onboarding journeys', () => {
     // A connected browser converges from the existing granular event, not from
     // a replacement snapshot.
     expect(await browser.waitFor(
-      ({ type, trackId }) => type === 'track_instrument_set' && trackId === 'lead-agent',
+      ({ type, trackId }) => type === 'track_sample_set' && trackId === 'lead-agent',
       'agent instrument broadcast'
     )).toMatchObject({
-      type: 'track_instrument_set',
+      type: 'track_sample_set',
       playerId: 'mcp',
       trackId: 'lead-agent',
+      name: 'Ada Lead',
     });
 
     expect(result.isError).not.toBe(true);

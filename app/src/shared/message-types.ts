@@ -118,7 +118,9 @@ export type ClientMessageBase =
   // Change instrument (issue #63). Replaces only the sound source; renaming
   // stays set_track_name so it cannot erase a collaborator's custom label.
   | { type: 'set_track_instrument'; trackId: string; sampleId: string }
-  // Legacy alias retained for compatibility. Nothing in the product emits it.
+  // Legacy wire envelope retained during rolling deploys. New clients emit it
+  // with the existing name so an older server preserves the label; a new
+  // server ignores the caller-supplied name and runs the shared operation.
   | { type: 'set_track_sample'; trackId: string; sampleId: string; name: string }
   | { type: 'set_track_volume'; trackId: string; volume: number }
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
@@ -173,10 +175,10 @@ export type ServerMessageBase =
   | { type: 'track_added'; track: SessionTrack; playerId: string }
   | { type: 'track_deleted'; trackId: string; playerId: string }
   | { type: 'track_cleared'; trackId: string; playerId: string }
-  // Change instrument (issue #63). Carries only the sound source: every peer
-  // recomputes the resulting track with the same shared operation.
+  // New-format response accepted for forward compatibility.
   | { type: 'track_instrument_set'; trackId: string; sampleId: string; playerId: string }
-  // Legacy alias retained for compatibility. Nothing in the product emits it.
+  // Rolling-deploy response envelope. New clients ignore `name` and run the
+  // shared operation; older clients use it without crashing on an unknown type.
   | { type: 'track_sample_set'; trackId: string; sampleId: string; name: string; playerId: string }
   | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string }
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }

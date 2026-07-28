@@ -346,7 +346,7 @@ describe('isStateMutatingBroadcast', () => {
       'clear_track',     // -> track_cleared
       'copy_sequence',   // -> sequence_copied (Phase 26)
       'move_sequence',   // -> sequence_moved (Phase 26)
-      'set_track_instrument', // -> track_instrument_set (Change instrument, #63)
+      'set_track_instrument', // -> track_sample_set during rolling deploy (#63)
       'set_track_sample', // -> track_sample_set (legacy alias)
       'set_track_volume', // -> track_volume_set
       'set_track_transpose', // -> track_transpose_set

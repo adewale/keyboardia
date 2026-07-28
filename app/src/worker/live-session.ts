@@ -449,7 +449,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
         break;
       case 'track_instrument_set':
-        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        // Keep active sessions compatible with tabs running the previous
+        // client, whose exhaustive message switch does not know the new type.
+        this.broadcast({
+          type: 'track_sample_set',
+          trackId: event.trackId,
+          sampleId: event.sampleId,
+          name: event.name,
+          playerId: MCP_ACTOR_ID,
+        });
         break;
       case 'step_toggled':
         this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
@@ -2001,7 +2009,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private async handleSetTrackInstrument(
     _ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'set_track_instrument'; trackId: string; sampleId: string; seq?: number }
+    msg: {
+      type: 'set_track_instrument' | 'set_track_sample';
+      trackId: string;
+      sampleId: string;
+      name?: string;
+      seq?: number;
+    }
   ): Promise<void> {
     if (!this.state) return;
 
@@ -2013,39 +2027,32 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       );
       return;
     }
-    if (!result.changed) return;
+    if (result.changed) {
+      this.state = result.state;
+      this.validateAndRepairState('handleSetTrackInstrument');
+      await this.persistToDoStorage();
+    }
 
-    this.state = result.state;
-
-    this.validateAndRepairState('handleSetTrackInstrument');
-    await this.persistToDoStorage();
-
+    // Always answer with the rollout-compatible envelope, even when a direct
+    // client used the new request type. One such request is broadcast to every
+    // tab, including older tabs whose exhaustive switch rejects the new event.
     this.broadcast({
-      type: 'track_instrument_set',
+      type: 'track_sample_set',
       trackId: msg.trackId,
       sampleId: msg.sampleId,
+      name: result.track.name,
       playerId: player.id,
     }, undefined, msg.seq);
   }
 
-  /** Legacy alias of handleSetTrackInstrument; nothing sends set_track_sample. */
-  private handleSetTrackSample = createTrackMutationHandler<
-    { trackId: string; sampleId: string; name: string },
-    ServerMessage
-  >({
-    getTrackId: (msg) => msg.trackId,
-    mutate: (track, msg) => {
-      track.sampleId = msg.sampleId;
-      track.name = msg.name;
-    },
-    toBroadcast: (msg, playerId) => ({
-      type: 'track_sample_set',
-      trackId: msg.trackId,
-      sampleId: msg.sampleId,
-      name: msg.name,
-      playerId,
-    }),
-  });
+  /** Rolling-deploy alias; the caller-supplied name is never trusted. */
+  private async handleSetTrackSample(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_track_sample'; trackId: string; sampleId: string; name: string; seq?: number }
+  ): Promise<void> {
+    await this.handleSetTrackInstrument(ws, player, msg);
+  }
 
   private handleSetTrackVolume = createTrackMutationHandler<
     { trackId: string; volume: number },

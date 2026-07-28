@@ -131,7 +131,7 @@ export function SamplePicker({
     // yet; for 'change' the per-track synth is rebuilt by
     // useTrackInstrumentReconcile once the new sampleId reaches state, which
     // is the path a collaborator's change takes too.
-    prepareInstrument(instrumentId);
+    void prepareInstrument(instrumentId);
 
     const name = getInstrumentName(instrumentId);
     onSelectSample(instrumentId, name);

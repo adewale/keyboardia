@@ -45,7 +45,7 @@ export type McpSessionEdit =
 
 export type McpEditEvent =
   | { type: 'track_added'; track: SessionTrack }
-  | { type: 'track_instrument_set'; trackId: string; sampleId: string }
+  | { type: 'track_instrument_set'; trackId: string; sampleId: string; name: string }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean }
   | { type: 'tempo_changed'; tempo: number };
 
@@ -238,6 +238,7 @@ export function applyMcpSessionEdit(
         type: 'track_instrument_set',
         trackId: edit.track_id,
         sampleId: edit.sample_id,
+        name: result.track.name,
       }],
       changed: true,
     };

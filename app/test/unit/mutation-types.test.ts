@@ -308,7 +308,7 @@ describe('Bidirectional Message Mapping', () => {
     'add_track': 'track_added',
     'delete_track': 'track_deleted',
     'clear_track': 'track_cleared',
-    'set_track_instrument': 'track_instrument_set',
+    'set_track_instrument': 'track_sample_set', // rollout-compatible response
     'set_track_sample': 'track_sample_set',
     'set_track_volume': 'track_volume_set',
     'set_track_transpose': 'track_transpose_set',
@@ -334,6 +334,12 @@ describe('Bidirectional Message Mapping', () => {
     'batch_clear_steps': 'steps_cleared',
     'batch_set_parameter_locks': 'parameter_locks_batch_set',
   };
+
+  // Current servers answer both instrument request envelopes with the legacy
+  // response during the rolling-deploy window. New clients still accept the
+  // forward response emitted by a future server, so it is state-mutating even
+  // though no current request maps to it one-to-one.
+  const FORWARD_COMPATIBLE_BROADCASTS = new Set(['track_instrument_set']);
 
   it('every SYNCED_ACTION has a corresponding ClientMessage type', () => {
     for (const action of SYNCED_ACTIONS) {
@@ -385,16 +391,20 @@ describe('Bidirectional Message Mapping', () => {
   it('MESSAGE_TO_BROADCAST_MAP covers all state-mutating broadcasts', () => {
     const mappedBroadcasts = new Set(Object.values(MESSAGE_TO_BROADCAST_MAP));
 
-    // Every STATE_MUTATING_BROADCAST should be in our map
+    // Every STATE_MUTATING_BROADCAST should be in the current response map or
+    // be an explicitly accepted forward-compatible response.
     for (const broadcast of STATE_MUTATING_BROADCASTS) {
       expect(
-        mappedBroadcasts.has(broadcast),
-        `STATE_MUTATING_BROADCASTS contains "${broadcast}" but it's not in MESSAGE_TO_BROADCAST_MAP`
+        mappedBroadcasts.has(broadcast) || FORWARD_COMPATIBLE_BROADCASTS.has(broadcast),
+        `STATE_MUTATING_BROADCASTS contains "${broadcast}" but it's not mapped or forward-compatible`
       ).toBe(true);
     }
 
-    // Sizes should match
-    expect(mappedBroadcasts.size).toBe(STATE_MUTATING_BROADCASTS.size);
+    for (const broadcast of FORWARD_COMPATIBLE_BROADCASTS) {
+      expect(mappedBroadcasts.has(broadcast)).toBe(false);
+    }
+    expect(mappedBroadcasts.size + FORWARD_COMPATIBLE_BROADCASTS.size)
+      .toBe(STATE_MUTATING_BROADCASTS.size);
   });
 
   it('complete flow: SYNCED_ACTION → ClientMessage → Broadcast', () => {

@@ -44,7 +44,7 @@ interface TrackDrawerProps {
   onExpandVelocity?: () => void;
   onShowPatternTools?: () => void;
   /** Change instrument (issue #63): absent when the session cannot be edited. */
-  onChangeInstrument?: () => void;
+  onChangeInstrument?: (opener: HTMLButtonElement) => void;
   /** Display name of the track's current instrument, for the button's label. */
   instrumentName?: string;
   /** Whether the shared picker panel below the row is open. */
@@ -234,7 +234,7 @@ export const TrackDrawer = memo(function TrackDrawer({
         {onChangeInstrument && (
           <button
             className={`drawer-icon-btn ${isInstrumentPickerVisible ? 'active' : ''}`}
-            onClick={onChangeInstrument}
+            onClick={(event) => onChangeInstrument(event.currentTarget)}
             title={instrumentName ? `Change instrument (currently ${instrumentName})` : 'Change instrument'}
             aria-label="Change instrument"
             aria-expanded={!!isInstrumentPickerVisible}

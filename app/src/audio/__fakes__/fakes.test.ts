@@ -35,6 +35,8 @@ describe('FakeToneSynthManager', () => {
     fake.setFMParams(2.5, 8);
     expect(fake.getFMParams()).toEqual({ harmonicity: 2.5, modulationIndex: 8 });
     expect(fake.setFMParamsCalls).toEqual([{ harmonicity: 2.5, modulationIndex: 8 }]);
+    fake.resetFMParams();
+    expect(fake.getFMParams()).toBeNull();
   });
 
   it('isReady() flips after initialize, back to false after dispose', async () => {

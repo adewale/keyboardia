@@ -9,7 +9,7 @@
  * cover every origin of a change with one mechanism:
  *
  *   - the local person picking a new instrument,
- *   - a collaborator's `track_instrument_set` broadcast,
+ *   - a collaborator's instrument broadcast (new or rollout-compatible),
  *   - an MCP agent's `edit_session`,
  *   - a snapshot after reconnect,
  *   - `LOAD_STATE` when a session opens.
@@ -46,7 +46,7 @@ export function useTrackInstrumentReconcile(state: GridState): void {
       if (before === undefined || before === sampleId) continue;
 
       audioEngine.clearTrackSynths(trackId);
-      prepareInstrument(sampleId, trackId);
+      void prepareInstrument(sampleId, trackId);
     }
   }, [state.tracks]);
 }

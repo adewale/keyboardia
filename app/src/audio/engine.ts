@@ -63,6 +63,7 @@ export class AudioEngine {
   /** IDs from the last grid snapshot, used to reclaim remotely removed tracks. */
   private syncedTrackIds = new Set<string>();
   private initialized = false;
+  private initializationPromise: Promise<void> | null = null;
   private unlockListenerAttached = false;
   private unlockHandler: (() => Promise<void>) | null = null; // Store reference for cleanup
 
@@ -85,9 +86,8 @@ export class AudioEngine {
   private pitchShiftLoaded = false;
   private tempo = DEFAULT_TEMPO;
 
-  // Shared-control overrides applied to every (current and future) per-track
-  // synth instance. `undefined` means "leave the engine's default/preset
-  // value alone". Used by XY-pad and FM-param setters to fan out state.
+  // Shared-control overrides applied to every (current and future) advanced
+  // synth instance. `undefined` means "leave the engine's default value alone".
   private advancedOverrides: {
     filterFrequency?: number;
     filterResonance?: number;
@@ -97,9 +97,13 @@ export class AudioEngine {
     release?: number;
     oscMix?: number;
   } = {};
-  private toneOverrides: {
-    fmParams?: { harmonicity: number; modulationIndex: number };
-  } = {};
+  // FM parameters are track state, not a global synth preference. Keeping the
+  // pending override keyed by track also lets instrument replacement delete it
+  // before a fresh preset instance is created.
+  private trackFMOverrides = new Map<
+    string,
+    { harmonicity: number; modulationIndex: number }
+  >();
 
   constructor() {
     this.toneSynthRegistry = new TrackSynthRegistry<ToneSynthManager>({
@@ -125,11 +129,11 @@ export class AudioEngine {
       // cast via the param type of connect() to satisfy the mixed-type API.
       output.connect(busInput as Parameters<typeof output.connect>[0]);
     }
-    // Apply any shared-control overrides set before this track existed.
-    if (this.toneOverrides.fmParams) {
+    const fmOverride = this.trackFMOverrides.get(trackId);
+    if (fmOverride) {
       manager.setFMParams(
-        this.toneOverrides.fmParams.harmonicity,
-        this.toneOverrides.fmParams.modulationIndex,
+        fmOverride.harmonicity,
+        fmOverride.modulationIndex,
       );
     }
     logger.audio.log(`Created ToneSynthManager for track ${trackId}`);
@@ -184,12 +188,6 @@ export class AudioEngine {
     if (this.previewToneSynth === null) {
       const m = new ToneSynthManager();
       await m.initialize();
-      if (this.toneOverrides.fmParams) {
-        m.setFMParams(
-          this.toneOverrides.fmParams.harmonicity,
-          this.toneOverrides.fmParams.modulationIndex,
-        );
-      }
       const out = m.getOutput();
       if (out && effectsInput) {
         out.connect(effectsInput as Parameters<typeof out.connect>[0]);
@@ -225,6 +223,15 @@ export class AudioEngine {
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
+    if (this.initializationPromise) return this.initializationPromise;
+
+    this.initializationPromise = this.initializeInternal().finally(() => {
+      this.initializationPromise = null;
+    });
+    return this.initializationPromise;
+  }
+
+  private async initializeInternal(): Promise<void> {
 
     // Create AudioContext (must be triggered by user gesture)
     // Use webkitAudioContext for older iOS Safari
@@ -716,6 +723,11 @@ export class AudioEngine {
     return this.initialized;
   }
 
+  /** True while a user-gesture-triggered base initialization is in flight. */
+  isInitializing(): boolean {
+    return this.initializationPromise !== null;
+  }
+
   /**
    * Check if Tone.js synths are initialized and ready.
    * Use this before playing tone:* or advanced:* presets.
@@ -745,7 +757,8 @@ export class AudioEngine {
   /**
    * Reconcile authored audio state from local or multiplayer grid snapshots.
    * This runs while stopped too, so previews and the first scheduled note use
-   * the correct tempo/faders even when AudioContext nodes are still lazy.
+   * the correct tempo, faders, and FM parameters even when AudioContext nodes
+   * are still lazy.
    */
   syncGridAudioState(state: Pick<GridState, 'tempo' | 'tracks'>): void {
     this.setTempo(state.tempo);
@@ -755,6 +768,22 @@ export class AudioEngine {
       const volume = track.volume ?? 1;
       if (this.pendingTrackVolumes.get(track.id) !== volume) {
         this.setTrackVolume(track.id, volume);
+      }
+      const currentFM = this.trackFMOverrides.get(track.id);
+      if (track.fmParams) {
+        if (currentFM?.harmonicity !== track.fmParams.harmonicity
+            || currentFM.modulationIndex !== track.fmParams.modulationIndex) {
+          this.setFMParams(
+            track.id,
+            track.fmParams.harmonicity,
+            track.fmParams.modulationIndex,
+          );
+        }
+      } else if (this.trackFMOverrides.delete(track.id)) {
+        // A restored snapshot can remove FM parameters without changing the
+        // sample ID. Reset the ready synth in place so its preset defaults take
+        // effect without dropping a note during asynchronous reconstruction.
+        this.toneSynthRegistry.getIfReady(track.id)?.resetFMParams();
       }
     }
     for (const trackId of this.syncedTrackIds) {
@@ -928,6 +957,7 @@ export class AudioEngine {
   removeTrackGain(trackId: string): void {
     this.pendingTrackVolumes.delete(trackId);
     this.syncedTrackIds.delete(trackId);
+    this.trackFMOverrides.delete(trackId);
     this.toneSynthRegistry.remove(trackId);
     this.advancedSynthRegistry.remove(trackId);
     if (this.trackBusManager) {
@@ -943,6 +973,7 @@ export class AudioEngine {
    * tone:fm-bass) so the next note uses the right synth engine.
    */
   clearTrackSynths(trackId: string): void {
+    this.trackFMOverrides.delete(trackId);
     this.toneSynthRegistry.remove(trackId);
     this.advancedSynthRegistry.remove(trackId);
   }
@@ -1167,24 +1198,28 @@ export class AudioEngine {
   }
 
   /**
-   * Set FM synthesis parameters for FM synth tracks
+   * Set FM synthesis parameters for one FM synth track.
+   * @param trackId Track whose FM state changed
    * @param harmonicity Frequency ratio between modulator and carrier (0.5-10)
    * @param modulationIndex Intensity of modulation (0-20)
    */
-  setFMParams(harmonicity: number, modulationIndex: number): void {
-    this.toneOverrides.fmParams = { harmonicity, modulationIndex };
-    this.toneSynthRegistry.forEach((synth) => {
-      synth.setFMParams(harmonicity, modulationIndex);
-    });
+  setFMParams(trackId: string, harmonicity: number, modulationIndex: number): void {
+    this.trackFMOverrides.set(trackId, { harmonicity, modulationIndex });
+    this.toneSynthRegistry.getIfReady(trackId)?.setFMParams(harmonicity, modulationIndex);
   }
 
   /**
-   * Get current FM synthesis parameters. Returns the shared-control
-   * override if any setFMParams call has been made, otherwise the first
-   * registered track's FM params, otherwise null.
+   * Get current FM synthesis parameters for a track. With no track ID, returns
+   * the first active track's value for legacy diagnostics.
    */
-  getFMParams(): { harmonicity: number; modulationIndex: number } | null {
-    if (this.toneOverrides.fmParams) return this.toneOverrides.fmParams;
+  getFMParams(trackId?: string): { harmonicity: number; modulationIndex: number } | null {
+    if (trackId) {
+      return this.trackFMOverrides.get(trackId)
+        ?? this.toneSynthRegistry.getIfReady(trackId)?.getFMParams()
+        ?? null;
+    }
+    const firstOverride = this.trackFMOverrides.values().next().value;
+    if (firstOverride) return firstOverride;
     const ids = this.toneSynthRegistry.activeTrackIds();
     if (ids.length === 0) return null;
     const first = this.toneSynthRegistry.getIfReady(ids[0]);
@@ -1646,7 +1681,7 @@ export class AudioEngine {
     // Reset all state
     this.toneEffects = null;
     this.advancedOverrides = {};
-    this.toneOverrides = {};
+    this.trackFMOverrides.clear();
     this.pendingTrackVolumes.clear();
     this.syncedTrackIds.clear();
     this.trackBusManager = null;
@@ -1654,6 +1689,7 @@ export class AudioEngine {
     this.compressor = null;
     this.toneInitialized = false;
     this.toneInitPromise = null;
+    this.initializationPromise = null;
     this.effectsChainConnected = false;
     this.tempo = DEFAULT_TEMPO;
     this.initialized = false;

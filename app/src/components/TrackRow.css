@@ -1731,7 +1731,12 @@
  * landscape layout is unchanged.
  */
 .step-sequencer[data-orientation="landscape"] .instrument-panel-container {
-  display: grid;
+  display: grid !important;
+}
+
+.step-sequencer[data-orientation="landscape"] .sample-picker.variant-change {
+  /* 12px app + 8px sequencer padding on both sides of the scrollport. */
+  max-width: calc(100vw - 40px);
 }
 
 /* Instrument row button in the mobile inline drawer */

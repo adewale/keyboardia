@@ -155,7 +155,7 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'add_track': 'track_added',
         'delete_track': 'track_deleted',
         'clear_track': 'track_cleared',
-        'set_track_instrument': 'track_instrument_set',
+        'set_track_instrument': 'track_sample_set', // rollout-compatible response
         'set_track_sample': 'track_sample_set',
         'set_track_volume': 'track_volume_set',
         'set_track_transpose': 'track_transpose_set',

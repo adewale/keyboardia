@@ -103,8 +103,8 @@ export const STATE_MUTATING_BROADCASTS = new Set([
   'track_added',
   'track_deleted',
   'track_cleared',
-  'track_instrument_set', // Change instrument (issue #63)
-  'track_sample_set',     // Legacy alias of track_instrument_set
+  'track_instrument_set', // Forward-compatible change-instrument response
+  'track_sample_set',     // Rollout-compatible change-instrument response
   'track_volume_set',
   'track_transpose_set',
   'track_step_count_set',

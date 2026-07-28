@@ -23,17 +23,19 @@ test plan in [specs/CHANGE-INSTRUMENT.md](specs/CHANGE-INSTRUMENT.md).
 
 **Added:**
 - **Change a track's instrument from the browser.** A ♪ toggle on the desktop
-  track row, an Instrument row in the mobile drawer, and a Sound button in the
-  landscape drawer all open one picker over the canonical instrument catalog —
+  track row and a Sound button in the landscape drawer open one picker over the
+  canonical instrument catalog —
   the same `SamplePicker` component that adds tracks, with hover preview before
   committing.
 - **One shared domain operation** (`app/src/shared/track-instrument.ts`) used by
   the browser reducer, the Durable Object's WebSocket handler, and MCP. It
   validates `sampleId` against `VALID_SAMPLE_IDS` at the message boundary and
   rejects unknown instruments and unknown tracks without mutating.
-- **Wire protocol:** `set_track_instrument` (client) and `track_instrument_set`
-  (broadcast). A change is visible to every connected collaborator through the
-  normal granular path — no snapshot replacement.
+- **Wire protocol:** the Durable Object accepts the first-class
+  `set_track_instrument` operation, while product clients and broadcasts use
+  rollout-compatible `set_track_sample` / `track_sample_set` envelopes until
+  older open tabs and isolates have drained. Both paths run the shared operation;
+  no snapshot replacement is needed.
 - **MCP:** `edit_session` gains a `set_track_instrument` operation using the same
   catalog enum as `add_track`. There is no MCP-specific catalog, validator, or
   mutation implementation.

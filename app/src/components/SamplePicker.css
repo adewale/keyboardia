@@ -292,6 +292,14 @@
   max-height: 220px;
   overflow-y: auto;
   width: 100%;
+  /* Fit between the app + sequencer padding on both sides. If the sticky box
+     is wider than this scrollport, its parent's right edge forces it left at
+     the end of a long pattern. */
+  max-width: calc(100vw - 96px);
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
+  z-index: 2;
 }
 
 .sample-picker.variant-change .instrument-btn.current {

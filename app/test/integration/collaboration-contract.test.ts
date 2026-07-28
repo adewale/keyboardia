@@ -627,17 +627,17 @@ it('changes a track instrument for every collaborator without disturbing the tra
   }));
 
   const onA = await a.inbox.waitFor(
-    (message) => message.type === 'track_instrument_set' && message.clientSeq === 601,
+    (message) => message.type === 'track_sample_set' && message.clientSeq === 601,
     'instrument change acknowledgement on A',
   );
   const onB = await b.inbox.waitFor(
-    (message) => message.type === 'track_instrument_set',
+    (message) => message.type === 'track_sample_set',
     'instrument change broadcast on B',
   );
 
   // A collaborator sees the change without asking for a new snapshot.
   expect(onB).toMatchObject({
-    type: 'track_instrument_set',
+    type: 'track_sample_set',
     trackId: 'shared-track',
     sampleId: 'sampled:808-kick',
     playerId: 'player-a',
@@ -656,6 +656,54 @@ it('changes a track instrument for every collaborator without disturbing the tra
   expect(persisted.stepCount).toBe(12);
 });
 
+it('keeps the legacy rollout envelope validated, name-safe, and acknowledged on no-op', async () => {
+  const withFm = workedOnTrack();
+  (withFm as SessionTrack & { fmParams?: unknown }).fmParams = {
+    harmonicity: 9,
+    modulationIndex: 19,
+  };
+  const sessionId = await createSessionWith([withFm]);
+  const a = await connect(sessionId, 'player-a');
+
+  a.socket.send(JSON.stringify({
+    type: 'set_track_sample',
+    trackId: 'shared-track',
+    sampleId: 'sampled:808-kick',
+    name: 'Hostile overwrite',
+    seq: 609,
+  }));
+
+  expect(await a.inbox.waitFor(
+    (message) => message.type === 'track_sample_set' && message.clientSeq === 609,
+    'rollout-compatible instrument acknowledgement',
+  )).toMatchObject({
+    type: 'track_sample_set',
+    sampleId: 'sampled:808-kick',
+    name: 'Ada’s Lead',
+  });
+
+  let [persisted] = await readTracks(sessionId);
+  expect(persisted.name).toBe('Ada’s Lead');
+  expect((persisted as SessionTrack & { fmParams?: unknown }).fmParams).toBeUndefined();
+
+  // The optimistic client still tracks this mutation, so an identical retry
+  // needs an ordered acknowledgement even though storage does not change.
+  a.socket.send(JSON.stringify({
+    type: 'set_track_sample',
+    trackId: 'shared-track',
+    sampleId: 'sampled:808-kick',
+    name: 'Hostile overwrite',
+    seq: 610,
+  }));
+  expect(await a.inbox.waitFor(
+    (message) => message.type === 'track_sample_set' && message.clientSeq === 610,
+    'no-op instrument acknowledgement',
+  )).toMatchObject({ name: 'Ada’s Lead' });
+
+  [persisted] = await readTracks(sessionId);
+  expect(persisted.name).toBe('Ada’s Lead');
+});
+
 it('drops engine-scoped parameters the new instrument cannot interpret', async () => {
   const withFm = workedOnTrack();
   (withFm as SessionTrack & { fmParams?: unknown }).fmParams = {
@@ -672,7 +720,7 @@ it('drops engine-scoped parameters the new instrument cannot interpret', async (
     seq: 602,
   }));
   await a.inbox.waitFor(
-    (message) => message.type === 'track_instrument_set' && message.clientSeq === 602,
+    (message) => message.type === 'track_sample_set' && message.clientSeq === 602,
     'instrument change acknowledgement',
   );
 
@@ -702,7 +750,7 @@ it('drops an instrument change the catalog does not know, without mutating', asy
   }));
 
   const next = await a.inbox.waitFor(
-    (message) => message.type === 'track_instrument_set',
+    (message) => message.type === 'track_sample_set',
     'the valid follow-up broadcast',
   );
   expect(next).toMatchObject({ sampleId: 'kick', clientSeq: 604 });
@@ -781,7 +829,7 @@ it('applies the same result through the Durable Object as the shared operation',
     seq: 608,
   }));
   await a.inbox.waitFor(
-    (message) => message.type === 'track_instrument_set' && message.clientSeq === 608,
+    (message) => message.type === 'track_sample_set' && message.clientSeq === 608,
     'instrument change acknowledgement',
   );
 

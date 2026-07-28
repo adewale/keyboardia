@@ -16,8 +16,8 @@ const API_BASE = getBaseUrl();
  * See specs/CHANGE-INSTRUMENT.md.
  */
 
-function sessionState() {
-  const steps = Array(64).fill(false);
+function sessionState(stepCount = 16) {
+  const steps = Array(128).fill(false);
   steps[0] = true;
   steps[6] = true;
 
@@ -28,18 +28,18 @@ function sessionState() {
         name: 'Ada Lead',
         sampleId: 'kick',
         steps,
-        parameterLocks: Array(64).fill(null),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,
-        stepCount: 16,
+        stepCount,
       },
       {
         id: 'bystander-track',
         name: 'Bystander',
         sampleId: 'snare',
-        steps: Array(64).fill(false),
-        parameterLocks: Array(64).fill(null),
+        steps: Array(128).fill(false),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,
@@ -112,5 +112,90 @@ test.describe('Change instrument', () => {
     // rather than present-and-disabled.
     await expect(page.getByTestId('change-instrument-instrument-track')).toHaveCount(0);
     await expect(page.locator('.instrument-panel-container')).toHaveCount(0);
+  });
+
+  test('restores keyboard focus after choosing an instrument @blocking', async ({ page, request }) => {
+    const { id } = await createSessionWithRetry(request, sessionState());
+    await page.goto(`${API_BASE}/s/${id}`);
+    await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 10000 });
+
+    const toggle = page.getByTestId('change-instrument-instrument-track');
+    await toggle.click();
+    const option = page.getByTestId('set-instrument-sampled:808-kick');
+    await option.focus();
+    await page.keyboard.press('Enter');
+
+    await expect(toggle).toBeFocused();
+    await expect(toggle).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('keeps the picker inside the viewport after scrolling a long pattern @blocking', async ({ page, request }) => {
+    await page.setViewportSize({ width: 1000, height: 700 });
+    const { id } = await createSessionWithRetry(request, sessionState(128));
+    await page.goto(`${API_BASE}/s/${id}`);
+    await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 10000 });
+
+    const tracks = page.locator('.tracks');
+    await tracks.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
+    const toggle = page.getByTestId('change-instrument-instrument-track');
+    await expect(toggle).toBeVisible();
+    await toggle.click();
+
+    const picker = page.locator('#instrument-panel-instrument-track .sample-picker');
+    await expect(picker.getByRole('button', { name: 'Drums' })).toBeVisible();
+    await expect.poll(async () => {
+      const box = await picker.boundingBox();
+      const tracksBox = await tracks.boundingBox();
+      return !!box && !!tracksBox
+        && box.x >= tracksBox.x
+        && box.x + box.width <= tracksBox.x + tracksBox.width + 1;
+    }).toBe(true);
+    const box = await picker.boundingBox();
+    const tracksBox = await tracks.boundingBox();
+    expect(box).not.toBeNull();
+    expect(tracksBox).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(tracksBox!.x);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(tracksBox!.x + tracksBox!.width + 1);
+  });
+
+  test('restores focus after rotating while the picker is open @blocking', async ({ page, request }) => {
+    await page.setViewportSize({ width: 1000, height: 700 });
+    const { id } = await createSessionWithRetry(request, sessionState());
+    await page.goto(`${API_BASE}/s/${id}`);
+    const toggle = page.getByTestId('change-instrument-instrument-track');
+    await expect(toggle).toBeVisible({ timeout: 10000 });
+    await toggle.click();
+    const option = page.getByTestId('set-instrument-sampled:808-kick');
+    await option.focus();
+
+    await page.setViewportSize({ width: 844, height: 390 });
+    await expect(page.locator('.step-sequencer')).toHaveAttribute('data-orientation', 'landscape');
+    await page.keyboard.press('Enter');
+
+    await expect(page.locator('.track-name').first()).toBeFocused();
+  });
+
+  test('shows and dismisses the picker in modern mobile landscape @blocking', async ({ page, request }) => {
+    await page.setViewportSize({ width: 844, height: 390 });
+    const { id } = await createSessionWithRetry(request, sessionState());
+    await page.goto(`${API_BASE}/s/${id}`);
+    const trackName = page.locator('.track-name').first();
+    await expect(trackName).toBeVisible({ timeout: 10000 });
+
+    await trackName.focus();
+    await page.keyboard.press('Enter');
+    const sound = page.getByTestId('landscape-change-instrument-instrument-track');
+    await expect(sound).toBeVisible();
+    await sound.click();
+
+    const panel = page.locator('#instrument-panel-instrument-track');
+    const picker = panel.locator('.sample-picker');
+    await expect(picker).toBeVisible();
+    await expect(picker.getByRole('button', { name: 'Drums' })).toBeVisible();
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.track-drawer')).toHaveCount(0);
+    await expect(panel).not.toHaveClass(/expanded/);
+    await expect(trackName).toBeFocused();
   });
 });

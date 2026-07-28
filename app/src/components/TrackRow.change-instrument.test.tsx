@@ -1,16 +1,17 @@
 // @vitest-environment jsdom
 /**
- * Change Instrument (issue #63): the track row's three entry points.
+ * Change Instrument (issue #63): the track row's entry points.
  *
  * Desktop, the mobile inline drawer, and the landscape TrackDrawer must all
- * open the SAME picker panel over the SAME catalog, and all three must vanish
- * on a published session.
+ * open the SAME picker panel over the SAME catalog. The InlineDrawer seam is
+ * retained for TrackRow's responsive contract, while the product's narrow
+ * portrait mode intentionally substitutes the read-only PortraitGrid.
  *
  * See specs/CHANGE-INSTRUMENT.md §7.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Track } from '../types';
 import { TrackRow } from './TrackRow';
 
@@ -158,6 +159,23 @@ describe('TrackRow change instrument', () => {
     expect(document.querySelectorAll('.sample-picker.variant-change')).toHaveLength(1);
   });
 
+  it('closes the landscape picker when Escape dismisses its drawer', () => {
+    const onToggleLandscapeDrawer = vi.fn();
+    renderRow({
+      onSetInstrument: vi.fn(),
+      orientationMode: 'landscape',
+      isLandscapeDrawerOpen: true,
+      onToggleLandscapeDrawer,
+    });
+
+    fireEvent.click(screen.getByTestId('landscape-change-instrument-track-1'));
+    fireEvent.keyDown(document, { key: 'Escape' });
+
+    expect(onToggleLandscapeDrawer).toHaveBeenCalledTimes(1);
+    expect(document.querySelector('.instrument-panel-container')!.className)
+      .not.toContain('expanded');
+  });
+
   it('commits the chosen instrument and closes the picker', () => {
     const onSetInstrument = vi.fn();
     renderRow({ onSetInstrument });
@@ -171,6 +189,31 @@ describe('TrackRow change instrument', () => {
     expect(onSetInstrument.mock.calls[0]).toHaveLength(1);
     expect(document.querySelector('.instrument-panel-container')!.className)
       .not.toContain('expanded');
+  });
+
+  it('restores focus to the opener after keyboard-style selection', async () => {
+    renderRow({ onSetInstrument: vi.fn() });
+    const toggle = screen.getByTestId('change-instrument-track-1');
+    fireEvent.click(toggle);
+    const option = screen.getByTestId('set-instrument-sampled:808-kick');
+    option.focus();
+
+    fireEvent.click(option);
+
+    await waitFor(() => expect(document.activeElement).toBe(toggle));
+  });
+
+  it('falls back to the visible track name when the opener becomes hidden', async () => {
+    renderRow({ onSetInstrument: vi.fn() });
+    const toggle = screen.getByTestId('change-instrument-track-1');
+    fireEvent.click(toggle);
+    toggle.style.display = 'none';
+
+    fireEvent.click(screen.getByTestId('set-instrument-sampled:808-kick'));
+
+    await waitFor(() => {
+      expect(document.activeElement).toBe(document.querySelector('.track-name'));
+    });
   });
 
   it('does not rename the track when the instrument changes', () => {

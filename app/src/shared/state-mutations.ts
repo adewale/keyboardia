@@ -227,13 +227,10 @@ export function applyMutation(
     }
 
     case 'set_track_sample': {
-      // Legacy alias: instrument plus a caller-supplied display name. Retained
-      // so a message already in flight still applies; nothing emits it.
-      return updateTrackById(state, message.trackId, track => ({
-        ...track,
-        sampleId: message.sampleId,
-        name: message.name,
-      }));
+      // Legacy wire alias. The caller-supplied name exists only so a new client
+      // can talk safely to an older server; current code must never trust it or
+      // bypass catalog validation / engine-state cleanup.
+      return setTrackInstrument(state, message).state;
     }
 
     case 'set_track_volume': {

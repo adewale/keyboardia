@@ -214,8 +214,9 @@ instrument a track already plays is a no-op.
 
 This is not an MCP-specific operation: it is Keyboardia's shared **Change
 instrument** operation, the same one the browser's picker and the WebSocket
-`set_track_instrument` message run. Keyboardia broadcasts the existing granular
-`track_instrument_set` event after one durable write. See
+`set_track_instrument` message run. During rolling deployment Keyboardia
+broadcasts the granular, backward-compatible `track_sample_set` event after one
+durable write. See
 [specs/CHANGE-INSTRUMENT.md](CHANGE-INSTRUMENT.md), which also documents the
 engine-state (FM parameter) compatibility policy this operation applies.
 
