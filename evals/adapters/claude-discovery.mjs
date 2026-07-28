@@ -93,7 +93,9 @@ child.on('error', (error) => {
 
 child.on('close', (code) => {
   if (code !== 0) {
-    process.stderr.write(stderr || `claude-discovery: CLI exited ${code}\n`);
+    process.stderr.write(
+      stderr || stdout || `claude-discovery: CLI exited ${code}\n`,
+    );
     process.exit(code ?? 1);
   }
   let answer = '';
