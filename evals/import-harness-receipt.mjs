@@ -325,10 +325,10 @@ async function main() {
   const { tasks, rawFiles } = loadTasks(options.tasks);
   if (tasks.length === 0) fail('prepared task set is empty');
   verifyCompleteTaskMatrix(tasks, manifest, matrixPolicy);
-  const benchmarkRaw = readFileSync(options.benchmark, 'utf8');
-  const benchmark = JSON.parse(benchmarkRaw);
-  const auditRaw = readFileSync(options.audit, 'utf8');
-  const audit = JSON.parse(auditRaw);
+  const benchmarkRaw = readFileSync(options.benchmark);
+  const benchmark = JSON.parse(benchmarkRaw.toString('utf8'));
+  const auditRaw = readFileSync(options.audit);
+  const audit = JSON.parse(auditRaw.toString('utf8'));
   if (!Array.isArray(benchmark.results) || benchmark.results.length !== tasks.length) {
     fail(`benchmark has ${benchmark.results?.length ?? 0} results for ${tasks.length} tasks`);
   }
