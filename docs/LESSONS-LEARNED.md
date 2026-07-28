@@ -52,6 +52,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson: Historical Layering Creates Hidden Duplication](#lesson-historical-layering-creates-hidden-duplication)
 - [Lesson: Read the Spec Before Implementing](#lesson-read-the-spec-before-implementing)
 - [Lesson: Test the Spec, Not Your Mental Model](#lesson-test-the-spec-not-your-mental-model)
+- [Lesson 59: An Architectural Guard Is a Compiler Front End](#lesson-59-an-architectural-guard-is-a-compiler-front-end)
 
 ### Process
 - [Process: Spec-First Development Checklist](#process-spec-first-development-checklist)
@@ -5453,3 +5454,49 @@ effects with asynchronous generations, cleanup must invalidate every memoized
 claim made by that generation, and tests must replay the framework lifecycle as
 well as the ordinary user journey. When a policy promises a bounded schedule,
 assert every boundary and prove that work actually stops after the bound.
+
+---
+
+## Lesson 59: An Architectural Guard Is a Compiler Front End
+
+**Date:** 2026-07-28 (PR #79 multi-agent correctness audit)
+
+### The Problem
+
+The first runtime-boundary test searched raw source with a regular expression
+and resolved only extensionless `.ts`/`.tsx` candidates. It silently ignored an
+unresolved relative import, treated commented examples as dependencies, missed
+TypeScript bundler resolution such as `../audio/engine.js` resolving to
+`engine.ts`, and checked transitive reachability only from `worker/index.ts`.
+Its shared rule also named a few forbidden directories instead of defining the
+shared layer's allowed capabilities. A `shared -> utils -> audio` bridge could
+therefore remain green.
+
+Strengthening the test exposed one more real dependency: shared state mutations
+and Worker handlers imported the client-owned `utils/patternOps.ts`. The
+functions were pure, but their location made the dependency direction false.
+
+### The Fix
+
+The scanner now parses the TypeScript AST, so comments and strings are not code,
+and asks TypeScript's Bundler resolver for the same source module the build will
+use. Every unresolved code import and parse failure is a test failure. Policies
+start from every Worker, shared, and state module and walk transitive paths with
+readable provenance. Shared is an allow-list (`shared/**` only); Worker permits
+only Worker, shared, and explicitly pure music modules; state cannot transitively
+reach live audio. Pure pattern operations moved into shared, with the old client
+path retained only as a compatibility facade.
+
+The guard itself has adversarial tests for `.js` specifiers, Vite query imports,
+commented imports, unresolved imports, indirect bridges, and module-scope browser
+API calls. A browser MIDI test was also mutation-checked by corrupting only the
+real Web Worker response: it failed on the downloaded bytes, then passed after
+the mutation was removed.
+
+### The Rule
+
+An import-boundary test is a small compiler front end. If its parser or resolver
+disagrees with the production toolchain, green means only that the test did not
+see the program. Define layers by allowed capabilities, walk every owned root
+transitively, make resolution failure loud, and mutation-test the guard with the
+exact syntax and bridge paths an adversarial change would use.

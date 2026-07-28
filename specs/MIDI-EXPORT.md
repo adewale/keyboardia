@@ -517,12 +517,12 @@ GM program changes are included for compatibility with GM-compatible hardware an
 When adding new samples or synth presets to Keyboardia, update the MIDI export mappings:
 
 **For new drum samples:**
-1. Add to `DRUM_NOTE_MAP` in `app/src/audio/midiExport.ts`
+1. Add to `DRUM_NOTE_MAP` in `app/src/shared/midi-core.ts`
 2. Use standard GM drum notes (35-81) when possible
 3. Add test case to `getDrumNote` test suite
 
 **For new synth presets:**
-1. Add to `SYNTH_PROGRAM_MAP` in `app/src/audio/midiExport.ts`
+1. Add to `SYNTH_PROGRAM_MAP` in `app/src/shared/midi-core.ts`
 2. Choose closest GM program number (see [General MIDI spec](https://en.wikipedia.org/wiki/General_MIDI))
 3. Add test case to `getSynthProgram` test suite
 
@@ -540,19 +540,20 @@ return SYNTH_PROGRAM_MAP[preset] ?? SYNTH_PROGRAM_MAP.default;
 | `app/src/audio/synth.ts` | `SYNTH_PRESETS` (32 presets) |
 | `app/src/audio/toneSynths.ts` | `TONE_SYNTH_PRESETS` |
 | `app/src/audio/advancedSynth.ts` | `ADVANCED_SYNTH_PRESETS` (8 presets) |
-| `app/src/audio/midiExport.ts` | `DRUM_NOTE_MAP`, `SYNTH_PROGRAM_MAP` |
+| `app/src/shared/midi-core.ts` | `DRUM_NOTE_MAP`, `SYNTH_PROGRAM_MAP`, deterministic MIDI bytes |
+| `app/src/audio/midiExport.ts` | Browser Blob, Web Worker, and download adapter |
 
 ### Recommended: Coverage Test
 
 To prevent silent fallbacks, add a test that verifies all presets have explicit MIDI mappings.
 
-**Implementation Note:** `SYNTH_PROGRAM_MAP` is currently not exported. To enable this test:
-1. Export `SYNTH_PROGRAM_MAP` from `midiExport.ts`, OR
+**Implementation Note:** `SYNTH_PROGRAM_MAP` is exported from the shared core. A coverage test can:
+1. Import `SYNTH_PROGRAM_MAP` from `shared/midi-core.ts`, OR
 2. Add a helper function `hasExplicitMapping(presetId: string): boolean`
 
 ```typescript
 import { SYNTH_PRESETS } from './synth';
-import { SYNTH_PROGRAM_MAP } from './midiExport'; // requires export
+import { SYNTH_PROGRAM_MAP } from '../shared/midi-core';
 
 describe('MIDI Export: Preset Coverage', () => {
   it('all synth presets have explicit MIDI program mappings', () => {

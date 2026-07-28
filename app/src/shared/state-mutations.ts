@@ -33,7 +33,7 @@ import {
   clamp,
 } from './constants';
 import { MAX_TRACK_NAME_LENGTH } from './validation';
-// Import pattern operation utilities (Phase 32: Sync fix)
+// Import runtime-neutral pattern operations (Phase 32: Sync fix)
 import {
   rotateLeft,
   rotateRight,
@@ -41,7 +41,7 @@ import {
   reversePattern,
   mirrorPattern,
   applyEuclidean,
-} from '../utils/patternOps';
+} from './pattern-operations';
 
 /**
  * Create an empty initial state for testing.

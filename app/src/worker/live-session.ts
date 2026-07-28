@@ -78,7 +78,7 @@ import {
   reversePattern,
   mirrorPattern,
   applyEuclidean,
-} from '../utils/patternOps';
+} from '../shared/pattern-operations';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 import { validateCompleteSessionState } from './validation';
 import {

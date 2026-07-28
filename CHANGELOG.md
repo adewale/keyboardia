@@ -16,6 +16,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Runtime-Neutral Dependency Boundaries (July 2026)
+
+**Changed:**
+- Canonical instrument data, serializable effects defaults, deterministic MIDI
+  encoding, and pure pattern transformations now live in runtime-neutral shared
+  modules. Browser UI/audio delivery and Cloudflare Worker/MCP adapters consume
+  those cores without importing one another.
+- Browser MIDI export retains Blob, browser Worker, file-picker, and download
+  behavior; MCP exports the identical shared MIDI bytes directly.
+- Client-only state and sync adapters now live under their owning client layers.
+
+**Added (regression proof):**
+- Runtime boundary tests parse the TypeScript AST, use bundler-equivalent module
+  resolution (including `.js` to `.ts` and Vite Worker query specifiers), fail on
+  unresolved code imports, ignore comments and strings, and enforce Worker,
+  shared, and state capabilities across complete transitive graphs.
+- Worker runtime safety detects top-level browser API calls rather than only
+  column-zero variable declarations.
+- A real Chromium test constructs `midiExport.worker.ts`, receives its response,
+  downloads the result, and verifies a non-trivial Standard MIDI `MThd` header.
+
 #### Live MCP Sampled-Instrument Readiness (July 2026)
 
 **Fixed (browser audio readiness):**
@@ -58,7 +79,7 @@ an authoritative Keyboardia operation and returns canonical session URLs.
   `source_url`, purges both social-preview cache entries, and rejects publishing
   an already-published session. Publishing is never an implicit side effect of
   editing or exporting.
-- **`export_midi`** — uses the browser's authoritative `exportToMidi()` path, so
+- **`export_midi`** — uses the same runtime-neutral encoder as the browser, so
   identical state produces identical bytes. It returns base64-encoded Standard
   MIDI, reports skipped tracks, and lists features MIDI cannot represent rather
   than approximating them silently.
@@ -125,10 +146,11 @@ an authoritative Keyboardia operation and returns canonical session URLs.
   deployment or policy changes.
 
 **Fixed (Workers runtime and deployment proof):**
-- **`import.meta.env.DEV` crashed every `/mcp` request.** Browser MIDI reuse
-  reached a Vite-only global during Worker module evaluation. Unit and
+- **`import.meta.env.DEV` crashed every `/mcp` request.** The former browser MIDI
+  reuse reached a Vite-only global during Worker module evaluation. Unit and
   workerd-based integration tests both transformed through Vite and missed it;
-  `worker-runtime-safety.test.ts` now walks the Worker import graph and rejects
+  the MIDI core is now runtime-neutral and `worker-runtime-safety.test.ts` walks
+  the resolved Worker import graph and rejects
   unguarded reads. See Lessons 50–54 in `docs/LESSONS-LEARNED.md`.
 - The Worker now has a dedicated TypeScript target and Workers runtime types.
   CI performs a Wrangler dry run, ratchets JavaScript/upload sizes, and rejects
