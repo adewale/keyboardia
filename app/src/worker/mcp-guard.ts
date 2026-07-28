@@ -17,6 +17,96 @@ import { isBodySizeValid } from './validation';
 export const MCP_ALLOWED_METHODS = 'POST';
 
 /**
+ * Browser origins allowed to call the public MCP endpoint directly. CLI and
+ * hosted agent clients normally omit Origin and are unaffected by this list.
+ * Local ports are deliberately allowed so Vite/Playwright and wrangler ports
+ * can differ without opening a non-default production origin.
+ */
+const MCP_ALLOWED_ORIGIN_HOSTNAMES = new Set([
+  'keyboardia.dev',
+  'www.keyboardia.dev',
+  'staging.keyboardia.dev',
+  'localhost',
+  '127.0.0.1',
+  '[::1]',
+]);
+
+function parsedAllowedOrigin(request: Request): URL | null {
+  const origin = request.headers.get('origin');
+  if (!origin) return null;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(origin);
+  } catch {
+    return null;
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+  const isSameWorkersPreview = hostname.endsWith('.workers.dev')
+    && parsed.origin === new URL(request.url).origin;
+
+  if (
+    (parsed.protocol !== 'https:' && parsed.protocol !== 'http:')
+    || parsed.username !== ''
+    || parsed.password !== ''
+    || parsed.pathname !== '/'
+    || parsed.search !== ''
+    || parsed.hash !== ''
+    || (!MCP_ALLOWED_ORIGIN_HOSTNAMES.has(hostname) && !isSameWorkersPreview)
+  ) {
+    return null;
+  }
+
+  const isLocal = hostname === 'localhost'
+    || hostname === '127.0.0.1'
+    || hostname === '[::1]';
+  if (!isLocal && parsed.protocol !== 'https:') return null;
+  if (!isLocal && parsed.port !== '') return null;
+
+  return parsed;
+}
+
+/**
+ * MCP Streamable HTTP requires a present Origin to be validated. Missing
+ * Origin is valid because non-browser clients do not send one; a malformed,
+ * opaque (`null`), or unapproved browser origin is rejected before parsing.
+ */
+export function validateMcpOrigin(request: Request): Response | undefined {
+  const origin = request.headers.get('origin');
+  if (!origin) return undefined;
+  if (parsedAllowedOrigin(request)) return undefined;
+
+  return new Response(JSON.stringify({
+    jsonrpc: '2.0',
+    error: {
+      code: -32000,
+      message: `Invalid Origin: ${origin}`,
+    },
+    id: null,
+  }), {
+    status: 403,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/** CORS metadata for a validated browser origin. */
+export function mcpCorsHeaders(request: Request): Headers {
+  const headers = new Headers({
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Accept, MCP-Protocol-Version, MCP-Method, MCP-Name',
+    'Access-Control-Expose-Headers': 'MCP-Protocol-Version',
+    'Access-Control-Max-Age': '86400',
+    Vary: 'Origin',
+  });
+  const origin = request.headers.get('origin');
+  if (origin && parsedAllowedOrigin(request)) {
+    headers.set('Access-Control-Allow-Origin', origin);
+  }
+  return headers;
+}
+
+/**
  * The stateless transport has no SSE stream to attach to and no MCP session to
  * terminate, so GET and DELETE are as unserviceable as PUT. The SDK answers
  * them with 405 too; rejecting here just does it before the SDK is loaded.
@@ -100,6 +190,9 @@ async function readBoundedBody(request: Request): Promise<ArrayBuffer | null> {
  * the same way.
  */
 export async function guardMcpRequest(request: Request): Promise<Response | Request> {
+  const originRejection = validateMcpOrigin(request);
+  if (originRejection) return originRejection;
+
   if (request.method !== 'POST') {
     return methodNotAllowed();
   }

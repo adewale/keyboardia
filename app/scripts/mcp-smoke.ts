@@ -370,7 +370,7 @@ async function main(): Promise<void> {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json, text/event-stream',
-        'Origin': 'https://mcp-smoke.invalid',
+        'Origin': baseUrl,
       },
       body: initializeBody(),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
@@ -393,15 +393,43 @@ async function main(): Promise<void> {
     const response = rawInitialize!;
     const allowOrigin = response.headers.get('access-control-allow-origin');
     assert(
-      allowOrigin,
-      'A successful POST /mcp carried no Access-Control-Allow-Origin, so no browser '
-      + 'MCP client can read the response.'
+      allowOrigin === baseUrl,
+      `A successful POST /mcp allowed Origin "${allowOrigin}" instead of exactly `
+      + `reflecting the trusted origin "${baseUrl}".`
     );
     const expose = response.headers.get('access-control-expose-headers') ?? '';
     assert(
       expose.toLowerCase().includes('mcp-protocol-version'),
       `Access-Control-Expose-Headers is "${expose}"; cross-origin JavaScript cannot `
       + 'read MCP-Protocol-Version without it.'
+    );
+  });
+
+  await check('Opaque browser origins are rejected before protocol parsing', async () => {
+    const response = await fetch(`${baseUrl}/mcp`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json, text/event-stream',
+        'Origin': 'null',
+      },
+      body: initializeBody(),
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    assert(response.status === 403, `Origin: null returned ${response.status}, expected 403.`);
+    assert(
+      response.headers.get('access-control-allow-origin') === null,
+      'The rejected origin was still granted CORS access.'
+    );
+    const body = await response.json() as {
+      jsonrpc?: string;
+      error?: { code?: number };
+      id?: unknown;
+    };
+    assertEqual(
+      { jsonrpc: body.jsonrpc, code: body.error?.code, id: body.id },
+      { jsonrpc: '2.0', code: -32000, id: null },
+      'The Origin rejection was not a JSON-RPC error response.'
     );
   });
 

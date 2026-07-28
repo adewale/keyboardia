@@ -30,10 +30,13 @@ rl.question('Type "production" to confirm: ', (answer) => {
   console.log('\n✅ Confirmed. Building and deploying...\n');
 
   try {
-    execSync('npm run build && wrangler deploy --env=""', {
-      stdio: 'inherit',
-      cwd: process.cwd(),
-    });
+    execSync(
+      'npm run deploy && wrangler deploy --env="" && npm run smoke:mcp:production',
+      {
+        stdio: 'inherit',
+        cwd: process.cwd(),
+      }
+    );
   } catch (_error) {
     console.error('\n❌ Deployment failed.\n');
     process.exit(1);
