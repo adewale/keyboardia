@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest';
 import {
   sanitizeForReceipt,
   validateAutonomousReceipt,
-  validateAutonomousReceipt,
   validateAutonomousTrace,
   validateOriginOnlyPrompt,
 } from '../scripts/autonomous-discovery-validator.mjs';
