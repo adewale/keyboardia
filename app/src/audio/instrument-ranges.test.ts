@@ -145,6 +145,11 @@ describe('INSTRUMENT_RANGES constants', () => {
 
   it('sampled instrument ranges match manifest playableRange exactly', () => {
     const mismatches: string[] = [];
+    // Cases come from readdirSync, so an empty or renamed public/instruments
+    // leaves `mismatches` empty and the test green without comparing anything.
+    // Verified by moving the directory aside. The floor is well under the
+    // current catalogue so adding or retiring one instrument does not churn it.
+    let compared = 0;
 
     for (const entry of readdirSync(INSTRUMENTS_DIR, { withFileTypes: true })) {
       if (!entry.isDirectory()) continue;
@@ -158,6 +163,7 @@ describe('INSTRUMENT_RANGES constants', () => {
       if (!manifest.samples?.length || !manifest.playableRange) continue;
 
       const sampleId = `sampled:${manifest.id ?? entry.name}`;
+      compared++;
       const range = INSTRUMENT_RANGES[sampleId];
       if (!range) {
         mismatches.push(`${sampleId}: missing from INSTRUMENT_RANGES`);
@@ -170,6 +176,7 @@ describe('INSTRUMENT_RANGES constants', () => {
       }
     }
 
+    expect(compared, 'no instrument manifests were compared').toBeGreaterThan(20);
     expect(mismatches).toEqual([]);
   });
 });

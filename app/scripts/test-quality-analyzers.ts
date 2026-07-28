@@ -673,3 +673,39 @@ export function analyzeExportReachability(
   }
   return results;
 }
+
+/**
+ * Which test files does no lane execute?
+ *
+ * A test file that no runner collects is worse than a deleted one: it still
+ * greps as coverage, still reads as a promise in review, and its assertions rot
+ * unobserved. `test/staging/failure-modes.test.ts` carried an always-green
+ * try/catch for months for exactly this reason — nothing ever ran it, so
+ * nothing ever noticed.
+ *
+ * The caller supplies what the runners themselves report collecting, so this
+ * never re-derives include/exclude globs — reimplementing lane resolution here
+ * would be the same drift this repo already paid for elsewhere. `allowed` is
+ * the committed set of files deliberately left unrun; anything outside it is a
+ * finding, and an allowlist entry that is no longer unrun is also a finding, so
+ * the list cannot quietly outlive its reason.
+ */
+export interface UnrunFindings {
+  unlisted: string[];
+  staleAllowances: string[];
+}
+
+export function findUnrunTestFiles(
+  onDisk: readonly string[],
+  collected: readonly string[],
+  allowed: readonly string[],
+): UnrunFindings {
+  const collectedSet = new Set(collected);
+  const allowedSet = new Set(allowed);
+  const unrun = onDisk.filter((file) => !collectedSet.has(file));
+  const unrunSet = new Set(unrun);
+  return {
+    unlisted: unrun.filter((file) => !allowedSet.has(file)).sort(),
+    staleAllowances: [...allowedSet].filter((file) => !unrunSet.has(file)).sort(),
+  };
+}

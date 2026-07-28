@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   analyzeExportReachability,
   collectModuleSpecifiers,
+  findUnrunTestFiles,
   scanTestSource,
   type SourceUnit,
 } from '../../scripts/test-quality-analyzers';
@@ -180,5 +181,34 @@ describe('module linkage analyzer', () => {
     expect(analyzeExportReachability(units)).toContainEqual({
       file: 'src/value.ts', name: 'value', kind: 'const', testFiles: 0, status: 'build-only',
     });
+  });
+});
+
+describe('unrun test file analyzer', () => {
+  const onDisk = ['a.test.ts', 'b.test.ts', 'staging/c.test.ts'];
+
+  it('reports a test file no runner collects', () => {
+    const { unlisted } = findUnrunTestFiles(onDisk, ['a.test.ts'], ['staging/c.test.ts']);
+    expect(unlisted).toEqual(['b.test.ts']);
+  });
+
+  it('stays silent when an unrun file is on the allowlist', () => {
+    const { unlisted } = findUnrunTestFiles(onDisk, ['a.test.ts', 'b.test.ts'], ['staging/c.test.ts']);
+    expect(unlisted).toEqual([]);
+  });
+
+  it('reports an allowlist entry that a lane now runs, so the list cannot outlive its reason', () => {
+    const { staleAllowances } = findUnrunTestFiles(onDisk, onDisk, ['staging/c.test.ts']);
+    expect(staleAllowances).toEqual(['staging/c.test.ts']);
+  });
+
+  it('reports an allowlist entry for a file that no longer exists', () => {
+    const { staleAllowances } = findUnrunTestFiles(onDisk, onDisk, ['deleted.test.ts']);
+    expect(staleAllowances).toEqual(['deleted.test.ts']);
+  });
+
+  it('does not treat a collected file that is absent from disk as unrun', () => {
+    const { unlisted, staleAllowances } = findUnrunTestFiles(['a.test.ts'], ['a.test.ts', 'ghost.test.ts'], []);
+    expect({ unlisted, staleAllowances }).toEqual({ unlisted: [], staleAllowances: [] });
   });
 });

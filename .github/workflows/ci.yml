@@ -40,23 +40,34 @@ jobs:
       - name: Check for always-green test patterns
         run: npm run validate:test-antipatterns
 
-      # Advisory: reports tests that name a module they never import, tests
-      # that reimplement the logic they claim to cover, and modules imported
-      # only by their own tests. The last needs a human call (a module can be
-      # legitimately new), so this informs rather than blocks.
+      # Reports tests that name a module they never import, tests that
+      # reimplement the logic they claim to cover, and modules imported only by
+      # their own tests. Advisory while a backlog existed; the backlog is zero,
+      # and a clean checker left on continue-on-error silently refills.
       - name: Check test/subject linkage
         run: npm run validate:test-links
-        continue-on-error: true
 
-      # Advisory. The linkage check above asks whether anything imports a
-      # *module*; this asks the same of each exported symbol, which is the
-      # granularity two bugs in this repo hid at — slicer.ts had one live
-      # export and four dead ones carrying a units bug, and instrument-types.ts
-      # had one dead export answering "is this melodic?" wrongly for 24 of 99
-      # catalogue ids. Both had passing tests, which is what kept them alive.
+      # The linkage check above asks whether anything imports a *module*; this
+      # asks the same of each exported symbol, which is the granularity two bugs
+      # in this repo hid at — slicer.ts had one live export and four dead ones
+      # carrying a units bug, and instrument-types.ts had one dead export
+      # answering "is this melodic?" wrongly for 24 of 99 catalogue ids. Both
+      # had passing tests, which is what kept them alive. Also advisory until
+      # the backlog cleared; now at zero dead runtime exports, so it blocks.
       - name: Check for unreachable exports
         run: npm run validate:dead-exports
-        continue-on-error: true
+
+      # The two checks above ask whether production reaches the code a test
+      # covers. This asks the mirror question: does any lane reach the test?
+      # Six staging files — 103 tests, 226 assertions — are collected by
+      # nothing, which is how an always-green try/catch survived in
+      # failure-modes.test.ts for months. They are declared in the script's
+      # allowlist; a seventh, or an allowlist entry that a lane now runs,
+      # fails here. Its first run found e2e/last-cell-flicker.spec.ts: a spec
+      # whose only test had been removed, leaving a docblock Playwright
+      # collected nothing from.
+      - name: Check every test file is run by a lane
+        run: npm run validate:unrun-tests
 
   unit-tests:
     name: Unit Tests
@@ -257,17 +268,23 @@ jobs:
           # The two real-audio matrix specs are CPU-bound. Serial execution
           # avoids timeout inflation while keeping every test first-attempt-only.
           #
-          # @visual is excluded. visual.spec.ts used to skip everywhere, so it
-          # cost this lane nothing; it now runs, and four of its tests have no
-          # committed baseline at all — they were previously wrapped in
-          # `if (await stepCell.isVisible())` guards that were always false on an
-          # empty session, so they never executed and never produced one. A
-          # baseline must be generated on this runner image (see
+          # visual.spec.ts is excluded via E2E_FUNCTIONAL_ONLY below. It used to
+          # skip everywhere, so it cost this lane nothing; it now runs, and four
+          # of its tests have no committed baseline at all — they were wrapped
+          # in `if (await stepCell.isVisible())` guards that were always false
+          # on an empty session, so they never executed and never produced one.
+          # A baseline must be generated on this runner image (see
           # .github/workflows/visual-baselines.yml) rather than from a
-          # contributor's machine, and until it is, these belong in the
-          # macOS visual job below and not in a gating lane. populated-visual
-          # .spec.ts is the deterministic visual coverage that does gate.
-          npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0 --grep-invert @visual
+          # contributor's machine, and until it is, these belong in the macOS
+          # visual job below and not in a gating lane. populated-visual.spec.ts
+          # is the deterministic visual coverage that does gate.
+          #
+          # This previously also passed --grep-invert @visual, a second
+          # mechanism aimed at the same file. Both collect exactly 151 tests
+          # here, so the tag filter is redundant with the path filter pre-push
+          # already uses; one mechanism is easier to reason about than two that
+          # happen to agree.
+          npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
           node - <<'NODE'
           const fs = require('node:fs');
           const { stats } = JSON.parse(fs.readFileSync('test-results/offline-results.json', 'utf8'));
@@ -279,6 +296,7 @@ jobs:
           NODE
         env:
           USE_MOCK_API: '1'
+          E2E_FUNCTIONAL_ONLY: '1'
           CI: 'true'
           PLAYWRIGHT_OUTPUT_DIR: 'test-results/offline-artifacts'
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/offline-results.json'

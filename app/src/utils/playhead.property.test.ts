@@ -7,6 +7,12 @@
  * Key Property: ∀ currentStep ∈ [0, MAX_STEPS), ∀ maxStepCount ∈ [1, MAX_STEPS]:
  *   getPlayheadIndex(currentStep, maxStepCount) ∈ [0, maxStepCount)
  *
+ * This is where the last-cell flickering bug is now guarded. e2e/last-cell-
+ * flicker.spec.ts used to hold a browser test for it; the test was removed in
+ * favour of these properties and the file survived for months as a docblock
+ * Playwright collected nothing from — visible to grep as coverage, run by
+ * nothing. The pointer belongs with the assertions, so the file is gone.
+ *
  * @see bug-patterns.ts#step-index-boundary-wrapping
  */
 
