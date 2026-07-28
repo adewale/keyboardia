@@ -35,7 +35,8 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'add_track',
         'delete_track',
         'clear_track',
-        'set_track_sample',
+        'set_track_instrument',  // Change instrument (issue #63)
+        'set_track_sample',      // Legacy alias of set_track_instrument
         'set_track_volume',
         'set_track_transpose',
         'set_track_step_count',
@@ -66,7 +67,7 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
       });
 
-      // Verify count matches expected (28 total)
+      // Verify count matches expected (29 total)
       expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedTypes.length);
     });
 
@@ -154,6 +155,7 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'add_track': 'track_added',
         'delete_track': 'track_deleted',
         'clear_track': 'track_cleared',
+        'set_track_instrument': 'track_sample_set', // rollout-compatible response
         'set_track_sample': 'track_sample_set',
         'set_track_volume': 'track_volume_set',
         'set_track_transpose': 'track_transpose_set',

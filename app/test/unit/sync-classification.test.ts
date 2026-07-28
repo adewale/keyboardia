@@ -45,6 +45,7 @@ const ALL_GRID_ACTION_TYPES = [
   'ADD_TRACK',
   'DELETE_TRACK',
   'CLEAR_TRACK',
+  'SET_TRACK_INSTRUMENT',  // Change instrument (issue #63)
   'SET_TRACK_SAMPLE',
   'SET_TRACK_VOLUME',
   'SET_TRACK_TRANSPOSE',
@@ -119,6 +120,8 @@ function createMockAction(type: string): GridAction {
       return { type: 'DELETE_TRACK', trackId: 'test-track-1' };
     case 'CLEAR_TRACK':
       return { type: 'CLEAR_TRACK', trackId: 'test-track-1' };
+    case 'SET_TRACK_INSTRUMENT':
+      return { type: 'SET_TRACK_INSTRUMENT', trackId: 'test-track-1', sampleId: 'snare', name: 'Test Track' };
     case 'SET_TRACK_SAMPLE':
       return { type: 'SET_TRACK_SAMPLE', trackId: 'test-track-1', sampleId: 'snare', name: 'Snare' };
     case 'SET_TRACK_VOLUME':
@@ -239,14 +242,15 @@ describe('Sync Classification Verification', () => {
     });
 
     it('has the expected number of classified actions', () => {
-      // 28 synced + 11 local-only + 8 internal = 47 total
+      // 29 synced + 11 local-only + 8 internal = 48 total
+      // (issue #63 added SET_TRACK_INSTRUMENT to synced)
       // (Phase 31F added SELECT_STEP, CLEAR_SELECTION to local-only)
       // (Phase 31F/31G added DELETE_SELECTED_STEPS, APPLY_TO_SELECTION, SET_LOOP_REGION to synced)
       // (Phase 36 added FOCUS_TRACK, FOCUS_STEP, BLUR_FOCUS to local-only)
       // (REORDER_TRACK_BY_ID added to INTERNAL for commutative track reorder - remote-only action)
       // Note: TypeScript exhaustiveness check in sync-classification.ts now enforces completeness
       const totalClassified = SYNCED_ACTIONS.size + LOCAL_ONLY_ACTIONS.size + INTERNAL_ACTIONS.size;
-      expect(totalClassified).toBe(47);
+      expect(totalClassified).toBe(48);
     });
   });
 

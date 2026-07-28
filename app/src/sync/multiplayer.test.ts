@@ -604,6 +604,20 @@ describe('Phase 12: Message Serialization (actionToMessage)', () => {
     });
   });
 
+  it('uses the rollout-compatible envelope for SET_TRACK_INSTRUMENT', () => {
+    expect(actionToMessage({
+      type: 'SET_TRACK_INSTRUMENT',
+      trackId: 'track-def',
+      sampleId: 'sampled:808-kick',
+      name: 'Ada Lead',
+    })).toEqual({
+      type: 'set_track_sample',
+      trackId: 'track-def',
+      sampleId: 'sampled:808-kick',
+      name: 'Ada Lead',
+    });
+  });
+
   it('should convert SET_TRACK_VOLUME action to set_track_volume message', () => {
     const action: GridAction = {
       type: 'SET_TRACK_VOLUME',

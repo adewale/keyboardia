@@ -278,3 +278,32 @@
 .sample-picker.pending {
   opacity: 0.7;
 }
+
+/*
+ * Change Instrument variant (issue #63).
+ *
+ * Every rule below is scoped to .variant-change so the default "Add Track"
+ * picker renders exactly as before — e2e/visual.spec.ts holds a
+ * sample-picker.png baseline of it.
+ */
+.sample-picker.variant-change {
+  /* Sits inside a track panel rather than the controls row, so it must not
+     grow with the page and must scroll on its own. */
+  max-height: 220px;
+  overflow-y: auto;
+  width: 100%;
+  /* Fit between the app + sequencer padding on both sides. If the sticky box
+     is wider than this scrollport, its parent's right edge forces it left at
+     the end of a long pattern. */
+  max-width: calc(100vw - 96px);
+  box-sizing: border-box;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+}
+
+.sample-picker.variant-change .instrument-btn.current {
+  border-color: var(--color-accent);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+  font-weight: 600;
+}

@@ -39,7 +39,8 @@ const ALL_HANDLED_MESSAGE_TYPES = [
   'clear_track',
   'copy_sequence',  // Phase 26: Copy steps between tracks
   'move_sequence',  // Phase 26: Move steps between tracks
-  'set_track_sample',
+  'set_track_instrument',  // Change instrument (issue #63)
+  'set_track_sample',      // Legacy alias of set_track_instrument
   'set_track_volume',
   'set_track_transpose',
   'set_track_step_count',
@@ -89,7 +90,8 @@ describe('Mutation Type Definitions', () => {
       'clear_track',
       'copy_sequence',  // Phase 26: Copy steps between tracks
       'move_sequence',  // Phase 26: Move steps between tracks
-      'set_track_sample',
+      'set_track_instrument',  // Change instrument (issue #63)
+      'set_track_sample',      // Legacy alias of set_track_instrument
       'set_track_volume',
       'set_track_transpose',
       'set_track_step_count',
@@ -213,13 +215,14 @@ describe('Mutation Type Definitions', () => {
  * per "My Ears, My Control" philosophy - each user controls their own mix.
  */
 describe('Published Session Protection', () => {
-  it('has exactly 28 mutation types to block', () => {
+  it('has exactly 29 mutation types to block', () => {
     // 15 original + set_session_name + set_scale + set_track_swing (removed set_track_playback_mode)
     // Phase 31F: Added batch_clear_steps and batch_set_parameter_locks
     // Phase 31G: Added set_loop_region and reorder_tracks
     // Pattern ops: rotate_pattern, invert_pattern, reverse_pattern, mirror_pattern, euclidean_fill
     // Track naming: set_track_name
-    expect(MUTATING_MESSAGE_TYPES.size).toBe(28);
+    // Change instrument: set_track_instrument
+    expect(MUTATING_MESSAGE_TYPES.size).toBe(29);
   });
 
   it('has exactly 8 read-only types to allow', () => {
@@ -227,13 +230,14 @@ describe('Published Session Protection', () => {
     expect(READONLY_MESSAGE_TYPES.size).toBe(8);
   });
 
-  it('covers all 36 message types handled by the DO', () => {
+  it('covers all 37 message types handled by the DO', () => {
     const totalClassified = MUTATING_MESSAGE_TYPES.size + READONLY_MESSAGE_TYPES.size;
     expect(totalClassified).toBe(ALL_HANDLED_MESSAGE_TYPES.length);
     // Phase 31F: Added 2 batch message types
     // Phase 31G: Added set_loop_region and reorder_tracks
     // Pattern ops: 5 new types, Track naming: 1 new type
-    expect(totalClassified).toBe(36);
+    // Change instrument: 1 new type
+    expect(totalClassified).toBe(37);
   });
 });
 
@@ -265,6 +269,7 @@ describe('Bidirectional Message Mapping', () => {
     'ADD_TRACK': 'add_track',
     'DELETE_TRACK': 'delete_track',
     'CLEAR_TRACK': 'clear_track',
+    'SET_TRACK_INSTRUMENT': 'set_track_instrument',
     'SET_TRACK_SAMPLE': 'set_track_sample',
     'SET_TRACK_VOLUME': 'set_track_volume',
     'SET_TRACK_TRANSPOSE': 'set_track_transpose',
@@ -303,6 +308,7 @@ describe('Bidirectional Message Mapping', () => {
     'add_track': 'track_added',
     'delete_track': 'track_deleted',
     'clear_track': 'track_cleared',
+    'set_track_instrument': 'track_sample_set', // rollout-compatible response
     'set_track_sample': 'track_sample_set',
     'set_track_volume': 'track_volume_set',
     'set_track_transpose': 'track_transpose_set',
@@ -328,6 +334,12 @@ describe('Bidirectional Message Mapping', () => {
     'batch_clear_steps': 'steps_cleared',
     'batch_set_parameter_locks': 'parameter_locks_batch_set',
   };
+
+  // Current servers answer both instrument request envelopes with the legacy
+  // response during the rolling-deploy window. New clients still accept the
+  // forward response emitted by a future server, so it is state-mutating even
+  // though no current request maps to it one-to-one.
+  const FORWARD_COMPATIBLE_BROADCASTS = new Set(['track_instrument_set']);
 
   it('every SYNCED_ACTION has a corresponding ClientMessage type', () => {
     for (const action of SYNCED_ACTIONS) {
@@ -379,16 +391,20 @@ describe('Bidirectional Message Mapping', () => {
   it('MESSAGE_TO_BROADCAST_MAP covers all state-mutating broadcasts', () => {
     const mappedBroadcasts = new Set(Object.values(MESSAGE_TO_BROADCAST_MAP));
 
-    // Every STATE_MUTATING_BROADCAST should be in our map
+    // Every STATE_MUTATING_BROADCAST should be in the current response map or
+    // be an explicitly accepted forward-compatible response.
     for (const broadcast of STATE_MUTATING_BROADCASTS) {
       expect(
-        mappedBroadcasts.has(broadcast),
-        `STATE_MUTATING_BROADCASTS contains "${broadcast}" but it's not in MESSAGE_TO_BROADCAST_MAP`
+        mappedBroadcasts.has(broadcast) || FORWARD_COMPATIBLE_BROADCASTS.has(broadcast),
+        `STATE_MUTATING_BROADCASTS contains "${broadcast}" but it's not mapped or forward-compatible`
       ).toBe(true);
     }
 
-    // Sizes should match
-    expect(mappedBroadcasts.size).toBe(STATE_MUTATING_BROADCASTS.size);
+    for (const broadcast of FORWARD_COMPATIBLE_BROADCASTS) {
+      expect(mappedBroadcasts.has(broadcast)).toBe(false);
+    }
+    expect(mappedBroadcasts.size + FORWARD_COMPATIBLE_BROADCASTS.size)
+      .toBe(STATE_MUTATING_BROADCASTS.size);
   });
 
   it('complete flow: SYNCED_ACTION → ClientMessage → Broadcast', () => {

@@ -37,6 +37,7 @@ type ToneSynthManagerSurface = Pick<
   | 'semitoneToNoteName'
   | 'getPresetNames'
   | 'setFMParams'
+  | 'resetFMParams'
   | 'getFMParams'
   | 'dispose'
 >;
@@ -109,6 +110,10 @@ export class FakeToneSynthManager implements ToneSynthManagerSurface {
   setFMParams(harmonicity: number, modulationIndex: number): void {
     this.fmParams = { harmonicity, modulationIndex };
     this.setFMParamsCalls.push({ harmonicity, modulationIndex });
+  }
+
+  resetFMParams(): void {
+    this.fmParams = null;
   }
 
   getFMParams(): { harmonicity: number; modulationIndex: number } | null {

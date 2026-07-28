@@ -2,6 +2,7 @@ import { VALID_SAMPLE_IDS, getInstrumentName } from '../shared/instrument-catalo
 import { DEFAULT_STEP_COUNT, MAX_STEPS, MAX_TRACKS, MAX_TEMPO, MIN_TEMPO } from '../shared/constants';
 import type { Session, SessionState, SessionTrack } from '../shared/state';
 import { createDefaultTrack } from '../shared/state-mutations';
+import { setTrackInstrument } from '../shared/track-instrument';
 import { MAX_TRACK_NAME_LENGTH, sanitizeTrackName } from '../shared/validation';
 
 export const MCP_ACTOR_ID = 'mcp';
@@ -28,6 +29,11 @@ export type McpSessionEdit =
       name?: string;
     }
   | {
+      operation: 'set_track_instrument';
+      track_id: string;
+      sample_id: string;
+    }
+  | {
       operation: 'set_steps';
       track_id: string;
       changes: Array<{ step: number; value: boolean }>;
@@ -39,6 +45,7 @@ export type McpSessionEdit =
 
 export type McpEditEvent =
   | { type: 'track_added'; track: SessionTrack }
+  | { type: 'track_instrument_set'; trackId: string; sampleId: string; name: string }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean }
   | { type: 'tempo_changed'; tempo: number };
 
@@ -199,6 +206,40 @@ export function applyMcpSessionEdit(
     return {
       state: { ...state, tracks: [...state.tracks, track] },
       events: [{ type: 'track_added', track }],
+      changed: true,
+    };
+  }
+
+  if (edit.operation === 'set_track_instrument') {
+    // Change instrument (issue #63). The catalog check, the field preservation,
+    // and the engine-state policy all live in the shared domain operation, so an
+    // agent and a browser cannot reach different results. See
+    // specs/CHANGE-INSTRUMENT.md.
+    const result = setTrackInstrument(state, {
+      trackId: edit.track_id,
+      sampleId: edit.sample_id,
+    });
+
+    if (!result.ok) {
+      throw new McpSessionEditError(
+        result.error.message,
+        result.error.code,
+        result.error.code === 'TRACK_NOT_FOUND' ? 404 : 400
+      );
+    }
+
+    if (!result.changed) {
+      return { state, events: [], changed: false };
+    }
+
+    return {
+      state: result.state,
+      events: [{
+        type: 'track_instrument_set',
+        trackId: edit.track_id,
+        sampleId: edit.sample_id,
+        name: result.track.name,
+      }],
       changed: true,
     };
   }

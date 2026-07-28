@@ -33,6 +33,7 @@ import {
   clamp,
 } from './constants';
 import { MAX_TRACK_NAME_LENGTH } from './validation';
+import { setTrackInstrument } from './track-instrument';
 // Import runtime-neutral pattern operations (Phase 32: Sync fix)
 import {
   rotateLeft,
@@ -217,12 +218,19 @@ export function applyMutation(
       }));
     }
 
+    case 'set_track_instrument': {
+      // Change instrument (issue #63). The shared operation validates the
+      // instrument and owns the engine-state policy, so the browser reducer,
+      // the Durable Object, and MCP cannot drift apart. A rejected request
+      // returns the caller's own state, so this is a safe no-op.
+      return setTrackInstrument(state, message).state;
+    }
+
     case 'set_track_sample': {
-      return updateTrackById(state, message.trackId, track => ({
-        ...track,
-        sampleId: message.sampleId,
-        name: message.name,
-      }));
+      // Legacy wire alias. The caller-supplied name exists only so a new client
+      // can talk safely to an older server; current code must never trust it or
+      // bypass catalog validation / engine-state cleanup.
+      return setTrackInstrument(state, message).state;
     }
 
     case 'set_track_volume': {

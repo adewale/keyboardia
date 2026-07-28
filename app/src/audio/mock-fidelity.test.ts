@@ -48,6 +48,7 @@ describe('Mock-fidelity contract: ToneSynthManager', () => {
     'semitoneToNoteName',
     'getPresetNames',
     'setFMParams',
+    'resetFMParams',
     'getFMParams',
     'dispose',
   ] as const;

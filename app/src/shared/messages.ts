@@ -34,7 +34,8 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'add_track',
   'delete_track',
   'clear_track',
-  'set_track_sample',
+  'set_track_instrument', // Change instrument (issue #63)
+  'set_track_sample',     // Legacy alias of set_track_instrument
   'set_track_volume',
   'set_track_transpose',
   'set_track_step_count',
@@ -102,7 +103,8 @@ export const STATE_MUTATING_BROADCASTS = new Set([
   'track_added',
   'track_deleted',
   'track_cleared',
-  'track_sample_set',
+  'track_instrument_set', // Forward-compatible change-instrument response
+  'track_sample_set',     // Rollout-compatible change-instrument response
   'track_volume_set',
   'track_transpose_set',
   'track_step_count_set',

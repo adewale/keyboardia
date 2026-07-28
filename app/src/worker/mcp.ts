@@ -224,6 +224,11 @@ const editSchema = z.object({
       name: z.string().trim().min(1).max(MAX_TRACK_NAME_LENGTH).optional(),
     }).strict(),
     z.object({
+      operation: z.literal('set_track_instrument'),
+      track_id: trackIdSchema,
+      sample_id: z.enum(sampleIds),
+    }).strict(),
+    z.object({
       operation: z.literal('set_steps'),
       track_id: trackIdSchema,
       changes: z.array(z.object({
@@ -361,8 +366,10 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       title: 'Edit Keyboardia session',
       description: [
         'Make one narrow, retry-safe edit to an existing collaborative session.',
-        'Supported operations: add_track, set_steps, and set_tempo.',
+        'Supported operations: add_track, set_track_instrument, set_steps, and set_tempo.',
         'set_steps changes only the named steps; it never replaces a track or session.',
+        'set_track_instrument replaces only a track\'s sound source, keeping its'
+        + ' pattern, mix, timing, and custom name.',
       ].join(' '),
       inputSchema: editSchema,
       annotations: {

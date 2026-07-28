@@ -462,6 +462,28 @@ export class ToneSynthManager {
   }
 
   /**
+   * Clear the persisted FM override without replacing the live synth.
+   * The active preset values are restored synchronously so a state reset
+   * during playback cannot drop the next scheduled note while rebuilding.
+   */
+  resetFMParams(): void {
+    this.fmOverride = null;
+    if (!this.ready) return;
+
+    const synth = this.synths.get('fm');
+    const presetName = this.activePresets.get('fm');
+    if (!(synth instanceof Tone.FMSynth) || !presetName) return;
+
+    const config = TONE_SYNTH_PRESETS[presetName].config;
+    if (typeof config.harmonicity === 'number') {
+      synth.harmonicity.value = config.harmonicity;
+    }
+    if (typeof config.modulationIndex === 'number') {
+      synth.modulationIndex.value = config.modulationIndex;
+    }
+  }
+
+  /**
    * Get current FM params from the active FM synth
    */
   getFMParams(): { harmonicity: number; modulationIndex: number } | null {
