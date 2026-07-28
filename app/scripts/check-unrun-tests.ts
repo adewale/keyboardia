@@ -44,10 +44,19 @@ function filesBelow(root: string): string[] {
 
 const run = (command: string, args: string[], cwd?: string) => {
   try {
-    return execFileSync(command, args, { encoding: 'utf8', cwd, stdio: ['ignore', 'pipe', 'ignore'] });
+    return execFileSync(command, args, {
+      encoding: 'utf8',
+      cwd,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
   } catch (error) {
-    // A runner that exits non-zero still prints the inventory it collected.
-    return (error as { stdout?: string }).stdout ?? '';
+    const failure = error as { message?: string; stderr?: string; stdout?: string };
+    const diagnostic = failure.stderr?.trim() || failure.stdout?.trim() || failure.message;
+    const location = cwd ? ` in ${path.relative(process.cwd(), cwd) || '.'}` : '';
+    throw new Error(
+      `Test collector failed${location}: ${command} ${args.join(' ')}\n${diagnostic ?? 'No diagnostic output.'}`,
+      { cause: error },
+    );
   }
 };
 

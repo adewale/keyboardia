@@ -25,10 +25,20 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: |
+            app/package-lock.json
+            app/test/integration/package-lock.json
 
-      - name: Install dependencies
+      - name: Install app dependencies
         run: npm ci
+
+      # validate:unrun-tests asks the integration runner what it collects.
+      # That runner has an independent lockfile and loads the Workers pool from
+      # its Vitest config, so the inventory is not available after installing
+      # only app/package-lock.json.
+      - name: Install integration test dependencies
+        run: npm ci
+        working-directory: ./app/test/integration
 
       - name: Run ESLint
         run: npm run lint
