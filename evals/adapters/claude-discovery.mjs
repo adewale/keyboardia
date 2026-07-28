@@ -7,6 +7,7 @@
  * an endpoint the model extracts from digest-verified same-origin bytes.
  */
 import { spawn } from 'node:child_process';
+import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { numericUsage } from './usage.mjs';
@@ -93,6 +94,10 @@ child.on('error', (error) => {
 });
 
 child.on('close', (code) => {
+  if (process.env.KEYBOARDIA_KEEP_AUTONOMOUS_CLI === '1') {
+    writeFileSync(`${tracePath}.claude-stdout`, stdout, { mode: 0o600 });
+    writeFileSync(`${tracePath}.claude-stderr`, stderr, { mode: 0o600 });
+  }
   if (code !== 0) {
     process.stderr.write(
       stderr || stdout || `claude-discovery: CLI exited ${code}\n`,
