@@ -3,7 +3,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
-  findImportMetaEnvReferences,
+  findImportMetaReferences,
   findModuleEvaluationBrowserGlobals,
   reachableModules,
   scanProductionGraph,
@@ -33,12 +33,12 @@ describe('worker runtime safety', () => {
     expect(workerModules.some(module => module.startsWith('audio/'))).toBe(false);
   });
 
-  it('never reads Vite-only import.meta.env syntax', () => {
+  it('never uses Vite-only import.meta capabilities', () => {
     const offenders: string[] = [];
 
     for (const module of workerModules) {
       const source = readFileSync(resolve(SRC_ROOT, module), 'utf8');
-      for (const reference of findImportMetaEnvReferences(source, module)) {
+      for (const reference of findImportMetaReferences(source, module)) {
         offenders.push(
           `src/${module}:${reference.line}:${reference.column}: ${reference.global}`,
         );

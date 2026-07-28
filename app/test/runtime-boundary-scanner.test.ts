@@ -4,7 +4,7 @@ import {
   extractRelativeImports,
   findBrowserGlobalReferences,
   findExternalImportViolations,
-  findImportMetaEnvReferences,
+  findImportMetaReferences,
   findModuleEvaluationBrowserGlobals,
   findResourceImportViolations,
   findReachabilityViolations,
@@ -131,6 +131,45 @@ describe('runtime boundary scanner', () => {
     })).toEqual(['Shared resources: shared/constants.ts -> resource:./presentation.css']);
   });
 
+  it('records Vite URL workers and compiler-emitted JSX runtime imports', () => {
+    expect(extractModuleImports(`
+      const worker = new Worker(new URL('./midi.worker.ts', import.meta.url));
+      export const View = () => <div />;
+    `, 'view.tsx')).toEqual([
+      { specifier: './midi.worker.ts', typeOnly: false },
+      { specifier: 'react/jsx-runtime', typeOnly: false },
+    ]);
+
+    expect(extractModuleImports(
+      'export const View = () => <div />;',
+      'view.jsx',
+    )).toEqual([{ specifier: 'react/jsx-runtime', typeOnly: false }]);
+  });
+
+  it('makes Vite module references loud when their target cannot be statically resolved', () => {
+    const graph = scanProductionGraph(SRC_ROOT, {
+      sourceOverrides: new Map([
+        ['shared/constants.ts', `
+          const modules = import.meta.glob('../audio/*.ts');
+          const url = new URL(getWorkerPath(), import.meta.url);
+          void modules;
+          void url;
+        `],
+      ]),
+    });
+
+    expect(graph.unanalyzableModuleReferences).toEqual(expect.arrayContaining([
+      {
+        importer: 'shared/constants.ts',
+        expression: "import.meta.glob('../audio/*.ts')",
+      },
+      {
+        importer: 'shared/constants.ts',
+        expression: 'new URL(getWorkerPath(), import.meta.url)',
+      },
+    ]));
+  });
+
   it('reports a forbidden dependency path even when an allowed-looking bridge hides it', () => {
     const edges: ImportEdge[] = [
       { importer: 'shared/core.ts', imported: 'utils/bridge.ts', typeOnly: false },
@@ -208,23 +247,56 @@ describe('runtime boundary scanner', () => {
     ]);
   });
 
-  it('parses import.meta.env syntax and ignores comments and strings', () => {
-    const offenders = findImportMetaEnvReferences(`
-      // import.meta.env.DEV
-      const example = 'import.meta["env"]';
-      import.meta.env.DEV;
-      import.meta['env'].MODE;
-      const meta = import.meta;
-      const alias = meta;
-      alias.env.PROD;
-      const { env } = alias;
+  it('finds destructured, ambient-shadowed, storage, worker, and audio browser capabilities', () => {
+    const offenders = findBrowserGlobalReferences(`
+      declare const window: { location: string };
+      void window.location;
+      const { Worker: BrowserWorker } = globalThis;
+      new BrowserWorker('/worker.js');
+      const { Worker: SelfWorker } = self;
+      new SelfWorker('/self-worker.js');
+      new OfflineAudioContext(2, 128, 44100);
+      new SharedWorker('/shared-worker.js');
+      indexedDB.open('session');
+      void location.href;
+      const { navigator: nav } = source;
+      void nav;
     `);
 
     expect(offenders.map(({ global }) => global)).toEqual([
-      'import.meta.env',
-      'import.meta.env',
-      'import.meta.env',
-      'import.meta.env',
+      'window',
+      'Worker',
+      'self',
+      'OfflineAudioContext',
+      'SharedWorker',
+      'indexedDB',
+      'location',
     ]);
+  });
+
+  it('rejects every import.meta capability without alias or shadowing blind spots', () => {
+    const offenders = findImportMetaReferences(`
+      // import.meta.env.DEV
+      const example = 'import.meta["env"]';
+      import.meta.env.DEV;
+      let assigned;
+      assigned = import.meta;
+      const { ['env']: viteEnv } = import.meta;
+      const holder = { meta: import.meta };
+      ((meta) => meta.env.DEV)(import.meta);
+      const modules = import.meta.glob('../audio/*.ts');
+      {
+        const meta = { env: { DEV: false } };
+        void meta.env.DEV;
+      }
+      void assigned;
+      void viteEnv;
+      void holder;
+      void modules;
+    `);
+
+    expect(offenders.map(({ global }) => global)).toEqual(
+      Array(6).fill('import.meta'),
+    );
   });
 });

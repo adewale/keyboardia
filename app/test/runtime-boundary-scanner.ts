@@ -133,6 +133,61 @@ function exportDeclarationIsTypeOnly(declaration: ts.ExportDeclaration): boolean
   return declaration.isTypeOnly;
 }
 
+function scriptKindFor(fileName: string): ts.ScriptKind {
+  switch (extname(fileName).toLowerCase()) {
+    case '.js':
+    case '.cjs':
+    case '.mjs':
+      return ts.ScriptKind.JS;
+    case '.jsx':
+      return ts.ScriptKind.JSX;
+    case '.tsx':
+      return ts.ScriptKind.TSX;
+    default:
+      return ts.ScriptKind.TS;
+  }
+}
+
+function isImportMetaProperty(
+  node: ts.Node | undefined,
+  property: string,
+): node is ts.PropertyAccessExpression | ts.ElementAccessExpression {
+  if (!node) return false;
+  if (ts.isPropertyAccessExpression(node)) {
+    return isImportMeta(node.expression) && node.name.text === property;
+  }
+  return ts.isElementAccessExpression(node)
+    && isImportMeta(node.expression)
+    && stringLiteralText(node.argumentExpression) === property;
+}
+
+function jsxRuntimeSpecifier(
+  sourceFile: ts.SourceFile,
+  compilerOptions: ts.CompilerOptions,
+): string | null {
+  if (compilerOptions.jsx !== ts.JsxEmit.ReactJSX
+    && compilerOptions.jsx !== ts.JsxEmit.ReactJSXDev) {
+    return null;
+  }
+
+  let containsJsx = false;
+  const findJsx = (node: ts.Node): void => {
+    if (ts.isJsxElement(node) || ts.isJsxSelfClosingElement(node) || ts.isJsxFragment(node)) {
+      containsJsx = true;
+      return;
+    }
+    ts.forEachChild(node, findJsx);
+  };
+  findJsx(sourceFile);
+  if (!containsJsx) return null;
+
+  const source = (compilerOptions.jsxImportSource ?? 'react').replace(/\/$/, '');
+  const runtime = compilerOptions.jsx === ts.JsxEmit.ReactJSXDev
+    ? 'jsx-dev-runtime'
+    : 'jsx-runtime';
+  return `${source}/${runtime}`;
+}
+
 /** Extracts real module references from the TypeScript syntax tree. */
 export function extractModuleImports(
   source: string,
@@ -143,7 +198,7 @@ export function extractModuleImports(
     source,
     ts.ScriptTarget.Latest,
     true,
-    fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    scriptKindFor(fileName),
   );
   const imports: RelativeImport[] = [];
 
@@ -177,10 +232,19 @@ export function extractModuleImports(
         return;
       }
     }
+    if (ts.isNewExpression(node)
+      && ts.isIdentifier(node.expression)
+      && node.expression.text === 'URL'
+      && isImportMetaProperty(node.arguments?.[1], 'url')) {
+      const specifier = stringLiteralText(node.arguments?.[0]);
+      if (specifier?.startsWith('.')) add(specifier, false);
+      return;
+    }
     ts.forEachChild(node, visit);
   };
 
   visit(sourceFile);
+  add(jsxRuntimeSpecifier(sourceFile, compilerOptionsFor(fileName)), false);
   return imports;
 }
 
@@ -199,7 +263,7 @@ function findUnanalyzableModuleReferences(source: string, fileName: string): str
     source,
     ts.ScriptTarget.Latest,
     true,
-    fileName.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+    scriptKindFor(fileName),
   );
   const references: string[] = [];
 
@@ -211,6 +275,28 @@ function findUnanalyzableModuleReferences(source: string, fileName: string): str
         references.push(node.getText(sourceFile));
         return;
       }
+      if ((ts.isPropertyAccessExpression(node.expression)
+          || ts.isElementAccessExpression(node.expression))
+        && isImportMeta(node.expression.expression)
+        && (ts.isPropertyAccessExpression(node.expression)
+          ? node.expression.name.text === 'glob' || node.expression.name.text === 'globEager'
+          : ['glob', 'globEager'].includes(
+            stringLiteralText(node.expression.argumentExpression) ?? '',
+          ))) {
+        // Vite globs can expand to many modules. Until the scanner implements
+        // that expansion, retaining the expression as unanalyzable is safer
+        // than silently pretending the graph is closed.
+        references.push(node.getText(sourceFile));
+        return;
+      }
+    }
+    if (ts.isNewExpression(node)
+      && ts.isIdentifier(node.expression)
+      && node.expression.text === 'URL'
+      && isImportMetaProperty(node.arguments?.[1], 'url')
+      && stringLiteralText(node.arguments?.[0]) === null) {
+      references.push(node.getText(sourceFile));
+      return;
     }
     ts.forEachChild(node, visit);
   };
@@ -286,7 +372,7 @@ export function scanProductionGraph(
       source,
       ts.ScriptTarget.Latest,
       true,
-      importerPath.endsWith('.tsx') ? ts.ScriptKind.TSX : ts.ScriptKind.TS,
+      scriptKindFor(importerPath),
     );
     for (const diagnostic of sourceFile.parseDiagnostics) {
       parseFailures.push({
@@ -454,6 +540,7 @@ export function findResourceImportViolations(policy: ResourceImportPolicy): stri
 
 const BROWSER_GLOBALS = new Set([
   'AudioContext',
+  'OfflineAudioContext',
   'AudioWorkletNode',
   'HTMLAnchorElement',
   'HTMLElement',
@@ -461,11 +548,15 @@ const BROWSER_GLOBALS = new Set([
   'MediaRecorder',
   'MutationObserver',
   'ResizeObserver',
+  'SharedWorker',
   'Worker',
   'cancelAnimationFrame',
   'document',
+  'indexedDB',
   'localStorage',
+  'location',
   'navigator',
+  'self',
   'sessionStorage',
   'webkitAudioContext',
   'window',
@@ -483,7 +574,24 @@ function isPropertyName(node: ts.Identifier): boolean {
   if (ts.isPropertyAccessExpression(parent) && parent.name === node) return true;
   if (ts.isPropertyAssignment(parent) && parent.name === node) return true;
   if (ts.isPropertyDeclaration(parent) && parent.name === node) return true;
+  if (ts.isBindingElement(parent) && parent.propertyName === node) return true;
   return false;
+}
+
+function isDeclarationName(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  return (ts.isVariableDeclaration(parent) && parent.name === node)
+    || (ts.isParameter(parent) && parent.name === node)
+    || (ts.isFunctionDeclaration(parent) && parent.name === node)
+    || (ts.isFunctionExpression(parent) && parent.name === node)
+    || (ts.isClassDeclaration(parent) && parent.name === node)
+    || (ts.isClassExpression(parent) && parent.name === node)
+    || (ts.isBindingElement(parent) && parent.name === node);
+}
+
+function declarationCreatesRuntimeBinding(declaration: ts.Declaration): boolean {
+  if (declaration.getSourceFile().isDeclarationFile) return false;
+  return (ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Ambient) === 0;
 }
 
 function isImmediatelyInvokedFunction(node: ts.FunctionLikeDeclaration): boolean {
@@ -522,6 +630,7 @@ function analyzeBrowserGlobals(
     source,
     ts.ScriptTarget.Latest,
     true,
+    scriptKindFor(fileName),
   );
   const analysisOptions: ts.CompilerOptions = {
     ...APP_COMPILER_OPTIONS,
@@ -552,7 +661,8 @@ function analyzeBrowserGlobals(
 
   const isUnshadowed = (node: ts.Identifier): boolean => {
     const symbol = checker.getSymbolAtLocation(node);
-    return !symbol?.declarations?.some(declaration => declaration.getSourceFile() === sourceFile);
+    return !symbol?.declarations?.some(declaration =>
+      declaration.getSourceFile() === sourceFile && declarationCreatesRuntimeBinding(declaration));
   };
 
   const visit = (node: ts.Node): void => {
@@ -562,6 +672,21 @@ function analyzeBrowserGlobals(
     }
     if (ts.isTypeNode(node)
       || ts.isImportDeclaration(node) || ts.isImportEqualsDeclaration(node)) {
+      return;
+    }
+    if (ts.isVariableDeclaration(node)
+      && ts.isObjectBindingPattern(node.name)
+      && node.initializer
+      && ts.isIdentifier(node.initializer)
+      && node.initializer.text === 'globalThis'
+      && isUnshadowed(node.initializer)) {
+      for (const element of node.name.elements) {
+        const property = element.propertyName ?? element.name;
+        const global = ts.isIdentifier(property) || ts.isStringLiteral(property)
+          ? property.text
+          : null;
+        if (global && BROWSER_GLOBALS.has(global)) add(global, element);
+      }
       return;
     }
     if (ts.isPropertyAccessExpression(node)
@@ -585,6 +710,7 @@ function analyzeBrowserGlobals(
     if (ts.isIdentifier(node)
       && BROWSER_GLOBALS.has(node.text)
       && !isPropertyName(node)
+      && !isDeclarationName(node)
       && isUnshadowed(node)) {
       add(node.text, node);
       return;
@@ -618,66 +744,29 @@ function isImportMeta(node: ts.Node | undefined): node is ts.MetaProperty {
     && node.name.text === 'meta';
 }
 
-/** Finds direct, computed, destructured, and simply aliased import.meta.env reads. */
-export function findImportMetaEnvReferences(
+/** Finds every import.meta capability in a runtime-neutral module. */
+export function findImportMetaReferences(
   source: string,
   fileName = 'module.ts',
 ): BrowserGlobalReference[] {
-  const sourceFile = ts.createSourceFile(fileName, source, ts.ScriptTarget.Latest, true);
-  const metaAliases = new Set<string>();
-
-  let changed = true;
-  while (changed) {
-    changed = false;
-    const collect = (node: ts.Node): void => {
-      if (ts.isVariableDeclaration(node)
-        && ts.isIdentifier(node.name)
-        && node.initializer
-        && (isImportMeta(node.initializer)
-          || (ts.isIdentifier(node.initializer) && metaAliases.has(node.initializer.text)))
-        && !metaAliases.has(node.name.text)) {
-        metaAliases.add(node.name.text);
-        changed = true;
-      }
-      ts.forEachChild(node, collect);
-    };
-    collect(sourceFile);
-  }
-
+  const sourceFile = ts.createSourceFile(
+    fileName,
+    source,
+    ts.ScriptTarget.Latest,
+    true,
+    scriptKindFor(fileName),
+  );
   const references: BrowserGlobalReference[] = [];
   const add = (node: ts.Node): void => {
     const location = sourceFile.getLineAndCharacterOfPosition(node.getStart(sourceFile));
     references.push({
-      global: 'import.meta.env',
+      global: 'import.meta',
       line: location.line + 1,
       column: location.character + 1,
     });
   };
-  const isMetaExpression = (node: ts.Expression): boolean =>
-    isImportMeta(node) || (ts.isIdentifier(node) && metaAliases.has(node.text));
-
   const visit = (node: ts.Node): void => {
-    if (ts.isPropertyAccessExpression(node)
-      && isMetaExpression(node.expression)
-      && node.name.text === 'env') {
-      add(node);
-      return;
-    }
-    if (ts.isElementAccessExpression(node)
-      && isMetaExpression(node.expression)
-      && stringLiteralText(node.argumentExpression) === 'env') {
-      add(node);
-      return;
-    }
-    if (ts.isVariableDeclaration(node)
-      && ts.isObjectBindingPattern(node.name)
-      && node.initializer
-      && isMetaExpression(node.initializer)) {
-      for (const element of node.name.elements) {
-        const property = element.propertyName ?? element.name;
-        if (ts.isIdentifier(property) && property.text === 'env') add(element);
-      }
-    }
+    if (isImportMeta(node)) add(node);
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);

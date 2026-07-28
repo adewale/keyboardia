@@ -5489,25 +5489,37 @@ than invisible strings.
 
 Policies start from every Worker, shared, music, and state module and walk
 transitive paths with readable provenance. Shared is an allow-list (`shared/**`
-only); Worker permits only Worker, shared, and explicitly pure music modules;
-state cannot transitively reach live audio. Intrinsic capabilities are checked
-too: a symbol-aware AST pass scans every neutral-owned module, including deferred
-callbacks, constructors, getters, and IIFEs, while recognizing locally shadowed
-names. It covers storage, browser Workers, Web Audio, computed `globalThis`
-properties, and direct/computed/aliased `import.meta.env` reads. The real workerd
-MCP journey remains the deployed-bundle module-evaluation oracle. Pure pattern
-operations moved into shared, with the old client path retained only as a
-compatibility facade.
+only); music permits only music and shared; Worker permits only Worker, shared,
+and explicitly pure music modules. State cannot transitively reach live audio,
+and its package, resource, and intrinsic-capability checks follow intermediary
+modules rather than stopping at the `state/**` directory boundary.
+
+Intrinsic capabilities are checked too: a symbol-aware AST pass scans every
+neutral-owned or state-reachable module, including deferred callbacks,
+constructors, getters, and IIFEs, while recognizing locally shadowed names and
+erased ambient declarations. It covers storage, browser and shared Workers, Web
+Audio, location, computed and destructured `globalThis` properties. Because no
+neutral module has an approved `import.meta` capability, the reliable rule is to
+reject `import.meta` there wholesale instead of attempting partial alias taint
+analysis. Vite globs are loud unanalyzable graph references; literal
+`new URL(..., import.meta.url)` Worker/asset references are graph edges. The
+scanner also models the JSX runtime import emitted by the loaded tsconfig. The
+real workerd MCP journey remains the deployed-bundle module-evaluation oracle.
+Pure pattern operations moved into shared, with the old client path retained
+only as a compatibility facade.
 
 The guard itself has adversarial tests for `.js` and dotted specifiers, Vite
-query imports, inline versus clause-level type imports, commented imports,
-unresolved and excluded imports, package/resource escapes, indirect bridges,
-shadowed globals, eager/deferred browser APIs, and `import.meta.env` syntax. A
-browser MIDI test was mutation-checked by corrupting only the real Web Worker
-response: it failed on the downloaded bytes, then passed after the mutation was
-removed. It also records a real Worker response so synchronous fallback cannot
-masquerade as off-thread success. The real-Wrangler MCP journey invokes
-`export_midi` and validates `MThd`, covering the Worker adapter in workerd.
+query and URL imports, compiler-emitted JSX imports, inline versus clause-level
+type imports, commented imports, unresolved and excluded imports,
+package/resource escapes through intermediary modules, indirect music bridges,
+shadowed and ambient globals, eager/deferred browser APIs, destructured globals,
+and arbitrary `import.meta` syntax. A browser MIDI test was mutation-checked by
+corrupting only the real Web Worker response: it failed on the downloaded bytes,
+then passed after the mutation was removed. It records the MIDI Worker's own
+response—without coupling the proof to unrelated page Workers—so synchronous
+fallback cannot masquerade as off-thread success. The real-Wrangler MCP journey
+invokes `export_midi` and validates `MThd`, covering the Worker adapter in
+workerd.
 
 ### The Rule
 

@@ -420,10 +420,13 @@ failure in which the old cross-runtime graph reached a module-scope
 See [Lesson 50](../docs/LESSONS-LEARNED.md).
 
 The boundary suite parses TypeScript syntax, resolves imports with the same
-bundler semantics as the application, rejects unresolved code imports, and
-checks every Worker/shared entry transitively. `worker-runtime-safety.test.ts`
-also rejects browser globals evaluated anywhere in the real Worker entry graph.
-A dry Worker bundle and a running `wrangler dev` remain the final runtime proof.
+bundler semantics as the application (including Vite URL Worker references and
+compiler-emitted JSX runtime imports), rejects unresolved code imports, and
+checks every Worker/shared/music entry transitively. Runtime-neutral modules
+reject unapproved browser globals and every `import.meta` capability;
+`worker-runtime-safety.test.ts` separately rejects module-evaluation browser
+globals throughout the real Worker entry graph. A dry Worker bundle and a
+running `wrangler dev` remain the final runtime proof.
 
 ## 5. Collaboration semantics
 

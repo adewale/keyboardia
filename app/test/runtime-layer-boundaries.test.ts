@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import {
   findBrowserGlobalReferences,
   findExternalImportViolations,
-  findImportMetaEnvReferences,
+  findImportMetaReferences,
   findReachabilityViolations,
   findResourceImportViolations,
   reachableModules,
@@ -18,8 +18,13 @@ const graph = scanProductionGraph(SRC_ROOT);
 
 const workerRoots = graph.modules.filter(module => module.startsWith('worker/'));
 const sharedRoots = graph.modules.filter(module => module.startsWith('shared/'));
+const musicRoots = graph.modules.filter(module => module.startsWith('music/'));
 const stateRoots = graph.modules.filter(module => module.startsWith('state/'));
-const runtimeNeutralRoots = graph.modules.filter(module => /^(?:worker|shared|music)\//.test(module));
+const stateRuntimeModules = new Set(
+  stateRoots.flatMap(root => reachableModules(root, graph.edges, { runtimeOnly: true })),
+);
+const runtimeCapabilityModules = graph.modules.filter(module =>
+  /^(?:worker|shared|music|state)\//.test(module) || stateRuntimeModules.has(module));
 
 const WORKER_PACKAGES = new Set([
   '@modelcontextprotocol/server',
@@ -31,12 +36,28 @@ const WORKER_PACKAGES = new Set([
 const SHARED_PACKAGES = new Set(['midi-writer-js']);
 const STATE_PACKAGES = new Set(['react']);
 
+function packageName(specifier: string): string {
+  const parts = specifier.split('/');
+  return specifier.startsWith('@')
+    ? parts.slice(0, 2).join('/')
+    : (parts[0] ?? specifier);
+}
+
+function packageIsAllowed(allowed: ReadonlySet<string>, specifier: string): boolean {
+  return allowed.has(packageName(specifier));
+}
+
 describe('runtime dependency boundaries', () => {
   it('parses and resolves the real production graph without blind spots', () => {
     expect(graph.modules.length).toBeGreaterThan(150);
     expect(graph.edges.length).toBeGreaterThan(250);
     expect(graph.edges.some(edge => edge.importer === 'worker/index.ts')).toBe(true);
     expect(graph.edges.some(edge => edge.importer === 'state/grid.tsx')).toBe(true);
+    expect(graph.edges).toContainEqual({
+      importer: 'audio/midiExport.ts',
+      imported: 'audio/midiExport.worker.ts',
+      typeOnly: false,
+    });
     expect(graph.parseFailures).toEqual([]);
     expect(graph.unresolvedRelativeImports).toEqual([]);
     expect(graph.unanalyzableModuleReferences).toEqual([]);
@@ -67,18 +88,28 @@ describe('runtime dependency boundaries', () => {
     })).toEqual([]);
   });
 
+  it('keeps every music module transitively inside music and shared capabilities', () => {
+    expect(musicRoots.length).toBeGreaterThan(1);
+    expect(findReachabilityViolations({
+      policyName: 'Music',
+      roots: musicRoots,
+      edges: graph.edges,
+      isAllowed: module => /^(?:music|shared)\//.test(module),
+    })).toEqual([]);
+  });
+
   it('keeps external packages and runtime resources inside explicit capability allow-lists', () => {
     expect(findExternalImportViolations({
       policyName: 'Worker packages',
       imports: graph.externalImports,
       appliesTo: module => module.startsWith('worker/'),
-      isAllowed: specifier => WORKER_PACKAGES.has(specifier),
+      isAllowed: specifier => packageIsAllowed(WORKER_PACKAGES, specifier),
     })).toEqual([]);
     expect(findExternalImportViolations({
       policyName: 'Shared packages',
       imports: graph.externalImports,
       appliesTo: module => module.startsWith('shared/'),
-      isAllowed: specifier => SHARED_PACKAGES.has(specifier),
+      isAllowed: specifier => packageIsAllowed(SHARED_PACKAGES, specifier),
     })).toEqual([]);
     expect(findExternalImportViolations({
       policyName: 'Music packages',
@@ -89,23 +120,23 @@ describe('runtime dependency boundaries', () => {
     expect(findExternalImportViolations({
       policyName: 'State packages',
       imports: graph.externalImports,
-      appliesTo: module => module.startsWith('state/'),
-      isAllowed: specifier => STATE_PACKAGES.has(specifier),
+      appliesTo: module => stateRuntimeModules.has(module),
+      isAllowed: specifier => packageIsAllowed(STATE_PACKAGES, specifier),
     })).toEqual([]);
     expect(findResourceImportViolations({
       policyName: 'Runtime-neutral resources',
       imports: graph.resourceImports,
-      appliesTo: module => /^(?:worker|shared|music|state)\//.test(module),
+      appliesTo: module => runtimeCapabilityModules.includes(module),
     })).toEqual([]);
   });
 
   it('keeps intrinsic browser and Vite capabilities out of every neutral-owned module', () => {
     const offenders: string[] = [];
-    for (const module of runtimeNeutralRoots) {
+    for (const module of runtimeCapabilityModules) {
       const source = readFileSync(resolve(SRC_ROOT, module), 'utf8');
       for (const reference of [
         ...findBrowserGlobalReferences(source, module),
-        ...findImportMetaEnvReferences(source, module),
+        ...findImportMetaReferences(source, module),
       ]) {
         offenders.push(`src/${module}:${reference.line}:${reference.column}: ${reference.global}`);
       }
@@ -121,5 +152,42 @@ describe('runtime dependency boundaries', () => {
       edges: graph.edges,
       isAllowed: module => !module.startsWith('audio/'),
     })).toEqual([]);
+  });
+
+  it('carries package capabilities through modules reached from serializable state', () => {
+    const mutatedGraph = scanProductionGraph(SRC_ROOT, {
+      sourceOverrides: new Map([
+        ['utils/patternOps.ts', "import 'tone'; export * from '../shared/pattern-operations';"],
+      ]),
+    });
+    const mutatedStateModules = new Set(
+      stateRoots.flatMap(root =>
+        reachableModules(root, mutatedGraph.edges, { runtimeOnly: true })),
+    );
+
+    expect(findExternalImportViolations({
+      policyName: 'State packages',
+      imports: mutatedGraph.externalImports,
+      appliesTo: module => mutatedStateModules.has(module),
+      isAllowed: specifier => packageIsAllowed(STATE_PACKAGES, specifier),
+    })).toContain('State packages: utils/patternOps.ts -> package:tone');
+  });
+
+  it('rejects an indirect music bridge into a client runtime', () => {
+    const mutatedGraph = scanProductionGraph(SRC_ROOT, {
+      sourceOverrides: new Map([
+        ['music/session-analysis.ts', "export * from '../utils/patternOps';"],
+        ['utils/patternOps.ts', "export * from '../audio/engine';"],
+      ]),
+    });
+
+    expect(findReachabilityViolations({
+      policyName: 'Music',
+      roots: musicRoots,
+      edges: mutatedGraph.edges,
+      isAllowed: module => /^(?:music|shared)\//.test(module),
+    })).toContain(
+      'Music: music/session-analysis.ts -> utils/patternOps.ts',
+    );
   });
 });

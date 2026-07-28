@@ -79,7 +79,8 @@ test('exports a valid MIDI download through the real browser Worker', async ({ p
       responded: observedWindow.__respondedWorkerUrls,
     };
   });
-  const observedWorkerUrls = workerEvidence.constructed;
-  expect(observedWorkerUrls).toContainEqual(expect.stringContaining('midiExport.worker'));
-  expect(workerEvidence.responded).toEqual(observedWorkerUrls);
+  const midiWorkerUrls = workerEvidence.constructed.filter(url =>
+    url.includes('midiExport.worker'));
+  expect(midiWorkerUrls).toHaveLength(1);
+  expect(workerEvidence.responded).toContain(midiWorkerUrls[0]);
 });
