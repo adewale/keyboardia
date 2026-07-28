@@ -1403,3 +1403,101 @@ Every technique here reads recorded diffs, so every technique here inherits that
 limit. A deletion audit answers "what did we throw away that git remembers us
 throwing away" — which is not the same question, and the gap between them is
 exactly as large as the history rewriting that has happened.
+
+## §22 — Continuing to fix: what sabotage found that grep could not
+
+Three sweeps, each following the same rule: find the shape by grep, then decide
+by breaking production and watching. Grep proposed 5 + 11 + 12 candidates;
+sabotage confirmed 2 + 0 + 2. The three-quarters it eliminated matter as much as
+the quarter it kept.
+
+### Vacuous generators — 2 real of 5 flagged
+
+Suites that build their cases from `readdirSync` pass on an empty directory:
+nothing to iterate, nothing to compare, green. Moving `public/instruments` aside
+proved two of them. `instrument-ranges` compared nothing and reported no
+mismatches. `instrument-range-render` rendered nothing and asserted
+`summary.length === manifests.length` — `0 === 0`, under a comment reading
+"Sanity only".
+
+Both now fail on an empty catalogue: the render suite against
+`SAMPLED_INSTRUMENTS`, so a *partial* catalogue also fails, and
+`instrument-ranges` on a compared-count floor set well below the current 27.
+
+The other three were fine. `instrument-routing` asserts its manifest ids equal
+`SAMPLED_INSTRUMENTS`, `sample-pipeline-decisions` asserts all ten rejections,
+`sample-pipeline-runner` reads only directories it creates. Acting on the grep
+would have meant "fixing" three working tests.
+
+The same question asked of `.each`-driven suites came back clean for a
+structural reason worth writing down: **vitest fails a file when a `describe`
+contains no tests**, so an empty `.each` inside its own `describe` self-reports
+as `No test found in suite`. Verified with a probe. Emptying `SYNTH_PRESETS`,
+`ADVANCED_SYNTH_PRESETS`, `TONE_SYNTH_PRESETS`, `SAMPLED_INSTRUMENTS` and the
+three action-classification sets failed every suite that consumes them. The
+vulnerable shape is not `.each` — it is the loop that accumulates into an array
+and then asserts that array is empty.
+
+### A test that no longer tested anything — `reducer-mutation-equivalence`
+
+Re-running the audit's headline sabotage (`applyMutation` neutered to
+`return state`) killed 165 of 4,421. Two of the twelve files that import
+`applyMutation` survived, and both were wrong in the same direction.
+
+`reducer-mutation-equivalence.test.ts` — 29 tests, 533 lines — passed in full
+with `applyMutation` returning its input untouched. Its premise had expired
+without anyone noticing:
+
+> - gridReducer (client) and applyMutation (shared) have duplicate logic
+
+Phase 3 routed every SYNCED case in `gridReducer` through
+`delegateToApplyMutation`. Asking the runtime rather than the docblock: **27 of
+28 SYNCED actions have no independent client implementation left**;
+`SET_SESSION_NAME` is the only exception, and it has no test in the file. Both
+sides of every comparison ran the same function, so breaking it broke both sides
+identically and the equality held. `f(x) === f(x)`, 29 times, behind an adapter
+round-trip that made it look like real work.
+
+It is not worthless — `actionToMessage` and the GridState/SessionState adapters
+*are* independent of `applyMutation`, and a break in either still shows up here.
+What was missing is the other half of the oracle. Every comparison now goes
+through `expectEquivalentAndChanged`, which additionally requires the mutation
+to move the state. Under the same sabotage, 28 of 29 now fail.
+
+Two property tests then failed honestly: `arbSwing` draws 0 against a fixture at
+swing 0, `arbTranspose` draws 0 against a track at transpose 0. Those runs are
+genuine identities, not defects, so they are skipped with `fc.pre` rather than
+having the boundary removed from the arbitrary.
+
+### A promise never kept — `sync-layer-coverage`
+
+The second survivor imported `applyMutation as _applyMutation` and never called
+it. The underscore is why the linkage checker stayed silent: the module *is*
+imported. Its header lists four claims; the fourth, "Round-trip: client → server
+→ client produces correct state", had no implementation.
+
+That is precisely the bug class the same header cites — Phase 31B listed pattern
+operations in `SYNCED_ACTIONS`, nothing wired them up, and the gap shipped.
+`SL-001` only asks that a message is non-null; an action can produce a
+well-formed message the server ignores completely and every test still passes.
+
+Implemented: for each routed SYNCED action, build the mock action, convert it,
+apply it, and require the state to change. Building it surfaced the fixture trap
+immediately — six actions "failed" against a bland fixture because
+`createMockAction('SET_TEMPO')` sends 120 to a session already at 120, and
+rotate/reverse/mirror/clear are indistinguishable from no-ops on an all-false
+pattern. The fixture is now asymmetric and off-default, with the reason written
+next to it. `SET_SESSION_NAME` is a documented exception: state-mutations.ts
+says `// Only affects metadata, not session state`.
+
+### Where the suite stands
+
+| Sabotage: `applyMutation` → `return state` | Tests killed | Importers surviving |
+|---|---|---|
+| Audit baseline | 133 / 4,812 | 6 of 12 |
+| Start of this pass | 165 / 4,421 | 2 of 12 |
+| Now | **215 / 4,444** | **0 of 12** |
+
+Every test file that imports the reducer every multiplayer mutation flows
+through now fails when it stops working. That is the number worth tracking —
+not the test count, which moves with the sample assets on disk.

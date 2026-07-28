@@ -24,8 +24,9 @@ import {
   isSyncedAction as _isSyncedAction,
 } from '../../src/sync/sync-classification';
 import { actionToMessage } from '../../src/sync/multiplayer';
-import { applyMutation as _applyMutation } from '../../src/shared/state-mutations';
+import { applyMutation } from '../../src/shared/state-mutations';
 import type { GridAction, Track, ParameterLock, EffectsState, ScaleState, FMParams } from '../../src/types';
+import type { SessionState } from '../../src/shared/state';
 import type { ClientMessageBase as _ClientMessageBase } from '../../src/shared/message-types';
 
 // ============================================================================
@@ -396,4 +397,93 @@ describe('Sync Coverage Summary', () => {
 
     expect(implemented).toBeGreaterThan(0);
   });
+});
+
+// ============================================================================
+// Round-trip: does the server actually act on the message?
+//
+// Claim 4 in this file's header — "client -> server -> client produces correct
+// state" — was never implemented. applyMutation was imported as
+// `_applyMutation` and never called, which is why the linkage checker saw a
+// used module and said nothing.
+//
+// This is the exact bug class the header cites: Phase 31B listed pattern
+// operations in SYNCED_ACTIONS, nothing wired them up, and the gap shipped. An
+// action can produce a perfectly well-formed message that applyMutation does
+// not handle, and every other test in this file still passes — SL-001 only
+// asks that the message is non-null.
+// ============================================================================
+
+/** A session with enough shape for any mutation to have something to act on. */
+function roundTripState(): SessionState {
+  return {
+    tracks: [{
+      id: 'test-track-1',
+      name: 'Test Track',
+      sampleId: 'kick',
+      // Asymmetric on purpose. An all-false pattern makes CLEAR_TRACK a no-op
+      // and makes rotate/reverse/mirror indistinguishable from doing nothing,
+      // which would make those round-trips unfalsifiable.
+      steps: Array.from({ length: 128 }, (_, i) => i % 5 === 0 || i === 3),
+      parameterLocks: Array.from({ length: 128 }, (_, i) => (i === 4 ? { volume: 0.4 } : null)),
+      volume: 0.8,
+      muted: false,
+      soloed: false,
+      transpose: 0,
+      stepCount: 16,
+    }, {
+      id: 'test-track-2',
+      name: 'Second Track',
+      sampleId: 'snare',
+      steps: Array(128).fill(true),
+      parameterLocks: Array(128).fill(null),
+      volume: 0.5,
+      muted: false,
+      soloed: false,
+      transpose: 5,
+      stepCount: 16,
+    }],
+    // Not 120: createMockAction('SET_TEMPO') sends 120, and a fixture already
+    // at the mocked value turns that round-trip into a no-op.
+    tempo: 137,
+    swing: 11,
+    version: 1,
+  } as SessionState;
+}
+
+describe('SYNCED_ACTIONS reach the shared mutation', () => {
+  /**
+   * Actions whose message deliberately leaves SessionState alone.
+   * state-mutations.ts: `case 'set_session_name': // Only affects metadata,
+   * not session state`. It is also the one SYNCED action gridReducer still
+   * implements independently, so it is genuinely different from the rest.
+   */
+  const NO_SESSION_STATE_EFFECT = new Set(['SET_SESSION_NAME']);
+
+  const routed = [...SYNCED_ACTIONS].filter(
+    (action) => !NON_STANDARD_SYNC_ACTIONS.has(action)
+      && !KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS.has(action)
+      && !NO_SESSION_STATE_EFFECT.has(action),
+  );
+
+  it('covers a non-trivial number of actions', () => {
+    // Without this the loop below can silently shrink to nothing.
+    expect(routed.length, 'no SYNCED_ACTIONS were round-tripped').toBeGreaterThan(10);
+  });
+
+  for (const actionType of routed) {
+    it(`${actionType}: applyMutation acts on the message it produces`, () => {
+      const message = actionToMessage(createMockAction(actionType));
+      expect(message, `${actionType} produced no message`).not.toBeNull();
+
+      const before = roundTripState();
+      const after = applyMutation(roundTripState(), message as never);
+
+      expect(
+        after,
+        `${actionType} produced message "${(message as { type?: string })?.type}" and applyMutation ` +
+          'left the state byte-identical — the action is listed as synced but the server ignores it',
+      ).not.toEqual(before);
+    });
+  }
 });
