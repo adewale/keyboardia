@@ -25,11 +25,34 @@
     "source": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["repository", "git_commit", "git_tree", "files"],
+      "required": [
+        "repository",
+        "git_commit",
+        "git_tree",
+        "commit_content",
+        "tree_objects",
+        "bundle_sha256",
+        "files"
+      ],
       "properties": {
         "repository": { "type": "string", "minLength": 1 },
         "git_commit": { "$ref": "#/$defs/gitObject" },
         "git_tree": { "$ref": "#/$defs/gitObject" },
+        "commit_content": { "type": "string", "minLength": 1 },
+        "tree_objects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["object", "content_base64"],
+            "properties": {
+              "object": { "$ref": "#/$defs/gitObject" },
+              "content_base64": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "bundle_sha256": { "$ref": "#/$defs/sha256" },
         "files": {
           "type": "array",
           "minItems": 1,
@@ -125,10 +148,21 @@
             "launch": {
               "type": "object",
               "additionalProperties": false,
-              "required": ["mode", "wrangler_version", "source_git_commit", "source_git_tree"],
+              "required": [
+                "mode",
+                "wrangler_version",
+                "wrangler_lock_version",
+                "wrangler_lock_integrity",
+                "build_sha256",
+                "source_git_commit",
+                "source_git_tree"
+              ],
               "properties": {
                 "mode": { "const": "runner-owned-wrangler-local" },
                 "wrangler_version": { "type": "string", "minLength": 1 },
+                "wrangler_lock_version": { "type": "string", "minLength": 1 },
+                "wrangler_lock_integrity": { "type": "string", "minLength": 1 },
+                "build_sha256": { "$ref": "#/$defs/sha256" },
                 "source_git_commit": { "$ref": "#/$defs/gitObject" },
                 "source_git_tree": { "$ref": "#/$defs/gitObject" }
               }
@@ -203,6 +237,7 @@
             }
           },
           "input_bundle_hash": { "$ref": "#/$defs/sha256" },
+          "complete_input_bundle_hash": { "$ref": "#/$defs/sha256" },
           "prompt_ref": { "$ref": "#/$defs/artifactRef" },
           "output_ref": { "$ref": "#/$defs/artifactRef" },
           "trace_ref": { "$ref": "#/$defs/artifactRef" },
@@ -221,6 +256,12 @@
       },
       "then": {
         "properties": {
+          "harness": {
+            "properties": {
+              "name": { "const": "skill-eval-harness" },
+              "mode": { "const": "patched-local-checkout" }
+            }
+          },
           "invocation": {
             "required": [
               "benchmark_ref",
@@ -230,7 +271,7 @@
               "skill_tree_hash"
             ]
           },
-          "runs": { "items": { "required": ["input_bundle_hash"] } }
+          "runs": { "items": { "required": ["input_bundle_hash", "complete_input_bundle_hash"] } }
         }
       }
     },

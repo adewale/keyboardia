@@ -10,9 +10,13 @@ import {
   answerMatrixSummary,
   buildReceipt,
   canonicalJson,
+  canonicalSkillTreeHashFromSource,
+  completeSkillEvalInputBundleHash,
   createPatchedGitBinding,
   createSourceBinding,
+  assertSourceBindingStillClean,
   redactCapability,
+  scoreObjectiveAssertions,
   sha256,
   skillEvalInputBundleHash,
   verifyReceipt,
@@ -21,6 +25,8 @@ import {
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
 import {
   buildExecutionReplayEvidence,
+  projectExecutionReplay,
+  registerCapabilitiesFromEvidence,
   summarize,
   summarizeRun,
 } from '../../evals/run-benchmark.mjs';
@@ -28,18 +34,32 @@ import {
 import { scoreExecution } from '../../evals/score-execution.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
 import { verifyExecutionReceipt } from '../../evals/verify-execution-receipt.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling, checked here rather than by tsc
+import { verifyCompleteTaskMatrix } from '../../evals/import-harness-receipt.mjs';
 
 function git(root: string, ...args: string[]): string {
   return execFileSync('git', ['-C', root, ...args], { encoding: 'utf8' }).trim();
 }
 
-function committedInputs() {
+function committedInputs({ execution = false } = {}) {
   const root = mkdtempSync(resolve(tmpdir(), 'keyboardia-receipt-test-'));
   git(root, 'init', '-q');
   const files = [
     ['skill', 'skill/SKILL.md', '# Skill\n'],
-    ['manifest', 'evals/manifest.json', `${JSON.stringify({
+    ['manifest', execution ? 'evals/execution-benchmark.json' : 'evals/manifest.json', `${JSON.stringify(execution ? {
       version: 1,
+      skill_paths: ['skill/SKILL.md'],
+      variants: ['with_skill'],
+      cases: [{
+        id: 'execution-case', kind: 'execution', split: 'tune', prompt: 'Execute',
+        assertions: [{
+          name: 'tempo-preserved', type: 'state', check: 'tempo_unchanged', severity: 'gate',
+        }],
+      }],
+    } : {
+      version: 1,
+      skill_paths: ['skill/SKILL.md'],
+      variants: ['with_skill'],
       cases: [{
         id: 'case-1',
         kind: 'positive',
@@ -70,6 +90,10 @@ function committedInputs() {
         ],
       }],
     })}\n`],
+    ['answer_matrix_policy', 'evals/answer-matrix-policy.json', `${JSON.stringify({
+      version: 1, suite: 'keyboardia-answer-matrix', splits: ['tune'], repeats: 1,
+      models: ['gpt-test-model'],
+    })}\n`],
     ['fixture', 'evals/fixture.txt', 'exact fixture\n'],
     ['runner', 'evals/run.mjs', 'export {};\n'],
     ['receipt_runtime', 'evals/receipt.mjs', 'export {};\n'],
@@ -81,11 +105,11 @@ function committedInputs() {
       '',
     ].join('\n')],
     ['execution_receipt_verifier', 'evals/verify-execution-receipt.mjs', 'export {};\n'],
-    ['system_under_test_entry', 'app/worker.ts', 'export {};\n'],
+    ['system_under_test_entry', 'app/src/worker/index.ts', 'export {};\n'],
     ['system_under_test_config', 'app/wrangler.jsonc', '{}\n'],
-    ['system_under_test_typescript_config', 'app/tsconfig.json', '{}\n'],
-    ['system_under_test_package', 'app/package.json', '{}\n'],
-    ['system_under_test_lock', 'app/package-lock.json', '{}\n'],
+    ['system_under_test_typescript_config', 'app/tsconfig.worker.json', '{}\n'],
+    ['system_under_test_package', 'app/package.json', '{"devDependencies":{"wrangler":"^4.53.0"}}\n'],
+    ['system_under_test_lock', 'app/package-lock.json', '{"packages":{"node_modules/wrangler":{"version":"4.53.0","integrity":"sha512-test"}}}\n'],
   ] as const;
   for (const [, path, content] of files) {
     const absolute = resolve(root, path);
@@ -141,6 +165,44 @@ function attachPatchedHarness(
   );
 }
 
+function parsedManifestFor(source: ReturnType<typeof createSourceBinding>) {
+  return JSON.parse(source.files.find((file) => file.role === 'manifest')!.content);
+}
+
+function answerArtifactFiles(
+  task: Record<string, unknown>,
+  evalCase: Record<string, unknown>,
+  manifest: Record<string, unknown>,
+  inputBundleHash: string,
+  skillTreeHash: string,
+  manifestRevision: string,
+  output: string,
+) {
+  const embedded = {
+    'events.json': '{}\n',
+    'metrics.json': '{}\n',
+    'metadata.json': JSON.stringify({
+      input_bundle_hash: inputBundleHash,
+      complete_input_bundle_hash: completeSkillEvalInputBundleHash(inputBundleHash, skillTreeHash),
+      skill_tree_hash: skillTreeHash,
+      manifest_revision: manifestRevision,
+      provider: 'codex',
+      telemetry: { basis: { provider: 'codex', runner: 'codex', model: task.model } },
+    }),
+    'prompt.md': answerHarnessPrompt(task, evalCase, manifest),
+    'output.md': output,
+  };
+  return {
+    ...Object.fromEntries(Object.entries(embedded).filter(([name]) => name !== 'output.md')),
+    'artifact-commit.json': JSON.stringify({
+      schema_version: 1,
+      required_files: ['output.md', 'events.json', 'metrics.json', 'metadata.json'],
+      inventory_sha256: Object.fromEntries(Object.entries(embedded)
+        .map(([name, content]) => [name, sha256(content)])),
+    }),
+  };
+}
+
 function answerReceiptFixture() {
   const { root, source } = committedInputs();
   const manifest = source.files.find((file) => file.role === 'manifest');
@@ -150,10 +212,10 @@ function answerReceiptFixture() {
     caseId: 'case-1',
     sourceFiles: source.files,
   });
-  const skillTreeHash = 'a'.repeat(64);
+  const skillTreeHash = canonicalSkillTreeHashFromSource(parsedManifestFor(source), source.files);
   const task = {
     case_id: 'case-1', kind: 'positive', split: 'tune', variant: 'with_skill',
-    run_number: 0, model: 'test-model', prompt: 'Exact prompt',
+    run_number: 1, model: 'gpt-test-model', prompt: 'Exact prompt',
     manifest_revision: manifest.sha256, skill_tree_hash: skillTreeHash,
     input_bundle_hash: inputBundleHash,
   };
@@ -168,14 +230,14 @@ function answerReceiptFixture() {
   const benchmark = {
     results: [{
       case_id: 'case-1', kind: 'positive', split: 'tune', variant: 'with_skill',
-      run_number: 0, model: 'test-model', missing_output: false, execution_valid: true,
+      run_number: 1, model: 'gpt-test-model', missing_output: false, execution_valid: true,
       assertions, objective_passed: 4, objective_total: 4,
       objective_pass_rate: 1, critical_failures: [], vetoed: false,
       metadata: { input_bundle_hash: inputBundleHash },
     }],
     summary: { with_skill: { runs: 1 }, without_skill: { runs: 0 } },
     paired_summary: { pairs: 0 },
-    by_model: { 'test-model': { runs: 1 } },
+    by_model: { 'gpt-test-model': { runs: 1 } },
     case_flags: [],
     reliability: { errors: 0 },
   };
@@ -190,24 +252,30 @@ function answerReceiptFixture() {
     source,
     harness: {
       name: 'skill-eval-harness', repository: 'local', version: 'test',
-      git_commit: source.git_commit, mode: 'fixture',
+      git_commit: source.git_commit, mode: 'patched-local-checkout',
     },
     invocation: {
-      suite: 'keyboardia-answer-matrix', models: ['test-model'],
-      adapters: [{ role: 'answer', id: 'stub', path: 'evals/adapter.mjs' }],
+      suite: 'keyboardia-answer-matrix', models: ['gpt-test-model'],
+      adapters: [{ role: 'answer', id: 'codex-native', path: null }],
       splits: ['tune'], repeats: 1, judge: false,
       manifest_revision: manifest.sha256, skill_tree_hash: skillTreeHash,
     },
     runs: [{
-      model: 'test-model', case: 'case-1', kind: 'positive', split: 'tune',
-      variant: 'with_skill', repeat: 0, ok: true, prompt: 'Exact prompt',
+      model: 'gpt-test-model', case: 'case-1', kind: 'positive', split: 'tune',
+      variant: 'with_skill', repeat: 1, ok: true, prompt: 'Exact prompt',
       response: '{"ok":true}', assertions, objective_passed: 4,
       objective_total: 4, objective_pass_rate: 1, critical_failures: [], vetoed: false,
       input_bundle_hash: inputBundleHash,
-      trace: { artifact_files: {
-        'metadata.json': JSON.stringify({ input_bundle_hash: inputBundleHash }),
-        'prompt.md': answerHarnessPrompt(task, evalCase, parsedManifest),
-      } },
+      complete_input_bundle_hash: completeSkillEvalInputBundleHash(inputBundleHash, skillTreeHash),
+      trace: { artifact_files: answerArtifactFiles(
+        task,
+        evalCase,
+        parsedManifest,
+        inputBundleHash,
+        skillTreeHash,
+        manifest.sha256,
+        '{"ok":true}',
+      ) },
     }],
     summary: answerMatrixSummary(benchmark, audit),
   });
@@ -216,15 +284,45 @@ function answerReceiptFixture() {
   ];
   receipt.invocation.benchmark_ref = addArtifact(
     receipt.artifacts,
-    JSON.stringify(benchmark),
+    JSON.stringify({ version: 1, results: benchmark.results }),
     'application/json',
   );
   receipt.invocation.audit_ref = addArtifact(
     receipt.artifacts,
-    JSON.stringify(audit),
+    JSON.stringify({
+      version: 1, external_report_sha256: 'c'.repeat(64), reported_blockers: [],
+    }),
     'application/json',
   );
+  writeFileSync(resolve(root, 'evals/adapter.mjs'), 'export const patched = true;\n');
+  git(root, 'add', 'evals/adapter.mjs');
+  execFileSync('git', [
+    '-C', root, '-c', 'user.name=Receipt Test', '-c', 'user.email=receipt@example.test',
+    'commit', '-qm', 'patch answer harness',
+  ]);
+  attachPatchedHarness(receipt, createPatchedGitBinding(root));
   return { root, receipt };
+}
+
+function rewriteAnswerTrace(
+  receipt: ReturnType<typeof buildReceipt>,
+  mutate: (files: Record<string, string>) => void,
+) {
+  const run = receipt.runs[0];
+  const trace = JSON.parse(receipt.artifacts[run.trace_ref].content);
+  mutate(trace.artifact_files);
+  delete trace.artifact_files['artifact-commit.json'];
+  const embedded = {
+    ...trace.artifact_files,
+    'output.md': receipt.artifacts[run.output_ref].content,
+  };
+  trace.artifact_files['artifact-commit.json'] = JSON.stringify({
+    schema_version: 1,
+    required_files: ['output.md', 'events.json', 'metrics.json', 'metadata.json'],
+    inventory_sha256: Object.fromEntries(Object.entries(embedded)
+      .map(([name, content]) => [name, sha256(content)])),
+  });
+  run.trace_ref = addArtifact(receipt.artifacts, canonicalJson(trace), 'application/json');
 }
 
 function exampleReceipt() {
@@ -334,9 +432,9 @@ describe('eval receipts', () => {
     expect(verifyReceipt(fabricatedRun).join('\n')).toContain('scoring does not match');
 
     const blockedAudit = structuredClone(receipt);
-    const audit = { counts: { cases: 1 }, readiness: { blockers: ['blocked'] }, benchmark: {
-      summary: receipt.summary.summary, case_flags: receipt.summary.case_flags,
-    } };
+    const audit = {
+      version: 1, external_report_sha256: 'c'.repeat(64), reported_blockers: ['blocked'],
+    };
     blockedAudit.invocation.audit_ref = addArtifact(
       blockedAudit.artifacts,
       JSON.stringify(audit),
@@ -365,10 +463,69 @@ describe('eval receipts', () => {
     );
     expect(verifyReceipt(coordinatedFabrication).join('\n'))
       .toContain('independently regraded output');
+
+    const coordinatedAggregate = structuredClone(receipt);
+    const benchmark = JSON.parse(
+      coordinatedAggregate.artifacts[coordinatedAggregate.invocation.benchmark_ref].content,
+    );
+    benchmark.summary = { fabricated: true };
+    benchmark.by_model = { fabricated: true };
+    benchmark.paired_summary = { fabricated: true };
+    benchmark.case_flags = [{ case_id: 'case-1', flags: ['fabricated'] }];
+    benchmark.reliability = { fabricated: true };
+    coordinatedAggregate.invocation.benchmark_ref = addArtifact(
+      coordinatedAggregate.artifacts,
+      JSON.stringify(benchmark),
+      'application/json',
+    );
+    const auditArtifact = {
+      counts: { fabricated: 999 }, readiness: { blockers: [] },
+      benchmark: { summary: benchmark.summary, case_flags: benchmark.case_flags },
+    };
+    coordinatedAggregate.invocation.audit_ref = addArtifact(
+      coordinatedAggregate.artifacts,
+      JSON.stringify(auditArtifact),
+      'application/json',
+    );
+    coordinatedAggregate.summary = { fabricated: true };
+    expect(verifyReceipt(coordinatedAggregate).join('\n'))
+      .toContain('independently derived result aggregates');
+
+    const omittedHarness = structuredClone(receipt);
+    omittedHarness.harness.mode = 'fixture';
+    for (const field of [
+      'git_tree', 'parent_git_commit', 'parent_git_tree', 'patch_ref',
+      'parent_tree_ref', 'commit_ref', 'parent_commit_ref',
+    ]) delete omittedHarness.harness[field];
+    expect(verifyReceipt(omittedHarness).join('\n')).toContain('must be equal to constant');
+
+    const inventoryDrift = structuredClone(receipt);
+    const trace = JSON.parse(inventoryDrift.artifacts[inventoryDrift.runs[0].trace_ref].content);
+    trace.artifact_files['events.json'] = '{"tampered":true}\n';
+    inventoryDrift.runs[0].trace_ref = addArtifact(
+      inventoryDrift.artifacts,
+      canonicalJson(trace),
+      'application/json',
+    );
+    expect(verifyReceipt(inventoryDrift).join('\n')).toContain('inventory digest mismatch');
+
+    const missingCell = structuredClone(receipt);
+    missingCell.invocation.prepared_tasks_refs = [addArtifact(missingCell.artifacts, '')];
+    expect(verifyReceipt(missingCell).join('\n')).toContain('complete manifest × variant × model × repeat matrix');
+
+    const adapterMismatch = structuredClone(receipt);
+    rewriteAnswerTrace(adapterMismatch, (files) => {
+      const metadata = JSON.parse(files['metadata.json']);
+      metadata.provider = 'subagent';
+      metadata.telemetry.basis.provider = 'subagent';
+      metadata.telemetry.basis.runner = 'subagent';
+      files['metadata.json'] = JSON.stringify(metadata);
+    });
+    expect(verifyReceipt(adapterMismatch).join('\n')).toContain('provider/runner metadata does not match');
   });
 
   it('reconstructs live execution runs and summary from deterministic replay evidence', () => {
-    const { source } = committedInputs();
+    const { source } = committedInputs({ execution: true });
     const baseline = { tempo: 120, tracks: [] };
     const final = { tempo: 120, tracks: [] };
     const trace: unknown[] = [];
@@ -376,10 +533,7 @@ describe('eval receipts', () => {
       name: 'tempo-preserved', type: 'state', check: 'tempo_unchanged', severity: 'gate',
     }];
     const scored = scoreExecution(assertions, { baseline, final, trace });
-    const manifest = {
-      variants: ['with_skill'],
-      cases: [{ id: 'execution-case', kind: 'execution', assertions }],
-    };
+    const manifest = parsedManifestFor(source);
     const run = {
       model: 'test-model', case: 'execution-case', kind: 'execution', split: 'tune',
       variant: 'with_skill', repeat: 0, ok: true, scorable: true,
@@ -402,7 +556,9 @@ describe('eval receipts', () => {
         system_under_test: {
           base_url: 'http://127.0.0.1:43189', mcp_endpoint: 'http://127.0.0.1:43189/mcp',
           launch: {
-            mode: 'runner-owned-wrangler-local', wrangler_version: 'test',
+            mode: 'runner-owned-wrangler-local', wrangler_version: 'wrangler 4.53.0',
+            wrangler_lock_version: '4.53.0', wrangler_lock_integrity: 'sha512-test',
+            build_sha256: 'b'.repeat(64),
             source_git_commit: source.git_commit, source_git_tree: source.git_tree,
           },
           tools_list: tools, tools_list_sha256: sha256(canonicalJson(tools)),
@@ -422,6 +578,25 @@ describe('eval receipts', () => {
     const externalWorker = structuredClone(receipt);
     externalWorker.invocation.system_under_test.launch.mode = 'external-unattested';
     expect(verifyExecutionReceipt(externalWorker).join('\n')).toContain('runner-owned');
+
+    const manifestDrift = structuredClone(receipt);
+    manifestDrift.invocation.execution_replay.input.cases[0].assertions[0].check = 'tempo_equals';
+    manifestDrift.invocation.execution_replay.input.cases[0].assertions[0].value = 120;
+    manifestDrift.invocation.execution_replay.input_sha256 = sha256(canonicalJson(
+      manifestDrift.invocation.execution_replay.input,
+    ));
+    manifestDrift.invocation.execution_replay.projection = projectExecutionReplay(
+      manifestDrift.invocation.execution_replay.input,
+    );
+    manifestDrift.invocation.execution_replay.projection_sha256 = sha256(canonicalJson(
+      manifestDrift.invocation.execution_replay.projection,
+    ));
+    expect(verifyExecutionReceipt(manifestDrift).join('\n'))
+      .toContain('do not match the embedded manifest');
+
+    const wrongEndpoint = structuredClone(receipt);
+    wrongEndpoint.invocation.system_under_test.mcp_endpoint = 'http://127.0.0.1:43189/not-mcp';
+    expect(verifyExecutionReceipt(wrongEndpoint).join('\n')).toContain('does not match the owned Worker');
   });
 
   it('is shallow-history safe and rejects unsanitized host paths', () => {
@@ -436,8 +611,17 @@ describe('eval receipts', () => {
     ]);
     expect(verifyReceipt(receipt, { repoRoot: unrelated })).toEqual([]);
 
+    const fabricatedSource = structuredClone(receipt);
+    fabricatedSource.source.git_commit = 'f'.repeat(40);
+    expect(verifyReceipt(fabricatedSource, { repoRoot: unrelated }).join('\n'))
+      .toContain('source commit object does not match');
+
     receipt.summary.host = '/Users/example/private/eval-output.json';
     expect(verifyReceipt(receipt).join('\n')).toContain('unsanitized host path');
+
+    const rootPath = structuredClone(receipt);
+    rootPath.summary.host = '/root/private/eval-output.json';
+    expect(verifyReceipt(rootPath).join('\n')).toContain('unsanitized host path');
   });
 
   it('fails closed when a registered capability survives in any encoding or key', () => {
@@ -445,6 +629,7 @@ describe('eval receipts', () => {
     const capability = '8c991b32-6ed8-4f4f-9433-976e68f62230';
     const encoded = encodeURIComponent(capability).replaceAll('-', '%2D');
     const doubleEncoded = encodeURIComponent(encoded);
+    const base64Encoded = Buffer.from(capability).toString('base64');
     const base = {
       source,
       harness: {
@@ -465,7 +650,7 @@ describe('eval receipts', () => {
       summary: {},
       capabilities: new Set([capability]),
     };
-    for (const leaked of [capability, encoded, doubleEncoded]) {
+    for (const leaked of [capability, encoded, doubleEncoded, base64Encoded]) {
       expect(() => buildReceipt({
         ...base,
         runs: [{
@@ -486,6 +671,12 @@ describe('eval receipts', () => {
     const safe = redactCapability({ prompt: doubleEncoded, trace: [{ [encoded]: capability }] }, capability);
     expect(JSON.stringify(safe)).not.toContain(capability);
     expect(redactCapability('benign%20URL', capability)).toBe('benign%20URL');
+    expect(redactCapability(base64Encoded, capability)).toBe('<redacted-session-id>');
+    const returnedCapability = '24a1e192-6ea3-4c2c-8797-28ea4b06f8b9';
+    const registered = registerCapabilitiesFromEvidence({
+      result: { session_id: returnedCapability },
+    }, new Set<string>());
+    expect(registered.has(returnedCapability)).toBe(true);
     expect(() => buildReceipt({
       ...base,
       runs: [{
@@ -493,6 +684,40 @@ describe('eval receipts', () => {
         variant: 'with_skill', repeat: 0, ...safe, response: 'ok', assertions: [],
       }],
     })).not.toThrow();
+  });
+
+  it('rejects unsafe receipt oracle commands without executing them', () => {
+    const { source } = committedInputs();
+    expect(() => scoreObjectiveAssertions({
+      assertions: [{
+        name: 'unsafe', type: 'script', command: ['sh', '-c', 'exit 0'], severity: 'gate',
+      }],
+    }, 'output', 'evals/manifest.json', source.files)).toThrow(/unsafe script assertion command/);
+  });
+
+  it('rejects incomplete importer matrices and end-of-run worktree drift', () => {
+    const manifest = {
+      variants: ['with_skill', 'without_skill'],
+      cases: [{ id: 'case-1', kind: 'positive', split: 'tune' }],
+    };
+    const policy = {
+      splits: ['tune'], repeats: 2, models: ['claude-test', 'gpt-test'],
+    };
+    expect(() => verifyCompleteTaskMatrix([{
+      case_id: 'case-1', kind: 'positive', split: 'tune', variant: 'with_skill',
+      run_number: 1, model: 'gpt-test',
+    }], manifest, policy)).toThrow(/complete policy case/);
+
+    const { root, source } = committedInputs();
+    expect(() => assertSourceBindingStillClean(root, source)).not.toThrow();
+    writeFileSync(resolve(root, 'untracked-after-run.txt'), 'drift\n');
+    expect(() => assertSourceBindingStillClean(root, source)).toThrow(/changed during evaluation/);
+  });
+
+  it('enforces the committed JSON Schema at runtime', () => {
+    const { receipt } = exampleReceipt();
+    const unexpected = { ...receipt, unexpected: true };
+    expect(verifyReceipt(unexpected).join('\n')).toContain('must NOT have additional properties');
   });
 
   it('canonicalizes JSON independently of object insertion order', () => {

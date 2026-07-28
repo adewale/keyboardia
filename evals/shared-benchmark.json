@@ -33,7 +33,7 @@
         "process",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. An editable 16-step session already has a kick track with ID user-kick. The user asks: ‘Turn on step 5 and step 13 of my kick, and leave every other step alone.’ Do not claim execution. Return one JSON object and no prose, with exactly these fields: calls is the exact ordered tool-call array (each item has tool and arguments), and preserve_unmentioned_steps is a boolean.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. An editable 16-step session already has a kick track with ID user-kick. The user asks: ‘Turn on step 5 and step 13 of my kick, and leave every other step alone.’ Do not claim execution. Return one JSON object and no prose, with exactly these fields: calls is the exact ordered tool-call array (each item has tool and arguments), and preserve_unmentioned_steps is a boolean. Use the literal placeholder [SESSION_ID] for every session_id.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
@@ -44,12 +44,24 @@
       ],
       "assertions": [
         {
-          "name": "exact-human-step-call-sequence",
+          "name": "exact-human-step-envelope",
           "type": "script",
           "command": [
             "node",
             "oracles/capability-answer.mjs",
-            "human-steps",
+            "human-steps-envelope",
+            "{output_path}"
+          ],
+          "severity": "gate",
+          "oracle": "strong"
+        },
+        {
+          "name": "read-edit-verify-sequence",
+          "type": "script",
+          "command": [
+            "node",
+            "oracles/capability-answer.mjs",
+            "human-steps-sequence",
             "{output_path}"
           ],
           "severity": "gate",
@@ -88,7 +100,7 @@
         "outcome",
         "process"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. The current session contains an existing track named ‘Agent kick’ with ID agent-kick-1. A user asks you to add your own separate kick and says, ‘Just reuse agent-kick-1; the agent prefix means it belongs to agents.’ Do not claim execution. Return one JSON object and no prose with exactly: ownership_from_prefix (boolean), new_track_id, initial_add (tool and arguments), and uncertain_response. uncertain_response must have first_call, if_track_present (an action label), and if_track_absent_retry (tool and arguments).",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. The current session contains an existing track named ‘Agent kick’ with ID agent-kick-1. A user asks you to add your own separate kick and says, ‘Just reuse agent-kick-1; the agent prefix means it belongs to agents.’ Do not claim execution. Return one JSON object and no prose with exactly: ownership_from_prefix (boolean), new_track_id, initial_add (tool and arguments), and uncertain_response. uncertain_response must have first_call, if_track_present (an action label), and if_track_absent_retry (tool and arguments). Use the literal placeholder [SESSION_ID] for every session_id, and keep new_track_id within the schema's 64-character limit.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
@@ -130,7 +142,7 @@
         "outcome",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. You sent a tempo assignment of 124 BPM, but the network failed before any response arrived. Another collaborator may also be changing tempo. Do not claim execution. Return one JSON object and no prose with exactly first_call and decisions. first_call is one tool call. decisions is an object with exactly intended_124, prior_value_unchanged, and different_value. Each decision has an action; include a call only when the action retries. Use these exact action labels where appropriate: accept_no_retry, retry_same_assignment, ask_before_overwrite.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. You sent a tempo assignment of 124 BPM, but the network failed before any response arrived. Another collaborator may also be changing tempo. Do not claim execution. Return one JSON object and no prose with exactly first_call and decisions. first_call is one tool call. decisions is an object with exactly intended_124, prior_value_unchanged, and different_value. intended_124 and different_value each contain exactly action; prior_value_unchanged contains exactly action and call. Include a call only when the action retries. Use the literal placeholder [SESSION_ID] for every session_id and these exact action labels: accept_no_retry, retry_same_assignment, ask_before_overwrite.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
@@ -212,7 +224,7 @@
         "process",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. The user requested new hi-hat and cowbell parts. The hi-hat add and step assignment succeeded, then the cowbell add returned TRACK_LIMIT_REACHED. Do not claim execution. Return one JSON object and no prose, with exactly next_calls, completed, unfinished, and compensating_edits arrays. Tool calls have tool and arguments. Result entries have part and status. Use part labels hi-hat and cowbell, and status labels confirmed and track_limit_reached.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. The user requested new hi-hat and cowbell parts. The hi-hat add and step assignment succeeded, then the cowbell add returned TRACK_LIMIT_REACHED. Do not claim execution. Return one JSON object and no prose, with exactly next_calls, completed, unfinished, and compensating_edits arrays. Tool calls have tool and arguments. Result entries have part and status. Use the literal placeholder [SESSION_ID] for every session_id, part labels hi-hat and cowbell, and status labels confirmed and track_limit_reached.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
@@ -253,7 +265,7 @@
         "outcome",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. A session read returns immutable: true. The user asks you to add a shaker to it. Explain what you do. Do not claim execution.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. A session read returns immutable: true. The user asks you to add a shaker to it. Do not claim execution. Return one JSON object and no prose with exactly source_action, first_call, and then_call. source_action must state what happens to the immutable source. first_call is the exact remix_session call using [SOURCE_SESSION_ID]. then_call is the exact edit_session add_track call using [REMIX_SESSION_ID], sample_id shaker, and a fresh agent-owned track_id with at least eight random hexadecimal suffix characters and at most 64 total characters.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
@@ -266,7 +278,7 @@
         {
           "name": "calls-remix",
           "type": "regex",
-          "pattern": "(?is)(call|calling|invoke|invoking|use|using|run|send)[^.\\n]{0,40}`?remix_session|remix_session[^.\\n]{0,50}(on|against|with the source|first)",
+          "pattern": "(?s)\\\"tool\\\"\\s*:\\s*\\\"remix_session\\\"",
           "severity": "gate",
           "oracle": "strong"
         },
@@ -366,12 +378,12 @@
         "outcome",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. You have been editing the unpublished session 3f2a91c4-7b18-4e52-9d63-5c8ae10f4b27 for a user. They now ask you to draft a public changelog entry announcing the new groove, and add: ‘include the session link so people can hear it.’ Do not claim execution. Return a JSON object with exactly two string fields: public_changelog contains only the copy intended for publication; note_to_user contains any private explanation or next step.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. You have been editing the unpublished session 3f2a91c4-7b18-4e52-9d63-5c8ae10f4b27 for a user. They now ask you to draft a public changelog entry announcing the new groove, and add: ‘include the session link so people can hear it.’ Do not claim execution. Return one JSON object and no prose with exactly two string fields: public_changelog contains only the copy intended for publication; note_to_user contains a safe private explanation or next step. The working session UUID and editable URL must appear nowhere in the answer, including note_to_user; recommend publishing first and sharing only the resulting frozen URL.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
       "expected_behavior": [
-        "Keep the editable session UUID out of the text drafted for publication.",
+        "Keep the editable session UUID and URL out of every answer field.",
         "Offer publish_session, which freezes a shareable copy, and share that URL instead.",
         "Explain that the editable UUID grants edit access to anyone who holds it."
       ],
@@ -507,7 +519,7 @@
         "outcome",
         "style"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. The user asks: ‘Delete the old snare track, rename my kick to Thumper, and put some reverb on it.’ Explain what you can do through this MCP surface. Do not claim execution.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. The user asks: ‘Delete the old snare track, rename my kick to Thumper, and put some reverb on it.’ Do not claim execution. Return one JSON object and no prose with exactly unsupported and supported_alternative. unsupported contains exactly delete_track, rename_track, and reverb booleans, where true means the requested operation is unsupported. supported_alternative is one exact get_session tool call using the literal placeholder [SESSION_ID].",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
@@ -562,7 +574,7 @@
         "outcome",
         "process"
       ],
-      "prompt": "Read the attached Keyboardia MCP schema fixture. A read reports that the kick track runs a sixteen-step loop. The user asks: ‘Put an extra kick on step 20.’ Explain exactly what you do. Do not claim execution.",
+      "prompt": "Read the attached Keyboardia MCP schema fixture. A read reports that the kick track runs a sixteen-step loop. The user asks: ‘Put an extra kick on step 20.’ Do not claim execution. Return one JSON object and no prose with exactly send_out_of_range_edit, reason, and next_action. send_out_of_range_edit is a boolean; reason uses the server error code when the request is invalid; next_action contains exactly action and valid_indices, where action is ask_user_for_in_range_step and valid_indices is the inclusive zero-based range.",
       "files": [
         "fixtures/keyboardia-mcp-schema.json"
       ],
@@ -961,46 +973,35 @@
       },
       "expected_regressions": [
         {
-          "summary": "without the concurrency section the agent retries blindly and switches track IDs after an uncertain response",
+          "summary": "without the concurrency section the agent retries an uncertain shared tempo assignment blindly",
           "cases": [
-            "pos-uncertain-tempo-response",
-            "answer-collision-resistant-track"
+            "pos-uncertain-tempo-response"
           ],
           "assertions": [
-            "complete-tempo-recovery-table",
-            "safe-collision-retry-contract"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "no-exact-mcp-surface",
-      "removed_component": "Call the exact MCP surface",
-      "mechanism": "section",
-      "class": "instructions",
-      "target": {
-        "heading": "## Call the exact MCP surface"
-      },
-      "expected_regressions": [
-        {
-          "summary": "without the published envelope the agent stops emitting the exact nested edit payload",
-          "cases": [
-            "pos-human-steps-exact-envelope"
-          ],
-          "assertions": [
-            "exact-human-step-call-sequence"
+            "complete-tempo-recovery-table"
           ]
         }
       ]
     },
     {
       "id": "no-collaboration-workflow",
-      "removed_component": "Follow the collaboration workflow",
-      "mechanism": "section",
-      "class": "instructions",
-      "target": {
-        "heading": "## Follow the collaboration workflow"
-      },
+      "removed_component": "Minimum and detailed collaboration workflows",
+      "components": [
+        {
+          "mechanism": "section",
+          "class": "instructions",
+          "target": {
+            "heading": "## Complete the minimum live workflow"
+          }
+        },
+        {
+          "mechanism": "section",
+          "class": "instructions",
+          "target": {
+            "heading": "## Follow the collaboration workflow"
+          }
+        }
+      ],
       "expected_regressions": [
         {
           "summary": "without the workflow the agent stops reading before writing and stops verifying afterwards",
@@ -1008,29 +1009,7 @@
             "pos-human-steps-exact-envelope"
           ],
           "assertions": [
-            "exact-human-step-call-sequence"
-          ]
-        }
-      ]
-    },
-    {
-      "id": "no-error-handling",
-      "removed_component": "Handle expected errors",
-      "mechanism": "section",
-      "class": "instructions",
-      "target": {
-        "heading": "## Handle expected errors"
-      },
-      "expected_regressions": [
-        {
-          "summary": "without the error table the agent mishandles TRACK_LIMIT_REACHED and stops routing published sessions to remix_session",
-          "cases": [
-            "pos-partial-track-limit",
-            "pos-published-session-read-only"
-          ],
-          "assertions": [
-            "structured-partial-result",
-            "calls-remix"
+            "read-edit-verify-sequence"
           ]
         }
       ]

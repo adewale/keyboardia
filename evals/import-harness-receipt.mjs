@@ -1,9 +1,7 @@
 #!/usr/bin/env node
 /** Import a skill-eval-harness answer matrix into a durable Keyboardia receipt. */
-import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import {
-  lstatSync,
   readFileSync,
   readdirSync,
   realpathSync,
@@ -16,8 +14,11 @@ import {
   answerMatrixSummary,
   buildReceipt,
   canonicalJson,
+  canonicalSkillTreeHashFromSource,
+  completeSkillEvalInputBundleHash,
   createPatchedGitBinding,
   createSourceBinding,
+  sanitizeReceiptText,
   sha256,
   skillEvalInputBundleHash,
   writeReceipt,
@@ -27,7 +28,6 @@ const evalsDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(evalsDir, '..');
 const ARTIFACT_COMMIT = 'artifact-commit.json';
 const REQUIRED_ARTIFACTS = ['output.md', 'events.json', 'metrics.json', 'metadata.json'];
-const COPY_EXCLUDE = new Set(['evals', '.git']);
 
 function fail(message) {
   throw new Error(message);
@@ -106,41 +106,46 @@ function loadTasks(paths) {
   return { tasks, rawFiles };
 }
 
-function walkSkill(root, prefix, entries) {
-  for (const dirent of readdirSync(root, { withFileTypes: true })) {
-    if (dirent.name.startsWith('.') || COPY_EXCLUDE.has(dirent.name)) continue;
-    const absolute = resolve(root, dirent.name);
-    const rel = `${prefix}/${dirent.name}`;
-    if (dirent.isDirectory()) walkSkill(absolute, rel, entries);
-    else if (dirent.isSymbolicLink()) {
-      const target = realpathSync(absolute);
-      const rootReal = realpathSync(root);
-      const targetRel = relative(rootReal, target);
-      if (targetRel === '..' || targetRel.startsWith(`..${sep}`) || isAbsolute(targetRel)) {
-        fail(`skill symlink escapes its root: ${absolute}`);
-      }
-      if (lstatSync(target).isDirectory()) walkSkill(target, rel, entries);
-      else entries.push([rel, readFileSync(target)]);
-    } else if (dirent.isFile()) entries.push([rel, readFileSync(absolute)]);
-  }
+function taskIdentity(task) {
+  return canonicalJson([
+    task.case_id,
+    task.kind,
+    task.split,
+    task.variant,
+    task.run_number,
+    task.model,
+  ]);
 }
 
-export function canonicalSkillTreeHash(root, manifest) {
-  const entries = [];
-  for (const skillPath of manifest.skill_paths ?? []) {
-    const source = resolve(root, skillPath);
-    const stat = lstatSync(source);
-    const sourceDir = stat.isDirectory() ? source : dirname(source);
-    const key = skillPath.replace(/[^A-Za-z0-9_.-]/g, '_');
-    walkSkill(sourceDir, key, entries);
+function expectedMatrixIdentities(manifest, policy) {
+  const identities = [];
+  const splits = new Set(policy.splits);
+  for (const evalCase of manifest.cases ?? []) {
+    if (evalCase.kind === 'trigger' || !splits.has(evalCase.split ?? 'tune')) continue;
+    for (const variant of manifest.variants ?? []) {
+      for (const model of policy.models) {
+        for (let repeat = 1; repeat <= policy.repeats; repeat += 1) {
+          identities.push(taskIdentity({
+            case_id: evalCase.id,
+            kind: evalCase.kind ?? 'behavior',
+            split: evalCase.split ?? 'tune',
+            variant,
+            run_number: repeat,
+            model,
+          }));
+        }
+      }
+    }
   }
-  const digest = createHash('sha256');
-  for (const [path, bytes] of entries.sort(([left], [right]) => left.localeCompare(right))) {
-    digest.update(path, 'utf8');
-    digest.update(Buffer.from([0]));
-    digest.update(bytes);
+  return identities.sort();
+}
+
+export function verifyCompleteTaskMatrix(tasks, manifest, policy) {
+  const actual = tasks.map(taskIdentity).sort();
+  const expected = expectedMatrixIdentities(manifest, policy);
+  if (canonicalJson(actual) !== canonicalJson(expected)) {
+    fail('prepared tasks do not form the complete policy case × variant × model × repeat matrix');
   }
-  return digest.digest('hex');
 }
 
 function verifyArtifactSet(runDir) {
@@ -191,6 +196,7 @@ function sourceBinding() {
   return createSourceBinding(repoRoot, [
     { role: 'skill', path: 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md' },
     { role: 'manifest', path: 'evals/shared-benchmark.json' },
+    { role: 'answer_matrix_policy', path: 'evals/answer-matrix-policy.json' },
     { role: 'fixture', path: 'evals/fixtures/keyboardia-mcp-schema.json' },
     { role: 'oracle', path: 'evals/oracles/capability-answer.mjs' },
     { role: 'oracle_dependency', path: 'evals/oracles/public-changelog-safe.mjs' },
@@ -198,6 +204,7 @@ function sourceBinding() {
     { role: 'answer_adapter_dependency', path: 'evals/adapters/usage.mjs' },
     { role: 'runner', path: 'evals/import-harness-receipt.mjs' },
     { role: 'receipt_runtime', path: 'evals/receipt.mjs' },
+    { role: 'receipt_schema_validator', path: 'evals/validate-receipt-schema.mjs' },
     { role: 'receipt_schema', path: 'evals/receipt.schema.json' },
   ]);
 }
@@ -239,20 +246,35 @@ function runEvidence(
     if (task[taskKey] !== result[resultKey]) fail(`${task.run_dir} has mismatched ${taskKey}`);
   }
   if (result.missing_output || result.execution_valid !== true) fail(`${task.run_dir} is not a complete scorable run`);
-  const { commit, inventory } = verifyArtifactSet(runDir);
+  const { inventory } = verifyArtifactSet(runDir);
   const metadata = json(resolve(runDir, 'metadata.json'));
   if (metadata.manifest_revision !== expectedManifestRevision
       || metadata.skill_tree_hash !== expectedSkillHash
       || metadata.input_bundle_hash !== expectedInputBundleHash) {
     fail(`${task.run_dir} metadata is not bound to the prepared inputs`);
   }
-  const traceFiles = {};
-  for (const name of Object.keys(inventory).sort()) {
-    if (name !== 'output.md') {
-      traceFiles[name] = readFileSync(resolve(runDir, name), 'utf8');
-    }
+  const basis = metadata.telemetry?.basis;
+  const expectedProvider = /^claude-/i.test(task.model) ? 'subagent'
+    : /^gpt-/i.test(task.model) ? 'codex' : null;
+  if (!expectedProvider || metadata.provider !== expectedProvider
+      || basis?.provider !== expectedProvider || basis?.runner !== expectedProvider
+      || basis?.model !== task.model) {
+    fail(`${task.run_dir} provider/runner metadata does not match ${task.model}`);
   }
-  traceFiles[ARTIFACT_COMMIT] = JSON.stringify(commit);
+  const traceFiles = {};
+  let output;
+  const receiptInventory = {};
+  for (const name of Object.keys(inventory).sort()) {
+    const sanitized = sanitizeReceiptText(readFileSync(resolve(runDir, name), 'utf8'));
+    receiptInventory[name] = sha256(sanitized);
+    if (name === 'output.md') output = sanitized;
+    else traceFiles[name] = sanitized;
+  }
+  traceFiles[ARTIFACT_COMMIT] = JSON.stringify({
+    schema_version: 1,
+    required_files: REQUIRED_ARTIFACTS,
+    inventory_sha256: receiptInventory,
+  });
   const prompt = traceFiles['prompt.md'];
   if (prompt !== answerHarnessPrompt(task, expectedCase, manifest)) {
     fail(`${task.run_dir} prompt.md does not match its prepared task and manifest`);
@@ -266,7 +288,7 @@ function runEvidence(
     repeat: task.run_number,
     ok: true,
     prompt: task.prompt,
-    response: readFileSync(resolve(runDir, 'output.md'), 'utf8'),
+    response: output,
     trace: { artifact_files: traceFiles },
     assertions: result.assertions ?? [],
     usage: metadata.usage_normalized ?? null,
@@ -276,6 +298,10 @@ function runEvidence(
     critical_failures: result.critical_failures ?? [],
     vetoed: result.vetoed === true,
     input_bundle_hash: expectedInputBundleHash,
+    complete_input_bundle_hash: completeSkillEvalInputBundleHash(
+      expectedInputBundleHash,
+      expectedSkillHash,
+    ),
   };
 }
 
@@ -290,9 +316,13 @@ async function main() {
   const manifestRaw = readFileSync(options.manifest);
   const manifest = JSON.parse(manifestRaw.toString('utf8'));
   const expectedManifestRevision = sha256(manifestRaw);
-  const expectedSkillHash = canonicalSkillTreeHash(repoRoot, manifest);
+  const source = sourceBinding();
+  const matrixPolicy = JSON.parse(source.files
+    .find((file) => file.role === 'answer_matrix_policy').content);
+  const expectedSkillHash = canonicalSkillTreeHashFromSource(manifest, source.files);
   const { tasks, rawFiles } = loadTasks(options.tasks);
   if (tasks.length === 0) fail('prepared task set is empty');
+  verifyCompleteTaskMatrix(tasks, manifest, matrixPolicy);
   const benchmarkRaw = readFileSync(options.benchmark, 'utf8');
   const benchmark = JSON.parse(benchmarkRaw);
   const auditRaw = readFileSync(options.audit, 'utf8');
@@ -306,7 +336,6 @@ async function main() {
       || canonicalJson(audit.benchmark?.case_flags) !== canonicalJson(benchmark.case_flags)) {
     fail('run-aware audit was not produced from the supplied benchmark');
   }
-  const source = sourceBinding();
   const sourceManifest = source.files.find((file) => file.role === 'manifest');
   if (sourceManifest.sha256 !== expectedManifestRevision) {
     fail('supplied manifest does not match the embedded source manifest');
@@ -350,7 +379,18 @@ async function main() {
   });
   const harness = harnessBinding(options.harnessRepo);
   const models = [...new Set(tasks.map((task) => task.model ?? null))].sort();
-  const repeats = Math.max(...tasks.map((task) => Number(task.run_number)));
+  if (canonicalJson(models) !== canonicalJson([...matrixPolicy.models].sort())) {
+    fail('prepared tasks do not match the answer-matrix policy model set');
+  }
+  const repeats = matrixPolicy.repeats;
+  const adapters = [
+    ...(models.some((model) => /^claude-/i.test(model))
+      ? [{ role: 'answer', id: 'claude-subagent', path: 'evals/adapters/claude.mjs' }]
+      : []),
+    ...(models.some((model) => /^gpt-/i.test(model))
+      ? [{ role: 'answer', id: 'codex-native', path: null }]
+      : []),
+  ];
   const receipt = buildReceipt({
     source,
     harness: {
@@ -363,18 +403,15 @@ async function main() {
     invocation: {
       suite: 'keyboardia-answer-matrix',
       models,
-      adapters: [
-        { role: 'answer', id: 'claude-subagent', path: 'evals/adapters/claude.mjs' },
-        { role: 'answer', id: 'codex-native', path: null },
-      ],
-      splits: [...new Set(tasks.map((task) => task.split))].sort(),
+      adapters,
+      splits: matrixPolicy.splits,
       repeats,
       judge: false,
       manifest_revision: expectedManifestRevision,
       skill_tree_hash: expectedSkillHash,
     },
     runs,
-    summary: answerMatrixSummary(benchmark, audit),
+    summary: answerMatrixSummary(benchmark),
   });
   receipt.harness.git_tree = harness.gitTree;
   receipt.harness.parent_git_commit = harness.parentGitCommit;
@@ -405,8 +442,15 @@ async function main() {
   );
   receipt.invocation.prepared_tasks_refs = rawFiles.map(({ raw }) =>
     addArtifact(receipt.artifacts, raw, 'text/plain'));
-  receipt.invocation.benchmark_ref = addArtifact(receipt.artifacts, benchmarkRaw, 'application/json');
-  receipt.invocation.audit_ref = addArtifact(receipt.artifacts, auditRaw, 'application/json');
+  receipt.invocation.benchmark_ref = addArtifact(receipt.artifacts, canonicalJson({
+    version: 1,
+    results: benchmark.results,
+  }), 'application/json');
+  receipt.invocation.audit_ref = addArtifact(receipt.artifacts, canonicalJson({
+    version: 1,
+    external_report_sha256: sha256(auditRaw),
+    reported_blockers: audit.readiness.blockers,
+  }), 'application/json');
   writeReceipt(options.out, receipt);
   process.stdout.write(`Imported ${runs.length} immutable harness runs\n${options.out}\n`);
 }

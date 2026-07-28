@@ -10,6 +10,7 @@ import {
 } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, isAbsolute, posix, relative, resolve, sep } from 'node:path';
+import { validateReceiptSchema } from './validate-receipt-schema.mjs';
 
 export const RECEIPT_SCHEMA_VERSION = 2;
 export const REDACTED_CAPABILITY = '<redacted-session-id>';
@@ -36,7 +37,10 @@ export function sanitizeReceiptText(value) {
     .replace(/\/(?:private\/)?var\/folders\/[^\s"'`]+/g, '<temp-path>')
     .replace(/\/private\/tmp\/[^\s"'`]+/g, '<temp-path>')
     .replace(/\/tmp\/[^\s"'`]+/g, '<temp-path>')
-    .replace(/\/Users\/[^/\s"'`]+\/[^\s"'`]+/g, '<workspace-path>');
+    .replace(/\/Users\/[^/\s"'`]+\/[^\s"'`]+/g, '<workspace-path>')
+    .replace(/\/home\/[^/\s"'`]+\/[^\s"'`]+/g, '<workspace-path>')
+    .replace(/\/root\/[^\s"'`]+/g, '<workspace-path>')
+    .replace(/[A-Za-z]:\\Users\\[^\\\s"'`]+\\[^\s"'`]+/g, '<workspace-path>');
 }
 
 function sanitizeReceiptValue(value) {
@@ -55,6 +59,7 @@ const HOST_PATHS = [
   /\/(?:private\/)?var\/folders\//i,
   /\/Users\/[^/\s"'`]+\//,
   /\/home\/[^/\s"'`]+\//,
+  /\/root\//,
   /\/(?:private\/)?tmp\/[^\s"'`]+/,
   /[A-Za-z]:\\Users\\[^\\\s"'`]+\\/,
 ];
@@ -72,7 +77,7 @@ function hostPathPresent(value) {
 export function receiptContainsHostPath(receipt) {
   if (!receipt || typeof receipt !== 'object') return false;
   const copy = structuredClone(receipt);
-  for (const file of copy.source?.files ?? []) delete file.content;
+  for (const tree of copy.source?.tree_objects ?? []) delete tree.content_base64;
   return hostPathPresent(copy);
 }
 
@@ -235,6 +240,13 @@ export function skillEvalInputBundleHash({ manifestPath, manifestContent, caseId
   return hash.digest('hex');
 }
 
+export function completeSkillEvalInputBundleHash(inputBundleHash, skillTreeHash) {
+  const hash = createHash('sha256').update('keyboardia-complete-skill-eval-input-bundle-v1\0', 'utf8');
+  lengthPrefixed(hash, inputBundleHash);
+  lengthPrefixed(hash, skillTreeHash);
+  return hash.digest('hex');
+}
+
 function regexEscape(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -270,7 +282,13 @@ function decodedPercentValue(value) {
 
 function stringContainsCapability(value, sessionId) {
   if (encodedCapabilityPattern(sessionId).test(value)) return true;
-  return encodedCapabilityPattern(sessionId).test(decodedPercentValue(value));
+  if (encodedCapabilityPattern(sessionId).test(decodedPercentValue(value))) return true;
+  const bytes = Buffer.from(sessionId, 'utf8');
+  const encodings = [
+    bytes.toString('base64'),
+    bytes.toString('base64url'),
+  ];
+  return encodings.some((encoded) => value.includes(encoded));
 }
 
 export function capabilityPresent(value, sessionId) {
@@ -288,9 +306,13 @@ export function redactCapability(value, sessionId) {
     const direct = value.replace(encodedCapabilityPattern(sessionId), REDACTED_CAPABILITY);
     if (direct !== value) return direct;
     const decoded = decodedPercentValue(value);
-    return encodedCapabilityPattern(sessionId).test(decoded)
+    const decodedRedaction = encodedCapabilityPattern(sessionId).test(decoded)
       ? decoded.replace(encodedCapabilityPattern(sessionId), REDACTED_CAPABILITY)
       : value;
+    if (decodedRedaction !== value) return decodedRedaction;
+    const bytes = Buffer.from(sessionId, 'utf8');
+    return [bytes.toString('base64'), bytes.toString('base64url')]
+      .reduce((text, encoded) => text.replaceAll(encoded, REDACTED_CAPABILITY), value);
   }
   if (Array.isArray(value)) {
     return value.map((entry) => redactCapability(entry, sessionId));
@@ -372,6 +394,83 @@ function gitTreeSnapshot(repoRoot, treeish) {
   };
 }
 
+function parseRawGitTree(raw) {
+  const entries = [];
+  let offset = 0;
+  while (offset < raw.length) {
+    const space = raw.indexOf(0x20, offset);
+    const nul = raw.indexOf(0, space + 1);
+    if (space < 0 || nul < 0 || nul + 21 > raw.length) {
+      throw new Error('malformed raw Git tree object');
+    }
+    const mode = raw.subarray(offset, space).toString('ascii');
+    const name = raw.subarray(space + 1, nul).toString('utf8');
+    if (!name || name.includes('/') || name === '.' || name === '..'
+        || Buffer.byteLength(name, 'utf8') !== nul - space - 1) {
+      throw new Error(`invalid raw Git tree entry: ${name || '<missing>'}`);
+    }
+    const object = raw.subarray(nul + 1, nul + 21).toString('hex');
+    entries.push({ mode, name, object, tree: mode === '40000' || mode === '040000' });
+    offset = nul + 21;
+  }
+  return entries;
+}
+
+function sourceTreeObjects(repoRoot, rootTree) {
+  const objects = [];
+  const pending = [rootTree];
+  const seen = new Set();
+  while (pending.length > 0) {
+    const object = pending.pop();
+    if (seen.has(object)) continue;
+    seen.add(object);
+    const content = git(repoRoot, ['cat-file', 'tree', object], { bytes: true });
+    if (gitObjectSha1('tree', content) !== object) {
+      throw new Error(`source Git tree ${object} failed self-verification`);
+    }
+    for (const entry of parseRawGitTree(content)) {
+      if (entry.tree) pending.push(entry.object);
+    }
+    objects.push({ object, content_base64: content.toString('base64') });
+  }
+  return objects.sort((left, right) => left.object.localeCompare(right.object));
+}
+
+export function canonicalSourceBundleHash(files) {
+  const hash = createHash('sha256').update('keyboardia-receipt-source-bundle-v1\0', 'utf8');
+  for (const file of [...files].sort((left, right) => left.path.localeCompare(right.path)
+    || left.role.localeCompare(right.role))) {
+    lengthPrefixed(hash, file.role);
+    lengthPrefixed(hash, file.path);
+    lengthPrefixed(hash, file.content);
+  }
+  return hash.digest('hex');
+}
+
+export function canonicalSkillTreeHashFromSource(manifest, sourceFiles) {
+  const entries = [];
+  for (const skillPath of manifest.skill_paths ?? []) {
+    const normalized = posix.normalize(skillPath);
+    const exact = sourceFiles.find((file) => file.role === 'skill' && file.path === normalized);
+    const root = exact ? posix.dirname(normalized) : normalized.replace(/\/$/, '');
+    const key = normalized.replace(/[^A-Za-z0-9_.-]/g, '_');
+    const matched = sourceFiles.filter((file) => file.role === 'skill'
+      && (file.path === normalized || file.path.startsWith(`${root}/`)));
+    if (matched.length === 0) throw new Error(`embedded source is missing skill path ${skillPath}`);
+    for (const file of matched) {
+      const suffix = exact ? posix.basename(file.path) : posix.relative(root, file.path);
+      entries.push([`${key}/${suffix}`, file.content]);
+    }
+  }
+  const digest = createHash('sha256');
+  for (const [path, content] of entries.sort(([left], [right]) => left.localeCompare(right))) {
+    digest.update(path, 'utf8');
+    digest.update(Buffer.from([0]));
+    digest.update(content, 'utf8');
+  }
+  return digest.digest('hex');
+}
+
 export function createPatchedGitBinding(repoRoot) {
   const root = realpathSync(resolve(repoRoot));
   const dirty = git(root, ['status', '--porcelain', '--untracked-files=all']);
@@ -421,6 +520,7 @@ export function createSourceBinding(repoRoot, inputs) {
     throw new Error('cannot create a durable receipt from a dirty or untracked worktree');
   }
   const gitTree = git(root, ['show', '-s', '--format=%T', gitCommit]);
+  const commitContent = git(root, ['cat-file', 'commit', gitCommit], { bytes: true });
   const repository = git(root, ['config', '--get', 'remote.origin.url'], { optional: true }) ?? 'local';
   const files = inputs.map((input) => {
     const path = checkedRelativePath(root, input.path);
@@ -448,12 +548,37 @@ export function createSourceBinding(repoRoot, inputs) {
       })(),
     };
   });
-  return {
+  const source = {
     repository,
     git_commit: gitCommit,
     git_tree: gitTree,
+    commit_content: (() => {
+      const content = commitContent.toString('utf8');
+      if (!Buffer.from(content, 'utf8').equals(commitContent)) {
+        throw new Error('source commit object is not UTF-8 text');
+      }
+      return content;
+    })(),
+    tree_objects: sourceTreeObjects(root, gitTree),
     files,
   };
+  source.bundle_sha256 = canonicalSourceBundleHash(files);
+  return source;
+}
+
+export function assertSourceBindingStillClean(repoRoot, source) {
+  const root = realpathSync(resolve(repoRoot));
+  const dirty = git(root, ['status', '--porcelain', '--untracked-files=all']);
+  if (dirty) throw new Error('receipt source worktree changed during evaluation');
+  if (git(root, ['rev-parse', 'HEAD']) !== source.git_commit
+      || git(root, ['show', '-s', '--format=%T', 'HEAD']) !== source.git_tree) {
+    throw new Error('receipt source HEAD changed during evaluation');
+  }
+  for (const file of source.files ?? []) {
+    if (sha256(readFileSync(resolve(root, file.path))) !== file.sha256) {
+      throw new Error(`receipt source input changed during evaluation: ${file.path}`);
+    }
+  }
 }
 
 export function addArtifact(
@@ -577,6 +702,71 @@ function commitIdentity(payload) {
   return { tree, parents };
 }
 
+function verifySourceGitProof(source, errors) {
+  if (typeof source?.commit_content !== 'string') {
+    errors.push('source.commit_content is required for self-contained provenance');
+    return;
+  }
+  requireValue(gitObjectSha1('commit', source.commit_content) === source.git_commit,
+    'source commit object does not match source.git_commit', errors);
+  const identity = commitIdentity(source.commit_content);
+  requireValue(identity.tree === source.git_tree,
+    'source commit object does not name source.git_tree', errors);
+  if (!Array.isArray(source.tree_objects) || source.tree_objects.length === 0) {
+    errors.push('source.tree_objects is required for self-contained provenance');
+    return;
+  }
+  const trees = new Map();
+  for (const [index, entry] of source.tree_objects.entries()) {
+    if (!entry || !isHex(entry.object, 40) || typeof entry.content_base64 !== 'string') {
+      errors.push(`source.tree_objects[${index}] is invalid`);
+      continue;
+    }
+    if (trees.has(entry.object)) {
+      errors.push(`source.tree_objects contains duplicate object ${entry.object}`);
+      continue;
+    }
+    const bytes = Buffer.from(entry.content_base64, 'base64');
+    if (bytes.toString('base64') !== entry.content_base64
+        || gitObjectSha1('tree', bytes) !== entry.object) {
+      errors.push(`source tree object ${entry.object} failed self-verification`);
+      continue;
+    }
+    try {
+      trees.set(entry.object, parseRawGitTree(bytes));
+    } catch (error) {
+      errors.push(`source tree object ${entry.object} is invalid: ${error.message}`);
+    }
+  }
+  requireValue(trees.has(source.git_tree),
+    'source.tree_objects does not contain source.git_tree', errors);
+  const resolvePath = (path) => {
+    let tree = source.git_tree;
+    const parts = path.split('/');
+    for (const [index, part] of parts.entries()) {
+      const entries = trees.get(tree);
+      if (!entries) throw new Error(`missing source tree object ${tree} for ${path}`);
+      const entry = entries.find((candidate) => candidate.name === part);
+      if (!entry) throw new Error(`${path} is absent from source.git_tree`);
+      if (index === parts.length - 1) {
+        if (entry.tree) throw new Error(`${path} resolves to a tree, not a blob`);
+        return entry.object;
+      }
+      if (!entry.tree) throw new Error(`${path} traverses through a blob`);
+      tree = entry.object;
+    }
+    throw new Error(`cannot resolve empty source path ${path}`);
+  };
+  for (const file of source.files ?? []) {
+    try {
+      requireValue(resolvePath(file.path) === file.git_blob,
+        `${file.path} does not match the self-contained source tree`, errors);
+    } catch (error) {
+      errors.push(error.message);
+    }
+  }
+}
+
 function reconstructPatchedTree(
   snapshot,
   patch,
@@ -641,6 +831,13 @@ function artifactContent(receipt, ref, label, errors) {
 
 function verifyPatchedHarness(receipt, errors) {
   const harness = receipt.harness ?? {};
+  const answerMatrix = receipt.invocation?.suite === 'keyboardia-answer-matrix';
+  if (answerMatrix) {
+    requireValue(harness.name === 'skill-eval-harness',
+      'answer receipt requires the skill-eval-harness', errors);
+    requireValue(harness.mode === 'patched-local-checkout',
+      'answer receipt requires patched-local-checkout harness reconstruction', errors);
+  }
   const fields = [
     'git_tree',
     'parent_git_commit',
@@ -650,7 +847,8 @@ function verifyPatchedHarness(receipt, errors) {
     'commit_ref',
     'parent_commit_ref',
   ];
-  const patched = fields.some((field) => harness[field] !== undefined && harness[field] !== null);
+  const patched = answerMatrix
+    || fields.some((field) => harness[field] !== undefined && harness[field] !== null);
   if (!patched) return;
   for (const field of ['git_tree', 'parent_git_commit', 'parent_git_tree']) {
     requireValue(isHex(harness[field], 40),
@@ -706,19 +904,53 @@ function verifyPatchedHarness(receipt, errors) {
   }
 }
 
-export function answerMatrixSummary(benchmark, audit) {
+function normalizedAnswerResult(result) {
   return {
-    results: benchmark.results.length,
-    summary: benchmark.summary,
-    paired_summary: benchmark.paired_summary,
-    by_model: benchmark.by_model,
-    case_flags: benchmark.case_flags,
-    reliability: benchmark.reliability,
-    audit: {
-      readiness: audit.readiness,
-      counts: audit.counts,
-    },
+    model: result.model ?? null,
+    case: result.case_id ?? result.case,
+    kind: result.kind,
+    split: result.split ?? 'tune',
+    variant: result.variant,
+    repeat: result.run_number ?? result.repeat ?? 0,
+    complete: result.execution_valid === undefined
+      ? result.ok === true
+      : result.execution_valid === true && result.missing_output !== true,
+    objective_passed: result.objective_passed,
+    objective_total: result.objective_total,
+    objective_pass_rate: result.objective_pass_rate,
+    vetoed: result.vetoed === true,
   };
+}
+
+function answerAggregate(rows) {
+  const groups = (key) => Object.fromEntries([...new Set(rows.map((row) => row[key]))]
+    .sort()
+    .map((value) => {
+      const selected = rows.filter((row) => row[key] === value);
+      return [value, {
+        runs: selected.length,
+        complete_runs: selected.filter((row) => row.complete).length,
+        objective_passed: selected.reduce((total, row) => total + Number(row.objective_passed ?? 0), 0),
+        objective_total: selected.reduce((total, row) => total + Number(row.objective_total ?? 0), 0),
+        vetoed_runs: selected.filter((row) => row.vetoed).length,
+      }];
+    }));
+  return {
+    version: 1,
+    results: rows.length,
+    complete_runs: rows.filter((row) => row.complete).length,
+    objective_passed: rows.reduce((total, row) => total + Number(row.objective_passed ?? 0), 0),
+    objective_total: rows.reduce((total, row) => total + Number(row.objective_total ?? 0), 0),
+    vetoed_runs: rows.filter((row) => row.vetoed).length,
+    by_variant: groups('variant'),
+    by_model: groups('model'),
+    result_projection_sha256: sha256(canonicalJson(rows.sort((left, right) =>
+      canonicalJson(left).localeCompare(canonicalJson(right))))),
+  };
+}
+
+export function answerMatrixSummary(benchmark) {
+  return answerAggregate((benchmark.results ?? []).map(normalizedAnswerResult));
 }
 
 /** Rebuild skill-eval-harness's exact model-visible answer prompt from bound inputs. */
@@ -763,6 +995,43 @@ function jsonArtifact(receipt, ref, label, errors) {
   } catch (error) {
     errors.push(`${label} is not valid JSON: ${error.message}`);
     return null;
+  }
+}
+
+function verifyRunArtifactInventory(trace, output, label, errors) {
+  const files = trace?.artifact_files;
+  if (!files || typeof files !== 'object' || Array.isArray(files)) {
+    errors.push(`${label} has no embedded artifact_files inventory`);
+    return;
+  }
+  let commit;
+  try {
+    commit = JSON.parse(files['artifact-commit.json']);
+  } catch (error) {
+    errors.push(`${label} artifact-commit.json is invalid: ${error.message}`);
+    return;
+  }
+  const required = ['output.md', 'events.json', 'metrics.json', 'metadata.json'];
+  requireValue(commit?.schema_version === 1
+    && canonicalJson(commit.required_files) === canonicalJson(required),
+  `${label} artifact commit contract is unsupported`, errors);
+  const inventory = commit?.inventory_sha256;
+  if (!inventory || typeof inventory !== 'object' || Array.isArray(inventory)) {
+    errors.push(`${label} artifact commit has no inventory_sha256`);
+    return;
+  }
+  const embedded = {
+    ...Object.fromEntries(Object.entries(files)
+      .filter(([name]) => name !== 'artifact-commit.json')),
+    'output.md': output,
+  };
+  requireValue(canonicalJson(Object.keys(inventory).sort())
+    === canonicalJson(Object.keys(embedded).sort()),
+  `${label} artifact inventory does not exactly cover embedded run files`, errors);
+  for (const [name, digest] of Object.entries(inventory)) {
+    requireValue(typeof embedded[name] === 'string' && isHex(digest, 64)
+      && sha256(embedded[name]) === digest,
+    `${label} artifact inventory digest mismatch for ${name}`, errors);
   }
 }
 
@@ -938,7 +1207,7 @@ function materializeEmbeddedSources(sourceFiles) {
   }
 }
 
-function scoreObjectiveAssertions(evalCase, output, manifestPath, sourceFiles) {
+export function scoreObjectiveAssertions(evalCase, output, manifestPath, sourceFiles) {
   const assertions = (evalCase.assertions ?? [])
     .filter((assertion) => !['judge', 'rubric'].includes(assertion.type));
   const needsScripts = assertions.some((assertion) => assertion.type === 'script');
@@ -969,11 +1238,30 @@ function scoreObjectiveAssertions(evalCase, output, manifestPath, sourceFiles) {
         const command = assertion.command.map((part) => part
           .replaceAll('{output_dir}', outputDir)
           .replaceAll('{output_path}', outputPath));
-        const result = spawnSync(command[0], command.slice(1), {
+        if (command[0] !== 'node' || command.length < 2 || command[1].startsWith('-')) {
+          throw new Error(
+            `unsafe script assertion command ${assertion.name ?? '<unnamed>'}: only a bound Node oracle is allowed`
+          );
+        }
+        const oraclePath = posix.normalize(posix.join(posix.dirname(manifestPath), command[1]));
+        const oracle = sourceFiles.find((file) => file.path === oraclePath && file.role === 'oracle');
+        if (!oracle) {
+          throw new Error(
+            `unsafe script assertion command ${assertion.name ?? '<unnamed>'}: ${oraclePath} is not a bound oracle`
+          );
+        }
+        const result = spawnSync(process.execPath, [
+          '--permission',
+          `--allow-fs-read=${root}`,
+          `--allow-fs-read=${outputPath}`,
+          '--max-old-space-size=128',
+          ...command.slice(1),
+        ], {
           cwd: resolve(root, posix.dirname(manifestPath)),
           encoding: 'utf8',
           timeout: Number(assertion.timeout_s ?? 30) * 1000,
           maxBuffer: 4 * 1024 * 1024,
+          env: { LANG: 'C', TZ: 'UTC' },
         });
         passed = result.status === Number(assertion.pass_exit_code ?? 0);
       } else {
@@ -1026,6 +1314,54 @@ function recordedObjectiveProjection(value) {
   };
 }
 
+function expectedAnswerMatrixIdentities(manifest, policy) {
+  const identities = [];
+  const splits = new Set(policy.splits ?? []);
+  const cases = (manifest.cases ?? []).filter((evalCase) =>
+    evalCase.kind !== 'trigger' && splits.has(evalCase.split ?? 'tune'));
+  for (const evalCase of cases) {
+    for (const variant of manifest.variants ?? []) {
+      for (const model of policy.models ?? []) {
+        for (let repeat = 1; repeat <= policy.repeats; repeat += 1) {
+          identities.push(runIdentity({
+            case_id: evalCase.id,
+            kind: evalCase.kind ?? 'behavior',
+            split: evalCase.split ?? 'tune',
+            variant,
+            run_number: repeat,
+            model,
+          }, true));
+        }
+      }
+    }
+  }
+  return identities.sort();
+}
+
+function verifyAnswerModelProvenance(task, metadata, invocation, label, errors) {
+  const basis = metadata?.telemetry?.basis;
+  let adapter;
+  let provider;
+  if (/^claude-/i.test(task.model)) {
+    adapter = { id: 'claude-subagent', path: 'evals/adapters/claude.mjs' };
+    provider = 'subagent';
+  } else if (/^gpt-/i.test(task.model)) {
+    adapter = { id: 'codex-native', path: null };
+    provider = 'codex';
+  } else {
+    errors.push(`${label} uses unsupported model family ${task.model}`);
+    return;
+  }
+  requireValue((invocation.adapters ?? []).some((entry) => entry.role === 'answer'
+    && entry.id === adapter.id && entry.path === adapter.path),
+  `${label} has no matching declared answer adapter for ${task.model}`, errors);
+  requireValue(metadata?.provider === provider
+    && basis?.provider === provider
+    && basis?.runner === provider
+    && basis?.model === task.model,
+  `${label} provider/runner metadata does not match ${task.model}`, errors);
+}
+
 function verifyAnswerMatrix(receipt, errors) {
   if (receipt.invocation?.suite !== 'keyboardia-answer-matrix') return;
   requireValue(Array.isArray(receipt.invocation?.prepared_tasks_refs)
@@ -1045,20 +1381,20 @@ function verifyAnswerMatrix(receipt, errors) {
   const audit = jsonArtifact(receipt, receipt.invocation?.audit_ref, 'invocation.audit_ref', errors);
   if (!benchmark || !audit) return;
   requireValue(Array.isArray(benchmark.results), 'answer benchmark requires results', errors);
-  requireValue(Array.isArray(audit.readiness?.blockers),
-    'answer audit requires readiness.blockers', errors);
-  requireValue(audit.readiness?.blockers?.length === 0,
+  requireValue(benchmark.version === 1
+    && canonicalJson(Object.keys(benchmark).sort()) === canonicalJson(['results', 'version']),
+  'answer benchmark evidence must contain only independently checked run results', errors);
+  requireValue(audit.version === 1 && isHex(audit.external_report_sha256, 64)
+    && Array.isArray(audit.reported_blockers),
+  'answer audit evidence is invalid', errors);
+  requireValue(audit.reported_blockers?.length === 0,
     'answer audit contains readiness blockers', errors);
-  requireValue(canonicalJson(audit.benchmark?.summary) === canonicalJson(benchmark.summary),
-    'answer audit summary does not match benchmark', errors);
-  requireValue(canonicalJson(audit.benchmark?.case_flags) === canonicalJson(benchmark.case_flags),
-    'answer audit case flags do not match benchmark', errors);
   if (!Array.isArray(benchmark.results)) return;
   requireValue(tasks.length > 0, 'answer receipt has no prepared tasks', errors);
   requireValue(tasks.length === benchmark.results.length && tasks.length === receipt.runs.length,
     'answer task, benchmark, and receipt run counts differ', errors);
-  requireValue(canonicalJson(receipt.summary) === canonicalJson(answerMatrixSummary(benchmark, audit)),
-    'answer receipt summary does not match benchmark and audit artifacts', errors);
+  requireValue(canonicalJson(receipt.summary) === canonicalJson(answerMatrixSummary(benchmark)),
+    'answer receipt summary does not match independently derived result aggregates', errors);
 
   const sourceManifest = (receipt.source?.files ?? []).find((file) => file.role === 'manifest');
   requireValue(sourceManifest?.sha256 === receipt.invocation?.manifest_revision,
@@ -1071,6 +1407,35 @@ function verifyAnswerMatrix(receipt, errors) {
   }
   const manifestCases = new Map((manifest?.cases ?? []).map((evalCase) => [evalCase.id, evalCase]));
   const sourceFiles = receipt.source?.files ?? [];
+  let matrixPolicy = null;
+  try {
+    const policyFile = sourceFiles.find((file) => file.role === 'answer_matrix_policy');
+    if (policyFile?.path !== 'evals/answer-matrix-policy.json') {
+      throw new Error('expected evals/answer-matrix-policy.json');
+    }
+    matrixPolicy = JSON.parse(policyFile.content);
+    if (matrixPolicy.version !== 1 || matrixPolicy.suite !== 'keyboardia-answer-matrix') {
+      throw new Error('unsupported answer-matrix policy');
+    }
+    requireValue(canonicalJson(receipt.invocation.models) === canonicalJson(matrixPolicy.models)
+      && canonicalJson(receipt.invocation.splits) === canonicalJson(matrixPolicy.splits)
+      && receipt.invocation.repeats === matrixPolicy.repeats,
+    'answer invocation does not match the embedded answer-matrix policy', errors);
+  } catch (error) {
+    errors.push(`answer matrix policy is invalid: ${error.message}`);
+  }
+  try {
+    requireValue(canonicalSkillTreeHashFromSource(manifest, sourceFiles)
+      === receipt.invocation?.skill_tree_hash,
+    'answer skill tree hash does not match embedded skill bytes', errors);
+  } catch (error) {
+    errors.push(`answer skill tree hash cannot be derived: ${error.message}`);
+  }
+  const expectedIdentities = manifest && matrixPolicy
+    ? expectedAnswerMatrixIdentities(manifest, matrixPolicy) : [];
+  const taskIdentities = tasks.map((task) => runIdentity(task, true)).sort();
+  requireValue(canonicalJson(taskIdentities) === canonicalJson(expectedIdentities),
+    'answer prepared tasks do not form the complete manifest × variant × model × repeat matrix', errors);
   const benchmarkByIdentity = new Map();
   for (const result of benchmark.results) {
     const identity = benchmarkIdentity(result);
@@ -1115,6 +1480,10 @@ function verifyAnswerMatrix(receipt, errors) {
     `prepared task ${index} input bundle hash mismatch`, errors);
     requireValue(run.input_bundle_hash === inputBundleHash,
       `runs[${index}] input bundle hash mismatch`, errors);
+    requireValue(run.complete_input_bundle_hash === completeSkillEvalInputBundleHash(
+      inputBundleHash,
+      receipt.invocation.skill_tree_hash,
+    ), `runs[${index}] complete input bundle hash mismatch`, errors);
     const result = benchmarkByIdentity.get(identity);
     requireValue(Boolean(result), `prepared task ${index} has no benchmark result`, errors);
     if (!result) continue;
@@ -1149,10 +1518,15 @@ function verifyAnswerMatrix(receipt, errors) {
       }
     }
     const trace = jsonArtifact(receipt, run.trace_ref, `runs[${index}].trace_ref`, errors);
+    verifyRunArtifactInventory(trace, output, `runs[${index}]`, errors);
     try {
       const metadata = JSON.parse(trace?.artifact_files?.['metadata.json']);
       requireValue(metadata.input_bundle_hash === inputBundleHash,
         `runs[${index}] artifact metadata input bundle hash mismatch`, errors);
+      requireValue(metadata.manifest_revision === receipt.invocation?.manifest_revision
+        && metadata.skill_tree_hash === receipt.invocation?.skill_tree_hash,
+      `runs[${index}] artifact metadata source binding mismatch`, errors);
+      verifyAnswerModelProvenance(task, metadata, receipt.invocation, `runs[${index}]`, errors);
     } catch (error) {
       errors.push(`runs[${index}] artifact metadata is invalid: ${error.message}`);
     }
@@ -1172,7 +1546,7 @@ function verifyAnswerMatrix(receipt, errors) {
 }
 
 export function verifyReceipt(receipt, { repoRoot = null } = {}) {
-  const errors = [];
+  const errors = validateReceiptSchema(receipt);
   requireValue(receipt && typeof receipt === 'object', 'receipt must be an object', errors);
   if (errors.length > 0) return errors;
   requireValue(receipt.schema_version === RECEIPT_SCHEMA_VERSION, 'unsupported schema_version', errors);
@@ -1180,6 +1554,8 @@ export function verifyReceipt(receipt, { repoRoot = null } = {}) {
   requireValue(!Number.isNaN(Date.parse(receipt.generated_at)), 'generated_at must be an ISO timestamp', errors);
   requireValue(isHex(receipt.source?.git_commit, 40), 'source.git_commit must be 40 lowercase hex characters', errors);
   requireValue(isHex(receipt.source?.git_tree, 40), 'source.git_tree must be 40 lowercase hex characters', errors);
+  requireValue(isHex(receipt.source?.bundle_sha256, 64),
+    'source.bundle_sha256 must be 64 lowercase hex characters', errors);
   requireValue(Array.isArray(receipt.source?.files) && receipt.source.files.length > 0, 'source.files must be non-empty', errors);
   requireValue(typeof receipt.harness?.name === 'string', 'harness.name is required', errors);
   requireValue(typeof receipt.harness?.version === 'string', 'harness.version is required', errors);
@@ -1205,6 +1581,7 @@ export function verifyReceipt(receipt, { repoRoot = null } = {}) {
   }
 
   const roles = new Set();
+  const sourcePaths = new Set();
   for (const file of receipt.source?.files ?? []) {
     roles.add(file.role);
     requireValue(typeof file.role === 'string' && file.role.length > 0, 'source file role is required', errors);
@@ -1219,10 +1596,17 @@ export function verifyReceipt(receipt, { repoRoot = null } = {}) {
       requireValue(sha256(bytes) === file.sha256, `${file.path} embedded source SHA-256 mismatch`, errors);
       requireValue(gitBlobSha1(bytes) === file.git_blob, `${file.path} embedded source Git blob mismatch`, errors);
     }
+    requireValue(!sourcePaths.has(file.path), `duplicate embedded source path ${file.path}`, errors);
+    sourcePaths.add(file.path);
   }
   for (const role of ['skill', 'manifest', 'runner', 'receipt_runtime', 'receipt_schema']) {
     requireValue(roles.has(role), `source.files is missing role ${role}`, errors);
   }
+  if (Array.isArray(receipt.source?.files)) {
+    requireValue(canonicalSourceBundleHash(receipt.source.files) === receipt.source?.bundle_sha256,
+      'source bundle SHA-256 mismatch', errors);
+  }
+  verifySourceGitProof(receipt.source, errors);
 
   const artifacts = receipt.artifacts ?? {};
   for (const [ref, artifact] of Object.entries(artifacts)) {

@@ -2,7 +2,7 @@
 import { isDeepStrictEqual } from 'node:util';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { extractFirstJsonObject } from './public-changelog-safe.mjs';
+import { parseExactJsonObject } from './public-changelog-safe.mjs';
 
 function pass(reason) {
   return { passed: true, reason };
@@ -21,6 +21,11 @@ function nonEmptyString(value) {
   return typeof value === 'string' && value.trim().length > 0;
 }
 
+function sessionReference(value) {
+  return typeof value === 'string' && (/^(?:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/.test(value)
+    || /^\[(?:SOURCE_|REMIX_)?SESSION_ID\]$/.test(value));
+}
+
 function callName(value, allowName = false) {
   if (exactKeys(value, ['tool', 'arguments'])) return value.tool;
   if (allowName && exactKeys(value, ['name', 'arguments'])) return value.name;
@@ -30,20 +35,20 @@ function callName(value, allowName = false) {
 function getSessionCall(value, sessionId = null, allowName = false) {
   return callName(value, allowName) === 'get_session'
     && exactKeys(value.arguments, ['session_id'])
-    && nonEmptyString(value.arguments.session_id)
+    && sessionReference(value.arguments.session_id)
     && (sessionId === null || value.arguments.session_id === sessionId);
 }
 
 function editSessionCall(value, sessionId = null, allowName = false) {
   return callName(value, allowName) === 'edit_session'
     && exactKeys(value.arguments, ['session_id', 'edit'])
-    && nonEmptyString(value.arguments.session_id)
+    && sessionReference(value.arguments.session_id)
     && (sessionId === null || value.arguments.session_id === sessionId);
 }
 
 function parse(text) {
   try {
-    return { value: extractFirstJsonObject(text) };
+    return { value: parseExactJsonObject(text) };
   } catch (error) {
     return { error: error.message };
   }
@@ -80,24 +85,39 @@ function unwrapSinglePayload(value) {
   return payload;
 }
 
-export function humanStepsAnswer(text) {
+function parsedHumanSteps(text) {
   const parsed = parse(text);
-  if (parsed.error) return fail(parsed.error);
+  if (parsed.error) return { error: parsed.error };
   const value = parsed.value;
   if (!exactKeys(value, ['calls', 'preserve_unmentioned_steps'])) {
-    return fail('expected exactly calls and preserve_unmentioned_steps');
+    return { error: 'expected exactly calls and preserve_unmentioned_steps' };
   }
-  if (value.preserve_unmentioned_steps !== true) {
-    return fail('preserve_unmentioned_steps must be true');
-  }
-  if (!Array.isArray(value.calls) || value.calls.length !== 3) {
-    return fail('calls must contain exactly get_session, edit_session, get_session');
-  }
+  if (!Array.isArray(value.calls)) return { error: 'calls must be an array' };
+  return { value };
+}
+
+export function humanStepsSequenceAnswer(text) {
+  const parsed = parsedHumanSteps(text);
+  if (parsed.error) return fail(parsed.error);
+  const value = parsed.value;
+  if (value.calls.length !== 3) return fail('calls must contain exactly three entries');
   const [before, editCall, after] = value.calls;
   if (!getSessionCall(before)) return fail('first call must be get_session');
   const sessionId = before.arguments.session_id;
   if (!editSessionCall(editCall, sessionId)) return fail('second call must be edit_session for the same session');
   if (!getSessionCall(after, sessionId)) return fail('third call must verify with get_session for the same session');
+  return pass('exact get/edit/get sequence uses one schema-valid session reference');
+}
+
+export function humanStepsEnvelopeAnswer(text) {
+  const parsed = parsedHumanSteps(text);
+  if (parsed.error) return fail(parsed.error);
+  const value = parsed.value;
+  if (value.preserve_unmentioned_steps !== true) {
+    return fail('preserve_unmentioned_steps must be true');
+  }
+  const editCall = value.calls[1];
+  if (!editSessionCall(editCall)) return fail('middle call must be an exact edit_session envelope');
   const edit = editCall.arguments.edit;
   if (!exactKeys(edit, ['operation', 'track_id', 'changes'])) {
     return fail('set_steps edit must contain exactly operation, track_id, and changes');
@@ -105,11 +125,21 @@ export function humanStepsAnswer(text) {
   if (edit.operation !== 'set_steps' || edit.track_id !== 'user-kick') {
     return fail('edit must target user-kick with set_steps');
   }
+  const normalizedChanges = Array.isArray(edit.changes)
+    ? edit.changes.map((change) => exactKeys(change, ['step', 'value']) ? change : null)
+      .sort((left, right) => (left?.step ?? 0) - (right?.step ?? 0))
+    : null;
   const expectedChanges = [{ step: 4, value: true }, { step: 12, value: true }];
-  if (!isDeepStrictEqual(edit.changes, expectedChanges)) {
+  if (!isDeepStrictEqual(normalizedChanges, expectedChanges)) {
     return fail('changes must be exactly [{step:4,value:true},{step:12,value:true}]');
   }
-  return pass('exact get/edit/get sequence preserves the pattern and sets only indices 4 and 12');
+  return pass('exact nested set_steps envelope assigns only indices 4 and 12');
+}
+
+export function humanStepsAnswer(text) {
+  const sequence = humanStepsSequenceAnswer(text);
+  if (!sequence.passed) return sequence;
+  return humanStepsEnvelopeAnswer(text);
 }
 
 function addTrackCall(value, trackId, sessionId = null) {
@@ -138,7 +168,8 @@ export function collisionRetryAnswer(text) {
   if (value.ownership_from_prefix !== false) {
     return fail('ownership_from_prefix must be false');
   }
-  if (!/^agent-[A-Za-z0-9._-]*[0-9a-fA-F]{8,}$/.test(value.new_track_id ?? '')) {
+  if (typeof value.new_track_id !== 'string' || value.new_track_id.length > 64
+      || !/^agent-[A-Za-z0-9._-]*[0-9a-fA-F]{8,}$/.test(value.new_track_id)) {
     return fail('new_track_id needs an agent- prefix and at least eight hexadecimal suffix characters');
   }
   if (value.new_track_id === 'agent-kick-1' || !addTrackCall(value.initial_add, value.new_track_id)) {
@@ -256,83 +287,77 @@ export function partialTrackLimitAnswer(text) {
   return pass('re-read, honest partial result, and no compensating rollback');
 }
 
-function proseClauses(text) {
-  return String(text)
-    .split(/(?<=[.!])\s+|[\n;]+/)
-    .map((clause) => clause.replace(/[`*]/g, '').trim().toLowerCase())
-    .filter(Boolean);
-}
-
-function negatesOperation(clause, operation = '') {
-  const target = operation ? `[^.!?;\\n]{0,100}${operation}` : '[^.!?;\\n]{0,100}';
-  return new RegExp(`(?:\\bdo\\s+not\\b|\\bdon't\\b|\\bnever\\b|\\bwould\\s+not\\b|\\bwon't\\b|\\bcannot\\b|\\bcan't\\b|\\bmust\\s+not\\b|\\bshould\\s+not\\b|\\bnot\\s+(?:available|supported)\\b|\\bunsupported\\b|\\bno\\s+support\\b|\\bdoes(?:n't|\\s+not)\\s+(?:support|expose)\\b|\\boutside\\s+(?:the\\s+)?mcp\\s+surface\\b|\\bavoid(?:s|ed|ing)?\\b|\\brefus(?:e|es|ed|ing)\\s+to\\b)${target}`).test(clause);
-}
-
 export function publishedSessionAnswer(text) {
-  for (const clause of proseClauses(text)) {
-    if (!clause.includes('edit_session')
-        || !/(immutable|published|frozen|source)/.test(clause)) continue;
-    const attemptsEdit = /\b(?:call|use|invoke|run|send|attempt(?:ing)?(?:\s+to)?)\b[^.!?;\n]{0,50}\bedit_session\b/.test(clause)
-      || /\bedit_session\b[^.!?;\n]{0,60}\b(?:on|against|for)\b[^.!?;\n]{0,30}\b(?:the\s+)?(?:immutable|published|frozen|source)\b/.test(clause);
-    const negated = /(?:\bdo\s+not\b|\bdon't\b|\bnever\b|\bwould\s+not\b|\bwon't\b|\bcannot\b|\bcan't\b|\bmust\s+not\b|\bshould\s+not\b|\bavoid(?:s|ed|ing)?\b|\brefus(?:e|es|ed|ing)\s+to\b)[^.!?;\n]{0,100}\bedit_session\b/.test(clause)
-      || /\bedit_session\b[^.!?;\n]{0,80}(?:\bnot\s+(?:allowed|available|supported)\b|\bcannot\b|\bcan't\b|\bwon't\b|\bnever\b)/.test(clause);
-    if (attemptsEdit && !negated) {
-      return fail('answer attempts edit_session against the immutable source');
-    }
+  const parsed = parse(text);
+  if (parsed.error) return fail(parsed.error);
+  const value = parsed.value;
+  if (!exactKeys(value, ['source_action', 'first_call', 'then_call'])) {
+    return fail('expected exactly source_action, first_call, and then_call');
   }
-  return pass('no affirmative edit_session attempt targets the immutable source');
+  if (value.source_action !== 'leave_unchanged') {
+    return fail('immutable source must be left unchanged');
+  }
+  if (callName(value.first_call) !== 'remix_session'
+      || !exactKeys(value.first_call.arguments, ['session_id'])
+      || value.first_call.arguments.session_id !== '[SOURCE_SESSION_ID]') {
+    return fail('first_call must remix [SOURCE_SESSION_ID]');
+  }
+  if (!editSessionCall(value.then_call, '[REMIX_SESSION_ID]')) {
+    return fail('then_call must edit only [REMIX_SESSION_ID]');
+  }
+  const edit = value.then_call.arguments.edit;
+  if (!exactKeys(edit, ['operation', 'track_id', 'sample_id'])
+      || edit.operation !== 'add_track' || edit.sample_id !== 'shaker'
+      || typeof edit.track_id !== 'string' || edit.track_id.length > 64
+      || !/^agent-[A-Za-z0-9._-]*[0-9a-fA-F]{8,}$/.test(edit.track_id)) {
+    return fail('then_call must add a shaker with a fresh bounded agent track ID');
+  }
+  return pass('immutable source is remixed before the shaker edit targets only the remix');
 }
 
 export function unsupportedEditsAnswer(text) {
-  const clauses = proseClauses(text);
-  const requirements = [
-    ['track deletion', /\b(delet(?:e|ion|ing)?|remov(?:e|al|ing)?)\b/],
-    ['track rename', /\brenam(?:e|ing)?\b/],
-    ['reverb/effects', /\b(reverb|effects?)\b/],
-  ];
-  for (const [label, pattern] of requirements) {
-    const declined = clauses.some((clause) => pattern.test(clause)
-      && (negatesOperation(clause) || /\bavailable\s+over\s+mcp\??\s*(?:\||:)?\s*no\b/.test(clause)));
-    if (!declined) return fail(`answer does not explicitly decline ${label}`);
+  const parsed = parse(text);
+  if (parsed.error) return fail(parsed.error);
+  const value = parsed.value;
+  if (!exactKeys(value, ['unsupported', 'supported_alternative'])
+      || !exactKeys(value.unsupported, ['delete_track', 'rename_track', 'reverb'])) {
+    return fail('expected exact unsupported decision table and supported_alternative');
   }
-  if (!/\b(get_session|edit_session|create_session|remix_session|publish_session|export_midi|analyze_session|add_track|set_steps|set_tempo|set_track_instrument)\b/.test(String(text))) {
-    return fail('answer does not identify anything the MCP can still do');
+  if (!isDeepStrictEqual(value.unsupported, {
+    delete_track: true,
+    rename_track: true,
+    reverb: true,
+  })) {
+    return fail('all three requested operations must be marked unsupported');
   }
-  return pass('all three unsupported requests are declined and supported work is identified');
+  if (!getSessionCall(value.supported_alternative, '[SESSION_ID]')) {
+    return fail('supported_alternative must be an exact get_session call for [SESSION_ID]');
+  }
+  return pass('all unsupported requests are declined and a real supported call is supplied');
 }
 
 export function stepBeyondLoopAnswer(text) {
-  const source = String(text);
-  if (source.trimStart().startsWith('{')) {
-    const parsed = parse(source);
-    if (!parsed.error) {
-      const pending = [parsed.value];
-      while (pending.length > 0) {
-        const value = pending.pop();
-        if (!value || typeof value !== 'object') continue;
-        if (value.operation === 'set_steps' && Array.isArray(value.changes)
-            && value.changes.some((change) => Number.isInteger(change?.step) && change.step >= 16)) {
-          return fail('structured set_steps payload assigns an out-of-loop step');
-        }
-        pending.push(...(Array.isArray(value) ? value : Object.values(value)));
-      }
-    }
+  const parsed = parse(text);
+  if (parsed.error) return fail(parsed.error);
+  const value = parsed.value;
+  if (!exactKeys(value, ['send_out_of_range_edit', 'reason', 'next_action'])) {
+    return fail('expected exactly send_out_of_range_edit, reason, and next_action');
   }
-  const assignment = /["']?step["']?\s*:\s*(1[6-9]|[2-9][0-9]|1[0-2][0-9])\b/gi;
-  for (const match of source.matchAll(assignment)) {
-    const start = Math.max(0, (match.index ?? 0) - 180);
-    const end = Math.min(source.length, (match.index ?? 0) + match[0].length + 180);
-    const clause = source.slice(start, end).replace(/[`*]/g, '').toLowerCase();
-    const affirmative = /\b(?:call|use|invoke|run|send|submit|set|assign|attempt(?:ing)?(?:\s+to)?)\b[^.!?;\n]{0,120}\b(?:edit_session|step)\b/.test(clause);
-    if (affirmative && !negatesOperation(clause)) {
-      return fail('answer affirmatively assigns an out-of-loop step');
-    }
+  if (value.send_out_of_range_edit !== false || value.reason !== 'STEP_OUTSIDE_LOOP') {
+    return fail('out-of-range edit must be rejected with STEP_OUTSIDE_LOOP');
   }
-  return pass('no affirmative out-of-loop step assignment is proposed');
+  if (!exactKeys(value.next_action, ['action', 'valid_indices'])
+      || value.next_action.action !== 'ask_user_for_in_range_step'
+      || !isDeepStrictEqual(value.next_action.valid_indices, [0, 15])) {
+    return fail('next_action must ask for an index in the inclusive range 0..15');
+  }
+  return pass('out-of-range edit is rejected with a bounded in-range next action');
 }
 
 export const CAPABILITY_ORACLES = {
   'human-steps': humanStepsAnswer,
+  'human-steps-envelope': humanStepsEnvelopeAnswer,
+  'human-steps-sequence': humanStepsSequenceAnswer,
   'collision-retry': collisionRetryAnswer,
   'uncertain-tempo': uncertainTempoAnswer,
   'concurrent-delta': concurrentDeltaAnswer,

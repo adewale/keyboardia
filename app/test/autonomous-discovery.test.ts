@@ -109,7 +109,11 @@ function validTrace() {
       session_id: SESSION,
       edit: { operation: 'add_track', track_id: 'agent-kick-a7f3c29d', sample_id: 'kick' },
     }, { ...initial, tracks: [{ track_id: 'agent-kick-a7f3c29d', sample_id: 'kick', active_steps: [] }] }),
-    toolCall(9, 'edit_session', {
+    toolCall(9, 'get_session', { session_id: SESSION }, {
+      ...initial,
+      tracks: [{ track_id: 'agent-kick-a7f3c29d', sample_id: 'kick', active_steps: [] }],
+    }),
+    toolCall(10, 'edit_session', {
       session_id: SESSION,
       edit: {
         operation: 'set_steps',
@@ -117,7 +121,7 @@ function validTrace() {
         changes: [0, 4, 8, 12].map((step) => ({ step, value: true })),
       },
     }, final),
-    toolCall(10, 'get_session', { session_id: SESSION }, final),
+    toolCall(11, 'get_session', { session_id: SESSION }, final),
   ];
 }
 
@@ -137,7 +141,7 @@ describe('autonomous discovery trace oracle', () => {
     expect(validateAutonomousTrace(validTrace(), { origin: ORIGIN })).toMatchObject({
       passed: true,
       endpoint: `${ORIGIN}/mcp`,
-      target_call_count: 5,
+      target_call_count: 6,
     });
   });
 
@@ -150,8 +154,8 @@ describe('autonomous discovery trace oracle', () => {
 
   it('rejects a target result that did not succeed', () => {
     const trace = validTrace();
-    trace[8].response.success = false;
-    trace[8].response.error = 'target returned isError';
+    trace[9].response.success = false;
+    trace[9].response.error = 'target returned isError';
     expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
       .toThrow(/target call edit_session failed/);
   });
@@ -176,7 +180,14 @@ describe('autonomous discovery trace oracle', () => {
   it('rejects an edit without a final verification read', () => {
     const trace = validTrace().slice(0, -1);
     expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
-      .toThrow(/initial and final/);
+      .toThrow(/verification get_session/);
+  });
+
+  it('rejects consecutive edits without an intermediate verification read', () => {
+    const trace = validTrace();
+    trace.splice(8, 1);
+    expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
+      .toThrow(/verification get_session/);
   });
 
   it('rejects an incorrect final musical state', () => {

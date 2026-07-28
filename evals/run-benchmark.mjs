@@ -29,7 +29,16 @@
  *   node evals/run-benchmark.mjs --rescore results.json --out regraded.json
  */
 import { spawn, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { basename, dirname, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -39,7 +48,9 @@ import {
   buildReceipt,
   canonicalJson,
   createSourceBinding,
+  assertSourceBindingStillClean,
   redactCapability,
+  redactCapabilities,
   sha256,
   writeReceipt,
 } from './receipt.mjs';
@@ -259,6 +270,24 @@ async function freeLoopbackPort() {
   });
 }
 
+function directoryDigest(root) {
+  const entries = [];
+  const walk = (directory) => {
+    for (const dirent of readdirSync(directory, { withFileTypes: true })) {
+      const absolute = resolve(directory, dirent.name);
+      if (dirent.isDirectory()) walk(absolute);
+      else if (dirent.isFile() || dirent.isSymbolicLink()) {
+        const bytes = dirent.isSymbolicLink()
+          ? Buffer.from(`symlink:${lstatSync(absolute).mode}:${readFileSync(absolute)}`)
+          : readFileSync(absolute);
+        entries.push([relative(root, absolute).split(sep).join('/'), sha256(bytes)]);
+      }
+    }
+  };
+  walk(root);
+  return sha256(canonicalJson(entries.sort(([left], [right]) => left.localeCompare(right))));
+}
+
 async function startOwnedLocalWorker() {
   const tempRoot = mkdtempSync(resolve(tmpdir(), 'keyboardia-live-eval-worker-'));
   const persistence = resolve(tempRoot, 'wrangler-state');
@@ -271,7 +300,18 @@ async function startOwnedLocalWorker() {
     rmSync(tempRoot, { recursive: true, force: true });
     throw new Error(`local Worker build failed with status ${build.status}`);
   }
-  const version = spawnSync('npx', ['wrangler', '--version'], {
+  const wranglerBin = resolve(appRoot, 'node_modules/.bin/wrangler');
+  if (!existsSync(wranglerBin)) {
+    rmSync(tempRoot, { recursive: true, force: true });
+    throw new Error('the lockfile-installed Wrangler binary is missing; run npm ci in app/');
+  }
+  const lock = JSON.parse(readFileSync(resolve(appRoot, 'package-lock.json'), 'utf8'));
+  const lockedWrangler = lock.packages?.['node_modules/wrangler'];
+  if (!lockedWrangler?.version || !lockedWrangler?.integrity) {
+    rmSync(tempRoot, { recursive: true, force: true });
+    throw new Error('package-lock.json does not bind Wrangler version and integrity');
+  }
+  const version = spawnSync(wranglerBin, ['--version'], {
     cwd: appRoot,
     encoding: 'utf8',
     env: { ...process.env, WRANGLER_SEND_METRICS: 'false' },
@@ -282,8 +322,8 @@ async function startOwnedLocalWorker() {
   }
   const port = await freeLoopbackPort();
   const origin = `http://127.0.0.1:${port}`;
-  const child = spawn('npx', [
-    'wrangler', 'dev', '--local', '--port', String(port),
+  const child = spawn(wranglerBin, [
+    'dev', '--local', '--port', String(port),
     '--persist-to', persistence,
     '--show-interactive-dev-session', 'false',
     '--var', 'SESSION_CREATE_RATE_LIMIT_PER_MINUTE:2000',
@@ -311,6 +351,9 @@ async function startOwnedLocalWorker() {
         origin,
         tempRoot,
         wranglerVersion: version.stdout.trim(),
+        wranglerLockVersion: lockedWrangler.version,
+        wranglerLockIntegrity: lockedWrangler.integrity,
+        buildSha256: directoryDigest(resolve(appRoot, 'dist')),
       };
     }
     await new Promise((resolveWait) => setTimeout(resolveWait, 500));
@@ -342,7 +385,7 @@ function repoRelativePath(path) {
 function snapshotRunInputs(manifest, options, manifestBytes) {
   const snapshots = new Map();
   const boundInputs = [];
-  const seenBindings = new Set();
+    const seenBindings = new Set();
   const capture = (role, path, suppliedBytes = null) => {
     const absolute = resolve(path);
     const bytes = suppliedBytes ?? readFileSync(absolute);
@@ -351,7 +394,7 @@ function snapshotRunInputs(manifest, options, manifestBytes) {
       throw new Error(`input changed while it was being snapshotted: ${absolute}`);
     }
     snapshots.set(absolute, { bytes, text: bytes.toString('utf8') });
-    const bindingKey = `${role}:${absolute}`;
+    const bindingKey = absolute;
     if (!seenBindings.has(bindingKey)) {
       boundInputs.push({ role, path: repoRelativePath(absolute), bytes });
       seenBindings.add(bindingKey);
@@ -374,15 +417,23 @@ function snapshotRunInputs(manifest, options, manifestBytes) {
       const candidates = [
         imported,
         `${imported}.mjs`, `${imported}.js`, `${imported}.ts`, `${imported}.tsx`, `${imported}.json`,
+        imported.replace(/\.(?:m?js)$/, '.ts'),
+        imported.replace(/\.(?:m?js)$/, '.tsx'),
         resolve(imported, 'index.mjs'), resolve(imported, 'index.js'),
         resolve(imported, 'index.ts'), resolve(imported, 'index.tsx'),
       ];
       const dependency = candidates.find((candidate) => existsSync(candidate));
-      if (dependency) captureModule(`${role}_dependency`, dependency);
+      if (!dependency) {
+        throw new Error(`cannot bind local dependency ${match[1]} imported by ${absolute}`);
+      }
+      captureModule(`${role}_dependency`, dependency);
     }
   };
 
   capture('manifest', options.manifest, manifestBytes);
+  capture('runner', fileURLToPath(import.meta.url));
+  capture('receipt_runtime', resolve(evalsDir, 'receipt.mjs'));
+  capture('execution_receipt_verifier', resolve(evalsDir, 'verify-execution-receipt.mjs'));
   captureModule('runner', fileURLToPath(import.meta.url));
   captureModule('receipt_runtime', resolve(evalsDir, 'receipt.mjs'));
   captureModule('execution_receipt_verifier', resolve(evalsDir, 'verify-execution-receipt.mjs'));
@@ -673,6 +724,22 @@ export function buildExecutionReplayEvidence(manifest, runs, options, reportedSu
   return evidence;
 }
 
+const UUID_CAPABILITY = /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi;
+
+export function registerCapabilitiesFromEvidence(value, capabilities) {
+  if (typeof value === 'string') {
+    for (const match of value.matchAll(UUID_CAPABILITY)) capabilities.add(match[0]);
+  } else if (Array.isArray(value)) {
+    for (const entry of value) registerCapabilitiesFromEvidence(entry, capabilities);
+  } else if (value && typeof value === 'object') {
+    for (const [key, entry] of Object.entries(value)) {
+      registerCapabilitiesFromEvidence(key, capabilities);
+      registerCapabilitiesFromEvidence(entry, capabilities);
+    }
+  }
+  return capabilities;
+}
+
 /**
  * Runs one execution case: build a disposable session from the case's setup,
  * hand the agent live MCP tools, then score the session it left behind and the
@@ -706,14 +773,17 @@ async function runExecutionCase({ testCase, casePrompt, model, options, capabili
     timeoutMs: options.timeoutMs,
     env: { KEYBOARDIA_MCP_URL: mcpEndpoint },
   });
+  registerCapabilitiesFromEvidence(result.trace, capabilities);
+  registerCapabilitiesFromEvidence(result.text, capabilities);
+  const registeredCapabilities = () => [...capabilities];
   if (!result.ok) {
     // An adapter may have completed edits before its process or output failed.
     // Retrying against this session would score two attempts as one run.
     return {
       ok: false,
       scorable: false,
-      prompt: redactCapability(prompt, sessionId),
-      error: redactCapability(result.error, sessionId),
+      prompt: redactCapabilities(prompt, registeredCapabilities()),
+      error: redactCapabilities(result.error, registeredCapabilities()),
     };
   }
 
@@ -721,7 +791,7 @@ async function runExecutionCase({ testCase, casePrompt, model, options, capabili
   try {
     final = await readCompactSession(baseUrl, sessionId);
   } catch (error) {
-    return redactCapability({
+    return redactCapabilities({
       ok: false,
       scorable: false,
       prompt,
@@ -729,19 +799,19 @@ async function runExecutionCase({ testCase, casePrompt, model, options, capabili
       trace: result.trace,
       usage: result.usage,
       error: `final read: ${error.message}`,
-    }, sessionId);
+    }, registeredCapabilities());
   }
   const assertions = scoreExecution(testCase.assertions ?? [], {
     baseline,
     final,
     trace: result.trace,
   });
-  const recorded = redactCapability({
+  const recorded = redactCapabilities({
     prompt,
     response: result.text,
     usage: result.usage,
     execution: { baseline, final, trace: result.trace ?? [] },
-  }, sessionId);
+  }, registeredCapabilities());
   return {
     ok: true,
     scorable: true,
@@ -1139,6 +1209,9 @@ async function main() {
         launch: {
           mode: ownedWorker ? 'runner-owned-wrangler-local' : 'external-unattested',
           wrangler_version: ownedWorker?.wranglerVersion ?? null,
+          wrangler_lock_version: ownedWorker?.wranglerLockVersion ?? null,
+          wrangler_lock_integrity: ownedWorker?.wranglerLockIntegrity ?? null,
+          build_sha256: ownedWorker?.buildSha256 ?? null,
           source_git_commit: receiptContext.source.git_commit,
           source_git_tree: receiptContext.source.git_tree,
         },
@@ -1309,6 +1382,7 @@ function emit(runs, options, manifest, receiptContext = null) {
   const summary = summarize(runs, options, manifest);
   if (receiptContext) {
     assertBoundInputsUnchanged(receiptContext.boundInputs);
+    assertSourceBindingStillClean(repoRoot, receiptContext.source);
     const executionReplay = buildExecutionReplayEvidence(manifest, runs, options, summary);
     if (executionReplay) receiptContext.invocation.execution_replay = executionReplay;
     const receipt = buildReceipt({

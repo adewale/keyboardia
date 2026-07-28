@@ -158,7 +158,15 @@ export function validateAutonomousTrace(events, { origin }) {
   invariant(edits.length >= 1, 'no successful edit occurred between the initial and final reads');
   invariant(finalPosition > edits.at(-1)[1], 'final read did not follow the edits');
   invariant(calls.filter((call) => call.request.name === 'edit_session').length === edits.length,
-    'an edit targeted a different session or occurred outside read/edit/read');
+    'an edit targeted a different session, occurred outside read/edit/read, or lacked its verification get_session');
+  for (const [, editPosition] of edits) {
+    const verificationRead = calls[editPosition + 1];
+    invariant(verificationRead?.request.name === 'get_session' &&
+      verificationRead.request.arguments?.session_id === sessionId,
+    'every edit_session must be followed immediately by a verification get_session');
+    invariant(compactState(verificationRead).session_id === sessionId,
+      'post-edit verification read returned a different session');
+  }
 
   const operations = edits.map(([call]) => call.request.arguments?.edit?.operation);
   invariant(operations[0] === 'add_track', 'first edit did not add the requested track');

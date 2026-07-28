@@ -46,6 +46,36 @@ function projectedReceiptRun(receipt, run, index, errors) {
   };
 }
 
+function sourceFile(receipt, role, expectedPath, errors) {
+  const matches = (receipt.source?.files ?? []).filter((file) => file.role === role);
+  if (matches.length !== 1 || matches[0].path !== expectedPath) {
+    errors.push(`execution receipt source role ${role} must bind ${expectedPath} exactly once`);
+    return null;
+  }
+  return matches[0];
+}
+
+function parseSourceJson(file, label, errors) {
+  if (!file) return null;
+  try {
+    return JSON.parse(file.content);
+  } catch (error) {
+    errors.push(`${label} is not valid JSON: ${error.message}`);
+    return null;
+  }
+}
+
+function executionIdentity(value) {
+  return canonicalJson([
+    value.model ?? null,
+    value.case,
+    value.kind,
+    value.split ?? 'tune',
+    value.variant,
+    value.repeat ?? 0,
+  ]);
+}
+
 /** Verify live execution scores solely from bound replay state and trace evidence. */
 export function verifyExecutionReceipt(receipt) {
   const executionRuns = (receipt.runs ?? []).filter((run) => run.kind === 'execution');
@@ -65,9 +95,13 @@ export function verifyExecutionReceipt(receipt) {
     errors.push('execution Worker source identity does not match receipt source');
   }
   try {
-    const hostname = new URL(system.base_url).hostname;
+    const base = new URL(system.base_url);
+    const hostname = base.hostname;
     if (!['127.0.0.1', '::1', 'localhost'].includes(hostname)) {
       errors.push('execution Worker base URL is not loopback-owned');
+    }
+    if (system.mcp_endpoint !== new URL('/mcp', base).href) {
+      errors.push('execution MCP endpoint does not match the owned Worker base URL');
     }
   } catch {
     errors.push('execution Worker base URL is invalid');
@@ -77,16 +111,22 @@ export function verifyExecutionReceipt(receipt) {
   } else if (sha256(canonicalJson(system.tools_list)) !== system.tools_list_sha256) {
     errors.push('execution MCP tools list hash mismatch');
   }
-  const roles = new Set((receipt.source?.files ?? []).map((file) => file.role));
-  for (const role of [
-    'execution_receipt_verifier',
-    'system_under_test_entry',
-    'system_under_test_config',
-    'system_under_test_typescript_config',
-    'system_under_test_package',
-    'system_under_test_lock',
-  ]) {
-    if (!roles.has(role)) errors.push(`execution receipt source is missing role ${role}`);
+  const manifestFile = sourceFile(receipt, 'manifest', 'evals/execution-benchmark.json', errors);
+  sourceFile(receipt, 'execution_receipt_verifier', 'evals/verify-execution-receipt.mjs', errors);
+  sourceFile(receipt, 'system_under_test_entry', 'app/src/worker/index.ts', errors);
+  sourceFile(receipt, 'system_under_test_config', 'app/wrangler.jsonc', errors);
+  sourceFile(receipt, 'system_under_test_typescript_config', 'app/tsconfig.worker.json', errors);
+  const packageFile = sourceFile(receipt, 'system_under_test_package', 'app/package.json', errors);
+  const lockFile = sourceFile(receipt, 'system_under_test_lock', 'app/package-lock.json', errors);
+  const manifest = parseSourceJson(manifestFile, 'execution manifest', errors);
+  parseSourceJson(packageFile, 'execution package', errors);
+  const lock = parseSourceJson(lockFile, 'execution package lock', errors);
+  const lockedWrangler = lock?.packages?.['node_modules/wrangler'];
+  if (!lockedWrangler?.version || !lockedWrangler?.integrity
+      || system.launch?.wrangler_lock_version !== lockedWrangler.version
+      || system.launch?.wrangler_lock_integrity !== lockedWrangler.integrity
+      || !String(system.launch?.wrangler_version).includes(lockedWrangler.version)) {
+    errors.push('execution Wrangler launch does not match the embedded package lock');
   }
   const replay = invocation.execution_replay;
   try {
@@ -94,6 +134,42 @@ export function verifyExecutionReceipt(receipt) {
   } catch (error) {
     errors.push(`execution replay is invalid: ${error.message}`);
     return errors;
+  }
+  if (manifest) {
+    const expectedCases = manifest.cases
+      .filter((testCase) => testCase.kind === 'execution'
+        && (invocation.splits ?? []).includes(testCase.split ?? 'tune'))
+      .map((testCase) => ({
+        id: testCase.id,
+        kind: testCase.kind,
+        assertions: testCase.assertions ?? [],
+      }));
+    if (canonicalJson(replay.input.cases) !== canonicalJson(expectedCases)
+        || canonicalJson(replay.input.variants) !== canonicalJson(manifest.variants)
+        || canonicalJson(replay.input.models) !== canonicalJson(invocation.models)) {
+      errors.push('execution replay cases/assertions/models/variants do not match the embedded manifest');
+    }
+    const expectedIdentities = [];
+    for (const testCase of expectedCases) {
+      for (const variant of manifest.variants ?? []) {
+        for (const model of invocation.models ?? []) {
+          for (let repeat = 0; repeat < invocation.repeats; repeat += 1) {
+            expectedIdentities.push(executionIdentity({
+              model,
+              case: testCase.id,
+              kind: testCase.kind,
+              split: manifest.cases.find((entry) => entry.id === testCase.id)?.split ?? 'tune',
+              variant,
+              repeat,
+            }));
+          }
+        }
+      }
+    }
+    const actualIdentities = replay.input.runs.map(executionIdentity);
+    if (canonicalJson(actualIdentities.sort()) !== canonicalJson(expectedIdentities.sort())) {
+      errors.push('execution replay does not contain the complete manifest run matrix');
+    }
   }
   const projectedRuns = executionRuns.map((run, index) =>
     projectedReceiptRun(receipt, run, index, errors));
