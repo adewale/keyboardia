@@ -12,6 +12,7 @@
  *   npm run smoke:mcp:production                        # reuses the registered session
  *   npm run smoke:mcp:staging
  *   npm run smoke:mcp -- http://localhost:8787          # against wrangler dev
+ *   npm run smoke:mcp -- http://localhost:8787 --browser-origin https://keyboardia.dev
  *   npm run smoke:mcp -- <base-url> --session <uuid>    # explicit session
  *   npm run smoke:mcp -- <base-url> --new-session       # force a fresh one
  *
@@ -29,7 +30,13 @@
  * cannot create immutable litter.
  */
 
-import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import {
+  CLIENT_CAPABILITIES_META_KEY,
+  CLIENT_INFO_META_KEY,
+  Client,
+  PROTOCOL_VERSION_META_KEY,
+  StreamableHTTPClientTransport,
+} from '@modelcontextprotocol/client';
 
 const PROTOCOL_VERSION = '2026-07-28';
 const REQUEST_TIMEOUT_MS = 20_000;
@@ -98,6 +105,7 @@ type SessionSource = 'explicit' | 'registered' | 'create' | 'create-forced';
 
 interface Options {
   baseUrl: string;
+  browserOrigin: string | null;
   sessionId: string | null;
   source: SessionSource;
 }
@@ -105,6 +113,7 @@ interface Options {
 function parseArgs(argv: string[]): Options {
   const args = argv.slice(2);
   let baseUrl: string | null = null;
+  let browserOrigin: string | null = null;
   let sessionId: string | null = null;
   let forceNew = false;
 
@@ -115,6 +124,9 @@ function parseArgs(argv: string[]): Options {
       if (!sessionId) fail('--session needs a session UUID.');
     } else if (arg === '--new-session') {
       forceNew = true;
+    } else if (arg === '--browser-origin') {
+      browserOrigin = args[++i] ?? null;
+      if (!browserOrigin) fail('--browser-origin needs an absolute origin.');
     } else if (arg.startsWith('--')) {
       fail(`Unknown option ${arg}.`);
     } else if (baseUrl === null) {
@@ -125,7 +137,10 @@ function parseArgs(argv: string[]): Options {
   }
 
   if (!baseUrl) {
-    fail('Usage: npm run smoke:mcp -- <base-url> [--session <uuid> | --new-session]');
+    fail(
+      'Usage: npm run smoke:mcp -- <base-url> '
+      + '[--session <uuid> | --new-session] [--browser-origin <origin>]'
+    );
   }
 
   if (sessionId && forceNew) {
@@ -144,18 +159,28 @@ function parseArgs(argv: string[]): Options {
     fail(`--session ${sessionId} is not a UUID.`);
   }
 
+  if (browserOrigin) {
+    try {
+      const parsed = new URL(browserOrigin);
+      if (parsed.origin !== browserOrigin) throw new Error('not an origin');
+    } catch {
+      fail(`--browser-origin ${browserOrigin} is not an exact absolute origin.`);
+    }
+  }
+
   if (sessionId) {
-    return { baseUrl: baseUrl!, sessionId, source: 'explicit' };
+    return { baseUrl: baseUrl!, browserOrigin, sessionId, source: 'explicit' };
   }
 
   // A deployment's registered session is the default, so forgetting a flag
   // cannot litter production. --new-session is the deliberate opt-out.
   const registered = DEPLOYMENT_SMOKE_SESSIONS[baseUrl!];
   if (registered && !forceNew) {
-    return { baseUrl: baseUrl!, sessionId: registered, source: 'registered' };
+    return { baseUrl: baseUrl!, browserOrigin, sessionId: registered, source: 'registered' };
   }
   return {
     baseUrl: baseUrl!,
+    browserOrigin,
     sessionId: null,
     // Overriding a registration and having none are different situations, and
     // the run header should not report the second when it is the first.
@@ -220,21 +245,46 @@ function assertEqual(actual: unknown, expected: unknown, message: string): void 
   assert(a === b, `${message}\n  expected: ${b}\n  actual:   ${a}`);
 }
 
+function exitForRecordedFailures(baseUrl: string): never {
+  console.error(`\n❌ ${failures.length} check(s) failed against ${baseUrl}:\n`);
+  for (const failure of failures) console.error(`   • ${failure}`);
+  console.error('');
+  process.exit(1);
+}
+
 // ---------------------------------------------------------------------------
 // HTTP helpers
 // ---------------------------------------------------------------------------
 
-function initializeBody(): string {
+function discoverBody(): string {
   return JSON.stringify({
     jsonrpc: '2.0',
     id: 1,
-    method: 'initialize',
+    method: 'server/discover',
     params: {
-      protocolVersion: PROTOCOL_VERSION,
-      capabilities: {},
-      clientInfo: { name: 'keyboardia-smoke', version: '1.0.0' },
+      _meta: {
+        [PROTOCOL_VERSION_META_KEY]: PROTOCOL_VERSION,
+        [CLIENT_INFO_META_KEY]: { name: 'keyboardia-smoke', version: '1.0.0' },
+        [CLIENT_CAPABILITIES_META_KEY]: {},
+      },
     },
   });
+}
+
+function browserOriginFor(baseUrl: string): string {
+  if (baseUrl === 'https://keyboardia.dev') return 'https://www.keyboardia.dev';
+  if (baseUrl === 'https://www.keyboardia.dev') return 'https://keyboardia.dev';
+  if (baseUrl === 'https://staging.keyboardia.dev') return 'https://keyboardia.dev';
+
+  const target = new URL(baseUrl);
+  if (target.hostname === 'localhost'
+    || target.hostname === '127.0.0.1'
+    || target.hostname === '[::1]') {
+    return target.origin === 'http://localhost:5173'
+      ? 'http://localhost:8787'
+      : 'http://localhost:5173';
+  }
+  return target.origin;
 }
 
 async function createSession(baseUrl: string, name: string): Promise<{ id: string; url: string }> {
@@ -326,7 +376,13 @@ function findTrack(session: CompactSession, trackId: string): CompactTrack {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { baseUrl, sessionId: providedSessionId, source } = parseArgs(process.argv);
+  const {
+    baseUrl,
+    browserOrigin: configuredBrowserOrigin,
+    sessionId: providedSessionId,
+    source,
+  } = parseArgs(process.argv);
+  const browserOrigin = configuredBrowserOrigin ?? browserOriginFor(baseUrl);
 
   // Track IDs are stable rather than per-run. MAX_TRACKS is 16, so per-run IDs
   // would let a reused --session accumulate two tracks per run and start
@@ -348,6 +404,7 @@ async function main(): Promise<void> {
   console.log(`\nKeyboardia MCP golden journey`);
   console.log(`Target:   ${baseUrl}/mcp`);
   console.log(`Protocol: ${PROTOCOL_VERSION}`);
+  console.log(`Browser:  ${browserOrigin}`);
   console.log(`Session:  ${sessionPlan}`);
   console.log(`Run ID:   ${runId}\n`);
 
@@ -363,26 +420,60 @@ async function main(): Promise<void> {
   // Deliberately a raw POST rather than the SDK client: a 404 here means the
   // route is absent from the deployed Worker, and that diagnosis should not
   // arrive disguised as a protocol-negotiation error.
-  let rawInitialize: Response | null = null;
+  await check('A browser preflight authorizes every modern MCP request header', async () => {
+    const requestedHeaders = [
+      'content-type',
+      'accept',
+      'mcp-protocol-version',
+      'mcp-method',
+      'mcp-name',
+    ];
+    const response = await fetch(`${baseUrl}/mcp`, {
+      method: 'OPTIONS',
+      headers: {
+        Origin: browserOrigin,
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': requestedHeaders.join(', '),
+      },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    assert(response.status === 204, `OPTIONS /mcp returned ${response.status}, expected 204.`);
+    assert(
+      response.headers.get('access-control-allow-origin') === browserOrigin,
+      'The preflight did not grant the exact browser origin.'
+    );
+    const allowedHeaders = (response.headers.get('access-control-allow-headers') ?? '')
+      .toLowerCase()
+      .split(',')
+      .map((header) => header.trim());
+    for (const header of requestedHeaders) {
+      assert(allowedHeaders.includes(header), `The preflight did not allow ${header}.`);
+    }
+  }, { fatal: true });
+
+  let rawDiscover: Response | null = null;
   await check('POST /mcp is served by the deployed Worker', async () => {
-    rawInitialize = await fetch(`${baseUrl}/mcp`, {
+    rawDiscover = await fetch(`${baseUrl}/mcp`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json, text/event-stream',
-        'Origin': baseUrl,
+        'Origin': browserOrigin,
+        'MCP-Protocol-Version': PROTOCOL_VERSION,
+        'Mcp-Method': 'server/discover',
+        'Mcp-Name': 'keyboardia-smoke',
       },
-      body: initializeBody(),
+      body: discoverBody(),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     assert(
-      rawInitialize.status !== 404,
+      rawDiscover.status !== 404,
       'POST /mcp returned 404. The deployed Worker does not have the /mcp route — '
       + 'the code is merged but not deployed. Deploy, then re-run.'
     );
     assert(
-      rawInitialize.ok,
-      `POST /mcp returned ${rawInitialize.status}, expected a protocol response.`
+      rawDiscover.ok,
+      `POST /mcp returned ${rawDiscover.status}, expected a protocol response.`
     );
   }, { fatal: true });
 
@@ -390,12 +481,12 @@ async function main(): Promise<void> {
   // a *successful exchange*, and the expose list is what lets a page read the
   // negotiated revision at all.
   await check('CORS headers are present on a real exchange, not just OPTIONS', async () => {
-    const response = rawInitialize!;
+    const response = rawDiscover!;
     const allowOrigin = response.headers.get('access-control-allow-origin');
     assert(
-      allowOrigin === baseUrl,
+      allowOrigin === browserOrigin,
       `A successful POST /mcp allowed Origin "${allowOrigin}" instead of exactly `
-      + `reflecting the trusted origin "${baseUrl}".`
+      + `reflecting the trusted origin "${browserOrigin}".`
     );
     const expose = response.headers.get('access-control-expose-headers') ?? '';
     assert(
@@ -412,8 +503,10 @@ async function main(): Promise<void> {
         'Content-Type': 'application/json',
         'Accept': 'application/json, text/event-stream',
         'Origin': 'null',
+        'MCP-Protocol-Version': PROTOCOL_VERSION,
+        'Mcp-Method': 'server/discover',
       },
-      body: initializeBody(),
+      body: discoverBody(),
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     assert(response.status === 403, `Origin: null returned ${response.status}, expected 403.`);
@@ -432,6 +525,7 @@ async function main(): Promise<void> {
       'The Origin rejection was not a JSON-RPC error response.'
     );
   });
+  if (aborted) exitForRecordedFailures(baseUrl);
 
   console.log('\nProtocol');
 
@@ -449,6 +543,7 @@ async function main(): Promise<void> {
       `No request carried MCP-Protocol-Version: ${PROTOCOL_VERSION}.`
     );
   }, { fatal: true });
+  if (aborted) exitForRecordedFailures(baseUrl);
 
   await check('No exchange issues or requires Mcp-Session-Id', async () => {
     const stateful = exchanges.filter(({ response }) => response.headers.get('Mcp-Session-Id'));
@@ -540,6 +635,7 @@ async function main(): Promise<void> {
         : 'The target session is published and cannot be edited. Pass an editable --session.'
     );
   }, { fatal: true });
+  if (aborted) exitForRecordedFailures(baseUrl);
 
   console.log('\nEdits');
 
@@ -889,10 +985,7 @@ async function main(): Promise<void> {
   }
 
   if (failures.length > 0) {
-    console.error(`❌ ${failures.length} check(s) failed against ${baseUrl}:\n`);
-    for (const failure of failures) console.error(`   • ${failure}`);
-    console.error('');
-    process.exit(1);
+    exitForRecordedFailures(baseUrl);
   }
 
   console.log(`✅ Golden journey passed against ${baseUrl}.\n`);

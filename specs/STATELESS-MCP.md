@@ -81,8 +81,9 @@ The [Microsoft App Service article](https://techcommunity.microsoft.com/blog/app
 is useful deployment commentary, but the MCP project documents above are the
 protocol authorities.
 
-The v2 SDK is still a beta dependency. Before production deployment, update to
-the final compatible release and rerun the protocol tests.
+The server and test client are pinned to the stable v2.0.0 SDK. Protocol tests
+exercise both the official client transport and raw modern requests so an SDK
+upgrade cannot silently fall back to the legacy negotiation path.
 
 ## 3. Access and user exposure
 
@@ -157,6 +158,11 @@ interface EditSessionInput {
 
 Every successful call returns the same compact current-session shape as
 `get_session`.
+
+The tool is annotated `destructiveHint: true`: although each operation is
+narrow and retry-safe, clearing a step, overwriting an instrument, or changing
+tempo can destroy a value the user cares about. Clients must not interpret
+idempotence as non-destructiveness.
 
 #### `add_track`
 
@@ -506,11 +512,13 @@ endpoint. The route is matched before Keyboardia's `/api/` response decoration
 and the SDK emits bare protocol responses, so these headers are applied at the
 route itself.
 
-A browser `Origin` is validated before rate limiting, body reads, or SDK
-loading. Keyboardia's production, www, staging, and local-development origins
-are allowed; an HTTPS `workers.dev` preview is allowed only when it exactly
-matches the requested preview origin. Successful browser responses reflect
-that exact trusted origin and include `Vary: Origin`; they never use wildcard
+A browser `Origin` is validated against the requested deployment before rate
+limiting, body reads, or SDK loading. Production accepts only the production
+and www origins; staging accepts itself plus those higher-trust production
+origins; a local target accepts loopback origins on any port; and an HTTPS
+preview accepts only its exact own origin. In particular, staging and localhost
+never gain write access to production. Successful browser responses reflect
+the canonical trusted origin and include `Vary: Origin`; they never use wildcard
 CORS. Opaque (`Origin: null`), malformed, insecure production, and foreign
 origins receive HTTP 403 with a JSON-RPC error. Non-browser MCP clients normally
 omit `Origin` and are unaffected.
@@ -532,7 +540,7 @@ Unsupported operations are not advertised and do not have placeholder
 handlers:
 
 - calling an unknown tool receives the standard MCP unknown-tool error;
-- supplying an edit other than the three schema variants receives the
+- supplying an edit other than the four schema variants receives the
   standard invalid-parameters error;
 - there is no custom `unsupported_for_now` response matrix.
 
@@ -545,7 +553,7 @@ This is smaller and gives agents an exact capability description through
 |---|---|
 | HTTP MCP protocol | Official `@modelcontextprotocol/server` v2 handler |
 | Tool definitions and DO adapter | `app/src/worker/mcp.ts` |
-| Compact representation and three pure edits | `app/src/worker/mcp-edits.ts` |
+| Compact representation and four pure edits | `app/src/worker/mcp-edits.ts` |
 | Endpoint routing | `app/src/worker/index.ts` |
 | Serialization, persistence, immutable check, browser broadcast | `app/src/worker/live-session.ts` |
 | Instrument enum | Existing `VALID_SAMPLE_IDS` |
@@ -579,16 +587,22 @@ The cases cover:
 - adding a four-on-the-floor kick and setting tempo;
 - adding a rhythm while preserving an existing collaborator's track;
 - editing and clearing steps on specifically named existing tracks;
+- clearing a track's last active step to a valid silent pattern;
 - changing tempo without touching the pattern; and
 - creating two different patterns with the same instrument.
 
 Every case carries its explicit starting tempo and tracks, so a runner does not
-have to reverse-engineer setup from the expected output. The scorer uses a
-globally optimal one-to-one track assignment, measures active-step F1 and step
-count independently, rejects extra tracks as litter, and automatically protects
-every baseline track and unnamed tempo value. Session replacement, publication,
-or unrequested baseline damage is a hard failure with a diagnostic reason; an
-agent cannot trade collaborator damage for a high musical average.
+have to reverse-engineer setup from the expected output. Fixture validation
+rejects invalid instruments, duplicate IDs, impossible steps and loop lengths,
+and objectives that make no reachable change. Expectations distinguish new
+tracks from named existing tracks, so an additive task cannot claim work that
+was already present. The scorer uses a globally optimal one-to-one assignment,
+measures active-step F1 and step count independently, rejects extra tracks as
+litter, and automatically protects every baseline track, track order, unnamed
+step, and unnamed tempo value. Safety checks do not award positive objective
+credit. Session replacement, publication, duplicate IDs, or unrequested damage
+is a hard failure with a diagnostic reason; an agent cannot trade collaborator
+damage for a high musical average.
 
 Run the protocol, collaboration, and scorer checks with:
 
@@ -659,13 +673,20 @@ cd app
 npm run smoke:mcp:staging
 npm run smoke:mcp:production
 npm run smoke:mcp -- http://localhost:8787          # against wrangler dev
+npm run smoke:mcp -- http://localhost:8787 --browser-origin https://keyboardia.dev
 ```
+
+Wrangler may expose a configured custom-domain route in `request.url` even
+while listening on localhost. In that mode, pass `--browser-origin` to name an
+origin trusted by that configured deployment; the smoke still sends traffic to
+the local base URL and never mutates the remote deployment.
 
 It exits non-zero on any failure, so it gates the repository's deploy commands.
 `npm run deploy` runs the MCP contract tests, builds, deploys staging, and then
-smokes staging. The confirmed production command runs that complete staging
-promotion first, deploys the same checkout to production only after it is
-green, and then smokes production.
+smokes staging. The production command discloses that whole sequence and asks
+for a `staging` confirmation before the first mutation. Only after staging is
+green does it disclose the production mutation and require a separate
+`production` confirmation before promoting the same checkout and smoking it.
 
 The journey is section 9's onboarding path with the acceptance criteria that
 can only be checked against real infrastructure:
@@ -673,8 +694,9 @@ can only be checked against real infrastructure:
 1. the target answers `/api/health`, and `POST /mcp` is not a 404 — that
    specific failure is reported as "merged but not deployed" rather than
    surfacing later as a protocol error;
-2. a successful browser exchange reflects its exact trusted origin,
-   `MCP-Protocol-Version` is in the expose list, and `Origin: null` is rejected
+2. a real cross-origin `OPTIONS` request allows every modern MCP request header,
+   a successful modern `server/discover` exchange reflects the same exact
+   origin, `MCP-Protocol-Version` is exposed, and `Origin: null` is rejected
    with HTTP 403 before protocol parsing;
 3. the official client negotiates `2026-07-28` with an explicit pin, and no
    response carries `Mcp-Session-Id`;

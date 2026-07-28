@@ -215,7 +215,7 @@ const sessionIdSchema = z.uuid().describe(
 const trackIdSchema = z.string()
   .regex(TRACK_ID_PATTERN)
   .describe(
-    'For add_track, choose a stable unique ID and reuse it on retries. For set_steps, copy an existing track_id from get_session.'
+    'For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session.'
   );
 const sampleIdSchema = z.enum(sampleIds).describe(
   'The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.'
@@ -236,8 +236,10 @@ const editSchema = z.object({
     z.object({
       operation: z.literal('set_track_instrument'),
       track_id: trackIdSchema,
-      sample_id: z.enum(sampleIds),
-    }).strict(),
+      sample_id: sampleIdSchema,
+    }).strict().describe(
+      'Replace only an existing track\'s sound source while preserving its name, pattern, mix, and timing.'
+    ),
     z.object({
       operation: z.literal('set_steps'),
       track_id: trackIdSchema,
@@ -355,7 +357,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
     instructions: [
       'Read an existing session with get_session before editing it.',
       'Step indexes are zero-based; preserve every track and step the user did not ask to change.',
-      'For add_track, choose a stable unique track_id and reuse it on retry. For set_steps, use a track_id returned by get_session.',
+      'For add_track, choose a stable unique track_id and reuse it on retry. For set_steps and set_track_instrument, use a track_id returned by get_session.',
       'Only publish when the user explicitly asks. A session UUID grants the same access as its share URL, so do not expose it unnecessarily.',
     ].join(' '),
   });
@@ -396,7 +398,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       inputSchema: editSchema,
       annotations: {
         readOnlyHint: false,
-        destructiveHint: false,
+        destructiveHint: true,
         idempotentHint: true,
         openWorldHint: false,
       },

@@ -20,6 +20,13 @@ function mcpRequest(init: RequestInit = {}): Request {
   });
 }
 
+function mcpRequestFor(target: string, origin: string): Request {
+  return new Request(`${target}/mcp`, {
+    method: 'POST',
+    headers: { Origin: origin },
+  });
+}
+
 describe('isJsonContentType', () => {
   it('accepts application/json with parameters', () => {
     expect(isJsonContentType('application/json')).toBe(true);
@@ -44,13 +51,27 @@ describe('MCP browser origin validation', () => {
   it.each([
     'https://keyboardia.dev',
     'https://www.keyboardia.dev',
+  ])('allows the production browser origin %s on production', (origin) => {
+    const request = mcpRequest({ headers: { Origin: origin } });
+    expect(validateMcpOrigin(request)).toBeUndefined();
+  });
+
+  it.each([
+    ['https://staging.keyboardia.dev', 'https://staging.keyboardia.dev'],
+    ['https://staging.keyboardia.dev', 'https://keyboardia.dev'],
+    ['http://localhost:8787', 'http://localhost:5173'],
+    ['http://127.0.0.1:8787', 'http://[::1]:5173'],
+  ])('allows %s to be called by its approved %s origin', (target, origin) => {
+    expect(validateMcpOrigin(mcpRequestFor(target, origin))).toBeUndefined();
+  });
+
+  it.each([
     'https://staging.keyboardia.dev',
     'http://localhost:5173',
     'http://127.0.0.1:8787',
     'http://[::1]:8787',
-  ])('allows the approved browser origin %s', (origin) => {
-    const request = mcpRequest({ headers: { Origin: origin } });
-    expect(validateMcpOrigin(request)).toBeUndefined();
+  ])('does not grant the lower-trust origin %s access to production', (origin) => {
+    expect(validateMcpOrigin(mcpRequest({ headers: { Origin: origin } }))?.status).toBe(403);
   });
 
   it('allows the exact HTTPS origin of a workers.dev preview', () => {
@@ -62,11 +83,19 @@ describe('MCP browser origin validation', () => {
     expect(validateMcpOrigin(request)).toBeUndefined();
   });
 
+  it('rejects a sibling workers.dev preview origin', () => {
+    const request = new Request('https://keyboardia-preview.owner.workers.dev/mcp', {
+      method: 'POST',
+      headers: { Origin: 'https://other-preview.owner.workers.dev' },
+    });
+
+    expect(validateMcpOrigin(request)?.status).toBe(403);
+  });
+
   it.each([
     'null',
     'not a URL',
     'https://agent.example',
-    'https://keyboardia-preview.owner.workers.dev',
     'https://keyboardia.dev.evil.example',
     'http://keyboardia.dev',
     'https://keyboardia.dev:444',
@@ -86,10 +115,10 @@ describe('MCP browser origin validation', () => {
 
   it('reflects an approved origin and exposes the negotiated protocol header', () => {
     const headers = mcpCorsHeaders(mcpRequest({
-      headers: { Origin: 'http://localhost:5173' },
+      headers: { Origin: 'https://www.keyboardia.dev' },
     }));
 
-    expect(headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:5173');
+    expect(headers.get('Access-Control-Allow-Origin')).toBe('https://www.keyboardia.dev');
     expect(headers.get('Access-Control-Allow-Methods')).toBe('POST, OPTIONS');
     expect(headers.get('Access-Control-Allow-Headers')).toContain('MCP-Protocol-Version');
     expect(headers.get('Access-Control-Expose-Headers')).toBe('MCP-Protocol-Version');
