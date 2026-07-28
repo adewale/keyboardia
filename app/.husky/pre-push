@@ -108,7 +108,7 @@ FULL_START=$(date +%s)
 
 # Screenshot contracts have runner-specific baselines and a dedicated CI lane;
 # the functional gate must not generate or bless developer-machine snapshots.
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 200 17; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 206 17; then
     FULL_END=$(date +%s)
     FULL_DURATION=$((FULL_END - FULL_START))
     echo ""
@@ -134,7 +134,7 @@ echo ""
 
 WEBKIT_START=$(date +%s)
 
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 154 52; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 160 52; then
     WEBKIT_END=$(date +%s)
     WEBKIT_DURATION=$((WEBKIT_END - WEBKIT_START))
     echo ""

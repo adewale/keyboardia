@@ -11,6 +11,12 @@ accessibility.spec.ts › Accessibility › visible buttons and links have compu
 accessibility.spec.ts › Accessibility › visible icon-only controls use explicit aria labels @blocking
 advanced-sub-bass-session.spec.ts › advanced sub-bass preset produces live master output
 all-instruments-master-output.spec.ts › every catalog instrument sequencer step produces live master output
+change-instrument.spec.ts › Change instrument › keeps the picker inside the viewport after scrolling a long pattern @blocking
+change-instrument.spec.ts › Change instrument › offers no instrument control on a published session @blocking
+change-instrument.spec.ts › Change instrument › replaces a track sound while keeping its pattern, name, and position @blocking
+change-instrument.spec.ts › Change instrument › restores focus after rotating while the picker is open @blocking
+change-instrument.spec.ts › Change instrument › restores keyboard focus after choosing an instrument @blocking
+change-instrument.spec.ts › Change instrument › shows and dismisses the picker in modern mobile landscape @blocking
 chromatic-grid.spec.ts › Chromatic Grid Redesign › should add view-mode-all class for dimmed chromatic styling
 chromatic-grid.spec.ts › Chromatic Grid Redesign › should have correct tooltip on mode buttons
 chromatic-grid.spec.ts › Chromatic Grid Redesign › should show non-key-interval pitches in Events mode (guardrail #1)

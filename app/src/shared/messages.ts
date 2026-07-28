@@ -32,6 +32,7 @@ export const MESSAGE_TO_STATE_BROADCAST = {
   add_track: 'track_added',
   delete_track: 'track_deleted',
   clear_track: 'track_cleared',
+  set_track_instrument: 'track_sample_set',
   set_track_sample: 'track_sample_set',
   set_track_volume: 'track_volume_set',
   set_track_transpose: 'track_transpose_set',
@@ -57,7 +58,8 @@ export const MESSAGE_TO_STATE_BROADCAST = {
 
 export type MutatingMessageType = keyof typeof MESSAGE_TO_STATE_BROADCAST;
 export type StateMutatingBroadcastType =
-  (typeof MESSAGE_TO_STATE_BROADCAST)[MutatingMessageType];
+  | (typeof MESSAGE_TO_STATE_BROADCAST)[MutatingMessageType]
+  | 'track_instrument_set';
 
 export const MUTATING_MESSAGE_TYPES = new Set<MutatingMessageType>(
   Object.keys(MESSAGE_TO_STATE_BROADCAST) as MutatingMessageType[],
@@ -94,7 +96,7 @@ export const READONLY_MESSAGE_TYPES = new Set([
  * Each client maintains its own local mute/solo state.
  */
 export const STATE_MUTATING_BROADCASTS = new Set<StateMutatingBroadcastType>(
-  Object.values(MESSAGE_TO_STATE_BROADCAST),
+  [...Object.values(MESSAGE_TO_STATE_BROADCAST), 'track_instrument_set'],
 );
 
 /** Type for readonly message type strings */

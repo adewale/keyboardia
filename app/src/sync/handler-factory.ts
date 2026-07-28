@@ -59,6 +59,28 @@ export function createRemoteHandler<T extends { playerId: string }>(
 }
 
 /**
+ * Creates a handler for an authoritative ordered server result.
+ *
+ * Most optimistic mutations can skip their own echo. Last-writer-wins fields
+ * cannot: a remote write may be ordered before the local write at the server,
+ * so applying every ordered result (including the local acknowledgement) is
+ * what makes the browser converge on the server's final value.
+ */
+export function createAuthoritativeHandler<T extends { playerId: string }>(
+  actionCreator: (msg: Omit<T, 'playerId'>) => Omit<GridAction, 'isRemote'>,
+) {
+  return function (this: HandlerContext, msg: T): void {
+    if (!this.dispatch) return;
+
+    const { playerId: _, ...rest } = msg;
+    this.dispatch({
+      ...actionCreator(rest as Omit<T, 'playerId'>),
+      isRemote: true,
+    } as GridAction);
+  };
+}
+
+/**
  * Type helper: Extracts the message type from a handler created by createRemoteHandler
  */
 export type HandlerMessage<T> = T extends (msg: infer M) => void ? M : never;

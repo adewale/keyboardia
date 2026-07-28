@@ -23,8 +23,8 @@ export function useSchedulerStateSync(
 ): void {
   const hasSyncedInitialRef = useRef(false);
 
-  // Base faders and tempo are audio-engine state, not note events. Reconcile
-  // them even while stopped so lazy buses, previews, and the first note all
+  // Base faders, tempo, and FM parameters are audio-engine state, not note
+  // events. Reconcile them even while stopped so lazy buses and the first note
   // inherit the current local or multiplayer snapshot.
   useEffect(() => {
     audioEngine.syncGridAudioState(state);

@@ -19,6 +19,17 @@ describe('actionToMessage', () => {
       { type: 'delete_track', trackId: 'track-3' }],
     ['track clearing', { type: 'CLEAR_TRACK', trackId: 'track-4' },
       { type: 'clear_track', trackId: 'track-4' }],
+    ['instrument changes', {
+      type: 'SET_TRACK_INSTRUMENT',
+      trackId: 'track-5',
+      sampleId: 'sampled:808-kick',
+      name: 'Ada Lead',
+    }, {
+      type: 'set_track_sample',
+      trackId: 'track-5',
+      sampleId: 'sampled:808-kick',
+      name: 'Ada Lead',
+    }],
     ['sample selection', {
       type: 'SET_TRACK_SAMPLE', trackId: 'track-5', sampleId: 'kick', name: 'Kick Drum',
     }, {

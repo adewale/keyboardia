@@ -209,4 +209,124 @@ describe('MCP rhythm domain', () => {
       changes: [{ step: 16, value: true }],
     })).toThrowError(/outside this track's 16-step loop/);
   });
+
+  describe('set_track_instrument', () => {
+    /** A track a person has already invested work in. */
+    function workedOnTrack() {
+      const track = createDefaultTrack('lead-1', 'tone:fm-bass', 'Ada’s Lead');
+      track.steps[0] = true;
+      track.steps[6] = true;
+      track.parameterLocks[6] = { pitch: 7 };
+      track.volume = 0.42;
+      track.transpose = -5;
+      track.stepCount = 12;
+      track.swing = 30;
+      track.fmParams = { harmonicity: 9, modulationIndex: 19 };
+      return track;
+    }
+
+    it('replaces the sound source and keeps the rest of the track', () => {
+      const track = workedOnTrack();
+      const state = createInitialSessionState({ tracks: [track] });
+
+      const result = applyMcpSessionEdit(state, {
+        operation: 'set_track_instrument',
+        track_id: 'lead-1',
+        sample_id: 'sampled:808-kick',
+      });
+
+      expect(result.changed).toBe(true);
+      expect(result.events).toEqual([{
+        type: 'track_instrument_set',
+        trackId: 'lead-1',
+        sampleId: 'sampled:808-kick',
+        name: 'Ada’s Lead',
+      }]);
+
+      const after = result.state.tracks[0]!;
+      expect(after.sampleId).toBe('sampled:808-kick');
+      // An agent must not be able to erase a collaborator's label by
+      // swapping a sound.
+      expect(after.name).toBe('Ada’s Lead');
+      expect(after.steps).toEqual(track.steps);
+      expect(after.parameterLocks).toEqual(track.parameterLocks);
+      expect(after.volume).toBe(0.42);
+      expect(after.transpose).toBe(-5);
+      expect(after.stepCount).toBe(12);
+      expect(after.swing).toBe(30);
+      // Engine-scoped state does not survive an instrument change.
+      expect(after.fmParams).toBeUndefined();
+    });
+
+    it('treats an identical retry as a no-op', () => {
+      const state = createInitialSessionState({ tracks: [workedOnTrack()] });
+      const edit = {
+        operation: 'set_track_instrument' as const,
+        track_id: 'lead-1',
+        sample_id: 'kick',
+      };
+
+      const first = applyMcpSessionEdit(state, edit);
+      expect(first.changed).toBe(true);
+
+      const retry = applyMcpSessionEdit(first.state, edit);
+      expect(retry).toEqual({ state: first.state, events: [], changed: false });
+    });
+
+    it('rejects an unknown instrument without mutating the session', () => {
+      const state = createInitialSessionState({ tracks: [workedOnTrack()] });
+
+      let thrown: unknown;
+      try {
+        applyMcpSessionEdit(state, {
+          operation: 'set_track_instrument',
+          track_id: 'lead-1',
+          sample_id: 'not-an-instrument',
+        });
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toBeInstanceOf(McpSessionEditError);
+      expect((thrown as McpSessionEditError).code).toBe('INVALID_SAMPLE_ID');
+      expect((thrown as McpSessionEditError).status).toBe(400);
+      expect(state.tracks[0]!.sampleId).toBe('tone:fm-bass');
+    });
+
+    it('rejects an unknown track with 404 and no mutation', () => {
+      const state = createInitialSessionState({ tracks: [workedOnTrack()] });
+
+      let thrown: unknown;
+      try {
+        applyMcpSessionEdit(state, {
+          operation: 'set_track_instrument',
+          track_id: 'no-such-track',
+          sample_id: 'kick',
+        });
+      } catch (error) {
+        thrown = error;
+      }
+
+      expect(thrown).toBeInstanceOf(McpSessionEditError);
+      expect((thrown as McpSessionEditError).code).toBe('TRACK_NOT_FOUND');
+      expect((thrown as McpSessionEditError).status).toBe(404);
+      expect(state.tracks).toHaveLength(1);
+    });
+
+    it('leaves collaborator tracks untouched', () => {
+      const mine = workedOnTrack();
+      const theirs = createDefaultTrack('snare-1', 'snare', 'Their Snare');
+      theirs.steps[4] = true;
+      const state = createInitialSessionState({ tracks: [mine, theirs] });
+
+      const result = applyMcpSessionEdit(state, {
+        operation: 'set_track_instrument',
+        track_id: 'lead-1',
+        sample_id: 'kick',
+      });
+
+      expect(result.state.tracks[1]).toBe(theirs);
+      expect(result.state.tracks.map((t) => t.id)).toEqual(['lead-1', 'snare-1']);
+    });
+  });
 });

@@ -4,9 +4,39 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import {
+  createAuthoritativeHandler,
   createRemoteHandler,
   type HandlerContext,
 } from './handler-factory';
+
+describe('createAuthoritativeHandler', () => {
+  it('applies ordered remote and own results so last-writer-wins state converges', () => {
+    const applied: string[] = [];
+    const context: HandlerContext = {
+      state: { playerId: 'player-b' },
+      dispatch: (action) => {
+        if (action.type === 'SET_TRACK_INSTRUMENT') applied.push(action.sampleId);
+      },
+    };
+    const handler = createAuthoritativeHandler<{
+      trackId: string;
+      sampleId: string;
+      playerId: string;
+    }>((message) => ({
+      type: 'SET_TRACK_INSTRUMENT',
+      trackId: message.trackId,
+      sampleId: message.sampleId,
+      name: message.sampleId,
+    }));
+
+    // B optimistically chose hihat, but the server ordered A then B. Skipping
+    // B's own acknowledgement would leave B incorrectly on snare.
+    handler.call(context, { trackId: 'track-1', sampleId: 'snare', playerId: 'player-a' });
+    handler.call(context, { trackId: 'track-1', sampleId: 'hihat', playerId: 'player-b' });
+
+    expect(applied).toEqual(['snare', 'hihat']);
+  });
+});
 
 describe('createRemoteHandler', () => {
   it('should skip messages from own player', () => {

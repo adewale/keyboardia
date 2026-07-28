@@ -17,6 +17,7 @@ import type { MutationState } from '../sync/mutation-tracker';
 
 // Value imports
 import { NOTE_NAMES, SCALES, type NoteName, type ScaleId } from '../music/music-theory';
+import { VALID_SAMPLE_IDS } from '../components/sample-constants';
 
 // =============================================================================
 // Constants
@@ -136,6 +137,15 @@ export const arbSampleId = fc.oneof(
     'advanced:fm'
   )
 );
+
+/**
+ * Sample ID drawn from the real instrument catalog.
+ *
+ * arbSampleId above generates plausible-looking IDs, most of which are NOT in
+ * VALID_SAMPLE_IDS. Operations that validate against the catalog need this one,
+ * or the property degenerates into "every mutation is rejected".
+ */
+export const arbCatalogSampleId = fc.constantFrom(...[...VALID_SAMPLE_IDS].sort());
 
 /** Track for hashing (minimal fields needed) */
 export const arbTrackForHash = fc.record({
@@ -449,6 +459,13 @@ export function arbMutationForState(state: SessionState): fc.Arbitrary<ClientMes
         trackId: arbTrackId,
         sampleId: arbSampleId,
         name: fc.string({ minLength: 1, maxLength: 20 }),
+      }),
+      // Change instrument (issue #63). Uses catalog IDs so the mutation
+      // actually applies instead of being rejected on every draw.
+      fc.record({
+        type: fc.constant('set_track_instrument' as const),
+        trackId: arbTrackId,
+        sampleId: arbCatalogSampleId,
       }),
       // Parameter locks
       fc.record({

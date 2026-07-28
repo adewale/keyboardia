@@ -9,6 +9,7 @@ import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
 import { useSchedulerStateSync } from '../audio/useSchedulerStateSync';
 import { useTrackPrewarm } from '../audio/useTrackPrewarm';
+import { useTrackInstrumentReconcile } from '../audio/useTrackInstrumentReconcile';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
 import { TrackSkeleton } from './TrackSkeleton';
@@ -127,6 +128,9 @@ export function StepSequencer() {
   // notes until the browser-owned instrument instance becomes ready.
   // See review finding #4.
   useTrackPrewarm(state, state.isPlaying);
+  // Change instrument (issue #63): dispose and rebuild a track's per-track
+  // synth whenever its instrument changes, whoever changed it.
+  useTrackInstrumentReconcile(state);
 
   // MEDIUM-2: Reset drag state on unmount to prevent stale state issues
   useEffect(() => {
@@ -264,7 +268,7 @@ export function StepSequencer() {
   const handleSetFMParams = useCallback((trackId: string, fmParams: FMParams) => {
     dispatch({ type: 'SET_FM_PARAMS', trackId, fmParams });
     // Also apply FM params to the audio engine immediately for real-time preview
-    audioEngine.setFMParams(fmParams.harmonicity, fmParams.modulationIndex);
+    audioEngine.setFMParams(trackId, fmParams.harmonicity, fmParams.modulationIndex);
   }, [dispatch]);
 
   // Phase 25: Handle track volume changes
@@ -303,6 +307,14 @@ export function StepSequencer() {
   const handleSetName = useCallback((trackId: string, name: string) => {
     dispatch({ type: 'SET_TRACK_NAME', trackId, name });
   }, [dispatch]);
+
+  // Change instrument (issue #63). Only the state change happens here: the
+  // audio engine is reconciled by useTrackInstrumentReconcile, which sees this
+  // change and a collaborator's or an agent's identically.
+  const handleSetInstrument = useCallback((trackId: string, sampleId: string) => {
+    const name = state.tracks.find((track) => track.id === trackId)?.name ?? sampleId;
+    dispatch({ type: 'SET_TRACK_INSTRUMENT', trackId, sampleId, name });
+  }, [dispatch, state.tracks]);
 
   // Phase 31D: Per-track swing handler
   const handleSetTrackSwing = useCallback((trackId: string, swing: number) => {
@@ -751,6 +763,9 @@ export function StepSequencer() {
                   onEuclideanFill={(hits) => handleEuclideanFill(track.id, hits)}
                   onSetName={(name) => handleSetName(track.id, name)}
                   onSetTrackSwing={(swing) => handleSetTrackSwing(track.id, swing)}
+                  onSetInstrument={isPublished
+                    ? undefined
+                    : (sampleId) => handleSetInstrument(track.id, sampleId)}
                   selectedSteps={features.advancedStepInput ? selectedSteps : undefined}
                   selectionAnchor={features.advancedStepInput ? selectionAnchor : undefined}
                   hasSelection={features.advancedStepInput && selectionCount > 0}

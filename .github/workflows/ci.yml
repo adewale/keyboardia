@@ -240,11 +240,11 @@ jobs:
         run: |
           required_specs=()
           while IFS= read -r spec; do required_specs+=("$spec"); done < e2e/mock-compatible-files.txt
-          test "${#required_specs[@]}" -eq 5
+          test "${#required_specs[@]}" -eq 6
           discovered=$(npx playwright test "${required_specs[@]}" --project=chromium --list | sed -n 's/^Total: \([0-9][0-9]*\) tests.*/\1/p')
-          test "$discovered" = "65"
+          test "$discovered" = "71"
           npx playwright test "${required_specs[@]}" --project=chromium --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 65 0
+          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 71 0
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -430,7 +430,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --workers=2
-          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 200 17
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 206 17
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -442,7 +442,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 154 52
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 160 52
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'

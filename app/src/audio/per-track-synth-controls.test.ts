@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Phase 3: global controls fan out to every active per-track synth AND
- * apply to tracks created later (override memory).
+ * Phase 3: shared advanced controls fan out, while FM controls remain scoped
+ * to the track that owns their persisted state.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { GridState } from '../types';
@@ -19,7 +19,9 @@ interface SpyAdvanced {
 }
 interface SpyTone {
   setFMParams: ReturnType<typeof vi.fn<(h: number, m: number) => void>>;
+  resetFMParams: ReturnType<typeof vi.fn<() => void>>;
   getFMParams: ReturnType<typeof vi.fn<() => { harmonicity: number; modulationIndex: number } | null>>;
+  playNote: ReturnType<typeof vi.fn<() => void>>;
 }
 
 const advancedInstances: SpyAdvanced[] = [];
@@ -35,17 +37,20 @@ vi.mock('./toneSynths', async () => {
         setFMParams: vi.fn<(h: number, m: number) => void>((h, m) => {
           this.fm = { harmonicity: h, modulationIndex: m };
         }),
+        resetFMParams: vi.fn<() => void>(() => { this.fm = null; }),
         getFMParams: vi.fn<() => { harmonicity: number; modulationIndex: number } | null>(() => this.fm),
+        playNote: vi.fn<() => void>(),
       };
       toneInstances.push(this.spies);
     }
     async initialize(): Promise<void> {}
     getOutput(): { connect: () => void; disconnect: () => void } { return { connect: () => {}, disconnect: () => {} }; }
     setFMParams(h: number, m: number): void { this.spies.setFMParams(h, m); }
+    resetFMParams(): void { this.spies.resetFMParams(); }
     getFMParams(): { harmonicity: number; modulationIndex: number } | null { return this.spies.getFMParams(); }
     semitoneToNoteName(s: number): string { return `n${s}`; }
     getPresetNames(): string[] { return []; }
-    playNote(): void {}
+    playNote(): void { this.spies.playNote(); }
     dispose(): void {}
   }
   return { ...actual, ToneSynthManager: MockToneSynthManager };
@@ -104,6 +109,7 @@ function stubEngineInternals(engine: AudioEngine): void {
   (engine as unknown as { toneInitialized: boolean }).toneInitialized = true;
   const fakeBusManager = {
     getBusInput: () => ({ connect: vi.fn(), disconnect: vi.fn() }),
+    setTrackVolume: vi.fn(),
   };
   (engine as unknown as { trackBusManager: unknown }).trackBusManager = fakeBusManager;
 }
@@ -213,27 +219,70 @@ describe('Phase 3: global controls fan out + overrides', () => {
     expect(advancedInstances[0].setLfoRate).not.toHaveBeenCalled();
   });
 
-  it('setFMParams fans out across tone tracks AND is preserved for new tracks', async () => {
+  it('setFMParams updates only its track and is inherited by that track', async () => {
     const engine = new AudioEngine();
     stubEngineInternals(engine);
     await engine.warmToneSynthForTrack('A');
     await engine.warmToneSynthForTrack('B');
 
-    engine.setFMParams(3, 7);
-    for (const t of toneInstances) {
-      expect(t.setFMParams).toHaveBeenCalledWith(3, 7);
-    }
+    engine.setFMParams('A', 3, 7);
+    expect(toneInstances[0].setFMParams).toHaveBeenCalledWith(3, 7);
+    expect(toneInstances[1].setFMParams).not.toHaveBeenCalled();
 
+    engine.setFMParams('C', 4, 9);
     await engine.warmToneSynthForTrack('C');
     const newInstance = toneInstances[toneInstances.length - 1];
-    expect(newInstance.setFMParams).toHaveBeenCalledWith(3, 7);
+    expect(newInstance.setFMParams).toHaveBeenCalledWith(4, 9);
   });
 
-  it('getFMParams reports the shared-override value when set', () => {
+  it('reconciles persisted FM parameters and resets a removed override', async () => {
     const engine = new AudioEngine();
     stubEngineInternals(engine);
-    expect(engine.getFMParams()).toBeNull();
-    engine.setFMParams(2, 5);
-    expect(engine.getFMParams()).toEqual({ harmonicity: 2, modulationIndex: 5 });
+    const withFMParams = {
+      tempo: 120,
+      tracks: [{
+        id: 'A',
+        volume: 1,
+        fmParams: { harmonicity: 9, modulationIndex: 19 },
+      }],
+    } as unknown as Pick<GridState, 'tempo' | 'tracks'>;
+
+    engine.syncGridAudioState(withFMParams);
+    await engine.warmToneSynthForTrack('A');
+    expect(toneInstances[0].setFMParams).toHaveBeenCalledWith(9, 19);
+    engine.playToneSynth('fm-bass', 0, 0, 0.1, 1, 'A');
+
+    engine.syncGridAudioState({
+      tempo: 120,
+      tracks: [{ id: 'A', volume: 1 }],
+    } as unknown as Pick<GridState, 'tempo' | 'tracks'>);
+    engine.playToneSynth('fm-bass', 0, 0.1, 0.1, 1, 'A');
+
+    expect(toneInstances).toHaveLength(1);
+    expect(toneInstances[0].resetFMParams).toHaveBeenCalledOnce();
+    expect(toneInstances[0].playNote).toHaveBeenCalledTimes(2);
+    expect(engine.getFMParams('A')).toBeNull();
+  });
+
+  it('instrument replacement clears a track FM override before rebuilding', async () => {
+    const engine = new AudioEngine();
+    stubEngineInternals(engine);
+    await engine.warmToneSynthForTrack('A');
+    engine.setFMParams('A', 2, 5);
+
+    engine.clearTrackSynths('A');
+    await engine.warmToneSynthForTrack('A');
+
+    const rebuilt = toneInstances[toneInstances.length - 1];
+    expect(rebuilt.setFMParams).not.toHaveBeenCalled();
+    expect(engine.getFMParams('A')).toBeNull();
+  });
+
+  it('getFMParams reports the selected track override', () => {
+    const engine = new AudioEngine();
+    stubEngineInternals(engine);
+    expect(engine.getFMParams('A')).toBeNull();
+    engine.setFMParams('A', 2, 5);
+    expect(engine.getFMParams('A')).toEqual({ harmonicity: 2, modulationIndex: 5 });
   });
 });

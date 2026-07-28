@@ -68,6 +68,9 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 43: A Test Frame Matcher Must Consume Frames](#lesson-43-a-test-frame-matcher-must-consume-frames-or-it-reads-stale-values)
 - [Lesson 55: A Production Fixture Is Not a Test Fixture](#lesson-55-a-production-fixture-is-not-a-test-fixture)
 - [Lesson 56: Browser Navigation Tests Must Assert Focus, Not Styling](#lesson-56-browser-navigation-tests-must-assert-focus-not-styling)
+- [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
+- [Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row](#lesson-61-an-unplaced-child-of-a-full-grid-silently-adds-a-row)
+- [Lesson 62: Track Row Width Is Load-Bearing for Drag During Playback](#lesson-62-track-row-width-is-load-bearing-for-drag-during-playback)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5541,3 +5544,220 @@ packages/resources/intrinsic globals as capabilities too. Define layers by
 allowed capabilities, walk every owned root transitively, make resolution
 failure loud, retain a real-runtime oracle, and mutation-test the guard with the
 exact syntax and bridge paths an adversarial change would use.
+## Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries
+
+**Date:** July 2026
+**Context:** Change Instrument ([#63](https://github.com/adewale/keyboardia/issues/63))
+
+### What happened
+
+The new per-track instrument picker was rendered inside a collapsed
+`panel-animation-container` — `grid-template-rows: 0fr`, `overflow: hidden`,
+`aria-hidden="true"`, `inert`. Zero pixels, no layout, not focusable. It looked
+free.
+
+It was not. The panel contained the whole instrument catalog: about a hundred
+buttons per track, with accessible names — "808 Hat", "Kick", "FM Bass" —
+**identical to the Add Track picker's**. Track rows come before that picker in
+the DOM, so the moment a session had one track:
+
+```ts
+// Meant the Add Track picker. Now resolves into a zero-height panel.
+await page.getByRole('button', { name: /808 Hat/ }).first().click();
+
+// Two matches instead of one → Playwright strict-mode violation.
+await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible();
+```
+
+Twelve tests failed across the drag-reorder and multiplayer suites — none of
+which had been touched, and none of which mention instruments in their intent.
+The symptoms pointed nowhere near the cause: `locator.click` timeouts (the
+element was real but zero-height) and assertion mismatches on track names.
+
+`aria-hidden` and `inert` did not save it. They govern the accessibility tree
+and interaction; they do not remove an element from a selector's candidate set
+in the way this assumed.
+
+### The lesson
+
+**A hidden subtree is still in the document.** Anything that queries by role,
+accessible name, text, or label sees it. If a panel duplicates names that exist
+elsewhere on the page, hiding is not enough — do not render it.
+
+Mount large or name-colliding panel content only while open:
+
+```tsx
+<div className={`panel-animation-container ${isOpen ? 'expanded' : ''}`}>
+  <div className="panel-animation-content">
+    {isOpen && <SamplePicker variant="change" … />}
+  </div>
+</div>
+```
+
+The collapse animation loses its exit transition, which nobody noticed. In
+exchange a ten-track session stops rendering the catalog ten times.
+
+### Why the narrow tests missed it
+
+Component tests rendered one `TrackRow` in isolation, where there is no Add
+Track picker to collide with, and used `data-testid` rather than accessible
+names. The unit and Durable Object suites do not build a page at all. Only the
+real-Worker E2E lane assembles the whole document — which is the argument for
+keeping that lane, and for reading a broad unexplained failure as a signal about
+your own change before assuming the suite is flaky.
+
+### Heuristic
+
+Before rendering a panel closed rather than unmounted, ask what names it puts
+in the document, and whether anything else on the page already answers to them.
+
+---
+
+## Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row
+
+**Date:** July 2026
+**Context:** Change Instrument ([#63](https://github.com/adewale/keyboardia/issues/63))
+
+### What happened
+
+`.track-left` is a CSS grid with a fully-allocated explicit template — ten named
+columns, every child assigned with `grid-column`. Adding a "Change instrument"
+toggle to the JSX without adding a column meant it was **auto-placed**, and with
+row 1 full it went into an implicit **second row**.
+
+Every track row grew from 48px to 84px.
+
+Nothing failed where the change was made. Eleven drag-reorder tests failed,
+because `dragTrack` drops on the vertical centre of `.track-row-wrapper` and all
+those centres had moved. The assertions read like a reordering logic bug —
+`Expected "808 Hat", Received "808 Clap"`, always an adjacent track — which is
+about as far from "you forgot a grid-column" as a symptom can get.
+
+### Why nothing cheaper caught it
+
+- **jsdom computes no layout.** The component test rendered the button, asserted
+  it was there, and passed. `getBoundingClientRect` is all zeros in jsdom, so no
+  unit or component test can see a row get taller.
+- **The visual baselines load a session with zero tracks.** `visual.spec.ts`
+  navigates to `/`, which has no track rows at all, so a 75%-taller track row is
+  invisible to every screenshot except the populated Holby ones — and the
+  landscape override hides this control, so those were clean too.
+- Only real-browser tests that *measure* the row caught it, and they caught it
+  indirectly, in a suite about something else.
+
+### How it was diagnosed
+
+Not by reading the diff — the reasoning from the CSS said the panel collapses to
+zero height and the button fits an existing row, and that reasoning was simply
+wrong. What settled it was a baseline: the same three specs, same harness, run
+against `origin/main` in a second worktree on a second port. 75/75 green there
+against 11 failures on the branch turned "probably environmental flake" into
+"definitely mine". Then one script comparing `getBoundingClientRect` across both
+servers gave the number: 48 vs 84.
+
+**When a broad, unrelated suite fails, measure the baseline before you theorise.**
+A worktree plus a spare port costs three minutes and converts an argument into a
+fact.
+
+### The rule
+
+If a grid's template is fully allocated and its children are explicitly placed,
+then **every** child must be explicitly placed. Adding one to the markup means
+adding a column and a `grid-column` rule in the same change. The stylesheet now
+says so where the assignments live.
+
+Guard, in `TrackRow.change-instrument.test.tsx`:
+
+```ts
+// jsdom has no layout, so assert the contract layout depends on:
+// the class the stylesheet places.
+expect(toggle.classList.contains('instrument-toggle')).toBe(true);
+expect(toggle.parentElement?.classList.contains('track-left')).toBe(true);
+```
+
+---
+
+## Lesson 62: Track Row Width Is Load-Bearing for Drag During Playback
+
+**Date:** July 2026
+**Context:** Change Instrument ([#63](https://github.com/adewale/keyboardia/issues/63))
+
+### What happened
+
+After fixing the grid-row bug in lesson 61, one test still failed: *"should
+handle reorder during playback"*. Every other reorder test passed. The drag
+simply had no effect — the order came back unchanged.
+
+Measured, not guessed:
+
+| variant | `.track-left` | row width | passes |
+|---|---|---|---|
+| `origin/main` | 508px | 1354px | 13 / 13 |
+| branch, new 36px column | 548px | 1394px | 5 / 18 |
+| branch, column collapsed to 0 | 512px | 1358px | 6 / 6 |
+| branch, column paid for from `[name]` | 508px | 1354px | 6 / 6 + full suite 75/75 |
+
+Adding 40px to the track row's left column is what broke it. Removing the
+button but keeping the column made no difference — it was never the button, it
+was the width.
+
+### Why width matters here
+
+`dragTrack` drops on the horizontal centre of `.track-row-wrapper`. The row is
+wider than the viewport, `.track-left` is `position: sticky`, and during
+playback the step area auto-scrolls to follow the playhead. Moving the drop
+centre 20px changes which scrolling child sits under a stationary cursor
+mid-drag, and the wrapper's `dragleave` handler clears the drop target when that
+happens. Non-playback drags never see it because nothing is scrolling.
+
+The underlying fragility is in the drag/auto-scroll interaction, not in this
+feature. **It is still there.** This lesson records the constraint; fixing the
+interaction properly is separate work.
+
+### The rule
+
+**A new control in `.track-left` is paid for out of measured slack, not added
+to the row, and not taken out of a control that was actually using its space.**
+
+The first attempt took the 40px from the name column (100px → 60px). That kept
+the row width correct and the reorder suite green — and made the track names
+overflow into the M button. A screenshot caught what the numbers did not.
+
+Measuring each column against what it actually renders found the space for
+free:
+
+| column | budget | renders at | slack |
+|---|---|---|---|
+| `[name]` | 100px | 80px (`.track-name` has a fixed `width: 80px`) | 20px |
+| `[badge]` | 36px | 28px | 8px |
+
+That is 28px, so the toggle is 24px wide plus its 4px gap. `.track-left` stays
+508px, the row stays 1354px, and **no existing control changes its rendered
+size** — the names truncate exactly where they did before, because they were
+never using the 20px in the first place.
+
+If you genuinely need the row to grow, expect to fix the drag/auto-scroll
+interaction first, and re-run the three reorder specs against a real Worker
+several times — a single green run proves nothing at 5-in-18 odds.
+
+### The method that found it
+
+Three wrong theories preceded the answer, each argued from reading the CSS.
+What worked was mechanical: a `git worktree` of `origin/main` on a second port,
+the same spec run against both, and a script printing `getBoundingClientRect`
+from each. Then bisect the diff — collapse the column, re-run, compare — until
+one variable explains the result.
+
+**A flaky-looking failure deserves a baseline before it deserves a theory.**
+
+### Coda: the same mistake, one layer up
+
+Funding the column out of `[name]` and `[badge]` slack was measured against an
+**editable** row, and verified against editable-session tests. It changed the
+default template, so a published row — which renders no toggle — still paid for
+the column: every control right of the name shifted 20px left, around an empty
+gap. CI's macOS visual job caught it on the published Holby baseline.
+
+Layout changes have to be checked against every state that renders the layout,
+not just the state the new control appears in. The template that carries a new
+control now sits behind a modifier class that only the rows rendering it carry.

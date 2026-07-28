@@ -380,6 +380,12 @@ describe('Reducer-Mutation Equivalence', () => {
 
     it.each([
       { type: 'SET_TRACK_SAMPLE', trackId: 'track-1', sampleId: 'lead', name: 'Lead' },
+      {
+        type: 'SET_TRACK_INSTRUMENT',
+        trackId: 'track-1',
+        sampleId: 'snare',
+        name: 'Snare',
+      },
       { type: 'SET_TRACK_STEP_COUNT', trackId: 'track-1', stepCount: 32 },
       { type: 'SET_TRACK_SWING', trackId: 'track-1', swing: 37 },
       {
@@ -557,6 +563,7 @@ describe('Reducer-Mutation Equivalence', () => {
         'SET_TRACK_VOLUME',
         'SET_TRACK_TRANSPOSE',
         'SET_TRACK_SAMPLE',
+        'SET_TRACK_INSTRUMENT',
         'SET_TRACK_STEP_COUNT',
         'SET_TRACK_SWING',
         'SET_EFFECTS',

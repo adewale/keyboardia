@@ -67,14 +67,14 @@
  * This eliminates the need for spacer elements to maintain alignment.
  *
  * Phase 31H: Reordered columns for logical grouping
- * Grid columns: drag | name | mute | solo | transpose | badge | step-count | pitch-view | velocity | tools
+ * Grid columns: drag | name | mute | solo | transpose | badge | step-count | pitch-view | velocity | instrument | tools
  *
  * Control groups:
  * - [Drag] reorder handle
  * - [Name] identification
  * - [M S] playback state
  * - [Transpose Key Steps] pitch/timing params (grouped)
- * - [Expand Velocity Pattern] view controls
+ * - [Expand Velocity Instrument Pattern] view controls
  */
 .track-left {
   display: grid;
@@ -102,6 +102,30 @@
   box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.2);
 }
 
+/*
+ * Change instrument (issue #63): only an editable row carries the extra column.
+ *
+ * A published or read-only row does not render the toggle, so reserving its
+ * column there would leave a visible empty gap and shift every control from
+ * `mute` rightward — a 3557-pixel diff on the published Holby baseline for a
+ * button that is not even on screen. The total stays 508px either way, so the
+ * drag geometry documented in lesson 62 is unchanged in both templates.
+ */
+.track-left.has-instrument-toggle {
+  grid-template-columns:
+    [drag] 20px
+    [name] 80px
+    [mute] 36px
+    [solo] 36px
+    [transpose] 60px
+    [badge] 28px
+    [step-count] 60px
+    [pitch-view] 36px
+    [velocity] 36px
+    [instrument] 24px
+    [tools] 36px;
+}
+
 /* Grid column assignments for track controls */
 .track-drag-handle { grid-column: drag; }
 .track-name,
@@ -110,6 +134,19 @@
 .solo-button { grid-column: solo; }
 .expand-toggle { grid-column: pitch-view; }
 .velocity-toggle { grid-column: velocity; }
+/*
+ * Two invariants, both learned the hard way (docs/LESSONS-LEARNED.md 61, 62):
+ *
+ * 1. Every child of .track-left MUST have an explicit grid-column. The template
+ *    is fully allocated, so an unplaced child is auto-placed into an implicit
+ *    SECOND row and silently grows every track row by its own height.
+ * 2. The TOTAL width of this template must not change. Widening it by 40px made
+ *    "reorder during playback" fail 13 of 18 runs while every other reorder
+ *    test passed — the drag lands on the row wrapper's centre, and moving that
+ *    centre interacts badly with the step area's playback auto-scroll. A new
+ *    control is paid for out of an existing column, not added to the row.
+ */
+.instrument-toggle { grid-column: instrument; }
 .pattern-tools-toggle { grid-column: tools; }
 /* Phase 31H: Pitch/Step group spans transpose + badge + step-count */
 .track-pitch-step-group { grid-column: transpose / span 3; }
@@ -1536,6 +1573,7 @@
 .step-sequencer[data-orientation="landscape"] .track-left .track-pitch-step-group,
 .step-sequencer[data-orientation="landscape"] .track-left .expand-toggle,
 .step-sequencer[data-orientation="landscape"] .track-left .velocity-toggle,
+.step-sequencer[data-orientation="landscape"] .track-left .instrument-toggle,
 .step-sequencer[data-orientation="landscape"] .track-left .pattern-tools-toggle {
   display: none !important;
 }
@@ -1645,4 +1683,78 @@
 /* Inline drawer (existing) - hide in landscape, use TrackDrawer instead */
 .step-sequencer[data-orientation="landscape"] .inline-drawer {
   display: none !important;
+}
+
+/* ===== Change Instrument (issue #63) ===== */
+
+/*
+ * Desktop toggle. Matches .pattern-tools-toggle so the track row's control
+ * strip stays one visual family. Hidden in landscape by the rule in the
+ * landscape section above; that mode opens the same panel from the TrackDrawer.
+ */
+.instrument-toggle {
+  /* 24px, not the siblings' 36px: the column is funded entirely from
+     measured slack (name 100→80, badge 36→28) so .track-left stays 508px and
+     no existing control changes size. See lesson 62. */
+  width: 24px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.instrument-toggle:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
+}
+
+.instrument-toggle.active {
+  background: var(--color-accent-muted);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/*
+ * The picker panel is a .panel-animation-container, which landscape hides
+ * wholesale. This one has to stay reachable there, because the landscape
+ * TrackDrawer is what opens it. Collapsed it is grid-template-rows: 0fr with
+ * overflow hidden, so an unopened panel still contributes zero height and the
+ * landscape layout is unchanged.
+ */
+.step-sequencer[data-orientation="landscape"] .instrument-panel-container {
+  display: grid !important;
+}
+
+.step-sequencer[data-orientation="landscape"] .sample-picker.variant-change {
+  /* 12px app + 8px sequencer padding on both sides of the scrollport. */
+  max-width: calc(100vw - 40px);
+}
+
+/* Instrument row button in the mobile inline drawer */
+.drawer-instrument-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.drawer-instrument-btn.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }

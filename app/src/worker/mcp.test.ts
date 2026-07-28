@@ -291,6 +291,90 @@ describe('stateless MCP endpoint', () => {
     expect(sessions.session.state.tracks).toHaveLength(0);
   });
 
+  it('rejects an instrument outside the catalog before the session adapter runs', async () => {
+    let storeCalls = 0;
+    const sessions: McpSessionAdapter = {
+      async getSession() {
+        storeCalls += 1;
+        throw new Error('invalid input reached the session adapter');
+      },
+      async editSession() {
+        storeCalls += 1;
+        throw new Error('invalid input reached the session adapter');
+      },
+    };
+    const client = await connectClient(sessions, []);
+
+    const result = await client.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: SESSION_ID,
+        edit: {
+          operation: 'set_track_instrument',
+          track_id: 'kick-1',
+          sample_id: 'not-an-instrument',
+        },
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(storeCalls).toBe(0);
+  });
+
+  it('changes a track instrument without touching its pattern or name', async () => {
+    const sessions = new MemorySessionAdapter();
+    const client = await connectClient(sessions, []);
+
+    await client.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: SESSION_ID,
+        edit: {
+          operation: 'add_track',
+          track_id: 'lead-1',
+          sample_id: 'kick',
+          name: 'Ada Lead',
+        },
+      },
+    });
+    await client.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: SESSION_ID,
+        edit: {
+          operation: 'set_steps',
+          track_id: 'lead-1',
+          changes: [{ step: 2, value: true }, { step: 10, value: true }],
+        },
+      },
+    });
+
+    const result = await client.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: SESSION_ID,
+        edit: {
+          operation: 'set_track_instrument',
+          track_id: 'lead-1',
+          sample_id: 'tone:fm-bell',
+        },
+      },
+    });
+
+    expect(result.structuredContent).toEqual({
+      session_id: SESSION_ID,
+      immutable: false,
+      tempo: 120,
+      tracks: [{
+        track_id: 'lead-1',
+        name: 'Ada Lead',
+        sample_id: 'tone:fm-bell',
+        step_count: 16,
+        active_steps: [2, 10],
+      }],
+    });
+  });
+
   it('lets two agents mutate and read the same session without replacing it', async () => {
     const sessions = new MemorySessionAdapter();
     const agentA = await connectClient(sessions, []);

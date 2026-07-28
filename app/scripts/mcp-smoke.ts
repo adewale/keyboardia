@@ -652,6 +652,77 @@ async function main(): Promise<void> {
     );
   });
 
+  // Change instrument (issue #63). Runs after the pattern is built so the
+  // check proves the swap keeps the work, not just that the field changed.
+  // Ends on 'kick' so a reused session starts each run from the same sound.
+  await check('set_track_instrument swaps the sound and keeps the pattern', async () => {
+    const swapped = expectSession(
+      await callTool(client!, 'edit_session', {
+        session_id: sessionId,
+        edit: {
+          operation: 'set_track_instrument',
+          track_id: kickTrackId,
+          sample_id: 'sampled:808-kick',
+        },
+      }),
+      'edit_session/set_track_instrument'
+    );
+    const track = findTrack(swapped, kickTrackId);
+    assert(
+      track.sample_id === 'sampled:808-kick',
+      `Instrument is ${track.sample_id}, expected sampled:808-kick.`
+    );
+    assertEqual(
+      track.active_steps,
+      [0, 4, 8, 12],
+      'Changing the instrument disturbed the pattern.'
+    );
+    assert(
+      track.name === 'Kick',
+      `Changing the instrument renamed the track to ${track.name}.`
+    );
+
+    const restored = expectSession(
+      await callTool(client!, 'edit_session', {
+        session_id: sessionId,
+        edit: {
+          operation: 'set_track_instrument',
+          track_id: kickTrackId,
+          sample_id: 'kick',
+        },
+      }),
+      'edit_session/set_track_instrument (restore)'
+    );
+    assertEqual(
+      findTrack(restored, kickTrackId).active_steps,
+      [0, 4, 8, 12],
+      'Restoring the instrument disturbed the pattern.'
+    );
+  });
+
+  await check('set_track_instrument rejects an unknown track without mutating', async () => {
+    expectToolError(
+      await callTool(client!, 'edit_session', {
+        session_id: sessionId,
+        edit: {
+          operation: 'set_track_instrument',
+          track_id: 'no-such-track-for-smoke',
+          sample_id: 'kick',
+        },
+      }),
+      'edit_session/set_track_instrument for a missing track'
+    );
+
+    const session = expectSession(
+      await callTool(client!, 'get_session', { session_id: sessionId }),
+      'get_session'
+    );
+    assert(
+      session.tracks.every((track) => track.track_id !== 'no-such-track-for-smoke'),
+      'A rejected set_track_instrument created a track.'
+    );
+  });
+
   // Chosen to differ from whatever the session currently holds, so a reused
   // session still proves tempo actually moved.
   const targetTempo = baseline!.tempo === 124 ? 128 : 124;

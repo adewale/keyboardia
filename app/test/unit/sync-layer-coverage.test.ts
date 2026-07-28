@@ -77,6 +77,8 @@ function createMockAction(type: string): GridAction {
       return { type: 'DELETE_TRACK', trackId: 'test-track-1' };
     case 'CLEAR_TRACK':
       return { type: 'CLEAR_TRACK', trackId: 'test-track-1' };
+    case 'SET_TRACK_INSTRUMENT':
+      return { type: 'SET_TRACK_INSTRUMENT', trackId: 'test-track-1', sampleId: 'snare', name: 'Test Track' };
     case 'SET_TRACK_SAMPLE':
       return { type: 'SET_TRACK_SAMPLE', trackId: 'test-track-1', sampleId: 'snare', name: 'Snare' };
     case 'SET_TRACK_VOLUME':

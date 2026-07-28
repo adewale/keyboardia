@@ -81,6 +81,7 @@ import {
 } from '../shared/pattern-operations';
 import { MAX_TRACK_NAME_LENGTH, isValidNumber } from '../shared/validation';
 import { getIdentityFromId } from '../shared/identity';
+import { setTrackInstrument } from '../shared/track-instrument';
 import { validateCompleteSessionState } from './validation';
 import {
   MCP_ACTOR_ID,
@@ -406,6 +407,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     switch (event.type) {
       case 'track_added':
         this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
+      case 'track_instrument_set':
+        // Keep active sessions compatible with tabs running the previous
+        // client, whose exhaustive message switch does not know the new type.
+        this.broadcast({
+          type: 'track_sample_set',
+          trackId: event.trackId,
+          sampleId: event.sampleId,
+          name: event.name,
+          playerId: MCP_ACTOR_ID,
+        });
         break;
       case 'step_toggled':
         this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
@@ -975,6 +987,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         break;
       case 'copy_sequence':
         this.handleCopySequence(ws, player, msg);
+        break;
+      case 'set_track_instrument':
+        this.handleSetTrackInstrument(ws, player, msg);
         break;
       case 'set_track_sample':
         this.handleSetTrackSample(ws, player, msg);
@@ -1948,23 +1963,68 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }, undefined, msg.seq);
   }
 
-  private handleSetTrackSample = createTrackMutationHandler<
-    { trackId: string; sampleId: string; name: string },
-    ServerMessage
-  >({
-    getTrackId: (msg) => msg.trackId,
-    mutate: (track, msg) => {
-      track.sampleId = msg.sampleId;
-      track.name = msg.name;
-    },
-    toBroadcast: (msg, playerId) => ({
+  /**
+   * Change instrument (issue #63).
+   *
+   * Runs the same shared operation the browser reducer and MCP run, so all
+   * three transports validate the instrument against the canonical catalog and
+   * apply the identical engine-state policy. Unlike the other track handlers
+   * this one cannot use createTrackMutationHandler: the shared operation is
+   * pure, so the handler assigns the returned state the way handleMcpEdit does.
+   *
+   * A rejected request (unknown instrument or unknown track) is dropped without
+   * mutating or broadcasting, matching every other track mutation handler. The
+   * picker only ever offers catalog entries, so reaching this branch means a
+   * stale or hostile client, and answering it with an `error` frame would raise
+   * a banner in the sender's browser for a message a person never sent.
+   */
+  private async handleSetTrackInstrument(
+    _ws: WebSocket,
+    player: PlayerInfo,
+    msg: {
+      type: 'set_track_instrument' | 'set_track_sample';
+      trackId: string;
+      sampleId: string;
+      name?: string;
+      seq?: number;
+    }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const result = setTrackInstrument(this.state, msg);
+    if (!result.ok) {
+      console.warn(
+        `[WS] session=${this.sessionId} player=${player.id} `
+        + `Rejected set_track_instrument (${result.error.code}): ${result.error.message}`
+      );
+      return;
+    }
+    if (result.changed) {
+      this.state = result.state;
+      this.validateAndRepairState('handleSetTrackInstrument');
+      await this.persistToDoStorage();
+    }
+
+    // Always answer with the rollout-compatible envelope, even when a direct
+    // client used the new request type. One such request is broadcast to every
+    // tab, including older tabs whose exhaustive switch rejects the new event.
+    this.broadcast({
       type: 'track_sample_set',
       trackId: msg.trackId,
       sampleId: msg.sampleId,
-      name: msg.name,
-      playerId,
-    }),
-  });
+      name: result.track.name,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  /** Rolling-deploy alias; the caller-supplied name is never trusted. */
+  private async handleSetTrackSample(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_track_sample'; trackId: string; sampleId: string; name: string; seq?: number }
+  ): Promise<void> {
+    await this.handleSetTrackInstrument(ws, player, msg);
+  }
 
   private handleSetTrackVolume = createTrackMutationHandler<
     { trackId: string; volume: number },

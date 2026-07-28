@@ -16,6 +16,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Change Instrument — browser, WebSocket, and MCP (July 2026)
+
+Issue [#63](https://github.com/adewale/keyboardia/issues/63). Full design and
+test plan in [specs/CHANGE-INSTRUMENT.md](specs/CHANGE-INSTRUMENT.md).
+
+**Added:**
+- **Change a track's instrument from the browser.** A ♪ toggle on the desktop
+  track row and a Sound button in the landscape drawer open one picker over the
+  canonical instrument catalog —
+  the same `SamplePicker` component that adds tracks, with hover preview before
+  committing.
+- **One shared domain operation** (`app/src/shared/track-instrument.ts`) used by
+  the browser reducer, the Durable Object's WebSocket handler, and MCP. It
+  validates `sampleId` against `VALID_SAMPLE_IDS` at the message boundary and
+  rejects unknown instruments and unknown tracks without mutating.
+- **Wire protocol:** the Durable Object accepts the first-class
+  `set_track_instrument` operation, while product clients and broadcasts use
+  rollout-compatible `set_track_sample` / `track_sample_set` envelopes until
+  older open tabs and isolates have drained. Both paths run the shared operation;
+  no snapshot replacement is needed.
+- **MCP:** `edit_session` gains a `set_track_instrument` operation using the same
+  catalog enum as `add_track`. There is no MCP-specific catalog, validator, or
+  mutation implementation.
+- **Audio reconciliation** (`useTrackInstrumentReconcile`): a track's cached
+  per-track synth is disposed and rebuilt whenever its instrument changes,
+  whether the change came from this browser, a collaborator, an agent, or a
+  reconnect snapshot.
+
+**Behavior:**
+- The operation preserves the track's ID, list position, custom name, pattern,
+  parameter locks, volume, mute/solo, transpose, step count, and swing.
+- Engine-scoped `fmParams` are dropped on a real instrument change, so a value
+  tuned for `tone:fm-bass` cannot bleed into `tone:fm-bell` or lie dormant and
+  reappear later. Re-picking the instrument a track already plays is a no-op and
+  keeps them.
+- Published sessions reject the operation on every path; the browser control is
+  absent rather than disabled.
+- Renaming stays `set_track_name`, so replacing a sound can never erase a
+  collaborator's label. The old `set_track_sample` message, which required a
+  caller-supplied name, is retained as a compatibility alias and is no longer
+  emitted.
 #### Runtime-Neutral Dependency Boundaries (July 2026)
 
 **Changed:**
