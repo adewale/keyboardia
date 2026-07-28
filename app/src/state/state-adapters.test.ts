@@ -20,10 +20,10 @@ import {
   maybeInvalidateSelection,
   delegateToApplyMutation,
 } from './state-adapters';
-import { applyMutation } from './state-mutations';
-import { DEFAULT_STEP_COUNT } from './constants';
+import { applyMutation } from '../shared/state-mutations';
+import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import type { GridState, Track, SelectionState } from '../types';
-import type { SessionState, SessionTrack } from './state';
+import type { SessionState, SessionTrack } from '../shared/state';
 
 function makeTrack(overrides: Partial<Track> = {}): Track {
   return {

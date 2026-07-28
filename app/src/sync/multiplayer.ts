@@ -25,7 +25,7 @@ import {
   INTERNAL_ACTIONS,
   LOCAL_ONLY_ACTIONS,
   SYNCED_ACTIONS,
-} from '../shared/sync-classification';
+} from './sync-classification';
 
 // ============================================================================
 // Types (imported from shared module - canonical definitions)

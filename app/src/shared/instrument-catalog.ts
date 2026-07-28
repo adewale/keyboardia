@@ -166,10 +166,3 @@ export function getInstrumentName(id: string): string {
     ?? id;
 }
 
-export function isValidSampleId(sampleId: string): boolean {
-  return VALID_SAMPLE_IDS.has(sampleId);
-}
-
-export function getCanonicalSampleId(sampleId: string): string | null {
-  return VALID_SAMPLE_IDS.has(sampleId) ? sampleId : null;
-}

@@ -38,7 +38,7 @@ import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { gridReducer } from '../../src/state/grid';
 import { applyMutation } from '../../src/shared/state-mutations';
-import { gridStateToSessionState } from '../../src/shared/state-adapters';
+import { gridStateToSessionState } from '../../src/state/state-adapters';
 import { actionToMessage } from '../../src/sync/multiplayer';
 import { SYNCED_ACTIONS } from '../../src/sync/sync-classification';
 import type { GridState, GridAction } from '../../src/types';
