@@ -150,7 +150,8 @@ export function calculateStepTime(
  */
 export function advanceStep(
   currentStep: number,
-  loopRegion: { start: number; end: number } | null
+  loopRegion: { start: number; end: number } | null,
+  maxSteps = MAX_STEPS
 ): number {
   if (loopRegion) {
     if (currentStep >= loopRegion.end) {
@@ -158,34 +159,5 @@ export function advanceStep(
     }
     return currentStep + 1;
   }
-  return (currentStep + 1) % MAX_STEPS;
-}
-
-/**
- * Check if a step is within a loop region.
- *
- * @param step - Step index to check
- * @param loopRegion - Optional loop region {start, end}
- * @returns True if step is within loop bounds
- */
-export function isStepInLoop(
-  step: number,
-  loopRegion: { start: number; end: number } | null
-): boolean {
-  if (!loopRegion) {
-    return step >= 0 && step < MAX_STEPS;
-  }
-  return step >= loopRegion.start && step < loopRegion.end;
-}
-
-/**
- * Calculate effective tempo after applying any modifiers.
- * Currently a passthrough, but can be extended for tempo automation.
- *
- * @param baseTempo - Base tempo in BPM
- * @returns Effective tempo in BPM
- */
-export function getEffectiveTempo(baseTempo: number): number {
-  // Clamp to valid range
-  return Math.max(60, Math.min(180, baseTempo));
+  return (currentStep + 1) % maxSteps;
 }

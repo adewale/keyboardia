@@ -7,8 +7,10 @@
  *
  * Uses Playwright best practices with proper waits.
  *
- * Note: These tests require real backend for WebSocket sync.
- * They will automatically skip if the backend is unavailable.
+ * Note: These tests require a real backend for WebSocket sync, so the whole
+ * file skips under USE_MOCK_API. Once past that guard a backend is expected to
+ * be present — an unreachable backend fails these tests rather than skipping
+ * them, so a dead backend cannot produce a green run.
  *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
@@ -16,6 +18,7 @@
 import { BrowserContext, Page } from '@playwright/test';
 import { test, expect, getBaseUrl, waitForAppReady, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
+import { createE2EContext } from './browser-context';
 
 // Multiplayer tests require real backend - WebSocket sync cannot be mocked
 // across multiple browser contexts (each context has independent route mocks)
@@ -30,16 +33,23 @@ test.describe('Multiplayer real-time sync', () => {
   let page2: Page;
   let sessionId: string;
 
-  test.beforeEach(async ({ browser, request }) => {
+  test.beforeEach(async ({ browser, browserName, request }) => {
     // Create a fresh session for each test
+    // This file already skips wholesale under USE_MOCK_API (see top), so by the
+    // time we get here a real backend is expected. A session that still fails to
+    // create after createSessionWithRetry's retries means the backend is broken
+    // — that is a failure, not a reason to skip. The previous version caught the
+    // error, called test.skip(true, 'Backend unavailable'), and every test in
+    // the file then skipped itself again on `if (!sessionId)`, so a dead backend
+    // produced an all-green run.
     const data = await createSessionWithRetry(request, {
       tracks: [
         {
           id: 'mp-test-track',
           name: 'Test',
           sampleId: 'kick',
-          steps: Array(64).fill(false),
-          parameterLocks: Array(64).fill(null),
+          steps: Array(128).fill(false),
+          parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
           transpose: 0,
@@ -51,10 +61,11 @@ test.describe('Multiplayer real-time sync', () => {
       version: 1,
     });
     sessionId = data.id;
+    expect(sessionId, 'backend returned a session with no id').toBeTruthy();
 
     // Create two independent browser contexts (simulating two users)
-    context1 = await browser.newContext();
-    context2 = await browser.newContext();
+    context1 = await createE2EContext(browser, browserName);
+    context2 = await createE2EContext(browser, browserName);
     page1 = await context1.newPage();
     page2 = await context2.newPage();
   });
@@ -155,6 +166,7 @@ test.describe('Multiplayer real-time sync', () => {
     const muteButton1 = page1.locator('.mute-button, [data-testid="mute-button"]').first();
     const muteButton2 = page2.locator('.mute-button, [data-testid="mute-button"]').first();
 
+    // Every track row renders a mute button; its absence is a regression.
     await expect(muteButton1).toBeVisible({ timeout: 5000 });
     await expect(muteButton2).toBeVisible({ timeout: 5000 });
 
@@ -212,15 +224,17 @@ test.describe('Multiplayer real-time sync', () => {
 });
 
 test.describe('Multiplayer connection resilience', () => {
-  test('client reconnects after brief disconnection', async ({ browser, request }) => {
+  test('client reconnects after brief disconnection', async ({ browser, browserName, request }) => {
+    // A real backend is guaranteed here (the file skips under USE_MOCK_API), so
+    // a failure to create the session is a backend failure, not a skip.
     const result = await createSessionWithRetry(request, {
       tracks: [
         {
           id: 'reconnect-test',
           name: 'Test',
           sampleId: 'kick',
-          steps: Array(64).fill(false),
-          parameterLocks: Array(64).fill(null),
+          steps: Array(128).fill(false),
+          parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
           transpose: 0,
@@ -233,7 +247,7 @@ test.describe('Multiplayer connection resilience', () => {
     });
     const sessionId = result.id;
 
-    const context = await browser.newContext();
+    const context = await createE2EContext(browser, browserName);
     const page = await context.newPage();
 
     // Load session using proper waits

@@ -8,35 +8,16 @@
  * AudioWorkletProcessor.process() call that fires every ~2.67ms at 48kHz.
  */
 
-// ─── Types (must be self-contained — worklets can't import app modules) ───
-// KEEP IN SYNC with scheduler-types.ts (WorkletTrack, WorkletPLock, WorkletSchedulerState)
-
-interface WorkletTrack {
-  id: string;
-  sampleId: string;
-  steps: boolean[];
-  stepCount: number;
-  muted: boolean;
-  soloed: boolean;
-  transpose: number;
-  swing: number;
-  parameterLocks: (PLock | null)[];
-}
-
-interface PLock {
-  pitch?: number;
-  volume?: number;
-  tie?: boolean;
-}
-
-interface SchedulerState {
-  tempo: number;
-  swing: number;
-  tracks: WorkletTrack[];
-  loopRegion: { start: number; end: number } | null;
-  maxSteps: number;
-  defaultStepCount: number;
-}
+import type { WorkletSchedulerState as SchedulerState } from '../scheduler-types';
+import { SCHEDULE_AHEAD_SEC } from '../scheduler-types';
+import {
+  advanceStep,
+  calculateStepTime,
+  calculateSwingDelay,
+  calculateTiedDuration,
+  getStepDuration,
+  STEPS_PER_BEAT,
+} from '../timing-calculations';
 
 interface NoteEvent {
   type: 'note';
@@ -78,12 +59,6 @@ interface BeatEvent {
 // spikes during normal use, the lookahead is too short. If it stays at
 // zero across a wide variety of sessions, the lookahead can shrink.
 // See Lesson 33 for the documentation-by-measurement rule.
-// KEEP IN SYNC with scheduler-types.ts SCHEDULE_AHEAD_SEC
-const SCHEDULE_AHEAD_SEC = 0.15;
-const STEPS_PER_BEAT = 4;
-const SWING_DELAY_FACTOR = 0.5;
-const GATE_TIME_RATIO = 0.9;
-
 // ─── Processor ───────────────────────────────────────────────────────────
 
 class SchedulerWorkletProcessor extends AudioWorkletProcessor {
@@ -167,7 +142,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
 
   private schedule(now: number): void {
     const state = this.state!;
-    const stepDuration = this.getStepDuration(state.tempo);
+    const stepDuration = getStepDuration(state.tempo);
 
     // BPM change detection (same algorithm as scheduler.ts:238-251)
     if (this.lastTempo !== 0 && this.lastTempo !== state.tempo) {
@@ -208,17 +183,14 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
       // note event is received, which captures MessagePort transit latency.
 
       // Advance step (loop-region aware)
-      const loopRegion = state.loopRegion;
-      if (loopRegion) {
-        this.currentStep = this.currentStep >= loopRegion.end
-          ? loopRegion.start
-          : this.currentStep + 1;
-      } else {
-        this.currentStep = (this.currentStep + 1) % state.maxSteps;
-      }
+      this.currentStep = advanceStep(this.currentStep, state.loopRegion, state.maxSteps);
 
       this.totalStepsScheduled++;
-      this.nextStepTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
+      this.nextStepTime = calculateStepTime(
+        this.audioStartTime,
+        this.totalStepsScheduled,
+        state.tempo,
+      );
     }
   }
 
@@ -259,7 +231,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
       }
 
       // Tied duration
-      const tiedDuration = this.calculateTiedDuration(track, trackStep, trackStepCount, duration);
+      const tiedDuration = calculateTiedDuration(track, trackStep, trackStepCount, duration);
 
       // Track active note
       this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
@@ -281,12 +253,6 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
     }
   }
 
-  // ─── Helpers (pure math, ported from timing-calculations.ts) ─────────
-
-  private getStepDuration(tempo: number): number {
-    return 1 / ((tempo / 60) * STEPS_PER_BEAT);
-  }
-
   private calculateSwingTime(
     trackStep: number,
     time: number,
@@ -294,34 +260,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
     globalSwing: number,
     trackSwing: number
   ): number {
-    const swingAmount = globalSwing + trackSwing - (globalSwing * trackSwing);
-    const isSwungStep = trackStep % 2 === 1;
-    const swingDelay = isSwungStep ? duration * swingAmount * SWING_DELAY_FACTOR : 0;
-    return time + swingDelay;
-  }
-
-  private calculateTiedDuration(
-    track: { steps: boolean[]; parameterLocks: (PLock | null)[] },
-    startStep: number,
-    trackStepCount: number,
-    stepDuration: number
-  ): number {
-    let tieCount = 1;
-    let stepsChecked = 0;
-
-    while (stepsChecked < trackStepCount - 1) {
-      const nextStep = (startStep + 1 + stepsChecked) % trackStepCount;
-      const nextPLock = track.parameterLocks[nextStep];
-
-      if (track.steps[nextStep] && nextPLock?.tie === true) {
-        tieCount++;
-        stepsChecked++;
-      } else {
-        break;
-      }
-    }
-
-    return stepDuration * tieCount * GATE_TIME_RATIO;
+    return time + calculateSwingDelay(trackStep, globalSwing, trackSwing, duration);
   }
 }
 

@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
-import { arraysEqual } from './patternOps';
+import { arraysEqual } from '../shared/pattern-operations';
 
 const boolArrayArb = fc.array(fc.boolean(), { minLength: 0, maxLength: 64 });
 

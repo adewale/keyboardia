@@ -18,10 +18,7 @@
  * @see specs/STATELESS-MCP.md - "Musical and pitch analysis"
  */
 
-import {
-  BASE_NOTE,
-  isDrumTrack,
-} from '../shared/midi-core';
+import { isDrumTrack } from '../shared/midi-core';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { boundedPatternLength } from '../shared/pattern-expansion';
 import type { SessionState, SessionTrack } from '../shared/state';
@@ -425,6 +422,3 @@ export function analyzeSession(state: SessionState): SessionAnalysis {
     caveats,
   };
 }
-
-/** Re-exported so callers can name the base note the pitches are relative to. */
-export { BASE_NOTE };

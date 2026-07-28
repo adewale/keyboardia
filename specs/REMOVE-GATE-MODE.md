@@ -581,11 +581,7 @@ Remove `playbackMode` from track fixtures in all test files:
 | `app/test/integration/state-hash-parity.test.ts` | Remove `playbackMode` |
 | `app/test/integration/validators.test.ts` | Remove `playbackMode` |
 | `app/test/integration/message-types.test.ts` | Remove from message type lists |
-| `app/test/staging/effects-bypass-sync.test.ts` | Remove `playbackMode` |
-| `app/test/staging/effects-immediate-sync.test.ts` | Remove `playbackMode` |
-| `app/test/staging/failure-modes.test.ts` | Remove `playbackMode` |
-| `app/test/staging/kv-staleness.test.ts` | Remove `playbackMode` |
-| `app/test/staging/multiplayer-sync.test.ts` | Remove `playbackMode` |
+| Former `app/test/staging/*.test.ts` | Deleted after the test audit found the isolated tier was never collected and duplicated maintained contracts |
 | `app/test/unit/sync-classification.test.ts` | Remove `SET_TRACK_PLAYBACK_MODE` test case |
 | `app/test/unit/mutation-types.test.ts` | Remove `set_track_playback_mode` from lists |
 

@@ -12,12 +12,14 @@ import { parseMidi } from 'midi-file';
 import type { MidiData } from 'midi-file';
 import {
   exportToMidi,
+} from './midiExport';
+import {
   TICKS_PER_STEP,
   BASE_NOTE,
   DRUM_CHANNEL,
   DRUM_NOTE_MAP,
   SYNTH_PROGRAM_MAP,
-} from './midiExport';
+} from '../shared/midi-core';
 import type { Track } from '../types';
 import type { ParameterLock } from '../shared/sync-types';
 

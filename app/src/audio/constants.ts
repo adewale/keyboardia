@@ -87,50 +87,6 @@ export const SCHEDULER_BASE_MIDI_NOTE = C4_MIDI_NOTE;
 // Sample Processing Constants - SINGLE SOURCE OF TRUTH
 // ============================================================================
 
-/**
- * Reference sample for volume normalization.
- * All other samples are normalized relative to this sample's peak level.
- */
-export const VOLUME_REFERENCE_SAMPLE = 'public/instruments/piano/C3.mp3';
-
-/**
- * Expected peak level of the reference sample in dB.
- * This is the target peak level for all normalized samples.
- */
-export const VOLUME_REFERENCE_PEAK_DB = -1.4;
-
-/**
- * Tolerance for volume validation in dB.
- * Samples within ±VOLUME_TOLERANCE_DB of VOLUME_REFERENCE_PEAK_DB pass validation.
- */
-export const VOLUME_TOLERANCE_DB = 2.0;
-
-/**
- * Target sample rate for all processed audio files.
- */
-export const TARGET_SAMPLE_RATE = 44100;
-
-/**
- * Target channel count for all processed audio files.
- * 1 = mono, 2 = stereo
- */
-export const TARGET_CHANNELS = 1;
-
-/**
- * Target MP3 bitrate for converted samples.
- */
-export const TARGET_MP3_BITRATE = '128k';
-
-// ============================================================================
-// Playable Range Constants
-// ============================================================================
-
-/**
- * Maximum acceptable gap between samples in semitones.
- * Larger gaps result in audible pitch-shift artifacts.
- */
-export const MAX_ACCEPTABLE_PITCH_GAP = 6;
-
 // ============================================================================
 // Utility Functions
 // ============================================================================
@@ -143,12 +99,4 @@ export function midiToNoteName(midi: number): string {
   const octave = Math.floor(midi / 12) - 1;
   const note = NOTE_NAMES[midi % 12];
   return `${note}${octave}`;
-}
-
-/**
- * Check if a playable range includes the scheduler's default note.
- * If not, the instrument will be SILENT at default settings.
- */
-export function playableRangeIncludesDefault(range: { min: number; max: number }): boolean {
-  return SCHEDULER_BASE_MIDI_NOTE >= range.min && SCHEDULER_BASE_MIDI_NOTE <= range.max;
 }

@@ -3,9 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   applyMutation,
-  createInitialState,
   createDefaultTrack,
 } from './state-mutations';
+import { createInitialSessionState } from './session-defaults';
 import type { SessionState } from './state';
 
 /**
@@ -64,7 +64,7 @@ function createTestState(
   sourceInstrument: string,
   destInstrument: string
 ): SessionState {
-  const state = createInitialState();
+  const state = createInitialSessionState();
   const sourceTrack = createDefaultTrack('source', sourceInstrument, 'Source');
   const destTrack = createDefaultTrack('dest', destInstrument, 'Destination');
   return {
@@ -392,32 +392,33 @@ describe('Copy/Paste Playable Range Relationships', () => {
   });
 });
 
-describe('Copy/Paste Behavior Documentation', () => {
-  it('documents the current copy/paste behavior', () => {
-    /**
-     * CURRENT BEHAVIOR (as of this test):
-     *
-     * 1. Copy/paste copies steps and parameterLocks VERBATIM
-     * 2. No transformation or clamping is applied
-     * 3. Out-of-range notes are SILENTLY skipped at playback
-     * 4. UI shows visual warnings for out-of-range steps
-     *
-     * WHEN RANGES DON'T MATCH:
-     * - User copies Track A (piano) to Track B (808-kick)
-     * - Piano has wide range, 808-kick has narrow range
-     * - High-pitched notes copied to 808-kick will be silent
-     * - Steps appear active but produce no sound
-     *
-     * VISUAL FEEDBACK:
-     * - TrackRow shows out-of-range warnings via rangeWarnings
-     * - Steps have 'out-of-range' CSS class
-     * - ParameterLockEditor shows warning when pitch is out of range
-     *
-     * NO AUTOMATIC CLAMPING because:
-     * - Would change the musical content without user consent
-     * - Better to show warnings and let user decide
-     * - User might want to change the destination instrument
-     */
-    expect(true).toBe(true); // Documentation test
-  });
-});
+/**
+ * COPY/PASTE BEHAVIOUR NOTES
+ *
+ * This used to be a test — `it('documents the current copy/paste behavior')`
+ * whose entire body was a comment followed by `expect(true).toBe(true)`. It
+ * could not fail, and it inflated the pass count with prose. The prose is worth
+ * keeping; the fake test is not. The behaviour it describes is genuinely
+ * verified by the assertions above in this file.
+ *
+ * 1. Copy/paste copies steps and parameterLocks VERBATIM
+ * 2. No transformation or clamping is applied
+ * 3. Out-of-range notes are SILENTLY skipped at playback
+ * 4. UI shows visual warnings for out-of-range steps
+ *
+ * WHEN RANGES DON'T MATCH:
+ * - User copies Track A (piano) to Track B (808-kick)
+ * - Piano has wide range, 808-kick has narrow range
+ * - High-pitched notes copied to 808-kick will be silent
+ * - Steps appear active but produce no sound
+ *
+ * VISUAL FEEDBACK:
+ * - TrackRow shows out-of-range warnings via rangeWarnings
+ * - Steps have 'out-of-range' CSS class
+ * - ParameterLockEditor shows warning when pitch is out of range
+ *
+ * NO AUTOMATIC CLAMPING because:
+ * - Would change the musical content without user consent
+ * - Better to show warnings and let user decide
+ * - User might want to change the destination instrument
+ */

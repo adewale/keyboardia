@@ -12,6 +12,7 @@
  */
 
 import { test, expect, waitForAppReady, waitForAnimation, useMockAPI } from './global-setup';
+import { createPopulatedSessionWithRetry } from './test-utils';
 
 // These tests require mobile-safari project for proper iPhone emulation with touch support
 // Skip with mock API or when touch is not enabled (webkit Desktop Safari doesn't have hasTouch)
@@ -40,94 +41,43 @@ test.describe('Mobile Layout (iPhone)', () => {
   test('touch targets are adequate size', async ({ page }) => {
     const minTouchSize = 44;
 
-    const stepCells = page.locator('.step-cell');
-    const stepCount = await stepCells.count();
-
-    if (stepCount > 0) {
-      const firstStep = stepCells.first();
-      const box = await firstStep.boundingBox();
-      if (box) {
-        console.log(`Step cell size: ${box.width}x${box.height}`);
-      }
-    }
-
-    // Use data-testid for precise selection (avoids strict mode violation with multiple play buttons)
-    const playButton = page.locator('[data-testid="play-button"]');
-
-    if (await playButton.isVisible()) {
-      const box = await playButton.boundingBox();
-      if (box) {
-        console.log(`Play button size: ${box.width}x${box.height}`);
-        expect(box.width).toBeGreaterThanOrEqual(minTouchSize * 0.75);
-        expect(box.height).toBeGreaterThanOrEqual(minTouchSize * 0.75);
-      }
+    const controls = [
+      page.locator('.portrait-play-btn'),
+      page.locator('.orientation-hint-dismiss'),
+    ];
+    for (const control of controls) {
+      await expect(control).toBeVisible();
+      const box = await control.boundingBox();
+      expect(box, 'visible portrait control has no layout box').not.toBeNull();
+      expect(box!.width).toBeGreaterThanOrEqual(minTouchSize);
+      expect(box!.height).toBeGreaterThanOrEqual(minTouchSize);
     }
   });
 
-  test('sample picker is accessible on mobile', async ({ page }) => {
-    const picker = page.locator('.sample-picker');
-
-    if (await picker.isVisible()) {
-      await expect(picker).toBeVisible();
-
-      // Find any category header (they're buttons with .category-header class)
-      const categoryHeader = page.locator('.category-header').first();
-
-      if (await categoryHeader.isVisible()) {
-        // Check if already expanded (has instruments visible)
-        const instruments = page.locator('.instrument-btn');
-        const alreadyExpanded = await instruments.first().isVisible().catch(() => false);
-
-        if (!alreadyExpanded) {
-          // Tap to expand category
-          await categoryHeader.tap();
-          // Wait for expansion animation
-          await page.waitForTimeout(300);
-        }
-
-        // Verify instruments are now visible
-        await expect(instruments.first()).toBeVisible({ timeout: 2000 });
-        const instrumentCount = await instruments.count();
-        expect(instrumentCount).toBeGreaterThan(0);
-      }
-    }
+  test('portrait mode hides editing controls and directs users to rotate', async ({ page }) => {
+    await expect(page.locator('.sample-picker')).toBeHidden();
+    await expect(page.locator('.orientation-hint')).toContainText('Rotate to edit');
   });
 
-  test('track rows are scrollable', async ({ page }) => {
-    const tracksContainer = page.locator('.tracks, .sequencer-grid').first();
+  test('populated portrait tracks fit without horizontal overflow', async ({ page, request }) => {
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
+    await waitForAppReady(page);
 
-    if (await tracksContainer.isVisible()) {
-      const scrollInfo = await tracksContainer.evaluate((el) => ({
-        scrollWidth: el.scrollWidth,
-        clientWidth: el.clientWidth,
-        canScroll: el.scrollWidth > el.clientWidth,
-      }));
-
-      console.log(`Scroll info: ${JSON.stringify(scrollInfo)}`);
-
-      if (scrollInfo.canScroll) {
-        const initialScrollLeft = await tracksContainer.evaluate((el) => el.scrollLeft);
-
-        const box = await tracksContainer.boundingBox();
-        if (box) {
-          await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2);
-          await page.mouse.down();
-          await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2, { steps: 10 });
-          await page.mouse.up();
-
-          await waitForAnimation(page);
-
-          const newScrollLeft = await tracksContainer.evaluate((el) => el.scrollLeft);
-          console.log(`Scroll: ${initialScrollLeft} -> ${newScrollLeft}`);
-        }
-      }
-    }
+    const rows = page.locator('.portrait-track-row');
+    await expect(rows).toHaveCount(10);
+    const grid = page.locator('.portrait-grid');
+    const scrollInfo = await grid.evaluate((el) => ({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+    }));
+    expect(scrollInfo.scrollWidth).toBeLessThanOrEqual(scrollInfo.clientWidth + 1);
+    await expect(rows.last().locator('.portrait-step-cell').last()).toBeVisible();
   });
 
   test('velocity lane is hidden on small screens', async ({ page }) => {
-    const velocityLane = page.locator('.velocity-lane');
-    const isVisible = await velocityLane.isVisible({ timeout: 1000 }).catch(() => false);
-    console.log(`Velocity lane visible on mobile: ${isVisible}`);
+    // The test name is the claim; assert it rather than logging it.
+    await expect(page.locator('.velocity-lane')).toBeHidden();
   });
 });
 
@@ -137,78 +87,14 @@ test.describe('Mobile Touch Interactions', () => {
     await waitForAppReady(page);
   });
 
-  test('can tap to toggle steps', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
+  test('portrait step cells are read-only', async ({ page, request }) => {
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
+    await waitForAppReady(page);
 
-    if (!(await stepCell.isVisible())) {
-      test.skip(true, 'No step cells visible');
-      return;
-    }
-
-    const initialActive = await stepCell.evaluate((el) =>
-      el.classList.contains('active') ||
-      el.getAttribute('aria-pressed') === 'true'
-    );
-
-    await stepCell.tap();
-
-    // Wait for state change with web-first assertion
-    await expect(async () => {
-      const newActive = await stepCell.evaluate((el) =>
-        el.classList.contains('active') ||
-        el.getAttribute('aria-pressed') === 'true'
-      );
-      expect(newActive).not.toBe(initialActive);
-    }).toPass({ timeout: 1000 });
-  });
-
-  test('can add track via tap', async ({ page }) => {
-    const trackRows = page.locator('.track-row');
-    const initialTrackCount = await trackRows.count();
-
-    const instrumentBtn = page.locator('.instrument-btn, .sample-button').first();
-
-    try {
-      await instrumentBtn.waitFor({ state: 'visible', timeout: 2000 });
-      await instrumentBtn.tap();
-      await expect(trackRows).toHaveCount(initialTrackCount + 1, { timeout: 2000 });
-    } catch {
-      // Try expanding a category first
-      const category = page.locator('.category-header').first();
-      if (await category.isVisible()) {
-        await category.tap();
-
-        const instrumentBtnAfterExpand = page.locator('.instrument-btn, .sample-button').first();
-        await instrumentBtnAfterExpand.waitFor({ state: 'visible', timeout: 1000 });
-        await instrumentBtnAfterExpand.tap();
-
-        await expect(trackRows).toHaveCount(initialTrackCount + 1, { timeout: 2000 });
-      }
-    }
-  });
-
-  test('transport controls work with tap', async ({ page }) => {
-    // Use data-testid for precise selection (avoids strict mode violation with multiple play buttons)
-    const playButton = page.locator('[data-testid="play-button"]');
-
-    if (!(await playButton.isVisible())) {
-      test.skip(true, 'Play button not visible');
-      return;
-    }
-
-    await playButton.tap();
-
-    // Wait for playing indicator
-    await expect(async () => {
-      const isPlaying = await page.evaluate(() => {
-        const playhead = document.querySelector('.playhead, [data-testid="playhead"]');
-        const playingClass = document.querySelector('.playing, [data-playing="true"]');
-        return !!(playhead || playingClass);
-      });
-      console.log(`Playing after tap: ${isPlaying}`);
-    }).toPass({ timeout: 1000 }).catch(() => {});
-
-    await playButton.tap();
+    const stepCell = page.locator('.portrait-step-cell').first();
+    await expect(stepCell).toBeVisible();
+    await expect(stepCell).toHaveCSS('pointer-events', 'none');
   });
 
   test('no ghost clicks on mobile', async ({ page }) => {
@@ -219,26 +105,14 @@ test.describe('Mobile Touch Interactions', () => {
       });
     });
 
-    const stepCell = page.locator('.step-cell').first();
-    if (await stepCell.isVisible()) {
-      await stepCell.tap();
+    const secondPage = page.getByRole('button', { name: 'View steps 9-16' });
+    await secondPage.tap();
+    await expect(secondPage).toHaveAttribute('aria-pressed', 'true');
+    await waitForAnimation(page);
 
-      // Wait for potential ghost clicks
-      await waitForAnimation(page);
-
-      const clicks = await page.evaluate(() => {
-        return (window as unknown as { __clicks: number[] }).__clicks;
-      });
-
-      let ghostClickCount = 0;
-      for (let i = 1; i < clicks.length; i++) {
-        if (clicks[i] - clicks[i - 1] < 300) {
-          ghostClickCount++;
-        }
-      }
-
-      expect(ghostClickCount).toBe(0);
-      console.log(`Clicks: ${clicks.length}, Ghost clicks: ${ghostClickCount}`);
-    }
+    const clicks = await page.evaluate(() => {
+      return (window as unknown as { __clicks: number[] }).__clicks;
+    });
+    expect(clicks).toHaveLength(1);
   });
 });

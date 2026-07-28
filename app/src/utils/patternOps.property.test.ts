@@ -16,7 +16,7 @@ import {
   mirrorPattern,
   euclidean,
   applyEuclidean,
-} from './patternOps';
+} from '../shared/pattern-operations';
 import { arbVariableLengthPattern, arbEuclideanParams, MAX_STEPS } from '../test/arbitraries';
 
 describe('patternOps - Property-Based Tests', () => {

@@ -89,6 +89,46 @@ describe('useKeyboard Hook', () => {
       button.remove();
     });
 
+    // UK-001aa's guard was written as "every key except Escape", which handed
+    // Delete and Backspace to the focused control too. A <button> does nothing
+    // with those, so the shortcut specified in KEYBOARD-SHORTCUTS.md ("Delete /
+    // Backspace — Delete selected steps — With selection") silently stopped
+    // working once step cells became real buttons: Ctrl+clicking a step focuses
+    // it, which is the only way to reach the shortcut. UK-001aa passed
+    // throughout, because it only ever asked about Space.
+    it.each(['Delete', 'Backspace'])(
+      'UK-001ab: still fires %s when a native button has focus',
+      (key) => {
+        const onDelete = vi.fn();
+        renderHook(() => useKeyboard({ onDelete }));
+        const button = document.createElement('button');
+        document.body.appendChild(button);
+
+        const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true });
+        button.dispatchEvent(event);
+
+        expect(onDelete, `${key} was swallowed by the focused button`).toHaveBeenCalledTimes(1);
+        expect(event.defaultPrevented).toBe(true);
+        button.remove();
+      },
+    );
+
+    it('UK-001ac: leaves Enter activation on focused native buttons', () => {
+      // The other half of what the guard legitimately owns; without this the
+      // narrowing above could be over-applied to Enter and nothing would say so.
+      const onEnter = vi.fn();
+      renderHook(() => useKeyboard({ onEnter }));
+      const button = document.createElement('button');
+      document.body.appendChild(button);
+
+      const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true });
+      button.dispatchEvent(event);
+
+      expect(onEnter).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+      button.remove();
+    });
+
     it('UK-001b: calls onEscape when Escape key is pressed', () => {
       const onEscape = vi.fn();
       renderHook(() => useKeyboard({ onEscape }));

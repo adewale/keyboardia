@@ -3,11 +3,18 @@
  * Tests for centralized audio trigger system
  */
 
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
+
+const engineMock = vi.hoisted(() => ({
+  isInitialized: vi.fn(),
+  initialize: vi.fn(),
+}));
+
+vi.mock('./engine', () => ({ audioEngine: engineMock }));
+
 import {
   // Gesture validation
   VALID_AUDIO_GESTURES,
-  INVALID_AUDIO_GESTURES,
   isValidAudioGesture,
   // Trigger types
   TIER_1_TRIGGERS,
@@ -20,12 +27,9 @@ import {
   shouldTriggerAudioLoad,
   // Audio unlock state
   isAudioUnlocked,
-  notifyAudioUnlocked,
-  subscribeToAudioUnlock,
   // Action functions
   signalMusicIntent,
 } from './audioTriggers';
-import type { AudioTrigger } from './audioTriggers';
 
 describe('audioTriggers', () => {
   describe('gesture validation', () => {
@@ -51,26 +55,6 @@ describe('audioTriggers', () => {
         expect(VALID_AUDIO_GESTURES).not.toContain('mouseenter');
         expect(VALID_AUDIO_GESTURES).not.toContain('mouseover');
         expect(VALID_AUDIO_GESTURES).not.toContain('mousemove');
-      });
-    });
-
-    describe('INVALID_AUDIO_GESTURES', () => {
-      it('includes hover events', () => {
-        expect(INVALID_AUDIO_GESTURES).toContain('mouseenter');
-        expect(INVALID_AUDIO_GESTURES).toContain('mouseover');
-        expect(INVALID_AUDIO_GESTURES).toContain('mousemove');
-      });
-
-      it('includes passive events', () => {
-        expect(INVALID_AUDIO_GESTURES).toContain('scroll');
-        expect(INVALID_AUDIO_GESTURES).toContain('wheel');
-        expect(INVALID_AUDIO_GESTURES).toContain('focus');
-        expect(INVALID_AUDIO_GESTURES).toContain('blur');
-      });
-
-      it('includes lifecycle events', () => {
-        expect(INVALID_AUDIO_GESTURES).toContain('load');
-        expect(INVALID_AUDIO_GESTURES).toContain('resize');
       });
     });
 
@@ -272,84 +256,63 @@ describe('audioTriggers', () => {
   });
 
   describe('audio unlock state', () => {
-    it('isAudioUnlocked returns boolean', () => {
-      expect(typeof isAudioUnlocked()).toBe('boolean');
+    it('publishes the false-to-true unlock transition', async () => {
+      vi.resetModules();
+      const audio = await import('./audioTriggers');
+      const listener = vi.fn();
+
+      audio.subscribeToAudioUnlock(listener);
+      audio.notifyAudioUnlocked();
+
+      expect(listener.mock.calls).toEqual([[false], [true]]);
+      expect(audio.isAudioUnlocked()).toBe(true);
     });
 
-    it('notifyAudioUnlocked does not throw', () => {
-      expect(() => notifyAudioUnlocked()).not.toThrow();
-    });
+    it('does not notify an unsubscribed listener', async () => {
+      vi.resetModules();
+      const audio = await import('./audioTriggers');
+      const listener = vi.fn();
 
-    it('after notifyAudioUnlocked, isAudioUnlocked returns true', () => {
-      notifyAudioUnlocked();
-      expect(isAudioUnlocked()).toBe(true);
-    });
-
-    it('subscribeToAudioUnlock returns unsubscribe function', () => {
-      const listener = () => {};
-      const unsubscribe = subscribeToAudioUnlock(listener);
-      expect(typeof unsubscribe).toBe('function');
+      const unsubscribe = audio.subscribeToAudioUnlock(listener);
       unsubscribe();
-    });
+      audio.notifyAudioUnlocked();
 
-    it('subscribeToAudioUnlock calls listener immediately with current state', () => {
-      let receivedState: boolean | undefined;
-      const listener = (state: boolean) => {
-        receivedState = state;
-      };
-      const unsubscribe = subscribeToAudioUnlock(listener);
-      expect(receivedState).toBeDefined();
-      unsubscribe();
-    });
-
-    it('multiple subscribers all receive notification', () => {
-      const states: boolean[] = [];
-      const listeners = [
-        (s: boolean) => states.push(s),
-        (s: boolean) => states.push(s),
-        (s: boolean) => states.push(s),
-      ];
-      const unsubscribes = listeners.map(l => subscribeToAudioUnlock(l));
-
-      // Each listener should have been called once immediately
-      expect(states.length).toBe(3);
-
-      unsubscribes.forEach(u => u());
+      expect(listener).toHaveBeenCalledOnce();
+      expect(listener).toHaveBeenLastCalledWith(false);
     });
   });
 
   describe('signalMusicIntent audio initialization', () => {
-    it('signalMusicIntent should not throw for add_track', () => {
-      // signalMusicIntent is called on clicks (valid gestures)
-      // It should start async audio initialization to enable previews
-      expect(() => signalMusicIntent('add_track')).not.toThrow();
+    beforeEach(() => {
+      delete (window as unknown as { __KEYBOARDIA_DISABLE_AUDIO_PRELOAD__?: boolean })
+        .__KEYBOARDIA_DISABLE_AUDIO_PRELOAD__;
+      engineMock.isInitialized.mockReset().mockReturnValue(false);
+      engineMock.initialize.mockReset().mockResolvedValue(undefined);
     });
 
-    it('signalMusicIntent should not throw for step_toggle', () => {
-      expect(() => signalMusicIntent('step_toggle')).not.toThrow();
-    });
+    it.each(['add_track', 'step_toggle', 'chromatic_click'] as const)(
+      'initializes audio for the %s music intent',
+      async trigger => {
+        await signalMusicIntent(trigger);
 
-    it('signalMusicIntent should not throw for chromatic_click', () => {
-      expect(() => signalMusicIntent('chromatic_click')).not.toThrow();
-    });
-
-    it('INVARIANT: signalMusicIntent is ONLY called from click handlers', () => {
-      // Document invariant: signalMusicIntent is called from click handlers
-      // Click is a valid gesture, so async audio init is safe
-      // Tier 2 triggers are the valid triggers for signalMusicIntent
-      const tier2Triggers: AudioTrigger[] = ['step_toggle', 'add_track', 'chromatic_click'];
-      for (const trigger of tier2Triggers) {
-        expect(shouldPreloadAudio(trigger)).toBe(true);
-        expect(shouldTriggerAudioLoad(trigger)).toBe(true);
+        expect(engineMock.initialize).toHaveBeenCalledOnce();
+        expect(isAudioUnlocked()).toBe(true);
       }
+    );
+
+    it('does not initialize audio for preview-only intent', async () => {
+      await signalMusicIntent('preview_hover');
+
+      expect(engineMock.initialize).not.toHaveBeenCalled();
     });
 
-    it('INVARIANT: signalMusicIntent enables hover previews after click', () => {
-      // After signalMusicIntent is called (from a click), audio initializes async
-      // This means hover previews will work after the first instrument click
-      // The async init calls notifyAudioUnlocked() on success
-      // Test: after module loads, isAudioUnlocked should be accessible
-      expect(typeof isAudioUnlocked).toBe('function');
+    it('keeps low-priority edit intents synchronous when the browser harness disables preloading', async () => {
+      (window as unknown as { __KEYBOARDIA_DISABLE_AUDIO_PRELOAD__?: boolean })
+        .__KEYBOARDIA_DISABLE_AUDIO_PRELOAD__ = true;
+
+      await signalMusicIntent('step_toggle');
+
+      expect(engineMock.initialize).not.toHaveBeenCalled();
     });
   });
 });

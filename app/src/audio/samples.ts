@@ -1,5 +1,14 @@
 import type { Sample } from '../types';
 
+/** Preserve the voice's designed balance, reducing gain only when it clips. */
+function limitMeasuredPeak(data: Float32Array): void {
+  let peak = 0;
+  for (const sample of data) peak = Math.max(peak, Math.abs(sample));
+  if (peak <= 1) return;
+  const gain = 1 / peak;
+  for (let index = 0; index < data.length; index++) data[index] *= gain;
+}
+
 // Generate synthesized sounds using Web Audio API
 // Covers drums, bass, synths, and FX - all procedurally generated
 
@@ -355,6 +364,7 @@ async function createConga(ctx: AudioContext): Promise<AudioBuffer> {
   const length = Math.floor(duration * sampleRate);
   const buffer = ctx.createBuffer(1, length, sampleRate);
   const data = buffer.getChannelData(0);
+  const maximumComponentSum = 1 + 0.3 + 0.15 + 0.4;
 
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
@@ -368,7 +378,8 @@ async function createConga(ctx: AudioContext): Promise<AudioBuffer> {
     const slap = (Math.random() * 2 - 1) * Math.exp(-t * 100) * 0.4;
     // Envelope
     const envelope = Math.exp(-t * 6);
-    data[i] = (fundamental + harmonic2 + harmonic3 + slap) * envelope * 0.7;
+    data[i] = (fundamental + harmonic2 + harmonic3 + slap)
+      / maximumComponentSum * envelope * 0.9;
   }
 
   return buffer;
@@ -452,11 +463,12 @@ async function createWoodblock(ctx: AudioContext): Promise<AudioBuffer> {
     // Resonant filtered click
     const freq = 800;
     const fundamental = Math.sin(2 * Math.PI * freq * t);
-    const harmonic = Math.sin(2 * Math.PI * freq * 2.7 * t) * 0.4;
+    const harmonic = Math.sin(2 * Math.PI * freq * 2.7 * t);
     // Sharp attack, medium decay with resonance
     const envelope = Math.exp(-t * 20);
     const attack = Math.exp(-t * 200);
-    data[i] = (fundamental + harmonic) * envelope * (0.7 + attack * 0.3);
+    // Keep the weighted oscillator sum within [-1, 1] before the envelope.
+    data[i] = (fundamental * 0.7 + harmonic * 0.3) * envelope * (0.7 + attack * 0.3);
   }
 
   return buffer;
@@ -471,7 +483,6 @@ async function createBass(ctx: AudioContext): Promise<AudioBuffer> {
   const buffer = ctx.createBuffer(1, length, sampleRate);
   const data = buffer.getChannelData(0);
   const freq = 55; // A1
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     // Sawtooth-ish bass with harmonics
@@ -481,8 +492,9 @@ async function createBass(ctx: AudioContext): Promise<AudioBuffer> {
     }
     // Plucky envelope
     const amp = Math.exp(-t * 4) * 0.9;
-    data[i] = sample * amp * 0.8;
+    data[i] = sample * amp;
   }
+  limitMeasuredPeak(data);
 
   return buffer;
 }
@@ -515,7 +527,6 @@ async function createLead(ctx: AudioContext): Promise<AudioBuffer> {
   const buffer = ctx.createBuffer(1, length, sampleRate);
   const data = buffer.getChannelData(0);
   const freq = 440; // A4
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     // Square-ish wave (odd harmonics)
@@ -526,8 +537,9 @@ async function createLead(ctx: AudioContext): Promise<AudioBuffer> {
     // Synthy envelope with sustain
     const attack = Math.min(t * 100, 1);
     const release = t > 0.4 ? Math.exp(-(t - 0.4) * 10) : 1;
-    data[i] = sample * attack * release * 0.75;
+    data[i] = sample * attack * release * 0.9;
   }
+  limitMeasuredPeak(data);
 
   return buffer;
 }
@@ -539,7 +551,6 @@ async function createPluck(ctx: AudioContext): Promise<AudioBuffer> {
   const buffer = ctx.createBuffer(1, length, sampleRate);
   const data = buffer.getChannelData(0);
   const freq = 330; // E4
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     // Karplus-Strong-ish pluck (harmonics that decay at different rates)
@@ -548,8 +559,9 @@ async function createPluck(ctx: AudioContext): Promise<AudioBuffer> {
       const harmonicDecay = Math.exp(-t * (5 + h * 3));
       sample += Math.sin(2 * Math.PI * freq * h * t) * harmonicDecay / h;
     }
-    data[i] = sample * 0.8;
+    data[i] = sample * 0.9;
   }
+  limitMeasuredPeak(data);
 
   return buffer;
 }
@@ -562,7 +574,6 @@ async function createChord(ctx: AudioContext): Promise<AudioBuffer> {
   const data = buffer.getChannelData(0);
   // Minor chord: root, minor third, fifth
   const freqs = [220, 261.63, 330]; // A3, C4, E4
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     let sample = 0;
@@ -575,8 +586,9 @@ async function createChord(ctx: AudioContext): Promise<AudioBuffer> {
     // Soft envelope
     const attack = Math.min(t * 20, 1);
     const release = t > 0.5 ? Math.exp(-(t - 0.5) * 5) : 1;
-    data[i] = sample * attack * release * 0.65;
+    data[i] = sample * attack * release * 0.9;
   }
+  limitMeasuredPeak(data);
 
   return buffer;
 }

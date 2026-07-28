@@ -14,7 +14,6 @@ export {
   MAX_MESSAGE_SIZE,
   MAX_TRACKS,
   MAX_STEPS,
-  DEFAULT_STEP_COUNT,
   MIN_TEMPO,
   MAX_TEMPO,
   MIN_SWING,
@@ -23,12 +22,6 @@ export {
   MAX_VOLUME,
   MIN_TRANSPOSE,
   MAX_TRANSPOSE,
-  MIN_PLOCK_PITCH,
-  MAX_PLOCK_PITCH,
-  MIN_PLOCK_VOLUME,
-  MAX_PLOCK_VOLUME,
-  MIN_CURSOR_POSITION,
-  MAX_CURSOR_POSITION,
   clamp,
 } from '../shared/constants';
 
@@ -227,7 +220,10 @@ function checkTrackCountWithinLimit(tracks: SessionTrack[]): string[] {
  * Check tempo is within bounds
  */
 function checkTempoWithinBounds(tempo: number): string[] {
-  if (tempo < MIN_TEMPO || tempo > MAX_TEMPO) {
+  // `tempo < MIN || tempo > MAX` is FALSE for NaN, so the previous version
+  // reported a non-finite tempo as valid — the one value most worth catching
+  // here, since this function is the storage boundary's second opinion.
+  if (!isValidNumberInRange(tempo, MIN_TEMPO, MAX_TEMPO)) {
     return [`Tempo ${tempo} is outside valid range [${MIN_TEMPO}, ${MAX_TEMPO}]`];
   }
   return [];
@@ -237,7 +233,8 @@ function checkTempoWithinBounds(tempo: number): string[] {
  * Check swing is within bounds
  */
 function checkSwingWithinBounds(swing: number): string[] {
-  if (swing < MIN_SWING || swing > MAX_SWING) {
+  // Comparison operators are NaN-false; see checkTempoWithinBounds.
+  if (!isValidNumberInRange(swing, MIN_SWING, MAX_SWING)) {
     return [`Swing ${swing} is outside valid range [${MIN_SWING}, ${MAX_SWING}]`];
   }
   return [];
@@ -273,8 +270,14 @@ function checkStepCountWithinBounds(tracks: SessionTrack[]): string[] {
   const violations: string[] = [];
 
   for (const track of tracks) {
+    // `undefined` means "use the default" and is valid; any other non-numeric
+    // value is not, and must not be hidden by the `??` below.
+    if (track.stepCount !== undefined && !Number.isFinite(track.stepCount)) {
+      violations.push(`Track ${track.id}: stepCount ${track.stepCount} is not a finite number`);
+      continue;
+    }
     const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
-    if (stepCount < 1 || stepCount > MAX_STEPS) {
+    if (!isValidNumberInRange(stepCount, 1, MAX_STEPS)) {
       violations.push(`Track ${track.id}: stepCount ${stepCount} is outside valid range [1, ${MAX_STEPS}]`);
     }
   }
@@ -289,7 +292,7 @@ function checkVolumeWithinBounds(tracks: SessionTrack[]): string[] {
   const violations: string[] = [];
 
   for (const track of tracks) {
-    if (track.volume < MIN_VOLUME || track.volume > MAX_VOLUME) {
+    if (!isValidNumberInRange(track.volume, MIN_VOLUME, MAX_VOLUME)) {
       violations.push(`Track ${track.id}: volume ${track.volume} is outside valid range [${MIN_VOLUME}, ${MAX_VOLUME}]`);
     }
   }
@@ -389,8 +392,18 @@ export function repairStateInvariants(state: SessionState): {
   }
   repairedState.tracks = uniqueTracks;
 
-  // Clamp tempo
-  if (repairedState.tempo < MIN_TEMPO) {
+  // Clamp tempo. The non-finite case must come first, but not for the reason
+  // it looks like: this function clones with JSON.parse(JSON.stringify(...)),
+  // which turns NaN into null, and `null < MIN_TEMPO` coerces to `0 < 60` and
+  // repairs. The value the comparisons genuinely could not see is **undefined**
+  // — JSON.stringify drops the key entirely — and `undefined < 60` and
+  // `undefined > 180` are both false, so a stored state with no tempo came out
+  // of the repair still having no tempo. That is exactly the legacy/corrupted
+  // KV case this function exists for.
+  if (!Number.isFinite(repairedState.tempo)) {
+    repairs.push(`Replaced non-finite tempo ${repairedState.tempo} with ${MIN_TEMPO}`);
+    repairedState.tempo = MIN_TEMPO;
+  } else if (repairedState.tempo < MIN_TEMPO) {
     repairs.push(`Clamped tempo from ${repairedState.tempo} to ${MIN_TEMPO}`);
     repairedState.tempo = MIN_TEMPO;
   } else if (repairedState.tempo > MAX_TEMPO) {
@@ -398,8 +411,11 @@ export function repairStateInvariants(state: SessionState): {
     repairedState.tempo = MAX_TEMPO;
   }
 
-  // Clamp swing
-  if (repairedState.swing < MIN_SWING) {
+  // Clamp swing (non-finite first — chiefly a missing key; see tempo above).
+  if (!Number.isFinite(repairedState.swing)) {
+    repairs.push(`Replaced non-finite swing ${repairedState.swing} with ${MIN_SWING}`);
+    repairedState.swing = MIN_SWING;
+  } else if (repairedState.swing < MIN_SWING) {
     repairs.push(`Clamped swing from ${repairedState.swing} to ${MIN_SWING}`);
     repairedState.swing = MIN_SWING;
   } else if (repairedState.swing > MAX_SWING) {
@@ -455,9 +471,30 @@ export function repairStateInvariants(state: SessionState): {
       repairs.push(`Truncated parameterLocks array for track ${track.id}`);
     }
 
-    // Clamp step count
+    // Clamp step count.
+    //
+    // Checked on the field rather than on `track.stepCount ?? DEFAULT`: the
+    // default only lands in the local, so a bad field value survived the repair
+    // untouched. That matters more than it looks, because line 376 clones with
+    // JSON.parse(JSON.stringify(...)) and **JSON.stringify turns NaN and
+    // ±Infinity into null** — so by the time this runs, a NaN stepCount is
+    // already `null`, `null ?? DEFAULT` is a finite 16, and nothing fired.
+    // `undefined` is legal (it means "use the default"); null and non-finite
+    // numbers are not.
+    if (track.stepCount !== undefined && !Number.isFinite(track.stepCount)) {
+      repairs.push(
+        `Replaced non-finite stepCount ${track.stepCount} with ${DEFAULT_STEP_COUNT} ` +
+        `for track ${track.id}`
+      );
+      track.stepCount = DEFAULT_STEP_COUNT;
+    }
     const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
-    if (stepCount < 1) {
+    if (!Number.isFinite(stepCount)) {
+      track.stepCount = DEFAULT_STEP_COUNT;
+      repairs.push(
+        `Replaced non-finite stepCount ${stepCount} with ${DEFAULT_STEP_COUNT} for track ${track.id}`
+      );
+    } else if (stepCount < 1) {
       track.stepCount = 1;
       repairs.push(`Clamped stepCount from ${stepCount} to 1 for track ${track.id}`);
     } else if (stepCount > MAX_STEPS) {
@@ -465,8 +502,13 @@ export function repairStateInvariants(state: SessionState): {
       repairs.push(`Clamped stepCount from ${stepCount} to ${MAX_STEPS} for track ${track.id}`);
     }
 
-    // Clamp volume
-    if (track.volume < MIN_VOLUME) {
+    // Clamp volume (non-finite first — chiefly a missing key; see tempo above).
+    if (!Number.isFinite(track.volume)) {
+      repairs.push(
+        `Replaced non-finite volume ${track.volume} with ${MAX_VOLUME} for track ${track.id}`
+      );
+      track.volume = MAX_VOLUME;
+    } else if (track.volume < MIN_VOLUME) {
       repairs.push(`Clamped volume from ${track.volume} to ${MIN_VOLUME} for track ${track.id}`);
       track.volume = MIN_VOLUME;
     } else if (track.volume > MAX_VOLUME) {

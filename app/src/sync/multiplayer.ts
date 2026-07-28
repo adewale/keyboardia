@@ -21,6 +21,11 @@ import { MutationTracker, type MutationStats } from './mutation-tracker';
 import { MessageQueue } from './MessageQueue';
 import { RecoveryManager } from './RecoveryManager';
 import { registerHmrDispose } from '../utils/hmr';
+import {
+  INTERNAL_ACTIONS,
+  LOCAL_ONLY_ACTIONS,
+  SYNCED_ACTIONS,
+} from './sync-classification';
 
 // ============================================================================
 // Types (imported from shared module - canonical definitions)
@@ -2239,6 +2244,23 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
     return null;
   }
 
+  // Playback is local state, but play/stop are broadcast as read-only clock
+  // signals. It is the sole deliberate exception to the state-sync policy.
+  if (action.type === 'SET_PLAYING') {
+    return action.isPlaying ? { type: 'play' } : { type: 'stop' };
+  }
+
+  // The classification manifest is an active production gate. A local or
+  // internal action can never become a state-mutating wire message merely
+  // because a conversion case is added below.
+  if (
+    LOCAL_ONLY_ACTIONS.has(action.type as never)
+    || INTERNAL_ACTIONS.has(action.type as never)
+    || !SYNCED_ACTIONS.has(action.type as never)
+  ) {
+    return null;
+  }
+
   switch (action.type) {
     case 'TOGGLE_STEP':
       return { type: 'toggle_step', trackId: action.trackId, step: action.step };
@@ -2349,8 +2371,6 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         type: 'set_loop_region',
         region: action.region,
       };
-    case 'SET_PLAYING':
-      return action.isPlaying ? { type: 'play' } : { type: 'stop' };
     // Phase 32: Pattern operations (sync fix)
     case 'ROTATE_PATTERN':
       return {
@@ -2527,11 +2547,4 @@ export function sendBatchSetParameterLocks(
  */
 export function sendReorderTracks(trackId: string, toIndex: number): void {
   multiplayer.send({ type: 'reorder_tracks', trackId, toIndex });
-}
-
-/**
- * Phase 11: Get current remote cursors
- */
-export function getRemoteCursors(): Map<string, RemoteCursor> {
-  return multiplayer.getState().cursors;
 }

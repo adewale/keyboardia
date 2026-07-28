@@ -125,27 +125,3 @@ export function useOrientationMode(): OrientationMode {
 
   return mode;
 }
-
-/**
- * Convenience hook to check if we're in portrait consumption mode
- */
-export function useIsPortraitMode(): boolean {
-  const mode = useOrientationMode();
-  return mode === 'portrait';
-}
-
-/**
- * Convenience hook to check if we're in landscape creation mode
- */
-export function useIsLandscapeMode(): boolean {
-  const mode = useOrientationMode();
-  return mode === 'landscape';
-}
-
-/**
- * Convenience hook to check if we're on mobile (portrait or landscape)
- */
-export function useIsMobile(): boolean {
-  const mode = useOrientationMode();
-  return mode !== 'desktop';
-}

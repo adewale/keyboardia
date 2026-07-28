@@ -17,9 +17,6 @@ import {
   SYNCED_ACTIONS,
   LOCAL_ONLY_ACTIONS,
   INTERNAL_ACTIONS,
-  isSyncedAction,
-  isLocalOnlyAction,
-  isInternalAction,
 } from '../../src/sync/sync-classification';
 import { actionToMessage } from '../../src/sync/multiplayer';
 import { MUTATING_MESSAGE_TYPES, READONLY_MESSAGE_TYPES } from '../../src/shared/messages';
@@ -28,60 +25,6 @@ import type { GridAction, Track, ParameterLock, EffectsState, FMParams } from '.
 // ============================================================================
 // Test Helpers
 // ============================================================================
-
-/**
- * All GridAction type strings from src/types.ts.
- *
- * NOTE: This list is now REDUNDANT with the compile-time exhaustiveness check
- * in sync-classification.ts. The TypeScript compiler will error if any action
- * is missing from the classification sets. This list is kept for test clarity.
- */
-const ALL_GRID_ACTION_TYPES = [
-  // State mutations (synced)
-  'TOGGLE_STEP',
-  'SET_TEMPO',
-  'SET_SWING',
-  'SET_PARAMETER_LOCK',
-  'ADD_TRACK',
-  'DELETE_TRACK',
-  'CLEAR_TRACK',
-  'SET_TRACK_INSTRUMENT',  // Change instrument (issue #63)
-  'SET_TRACK_SAMPLE',
-  'SET_TRACK_VOLUME',
-  'SET_TRACK_TRANSPOSE',
-  'SET_TRACK_STEP_COUNT',
-  'SET_TRACK_SWING',       // Phase 31D: Per-track swing
-  'SET_TRACK_NAME',        // Phase 31D: Track naming
-  'SET_EFFECTS',
-  'SET_SCALE',             // Phase 29E: Key Assistant
-  'SET_FM_PARAMS',
-  'COPY_SEQUENCE',
-  'MOVE_SEQUENCE',
-  'SET_SESSION_NAME',
-  // Phase 31B: Pattern manipulation
-  'ROTATE_PATTERN',
-  'INVERT_PATTERN',
-  'REVERSE_PATTERN',
-  'MIRROR_PATTERN',
-  'EUCLIDEAN_FILL',
-  // Phase 31G: Workflow
-  'REORDER_TRACKS',
-  // Local only (not synced)
-  'TOGGLE_MUTE',
-  'TOGGLE_SOLO',
-  'EXCLUSIVE_SOLO',
-  'CLEAR_ALL_SOLOS',
-  'UNMUTE_ALL',            // Phase 31D
-  'SET_PLAYING',
-  'SET_CURRENT_STEP',
-  // Internal (not synced)
-  'LOAD_STATE',
-  'RESET_STATE',
-  'REMOTE_STEP_SET',
-  'REMOTE_MUTE_SET',
-  'REMOTE_SOLO_SET',
-  'SET_TRACK_STEPS',
-] as const;
 
 /**
  * Create a mock GridAction for testing actionToMessage.
@@ -216,22 +159,7 @@ function createMockAction(type: string): GridAction {
 describe('Sync Classification Verification', () => {
 
   describe('Classification Completeness', () => {
-    it('all GridAction types are classified in exactly one set', () => {
-      const allClassified = new Set([
-        ...SYNCED_ACTIONS,
-        ...LOCAL_ONLY_ACTIONS,
-        ...INTERNAL_ACTIONS,
-      ]);
-
-      // Check that every known action is classified
-      for (const actionType of ALL_GRID_ACTION_TYPES) {
-        expect(
-          allClassified.has(actionType),
-          `Action type "${actionType}" is not classified in any set. Add it to SYNCED_ACTIONS, LOCAL_ONLY_ACTIONS, or INTERNAL_ACTIONS in sync-classification.ts`
-        ).toBe(true);
-      }
-
-      // Check that no action is in multiple sets (no duplicates)
+    it('does not assign an action to conflicting policies', () => {
       const syncedAndLocal = [...SYNCED_ACTIONS].filter(a => LOCAL_ONLY_ACTIONS.has(a as never));
       const syncedAndInternal = [...SYNCED_ACTIONS].filter(a => INTERNAL_ACTIONS.has(a as never));
       const localAndInternal = [...LOCAL_ONLY_ACTIONS].filter(a => INTERNAL_ACTIONS.has(a as never));
@@ -239,18 +167,6 @@ describe('Sync Classification Verification', () => {
       expect(syncedAndLocal, 'Some actions are in both SYNCED and LOCAL_ONLY').toEqual([]);
       expect(syncedAndInternal, 'Some actions are in both SYNCED and INTERNAL').toEqual([]);
       expect(localAndInternal, 'Some actions are in both LOCAL_ONLY and INTERNAL').toEqual([]);
-    });
-
-    it('has the expected number of classified actions', () => {
-      // 29 synced + 11 local-only + 8 internal = 48 total
-      // (issue #63 added SET_TRACK_INSTRUMENT to synced)
-      // (Phase 31F added SELECT_STEP, CLEAR_SELECTION to local-only)
-      // (Phase 31F/31G added DELETE_SELECTED_STEPS, APPLY_TO_SELECTION, SET_LOOP_REGION to synced)
-      // (Phase 36 added FOCUS_TRACK, FOCUS_STEP, BLUR_FOCUS to local-only)
-      // (REORDER_TRACK_BY_ID added to INTERNAL for commutative track reorder - remote-only action)
-      // Note: TypeScript exhaustiveness check in sync-classification.ts now enforces completeness
-      const totalClassified = SYNCED_ACTIONS.size + LOCAL_ONLY_ACTIONS.size + INTERNAL_ACTIONS.size;
-      expect(totalClassified).toBe(48);
     });
   });
 
@@ -260,23 +176,13 @@ describe('Sync Classification Verification', () => {
      * Exception: ADD_TRACK uses sendAddTrack separately (returns null from actionToMessage)
      */
     it('SYNCED_ACTIONS produce messages (except special cases)', () => {
-      // Special cases: actions classified as synced but with pending wire implementation
-      // or non-standard send patterns. These still pass compile-time exhaustiveness check.
+      // These actions use dedicated send functions because their wire payload
+      // needs reducer state that is not present on the GridAction itself.
       const specialCases = new Set([
         'ADD_TRACK',         // Uses sendAddTrack separately
-        // Pattern manipulation - classified as synced, wire implementation pending
-        'SET_TRACK_NAME',    // Phase 31D: Pending implementation
-        'ROTATE_PATTERN',    // Phase 31B: Pending implementation
-        'INVERT_PATTERN',    // Phase 31B: Pending implementation
-        'REVERSE_PATTERN',   // Phase 31B: Pending implementation
-        'MIRROR_PATTERN',    // Phase 31B: Pending implementation
-        'EUCLIDEAN_FILL',    // Phase 31B: Pending implementation
         'REORDER_TRACKS',    // Phase 31G: Uses handleTrackReorder separately
-        // Note: REORDER_TRACK_BY_ID is in INTERNAL_ACTIONS (remote-only), not SYNCED_ACTIONS
-        // Phase 31F/31G: Batch operations use separate sync handlers
         'DELETE_SELECTED_STEPS', // Uses handleBatchClearSteps separately
         'APPLY_TO_SELECTION',    // Uses handleBatchSetParameterLocks separately
-        'SET_LOOP_REGION',       // Pending wire implementation
       ]);
 
       for (const actionType of SYNCED_ACTIONS) {
@@ -307,18 +213,9 @@ describe('Sync Classification Verification', () => {
       // Same special cases as above
       const specialCases = new Set([
         'ADD_TRACK',         // Uses sendAddTrack separately
-        'SET_TRACK_NAME',    // Phase 31D: Pending implementation
-        'ROTATE_PATTERN',    // Phase 31B: Pending implementation
-        'INVERT_PATTERN',    // Phase 31B: Pending implementation
-        'REVERSE_PATTERN',   // Phase 31B: Pending implementation
-        'MIRROR_PATTERN',    // Phase 31B: Pending implementation
-        'EUCLIDEAN_FILL',    // Phase 31B: Pending implementation
         'REORDER_TRACKS',    // Phase 31G: Uses handleTrackReorder separately
-        // Note: REORDER_TRACK_BY_ID is in INTERNAL_ACTIONS (remote-only), not SYNCED_ACTIONS
-        // Phase 31F/31G: Batch operations use separate sync handlers
         'DELETE_SELECTED_STEPS', // Uses handleBatchClearSteps separately
         'APPLY_TO_SELECTION',    // Uses handleBatchSetParameterLocks separately
-        'SET_LOOP_REGION',       // Pending wire implementation
       ]);
 
       for (const actionType of SYNCED_ACTIONS) {
@@ -400,8 +297,7 @@ describe('Sync Classification Verification', () => {
 
     it('mute actions are classified as LOCAL_ONLY', () => {
       expect(LOCAL_ONLY_ACTIONS.has('TOGGLE_MUTE')).toBe(true);
-      expect(isLocalOnlyAction('TOGGLE_MUTE')).toBe(true);
-      expect(isSyncedAction('TOGGLE_MUTE')).toBe(false);
+      expect(SYNCED_ACTIONS.has('TOGGLE_MUTE' as never)).toBe(false);
     });
 
     it('solo actions are classified as LOCAL_ONLY', () => {
@@ -409,13 +305,9 @@ describe('Sync Classification Verification', () => {
       expect(LOCAL_ONLY_ACTIONS.has('EXCLUSIVE_SOLO')).toBe(true);
       expect(LOCAL_ONLY_ACTIONS.has('CLEAR_ALL_SOLOS')).toBe(true);
 
-      expect(isLocalOnlyAction('TOGGLE_SOLO')).toBe(true);
-      expect(isLocalOnlyAction('EXCLUSIVE_SOLO')).toBe(true);
-      expect(isLocalOnlyAction('CLEAR_ALL_SOLOS')).toBe(true);
-
-      expect(isSyncedAction('TOGGLE_SOLO')).toBe(false);
-      expect(isSyncedAction('EXCLUSIVE_SOLO')).toBe(false);
-      expect(isSyncedAction('CLEAR_ALL_SOLOS')).toBe(false);
+      expect(SYNCED_ACTIONS.has('TOGGLE_SOLO' as never)).toBe(false);
+      expect(SYNCED_ACTIONS.has('EXCLUSIVE_SOLO' as never)).toBe(false);
+      expect(SYNCED_ACTIONS.has('CLEAR_ALL_SOLOS' as never)).toBe(false);
     });
 
     it('mute actions do not produce sync messages', () => {
@@ -435,29 +327,4 @@ describe('Sync Classification Verification', () => {
     });
   });
 
-  describe('Helper Functions', () => {
-    it('isSyncedAction returns true only for SYNCED_ACTIONS', () => {
-      expect(isSyncedAction('TOGGLE_STEP')).toBe(true);
-      expect(isSyncedAction('SET_TEMPO')).toBe(true);
-      expect(isSyncedAction('TOGGLE_MUTE')).toBe(false);
-      expect(isSyncedAction('LOAD_STATE')).toBe(false);
-      expect(isSyncedAction('unknown')).toBe(false);
-    });
-
-    it('isLocalOnlyAction returns true only for LOCAL_ONLY_ACTIONS', () => {
-      expect(isLocalOnlyAction('TOGGLE_MUTE')).toBe(true);
-      expect(isLocalOnlyAction('TOGGLE_SOLO')).toBe(true);
-      expect(isLocalOnlyAction('SET_PLAYING')).toBe(true);
-      expect(isLocalOnlyAction('TOGGLE_STEP')).toBe(false);
-      expect(isLocalOnlyAction('LOAD_STATE')).toBe(false);
-    });
-
-    it('isInternalAction returns true only for INTERNAL_ACTIONS', () => {
-      expect(isInternalAction('LOAD_STATE')).toBe(true);
-      expect(isInternalAction('RESET_STATE')).toBe(true);
-      expect(isInternalAction('REMOTE_STEP_SET')).toBe(true);
-      expect(isInternalAction('TOGGLE_STEP')).toBe(false);
-      expect(isInternalAction('TOGGLE_MUTE')).toBe(false);
-    });
-  });
 });

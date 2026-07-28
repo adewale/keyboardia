@@ -11,7 +11,8 @@
  * This helper makes the clamping explicit so the engine can decide what
  * to do (warn, fall back to native playbackRate, etc).
  *
- * KEEP IN SYNC with pitch-shift.worklet.ts parameterDescriptors.
+ * The worklet imports these constants for its AudioParam descriptor, so the
+ * clamping path and browser-visible range cannot drift.
  */
 
 export const PITCH_WORKLET_MAX_SEMITONES = 24;

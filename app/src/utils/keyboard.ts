@@ -161,37 +161,3 @@ export function getShortcutsByCategory(category: KeyboardShortcut['category']): 
     s => s.category === category && s.implemented && s.type === 'keyboard'
   );
 }
-
-/**
- * Get all shortcuts filtered by category, including mouse-based.
- * Used for documentation purposes.
- */
-export function getAllShortcutsByCategory(category: KeyboardShortcut['category']): KeyboardShortcut[] {
-  return KEYBOARD_SHORTCUTS.filter(s => s.category === category && s.implemented);
-}
-
-/**
- * Parse a key event into a normalized string representation.
- * E.g., Ctrl+Shift+S on Windows, Cmd+Shift+S on Mac.
- */
-export function normalizeKeyEvent(e: KeyboardEvent): string {
-  const parts: string[] = [];
-
-  if (e.metaKey) parts.push('Cmd');
-  if (e.ctrlKey) parts.push('Ctrl');
-  if (e.altKey) parts.push('Alt');
-  if (e.shiftKey) parts.push('Shift');
-
-  // Normalize key names
-  let key = e.key;
-  if (key === ' ') key = 'Space';
-  if (key === 'Backspace') key = 'Backspace';
-  if (key === 'Delete') key = 'Delete';
-
-  // Don't include modifier keys as the main key
-  if (!['Control', 'Shift', 'Alt', 'Meta'].includes(key)) {
-    parts.push(key);
-  }
-
-  return parts.join('+');
-}

@@ -6,11 +6,6 @@
  */
 
 /**
- * Regex to detect social media crawlers via User-Agent
- */
-const SOCIAL_CRAWLER_REGEX = /facebookexternalhit|facebot|twitterbot|linkedinbot|discordbot|slackbot|whatsapp|telegrambot/i;
-
-/**
  * Session metadata for social previews
  */
 export interface SessionMeta {
@@ -18,14 +13,6 @@ export interface SessionMeta {
   name: string | null;
   trackCount: number;
   tempo: number;
-}
-
-/**
- * Check if the request is from a social media crawler
- */
-export function isSocialCrawler(request: Request): boolean {
-  const userAgent = request.headers.get('User-Agent') || '';
-  return SOCIAL_CRAWLER_REGEX.test(userAgent);
 }
 
 /**

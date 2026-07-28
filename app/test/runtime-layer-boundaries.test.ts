@@ -162,7 +162,7 @@ describe('runtime dependency boundaries', () => {
   it('carries package capabilities through modules reached from serializable state', () => {
     const mutatedGraph = scanProductionGraph(SRC_ROOT, {
       sourceOverrides: new Map([
-        ['utils/patternOps.ts', "import 'tone'; export * from '../shared/pattern-operations';"],
+        ['shared/pattern-operations.ts', "import 'tone'; export const marker = true;"],
       ]),
     });
     const mutatedStateModules = new Set(
@@ -175,14 +175,14 @@ describe('runtime dependency boundaries', () => {
       imports: mutatedGraph.externalImports,
       appliesTo: module => mutatedStateModules.has(module),
       isAllowed: specifier => packageIsAllowed(STATE_PACKAGES, specifier),
-    })).toContain('State packages: utils/patternOps.ts -> package:tone');
+    })).toContain('State packages: shared/pattern-operations.ts -> package:tone');
   });
 
   it('rejects an indirect music bridge into a client runtime', () => {
     const mutatedGraph = scanProductionGraph(SRC_ROOT, {
       sourceOverrides: new Map([
-        ['music/session-analysis.ts', "export * from '../utils/patternOps';"],
-        ['utils/patternOps.ts', "export * from '../audio/engine';"],
+        ['music/session-analysis.ts', "export * from '../shared/pattern-operations';"],
+        ['shared/pattern-operations.ts', "export * from '../audio/engine';"],
       ]),
     });
 
@@ -192,7 +192,7 @@ describe('runtime dependency boundaries', () => {
       edges: mutatedGraph.edges,
       isAllowed: module => /^(?:music|shared)\//.test(module),
     })).toContain(
-      'Music: music/session-analysis.ts -> utils/patternOps.ts',
+      'Music: music/session-analysis.ts -> shared/pattern-operations.ts -> audio/engine.ts',
     );
   });
 });

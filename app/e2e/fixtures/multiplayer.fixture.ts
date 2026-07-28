@@ -10,6 +10,7 @@
 import { test as base, expect, BrowserContext, Page } from '@playwright/test';
 import { createSessionWithRetry } from '../test-utils';
 import { createTrack, TrackData } from './session.fixture';
+import { createE2EContext } from '../browser-context';
 
 /**
  * Two-client fixture result
@@ -33,7 +34,7 @@ export const test = base.extend<{
   /**
    * Two independent browser contexts connected to the same session
    */
-  twoClients: async ({ browser, request }, use) => {
+  twoClients: async ({ browser, browserName, request }, use) => {
     // Create a fresh session
     const { id: sessionId } = await createSessionWithRetry(request, {
       tracks: [
@@ -45,8 +46,8 @@ export const test = base.extend<{
     });
 
     // Create two independent browser contexts
-    const context1 = await browser.newContext();
-    const context2 = await browser.newContext();
+    const context1 = await createE2EContext(browser, browserName);
+    const context2 = await createE2EContext(browser, browserName);
     const page1 = await context1.newPage();
     const page2 = await context2.newPage();
 
@@ -67,7 +68,7 @@ export const test = base.extend<{
   /**
    * Two clients with pre-populated tracks
    */
-  twoClientsWithTracks: async ({ browser, request }, use) => {
+  twoClientsWithTracks: async ({ browser, browserName, request }, use) => {
     const tracks: TrackData[] = [
       createTrack({ id: 'kick', name: 'Kick', sampleId: 'kick' }),
       createTrack({ id: 'snare', name: 'Snare', sampleId: 'snare' }),
@@ -80,8 +81,8 @@ export const test = base.extend<{
       version: 1,
     });
 
-    const context1 = await browser.newContext();
-    const context2 = await browser.newContext();
+    const context1 = await createE2EContext(browser, browserName);
+    const context2 = await createE2EContext(browser, browserName);
     const page1 = await context1.newPage();
     const page2 = await context2.newPage();
 

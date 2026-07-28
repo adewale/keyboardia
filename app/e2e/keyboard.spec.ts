@@ -21,6 +21,18 @@ function isMobileProject(projectName: string): boolean {
   return projectName.startsWith('mobile-');
 }
 
+/**
+ * New sessions start empty, so any test that needs a `.step-cell` has to add a
+ * track first. Several tests here previously guarded on `.step-cell` visibility
+ * and silently did nothing because that guard was always false.
+ */
+async function addKickTrack(page: import('@playwright/test').Page): Promise<void> {
+  const kickButton = page.getByRole('button', { name: /808 Kick/i });
+  await expect(kickButton).toBeVisible({ timeout: 10000 });
+  await kickButton.click();
+  await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
+}
+
 test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires physical keyboard');
@@ -87,7 +99,12 @@ test.describe('Keyboard Shortcuts', () => {
     await waitForAppReady(page);
   });
 
-  test('Space starts and stops playback', async ({ page }) => {
+  // Space -> Play/Pause is specified in specs/KEYBOARD-SHORTCUTS.md and wired in
+  // src/hooks/useKeyboard.ts. It is not conditional, so this test is not either
+  // — the previous "(if implemented)" version wrapped a bare console.log in
+  // `.toPass().catch(() => {})` and could not fail.
+  test('Space starts and stops playback', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Real audio playback is owned by Chromium; headless WebKit can wedge on AudioContext.resume()');
     const playButton = page.getByTestId('play-button');
     await expect(playButton).toHaveAttribute('aria-label', 'Play');
 
@@ -98,6 +115,28 @@ test.describe('Keyboard Shortcuts', () => {
     await page.keyboard.press('Space');
     await expect(playButton).toHaveAttribute('aria-label', 'Play');
     await expect(playButton).not.toHaveClass(/playing/);
+  });
+
+  // "Ctrl+A selects all (if implemented)" was deleted rather than fixed: it is
+  // not implemented, not in useKeyboard.ts, and not in the shortcut table in
+  // specs/KEYBOARD-SHORTCUTS.md. Selection is Ctrl/Cmd+Click per that spec. The
+  // test pressed Ctrl+A, logged a count, and asserted nothing — a passing test
+  // for a feature that does not exist.
+
+  test('Delete clears selected steps', async ({ page }) => {
+    await addKickTrack(page);
+
+    const stepCell = page.locator('.step-cell').first();
+    await expect(stepCell).toBeVisible();
+
+    // Activate the step, then select it (Ctrl+Click per KEYBOARD-SHORTCUTS.md).
+    await stepCell.click();
+    await expect(stepCell, 'clicking a step should activate it').toHaveClass(/active/);
+
+    await stepCell.click({ modifiers: ['Control'] });
+    await page.keyboard.press('Delete');
+
+    await expect(stepCell, 'Delete should clear the selected step').not.toHaveClass(/active/);
   });
 
   // NOTE: "Undo/Redo with Ctrl+Z and Ctrl+Y" test was removed.

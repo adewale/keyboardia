@@ -22,9 +22,6 @@ import {
   isSynthParam,
 } from './effect-param-mapping';
 
-// Re-export classification functions so existing importers don't break
-export { isEffectParam, isSynthParam } from './effect-param-mapping';
-
 // ─── Types ──────────────────────────────────────────────────────────────
 
 export interface XYParamUpdate {

@@ -12,6 +12,7 @@
 import { test as base, expect, Page, Locator, devices } from '@playwright/test';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 import type { SessionState } from './test-utils';
+import { configureE2EPage } from './browser-context';
 
 /**
  * Whether we're running in CI environment
@@ -35,13 +36,48 @@ export interface CreateSessionInput {
   version?: number;
 }
 
+async function settleWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    promise.then(() => undefined),
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, timeoutMs);
+    }),
+  ]);
+  if (timer) clearTimeout(timer);
+}
+
 /**
  * Test base for HTTP-backed session creation and isolated browser storage.
  */
 export const test = base.extend<{
   createSession: (data: CreateSessionInput) => Promise<{ id: string }>;
   isolatedPage: Page;
+  releasePageAudio: void;
 }>({
+  /**
+   * Every E2E document owns its AudioContext. Close it before Playwright reuses
+   * the browser process so one test cannot starve the next test's page.
+   */
+  releasePageAudio: [async ({ page, browserName }, use) => {
+    await configureE2EPage(page, browserName);
+    await use();
+    if (page.isClosed()) return;
+    const shutdown = page.evaluate(() => {
+      const engine = (window as unknown as {
+        __audioEngine__?: { shutdown?: () => Promise<void> };
+      }).__audioEngine__;
+      return engine?.shutdown?.();
+    }).catch(() => {
+      // A test may intentionally navigate or close the page during teardown.
+      // The pagehide lifecycle handler owns cleanup in that case.
+    });
+    // Normally wait for close() so WebKit does not accumulate live contexts
+    // across a serial worker. A wedged media process can leave close() pending
+    // forever, so bound the wait and let page destruction be the fallback.
+    await settleWithin(shutdown, 2_000);
+  }, { auto: true }],
+
   /**
    * Create a session through the configured HTTP backend. With USE_MOCK_API=1,
    * Vite handles the request; otherwise this exercises the real Worker.

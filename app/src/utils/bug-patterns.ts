@@ -1636,20 +1636,6 @@ export function runAllDetections(): Map<string, BugDetectionResult> {
 }
 
 /**
- * Get pattern by ID
- */
-export function getPattern(id: string): BugPattern | undefined {
-  return BUG_PATTERNS.find(p => p.id === id);
-}
-
-/**
- * Get patterns by category
- */
-export function getPatternsByCategory(category: BugCategory): BugPattern[] {
-  return BUG_PATTERNS.filter(p => p.category === category);
-}
-
-/**
  * Search patterns by symptom keyword
  */
 export function searchPatternsBySymptom(keyword: string): BugPattern[] {
@@ -1658,21 +1644,6 @@ export function searchPatternsBySymptom(keyword: string): BugPattern[] {
     p.symptoms.some(s => s.toLowerCase().includes(lower)) ||
     p.description.toLowerCase().includes(lower)
   );
-}
-
-/**
- * Get code patterns for static analysis
- */
-export function getAllCodePatterns(): { patternId: string; regex: string }[] {
-  const results: { patternId: string; regex: string }[] = [];
-
-  for (const pattern of BUG_PATTERNS) {
-    for (const regex of pattern.detection.codePatterns || []) {
-      results.push({ patternId: pattern.id, regex });
-    }
-  }
-
-  return results;
 }
 
 // Initialize global interface

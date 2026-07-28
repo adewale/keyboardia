@@ -637,7 +637,7 @@ fc.assert(fc.property(
 |----------|------------------|
 | Timing monotonicity | step₁ < step₂ ⟹ time(step₁) ≤ time(step₂) |
 | Swing on odd steps | step mod 2 = 0 ⟹ swingDelay(step) = 0 |
-| Loop containment | loopRegion ⟹ ∀ t: currentStep ∈ [start, end) |
+| Loop containment | loopRegion ⟹ ∀ t: currentStep ∈ [start, end] |
 | Tied duration | tiedDuration(start, n) = n × stepDuration × 0.9 |
 
 ---

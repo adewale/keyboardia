@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { recorder } from '../audio/recorder';
 import { requireAudioEngine, tryGetEngineForPreview } from '../audio/audioTriggers';
-import { detectTransients } from '../audio/slicer';
+import { extractSlice, sliceByTransients, sliceFromNormalizedRange } from '../audio/slicer';
 import { Waveform } from './Waveform';
 import { Add, Close, Scissors } from '../icons';
 import './Recorder.css';
@@ -88,21 +88,12 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     }
 
     const calculateSlices = () => {
-      // Use preview trigger - don't block if not loaded
-      const audioEngine = tryGetEngineForPreview('preview_slice');
-      if (!audioEngine) return;
-
-      const audioContext = audioEngine.getAudioContext();
-      if (!audioContext) return;
-
       // Sensitivity: 0 = few slices (high threshold), 100 = many slices (low threshold)
       const threshold = 1 - (sensitivity / 100) * 0.8; // Range: 0.2 to 1.0
-      const transients = detectTransients(recordedBuffer, threshold, 0.05);
-
-      // Convert to normalized positions
       const duration = recordedBuffer.duration;
-      const points = transients
-        .map(t => t / duration)
+      const points = sliceByTransients(recordedBuffer, 16, threshold).slices
+        .slice(1)
+        .map(slice => slice.startTime / duration)
         .filter(p => p > 0.02 && p < 0.98); // Skip very start/end
 
       setSlicePoints(points);
@@ -146,15 +137,8 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
       }
     }
 
-    const startTime = startPercent * recordedBuffer.duration;
-    const endTime = endPercent * recordedBuffer.duration;
-
-    // Create a slice buffer
-    const sampleRate = recordedBuffer.sampleRate;
-    const startSample = Math.floor(startTime * sampleRate);
-    const endSample = Math.floor(endTime * sampleRate);
-    const sliceBuffer = audioContext.createBuffer(1, endSample - startSample, sampleRate);
-    sliceBuffer.copyToChannel(recordedBuffer.getChannelData(0).slice(startSample, endSample), 0);
+    const slice = sliceFromNormalizedRange(recordedBuffer, startPercent, endPercent);
+    const sliceBuffer = extractSlice(audioContext, recordedBuffer, slice);
 
     // Play it
     const source = audioContext.createBufferSource();
@@ -181,14 +165,8 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
       const tracksToAdd = Math.min(allPoints.length - 1, maxTracks - trackCount);
 
       for (let i = 0; i < tracksToAdd; i++) {
-        const startTime = allPoints[i] * recordedBuffer.duration;
-        const endTime = allPoints[i + 1] * recordedBuffer.duration;
-
-        const sampleRate = recordedBuffer.sampleRate;
-        const startSample = Math.floor(startTime * sampleRate);
-        const endSample = Math.floor(endTime * sampleRate);
-        const sliceBuffer = audioContext.createBuffer(1, endSample - startSample, sampleRate);
-        sliceBuffer.copyToChannel(recordedBuffer.getChannelData(0).slice(startSample, endSample), 0);
+        const slice = sliceFromNormalizedRange(recordedBuffer, allPoints[i], allPoints[i + 1]);
+        const sliceBuffer = extractSlice(audioContext, recordedBuffer, slice);
 
         const sampleId = `slice-${Date.now()}-${i}`;
         const name = `Slice ${i + 1}`;

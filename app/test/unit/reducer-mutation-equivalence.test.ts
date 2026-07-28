@@ -1,14 +1,32 @@
 /**
  * Reducer-Mutation Equivalence Tests
  *
- * These tests verify that gridReducer and applyMutation produce IDENTICAL
- * results for all SYNCED actions. This catches divergence bugs where
- * someone changes one but not the other.
+ * WHAT THESE ACTUALLY COVER, which is not what the file was built for.
  *
- * WHY THIS MATTERS:
- * - gridReducer (client) and applyMutation (shared) have duplicate logic
- * - If they diverge, client and server state will differ
- * - This test suite is the safety net that catches divergence
+ * The original premise: gridReducer (client) and applyMutation (shared) hold
+ * duplicate logic, and this suite is the net that catches them diverging. That
+ * premise expired. Phase 3 routed every SYNCED case in gridReducer through
+ * `delegateToApplyMutation`, so 27 of the 28 SYNCED actions have no separate
+ * client implementation left — `SET_SESSION_NAME` is the sole exception and it
+ * has no test here. Both sides of every comparison below now run the same
+ * function.
+ *
+ * The July 2026 audit caught this by sabotage: neutering `applyMutation` to
+ * `return state` broke both sides identically, and all 29 tests passed. A
+ * suite whose stated job is detecting divergence detected a function that had
+ * stopped working at all.
+ *
+ * What survives is still worth running, because two things in the path are
+ * genuinely independent of applyMutation:
+ *   - actionToMessage, which translates a GridAction into a wire message
+ *   - the GridState <-> SessionState adapters
+ * A break in either shows up here as an inequality. `expectEquivalentAndChanged`
+ * supplies the missing half: the mutation must also move the state, so a no-op
+ * implementation can no longer satisfy the comparison. Under the same sabotage
+ * 28 of the 29 tests now fail.
+ *
+ * If a SYNCED action ever regains an independent client implementation, this
+ * file becomes a true equivalence suite again for that action, at no cost.
  *
  * ARCHITECTURE:
  * - gridReducer works on GridState (client-side state)
@@ -20,110 +38,13 @@ import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { gridReducer } from '../../src/state/grid';
 import { applyMutation } from '../../src/shared/state-mutations';
+import { gridStateToSessionState } from '../../src/state/state-adapters';
 import { actionToMessage } from '../../src/sync/multiplayer';
 import { SYNCED_ACTIONS } from '../../src/sync/sync-classification';
-import type { GridState, GridAction, Track } from '../../src/types';
-import type { SessionState, SessionTrack } from '../../src/shared/state';
+import type { GridState, GridAction } from '../../src/types';
 import type { ClientMessageBase } from '../../src/shared/message-types';
-import { MAX_STEPS, STEPS_PER_PAGE } from '../../src/types';
+import { MAX_STEPS } from '../../src/types';
 import { DEFAULT_EFFECTS_STATE } from '../../src/audio/toneEffects';
-
-// ============================================================================
-// State Adapters
-// ============================================================================
-
-/**
- * Convert GridState to SessionState for comparison.
- * Only includes synced fields.
- */
-function gridStateToSessionState(gridState: GridState): SessionState {
-  return {
-    tracks: gridState.tracks.map(trackToSessionTrack),
-    tempo: gridState.tempo,
-    swing: gridState.swing,
-    effects: gridState.effects,
-    scale: gridState.scale,
-    loopRegion: gridState.loopRegion,
-    version: 1,
-  };
-}
-
-/**
- * Convert Track to SessionTrack.
- */
-function trackToSessionTrack(track: Track): SessionTrack {
-  return {
-    id: track.id,
-    name: track.name,
-    sampleId: track.sampleId,
-    steps: track.steps,
-    parameterLocks: track.parameterLocks,
-    volume: track.volume,
-    muted: track.muted,
-    soloed: track.soloed,
-    transpose: track.transpose,
-    stepCount: track.stepCount,
-    swing: track.swing,
-    fmParams: track.fmParams,
-  };
-}
-
-/**
- * Compare two session states for equivalence.
- * Ignores version and local-only fields.
- */
-function statesAreEquivalent(a: SessionState, b: SessionState): boolean {
-  // Compare tracks
-  if (a.tracks.length !== b.tracks.length) return false;
-  for (let i = 0; i < a.tracks.length; i++) {
-    if (!tracksAreEquivalent(a.tracks[i], b.tracks[i])) return false;
-  }
-
-  // Compare global settings
-  if (a.tempo !== b.tempo) return false;
-  if (a.swing !== b.swing) return false;
-
-  // Compare effects (deep equality)
-  if (JSON.stringify(a.effects) !== JSON.stringify(b.effects)) return false;
-
-  // Compare scale (deep equality)
-  if (JSON.stringify(a.scale) !== JSON.stringify(b.scale)) return false;
-
-  // Compare loop region
-  if (JSON.stringify(a.loopRegion) !== JSON.stringify(b.loopRegion)) return false;
-
-  return true;
-}
-
-/**
- * Compare two tracks for equivalence.
- * Ignores local-only fields (muted, soloed - per "My Ears, My Control").
- */
-function tracksAreEquivalent(a: SessionTrack, b: SessionTrack): boolean {
-  if (a.id !== b.id) return false;
-  if (a.name !== b.name) return false;
-  if (a.sampleId !== b.sampleId) return false;
-  if (a.volume !== b.volume) return false;
-  if (a.transpose !== b.transpose) return false;
-  if (a.stepCount !== b.stepCount) return false;
-  if (a.swing !== b.swing) return false;
-
-  // Compare steps (only within stepCount)
-  const stepCount = a.stepCount ?? STEPS_PER_PAGE;
-  for (let i = 0; i < stepCount; i++) {
-    if (a.steps[i] !== b.steps[i]) return false;
-  }
-
-  // Compare parameter locks (only within stepCount)
-  for (let i = 0; i < stepCount; i++) {
-    if (JSON.stringify(a.parameterLocks[i]) !== JSON.stringify(b.parameterLocks[i])) return false;
-  }
-
-  // Compare FM params
-  if (JSON.stringify(a.fmParams) !== JSON.stringify(b.fmParams)) return false;
-
-  return true;
-}
 
 // ============================================================================
 // Test Fixtures
@@ -180,9 +101,38 @@ const NON_STANDARD_SYNC_ACTIONS = new Set([
   'APPLY_TO_SELECTION',    // Uses selection state not in action
   'REORDER_TRACKS',        // Uses handleTrackReorder directly
   'SET_LOOP_REGION',       // Has actionToMessage but complex validation differs
+  'SET_SESSION_NAME',      // Updates session metadata, which GridState does not contain
 ]);
 
 // ============================================================================
+/**
+ * Assert the two paths agree AND that the mutation actually moved the state.
+ *
+ * The witness is what makes these tests capable of failing. Phase 3 made every
+ * SYNCED action in gridReducer delegate to applyMutation via
+ * delegateToApplyMutation, so both sides of the comparison now run the same
+ * function: 27 of the 28 SYNCED actions have no independent client
+ * implementation left (SET_SESSION_NAME is the only exception, and it has no
+ * test here). Neutering applyMutation to `return state` broke both sides
+ * identically and all 29 tests in this file still passed.
+ *
+ * Equality alone therefore proves nothing. Requiring the result to differ from
+ * the input makes a no-op implementation fail, and keeps the real remaining
+ * coverage — actionToMessage and the GridState/SessionState adapters, which
+ * are genuinely independent of applyMutation.
+ */
+function expectEquivalentAndChanged(
+  reducerAsSession: unknown,
+  mutationResult: unknown,
+  before: unknown,
+): void {
+  expect(reducerAsSession).toEqual(mutationResult);
+  expect(
+    mutationResult,
+    'the mutation left the state untouched, so the equivalence above is f(x) === f(x)',
+  ).not.toEqual(before);
+}
+
 // Equivalence Tests
 // ============================================================================
 
@@ -208,7 +158,7 @@ describe('Reducer-Mutation Equivalence', () => {
 
       // Compare results
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('SET_TEMPO: gridReducer and applyMutation are equivalent', () => {
@@ -222,7 +172,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('SET_SWING: gridReducer and applyMutation are equivalent', () => {
@@ -236,7 +186,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('SET_TRACK_VOLUME: gridReducer and applyMutation are equivalent', () => {
@@ -250,7 +200,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('SET_TRACK_TRANSPOSE: gridReducer and applyMutation are equivalent', () => {
@@ -264,7 +214,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('CLEAR_TRACK: gridReducer and applyMutation are equivalent', () => {
@@ -278,7 +228,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('DELETE_TRACK: gridReducer and applyMutation are equivalent', () => {
@@ -292,7 +242,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('SET_PARAMETER_LOCK: gridReducer and applyMutation are equivalent', () => {
@@ -311,7 +261,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     // Pattern operations
@@ -326,7 +276,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('INVERT_PATTERN: gridReducer and applyMutation are equivalent', () => {
@@ -340,7 +290,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('REVERSE_PATTERN: gridReducer and applyMutation are equivalent', () => {
@@ -354,7 +304,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('MIRROR_PATTERN: gridReducer and applyMutation are equivalent', () => {
@@ -369,7 +319,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('EUCLIDEAN_FILL: gridReducer and applyMutation are equivalent', () => {
@@ -383,7 +333,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('SET_TRACK_NAME: gridReducer and applyMutation are equivalent', () => {
@@ -397,7 +347,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('COPY_SEQUENCE: gridReducer and applyMutation are equivalent', () => {
@@ -411,7 +361,7 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
     });
 
     it('MOVE_SEQUENCE: gridReducer and applyMutation are equivalent', () => {
@@ -425,7 +375,41 @@ describe('Reducer-Mutation Equivalence', () => {
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
       const reducerAsSession = gridStateToSessionState(reducerResult);
-      expect(statesAreEquivalent(reducerAsSession, mutationResult)).toBe(true);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
+    });
+
+    it.each([
+      { type: 'SET_TRACK_SAMPLE', trackId: 'track-1', sampleId: 'lead', name: 'Lead' },
+      {
+        type: 'SET_TRACK_INSTRUMENT',
+        trackId: 'track-1',
+        sampleId: 'snare',
+        name: 'Snare',
+      },
+      { type: 'SET_TRACK_STEP_COUNT', trackId: 'track-1', stepCount: 32 },
+      { type: 'SET_TRACK_SWING', trackId: 'track-1', swing: 37 },
+      {
+        type: 'SET_EFFECTS',
+        effects: { ...DEFAULT_EFFECTS_STATE, bypass: true },
+      },
+      {
+        type: 'SET_SCALE',
+        scale: { root: 'D', scaleId: 'major', locked: true },
+      },
+      {
+        type: 'SET_FM_PARAMS',
+        trackId: 'track-1',
+        fmParams: { harmonicity: 2, modulationIndex: 5 },
+      },
+    ] satisfies GridAction[])('$type: gridReducer and applyMutation are equivalent', action => {
+      const gridState = createTestGridState();
+      const reducerResult = gridReducer(gridState, action);
+      const message = actionToMessage(action);
+      expect(message).not.toBeNull();
+
+      const sessionState = gridStateToSessionState(gridState);
+      const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
+      expectEquivalentAndChanged(gridStateToSessionState(reducerResult), mutationResult, sessionState);
     });
   });
 
@@ -453,15 +437,12 @@ describe('Reducer-Mutation Equivalence', () => {
 
           const reducerResult = gridReducer(gridState, action);
           const message = actionToMessage(action);
-          if (!message) return true; // Skip if no message
+          expect(message).not.toBeNull();
 
           const sessionState = gridStateToSessionState(gridState);
           const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
-          return statesAreEquivalent(
-            gridStateToSessionState(reducerResult),
-            mutationResult
-          );
+          expectEquivalentAndChanged(gridStateToSessionState(reducerResult), mutationResult, sessionState);
         }),
         { numRuns: 100 }
       );
@@ -471,19 +452,21 @@ describe('Reducer-Mutation Equivalence', () => {
       fc.assert(
         fc.property(arbSwing, (swing) => {
           const gridState = createTestGridState();
+          // The fixture starts at swing 0, so that one draw is a no-op and the
+          // change witness cannot hold for it. Skipping the identity keeps the
+          // boundary in the arbitrary while leaving every executed run able to
+          // detect a mutation that does nothing.
+          fc.pre(swing !== gridState.swing);
           const action: GridAction = { type: 'SET_SWING', swing };
 
           const reducerResult = gridReducer(gridState, action);
           const message = actionToMessage(action);
-          if (!message) return true;
+          expect(message).not.toBeNull();
 
           const sessionState = gridStateToSessionState(gridState);
           const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
-          return statesAreEquivalent(
-            gridStateToSessionState(reducerResult),
-            mutationResult
-          );
+          expectEquivalentAndChanged(gridStateToSessionState(reducerResult), mutationResult, sessionState);
         }),
         { numRuns: 100 }
       );
@@ -497,15 +480,12 @@ describe('Reducer-Mutation Equivalence', () => {
 
           const reducerResult = gridReducer(gridState, action);
           const message = actionToMessage(action);
-          if (!message) return true;
+          expect(message).not.toBeNull();
 
           const sessionState = gridStateToSessionState(gridState);
           const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
-          return statesAreEquivalent(
-            gridStateToSessionState(reducerResult),
-            mutationResult
-          );
+          expectEquivalentAndChanged(gridStateToSessionState(reducerResult), mutationResult, sessionState);
         }),
         { numRuns: 100 }
       );
@@ -519,15 +499,12 @@ describe('Reducer-Mutation Equivalence', () => {
 
           const reducerResult = gridReducer(gridState, action);
           const message = actionToMessage(action);
-          if (!message) return true;
+          expect(message).not.toBeNull();
 
           const sessionState = gridStateToSessionState(gridState);
           const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
-          return statesAreEquivalent(
-            gridStateToSessionState(reducerResult),
-            mutationResult
-          );
+          expectEquivalentAndChanged(gridStateToSessionState(reducerResult), mutationResult, sessionState);
         }),
         { numRuns: 100 }
       );
@@ -537,19 +514,19 @@ describe('Reducer-Mutation Equivalence', () => {
       fc.assert(
         fc.property(arbTranspose, (transpose) => {
           const gridState = createTestGridState();
+          // track-1 starts at transpose 0 — same identity-draw reasoning as
+          // PBT-EQ-002 above.
+          fc.pre(transpose !== gridState.tracks[0].transpose);
           const action: GridAction = { type: 'SET_TRACK_TRANSPOSE', trackId: 'track-1', transpose };
 
           const reducerResult = gridReducer(gridState, action);
           const message = actionToMessage(action);
-          if (!message) return true;
+          expect(message).not.toBeNull();
 
           const sessionState = gridStateToSessionState(gridState);
           const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
-          return statesAreEquivalent(
-            gridStateToSessionState(reducerResult),
-            mutationResult
-          );
+          expectEquivalentAndChanged(gridStateToSessionState(reducerResult), mutationResult, sessionState);
         }),
         { numRuns: 100 }
       );
@@ -565,15 +542,12 @@ describe('Reducer-Mutation Equivalence', () => {
 
           const reducerResult = gridReducer(gridState, action);
           const message = actionToMessage(action);
-          if (!message) return true;
+          expect(message).not.toBeNull();
 
           const sessionState = gridStateToSessionState(gridState);
           const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
 
-          return statesAreEquivalent(
-            gridStateToSessionState(reducerResult),
-            mutationResult
-          );
+          expectEquivalentAndChanged(gridStateToSessionState(reducerResult), mutationResult, sessionState);
         }),
         { numRuns: 100 }
       );
@@ -588,6 +562,13 @@ describe('Reducer-Mutation Equivalence', () => {
         'SET_SWING',
         'SET_TRACK_VOLUME',
         'SET_TRACK_TRANSPOSE',
+        'SET_TRACK_SAMPLE',
+        'SET_TRACK_INSTRUMENT',
+        'SET_TRACK_STEP_COUNT',
+        'SET_TRACK_SWING',
+        'SET_EFFECTS',
+        'SET_SCALE',
+        'SET_FM_PARAMS',
         'CLEAR_TRACK',
         'DELETE_TRACK',
         'SET_PARAMETER_LOCK',
@@ -605,14 +586,7 @@ describe('Reducer-Mutation Equivalence', () => {
         a => !testedActions.has(a) && !NON_STANDARD_SYNC_ACTIONS.has(a)
       );
 
-      if (untestedActions.length > 0) {
-        console.log(`
-⚠️  UNTESTED SYNCED_ACTIONS (add equivalence tests):
-   ${untestedActions.join(', ')}
-        `);
-      }
-
-      expect(testedActions.size).toBeGreaterThan(0);
+      expect(untestedActions).toEqual([]);
     });
   });
 });

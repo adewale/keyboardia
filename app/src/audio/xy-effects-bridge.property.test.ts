@@ -5,7 +5,6 @@
  * 1. Batched updates never lose parameters (no stale closure)
  * 2. Values stay within mapped ranges
  * 3. Effect vs synth routing is mutually exclusive
- * 4. Roundtrip: position → params → unmap → position is identity (within tolerance)
  */
 
 import { describe, it, expect } from 'vitest';
@@ -13,17 +12,13 @@ import * as fc from 'fast-check';
 import {
   XYPadController,
   XY_PAD_PRESETS,
-  PARAMETER_RANGES,
-  mapValue,
-  unmapValue,
   type XYPadParameter,
 } from './xyPad';
 import {
   buildBatchedEffectsUpdate,
-  isEffectParam,
-  isSynthParam,
   type XYParamUpdate,
 } from './xy-effects-bridge';
+import { isEffectParam, isSynthParam } from './effect-param-mapping';
 
 const PRESET_IDS = Object.keys(XY_PAD_PRESETS);
 const presetArb = fc.constantFrom(...PRESET_IDS);
@@ -121,75 +116,18 @@ describe('Property: batched updates preserve all parameters', () => {
 // ─── Routing exclusivity ────────────────────────────────────────────────
 
 describe('Property: effect and synth routing are mutually exclusive', () => {
-  const ALL_PARAMS: XYPadParameter[] = [
-    'filterFrequency', 'filterResonance', 'lfoRate', 'lfoAmount',
-    'oscMix', 'attack', 'release',
-    'reverbWet', 'reverbDecay', 'delayWet', 'delayFeedback', 'chorusWet', 'distortionWet',
-  ];
-
-  it('every XYPadParameter is either an effect param or a synth param, never both', () => {
-    for (const param of ALL_PARAMS) {
+  it('every parameter used by a production preset has exactly one destination', () => {
+    const parameters = new Set(
+      Object.values(XY_PAD_PRESETS).flatMap(preset =>
+        preset.mappings.map(mapping => mapping.parameter)),
+    );
+    expect(parameters.size).toBeGreaterThan(0);
+    for (const param of parameters) {
       const isEffect = isEffectParam(param);
       const isSynth = isSynthParam(param);
       expect(isEffect || isSynth).toBe(true);
       expect(isEffect && isSynth).toBe(false);
     }
-  });
-
-  it('for any preset, each parameter routes to exactly one destination', () => {
-    fc.assert(
-      fc.property(presetArb, (presetId) => {
-        const preset = XY_PAD_PRESETS[presetId];
-        for (const mapping of preset.mappings) {
-          // Exactly one of these is true
-          expect(isEffectParam(mapping.parameter) !== isSynthParam(mapping.parameter)).toBe(true);
-        }
-      }),
-      { numRuns: 50 }
-    );
-  });
-});
-
-// ─── Roundtrip invariant ────────────────────────────────────────────────
-
-describe('Property: mapValue/unmapValue roundtrip', () => {
-  it('unmapValue(mapValue(v)) ≈ v for any normalized value and parameter range', () => {
-    const paramArb = fc.constantFrom(...Object.keys(PARAMETER_RANGES) as XYPadParameter[]);
-
-    fc.assert(
-      fc.property(normalizedArb, paramArb, (v, param) => {
-        const { min, max, curve } = PARAMETER_RANGES[param];
-        const mapped = mapValue(v, min, max, curve);
-        const roundtripped = unmapValue(mapped, min, max, curve);
-
-        expect(roundtripped).toBeCloseTo(v, 4);
-      }),
-      { numRuns: 500 }
-    );
-  });
-});
-
-// ─── Reverb-control preset equivalence ──────────────────────────────────
-
-describe('Property: reverb-control preset replaces bespoke handleReverbXY', () => {
-  it('produces reverb wet and decay values within the same ranges', () => {
-    fc.assert(
-      fc.property(normalizedArb, normalizedArb, (x, y) => {
-        const controller = new XYPadController('reverb-control');
-        controller.setPosition(x, y);
-        const values = controller.getAllParameterValues();
-
-        expect(values.reverbWet).toBeDefined();
-        // reverbWet mapped from 0–1
-        expect(values.reverbWet).toBeGreaterThanOrEqual(0);
-        expect(values.reverbWet).toBeLessThanOrEqual(1);
-
-        // reverbDecay doesn't exist as XYPadParameter, so the preset
-        // should expose it via a new 'reverbDecay' param or map through
-        // the standard effect update path
-      }),
-      { numRuns: 200 }
-    );
   });
 });
 

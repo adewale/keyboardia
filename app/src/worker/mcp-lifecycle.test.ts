@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { exportToMidi } from '../audio/midiExport';
 import type { Session, SessionTrack } from '../shared/state';
-import { createDefaultTrack, createInitialState } from '../shared/state-mutations';
+import { createDefaultTrack } from '../shared/state-mutations';
+import { createInitialSessionState } from '../shared/session-defaults';
 import { sessionTracksToTracks } from '../types';
 import { McpSessionEditError } from './mcp-edits';
 import {
@@ -37,7 +38,7 @@ function session(tracks: SessionTrack[], overrides: Partial<Session> = {}): Sess
     remixedFromName: null,
     remixCount: 0,
     immutable: false,
-    state: { ...createInitialState(), tracks },
+    state: createInitialSessionState({ tracks }),
     ...overrides,
   };
 }

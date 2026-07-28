@@ -55,17 +55,26 @@ export class FakeAudioBuffer {
   /** Test-visible identity: which fetched payload produced this buffer. */
   readonly label: string;
   readonly duration: number;
-  readonly numberOfChannels = 2;
-  readonly sampleRate = 44100;
+  readonly numberOfChannels: number;
+  readonly sampleRate: number;
   readonly length: number;
+  private readonly channelData: Float32Array[];
 
-  constructor(label: string, duration = 5) {
+  constructor(label: string, duration = 5, sampleRate = 44100, numberOfChannels = 2) {
     this.label = label;
     this.duration = duration;
+    this.sampleRate = sampleRate;
+    this.numberOfChannels = numberOfChannels;
     this.length = Math.round(duration * this.sampleRate);
+    this.channelData = Array.from(
+      { length: numberOfChannels },
+      () => new Float32Array(this.length),
+    );
   }
-  getChannelData(): Float32Array {
-    return new Float32Array(this.length);
+  getChannelData(channel = 0): Float32Array {
+    const data = this.channelData[channel];
+    if (!data) throw new RangeError(`Channel ${channel} does not exist`);
+    return data;
   }
 }
 
@@ -133,6 +142,7 @@ export class FakeBufferSourceNode {
 export class FakeAudioContext {
   state: AudioContextState = 'running';
   currentTime = 0;
+  readonly sampleRate = 44100;
   readonly createdSources: FakeBufferSourceNode[] = [];
   readonly createdGains: FakeGainNode[] = [];
   resumeCalls = 0;
@@ -148,6 +158,9 @@ export class FakeAudioContext {
     const node = new FakeGainNode();
     this.createdGains.push(node);
     return node;
+  }
+  createBuffer(numberOfChannels: number, length: number, sampleRate: number): FakeAudioBuffer {
+    return new FakeAudioBuffer('generated', length / sampleRate, sampleRate, numberOfChannels);
   }
   decodeAudioData(data: ArrayBuffer): Promise<FakeAudioBuffer> {
     const label = new TextDecoder().decode(data);
@@ -178,7 +191,14 @@ export class FakeAudioContext {
 // methods/properties SampledInstrument uses, this stops compiling.
 type UsedAudioContextSurface = Pick<
   AudioContext,
-  'state' | 'currentTime' | 'createBufferSource' | 'createGain' | 'decodeAudioData' | 'resume'
+  | 'state'
+  | 'currentTime'
+  | 'sampleRate'
+  | 'createBuffer'
+  | 'createBufferSource'
+  | 'createGain'
+  | 'decodeAudioData'
+  | 'resume'
 >;
 const _surfaceCheck: Record<keyof UsedAudioContextSurface, unknown> = new FakeAudioContext();
 void _surfaceCheck;

@@ -35,9 +35,6 @@ export const STEPS_PER_BEAT = 4;
 /** Ticks per step (128 / 4 = 32) */
 export const TICKS_PER_STEP = TICKS_PER_QUARTER / STEPS_PER_BEAT;
 
-/** Note duration in ticks (one step minus 1 tick to prevent overlap) */
-export const NOTE_DURATION_TICKS = TICKS_PER_STEP - 1;
-
 /** Default velocity as percentage (100% = MIDI 127) */
 export const DEFAULT_VELOCITY = 100;
 

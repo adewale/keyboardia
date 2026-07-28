@@ -140,14 +140,3 @@ export function hashState(state: unknown): string {
   // Convert to hex and pad
   return (hash >>> 0).toString(16).padStart(8, '0');
 }
-
-/**
- * Async version using SHA-256 for production use
- */
-export async function hashStateAsync(state: unknown): Promise<string> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(JSON.stringify(state));
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.slice(0, 8).map(b => b.toString(16).padStart(2, '0')).join('');
-}

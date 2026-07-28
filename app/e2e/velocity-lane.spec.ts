@@ -28,7 +28,7 @@ const API_BASE = getBaseUrl();
  * Create a test session with a track for velocity lane testing
  */
 async function createTestSession(request: Parameters<typeof createSessionWithRetry>[0]) {
-  const steps = Array(64).fill(false);
+  const steps = Array(128).fill(false);
   // Pre-activate some steps for tests that need them
   steps[0] = true;
   steps[1] = true;
@@ -42,7 +42,7 @@ async function createTestSession(request: Parameters<typeof createSessionWithRet
         name: 'Kick',
         sampleId: 'kick',
         steps,
-        parameterLocks: Array(64).fill(null),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,

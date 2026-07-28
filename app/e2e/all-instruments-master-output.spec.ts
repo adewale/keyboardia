@@ -1,9 +1,9 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { createSessionWithRetry, API_BASE } from './test-utils';
-import { waitForAppReady } from './global-setup';
+import { test, expect, waitForAppReady } from './global-setup';
 import { INSTRUMENT_CATEGORIES } from '../src/components/sample-constants';
 import { getInstrumentRange } from '../src/audio/instrument-ranges';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
@@ -15,6 +15,7 @@ const REPORT_DIR = resolve(THIS_DIR, '../test-results/audio-output');
 const SILENCE_PEAK = 1e-4;
 const SILENCE_RMS = 1e-5;
 const STEP_COUNT = 4;
+const PATTERN_STEPS = 128;
 const SESSION_TEMPO = 120;
 const MEASURE_ITERATIONS = 50;
 const MEASURE_INTERVAL_MS = 50;
@@ -95,8 +96,8 @@ function trackIdFor(sampleId: string, index: number): string {
 }
 
 function buildSequencerTrack(spec: InstrumentSpec, index: number): SessionTrack {
-  const steps = Array(STEP_COUNT).fill(false) as boolean[];
-  const parameterLocks = Array(STEP_COUNT).fill(null) as Array<{ pitch: number; volume: number } | null>;
+  const steps = Array(PATTERN_STEPS).fill(false) as boolean[];
+  const parameterLocks = Array(PATTERN_STEPS).fill(null) as Array<{ pitch: number; volume: number } | null>;
   steps[0] = true;
   parameterLocks[0] = { pitch: spec.pitch, volume: 1 };
   return {
@@ -237,6 +238,25 @@ test('every catalog instrument sequencer step produces live master output', asyn
   test.setTimeout(240_000);
   const specs = allInstrumentSpecs();
   expect(specs).toHaveLength(99);
+
+  // Codec precondition — see e2e/sample-browser-decode.spec.ts for the same
+  // check and the full reasoning.
+  //
+  // This test measures master peak/RMS and reports instruments that come out
+  // silent. On a Chromium without AAC, every .m4a-backed instrument decodes to
+  // nothing and is reported as silent — indistinguishable from a genuine audio
+  // routing regression, which is the failure this test exists to catch. Assert
+  // the browser can actually decode the catalogue before believing its silence.
+  await page.goto('/');
+  const aacSupport = await page.evaluate(() =>
+    document.createElement('audio').canPlayType('audio/mp4; codecs="mp4a.40.2"')
+  );
+  expect(
+    aacSupport,
+    `this browser cannot decode AAC/m4a (canPlayType: "${aacSupport}"), so every ` +
+      'm4a-backed instrument would be reported silent regardless of routing. Run ' +
+      'with Playwright\'s bundled Chromium (npx playwright install chromium).'
+  ).not.toBe('');
 
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];

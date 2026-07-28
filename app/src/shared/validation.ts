@@ -10,15 +10,8 @@
 
 import {
   clamp,
-  MIN_TEMPO,
-  MAX_TEMPO,
-  MIN_SWING,
-  MAX_SWING,
   MIN_VOLUME,
   MAX_VOLUME,
-  MIN_TRANSPOSE,
-  MAX_TRANSPOSE,
-  MAX_STEPS,
 } from './constants';
 
 // Re-export clamp from constants (single source of truth)
@@ -72,26 +65,6 @@ export function sanitizeTrackName(
   return name.trim().slice(0, maxLength);
 }
 
-// =============================================================================
-// Step Index Validation
-// =============================================================================
-
-/**
- * Validates that a value is a valid step index (integer 0 to MAX_STEPS-1).
- *
- * @param step Value to validate
- * @returns Type guard for valid step index
- */
-export function isValidStepIndex(step: unknown): step is number {
-  return (
-    typeof step === 'number' &&
-    Number.isFinite(step) &&
-    Number.isInteger(step) &&
-    step >= 0 &&
-    step < MAX_STEPS
-  );
-}
-
 /**
  * Validates that a value is a valid number (not NaN, not Infinity).
  *
@@ -131,50 +104,9 @@ export function clampPan(pan: number): number {
 }
 
 /**
- * Clamp tempo to valid range (MIN_TEMPO to MAX_TEMPO BPM).
- * Used in TransportBar and session creation.
- */
-export function clampTempo(tempo: number): number {
-  return clamp(tempo, MIN_TEMPO, MAX_TEMPO);
-}
-
-/**
- * Clamp swing to valid range (0-100%).
- * Used in TransportBar and track settings.
- */
-export function clampSwing(swing: number): number {
-  return clamp(swing, MIN_SWING, MAX_SWING);
-}
-
-/**
- * Clamp transpose to valid range (MIN_TRANSPOSE to MAX_TRANSPOSE semitones).
- * Used in track transpose controls.
- */
-export function clampTranspose(transpose: number): number {
-  return Math.round(clamp(transpose, MIN_TRANSPOSE, MAX_TRANSPOSE));
-}
-
-/**
- * Clamp a normalized value to 0-1 range.
- * Used for XY pad coordinates, filter cutoff, and other normalized parameters.
- */
-export function clampNormalized(value: number): number {
-  return clamp(value, 0, 1);
-}
-
-/**
  * Clamp gain/boost value to 0-2 range.
  * Used for audio gain that can boost above unity.
  */
 export function clampGain(gain: number): number {
   return clamp(gain, 0, 2);
-}
-
-/**
- * Clamp step index to valid range for a given step count.
- * Returns -1 for invalid values.
- */
-export function clampStepIndex(step: number, stepCount: number): number {
-  if (!isValidNumber(step) || !Number.isInteger(step)) return -1;
-  return clamp(step, 0, stepCount - 1);
 }

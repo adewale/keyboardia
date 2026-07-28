@@ -25,13 +25,56 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: app/package-lock.json
+          cache-dependency-path: |
+            app/package-lock.json
+            app/test/integration/package-lock.json
 
-      - name: Install dependencies
+      - name: Install app dependencies
         run: npm ci
+
+      # validate:unrun-tests asks the integration runner what it collects.
+      # That runner has an independent lockfile and loads the Workers pool from
+      # its Vitest config, so the inventory is not available after installing
+      # only app/package-lock.json.
+      - name: Install integration test dependencies
+        run: npm ci
+        working-directory: ./app/test/integration
 
       - name: Run ESLint
         run: npm run lint
+
+      # Catches the always-green patterns from the July 2026 audit: assertions
+      # nullified by .catch(), runtime self-skips, tautologies, and tests with
+      # no assertion at all. Gating — every one of these shipped here as a
+      # passing test that could not fail, so a warning would not be enough.
+      - name: Check for always-green test patterns
+        run: npm run validate:test-antipatterns
+
+      # Reports tests that name a module they never import, tests that
+      # reimplement the logic they claim to cover, and modules imported only by
+      # their own tests. Advisory while a backlog existed; the backlog is zero,
+      # and a clean checker left on continue-on-error silently refills.
+      - name: Check test/subject linkage
+        run: npm run validate:test-links
+
+      # The linkage check above asks whether anything imports a *module*; this
+      # asks the same of each exported symbol, which is the granularity two bugs
+      # in this repo hid at — slicer.ts had one live export and four dead ones
+      # carrying a units bug, and instrument-types.ts had one dead export
+      # answering "is this melodic?" wrongly for 24 of 99 catalogue ids. Both
+      # had passing tests, which is what kept them alive. Also advisory until
+      # the backlog cleared; now at zero dead runtime exports, so it blocks.
+      - name: Check for unreachable exports
+        run: npm run validate:dead-exports
+
+      # The two checks above ask whether production reaches the code a test
+      # covers. This asks the mirror question: does any lane reach the test?
+      # Six staging files — 103 tests, 226 assertions — were collected by
+      # nothing, which is how an always-green try/catch survived for months.
+      # They were deleted after their claims were mapped to maintained lanes.
+      # There is no allowlist: any future uncollected file fails here.
+      - name: Check every test file is run by a lane
+        run: npm run validate:unrun-tests
 
   unit-tests:
     name: Unit Tests
@@ -152,8 +195,20 @@ jobs:
           USE_MOCK_API: '1'
           CI: 'true'
 
+  # E2E is split into three jobs by what each one needs, replacing a single
+  # `continue-on-error: true` job whose comment read "E2E tests are advisory -
+  # many require real backend". Exempting all 35 spec files because some of them
+  # need a backend meant no E2E failure could ever break the build, and the
+  # backend-dependent specs still never ran anywhere in CI.
+  #
+  #   e2e-tests          mock API, gating     — the everyday regression net
+  #   e2e-real-backend   wrangler dev, gating — the complete production path
+  #   e2e-visual         screenshots, gating  — runner-owned Linux baselines
+  #
+  # See docs/TEST-AUDIT-2026-07.md for the audit and lane ownership rationale.
   e2e-tests:
-    name: E2E Tests
+    name: E2E Tests (mock API)
+    timeout-minutes: 45
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -189,15 +244,7 @@ jobs:
           discovered=$(npx playwright test "${required_specs[@]}" --project=chromium --list | sed -n 's/^Total: \([0-9][0-9]*\) tests.*/\1/p')
           test "$discovered" = "71"
           npx playwright test "${required_specs[@]}" --project=chromium --retries=0
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const { stats } = JSON.parse(fs.readFileSync('test-results/blocking-results.json', 'utf8'));
-          const expected = { expected: 71, skipped: 0, flaky: 0, unexpected: 0 };
-          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
-          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-            throw new Error(`Blocking Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
-          }
-          NODE
+          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 71 0
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -214,23 +261,20 @@ jobs:
           offline_specs=()
           while IFS= read -r spec; do offline_specs+=("$spec"); done < <(
             comm -23 \
-              <(find e2e -type f -name '*.spec.ts' ! -path 'e2e/staging/*' | sort) \
+              <(find e2e -type f -name '*.spec.ts' | sort) \
               <(sort e2e/mock-compatible-files.txt)
           )
-          # The two real-audio matrix specs are CPU-bound. Serial execution
+          # The three real-audio matrix specs are CPU-bound. Serial execution
           # avoids timeout inflation while keeping every test first-attempt-only.
+          #
+          # visual.spec.ts is excluded via E2E_FUNCTIONAL_ONLY below and owned
+          # by the real-Worker Linux visual lane. populated-visual.spec.ts is
+          # deterministic mock-backed evidence and remains in this lane.
           npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const { stats } = JSON.parse(fs.readFileSync('test-results/offline-results.json', 'utf8'));
-          const expected = { expected: 158, skipped: 90, flaky: 0, unexpected: 0 };
-          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
-          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-            throw new Error(`Offline Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
-          }
-          NODE
+          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 83 69
         env:
           USE_MOCK_API: '1'
+          E2E_FUNCTIONAL_ONLY: '1'
           CI: 'true'
           PLAYWRIGHT_OUTPUT_DIR: 'test-results/offline-artifacts'
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/offline-results.json'
@@ -275,15 +319,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:collaboration:worker
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const { stats } = JSON.parse(fs.readFileSync('test-results/worker-results.json', 'utf8'));
-          const expected = { expected: 151, skipped: 0, flaky: 0, unexpected: 0 };
-          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
-          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-            throw new Error(`Worker Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
-          }
-          NODE
+          node scripts/assert-playwright-stats.mjs test-results/worker-results.json 73 0
         env:
           CI: 'true'
           PLAYWRIGHT_OUTPUT_DIR: 'test-results/worker-artifacts'
@@ -304,6 +340,7 @@ jobs:
 
   visual-tests-macos:
     name: Visual Tests (macOS)
+    timeout-minutes: 30
     runs-on: macos-14
     defaults:
       run:
@@ -329,15 +366,7 @@ jobs:
         shell: bash
         run: |
           npx playwright test e2e/populated-visual.spec.ts --project=chromium --retries=0
-          node - <<'NODE'
-          const fs = require('node:fs');
-          const { stats } = JSON.parse(fs.readFileSync('test-results/visual-results.json', 'utf8'));
-          const expected = { expected: 3, skipped: 0, flaky: 0, unexpected: 0 };
-          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
-          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
-            throw new Error(`Visual Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
-          }
-          NODE
+          node scripts/assert-playwright-stats.mjs test-results/visual-results.json 3 0
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -353,4 +382,132 @@ jobs:
           path: |
             app/playwright-report-visual/
             app/test-results/
+          retention-days: 7
+
+  e2e-real-backend:
+    name: E2E Tests (real backend)
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium webkit
+
+      # 12 spec files still carry `test.skip(useMockAPI, ...)` — the multiplayer,
+      # session-persistence, race-condition and publish flows. Under USE_MOCK_API
+      # every one of them skips, so they run in no other CI job.
+      #
+      # This complements the `test:e2e:collaboration:worker` step in e2e-tests:
+      # that runs the collaboration contract subset against a real Worker; this
+      # runs the complete functional Chromium suite against the same production
+      # path. The first audit runs proved Wrangler stable here, so failures gate.
+      # Chromium and WebKit run as separate contracts below so browser-specific
+      # failures and result inventories remain attributable.
+      #
+      # --workers=2 matters too: every worker shares one wrangler dev instance.
+      # Running the default worker count against it produced a wave of
+      # ECONNREFUSED partway through a local trial — the backend, not the tests,
+      # was the bottleneck.
+      # Screenshot contracts have a separate real-Worker lane below. Keeping
+      # them out here prevents Linux pixel diffs from being reported as backend
+      # failures, which previously hid ten failed tests behind continue-on-error.
+      - name: Run functional E2E tests against wrangler dev
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=chromium --workers=2
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 206 17
+        env:
+          CI: 'true'
+          E2E_FUNCTIONAL_ONLY: '1'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/real-backend-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/real-backend-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-real-backend'
+
+      - name: Run broad WebKit contract against wrangler dev
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 160 52
+        env:
+          CI: 'true'
+          E2E_FUNCTIONAL_ONLY: '1'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/webkit-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/webkit-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-webkit'
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-real-backend
+          path: |
+            app/playwright-report-real-backend/
+            app/playwright-report-webkit/
+            app/test-results/real-backend-results.json
+            app/test-results/webkit-results.json
+          retention-days: 7
+
+  e2e-visual:
+    name: E2E Visual Regression
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # visual.spec.ts used to skip in CI, then ran against Vite's mock backend
+      # with developer-generated Linux baselines under continue-on-error. Nine
+      # of eleven tests failed on every run while the check stayed green. The
+      # baselines now come from this runner and the production-like Worker path;
+      # every image and the exact result inventory gate.
+      - name: Run visual regression tests
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=chromium --grep @visual --workers=1
+          node scripts/assert-playwright-stats.mjs test-results/visual-results.json 11 0
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/visual-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/visual-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-visual'
+
+      - name: Upload visual diff report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-visual
+          path: |
+            app/playwright-report-visual/
+            app/test-results/visual-results.json
           retention-days: 7

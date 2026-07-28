@@ -63,13 +63,6 @@ interface RateLimitEntry {
   windowStart: number;
 }
 
-const rateLimitMap = new Map<string, RateLimitEntry>();
-
-/** Test seam: the map outlives a single request by design. */
-export function resetRateLimits(): void {
-  rateLimitMap.clear();
-}
-
 export interface RateLimitDecision {
   allowed: boolean;
   remaining: number;
@@ -81,32 +74,41 @@ export interface RateLimitDecision {
  * means a burst of OG image requests can exhaust an IP's session-create budget,
  * which is an unrelated denial of service against the same visitor.
  */
-export function checkRateLimit(bucket: RateLimitBucket, ip: string, max: number): RateLimitDecision {
-  const now = Date.now();
-  const key = `${bucket}:${ip}`;
-  const entry = rateLimitMap.get(key);
+export function createRateLimitChecker(now: () => number = Date.now) {
+  const entries = new Map<string, RateLimitEntry>();
 
-  // Clean up old entries periodically (simple garbage collection)
-  if (rateLimitMap.size > 10000) {
-    for (const [mapKey, value] of rateLimitMap.entries()) {
-      if (now - value.windowStart > RATE_LIMIT_WINDOW_MS) {
-        rateLimitMap.delete(mapKey);
+  return (bucket: RateLimitBucket, ip: string, max: number): RateLimitDecision => {
+    const timestamp = now();
+    const key = `${bucket}:${ip}`;
+    const entry = entries.get(key);
+
+    // Clean up old entries periodically (simple garbage collection)
+    if (entries.size > 10000) {
+      for (const [mapKey, value] of entries.entries()) {
+        if (timestamp - value.windowStart > RATE_LIMIT_WINDOW_MS) {
+          entries.delete(mapKey);
+        }
       }
     }
-  }
 
-  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
-    // Start new window
-    rateLimitMap.set(key, { count: 1, windowStart: now });
-    return { allowed: true, remaining: max - 1, resetIn: RATE_LIMIT_WINDOW_MS };
-  }
+    if (!entry || timestamp - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+      entries.set(key, { count: 1, windowStart: timestamp });
+      return { allowed: true, remaining: max - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+    }
 
-  if (entry.count >= max) {
-    const resetIn = RATE_LIMIT_WINDOW_MS - (now - entry.windowStart);
-    return { allowed: false, remaining: 0, resetIn };
-  }
+    if (entry.count >= max) {
+      const resetIn = RATE_LIMIT_WINDOW_MS - (timestamp - entry.windowStart);
+      return { allowed: false, remaining: 0, resetIn };
+    }
 
-  entry.count++;
-  const resetIn = RATE_LIMIT_WINDOW_MS - (now - entry.windowStart);
-  return { allowed: true, remaining: max - entry.count, resetIn };
+    entry.count++;
+    const resetIn = RATE_LIMIT_WINDOW_MS - (timestamp - entry.windowStart);
+    return { allowed: true, remaining: max - entry.count, resetIn };
+  };
+}
+
+const checkDefaultRateLimit = createRateLimitChecker();
+
+export function checkRateLimit(bucket: RateLimitBucket, ip: string, max: number): RateLimitDecision {
+  return checkDefaultRateLimit(bucket, ip, max);
 }

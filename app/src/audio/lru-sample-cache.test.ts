@@ -10,8 +10,14 @@
  * - Edge cases
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LRUSampleCache, getBufferSize, isIOS, getRecommendedMaxSize } from './lru-sample-cache';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import {
+  LRUSampleCache,
+  getBufferSize,
+  getRecommendedHardLimit,
+  getRecommendedMaxSize,
+  isIOS,
+} from './lru-sample-cache';
 
 // Mock AudioBuffer factory
 function createMockBuffer(channels: number, length: number): AudioBuffer {
@@ -38,6 +44,10 @@ describe('getBufferSize', () => {
     // 1 channel * 22050 samples * 4 bytes = 88200 bytes
     expect(getBufferSize(buffer)).toBe(88200);
   });
+});
+
+afterEach(() => {
+  vi.unstubAllGlobals();
 });
 
 describe('LRUSampleCache', () => {
@@ -406,11 +416,7 @@ describe('LRUSampleCache', () => {
     });
 
     describe('platform-aware defaults', () => {
-      it('isIOS() detects iOS user agents', () => {
-        // Test that the isIOS function exists and can detect iOS
-        // Note: In test environment, navigator.userAgent is not iOS
-        expect(typeof isIOS).toBe('function');
-        // Default test environment should not be iOS
+      it('isIOS() rejects the default non-iOS user agent', () => {
         expect(isIOS()).toBe(false);
       });
 
@@ -420,12 +426,21 @@ describe('LRUSampleCache', () => {
         expect(size).toBe(64 * 1024 * 1024);
       });
 
-      it('should return smaller size when isIOS would return true', () => {
-        // Verify the iOS constants are smaller than desktop
-        // iOS: 32MB, Desktop: 64MB
-        const IOS_MAX_SIZE = 32 * 1024 * 1024;
-        const DEFAULT_MAX_SIZE = 64 * 1024 * 1024;
-        expect(IOS_MAX_SIZE).toBeLessThan(DEFAULT_MAX_SIZE);
+      it('applies the iOS recommendations to a default cache instance', () => {
+        vi.stubGlobal('navigator', { userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)' });
+
+        expect(isIOS()).toBe(true);
+        expect(getRecommendedMaxSize()).toBe(32 * 1024 * 1024);
+        expect(getRecommendedHardLimit()).toBe(48 * 1024 * 1024);
+
+        const iosCache = new LRUSampleCache();
+        expect(iosCache.getMetrics().maxSize).toBe(32 * 1024 * 1024);
+
+        // A buffer above the recommended hard limit must be rejected even
+        // though it would fit under the old desktop-derived 96MB limit.
+        const oversized = createMockBuffer(2, 7_000_000); // 56MB
+        iosCache.set('too-large-for-ios', oversized);
+        expect(iosCache.has('too-large-for-ios')).toBe(false);
       });
     });
 

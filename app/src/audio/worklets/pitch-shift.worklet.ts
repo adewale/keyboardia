@@ -11,74 +11,12 @@
  * Latency: one grain (grainSize samples). The engine compensates by
  * delaying the envGain ramp in playSample() by grainSize/sampleRate.
  *
- * ─────────────────────────────────────────────────────────────────────
- * KEEP IN SYNC with pitch-shift-engine.ts, which is the canonical,
- * unit-tested version of the algorithm. Worklet files cannot import app
- * modules because the AudioWorklet bundler treats each file standalone.
- * ─────────────────────────────────────────────────────────────────────
+ * Vite bundles this AudioWorklet's module graph, so the processor uses the
+ * same GrainPitchShifter implementation that the unit tests exercise.
  */
 
-class GrainPitchShifter {
-  readonly grainSize: number;
-  readonly hopSize: number;
-  private inputBuffer: Float32Array;
-  private inputWritePos = 0;
-  private outputBuffer: Float32Array;
-  private outputReadPos = 0;
-  private window: Float32Array;
-  private samplesUntilNextGrain = 0;
-
-  constructor(grainSize: number) {
-    this.grainSize = grainSize;
-    this.hopSize = Math.floor(grainSize / 2);
-    const size = grainSize * 4;
-    this.inputBuffer = new Float32Array(size);
-    this.outputBuffer = new Float32Array(size);
-    this.window = new Float32Array(grainSize);
-    for (let i = 0; i < grainSize; i++) {
-      this.window[i] = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (grainSize - 1)));
-    }
-  }
-
-  write(input: Float32Array): void {
-    const len = this.inputBuffer.length;
-    for (let i = 0; i < input.length; i++) {
-      this.inputBuffer[this.inputWritePos % len] = input[i];
-      this.inputWritePos++;
-    }
-  }
-
-  read(output: Float32Array, pitchRatio: number): void {
-    const len = this.outputBuffer.length;
-    for (let i = 0; i < output.length; i++) {
-      if (this.samplesUntilNextGrain <= 0) {
-        this.processGrain(pitchRatio);
-        this.samplesUntilNextGrain = this.hopSize;
-      }
-      this.samplesUntilNextGrain--;
-      const idx = this.outputReadPos % len;
-      output[i] = this.outputBuffer[idx];
-      this.outputBuffer[idx] = 0;
-      this.outputReadPos++;
-    }
-  }
-
-  private processGrain(pitchRatio: number): void {
-    const len = this.inputBuffer.length;
-    const grainStart = this.inputWritePos - this.grainSize;
-    for (let i = 0; i < this.grainSize; i++) {
-      const readPos = grainStart + i * pitchRatio;
-      const readIdx = Math.floor(readPos);
-      const frac = readPos - readIdx;
-      const idx0 = ((readIdx % len) + len) % len;
-      const idx1 = (((readIdx + 1) % len) + len) % len;
-      const sample = this.inputBuffer[idx0] * (1 - frac) + this.inputBuffer[idx1] * frac;
-      const windowed = sample * this.window[i];
-      const outIdx = ((this.outputReadPos + i) % len + len) % len;
-      this.outputBuffer[outIdx] += windowed;
-    }
-  }
-}
+import { PITCH_WORKLET_MAX_RATIO, PITCH_WORKLET_MIN_RATIO } from '../pitch-shift-range';
+import { GrainPitchShifter } from './pitch-shift-engine';
 
 class PitchShiftWorkletProcessor extends AudioWorkletProcessor {
   private grainSize: number;
@@ -89,8 +27,8 @@ class PitchShiftWorkletProcessor extends AudioWorkletProcessor {
       {
         name: 'pitchRatio',
         defaultValue: 1.0,
-        minValue: 0.25,  // -24 semitones
-        maxValue: 4.0,   // +24 semitones
+        minValue: PITCH_WORKLET_MIN_RATIO,  // -24 semitones
+        maxValue: PITCH_WORKLET_MAX_RATIO,  // +24 semitones
         automationRate: 'k-rate',
       },
     ];
@@ -125,7 +63,7 @@ class PitchShiftWorkletProcessor extends AudioWorkletProcessor {
       this.shifters.push(new GrainPitchShifter(this.grainSize));
     }
 
-    const pitchRatio = parameters.pitchRatio[0];
+    const pitchRatio = parameters.pitchRatio?.[0] ?? 1;
 
     for (let ch = 0; ch < channelCount; ch++) {
       const inCh = input[ch];

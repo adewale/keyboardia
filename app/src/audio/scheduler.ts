@@ -18,17 +18,24 @@ import {
   assertPlaybackStopped,
   logStateSnapshot,
 } from './playback-state-debug';
-import { SWING_DELAY_FACTOR } from './timing-calculations';
+import {
+  advanceStep,
+  calculateStepTime,
+  calculateSwingDelay,
+  calculateTiedDuration,
+  getStepDuration,
+  STEPS_PER_BEAT,
+} from './timing-calculations';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { velocityFromMultiplier } from './velocity';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
+import { getTrackStep, shouldTrackPlay, shouldTrackTrigger } from './track-step';
 
 // =============================================================================
 // Constants
 // =============================================================================
 
 const LOOKAHEAD_MS = 25; // How often to check (ms)
-const STEPS_PER_BEAT = 4; // 16th notes
 
 // =============================================================================
 // Types for Note Scheduling
@@ -225,7 +232,7 @@ export class Scheduler implements IScheduler {
 
   private scheduler(state: GridState): void {
     const currentTime = audioEngine.getCurrentTime();
-    const stepDuration = this.getStepDuration(state.tempo);
+    const stepDuration = getStepDuration(state.tempo);
 
     // Phase 22: Detect BPM changes during playback and recalculate timing reference
     // Without this fix, changing BPM causes nextStepTime to jump (since it's calculated as
@@ -235,7 +242,7 @@ export class Scheduler implements IScheduler {
       // BPM changed! Recalculate audioStartTime to maintain current position
       // Formula: audioStartTime = currentTime - (totalStepsScheduled * NEW_stepDuration)
       // This ensures nextStepTime ≈ currentTime after the change
-      const oldStepDuration = this.getStepDuration(this.lastTempo);
+      const oldStepDuration = getStepDuration(this.lastTempo);
       const elapsedAtOldTempo = this.totalStepsScheduled * oldStepDuration;
 
       // Calculate where we should be at the new tempo to maintain musical position
@@ -289,38 +296,23 @@ export class Scheduler implements IScheduler {
 
       // Phase 31G: Advance to next step - respect loop region if set
       // If loopRegion is defined, playhead stays within [start, end]
-      const loopRegion = state.loopRegion;
-      if (loopRegion) {
-        // Within loop region: advance and wrap at loop end
-        if (this.currentStep >= loopRegion.end) {
-          this.currentStep = loopRegion.start;
-        } else {
-          this.currentStep++;
-        }
-      } else {
-        // No loop: standard wrap at MAX_STEPS
-        this.currentStep = (this.currentStep + 1) % MAX_STEPS;
-      }
+      this.currentStep = advanceStep(this.currentStep, state.loopRegion ?? null, MAX_STEPS);
       this.totalStepsScheduled++;
 
       // Phase 13B: Use multiplicative timing to prevent drift
       // Instead of: this.nextStepTime += stepDuration (accumulates floating-point errors)
       // We compute: nextStepTime = startTime + (stepCount * stepDuration)
-      this.nextStepTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
+      this.nextStepTime = calculateStepTime(
+        this.audioStartTime,
+        this.totalStepsScheduled,
+        state.tempo,
+      );
     }
   }
 
   // ===========================================================================
   // Helper Methods for scheduleStep (H-03 refactoring)
   // ===========================================================================
-
-  /**
-   * Determine if a track should play based on solo/mute state.
-   * Solo wins over mute: if any track is soloed, only soloed tracks play.
-   */
-  private shouldTrackPlay(track: Track, anySoloed: boolean): boolean {
-    return anySoloed ? track.soloed : !track.muted;
-  }
 
   /**
    * Calculate swing-adjusted time for a step.
@@ -333,11 +325,7 @@ export class Scheduler implements IScheduler {
     globalSwing: number,
     trackSwing: number
   ): number {
-    // Swing blending: combined = global + track - (global * track)
-    const swingAmount = globalSwing + trackSwing - (globalSwing * trackSwing);
-    const isSwungStep = trackStep % 2 === 1;
-    const swingDelay = isSwungStep ? duration * swingAmount * SWING_DELAY_FACTOR : 0;
-    return time + swingDelay;
+    return time + calculateSwingDelay(trackStep, globalSwing, trackSwing, duration);
   }
 
   /**
@@ -451,22 +439,19 @@ export class Scheduler implements IScheduler {
     }
 
     for (const track of state.tracks) {
-      // Check if track should play (solo/mute logic)
-      if (!this.shouldTrackPlay(track, anySoloed)) {
-        if (anySoloed && globalStep === 0) {
+      // Use the same full trigger decision exercised by track-step.test.ts.
+      // This keeps mute/solo and polyrhythm activation out of parallel copies.
+      if (!shouldTrackTrigger(track, globalStep, anySoloed)) {
+        if (anySoloed && globalStep === 0 && !shouldTrackPlay(track, anySoloed)) {
           logger.audio.log(`[SOLO DEBUG] Track "${track.sampleId}" NOT playing (soloed=${track.soloed}, muted=${track.muted})`);
         }
         continue;
       }
 
-      // Calculate track-local step position
+      // Calculate track-local step position (shared with track-step.ts so the
+      // polyrhythm maths has exactly one implementation).
       const trackStepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
-      const trackStep = globalStep % trackStepCount;
-
-      // Skip if step is not active
-      if (trackStep >= trackStepCount || !track.steps[trackStep]) {
-        continue;
-      }
+      const trackStep = getTrackStep(globalStep, trackStepCount);
 
       // Calculate swing-adjusted time
       const trackSwing = (track.swing ?? 0) / 100;
@@ -485,7 +470,7 @@ export class Scheduler implements IScheduler {
       }
 
       // Calculate tied note duration
-      const tiedDuration = this.calculateTiedDuration(track, trackStep, trackStepCount, duration);
+      const tiedDuration = calculateTiedDuration(track, trackStep, trackStepCount, duration);
 
       // Track this note as active for tie detection in next step
       this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
@@ -515,44 +500,6 @@ export class Scheduler implements IScheduler {
       // Play the note
       this.playInstrumentNote(noteParams);
     }
-  }
-
-  private getStepDuration(tempo: number): number {
-    const beatsPerSecond = tempo / 60;
-    return 1 / (beatsPerSecond * STEPS_PER_BEAT);
-  }
-
-  /**
-   * Calculate duration including tied notes.
-   * Scans forward from startStep to count consecutive tied steps.
-   *
-   * ABSTRACTION FIX (AU-004d): Uses step count iteration instead of index comparison.
-   */
-  private calculateTiedDuration(
-    track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
-    startStep: number,
-    trackStepCount: number,
-    stepDuration: number
-  ): number {
-    let tieCount = 1; // Start with 1 for the current step
-    let stepsChecked = 0;
-
-    // Scan forward for tied steps
-    // Use stepsChecked counter instead of index comparison to handle wrap-around
-    while (stepsChecked < trackStepCount - 1) {
-      const nextStep = (startStep + 1 + stepsChecked) % trackStepCount;
-      const nextPLock = track.parameterLocks[nextStep];
-
-      if (track.steps[nextStep] && nextPLock?.tie === true) {
-        tieCount++;
-        stepsChecked++;
-      } else {
-        break;
-      }
-    }
-
-    // Return extended duration (with 90% gate time for natural release)
-    return stepDuration * tieCount * 0.9;
   }
 
   getCurrentStep(): number {

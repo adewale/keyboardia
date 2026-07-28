@@ -1,6 +1,10 @@
 import { useCallback, useRef, useEffect } from 'react';
-import { clamp } from '../shared/validation';
 import { Play, Stop } from '../icons';
+import {
+  calculateDragValue,
+  SWING_DRAG_SENSITIVITY,
+  TEMPO_DRAG_SENSITIVITY,
+} from './transport-drag';
 import './TransportBar.css';
 
 /**
@@ -71,10 +75,14 @@ export function TransportBar({
     if (!dragStartRef.current) return;
 
     const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    const delta = dragStartRef.current.y - y; // Drag up = increase
-    const sensitivity = type === 'tempo' ? 0.5 : 0.3;
-    const newValue = Math.round(
-      clamp(dragStartRef.current.value + delta * sensitivity, min, max)
+    const sensitivity = type === 'tempo' ? TEMPO_DRAG_SENSITIVITY : SWING_DRAG_SENSITIVITY;
+    const newValue = calculateDragValue(
+      dragStartRef.current.value,
+      dragStartRef.current.y,
+      y,
+      sensitivity,
+      min,
+      max,
     );
     onChange(newValue);
   }, []);

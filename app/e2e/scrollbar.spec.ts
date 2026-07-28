@@ -20,6 +20,7 @@ import {
 } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
+
 const API_BASE = getBaseUrl();
 
 /**
@@ -33,7 +34,7 @@ function isMobileProject(projectName: string): boolean {
  * Create a test session with multiple tracks for scrollbar testing
  */
 async function createTestSession(request: Parameters<typeof createSessionWithRetry>[0], stepCount = 16) {
-  const steps = Array(64).fill(false);
+  const steps = Array(128).fill(false);
   steps[0] = true;
   steps[4] = true;
 
@@ -44,7 +45,7 @@ async function createTestSession(request: Parameters<typeof createSessionWithRet
         name: 'Kick',
         sampleId: 'kick',
         steps,
-        parameterLocks: Array(64).fill(null),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,
@@ -55,7 +56,7 @@ async function createTestSession(request: Parameters<typeof createSessionWithRet
         name: 'Snare',
         sampleId: 'snare',
         steps,
-        parameterLocks: Array(64).fill(null),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,
@@ -83,12 +84,10 @@ test.describe('Scrollbar behavior', () => {
     // Skip on mobile - touch scrolling reports overflow differently than desktop scrollbars
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - CSS overflow behaves differently with touch scrolling');
 
-    // Check if tracks container exists
+    // beforeEach already asserted the grid and a track row are visible, so a
+    // missing tracks container is a regression rather than a reason to skip.
     const tracksContainer = page.locator('.tracks, .sequencer-grid');
-    if (!(await tracksContainer.isVisible({ timeout: 2000 }).catch(() => false))) {
-      test.skip(true, 'No tracks container found');
-      return;
-    }
+    await expect(tracksContainer.first()).toBeVisible({ timeout: 5000 });
 
     // The .tracks container should have horizontal scroll
     const tracksOverflow = await tracksContainer.evaluate((el) => {
@@ -128,13 +127,10 @@ test.describe('Scrollbar behavior', () => {
     await waitForAnimation(page);
 
     // Check for track rows
+    // createTestSession() seeds two tracks, so an empty grid means loading
+    // broke — fail rather than skip.
     const trackRows = page.locator('.track-row');
-    const trackCount = await trackRows.count();
-
-    if (trackCount < 1) {
-      test.skip(true, 'No tracks available');
-      return;
-    }
+    await expect(trackRows).not.toHaveCount(0);
 
     // Try to expand a track to 64 steps to ensure scrolling is needed
     const stepCountSelect = page.locator('.step-count-select').first();
@@ -147,18 +143,14 @@ test.describe('Scrollbar behavior', () => {
     const firstTrackFirstStep = page.locator('.track-row').first().locator('.step-cell').first();
     const lastTrackFirstStep = page.locator('.track-row').last().locator('.step-cell').first();
 
-    if (!(await firstTrackFirstStep.isVisible()) || !(await lastTrackFirstStep.isVisible())) {
-      test.skip(true, 'Step cells not visible');
-      return;
-    }
+    await expect(firstTrackFirstStep).toBeVisible();
+    await expect(lastTrackFirstStep).toBeVisible();
 
     const initialFirstBox = await firstTrackFirstStep.boundingBox();
     const initialLastBox = await lastTrackFirstStep.boundingBox();
 
-    if (!initialFirstBox || !initialLastBox) {
-      test.skip(true, 'Could not get step cell bounding boxes');
-      return;
-    }
+    expect(initialFirstBox, 'first step cell has no bounding box').not.toBeNull();
+    expect(initialLastBox, 'last step cell has no bounding box').not.toBeNull();
 
     // Scroll the tracks container
     const tracksContainer = page.locator('.tracks, .sequencer-grid');
@@ -213,26 +205,18 @@ test.describe('Scrollbar behavior', () => {
 
     // Open pattern tools panel
     const patternToolsToggle = page.locator('.pattern-tools-toggle').first();
-    if (!(await patternToolsToggle.isVisible({ timeout: 2000 }).catch(() => false))) {
-      test.skip(true, 'Pattern tools toggle not visible');
-      return;
-    }
+    await expect(patternToolsToggle).toBeVisible({ timeout: 5000 });
 
     await patternToolsToggle.click();
     await waitForAnimation(page);
 
     const patternToolsPanel = page.locator('.pattern-tools-panel').first();
-    if (!(await patternToolsPanel.isVisible({ timeout: 2000 }).catch(() => false))) {
-      test.skip(true, 'Pattern tools panel not visible after toggle');
-      return;
-    }
+    await expect(patternToolsPanel, 'toggle should open the pattern tools panel')
+      .toBeVisible({ timeout: 5000 });
 
     // Get initial position of the pattern tools panel
     const initialBox = await patternToolsPanel.boundingBox();
-    if (!initialBox) {
-      test.skip(true, 'Could not get pattern tools panel bounding box');
-      return;
-    }
+    expect(initialBox, 'pattern tools panel has no bounding box').not.toBeNull();
 
     // Verify the panel is initially visible (left edge >= 0)
     expect(initialBox.x).toBeGreaterThanOrEqual(0);
@@ -245,10 +229,13 @@ test.describe('Scrollbar behavior', () => {
       canScroll: el.scrollWidth > el.clientWidth,
     }));
 
-    if (!scrollInfo.canScroll) {
-      test.skip(true, 'No horizontal overflow detected');
-      return;
-    }
+    // The 1024px viewport set above is narrower than the seeded 16-step grid,
+    // so overflow is the expected state. No overflow means the layout changed
+    // and this test's premise is broken — surface that instead of skipping.
+    expect(
+      scrollInfo.canScroll,
+      `expected horizontal overflow at 1024px: ${JSON.stringify(scrollInfo)}`
+    ).toBe(true);
 
     // Scroll right by 400px
     await tracksContainer.evaluate((el) => {
@@ -279,13 +266,10 @@ test.describe('Scrollbar behavior', () => {
 
   test('step columns should align vertically across all tracks', async ({ page }) => {
 
+    // createTestSession() seeds two tracks; fewer means the fixture or session
+    // loading regressed.
     const trackRows = page.locator('.track-row');
-    const trackCount = await trackRows.count();
-
-    if (trackCount < 2) {
-      test.skip(true, 'Test requires at least 2 tracks');
-      return;
-    }
+    await expect(trackRows.nth(1)).toBeVisible();
 
     // Wait for tracks to be fully rendered
     await expect(trackRows.first().locator('.step-cell').first()).toBeVisible();

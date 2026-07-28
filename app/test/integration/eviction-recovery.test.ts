@@ -162,7 +162,7 @@ async function pollStorage<T>(
 }
 
 // Poll the legacy KV mirror (written on disconnect) until `pred` holds.
-async function pollKvTempo(
+async function expectKvTempo(
   kv: KVNamespace,
   sessionId: string,
   pred: (tempo: number | undefined) => boolean,
@@ -679,7 +679,7 @@ it('flushes the latest state to KV when a disconnect wakes a hibernated DO', asy
 
   // Hybrid persistence: the mutation is in DO storage, but KV is only written on
   // disconnect — so KV still has the original tempo at this point.
-  await pollKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120');
+  await expectKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120');
 
   // Hibernate (discards in-memory state + the pendingKVSave flag), then close.
   // The close event wakes the DO; flushPendingKVSave() must reload state and
@@ -687,7 +687,7 @@ it('flushes the latest state to KV when a disconnect wakes a hibernated DO', asy
   await evictDurableObject(stub);
   ws.close(1000, 'bye');
 
-  await pollKvTempo(SESSIONS, id, (t) => t === 145, 'KV flushed to 145 after wake-disconnect');
+  await expectKvTempo(SESSIONS, id, (t) => t === 145, 'KV flushed to 145 after wake-disconnect');
 });
 
 // ===========================================================================
@@ -745,7 +745,7 @@ it('webSocketError on a cold wake flushes KV when it is the last connection', as
 
   ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150, seq: 1 }));
   await inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === 150, 'ack');
-  await pollKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120 (no disconnect yet)');
+  await expectKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120 (no disconnect yet)');
 
   await evictDurableObject(stub); // hibernate: in-memory state discarded
 
@@ -759,7 +759,7 @@ it('webSocketError on a cold wake flushes KV when it is the last connection', as
       .webSocketError({}, new Error('forced abnormal close'));
   });
 
-  await pollKvTempo(SESSIONS, id, (t) => t === 150, 'KV flushed via webSocketError else-branch');
+  await expectKvTempo(SESSIONS, id, (t) => t === 150, 'KV flushed via webSocketError else-branch');
 
   ws.close(1000, 'done');
 });
@@ -813,7 +813,7 @@ it('a non-last client close after hibernation does not prematurely flush KV', as
 
   a.ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150, seq: 1 }));
   await a.inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === 150, 'ack');
-  await pollKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120');
+  await expectKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120');
 
   await evictDurableObject(stub); // hibernate both
 
@@ -830,7 +830,7 @@ it('a non-last client close after hibernation does not prematurely flush KV', as
 
   // B (the last) closes -> flush converges KV to the persisted DO state.
   b.ws.close(1000, 'bye');
-  await pollKvTempo(SESSIONS, id, (t) => t === 150, 'KV flushes only when the last client leaves');
+  await expectKvTempo(SESSIONS, id, (t) => t === 150, 'KV flushes only when the last client leaves');
 });
 
 // ===========================================================================

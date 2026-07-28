@@ -1,0 +1,234 @@
+accessibility.spec.ts › Accessibility › focus indicators are visible
+accessibility.spec.ts › Accessibility › focusable elements are keyboard accessible
+accessibility.spec.ts › Accessibility › images have alt text
+accessibility.spec.ts › Accessibility › mixer mute and solo expose their pressed state @blocking
+accessibility.spec.ts › Accessibility › no elements with tabindex > 0
+accessibility.spec.ts › Accessibility › page has accessible title
+accessibility.spec.ts › Accessibility › page has proper heading hierarchy
+accessibility.spec.ts › Accessibility › panel toggles expose disclosure state and controlled regions @blocking
+accessibility.spec.ts › Accessibility › sequencer steps support native Enter and Space activation @blocking
+accessibility.spec.ts › Accessibility › visible buttons and links have computed accessible names @blocking
+accessibility.spec.ts › Accessibility › visible icon-only controls use explicit aria labels @blocking
+advanced-sub-bass-session.spec.ts › advanced sub-bass preset produces live master output
+all-instruments-master-output.spec.ts › every catalog instrument sequencer step produces live master output
+change-instrument.spec.ts › Change instrument › keeps the picker inside the viewport after scrolling a long pattern @blocking
+change-instrument.spec.ts › Change instrument › offers no instrument control on a published session @blocking
+change-instrument.spec.ts › Change instrument › replaces a track sound while keeping its pattern, name, and position @blocking
+change-instrument.spec.ts › Change instrument › restores focus after rotating while the picker is open @blocking
+change-instrument.spec.ts › Change instrument › restores keyboard focus after choosing an instrument @blocking
+change-instrument.spec.ts › Change instrument › shows and dismisses the picker in modern mobile landscape @blocking
+chromatic-grid.spec.ts › Chromatic Grid Redesign › should add view-mode-all class for dimmed chromatic styling
+chromatic-grid.spec.ts › Chromatic Grid Redesign › should have correct tooltip on mode buttons
+chromatic-grid.spec.ts › Chromatic Grid Redesign › should show non-key-interval pitches in Events mode (guardrail #1)
+chromatic-grid.spec.ts › Chromatic Grid Redesign › should show view mode segmented control when chromatic grid is expanded
+chromatic-grid.spec.ts › Chromatic Grid Redesign › should toggle to All mode and show 49 rows
+chromatic-grid.spec.ts › Chromatic Grid Scale Lock › should apply scale-locked class to chromatic grid when scale is locked
+chromatic-grid.spec.ts › Chromatic Grid Scale Lock › should show out-of-scale warning badge when scale is locked with out-of-scale notes
+chromatic-grid.spec.ts › Chromatic Grid Scale Lock › should still show out-of-scale pitches when scale is locked (guardrail #1)
+connection-storm.spec.ts › Connection Storm Prevention › connection remains stable during tempo changes
+connection-storm.spec.ts › Connection Storm Prevention › debug overlay shows stable connection count during interactions
+connection-storm.spec.ts › Connection Storm Prevention › rapid state changes do not cause WebSocket reconnections
+core.spec.ts › Session Name › can edit session name
+core.spec.ts › Track Management › can delete a track
+drag-to-paint.spec.ts › Drag-to-Paint: Basic Painting › should activate a single step on click (no drag)
+drag-to-paint.spec.ts › Drag-to-Paint: Basic Painting › should activate only the start step when dragging in place
+drag-to-paint.spec.ts › Drag-to-Paint: Basic Painting › should activate steps 0-3 when dragging from inactive step 0
+drag-to-paint.spec.ts › Drag-to-Paint: Erasing › should deactivate a single step on click
+drag-to-paint.spec.ts › Drag-to-Paint: Erasing › should deactivate steps 0-3 when dragging from active step
+drag-to-paint.spec.ts › Drag-to-Paint: Long Drags › should paint 8 consecutive steps
+drag-to-paint.spec.ts › Drag-to-Paint: Mixed Patterns › should erase only active steps when starting from active
+drag-to-paint.spec.ts › Drag-to-Paint: Mixed Patterns › should paint over inactive steps only when starting from inactive
+drag-to-paint.spec.ts › Drag-to-Paint: Modifier Keys › should NOT paint when Ctrl+clicking (selection mode)
+drag-to-paint.spec.ts › Drag-to-Paint: Modifier Keys › should NOT start painting when Shift+clicking (p-lock mode)
+drag-to-paint.spec.ts › Drag-to-Paint: Pointer Behavior › should end paint mode when pointer released outside grid
+drag-to-paint.spec.ts › Drag-to-Paint: Pointer Behavior › should use smooth mouse movement for reliable painting
+drag-to-paint.spec.ts › Drag-to-Paint: Reverse Direction › should erase when dragging right to left from active step
+drag-to-paint.spec.ts › Drag-to-Paint: Reverse Direction › should paint when dragging right to left
+drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should correctly handle paint then erase on overlapping region
+drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should handle multiple paint operations in sequence
+drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should maintain consistent state after rapid paint operations
+drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should not leave paint mode stuck after interrupted drag
+feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Ctrl+Click to toggle step selection
+feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Shift+Click to extend selection
+feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can drag to paint multiple steps
+feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › selection badge appears when steps are selected
+feature-flags.spec.ts › Feature Flags › Loop Ruler (default: ON) › loop ruler is visible by default
+feature-flags.spec.ts › Feature Flags › Loop Ruler (default: ON) › loop ruler supports drag interaction
+instrument-range-session.spec.ts › plays every sampled instrument across a range of notes in live sessions
+keyboard.spec.ts › Focus Management › focus does not get trapped
+keyboard.spec.ts › Keyboard Navigation › Shift+Tab navigates backwards
+keyboard.spec.ts › Keyboard Navigation › Tab navigates through interactive elements
+keyboard.spec.ts › Keyboard Shortcuts › ? key opens keyboard shortcuts help panel (desktop)
+keyboard.spec.ts › Keyboard Shortcuts › Delete clears selected steps
+keyboard.spec.ts › Keyboard Shortcuts › Help panel closes with ? key (toggle)
+keyboard.spec.ts › Keyboard Shortcuts › Help panel closes with Escape key
+keyboard.spec.ts › Keyboard Shortcuts › Help panel closes with X button
+keyboard.spec.ts › Keyboard Shortcuts › Help panel closes with backdrop click
+keyboard.spec.ts › Keyboard Shortcuts › Help panel has correct accessibility attributes
+keyboard.spec.ts › Keyboard Shortcuts › Space activates the focused modal control instead of the global transport
+keyboard.spec.ts › Keyboard Shortcuts › Space starts and stops playback
+landscape-alignment.spec.ts › Landscape Mobile Alignment › M/S buttons and step cells should have same height in landscape
+landscape-alignment.spec.ts › Landscape Mobile Alignment › M/S buttons should be vertically aligned with step grid cells
+landscape-alignment.spec.ts › Landscape Mobile Alignment › all track rows should have consistent vertical alignment
+landscape-alignment.spec.ts › Landscape Mobile Alignment › screenshot comparison - visual alignment check
+landscape-alignment.spec.ts › Modern Device Landscape Alignment › Samsung Galaxy S24: M/S buttons should be vertically aligned with step grid
+landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 14: M/S buttons should be vertically aligned with step grid
+landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 15 Pro Max: M/S buttons should be vertically aligned with step grid
+mcp-sampled-instrument-lifecycle.spec.ts › MCP-created sampled tracks become audible when added during uninterrupted playback
+midi-export-download.spec.ts › exports a valid MIDI download through the real browser Worker
+mixer-layout.spec.ts › Mixer Panel Layout › VU meter stays within mixer channel bounds
+mixer-layout.spec.ts › Mixer Panel Layout › fader has non-zero height in each channel
+mixer-layout.spec.ts › Mixer Panel Layout › mixer channel elements scroll together with page
+mobile-android.spec.ts › Android Mobile › app works on Android
+mobile-iphone.spec.ts › Mobile Layout (iPhone) › app is usable on mobile viewport
+mobile-iphone.spec.ts › Mobile Layout (iPhone) › populated portrait tracks fit without horizontal overflow
+mobile-iphone.spec.ts › Mobile Layout (iPhone) › portrait mode hides editing controls and directs users to rotate
+mobile-iphone.spec.ts › Mobile Layout (iPhone) › touch targets are adequate size
+mobile-iphone.spec.ts › Mobile Layout (iPhone) › velocity lane is hidden on small screens
+mobile-iphone.spec.ts › Mobile Touch Interactions › no ghost clicks on mobile
+mobile-iphone.spec.ts › Mobile Touch Interactions › portrait step cells are read-only
+mobile-orientation.spec.ts › Accessibility › collapsed track panels are inert during sequential keyboard navigation @blocking
+mobile-orientation.spec.ts › Accessibility › portrait grid exposes accessible playback and 44px page controls @blocking
+mobile-orientation.spec.ts › Accessibility › portrait header should have proper ARIA labels
+mobile-orientation.spec.ts › Accessibility › should respect prefers-reduced-motion @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › M/S buttons should toggle instantly without drawer
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › activating another track name should close first drawer (accordion)
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape drawer keeps the destructive action distinguishable without hover @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape drawer supports keyboard disclosure and Escape focus restoration @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape drawer uses non-overlapping 44px control targets @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › narrow landscape drawer scrolls every control into view and disables reduced motion @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › partial portrait pages do not expose nonexistent steps @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › should hide complex transport elements in landscape
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › should show compact track rows with M/S and name
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › should show transport with play, BPM, and swing only
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › step editing should work - tap to toggle
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › step grid should show more cells than old mobile
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › tapping same track name again should close drawer
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › tapping track name should open drawer with Copy/Clear/Delete
+mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › orientation hint should be dismissible
+mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › page indicator dots should switch between step pages
+mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › portrait header should show share and QR buttons
+mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › should hide all editing UI in portrait
+mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › should show orientation hint suggesting rotation
+mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › should show portrait grid with abbreviated track labels
+mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › should show portrait header with play button, title, and BPM
+mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › tap-anywhere-to-play-pause should toggle playback @blocking
+mobile-orientation.spec.ts › Modern Device Landscape Compatibility › Samsung Galaxy S24 landscape should show compact track layout
+mobile-orientation.spec.ts › Modern Device Landscape Compatibility › Samsung Galaxy S24 landscape should show landscape UI, not desktop
+mobile-orientation.spec.ts › Modern Device Landscape Compatibility › iPhone 14 landscape should show compact track layout
+mobile-orientation.spec.ts › Modern Device Landscape Compatibility › iPhone 14 landscape should show landscape UI, not desktop
+mobile-orientation.spec.ts › Modern Device Landscape Compatibility › iPhone 15 Pro Max landscape should show compact track layout
+mobile-orientation.spec.ts › Modern Device Landscape Compatibility › iPhone 15 Pro Max landscape should show landscape UI, not desktop
+mobile-orientation.spec.ts › Orientation Changes › multiple rapid orientation changes should not break layout
+mobile-orientation.spec.ts › Orientation Changes › round-trip: portrait → landscape → portrait should restore identical UI
+mobile-orientation.spec.ts › Orientation Changes › should show desktop interface at 768px+ width
+mobile-orientation.spec.ts › Orientation Changes › should transition smoothly from landscape to portrait
+mobile-orientation.spec.ts › Orientation Changes › should transition smoothly from portrait to landscape
+mobile-orientation.spec.ts › Performance › playback should maintain smooth animation
+mock-publish-contract.spec.ts › mock publish contract › applies production defaults and rejects production-invalid input @blocking
+mock-publish-contract.spec.ts › mock publish contract › flushes pending state before exposing a share link @blocking
+mock-publish-contract.spec.ts › mock publish contract › loads the seeded Holby example with ten tracks @blocking
+mock-publish-contract.spec.ts › mock publish contract › preserves named extended session state when publishing @blocking
+mock-publish-contract.spec.ts › mock publish contract › preserves remix lineage and increments the source count @blocking
+mock-publish-contract.spec.ts › mock publish contract › publishes the latest edit made while a transition flush is in flight @blocking
+mock-publish-contract.spec.ts › mock publish contract › replays and REST-persists effects and scale through the client @blocking
+motion-accessibility.spec.ts › shared motion accessibility › removes production transitions and animations for reduced motion @blocking
+motion-accessibility.spec.ts › shared motion accessibility › uses short interaction feedback on production controls in standard motion mode @blocking
+multiplayer.spec.ts › Multiplayer connection resilience › client reconnects after brief disconnection
+multiplayer.spec.ts › Multiplayer input validation › invalid tempo values are rejected by the HTTP boundary
+multiplayer.spec.ts › Multiplayer real-time sync › add track syncs to other client
+multiplayer.spec.ts › Multiplayer real-time sync › mute/solo remain local (do not sync)
+multiplayer.spec.ts › Multiplayer real-time sync › step toggle syncs between clients
+multiplayer.spec.ts › Multiplayer real-time sync › tempo change syncs between clients
+multiplayer.spec.ts › Multiplayer real-time sync › two clients can connect to the same session
+new-session.spec.ts › New session from published session › clicking New should clear all tracks
+new-session.spec.ts › New session from published session › clicking New should create a different session ID
+new-session.spec.ts › New session from published session › clicking New should not mark new session as published
+new-session.spec.ts › New session from published session › clicking New should reset session name to empty
+new-session.spec.ts › New session from published session › clicking New should stop playback
+new-session.spec.ts › New session from regular session › clicking New from editable session should also reset state
+per-track-advanced-meters.spec.ts › Per-track advanced-synth metering › two advanced tracks produce independent, animating VU meters
+phase3-refactoring.spec.ts › Core mutations (delegated to applyMutation) › toggle step - activates and deactivates
+phase3-refactoring.spec.ts › Core mutations (delegated to applyMutation) › toggle step - persists after refresh
+phase3-refactoring.spec.ts › Edge cases › operations work after page navigation
+phase3-refactoring.spec.ts › Edge cases › pattern operations on empty track
+phase3-refactoring.spec.ts › Edge cases › rapid step toggling does not lose updates
+phase3-refactoring.spec.ts › Error monitoring › no console errors during normal operations
+phase3-refactoring.spec.ts › Pattern operations (single client) › Euclidean fill distributes steps evenly
+phase3-refactoring.spec.ts › Pattern operations (single client) › invert pattern toggles all steps
+phase3-refactoring.spec.ts › Pattern operations (single client) › pattern operation persists after refresh
+phase3-refactoring.spec.ts › Pattern operations (single client) › reverse pattern reverses step order
+phase3-refactoring.spec.ts › Pattern operations (single client) › rotate left shifts pattern
+phase3-refactoring.spec.ts › Pattern operations (single client) › rotate right shifts pattern
+phase3-refactoring.spec.ts › Pattern operations sync in multiplayer › invert pattern syncs to other client
+phase3-refactoring.spec.ts › Pattern operations sync in multiplayer › multiple pattern operations sync correctly
+phase3-refactoring.spec.ts › Pattern operations sync in multiplayer › reverse pattern syncs to other client
+phase3-refactoring.spec.ts › Pattern operations sync in multiplayer › rotate pattern syncs to other client
+phase3-refactoring.spec.ts › Selection invalidation after pattern operations › selection clears after rotate
+phase3-refactoring.spec.ts › Track operations › add track appears and syncs
+phase3-refactoring.spec.ts › Track operations › clear track removes all steps
+pitch-contour-alignment.spec.ts › PitchContour alignment › CSS dimensions match JavaScript constants (CRITICAL regression test)
+pitch-contour-alignment.spec.ts › PitchContour alignment › SVG contour dots align with step cells for session with pitch variation
+playback.spec.ts › Playback stability › playhead position updates correctly during playback
+playback.spec.ts › Playback stability › should have smooth playhead movement with different step counts
+playback.spec.ts › Playback stability › should not flicker during playback - step changes are monotonic
+plock-editor.spec.ts › P-lock editor › clear action is named and restores focus to the invoking step @blocking
+plock-editor.spec.ts › P-lock editor › outside dismissal does not steal focus back to the invoking step @blocking
+plock-editor.spec.ts › P-lock editor › p-lock changes should persist and show in tooltip
+plock-editor.spec.ts › P-lock editor › should close p-lock editor when clicking outside
+plock-editor.spec.ts › P-lock editor › should close p-lock editor when clicking same step again
+plock-editor.spec.ts › P-lock editor › should open p-lock editor on Shift+click of active step
+plock-editor.spec.ts › P-lock editor › should switch p-lock editor to different step on Shift+click
+populated-visual.spec.ts › Deterministic populated-session visuals › Holby landscape editing view
+populated-visual.spec.ts › Deterministic populated-session visuals › Holby pitch overview exposes correctly named octaves
+populated-visual.spec.ts › Deterministic populated-session visuals › Holby portrait consumption view
+sample-browser-decode.spec.ts › browser decodeAudioData decodes every referenced sampled-instrument file
+scrollbar.spec.ts › Scrollbar behavior › all tracks should scroll together horizontally when scrolling the panel
+scrollbar.spec.ts › Scrollbar behavior › pattern tools panel should stay visible when scrolling horizontally
+scrollbar.spec.ts › Scrollbar behavior › should have a single scrollbar for the entire tracks panel, not per track
+scrollbar.spec.ts › Scrollbar behavior › step columns should align vertically across all tracks
+session-api-contract.spec.ts › a direct-format create keeps its collaborative fields
+session-api-contract.spec.ts › create, read, replace, rename, remix, and publish share one HTTP contract
+session-api-contract.spec.ts › hostile persisted metadata is rejected identically by both backends
+session-api-contract.spec.ts › invalid requests are rejected without changing the session contract
+session-api-contract.spec.ts › stored state is normalized identically by both backends
+session-api-contract.spec.ts › unknown API routes answer with JSON on both backends
+session-persistence.spec.ts › Debug mode UI › debug overlay appears with ?debug=1
+session-persistence.spec.ts › Debug mode UI › debug overlay is hidden without ?debug=1
+session-persistence.spec.ts › Observability endpoints › debug logs can filter by session ID
+session-persistence.spec.ts › Observability endpoints › debug logs endpoint returns logs array
+session-persistence.spec.ts › Session persistence integrity › debug endpoint returns correct session info
+session-persistence.spec.ts › Session persistence integrity › non-existent session returns 404 with debug info
+session-persistence.spec.ts › Session persistence integrity › session created via API should load with correct tracks
+session-persistence.spec.ts › Session state transitions › create -> load -> update cycle maintains data integrity
+session-race.spec.ts › Session Loading Race Condition › edits made after load are saved correctly
+session-race.spec.ts › Session Loading Race Condition › loaded session data persists after initial load
+session-race.spec.ts › Session Loading Race Condition › new session can be created and edited without data loss
+session-race.spec.ts › Session Loading Race Condition › session data survives rapid page refresh
+track-reorder.spec.ts › Track reorder browser contract › cancels outside the track list without reordering or leaking visual state
+track-reorder.spec.ts › Track reorder browser contract › does not initiate a drag from the track name
+track-reorder.spec.ts › Track reorder browser contract › exposes one accessible drag handle per track
+track-reorder.spec.ts › Track reorder browser contract › lands on the exact target once without losing or duplicating tracks
+track-reorder.spec.ts › Track reorder browser contract › marks only the active track as dragging and clears it on release
+track-reorder.spec.ts › Track reorder browser contract › persists the exact order after reload
+velocity-lane.spec.ts › Velocity Lane › should collapse velocity lane when toggle is clicked again
+velocity-lane.spec.ts › Velocity Lane › should display velocity toggle button on tracks
+velocity-lane.spec.ts › Velocity Lane › should expand velocity lane when toggle is clicked
+velocity-lane.spec.ts › Velocity Lane › should hide velocity lane on mobile viewport
+velocity-lane.spec.ts › Velocity Lane › should persist velocity changes
+velocity-lane.spec.ts › Velocity Lane › should show velocity bars only for active steps
+velocity-lane.spec.ts › Velocity Lane › should show velocity value in tooltip
+visual.spec.ts › Interaction State Screenshots › button hover states
+visual.spec.ts › Interaction State Screenshots › step cell active state
+visual.spec.ts › Interaction State Screenshots › step cell inactive state
+visual.spec.ts › Responsive Visual Regression › mobile layout (iPhone)
+visual.spec.ts › Responsive Visual Regression › tablet layout (iPad)
+visual.spec.ts › Responsive Visual Regression › wide desktop layout
+visual.spec.ts › Visual Regression (Desktop) › sample picker appearance
+visual.spec.ts › Visual Regression (Desktop) › sequencer grid appearance
+visual.spec.ts › Visual Regression (Desktop) › track row with active steps
+visual.spec.ts › Visual Regression (Desktop) › transport controls appearance
+visual.spec.ts › Visual Regression (Desktop) › velocity lane expanded
+vu-meters.spec.ts › VU Meters › VU meter bars animate during playback
+vu-meters.spec.ts › VU Meters › VU meters are inactive when not playing
+vu-meters.spec.ts › VU Meters › mixer panel shows VU meters for each track

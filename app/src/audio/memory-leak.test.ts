@@ -7,55 +7,11 @@
  * 2. Stale timers firing after playback stops
  * 3. Voice allocation issues from orphaned state
  *
- * These are structural tests - they verify methods exist without
- * initializing complex Tone.js infrastructure.
+ * Cleanup is verified through observable voice/timer state rather than
+ * asserting that methods merely exist.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-
-describe('AudioEngine dispose method', () => {
-  it('should have a dispose method that can be called', async () => {
-    // Import the actual class to check its prototype
-    const { AudioEngine } = await import('./engine');
-
-    // Verify dispose method exists on prototype
-    expect(typeof AudioEngine.prototype.dispose).toBe('function');
-
-    // Verify calling dispose doesn't throw (even on uninitialized engine)
-    const engine = new AudioEngine();
-    expect(() => engine.dispose()).not.toThrow();
-  });
-});
-
-describe('AdvancedSynthVoice cancelPendingRelease', () => {
-  it('should have a cancelPendingRelease method', async () => {
-    const { AdvancedSynthVoice } = await import('./advancedSynth');
-    expect(typeof AdvancedSynthVoice.prototype.cancelPendingRelease).toBe('function');
-  });
-});
-
-describe('AdvancedSynthEngine stopAll', () => {
-  it('should have a stopAll method that can be called', async () => {
-    const { AdvancedSynthEngine } = await import('./advancedSynth');
-    expect(typeof AdvancedSynthEngine.prototype.stopAll).toBe('function');
-
-    // Verify calling stopAll doesn't throw (even on uninitialized engine)
-    const engine = new AdvancedSynthEngine();
-    expect(() => engine.stopAll()).not.toThrow();
-  });
-});
-
-describe('SynthEngine stopAll clears voices', () => {
-  it('should have SynthEngine with stopAll method', async () => {
-    const synth = await import('./synth');
-    expect(synth.SynthEngine).toBeDefined();
-    expect(typeof synth.SynthEngine.prototype.stopAll).toBe('function');
-
-    // Verify stopAll can be called without throwing
-    const engine = new synth.SynthEngine();
-    expect(() => engine.stopAll()).not.toThrow();
-  });
-});
 
 describe('Timer cleanup behavior', () => {
   beforeEach(() => {

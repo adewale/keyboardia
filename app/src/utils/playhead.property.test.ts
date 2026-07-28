@@ -7,6 +7,12 @@
  * Key Property: ∀ currentStep ∈ [0, MAX_STEPS), ∀ maxStepCount ∈ [1, MAX_STEPS]:
  *   getPlayheadIndex(currentStep, maxStepCount) ∈ [0, maxStepCount)
  *
+ * This is where the last-cell flickering bug is now guarded. e2e/last-cell-
+ * flicker.spec.ts used to hold a browser test for it; the test was removed in
+ * favour of these properties and the file survived for months as a docblock
+ * Playwright collected nothing from — visible to grep as coverage, run by
+ * nothing. The pointer belongs with the assertions, so the file is gone.
+ *
  * @see bug-patterns.ts#step-index-boundary-wrapping
  */
 
@@ -16,7 +22,6 @@ import { MAX_STEPS } from '../types';
 import {
   getPlayheadIndex,
   isStepPlaying,
-  getPlayheadPercent,
 } from './playhead';
 
 // Valid step counts used in the app
@@ -308,45 +313,6 @@ describe('isStepPlaying Properties', () => {
         expect(playingCount).toBe(1);
       }),
       { numRuns: 300 }
-    );
-  });
-});
-
-// =============================================================================
-// getPlayheadPercent Properties
-// =============================================================================
-
-describe('getPlayheadPercent Properties', () => {
-  it('returns 0 when not playing', () => {
-    fc.assert(
-      fc.property(arbCurrentStep, arbStepCount, (currentStep, maxStepCount) => {
-        const result = getPlayheadPercent(currentStep, maxStepCount, false);
-        expect(result).toBe(0);
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  it('percentage is always in [0, 100)', () => {
-    fc.assert(
-      fc.property(arbCurrentStep, arbStepCount, (currentStep, maxStepCount) => {
-        const result = getPlayheadPercent(currentStep, maxStepCount, true);
-        expect(result).toBeGreaterThanOrEqual(0);
-        expect(result).toBeLessThan(100);
-      }),
-      { numRuns: 500 }
-    );
-  });
-
-  it('percentage = (index / maxStepCount) * 100', () => {
-    fc.assert(
-      fc.property(arbCurrentStep, arbStepCount, (currentStep, maxStepCount) => {
-        const percent = getPlayheadPercent(currentStep, maxStepCount, true);
-        const index = getPlayheadIndex(currentStep, maxStepCount);
-        const expected = (index / maxStepCount) * 100;
-        expect(percent).toBeCloseTo(expected, 10);
-      }),
-      { numRuns: 200 }
     );
   });
 });

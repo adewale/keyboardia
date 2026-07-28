@@ -31,6 +31,7 @@ import {
   type RequestMetrics,
 } from './observability';
 import { matchRoute, extractSessionId } from './route-patterns';
+import { isSessionPagePath } from './routing';
 import { guardMcpRequest, mcpCorsHeaders, validateMcpOrigin } from './mcp-guard';
 
 // State hashing utilities (still needed for debug endpoints)
@@ -211,7 +212,7 @@ export default {
     // tools like OpenGraph.xyz, metatags.io, and schema.org see correct content
     // Phase 34: Route through DO for latest state (includes pending changes)
     // ========================================================================
-    if (path.startsWith('/s/')) {
+    if (isSessionPagePath(path)) {
       const sessionMatch = path.match(/^\/s\/([a-f0-9-]{36})$/);
 
       if (sessionMatch) {
@@ -337,13 +338,13 @@ async function handleApiRequest(
       }
     }
 
-    ctx.waitUntil(Promise.resolve().then(() => emitHttpRequestEvent(event)));
+    ctx.waitUntil(Promise.resolve().then(() => emitHttpRequestEvent(event, env)));
   };
 
   // GET /api/health - Health check endpoint for monitoring and testing
   if (path === '/api/health' && method === 'GET') {
     emitEvent(200);
-    return new Response(JSON.stringify({ status: 'ok' }), {
+    return new Response(JSON.stringify({ status: 'ok', runId: env.E2E_RUN_ID ?? null }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

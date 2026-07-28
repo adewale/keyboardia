@@ -551,10 +551,3 @@ export function initLogStore(): void {
 export function isPersistenceEnabled(): boolean {
   return typeof window !== 'undefined' && window.__LOG_PERSIST__ === true;
 }
-
-/**
- * Get current session ID
- */
-export function getSessionId(): string {
-  return SESSION_ID;
-}

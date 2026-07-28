@@ -4,9 +4,8 @@
  * The AudioEngine and playback controls interact with this interface,
  * unaware of which implementation is active underneath.
  *
- * NOTE: WorkletTrack, WorkletPLock, and WorkletSchedulerState are duplicated
- * in worklets/scheduler.worklet.ts because worklets can't import external
- * modules. Keep both files in sync.
+ * Vite bundles the AudioWorklet module graph, so the worklet imports these
+ * types and the shared timing kernel instead of maintaining parallel copies.
  */
 
 import type { GridState } from '../types';
@@ -93,5 +92,4 @@ export interface WorkletPLock {
   tie?: boolean;
 }
 
-// KEEP IN SYNC with worklets/scheduler.worklet.ts SCHEDULE_AHEAD_SEC
 export const SCHEDULE_AHEAD_SEC = 0.15;

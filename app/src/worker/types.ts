@@ -70,6 +70,12 @@ export interface Env {
   // Environment variables
   ENVIRONMENT?: string;   // "production" | "staging"
   SERVICE_NAME?: string;  // "keyboardia" | "keyboardia-staging"
+  // Wide events default on. Integration/miniflare runs turn them off because
+  // forwarding thousands of console events through Vitest's worker RPC can
+  // outlive the test environment and fail teardown after all assertions pass.
+  OBSERVABILITY_LOGS_ENABLED?: string;
+  /** Local full-stack runner nonce; omitted in deployed environments. */
+  E2E_RUN_ID?: string;
 
   // Per-minute, per-IP rate limit overrides. Unset means the production
   // default in worker/index.ts. Raise these for load and integration testing
@@ -81,10 +87,7 @@ export interface Env {
 
 // Import and re-export shared message constants (canonical definitions)
 export {
-  MUTATING_MESSAGE_TYPES,
   READONLY_MESSAGE_TYPES,
-  STATE_MUTATING_BROADCASTS,
-  isStateMutatingMessage,
   isStateMutatingBroadcast,
   assertNever,
 } from '../shared/messages';
@@ -117,9 +120,6 @@ export interface RemixSessionResponse {
 export interface ErrorResponse {
   error: string;
 }
-
-// Backwards compatibility: Keep isStateMutatingMessage and isStateMutatingBroadcast available
-// They are re-exported from '../shared/messages' above
 
 // NOTE: The following type definitions have been REMOVED and consolidated into
 // src/shared/message-types.ts:

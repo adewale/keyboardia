@@ -1,17 +1,14 @@
 /**
  * Property-Based Tests for Statistical Helpers
  *
- * Verifies mathematical invariants of percentile, mean, and stddev:
+ * Verifies mathematical invariants of percentile:
  * - percentile(0) = min, percentile(100) = max
  * - percentile is monotonically non-decreasing in p
- * - mean is bounded by [min, max]
- * - stddev is non-negative
- * - stddev of constant array is 0
  */
 
 import fc from 'fast-check';
 import { describe, it, expect } from 'vitest';
-import { percentile, mean, stddev } from './percentile';
+import { percentile } from './percentile';
 
 // ─── Arbitraries ────────────────────────────────────────────────────────
 
@@ -85,93 +82,6 @@ describe('percentile properties', () => {
         percentile(values, p);
         expect(values).toEqual(copy);
       }),
-      { numRuns: 100 }
-    );
-  });
-});
-
-// ─── Mean Properties ────────────────────────────────────────────────────
-
-describe('mean properties', () => {
-  it('is bounded by [min, max]', () => {
-    fc.assert(
-      fc.property(arbNonEmptyNumbers, (values) => {
-        const m = mean(values);
-        expect(m).toBeGreaterThanOrEqual(Math.min(...values) - 1e-10);
-        expect(m).toBeLessThanOrEqual(Math.max(...values) + 1e-10);
-      }),
-      { numRuns: 200 }
-    );
-  });
-
-  it('constant array returns the constant', () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: -1e6, max: 1e6, noNaN: true }),
-        fc.integer({ min: 1, max: 50 }),
-        (val, len) => {
-          const arr = new Array(len).fill(val);
-          expect(mean(arr)).toBeCloseTo(val, 7);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  it('is invariant to element order (commutative)', () => {
-    fc.assert(
-      fc.property(arbNonEmptyNumbers, (values) => {
-        const reversed = [...values].reverse();
-        // Float summation is not associative: reordering shifts the sum
-        // by up to a few ulps of the running magnitude, which exceeds an
-        // absolute toBeCloseTo(…, 10) for inputs near 1e6 (seen with
-        // [1.16e-10, 866507.86, 262143.99] — a 1-ulp difference of the
-        // mean). Bound the error relative to Σ|values| instead.
-        const sumAbs = values.reduce((s, v) => s + Math.abs(v), 0);
-        const tolerance = 4 * Number.EPSILON * sumAbs;
-        expect(Math.abs(mean(values) - mean(reversed))).toBeLessThanOrEqual(tolerance);
-      }),
-      { numRuns: 100 }
-    );
-  });
-});
-
-// ─── Stddev Properties ──────────────────────────────────────────────────
-
-describe('stddev properties', () => {
-  it('is non-negative', () => {
-    fc.assert(
-      fc.property(arbNonEmptyNumbers, (values) => {
-        expect(stddev(values)).toBeGreaterThanOrEqual(0);
-      }),
-      { numRuns: 200 }
-    );
-  });
-
-  it('constant array returns 0', () => {
-    fc.assert(
-      fc.property(
-        fc.double({ min: -1e6, max: 1e6, noNaN: true }),
-        fc.integer({ min: 2, max: 50 }),
-        (val, len) => {
-          const arr = new Array(len).fill(val);
-          expect(stddev(arr)).toBeCloseTo(0, 7);
-        }
-      ),
-      { numRuns: 100 }
-    );
-  });
-
-  it('is invariant to translation (adding constant to all elements)', () => {
-    fc.assert(
-      fc.property(
-        fc.array(fc.double({ min: -1e3, max: 1e3, noNaN: true }), { minLength: 2, maxLength: 50 }),
-        fc.double({ min: -1e3, max: 1e3, noNaN: true }),
-        (values, offset) => {
-          const shifted = values.map(v => v + offset);
-          expect(stddev(shifted)).toBeCloseTo(stddev(values), 5);
-        }
-      ),
       { numRuns: 100 }
     );
   });

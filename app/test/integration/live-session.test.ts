@@ -976,15 +976,23 @@ it('DO: persists state to DO storage after mutation (hybrid persistence)', async
 
   const { id } = await createResponse.json() as { id: string };
 
-  // Access DO to verify it can load state
+  // Creating a session writes KV. A subsequent state mutation is routed through
+  // the Durable Object and must synchronously update its authoritative storage.
+  const updateResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 145, swing: 0, version: 1 },
+    }),
+  });
+  expect(updateResponse.status).toBe(200);
+  await updateResponse.text();
+
   const doId = (env as unknown as Env).LIVE_SESSIONS.idFromName(id);
   const stub = (env as unknown as Env).LIVE_SESSIONS.get(doId);
 
-  // Use runInDurableObject to verify internal state
-  await runInDurableObject(stub, async (instance: unknown) => {
-    const obj = instance as { state: { tempo: number } | null };
-    // State should be loaded (either from DO storage or KV)
-    // The exact loading path depends on prior access, but state should exist
-    expect(obj.state).toBeDefined();
+  await runInDurableObject(stub, async (_instance, durableState) => {
+    const persisted = await durableState.storage.get<{ tempo: number }>('state');
+    expect(persisted?.tempo).toBe(145);
   });
 });

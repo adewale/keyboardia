@@ -16,7 +16,7 @@ import {
   waitForAppReady,
   pressKeyboardTab,
 } from './global-setup';
-import { createPopulatedSessionWithRetry } from './test-utils';
+import { createPopulatedSessionWithRetry, hasVisibleFocusIndicator } from './test-utils';
 
 /**
  * Check if running on a mobile browser project.
@@ -185,20 +185,27 @@ test.describe('Accessibility', () => {
 
     const focusedElement = page.locator(':focus');
     await expect(focusedElement).toBeVisible();
+
     const indicator = await focusedElement.evaluate((el) => {
       const style = window.getComputedStyle(el);
       return {
         focusVisible: el.matches(':focus-visible'),
-        outlineWidth: Number.parseFloat(style.outlineWidth),
         outlineStyle: style.outlineStyle,
+        outlineWidth: Number.parseFloat(style.outlineWidth) || 0,
         boxShadow: style.boxShadow,
       };
     });
+
+    // WCAG 2.4.7: a keyboard-focused control must have a visible indicator.
+    // Two independent claims, both needed: the browser considered this keyboard
+    // focus (`:focus-visible`), and something is actually drawn.
     expect(indicator.focusVisible, 'keyboard focus should match :focus-visible').toBe(true);
+    // Via the shared predicate rather than `outlineWidth > 0`, which rejects
+    // `outline-style: auto` — Chromium's native focus ring, whose computed
+    // outline-width is 0.
     expect(
-      (indicator.outlineStyle !== 'none' && indicator.outlineWidth > 0) ||
-        indicator.boxShadow !== 'none',
-      'focused control should render an outline or box shadow',
+      hasVisibleFocusIndicator(indicator),
+      `focused element has no visible focus indicator: ${JSON.stringify(indicator)}`
     ).toBe(true);
   });
 
@@ -211,16 +218,23 @@ test.describe('Accessibility', () => {
     const images = page.locator('img');
     const imageCount = await images.count();
 
-    const violations: string[] = [];
+    const unlabelled: string[] = [];
+
     for (let i = 0; i < imageCount; i++) {
       const img = images.nth(i);
-      const alt = await img.getAttribute('alt');
-      const role = await img.getAttribute('role');
+      const [alt, role, src] = await Promise.all([
+        img.getAttribute('alt'),
+        img.getAttribute('role'),
+        img.getAttribute('src'),
+      ]);
+
+      // `alt=""` is a valid decorative marker; a missing attribute is not.
+      // `role="none"` is a synonym for `presentation`.
       if (alt === null && role !== 'presentation' && role !== 'none') {
-        violations.push((await img.getAttribute('src')) ?? '<missing src>');
+        unlabelled.push(src ?? '(no src)');
       }
     }
 
-    expect(violations).toEqual([]);
+    expect(unlabelled, `images missing alt text: ${unlabelled.join(', ')}`).toEqual([]);
   });
 });

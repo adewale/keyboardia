@@ -41,20 +41,7 @@ export const VALID_AUDIO_GESTURES = [
  * Events that are NOT valid user gestures.
  * These cannot unlock AudioContext - audio will remain suspended.
  */
-export const INVALID_AUDIO_GESTURES = [
-  'mouseenter',
-  'mouseover',
-  'mousemove',
-  'scroll',
-  'wheel',
-  'focus',
-  'blur',
-  'load',
-  'resize',
-] as const;
-
 export type ValidGesture = (typeof VALID_AUDIO_GESTURES)[number];
-export type InvalidGesture = (typeof INVALID_AUDIO_GESTURES)[number];
 
 /**
  * Check if an event type is a valid user gesture for AudioContext unlock.
@@ -173,17 +160,26 @@ export function shouldTriggerAudioLoad(trigger: AudioTrigger): boolean {
  * };
  * ```
  */
-export function signalMusicIntent(trigger: AudioTrigger): void {
+export function signalMusicIntent(trigger: AudioTrigger): Promise<void> {
   if (!shouldTriggerAudioLoad(trigger)) {
     logger.audio.warn(`[AudioTrigger] ${trigger} should not trigger audio load`);
-    return;
+    return Promise.resolve();
   }
+
+  // Headless WebKit's media process can wedge on AudioContext.resume(), which
+  // would freeze otherwise browser-independent edit and accessibility tests.
+  // The WebKit E2E fixture sets this narrow runtime seam; Tier 1 playback still
+  // exercises the real engine, and Chromium owns exhaustive real-audio tests.
+  const preloadDisabled = typeof window !== 'undefined'
+    && (window as unknown as { __KEYBOARDIA_DISABLE_AUDIO_PRELOAD__?: boolean })
+      .__KEYBOARDIA_DISABLE_AUDIO_PRELOAD__ === true;
+  if (preloadDisabled && shouldPreloadAudio(trigger)) return Promise.resolve();
 
   logger.audio.log(`[AudioTrigger] Music intent: ${trigger}`);
 
   // Since this is triggered by a click (valid gesture), start async initialization
   // This enables hover previews after the first instrument click
-  initializeAudioAsync();
+  return initializeAudioAsync();
 }
 
 /**

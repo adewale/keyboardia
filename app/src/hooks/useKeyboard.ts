@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { isTextEditingContext, isMobileDevice } from '../utils/keyboard';
+import { useStableGetter } from './useStableCallback';
 
 /**
  * Keyboard handler configuration.
@@ -82,6 +83,12 @@ type KeyMatcher = (e: KeyboardEvent) => boolean;
  * Handler map entry: [matcher, definition]
  */
 type HandlerMapEntry = [KeyMatcher, HandlerDef];
+
+/**
+ * Keys a focused native control activates itself. Anything else is free to be
+ * a global shortcut regardless of what has focus.
+ */
+const NATIVELY_ACTIVATED_KEYS = new Set([' ', 'Spacebar', 'Enter']);
 
 function isInteractiveTarget(target: EventTarget | null): boolean {
   return target instanceof Element && target.closest(
@@ -183,11 +190,11 @@ export function useKeyboard(
     skipInTextInput = true,
   } = options;
 
-  // Use refs for handlers to avoid re-registering on every render
-  const handlersRef = useRef(handlers);
-  useEffect(() => {
-    handlersRef.current = handlers;
-  }, [handlers]);
+  // Read the latest handlers without re-registering the listener on every
+  // render. useStableGetter updates during render rather than in an effect,
+  // which closes the window where a keypress between render and effect flush
+  // would have run the previous render's handlers.
+  const getHandlers = useStableGetter(handlers);
 
   // Memoize mobile check result to avoid repeated calls
   const isMobileRef = useRef<boolean | null>(null);
@@ -199,16 +206,25 @@ export function useKeyboard(
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    const h = handlersRef.current;
+    const h = getHandlers();
 
     // Skip if disabled
     if (!enabled) return;
 
-    // Native interactive controls own their keyboard behavior. In particular,
-    // Space/Enter on a focused sequencer button must activate that button rather
-    // than triggering the global transport shortcut. Escape remains global so
-    // overlays and drawers can still be dismissed from inside their controls.
-    if (e.key !== 'Escape' && isInteractiveTarget(e.target)) return;
+    // Native interactive controls own their keyboard behavior — but only for the
+    // keys they actually handle. Space and Enter activate a focused button, so
+    // on a sequencer step they must toggle that step rather than trigger the
+    // global transport.
+    //
+    // This was written as "every key except Escape", which also handed Delete
+    // and Backspace to the button. A <button> does nothing with those, so the
+    // documented shortcut (specs/KEYBOARD-SHORTCUTS.md: "Delete / Backspace —
+    // Delete selected steps — With selection") silently stopped working the
+    // moment step cells became real buttons: Ctrl+clicking a step focuses it,
+    // so the guard fired on the one path a user can reach it from. Listing the
+    // owned keys instead of excluding one keeps the guard's intent and drops
+    // the collateral.
+    if (NATIVELY_ACTIVATED_KEYS.has(e.key) && isInteractiveTarget(e.target)) return;
 
     // Check text input context for shortcuts that would conflict
     const inTextInput = skipInTextInput && isTextEditingContext(e.target);
@@ -247,7 +263,7 @@ export function useKeyboard(
         e.preventDefault();
       }
     }
-  }, [enabled, skipOnMobile, skipInTextInput, checkIsMobile]);
+  }, [enabled, skipOnMobile, skipInTextInput, checkIsMobile, getHandlers]);
 
   useEffect(() => {
     if (!enabled) return;

@@ -8,6 +8,7 @@
 import React from 'react';
 import { ImageResponse } from 'workers-og';
 import type { Env } from './types';
+import { condenseSteps } from './og-image-layout';
 import type { Session } from '../shared/state';
 
 const OG_WIDTH = 600;
@@ -59,23 +60,6 @@ interface OGImageProps {
   tracks: Array<{ steps: boolean[] }>;
   tempo: number;
   trackCount: number;
-}
-
-/**
- * Condense steps to a fixed number of columns for display
- * Uses OR reduction: if any step in a segment is active, the column is active
- */
-function condenseSteps(steps: boolean[], targetColumns: number): boolean[] {
-  if (steps.length <= targetColumns) {
-    return [...steps, ...Array(targetColumns - steps.length).fill(false)];
-  }
-
-  const ratio = steps.length / targetColumns;
-  return Array.from({ length: targetColumns }, (_, i) => {
-    const start = Math.floor(i * ratio);
-    const end = Math.floor((i + 1) * ratio);
-    return steps.slice(start, end).some(Boolean);
-  });
 }
 
 /**

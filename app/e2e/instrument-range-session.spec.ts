@@ -1,9 +1,9 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { createSessionWithRetry, API_BASE } from './test-utils';
-import { waitForAppReady } from './global-setup';
+import { test, expect, waitForAppReady } from './global-setup';
 import { MAX_TRACKS } from '../src/types';
 
 /**
@@ -33,7 +33,7 @@ const REPORT_DIR = resolve(THIS_DIR, '../test-results/instrument-range');
 // Probe a spread across the grid: deep low, low, octave, fifth, root, up...
 const PROBE_OFFSETS = [-24, -18, -12, -7, 0, 7, 12, 18, 24];
 const STEP_COUNT = 16;
-const TOTAL_STEPS = 64;
+const TOTAL_STEPS = 128;
 
 function sampledInstrumentIds(): string[] {
   const ids: string[] = [];

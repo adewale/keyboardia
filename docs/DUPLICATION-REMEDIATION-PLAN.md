@@ -1,5 +1,9 @@
 # Duplication Remediation Plan
 
+> **Historical plan.** The isolated `app/test/staging` package referenced below
+> was deleted in July 2026 after collector-based auditing proved its 103 tests
+> were never run and duplicated maintained Worker-runtime/browser contracts.
+
 **Generated:** 2026-01-09
 **Audit Scope:** Full codebase analysis for duplication and missing abstractions
 **Total Issues Identified:** 89 distinct duplication patterns across 6 categories
@@ -41,7 +45,7 @@
 **Estimated Effort:** 2 hours
 **Files to Modify:**
 - Create: `app/test/types.ts`
-- Modify: `app/test/staging/*.test.ts` (6 files)
+- Former: `app/test/staging/*.test.ts` (deleted as uncollected duplicate coverage)
 - Modify: `app/test/integration/*.test.ts` (2 files)
 
 **Description:**

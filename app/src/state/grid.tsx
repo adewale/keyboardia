@@ -4,11 +4,9 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, DEFAULT_TEMPO, DEFAULT_SWING } from '../types';
-import { detectMirrorDirection } from '../utils/patternOps';
+import { detectMirrorDirection } from '../shared/pattern-operations';
 // Serializable defaults must not pull the Tone.js runtime into state.
 import { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
-// Re-export for backwards compatibility
-export { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
 // Phase 3 refactoring: Delegate SYNCED actions to applyMutation
 import { delegateToApplyMutation, maybeInvalidateSelection } from './state-adapters';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';

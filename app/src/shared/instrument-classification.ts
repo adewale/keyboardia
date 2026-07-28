@@ -39,10 +39,26 @@ export const DRUM_INSTRUMENT_IDS = new Set([
   'tone:metal-hihat',
 ]);
 
-/** Microphone recordings are one-shot, unpitched samples in MIDI exports. */
+/**
+ * Prefixes for audio the user supplied, which has no known pitch mapping.
+ *
+ * `mic:` was here alone, and nothing produces it. Recorder.tsx mints
+ * `recording-${Date.now()}` for a whole take and `slice-${Date.now()}-${i}`
+ * for each auto-slice, so every real user recording fell past this check and
+ * was classified as a pitched instrument — which put it on a melodic MIDI
+ * channel with a GM program instead of channel 10, and left it out of the
+ * recording count that mcp-lifecycle reports.
+ *
+ * `mic:` stays because midiExport and mcp-lifecycle both still branch on it;
+ * removing it belongs with removing those branches.
+ */
+const USER_AUDIO_PREFIXES = ['mic:', 'recording-', 'slice-'];
+
+/** Drums and user recordings alike are one-shot, unpitched samples. */
 export function isDrumInstrument(sampleId: string): boolean {
   const normalized = sampleId.trim().toLowerCase();
-  return normalized.startsWith('mic:') || DRUM_INSTRUMENT_IDS.has(normalized);
+  return USER_AUDIO_PREFIXES.some((prefix) => normalized.startsWith(prefix)) ||
+    DRUM_INSTRUMENT_IDS.has(normalized);
 }
 
 /** Pure preset extraction that does not import any browser audio engine. */

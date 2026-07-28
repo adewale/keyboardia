@@ -27,7 +27,7 @@ import type {
   FMParams,
   ValidStepCount,
 } from './types';
-import { isStateMutatingMessage, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
+import { READONLY_MESSAGE_TYPES, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { getSession, updateSession, updateSessionName } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
@@ -79,7 +79,8 @@ import {
   mirrorPattern,
   applyEuclidean,
 } from '../shared/pattern-operations';
-import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
+import { MAX_TRACK_NAME_LENGTH, isValidNumber } from '../shared/validation';
+import { getIdentityFromId } from '../shared/identity';
 import { setTrackInstrument } from '../shared/track-instrument';
 import { validateCompleteSessionState } from './validation';
 import {
@@ -96,47 +97,6 @@ const MAX_PLAYERS = 10;
 const STALE_CONNECTION_THRESHOLD_MS = 120_000; // 2 minutes
 const PRUNE_CHECK_INTERVAL_MS = 60_000; // 1 minute
 
-// Phase 11: Identity generation (duplicated from utils/identity.ts for worker)
-const IDENTITY_COLORS = [
-  '#E53935', '#D81B60', '#8E24AA', '#5E35B1', '#3949AB', '#1E88E5',
-  '#039BE5', '#00ACC1', '#00897B', '#43A047', '#7CB342', '#C0CA33',
-  '#FDD835', '#FFB300', '#FB8C00', '#F4511E', '#6D4C41', '#757575',
-];
-const IDENTITY_COLOR_NAMES = [
-  'Red', 'Pink', 'Purple', 'Violet', 'Indigo', 'Blue', 'Sky', 'Cyan',
-  'Teal', 'Green', 'Lime', 'Olive', 'Yellow', 'Amber', 'Orange', 'Coral',
-  'Brown', 'Grey',
-];
-const IDENTITY_ANIMALS = [
-  'Ant', 'Badger', 'Bat', 'Bear', 'Beaver', 'Bee', 'Bird', 'Bison',
-  'Butterfly', 'Camel', 'Cat', 'Cheetah', 'Chicken', 'Crab', 'Crow',
-  'Deer', 'Dog', 'Dolphin', 'Dove', 'Dragon', 'Duck', 'Eagle', 'Elephant',
-  'Falcon', 'Fish', 'Flamingo', 'Fox', 'Frog', 'Giraffe', 'Goat',
-  'Gorilla', 'Hamster', 'Hawk', 'Hedgehog', 'Hippo', 'Horse', 'Jaguar',
-  'Kangaroo', 'Koala', 'Lemur', 'Leopard', 'Lion', 'Llama', 'Lobster',
-  'Monkey', 'Moose', 'Mouse', 'Octopus', 'Otter', 'Owl', 'Panda',
-  'Panther', 'Parrot', 'Peacock', 'Penguin', 'Pig', 'Puma', 'Rabbit',
-  'Raccoon', 'Raven', 'Rhino', 'Seal', 'Shark', 'Sheep', 'Snake',
-  'Spider', 'Squid', 'Swan', 'Tiger', 'Turtle', 'Whale', 'Wolf', 'Zebra',
-];
-
-function generateIdentity(playerId: string) {
-  let hash = 0;
-  for (let i = 0; i < playerId.length; i++) {
-    const char = playerId.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  const absHash = Math.abs(hash);
-  const colorIndex = absHash % IDENTITY_COLORS.length;
-  const animalIndex = (absHash >> 8) % IDENTITY_ANIMALS.length;
-  return {
-    color: IDENTITY_COLORS[colorIndex],
-    colorIndex,
-    animal: IDENTITY_ANIMALS[animalIndex],
-    name: `${IDENTITY_COLOR_NAMES[colorIndex]} ${IDENTITY_ANIMALS[animalIndex]}`,
-  };
-}
 // Schema version for migrations
 const SCHEMA_VERSION = 1;
 
@@ -811,7 +771,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     // Create player info with identity (uses requested playerId for consistent identity)
     const playerId = requestedPlayerId;
-    const identity = generateIdentity(playerId);
+    const identity = getIdentityFromId(playerId);
     const playerInfo: PlayerInfo = {
       id: playerId,
       connectedAt: Date.now(),
@@ -981,7 +941,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Phase 21 CENTRALIZED CHECK: Reject all mutations on published (immutable) sessions
     // This single check protects ALL mutation handlers - no per-handler checks needed
     // Adding a new mutation type? Add it to MUTATING_MESSAGE_TYPES in types.ts
-    if (isStateMutatingMessage(msg.type) && this.immutable) {
+    // Published sessions admit only the explicit read-only protocol surface.
+    // This is fail-closed: a newly added message is blocked until classified.
+    if (this.immutable && !READONLY_MESSAGE_TYPES.has(msg.type as never)) {
       // Track rejected mutations for observability
       if (obs) {
         obs.rejectedMutationCount++;
@@ -1167,7 +1129,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         infra: obs.infra,
         service: getServiceInfo(this.env),
       };
-      emitWsSessionEvent(event);
+      emitWsSessionEvent(event, this.env);
     }
 
     await this.teardownConnection(ws);
@@ -1313,7 +1275,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     { tempo: number; seq?: number },
     ServerMessage
   >({
-    validate: (msg) => ({ ...msg, tempo: clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO) }),
+    // Reject non-numeric input before clamping: clamp() is Math.max/Math.min,
+    // which turns a non-numeric tempo into NaN rather than rejecting it.
+    // isValidNumber is shared/validation.ts's existing type+finite guard.
+    validate: (msg) =>
+      isValidNumber(msg.tempo)
+        ? { ...msg, tempo: clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO) }
+        : null,
     mutate: (state, msg) => { state.tempo = msg.tempo; },
     toBroadcast: (msg, playerId) => ({
       type: 'tempo_changed',
@@ -1326,7 +1294,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     { swing: number; seq?: number },
     ServerMessage
   >({
-    validate: (msg) => ({ ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }),
+    // Same guard as tempo — see handler-factory's GlobalMutationConfig.validate.
+    validate: (msg) =>
+      isValidNumber(msg.swing)
+        ? { ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }
+        : null,
     mutate: (state, msg) => { state.swing = msg.swing; },
     toBroadcast: (msg, playerId) => ({
       type: 'swing_changed',
@@ -2059,7 +2031,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     ServerMessage
   >({
     getTrackId: (msg) => msg.trackId,
-    validate: (msg) => ({ ...msg, volume: clamp(msg.volume, MIN_VOLUME, MAX_VOLUME) }),
+    // Reject non-finite input before clamping — clamp() is Math.max/Math.min,
+    // which passes NaN straight through. See GlobalMutationConfig.validate.
+    validate: (msg) =>
+      isValidNumber(msg.volume)
+        ? { ...msg, volume: clamp(msg.volume, MIN_VOLUME, MAX_VOLUME) }
+        : null,
     mutate: (track, msg) => { track.volume = msg.volume; },
     toBroadcast: (msg, playerId) => ({
       type: 'track_volume_set',
@@ -2074,10 +2051,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     ServerMessage
   >({
     getTrackId: (msg) => msg.trackId,
-    validate: (msg) => ({
-      ...msg,
-      transpose: Math.round(clamp(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE)),
-    }),
+    // Math.round(NaN) is NaN, so rounding does not rescue a non-numeric input.
+    validate: (msg) =>
+      isValidNumber(msg.transpose)
+        ? {
+            ...msg,
+            transpose: Math.round(clamp(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE)),
+          }
+        : null,
     mutate: (track, msg) => { track.transpose = msg.transpose; },
     toBroadcast: (msg, playerId) => ({
       type: 'track_transpose_set',
@@ -2093,10 +2074,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     ServerMessage
   >({
     getTrackId: (msg) => msg.trackId,
-    validate: (msg) => ({
-      ...msg,
-      swing: clamp(msg.swing, MIN_SWING, MAX_SWING),
-    }),
+    // Same guard as volume and transpose: clamp() is Math.max/Math.min, which
+    // passes a non-numeric value through as NaN. Per-track swing was missed
+    // when those two were fixed.
+    validate: (msg) =>
+      isValidNumber(msg.swing)
+        ? { ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }
+        : null,
     mutate: (track, msg) => { track.swing = msg.swing; },
     toBroadcast: (msg, playerId) => ({
       type: 'track_swing_set',
@@ -2153,13 +2137,35 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   ): Promise<void> {
     if (!this.state) return;
 
-    // Validate effects object has required fields
-    if (!msg.effects ||
-        typeof msg.effects.reverb?.wet !== 'number' ||
-        typeof msg.effects.delay?.wet !== 'number' ||
-        typeof msg.effects.chorus?.wet !== 'number' ||
-        typeof msg.effects.distortion?.wet !== 'number') {
-      console.warn(`[WS] Invalid effects state from ${player.id}`);
+    // Validate every numeric field, not just the four `wet` ones.
+    //
+    // The previous guard checked reverb.wet, delay.wet, chorus.wet and
+    // distortion.wet, and left decay, feedback, frequency, depth and amount to
+    // reach clamp() unchecked. clamp() is Math.max/Math.min, so a string or
+    // object arrives as NaN, and the NaN was stored in session state and
+    // broadcast to every collaborator. `typeof x === 'number'` is also not
+    // enough on its own — JSON.parse turns 1e999 into Infinity — so this uses
+    // the same isValidNumber guard as tempo, swing, volume and transpose.
+    const numericEffectFields: Array<[string, unknown]> = msg.effects
+      ? [
+          ['reverb.decay', msg.effects.reverb?.decay],
+          ['reverb.wet', msg.effects.reverb?.wet],
+          ['delay.feedback', msg.effects.delay?.feedback],
+          ['delay.wet', msg.effects.delay?.wet],
+          ['chorus.frequency', msg.effects.chorus?.frequency],
+          ['chorus.depth', msg.effects.chorus?.depth],
+          ['chorus.wet', msg.effects.chorus?.wet],
+          ['distortion.amount', msg.effects.distortion?.amount],
+          ['distortion.wet', msg.effects.distortion?.wet],
+        ]
+      : [];
+
+    const invalidField = numericEffectFields.find(([, value]) => !isValidNumber(value));
+    if (!msg.effects || invalidField) {
+      console.warn(
+        `[WS] Invalid effects state from ${player.id}` +
+        (invalidField ? `: ${invalidField[0]} is not a finite number` : '')
+      );
       return;
     }
 

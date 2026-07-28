@@ -102,8 +102,20 @@ export function createTrackMutationHandler<
  * Configuration for global state mutation handlers (tempo, swing, effects).
  */
 export interface GlobalMutationConfig<TMsg, TBroadcast extends ServerMessage> {
-  /** Optional: Validate and transform the message */
-  validate?: (msg: TMsg) => TMsg;
+  /**
+   * Optional: validate and transform the message.
+   *
+   * Return `null` to reject it — the mutation is not applied, nothing is
+   * persisted, and nothing is broadcast.
+   *
+   * Rejection exists because clamping alone is range control, not type control.
+   * `clamp(v, 60, 180)` is `Math.max(60, Math.min(180, v))`, and a non-numeric
+   * `v` propagates through as NaN rather than being caught — so a client could
+   * set a shared session's tempo to NaN, have it persisted, and have it
+   * broadcast to every collaborator. A transform-only signature had no way to
+   * say "discard this".
+   */
+  validate?: (msg: TMsg) => TMsg | null;
   /** Apply mutation to state */
   mutate: (state: SessionState, msg: TMsg) => void;
   /** Create broadcast message */
@@ -142,8 +154,10 @@ export function createGlobalMutationHandler<
     // Return early if no state loaded
     if (!this.state) return;
 
-    // Validate/transform message
+    // Validate/transform message. A null result means "reject": apply nothing,
+    // persist nothing, broadcast nothing.
     const validated = config.validate ? config.validate(msg) : msg;
+    if (validated === null) return;
 
     // Apply mutation
     config.mutate(this.state, validated);

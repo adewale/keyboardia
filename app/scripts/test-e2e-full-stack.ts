@@ -1,203 +1,177 @@
 #!/usr/bin/env npx tsx
-/**
- * Full-Stack E2E Test Runner
- *
- * Runs E2E tests against the real Cloudflare Worker (wrangler dev) instead of
- * just the Vite dev server. This tests the complete stack including:
- * - Cloudflare Worker API endpoints
- * - Durable Objects (WebSocket, state persistence)
- * - KV storage
- * - Observability 2.0 wide events
- *
- * Usage:
- *   npm run test:e2e:full-stack           # Run all E2E tests against wrangler dev
- *   npm run test:e2e:full-stack -- --smoke # Run only smoke tests
- *   npm run test:e2e:session-contract:worker # Run the HTTP contract against wrangler dev
- *   npm run test:e2e:collaboration:worker # HTTP contract + the connected browser path
- *   E2E_WORKER_PORT=8791 npm run test:e2e:session-contract:worker # Override port
- *
- * Prerequisites:
- *   - Project must be built first (script handles this)
- *   - Port 8787 must be available for wrangler dev
- */
-
-import { spawn, execSync, ChildProcess } from 'child_process';
+import { randomUUID } from 'node:crypto';
+import { spawn, execSync, type ChildProcess } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { buildPlaywrightArgs, getWranglerStdio, type TestScope } from './e2e-full-stack-args';
+import {
+  assertPortAvailable,
+  parseWallTimeout,
+  signalExitCode,
+  waitForOwnedHealth,
+} from './e2e-full-stack-lifecycle';
 
 const WRANGLER_PORT = Number(process.env.E2E_WORKER_PORT ?? 8787);
 if (!Number.isInteger(WRANGLER_PORT) || WRANGLER_PORT < 1 || WRANGLER_PORT > 65535) {
   throw new Error('E2E_WORKER_PORT must be a valid TCP port');
 }
 const WRANGLER_URL = `http://localhost:${WRANGLER_PORT}`;
-const MAX_STARTUP_WAIT_MS = 120_000; // 2 minutes
-const HEALTH_CHECK_INTERVAL_MS = 1000;
+const MAX_STARTUP_WAIT_MS = 120_000;
+const HEALTH_CHECK_INTERVAL_MS = 1_000;
+const E2E_TIMEOUT_MS = parseWallTimeout(process.env.E2E_TIMEOUT_MS);
 
 let wranglerProcess: ChildProcess | null = null;
+let playwrightProcess: ChildProcess | null = null;
+let cleanupPromise: Promise<void> | null = null;
 
-/**
- * Check if wrangler dev is ready by hitting the health endpoint
- */
-async function isWranglerReady(): Promise<boolean> {
+function signalTree(child: ChildProcess, signal: NodeJS.Signals): void {
+  if (!child.pid) return;
+  if (process.platform === 'win32' && (child.exitCode !== null || child.signalCode !== null)) return;
   try {
-    const response = await fetch(`${WRANGLER_URL}/api/health`, {
-      signal: AbortSignal.timeout(2000),
-    });
-    return response.ok;
-  } catch {
-    return false;
+    if (process.platform === 'win32') child.kill(signal);
+    else process.kill(-child.pid, signal);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code !== 'ESRCH') throw error;
   }
 }
 
-/**
- * Wait for wrangler dev to be ready
- */
-async function waitForWrangler(): Promise<void> {
-  const startTime = Date.now();
-  console.log(`⏳ Waiting for wrangler dev to be ready on port ${WRANGLER_PORT}...`);
-
-  while (Date.now() - startTime < MAX_STARTUP_WAIT_MS) {
-    if (await isWranglerReady()) {
-      console.log(`✅ Wrangler dev is ready (took ${Math.round((Date.now() - startTime) / 1000)}s)`);
-      return;
-    }
-    await new Promise(resolve => setTimeout(resolve, HEALTH_CHECK_INTERVAL_MS));
+function treeIsAlive(child: ChildProcess): boolean {
+  if (!child.pid) return false;
+  if (process.platform === 'win32') {
+    return child.exitCode === null && child.signalCode === null;
   }
-
-  throw new Error(`Wrangler dev failed to start within ${MAX_STARTUP_WAIT_MS / 1000}s`);
+  try {
+    process.kill(-child.pid, 0);
+    return true;
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code === 'ESRCH') return false;
+    if (code === 'EPERM') return true;
+    throw error;
+  }
 }
 
-/**
- * Start wrangler dev in the background
- */
-function startWrangler(): ChildProcess {
-  console.log('🚀 Starting wrangler dev...');
+async function waitForTreeExit(child: ChildProcess, timeoutMs: number): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  while (treeIsAlive(child) && Date.now() < deadline) {
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return !treeIsAlive(child);
+}
 
-  // Full-stack suites deliberately create more sessions per minute than a
-  // person. Pass a local-only override to the process under test; production
-  // keeps the conservative default and the test no longer fails after ten
-  // successful creates with a cascade of unrelated 429 assertions.
+async function terminateTrees(children: Array<ChildProcess | null>): Promise<boolean> {
+  const live = children.filter((child): child is ChildProcess =>
+    Boolean(child?.pid) && treeIsAlive(child!),
+  );
+  // Signal every owned tree before the first await. npm may stop waiting for
+  // this runner as soon as Ctrl-C reaches its foreground process group; a
+  // sequential cleanup could otherwise exit before Wrangler was signalled.
+  for (const child of live) signalTree(child, 'SIGTERM');
+  const graceful = await Promise.all(live.map((child) => waitForTreeExit(child, 5_000)));
+  const survivors = live.filter((_child, index) => !graceful[index]);
+  for (const child of survivors) signalTree(child, 'SIGKILL');
+  const forced = await Promise.all(survivors.map((child) => waitForTreeExit(child, 5_000)));
+  return forced.every(Boolean);
+}
+
+function startWrangler(runId: string): ChildProcess {
   const createLimit = process.env.E2E_SESSION_CREATE_RATE_LIMIT_PER_MINUTE ?? '1000';
-  const proc = spawn('npx', [
-    'wrangler',
-    'dev',
-    '--port',
-    String(WRANGLER_PORT),
-    '--var',
-    `SESSION_CREATE_RATE_LIMIT_PER_MINUTE:${createLimit}`,
+  return spawn('npx', [
+    'wrangler', 'dev', '--port', String(WRANGLER_PORT),
+    '--var', `SESSION_CREATE_RATE_LIMIT_PER_MINUTE:${createLimit}`,
+    '--var', `E2E_RUN_ID:${runId}`,
   ], {
-    // Playwright runs through execSync below. Inherited output keeps Wrangler's
-    // request log flowing while the parent Node event loop is blocked.
     stdio: getWranglerStdio(),
-    detached: false,
-    shell: true,
+    detached: process.platform !== 'win32',
   });
-
-  proc.on('error', (err) => {
-    console.error('❌ Failed to start wrangler:', err.message);
-  });
-
-  return proc;
 }
 
-/**
- * Stop wrangler dev
- */
-function stopWrangler(): void {
-  if (wranglerProcess) {
-    console.log('🛑 Stopping wrangler dev...');
-    wranglerProcess.kill('SIGTERM');
-    wranglerProcess = null;
-  }
-}
-
-/** Every browser spec whose contract requires the real Worker. The inventory
- * validator keeps this list aligned with all `useMockAPI` guards. */
 const WORKER_REQUIRED_SPECS = readFileSync(
   new URL('../e2e/worker-required-files.txt', import.meta.url),
   'utf8',
-).split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+).split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
 
-function runE2ETests(scope: TestScope): number {
-  console.log(`\n🧪 Running E2E tests against ${WRANGLER_URL}...\n`);
-
-  const args = buildPlaywrightArgs(scope, WORKER_REQUIRED_SPECS);
-
-  try {
-    execSync(`npx ${args.join(' ')}`, {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        // Override the base URL to point to wrangler dev
-        // PLAYWRIGHT_BASE_URL: Used by playwright.config.ts for browser navigation
-        // BASE_URL: Used by test-utils.ts for direct API requests
-        PLAYWRIGHT_BASE_URL: WRANGLER_URL,
-        BASE_URL: WRANGLER_URL,
-      },
+async function runE2ETests(scope: TestScope, passthroughArgs: string[]): Promise<number> {
+  const args = buildPlaywrightArgs(scope, WORKER_REQUIRED_SPECS, passthroughArgs);
+  playwrightProcess = spawn('npx', args, {
+    stdio: 'inherit',
+    detached: process.platform !== 'win32',
+    env: { ...process.env, PLAYWRIGHT_BASE_URL: WRANGLER_URL, BASE_URL: WRANGLER_URL },
+  });
+  let timedOut = false;
+  const timeout = setTimeout(() => {
+    timedOut = true;
+    console.error(`\n❌ E2E exceeded the ${Math.round(E2E_TIMEOUT_MS / 60_000)} minute wall-clock limit`);
+    void terminateTrees([playwrightProcess]);
+  }, E2E_TIMEOUT_MS);
+  const status = await new Promise<number>((resolve) => {
+    let settled = false;
+    const finish = (value: number) => {
+      if (settled) return;
+      settled = true;
+      resolve(value);
+    };
+    playwrightProcess!.once('error', (error) => {
+      console.error('❌ Failed to start Playwright:', error.message);
+      finish(1);
     });
-    return 0;
-  } catch {
-    // execSync throws on non-zero exit code
-    return 1;
-  }
+    playwrightProcess!.once('exit', (code, signal) => {
+      finish(timedOut ? 124 : code ?? (signal ? signalExitCode(signal) : 1));
+    });
+  });
+  clearTimeout(timeout);
+  playwrightProcess = null;
+  return status;
 }
 
-/**
- * Build the project
- */
-function buildProject(): void {
-  console.log('📦 Building project...');
-  execSync('npm run build', { stdio: 'inherit' });
-  console.log('✅ Build complete\n');
+async function cleanup(): Promise<void> {
+  if (cleanupPromise) return cleanupPromise;
+  cleanupPromise = (async () => {
+    const stopped = await terminateTrees([playwrightProcess, wranglerProcess]);
+    if (!stopped) {
+      console.error('❌ Failed to terminate an owned E2E process tree');
+      if (process.exitCode === undefined || process.exitCode === 0) process.exitCode = 1;
+    }
+    playwrightProcess = null;
+    wranglerProcess = null;
+  })();
+  return cleanupPromise;
 }
 
-/**
- * Main entry point
- */
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const scope: TestScope = args.includes('--collaboration')
-    ? 'collaboration'
-    : args.includes('--session-contract')
-      ? 'session-contract'
-      : args.includes('--smoke')
-        ? 'smoke'
-        : 'all';
-  let exitCode = 0;
+  const scopeFlags = ['--collaboration', '--session-contract', '--smoke'];
+  const scope: TestScope = args.includes('--collaboration') ? 'collaboration'
+    : args.includes('--session-contract') ? 'session-contract'
+      : args.includes('--smoke') ? 'smoke' : 'all';
+  const passthroughArgs = args.filter((arg) => !scopeFlags.includes(arg));
+  const runId = randomUUID();
 
-  // Cleanup handler
-  const cleanup = () => {
-    stopWrangler();
-    process.exit(exitCode);
+  const handleSignal = (signal: NodeJS.Signals) => {
+    process.exitCode = signalExitCode(signal);
+    void cleanup();
   };
-
-  process.on('SIGINT', cleanup);
-  process.on('SIGTERM', cleanup);
+  process.once('SIGINT', handleSignal);
+  process.once('SIGTERM', handleSignal);
 
   try {
-    // Step 1: Build
-    buildProject();
-
-    // Step 2: Start wrangler dev
-    wranglerProcess = startWrangler();
-
-    // Step 3: Wait for wrangler to be ready
-    await waitForWrangler();
-
-    // Step 4: Run E2E tests
-    exitCode = runE2ETests(scope);
-
-    if (exitCode === 0) {
-      console.log('\n✅ All E2E tests passed!');
-    } else {
-      console.log('\n❌ Some E2E tests failed');
-    }
+    await assertPortAvailable(WRANGLER_PORT);
+    console.log('📦 Building project...');
+    execSync('npm run build', { stdio: 'inherit' });
+    wranglerProcess = startWrangler(runId);
+    console.log(`⏳ Waiting for the owned Worker on port ${WRANGLER_PORT}...`);
+    await waitForOwnedHealth(
+      wranglerProcess, WRANGLER_URL, runId, MAX_STARTUP_WAIT_MS, HEALTH_CHECK_INTERVAL_MS,
+    );
+    console.log('✅ Owned Worker is ready');
+    const status = await runE2ETests(scope, passthroughArgs);
+    if (process.exitCode === undefined) process.exitCode = status;
   } catch (error) {
     console.error('\n❌ Error:', error instanceof Error ? error.message : error);
-    exitCode = 1;
+    if (process.exitCode === undefined || process.exitCode === 0) process.exitCode = 1;
   } finally {
-    cleanup();
+    await cleanup();
   }
 }
 
-main();
+void main();

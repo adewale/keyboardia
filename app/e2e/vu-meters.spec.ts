@@ -6,9 +6,9 @@
  * self-contained session creation — no wrangler backend needed.
  */
 
-import { test as base, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './global-setup';
 
-const test = base;
 
 /**
  * Navigate to the app, create a session, and add tracks with active steps.

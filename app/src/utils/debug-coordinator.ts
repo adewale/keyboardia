@@ -337,25 +337,5 @@ export function initDebugCoordinator(): void {
   }
 }
 
-/**
- * Check if full debug mode is enabled
- */
-export function isDebugMode(): boolean {
-  return typeof window !== 'undefined' && window.__DEBUG_MODE__ === true;
-}
-
-/**
- * Get current debug flags
- */
-export function getDebugFlags(): DebugFlags {
-  if (typeof window !== 'undefined' && window.__DEBUG_FLAGS__) {
-    return window.__DEBUG_FLAGS__;
-  }
-  return parseUrlFlags();
-}
-
-// Export for cleanup
-export { stopBugDetection, runBugDetection };
-
 // HMR cleanup - stops bug detection interval during development
 registerHmrDispose('DebugCoordinator', () => stopBugDetection());

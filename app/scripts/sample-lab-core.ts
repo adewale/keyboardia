@@ -325,10 +325,6 @@ export function evaluateCandidateReadiness(candidate: SampleCandidate, sources: 
   return { level: 'decision-ready', blockers: [], reviewNotes };
 }
 
-export function playbackRateForTarget(targetMidi: number, rootMidi: number): number {
-  return 2 ** ((targetMidi - rootMidi) / 12);
-}
-
 export interface SfzRegion {
   sample?: string;
   rootMidi?: number;

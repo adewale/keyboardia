@@ -14,6 +14,13 @@ export default {
   // Critical pure modules with strong invariants — high-value targets.
   // Avoiding files that bring in DOM or AudioContext at module load.
   mutate: [
+    // The reducer every multiplayer mutation flows through. A manual sabotage
+    // (neutering it to `return state`) was how the July 2026 audit found that
+    // sync-convergence.property.test.ts caught only 5 of 24 — Stryker automates
+    // exactly that experiment, so it should not have to be run by hand again.
+    'src/shared/state-mutations.ts',
+    // Polyrhythm step maths, extracted from the scheduler so it is testable.
+    'src/audio/track-step.ts',
     'src/audio/scheduler-multiplayer-sync.ts',
     'src/audio/pitch-shift-range.ts',
     'src/audio/envelope-anchor.ts',

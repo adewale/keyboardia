@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
-import { SampledInstrument, type InstrumentManifest } from './sampled-instrument';
+import { SampledInstrument, SAMPLED_INSTRUMENTS, type InstrumentManifest } from './sampled-instrument';
 import { ChokeGroupRegistry } from './choke-groups';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 
@@ -202,7 +202,14 @@ describe.skipIf(!webAudio)('instrument range — headless offline render (layer 
       ) + '\n'
     );
 
-    // Sanity only — audit, not a behavioural gate.
-    expect(summary.length).toBe(manifests.length);
+    // Not a sanity check: this suite builds its cases from readdirSync, so an
+    // empty or renamed public/instruments produced zero notes, zero comparisons
+    // and a green tick. Verified by moving the directory aside — the audibility
+    // assertions above never ran and this file passed. Anchoring the rendered
+    // set to the instruments the app declares makes the vacuous run fail.
+    expect(
+      [...summary.map((entry) => entry.id)].sort(),
+      'rendered instrument set does not match SAMPLED_INSTRUMENTS',
+    ).toEqual([...SAMPLED_INSTRUMENTS].sort());
   }, 180_000);
 });

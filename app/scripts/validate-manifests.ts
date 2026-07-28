@@ -31,6 +31,7 @@ import {
   midiToNoteName,
 } from '../src/audio/constants';
 import { nearestSampleNote, selectVelocityGroupBlend } from '../src/audio/sample-selection';
+import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 
 // ============================================================================
 // Configuration
@@ -38,7 +39,7 @@ import { nearestSampleNote, selectVelocityGroupBlend } from '../src/audio/sample
 
 const INSTRUMENTS_DIR = 'public/instruments';
 const SAMPLED_INSTRUMENTS_FILE = 'src/audio/sampled-instrument.ts';
-const SAMPLE_CONSTANTS_FILE = 'src/components/sample-constants.ts';
+const INSTRUMENT_CATALOG_FILE = 'src/shared/instrument-catalog.ts';
 // Use the SINGLE SOURCE OF TRUTH - never hardcode this value
 const DEFAULT_PLAYBACK_NOTE = SCHEDULER_BASE_MIDI_NOTE;
 const AUDIO_FILE_EXTENSIONS = new Set(['.mp3', '.m4a', '.wav', '.flac', '.aif', '.aiff', '.ogg']);
@@ -132,21 +133,27 @@ function getRegisteredInstruments(): Set<string> {
 }
 
 /**
- * Get sampled instruments from INSTRUMENT_CATEGORIES (UI registry)
- * This is the list of instruments visible to users in the sample picker
+ * Sampled instruments the picker shows, read from the catalogue itself.
+ *
+ * This used to scrape sample-constants.ts for the literal text 'sampled:xxx'.
+ * That worked only while the ids happened to be spelled out in that file, and
+ * it made a *text* consumer of a module — invisible to the import graph, so
+ * `validate:dead-exports` reported the tables holding those literals as having
+ * no consumer at all. Deleting them left this validator matching nothing and
+ * declaring all 26 instruments unreachable from the UI.
+ *
+ * Reading INSTRUMENT_GROUPS directly is both narrower and harder to break: it
+ * is the same structure the picker renders, and moving or reformatting a file
+ * can no longer silently empty this set.
  */
 function getUIRegisteredInstruments(): Set<string> {
-  const filePath = path.join(process.cwd(), SAMPLE_CONSTANTS_FILE);
-  if (!fs.existsSync(filePath)) {
-    return new Set();
-  }
-
-  const content = fs.readFileSync(filePath, 'utf-8');
-  // Match all 'sampled:xxx' IDs in the file
-  const matches = content.matchAll(/['"]sampled:([^'"]+)['"]/g);
   const instruments = new Set<string>();
-  for (const match of matches) {
-    instruments.add(match[1]);
+  for (const group of Object.values(INSTRUMENT_GROUPS)) {
+    for (const instrument of group.instruments) {
+      if (instrument.id.startsWith('sampled:')) {
+        instruments.add(instrument.id.slice('sampled:'.length));
+      }
+    }
   }
   return instruments;
 }
@@ -374,7 +381,7 @@ function validateManifest(
       type: 'critical',
       code: 'NOT_IN_UI',
       message: `Instrument "${instrumentId}" not in INSTRUMENT_CATEGORIES - users cannot see it!`,
-      fix: `Add { id: 'sampled:${instrumentId}', name: '...', type: 'sampled' } to INSTRUMENT_CATEGORIES in ${SAMPLE_CONSTANTS_FILE}`,
+      fix: `Add { id: 'sampled:${instrumentId}', name: '...', type: 'sampled' } to INSTRUMENT_GROUPS in ${INSTRUMENT_CATALOG_FILE}`,
     });
   }
 

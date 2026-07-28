@@ -23,7 +23,9 @@ Prefer the narrowest controllable seam that still executes production code:
   the strict zero-skip mock subset; `e2e/worker-required-files.txt` contains
   every spec that guards behavior with `useMockAPI` plus the shared Worker
   contracts. `npm run validate:e2e-inventories` fails when a real-backend guard
-  is introduced without Worker coverage.
+  is introduced without Worker coverage. `e2e/test-title-inventory.txt` also
+  commits every exact Chromium file/suite/title identity, so replacing or
+  silently dropping a test requires an explicit inventory review.
 - Reporter statistics are release contracts, not summaries. Required mock and
   Worker lanes reject any skipped, flaky, or unexpected result; the remaining
   offline lane ratchets its reviewed pass/skip totals so a new skip cannot turn
@@ -624,6 +626,58 @@ test.describe("Load testing", () => {
 
 ## 5. Test Organization
 
+### Where does a test go?
+
+One rule, applied in order. The first match wins.
+
+| Put it in | When | Cost per test |
+|---|---|---|
+| `src/<dir>/X.test.ts` (co-located) | It tests one module. This is the default and covers ~90% of tests. | ~9ms |
+| `app/test/unit/` | It tests *agreement between* modules, so no single `src/` directory is its home — e.g. "every SYNCED_ACTION has a handler", reducer/mutation equivalence, golden masters. | ~9ms |
+| `app/test/integration/` | **It executes against the real Workers runtime** (`import { env } from 'cloudflare:test'`). Durable Object lifecycle, KV, hibernation, WebSocket server behaviour. | ~93ms |
+| `app/e2e/` | It needs a real browser for something the tiers above cannot do: pointer/drag semantics, layout and scroll, focus rings, screenshots, or two clients over a live WebSocket. | ~5,900ms |
+
+**The integration rule is literal.** If a file in `test/integration/` does not
+import `cloudflare:test`, it is a unit test in the wrong directory — it pays the
+Workers-pool startup cost for no boundary crossing, and its location implies a
+guarantee (that the real Durable Object honours this) that it does not provide.
+Nine such files were moved out in July 2026; keep it at zero.
+
+**The e2e rule is about capability, not realism.** "It's more realistic" is not a
+reason — everything is more realistic in a browser. The question is whether a
+cheaper tier *can* verify the claim. If the answer is yes, the e2e test is
+duplicate coverage running ~650x slower and flaking on drag timing. When you
+remove one, leave the pointer behind, which is the established convention here:
+
+```ts
+// NOTE: "Space/Enter activates focused elements" test was removed.
+// Covered by src/components/keyboard-handlers.test.ts:
+// - E-001: Space key on step should dispatch toggle
+```
+
+**Name a test file after the module it imports, not the concept it covers.** If
+`foo.test.ts` does not import `foo`, one of the two names is wrong. In July 2026
+`invariants.property.test.ts` was found to test `validation.ts` while
+`validators.property.test.ts` tested `invariants.ts` — the names had detached
+from the code because four modules in `src/worker` and `src/shared` all mean
+roughly "check the values" (`validation.ts`, `invariants.ts`, `validators.ts`,
+`shared/validation.ts`).
+
+Where one module needs both example-based and property-based coverage, use
+`foo.test.ts` and `foo.property.test.ts`. That pairing is visible; two files
+named after different concepts is not.
+
+**Never define a test file's scope by negation.** A header reading "tests what
+`other.test.ts` doesn't cover" describes a boundary no tool can enforce and no
+reader can see. It rots the moment either file changes, and it left one file
+pointing at another that had been deleted.
+
+**Deliberately untested:** the debug tooling (`src/utils/log-store.ts`,
+`debug-tracer.ts`, `debug-coordinator.ts`, `src/debug/*`) is short-lived
+diagnostic code where test investment would not pay back. That is a decision,
+not an oversight — see `docs/TEST-PLACEMENT-ANALYSIS.md`.
+
+
 ### Current Directory Structure
 
 ```
@@ -694,7 +748,53 @@ npm run test:e2e:full-stack
 
 # Watch mode during development
 npm run test:unit -- --watch
+
+# Static checks on the tests themselves (see below)
+npm run validate:test-quality
 ```
+
+### Checking the tests themselves
+
+Four TypeScript-parser-based checks run in the `lint` CI job. They exist because
+every pattern they detect shipped here as apparently valid coverage — see
+`docs/TEST-AUDIT-2026-07.md`.
+
+```bash
+npm run validate:test-antipatterns   # gating
+npm run validate:test-links          # gating
+npm run validate:dead-exports        # gating
+npm run validate:unrun-tests         # gating, zero exceptions
+npm run validate:test-quality        # all four
+```
+
+`validate:test-antipatterns` **fails the build**. It reports assertions
+nullified by `.catch(() => {})`, runtime self-skips (`test.skip(true, ...)`),
+tautologies (`expect(true).toBe(true)`), self-comparisons, and tests with no
+assertion at all. Matching runs over comment-stripped source, so describing one
+of these patterns in a comment is not reported as an instance of it.
+
+`validate:test-links` **fails the build** on three kinds of test that are not
+connected to the code they claim to cover:
+
+| Finding | Meaning | Fix |
+|---|---|---|
+| ORPHAN | `foo.test.ts` never imports `foo` | rename the test, or point it at the module |
+| REIMPL | the test defines its own copy of the logic it names | export the real function and import it |
+| DEAD | a module is imported only by its own tests | delete the module, or wire it up |
+
+DEAD needs a human call — a module can be legitimately new — but the call must
+be made in the change that introduces it. The gate does not preserve a standing
+exception. The last accumulated DEAD finding, `src/worker/validators.ts`, had
+64 green tests describing a protection that did not run, and the gap it masked
+was a live state-corruption bug.
+
+`validate:dead-exports` traces import, export, re-export, dynamic-import, Worker
+entry, and build-tool reachability. Runtime exports used only by tests are
+findings; build-only exports are reported separately and accepted.
+
+`validate:unrun-tests` asks Vitest and Playwright what they actually collect.
+Every test file must belong to a lane. There is no permanent allowlist: wire a
+unique contract into CI, or delete redundant test theatre.
 
 The offline backend deliberately does not implement WebSockets. Browser tests
 that work in both modes must call `waitForCollaborationReady(page)` rather than
@@ -703,21 +803,36 @@ when `USE_MOCK_API=1`.
 
 Because that helper is a no-op offline, a spec relying on it proves nothing
 about the connected path when CI runs it with `USE_MOCK_API=1`. Any spec that
-needs an authoritative snapshot before it edits therefore also belongs in
-`CONNECTED_PATH_SPECS` in `scripts/test-e2e-full-stack.ts`, so the real-Worker
-job actually exercises the wait. Both jobs are blocking: the supported offline
-Chromium matrix, and the real-Worker collaboration run that covers the session
-contract plus the connected browser path.
+needs an authoritative snapshot before it edits therefore also belongs in the
+sorted `e2e/worker-required-files.txt` manifest. The inventory validator derives
+all `test.skip(useMockAPI, ...)` guards from source and fails if the manifest
+misses one. Both the offline Chromium matrix and real-Worker path are blocking.
 
 ---
 
 ## 6. CI/CD Integration
 
-The authoritative workflow is `.github/workflows/ci.yml` and uses the repository-wide Node version. E2E coverage has three distinct evidence levels:
+The authoritative workflow is `.github/workflows/ci.yml` and uses the
+repository-wide Node version. Every Playwright report is checked against both
+reviewed pass/skip totals and the exact title inventory:
 
-1. **Blocking mock-compatible Chromium:** the five files in `app/e2e/mock-compatible-files.txt` must discover exactly 65 tests. They run with `USE_MOCK_API=1`, `--retries=0`, and must report 65 expected results with zero skipped, flaky, or unexpected results. Separate JSON, HTML, trace, screenshot, and video paths prevent later Playwright runs from deleting this evidence.
-2. **Blocking remaining Chromium and Worker contract:** every other offline Chromium spec runs with zero retries, then 17 collaboration/session tests run against a real Wrangler Worker with zero skipped, flaky, or unexpected results. Mock mode is never treated as WebSocket or Durable Object evidence. Failure artifacts are retained.
-3. **Blocking macOS visuals:** the two deterministic Holby screenshots run on pinned `macos-14` Chromium against checked-in macOS baselines. The lane rejects skipped, flaky, retried, or unexpected results. Linux baselines are not substitutes.
+1. **Mock-compatible Chromium:** five manifest files, 65 passed, zero skipped.
+2. **Remaining offline Chromium:** 82 passed and 69 reviewed backend-dependent
+   skips; a new or renamed skip fails the contract.
+3. **Worker-owned Chromium subset:** 12 manifest files, 73 passed, zero skipped,
+   serialized below the production session-create rate limit.
+4. **Full real-backend browsers:** the functional suite runs against an owned
+   Wrangler process in Chromium (200 passed, 17 reviewed skips) and broad
+   WebKit (154 passed, 52 reviewed browser/project skips; seven real-audio
+   specs are excluded and four playback tests in mixed files are among the
+   reviewed skips because headless WebKit can wedge on `AudioContext.resume()`).
+5. **Visuals:** three deterministic Holby screenshots gate on pinned `macos-14`;
+   11 tagged screenshots gate on the Linux real-Worker runner. Platform
+   baselines are not interchangeable.
+
+The full-stack launcher rejects an occupied port, tags health with a per-run
+nonce, races readiness against early Worker exit, enforces a 30-minute wall
+timeout, and terminates the detached process group on completion or signal.
 
 Unit tests retain Vitest's five-second global timeout. A measured slow property or render test may declare a local timeout in that test only. Do not reintroduce probabilistic WebSocket doubles as “chaos” evidence; named faults need a deterministic seam or a real Worker contract with an assertion proving the fault occurred.
 

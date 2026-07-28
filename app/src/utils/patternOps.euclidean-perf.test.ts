@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { euclidean } from './patternOps';
+import { euclidean } from '../shared/pattern-operations';
 
 describe('euclidean: correctness after removing JSON.stringify', () => {
   // Reference patterns from ethnomusicology literature

@@ -4,7 +4,6 @@ import {
   evaluateCandidateReadiness,
   parseSampleLabCatalog,
   parseSfz,
-  playbackRateForTarget,
   summarizeSfz,
   type SampleLabCatalog,
 } from '../scripts/sample-lab-core';
@@ -158,14 +157,6 @@ describe('evaluateCandidateReadiness', () => {
     expect(readiness.level).toBe('blocked');
     expect(readiness.blockers).toContain('Objective audit has 1 hard error');
     expect(readiness.blockers).toContain('Browser decode has not passed');
-  });
-});
-
-describe('pitch-matched comparison playback', () => {
-  it('plays each source at the same target pitch even when roots differ', () => {
-    expect(playbackRateForTarget(60, 60)).toBe(1);
-    expect(playbackRateForTarget(60, 61)).toBeCloseTo(2 ** (-1 / 12), 10);
-    expect(playbackRateForTarget(60, 62)).toBeCloseTo(2 ** (-2 / 12), 10);
   });
 });
 

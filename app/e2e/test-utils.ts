@@ -36,6 +36,7 @@
  */
 
 import type { APIRequestContext } from '@playwright/test';
+import { MAX_STEPS } from '../src/shared/constants';
 import { calculateBackoffDelay } from '../src/utils/retry';
 
 // Use local dev server - in CI we run with USE_MOCK_API=1
@@ -98,19 +99,44 @@ export async function createSessionWithRetry(
   data: Record<string, unknown>,
   maxRetries = 3
 ): Promise<{ id: string }> {
+  const tracks = data.tracks;
+  if (Array.isArray(tracks)) {
+    for (const [index, candidate] of tracks.entries()) {
+      if (!candidate || typeof candidate !== 'object') continue;
+      const track = candidate as { id?: unknown; steps?: unknown; parameterLocks?: unknown };
+      const label = typeof track.id === 'string' ? track.id : `tracks[${index}]`;
+      if (!Array.isArray(track.steps) || track.steps.length !== MAX_STEPS) {
+        throw new Error(
+          `E2E fixture ${label} must provide exactly ${MAX_STEPS} steps; ` +
+          'use a direct API request when intentionally testing legacy normalization.',
+        );
+      }
+      if (!Array.isArray(track.parameterLocks) || track.parameterLocks.length !== MAX_STEPS) {
+        throw new Error(
+          `E2E fixture ${label} must provide exactly ${MAX_STEPS} parameter locks; ` +
+          'use a direct API request when intentionally testing legacy normalization.',
+        );
+      }
+    }
+  }
+
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const res = await request.post(`${API_BASE}/api/sessions`, { data });
-    if (res.ok()) {
-      return res.json();
+    try {
+      const res = await request.post(`${API_BASE}/api/sessions`, { data });
+      if (res.ok()) {
+        return res.json();
+      }
+      lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
     }
-    lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
     // Don't sleep after the last attempt
     if (attempt < maxRetries - 1) {
       const delay = calculateBackoffDelay(attempt);
       console.log(
         `[TEST] Session create attempt ${attempt + 1} failed: ` +
-        `${res.status()} ${res.statusText()}; retrying in ${delay}ms...`,
+        `${lastError.message}; retrying in ${delay}ms...`,
       );
       await new Promise((r) => setTimeout(r, delay));
     }
@@ -219,4 +245,32 @@ export async function getSessionWithRetry(
  */
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+/**
+ * Computed styles relevant to a focus indicator.
+ */
+export interface FocusStyle {
+  outlineStyle: string;
+  outlineWidth: number;
+  boxShadow: string;
+}
+
+/**
+ * Does a focused element show a visible focus indicator? (WCAG 2.4.7)
+ *
+ * `outline-style: auto` is the browser's native focus ring and counts on its
+ * own: Chromium reports a computed `outline-width` of 0px for it, so a naive
+ * `outlineWidth > 0` check rejects perfectly good native focus rings.
+ *
+ * Note for callers: drive focus with real `Tab` presses, not `locator.focus()`.
+ * The native ring comes from a UA `:focus-visible` rule, and `:focus-visible`
+ * deliberately does not match programmatic focus on links or `[tabindex]`
+ * containers — so `.focus()` reports "no indicator" for elements that are in
+ * fact styled correctly.
+ */
+export function hasVisibleFocusIndicator(style: FocusStyle): boolean {
+  if (style.outlineStyle === 'auto') return true;
+  if (style.outlineStyle !== 'none' && style.outlineWidth > 0) return true;
+  return style.boxShadow !== 'none' && style.boxShadow !== '';
 }

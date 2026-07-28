@@ -1,691 +1,882 @@
 /**
- * Property-Based Tests for Debug Invariants
+ * Property-Based Tests for Invariants
  *
- * Tests invariants from invariants.ts, validation.ts, and state-mutations.ts
- * that weren't covered by validators.property.test.ts.
+ * Tests VA-001 through VA-004 from the Property-Based Testing specification:
+ * value clamping, validation idempotence, array length invariants, and
+ * parameter lock validation behaviour.
  *
- * Test categories:
- * - EF-001: Effects validation bounds and schema
- * - SN-001: Session name XSS prevention
- * - LR-001: Loop region bounds after mutations
+ * Renamed from validators.property.test.ts (invariants.property.test.ts was
+ * already taken by the EF/SN/LR debug-invariant properties). Despite the old name, 27 of its 28
+ * tests exercised ./invariants — clamp, validateParameterLock,
+ * validateStateInvariants, repairStateInvariants, validateCursorPosition — all
+ * of which are live code reached from live-session.ts. Only one test touched
+ * src/worker/validators.ts, which was deleted as unreachable, so that one test
+ * went with it and the rest stayed.
  */
 
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import {
-  validateSessionState,
-  validateSessionName,
-  isValidUUID,
-  isBodySizeValid,
-} from './validation';
+  clamp,
+  validateParameterLock,
+  validateStateInvariants,
+  repairStateInvariants,
+  validateCursorPosition,
+  isValidIntegerInRange,
+  isValidNumberInRange,
+  MAX_STEPS,
+  MAX_TRACKS,
+  MIN_TEMPO,
+  MAX_TEMPO,
+  MIN_SWING,
+  MAX_SWING,
+  MIN_VOLUME,
+  MAX_VOLUME,
+  MIN_TRANSPOSE,
+  MAX_TRANSPOSE,
+} from './invariants';
 import {
-  REVERB_MIN_DECAY,
-  REVERB_MAX_DECAY,
-  DELAY_MAX_FEEDBACK,
-  CHORUS_MIN_FREQUENCY,
-  CHORUS_MAX_FREQUENCY,
-  MAX_MESSAGE_SIZE,
+  MIN_PLOCK_PITCH,
+  MAX_PLOCK_PITCH,
+  MIN_PLOCK_VOLUME,
+  MAX_PLOCK_VOLUME,
+  MIN_CURSOR_POSITION,
+  MAX_CURSOR_POSITION,
 } from '../shared/constants';
-import { applyMutation } from '../shared/state-mutations';
-import { repairStateInvariants, validateStateInvariants } from './invariants';
-import type { SessionState } from '../shared/state';
-import { arbFloat32, arbSessionState, arbStepCount as _arbStepCount } from '../test/arbitraries';
+import { validateSessionState } from './validation';
+import { SCALES } from '../music/music-theory';
+import type { SessionState, SessionTrack } from './types';
+import {
+  arbTempo as _arbTempo,
+  arbSwing as _arbSwing,
+  arbVolume as _arbVolume,
+  arbTranspose as _arbTranspose,
+  arbStepIndex as _arbStepIndex,
+} from '../test/arbitraries';
 
 // =============================================================================
-// Helper Arbitraries for Effects Testing
+// Helper Arbitraries
 // =============================================================================
 
-/** Valid reverb state */
-const arbValidReverb = fc.record({
-  decay: arbFloat32(REVERB_MIN_DECAY, REVERB_MAX_DECAY),
-  wet: arbFloat32(0, 1),
+/** Parameter lock pitch (extended range to test clamping) */
+const arbPlockPitch = fc.integer({ min: -50, max: 50 });
+
+/** Parameter lock volume (extended range to test clamping) */
+const arbPlockVolume = fc.float({
+  min: Math.fround(-0.5),
+  max: Math.fround(1.5),
+  noNaN: true,
 });
 
-/** Valid delay state */
-const arbValidDelay = fc.record({
-  time: fc.constantFrom('32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m'),
-  feedback: arbFloat32(0, DELAY_MAX_FEEDBACK),
-  wet: arbFloat32(0, 1),
-});
-
-/** Valid chorus state */
-const arbValidChorus = fc.record({
-  frequency: arbFloat32(CHORUS_MIN_FREQUENCY, CHORUS_MAX_FREQUENCY),
-  depth: arbFloat32(0, 1),
-  wet: arbFloat32(0, 1),
-});
-
-/** Valid distortion state */
-const arbValidDistortion = fc.record({
-  amount: arbFloat32(0, 1),
-  wet: arbFloat32(0, 1),
-});
-
-/** Complete valid effects state */
-const arbValidEffects = fc.record({
-  reverb: arbValidReverb,
-  delay: arbValidDelay,
-  chorus: arbValidChorus,
-  distortion: arbValidDistortion,
-});
-
-/** Out-of-range reverb (for testing clamping/rejection) - reserved for future tests */
-const _arbOutOfRangeReverb = fc.record({
-  decay: fc.oneof(
-    arbFloat32(-10, REVERB_MIN_DECAY - 0.01),  // Below min
-    arbFloat32(REVERB_MAX_DECAY + 0.01, 100)   // Above max
+/** Valid parameter lock */
+const arbValidParameterLock = fc.record({
+  pitch: fc.option(fc.integer({ min: MIN_PLOCK_PITCH, max: MAX_PLOCK_PITCH }), {
+    nil: undefined,
+  }),
+  volume: fc.option(
+    fc.float({
+      min: Math.fround(MIN_PLOCK_VOLUME),
+      max: Math.fround(MAX_PLOCK_VOLUME),
+      noNaN: true,
+    }),
+    { nil: undefined }
   ),
-  wet: fc.oneof(
-    arbFloat32(-1, -0.01),    // Below 0
-    arbFloat32(1.01, 2)       // Above 1
-  ),
+  tie: fc.option(fc.boolean(), { nil: undefined }),
 });
 
-/** Reverb with wrong field names (schema violation) - reserved for future tests */
-const _arbWrongSchemaReverb = fc.record({
-  mix: arbFloat32(0, 1),      // Wrong! Should be 'wet'
-  decay: arbFloat32(REVERB_MIN_DECAY, REVERB_MAX_DECAY),
+/** Minimal valid track for state testing */
+const arbMinimalTrack = fc.record({
+  id: fc.uuid(),
+  name: fc.string({ minLength: 1, maxLength: 20 }),
+  sampleId: fc.constantFrom('kick', 'snare', 'hihat'),
+  steps: fc.constant(new Array(MAX_STEPS).fill(false)),
+  parameterLocks: fc.constant(new Array(MAX_STEPS).fill(null)),
+  volume: fc.float({ min: Math.fround(MIN_VOLUME), max: Math.fround(MAX_VOLUME), noNaN: true }),
+  muted: fc.boolean(),
+  soloed: fc.boolean(),
+  transpose: fc.integer({ min: MIN_TRANSPOSE, max: MAX_TRANSPOSE }),
+  stepCount: fc.constantFrom(8, 16, 32, 64),
 });
 
-/** Chorus with wrong field names - reserved for future tests */
-const _arbWrongSchemaChorus = fc.record({
-  rate: arbFloat32(0.1, 10),   // Wrong! Should be 'frequency'
-  depth: arbFloat32(0, 1),
-  wet: arbFloat32(0, 1),
-});
+/** Minimal valid session state */
+const arbMinimalSessionState = fc.record({
+  tracks: fc.array(arbMinimalTrack, { minLength: 0, maxLength: MAX_TRACKS }),
+  tempo: fc.integer({ min: MIN_TEMPO, max: MAX_TEMPO }),
+  swing: fc.integer({ min: MIN_SWING, max: MAX_SWING }),
+  loopRegion: fc.constant(null),
+  effects: fc.constant({
+    bypass: false,
+    reverb: { decay: 2, wet: 0.3 },
+    delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+    chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
+    distortion: { amount: 0.2, wet: 0.1 },
+  }),
+}) as fc.Arbitrary<SessionState>;
 
 // =============================================================================
-// Helper Arbitraries for Session Name Testing
+// VA-001: Clamp Within Bounds
 // =============================================================================
 
-/** Valid session names - alphanumeric with common punctuation */
-const arbValidSessionName = fc.string({ minLength: 1, maxLength: 100 }).filter(
-  // Filter out XSS patterns so we only test truly valid names
-  (s) => !/<script|javascript:|on\w+\s*=/i.test(s)
-);
-
-/** XSS attack patterns - only patterns that contain actual XSS vectors */
-const arbXSSPattern = fc.constantFrom(
-  '<script>alert(1)</script>',
-  'javascript:alert(1)',
-  '<img onerror="alert(1)">',
-  '<div onclick="alert(1)">',
-  '<script src="evil.js">',
-  'JAVASCRIPT:alert(1)',  // Case variation
-  '<SCRIPT>alert(1)</SCRIPT>',
-  '"><script>alert(1)</script>',
-  // Note: "'; alert(1); //" is SQL injection, not XSS - removed
-);
-
-/** Names that are too long */
-const arbTooLongName = fc.string({ minLength: 101, maxLength: 200 });
-
-// =============================================================================
-// Helper Arbitraries for Loop Region Testing
-// =============================================================================
-
-/** Loop region with potentially invalid bounds (for testing normalization) - reserved for future tests */
-const _arbUnnormalizedLoopRegion = fc.record({
-  start: fc.integer({ min: -10, max: 200 }),
-  end: fc.integer({ min: -10, max: 200 }),
-});
-
-// =============================================================================
-// EF-001: Effects Validation Bounds and Schema
-// =============================================================================
-
-describe('EF-001: Effects Validation', () => {
-  describe('EF-001a: Valid effects pass validation', () => {
-    it('valid effects should pass validateSessionState', () => {
-      fc.assert(
-        fc.property(arbValidEffects, (effects) => {
-          const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-          const result = validateSessionState(state);
-          expect(result.valid).toBe(true);
-          expect(result.errors).toHaveLength(0);
-        }),
-        { numRuns: 200 }
-      );
-    });
-  });
-
-  describe('EF-001b: Reverb bounds are enforced', () => {
-    it('reverb.decay must be in [0.1, 10]', () => {
-      fc.assert(
-        fc.property(
-          arbFloat32(-10, 100),
-          arbFloat32(0, 1),
-          (decay, wet) => {
-            const effects = {
-              reverb: { decay, wet },
-              delay: { time: '8n', feedback: 0.3, wet: 0.2 },
-              chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
-              distortion: { amount: 0.2, wet: 0.1 },
-            };
-            const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-            const result = validateSessionState(state);
-
-            if (decay < REVERB_MIN_DECAY || decay > REVERB_MAX_DECAY) {
-              expect(result.valid).toBe(false);
-              expect(result.errors.some(e => e.includes('reverb.decay'))).toBe(true);
-            }
-          }
-        ),
-        { numRuns: 200 }
-      );
-    });
-
-    it('reverb.wet must be in [0, 1]', () => {
-      fc.assert(
-        fc.property(
-          arbFloat32(REVERB_MIN_DECAY, REVERB_MAX_DECAY),
-          arbFloat32(-2, 3),
-          (decay, wet) => {
-            const effects = {
-              reverb: { decay, wet },
-              delay: { time: '8n', feedback: 0.3, wet: 0.2 },
-              chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
-              distortion: { amount: 0.2, wet: 0.1 },
-            };
-            const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-            const result = validateSessionState(state);
-
-            if (wet < 0 || wet > 1) {
-              expect(result.valid).toBe(false);
-              expect(result.errors.some(e => e.includes('reverb.wet'))).toBe(true);
-            }
-          }
-        ),
-        { numRuns: 200 }
-      );
-    });
-  });
-
-  describe('EF-001c: Delay bounds are enforced', () => {
-    it('delay.feedback must be in [0, 0.95]', () => {
-      fc.assert(
-        fc.property(arbFloat32(-1, 2), (feedback) => {
-          const effects = {
-            reverb: { decay: 2, wet: 0.3 },
-            delay: { time: '8n', feedback, wet: 0.2 },
-            chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
-            distortion: { amount: 0.2, wet: 0.1 },
-          };
-          const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-          const result = validateSessionState(state);
-
-          if (feedback < 0 || feedback > DELAY_MAX_FEEDBACK) {
-            expect(result.valid).toBe(false);
-            expect(result.errors.some(e => e.includes('delay.feedback'))).toBe(true);
-          }
-        }),
-        { numRuns: 200 }
-      );
-    });
-
-    it('delay.time must be a valid note value', () => {
-      const invalidTimes = ['1s', '100ms', 'fast', '3n', '5n', 'invalid'];
-      const validTimes = ['32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m'];
-
-      for (const time of invalidTimes) {
-        const effects = {
-          reverb: { decay: 2, wet: 0.3 },
-          delay: { time, feedback: 0.3, wet: 0.2 },
-          chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
-          distortion: { amount: 0.2, wet: 0.1 },
-        };
-        const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-        const result = validateSessionState(state);
-        expect(result.valid).toBe(false);
-        expect(result.errors.some(e => e.includes('delay.time'))).toBe(true);
-      }
-
-      for (const time of validTimes) {
-        const effects = {
-          reverb: { decay: 2, wet: 0.3 },
-          delay: { time, feedback: 0.3, wet: 0.2 },
-          chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
-          distortion: { amount: 0.2, wet: 0.1 },
-        };
-        const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-        const result = validateSessionState(state);
-        expect(result.valid).toBe(true);
-      }
-    });
-  });
-
-  describe('EF-001d: Chorus bounds are enforced', () => {
-    it('chorus.frequency must be in [0.1, 10]', () => {
-      fc.assert(
-        fc.property(arbFloat32(-5, 50), (frequency) => {
-          const effects = {
-            reverb: { decay: 2, wet: 0.3 },
-            delay: { time: '8n', feedback: 0.3, wet: 0.2 },
-            chorus: { frequency, depth: 0.5, wet: 0.1 },
-            distortion: { amount: 0.2, wet: 0.1 },
-          };
-          const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-          const result = validateSessionState(state);
-
-          if (frequency < CHORUS_MIN_FREQUENCY || frequency > CHORUS_MAX_FREQUENCY) {
-            expect(result.valid).toBe(false);
-            expect(result.errors.some(e => e.includes('chorus.frequency'))).toBe(true);
-          }
-        }),
-        { numRuns: 200 }
-      );
-    });
-  });
-
-  describe('EF-001e: Schema violations are rejected', () => {
-    it('reverb.mix is rejected (should be reverb.wet)', () => {
-      const effects = {
-        reverb: { mix: 0.5, decay: 2 },  // Wrong field name!
-        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
-        chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
-        distortion: { amount: 0.2, wet: 0.1 },
-      };
-      const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-      const result = validateSessionState(state);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('reverb.mix is invalid'))).toBe(true);
-    });
-
-    it('chorus.rate is rejected (should be chorus.frequency)', () => {
-      const effects = {
-        reverb: { decay: 2, wet: 0.3 },
-        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
-        chorus: { rate: 1, depth: 0.5, wet: 0.1 },  // Wrong field name!
-        distortion: { amount: 0.2, wet: 0.1 },
-      };
-      const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-      const result = validateSessionState(state);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('chorus.rate is invalid'))).toBe(true);
-    });
-
-    it('distortion.drive is rejected (should be distortion.amount)', () => {
-      const effects = {
-        reverb: { decay: 2, wet: 0.3 },
-        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
-        chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
-        distortion: { drive: 0.2, wet: 0.1 },  // Wrong field name!
-      };
-      const state = { effects, tracks: [], tempo: 120, swing: 0, version: 1 };
-      const result = validateSessionState(state);
-
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('distortion.drive is invalid'))).toBe(true);
-    });
-  });
-});
-
-// =============================================================================
-// SN-001: Session Name XSS Prevention
-// =============================================================================
-
-describe('SN-001: Session Name Validation', () => {
-  describe('SN-001a: Valid names pass', () => {
-    it('alphanumeric names with spaces pass', () => {
-      fc.assert(
-        fc.property(arbValidSessionName, (name) => {
-          const result = validateSessionName(name);
-          // Most generated names should pass (unless they happen to match XSS patterns)
-          // We're mainly testing that valid characters don't cause false rejections
-          if (!/<script|javascript:|on\w+\s*=/i.test(name)) {
-            expect(result.valid).toBe(true);
-          }
-        }),
-        { numRuns: 300 }
-      );
-    });
-
-    it('null is valid (clears name)', () => {
-      const result = validateSessionName(null);
-      expect(result.valid).toBe(true);
-    });
-
-    it('empty string is valid', () => {
-      const result = validateSessionName('');
-      expect(result.valid).toBe(true);
-    });
-
-    it('unicode characters are valid', () => {
-      const unicodeNames = ['日本語', 'Привет', '你好', 'مرحبا', '🎵🎶', 'Müsik'];
-      for (const name of unicodeNames) {
-        const result = validateSessionName(name);
-        expect(result.valid).toBe(true);
-      }
-    });
-  });
-
-  describe('SN-001b: XSS patterns are always rejected', () => {
-    it('script tags are rejected', () => {
-      fc.assert(
-        fc.property(arbXSSPattern, (xssPattern) => {
-          const result = validateSessionName(xssPattern);
-          expect(result.valid).toBe(false);
-          expect(result.errors.some(e => e.includes('unsafe'))).toBe(true);
-        }),
-        { numRuns: 50 }  // All patterns in arbXSSPattern
-      );
-    });
-
-    it('embedded XSS in valid text is rejected', () => {
-      const embeddedPatterns = [
-        'My Song <script>alert(1)</script>',
-        'Track javascript:alert(1)',
-        'Beat<img onerror="alert(1)">Drop',
-      ];
-      for (const name of embeddedPatterns) {
-        const result = validateSessionName(name);
-        expect(result.valid).toBe(false);
-      }
-    });
-
-    it('case variations of XSS are rejected', () => {
-      const caseVariations = [
-        '<SCRIPT>alert(1)</SCRIPT>',
-        '<ScRiPt>alert(1)</ScRiPt>',
-        'JAVASCRIPT:alert(1)',
-        'JaVaScRiPt:alert(1)',
-        'ONCLICK=alert(1)',
-        'OnClick=alert(1)',
-      ];
-      for (const name of caseVariations) {
-        const result = validateSessionName(name);
-        expect(result.valid).toBe(false);
-      }
-    });
-  });
-
-  describe('SN-001c: Length limits are enforced', () => {
-    it('names over 100 characters are rejected', () => {
-      fc.assert(
-        fc.property(arbTooLongName, (name) => {
-          const result = validateSessionName(name);
-          expect(result.valid).toBe(false);
-          expect(result.errors.some(e => e.includes('100 characters'))).toBe(true);
-        }),
-        { numRuns: 50 }
-      );
-    });
-
-    it('names exactly 100 characters pass', () => {
-      const name = 'a'.repeat(100);
-      const result = validateSessionName(name);
-      expect(result.valid).toBe(true);
-    });
-
-    it('names at 101 characters fail', () => {
-      const name = 'a'.repeat(101);
-      const result = validateSessionName(name);
-      expect(result.valid).toBe(false);
-    });
-  });
-
-  describe('SN-001d: Non-string types are rejected', () => {
-    it('numbers are rejected', () => {
-      const result = validateSessionName(12345 as unknown);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some(e => e.includes('string'))).toBe(true);
-    });
-
-    it('objects are rejected', () => {
-      const result = validateSessionName({ name: 'test' } as unknown);
-      expect(result.valid).toBe(false);
-    });
-
-    it('arrays are rejected', () => {
-      const result = validateSessionName(['test'] as unknown);
-      expect(result.valid).toBe(false);
-    });
-
-    it('undefined is rejected (but null is allowed)', () => {
-      const result = validateSessionName(undefined as unknown);
-      expect(result.valid).toBe(false);
-    });
-  });
-});
-
-// =============================================================================
-// LR-001: Loop Region Bounds After Mutations
-// =============================================================================
-
-describe('LR-001: Loop Region Invariants', () => {
-  describe('LR-001a: Loop region start <= end after mutation', () => {
-    it('set_loop_region normalizes reversed bounds', () => {
-      fc.assert(
-        fc.property(
-          arbSessionState,
-          fc.integer({ min: 0, max: 127 }),
-          fc.integer({ min: 0, max: 127 }),
-          (state, rawStart, rawEnd) => {
-            // Apply set_loop_region mutation
-            const newState = applyMutation(state, {
-              type: 'set_loop_region',
-              region: { start: rawStart, end: rawEnd },
-            });
-
-            // Loop region should always have start <= end
-            if (newState.loopRegion) {
-              expect(newState.loopRegion.start).toBeLessThanOrEqual(newState.loopRegion.end);
-            }
-          }
-        ),
-        { numRuns: 300 }
-      );
-    });
-  });
-
-  describe('LR-001b: Loop region is bounded by track length', () => {
-    it('loop region is clamped to longest track length', () => {
-      // Import DEFAULT_STEP_COUNT to match the algorithm
-      const DEFAULT_STEP_COUNT = 16;
-
-      fc.assert(
-        fc.property(
-          arbSessionState,
-          fc.integer({ min: 0, max: 500 }),  // Potentially way out of bounds
-          fc.integer({ min: 0, max: 500 }),
-          (state, rawStart, rawEnd) => {
-            const newState = applyMutation(state, {
-              type: 'set_loop_region',
-              region: { start: rawStart, end: rawEnd },
-            });
-
-            if (newState.loopRegion) {
-              // Calculate longest track - matches the algorithm in state-mutations.ts
-              // Note: DEFAULT_STEP_COUNT is used as a baseline even when tracks exist
-              const longestTrack = Math.max(
-                ...state.tracks.map(t => t.stepCount ?? DEFAULT_STEP_COUNT),
-                DEFAULT_STEP_COUNT
-              );
-
-              // Loop region should be within bounds [0, longestTrack - 1]
-              expect(newState.loopRegion.start).toBeGreaterThanOrEqual(0);
-              expect(newState.loopRegion.end).toBeGreaterThanOrEqual(0);
-              expect(newState.loopRegion.start).toBeLessThanOrEqual(longestTrack - 1);
-              expect(newState.loopRegion.end).toBeLessThanOrEqual(longestTrack - 1);
-            }
-          }
-        ),
-        { numRuns: 300 }
-      );
-    });
-  });
-
-  describe('LR-001c: Null loop region clears correctly', () => {
-    it('set_loop_region with null clears the loop', () => {
-      fc.assert(
-        fc.property(arbSessionState, (state) => {
-          // First set a loop region
-          const withLoop = applyMutation(state, {
-            type: 'set_loop_region',
-            region: { start: 0, end: 8 },
-          });
-
-          // Then clear it
-          const cleared = applyMutation(withLoop, {
-            type: 'set_loop_region',
-            region: null,
-          });
-
-          expect(cleared.loopRegion).toBeNull();
-        }),
-        { numRuns: 100 }
-      );
-    });
-  });
-
-  describe('LR-001d: Loop region survives track mutations', () => {
-    it('loop region persists after adding track', () => {
-      fc.assert(
-        fc.property(arbSessionState, (state) => {
-          fc.pre(state.tracks.length < 16);  // Can add tracks
-
-          // Set loop region
-          const withLoop = applyMutation(state, {
-            type: 'set_loop_region',
-            region: { start: 2, end: 10 },
-          });
-
-          // Add a track
-          const afterAdd = applyMutation(withLoop, {
-            type: 'add_track',
-            track: {
-              id: 'new-track-' + Math.random(),
-              name: 'New Track',
-              sampleId: 'synth:kick',
-              steps: new Array(128).fill(false),
-              parameterLocks: new Array(128).fill(null),
-              volume: 1,
-              muted: false,
-              soloed: false,
-              transpose: 0,
-              stepCount: 16,
-            },
-          });
-
-          // Loop region should still exist
-          expect(afterAdd.loopRegion).not.toBeNull();
-          if (afterAdd.loopRegion) {
-            expect(afterAdd.loopRegion.start).toBe(2);
-            expect(afterAdd.loopRegion.end).toBe(10);
-          }
-        }),
-        { numRuns: 100 }
-      );
-    });
-  });
-
-  describe('LR-001e: persisted loop regions are repaired at the storage boundary', () => {
-    const stateWithLoop = (loopRegion: unknown) => ({
-      tracks: [], tempo: 120, swing: 0, version: 1, loopRegion,
-    }) as SessionState;
-
-    it.each([
-      [],
-      '0-8',
-      {},
-      { start: 'bad', end: 8 },
-      { start: 0, end: Number.POSITIVE_INFINITY },
-      { start: 4.5, end: 12 },
-      { start: 4, end: 12.5 },
-      { start: -1, end: 8 },
-      { start: 128, end: 128 },
-      { start: 0, end: 128 },
-    ])('detects and clears an unsafe stored loop %#', (loopRegion) => {
-      const state = stateWithLoop(loopRegion);
-      expect(validateStateInvariants(state).valid).toBe(false);
-
-      const repaired = repairStateInvariants(state);
-      expect(repaired.repairedState.loopRegion).toBeNull();
-      expect(validateStateInvariants(repaired.repairedState).valid).toBe(true);
-      expect(repaired.repairs.some(repair => repair.includes('loop region'))).toBe(true);
-    });
-
-    it('normalizes reversed stored bounds without discarding a safe loop', () => {
-      const state = stateWithLoop({ start: 12, end: 4 });
-      expect(validateStateInvariants(state).valid).toBe(false);
-
-      const repaired = repairStateInvariants(state);
-      expect(repaired.repairedState.loopRegion).toEqual({ start: 4, end: 12 });
-      expect(validateStateInvariants(repaired.repairedState).valid).toBe(true);
-      expect(repaired.repairs).toContain('Normalized reversed loop region bounds');
-    });
-  });
-});
-
-// =============================================================================
-// UUID Validation Properties
-// =============================================================================
-
-describe('UUID-001: UUID Validation', () => {
-  it('valid UUIDs pass validation', () => {
+describe('VA-001: Clamp Within Bounds', () => {
+  it('VA-001a: clamp always returns value within [min, max]', () => {
     fc.assert(
-      fc.property(fc.uuid(), (uuid) => {
-        expect(isValidUUID(uuid)).toBe(true);
+      fc.property(
+        fc.float({ noNaN: true }),
+        fc.float({ noNaN: true }),
+        fc.float({ noNaN: true }),
+        (value, bound1, bound2) => {
+          const min = Math.min(bound1, bound2);
+          const max = Math.max(bound1, bound2);
+          fc.pre(min <= max); // Ensure valid range
+
+          const result = clamp(value, min, max);
+          expect(result).toBeGreaterThanOrEqual(min);
+          expect(result).toBeLessThanOrEqual(max);
+        }
+      ),
+      { numRuns: 500 }
+    );
+  });
+
+  it('VA-001b: clamp preserves values already within bounds', () => {
+    fc.assert(
+      fc.property(
+        fc.float({ min: Math.fround(-100), max: Math.fround(100), noNaN: true }),
+        fc.float({ min: Math.fround(-200), max: Math.fround(-100), noNaN: true }),
+        fc.float({ min: Math.fround(100), max: Math.fround(200), noNaN: true }),
+        (value, minBound, maxBound) => {
+          const result = clamp(value, minBound, maxBound);
+          if (value >= minBound && value <= maxBound) {
+            expect(result).toBe(value);
+          }
+        }
+      ),
+      { numRuns: 300 }
+    );
+  });
+
+  it('VA-001c: tempo clamping uses correct bounds', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: 500 }), (tempo) => {
+        const clamped = clamp(tempo, MIN_TEMPO, MAX_TEMPO);
+        expect(clamped).toBeGreaterThanOrEqual(MIN_TEMPO);
+        expect(clamped).toBeLessThanOrEqual(MAX_TEMPO);
       }),
       { numRuns: 200 }
     );
   });
 
-  it('invalid formats are rejected', () => {
-    const invalidUUIDs = [
-      'not-a-uuid',
-      '12345678-1234-1234-1234-12345678901',   // Too short
-      '12345678-1234-1234-1234-1234567890123', // Too long
-      '12345678-1234-1234-1234-12345678901g',  // Invalid char 'g'
-      '12345678123412341234123456789012',      // No dashes
-      '',
-      '  ',
-    ];
-    for (const uuid of invalidUUIDs) {
-      expect(isValidUUID(uuid)).toBe(false);
-    }
-  });
-
-  it('case insensitive (both upper and lower case pass)', () => {
-    const upperUUID = 'A1B2C3D4-E5F6-7890-ABCD-EF1234567890';
-    const lowerUUID = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
-    expect(isValidUUID(upperUUID)).toBe(true);
-    expect(isValidUUID(lowerUUID)).toBe(true);
-  });
-});
-
-// =============================================================================
-// Body Size Validation Properties
-// =============================================================================
-
-describe('BS-001: Body Size Validation', () => {
-  it('sizes under MAX_MESSAGE_SIZE pass', () => {
+  it('VA-001d: swing clamping uses correct bounds', () => {
     fc.assert(
-      fc.property(fc.integer({ min: 0, max: MAX_MESSAGE_SIZE }), (size) => {
-        expect(isBodySizeValid(String(size))).toBe(true);
+      fc.property(fc.integer({ min: -50, max: 200 }), (swing) => {
+        const clamped = clamp(swing, MIN_SWING, MAX_SWING);
+        expect(clamped).toBeGreaterThanOrEqual(MIN_SWING);
+        expect(clamped).toBeLessThanOrEqual(MAX_SWING);
       }),
       { numRuns: 200 }
     );
   });
 
-  it('sizes over MAX_MESSAGE_SIZE fail', () => {
+  it('VA-001e: volume clamping uses correct bounds', () => {
     fc.assert(
-      fc.property(fc.integer({ min: MAX_MESSAGE_SIZE + 1, max: MAX_MESSAGE_SIZE * 10 }), (size) => {
-        expect(isBodySizeValid(String(size))).toBe(false);
+      fc.property(
+        fc.float({ min: Math.fround(-1), max: Math.fround(3), noNaN: true }),
+        (volume) => {
+          const clamped = clamp(volume, MIN_VOLUME, MAX_VOLUME);
+          expect(clamped).toBeGreaterThanOrEqual(MIN_VOLUME);
+          expect(clamped).toBeLessThanOrEqual(MAX_VOLUME);
+        }
+      ),
+      { numRuns: 200 }
+    );
+  });
+
+  it('VA-001f: parameter lock pitch clamping uses correct bounds', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: -100, max: 100 }), (pitch) => {
+        const clamped = clamp(pitch, MIN_PLOCK_PITCH, MAX_PLOCK_PITCH);
+        expect(clamped).toBeGreaterThanOrEqual(MIN_PLOCK_PITCH);
+        expect(clamped).toBeLessThanOrEqual(MAX_PLOCK_PITCH);
+      }),
+      { numRuns: 200 }
+    );
+  });
+});
+
+// =============================================================================
+// VA-002: Validation Idempotence
+// =============================================================================
+
+describe('VA-002: Validation Idempotence', () => {
+  it('VA-002a: validateParameterLock is idempotent', () => {
+    fc.assert(
+      fc.property(arbValidParameterLock, (lock) => {
+        const once = validateParameterLock(lock);
+        const twice = validateParameterLock(once);
+
+        // If first validation returned null, second should too
+        if (once === null) {
+          expect(twice).toBe(null);
+        } else {
+          // Otherwise, results should be equal
+          expect(twice).toEqual(once);
+        }
+      }),
+      { numRuns: 500 }
+    );
+  });
+
+  it('VA-002b: validateParameterLock with out-of-range values is idempotent', () => {
+    fc.assert(
+      fc.property(arbPlockPitch, arbPlockVolume, fc.boolean(), (pitch, volume, tie) => {
+        const lock = { pitch, volume, tie };
+        const once = validateParameterLock(lock);
+        const twice = validateParameterLock(once);
+
+        if (once === null) {
+          expect(twice).toBe(null);
+        } else {
+          expect(twice).toEqual(once);
+          // After first validation, values should be within bounds
+          if (once.pitch !== undefined) {
+            expect(once.pitch).toBeGreaterThanOrEqual(MIN_PLOCK_PITCH);
+            expect(once.pitch).toBeLessThanOrEqual(MAX_PLOCK_PITCH);
+          }
+          if (once.volume !== undefined) {
+            expect(once.volume).toBeGreaterThanOrEqual(MIN_PLOCK_VOLUME);
+            expect(once.volume).toBeLessThanOrEqual(MAX_PLOCK_VOLUME);
+          }
+        }
+      }),
+      { numRuns: 300 }
+    );
+  });
+
+  it('VA-002c: validateCursorPosition is idempotent', () => {
+    fc.assert(
+      fc.property(
+        fc.float({ min: Math.fround(-50), max: Math.fround(150), noNaN: true }),
+        fc.float({ min: Math.fround(-50), max: Math.fround(150), noNaN: true }),
+        (x, y) => {
+          const position = { x, y };
+          const once = validateCursorPosition(position);
+          const twice = validateCursorPosition(once);
+
+          if (once === null) {
+            expect(twice).toBe(null);
+          } else {
+            expect(twice).toEqual(once);
+            // After first validation, values should be within bounds
+            expect(once.x).toBeGreaterThanOrEqual(MIN_CURSOR_POSITION);
+            expect(once.x).toBeLessThanOrEqual(MAX_CURSOR_POSITION);
+            expect(once.y).toBeGreaterThanOrEqual(MIN_CURSOR_POSITION);
+            expect(once.y).toBeLessThanOrEqual(MAX_CURSOR_POSITION);
+          }
+        }
+      ),
+      { numRuns: 300 }
+    );
+  });
+
+  it('VA-002d: repairStateInvariants is idempotent', () => {
+    fc.assert(
+      fc.property(arbMinimalSessionState, (state) => {
+        const { repairedState: once } = repairStateInvariants(state);
+        const { repairedState: twice, repairs } = repairStateInvariants(once);
+
+        // After first repair, second repair should make no changes
+        expect(repairs.length).toBe(0);
+        expect(twice).toEqual(once);
       }),
       { numRuns: 100 }
     );
   });
 
-  it('null/missing Content-Length passes (let fetch handle it)', () => {
-    expect(isBodySizeValid(null)).toBe(true);
-    expect(isBodySizeValid('')).toBe(true);
+  // VA-002e ("setTempo validator is idempotent") was deleted with
+  // src/worker/validators.ts — see the note at the top of this file. Clamp
+  // idempotence itself is still covered above against `clamp` directly, which
+  // is the function the live handlers actually use.
+});
+
+// =============================================================================
+// VA-003: Array Length Invariant
+// =============================================================================
+
+describe('VA-003: Array Length Invariant', () => {
+  it('VA-003a: valid tracks have steps array of exactly MAX_STEPS length', () => {
+    fc.assert(
+      fc.property(arbMinimalSessionState, (state) => {
+        const result = validateStateInvariants(state);
+
+        // If valid, all tracks should have correct array lengths
+        if (result.valid) {
+          for (const track of state.tracks) {
+            expect(track.steps.length).toBe(MAX_STEPS);
+            expect(track.parameterLocks.length).toBe(MAX_STEPS);
+          }
+        }
+      }),
+      { numRuns: 200 }
+    );
   });
 
-  it('non-numeric Content-Length passes (let server handle it)', () => {
-    expect(isBodySizeValid('abc')).toBe(true);
-    expect(isBodySizeValid('NaN')).toBe(true);
+  it('VA-003b: repairStateInvariants fixes incorrect array lengths', () => {
+    fc.assert(
+      fc.property(
+        fc.uuid(),
+        fc.array(fc.boolean(), { minLength: 0, maxLength: 200 }),
+        (id, steps) => {
+          // Create state with potentially wrong array length
+          const track = {
+            id,
+            name: 'Test',
+            sampleId: 'kick',
+            steps,
+            parameterLocks: new Array(steps.length).fill(null),
+            volume: 0.8,
+            muted: false,
+            soloed: false,
+            transpose: 0,
+            stepCount: 16,
+          } as SessionTrack;
+
+          const state = {
+            tracks: [track],
+            tempo: 120,
+            swing: 0,
+            loopRegion: null,
+            effects: {
+              bypass: false,
+              reverb: { decay: 2, wet: 0.3 },
+              delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+              chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
+              distortion: { amount: 0.2, wet: 0.1 },
+            },
+          } as SessionState;
+
+          const { repairedState } = repairStateInvariants(state);
+
+          // After repair, arrays should be correct length
+          expect(repairedState.tracks[0].steps.length).toBe(MAX_STEPS);
+          expect(repairedState.tracks[0].parameterLocks.length).toBe(MAX_STEPS);
+        }
+      ),
+      { numRuns: 100 }
+    );
+  });
+
+  it('VA-003c: array length violations are detected', () => {
+    const wrongLengthTrack = {
+      id: 'test-track',
+      name: 'Test',
+      sampleId: 'kick',
+      steps: new Array(64).fill(false), // Wrong length
+      parameterLocks: new Array(64).fill(null), // Wrong length
+      volume: 0.8,
+      muted: false,
+      soloed: false,
+      transpose: 0,
+      stepCount: 16,
+    } as SessionTrack;
+
+    const state = {
+      tracks: [wrongLengthTrack],
+      tempo: 120,
+      swing: 0,
+      loopRegion: null,
+      effects: {
+        bypass: false,
+        reverb: { decay: 2, wet: 0.3 },
+        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+        chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
+        distortion: { amount: 0.2, wet: 0.1 },
+      },
+    } as SessionState;
+
+    const result = validateStateInvariants(state);
+    expect(result.valid).toBe(false);
+    expect(result.violations.some((v) => v.includes('steps length'))).toBe(true);
+  });
+
+  it('VA-003d: track count respects MAX_TRACKS', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: MAX_TRACKS + 1, max: MAX_TRACKS + 10 }), (trackCount) => {
+        const tracks = Array.from({ length: trackCount }, (_, i) => ({
+          id: `track-${i}`,
+          name: `Track ${i}`,
+          sampleId: 'kick',
+          steps: new Array(MAX_STEPS).fill(false),
+          parameterLocks: new Array(MAX_STEPS).fill(null),
+          volume: 0.8,
+          muted: false,
+          soloed: false,
+          transpose: 0,
+          stepCount: 16,
+        })) as SessionTrack[];
+
+        const state = {
+          tracks,
+          tempo: 120,
+          swing: 0,
+          loopRegion: null,
+          effects: {
+            bypass: false,
+            reverb: { decay: 2, wet: 0.3 },
+            delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+            chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
+            distortion: { amount: 0.2, wet: 0.1 },
+          },
+        } as SessionState;
+
+        const result = validateStateInvariants(state);
+        expect(result.valid).toBe(false);
+        expect(result.violations.some((v) => v.includes('Track count'))).toBe(true);
+      }),
+      { numRuns: 20 }
+    );
+  });
+});
+
+// =============================================================================
+// VA-004: Parameter Lock Partial Preservation (FIXED)
+// =============================================================================
+
+describe('VA-004: Parameter Lock Partial Preservation', () => {
+  it('VA-004a: invalid pitch preserves valid volume (FIX VERIFIED)', () => {
+    // Previously, invalid pitch caused entire lock rejection
+    // Now, invalid pitch is dropped but valid volume is preserved
+
+    const lockWithInvalidPitch = {
+      pitch: NaN, // Invalid - will be dropped
+      volume: 0.5, // Valid - will be preserved
+    };
+
+    const result = validateParameterLock(lockWithInvalidPitch);
+
+    // FIX: Valid volume is preserved, invalid pitch is dropped
+    expect(result).not.toBe(null);
+    expect(result?.volume).toBe(0.5);
+    expect(result?.pitch).toBeUndefined();
+  });
+
+  it('VA-004b: invalid volume preserves valid pitch (FIX VERIFIED)', () => {
+    const lockWithInvalidVolume = {
+      pitch: 5, // Valid - will be preserved
+      volume: NaN, // Invalid - will be dropped
+    };
+
+    const result = validateParameterLock(lockWithInvalidVolume);
+
+    // FIX: Valid pitch is preserved, invalid volume is dropped
+    expect(result).not.toBe(null);
+    expect(result?.pitch).toBe(5);
+    expect(result?.volume).toBeUndefined();
+  });
+
+  it('VA-004c: all-valid locks are preserved', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: MIN_PLOCK_PITCH, max: MAX_PLOCK_PITCH }),
+        fc.float({
+          min: Math.fround(MIN_PLOCK_VOLUME),
+          max: Math.fround(MAX_PLOCK_VOLUME),
+          noNaN: true,
+        }),
+        fc.boolean(),
+        (pitch, volume, tie) => {
+          const lock = { pitch, volume, tie };
+          const result = validateParameterLock(lock);
+
+          expect(result).not.toBe(null);
+          expect(result?.pitch).toBe(pitch);
+          expect(result?.tie).toBe(tie);
+          // Volume might be slightly different due to clamping
+          if (result?.volume !== undefined) {
+            expect(result.volume).toBeGreaterThanOrEqual(MIN_PLOCK_VOLUME);
+            expect(result.volume).toBeLessThanOrEqual(MAX_PLOCK_VOLUME);
+          }
+        }
+      ),
+      { numRuns: 300 }
+    );
+  });
+
+  it('VA-004d: out-of-range values are clamped, not rejected', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: -100, max: 100 }),
+        fc.float({ min: Math.fround(-1), max: Math.fround(2), noNaN: true }),
+        (pitch, volume) => {
+          const lock = { pitch, volume };
+          const result = validateParameterLock(lock);
+
+          // Should not be null - values are clamped, not rejected
+          expect(result).not.toBe(null);
+
+          if (result) {
+            // Pitch should be clamped
+            expect(result.pitch).toBeGreaterThanOrEqual(MIN_PLOCK_PITCH);
+            expect(result.pitch).toBeLessThanOrEqual(MAX_PLOCK_PITCH);
+
+            // Volume should be clamped
+            expect(result.volume).toBeGreaterThanOrEqual(MIN_PLOCK_VOLUME);
+            expect(result.volume).toBeLessThanOrEqual(MAX_PLOCK_VOLUME);
+          }
+        }
+      ),
+      { numRuns: 300 }
+    );
+  });
+
+  it('VA-004e: null and undefined inputs return null', () => {
+    expect(validateParameterLock(null)).toBe(null);
+    expect(validateParameterLock(undefined)).toBe(null);
+  });
+
+  it('VA-004f: empty object returns null', () => {
+    expect(validateParameterLock({})).toBe(null);
+  });
+
+  it('VA-004g: arrays are rejected', () => {
+    expect(validateParameterLock([1, 2, 3])).toBe(null);
+    expect(validateParameterLock([])).toBe(null);
+  });
+
+  it('VA-004h: non-object types are rejected', () => {
+    expect(validateParameterLock('string')).toBe(null);
+    expect(validateParameterLock(123)).toBe(null);
+    expect(validateParameterLock(true)).toBe(null);
+  });
+});
+
+// =============================================================================
+// Additional Validation Properties
+// =============================================================================
+
+describe('Additional Validation Properties', () => {
+  it('isValidNumberInRange correctly identifies valid numbers', () => {
+    fc.assert(
+      fc.property(
+        fc.float({ noNaN: true }),
+        fc.float({ noNaN: true }),
+        fc.float({ noNaN: true }),
+        (value, min, max) => {
+          const realMin = Math.min(min, max);
+          const realMax = Math.max(min, max);
+
+          const result = isValidNumberInRange(value, realMin, realMax);
+
+          if (result) {
+            expect(value).toBeGreaterThanOrEqual(realMin);
+            expect(value).toBeLessThanOrEqual(realMax);
+          }
+        }
+      ),
+      { numRuns: 300 }
+    );
+  });
+
+  it('isValidNumberInRange rejects NaN and Infinity', () => {
+    expect(isValidNumberInRange(NaN, 0, 100)).toBe(false);
+    expect(isValidNumberInRange(Infinity, 0, 100)).toBe(false);
+    expect(isValidNumberInRange(-Infinity, 0, 100)).toBe(false);
+  });
+
+  it('isValidNumberInRange rejects non-numbers', () => {
+    expect(isValidNumberInRange('string', 0, 100)).toBe(false);
+    expect(isValidNumberInRange(null, 0, 100)).toBe(false);
+    expect(isValidNumberInRange(undefined, 0, 100)).toBe(false);
+    expect(isValidNumberInRange({}, 0, 100)).toBe(false);
+  });
+
+  it('isValidIntegerInRange accepts only discrete bounded indices', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: MAX_STEPS - 1 }), value => {
+        expect(isValidIntegerInRange(value, 0, MAX_STEPS - 1)).toBe(true);
+      }),
+      { numRuns: 200 },
+    );
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: MAX_STEPS - 2 }),
+        fc.double({ min: 0.01, max: 0.99, noNaN: true }),
+        (whole, fraction) => {
+          expect(isValidIntegerInRange(whole + fraction, 0, MAX_STEPS - 1)).toBe(false);
+        },
+      ),
+      { numRuns: 200 },
+    );
+  });
+
+  it('duplicate track IDs are detected', () => {
+    const tracks = [
+      {
+        id: 'same-id',
+        name: 'Track 1',
+        sampleId: 'kick',
+        steps: new Array(MAX_STEPS).fill(false),
+        parameterLocks: new Array(MAX_STEPS).fill(null),
+        volume: 0.8,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        stepCount: 16,
+      },
+      {
+        id: 'same-id', // Duplicate!
+        name: 'Track 2',
+        sampleId: 'snare',
+        steps: new Array(MAX_STEPS).fill(false),
+        parameterLocks: new Array(MAX_STEPS).fill(null),
+        volume: 0.8,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        stepCount: 16,
+      },
+    ] as SessionTrack[];
+
+    const state = {
+      tracks,
+      tempo: 120,
+      swing: 0,
+      loopRegion: null,
+      effects: {
+        bypass: false,
+        reverb: { decay: 2, wet: 0.3 },
+        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+        chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
+        distortion: { amount: 0.2, wet: 0.1 },
+      },
+    } as SessionState;
+
+    const result = validateStateInvariants(state);
+    expect(result.valid).toBe(false);
+    expect(result.violations.some((v) => v.includes('Duplicate track ID'))).toBe(true);
+  });
+
+  it('repairStateInvariants removes duplicate tracks', () => {
+    const tracks = [
+      {
+        id: 'dup-id',
+        name: 'First',
+        sampleId: 'kick',
+        steps: new Array(MAX_STEPS).fill(false),
+        parameterLocks: new Array(MAX_STEPS).fill(null),
+        volume: 0.8,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        stepCount: 16,
+      },
+      {
+        id: 'dup-id', // Duplicate
+        name: 'Second',
+        sampleId: 'snare',
+        steps: new Array(MAX_STEPS).fill(false),
+        parameterLocks: new Array(MAX_STEPS).fill(null),
+        volume: 0.5,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        stepCount: 16,
+      },
+    ] as SessionTrack[];
+
+    const state = {
+      tracks,
+      tempo: 120,
+      swing: 0,
+      loopRegion: null,
+      effects: {
+        bypass: false,
+        reverb: { decay: 2, wet: 0.3 },
+        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+        chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
+        distortion: { amount: 0.2, wet: 0.1 },
+      },
+    } as SessionState;
+
+    const { repairedState, repairs } = repairStateInvariants(state);
+
+    expect(repairedState.tracks.length).toBe(1);
+    expect(repairedState.tracks[0].name).toBe('First'); // First one kept
+    expect(repairs.some((r) => r.includes('Removed duplicate'))).toBe(true);
+  });
+});
+
+// =============================================================================
+// VA-005: Untrusted persisted metadata must match its model
+// =============================================================================
+
+describe('VA-005: persisted metadata boundary validation', () => {
+  const validateMetadata = (metadata: Record<string, unknown>) => validateSessionState({
+    tracks: [], tempo: 120, swing: 0, version: 1, ...metadata,
+  });
+
+  it('accepts exactly the scale registry own keys, never prototype-chain names', () => {
+    const inheritedNames = fc.constantFrom('toString', 'constructor', '__proto__');
+
+    fc.assert(
+      fc.property(fc.oneof(fc.string(), inheritedNames), (scaleId) => {
+        const result = validateMetadata({
+          scale: { root: 'C', scaleId, locked: false },
+        });
+
+        expect(result.valid).toBe(Object.hasOwn(SCALES, scaleId));
+      }),
+      { numRuns: 300 },
+    );
+  });
+
+  it('agrees with the loop-region boundary model for arbitrary JSON values', () => {
+    fc.assert(
+      fc.property(fc.jsonValue(), (loopRegion) => {
+        const result = validateMetadata({ loopRegion });
+        const isRecord = loopRegion !== null &&
+          typeof loopRegion === 'object' &&
+          !Array.isArray(loopRegion);
+        const value = isRecord ? loopRegion as Record<string, unknown> : null;
+        const start = value?.start;
+        const end = value?.end;
+        const expected = loopRegion === null || (
+          typeof start === 'number' && Number.isFinite(start) && start >= 0 && start < MAX_STEPS &&
+          typeof end === 'number' && Number.isFinite(end) && end >= 0 && end < MAX_STEPS &&
+          start <= end
+        );
+
+        expect(result.valid).toBe(expected);
+      }),
+      { numRuns: 500 },
+    );
+  });
+});
+
+// =============================================================================
+// VA-005: Non-finite values (the NaN-blind comparison family)
+//
+// `v < MIN || v > MAX` is FALSE for NaN, so a bounds check written with
+// comparison operators reports a non-finite value as *valid* — and a repair
+// written the same way leaves it in place. Both were true here, in the module
+// that exists to be the storage boundary's last line of defence, while
+// isValidNumberInRange sat correctly implemented a hundred lines above.
+//
+// These tests use NaN and ±Infinity rather than out-of-range numbers, because
+// out-of-range numbers were always handled. The whole failure was that the one
+// class of bad value the comparisons could not see is the one that reaches
+// state when an upstream clamp() is fed a string.
+// =============================================================================
+
+describe('VA-005: non-finite values are detected and repaired', () => {
+  const NON_FINITE = [NaN, Infinity, -Infinity];
+
+  const stateWith = (overrides: Partial<SessionState>): SessionState => ({
+    tracks: [],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+    ...overrides,
+  }) as SessionState;
+
+  const trackWith = (overrides: Record<string, unknown>) => ({
+    id: 't1',
+    name: 'Track',
+    sampleId: 'kick',
+    steps: Array(MAX_STEPS).fill(false),
+    parameterLocks: Array(MAX_STEPS).fill(null),
+    volume: 1,
+    muted: false,
+    soloed: false,
+    transpose: 0,
+    stepCount: 16,
+    ...overrides,
+  }) as unknown as SessionTrack;
+
+  it.each(NON_FINITE)('reports a tempo of %p as a violation', (tempo) => {
+    const result = validateStateInvariants(stateWith({ tempo }));
+    expect(result.valid, `tempo ${tempo} was accepted as valid`).toBe(false);
+    expect(result.violations.join(' ')).toMatch(/[Tt]empo/);
+  });
+
+  it.each(NON_FINITE)('repairs a tempo of %p to a finite value', (tempo) => {
+    const { repairedState, repairs } = repairStateInvariants(stateWith({ tempo }));
+    expect(Number.isFinite(repairedState.tempo), `tempo stayed ${repairedState.tempo}`).toBe(true);
+    expect(repairedState.tempo).toBeGreaterThanOrEqual(MIN_TEMPO);
+    expect(repairedState.tempo).toBeLessThanOrEqual(MAX_TEMPO);
+    expect(repairs.length, 'a repair happened but was not reported').toBeGreaterThan(0);
+    // The repaired state must satisfy the checker — otherwise the two halves of
+    // this module disagree and callers cannot trust either.
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it.each(NON_FINITE)('reports a swing of %p as a violation and repairs it', (swing) => {
+    expect(validateStateInvariants(stateWith({ swing })).valid).toBe(false);
+    const { repairedState } = repairStateInvariants(stateWith({ swing }));
+    expect(Number.isFinite(repairedState.swing)).toBe(true);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it.each(NON_FINITE)('reports a track volume of %p as a violation and repairs it', (volume) => {
+    const state = stateWith({ tracks: [trackWith({ volume })] });
+    expect(validateStateInvariants(state).valid, `volume ${volume} accepted`).toBe(false);
+
+    const { repairedState } = repairStateInvariants(state);
+    expect(Number.isFinite(repairedState.tracks[0].volume)).toBe(true);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it.each(NON_FINITE)('reports a stepCount of %p as a violation and repairs it', (stepCount) => {
+    const state = stateWith({ tracks: [trackWith({ stepCount })] });
+    expect(validateStateInvariants(state).valid, `stepCount ${stepCount} accepted`).toBe(false);
+
+    const { repairedState } = repairStateInvariants(state);
+    const repaired = repairedState.tracks[0].stepCount;
+    expect(Number.isFinite(repaired), `stepCount stayed ${repaired}`).toBe(true);
+    expect(repaired).toBeGreaterThanOrEqual(1);
+    expect(repaired).toBeLessThanOrEqual(MAX_STEPS);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  // The case the comparisons actually missed on the repair path. NaN never
+  // reaches those comparisons — repairStateInvariants clones through JSON
+  // first, which turns NaN into null, and `null < MIN` coerces to `0 < 60` and
+  // repairs. A *missing* key is what survived: JSON.stringify drops it, and
+  // `undefined < 60` and `undefined > 180` are both false.
+  it.each(['tempo', 'swing'] as const)('repairs a state with no %s at all', (field) => {
+    const state = stateWith({});
+    delete (state as unknown as Record<string, unknown>)[field];
+
+    const { repairedState, repairs } = repairStateInvariants(state);
+    expect(
+      Number.isFinite(repairedState[field]),
+      `${field} came out of the repair as ${repairedState[field]}`
+    ).toBe(true);
+    expect(repairs.length).toBeGreaterThan(0);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it('repairs a track with no volume at all', () => {
+    const track = trackWith({});
+    delete (track as unknown as Record<string, unknown>).volume;
+    const { repairedState } = repairStateInvariants(stateWith({ tracks: [track] }));
+
+    expect(Number.isFinite(repairedState.tracks[0].volume)).toBe(true);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it('still accepts a fully valid state (the fix is not just "reject everything")', () => {
+    const state = stateWith({ tempo: 120, swing: 25, tracks: [trackWith({})] });
+    const result = validateStateInvariants(state);
+    expect(result.violations).toEqual([]);
+    expect(result.valid).toBe(true);
+    expect(repairStateInvariants(state).repairs).toEqual([]);
+  });
+
+  it('still reports plain out-of-range values, which always worked', () => {
+    // Regression guard for the fix itself: replacing the comparisons with
+    // isValidNumberInRange must not lose the case they did handle.
+    expect(validateStateInvariants(stateWith({ tempo: MAX_TEMPO + 1 })).valid).toBe(false);
+    expect(validateStateInvariants(stateWith({ tempo: MIN_TEMPO - 1 })).valid).toBe(false);
+    expect(validateStateInvariants(stateWith({ swing: 101 })).valid).toBe(false);
   });
 });

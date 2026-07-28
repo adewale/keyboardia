@@ -1,6 +1,6 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createInitialState } from '../shared/state-mutations';
+import { createInitialSessionState } from '../shared/session-defaults';
 import type { Session } from '../shared/state';
 import { createKeyboardiaMcpHandler, type McpSessionAdapter } from './mcp';
 import {
@@ -240,7 +240,7 @@ describe('the guard and a real MCP client', () => {
       remixedFromName: null,
       remixCount: 0,
       immutable: false,
-      state: createInitialState(),
+      state: createInitialSessionState(),
     };
     const sessions = {
       getSession: async () => structuredClone(session),

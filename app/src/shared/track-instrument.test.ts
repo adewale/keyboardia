@@ -47,6 +47,20 @@ function stateWith(...tracks: SessionTrack[]): SessionState {
   return { tracks, tempo: 128, swing: 10, version: 1 };
 }
 
+type InstrumentResult = ReturnType<typeof setTrackInstrument>;
+type InstrumentSuccess = Extract<InstrumentResult, { ok: true }>;
+type InstrumentFailure = Extract<InstrumentResult, { ok: false }>;
+
+function expectSuccess(result: InstrumentResult): asserts result is InstrumentSuccess {
+  expect(result.ok).toBe(true);
+  if (!result.ok) throw new Error(`Expected instrument change to succeed: ${result.error.message}`);
+}
+
+function expectFailure(result: InstrumentResult): asserts result is InstrumentFailure {
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error('Expected instrument change to fail');
+}
+
 describe('setTrackInstrument', () => {
   it('routes the legacy wire alias through validation and field cleanup', () => {
     const before = fullTrack();
@@ -77,8 +91,7 @@ describe('setTrackInstrument', () => {
       sampleId: 'sampled:808-kick',
     });
 
-    expect(result.ok).toBe(true);
-    if (!result.ok) return;
+    expectSuccess(result);
     expect(result.changed).toBe(true);
 
     const after = result.state.tracks[0];
@@ -163,8 +176,7 @@ describe('setTrackInstrument', () => {
         sampleId: 'definitely-not-an-instrument',
       });
 
-      expect(result.ok).toBe(false);
-      if (result.ok) return;
+      expectFailure(result);
       expect(result.error.code).toBe('INVALID_SAMPLE_ID');
       // The caller's own reference comes back, so assigning the result
       // unconditionally cannot drop a concurrent edit.
@@ -175,8 +187,7 @@ describe('setTrackInstrument', () => {
       const state = stateWith(fullTrack());
       const result = setTrackInstrument(state, { trackId: 'nope', sampleId: 'kick' });
 
-      expect(result.ok).toBe(false);
-      if (result.ok) return;
+      expectFailure(result);
       expect(result.error.code).toBe('TRACK_NOT_FOUND');
       expect(result.state).toBe(state);
     });
@@ -187,8 +198,7 @@ describe('setTrackInstrument', () => {
         sampleId: 'also-nope',
       });
 
-      expect(result.ok).toBe(false);
-      if (result.ok) return;
+      expectFailure(result);
       // An invalid ID must be rejected identically whether or not the track
       // happens to exist, so callers get a stable error for a stable input.
       expect(result.error.code).toBe('INVALID_SAMPLE_ID');
@@ -225,8 +235,7 @@ describe('setTrackInstrument', () => {
         sampleId: undefined as unknown as string,
       });
 
-      expect(result.ok).toBe(false);
-      if (result.ok) return;
+      expectFailure(result);
       expect(result.error.code).toBe('INVALID_SAMPLE_ID');
     });
   });
@@ -236,8 +245,7 @@ describe('setTrackInstrument', () => {
       const state = stateWith(fullTrack({ sampleId: 'kick', fmParams: undefined }));
       const result = setTrackInstrument(state, { trackId: 'track-1', sampleId: 'kick' });
 
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
+      expectSuccess(result);
       expect(result.changed).toBe(false);
       expect(result.state).toBe(state);
     });
@@ -251,8 +259,7 @@ describe('setTrackInstrument', () => {
         sampleId: 'tone:fm-bell',
       });
 
-      expect(result.ok).toBe(true);
-      if (!result.ok) return;
+      expectSuccess(result);
       expect(result.track.fmParams).toEqual({ harmonicity: 9, modulationIndex: 19 });
     });
   });
@@ -327,8 +334,7 @@ describe('setTrackInstrument', () => {
             sampleId: to,
           });
 
-          expect(result.ok).toBe(true);
-          if (!result.ok) return;
+          expectSuccess(result);
 
           const after = result.state.tracks[0];
           expect(after.sampleId).toBe(to);
@@ -351,14 +357,14 @@ describe('setTrackInstrument', () => {
           const state = stateWith(fullTrack({ sampleId: from }));
 
           const once = setTrackInstrument(state, { trackId: 'track-1', sampleId: to });
-          expect(once.ok).toBe(true);
+          expectSuccess(once);
           const twice = setTrackInstrument(once.state, { trackId: 'track-1', sampleId: to });
-          expect(twice.ok).toBe(true);
+          expectSuccess(twice);
 
           expect(twice.state).toEqual(once.state);
           // The second application must also report no change, which is what
           // makes an MCP retry silent instead of re-broadcasting.
-          if (twice.ok) expect(twice.changed).toBe(false);
+          expect(twice.changed).toBe(false);
         }),
         { numRuns: 200 },
       );

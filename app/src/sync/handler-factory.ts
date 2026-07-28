@@ -81,22 +81,6 @@ export function createAuthoritativeHandler<T extends { playerId: string }>(
 }
 
 /**
- * Creates a handler that only skips own messages but doesn't dispatch.
- * Useful for handlers that need custom logic (e.g., playback, cursors).
- *
- * @param callback - Function to call for remote messages
- * @returns A handler function bound to the HandlerContext
- */
-export function createRemoteOnlyHandler<T extends { playerId: string }>(
-  callback: (msg: T) => void,
-) {
-  return function (this: HandlerContext, msg: T): void {
-    if (msg.playerId === this.state.playerId) return;
-    callback(msg);
-  };
-}
-
-/**
  * Type helper: Extracts the message type from a handler created by createRemoteHandler
  */
 export type HandlerMessage<T> = T extends (msg: infer M) => void ? M : never;

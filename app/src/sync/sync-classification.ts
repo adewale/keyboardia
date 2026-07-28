@@ -1,8 +1,9 @@
 /**
  * Client Sync Classification Manifest
  *
- * This is the SINGLE SOURCE OF TRUTH for what should sync in multiplayer.
- * Tests verify that actual code behavior matches this manifest.
+ * This is the runtime policy for what may sync in multiplayer. `actionToMessage`
+ * consults these sets before it emits a wire message, and tests verify that the
+ * per-action conversion agrees with the policy.
  *
  * ARCHITECTURAL PRINCIPLE: "My Ears, My Control"
  * - Session state (grid, tempo, structure) = synced to all players
@@ -109,28 +110,6 @@ export type InternalAction = typeof INTERNAL_ACTIONS extends Set<infer T> ? T : 
 
 // All classified action types (for exhaustiveness checking)
 export type ClassifiedAction = SyncedAction | LocalOnlyAction | InternalAction;
-
-/**
- * Check if an action type is classified as synced.
- * Useful for runtime checks when you have a string action type.
- */
-export function isSyncedAction(type: string): boolean {
-  return SYNCED_ACTIONS.has(type as SyncedAction);
-}
-
-/**
- * Check if an action type is classified as local-only.
- */
-export function isLocalOnlyAction(type: string): boolean {
-  return LOCAL_ONLY_ACTIONS.has(type as LocalOnlyAction);
-}
-
-/**
- * Check if an action type is classified as internal.
- */
-export function isInternalAction(type: string): boolean {
-  return INTERNAL_ACTIONS.has(type as InternalAction);
-}
 
 // =============================================================================
 // COMPILE-TIME EXHAUSTIVENESS CHECK

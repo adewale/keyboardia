@@ -105,18 +105,6 @@ export function selectVelocityGroupBlend<T extends VelocityRange>(
   return [{ layers: closest.layers, weight: 1 }];
 }
 
-/** Select representative layers for pure crossfade calculations. */
-export function selectVelocityBlend<T extends VelocityRange>(
-  layers: readonly T[],
-  velocity: number,
-  crossfadeWidth = 0
-): Array<VelocityBlend<T>> {
-  return selectVelocityGroupBlend(layers, velocity, crossfadeWidth).map(group => ({
-    layer: group.layers[0],
-    weight: group.weight,
-  }));
-}
-
 /** Deterministically select a declared round-robin variant for a cursor. */
 export function selectRoundRobinVariant<T extends RoundRobinVariant>(
   variants: readonly T[],
@@ -126,19 +114,6 @@ export function selectRoundRobinVariant<T extends RoundRobinVariant>(
   const ordered = [...variants].sort((a, b) => (a.roundRobinIndex ?? 0) - (b.roundRobinIndex ?? 0));
   const safeCursor = Number.isFinite(cursor) ? Math.max(0, Math.floor(cursor)) : 0;
   return ordered[safeCursor % ordered.length];
-}
-
-/**
- * Backwards-compatible hard velocity selection. New playback code uses
- * selectVelocityGroupBlend so crossfades and round robins stay explicit.
- */
-export function selectVelocityLayer<T extends VelocityRange>(
-  layers: readonly T[],
-  velocity: number
-): T | undefined {
-  const containing = layers.find(layer => velocity >= layer.velocityMin && velocity <= layer.velocityMax);
-  if (containing) return containing;
-  return selectVelocityGroupBlend(layers, velocity, 0)[0]?.layers[0];
 }
 
 export interface LoopSpec {

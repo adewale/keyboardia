@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { getSampledInstrumentId, parseInstrumentId } from '../src/audio/instrument-types';
-import { createInitialState } from '../src/shared/state-mutations';
+import type { SessionState } from '../src/shared/state';
 import { sessionTrackToTrack } from '../src/types';
 import { applyMcpSessionEdit } from '../src/worker/mcp-edits';
 
@@ -18,11 +18,21 @@ const MCP_SAMPLED_INSTRUMENTS = [
   ['take5-alto-sax', 'sampled:alto-sax', 'alto-sax'],
 ] as const;
 
+/**
+ * The empty session this contract starts from. Previously imported as
+ * `createInitialState` from `shared/state-mutations`, which was a test fixture
+ * living in production code; it was removed as an unreachable export and every
+ * caller now owns its own.
+ */
+function emptySession(): SessionState {
+  return { tracks: [], tempo: 120, swing: 0, version: 1 };
+}
+
 describe('MCP-to-browser sampled instrument boundary', () => {
   it.each(MCP_SAMPLED_INSTRUMENTS)(
     'preserves a complete playable sampled track for %s',
     (trackId, sampleId, instrumentId) => {
-      const result = applyMcpSessionEdit(createInitialState(), {
+      const result = applyMcpSessionEdit(emptySession(), {
         operation: 'add_track',
         track_id: trackId,
         sample_id: sampleId,

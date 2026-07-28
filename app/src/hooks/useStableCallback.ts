@@ -1,14 +1,12 @@
 /**
  * ESLint disable for this file:
  * - react-hooks/use-memo: We intentionally use a non-inline function in useCallback
- * - react-hooks/refs: We intentionally update refs during render (this is the pattern)
  *
- * This hook implements the "ref pattern" for stable callbacks, which is a well-known
- * React pattern documented in the React docs and used by libraries like use-event-callback.
- * The ESLint rules flag it because it's an advanced pattern that can be misused.
+ * New values are published from a layout effect. Mutating the ref during render
+ * lets timers and native listeners observe work React later abandons.
  */
-/* eslint-disable react-hooks/use-memo, react-hooks/refs */
-import { useCallback, useRef } from 'react';
+/* eslint-disable react-hooks/use-memo */
+import { useCallback, useLayoutEffect, useRef } from 'react';
 
 /**
  * useStableCallback - Creates a callback that maintains a stable reference while
@@ -63,9 +61,9 @@ import { useCallback, useRef } from 'react';
 export function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
   const fnRef = useRef(fn);
 
-  // Update ref on every render (always has latest function)
-  // This is intentional - we want to capture the latest closure
-  fnRef.current = fn;
+  useLayoutEffect(() => {
+    fnRef.current = fn;
+  }, [fn]);
 
   // Return a stable callback that calls the latest function from ref
   // The empty dependency array ensures the callback reference never changes
@@ -99,8 +97,9 @@ export function useStableCallback<T extends (...args: any[]) => any>(fn: T): T {
  */
 export function useStableGetter<T>(value: T): () => T {
   const valueRef = useRef(value);
-  // Update ref on every render - intentional pattern for stable getter
-  valueRef.current = value;
+  useLayoutEffect(() => {
+    valueRef.current = value;
+  }, [value]);
 
   return useCallback(() => valueRef.current, []);
 }
