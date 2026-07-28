@@ -347,6 +347,14 @@ function isResourceSpecifier(specifier: string): boolean {
   return RESOURCE_EXTENSIONS.has(extname(sourceSpecifier(specifier)).toLowerCase());
 }
 
+function hasBundlerLoaderQuery(specifier: string): boolean {
+  return specifier.includes('?');
+}
+
+function isResourceCapabilitySpecifier(specifier: string): boolean {
+  return isResourceSpecifier(specifier) || hasBundlerLoaderQuery(specifier);
+}
+
 function isCodePath(path: string): boolean {
   return CODE_EXTENSIONS.has(extname(path).toLowerCase());
 }
@@ -420,26 +428,24 @@ export function scanProductionGraph(
     }
 
     for (const importedReference of extractModuleImports(source, importerPath)) {
+      const isRuntimeResource = !importedReference.typeOnly
+        && isResourceCapabilitySpecifier(importedReference.specifier);
+      if (isRuntimeResource) {
+        resourceImports.push({ importer, specifier: importedReference.specifier });
+      }
+
       if (!importedReference.specifier.startsWith('.')) {
         externalImports.push({
           importer,
           specifier: importedReference.specifier,
           typeOnly: importedReference.typeOnly,
         });
-        if (!importedReference.typeOnly && isResourceSpecifier(importedReference.specifier)) {
-          resourceImports.push({ importer, specifier: importedReference.specifier });
-        }
         continue;
       }
 
       const resolved = resolveRelativeCodeImport(importerPath, importedReference.specifier);
       if (!resolved) {
-        if (isResourceSpecifier(importedReference.specifier)) {
-          if (!importedReference.typeOnly) {
-            resourceImports.push({ importer, specifier: importedReference.specifier });
-          }
-          continue;
-        }
+        if (isRuntimeResource) continue;
         unresolvedRelativeImports.push({
           importer,
           specifier: importedReference.specifier,
@@ -597,6 +603,10 @@ function ambientRuntimeValues(fileName: string): Set<string> {
         || ts.isEnumDeclaration(statement))
       && statement.name) {
       values.add(statement.name.text);
+      continue;
+    }
+    if (ts.isModuleDeclaration(statement) && ts.isIdentifier(statement.name)) {
+      values.add(statement.name.text);
     }
   }
   return values;
@@ -612,7 +622,17 @@ function browserGlobalsUnavailableInWorkerd(): Set<string> {
     APP_ROOT,
     'node_modules/@cloudflare/workers-types/index.d.ts',
   ));
-  return new Set([...browserGlobals].filter(global => !workerdGlobals.has(global)));
+  const ecmascriptGlobals = new Set<string>(Object.getOwnPropertyNames(Object.prototype));
+  for (const entry of readdirSync(typescriptLib)) {
+    if (!/^lib\.es(?:5|2015|2016|2017|2018|2019|2020|2021|2022)(?:\..+)?\.d\.ts$/.test(entry)) {
+      continue;
+    }
+    for (const global of ambientRuntimeValues(resolve(typescriptLib, entry))) {
+      ecmascriptGlobals.add(global);
+    }
+  }
+  return new Set([...browserGlobals].filter(global =>
+    !workerdGlobals.has(global) && !ecmascriptGlobals.has(global)));
 }
 
 const BROWSER_GLOBALS = new Set([
@@ -639,23 +659,99 @@ function isPropertyName(node: ts.Identifier): boolean {
   if (ts.isPropertyAssignment(parent) && parent.name === node) return true;
   if (ts.isPropertyDeclaration(parent) && parent.name === node) return true;
   if (ts.isBindingElement(parent) && parent.propertyName === node) return true;
+  if (ts.isLabeledStatement(parent) && parent.label === node) return true;
+  if ((ts.isBreakStatement(parent) || ts.isContinueStatement(parent))
+    && parent.label === node) return true;
   return false;
 }
 
 function isDeclarationName(node: ts.Identifier): boolean {
   const parent = node.parent;
-  return (ts.isVariableDeclaration(parent) && parent.name === node)
-    || (ts.isParameter(parent) && parent.name === node)
-    || (ts.isFunctionDeclaration(parent) && parent.name === node)
-    || (ts.isFunctionExpression(parent) && parent.name === node)
-    || (ts.isClassDeclaration(parent) && parent.name === node)
-    || (ts.isClassExpression(parent) && parent.name === node)
-    || (ts.isBindingElement(parent) && parent.name === node);
+  return ts.isNamedDeclaration(parent)
+    && !ts.isShorthandPropertyAssignment(parent)
+    && parent.name === node;
 }
 
 function declarationCreatesRuntimeBinding(declaration: ts.Declaration): boolean {
   if (declaration.getSourceFile().isDeclarationFile) return false;
   return (ts.getCombinedModifierFlags(declaration) & ts.ModifierFlags.Ambient) === 0;
+}
+
+function addBindingNames(name: ts.BindingName, names: Set<string>): void {
+  if (ts.isIdentifier(name)) {
+    names.add(name.text);
+    return;
+  }
+  for (const element of name.elements) {
+    if (!ts.isOmittedExpression(element)) addBindingNames(element.name, names);
+  }
+}
+
+function moduleScopeRuntimeBindingNames(sourceFile: ts.SourceFile): Set<string> {
+  const names = new Set<string>();
+  for (const statement of sourceFile.statements) {
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (declarationCreatesRuntimeBinding(declaration)) {
+          addBindingNames(declaration.name, names);
+        }
+      }
+      continue;
+    }
+    if ((ts.isFunctionDeclaration(statement)
+        || ts.isClassDeclaration(statement)
+        || ts.isEnumDeclaration(statement))
+      && statement.name
+      && declarationCreatesRuntimeBinding(statement)) {
+      names.add(statement.name.text);
+      continue;
+    }
+    if (ts.isImportDeclaration(statement) && statement.importClause) {
+      if (!statement.importClause.isTypeOnly && statement.importClause.name) {
+        names.add(statement.importClause.name.text);
+      }
+      const bindings = statement.importClause.namedBindings;
+      if (!statement.importClause.isTypeOnly && bindings && ts.isNamespaceImport(bindings)) {
+        names.add(bindings.name.text);
+      }
+      if (bindings && ts.isNamedImports(bindings)) {
+        for (const element of bindings.elements) {
+          if (!statement.importClause.isTypeOnly && !element.isTypeOnly) {
+            names.add(element.name.text);
+          }
+        }
+      }
+      continue;
+    }
+    if (ts.isImportEqualsDeclaration(statement) && !statement.isTypeOnly) {
+      names.add(statement.name.text);
+    }
+  }
+  return names;
+}
+
+function sourceAmbientRuntimeValueNames(sourceFile: ts.SourceFile): Set<string> {
+  const names = new Set<string>();
+  for (const statement of sourceFile.statements) {
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        if (!declarationCreatesRuntimeBinding(declaration)) {
+          addBindingNames(declaration.name, names);
+        }
+      }
+      continue;
+    }
+    if ((ts.isFunctionDeclaration(statement)
+        || ts.isClassDeclaration(statement)
+        || ts.isEnumDeclaration(statement)
+        || ts.isModuleDeclaration(statement))
+      && statement.name
+      && ts.isIdentifier(statement.name)
+      && !declarationCreatesRuntimeBinding(statement)) {
+      names.add(statement.name.text);
+    }
+  }
+  return names;
 }
 
 function isImmediatelyInvokedFunction(node: ts.FunctionLikeDeclaration): boolean {
@@ -716,6 +812,8 @@ function analyzeBrowserGlobals(
     host,
   });
   const checker = program.getTypeChecker();
+  const moduleRuntimeBindings = moduleScopeRuntimeBindingNames(sourceFile);
+  const sourceAmbientValues = sourceAmbientRuntimeValueNames(sourceFile);
   const references: BrowserGlobalReference[] = [];
 
   const add = (global: string, node: ts.Node): void => {
@@ -724,6 +822,7 @@ function analyzeBrowserGlobals(
   };
 
   const isUnshadowed = (node: ts.Identifier): boolean => {
+    if (moduleRuntimeBindings.has(node.text)) return false;
     const symbol = checker.getSymbolAtLocation(node);
     return !symbol?.declarations?.some(declaration =>
       declaration.getSourceFile() === sourceFile && declarationCreatesRuntimeBinding(declaration));
@@ -772,7 +871,7 @@ function analyzeBrowserGlobals(
       }
     }
     if (ts.isIdentifier(node)
-      && BROWSER_GLOBALS.has(node.text)
+      && (BROWSER_GLOBALS.has(node.text) || sourceAmbientValues.has(node.text))
       && !isPropertyName(node)
       && !isDeclarationName(node)
       && isUnshadowed(node)) {

@@ -161,7 +161,11 @@ describe('runtime boundary scanner', () => {
   it('classifies package asset subpaths as both package and resource capabilities', () => {
     const graph = scanProductionGraph(SRC_ROOT, {
       sourceOverrides: new Map([
-        ['shared/constants.ts', "import 'midi-writer-js/package.json';"],
+        ['shared/constants.ts', `
+          import 'midi-writer-js/package.json';
+          import 'midi-writer-js/build/index.js?raw';
+          import './pattern-operations.ts?worker';
+        `],
       ]),
     });
 
@@ -173,6 +177,14 @@ describe('runtime boundary scanner', () => {
     expect(graph.resourceImports).toContainEqual({
       importer: 'shared/constants.ts',
       specifier: 'midi-writer-js/package.json',
+    });
+    expect(graph.resourceImports).toContainEqual({
+      importer: 'shared/constants.ts',
+      specifier: 'midi-writer-js/build/index.js?raw',
+    });
+    expect(graph.resourceImports).toContainEqual({
+      importer: 'shared/constants.ts',
+      specifier: './pattern-operations.ts?worker',
     });
     expect(findResourceImportViolations({
       policyName: 'Shared resources',
@@ -352,6 +364,33 @@ describe('runtime boundary scanner', () => {
       'indexedDB',
       'location',
     ]);
+  });
+
+  it('derives DOM namespaces and treats source ambient values as runtime capabilities', () => {
+    const offenders = findBrowserGlobalReferences(`
+      declare const chrome: { runtime: unknown };
+      void CSS.supports('display', 'grid');
+      void chrome.runtime;
+    `);
+
+    expect(offenders.map(({ global }) => global)).toEqual(['CSS', 'chrome']);
+  });
+
+  it('does not confuse ECMAScript globals, labels, or local globalThis bindings with browser APIs', () => {
+    const offenders = findBrowserGlobalReferences(`
+      toString();
+      open: for (;;) {
+        break open;
+      }
+      const globalThis = { document: 1 };
+      void globalThis.document;
+    `);
+
+    expect(offenders).toEqual([]);
+    expect(findBrowserGlobalReferences(`
+      const { globalThis } = source;
+      void globalThis.document;
+    `)).toEqual([]);
   });
 
   it('rejects every import.meta capability without alias or shadowing blind spots', () => {

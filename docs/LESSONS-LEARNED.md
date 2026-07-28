@@ -5498,11 +5498,13 @@ Intrinsic capabilities are checked too: a symbol-aware AST pass scans every
 neutral-owned or state-reachable module, including deferred callbacks,
 constructors, getters, and IIFEs, while recognizing locally shadowed names and
 erased ambient declarations. Instead of maintaining a partial browser API list,
-the guard derives runtime values from TypeScript's DOM and Web Worker libraries
-and subtracts the values declared by the installed Cloudflare Workers types.
-Unapproved `globalThis`/`self` roots are rejected at their source, so aliases,
-assignment destructuring, default parameters, and expression wrappers cannot
-bypass a property-taint list.
+the guard derives runtime values and namespaces from TypeScript's DOM and Web
+Worker libraries and subtracts ECMAScript plus the values declared by the
+installed Cloudflare Workers types. Source-declared ambient runtime values are
+capabilities too. Unapproved `globalThis`/`self` roots are rejected at their
+source, so aliases, assignment destructuring, default parameters, and expression
+wrappers cannot bypass a property-taint list. Syntax-only identifiers such as
+labels and locally shadowed global-object names remain exempt.
 
 Because no neutral module has an approved `import.meta` capability, the reliable
 rule is likewise to reject `import.meta` wholesale instead of attempting partial
@@ -5510,18 +5512,18 @@ alias taint analysis. Vite globs are loud unanalyzable graph references; literal
 `new URL(..., import.meta.url)` Worker/asset references are graph edges. The
 scanner asks TypeScript to transpile each source and records module imports added
 by the compiler, including per-file JSX runtime/classic pragmas. Package asset
-subpaths remain both package and resource capabilities. The real workerd MCP
-journey remains the deployed-bundle module-evaluation oracle. Pure pattern
-operations moved into shared, with the old client path retained only as a
-compatibility facade.
+subpaths and Vite loader queries remain resource capabilities even when their
+underlying filename looks like code. The real workerd MCP journey remains the
+deployed-bundle module-evaluation oracle. Pure pattern operations moved into
+shared, with the old client path retained only as a compatibility facade.
 
 The guard itself has adversarial tests for `.js` and dotted specifiers, Vite
 query and URL imports, compiler-emitted and pragma-selected JSX imports, inline
 versus clause-level type imports, commented imports, unresolved and excluded
-imports, bare-package resource escapes, package/resource escapes through
-intermediary modules, indirect music bridges, shadowed and ambient globals,
-eager/deferred browser APIs, aliased global roots, and arbitrary `import.meta`
-syntax. A browser MIDI test was mutation-checked by
+imports, bare-package and Vite-query resource escapes, package/resource escapes
+through intermediary modules, indirect music bridges, shadowed and ambient
+globals/namespaces, eager/deferred browser APIs, aliased global roots, labels,
+and arbitrary `import.meta` syntax. A browser MIDI test was mutation-checked by
 corrupting only the real Web Worker response: it failed on the downloaded bytes,
 then passed after the mutation was removed. It records the MIDI Worker's own
 response—without coupling the proof to unrelated page Workers—so synchronous
