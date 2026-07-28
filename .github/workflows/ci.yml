@@ -141,6 +141,10 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      - name: Install eval validation dependencies
+        run: npm ci --ignore-scripts
+        working-directory: ./app
+
       # Proves the eval pipeline runs end to end with no provider, no
       # credentials, and no spend. The stub adapter is a fixed string, so this
       # gates the plumbing, never the scores.
