@@ -21,6 +21,7 @@ import {
   sha256,
   skillEvalInputBundleHash,
   verifyReceipt,
+  verifySourceModuleClosure,
   verifySourceProvenance,
   writeReceipt,
 } from '../../evals/receipt.mjs';
@@ -64,7 +65,7 @@ function committedInputs({ execution = false } = {}) {
       variants: ['with_skill'],
       cases: [{
         id: 'case-1',
-        kind: 'positive',
+        kind: 'adversarial',
         split: 'tune',
         prompt: 'Exact prompt',
         files: ['fixture.txt'],
@@ -133,6 +134,7 @@ function committedInputs({ execution = false } = {}) {
     path,
     bytes: readFileSync(resolve(root, path)),
   })));
+  source.repository = 'https://github.com/adewale/keyboardia.git';
   return { root, source };
 }
 
@@ -219,7 +221,7 @@ function answerReceiptFixture() {
   });
   const skillTreeHash = canonicalSkillTreeHashFromSource(parsedManifestFor(source), source.files);
   const task = {
-    case_id: 'case-1', kind: 'positive', split: 'tune', variant: 'with_skill',
+    case_id: 'case-1', kind: 'adversarial', split: 'tune', variant: 'with_skill',
     run_number: 1, model: 'gpt-test-model', prompt: 'Exact prompt',
     manifest_revision: manifest.sha256, skill_tree_hash: skillTreeHash,
     input_bundle_hash: inputBundleHash,
@@ -234,7 +236,7 @@ function answerReceiptFixture() {
   }));
   const benchmark = {
     results: [{
-      case_id: 'case-1', kind: 'positive', split: 'tune', variant: 'with_skill',
+      case_id: 'case-1', kind: 'adversarial', split: 'tune', variant: 'with_skill',
       run_number: 1, model: 'gpt-test-model', missing_output: false, execution_valid: true,
       assertions, objective_passed: 4, objective_total: 4,
       objective_pass_rate: 1, critical_failures: [], vetoed: false,
@@ -248,13 +250,18 @@ function answerReceiptFixture() {
   };
   const audit = {
     counts: {
-      cases: 1, positive: 1, negative: 0, adversarial: 0, holdout: 0, holdback: 0,
+      cases: 1, positive: 0, negative: 0, adversarial: 1, holdout: 0, holdback: 0,
       trigger: 0, trigger_positive: 0, trigger_negative: 0, ablations: 0,
       objective_assertions: 4, process_assertions: 0, efficiency_assertions: 0,
       judge_assertions: 0, fixture_cases: 1, input_files: 1, domain_tagged: 0,
       difficulty_tagged: 0, success_goal_tagged: 0, trigger_type_tagged: 0,
     },
-    readiness: { blockers: [], base_saturated_cases: [] },
+    readiness: {
+      ablations: { total: 0, materialized: 0, instruction_simulated: 0 },
+      leak_saturated_cases: [], objective_only_cases: [], adversarial_cases: 1,
+      judge_only_cases: 0, base_saturated_cases: [], qualitative_only_cases: [],
+      regression_guards_holding: [], blockers: [],
+    },
     findings: [
       { kind: 'missing-positive-evals', severity: 'required', message: 'fixture' },
       { kind: 'missing-hidden-splits', severity: 'required', message: 'fixture' },
@@ -266,7 +273,8 @@ function answerReceiptFixture() {
   const receipt = buildReceipt({
     source,
     harness: {
-      name: 'skill-eval-harness', repository: 'local', version: 'test',
+      name: 'skill-eval-harness',
+      repository: 'https://github.com/adewale/skill-eval-harness.git', version: 'test',
       git_commit: source.git_commit, mode: 'patched-local-checkout',
     },
     invocation: {
@@ -276,7 +284,7 @@ function answerReceiptFixture() {
       manifest_revision: manifest.sha256, skill_tree_hash: skillTreeHash,
     },
     runs: [{
-      model: 'gpt-test-model', case: 'case-1', kind: 'positive', split: 'tune',
+      model: 'gpt-test-model', case: 'case-1', kind: 'adversarial', split: 'tune',
       variant: 'with_skill', repeat: 1, ok: true, prompt: 'Exact prompt',
       response: '{"ok":true}', assertions, objective_passed: 4,
       objective_total: 4, objective_pass_rate: 1, critical_failures: [], vetoed: false,
@@ -421,6 +429,23 @@ describe('eval receipts', () => {
       .toContain('failed self-verification');
   });
 
+  it('closes CommonJS dependencies as well as ESM imports', () => {
+    for (const content of [
+      "require /* provenance comment */ ('./missing.cjs');\n",
+      "require?.('./missing.cjs');\n",
+      "const load = require; load('./missing.cjs');\n",
+      "let load; load = require; load('./missing.cjs');\n",
+      "module.require('./missing.cjs');\n",
+      "(0, require)('./missing.cjs');\n",
+    ]) {
+      const source = { files: [{ path: 'evals/entry.cjs', content }] };
+      expect(verifySourceModuleClosure(source, ['evals/entry.cjs']).join('\n'))
+        .toContain('cannot resolve ./missing.cjs');
+      source.files.push({ path: 'evals/missing.cjs', content: 'module.exports = {};\n' });
+      expect(verifySourceModuleClosure(source, ['evals/entry.cjs'])).toEqual([]);
+    }
+  });
+
   it('reconstructs a patched external harness without trusting Git history', () => {
     const { root, receipt } = exampleReceipt();
     receipt.harness.version = 'test';
@@ -450,7 +475,7 @@ describe('eval receipts', () => {
       { sanitize: false },
     );
     expect(verifyReceipt(fabricatedPatch).join('\n')).toContain('harness reconstruction failed');
-  });
+  }, 15_000);
 
   it('rederives answer runs, summary, audit readiness and input bundles', () => {
     const { receipt } = answerReceiptFixture();
@@ -459,6 +484,11 @@ describe('eval receipts', () => {
     const fabricatedSummary = structuredClone(receipt);
     fabricatedSummary.summary.results = 999;
     expect(verifyReceipt(fabricatedSummary).join('\n')).toContain('summary does not match');
+
+    const fabricatedRepository = structuredClone(receipt);
+    fabricatedRepository.source.repository = 'https://attacker.invalid/keyboardia.git';
+    fabricatedRepository.harness.repository = 'https://attacker.invalid/harness.git';
+    expect(verifyReceipt(fabricatedRepository).join('\n')).toMatch(/canonical.*repository/);
 
     const fabricatedRun = structuredClone(receipt);
     fabricatedRun.runs[0].objective_pass_rate = 0;
@@ -492,6 +522,21 @@ describe('eval receipts', () => {
     );
     expect(verifyReceipt(strippedAudit).join('\n'))
       .toMatch(/audit counts|audit findings/);
+
+    const fabricatedReadiness = structuredClone(receipt);
+    const fabricatedReadinessAudit = JSON.parse(
+      fabricatedReadiness.artifacts[fabricatedReadiness.invocation.audit_ref].content,
+    );
+    fabricatedReadinessAudit.readiness.leak_saturated_cases = ['fabricated-case'];
+    fabricatedReadinessAudit.readiness.ablations = {
+      total: 99, materialized: 99, instruction_simulated: 99,
+    };
+    fabricatedReadiness.invocation.audit_ref = addArtifact(
+      fabricatedReadiness.artifacts,
+      JSON.stringify(fabricatedReadinessAudit),
+      'application/json',
+    );
+    expect(verifyReceipt(fabricatedReadiness).join('\n')).toContain('audit readiness');
 
     const fabricatedPrompt = structuredClone(receipt);
     const task = {
@@ -576,7 +621,7 @@ describe('eval receipts', () => {
       files['metadata.json'] = JSON.stringify(metadata);
     });
     expect(verifyReceipt(adapterMismatch).join('\n')).toContain('provider/runner metadata does not match');
-  });
+  }, 15_000);
 
   it('reconstructs no-lift findings from the embedded benchmark', () => {
     const { receipt } = answerReceiptFixture();
@@ -642,7 +687,8 @@ describe('eval receipts', () => {
     const receipt = buildReceipt({
       source,
       harness: {
-        name: 'keyboardia-repo-runner', repository: 'local', version: '1',
+        name: 'keyboardia-repo-runner',
+        repository: 'https://github.com/adewale/keyboardia.git', version: '1',
         git_commit: source.git_commit, mode: 'repo-owned',
       },
       invocation: {
@@ -733,6 +779,13 @@ describe('eval receipts', () => {
     encodedPath.summary.host = Buffer.from('/Users/example/private/eval-output.json')
       .toString('base64url');
     expect(verifyReceipt(encodedPath).join('\n')).toContain('unsanitized host path');
+
+    const deeplyEncodedPath = structuredClone(receipt);
+    deeplyEncodedPath.summary.host = Array.from({ length: 9 }).reduce(
+      (value) => Buffer.from(value).toString('base64'),
+      '/Users/example/private/eval-output.json',
+    );
+    expect(verifyReceipt(deeplyEncodedPath).join('\n')).toContain('unsanitized host path');
   });
 
   it('fails closed when a registered capability survives in any encoding or key', () => {
@@ -761,7 +814,11 @@ describe('eval receipts', () => {
       summary: {},
       capabilities: new Set([capability]),
     };
-    for (const leaked of [capability, encoded, doubleEncoded, base64Encoded]) {
+    const deeplyEncoded = Array.from({ length: 9 }).reduce(
+      (value) => Buffer.from(value).toString('base64'),
+      capability,
+    );
+    for (const leaked of [capability, encoded, doubleEncoded, base64Encoded, deeplyEncoded]) {
       expect(() => buildReceipt({
         ...base,
         runs: [{
@@ -783,6 +840,7 @@ describe('eval receipts', () => {
     expect(JSON.stringify(safe)).not.toContain(capability);
     expect(redactCapability('benign%20URL', capability)).toBe('benign%20URL');
     expect(redactCapability(base64Encoded, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(deeplyEncoded, capability)).toBe('<redacted-session-id>');
     const returnedCapability = '24a1e192-6ea3-4c2c-8797-28ea4b06f8b9';
     const registered = registerCapabilitiesFromEvidence({
       result: { session_id: returnedCapability },

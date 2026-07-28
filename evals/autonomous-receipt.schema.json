@@ -59,7 +59,7 @@
         "files"
       ],
       "properties": {
-        "repository": { "type": "string", "minLength": 1 },
+        "repository": { "const": "https://github.com/adewale/keyboardia.git" },
         "git_commit": { "$ref": "#/$defs/gitObject" },
         "git_tree": { "$ref": "#/$defs/gitObject" },
         "commit_content": { "type": "string", "minLength": 1 },
@@ -122,9 +122,37 @@
       }
     },
     "redacted_uuids": { "type": "integer", "minimum": 1 },
-    "trace": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+    "trace": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sequence", "request_id", "phase", "request", "response"],
+        "properties": {
+          "sequence": { "type": "integer", "minimum": 1 },
+          "request_id": { "type": "string", "minLength": 1 },
+          "phase": { "type": "string", "minLength": 1 },
+          "request": { "type": "object" },
+          "response": { "type": "object" }
+        }
+      }
+    },
     "answer": { "type": "string" },
-    "cli_trace": { "type": "array", "minItems": 1, "items": { "type": "object" } },
+    "cli_trace": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "arguments"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "arguments": { "type": "object" }
+        }
+      }
+    },
     "adapter_argv": { "type": "array", "minItems": 1, "items": { "type": "string" } }
   },
   "$defs": {

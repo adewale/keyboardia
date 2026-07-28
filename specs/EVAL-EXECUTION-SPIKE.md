@@ -10,14 +10,14 @@ zero unscorable pairs.
 
 | Model | with-skill whole-case | baseline whole-case | with assertions | baseline assertions |
 | --- | ---: | ---: | ---: | ---: |
-| Claude Haiku 4.5 | 66.7% | 0.0% | 95.2% | 78.3% |
-| Claude Sonnet 5 | 100.0% | 0.0% | 100.0% | 83.0% |
-| Claude Opus 5 | 100.0% | 0.0% | 100.0% | 83.0% |
+| Claude Haiku 4.5 | 11.1% | 0.0% | 85.1% | 71.7% |
+| Claude Sonnet 5 | 33.3% | 0.0% | 92.2% | 73.1% |
+| Claude Opus 5 | 100.0% | 0.0% | 100.0% | 73.1% |
 
 The receipt is `evals/receipts/2026-07-28-live-execution.json`. It binds the
 skill, manifest, runner, scorer, session harness, receipt schema/runtime, MCP
 adapter, Worker source closure, package and lock bytes to Keyboardia commit
-`5291c90`, tree `db70579d2d013616f534ffeb3a298980b551dc87`.
+`ae4d618`, tree `22d2df21dc2b70293114fb936c0887af02b542fa`.
 
 ## What the suite proves
 
@@ -30,14 +30,16 @@ operations, step bounds, duplicate assignments, and collision-resistant IDs.
 
 After the live matrix, the owned Worker stopped and all runs were rescored from
 saved evidence. Live and offline projections matched at SHA-256
-`41cc449141f438130d82c68f3ae1bdc58c5fdc205db2b2ad6a9aa01e76ff67b4`.
+`a5e83a9a3413d17610be774f794f56f9e3493ebb0c4c234cea52301e2589a1d4`.
 `node evals/verify-receipts.mjs` independently repeats the deterministic replay.
 
 ## Interpretation and limits
 
-The skill materially improves the harsh whole-case score in this small live
-slice. The main discrimination is read-before-write and collision-resistant
-IDs. Eighteen assertions are 100% in both arms. Those state-preservation and
+The skill improves the harsh whole-case score in this small live slice, but the
+result is strongly model-dependent: Haiku passes only one of nine with-skill
+runs, Sonnet three, and Opus all nine. The main discrimination is
+read-before-write, post-edit verification, and collision-resistant IDs.
+Eighteen assertions are 100% in both arms. Those state-preservation and
 injection-resistance checks remain useful regression guards, but they must not
 be cited as lift.
 

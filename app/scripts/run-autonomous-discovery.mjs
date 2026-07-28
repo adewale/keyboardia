@@ -10,6 +10,7 @@ import { spawn, spawnSync } from 'node:child_process';
 import {
   assertSourceBindingStillClean,
   createSourceBinding,
+  relativeModuleSpecifiers,
   sanitizeReceiptText,
   sanitizeReceiptValue,
 } from '../../evals/receipt.mjs';
@@ -154,17 +155,14 @@ function sourceClosure(entryPaths) {
     if (found.has(absolute)) return;
     found.add(absolute);
     const source = readFileSync(absolute, 'utf8');
-    const imports = [
-      ...source.matchAll(/\bfrom\s+['"](\.[^'"]+)['"]/g),
-      ...source.matchAll(/\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g),
-      ...source.matchAll(/\bimport\s+['"](\.[^'"]+)['"]/g),
-    ];
-    for (const match of imports) {
-      const imported = resolve(dirname(absolute), match[1]);
+    for (const specifier of relativeModuleSpecifiers(source)) {
+      const imported = resolve(dirname(absolute), specifier);
       const candidates = [
         imported,
-        `${imported}.ts`, `${imported}.tsx`, `${imported}.mjs`, `${imported}.js`, `${imported}.json`,
-        resolve(imported, 'index.ts'), resolve(imported, 'index.tsx'), resolve(imported, 'index.js'),
+        ...['.mjs', '.js', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx', '.json']
+          .map((suffix) => `${imported}${suffix}`),
+        ...['.mjs', '.js', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx', '.json']
+          .map((suffix) => resolve(imported, `index${suffix}`)),
       ];
       const dependency = candidates.find((candidate) => existsSync(candidate));
       if (dependency) visit(dependency);

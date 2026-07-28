@@ -484,14 +484,34 @@ function git(repoRoot, args, { bytes = false, optional = false } = {}) {
 }
 
 export function verifySourceBinding(source, repoRoot) {
-  const requiredRoles = [
-    'skill', 'manifest', 'transport', 'validator', 'runner', 'answer_adapter',
-    'system_under_test_entry', 'system_under_test_config', 'dependency_manifest', 'dependency_lock',
-    'receipt_runtime', 'receipt_schema', 'receipt_schema_validator', 'autonomous_receipt_schema',
-    'autonomous_receipt_schema_validator',
-  ];
+  invariant(source?.repository === 'https://github.com/adewale/keyboardia.git',
+    'source repository must be the canonical Keyboardia repository');
+  const criticalBindings = new Map([
+    ['skill', 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md'],
+    ['manifest', 'app/public/.well-known/agent-skills/index.json'],
+    ['transport', 'app/scripts/autonomous-discovery-transport.mjs'],
+    ['validator', 'app/scripts/autonomous-discovery-validator.mjs'],
+    ['runner', 'app/scripts/run-autonomous-discovery.mjs'],
+    ['answer_adapter', 'evals/adapters/claude-discovery.mjs'],
+    ['system_under_test_entry', 'app/src/worker/index.ts'],
+    ['system_under_test_config', 'app/wrangler.jsonc'],
+    ['dependency_manifest', 'app/package.json'],
+    ['dependency_lock', 'app/package-lock.json'],
+    ['receipt_runtime', 'evals/receipt.mjs'],
+    ['receipt_schema', 'evals/receipt.schema.json'],
+    ['receipt_schema_validator', 'evals/validate-receipt-schema.mjs'],
+    ['autonomous_receipt_schema', 'evals/autonomous-receipt.schema.json'],
+    ['autonomous_receipt_schema_validator', 'evals/validate-autonomous-receipt-schema.mjs'],
+  ]);
+  const requiredRoles = [...criticalBindings.keys()];
   const proofErrors = verifySourceProvenance(source, { requiredRoles });
   invariant(proofErrors.length === 0, proofErrors.join('; '));
+  for (const [role, path] of criticalBindings) {
+    const matches = (source.files ?? []).filter((file) => file.role === role && file.path === path);
+    invariant(matches.length === 1, `${role} must bind ${path} exactly once`);
+    invariant((source.files ?? []).filter((file) => file.role === role).length === 1,
+      `${role} must not bind any other path`);
+  }
   const roots = (source.files ?? [])
     .filter((file) => [
       'transport', 'validator', 'runner', 'answer_adapter', 'system_under_test_entry',

@@ -18,10 +18,27 @@ The 2026-07-28 set contains four independently verifiable receipts:
 - `2026-07-28-autonomous-claude-opus-5.json`: a second passing origin-only
   journey on another model.
 
-Sonnet passed one of two observed attempts and Opus passed its one observed
-attempt. The failed Sonnet attempt emitted no receipt and is not independently
-auditable. There is deliberately no Haiku autonomous receipt. A receipt is
-evidence for the exact recorded sample, not a claim that every attempt passes.
+The current Sonnet and Opus autonomous samples each passed their one observed
+attempt. Their receipts contain 18 and 16 events respectively, including the
+continuous origin-only discovery, catalog/skill fetch, digest check, MCP
+initialize and tool discovery, then three state-changing calls each followed
+by an immediate post-state read. There is deliberately no Haiku autonomous
+receipt. A receipt is evidence for the exact recorded sample, not a claim that
+every attempt passes.
+
+The answer receipt binds 300 completed public-tune runs (10 cases, both arms,
+five models, three repeats) with zero missing outputs or execution errors. Its
+pooled objective rate is 62.3% with the skill and 42.8% without it. The audit
+has no readiness blockers or saturated base cases, but still records 22
+findings: 18 repeated-rate instability findings, fewer than five positive
+cases, no private holdout/holdback split, one negative-lift collision-ID case,
+and five assertions with identical arm rates. Two ablations are materialized
+but were not executed. Those limitations are evidence against treating the
+pooled lift as release proof.
+
+The live receipt binds 54 completed MCP runs with zero errors. Whole-case
+with-skill results were 1/9 for Haiku, 3/9 for Sonnet, and 9/9 for Opus; every
+baseline arm was 0/9. Eighteen live assertions had identical 100% arm rates.
 
 Run `node evals/verify-receipts.mjs` to schema-check every receipt, reconstruct
 its Git proofs, hash its bound inputs and artifact inventory, replay objective
@@ -63,10 +80,11 @@ prepared row, run metadata, or benchmark result. For a locally patched harness,
 the receipt embeds the public parent tree and commit bytes, the patched commit,
 and the binary patch. Verification reconstructs both Git identities and applies
 the patch offline, so a depth-1 or squash checkout does not need old objects.
-The receipt embeds the complete sanitized benchmark and audit reports, checks
-that their aggregate projections agree, and independently regrades every result
-from the committed manifest, oracle, task, and output evidence. The harness
-version is derived again from the reconstructed `pyproject.toml`.
+The receipt embeds the complete sanitized benchmark and audit reports,
+independently reconstructs audit counts, findings, and saturation lists, checks
+that their aggregate projections agree, and independently regrades every
+result from the committed manifest, oracle, task, and output evidence. The
+harness version is derived again from the reconstructed `pyproject.toml`.
 
 These hashes provide offline tamper evidence and source closure, not provider
 signatures, runtime attestation, or a transparency log.

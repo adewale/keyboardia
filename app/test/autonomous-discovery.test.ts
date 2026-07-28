@@ -1,4 +1,6 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
   sanitizeForReceipt,
@@ -6,7 +8,10 @@ import {
   validateAutonomousTrace,
   validateOriginOnlyPrompt,
   validateRawAnswerCapabilities,
+  verifySourceBinding,
 } from '../scripts/autonomous-discovery-validator.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling is exercised from Vitest
+import { canonicalSourceBundleHash } from '../../evals/receipt.mjs';
 
 const ORIGIN = 'http://127.0.0.1:43189';
 const SESSION = '7d9349b1-7635-46f2-a112-09db02f747aa';
@@ -145,6 +150,7 @@ function cliTraceFor(trace: ReturnType<typeof validTrace>) {
     mcp_tool_call: 'mcp__discovery_transport__call_mcp_tool',
   };
   return trace.map((entry) => ({
+    id: `tool-${entry.request_id}`,
     name: names[entry.phase],
     arguments: structuredClone(entry.request),
   }));
@@ -389,6 +395,15 @@ describe('autonomous discovery trace oracle', () => {
     expect(validateAutonomousReceipt(receipt)).toMatchObject({ passed: true });
     expect(() => validateAutonomousReceipt({ ...receipt, unexpected: true }))
       .toThrow(/additional properties/);
+    const openTrace = structuredClone(receipt);
+    openTrace.trace[0].provider_attested = true;
+    openTrace.trace_sha256 = createHash('sha256').update(JSON.stringify(openTrace.trace)).digest('hex');
+    expect(() => validateAutonomousReceipt(openTrace)).toThrow(/additional properties/);
+    const openCliTrace = structuredClone(receipt);
+    openCliTrace.cli_trace[0].provider_attested = true;
+    openCliTrace.cli_trace_sha256 = createHash('sha256')
+      .update(JSON.stringify(openCliTrace.cli_trace)).digest('hex');
+    expect(() => validateAutonomousReceipt(openCliTrace)).toThrow(/additional properties/);
     expect(() => validateAutonomousReceipt({
       ...receipt,
       agent: { ...receipt.agent, model: 'claude-opus-5' },
@@ -401,5 +416,29 @@ describe('autonomous discovery trace oracle', () => {
     source.files.find((file) => file.role === 'skill')!.content += '\nchanged';
     expect(() => validateAutonomousReceipt({ ...receipt, source }))
       .toThrow(/served skill bytes/);
+  });
+
+  it('binds critical autonomous roles to their canonical paths', () => {
+    const repoRoot = resolve(process.cwd(), '..');
+    const receipt = JSON.parse(readFileSync(resolve(
+      repoRoot,
+      'evals/receipts/2026-07-28-autonomous-claude-sonnet-5.json',
+    ), 'utf8'));
+    expect(verifySourceBinding(receipt.source, repoRoot)).toBe(true);
+    expect(() => verifySourceBinding({
+      ...receipt.source,
+      repository: 'https://attacker.invalid/keyboardia.git',
+    }, repoRoot)).toThrow(/canonical Keyboardia repository/);
+
+    for (const [role, canonicalPath, decoyPath] of [
+      ['answer_adapter', 'evals/adapters/claude-discovery.mjs', 'evals/adapters/usage.mjs'],
+      ['system_under_test_entry', 'app/src/worker/index.ts', 'app/src/worker/types.ts'],
+    ]) {
+      const source = structuredClone(receipt.source);
+      source.files.find((file: { path: string }) => file.path === canonicalPath).role = 'dependency';
+      source.files.find((file: { path: string }) => file.path === decoyPath).role = role;
+      source.bundle_sha256 = canonicalSourceBundleHash(source.files);
+      expect(() => verifySourceBinding(source, repoRoot)).toThrow(new RegExp(`${role} must bind`));
+    }
   });
 });

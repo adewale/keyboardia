@@ -8,8 +8,7 @@ The four missing-evidence objections are fixed:
    origin-only prompt through well-known discovery, exact-byte digest
    verification, MCP initialization, `tools/list`, read, edit, and verification.
    Claude Sonnet 5 and Opus 5 each completed that journey against a disposable
-   live Worker. Sonnet passed one of two observed attempts; Opus passed its one
-   observed attempt.
+   live Worker. Each passed its one observed attempt.
 2. A fresh 54-run live MCP execution sweep ran under the corrected
    successful-result trace contract.
 3. The final skill received a fresh 300-run, five-model, repeated answer matrix;
@@ -19,9 +18,9 @@ The four missing-evidence objections are fixed:
    source-commit, and source-tree bytes.
 
 This closes the four provenance and coverage gaps. It does not make the
-behavioral results merge-ready: Haiku has negative answer-matrix lift, the
-public answer matrix has no hidden split, repeated runs remain noisy, and
-several assertions have identical arm rates.
+behavioral results merge-ready: Haiku has no answer-matrix lift and weak live
+reliability, the public answer matrix has no hidden split, repeated runs remain
+noisy, and several assertions have identical arm rates.
 
 ## Immutable provenance
 
@@ -30,11 +29,11 @@ several assertions have identical arm rates.
 - Canonical skill-tree SHA-256 used to prepare the answer matrix:
   `25f360d0715de6bbdb1b810aca406cba90db15ebe3f5a4b07cde1893fdde9be2`.
 - Answer-manifest revision:
-  `6951891e166ebf07cbd39dd578c87fe33b518c287409592389ad8dfc1c1d7d10`.
-- The answer receipt binds Keyboardia commit `66a2b8b`, tree
-  `3b6ebed729a8c124b832b707e7a02e876a6e122a`.
-- The live and autonomous receipts bind Keyboardia commit `8c51c87`, tree
-  `3031f35d3b07524da215c0cc62e6c8e094a1e09f`.
+  `3eb95d408fede38c9cdf826fff0c7ffe0d4b1847503ee5bfc532509a594efe28`.
+- The answer receipt binds Keyboardia commit `c897d8e`, tree
+  `a4d5b48d836d1166a1d9b2c5cd946da251e9106c`.
+- The live and autonomous receipts bind Keyboardia commit `ae4d618`, tree
+  `22d2df21dc2b70293114fb936c0887af02b542fa`.
 - External harness: `skill-eval-harness` 0.6.0, public parent `9c1365a`,
   evaluated commit `a27427d`, tree
   `632326040b0b4c5ab8fc2c812211899bd8e8aa05`.
@@ -74,17 +73,15 @@ Each successful receipt proves the same continuous chain:
 9. call `set_steps`, then immediately `get_session`;
 10. verify kick steps `[0, 4, 8, 12]` and unchanged tempo.
 
-Sonnet recorded 39 correlated transport events and Opus 26. Both made exactly
+Sonnet recorded 18 correlated transport events and Opus 16. Both made exactly
 six target calls. Three live capability UUIDs were found before sanitization,
 redacted structurally, and rechecked after sanitization. The journey verifier
 also rejects a preconfigured target, a failed or unmatched MCP result, a second
 edit before verification, digest mismatch, endpoint not derived from verified
 skill bytes, or a final-state mismatch.
 
-Opus passed its one observed run. Sonnet's first observed run failed and emitted
-no receipt; its retry passed. The failed attempt is therefore an operational
-observation, not cryptographically auditable evidence. These samples prove the
-path is usable, not that agents activate it reliably.
+Each model passed its one observed run. These samples prove the path is usable,
+not that agents activate it reliably.
 
 ## Fresh live MCP matrix
 
@@ -94,13 +91,13 @@ and zero unscorable pairs.
 
 | Model | with-skill whole-case | baseline whole-case | with assertions | baseline assertions | assertion lift |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Claude Haiku 4.5 | 0.0% | 0.0% | 82.86% | 70.27% | +12.59 pp |
-| Claude Sonnet 5 | 55.56% | 0.0% | 94.23% | 73.05% | +21.18 pp |
+| Claude Haiku 4.5 | 11.11% | 0.0% | 85.06% | 71.66% | +13.40 pp |
+| Claude Sonnet 5 | 33.33% | 0.0% | 92.21% | 73.05% | +19.16 pp |
 | Claude Opus 5 | 100.0% | 0.0% | 100.0% | 73.05% | +26.95 pp |
 
 The owned Worker stopped before replay. Live and offline-rescored state, traces,
 and assertions produced the same projection SHA-256:
-`2f23940937bf803363ba3179a6f7ef49c16ac264d7c1eab4ab7bd3d918085a26`.
+`a5e83a9a3413d17610be774f794f56f9e3493ebb0c4c234cea52301e2589a1d4`.
 
 Eighteen live assertions were 100% in both arms. They remain useful regression
 guards for state preservation and injection resistance, but they are not
@@ -115,37 +112,40 @@ mismatch, duplicate tuple, extra tuple, or non-zero agent exit.
 
 | Model | with skill | without skill | lift |
 | --- | ---: | ---: | ---: |
-| Claude Haiku 4.5 | 20.00% | 25.00% | -5.00 pp |
-| Claude Opus 5 | 91.67% | 58.06% | +33.61 pp |
-| Claude Sonnet 5 | 81.67% | 55.00% | +26.67 pp |
-| GPT-5.4 | 68.33% | 23.33% | +45.00 pp |
-| GPT-5.4 Mini | 38.33% | 23.33% | +15.00 pp |
-| **Pooled mean** | **60.00%** | **36.94%** | **+23.06 pp** |
+| Claude Haiku 4.5 | 20.00% | 20.00% | 0.00 pp |
+| Claude Opus 5 | 85.83% | 64.17% | +21.67 pp |
+| Claude Sonnet 5 | 80.00% | 66.39% | +13.61 pp |
+| GPT-5.4 | 66.67% | 33.33% | +33.33 pp |
+| GPT-5.4 Mini | 59.17% | 30.00% | +29.17 pp |
+| **Pooled mean** | **62.33%** | **42.78%** | **+19.56 pp** |
 
 The result projection SHA-256 is
-`17e9b36fcb56866f77e93fff8878ff0337051d80ca5f0a625936a0625e9accc7`.
+`15ce1e7b06b18cf1478da974ab6757ed4e3bed2e70f098a8558571300a23b948`.
 
 The run-aware harness audit exited zero with no readiness blocker,
-base-saturated case, or leak-saturated case. It reports 20 findings: 17
+base-saturated case, or leak-saturated case. It reports 22 findings: 18
 required repeated-run variance findings, one required missing-positive-evals
-finding, one required missing-hidden-splits finding, and one recommended
-finding covering six assertions with identical arm rates. Both declared
-ablations are materialized, but this run did not execute an ablation matrix, so
-it is not empirical section-attribution evidence.
+finding, one required missing-hidden-splits finding, one recommended negative-
+lift finding for the collision-resistant-ID case, and one recommended finding
+covering five assertions with identical arm rates. Both declared ablations are
+materialized, but this run did not execute an ablation matrix, so it is not
+empirical section-attribution evidence.
 
 ## Why this still should not merge
 
-- Only Sonnet and Opus have auditable passing autonomous receipts. Sonnet was
-  operationally one-for-two; its failed attempt emitted no auditable receipt.
-- Haiku's answer score fell from 25.00% without the skill to 20.00% with it.
-  It also failed all three with-skill capability-withholding samples.
+- Only Sonnet and Opus have auditable autonomous receipts, with one observed
+  sample each. Haiku and GPT-family activation are untested.
+- Haiku's answer score is unchanged at 20.00%, and it passes only one of nine
+  with-skill live cases. Sonnet passes only three of nine live cases.
+- The collision-resistant-ID answer case regresses from 73.33% without the
+  skill to 60.00% with it.
 - There is no private holdout or holdback result. Public tune prompts and
   public oracles can co-adapt with the skill and cannot establish
   generalization.
-- Seventeen required audit findings record repeated-run variance across affected
+- Eighteen required audit findings record repeated-run variance across affected
   answer cases and arms; one successful sample per autonomous model is too
   little to claim reliable activation.
-- Six answer assertions and eighteen live assertions have identical arm rates.
+- Five answer assertions and eighteen live assertions have identical arm rates.
   Some are intentional safety guards, but they contribute no causal evidence.
 - Materialized ablations were audited structurally but not run across models,
   so the source of the observed lift is still unmeasured.

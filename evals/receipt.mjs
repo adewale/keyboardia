@@ -66,8 +66,9 @@ const HOST_PATHS = [
 
 function hostPathPresent(value) {
   if (typeof value === 'string') {
-    return reversibleDecodedStrings(value)
-      .some((candidate) => HOST_PATHS.some((pattern) => pattern.test(candidate)));
+    const decoded = reversibleDecodeState(value);
+    return decoded.exhausted
+      || decoded.variants.some((candidate) => HOST_PATHS.some((pattern) => pattern.test(candidate)));
   }
   if (Array.isArray(value)) return value.some(hostPathPresent);
   if (value && typeof value === 'object') {
@@ -315,12 +316,12 @@ function decodeCanonicalBase64(value) {
   return decoded;
 }
 
-export function reversibleDecodedStrings(value) {
+function reversibleDecodeState(value) {
   const variants = new Set([value]);
   const queue = [{ value, depth: 0 }];
-  while (queue.length > 0 && variants.size < MAX_REVERSIBLE_DECODE_VARIANTS) {
+  let exhausted = false;
+  while (queue.length > 0) {
     const current = queue.shift();
-    if (current.depth >= MAX_REVERSIBLE_DECODE_DEPTH) continue;
     const candidates = [decodedUnicodePercentValue(current.value)];
     for (const match of current.value.matchAll(/[A-Za-z0-9+/_-]{16,}={0,2}/g)) {
       const decoded = decodeCanonicalBase64(match[0]);
@@ -328,17 +329,26 @@ export function reversibleDecodedStrings(value) {
     }
     for (const candidate of candidates) {
       if (candidate === current.value || variants.has(candidate)) continue;
+      if (current.depth >= MAX_REVERSIBLE_DECODE_DEPTH
+          || variants.size >= MAX_REVERSIBLE_DECODE_VARIANTS) {
+        exhausted = true;
+        continue;
+      }
       variants.add(candidate);
       queue.push({ value: candidate, depth: current.depth + 1 });
-      if (variants.size >= MAX_REVERSIBLE_DECODE_VARIANTS) break;
     }
   }
-  return [...variants];
+  return { variants: [...variants], exhausted };
+}
+
+export function reversibleDecodedStrings(value) {
+  return reversibleDecodeState(value).variants;
 }
 
 function stringContainsCapability(value, sessionId) {
-  return reversibleDecodedStrings(value)
-    .some((candidate) => encodedCapabilityPattern(sessionId).test(candidate));
+  const decoded = reversibleDecodeState(value);
+  return decoded.exhausted
+    || decoded.variants.some((candidate) => encodedCapabilityPattern(sessionId).test(candidate));
 }
 
 export function capabilityPresent(value, sessionId) {
@@ -869,14 +879,55 @@ export function verifySourceProvenance(source, { requiredRoles = [] } = {}) {
 
 function embeddedModuleCandidates(importer, specifier) {
   const base = posix.normalize(posix.join(posix.dirname(importer), specifier));
-  const suffixes = ['.mjs', '.js', '.ts', '.tsx', '.json'];
+  const suffixes = ['.mjs', '.js', '.cjs', '.jsx', '.ts', '.mts', '.cts', '.tsx', '.json'];
   const candidates = [base];
   if (!posix.extname(base)) candidates.push(...suffixes.map((suffix) => `${base}${suffix}`));
-  if (/\.(?:m?js)$/.test(base)) {
-    candidates.push(base.replace(/\.(?:m?js)$/, '.ts'), base.replace(/\.(?:m?js)$/, '.tsx'));
+  if (/\.(?:m?js|cjs)$/.test(base)) {
+    candidates.push(...['.ts', '.mts', '.cts', '.tsx', '.jsx']
+      .map((suffix) => base.replace(/\.(?:m?js|cjs)$/, suffix)));
   }
   candidates.push(...suffixes.map((suffix) => `${base}/index${suffix}`));
   return candidates;
+}
+
+/** Extract statically resolvable relative ESM/CommonJS dependencies. */
+export function relativeModuleSpecifiers(content) {
+  const specifiers = new Set();
+  for (const pattern of [
+    /\b(?:import|export)[\s\S]*?\bfrom\s+['"](\.[^'"]+)['"]/g,
+    /\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g,
+    /\bimport\s+['"](\.[^'"]+)['"]/g,
+  ]) {
+    for (const match of content.matchAll(pattern)) specifiers.add(match[1]);
+  }
+  const gap = String.raw`(?:\s|\/\*[\s\S]*?\*\/|\/\/[^\n]*(?:\n|$))*`;
+  const loaders = new Set(['require']);
+  const aliasPattern = new RegExp(
+    String.raw`(?<![.$\w])([A-Za-z_$][\w$]*)${gap}=${gap}require\b`,
+    'g',
+  );
+  for (const match of content.matchAll(aliasPattern)) loaders.add(match[1]);
+  for (const loader of loaders) {
+    const escaped = loader.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const callPattern = new RegExp(
+      String.raw`(?<![.$\w])${escaped}${gap}(?:\?\.${gap})?\(${gap}['"](\.{1,2}\/[^'"]+)['"]`,
+      'g',
+    );
+    for (const match of content.matchAll(callPattern)) specifiers.add(match[1]);
+  }
+  for (const pattern of [
+    new RegExp(
+      String.raw`\bmodule${gap}\.${gap}require${gap}(?:\?\.${gap})?\(${gap}['"](\.{1,2}\/[^'"]+)['"]`,
+      'g',
+    ),
+    new RegExp(
+      String.raw`\(${gap}0${gap},${gap}require${gap}\)${gap}(?:\?\.${gap})?\(${gap}['"](\.{1,2}\/[^'"]+)['"]`,
+      'g',
+    ),
+  ]) {
+    for (const match of content.matchAll(pattern)) specifiers.add(match[1]);
+  }
+  return [...specifiers];
 }
 
 /** Require every relative import reachable from an entry point to be embedded. */
@@ -892,16 +943,11 @@ export function verifySourceModuleClosure(source, entryPaths) {
       errors.push(`source module closure is missing ${path}`);
       return;
     }
-    const imports = [
-      ...file.content.matchAll(/\b(?:import|export)[\s\S]*?\bfrom\s+['"](\.[^'"]+)['"]/g),
-      ...file.content.matchAll(/\bimport\s*\(\s*['"](\.[^'"]+)['"]\s*\)/g),
-      ...file.content.matchAll(/\bimport\s+['"](\.[^'"]+)['"]/g),
-    ];
-    for (const match of imports) {
-      const dependency = embeddedModuleCandidates(path, match[1])
+    for (const specifier of relativeModuleSpecifiers(file.content)) {
+      const dependency = embeddedModuleCandidates(path, specifier)
         .find((candidate) => files.has(candidate));
       if (!dependency) {
-        errors.push(`source module closure cannot resolve ${match[1]} from ${path}`);
+        errors.push(`source module closure cannot resolve ${specifier} from ${path}`);
       } else {
         visit(dependency);
       }
@@ -982,6 +1028,8 @@ function verifyPatchedHarness(receipt, errors) {
   if (answerMatrix) {
     requireValue(harness.name === 'skill-eval-harness',
       'answer receipt requires the skill-eval-harness', errors);
+    requireValue(harness.repository === 'https://github.com/adewale/skill-eval-harness.git',
+      'answer receipt requires the canonical skill-eval-harness repository', errors);
     requireValue(harness.mode === 'patched-local-checkout',
       'answer receipt requires patched-local-checkout harness reconstruction', errors);
   }
@@ -1525,6 +1573,163 @@ function expectedAuditCounts(manifest, splits) {
   };
 }
 
+const QUALITATIVE_ASSERTION_TYPES = new Set(['judge', 'rubric', 'factuality']);
+const POSITIVE_OBJECTIVE_ASSERTION_TYPES = new Set([
+  'contains', 'contains_any', 'contains_all', 'regex',
+]);
+
+function assertionLeakageValues(assertion) {
+  if (assertion.type === 'contains') return [String(assertion.value ?? '')];
+  if (['contains_any', 'contains_all'].includes(assertion.type)) {
+    const values = assertion.values ?? assertion.value ?? [];
+    return (Array.isArray(values) ? values : [values]).map(String);
+  }
+  return [];
+}
+
+function pairedReadinessSignals(benchmark) {
+  const pairs = new Map();
+  const intent = new Map();
+  for (const row of benchmark.results ?? []) {
+    intent.set(row.case_id, intent.get(row.case_id) ?? row.eval_intent ?? 'capability');
+    if (!['with_skill', 'without_skill'].includes(row.variant)
+        || row.execution_valid !== true || row.missing_output === true) continue;
+    const key = canonicalJson([
+      row.case_id,
+      row.model ?? null,
+      row.run_number ?? null,
+      row.split ?? null,
+    ]);
+    if (!pairs.has(key)) pairs.set(key, {});
+    pairs.get(key)[row.variant] = row;
+  }
+  const byCase = new Map();
+  for (const pair of pairs.values()) {
+    if (!pair.with_skill || !pair.without_skill) continue;
+    if (!byCase.has(pair.with_skill.case_id)) byCase.set(pair.with_skill.case_id, []);
+    byCase.get(pair.with_skill.case_id).push(pair);
+  }
+  const finiteRate = (value) => typeof value === 'number'
+    && Number.isFinite(value) && value >= 0 && value <= 1 ? value : null;
+  const combinedValue = (row) => {
+    let value = finiteRate(row.combined_pass_rate);
+    if (value === null || (row.combined_total === row.objective_total
+        && finiteRate(row.graded_score) !== null)) {
+      const blended = [value, finiteRate(row.graded_score)].filter((entry) => entry !== null);
+      value = blended.length > 0
+        ? blended.reduce((sum, entry) => sum + entry, 0) / blended.length
+        : finiteRate(row.objective_pass_rate);
+    }
+    return value;
+  };
+  const mean = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
+  const baseSaturated = [];
+  const regressionGuards = [];
+  const qualitativeOnly = [];
+  for (const [caseId, casePairs] of byCase) {
+    const combined = casePairs.map((pair) => [
+      combinedValue(pair.with_skill), combinedValue(pair.without_skill),
+    ]).filter(([left, right]) => left !== null && right !== null);
+    if (combined.length === 0) continue;
+    const withCombined = mean(combined.map(([left]) => left));
+    const withoutCombined = mean(combined.map(([, right]) => right));
+    if (Math.abs(withCombined - withoutCombined) <= 1e-9) {
+      (intent.get(caseId) === 'regression' ? regressionGuards : baseSaturated).push(caseId);
+      continue;
+    }
+    const objective = casePairs.map((pair) => [
+      finiteRate(pair.with_skill.objective_pass_rate),
+      finiteRate(pair.without_skill.objective_pass_rate),
+    ]).filter(([left, right]) => left !== null && right !== null);
+    if (objective.length > 0
+        && Math.abs(mean(objective.map(([left]) => left))
+          - mean(objective.map(([, right]) => right))) <= 1e-9
+        && withCombined > withoutCombined + 1e-9) {
+      qualitativeOnly.push(caseId);
+    }
+  }
+  return {
+    base_saturated_cases: baseSaturated.sort(),
+    qualitative_only_cases: qualitativeOnly.sort(),
+    regression_guards_holding: regressionGuards.sort(),
+  };
+}
+
+function expectedAuditReadiness(manifest, benchmark, splits) {
+  const selectedSplits = new Set(splits ?? []);
+  const cases = (manifest.cases ?? []).filter((evalCase) =>
+    selectedSplits.has(evalCase.split ?? 'tune'));
+  const ablations = manifest.ablations ?? [];
+  const materialized = ablations.filter((ablation) =>
+    (Array.isArray(ablation.components) && ablation.components.length > 0)
+      || Boolean(ablation.mechanism)).length;
+  const leaked = new Map();
+  for (const evalCase of cases) {
+    const prompt = typeof evalCase.prompt === 'string' ? evalCase.prompt.toLocaleLowerCase() : '';
+    for (const assertion of evalCase.assertions ?? []) {
+      const values = assertionLeakageValues(assertion)
+        .map((value) => value.trim())
+        .filter((value) => value.length >= 4 && prompt.includes(value.toLocaleLowerCase()));
+      if (values.length === 0) continue;
+      if (!leaked.has(evalCase.id)) leaked.set(evalCase.id, new Set());
+      leaked.get(evalCase.id).add(assertion.name ?? assertion.description ?? assertion.type ?? 'assertion');
+    }
+  }
+  const leakSaturated = [];
+  const objectiveOnly = [];
+  let adversarial = 0;
+  let judgeOnly = 0;
+  for (const evalCase of cases) {
+    if (evalCase.kind === 'adversarial') adversarial += 1;
+    const assertions = evalCase.assertions ?? [];
+    if (assertions.length > 0
+        && assertions.every((assertion) => QUALITATIVE_ASSERTION_TYPES.has(assertion.type))) {
+      judgeOnly += 1;
+    }
+    if (!['trigger', 'adversarial'].includes(evalCase.kind) && assertions.length > 0
+        && !assertions.some((assertion) => QUALITATIVE_ASSERTION_TYPES.has(assertion.type))) {
+      objectiveOnly.push(evalCase.id);
+    }
+    const positive = assertions.filter((assertion) =>
+      POSITIVE_OBJECTIVE_ASSERTION_TYPES.has(assertion.type));
+    if (positive.length > 0 && positive.every((assertion) => {
+      const values = assertionLeakageValues(assertion);
+      const label = assertion.name ?? assertion.description ?? assertion.type ?? 'assertion';
+      return values.length > 0 && leaked.get(evalCase.id)?.has(label);
+    })) leakSaturated.push(evalCase.id);
+  }
+  const run = pairedReadinessSignals(benchmark);
+  const blockers = [];
+  const instructionSimulated = ablations.length - materialized;
+  if (instructionSimulated > 0) {
+    blockers.push(`${instructionSimulated}/${ablations.length} ablation(s) are instruction-simulated (not blind / confirmation-gradeable) — materialize them`);
+  }
+  if (leakSaturated.length > 0) {
+    blockers.push(`${leakSaturated.length} case(s) are leak-saturated (every positive assertion value appears in the prompt) — they cannot discriminate skill from no-skill`);
+  }
+  if (adversarial === 0) {
+    blockers.push('no adversarial cases (kind: adversarial) — add the near-miss/under-pressure cases where the skill must hold');
+  }
+  if (run.base_saturated_cases.length > 0) {
+    blockers.push(`${run.base_saturated_cases.length} case(s) are base-saturated (measured with_skill == without_skill) — they cannot measure the skill; cut or harden them`);
+  }
+  return {
+    ablations: {
+      total: ablations.length,
+      materialized,
+      instruction_simulated: instructionSimulated,
+    },
+    leak_saturated_cases: leakSaturated,
+    objective_only_cases: objectiveOnly,
+    adversarial_cases: adversarial,
+    judge_only_cases: judgeOnly,
+    base_saturated_cases: run.base_saturated_cases,
+    qualitative_only_cases: run.qualitative_only_cases,
+    regression_guards_holding: run.regression_guards_holding,
+    blockers,
+  };
+}
+
 function expectedNonDiscriminatingAssertions(benchmark) {
   const groups = new Map();
   for (const result of benchmark.results ?? []) {
@@ -1680,14 +1885,13 @@ function verifyAnswerMatrix(receipt, errors) {
     const findings = normalizedAuditFindings(audit, benchmark, expectedCounts);
     requireValue(canonicalJson(findings.actual) === canonicalJson(findings.expected),
       'answer audit findings do not match the embedded manifest and benchmark', errors);
-    const expectedBaseSaturated = (benchmark.case_flags ?? [])
-      .filter((flag) => flag.eval_intent !== 'regression'
-        && typeof flag.with_skill === 'number'
-        && flag.with_skill === flag.without_skill)
-      .map((flag) => flag.case_id).sort();
-    requireValue(canonicalJson(audit.readiness?.base_saturated_cases ?? [])
-      === canonicalJson(expectedBaseSaturated),
-    'answer audit base-saturated cases do not match the embedded benchmark', errors);
+    const expectedReadiness = expectedAuditReadiness(
+      manifest,
+      benchmark,
+      receipt.invocation?.splits,
+    );
+    requireValue(canonicalJson(audit.readiness) === canonicalJson(expectedReadiness),
+      'answer audit readiness does not match the embedded manifest and benchmark', errors);
   }
   const manifestCases = new Map((manifest?.cases ?? []).map((evalCase) => [evalCase.id, evalCase]));
   const sourceFiles = receipt.source?.files ?? [];
@@ -1840,6 +2044,14 @@ export function verifyReceipt(receipt, { repoRoot = null } = {}) {
   requireValue(isHex(receipt.source?.git_tree, 40), 'source.git_tree must be 40 lowercase hex characters', errors);
   requireValue(isHex(receipt.source?.bundle_sha256, 64),
     'source.bundle_sha256 must be 64 lowercase hex characters', errors);
+  if (['keyboardia-answer-matrix', 'execution-benchmark'].includes(receipt.invocation?.suite)) {
+    requireValue(receipt.source?.repository === 'https://github.com/adewale/keyboardia.git',
+      'receipt source must be the canonical Keyboardia repository', errors);
+  }
+  if (receipt.invocation?.suite === 'execution-benchmark') {
+    requireValue(receipt.harness?.repository === 'https://github.com/adewale/keyboardia.git',
+      'execution receipt harness must be the canonical Keyboardia repository', errors);
+  }
   requireValue(Array.isArray(receipt.source?.files) && receipt.source.files.length > 0, 'source.files must be non-empty', errors);
   requireValue(typeof receipt.harness?.name === 'string', 'harness.name is required', errors);
   requireValue(typeof receipt.harness?.version === 'string', 'harness.version is required', errors);
