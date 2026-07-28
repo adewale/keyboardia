@@ -3,9 +3,26 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { verifyReceipt } from './receipt.mjs';
+import {
+  validateAutonomousReceipt,
+  verifySourceBinding as verifyAutonomousSourceBinding,
+} from '../app/scripts/autonomous-discovery-validator.mjs';
 
 const evalsDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(evalsDir, '..');
+
+function verifyAnyReceipt(receipt) {
+  if (receipt?.kind !== 'origin-only-autonomous-skill-discovery') {
+    return verifyReceipt(receipt, { repoRoot });
+  }
+  try {
+    validateAutonomousReceipt(receipt);
+    verifyAutonomousSourceBinding(receipt.source, repoRoot);
+    return [];
+  } catch (error) {
+    return [error.message];
+  }
+}
 
 function receiptFiles(paths) {
   const files = [];
@@ -34,7 +51,7 @@ for (const path of receiptFiles(paths)) {
     failed = true;
     continue;
   }
-  const errors = verifyReceipt(receipt, { repoRoot });
+  const errors = verifyAnyReceipt(receipt);
   if (errors.length > 0) {
     process.stderr.write(`${path}:\n- ${errors.join('\n- ')}\n`);
     failed = true;
@@ -43,4 +60,3 @@ for (const path of receiptFiles(paths)) {
   }
 }
 if (failed) process.exitCode = 1;
-
