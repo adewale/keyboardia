@@ -320,4 +320,4 @@ Hybrid eliminates the KV debounce overhead, saving $145/month at scale.
 
 - [KV Staleness Fix Options](./KV-STALENESS-FIX-OPTIONS.md) - All fix options considered
 - [Cost Analysis](./COST-ANALYSIS-DO-STORAGE.md) - Detailed cost comparison
-- [KV Staleness Test](../../test/staging/kv-staleness.test.ts) - Tests demonstrating the bug
+- [`state-machine-fuzz.test.ts`](../../test/integration/state-machine-fuzz.test.ts) and [`eviction-recovery.test.ts`](../../test/integration/eviction-recovery.test.ts) — maintained Worker-runtime coverage for KV lag/convergence and recovery

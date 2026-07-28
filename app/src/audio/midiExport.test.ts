@@ -7,6 +7,9 @@
 
 import { describe, it, expect } from 'vitest';
 import {
+  exportToMidi,
+} from './midiExport';
+import {
   isDrumTrack,
   getDrumNote,
   getSynthProgram,
@@ -15,14 +18,13 @@ import {
   stepToTicks,
   calculatePatternLength,
   sanitizeFilename,
-  exportToMidi,
   TICKS_PER_STEP,
   BASE_NOTE,
   DEFAULT_VELOCITY,
   DEFAULT_PROGRAM,
   DRUM_NOTE_MAP,
   SYNTH_PROGRAM_MAP,
-} from './midiExport';
+} from '../shared/midi-core';
 import type { Track } from '../types';
 import type { ParameterLock } from '../shared/sync-types';
 

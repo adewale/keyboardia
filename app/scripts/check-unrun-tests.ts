@@ -2,16 +2,15 @@
 /**
  * Find test files that no lane executes.
  *
- * The July 2026 audit found six: the five in test/staging/ and one e2e staging
- * spec — 103 tests and 226 assertions that CI has never run. They are not a
- * gap in coverage (every limit they touch is asserted 2-21 times over by lanes
- * that do run) but they are unmaintained, and one of them had carried an
- * always-green try/catch for months because nothing ever executed it.
+ * The July 2026 audit found six: five obsolete live-server suites and one
+ * duplicated E2E staging spec — 103 tests and 226 assertions that no lane ran.
+ * Those files were deleted after their claims were mapped to maintained lanes.
+ * This gate prevents an uncollected corpus from accumulating again.
  *
  * The lanes are asked what they collect rather than having their include and
  * exclude globs reimplemented here; the pure set logic and its fixtures live in
- * test-quality-analyzers.ts. UNRUN_ALLOWLIST is the deliberate exception, and a
- * stale entry is reported too, so it cannot outlive the reason it was added.
+ * test-quality-analyzers.ts. The repository has no permanent exceptions: a test
+ * file is either collected by a lane or it does not belong in the tree.
  *
  * Run: npx tsx scripts/check-unrun-tests.ts
  */
@@ -19,20 +18,6 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { findUnrunTestFiles } from './test-quality-analyzers';
-
-/**
- * Staging needs a deployed backend, so no CI lane can run it today. Either
- * schedule it against a real environment or delete it — see §21 of
- * docs/TEST-AUDIT-2026-07.md. Until that call is made, these are declared.
- */
-const UNRUN_ALLOWLIST = [
-  'e2e/staging/vu-meters.spec.ts',
-  'test/staging/effects-bypass-sync.test.ts',
-  'test/staging/effects-immediate-sync.test.ts',
-  'test/staging/failure-modes.test.ts',
-  'test/staging/kv-staleness.test.ts',
-  'test/staging/multiplayer-sync.test.ts',
-];
 
 function filesBelow(root: string): string[] {
   if (!existsSync(root)) return [];
@@ -91,12 +76,11 @@ if (!collected.length) {
   process.exit(1);
 }
 
-const { unlisted, staleAllowances } = findUnrunTestFiles(onDisk, collected, UNRUN_ALLOWLIST);
+const { unlisted } = findUnrunTestFiles(onDisk, collected, []);
 
-if (!unlisted.length && !staleAllowances.length) {
+if (!unlisted.length) {
   console.log(
-    `✅ Every test file is collected by a lane (${onDisk.length} files, ` +
-    `${UNRUN_ALLOWLIST.length} declared unrun).`,
+    `✅ Every test file is collected by a lane (${onDisk.length} files, zero exceptions).`,
   );
   process.exit(0);
 }
@@ -104,11 +88,6 @@ if (!unlisted.length && !staleAllowances.length) {
 if (unlisted.length) {
   console.log(`\nNO LANE RUNS THESE (${unlisted.length}) — they read as coverage and are never executed:`);
   for (const file of unlisted) console.log(`  ${file}`);
-  console.log('\n  Wire the file into a lane, or add it to UNRUN_ALLOWLIST with a reason.');
-}
-if (staleAllowances.length) {
-  console.log(`\nSTALE ALLOWLIST ENTRIES (${staleAllowances.length}) — a lane now runs these, or they are gone:`);
-  for (const file of staleAllowances) console.log(`  ${file}`);
-  console.log('\n  Remove them from UNRUN_ALLOWLIST in scripts/check-unrun-tests.ts.');
+  console.log('\n  Wire the file into a lane, or delete it if its coverage is redundant.');
 }
 process.exit(1);

@@ -7,11 +7,31 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
-import { useState, useEffect, useCallback } from 'react';
+import { render, renderHook, act } from '@testing-library/react';
+import { Suspense, createElement, useState, useEffect, useLayoutEffect, useCallback } from 'react';
 import { useStableCallback, useStableGetter } from './useStableCallback';
 
 describe('useStableCallback', () => {
+  it('does not expose a callback from a render that never commits', () => {
+    let committed: (() => string) | undefined;
+    const never = new Promise<never>(() => {});
+    function Probe({ value, suspend }: { value: string; suspend: boolean }) {
+      const callback = useStableCallback(() => value);
+      useLayoutEffect(() => {
+        committed = callback;
+      }, [callback]);
+      if (suspend) throw never;
+      return null;
+    }
+    const tree = (value: string, suspend: boolean) => createElement(
+      Suspense, { fallback: null }, createElement(Probe, { value, suspend }),
+    );
+    const view = render(tree('committed', false));
+
+    view.rerender(tree('abandoned', true));
+
+    expect(committed?.()).toBe('committed');
+  });
   it('should maintain stable reference across renders', () => {
     const callbackRefs: ((...args: unknown[]) => unknown)[] = [];
 
@@ -186,6 +206,26 @@ describe('useStableCallback', () => {
 });
 
 describe('useStableGetter', () => {
+  it('does not expose a value from a render that never commits', () => {
+    let committed: (() => string) | undefined;
+    const never = new Promise<never>(() => {});
+    function Probe({ value, suspend }: { value: string; suspend: boolean }) {
+      const getter = useStableGetter(value);
+      useLayoutEffect(() => {
+        committed = getter;
+      }, [getter]);
+      if (suspend) throw never;
+      return null;
+    }
+    const tree = (value: string, suspend: boolean) => createElement(
+      Suspense, { fallback: null }, createElement(Probe, { value, suspend }),
+    );
+    const view = render(tree('committed', false));
+
+    view.rerender(tree('abandoned', true));
+
+    expect(committed?.()).toBe('committed');
+  });
   it('should maintain stable reference across renders', () => {
     const getterRefs: (() => number)[] = [];
 

@@ -15,6 +15,7 @@ const REPORT_DIR = resolve(THIS_DIR, '../test-results/audio-output');
 const SILENCE_PEAK = 1e-4;
 const SILENCE_RMS = 1e-5;
 const STEP_COUNT = 4;
+const PATTERN_STEPS = 128;
 const SESSION_TEMPO = 120;
 const MEASURE_ITERATIONS = 50;
 const MEASURE_INTERVAL_MS = 50;
@@ -95,8 +96,8 @@ function trackIdFor(sampleId: string, index: number): string {
 }
 
 function buildSequencerTrack(spec: InstrumentSpec, index: number): SessionTrack {
-  const steps = Array(STEP_COUNT).fill(false) as boolean[];
-  const parameterLocks = Array(STEP_COUNT).fill(null) as Array<{ pitch: number; volume: number } | null>;
+  const steps = Array(PATTERN_STEPS).fill(false) as boolean[];
+  const parameterLocks = Array(PATTERN_STEPS).fill(null) as Array<{ pitch: number; volume: number } | null>;
   steps[0] = true;
   parameterLocks[0] = { pitch: spec.pitch, volume: 1 };
   return {

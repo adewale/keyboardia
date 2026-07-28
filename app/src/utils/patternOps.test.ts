@@ -11,7 +11,7 @@ import {
   detectMirrorDirection,
   euclidean,
   applyEuclidean,
-} from './patternOps';
+} from '../shared/pattern-operations';
 
 describe('rotateLeft', () => {
   it('rotates a boolean array left by one position', () => {

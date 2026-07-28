@@ -1,8 +1,9 @@
 # Test Placement Analysis — are we testing things in the right places?
 
-> **Status: items 1-4 of the recommended order are implemented.** Numbers in the
-> tables below are the *before* state that motivated the work; the outcome is
-> recorded in "What changed" at the end.
+> **Status: implemented.** Numbers in the tables below are the *before* state
+> that motivated the work; the outcome is recorded at the end. The obsolete
+> `test/staging` tier was subsequently deleted, and the unrun-test gate now
+> requires every remaining test file to be collected with zero exceptions.
 
 A tier-integrity review (step 4) and invariant-placement review (step 7) of the
 [testing-best-practices](https://github.com/adewale/testing-best-practices)
@@ -12,7 +13,7 @@ framework. The companion to `TEST-AUDIT-2026-07.md`, which asked whether tests
 Measured after main's "remove-test-theatre" merge, so the numbers reflect the
 current tree.
 
-## The shape today
+## Historical baseline
 
 | Tier | Files | Tests | Wall clock | Per test | Needs |
 |---|---|---|---|---|---|
@@ -690,8 +691,10 @@ disabled on day two.
 
 ## Closing state
 
-Both checkers are now wired into the `lint` CI job (`validate:test-antipatterns`
-gating, `validate:test-links` advisory) and documented in `specs/TESTING.md`.
+All four quality checkers are wired into the `lint` CI job and gate:
+`validate:test-antipatterns`, `validate:test-links`,
+`validate:dead-exports`, and `validate:unrun-tests`. Their current findings are
+zero; `specs/TESTING.md` documents the contracts.
 
 | Finding | Was | Now |
 |---|---|---|

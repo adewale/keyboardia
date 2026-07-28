@@ -16,10 +16,9 @@ import {
 } from './xyPad';
 import {
   buildBatchedEffectsUpdate,
-  isEffectParam,
-  isSynthParam,
   type XYParamUpdate,
 } from './xy-effects-bridge';
+import { isEffectParam, isSynthParam } from './effect-param-mapping';
 
 const PRESET_IDS = Object.keys(XY_PAD_PRESETS);
 const presetArb = fc.constantFrom(...PRESET_IDS);

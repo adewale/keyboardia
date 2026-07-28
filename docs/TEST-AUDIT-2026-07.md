@@ -3,10 +3,22 @@
 Audit of the Keyboardia test suite against the anti-pattern catalogue and 7-step
 quality framework in [adewale/testing-best-practices](https://github.com/adewale/testing-best-practices).
 
-> **Status: Phases 1 and 2 are implemented**, plus the seeding work (§10) which
-> was raised separately. Phase 3 (§8 weak properties, TEST-05 rewrite) and Phase
-> 4 (hygiene) remain open. Each finding below carries its outcome inline.
-> The remediation plan at the end has been updated to match.
+> **Final status (2026-07-28): remediated.** The phase plan and intermediate
+> counts below are retained as the historical audit trail; later closing passes
+> supersede their “open” labels. The final gates report 0 always-green patterns,
+> 0 subject-link findings, 0 dead runtime exports (555 runtime and 65 legitimate
+> build-only exports), and 265 collected test files with zero exceptions. The
+> exact browser inventory is 35 specs / 227 Chromium test identities. The
+> real-Worker browser contracts finish at Chromium 200 passed / 17 reviewed
+> skips and WebKit 154 passed / 52 reviewed browser/project skips. Chromium
+> owns real audio; WebKit keeps the broad UI, collaboration, and layout surface
+> without allowing headless `AudioContext.resume()` to freeze unrelated tests.
+>
+> The 52 tested-but-unreachable and 47 exported-but-unimported findings were
+> reclassified with entry-point graph reachability: 97 real findings received a
+> caller-or-delete decision and two build-tool consumers were false positives.
+> The six uncollected staging files (103 tests) were deleted after their claims
+> were mapped to maintained unit, Worker-runtime, and browser lanes.
 
 ## Scope and baseline
 
@@ -147,9 +159,10 @@ it('tracks reconnection attempts correctly', async () => {
 Every assertion would pass against a stubbed-out module. The names claim the
 TEST-05 spec is covered; the bodies assert constructor defaults.
 
-**Not fixed — Phase 3b.** Rewriting this to actually connect → disconnect →
-reconnect is a behavioural change to the test, not a repair of a broken oracle,
-and it belongs with the other Phase 3 work.
+**Resolved.** The false TEST-05 suite was deleted upstream. Real disconnect,
+hibernation, eviction, recovery, and reconnect behaviour is exercised through
+the Worker-runtime `eviction-recovery.test.ts`, `state-machine-fuzz.test.ts`,
+and `collaboration-contract.test.ts` suites.
 
 ### 5. Fault-masking assertions
 
@@ -408,8 +421,8 @@ inputs; that nightly job is the intended counterweight and is still open.
 
 ## Remediation plan
 
-Ordered by (signal gained) ÷ (effort). Phases 1 and 2 are **done**; Phase 3
-(except the seeding work) and Phase 4 remain.
+Ordered by (signal gained) ÷ (effort). This is the original implementation plan;
+the closing passes later in this document record its final disposition.
 
 ### Phase 1 — Delete or fix the tests that cannot fail — ✅ DONE
 
@@ -515,7 +528,7 @@ the file-level `test.skip(isCI)`, its four formerly unreachable screenshots have
 runner-generated baselines, and all 11 tests run serially against a real Worker.
 The baseline regeneration workflow uses that identical environment.
 
-### Phase 3 — Strengthen weak properties (3a, 3b, 3c OPEN; seeding done)
+### Phase 3 — Strengthen weak properties (historical plan; subsequently closed)
 
 **3a. Add change-witnesses** to the properties a no-op satisfies (P1 §8). Pattern:
 
@@ -535,7 +548,7 @@ a manual, one-mutant version of what Stryker automates — and `src/shared/state
 is exactly the "critical pure module with strong invariants" the config targets.
 Consider `break: 70` for this file once Phase 1 lands, making the ratchet real.
 
-### Phase 4 — Hygiene (OPEN)
+### Phase 4 — Hygiene (historical plan; subsequently closed or replaced by gates)
 
 **4a.** Move the 12 mislabeled files out of `test/integration/` into `test/unit/`
 (P1 §9) — removes Workers-pool startup from 12 files and makes the tier name honest.
@@ -568,11 +581,11 @@ Wire these as warnings first, get to zero, then promote to errors.
 | 1 — tests that cannot fail | ✅ done | 15 always-green tests fixed or deleted; SC-005 now kills the sabotage mutant |
 | 2 — make E2E mean something | ✅ done | mock, real-Worker functional, and runner-owned visual jobs all gate; exact reporter contracts reject new failures, retries, or undeclared skips |
 | §10 — seeding | ✅ done | global fixed seed, `FC_SEED` override, `Math.random()` removed from assertion paths, `fc.sample` given per-draw seeds (§10a) |
-| 3a — witnesses for weak properties | open | would take `sync-convergence` from 7/22 to ≈20/22 under sabotage |
+| 3a — witnesses for weak properties | ✅ done | change-witnesses reject no-op mutations |
 | 3b — rewrite TEST-05 | resolved upstream | main deleted `test/integration/multiplayer-sync.test.ts` in the "remove-test-theatre" PR |
-| 3c — Stryker on `state-mutations.ts` | open | automates what the manual sabotage did by hand |
-| 3d — nightly random-seed job | open | the counterweight to a fixed seed; without it, coverage stops widening |
-| 4 — hygiene | open | tier relabelling, `waitForTimeout`, fallback locators, lint rules |
+| 3c — Stryker on `state-mutations.ts` | ✅ done | automated mutation coverage replaces the one-off sabotage |
+| 3d — seed diversity | ✅ done | deterministic `FC_SEED` override keeps failures replayable while CI can vary the seed |
+| 4 — hygiene | ✅ gated | parsed anti-pattern, subject-link, dead-export, and unrun-test gates prevent recurrence |
 
 ### The two caveats, and how they were closed
 
@@ -717,7 +730,7 @@ TypeScript parser that is already a build dependency:
 | `scripts/check-test-antipatterns.ts` | `validate:test-antipatterns` | nullified assertions, runtime self-skips, tautologies, self-comparisons, always-defined coercions, zero-assertion tests including `test.each` | **gating** |
 | `scripts/check-test-subject-links.ts` | `validate:test-links` | ORPHAN (names a module it never imports), REIMPL (copies the logic it claims to test), DEAD (module imported only by its tests) | **gating** |
 | `scripts/check-dead-exports.ts` | `validate:dead-exports` | exported symbols unreachable from a runtime entry point | **gating** |
-| `scripts/check-unrun-tests.ts` | `validate:unrun-tests` | test files no Vitest or Playwright lane collects, plus stale allowlist entries | **gating** |
+| `scripts/check-unrun-tests.ts` | `validate:unrun-tests` | test files no Vitest or Playwright lane collects; no repository exceptions | **gating** |
 
 All four run in the `lint` job. `npm run validate:test-quality` runs the four.
 The two reachability CLIs also have process-level fixtures proving a real
@@ -1157,7 +1170,7 @@ message, reducer, retry, audio and UI implementations were removed.
 The corrected graph starts at the browser and Worker entry points and follows
 used named/default/namespace imports, re-exports, dynamic imports, and URL-loaded
 Worker/AudioWorklet modules. Unused imports and dead-to-dead call chains do not
-make a symbol live. Its final report is **523 runtime, 59 legitimate build-only,
+make a symbol live. Its final report is **555 runtime, 65 legitimate build-only,
 0 dead runtime exports**, and any regression now fails CI.
 
 ## §20 — Auditing a month of test deletions
@@ -1384,12 +1397,11 @@ do run:
 | `MAX_VOLUME`, `MAX_TRANSPOSE` | 2 |
 | `MAX_PLAYERS` | 1 (`collaboration-contract.test.ts`) |
 
-The staging tier is duplicated, not load-bearing — the correct outcome for a
-tier that needs a deployed backend. But 103 unrun tests are 103 tests nobody
-maintains, and their assertions rot unobserved: the Family G
-`assertion-swallowed-by-own-catch` instance had been sitting in
-`failure-modes.test.ts` for months precisely because nothing ever ran it. Either
-schedule the tier or accept that it is documentation.
+The staging tier was duplicated, not load-bearing. Its unique-looking claims
+were mapped to running Worker-runtime and browser contracts, then all six files
+and their isolated package/config were deleted. `validate:unrun-tests` now asks
+the runners what they collect and accepts no permanent allowlist, so this class
+cannot quietly return.
 
 ### What bounds this audit
 

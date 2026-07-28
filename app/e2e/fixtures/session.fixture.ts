@@ -49,8 +49,8 @@ export function createTrack(overrides: Partial<TrackData> = {}): TrackData {
     id,
     name: overrides.name || 'Test Track',
     sampleId: overrides.sampleId || 'kick',
-    steps: overrides.steps || Array(64).fill(false),
-    parameterLocks: overrides.parameterLocks || Array(64).fill(null),
+    steps: overrides.steps || Array(128).fill(false),
+    parameterLocks: overrides.parameterLocks || Array(128).fill(null),
     volume: overrides.volume ?? 1,
     muted: overrides.muted ?? false,
     transpose: overrides.transpose ?? 0,
@@ -129,7 +129,7 @@ export const test = base.extend<{
           true, false, false, false,  // Beat 2
           true, false, false, false,  // Beat 3
           true, false, false, false,  // Beat 4
-          ...Array(48).fill(false),
+          ...Array(112).fill(false),
         ],
       }),
       createTrack({
@@ -141,7 +141,7 @@ export const test = base.extend<{
           true, false, false, false,  // Beat 2
           false, false, false, false, // Beat 3
           true, false, false, false,  // Beat 4
-          ...Array(48).fill(false),
+          ...Array(112).fill(false),
         ],
       }),
       createTrack({
@@ -153,7 +153,7 @@ export const test = base.extend<{
           true, false, true, false,   // Beat 2
           true, false, true, false,   // Beat 3
           true, false, true, false,   // Beat 4
-          ...Array(48).fill(false),
+          ...Array(112).fill(false),
         ],
       }),
     ];

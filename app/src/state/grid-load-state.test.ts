@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { gridReducer, DEFAULT_EFFECTS_STATE } from './grid';
+import { gridReducer } from './grid';
+import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import type { GridState, Track } from '../types';
 import { MAX_STEPS, STEPS_PER_PAGE } from '../types';
 

@@ -166,6 +166,15 @@ export function signalMusicIntent(trigger: AudioTrigger): Promise<void> {
     return Promise.resolve();
   }
 
+  // Headless WebKit's media process can wedge on AudioContext.resume(), which
+  // would freeze otherwise browser-independent edit and accessibility tests.
+  // The WebKit E2E fixture sets this narrow runtime seam; Tier 1 playback still
+  // exercises the real engine, and Chromium owns exhaustive real-audio tests.
+  const preloadDisabled = typeof window !== 'undefined'
+    && (window as unknown as { __KEYBOARDIA_DISABLE_AUDIO_PRELOAD__?: boolean })
+      .__KEYBOARDIA_DISABLE_AUDIO_PRELOAD__ === true;
+  if (preloadDisabled && shouldPreloadAudio(trigger)) return Promise.resolve();
+
   logger.audio.log(`[AudioTrigger] Music intent: ${trigger}`);
 
   // Since this is triggered by a click (valid gesture), start async initialization

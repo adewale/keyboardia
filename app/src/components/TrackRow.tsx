@@ -24,6 +24,7 @@ import { isDrumInstrument } from '../shared/instrument-classification';
 import { getTransposedRoot, type NoteName } from '../music/music-theory';
 import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
 import { features } from '../config/features';
+import { useDragToPaint } from './useDragToPaint';
 import './TrackRow.css';
 import './ChromaticGrid.css';
 import './PianoRoll.css';
@@ -159,14 +160,6 @@ export const TrackRow = React.memo(function TrackRow({
   const [isVelocityExpanded, setIsVelocityExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showPatternTools, setShowPatternTools] = useState(false);
-  // Phase 31F: Drag-to-paint state
-  // 'on' = painting active steps, 'off' = painting inactive steps, null = not painting
-  const [paintMode, setPaintMode] = useState<'on' | 'off' | null>(null);
-  // BUG FIX: Use ref to avoid stale closures in global listener
-  const paintModeRef = useRef<'on' | 'off' | null>(null);
-  useEffect(() => { paintModeRef.current = paintMode; }, [paintMode]);
-  // Track last painted step to avoid duplicate toggles during fast drag
-  const lastPaintedStepRef = useRef<number | null>(null);
   // NOTE: Track name editing state moved to TrackNameEditor component
   // Phase 31G FIX: Track if pointerdown originated on drag handle
   // HTML5 DnD e.target is always the [draggable] element, not the clicked child
@@ -340,76 +333,12 @@ export const TrackRow = React.memo(function TrackRow({
     onSetTrackSwing(clamp(trackSwing, 0, 100));
   }, [onSetTrackSwing]);
 
-  // Phase 31F: Drag-to-paint handlers
-  // Start painting: determine paint mode from first step's toggled state
-  const handlePaintStart = useCallback((stepIndex: number) => {
-    const wasActive = track.steps[stepIndex];
-    const newState = !wasActive;
-
-    // Always toggle the clicked step
-    onToggleStep(stepIndex);
-    lastPaintedStepRef.current = stepIndex;
-
-    // Only enable drag continuation if advanced input is on
-    if (features.advancedStepInput) {
-      setPaintMode(newState ? 'on' : 'off');
-    }
-  }, [track.steps, onToggleStep]);
-
-  // Continue painting: apply paint mode to entered step
-  // Uses paintModeRef to avoid stale closure issues with paint mode
-  const handlePaintEnter = useCallback((stepIndex: number) => {
-    // No drag painting when advanced input is disabled
-    if (!features.advancedStepInput) return;
-
-    const currentPaintMode = paintModeRef.current;
-    if (currentPaintMode === null) return;
-
-    // Skip if we already painted this step (fast drag protection)
-    if (stepIndex === lastPaintedStepRef.current) return;
-
-    const isActive = track.steps[stepIndex];
-    const shouldBeActive = currentPaintMode === 'on';
-    if (isActive !== shouldBeActive) {
-      onToggleStep(stepIndex);
-      lastPaintedStepRef.current = stepIndex;
-    }
-  }, [track.steps, onToggleStep]);
-
-  // Container-level pointer move for fast drag detection
-  // Fallback in case individual pointerenter events are missed during fast dragging
-  const handleStepsPointerMove = useCallback((e: React.PointerEvent) => {
-    const currentPaintMode = paintModeRef.current;
-    if (currentPaintMode === null) return;
-    if (!features.advancedStepInput) return;
-
-    // Hit-test to find which step we're over
-    const target = e.target as HTMLElement;
-    const stepCell = target.closest('.step-cell') as HTMLElement | null;
-    if (!stepCell) return;
-
-    // Get step index from data attribute
-    const stepIndex = parseInt(stepCell.getAttribute('data-step-index') || '-1', 10);
-    if (stepIndex < 0 || stepIndex === lastPaintedStepRef.current) return;
-
-    const isActive = track.steps[stepIndex];
-    const shouldBeActive = currentPaintMode === 'on';
-    if (isActive !== shouldBeActive) {
-      onToggleStep(stepIndex);
-      lastPaintedStepRef.current = stepIndex;
-    }
-  }, [track.steps, onToggleStep]);
-
-  // Phase 31F: Memoized paint handlers for each step (must be after callback definitions)
-  const stepPaintStartHandlers = useMemo(() => {
-    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
-    return Array.from({ length: trackStepCount }, (_, i) => () => handlePaintStart(i));
-  }, [track.stepCount, handlePaintStart]);
-
-  const stepPaintEnterHandlers = useMemo(() => {
-    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
-    return Array.from({ length: trackStepCount }, (_, i) => () => handlePaintEnter(i));
-  }, [track.stepCount, handlePaintEnter]);
+  const { handleStepsPointerMove, stepPaintStartHandlers, stepPaintEnterHandlers } = useDragToPaint({
+    steps: track.steps,
+    stepCount: track.stepCount ?? STEPS_PER_PAGE,
+    enabled: features.advancedStepInput,
+    onToggleStep,
+  });
 
   // Phase 31F: Memoized selection toggle handlers (Ctrl+Click)
   const stepSelectToggleHandlers = useMemo(() => {
@@ -438,28 +367,6 @@ export const TrackRow = React.memo(function TrackRow({
       duration: isSustained ? 0.3 : undefined,
     });
   }, [track.sampleId, track.id, track.transpose]);
-
-  // Phase 31F: Global pointer up listener to end drag-to-paint
-  // BUG FIX: Register listener once on mount, not on each paintMode change
-  // This prevents listener accumulation and race conditions
-  useEffect(() => {
-    const handlePointerUp = () => {
-      // Only clear if we're actually painting (use ref to avoid stale closure)
-      if (paintModeRef.current !== null) {
-        setPaintMode(null);
-        lastPaintedStepRef.current = null; // Reset on paint end
-      }
-    };
-
-    // Listen on document to catch pointer up anywhere
-    document.addEventListener('pointerup', handlePointerUp);
-    document.addEventListener('pointercancel', handlePointerUp);
-
-    return () => {
-      document.removeEventListener('pointerup', handlePointerUp);
-      document.removeEventListener('pointercancel', handlePointerUp);
-    };
-  }, []); // Empty deps - register once on mount
 
   // Phase 31G: Drag handlers for track reordering
   // HIGH-2: Use track.id instead of trackIndex for stable references

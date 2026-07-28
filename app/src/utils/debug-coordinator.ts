@@ -337,8 +337,5 @@ export function initDebugCoordinator(): void {
   }
 }
 
-// Export for cleanup
-export { stopBugDetection, runBugDetection };
-
 // HMR cleanup - stops bug detection interval during development
 registerHmrDispose('DebugCoordinator', () => stopBugDetection());

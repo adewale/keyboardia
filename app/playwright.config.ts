@@ -1,18 +1,22 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const ignoredSpecs: RegExp[] = [];
-if (!process.env.RUN_STAGING_E2E) ignoredSpecs.push(/e2e\/staging\//);
 if (process.env.E2E_FUNCTIONAL_ONLY === '1') ignoredSpecs.push(/e2e\/visual\.spec\.ts$/);
 
 // Playwright's headless WebKit process does not provide a stable real-time
-// audio-analysis environment. These exhaustive AnalyserNode probes can wedge
+// audio environment. AudioContext.resume() and AnalyserNode probes can wedge
 // one WebKit worker for minutes and then make unrelated UI contracts time out.
-// Chromium remains the audio-capable browser lane; WebKit still runs the UI,
-// collaboration, layout and lightweight metering contracts below.
-const headlessWebkitAudioProbes = [
+// Chromium remains the real-audio browser lane; WebKit runs the broad UI,
+// collaboration and layout contract. Mixed files review-skip only their
+// playback tests at the test site so their remaining cross-browser value stays.
+const headlessWebkitAudioSpecs = [
   /e2e\/advanced-sub-bass-session\.spec\.ts$/,
   /e2e\/all-instruments-master-output\.spec\.ts$/,
   /e2e\/instrument-range-session\.spec\.ts$/,
+  /e2e\/mcp-sampled-instrument-lifecycle\.spec\.ts$/,
+  /e2e\/per-track-advanced-meters\.spec\.ts$/,
+  /e2e\/playback\.spec\.ts$/,
+  /e2e\/vu-meters\.spec\.ts$/,
 ];
 
 /**
@@ -32,9 +36,6 @@ const headlessWebkitAudioProbes = [
  */
 export default defineConfig({
   testDir: './e2e',
-  // Staging specs depend on a live external environment and a specific session,
-  // so they are excluded by default. Opt in with `npm run test:e2e:staging`
-  // (which sets RUN_STAGING_E2E=1).
   testIgnore: ignoredSpecs,
   timeout: 30000,
   outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || 'test-results',
@@ -96,7 +97,7 @@ export default defineConfig({
       // A second headless WebKit audio process can starve the first process and
       // create deterministic 30-40 second cascades in otherwise fast tests.
       workers: 1,
-      testIgnore: [...ignoredSpecs, ...headlessWebkitAudioProbes],
+      testIgnore: [...ignoredSpecs, ...headlessWebkitAudioSpecs],
     },
     {
       name: 'mobile-chrome',

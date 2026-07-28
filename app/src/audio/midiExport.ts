@@ -9,7 +9,6 @@ import type { GridState } from '../types';
 import { encodeMidi } from '../shared/midi-core';
 import type { MidiExportOptions } from '../shared/midi-core';
 
-export * from '../shared/midi-core';
 export type { MidiExportOptions } from '../shared/midi-core';
 
 export interface MidiExportResult {

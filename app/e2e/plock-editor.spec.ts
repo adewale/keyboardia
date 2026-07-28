@@ -21,7 +21,7 @@ const API_BASE = getBaseUrl();
 async function createTestSession(request: Parameters<typeof createSessionWithRetry>[0]) {
   // Don't pre-activate step 0 - tests will activate it via click
   // Only pre-activate steps 4 and 8 for tests that need multiple steps
-  const steps = Array(64).fill(false);
+  const steps = Array(128).fill(false);
   steps[4] = true;
   steps[8] = true;
 
@@ -32,7 +32,7 @@ async function createTestSession(request: Parameters<typeof createSessionWithRet
         name: 'Kick',
         sampleId: 'kick',
         steps,
-        parameterLocks: Array(64).fill(null),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,

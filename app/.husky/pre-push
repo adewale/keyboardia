@@ -1,9 +1,10 @@
 #!/bin/sh
 
-# Pre-push hook: Four-phase testing
+# Pre-push hook: Four-phase testing (plus phase-zero validation)
 # Phase 1: Unit tests (fast, ~11s)
 # Phase 2: Full functional E2E test (Chromium, including real Web Audio)
-# Phase 3: Mobile Safari test (iPhone viewport + touch)
+# Phase 3: Broad desktop WebKit contract
+# Phase 4: Mobile Safari test (iPhone viewport + touch)
 #
 # The full-stack runner owns its Wrangler process. This keeps the backend
 # lifecycle deterministic and applies the local-only session-create allowance
@@ -97,7 +98,7 @@ else
     exit 1
 fi
 
-# Phase 2: Full Test (comprehensive functional and audio contracts)
+# Phase 2: Full Chromium test (comprehensive functional and audio contracts)
 echo "----------------------------------------"
 echo "Phase 2: Full E2E Test (Chromium)"
 echo "----------------------------------------"
@@ -107,7 +108,7 @@ FULL_START=$(date +%s)
 
 # Screenshot contracts have runner-specific baselines and a dedicated CI lane;
 # the functional gate must not generate or bless developer-machine snapshots.
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 npm run test:e2e:full-stack -- --project=chromium; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 200 17; then
     FULL_END=$(date +%s)
     FULL_DURATION=$((FULL_END - FULL_START))
     echo ""
@@ -125,15 +126,37 @@ else
     exit 1
 fi
 
-# Phase 3: Mobile Safari Test (iPhone viewport + touch interactions)
+# Phase 3: Broad desktop WebKit test (UI, collaboration, and layout contracts)
 echo "----------------------------------------"
-echo "Phase 3: Mobile Safari (iPhone)"
+echo "Phase 3: Full WebKit Test"
+echo "----------------------------------------"
+echo ""
+
+WEBKIT_START=$(date +%s)
+
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 154 52; then
+    WEBKIT_END=$(date +%s)
+    WEBKIT_DURATION=$((WEBKIT_END - WEBKIT_START))
+    echo ""
+    echo "✅ Full WebKit test passed! (${WEBKIT_DURATION}s)"
+    echo ""
+else
+    echo ""
+    echo "❌ Full WebKit test FAILED"
+    echo ""
+    echo "Fix the cross-browser failure before pushing."
+    exit 1
+fi
+
+# Phase 4: Mobile Safari Test (iPhone viewport + touch interactions)
+echo "----------------------------------------"
+echo "Phase 4: Mobile Safari (iPhone)"
 echo "----------------------------------------"
 echo ""
 
 MOBILE_START=$(date +%s)
 
-if E2E_WORKER_PORT=8792 npm run test:e2e:full-stack -- e2e/mobile-iphone.spec.ts --project=mobile-safari; then
+if PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-mobile-safari.json E2E_WORKER_PORT=8792 npm run test:e2e:full-stack -- e2e/mobile-iphone.spec.ts --project=mobile-safari && node scripts/assert-playwright-stats.mjs test-results/prepush-mobile-safari.json 7 0; then
     MOBILE_END=$(date +%s)
     MOBILE_DURATION=$((MOBILE_END - MOBILE_START))
     echo ""
@@ -150,7 +173,7 @@ else
     exit 1
 fi
 
-TOTAL_DURATION=$((UNIT_DURATION + FULL_DURATION + MOBILE_DURATION))
+TOTAL_DURATION=$((UNIT_DURATION + FULL_DURATION + WEBKIT_DURATION + MOBILE_DURATION))
 
 echo "========================================"
 echo "  ✅ All tests passed! (${TOTAL_DURATION}s)"

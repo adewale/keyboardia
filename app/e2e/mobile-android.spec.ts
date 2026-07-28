@@ -24,8 +24,13 @@ test.describe('Android Mobile', () => {
     if (await stepCell.isVisible()) {
       await stepCell.tap();
 
-      await expect(stepCell).toHaveClass(/active/, { timeout: 1000 })
-        .catch(() => expect(stepCell).toHaveAttribute('aria-pressed', 'true'));
+      await expect.poll(async () => {
+        const [className, pressed] = await Promise.all([
+          stepCell.getAttribute('class'),
+          stepCell.getAttribute('aria-pressed'),
+        ]);
+        return className?.split(/\s+/).includes('active') || pressed === 'true';
+      }, { timeout: 1000 }).toBe(true);
     }
   });
 });

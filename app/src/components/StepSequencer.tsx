@@ -28,7 +28,7 @@ import { useOrientationMode } from '../hooks/useDisplayMode';
 import { features } from '../config/features';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
-import { detectMirrorDirection } from '../utils/patternOps';
+import { detectMirrorDirection } from '../shared/pattern-operations';
 import { AsyncActionLatch } from '../utils/AsyncActionLatch';
 import { resolveTrackReorder } from './track-reorder';
 import './StepSequencer.css';
@@ -46,10 +46,8 @@ export function StepSequencer() {
   // Use multiplayer dispatch if connected, otherwise regular dispatch
   const dispatch = multiplayer?.dispatch ?? gridDispatch;
   // Stable getters for values the scheduler and the keyboard listener read
-  // without wanting to re-subscribe. These replace refs that were synced in
-  // effects; useStableGetter updates during render instead, closing the window
-  // where a keypress landing between render and effect flush saw the previous
-  // value.
+  // without wanting to re-subscribe. useStableGetter publishes values in the
+  // commit phase, so timers cannot observe an abandoned concurrent render.
   const getState = useStableGetter(state);
   const playbackActiveRef = useRef(state.isPlaying);
   const playbackStartLatchRef = useRef(new AsyncActionLatch());

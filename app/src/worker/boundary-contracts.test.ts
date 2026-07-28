@@ -1,22 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Track, ParameterLock as AppParameterLock } from '../types';
 import type { SessionTrack, ParameterLock as WorkerParameterLock } from './types';
-import {
-  MIN_TEMPO as APP_MIN_TEMPO,
-  MAX_TEMPO as APP_MAX_TEMPO,
-  MIN_SWING as APP_MIN_SWING,
-  MAX_SWING as APP_MAX_SWING,
-  MAX_STEPS as APP_MAX_STEPS,
-  MAX_TRACKS as APP_MAX_TRACKS,
-} from '../types';
-import {
-  MIN_TEMPO as WORKER_MIN_TEMPO,
-  MAX_TEMPO as WORKER_MAX_TEMPO,
-  MIN_SWING as WORKER_MIN_SWING,
-  MAX_SWING as WORKER_MAX_SWING,
-  MAX_STEPS as WORKER_MAX_STEPS,
-  MAX_TRACKS as WORKER_MAX_TRACKS,
-} from './invariants';
 import { canonicalizeForHash } from './logging';
 import { canonicalizeForHash as clientCanonicalizeForHash } from '../sync/canonicalHash';
 
@@ -241,41 +225,10 @@ describe('ParameterLock parity', () => {
 });
 
 /**
- * Phase 13B: Constants parity tests
- * Ensures frontend and worker use the same bounds for validation.
- * If these fail, one side will reject values the other accepts.
- */
-describe('Constants parity between types.ts and worker/invariants.ts', () => {
-  it('MIN_TEMPO should match', () => {
-    expect(APP_MIN_TEMPO).toBe(WORKER_MIN_TEMPO);
-  });
-
-  it('MAX_TEMPO should match', () => {
-    expect(APP_MAX_TEMPO).toBe(WORKER_MAX_TEMPO);
-  });
-
-  it('MIN_SWING should match', () => {
-    expect(APP_MIN_SWING).toBe(WORKER_MIN_SWING);
-  });
-
-  it('MAX_SWING should match', () => {
-    expect(APP_MAX_SWING).toBe(WORKER_MAX_SWING);
-  });
-
-  it('MAX_STEPS should match', () => {
-    expect(APP_MAX_STEPS).toBe(WORKER_MAX_STEPS);
-  });
-
-  it('MAX_TRACKS should match', () => {
-    expect(APP_MAX_TRACKS).toBe(WORKER_MAX_TRACKS);
-  });
-});
-
-/**
  * Phase 26: State-mutating broadcast type tests
  * Ensures we correctly identify which server broadcasts affect state.
  */
-import { isStateMutatingBroadcast, STATE_MUTATING_BROADCASTS } from './types';
+import { isStateMutatingBroadcast, STATE_MUTATING_BROADCASTS } from '../shared/messages';
 
 describe('isStateMutatingBroadcast', () => {
   it('should return true for state-mutating broadcast types', () => {
@@ -381,7 +334,7 @@ describe('isStateMutatingBroadcast', () => {
  * Verifies that all mutation types in MUTATING_MESSAGE_TYPES would be blocked
  * on published (immutable) sessions via the centralized check.
  */
-import { MUTATING_MESSAGE_TYPES, isStateMutatingMessage } from './types';
+import { MUTATING_MESSAGE_TYPES, isStateMutatingMessage } from '../shared/messages';
 
 describe('TEST-08: Published Session WebSocket Blocking', () => {
   it('isStateMutatingMessage returns true for all MUTATING_MESSAGE_TYPES', () => {
@@ -507,10 +460,10 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
 // =============================================================================
 
 import {
-  validateCursorPosition,
   MIN_CURSOR_POSITION,
   MAX_CURSOR_POSITION,
-} from './invariants';
+} from '../shared/constants';
+import { validateCursorPosition } from './invariants';
 
 describe('Cursor Position Validation', () => {
   describe('validateCursorPosition', () => {

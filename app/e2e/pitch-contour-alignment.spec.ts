@@ -1,5 +1,5 @@
 import { test, expect, useMockAPI, waitForCollaborationReady } from './global-setup';
-import { API_BASE } from './test-utils';
+import { createSessionWithRetry } from './test-utils';
 
 /**
  * PitchContour SVG Alignment Tests
@@ -110,7 +110,7 @@ test.describe('PitchContour alignment', () => {
           name: 'Pitch Test',
           // PitchContour is intentionally limited to melodic instruments.
           sampleId: 'synth:lead',
-          steps: [true, true, true, true, false, false, true, true],
+          steps: [true, true, true, true, false, false, true, true, ...Array(120).fill(false)],
           parameterLocks: [
             { pitch: 0 },
             { pitch: 5 },
@@ -120,6 +120,7 @@ test.describe('PitchContour alignment', () => {
             null,
             { pitch: -3 },
             { pitch: 0 },
+            ...Array(120).fill(null),
           ],
           volume: 0.7,
           muted: false,
@@ -132,14 +133,7 @@ test.describe('PitchContour alignment', () => {
       version: 1,
     };
 
-    // Post session to API (respects BASE_URL env for full-stack testing)
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: sessionData,
-    });
-
-    expect(createRes.ok(), `fixture creation returned ${createRes.status()}`).toBe(true);
-
-    const { id: sessionId } = await createRes.json();
+    const { id: sessionId } = await createSessionWithRetry(request, sessionData);
 
     // Navigate directly to session
     await page.goto(`/s/${sessionId}`);

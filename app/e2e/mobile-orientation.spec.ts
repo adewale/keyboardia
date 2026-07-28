@@ -84,7 +84,8 @@ test.describe('Mobile Orientation - Portrait Mode', () => {
     await expect(page.locator('.sequencer-content')).not.toBeVisible();
   });
 
-  test('tap-anywhere-to-play-pause should toggle playback @blocking', async ({ page, request }) => {
+  test('tap-anywhere-to-play-pause should toggle playback @blocking', async ({ page, request, browserName }) => {
+    test.skip(browserName === 'webkit', 'Real audio playback is owned by Chromium; headless WebKit can wedge on AudioContext.resume()');
     // Use an owned populated session so browser hit-testing covers header,
     // track-label, and cell coordinates rather than only an empty grid.
     const { id } = await createPopulatedSessionWithRetry(request);
@@ -736,7 +737,8 @@ test.describe('Accessibility', () => {
 });
 
 test.describe('Performance', () => {
-  test('playback should maintain smooth animation', async ({ page, request }) => {
+  test('playback should maintain smooth animation', async ({ page, request, browserName }) => {
+    test.skip(browserName === 'webkit', 'Real audio playback is owned by Chromium; headless WebKit can wedge on AudioContext.resume()');
     await page.setViewportSize(PORTRAIT_VIEWPORT);
     const { id } = await createPopulatedSessionWithRetry(request);
     await page.goto(`/s/${id}`);

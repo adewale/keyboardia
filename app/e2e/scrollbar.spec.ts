@@ -34,7 +34,7 @@ function isMobileProject(projectName: string): boolean {
  * Create a test session with multiple tracks for scrollbar testing
  */
 async function createTestSession(request: Parameters<typeof createSessionWithRetry>[0], stepCount = 16) {
-  const steps = Array(64).fill(false);
+  const steps = Array(128).fill(false);
   steps[0] = true;
   steps[4] = true;
 
@@ -45,7 +45,7 @@ async function createTestSession(request: Parameters<typeof createSessionWithRet
         name: 'Kick',
         sampleId: 'kick',
         steps,
-        parameterLocks: Array(64).fill(null),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,
@@ -56,7 +56,7 @@ async function createTestSession(request: Parameters<typeof createSessionWithRet
         name: 'Snare',
         sampleId: 'snare',
         steps,
-        parameterLocks: Array(64).fill(null),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,

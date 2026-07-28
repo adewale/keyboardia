@@ -1,5 +1,14 @@
 import type { Sample } from '../types';
 
+/** Preserve the voice's designed balance, reducing gain only when it clips. */
+function limitMeasuredPeak(data: Float32Array): void {
+  let peak = 0;
+  for (const sample of data) peak = Math.max(peak, Math.abs(sample));
+  if (peak <= 1) return;
+  const gain = 1 / peak;
+  for (let index = 0; index < data.length; index++) data[index] *= gain;
+}
+
 // Generate synthesized sounds using Web Audio API
 // Covers drums, bass, synths, and FX - all procedurally generated
 
@@ -474,8 +483,6 @@ async function createBass(ctx: AudioContext): Promise<AudioBuffer> {
   const buffer = ctx.createBuffer(1, length, sampleRate);
   const data = buffer.getChannelData(0);
   const freq = 55; // A1
-  const harmonicWeightTotal = 1 + 1 / 2 + 1 / 3 + 1 / 4 + 1 / 5 + 1 / 6 + 1 / 7 + 1 / 8;
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     // Sawtooth-ish bass with harmonics
@@ -485,8 +492,9 @@ async function createBass(ctx: AudioContext): Promise<AudioBuffer> {
     }
     // Plucky envelope
     const amp = Math.exp(-t * 4) * 0.9;
-    data[i] = sample / harmonicWeightTotal * amp;
+    data[i] = sample * amp;
   }
+  limitMeasuredPeak(data);
 
   return buffer;
 }
@@ -519,8 +527,6 @@ async function createLead(ctx: AudioContext): Promise<AudioBuffer> {
   const buffer = ctx.createBuffer(1, length, sampleRate);
   const data = buffer.getChannelData(0);
   const freq = 440; // A4
-  const harmonicWeightTotal = 1 + 1 / 3 + 1 / 5 + 1 / 7;
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     // Square-ish wave (odd harmonics)
@@ -531,8 +537,9 @@ async function createLead(ctx: AudioContext): Promise<AudioBuffer> {
     // Synthy envelope with sustain
     const attack = Math.min(t * 100, 1);
     const release = t > 0.4 ? Math.exp(-(t - 0.4) * 10) : 1;
-    data[i] = sample / harmonicWeightTotal * attack * release * 0.9;
+    data[i] = sample * attack * release * 0.9;
   }
+  limitMeasuredPeak(data);
 
   return buffer;
 }
@@ -544,9 +551,6 @@ async function createPluck(ctx: AudioContext): Promise<AudioBuffer> {
   const buffer = ctx.createBuffer(1, length, sampleRate);
   const data = buffer.getChannelData(0);
   const freq = 330; // E4
-  const harmonicWeightTotal = 1 + 1 / 2 + 1 / 3 + 1 / 4 + 1 / 5 + 1 / 6
-    + 1 / 7 + 1 / 8 + 1 / 9 + 1 / 10 + 1 / 11 + 1 / 12;
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     // Karplus-Strong-ish pluck (harmonics that decay at different rates)
@@ -555,8 +559,9 @@ async function createPluck(ctx: AudioContext): Promise<AudioBuffer> {
       const harmonicDecay = Math.exp(-t * (5 + h * 3));
       sample += Math.sin(2 * Math.PI * freq * h * t) * harmonicDecay / h;
     }
-    data[i] = sample / harmonicWeightTotal * 0.9;
+    data[i] = sample * 0.9;
   }
+  limitMeasuredPeak(data);
 
   return buffer;
 }
@@ -569,10 +574,6 @@ async function createChord(ctx: AudioContext): Promise<AudioBuffer> {
   const data = buffer.getChannelData(0);
   // Minor chord: root, minor third, fifth
   const freqs = [220, 261.63, 330]; // A3, C4, E4
-  // Each of the three voices contributes 1 / (harmonic * 3), so their
-  // combined worst-case weight is the sum of the first four reciprocals.
-  const harmonicWeightTotal = 1 + 1 / 2 + 1 / 3 + 1 / 4;
-
   for (let i = 0; i < length; i++) {
     const t = i / sampleRate;
     let sample = 0;
@@ -585,8 +586,9 @@ async function createChord(ctx: AudioContext): Promise<AudioBuffer> {
     // Soft envelope
     const attack = Math.min(t * 20, 1);
     const release = t > 0.5 ? Math.exp(-(t - 0.5) * 5) : 1;
-    data[i] = sample / harmonicWeightTotal * attack * release * 0.9;
+    data[i] = sample * attack * release * 0.9;
   }
+  limitMeasuredPeak(data);
 
   return buffer;
 }

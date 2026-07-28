@@ -36,6 +36,7 @@
  */
 
 import type { APIRequestContext } from '@playwright/test';
+import { MAX_STEPS } from '../src/shared/constants';
 import { calculateBackoffDelay } from '../src/utils/retry';
 
 // Use local dev server - in CI we run with USE_MOCK_API=1
@@ -98,6 +99,27 @@ export async function createSessionWithRetry(
   data: Record<string, unknown>,
   maxRetries = 3
 ): Promise<{ id: string }> {
+  const tracks = data.tracks;
+  if (Array.isArray(tracks)) {
+    for (const [index, candidate] of tracks.entries()) {
+      if (!candidate || typeof candidate !== 'object') continue;
+      const track = candidate as { id?: unknown; steps?: unknown; parameterLocks?: unknown };
+      const label = typeof track.id === 'string' ? track.id : `tracks[${index}]`;
+      if (!Array.isArray(track.steps) || track.steps.length !== MAX_STEPS) {
+        throw new Error(
+          `E2E fixture ${label} must provide exactly ${MAX_STEPS} steps; ` +
+          'use a direct API request when intentionally testing legacy normalization.',
+        );
+      }
+      if (!Array.isArray(track.parameterLocks) || track.parameterLocks.length !== MAX_STEPS) {
+        throw new Error(
+          `E2E fixture ${label} must provide exactly ${MAX_STEPS} parameter locks; ` +
+          'use a direct API request when intentionally testing legacy normalization.',
+        );
+      }
+    }
+  }
+
   let lastError: Error | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {

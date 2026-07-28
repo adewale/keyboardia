@@ -2,6 +2,7 @@ import { BrowserContext, APIRequestContext } from '@playwright/test';
 import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
+import { createE2EContext } from './browser-context';
 
 const API_BASE = getBaseUrl();
 
@@ -37,7 +38,7 @@ test.skip(useMockAPI, 'Phase 3 tests include multiplayer sync requiring real bac
  * Pattern: steps 0, 4, 8, 12 are active (4-on-the-floor)
  */
 async function createTestSession(request: APIRequestContext) {
-  const steps = Array(64).fill(false);
+  const steps = Array(128).fill(false);
   steps[0] = true;
   steps[4] = true;
   steps[8] = true;
@@ -50,7 +51,7 @@ async function createTestSession(request: APIRequestContext) {
         name: 'Kick',
         sampleId: 'kick',
         steps,
-        parameterLocks: Array(64).fill(null),
+        parameterLocks: Array(128).fill(null),
         volume: 1,
         muted: false,
         transpose: 0,
@@ -275,8 +276,8 @@ test.describe('Pattern operations (single client)', () => {
           id: 'euclidean-test',
           name: 'Test',
           sampleId: 'kick',
-          steps: Array(64).fill(false),
-          parameterLocks: Array(64).fill(null),
+          steps: Array(128).fill(false),
+          parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
           transpose: 0,
@@ -320,9 +321,9 @@ test.describe('Pattern operations sync in multiplayer', () => {
   let page1: Page;
   let page2: Page;
 
-  test.beforeEach(async ({ browser }) => {
-    context1 = await browser.newContext();
-    context2 = await browser.newContext();
+  test.beforeEach(async ({ browser, browserName }) => {
+    context1 = await createE2EContext(browser, browserName);
+    context2 = await createE2EContext(browser, browserName);
     page1 = await context1.newPage();
     page2 = await context2.newPage();
   });
@@ -566,8 +567,8 @@ test.describe('Edge cases', () => {
           id: 'rapid-test',
           name: 'Test',
           sampleId: 'kick',
-          steps: Array(64).fill(false),
-          parameterLocks: Array(64).fill(null),
+          steps: Array(128).fill(false),
+          parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
           transpose: 0,
@@ -614,8 +615,8 @@ test.describe('Edge cases', () => {
           id: 'empty-test',
           name: 'Empty',
           sampleId: 'kick',
-          steps: Array(64).fill(false),
-          parameterLocks: Array(64).fill(null),
+          steps: Array(128).fill(false),
+          parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
           transpose: 0,

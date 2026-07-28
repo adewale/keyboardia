@@ -86,5 +86,21 @@ describe('instrument volume contracts', () => {
         expect.soft(peak(buffer), `${id} clips`).toBeLessThanOrEqual(MAX_SAFE_PEAK);
       }
     });
+
+    it('preserves the designed balance while limiting only measured clipping peaks', () => {
+      const levels = Object.fromEntries(['bass', 'lead', 'pluck', 'chord'].map((id) => {
+        const buffer = samples.get(id)?.buffer;
+        expect(buffer, `${id} has no rendered buffer`).toBeDefined();
+        return [id, { rms: rms(buffer!), peak: peak(buffer!) }];
+      }));
+
+      expect(levels.bass.rms).toBeGreaterThan(0.24);
+      expect(levels.lead.rms).toBeGreaterThan(0.45);
+      expect(levels.pluck.rms).toBeGreaterThan(0.16);
+      expect(levels.chord.rms).toBeGreaterThan(0.24);
+      for (const level of Object.values(levels)) expect(level.peak).toBeLessThanOrEqual(1);
+      expect(levels.lead.rms).toBeGreaterThan(levels.chord.rms);
+      expect(levels.bass.rms).toBeGreaterThan(levels.pluck.rms);
+    });
   });
 });

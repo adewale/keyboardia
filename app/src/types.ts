@@ -1,6 +1,5 @@
 // Re-export shared sync types (canonical definitions in shared/sync-types.ts)
 export type { ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
-export { VALID_STEP_COUNTS } from './shared/sync-types';
 import type { ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
 import { VALID_STEP_COUNTS } from './shared/sync-types';
 
@@ -10,11 +9,7 @@ export {
   MAX_STEPS,
   STEPS_PER_PAGE,
   DEFAULT_STEP_COUNT,
-  MIN_TEMPO,
-  MAX_TEMPO,
   DEFAULT_TEMPO,
-  MIN_SWING,
-  MAX_SWING,
   DEFAULT_SWING,
 } from './shared/constants';
 // Import for local use

@@ -284,6 +284,8 @@ describe('audioTriggers', () => {
 
   describe('signalMusicIntent audio initialization', () => {
     beforeEach(() => {
+      delete (window as unknown as { __KEYBOARDIA_DISABLE_AUDIO_PRELOAD__?: boolean })
+        .__KEYBOARDIA_DISABLE_AUDIO_PRELOAD__;
       engineMock.isInitialized.mockReset().mockReturnValue(false);
       engineMock.initialize.mockReset().mockResolvedValue(undefined);
     });
@@ -300,6 +302,15 @@ describe('audioTriggers', () => {
 
     it('does not initialize audio for preview-only intent', async () => {
       await signalMusicIntent('preview_hover');
+
+      expect(engineMock.initialize).not.toHaveBeenCalled();
+    });
+
+    it('keeps low-priority edit intents synchronous when the browser harness disables preloading', async () => {
+      (window as unknown as { __KEYBOARDIA_DISABLE_AUDIO_PRELOAD__?: boolean })
+        .__KEYBOARDIA_DISABLE_AUDIO_PRELOAD__ = true;
+
+      await signalMusicIntent('step_toggle');
 
       expect(engineMock.initialize).not.toHaveBeenCalled();
     });

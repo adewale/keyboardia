@@ -33,7 +33,7 @@ const REPORT_DIR = resolve(THIS_DIR, '../test-results/instrument-range');
 // Probe a spread across the grid: deep low, low, octave, fifth, root, up...
 const PROBE_OFFSETS = [-24, -18, -12, -7, 0, 7, 12, 18, 24];
 const STEP_COUNT = 16;
-const TOTAL_STEPS = 64;
+const TOTAL_STEPS = 128;
 
 function sampledInstrumentIds(): string[] {
   const ids: string[] = [];

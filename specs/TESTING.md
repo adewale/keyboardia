@@ -23,7 +23,9 @@ Prefer the narrowest controllable seam that still executes production code:
   the strict zero-skip mock subset; `e2e/worker-required-files.txt` contains
   every spec that guards behavior with `useMockAPI` plus the shared Worker
   contracts. `npm run validate:e2e-inventories` fails when a real-backend guard
-  is introduced without Worker coverage.
+  is introduced without Worker coverage. `e2e/test-title-inventory.txt` also
+  commits every exact Chromium file/suite/title identity, so replacing or
+  silently dropping a test requires an explicit inventory review.
 - Reporter statistics are release contracts, not summaries. Required mock and
   Worker lanes reject any skipped, flaky, or unexpected result; the remaining
   offline lane ratchets its reviewed pass/skip totals so a new skip cannot turn
@@ -753,14 +755,16 @@ npm run validate:test-quality
 
 ### Checking the tests themselves
 
-Two dependency-free scripts run in the `lint` CI job. They exist because every
-pattern they detect shipped here as a passing test that could not fail — see
+Four TypeScript-parser-based checks run in the `lint` CI job. They exist because
+every pattern they detect shipped here as apparently valid coverage — see
 `docs/TEST-AUDIT-2026-07.md`.
 
 ```bash
 npm run validate:test-antipatterns   # gating
-npm run validate:test-links          # advisory
-npm run validate:test-quality        # both
+npm run validate:test-links          # gating
+npm run validate:dead-exports        # gating
+npm run validate:unrun-tests         # gating, zero exceptions
+npm run validate:test-quality        # all four
 ```
 
 `validate:test-antipatterns` **fails the build**. It reports assertions
@@ -769,8 +773,8 @@ tautologies (`expect(true).toBe(true)`), self-comparisons, and tests with no
 assertion at all. Matching runs over comment-stripped source, so describing one
 of these patterns in a comment is not reported as an instance of it.
 
-`validate:test-links` is **advisory**. It reports three kinds of test that are
-not connected to the code they claim to cover:
+`validate:test-links` **fails the build** on three kinds of test that are not
+connected to the code they claim to cover:
 
 | Finding | Meaning | Fix |
 |---|---|---|
@@ -778,11 +782,19 @@ not connected to the code they claim to cover:
 | REIMPL | the test defines its own copy of the logic it names | export the real function and import it |
 | DEAD | a module is imported only by its own tests | delete the module, or wire it up |
 
-DEAD needs a human call — a module can be legitimately new — which is why this
-one informs rather than blocks. A standing DEAD finding should be resolved, not
-left to accumulate; the last one that was, `src/worker/validators.ts`, had 64
-green tests describing a protection that did not run, and the gap they masked
+DEAD needs a human call — a module can be legitimately new — but the call must
+be made in the change that introduces it. The gate does not preserve a standing
+exception. The last accumulated DEAD finding, `src/worker/validators.ts`, had
+64 green tests describing a protection that did not run, and the gap it masked
 was a live state-corruption bug.
+
+`validate:dead-exports` traces import, export, re-export, dynamic-import, Worker
+entry, and build-tool reachability. Runtime exports used only by tests are
+findings; build-only exports are reported separately and accepted.
+
+`validate:unrun-tests` asks Vitest and Playwright what they actually collect.
+Every test file must belong to a lane. There is no permanent allowlist: wire a
+unique contract into CI, or delete redundant test theatre.
 
 The offline backend deliberately does not implement WebSockets. Browser tests
 that work in both modes must call `waitForCollaborationReady(page)` rather than
@@ -791,21 +803,36 @@ when `USE_MOCK_API=1`.
 
 Because that helper is a no-op offline, a spec relying on it proves nothing
 about the connected path when CI runs it with `USE_MOCK_API=1`. Any spec that
-needs an authoritative snapshot before it edits therefore also belongs in
-`CONNECTED_PATH_SPECS` in `scripts/test-e2e-full-stack.ts`, so the real-Worker
-job actually exercises the wait. Both jobs are blocking: the supported offline
-Chromium matrix, and the real-Worker collaboration run that covers the session
-contract plus the connected browser path.
+needs an authoritative snapshot before it edits therefore also belongs in the
+sorted `e2e/worker-required-files.txt` manifest. The inventory validator derives
+all `test.skip(useMockAPI, ...)` guards from source and fails if the manifest
+misses one. Both the offline Chromium matrix and real-Worker path are blocking.
 
 ---
 
 ## 6. CI/CD Integration
 
-The authoritative workflow is `.github/workflows/ci.yml` and uses the repository-wide Node version. E2E coverage has three distinct evidence levels:
+The authoritative workflow is `.github/workflows/ci.yml` and uses the
+repository-wide Node version. Every Playwright report is checked against both
+reviewed pass/skip totals and the exact title inventory:
 
-1. **Blocking mock-compatible Chromium:** the five files in `app/e2e/mock-compatible-files.txt` must discover exactly 65 tests. They run with `USE_MOCK_API=1`, `--retries=0`, and must report 65 expected results with zero skipped, flaky, or unexpected results. Separate JSON, HTML, trace, screenshot, and video paths prevent later Playwright runs from deleting this evidence.
-2. **Blocking remaining Chromium and Worker contract:** every other offline Chromium spec runs with zero retries, then 17 collaboration/session tests run against a real Wrangler Worker with zero skipped, flaky, or unexpected results. Mock mode is never treated as WebSocket or Durable Object evidence. Failure artifacts are retained.
-3. **Blocking macOS visuals:** the two deterministic Holby screenshots run on pinned `macos-14` Chromium against checked-in macOS baselines. The lane rejects skipped, flaky, retried, or unexpected results. Linux baselines are not substitutes.
+1. **Mock-compatible Chromium:** five manifest files, 65 passed, zero skipped.
+2. **Remaining offline Chromium:** 82 passed and 69 reviewed backend-dependent
+   skips; a new or renamed skip fails the contract.
+3. **Worker-owned Chromium subset:** 12 manifest files, 73 passed, zero skipped,
+   serialized below the production session-create rate limit.
+4. **Full real-backend browsers:** the functional suite runs against an owned
+   Wrangler process in Chromium (200 passed, 17 reviewed skips) and broad
+   WebKit (154 passed, 52 reviewed browser/project skips; seven real-audio
+   specs are excluded and four playback tests in mixed files are among the
+   reviewed skips because headless WebKit can wedge on `AudioContext.resume()`).
+5. **Visuals:** three deterministic Holby screenshots gate on pinned `macos-14`;
+   11 tagged screenshots gate on the Linux real-Worker runner. Platform
+   baselines are not interchangeable.
+
+The full-stack launcher rejects an occupied port, tags health with a per-run
+nonce, races readiness against early Worker exit, enforces a 30-minute wall
+timeout, and terminates the detached process group on completion or signal.
 
 Unit tests retain Vitest's five-second global timeout. A measured slow property or render test may declare a local timeout in that test only. Do not reintroduce probabilistic WebSocket doubles as “chaos” evidence; named faults need a deterministic seam or a real Worker contract with an assertion proving the fault occurred.
 

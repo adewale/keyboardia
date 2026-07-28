@@ -7,8 +7,6 @@ export default defineConfig({
       '**/dist/**',
       // Exclude integration tests - they use a separate vitest config with workers pool
       'test/integration/**',
-      // Exclude staging tests - they require a live server (run explicitly with vitest run test/staging/)
-      'test/staging/**',
     ],
     // Include product tests plus pure deployment-check classifiers whose
     // failure modes must remain in the ordinary unit-test gate.

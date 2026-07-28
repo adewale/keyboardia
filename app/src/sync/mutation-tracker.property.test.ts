@@ -216,7 +216,7 @@ describe('mutation-tracker - Property-Based Tests', () => {
               .filter((m, i, arr) => arr.findIndex((x) => x.seq === m.seq) === i)
               .slice(0, 3);
 
-            if (uniqueMutations.length < 3) return;
+            fc.pre(uniqueMutations.length >= 3);
 
             uniqueMutations.forEach((m) => tracker.trackMutation(m));
             const initialPending = tracker.getStats().pending;

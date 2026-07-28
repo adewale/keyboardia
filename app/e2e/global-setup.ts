@@ -12,6 +12,7 @@
 import { test as base, expect, Page, Locator, devices } from '@playwright/test';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 import type { SessionState } from './test-utils';
+import { configureE2EPage } from './browser-context';
 
 /**
  * Whether we're running in CI environment
@@ -35,6 +36,17 @@ export interface CreateSessionInput {
   version?: number;
 }
 
+async function settleWithin<T>(promise: Promise<T>, timeoutMs: number): Promise<void> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    promise.then(() => undefined),
+    new Promise<void>((resolve) => {
+      timer = setTimeout(resolve, timeoutMs);
+    }),
+  ]);
+  if (timer) clearTimeout(timer);
+}
+
 /**
  * Test base for HTTP-backed session creation and isolated browser storage.
  */
@@ -47,23 +59,23 @@ export const test = base.extend<{
    * Every E2E document owns its AudioContext. Close it before Playwright reuses
    * the browser process so one test cannot starve the next test's page.
    */
-  releasePageAudio: [async ({ page }, use) => {
+  releasePageAudio: [async ({ page, browserName }, use) => {
+    await configureE2EPage(page, browserName);
     await use();
     if (page.isClosed()) return;
-    await page.evaluate(() => {
+    const shutdown = page.evaluate(() => {
       const engine = (window as unknown as {
         __audioEngine__?: { shutdown?: () => Promise<void> };
       }).__audioEngine__;
-      // shutdown() synchronously disposes nodes, clears the singleton context,
-      // and initiates close() before its first await. Do not await the native
-      // close promise here: headless WebKit can leave it pending forever after
-      // its media process wedges, which would turn cleanup into a second
-      // 30-second test failure. Page destruction owns the final fallback.
-      void engine?.shutdown?.();
+      return engine?.shutdown?.();
     }).catch(() => {
       // A test may intentionally navigate or close the page during teardown.
       // The pagehide lifecycle handler owns cleanup in that case.
     });
+    // Normally wait for close() so WebKit does not accumulate live contexts
+    // across a serial worker. A wedged media process can leave close() pending
+    // forever, so bound the wait and let page destruction be the fallback.
+    await settleWithin(shutdown, 2_000);
   }, { auto: true }],
 
   /**

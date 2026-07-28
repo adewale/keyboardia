@@ -25,9 +25,9 @@
  * Per-call `{ seed: ... }` options still win over this global default, so the
  * files that already pin their own seed keep doing so.
  *
- * NOTE: a scheduled job running with a random FC_SEED is the intended companion
- * to this — it keeps widening coverage while PR runs stay deterministic. That
- * job is not wired up yet; see docs/TEST-AUDIT-2026-07.md.
+ * `.github/workflows/property-seed.yml` is the companion: its weekly run uses
+ * the numeric GitHub run id as a rotating, logged, replayable seed while PR
+ * runs retain this deterministic default.
  */
 import fc from 'fast-check';
 

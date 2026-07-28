@@ -103,7 +103,8 @@ test.describe('Keyboard Shortcuts', () => {
   // src/hooks/useKeyboard.ts. It is not conditional, so this test is not either
   // — the previous "(if implemented)" version wrapped a bare console.log in
   // `.toPass().catch(() => {})` and could not fail.
-  test('Space starts and stops playback', async ({ page }) => {
+  test('Space starts and stops playback', async ({ page, browserName }) => {
+    test.skip(browserName === 'webkit', 'Real audio playback is owned by Chromium; headless WebKit can wedge on AudioContext.resume()');
     const playButton = page.getByTestId('play-button');
     await expect(playButton).toHaveAttribute('aria-label', 'Play');
 

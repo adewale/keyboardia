@@ -329,7 +329,7 @@ describe('KV flush on last disconnect', () => {
 ### Integration Tests
 
 ```typescript
-// test/staging/kv-flush-on-disconnect.test.ts
+// Historical sketch; implemented in test/integration/state-machine-fuzz.test.ts
 
 describe('KV flush on disconnect (staging)', () => {
   it('state survives rapid disconnect/reconnect', async () => {
@@ -385,7 +385,7 @@ describe('KV flush on disconnect (staging)', () => {
 |------|--------|
 | `src/worker/live-session.ts` | Add `flushPendingKVSave()`, call on disconnect |
 | `test/unit/kv-flush-on-disconnect.test.ts` | New test file |
-| `test/staging/multiplayer-sync.test.ts` | Add reconnection test |
+| `test/integration/eviction-recovery.test.ts` | Reconnection, hibernation, and recovery contracts (implemented) |
 
 ---
 

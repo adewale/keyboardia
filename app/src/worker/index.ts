@@ -343,7 +343,7 @@ async function handleApiRequest(
   // GET /api/health - Health check endpoint for monitoring and testing
   if (path === '/api/health' && method === 'GET') {
     emitEvent(200);
-    return new Response(JSON.stringify({ status: 'ok' }), {
+    return new Response(JSON.stringify({ status: 'ok', runId: env.E2E_RUN_ID ?? null }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

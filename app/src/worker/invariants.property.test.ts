@@ -34,13 +34,15 @@ import {
   MAX_VOLUME,
   MIN_TRANSPOSE,
   MAX_TRANSPOSE,
+} from './invariants';
+import {
   MIN_PLOCK_PITCH,
   MAX_PLOCK_PITCH,
   MIN_PLOCK_VOLUME,
   MAX_PLOCK_VOLUME,
   MIN_CURSOR_POSITION,
   MAX_CURSOR_POSITION,
-} from './invariants';
+} from '../shared/constants';
 import { validateSessionState } from './validation';
 import { SCALES } from '../music/music-theory';
 import type { SessionState, SessionTrack } from './types';

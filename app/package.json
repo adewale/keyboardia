@@ -27,7 +27,6 @@
     "test:e2e:full-stack:smoke": "tsx scripts/test-e2e-full-stack.ts --smoke",
     "test:e2e:session-contract:worker": "tsx scripts/test-e2e-full-stack.ts --session-contract",
     "test:e2e:collaboration:worker": "tsx scripts/test-e2e-full-stack.ts --collaboration",
-    "test:e2e:staging": "RUN_STAGING_E2E=1 npx playwright test e2e/staging/ --project=chromium",
     "smoke:mcp": "tsx scripts/mcp-smoke.ts",
     "smoke:mcp:staging": "tsx scripts/mcp-smoke.ts https://staging.keyboardia.dev",
     "smoke:mcp:production": "tsx scripts/mcp-smoke.ts https://keyboardia.dev",

@@ -18,6 +18,7 @@
 import { BrowserContext, Page } from '@playwright/test';
 import { test, expect, getBaseUrl, waitForAppReady, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
+import { createE2EContext } from './browser-context';
 
 // Multiplayer tests require real backend - WebSocket sync cannot be mocked
 // across multiple browser contexts (each context has independent route mocks)
@@ -32,7 +33,7 @@ test.describe('Multiplayer real-time sync', () => {
   let page2: Page;
   let sessionId: string;
 
-  test.beforeEach(async ({ browser, request }) => {
+  test.beforeEach(async ({ browser, browserName, request }) => {
     // Create a fresh session for each test
     // This file already skips wholesale under USE_MOCK_API (see top), so by the
     // time we get here a real backend is expected. A session that still fails to
@@ -47,8 +48,8 @@ test.describe('Multiplayer real-time sync', () => {
           id: 'mp-test-track',
           name: 'Test',
           sampleId: 'kick',
-          steps: Array(64).fill(false),
-          parameterLocks: Array(64).fill(null),
+          steps: Array(128).fill(false),
+          parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
           transpose: 0,
@@ -63,8 +64,8 @@ test.describe('Multiplayer real-time sync', () => {
     expect(sessionId, 'backend returned a session with no id').toBeTruthy();
 
     // Create two independent browser contexts (simulating two users)
-    context1 = await browser.newContext();
-    context2 = await browser.newContext();
+    context1 = await createE2EContext(browser, browserName);
+    context2 = await createE2EContext(browser, browserName);
     page1 = await context1.newPage();
     page2 = await context2.newPage();
   });
@@ -223,7 +224,7 @@ test.describe('Multiplayer real-time sync', () => {
 });
 
 test.describe('Multiplayer connection resilience', () => {
-  test('client reconnects after brief disconnection', async ({ browser, request }) => {
+  test('client reconnects after brief disconnection', async ({ browser, browserName, request }) => {
     // A real backend is guaranteed here (the file skips under USE_MOCK_API), so
     // a failure to create the session is a backend failure, not a skip.
     const result = await createSessionWithRetry(request, {
@@ -232,8 +233,8 @@ test.describe('Multiplayer connection resilience', () => {
           id: 'reconnect-test',
           name: 'Test',
           sampleId: 'kick',
-          steps: Array(64).fill(false),
-          parameterLocks: Array(64).fill(null),
+          steps: Array(128).fill(false),
+          parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
           transpose: 0,
@@ -246,7 +247,7 @@ test.describe('Multiplayer connection resilience', () => {
     });
     const sessionId = result.id;
 
-    const context = await browser.newContext();
+    const context = await createE2EContext(browser, browserName);
     const page = await context.newPage();
 
     // Load session using proper waits

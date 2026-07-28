@@ -18,7 +18,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
 import { basename } from 'path';
-import { collectModuleSpecifiers, collectTopLevelFunctionNames } from './test-quality-analyzers';
+import { collectTopLevelFunctionNames, collectUsedModuleSpecifiers } from './test-quality-analyzers';
 
 interface Finding { kind: 'ORPHAN' | 'REIMPL' | 'DEAD'; file: string; detail: string }
 
@@ -33,7 +33,7 @@ const findings: Finding[] = [];
 for (const file of testFiles) {
   const subject = basename(file).replace(/\.(property\.)?test\.tsx?$/, '');
   const src = readFileSync(file, 'utf-8');
-  const specifiers = collectModuleSpecifiers(src, file);
+  const specifiers = collectUsedModuleSpecifiers(src, file);
 
   if (specifiers.some((s) => s.split('/').pop() === subject)) continue;
 

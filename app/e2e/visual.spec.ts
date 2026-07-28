@@ -131,23 +131,27 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
 
     // The full row is wider than the desktop viewport. Locator screenshots
     // therefore scrolled it under the sticky app header and captured the
-    // random presence avatar instead of any track pixels. The step strip fits
-    // without scrolling; assert that it is below the header and wholly inside
-    // the viewport before treating its pixels as the visual contract.
+    // random presence avatar instead of any track pixels. Scroll the real last
+    // step into reach, then prove the sticky actions do not cover its hit area.
     const stepStrip = trackRow.locator('.steps');
     const stickyActions = trackRow.locator('.track-right');
     await expect(stickyActions).toBeVisible();
-    await stickyActions.evaluate((element) => { element.style.display = 'none'; });
+    const lastStep = stepStrip.locator('.step-cell').last();
+    await lastStep.scrollIntoViewIfNeeded();
 
-    const [stripBox, headerBox] = await Promise.all([
+    const [stripBox, headerBox, actionsBox, lastStepBox] = await Promise.all([
       stepStrip.boundingBox(),
       page.locator('.app-header').boundingBox(),
+      stickyActions.boundingBox(),
+      lastStep.boundingBox(),
     ]);
     expect(stripBox).not.toBeNull();
     expect(headerBox).not.toBeNull();
+    expect(actionsBox).not.toBeNull();
+    expect(lastStepBox).not.toBeNull();
     expect(stripBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
-    expect(stripBox!.x + stripBox!.width).toBeLessThanOrEqual(page.viewportSize()!.width);
-    expect(await stepStrip.locator('.step-cell').last().evaluate((element) => {
+    expect(lastStepBox!.x + lastStepBox!.width).toBeLessThanOrEqual(actionsBox!.x);
+    expect(await lastStep.evaluate((element) => {
       const box = element.getBoundingClientRect();
       return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
     })).toBe(true);

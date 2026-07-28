@@ -2,7 +2,8 @@ import type { Page } from '@playwright/test';
 import { createSessionWithRetry, API_BASE } from './test-utils';
 import { test, expect, waitForAppReady } from './global-setup';
 
-const TOTAL_STEPS = 16;
+const TOTAL_STEPS = 128;
+const ACTIVE_STEPS = 16;
 const SILENCE_PEAK = 1e-3;
 
 function buildSubBassTrack() {
@@ -13,13 +14,19 @@ function buildSubBassTrack() {
     // A simple repeating in-range sub-bass note. Before the filter-envelope
     // summing fix, the preset's envelopeAmount=0 drove filter.frequency to 0Hz
     // and this track rendered complete silence despite playSuccesses > 0.
-    steps: Array(TOTAL_STEPS).fill(true),
-    parameterLocks: Array(TOTAL_STEPS).fill({ pitch: -5 }),
+    steps: [
+      ...Array(ACTIVE_STEPS).fill(true),
+      ...Array(TOTAL_STEPS - ACTIVE_STEPS).fill(false),
+    ],
+    parameterLocks: [
+      ...Array(ACTIVE_STEPS).fill({ pitch: -5 }),
+      ...Array(TOTAL_STEPS - ACTIVE_STEPS).fill(null),
+    ],
     volume: 1,
     muted: false,
     soloed: false,
     transpose: 0,
-    stepCount: TOTAL_STEPS,
+    stepCount: ACTIVE_STEPS,
   };
 }
 

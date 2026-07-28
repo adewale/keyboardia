@@ -88,13 +88,21 @@ describe('validatedLoop properties', () => {
     fc.assert(
       fc.property(fc.boolean(), anyNumber, anyNumber, (loop, loopStart, loopEnd) => {
         const spec = validatedLoop({ loop, loopStart, loopEnd });
-        if (spec === null) return;
-        expect(loop).toBe(true);
-        expect(Number.isFinite(spec.start)).toBe(true);
-        expect(spec.start).toBeGreaterThanOrEqual(0);
-        if (spec.end !== undefined) {
-          expect(Number.isFinite(spec.end)).toBe(true);
-          expect(spec.end).toBeGreaterThan(spec.start);
+        if (spec === null) {
+          const start = loopStart ?? 0;
+          expect(loop !== true
+            || !Number.isFinite(start)
+            || start < 0
+            || (loopEnd !== undefined && (!Number.isFinite(loopEnd) || loopEnd <= start)))
+            .toBe(true);
+        } else {
+          expect(loop).toBe(true);
+          expect(Number.isFinite(spec.start)).toBe(true);
+          expect(spec.start).toBeGreaterThanOrEqual(0);
+          if (spec.end !== undefined) {
+            expect(Number.isFinite(spec.end)).toBe(true);
+            expect(spec.end).toBeGreaterThan(spec.start);
+          }
         }
       })
     );

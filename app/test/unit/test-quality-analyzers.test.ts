@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import {
   analyzeExportReachability,
   collectModuleSpecifiers,
+  collectUsedModuleSpecifiers,
   findUnrunTestFiles,
   scanTestSource,
   type SourceUnit,
@@ -46,13 +47,21 @@ describe('test anti-pattern analyzer', () => {
     expect(rules(source).filter((rule) => rule === 'zero-assertion-test')).toHaveLength(2);
   });
 
-  it('accepts inline assertions and named assertion helpers', () => {
+  it('accepts inline assertions and assertion-specific helpers', () => {
     const source = `
       it('checks inline', () => { expect(run()).toBe(2); });
       test.each([1])('checks helper', async (value) => { await expectSessionSynced(value); });
       it('checks page object', async () => { await page.expectStepActive(2); });
     `;
     expect(rules(source)).not.toContain('zero-assertion-test');
+  });
+
+  it('does not trust generic helper names or waits as assertions', () => {
+    const source = `
+      it('generic helper', () => { checkNothing(); });
+      it('timer wait', async () => { await page.waitForTimeout(50); });
+    `;
+    expect(rules(source).filter((rule) => rule === 'zero-assertion-test')).toHaveLength(2);
   });
 
   it('finds multiline swallowed assertions', () => {
@@ -67,6 +76,30 @@ describe('test anti-pattern analyzer', () => {
     expect(rules(source)).toContain('nullified-assertion');
   });
 
+  it('finds assertions swallowed by non-empty catch handlers and try/catch', () => {
+    const source = `
+      it('promise catch', async () => {
+        await expect(run()).rejects.toThrow().catch(error => report(error));
+      });
+      it('try catch', () => {
+        try { expect(run()).toBe(1); } catch (error) { report(error); }
+      });
+    `;
+    expect(rules(source)).toEqual(expect.arrayContaining([
+      'nullified-assertion',
+      'assertion-swallowed-by-own-catch',
+      'zero-assertion-test',
+    ]));
+  });
+
+  it('does not count unreachable or uninvoked assertions', () => {
+    const source = `
+      it('false branch', () => { if (false) expect(run()).toBe(1); });
+      it('nested helper', () => { function neverCalled() { expect(run()).toBe(1); } });
+    `;
+    expect(rules(source).filter((rule) => rule === 'zero-assertion-test')).toHaveLength(2);
+  });
+
   it('finds property tests that pass when the production bridge disappears', () => {
     const source = `
       it('stays equivalent', () => {
@@ -78,6 +111,24 @@ describe('test anti-pattern analyzer', () => {
       });
     `;
     expect(rules(source)).toContain('vacuous-property-guard');
+  });
+
+  it('finds bare property guards and test definitions that execute no rows', () => {
+    const source = `
+      it('property', () => fc.assert(fc.property(valueArb, value => {
+        if (!value) return;
+        expect(run(value)).toBe(true);
+      })));
+      test.skipIf(true)('skipped', () => expect(run()).toBe(true));
+      test.runIf(false)('also skipped', () => expect(run()).toBe(true));
+      it.each([])('empty %s', value => expect(value).toBe(true));
+    `;
+    expect(rules(source)).toEqual(expect.arrayContaining([
+      'vacuous-property-guard',
+      'runtime-self-skip',
+      'empty-test-table',
+    ]));
+    expect(rules(source).filter((rule) => rule === 'runtime-self-skip')).toHaveLength(2);
   });
 
   it('finds literal tautologies, stable self-comparisons, and string coercion oracles', () => {
@@ -115,6 +166,17 @@ describe('module linkage analyzer', () => {
     expect(collectModuleSpecifiers(source)).toEqual([
       './single', './double', './reexport', './dynamic',
     ]);
+  });
+
+  it('requires a static import binding to be used while retaining dynamic imports', () => {
+    const source = `
+      import './side-effect';
+      import { unused } from './unused';
+      import { live } from './live';
+      consume(live);
+      void import('./dynamic');
+    `;
+    expect(collectUsedModuleSpecifiers(source)).toEqual(['./live', './dynamic']);
   });
 
   it('does not let a same-named import from another module hide a dead export', () => {
@@ -206,6 +268,33 @@ describe('module linkage analyzer', () => {
       file: 'src/value.ts', name: 'value', kind: 'const', testFiles: 0, status: 'build-only',
     });
   });
+
+  it('tracks local export lists, aliases, and export-star barrels', () => {
+    const units: SourceUnit[] = [
+      { file: 'src/main.ts', source: `import { live } from './barrel'; consume(live);`, isTest: false, isEntry: true },
+      { file: 'src/impl.ts', source: `const live = 1; const dead = 2; export { live, dead as hidden };`, isTest: false },
+      { file: 'src/barrel.ts', source: `export * from './impl';`, isTest: false },
+    ];
+
+    expect(analyzeExportReachability(units).map(({ file, name, status }) => ({ file, name, status })))
+      .toEqual(expect.arrayContaining([
+        { file: 'src/impl.ts', name: 'live', status: 'runtime' },
+        { file: 'src/impl.ts', name: 'hidden', status: 'unreferenced' },
+        { file: 'src/barrel.ts', name: 'live', status: 'runtime' },
+        { file: 'src/barrel.ts', name: 'hidden', status: 'unreferenced' },
+      ]));
+  });
+
+  it('does not treat type-only imports as runtime callers', () => {
+    const units: SourceUnit[] = [
+      { file: 'src/main.ts', source: `import type { RuntimeThing } from './thing'; void 0;`, isTest: false, isEntry: true },
+      { file: 'src/thing.ts', source: `export class RuntimeThing {}`, isTest: false },
+    ];
+
+    expect(analyzeExportReachability(units)).toContainEqual({
+      file: 'src/thing.ts', name: 'RuntimeThing', kind: 'class', testFiles: 0, status: 'unreferenced',
+    });
+  });
 });
 
 describe('quality gate CLIs', () => {
@@ -230,10 +319,34 @@ describe('quality gate CLIs', () => {
     expect(result.stdout).toContain('Every test file is linked');
   });
 
+  it('does not let an unused or side-effect-only import satisfy subject linkage', () => {
+    for (const imported of [
+      `import './widget';`,
+      `import { widget } from './widget';`,
+    ]) {
+      const result = runChecker('check-test-subject-links.ts', {
+        'src/widget.ts': 'export const widget = 1;',
+        'src/widget.test.ts': `${imported} it('claims coverage', () => expect(1).toBe(1));`,
+      });
+      expect(result.status, result.stderr).toBe(1);
+      expect(result.stdout).toContain('ORPHAN (1)');
+    }
+  });
+
   it('fails the dead-export command on a real unreachable export fixture', () => {
     const result = runChecker('check-dead-exports.ts', {
       'src/main.ts': 'void 0;',
       'src/dead.ts': 'export const abandoned = 1;',
+    });
+
+    expect(result.status, result.stderr).toBe(1);
+    expect(result.stdout).toContain('EXPORTED BUT UNIMPORTED (1)');
+  });
+
+  it('fails the dead-export command on an unreachable local export list', () => {
+    const result = runChecker('check-dead-exports.ts', {
+      'src/main.ts': 'void 0;',
+      'src/dead.ts': 'const abandoned = 1; export { abandoned };',
     });
 
     expect(result.status, result.stderr).toBe(1);

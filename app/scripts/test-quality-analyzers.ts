@@ -27,7 +27,7 @@ export interface SourceUnit {
 export interface DeadExportFinding {
   file: string;
   name: string;
-  kind: 'function' | 'const' | 'class';
+  kind: 'function' | 'const' | 'class' | 're-export';
   testFiles: number;
 }
 
@@ -69,31 +69,92 @@ function containsExpect(node: ts.Node): boolean {
   );
 }
 
-function isEmptyCallback(node: ts.Expression): boolean {
-  if (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node)) return false;
-  return ts.isBlock(node.body) && node.body.statements.length === 0;
+function callbackAlwaysThrows(node: ts.Expression | undefined): boolean {
+  if (!node || (!ts.isArrowFunction(node) && !ts.isFunctionExpression(node))) return false;
+  if (ts.isThrowStatement(node.body)) return true;
+  return ts.isBlock(node.body)
+    && node.body.statements.length > 0
+    && node.body.statements.every((statement) => ts.isThrowStatement(statement));
+}
+
+function isSwallowedAssertion(node: ts.Node, boundary: ts.Node): boolean {
+  let current: ts.Node | undefined = node.parent;
+  while (current && current !== boundary) {
+    if (ts.isTryStatement(current) && current.tryBlock.getStart() <= node.getStart()
+      && node.getEnd() <= current.tryBlock.getEnd()
+      && current.catchClause
+      && !current.catchClause.block.statements.some(ts.isThrowStatement)) return true;
+    if (ts.isCallExpression(current)
+      && ts.isPropertyAccessExpression(current.expression)
+      && current.expression.name.text === 'catch'
+      && current.expression.expression.getStart() <= node.getStart()
+      && node.getEnd() <= current.expression.expression.getEnd()
+      && !callbackAlwaysThrows(current.arguments[0])) return true;
+    current = current.parent;
+  }
+  return false;
+}
+
+function isAssertionCall(node: ts.CallExpression): boolean {
+  const callee = node.expression;
+  if (ts.isIdentifier(callee)) {
+    return callee.text === 'expect'
+      || /^expect[A-Z]\w*$/.test(callee.text)
+      || /^assert(?:[A-Z]\w*)?$/.test(callee.text);
+  }
+  if (!ts.isPropertyAccessExpression(callee)) return false;
+  let root: ts.Expression = callee.expression;
+  while (ts.isCallExpression(root) || ts.isPropertyAccessExpression(root)) {
+    root = ts.isCallExpression(root) ? root.expression : root.expression;
+  }
+  const expectMatcherCall = ts.isIdentifier(root) && root.text === 'expect'
+    && !['poll', 'soft', 'not', 'resolves', 'rejects'].includes(callee.name.text);
+  return expectMatcherCall
+    || callee.name.text === 'toPass'
+    || /^expect[A-Z]\w*$/.test(callee.name.text)
+    || /^assert[A-Z]\w*$/.test(callee.name.text)
+    || (callee.name.text === 'assert'
+      && ts.isIdentifier(callee.expression)
+      && callee.expression.text === 'fc');
 }
 
 function isAssertionShaped(node: ts.Node): boolean {
-  return visit(node, (candidate) => {
-    if (ts.isThrowStatement(candidate)) return true;
-    if (!ts.isCallExpression(candidate)) return false;
-
-    const callee = candidate.expression;
-    if (ts.isIdentifier(callee)) {
-      return callee.text === 'expect'
-        || /^assert\w*$/.test(callee.text)
-        || /^(?:expect|assert|verify|check|poll|await)[A-Z]\w*$/.test(callee.text)
-        || /^waitFor\w*$/.test(callee.text);
+  let found = false;
+  const walk = (candidate: ts.Node, root = false): void => {
+    if (found) return;
+    if (!root && (ts.isArrowFunction(candidate) || ts.isFunctionExpression(candidate)
+      || ts.isFunctionDeclaration(candidate))) return;
+    if (ts.isIfStatement(candidate)
+      && candidate.expression.kind === ts.SyntaxKind.FalseKeyword) {
+      if (candidate.elseStatement) walk(candidate.elseStatement);
+      return;
     }
-    if (!ts.isPropertyAccessExpression(callee)) return false;
-    return callee.name.text === 'toPass'
-      || /^waitFor\w*$/.test(callee.name.text)
-      || /^(?:expect|assert|verify|check|poll|await)[A-Z]\w*$/.test(callee.name.text)
-      || (callee.name.text === 'assert'
-        && ts.isIdentifier(callee.expression)
-        && callee.expression.text === 'fc');
-  });
+    if (ts.isThrowStatement(candidate)) {
+      found = true;
+      return;
+    }
+    if (ts.isCallExpression(candidate) && isAssertionCall(candidate)
+      && !isSwallowedAssertion(candidate, node)) {
+      found = true;
+      return;
+    }
+    if (ts.isCallExpression(candidate)) {
+      const calleeName = ts.isIdentifier(candidate.expression) ? candidate.expression.text
+        : ts.isPropertyAccessExpression(candidate.expression) ? candidate.expression.name.text : '';
+      if (['waitFor', 'runInDurableObject', 'forEach'].includes(calleeName)) {
+        for (const argument of candidate.arguments) {
+          if ((ts.isArrowFunction(argument) || ts.isFunctionExpression(argument))
+            && isAssertionShaped(argument.body)) {
+            found = true;
+            return;
+          }
+        }
+      }
+    }
+    candidate.forEachChild((child) => walk(child));
+  };
+  walk(node, true);
+  return found;
 }
 
 interface TestCall {
@@ -107,7 +168,7 @@ function testCallee(expression: ts.Expression): { test: boolean; skipped: boolea
   }
   if (ts.isPropertyAccessExpression(expression)) {
     const modifier = expression.name.text;
-    if (!['only', 'skip', 'todo', 'concurrent', 'each', 'fails', 'fixme', 'slow'].includes(modifier)) {
+    if (!['only', 'skip', 'skipIf', 'runIf', 'todo', 'concurrent', 'each', 'fails', 'fixme', 'slow'].includes(modifier)) {
       return { test: false, skipped: false };
     }
     const base = testCallee(expression.expression);
@@ -119,6 +180,36 @@ function testCallee(expression: ts.Expression): { test: boolean; skipped: boolea
   if (ts.isCallExpression(expression)) return testCallee(expression.expression);
   if (ts.isTaggedTemplateExpression(expression)) return testCallee(expression.tag);
   return { test: false, skipped: false };
+}
+
+function staticallySkippedTest(node: ts.CallExpression): boolean {
+  const inspect = (expression: ts.Expression): boolean => {
+    if (ts.isCallExpression(expression)) {
+      if (ts.isPropertyAccessExpression(expression.expression)) {
+        const modifier = expression.expression.name.text;
+        const condition = expression.arguments[0]?.kind;
+        if (modifier === 'skipIf' && condition === ts.SyntaxKind.TrueKeyword) return true;
+        if (modifier === 'runIf' && condition === ts.SyntaxKind.FalseKeyword) return true;
+      }
+      return inspect(expression.expression);
+    }
+    return ts.isPropertyAccessExpression(expression) && inspect(expression.expression);
+  };
+  return inspect(node.expression);
+}
+
+function hasEmptyEachTable(node: ts.CallExpression): boolean {
+  const inspect = (expression: ts.Expression): boolean => {
+    if (ts.isCallExpression(expression)) {
+      if (ts.isPropertyAccessExpression(expression.expression)
+        && expression.expression.name.text === 'each'
+        && ts.isArrayLiteralExpression(expression.arguments[0])
+        && expression.arguments[0].elements.length === 0) return true;
+      return inspect(expression.expression);
+    }
+    return ts.isPropertyAccessExpression(expression) && inspect(expression.expression);
+  };
+  return inspect(node.expression);
 }
 
 function asTestCall(node: ts.CallExpression): TestCall | undefined {
@@ -176,7 +267,7 @@ function isLiteral(node: ts.Expression): boolean {
 }
 
 function isVacuousPropertyReturn(node: ts.ReturnStatement): boolean {
-  if (node.expression?.kind !== ts.SyntaxKind.TrueKeyword) return false;
+  if (node.expression && node.expression.kind !== ts.SyntaxKind.TrueKeyword) return false;
   let current: ts.Node | undefined = node.parent;
   while (current) {
     if (ts.isArrowFunction(current) || ts.isFunctionExpression(current)) {
@@ -237,7 +328,7 @@ export function scanTestSource(file: string, source: string): TestFinding[] {
       if (propertyName(node.expression) === 'catch'
         && ts.isPropertyAccessExpression(node.expression)
         && containsExpect(node.expression.expression)
-        && node.arguments.some(isEmptyCallback)) {
+        && !callbackAlwaysThrows(node.arguments[0])) {
         add('nullified-assertion', node);
       }
 
@@ -249,25 +340,17 @@ export function scanTestSource(file: string, source: string): TestFinding[] {
       }
 
       const testCall = asTestCall(node);
-      if (testCall?.callback && !testCall.skipped && !isAssertionShaped(testCall.callback.body)) {
+      if (testCall && staticallySkippedTest(node)) add('runtime-self-skip', node);
+      if (testCall && hasEmptyEachTable(node)) add('empty-test-table', node);
+      if (testCall?.callback && !testCall.skipped && !staticallySkippedTest(node)
+        && !isAssertionShaped(testCall.callback.body)) {
         add('zero-assertion-test', node);
       }
     }
 
-    if (ts.isTryStatement(node) && node.catchClause?.variableDeclaration
-      && ts.isIdentifier(node.catchClause.variableDeclaration.name)
-      && containsExpect(node.tryBlock)) {
-      const caught = node.catchClause.variableDeclaration.name.text;
-      const swallowed = node.catchClause.block.statements.find((statement) =>
-        visit(statement, (candidate) => {
-          if (!ts.isCallExpression(candidate)) return false;
-          const matcher = expectMatcher(candidate);
-          return matcher !== undefined
-            && isStableExpression(matcher.actual)
-            && matcher.actual.getText(sourceFile) === caught
-            && /^(?:toBeDefined|toBeTruthy|toBeNull|toBeInstanceOf)$/.test(matcher.matcher);
-        }));
-      if (swallowed) add('assertion-swallowed-by-own-catch', swallowed);
+    if (ts.isTryStatement(node) && node.catchClause && containsExpect(node.tryBlock)
+      && !node.catchClause.block.statements.some(ts.isThrowStatement)) {
+      add('assertion-swallowed-by-own-catch', node.catchClause);
     }
 
     if (ts.isReturnStatement(node) && isVacuousPropertyReturn(node)) {
@@ -303,6 +386,40 @@ export function collectModuleSpecifiers(source: string, file = 'source.ts'): str
   return [...specifiers];
 }
 
+/** Static module specifiers whose imported bindings are referenced by the file. */
+export function collectUsedModuleSpecifiers(source: string, file = 'source.ts'): string[] {
+  const sourceFile = parse(file, source);
+  const bindings = new Map<string, string>();
+  const dynamic = new Set<string>();
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement) || !ts.isStringLiteralLike(statement.moduleSpecifier)
+      || statement.importClause?.isTypeOnly) continue;
+    const specifier = statement.moduleSpecifier.text;
+    const clause = statement.importClause;
+    if (clause?.name) bindings.set(clause.name.text, specifier);
+    if (clause?.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
+      bindings.set(clause.namedBindings.name.text, specifier);
+    } else if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      for (const element of clause.namedBindings.elements) {
+        if (!element.isTypeOnly) bindings.set(element.name.text, specifier);
+      }
+    }
+  }
+  const used = new Set<string>();
+  const walk = (node: ts.Node): void => {
+    if (isImportCall(node)) {
+      dynamic.add((node.arguments[0] as ts.StringLiteral).text);
+    }
+    if (ts.isIdentifier(node) && isReferenceIdentifier(node)) {
+      const specifier = bindings.get(node.text);
+      if (specifier) used.add(specifier);
+    }
+    node.forEachChild(walk);
+  };
+  walk(sourceFile);
+  return [...used, ...dynamic];
+}
+
 export function collectTopLevelFunctionNames(source: string, file = 'source.ts'): string[] {
   const sourceFile = parse(file, source);
   return sourceFile.statements
@@ -336,6 +453,14 @@ interface DeclarationNode {
   exported: boolean;
   kind: DeadExportFinding['kind'];
   defaulted: boolean;
+}
+
+interface ExportSurface {
+  name: string;
+  node: ts.Node;
+  kind: DeadExportFinding['kind'];
+  targetFile: string;
+  targetName: string;
 }
 
 interface ImportBinding {
@@ -378,6 +503,84 @@ function topLevelDeclarations(sourceFile: ts.SourceFile): Map<string, Declaratio
   return declarations;
 }
 
+function exportedSurfaces(
+  file: string,
+  sourceFile: ts.SourceFile,
+  declarations: Map<string, DeclarationNode>,
+  files: Set<string>,
+  known: Map<string, ExportSurface[]>,
+): ExportSurface[] {
+  const surfaces = new Map<string, ExportSurface>();
+  const imported = new Map<string, { targetFile: string; targetName: string }>();
+  const add = (surface: ExportSurface) => surfaces.set(surface.name, surface);
+  for (const statement of sourceFile.statements) {
+    if (!ts.isImportDeclaration(statement) || statement.importClause?.isTypeOnly
+      || !ts.isStringLiteralLike(statement.moduleSpecifier)) continue;
+    const targetFile = resolveModule(file, statement.moduleSpecifier.text, files);
+    if (!targetFile) continue;
+    const clause = statement.importClause;
+    if (clause?.name) imported.set(clause.name.text, { targetFile, targetName: 'default' });
+    if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+      for (const element of clause.namedBindings.elements) {
+        if (!element.isTypeOnly) imported.set(element.name.text, {
+          targetFile,
+          targetName: element.propertyName?.text ?? element.name.text,
+        });
+      }
+    }
+  }
+  for (const declaration of declarations.values()) {
+    if (declaration.exported) add({
+      name: declaration.defaulted ? 'default' : declaration.name,
+      node: declaration.node,
+      kind: declaration.kind,
+      targetFile: file,
+      targetName: declaration.name,
+    });
+  }
+  for (const statement of sourceFile.statements) {
+    if (!ts.isExportDeclaration(statement) || statement.isTypeOnly) continue;
+    if (statement.moduleSpecifier && ts.isStringLiteralLike(statement.moduleSpecifier)) {
+      const target = resolveModule(file, statement.moduleSpecifier.text, files);
+      if (!target) continue;
+      if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+        for (const element of statement.exportClause.elements) {
+          if (element.isTypeOnly) continue;
+          const targetName = element.propertyName?.text ?? element.name.text;
+          const targetSurface = known.get(target)?.find((item) => item.name === targetName);
+          add({ name: element.name.text, node: element, kind: targetSurface?.kind ?? 're-export',
+            targetFile: target, targetName });
+        }
+      } else if (!statement.exportClause) {
+        for (const targetSurface of known.get(target) ?? []) {
+          if (targetSurface.name === 'default') continue;
+          add({ ...targetSurface, node: statement, targetFile: target, targetName: targetSurface.name });
+        }
+      }
+      continue;
+    }
+    if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+      for (const element of statement.exportClause.elements) {
+        if (element.isTypeOnly) continue;
+        const localName = element.propertyName?.text ?? element.name.text;
+        const declaration = declarations.get(localName);
+        if (declaration) {
+          add({ name: element.name.text, node: element, kind: declaration.kind,
+            targetFile: file, targetName: localName });
+        } else {
+          const binding = imported.get(localName);
+          if (!binding) continue;
+          const targetSurface = known.get(binding.targetFile)
+            ?.find((item) => item.name === binding.targetName);
+          add({ name: element.name.text, node: element, kind: targetSurface?.kind ?? 're-export',
+            targetFile: binding.targetFile, targetName: binding.targetName });
+        }
+      }
+    }
+  }
+  return [...surfaces.values()];
+}
+
 function isImportCall(node: ts.Node): node is ts.CallExpression {
   return ts.isCallExpression(node)
     && node.expression.kind === ts.SyntaxKind.ImportKeyword
@@ -415,7 +618,7 @@ function referencedEdges(
   files: Set<string>,
   localDeclarations: Map<string, DeclarationNode>,
   importBindings: Map<string, ImportBinding>,
-  exportsByFile: Map<string, DeclarationNode[]>,
+  exportsByFile: Map<string, ExportSurface[]>,
   graph: Map<string, Set<string>>,
 ): void {
   const addImported = (binding: ImportBinding, imported = binding.imported) => {
@@ -520,11 +723,26 @@ export function analyzeExportReachability(
   const files = new Set(normalized.map((unit) => unit.file));
   const parsed = new Map(normalized.map((unit) => [unit.file, parse(unit.file, unit.source)]));
   const declarationsByFile = new Map<string, Map<string, DeclarationNode>>();
-  const exportsByFile = new Map<string, DeclarationNode[]>();
+  const exportsByFile = new Map<string, ExportSurface[]>();
   for (const unit of normalized) {
     const declarations = topLevelDeclarations(parsed.get(unit.file)!);
     declarationsByFile.set(unit.file, declarations);
-    exportsByFile.set(unit.file, [...declarations.values()].filter((item) => item.exported));
+  }
+  // Barrels may re-export other barrels, so populate the exported surface to a
+  // fixed point instead of assuming source-file order is dependency order.
+  for (let pass = 0; pass <= normalized.length; pass += 1) {
+    let changed = false;
+    for (const unit of normalized) {
+      const next = exportedSurfaces(unit.file, parsed.get(unit.file)!,
+        declarationsByFile.get(unit.file)!, files, exportsByFile);
+      const before = exportsByFile.get(unit.file) ?? [];
+      if (next.map(({ name, targetFile, targetName }) => `${name}:${targetFile}:${targetName}`).join('|')
+        !== before.map(({ name, targetFile, targetName }) => `${name}:${targetFile}:${targetName}`).join('|')) {
+        exportsByFile.set(unit.file, next);
+        changed = true;
+      }
+    }
+    if (!changed) break;
   }
 
   const graph = new Map<string, Set<string>>();
@@ -535,15 +753,21 @@ export function analyzeExportReachability(
 
     for (const statement of sourceFile.statements) {
       if (ts.isImportDeclaration(statement) && ts.isStringLiteralLike(statement.moduleSpecifier)) {
+        if (statement.importClause?.isTypeOnly) continue;
         const target = resolveModule(unit.file, statement.moduleSpecifier.text, files);
         if (!target) continue;
-        addEdge(graph, moduleNode(unit.file), moduleNode(target));
         const clause = statement.importClause;
+        const hasRuntimeBinding = !clause || !!clause.name
+          || !!(clause.namedBindings && ts.isNamespaceImport(clause.namedBindings))
+          || !!(clause?.namedBindings && ts.isNamedImports(clause.namedBindings)
+            && clause.namedBindings.elements.some((element) => !element.isTypeOnly));
+        if (hasRuntimeBinding) addEdge(graph, moduleNode(unit.file), moduleNode(target));
         if (clause?.name) bindings.set(clause.name.text, { target, imported: 'default' });
         if (clause?.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
           bindings.set(clause.namedBindings.name.text, { target, imported: '*' });
         } else if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
           for (const element of clause.namedBindings.elements) {
+            if (element.isTypeOnly) continue;
             bindings.set(element.name.text, {
               target,
               imported: element.propertyName?.text ?? element.name.text,
@@ -551,12 +775,14 @@ export function analyzeExportReachability(
           }
         }
       } else if (ts.isExportDeclaration(statement)
+        && !statement.isTypeOnly
         && statement.moduleSpecifier && ts.isStringLiteralLike(statement.moduleSpecifier)) {
         const target = resolveModule(unit.file, statement.moduleSpecifier.text, files);
         if (!target) continue;
         addEdge(graph, moduleNode(unit.file), moduleNode(target));
         if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
           for (const element of statement.exportClause.elements) {
+            if (element.isTypeOnly) continue;
             const exportedName = element.name.text;
             const importedName = element.propertyName?.text ?? exportedName;
             addEdge(graph, declarationNode(unit.file, exportedName), declarationNode(target, importedName));
@@ -564,8 +790,22 @@ export function analyzeExportReachability(
               addEdge(graph, moduleNode(unit.file), declarationNode(unit.file, exportedName));
             }
           }
+        } else if (!statement.exportClause) {
+          for (const surface of exportsByFile.get(target) ?? []) {
+            if (surface.name === 'default') continue;
+            addEdge(graph, declarationNode(unit.file, surface.name),
+              declarationNode(target, surface.name));
+          }
         }
       }
+    }
+
+    for (const surface of exportsByFile.get(unit.file) ?? []) {
+      if (surface.targetFile !== unit.file || surface.targetName !== surface.name) {
+        addEdge(graph, declarationNode(unit.file, surface.name),
+          declarationNode(surface.targetFile, surface.targetName));
+      }
+      if (unit.isEntry) addEdge(graph, moduleNode(unit.file), declarationNode(unit.file, surface.name));
     }
 
     for (const declaration of declarations.values()) {
@@ -679,16 +919,14 @@ export function analyzeExportReachability(
  *
  * A test file that no runner collects is worse than a deleted one: it still
  * greps as coverage, still reads as a promise in review, and its assertions rot
- * unobserved. `test/staging/failure-modes.test.ts` carried an always-green
- * try/catch for months for exactly this reason — nothing ever ran it, so
- * nothing ever noticed.
+ * unobserved. A deleted live-server suite carried an always-green try/catch for
+ * months for exactly this reason — nothing ever ran it, so nothing noticed.
  *
  * The caller supplies what the runners themselves report collecting, so this
  * never re-derives include/exclude globs — reimplementing lane resolution here
- * would be the same drift this repo already paid for elsewhere. `allowed` is
- * the committed set of files deliberately left unrun; anything outside it is a
- * finding, and an allowlist entry that is no longer unrun is also a finding, so
- * the list cannot quietly outlive its reason.
+ * would be the same drift this repo already paid for elsewhere. The pure helper
+ * retains `allowed` for adversarial fixtures, while the repository gate passes
+ * an empty set: production test files have no permanent escape hatch.
  */
 export interface UnrunFindings {
   unlisted: string[];
