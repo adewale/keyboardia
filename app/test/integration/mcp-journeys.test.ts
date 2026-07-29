@@ -325,16 +325,9 @@ describe('MCP v1 onboarding journeys', () => {
     expect(result.isError).not.toBe(true);
     expect(result.structuredContent).toEqual({
       session_id: id,
-      immutable: false,
-      tempo: 120,
-      tracks: [{
-        track_id: 'lead-agent',
-        // The agent swapped a sound; it did not rename a collaborator's track.
-        name: 'Ada Lead',
-        sample_id: 'sampled:808-kick',
-        step_count: 16,
-        active_steps: [3, 11],
-      }],
+      applied: true,
+      verification_required: true,
+      next_tool: 'get_session',
     });
 
     const persisted = await (await SELF.fetch(`http://localhost/api/sessions/${id}`)).json() as {

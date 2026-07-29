@@ -33,7 +33,7 @@
     {
       "name": "edit_session",
       "title": "Edit Keyboardia session",
-      "description": "Make one narrow, retry-safe edit to an existing collaborative session. After every attempt, the next Keyboardia call must be get_session for the same session. Do not make another edit or finish from this tool's compact result; it is not verification. Supported operations: add_track, set_track_instrument, set_steps, and set_tempo. set_steps changes only the named steps; it never replaces a track or session. set_track_instrument replaces only a track's sound source, keeping its pattern, mix, timing, and custom name.",
+      "description": "Make one narrow, retry-safe edit to an existing collaborative session. After every attempt, the next Keyboardia call must be get_session for the same session. A successful call returns only an acknowledgement, never session state. Do not make another edit or finish from that acknowledgement; read with get_session to verify. Supported operations: add_track, set_track_instrument, set_steps, and set_tempo. set_steps changes only the named steps; it never replaces a track or session. set_track_instrument replaces only a track's sound source, keeping its pattern, mix, timing, and custom name.",
       "inputSchema": {
         "type": "object",
         "$schema": "https://json-schema.org/draft/2020-12/schema",

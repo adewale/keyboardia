@@ -206,6 +206,14 @@ describe('execution-graded evals', () => {
     expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, [
       trace[0]!, trace[1]!, { ...trace[2]!, result: baseline },
     ])).toBe(false);
+    expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, [
+      {
+        name: 'edit_session',
+        arguments: { session_id: 's', edit: { operation: 'set_steps' } },
+        success: false,
+      },
+      trace[3]!, trace[4]!,
+    ])).toBe(true);
     expect(scoreTraceAssertion({ check: 'edit_followed_by_read' }, trace)).toBe(true);
   });
 

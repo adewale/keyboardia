@@ -124,14 +124,15 @@ export function scoreTraceAssertion(assertion, trace) {
       return true;
     }
 
-    // Every attempted mutation is immediately closed by a successful read of
-    // the same session. Successful edits must also be visible in that read;
-    // after a failed edit, the read re-establishes current state before retry.
+    // Every successful or uncertain mutation is immediately closed by a
+    // successful read of the same session. A correlated `success: false` is a
+    // definite rejection and cannot have changed state, so it needs no read.
+    // Successful edits must also be visible in the authoritative read.
     case 'edit_followed_by_read': {
       const allCalls = trace ?? [];
       const edits = allCalls
         .map((call, index) => [call, index])
-        .filter(([call]) => call.name === 'edit_session');
+        .filter(([call]) => call.name === 'edit_session' && call.success !== false);
       return edits.some(([edit]) => edit.success === true) && edits.every(([edit, index]) => {
         const read = allCalls[index + 1];
         return read?.name === 'get_session'

@@ -18,8 +18,8 @@ GET → EDIT → GET → EDIT → GET
 
 After **every** `edit_session` attempt, the only allowed next Keyboardia action
 is `get_session` for the same session. Do this after success or failure, before
-another edit, and before the final answer. The compact state returned by
-`edit_session` does **not** count as verification. Never use
+another edit, and before the final answer. `edit_session` returns only an
+acknowledgement, never session state; only the following read verifies it. Never use
 `GET → EDIT → EDIT → GET` or finish on `EDIT`.
 
 - Start with `get_session`; use its current state and the live tool schema.

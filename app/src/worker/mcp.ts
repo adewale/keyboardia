@@ -294,6 +294,15 @@ function toolPayload(payload: Record<string, unknown>) {
   };
 }
 
+function editSuccess(sessionId: string) {
+  return toolPayload({
+    session_id: sessionId,
+    applied: true,
+    verification_required: true,
+    next_tool: 'get_session',
+  });
+}
+
 /**
  * Every session-lifecycle tool answers with the canonical /s/{session_id} URL
  * alongside the resulting music, so an agent always has something clickable to
@@ -392,7 +401,8 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       description: [
         'Make one narrow, retry-safe edit to an existing collaborative session.',
         'After every attempt, the next Keyboardia call must be get_session for the same session.',
-        'Do not make another edit or finish from this tool\'s compact result; it is not verification.',
+        'A successful call returns only an acknowledgement, never session state.',
+        'Do not make another edit or finish from that acknowledgement; read with get_session to verify.',
         'Supported operations: add_track, set_track_instrument, set_steps, and set_tempo.',
         'set_steps changes only the named steps; it never replaces a track or session.',
         'set_track_instrument replaces only a track\'s sound source, keeping its'
@@ -408,7 +418,8 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
     },
     async ({ session_id, edit }) => {
       try {
-        return toolSuccess(compactMcpSession(await sessions.editSession(session_id, edit)));
+        const session = await sessions.editSession(session_id, edit);
+        return editSuccess(session.id);
       } catch (error) {
         return toolError(error);
       }

@@ -156,8 +156,20 @@ interface EditSessionInput {
 }
 ```
 
-Every successful call returns the same compact current-session shape as
-`get_session`.
+Every successful call returns an acknowledgement, not session state:
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "applied": true,
+  "verification_required": true,
+  "next_tool": "get_session"
+}
+```
+
+The caller must invoke `get_session` next for the same session. This keeps the
+write acknowledgement distinct from an authoritative post-state read and makes
+the required read → edit → read loop explicit to small agents.
 
 The tool is annotated `destructiveHint: true`: although each operation is
 narrow and retry-safe, clearing a step, overwriting an instrument, or changing
