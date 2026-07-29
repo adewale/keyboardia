@@ -240,7 +240,7 @@ describe('autonomous discovery trace oracle', () => {
       .toThrow(/target call edit_session failed/);
   });
 
-  it('retains harmless failed discovery probes before the successful chain', () => {
+  it('rejects guessed discovery probes before the standard well-known catalog', () => {
     const trace = validTrace().map((entry) => ({
       ...entry,
       sequence: entry.sequence + 1,
@@ -254,7 +254,8 @@ describe('autonomous discovery trace oracle', () => {
       response: { success: false, error: 'fetch failed: HTTP 404' },
     });
 
-    expect(validateAutonomousTrace(trace, { origin: ORIGIN })).toMatchObject({ passed: true });
+    expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
+      .toThrow(/first network action/);
   });
 
   it('rejects an edit without a final verification read', () => {

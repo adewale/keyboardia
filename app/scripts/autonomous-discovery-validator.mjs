@@ -126,6 +126,8 @@ export function validateAutonomousTrace(events, { origin }) {
     return url.origin === normalizedOrigin && url.pathname === '/.well-known/agent-skills/index.json';
   });
   invariant(indexIndex >= 0, 'agent did not fetch the well-known skill catalog');
+  invariant(indexIndex === 0,
+    'the well-known skill catalog must be the agent\'s first network action');
   invariant(!events.slice(0, indexIndex).some((event) => event.phase.startsWith('mcp_')),
     'agent attempted MCP before fetching the catalog');
   const indexFetch = events[indexIndex];

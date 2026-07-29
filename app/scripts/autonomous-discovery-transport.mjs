@@ -100,7 +100,7 @@ server.registerTool(
   'fetch_url',
   {
     title: 'Fetch exact same-origin bytes',
-    description: 'Fetch an HTTP resource from the supplied site origin without following redirects. Returns exact UTF-8 response bytes and an opaque handle.',
+    description: 'Fetch an HTTP resource from the supplied site origin without following redirects. For Agent Skills discovery, the standard catalog is at /.well-known/agent-skills/index.json. Returns exact UTF-8 response bytes and an opaque handle.',
     inputSchema: z.object({ url: z.url() }).strict(),
     annotations: { readOnlyHint: true, openWorldHint: true },
   },
