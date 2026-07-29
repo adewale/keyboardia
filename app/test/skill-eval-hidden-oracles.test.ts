@@ -9,6 +9,8 @@ import { ORACLES as V4_ORACLES } from '../../evals/oracles/hidden-v4-answer.mjs'
 import { ORACLES as V5_ORACLES } from '../../evals/oracles/hidden-v5-answer.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
 import { ORACLES as V6_ORACLES } from '../../evals/oracles/hidden-v6-answer.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
+import { ORACLES as V7_ORACLES } from '../../evals/oracles/hidden-v7-answer.mjs';
 
 const call = (tool: string, arguments_: Record<string, unknown>) => ({ tool, arguments: arguments_ });
 const session = (tool: string, sessionId: string) => call(tool, { session_id: sessionId });
@@ -363,6 +365,76 @@ describe('hidden answer oracles', () => {
     expect(V6_ORACLES['attribution-regression'](JSON.stringify({
       attempted: { tempo: { before: 145, after: 147 } }, observed: { tempo: 147 },
       unattributed: { snare: { active_steps: { before: [1, 9], after: [1, 5, 9] } } },
+    }))).toMatchObject({ passed: true });
+  });
+
+  it('accepts semantic v7 envelopes while preserving exact MCP calls', () => {
+    const sid = '[SESSION_ID]';
+    expect(V7_ORACLES['discovery-edit-trace'](JSON.stringify([
+      { action: 'fetch_catalog', url: 'https://keyboardia.dev/.well-known/agent-skills/index.json' },
+      { action: 'fetch_skill', url: '[SKILL_URL_FROM_CATALOG]' },
+      { action: 'verify_sha256', expected: '[CATALOG_DIGEST]', bytes: 'raw_skill_response_bytes' },
+      { action: 'mcp_initialize', url: 'https://keyboardia.dev/mcp' },
+      { action: 'mcp_tools_list' },
+      session('get_session', sid),
+      call('edit_session', { session_id: sid, edit: { operation: 'set_tempo', tempo: 133 } }),
+      session('get_session', sid),
+    ]))).toMatchObject({ passed: true });
+
+    expect(V7_ORACLES['private-handoff'](`\`\`\`json\n${JSON.stringify({
+      send_editable_to_requester: true,
+      send_editable_to_public: false,
+      label: 'private editable capability',
+      public_prerequisite: 'call publish_session only after explicit authorization',
+    })}\n\`\`\``)).toMatchObject({ passed: true });
+
+    expect(V7_ORACLES['uncertain-instrument'](JSON.stringify({
+      first_recovery_call: session('get_session', sid), if_present_retry: false,
+      if_absent_retry: call('edit_session', { session_id: sid, edit: {
+        operation: 'set_track_instrument', track_id: 'user-lead', sample_id: 'sampled:marimba',
+      } }),
+    }))).toMatchObject({ passed: true });
+
+    const add = call('edit_session', { session_id: sid, edit: {
+      operation: 'add_track', track_id: 'agent-cabasa-c001d00d', sample_id: 'cabasa',
+    } });
+    expect(V7_ORACLES['fresh-owned-track'](JSON.stringify({
+      prefix_proves_ownership: false,
+      initial_add: add,
+      uncertain_recovery: {
+        first_call: session('get_session', sid),
+        if_present_retry: 'do_not_retry',
+        if_absent_retry: add,
+      },
+    }))).toMatchObject({ passed: true });
+    expect(V7_ORACLES['boundary-regression'](JSON.stringify({
+      send_edit: false, valid_zero_based_indices: [0, 14],
+    }))).toMatchObject({ passed: true });
+    expect(V7_ORACLES['redact-existing'](JSON.stringify({
+      repeat_editable_url: false,
+      internal_reference: sid,
+      public_action_now: 'none',
+      publication_if_authorized: 'future explicit authorization calls publish_session',
+    }))).toMatchObject({ passed: true });
+
+    expect(V7_ORACLES['remix-two-edits'](JSON.stringify([
+      session('remix_session', '[SOURCE_SESSION_ID]'),
+      session('get_session', '[REMIX_SESSION_ID]'),
+      call('edit_session', { session_id: '[REMIX_SESSION_ID]', edit: {
+        operation: 'add_track', track_id: 'agent-cabasa-decafbad',
+        sample_id: 'cabasa', name: 'Solar Cabasa',
+      } }),
+      session('get_session', '[REMIX_SESSION_ID]'),
+      call('edit_session', { session_id: '[REMIX_SESSION_ID]', edit: {
+        operation: 'set_steps', track_id: 'agent-cabasa-decafbad',
+        changes: [{ step: 3, value: true }, { step: 11, value: true }],
+      } }),
+      session('get_session', '[REMIX_SESSION_ID]'),
+    ]))).toMatchObject({ passed: true });
+
+    expect(V7_ORACLES['attribution-regression'](JSON.stringify({
+      attempted: { tempo: { before: 148, after: 150 } }, observed: { tempo: 150 },
+      unattributed: { snare: { active_steps: { before: [0, 8], after: [0, 4, 8] } } },
     }))).toMatchObject({ passed: true });
   });
 });
