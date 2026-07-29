@@ -211,6 +211,7 @@ function sourceBinding() {
     { role: 'oracle', path: 'evals/oracles/hidden-v5-answer.mjs' },
     { role: 'oracle', path: 'evals/oracles/hidden-v6-answer.mjs' },
     { role: 'oracle', path: 'evals/oracles/hidden-v7-answer.mjs' },
+    { role: 'oracle', path: 'evals/oracles/hidden-v8-answer.mjs' },
     // This module is both imported by capability-answer.mjs and invoked
     // directly by the public changelog case, so it is an oracle root too.
     { role: 'oracle', path: 'evals/oracles/public-changelog-safe.mjs' },

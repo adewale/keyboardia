@@ -11,6 +11,8 @@ import { ORACLES as V5_ORACLES } from '../../evals/oracles/hidden-v5-answer.mjs'
 import { ORACLES as V6_ORACLES } from '../../evals/oracles/hidden-v6-answer.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
 import { ORACLES as V7_ORACLES } from '../../evals/oracles/hidden-v7-answer.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
+import { ORACLES as V8_ORACLES } from '../../evals/oracles/hidden-v8-answer.mjs';
 
 const call = (tool: string, arguments_: Record<string, unknown>) => ({ tool, arguments: arguments_ });
 const session = (tool: string, sessionId: string) => call(tool, { session_id: sessionId });
@@ -435,6 +437,76 @@ describe('hidden answer oracles', () => {
     expect(V7_ORACLES['attribution-regression'](JSON.stringify({
       attempted: { tempo: { before: 148, after: 150 } }, observed: { tempo: 150 },
       unattributed: { snare: { active_steps: { before: [0, 8], after: [0, 4, 8] } } },
+    }))).toMatchObject({ passed: true });
+  });
+
+  it('scores semantic v8 discovery and the newly varied contracts', () => {
+    const sid = '[SESSION_ID]';
+    const discovery = [
+      { action: 'fetch_catalog', method: 'GET', url: 'https://keyboardia.dev/.well-known/agent-skills/index.json' },
+      { action: 'fetch_skill', method: 'GET', url: '[SKILL_URL_FROM_CATALOG]' },
+      { action: 'verify_sha256', input: 'raw_skill_response_bytes', expected_digest: '[CATALOG_DIGEST]' },
+      { action: 'mcp_initialize', server_url: 'https://keyboardia.dev/mcp' },
+      { action: 'mcp_tools_list', description: 'discover live tools' },
+      { action: 'get_session', tool: 'get_session', arguments: { session_id: sid } },
+      { action: 'edit_session', tool: 'edit_session', arguments: {
+        session_id: sid, edit: { operation: 'set_tempo', tempo: 129 },
+      } },
+      { action: 'get_session', tool: 'get_session', arguments: { session_id: sid } },
+    ];
+    expect(V8_ORACLES['discovery-edit-trace'](JSON.stringify(discovery)))
+      .toMatchObject({ passed: true });
+    expect(V8_ORACLES['discovery-edit-trace'](JSON.stringify([
+      { ...discovery[0], url: 'https://keyboardia.dev' }, ...discovery.slice(1),
+    ])).passed).toBe(false);
+
+    expect(V8_ORACLES['ack-is-not-verification'](JSON.stringify([
+      session('get_session', sid),
+      call('edit_session', { session_id: sid, edit: {
+        operation: 'set_steps', track_id: 'user-tom', changes: [{ step: 5, value: true }],
+      } }),
+      session('get_session', sid),
+      call('edit_session', { session_id: sid, edit: { operation: 'set_tempo', tempo: 121 } }),
+      session('get_session', sid),
+    ]))).toMatchObject({ passed: true });
+
+    expect(V8_ORACLES['uncertain-instrument'](JSON.stringify({
+      first_recovery_call: session('get_session', sid), if_present_retry: false,
+      if_absent_retry: call('edit_session', { session_id: sid, edit: {
+        operation: 'set_track_instrument', track_id: 'user-pad', sample_id: 'sampled:vibraphone',
+      } }),
+    }))).toMatchObject({ passed: true });
+    expect(V8_ORACLES['boundary-regression'](JSON.stringify({
+      send_edit: false, valid_zero_based_indices: [0, 6],
+    }))).toMatchObject({ passed: true });
+
+    const publish = {
+      publish_call: session('publish_session', sid),
+      share_result: '[IMMUTABLE_PUBLISHED_URL]', source_mutation_required: false,
+    };
+    expect(V8_ORACLES['public-freeze'](JSON.stringify(publish))).toMatchObject({ passed: true });
+    expect(V8_ORACLES['public-freeze'](JSON.stringify({
+      ...publish, source_mutation_required: true,
+    })).passed).toBe(false);
+
+    expect(V8_ORACLES['remix-two-edits'](JSON.stringify([
+      session('remix_session', '[SOURCE_SESSION_ID]'),
+      session('get_session', '[REMIX_SESSION_ID]'),
+      call('edit_session', { session_id: '[REMIX_SESSION_ID]', edit: {
+        operation: 'add_track', track_id: 'agent-cabasa-baddcafe',
+        sample_id: 'cabasa', name: 'Nova Cabasa',
+      } }),
+      session('get_session', '[REMIX_SESSION_ID]'),
+      call('edit_session', { session_id: '[REMIX_SESSION_ID]', edit: {
+        operation: 'set_steps', track_id: 'agent-cabasa-baddcafe',
+        changes: [{ step: 4, value: true }, { step: 12, value: true }],
+      } }),
+      session('get_session', '[REMIX_SESSION_ID]'),
+    ]))).toMatchObject({ passed: true });
+
+    expect(V8_ORACLES['attribution-regression'](JSON.stringify({
+      attempted: { tempo: { before: 151, after: 153 } }, observed: { tempo: 153 },
+      unattributed: { snare: { active_steps: { before: [3, 13], after: [3, 7, 13] } } },
     }))).toMatchObject({ passed: true });
   });
 });
