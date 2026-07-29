@@ -1,0 +1,558 @@
+{
+  "generated_at": 1785348990,
+  "manifest": "evals/shared-benchmark.json",
+  "skill_name": "collaborate-in-keyboardia",
+  "counts": {
+    "cases": 6,
+    "positive": 2,
+    "negative": 4,
+    "adversarial": 4,
+    "holdout": 4,
+    "holdback": 2,
+    "trigger": 0,
+    "trigger_positive": 0,
+    "trigger_negative": 0,
+    "ablations": 2,
+    "objective_assertions": 6,
+    "process_assertions": 0,
+    "efficiency_assertions": 0,
+    "judge_assertions": 0,
+    "fixture_cases": 6,
+    "input_files": 6,
+    "domain_tagged": 6,
+    "difficulty_tagged": 6,
+    "success_goal_tagged": 6,
+    "trigger_type_tagged": 6
+  },
+  "taxonomy": {
+    "domains": [
+      "capability-safety",
+      "collaboration-safety",
+      "mcp-contract"
+    ],
+    "difficulties": [
+      "extended",
+      "extreme"
+    ],
+    "trigger_types": [
+      "implicit"
+    ],
+    "success_goals": [
+      "outcome",
+      "process",
+      "style"
+    ]
+  },
+  "findings": [
+    {
+      "kind": "missing-positive-evals",
+      "severity": "required",
+      "message": "Only 2 positive cases; target at least 5."
+    },
+    {
+      "kind": "missing-trigger-no-trigger-cases",
+      "severity": "required",
+      "message": "trigger positives=0, trigger negatives=0; targets 2/2."
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v10-ack-regression has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v10-ack-regression",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.6666666666666666,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      }
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v10-fresh-owned-track has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v10-fresh-owned-track",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill"
+        ],
+        "with_skill": 0.3333333333333333,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v10-private-handoff has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v10-private-handoff",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.6666666666666666,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      }
+    },
+    {
+      "kind": "non-discriminating-assertions",
+      "severity": "recommended",
+      "message": "1 assertions have identical with/without pass rates.",
+      "evidence": [
+        {
+          "case_id": "holdback-v10-redact-existing",
+          "assertion": "redact-existing-v10",
+          "rates": {
+            "with_skill": 0.0,
+            "without_skill": 0.0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "expensive-no-lift-case",
+      "severity": "recommended",
+      "message": "Case holdback-v10-redact-existing cost $1.008316 with no objective lift — spend without signal.",
+      "evidence": {
+        "runs": 6,
+        "total_tokens": 7664,
+        "total_tokens_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": 7664
+        },
+        "total_tokens_availability": "complete",
+        "total_cost_usd": 1.008316,
+        "total_cost_usd_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "1.008316"
+        },
+        "total_cost_usd_availability": "complete",
+        "cost_by_currency": {
+          "USD": {
+            "availability": "complete",
+            "observed_count": 6,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "1.008316"
+          }
+        }
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "kind": "positive-eval",
+      "message": "Add task-success cases that require the skill's core workflow to produce verifiable evidence."
+    },
+    {
+      "kind": "ablation-plan",
+      "message": "Consider ablations for major skill sections not yet represented exactly by removed_component.",
+      "example": [
+        {
+          "removed_component": "Apply these non-negotiable rules first",
+          "expected_regressions": [
+            "Model stops following Apply these non-negotiable rules first guidance."
+          ]
+        },
+        {
+          "removed_component": "Complete the minimum live workflow",
+          "expected_regressions": [
+            "Model stops following Complete the minimum live workflow guidance."
+          ]
+        },
+        {
+          "removed_component": "Start from origin-only discovery",
+          "expected_regressions": [
+            "Model stops following Start from origin-only discovery guidance."
+          ]
+        },
+        {
+          "removed_component": "Discover and protect capabilities",
+          "expected_regressions": [
+            "Model stops following Discover and protect capabilities guidance."
+          ]
+        },
+        {
+          "removed_component": "Use the live edit surface",
+          "expected_regressions": [
+            "Model stops following Use the live edit surface guidance."
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "trigger-cases",
+      "message": "Add both TRIGGER and NO_TRIGGER cases with anchored expected-trigger-label regex assertions."
+    },
+    {
+      "kind": "assertion-design",
+      "message": "Replace keyword-only checks with source/artifact-backed assertions or stricter behavioral regexes for identical-rate assertions."
+    }
+  ],
+  "recommended_fixture_repos_files": [],
+  "readiness": {
+    "ablations": {
+      "total": 2,
+      "materialized": 2,
+      "instruction_simulated": 0
+    },
+    "leak_saturated_cases": [],
+    "objective_only_cases": [
+      "holdout-v10-ack-regression",
+      "holdout-v10-private-handoff"
+    ],
+    "adversarial_cases": 4,
+    "judge_only_cases": 0,
+    "base_saturated_cases": [],
+    "qualitative_only_cases": [],
+    "regression_guards_holding": [
+      "holdback-v10-redact-existing"
+    ],
+    "blockers": []
+  },
+  "benchmark": {
+    "summary": {
+      "with_skill": {
+        "cases": 6,
+        "runs": 18,
+        "missing_outputs": 0,
+        "execution_errors": 0,
+        "mean_objective_pass_rate": 0.7222222222222222,
+        "mean_combined_pass_rate": 0.7222222222222222,
+        "mean_process_pass_rate": null,
+        "mean_efficiency_pass_rate": null,
+        "objective_pass_rate": {
+          "mean": 0.7222222222222222,
+          "stddev": 0.4608885989624768,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 1.0,
+          "n": 18
+        },
+        "combined_pass_rate": {
+          "mean": 0.7222222222222222,
+          "stddev": 0.4608885989624768,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 1.0,
+          "n": 18
+        },
+        "process_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "efficiency_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "elapsed_ms": {
+          "sum": 1042724.0,
+          "mean": 57929.111111,
+          "median": 26770.0,
+          "p90": 152274.0,
+          "n": 18,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 18,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 1042724
+          }
+        },
+        "total_tokens": {
+          "sum": 41432.0,
+          "mean": 2301.777778,
+          "median": 1553.5,
+          "p90": 3888.0,
+          "n": 18,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 18,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 41432
+          }
+        },
+        "command_count": {
+          "sum": null,
+          "mean": null,
+          "median": null,
+          "p90": null,
+          "n": 0,
+          "availability": "unavailable",
+          "aggregate": {
+            "availability": "unavailable",
+            "observed_count": 0,
+            "unavailable_count": 18,
+            "not_applicable_count": 0,
+            "reason_counts": {
+              "trace_observation_incomplete": 18
+            }
+          }
+        },
+        "cost_usd_total": 3.757876,
+        "cost_usd_total_aggregate": {
+          "availability": "complete",
+          "observed_count": 18,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "3.757876"
+        },
+        "cost_usd": {
+          "sum": 3.757876,
+          "mean": 0.208771,
+          "median": 0.199718,
+          "p90": 0.232641,
+          "n": 18,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 18,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "3.757876"
+          }
+        },
+        "telemetry_availability": {
+          "trace": 0,
+          "events": 18,
+          "metrics": 18,
+          "tokens": 18,
+          "commands": 0,
+          "skill_invocation": 0,
+          "runs": 18
+        },
+        "median_elapsed_ms": 26770.0,
+        "median_total_tokens": 1553.5
+      },
+      "without_skill": {
+        "cases": 6,
+        "runs": 18,
+        "missing_outputs": 0,
+        "execution_errors": 0,
+        "mean_objective_pass_rate": 0.2222222222222222,
+        "mean_combined_pass_rate": 0.2222222222222222,
+        "mean_process_pass_rate": null,
+        "mean_efficiency_pass_rate": null,
+        "objective_pass_rate": {
+          "mean": 0.2222222222222222,
+          "stddev": 0.4277926319464986,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 0.0,
+          "n": 18
+        },
+        "combined_pass_rate": {
+          "mean": 0.2222222222222222,
+          "stddev": 0.4277926319464986,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 0.0,
+          "n": 18
+        },
+        "process_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "efficiency_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "elapsed_ms": {
+          "sum": 794953.0,
+          "mean": 44164.055556,
+          "median": 26349.0,
+          "p90": 72040.0,
+          "n": 18,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 18,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 794953
+          }
+        },
+        "total_tokens": {
+          "sum": 54755.0,
+          "mean": 3041.944444,
+          "median": 2008.0,
+          "p90": 6225.0,
+          "n": 18,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 18,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 54755
+          }
+        },
+        "command_count": {
+          "sum": null,
+          "mean": null,
+          "median": null,
+          "p90": null,
+          "n": 0,
+          "availability": "unavailable",
+          "aggregate": {
+            "availability": "unavailable",
+            "observed_count": 0,
+            "unavailable_count": 18,
+            "not_applicable_count": 0,
+            "reason_counts": {
+              "trace_observation_incomplete": 18
+            }
+          }
+        },
+        "cost_usd_total": 3.273182,
+        "cost_usd_total_aggregate": {
+          "availability": "complete",
+          "observed_count": 18,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "3.273182"
+        },
+        "cost_usd": {
+          "sum": 3.273182,
+          "mean": 0.181843,
+          "median": 0.170295,
+          "p90": 0.217102,
+          "n": 18,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 18,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "3.273182"
+          }
+        },
+        "telemetry_availability": {
+          "trace": 0,
+          "events": 18,
+          "metrics": 18,
+          "tokens": 18,
+          "commands": 0,
+          "skill_invocation": 0,
+          "runs": 18
+        },
+        "median_elapsed_ms": 26349.0,
+        "median_total_tokens": 2008.0
+      }
+    },
+    "case_flags": [
+      {
+        "case_id": "holdback-v10-redact-existing",
+        "flags": [
+          "no objective lift",
+          "with-skill failure"
+        ],
+        "with_skill": 0.0,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdout-v10-ack-regression",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.6666666666666666,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdout-v10-fresh-owned-track",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill"
+        ],
+        "with_skill": 0.3333333333333333,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      },
+      {
+        "case_id": "holdout-v10-private-handoff",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.6666666666666666,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      }
+    ]
+  }
+}

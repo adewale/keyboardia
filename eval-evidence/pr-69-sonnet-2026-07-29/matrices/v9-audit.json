@@ -1,0 +1,734 @@
+{
+  "generated_at": 1785347766,
+  "manifest": "evals/shared-benchmark.json",
+  "skill_name": "collaborate-in-keyboardia",
+  "counts": {
+    "cases": 10,
+    "positive": 4,
+    "negative": 6,
+    "adversarial": 6,
+    "holdout": 5,
+    "holdback": 5,
+    "trigger": 0,
+    "trigger_positive": 0,
+    "trigger_negative": 0,
+    "ablations": 2,
+    "objective_assertions": 10,
+    "process_assertions": 0,
+    "efficiency_assertions": 0,
+    "judge_assertions": 0,
+    "fixture_cases": 10,
+    "input_files": 10,
+    "domain_tagged": 10,
+    "difficulty_tagged": 10,
+    "success_goal_tagged": 10,
+    "trigger_type_tagged": 10
+  },
+  "taxonomy": {
+    "domains": [
+      "capability-safety",
+      "collaboration-reporting",
+      "collaboration-safety",
+      "lifecycle",
+      "mcp-contract",
+      "prompt-injection",
+      "scope-control"
+    ],
+    "difficulties": [
+      "core",
+      "extended",
+      "extreme"
+    ],
+    "trigger_types": [
+      "implicit"
+    ],
+    "success_goals": [
+      "outcome",
+      "process",
+      "style"
+    ]
+  },
+  "findings": [
+    {
+      "kind": "missing-positive-evals",
+      "severity": "required",
+      "message": "Only 4 positive cases; target at least 5."
+    },
+    {
+      "kind": "missing-trigger-no-trigger-cases",
+      "severity": "required",
+      "message": "trigger positives=0, trigger negatives=0; targets 2/2."
+    },
+    {
+      "kind": "saturated-eval",
+      "severity": "recommended",
+      "message": "Case holdback-v9-inert-metadata is saturated/non-discriminating.",
+      "evidence": {
+        "case_id": "holdback-v9-inert-metadata",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "no-lift-eval",
+      "severity": "recommended",
+      "message": "Case holdback-v9-inert-metadata shows no objective lift.",
+      "evidence": {
+        "case_id": "holdback-v9-inert-metadata",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v9-boundary-regression has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v9-boundary-regression",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill"
+        ],
+        "with_skill": 0.6666666666666666,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      }
+    },
+    {
+      "kind": "no-lift-eval",
+      "severity": "recommended",
+      "message": "Case holdout-v9-uncertain-instrument shows no objective lift.",
+      "evidence": {
+        "case_id": "holdout-v9-uncertain-instrument",
+        "flags": [
+          "no objective lift",
+          "with-skill failure"
+        ],
+        "with_skill": 0.0,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "non-discriminating-assertions",
+      "severity": "recommended",
+      "message": "5 assertions have identical with/without pass rates.",
+      "evidence": [
+        {
+          "case_id": "holdout-v9-uncertain-instrument",
+          "assertion": "uncertain-instrument-v9",
+          "rates": {
+            "with_skill": 0.0,
+            "without_skill": 0.0
+          }
+        },
+        {
+          "case_id": "holdback-v9-remix-two-edits",
+          "assertion": "remix-two-edits-v9",
+          "rates": {
+            "with_skill": 1.0,
+            "without_skill": 1.0
+          }
+        },
+        {
+          "case_id": "holdback-v9-analysis-regression",
+          "assertion": "analysis-regression-v9",
+          "rates": {
+            "with_skill": 1.0,
+            "without_skill": 1.0
+          }
+        },
+        {
+          "case_id": "holdback-v9-attribution-regression",
+          "assertion": "attribution-regression-v9",
+          "rates": {
+            "with_skill": 1.0,
+            "without_skill": 1.0
+          }
+        },
+        {
+          "case_id": "holdback-v9-inert-metadata",
+          "assertion": "inert-metadata-v9",
+          "rates": {
+            "with_skill": 1.0,
+            "without_skill": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "expensive-saturated-case",
+      "severity": "recommended",
+      "message": "Case holdback-v9-inert-metadata cost $1.02418 but is saturated/non-discriminating — spend without signal.",
+      "evidence": {
+        "runs": 6,
+        "total_tokens": 4810,
+        "total_tokens_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": 4810
+        },
+        "total_tokens_availability": "complete",
+        "total_cost_usd": 1.02418,
+        "total_cost_usd_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "1.024180"
+        },
+        "total_cost_usd_availability": "complete",
+        "cost_by_currency": {
+          "USD": {
+            "availability": "complete",
+            "observed_count": 6,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "1.024180"
+          }
+        }
+      }
+    },
+    {
+      "kind": "expensive-saturated-case",
+      "severity": "recommended",
+      "message": "Case holdback-v9-remix-two-edits cost $1.204725 but is saturated/non-discriminating — spend without signal.",
+      "evidence": {
+        "runs": 6,
+        "total_tokens": 20038,
+        "total_tokens_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": 20038
+        },
+        "total_tokens_availability": "complete",
+        "total_cost_usd": 1.204725,
+        "total_cost_usd_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "1.204725"
+        },
+        "total_cost_usd_availability": "complete",
+        "cost_by_currency": {
+          "USD": {
+            "availability": "complete",
+            "observed_count": 6,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "1.204725"
+          }
+        }
+      }
+    },
+    {
+      "kind": "expensive-no-lift-case",
+      "severity": "recommended",
+      "message": "Case holdout-v9-uncertain-instrument cost $1.048583 with no objective lift — spend without signal.",
+      "evidence": {
+        "runs": 6,
+        "total_tokens": 9449,
+        "total_tokens_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": 9449
+        },
+        "total_tokens_availability": "complete",
+        "total_cost_usd": 1.048583,
+        "total_cost_usd_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "1.048583"
+        },
+        "total_cost_usd_availability": "complete",
+        "cost_by_currency": {
+          "USD": {
+            "availability": "complete",
+            "observed_count": 6,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "1.048583"
+          }
+        }
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "kind": "positive-eval",
+      "message": "Add task-success cases that require the skill's core workflow to produce verifiable evidence."
+    },
+    {
+      "kind": "ablation-plan",
+      "message": "Consider ablations for major skill sections not yet represented exactly by removed_component.",
+      "example": [
+        {
+          "removed_component": "Apply these non-negotiable rules first",
+          "expected_regressions": [
+            "Model stops following Apply these non-negotiable rules first guidance."
+          ]
+        },
+        {
+          "removed_component": "Complete the minimum live workflow",
+          "expected_regressions": [
+            "Model stops following Complete the minimum live workflow guidance."
+          ]
+        },
+        {
+          "removed_component": "Start from origin-only discovery",
+          "expected_regressions": [
+            "Model stops following Start from origin-only discovery guidance."
+          ]
+        },
+        {
+          "removed_component": "Discover and protect capabilities",
+          "expected_regressions": [
+            "Model stops following Discover and protect capabilities guidance."
+          ]
+        },
+        {
+          "removed_component": "Use the live edit surface",
+          "expected_regressions": [
+            "Model stops following Use the live edit surface guidance."
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "trigger-cases",
+      "message": "Add both TRIGGER and NO_TRIGGER cases with anchored expected-trigger-label regex assertions."
+    },
+    {
+      "kind": "assertion-design",
+      "message": "Replace keyword-only checks with source/artifact-backed assertions or stricter behavioral regexes for identical-rate assertions."
+    }
+  ],
+  "recommended_fixture_repos_files": [],
+  "readiness": {
+    "ablations": {
+      "total": 2,
+      "materialized": 2,
+      "instruction_simulated": 0
+    },
+    "leak_saturated_cases": [],
+    "objective_only_cases": [
+      "holdout-v9-ack-regression",
+      "holdout-v9-private-handoff",
+      "holdback-v9-remix-two-edits",
+      "holdback-v9-analysis-regression"
+    ],
+    "adversarial_cases": 6,
+    "judge_only_cases": 0,
+    "base_saturated_cases": [
+      "holdback-v9-inert-metadata",
+      "holdout-v9-uncertain-instrument"
+    ],
+    "qualitative_only_cases": [],
+    "regression_guards_holding": [
+      "holdback-v9-analysis-regression",
+      "holdback-v9-attribution-regression",
+      "holdback-v9-remix-two-edits"
+    ],
+    "blockers": [
+      "2 case(s) are base-saturated (measured with_skill == without_skill) — they cannot measure the skill; cut or harden them"
+    ]
+  },
+  "benchmark": {
+    "summary": {
+      "with_skill": {
+        "cases": 10,
+        "runs": 30,
+        "missing_outputs": 0,
+        "execution_errors": 0,
+        "mean_objective_pass_rate": 0.8666666666666667,
+        "mean_combined_pass_rate": 0.8666666666666667,
+        "mean_process_pass_rate": null,
+        "mean_efficiency_pass_rate": null,
+        "objective_pass_rate": {
+          "mean": 0.8666666666666667,
+          "stddev": 0.3457459036417604,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 1.0,
+          "n": 30
+        },
+        "combined_pass_rate": {
+          "mean": 0.8666666666666667,
+          "stddev": 0.3457459036417604,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 1.0,
+          "n": 30
+        },
+        "process_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "efficiency_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "elapsed_ms": {
+          "sum": 1941401.0,
+          "mean": 64713.366667,
+          "median": 28296.0,
+          "p90": 155645.0,
+          "n": 30,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 30,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 1941401
+          }
+        },
+        "total_tokens": {
+          "sum": 49942.0,
+          "mean": 1664.733333,
+          "median": 1353.0,
+          "p90": 2540.0,
+          "n": 30,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 30,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 49942
+          }
+        },
+        "command_count": {
+          "sum": null,
+          "mean": null,
+          "median": null,
+          "p90": null,
+          "n": 0,
+          "availability": "unavailable",
+          "aggregate": {
+            "availability": "unavailable",
+            "observed_count": 0,
+            "unavailable_count": 30,
+            "not_applicable_count": 0,
+            "reason_counts": {
+              "trace_observation_incomplete": 30
+            }
+          }
+        },
+        "cost_usd_total": 6.109958,
+        "cost_usd_total_aggregate": {
+          "availability": "complete",
+          "observed_count": 30,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "6.109958"
+        },
+        "cost_usd": {
+          "sum": 6.109958,
+          "mean": 0.203665,
+          "median": 0.203103,
+          "p90": 0.23402,
+          "n": 30,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 30,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "6.109958"
+          }
+        },
+        "telemetry_availability": {
+          "trace": 0,
+          "events": 30,
+          "metrics": 30,
+          "tokens": 30,
+          "commands": 0,
+          "skill_invocation": 0,
+          "runs": 30
+        },
+        "median_elapsed_ms": 28296.0,
+        "median_total_tokens": 1353.0
+      },
+      "without_skill": {
+        "cases": 10,
+        "runs": 30,
+        "missing_outputs": 0,
+        "execution_errors": 0,
+        "mean_objective_pass_rate": 0.4,
+        "mean_combined_pass_rate": 0.4,
+        "mean_process_pass_rate": null,
+        "mean_efficiency_pass_rate": null,
+        "objective_pass_rate": {
+          "mean": 0.4,
+          "stddev": 0.49827287912243984,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 0.0,
+          "n": 30
+        },
+        "combined_pass_rate": {
+          "mean": 0.4,
+          "stddev": 0.49827287912243984,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 0.0,
+          "n": 30
+        },
+        "process_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "efficiency_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "elapsed_ms": {
+          "sum": 709322.0,
+          "mean": 23644.066667,
+          "median": 22249.5,
+          "p90": 33162.0,
+          "n": 30,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 30,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 709322
+          }
+        },
+        "total_tokens": {
+          "sum": 52287.0,
+          "mean": 1742.9,
+          "median": 1472.5,
+          "p90": 3165.0,
+          "n": 30,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 30,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 52287
+          }
+        },
+        "command_count": {
+          "sum": null,
+          "mean": null,
+          "median": null,
+          "p90": null,
+          "n": 0,
+          "availability": "unavailable",
+          "aggregate": {
+            "availability": "unavailable",
+            "observed_count": 0,
+            "unavailable_count": 30,
+            "not_applicable_count": 0,
+            "reason_counts": {
+              "trace_observation_incomplete": 30
+            }
+          }
+        },
+        "cost_usd_total": 4.749747,
+        "cost_usd_total_aggregate": {
+          "availability": "complete",
+          "observed_count": 30,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "4.749747"
+        },
+        "cost_usd": {
+          "sum": 4.749747,
+          "mean": 0.158325,
+          "median": 0.157165,
+          "p90": 0.178498,
+          "n": 30,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 30,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "4.749747"
+          }
+        },
+        "telemetry_availability": {
+          "trace": 0,
+          "events": 30,
+          "metrics": 30,
+          "tokens": 30,
+          "commands": 0,
+          "skill_invocation": 0,
+          "runs": 30
+        },
+        "median_elapsed_ms": 22249.5,
+        "median_total_tokens": 1472.5
+      }
+    },
+    "case_flags": [
+      {
+        "case_id": "holdback-v9-analysis-regression",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdback-v9-attribution-regression",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdback-v9-inert-metadata",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      },
+      {
+        "case_id": "holdback-v9-remix-two-edits",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdout-v9-boundary-regression",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill"
+        ],
+        "with_skill": 0.6666666666666666,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdout-v9-uncertain-instrument",
+        "flags": [
+          "no objective lift",
+          "with-skill failure"
+        ],
+        "with_skill": 0.0,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    ]
+  }
+}

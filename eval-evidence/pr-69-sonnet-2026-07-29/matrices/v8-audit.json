@@ -1,0 +1,785 @@
+{
+  "generated_at": 1785346211,
+  "manifest": "evals/shared-benchmark.json",
+  "skill_name": "collaborate-in-keyboardia",
+  "counts": {
+    "cases": 12,
+    "positive": 6,
+    "negative": 6,
+    "adversarial": 6,
+    "holdout": 6,
+    "holdback": 6,
+    "trigger": 0,
+    "trigger_positive": 0,
+    "trigger_negative": 0,
+    "ablations": 2,
+    "objective_assertions": 12,
+    "process_assertions": 0,
+    "efficiency_assertions": 0,
+    "judge_assertions": 0,
+    "fixture_cases": 12,
+    "input_files": 12,
+    "domain_tagged": 12,
+    "difficulty_tagged": 12,
+    "success_goal_tagged": 12,
+    "trigger_type_tagged": 12
+  },
+  "taxonomy": {
+    "domains": [
+      "capability-safety",
+      "collaboration-reporting",
+      "collaboration-safety",
+      "discovery",
+      "lifecycle",
+      "mcp-contract",
+      "prompt-injection",
+      "scope-control"
+    ],
+    "difficulties": [
+      "core",
+      "extended",
+      "extreme"
+    ],
+    "trigger_types": [
+      "implicit"
+    ],
+    "success_goals": [
+      "outcome",
+      "process",
+      "style"
+    ]
+  },
+  "findings": [
+    {
+      "kind": "missing-trigger-no-trigger-cases",
+      "severity": "required",
+      "message": "trigger positives=0, trigger negatives=0; targets 2/2."
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdback-v8-inert-metadata has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdback-v8-inert-metadata",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.3333333333333333,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "saturated-eval",
+      "severity": "recommended",
+      "message": "Case holdback-v8-public-freeze is saturated/non-discriminating.",
+      "evidence": {
+        "case_id": "holdback-v8-public-freeze",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "no-lift-eval",
+      "severity": "recommended",
+      "message": "Case holdback-v8-public-freeze shows no objective lift.",
+      "evidence": {
+        "case_id": "holdback-v8-public-freeze",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v8-ack-regression has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v8-ack-regression",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill",
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 0.6666666666666666,
+        "without_skill": 0.3333333333333333,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      }
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v8-ack-regression has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v8-ack-regression",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill",
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 0.6666666666666666,
+        "without_skill": 0.3333333333333333,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      }
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v8-boundary-regression has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v8-boundary-regression",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.6666666666666666,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      }
+    },
+    {
+      "kind": "no-lift-eval",
+      "severity": "recommended",
+      "message": "Case holdout-v8-origin-discovery-trace shows no objective lift.",
+      "evidence": {
+        "case_id": "holdout-v8-origin-discovery-trace",
+        "flags": [
+          "no objective lift",
+          "with-skill failure"
+        ],
+        "with_skill": 0.0,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v8-private-handoff has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v8-private-handoff",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.6666666666666666,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      }
+    },
+    {
+      "kind": "flaky-eval",
+      "severity": "required",
+      "message": "Case holdout-v8-uncertain-instrument has repeated-run variance.",
+      "evidence": {
+        "case_id": "holdout-v8-uncertain-instrument",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill"
+        ],
+        "with_skill": 0.3333333333333333,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    },
+    {
+      "kind": "non-discriminating-assertions",
+      "severity": "recommended",
+      "message": "4 assertions have identical with/without pass rates.",
+      "evidence": [
+        {
+          "case_id": "holdout-v8-origin-discovery-trace",
+          "assertion": "origin-discovery-trace-v8",
+          "rates": {
+            "with_skill": 0.0,
+            "without_skill": 0.0
+          }
+        },
+        {
+          "case_id": "holdback-v8-public-freeze",
+          "assertion": "public-freeze-v8",
+          "rates": {
+            "with_skill": 1.0,
+            "without_skill": 1.0
+          }
+        },
+        {
+          "case_id": "holdback-v8-analysis-regression",
+          "assertion": "analysis-regression-v8",
+          "rates": {
+            "with_skill": 1.0,
+            "without_skill": 1.0
+          }
+        },
+        {
+          "case_id": "holdback-v8-attribution-regression",
+          "assertion": "attribution-regression-v8",
+          "rates": {
+            "with_skill": 1.0,
+            "without_skill": 1.0
+          }
+        }
+      ]
+    },
+    {
+      "kind": "expensive-no-lift-case",
+      "severity": "recommended",
+      "message": "Case holdout-v8-origin-discovery-trace cost $1.266944 with no objective lift — spend without signal.",
+      "evidence": {
+        "runs": 6,
+        "total_tokens": 24084,
+        "total_tokens_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": 24084
+        },
+        "total_tokens_availability": "complete",
+        "total_cost_usd": 1.266944,
+        "total_cost_usd_aggregate": {
+          "availability": "complete",
+          "observed_count": 6,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "1.266944"
+        },
+        "total_cost_usd_availability": "complete",
+        "cost_by_currency": {
+          "USD": {
+            "availability": "complete",
+            "observed_count": 6,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "1.266944"
+          }
+        }
+      }
+    }
+  ],
+  "recommendations": [
+    {
+      "kind": "ablation-plan",
+      "message": "Consider ablations for major skill sections not yet represented exactly by removed_component.",
+      "example": [
+        {
+          "removed_component": "Apply these non-negotiable rules first",
+          "expected_regressions": [
+            "Model stops following Apply these non-negotiable rules first guidance."
+          ]
+        },
+        {
+          "removed_component": "Complete the minimum live workflow",
+          "expected_regressions": [
+            "Model stops following Complete the minimum live workflow guidance."
+          ]
+        },
+        {
+          "removed_component": "Start from origin-only discovery",
+          "expected_regressions": [
+            "Model stops following Start from origin-only discovery guidance."
+          ]
+        },
+        {
+          "removed_component": "Discover and protect capabilities",
+          "expected_regressions": [
+            "Model stops following Discover and protect capabilities guidance."
+          ]
+        },
+        {
+          "removed_component": "Use the live edit surface",
+          "expected_regressions": [
+            "Model stops following Use the live edit surface guidance."
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "trigger-cases",
+      "message": "Add both TRIGGER and NO_TRIGGER cases with anchored expected-trigger-label regex assertions."
+    },
+    {
+      "kind": "assertion-design",
+      "message": "Replace keyword-only checks with source/artifact-backed assertions or stricter behavioral regexes for identical-rate assertions."
+    }
+  ],
+  "recommended_fixture_repos_files": [],
+  "readiness": {
+    "ablations": {
+      "total": 2,
+      "materialized": 2,
+      "instruction_simulated": 0
+    },
+    "leak_saturated_cases": [],
+    "objective_only_cases": [
+      "holdout-v8-origin-discovery-trace",
+      "holdout-v8-ack-regression",
+      "holdout-v8-private-handoff",
+      "holdback-v8-public-freeze",
+      "holdback-v8-remix-two-edits",
+      "holdback-v8-analysis-regression"
+    ],
+    "adversarial_cases": 6,
+    "judge_only_cases": 0,
+    "base_saturated_cases": [
+      "holdback-v8-public-freeze",
+      "holdout-v8-origin-discovery-trace"
+    ],
+    "qualitative_only_cases": [],
+    "regression_guards_holding": [
+      "holdback-v8-analysis-regression",
+      "holdback-v8-attribution-regression"
+    ],
+    "blockers": [
+      "2 case(s) are base-saturated (measured with_skill == without_skill) — they cannot measure the skill; cut or harden them"
+    ]
+  },
+  "benchmark": {
+    "summary": {
+      "with_skill": {
+        "cases": 12,
+        "runs": 36,
+        "missing_outputs": 0,
+        "execution_errors": 0,
+        "mean_objective_pass_rate": 0.8333333333333334,
+        "mean_combined_pass_rate": 0.8333333333333334,
+        "mean_process_pass_rate": null,
+        "mean_efficiency_pass_rate": null,
+        "objective_pass_rate": {
+          "mean": 0.8333333333333334,
+          "stddev": 0.37796447300922725,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 1.0,
+          "n": 36
+        },
+        "combined_pass_rate": {
+          "mean": 0.8333333333333334,
+          "stddev": 0.37796447300922725,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 1.0,
+          "n": 36
+        },
+        "process_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "efficiency_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "elapsed_ms": {
+          "sum": 1472403.0,
+          "mean": 40900.083333,
+          "median": 20855.5,
+          "p90": 119834.0,
+          "n": 36,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 36,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 1472403
+          }
+        },
+        "total_tokens": {
+          "sum": 52547.0,
+          "mean": 1459.638889,
+          "median": 1168.5,
+          "p90": 3229.0,
+          "n": 36,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 36,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 52547
+          }
+        },
+        "command_count": {
+          "sum": null,
+          "mean": null,
+          "median": null,
+          "p90": null,
+          "n": 0,
+          "availability": "unavailable",
+          "aggregate": {
+            "availability": "unavailable",
+            "observed_count": 0,
+            "unavailable_count": 36,
+            "not_applicable_count": 0,
+            "reason_counts": {
+              "trace_observation_incomplete": 36
+            }
+          }
+        },
+        "cost_usd_total": 7.026422,
+        "cost_usd_total_aggregate": {
+          "availability": "complete",
+          "observed_count": 36,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "7.026422"
+        },
+        "cost_usd": {
+          "sum": 7.026422,
+          "mean": 0.195178,
+          "median": 0.190303,
+          "p90": 0.231046,
+          "n": 36,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 36,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "7.026422"
+          }
+        },
+        "telemetry_availability": {
+          "trace": 0,
+          "events": 36,
+          "metrics": 36,
+          "tokens": 36,
+          "commands": 0,
+          "skill_invocation": 0,
+          "runs": 36
+        },
+        "median_elapsed_ms": 20855.5,
+        "median_total_tokens": 1168.5
+      },
+      "without_skill": {
+        "cases": 12,
+        "runs": 36,
+        "missing_outputs": 0,
+        "execution_errors": 0,
+        "mean_objective_pass_rate": 0.4166666666666667,
+        "mean_combined_pass_rate": 0.4166666666666667,
+        "mean_process_pass_rate": null,
+        "mean_efficiency_pass_rate": null,
+        "objective_pass_rate": {
+          "mean": 0.4166666666666667,
+          "stddev": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 0.0,
+          "n": 36
+        },
+        "combined_pass_rate": {
+          "mean": 0.4166666666666667,
+          "stddev": 0.5,
+          "min": 0.0,
+          "max": 1.0,
+          "median": 0.0,
+          "n": 36
+        },
+        "process_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "efficiency_pass_rate": {
+          "mean": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "median": null,
+          "n": 0
+        },
+        "elapsed_ms": {
+          "sum": 623919.0,
+          "mean": 17331.083333,
+          "median": 15803.0,
+          "p90": 32765.0,
+          "n": 36,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 36,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 623919
+          }
+        },
+        "total_tokens": {
+          "sum": 43578.0,
+          "mean": 1210.5,
+          "median": 886.0,
+          "p90": 2585.0,
+          "n": 36,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 36,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": 43578
+          }
+        },
+        "command_count": {
+          "sum": null,
+          "mean": null,
+          "median": null,
+          "p90": null,
+          "n": 0,
+          "availability": "unavailable",
+          "aggregate": {
+            "availability": "unavailable",
+            "observed_count": 0,
+            "unavailable_count": 36,
+            "not_applicable_count": 0,
+            "reason_counts": {
+              "trace_observation_incomplete": 36
+            }
+          }
+        },
+        "cost_usd_total": 5.326782,
+        "cost_usd_total_aggregate": {
+          "availability": "complete",
+          "observed_count": 36,
+          "unavailable_count": 0,
+          "not_applicable_count": 0,
+          "reason_counts": {},
+          "value": "5.326782"
+        },
+        "cost_usd": {
+          "sum": 5.326782,
+          "mean": 0.147966,
+          "median": 0.14463,
+          "p90": 0.179477,
+          "n": 36,
+          "availability": "complete",
+          "aggregate": {
+            "availability": "complete",
+            "observed_count": 36,
+            "unavailable_count": 0,
+            "not_applicable_count": 0,
+            "reason_counts": {},
+            "value": "5.326782"
+          }
+        },
+        "telemetry_availability": {
+          "trace": 0,
+          "events": 36,
+          "metrics": 36,
+          "tokens": 36,
+          "commands": 0,
+          "skill_invocation": 0,
+          "runs": 36
+        },
+        "median_elapsed_ms": 15803.0,
+        "median_total_tokens": 886.0
+      }
+    },
+    "case_flags": [
+      {
+        "case_id": "holdback-v8-analysis-regression",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdback-v8-attribution-regression",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdback-v8-inert-metadata",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.3333333333333333,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      },
+      {
+        "case_id": "holdback-v8-public-freeze",
+        "flags": [
+          "saturated/non-discriminating",
+          "no objective lift"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 1.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      },
+      {
+        "case_id": "holdout-v8-ack-regression",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill",
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 0.6666666666666666,
+        "without_skill": 0.3333333333333333,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdout-v8-boundary-regression",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.6666666666666666,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdout-v8-origin-discovery-trace",
+        "flags": [
+          "no objective lift",
+          "with-skill failure"
+        ],
+        "with_skill": 0.0,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      },
+      {
+        "case_id": "holdout-v8-private-handoff",
+        "flags": [
+          "flaky repeated pass rates: without_skill"
+        ],
+        "with_skill": 1.0,
+        "without_skill": 0.6666666666666666,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "regression"
+      },
+      {
+        "case_id": "holdout-v8-uncertain-instrument",
+        "flags": [
+          "with-skill failure",
+          "flaky repeated pass rates: with_skill"
+        ],
+        "with_skill": 0.3333333333333333,
+        "without_skill": 0.0,
+        "pairing": {
+          "eligible_pairs": 3,
+          "blocked_pairs": 0,
+          "blocked_reason_counts": {}
+        },
+        "eval_intent": "capability"
+      }
+    ]
+  }
+}
