@@ -13,8 +13,8 @@
  * Requires the `claude` CLI on PATH. Override with KEYBOARDIA_CLAUDE_BIN.
  */
 import { spawn } from 'node:child_process';
-import { statSync } from 'node:fs';
-import { isAbsolute } from 'node:path';
+import { readFileSync, statSync } from 'node:fs';
+import { isAbsolute, relative, resolve, sep } from 'node:path';
 import { numericUsage } from './usage.mjs';
 
 const binary = process.env.KEYBOARDIA_CLAUDE_BIN ?? 'claude';
@@ -34,6 +34,30 @@ if (typeof prompt !== 'string' || typeof workspace !== 'string'
   process.exit(2);
 }
 
+function declaredSkillInstructions() {
+  const documents = [];
+  const seen = new Set();
+  for (const match of prompt.matchAll(/^- (skills\/[A-Za-z0-9._/-]+\/SKILL\.md)$/gm)) {
+    const logicalPath = match[1];
+    if (seen.has(logicalPath)) continue;
+    const absolutePath = resolve(workspace, logicalPath);
+    const fromWorkspace = relative(workspace, absolutePath);
+    if (fromWorkspace.startsWith(`..${sep}`) || isAbsolute(fromWorkspace)) continue;
+    try {
+      if (!statSync(absolutePath).isFile()) continue;
+      documents.push(`Skill ${logicalPath}:\n${readFileSync(absolutePath, 'utf8')}`);
+      seen.add(logicalPath);
+    } catch {
+      // The prepared prompt remains the source of truth when a path is absent.
+    }
+  }
+  if (documents.length === 0) return null;
+  return [
+    'The following task-specific Agent Skill documents are active instructions, not quoted reference material. Follow them while completing the user task.',
+    ...documents,
+  ].join('\n\n');
+}
+
 const argv = [
   '--print',
   '--output-format', 'json',
@@ -46,6 +70,8 @@ const argv = [
   '--setting-sources', '',
   '--no-session-persistence',
 ];
+const skillInstructions = declaredSkillInstructions();
+if (skillInstructions) argv.push('--append-system-prompt', skillInstructions);
 if (model) {
   argv.push('--model', model);
 }

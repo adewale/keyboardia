@@ -44,4 +44,38 @@ describe('Claude answer adapter', () => {
       rmSync(root, { recursive: true, force: true });
     }
   });
+
+  it('loads only prompt-declared skill files as task-specific system instructions', async () => {
+    const root = mkdtempSync(resolve(tmpdir(), 'keyboardia-claude-adapter-skill-'));
+    const workspace = resolve(root, 'with-skill');
+    const skillDir = resolve(workspace, 'skills/root-0');
+    const binary = resolve(root, 'fake-claude.mjs');
+    try {
+      writeFileSync(binary, [
+        '#!/usr/bin/env node',
+        "process.stdin.resume();",
+        "process.stdin.on('end', () => process.stdout.write(JSON.stringify({ result: JSON.stringify(process.argv.slice(2)), usage: {} })));",
+      ].join('\n'));
+      chmodSync(binary, 0o700);
+      mkdirSync(skillDir, { recursive: true });
+      writeFileSync(resolve(skillDir, 'SKILL.md'), '# Test skill\nFollow this instruction.\n');
+      const result = await invokeAdapter(
+        resolve('../evals/adapters/claude.mjs'),
+        {
+          prompt: 'Read and follow:\n- skills/root-0/SKILL.md\n\nTask prompt:\nDo it.',
+          model: 'claude-haiku-4-5',
+          workspace,
+        },
+        binary,
+      );
+      expect(result).toMatchObject({ code: 0, stderr: '' });
+      const argv = JSON.parse(JSON.parse(result.stdout).answer) as string[];
+      const systemIndex = argv.indexOf('--append-system-prompt');
+      expect(systemIndex).toBeGreaterThanOrEqual(0);
+      expect(argv[systemIndex + 1]).toContain('active instructions, not quoted reference material');
+      expect(argv[systemIndex + 1]).toContain('# Test skill\nFollow this instruction.');
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
 });
