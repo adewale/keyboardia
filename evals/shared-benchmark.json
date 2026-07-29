@@ -383,7 +383,7 @@
         {
           "name": "explains-why-uuid-is-private",
           "type": "regex",
-          "pattern": "(?is)(capabilit|edit access|anyone (who|with)[^.\\n]{0,60}(edit|change|modify|link|uuid|id)|grants|secret|private|never share[^.\\n]{0,60}(editable|session id)|editable[^.\\n]{0,60}(never share|not[^.\\n]{0,20}public))",
+          "pattern": "(?is)(capabilit|edit access|anyone (who|with)[^.\\n]{0,60}(edit|change|modify|link|uuid|id)|(edit|change|modify|modified)[^.\\n]{0,60}by anyone|grants|secret|private|never share[^.\\n]{0,60}(editable|session id)|editable[^.\\n]{0,60}(never share|not[^.\\n]{0,20}public))",
           "severity": "gate",
           "oracle": "strong"
         },
