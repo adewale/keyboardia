@@ -221,6 +221,19 @@ function sourceBinding() {
   ]);
 }
 
+function answerAdapter(model, provider) {
+  if (/^claude-/i.test(model) && provider === 'subagent') {
+    return { role: 'answer', id: 'claude-subagent', path: 'evals/adapters/claude.mjs' };
+  }
+  if (/^claude-/i.test(model) && provider === 'claude') {
+    return { role: 'answer', id: 'skill-eval-harness-run-claude', path: null };
+  }
+  if (/^gpt-/i.test(model) && provider === 'codex') {
+    return { role: 'answer', id: 'codex-native', path: null };
+  }
+  return null;
+}
+
 function runEvidence(
   task,
   result,
@@ -265,7 +278,7 @@ function runEvidence(
   ]) {
     if (task[taskKey] !== result[resultKey]) fail(`${task.run_dir} has mismatched ${taskKey}`);
   }
-  if (result.missing_output || result.execution_valid !== true) fail(`${task.run_dir} is not a complete scorable run`);
+  if (result.missing_output) fail(`${task.run_dir} has no committed output artifact`);
   const { inventory } = verifyArtifactSet(runDir);
   const metadata = json(resolve(runDir, 'metadata.json'));
   if (metadata.manifest_revision !== expectedManifestRevision
@@ -274,10 +287,8 @@ function runEvidence(
     fail(`${task.run_dir} metadata is not bound to the prepared inputs`);
   }
   const basis = metadata.telemetry?.basis;
-  const expectedProvider = /^claude-/i.test(task.model) ? 'subagent'
-    : /^gpt-/i.test(task.model) ? 'codex' : null;
-  if (!expectedProvider || metadata.provider !== expectedProvider
-      || basis?.provider !== expectedProvider || basis?.runner !== expectedProvider
+  const adapter = answerAdapter(task.model, metadata.provider);
+  if (!adapter || basis?.provider !== metadata.provider || basis?.runner !== metadata.provider
       || basis?.model !== task.model) {
     fail(`${task.run_dir} provider/runner metadata does not match ${task.model}`);
   }
@@ -306,7 +317,7 @@ function runEvidence(
     split: task.split,
     variant: task.variant,
     repeat: task.run_number,
-    ok: true,
+    ok: result.execution_valid === true,
     prompt: task.prompt,
     response: output,
     trace: { artifact_files: traceFiles },
@@ -322,6 +333,7 @@ function runEvidence(
       expectedInputBundleHash,
       expectedSkillHash,
     ),
+    _answer_adapter: adapter,
   };
 }
 
@@ -422,14 +434,11 @@ async function main() {
     fail('prepared tasks do not match the answer-matrix policy model set');
   }
   const repeats = matrixPolicy.repeats;
-  const adapters = [
-    ...(models.some((model) => /^claude-/i.test(model))
-      ? [{ role: 'answer', id: 'claude-subagent', path: 'evals/adapters/claude.mjs' }]
-      : []),
-    ...(models.some((model) => /^gpt-/i.test(model))
-      ? [{ role: 'answer', id: 'codex-native', path: null }]
-      : []),
-  ];
+  const adapters = [...new Map(runs.map((run) => [
+    `${run._answer_adapter.id}:${run._answer_adapter.path ?? ''}`,
+    run._answer_adapter,
+  ])).values()].sort((left, right) => left.id.localeCompare(right.id));
+  for (const run of runs) delete run._answer_adapter;
   const receipt = buildReceipt({
     source,
     harness: {

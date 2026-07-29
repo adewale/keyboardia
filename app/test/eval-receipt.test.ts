@@ -693,6 +693,25 @@ describe('eval receipts', () => {
     expect(verifyReceipt(receipt).join('\n')).toContain('audit findings');
   });
 
+  it('preserves a fully committed provider timeout as negative evidence', () => {
+    const { receipt } = answerReceiptFixture();
+    const benchmark = JSON.parse(
+      receipt.artifacts[receipt.invocation.benchmark_ref].content,
+    );
+    benchmark.results[0].execution_valid = false;
+    benchmark.results[0].metadata.returncode = 124;
+    benchmark.results[0].metadata.timed_out = true;
+    receipt.runs[0].ok = false;
+    receipt.summary = answerMatrixSummary(benchmark);
+    receipt.invocation.benchmark_ref = addArtifact(
+      receipt.artifacts,
+      JSON.stringify(benchmark),
+      'application/json',
+    );
+
+    expect(verifyReceipt(receipt)).toEqual([]);
+  });
+
   it('reconstructs live execution runs and summary from deterministic replay evidence', () => {
     const { source } = committedInputs({ execution: true });
     const baseline = { tempo: 120, tracks: [] };

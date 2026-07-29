@@ -69,17 +69,22 @@ The endpoint:
 The SDK, rather than Keyboardia code, implements protocol envelopes, discovery,
 header validation, JSON-RPC routing, and compatibility behavior.
 
-### Authoritative documentation
+### Normative protocol reference
+
+The versioned [MCP 2026-07-28 specification](https://modelcontextprotocol.io/specification/2026-07-28)
+is the normative protocol authority. When a release article, SEP, SDK guide, or
+third-party article differs from that final versioned specification, the
+specification controls.
+
+The following sources explain the design lineage or this implementation, but
+are not substitutes for the normative specification:
 
 - [MCP project's 2026-07-28 release-candidate overview](https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/)
 - [SEP-2575: Make MCP Stateless](https://modelcontextprotocol.io/seps/2575-stateless-mcp)
 - [SEP-2567: Sessionless MCP via Explicit State Handles](https://modelcontextprotocol.io/seps/2567-sessionless-mcp)
 - [Official TypeScript SDK guide for supporting 2026-07-28](https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28)
 - [Official TypeScript SDK HTTP serving guide](https://ts.sdk.modelcontextprotocol.io/v2/serving/http)
-
-The [Microsoft App Service article](https://techcommunity.microsoft.com/blog/appsonazureblog/mcp-just-went-stateless-%E2%80%94-what-the-2026-spec-changes-about-scaling-on-app-servic/4530222)
-is useful deployment commentary, but the MCP project documents above are the
-protocol authorities.
+- [Microsoft App Service deployment commentary](https://techcommunity.microsoft.com/blog/appsonazureblog/mcp-just-went-stateless-%E2%80%94-what-the-2026-spec-changes-about-scaling-on-app-servic/4530222)
 
 The server and test client are pinned to the stable v2.0.0 SDK. Protocol tests
 exercise both the official client transport and raw modern requests so an SDK

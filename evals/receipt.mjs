@@ -1824,23 +1824,21 @@ function normalizedAuditFindings(audit, benchmark, counts) {
 function verifyAnswerModelProvenance(task, metadata, invocation, label, errors) {
   const basis = metadata?.telemetry?.basis;
   let adapter;
-  let provider;
-  if (/^claude-/i.test(task.model)) {
+  if (/^claude-/i.test(task.model) && metadata?.provider === 'subagent') {
     adapter = { id: 'claude-subagent', path: 'evals/adapters/claude.mjs' };
-    provider = 'subagent';
-  } else if (/^gpt-/i.test(task.model)) {
+  } else if (/^claude-/i.test(task.model) && metadata?.provider === 'claude') {
+    adapter = { id: 'skill-eval-harness-run-claude', path: null };
+  } else if (/^gpt-/i.test(task.model) && metadata?.provider === 'codex') {
     adapter = { id: 'codex-native', path: null };
-    provider = 'codex';
   } else {
-    errors.push(`${label} uses unsupported model family ${task.model}`);
+    errors.push(`${label} provider/runner metadata does not match ${task.model}`);
     return;
   }
   requireValue((invocation.adapters ?? []).some((entry) => entry.role === 'answer'
     && entry.id === adapter.id && entry.path === adapter.path),
   `${label} has no matching declared answer adapter for ${task.model}`, errors);
-  requireValue(metadata?.provider === provider
-    && basis?.provider === provider
-    && basis?.runner === provider
+  requireValue(basis?.provider === metadata.provider
+    && basis?.runner === metadata.provider
     && basis?.model === task.model,
   `${label} provider/runner metadata does not match ${task.model}`, errors);
 }
@@ -2018,11 +2016,12 @@ function verifyAnswerMatrix(receipt, errors) {
     const result = benchmarkByIdentity.get(identity);
     requireValue(Boolean(result), `prepared task ${index} has no benchmark result`, errors);
     if (!result) continue;
-    requireValue(result.execution_valid === true && result.missing_output !== true,
-      `benchmark result ${index} is not complete and scorable`, errors);
+    requireValue(result.missing_output !== true,
+      `benchmark result ${index} has no committed output`, errors);
     requireValue(result.metadata?.input_bundle_hash === inputBundleHash,
       `benchmark result ${index} input bundle hash mismatch`, errors);
-    requireValue(run.ok === true, `runs[${index}] is not successful`, errors);
+    requireValue(run.ok === (result.execution_valid === true),
+      `runs[${index}] completion status does not match benchmark`, errors);
     requireValue(typeof run.prompt_ref === 'string' && typeof run.output_ref === 'string',
       `runs[${index}] must bind prompt and output artifacts`, errors);
     const prompt = artifactContent(receipt, run.prompt_ref, `runs[${index}].prompt_ref`, errors);
