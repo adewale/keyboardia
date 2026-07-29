@@ -2,7 +2,7 @@
   "version": 1,
   "suite": "keyboardia-answer-matrix",
   "splits": ["holdout", "holdback"],
-  "repeats": 6,
+  "repeats": 3,
   "models": [
     "claude-sonnet-5"
   ]

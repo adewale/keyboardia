@@ -481,6 +481,13 @@ describe('eval receipts', () => {
     const { receipt } = answerReceiptFixture();
     expect(verifyReceipt(receipt)).toEqual([]);
 
+    const multiReportReceipt = structuredClone(receipt);
+    multiReportReceipt.invocation.benchmark_refs = [multiReportReceipt.invocation.benchmark_ref];
+    multiReportReceipt.invocation.audit_refs = [multiReportReceipt.invocation.audit_ref];
+    delete multiReportReceipt.invocation.benchmark_ref;
+    delete multiReportReceipt.invocation.audit_ref;
+    expect(verifyReceipt(multiReportReceipt)).toEqual([]);
+
     const fabricatedSummary = structuredClone(receipt);
     fabricatedSummary.summary.results = 999;
     expect(verifyReceipt(fabricatedSummary).join('\n')).toContain('summary does not match');
@@ -507,7 +514,9 @@ describe('eval receipts', () => {
       JSON.stringify(audit),
       'application/json',
     );
-    expect(verifyReceipt(blockedAudit).join('\n')).toContain('readiness blockers');
+    const blockedErrors = verifyReceipt(blockedAudit).join('\n');
+    expect(blockedErrors).not.toContain('answer audit contains readiness blockers');
+    expect(blockedErrors).toMatch(/audit counts|audit findings|audit readiness/);
 
     const strippedAudit = structuredClone(receipt);
     const strippedAuditValue = JSON.parse(

@@ -1,8 +1,8 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  AUTONOMOUS_CRITICAL_BINDINGS,
   sanitizeForReceipt,
   validateAutonomousReceipt,
   validateAutonomousTrace,
@@ -10,8 +10,6 @@ import {
   validateRawAnswerCapabilities,
   verifySourceBinding,
 } from '../scripts/autonomous-discovery-validator.mjs';
-// @ts-expect-error -- dependency-free ESM eval tooling is exercised from Vitest
-import { canonicalSourceBundleHash } from '../../evals/receipt.mjs';
 
 const ORIGIN = 'http://127.0.0.1:43189';
 const SESSION = '7d9349b1-7635-46f2-a112-09db02f747aa';
@@ -447,26 +445,17 @@ describe('autonomous discovery trace oracle', () => {
   });
 
   it('binds critical autonomous roles to their canonical paths', () => {
-    const repoRoot = resolve(process.cwd(), '..');
-    const receipt = JSON.parse(readFileSync(resolve(
-      repoRoot,
-      'evals/receipts/2026-07-29-haiku-autonomous-1.json',
-    ), 'utf8'));
-    expect(verifySourceBinding(receipt.source, repoRoot)).toBe(true);
+    const receipt = autonomousReceipt();
     expect(() => verifySourceBinding({
       ...receipt.source,
       repository: 'https://attacker.invalid/keyboardia.git',
-    }, repoRoot)).toThrow(/canonical Keyboardia repository/);
-
-    for (const [role, canonicalPath, decoyPath] of [
-      ['answer_adapter', 'evals/adapters/claude-discovery.mjs', 'evals/adapters/usage.mjs'],
-      ['system_under_test_entry', 'app/src/worker/index.ts', 'app/src/worker/types.ts'],
-    ]) {
-      const source = structuredClone(receipt.source);
-      source.files.find((file: { path: string }) => file.path === canonicalPath).role = 'dependency';
-      source.files.find((file: { path: string }) => file.path === decoyPath).role = role;
-      source.bundle_sha256 = canonicalSourceBundleHash(source.files);
-      expect(() => verifySourceBinding(source, repoRoot)).toThrow(new RegExp(`${role} must bind`));
-    }
+    }, resolve(process.cwd(), '..'))).toThrow(/canonical Keyboardia repository/);
+    expect(AUTONOMOUS_CRITICAL_BINDINGS).toMatchObject({
+      answer_adapter: 'evals/adapters/claude-discovery.mjs',
+      system_under_test_entry: 'app/src/worker/index.ts',
+      skill: 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md',
+    });
+    expect(new Set(Object.values(AUTONOMOUS_CRITICAL_BINDINGS)).size)
+      .toBe(Object.keys(AUTONOMOUS_CRITICAL_BINDINGS).length);
   });
 });

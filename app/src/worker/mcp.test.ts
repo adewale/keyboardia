@@ -489,8 +489,17 @@ describe('stateless MCP endpoint', () => {
       },
     });
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       session_id: SESSION_ID,
+      immutable: false,
+      tempo: 120,
+      tracks: [{
+        track_id: 'lead-1',
+        name: 'Ada Lead',
+        sample_id: 'tone:fm-bell',
+        step_count: 16,
+        active_steps: [2, 10],
+      }],
       applied: true,
       verification_required: true,
       next_tool: 'get_session',

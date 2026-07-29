@@ -206,6 +206,37 @@ describe('Agent Skills host protocol journey', () => {
         arguments: argumentsFromSkill,
       }) as ToolResult;
       expectToolSuccess(result);
+
+      expect(result.structuredContent).toMatchObject({
+        session_id: sessionId,
+        applied: true,
+        verification_required: true,
+        next_tool: 'get_session',
+      });
+
+      // The skill's continuous trace contract is deliberately stronger than
+      // merely reaching the right final state: every write is immediately
+      // followed by the authoritative read before another write can occur.
+      const verified = await client.callTool({
+        name: readToolName!,
+        arguments: { session_id: sessionId },
+      }) as ToolResult;
+      expectToolSuccess(verified);
+      if (exampleName === 'add-track') {
+        expect(verified.structuredContent).toMatchObject({
+          tracks: [{ track_id: generatedTrackId }],
+        });
+      } else if (exampleName === 'set-track-instrument') {
+        expect(verified.structuredContent).toMatchObject({
+          tracks: [{ track_id: generatedTrackId, sample_id: expectedSampleId }],
+        });
+      } else if (exampleName === 'set-steps') {
+        expect(verified.structuredContent).toMatchObject({
+          tracks: [{ track_id: generatedTrackId, active_steps: [0, 4, 8, 12] }],
+        });
+      } else if (exampleName === 'set-tempo') {
+        expect(verified.structuredContent).toMatchObject({ tempo: 124 });
+      }
     }
 
     const final = await client.callTool({

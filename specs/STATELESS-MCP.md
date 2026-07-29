@@ -156,20 +156,27 @@ interface EditSessionInput {
 }
 ```
 
-Every successful call returns an acknowledgement, not session state:
+Every successful call returns a backwards-compatible compact snapshot together
+with an acknowledgement:
 
 ```json
 {
   "session_id": "00000000-0000-4000-8000-000000000001",
+  "immutable": false,
+  "tempo": 120,
+  "tracks": [],
   "applied": true,
   "verification_required": true,
   "next_tool": "get_session"
 }
 ```
 
-The caller must invoke `get_session` next for the same session. This keeps the
-write acknowledgement distinct from an authoritative post-state read and makes
-the required read → edit → read loop explicit to small agents.
+The compact snapshot preserves the original public response shape for existing
+clients. It is not authoritative verification: another collaborator can change
+the session before the response is observed. The caller must invoke
+`get_session` next for the same session. The acknowledgement fields make the
+required read → edit → read loop explicit to small agents without breaking
+clients that consume the compact fields.
 
 The tool is annotated `destructiveHint: true`: although each operation is
 narrow and retry-safe, clearing a step, overwriting an instrument, or changing
@@ -294,6 +301,12 @@ Creates an editable session through the same `createSession()` the REST API
 uses, with Keyboardia's normal defaults and no tracks. The agent then shapes it
 with `edit_session`.
 
+The returned editable URL is a bearer capability. When creation was explicitly
+requested, the agent may hand that newly created URL back privately to the
+requesting user and must label it editable/private. It must not disclose an
+existing editable URL or send any editable URL to a public or third-party
+destination. Public sharing requires `publish_session` and the immutable URL.
+
 `idempotency_key` is required and must be a UUID the caller generates. The first
 call records its new session under that key for 24 hours; replaying the key
 returns that same session instead of creating another. This is what keeps an
@@ -335,6 +348,10 @@ not reached KV yet, falling back to KV exactly as the REST route does.
 
 This is how an agent continues from published work: read the immutable source,
 remix, then edit only the remix.
+
+As with creation, an explicitly requested remix may return its new editable URL
+privately to the requester. That narrow lifecycle handoff does not authorize
+echoing the source capability or publishing an editable link.
 
 Each call deliberately produces a separate remix, so the tool is not marked
 idempotent.
@@ -1071,7 +1088,9 @@ stop and reconsider whether Keyboardia already has the required primitive.
 
 - A pinned official client negotiates MCP `2026-07-28`.
 - No response requires or emits `Mcp-Session-Id`.
-- `tools/list` advertises exactly `get_session` and `edit_session`.
+- `tools/list` advertises exactly the seven tools canonically defined in
+  section 4: `get_session`, `edit_session`, `create_session`, `remix_session`,
+  `publish_session`, `export_midi`, and `analyze_session`.
 - No resources or prompts are advertised.
 - `edit_session` accepts exactly `add_track`, `set_track_instrument`,
   `set_steps`, and `set_tempo`.

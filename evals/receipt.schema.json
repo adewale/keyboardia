@@ -137,6 +137,16 @@
         "skill_tree_hash": { "$ref": "#/$defs/sha256" },
         "benchmark_ref": { "$ref": "#/$defs/artifactKey" },
         "audit_ref": { "$ref": "#/$defs/artifactKey" },
+        "benchmark_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/artifactKey" }
+        },
+        "audit_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/artifactKey" }
+        },
         "prepared_tasks_refs": {
           "type": "array",
           "minItems": 1,
@@ -285,12 +295,10 @@
             }
           },
           "invocation": {
-            "required": [
-              "benchmark_ref",
-              "audit_ref",
-              "prepared_tasks_refs",
-              "manifest_revision",
-              "skill_tree_hash"
+            "required": ["prepared_tasks_refs", "manifest_revision", "skill_tree_hash"],
+            "oneOf": [
+              { "required": ["benchmark_ref", "audit_ref"] },
+              { "required": ["benchmark_refs", "audit_refs"] }
             ]
           },
           "runs": { "items": { "required": ["input_bundle_hash", "complete_input_bundle_hash"] } }

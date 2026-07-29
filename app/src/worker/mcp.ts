@@ -299,9 +299,13 @@ function toolPayload(payload: Record<string, unknown>) {
   };
 }
 
-function editSuccess(sessionId: string) {
+function editSuccess(session: Session) {
   return toolPayload({
-    session_id: sessionId,
+    // Keep the compact post-edit snapshot for clients written against the
+    // original MCP response. It is a compatibility view, not verification:
+    // another collaborator can change the session before this reaches the
+    // caller, so get_session remains the only authoritative post-state read.
+    ...compactMcpSession(session),
     applied: true,
     verification_required: true,
     next_tool: 'get_session',
@@ -366,7 +370,7 @@ function toolError(error: unknown) {
 function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string): McpServer {
   const server = new McpServer({
     name: 'keyboardia',
-    version: '1.0.0',
+    version: '1.1.0',
   }, {
     instructions: [
       'Read an existing session with get_session before editing it.',
@@ -406,8 +410,8 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       description: [
         'Make one narrow, retry-safe edit to an existing collaborative session.',
         'After every attempt, the next Keyboardia call must be get_session for the same session.',
-        'A successful call returns only an acknowledgement, never session state.',
-        'Do not make another edit or finish from that acknowledgement; read with get_session to verify.',
+        'A successful call includes a backwards-compatible compact snapshot plus an acknowledgement.',
+        'That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next.',
         'Supported operations: add_track, set_track_instrument, set_steps, and set_tempo.',
         'set_steps changes only the named steps; it never replaces a track or session.',
         'set_track_instrument replaces only a track\'s sound source, keeping its'
@@ -424,7 +428,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
     async ({ session_id, edit }) => {
       try {
         const session = await sessions.editSession(session_id, edit);
-        return editSuccess(session.id);
+        return editSuccess(session);
       } catch (error) {
         return toolError(error);
       }

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
 
 const discoveryRoot = resolve('public/.well-known/agent-skills');
@@ -19,6 +20,19 @@ interface DiscoveryIndex {
 }
 
 describe('Cloudflare Agent Skills discovery', () => {
+  it('validates the complete index against the pinned Cloudflare v0.2.0 contract', () => {
+    const index = JSON.parse(
+      readFileSync(resolve(discoveryRoot, 'index.json'), 'utf8'),
+    );
+    const schema = JSON.parse(
+      readFileSync(resolve('test/fixtures/agent-skills-discovery-0.2.0.schema.json'), 'utf8'),
+    );
+    const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema);
+
+    expect(validate(index), JSON.stringify(validate.errors, null, 2)).toBe(true);
+    expect(schema.$comment).toContain('1bd1167983fa5ac9cd47987710c525308eda1a98');
+  });
+
   it('publishes a v0.2.0 single-file skill with synchronized metadata', () => {
     const index = JSON.parse(
       readFileSync(resolve(discoveryRoot, 'index.json'), 'utf8'),

@@ -323,8 +323,17 @@ describe('MCP v1 onboarding journeys', () => {
     });
 
     expect(result.isError).not.toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       session_id: id,
+      immutable: false,
+      tempo: 120,
+      tracks: [{
+        track_id: 'lead-agent',
+        name: 'Ada Lead',
+        sample_id: 'sampled:808-kick',
+        step_count: 16,
+        active_steps: [3, 11],
+      }],
       applied: true,
       verification_required: true,
       next_tool: 'get_session',

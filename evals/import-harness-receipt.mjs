@@ -35,24 +35,28 @@ function fail(message) {
 }
 
 function parseArgs(argv) {
-  const options = { tasks: [] };
+  const options = { tasks: [], benchmarks: [], audits: [] };
   for (let index = 2; index < argv.length; index += 1) {
     const flag = argv[index];
     const value = argv[index + 1];
     if (flag === '--tasks') options.tasks.push(resolve(value));
     else if (flag === '--manifest') options.manifest = resolve(value);
     else if (flag === '--runs') options.runs = resolve(value);
-    else if (flag === '--benchmark') options.benchmark = resolve(value);
-    else if (flag === '--audit') options.audit = resolve(value);
+    else if (flag === '--benchmark') options.benchmarks.push(resolve(value));
+    else if (flag === '--audit') options.audits.push(resolve(value));
     else if (flag === '--harness-repo') options.harnessRepo = resolve(value);
     else if (flag === '--out') options.out = resolve(value);
     else fail(`unknown argument: ${flag}`);
     index += 1;
   }
-  for (const name of ['manifest', 'runs', 'benchmark', 'audit', 'harnessRepo', 'out']) {
+  for (const name of ['manifest', 'runs', 'harnessRepo', 'out']) {
     if (!options[name]) fail(`--${name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`)} is required`);
   }
   if (options.tasks.length === 0) fail('at least one --tasks file is required');
+  if (options.benchmarks.length === 0) fail('at least one --benchmark file is required');
+  if (options.benchmarks.length !== options.audits.length) {
+    fail('provide one --audit for each --benchmark, in the same order');
+  }
   return options;
 }
 
@@ -200,6 +204,8 @@ function sourceBinding() {
     { role: 'answer_matrix_policy', path: 'evals/answer-matrix-policy.json' },
     { role: 'fixture', path: 'evals/fixtures/keyboardia-mcp-schema.json' },
     { role: 'oracle', path: 'evals/oracles/capability-answer.mjs' },
+    { role: 'oracle', path: 'evals/oracles/retired-hidden-answer.mjs' },
+    { role: 'oracle', path: 'evals/oracles/hidden-v2-answer.mjs' },
     // This module is both imported by capability-answer.mjs and invoked
     // directly by the public changelog case, so it is an oracle root too.
     { role: 'oracle', path: 'evals/oracles/public-changelog-safe.mjs' },
@@ -326,18 +332,24 @@ async function main() {
   const { tasks, rawFiles } = loadTasks(options.tasks);
   if (tasks.length === 0) fail('prepared task set is empty');
   verifyCompleteTaskMatrix(tasks, manifest, matrixPolicy);
-  const benchmarkRaw = readFileSync(options.benchmark);
-  const benchmark = JSON.parse(benchmarkRaw.toString('utf8'));
-  const auditRaw = readFileSync(options.audit);
-  const audit = JSON.parse(auditRaw.toString('utf8'));
-  if (!Array.isArray(benchmark.results) || benchmark.results.length !== tasks.length) {
-    fail(`benchmark has ${benchmark.results?.length ?? 0} results for ${tasks.length} tasks`);
-  }
-  if (!Array.isArray(audit.readiness?.blockers)) fail('run-aware audit has no readiness blockers array');
-  if (audit.readiness.blockers.length > 0) fail('run-aware audit contains readiness blockers');
-  if (canonicalJson(audit.benchmark?.summary) !== canonicalJson(benchmark.summary)
-      || canonicalJson(audit.benchmark?.case_flags) !== canonicalJson(benchmark.case_flags)) {
-    fail('run-aware audit was not produced from the supplied benchmark');
+  const reports = options.benchmarks.map((path, index) => {
+    const benchmarkRaw = readFileSync(path);
+    const benchmark = JSON.parse(benchmarkRaw.toString('utf8'));
+    const auditRaw = readFileSync(options.audits[index]);
+    const audit = JSON.parse(auditRaw.toString('utf8'));
+    if (!Array.isArray(benchmark.results)) fail(`${path} has no results array`);
+    if (!Array.isArray(audit.readiness?.blockers)) {
+      fail(`${options.audits[index]} has no readiness blockers array`);
+    }
+    if (canonicalJson(audit.benchmark?.summary) !== canonicalJson(benchmark.summary)
+        || canonicalJson(audit.benchmark?.case_flags) !== canonicalJson(benchmark.case_flags)) {
+      fail(`run-aware audit ${options.audits[index]} was not produced from ${path}`);
+    }
+    return { benchmarkRaw, benchmark, auditRaw, audit };
+  });
+  const benchmarkResults = reports.flatMap(({ benchmark }) => benchmark.results);
+  if (benchmarkResults.length !== tasks.length) {
+    fail(`benchmarks have ${benchmarkResults.length} results for ${tasks.length} tasks`);
   }
   const sourceManifest = source.files.find((file) => file.role === 'manifest');
   if (sourceManifest.sha256 !== expectedManifestRevision) {
@@ -357,7 +369,7 @@ async function main() {
     }
   }
   const resultByRun = new Map();
-  for (const result of benchmark.results) {
+  for (const result of benchmarkResults) {
     const key = resolve(result.run_base);
     if (resultByRun.has(key)) fail(`duplicate benchmark result: ${key}`);
     resultByRun.set(key, result);
@@ -414,7 +426,7 @@ async function main() {
       skill_tree_hash: expectedSkillHash,
     },
     runs,
-    summary: answerMatrixSummary(benchmark),
+    summary: answerMatrixSummary({ results: benchmarkResults }),
   });
   receipt.harness.git_tree = harness.gitTree;
   receipt.harness.parent_git_commit = harness.parentGitCommit;
@@ -445,16 +457,18 @@ async function main() {
   );
   receipt.invocation.prepared_tasks_refs = rawFiles.map(({ raw }) =>
     addArtifact(receipt.artifacts, raw, 'text/plain'));
-  receipt.invocation.benchmark_ref = addArtifact(
-    receipt.artifacts,
-    exactUtf8(benchmarkRaw, 'benchmark report'),
-    'application/json',
-  );
-  receipt.invocation.audit_ref = addArtifact(
-    receipt.artifacts,
-    exactUtf8(auditRaw, 'audit report'),
-    'application/json',
-  );
+  receipt.invocation.benchmark_refs = reports.map(({ benchmarkRaw }, index) =>
+    addArtifact(
+      receipt.artifacts,
+      exactUtf8(benchmarkRaw, `benchmark report ${index + 1}`),
+      'application/json',
+    ));
+  receipt.invocation.audit_refs = reports.map(({ auditRaw }, index) =>
+    addArtifact(
+      receipt.artifacts,
+      exactUtf8(auditRaw, `audit report ${index + 1}`),
+      'application/json',
+    ));
   assertSourceBindingStillClean(repoRoot, source);
   writeReceipt(options.out, receipt);
   process.stdout.write(`Imported ${runs.length} immutable harness runs\n${options.out}\n`);

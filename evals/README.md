@@ -66,13 +66,11 @@ default unless `--judge-model` is also supplied.
 
 ## What the manifest measures
 
-| Case kind | Count | Arms | Scored by |
-| --- | --- | --- | --- |
-| `positive` | 4 | `with_skill`, `without_skill` | script / structured / regex + soft judge |
-| `adversarial` | 4 | `with_skill`, `without_skill` | script / structured / regex + soft judge |
-| `negative` | 2 | `with_skill`, `without_skill` | script / regex + soft judge |
-| `trigger` | 4 | catalog selection | whether the model chooses the skill |
-| hidden (`holdout` 4, `holdback` 2) | 6 | `with_skill`, `without_skill` | regex / not_regex + judge |
+| Slice | Unique cases | Arms | Scored by |
+| --- | ---: | --- | --- |
+| public answer regressions | 16 | `with_skill`, `without_skill` | script / structured / guard + soft judge |
+| trigger | 4 | catalog selection | whether the model chooses the skill |
+| hidden v2 (`holdout` 6, `holdback` 6) | 12 | `with_skill`, `without_skill` | deterministic script oracles |
 
 Both answer arms receive `fixtures/keyboardia-mcp-schema.json`, the exact
 `tools/list` output of the live Worker. The baseline is therefore never
@@ -232,25 +230,22 @@ in the Node suite, so the always-on floor needs no Python.
   100/100 forever: `no-invented-operation` earns its keep the day a model starts
   fabricating a `"delete_track"` payload, not today. Pooling guards with broken
   checks buries the ones worth opening.
-- Per-assertion deltas at three repeats are inside the noise floor. The exact
-  paired sign test cannot reach p≤0.05 below six matched pairs at all, so read
-  per-model aggregates, not single assertions.
+- Repeated calls estimate within-prompt variance; they never increase the
+  number of independent prompts. The Sonnet-first policy uses 12 unique hidden
+  cases and three repeats (72 calls across two arms), and reports both numbers.
 - A `trigger` case here measures description-driven selection from a catalog of
   the skill plus five distractors. It does **not** prove autonomous loading. For
   local host activation, run `skill-trigger-matrix`, which mounts the skill where
   an agent can discover it and never names it in the prompt. No matrix result is
   committed here, and local activation still would not prove well-known HTTP
   discovery followed by MCP use in one agent run.
-- Three committed Haiku receipts prove the full origin-only
-  HTTP-discovery-to-MCP journey in three independent samples. Each began at the
-  origin, fetched the standard well-known catalog before any other network
-  action, verified the indexed skill digest, connected to the same-origin MCP,
-  discovered its tools, and completed a read/edit/read verification chain.
-  Older Sonnet and Opus samples were removed because they predated and did not
-  satisfy that corrected catalog-first contract. A later Sonnet-first hidden
-  answer matrix is recorded in `specs/EVAL-SONNET-FIRST-2026-07-29.md`; it did
-  not demonstrate objective skill lift and does not replace the missing Sonnet
-  live trace.
+- Large historical receipts were removed from the application repository and
+  remain recoverable from Git history. Current release evidence is uploaded as
+  one durable content-bound artifact; its hash and immutable source identities
+  belong in the run report. A live trace counts only if one agent starts from
+  the origin, discovers the catalog, verifies the selected bytes, derives and
+  connects to MCP, lists tools, reads, edits, and immediately verifies every
+  write in that same trace.
 - Ablation is removal-only, and this skill's frontmatter carries just the two
   required fields, so there is no discovery ablation: removing `description`
   yields an invalid skill rather than a weaker one. Measure triggering by

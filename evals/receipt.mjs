@@ -1830,32 +1830,38 @@ function verifyAnswerMatrix(receipt, errors) {
   requireValue(Array.isArray(receipt.invocation?.prepared_tasks_refs)
     && receipt.invocation.prepared_tasks_refs.length > 0,
   'answer receipt requires prepared_tasks_refs', errors);
-  for (const field of ['benchmark_ref', 'audit_ref']) {
-    requireValue(typeof receipt.invocation?.[field] === 'string',
-      `answer receipt requires invocation.${field}`, errors);
-  }
+  const benchmarkRefs = Array.isArray(receipt.invocation?.benchmark_refs)
+    ? receipt.invocation.benchmark_refs : [receipt.invocation?.benchmark_ref];
+  const auditRefs = Array.isArray(receipt.invocation?.audit_refs)
+    ? receipt.invocation.audit_refs : [receipt.invocation?.audit_ref];
+  requireValue(benchmarkRefs.length > 0 && benchmarkRefs.every((ref) => typeof ref === 'string'),
+    'answer receipt requires benchmark evidence', errors);
+  requireValue(auditRefs.length === benchmarkRefs.length
+    && auditRefs.every((ref) => typeof ref === 'string'),
+  'answer receipt requires one audit for every benchmark', errors);
   const tasks = taskRows(receipt, errors);
-  const benchmark = jsonArtifact(
-    receipt,
-    receipt.invocation?.benchmark_ref,
-    'invocation.benchmark_ref',
-    errors,
-  );
-  const audit = jsonArtifact(receipt, receipt.invocation?.audit_ref, 'invocation.audit_ref', errors);
-  if (!benchmark || !audit) return;
-  requireValue(Array.isArray(benchmark.results), 'answer benchmark requires results', errors);
-  requireValue(benchmark.summary && Array.isArray(benchmark.case_flags),
-    'answer benchmark evidence is missing its aggregate report', errors);
-  requireValue(Array.isArray(audit.readiness?.blockers)
-    && audit.benchmark?.summary && Array.isArray(audit.benchmark?.case_flags),
-  'answer audit evidence is missing its independently generated benchmark projection', errors);
-  requireValue(audit.readiness?.blockers?.length === 0,
-    'answer audit contains readiness blockers', errors);
-  requireValue(canonicalJson(audit.benchmark?.summary) === canonicalJson(benchmark.summary),
-    'answer audit summary does not match the embedded benchmark', errors);
-  requireValue(canonicalJson(audit.benchmark?.case_flags) === canonicalJson(benchmark.case_flags),
-    'answer audit case flags do not match the embedded benchmark', errors);
-  if (!Array.isArray(benchmark.results)) return;
+  const benchmarks = benchmarkRefs.map((ref, index) => jsonArtifact(
+    receipt, ref, `invocation benchmark ${index + 1}`, errors));
+  const audits = auditRefs.map((ref, index) => jsonArtifact(
+    receipt, ref, `invocation audit ${index + 1}`, errors));
+  if (benchmarks.some((report) => !report) || audits.some((report) => !report)) return;
+  const benchmark = { results: benchmarks.flatMap((report) => report.results ?? []) };
+  for (const [index, report] of benchmarks.entries()) {
+    const audit = audits[index];
+    requireValue(Array.isArray(report.results),
+      `answer benchmark ${index + 1} requires results`, errors);
+    requireValue(report.summary && Array.isArray(report.case_flags),
+      `answer benchmark ${index + 1} is missing its aggregate report`, errors);
+    requireValue(Array.isArray(audit.readiness?.blockers)
+      && audit.benchmark?.summary && Array.isArray(audit.benchmark?.case_flags),
+    `answer audit ${index + 1} is missing its independently generated benchmark projection`, errors);
+    // Blockers are valid negative evidence. Their exact derived content is
+    // verified below; rejecting their presence would select only good runs.
+    requireValue(canonicalJson(audit.benchmark?.summary) === canonicalJson(report.summary),
+      `answer audit ${index + 1} summary does not match its benchmark`, errors);
+    requireValue(canonicalJson(audit.benchmark?.case_flags) === canonicalJson(report.case_flags),
+      `answer audit ${index + 1} case flags do not match its benchmark`, errors);
+  }
   requireValue(tasks.length > 0, 'answer receipt has no prepared tasks', errors);
   requireValue(tasks.length === benchmark.results.length && tasks.length === receipt.runs.length,
     'answer task, benchmark, and receipt run counts differ', errors);
@@ -1880,19 +1886,22 @@ function verifyAnswerMatrix(receipt, errors) {
     errors.push(`answer embedded manifest is not valid JSON: ${error.message}`);
   }
   if (manifest) {
-    const expectedCounts = expectedAuditCounts(manifest, receipt.invocation?.splits);
-    requireValue(canonicalJson(audit.counts) === canonicalJson(expectedCounts),
-      'answer audit counts do not match the embedded manifest', errors);
-    const findings = normalizedAuditFindings(audit, benchmark, expectedCounts);
-    requireValue(canonicalJson(findings.actual) === canonicalJson(findings.expected),
-      'answer audit findings do not match the embedded manifest and benchmark', errors);
-    const expectedReadiness = expectedAuditReadiness(
-      manifest,
-      benchmark,
-      receipt.invocation?.splits,
-    );
-    requireValue(canonicalJson(audit.readiness) === canonicalJson(expectedReadiness),
-      'answer audit readiness does not match the embedded manifest and benchmark', errors);
+    for (const [index, report] of benchmarks.entries()) {
+      const audit = audits[index];
+      const reportSplits = [...new Set((report.results ?? []).map((result) => result.split))];
+      requireValue(reportSplits.length > 0
+        && reportSplits.every((split) => receipt.invocation?.splits?.includes(split)),
+      `answer benchmark ${index + 1} contains an undeclared split`, errors);
+      const expectedCounts = expectedAuditCounts(manifest, reportSplits);
+      requireValue(canonicalJson(audit.counts) === canonicalJson(expectedCounts),
+        `answer audit counts do not match the embedded manifest (report ${index + 1})`, errors);
+      const findings = normalizedAuditFindings(audit, report, expectedCounts);
+      requireValue(canonicalJson(findings.actual) === canonicalJson(findings.expected),
+        `answer audit findings do not match its manifest and benchmark (report ${index + 1})`, errors);
+      const expectedReadiness = expectedAuditReadiness(manifest, report, reportSplits);
+      requireValue(canonicalJson(audit.readiness) === canonicalJson(expectedReadiness),
+        `answer audit readiness does not match its manifest and benchmark (report ${index + 1})`, errors);
+    }
   }
   const manifestCases = new Map((manifest?.cases ?? []).map((evalCase) => [evalCase.id, evalCase]));
   const sourceFiles = receipt.source?.files ?? [];
@@ -2140,6 +2149,12 @@ export function verifyReceipt(receipt, { repoRoot = null } = {}) {
   }
   checkRef(receipt.invocation?.benchmark_ref, 'invocation.benchmark_ref');
   checkRef(receipt.invocation?.audit_ref, 'invocation.audit_ref');
+  for (const [index, ref] of (receipt.invocation?.benchmark_refs ?? []).entries()) {
+    checkRef(ref, `invocation.benchmark_refs[${index}]`);
+  }
+  for (const [index, ref] of (receipt.invocation?.audit_refs ?? []).entries()) {
+    checkRef(ref, `invocation.audit_refs[${index}]`);
+  }
   if (receipt.invocation?.prepared_tasks_refs !== undefined) {
     requireValue(Array.isArray(receipt.invocation.prepared_tasks_refs) &&
       receipt.invocation.prepared_tasks_refs.length > 0,

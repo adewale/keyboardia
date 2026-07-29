@@ -486,26 +486,28 @@ function git(repoRoot, args, { bytes = false, optional = false } = {}) {
   return bytes ? result.stdout : result.stdout.trim();
 }
 
+export const AUTONOMOUS_CRITICAL_BINDINGS = Object.freeze({
+  skill: 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md',
+  manifest: 'app/public/.well-known/agent-skills/index.json',
+  transport: 'app/scripts/autonomous-discovery-transport.mjs',
+  validator: 'app/scripts/autonomous-discovery-validator.mjs',
+  runner: 'app/scripts/run-autonomous-discovery.mjs',
+  answer_adapter: 'evals/adapters/claude-discovery.mjs',
+  system_under_test_entry: 'app/src/worker/index.ts',
+  system_under_test_config: 'app/wrangler.jsonc',
+  dependency_manifest: 'app/package.json',
+  dependency_lock: 'app/package-lock.json',
+  receipt_runtime: 'evals/receipt.mjs',
+  receipt_schema: 'evals/receipt.schema.json',
+  receipt_schema_validator: 'evals/validate-receipt-schema.mjs',
+  autonomous_receipt_schema: 'evals/autonomous-receipt.schema.json',
+  autonomous_receipt_schema_validator: 'evals/validate-autonomous-receipt-schema.mjs',
+});
+
 export function verifySourceBinding(source, repoRoot) {
   invariant(source?.repository === 'https://github.com/adewale/keyboardia.git',
     'source repository must be the canonical Keyboardia repository');
-  const criticalBindings = new Map([
-    ['skill', 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md'],
-    ['manifest', 'app/public/.well-known/agent-skills/index.json'],
-    ['transport', 'app/scripts/autonomous-discovery-transport.mjs'],
-    ['validator', 'app/scripts/autonomous-discovery-validator.mjs'],
-    ['runner', 'app/scripts/run-autonomous-discovery.mjs'],
-    ['answer_adapter', 'evals/adapters/claude-discovery.mjs'],
-    ['system_under_test_entry', 'app/src/worker/index.ts'],
-    ['system_under_test_config', 'app/wrangler.jsonc'],
-    ['dependency_manifest', 'app/package.json'],
-    ['dependency_lock', 'app/package-lock.json'],
-    ['receipt_runtime', 'evals/receipt.mjs'],
-    ['receipt_schema', 'evals/receipt.schema.json'],
-    ['receipt_schema_validator', 'evals/validate-receipt-schema.mjs'],
-    ['autonomous_receipt_schema', 'evals/autonomous-receipt.schema.json'],
-    ['autonomous_receipt_schema_validator', 'evals/validate-autonomous-receipt-schema.mjs'],
-  ]);
+  const criticalBindings = new Map(Object.entries(AUTONOMOUS_CRITICAL_BINDINGS));
   const requiredRoles = [...criticalBindings.keys()];
   const proofErrors = verifySourceProvenance(source, { requiredRoles });
   invariant(proofErrors.length === 0, proofErrors.join('; '));
