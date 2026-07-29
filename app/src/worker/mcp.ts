@@ -217,6 +217,11 @@ const trackIdSchema = z.string()
   .describe(
     'For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session.'
   );
+const newTrackIdSchema = z.string()
+  .regex(TRACK_ID_PATTERN)
+  .describe(
+    'Generate a fresh collision-resistant ID that ends with at least eight hexadecimal characters, such as agent-kick-a7f3c29d. Generate it once and reuse it on retries.'
+  );
 const sampleIdSchema = z.enum(sampleIds).describe(
   'The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.'
 );
@@ -226,7 +231,7 @@ const editSchema = z.object({
   edit: z.discriminatedUnion('operation', [
     z.object({
       operation: z.literal('add_track'),
-      track_id: trackIdSchema,
+      track_id: newTrackIdSchema,
       sample_id: sampleIdSchema,
       name: z.string().trim().min(1).max(MAX_TRACK_NAME_LENGTH).optional()
         .describe('Optional display name. The instrument name is used when omitted.'),

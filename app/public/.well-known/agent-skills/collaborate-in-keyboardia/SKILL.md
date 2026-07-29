@@ -23,6 +23,8 @@ acknowledgement, never session state; only the following read verifies it. Never
 `GET → EDIT → EDIT → GET` or finish on `EDIT`.
 
 - Start with `get_session`; use its current state and the live tool schema.
+- Before `add_track`, generate a fresh ID ending in at least eight hexadecimal
+  characters, such as `agent-kick-a7f3c29d`.
 - Make one narrow operation per `edit_session` call.
 - Stop if an edit or its following read fails. Report what remains unverified.
 - For read-only work, stop after the read. Never edit an immutable session.

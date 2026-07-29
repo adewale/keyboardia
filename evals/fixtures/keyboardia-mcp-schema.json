@@ -59,7 +59,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                "description": "Generate a fresh collision-resistant ID that ends with at least eight hexadecimal characters, such as agent-kick-a7f3c29d. Generate it once and reuse it on retries."
                   },
                   "sample_id": {
                     "type": "string",
