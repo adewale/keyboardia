@@ -7,38 +7,44 @@ capabilities.
 
 ## Current evidence set
 
-The 2026-07-28 set contains four independently verifiable receipts:
+The current Haiku-only evidence set contains five independently verifiable
+receipts from 2026-07-29:
 
-- `2026-07-28-answer-matrix.json`: 300 repeated public-tune answer runs across
-  five models and both arms;
-- `2026-07-28-live-execution.json`: 54 real MCP state/trace runs across three
-  models and both arms;
-- `2026-07-28-autonomous-claude-sonnet-5.json`: one passing origin-only
-  well-known-discovery-to-verified-edit journey;
-- `2026-07-28-autonomous-claude-opus-5.json`: a second passing origin-only
-  journey on another model.
+- `2026-07-29-haiku-answer-matrix.json`: 60 repeated public-tune answer runs
+  across ten cases, both arms, and three repeats;
+- `2026-07-29-haiku-live-execution.json`: 18 real MCP state/trace runs across
+  three cases, both arms, and three repeats;
+- `2026-07-29-haiku-autonomous-1.json`,
+  `2026-07-29-haiku-autonomous-2.json`, and
+  `2026-07-29-haiku-autonomous-3.json`: three independent passing origin-only
+  well-known-discovery-to-verified-edit journeys.
 
-The current Sonnet and Opus autonomous samples each passed their one observed
-attempt. Their receipts contain 18 and 16 events respectively, including the
-continuous origin-only discovery, catalog/skill fetch, digest check, MCP
-initialize and tool discovery, then three state-changing calls each followed
-by an immediate post-state read. There is deliberately no Haiku autonomous
-receipt. A receipt is evidence for the exact recorded sample, not a claim that
+The three Haiku autonomous receipts contain 14, 18, and 13 events. Every run
+began with the origin, fetched the standard well-known catalog before any other
+network action, fetched and verified the indexed skill, initialized the
+same-origin MCP, discovered its tools, and completed a state-changing call with
+an immediate post-state read. Older Sonnet and Opus autonomous receipts were
+removed because they predated and did not satisfy this corrected catalog-first
+contract. A receipt is evidence for the exact recorded sample, not a claim that
 every attempt passes.
 
-The answer receipt binds 300 completed public-tune runs (10 cases, both arms,
-five models, three repeats) with zero missing outputs or execution errors. Its
-pooled objective rate is 62.3% with the skill and 42.8% without it. The audit
-has no readiness blockers or saturated base cases, but still records 22
-findings: 18 repeated-rate instability findings, fewer than five positive
-cases, no private holdout/holdback split, one negative-lift collision-ID case,
-and five assertions with identical arm rates. Two ablations are materialized
-but were not executed. Those limitations are evidence against treating the
-pooled lift as release proof.
+The Haiku answer receipt binds 60 completed runs with zero missing outputs or
+execution errors. Its case-weighted mean objective rate is 98.33% with the
+skill and 27.22% without it, a 71.11 percentage-point lift. The raw
+assertion-instance tally is 59/60 with the skill and 23/60 without it. One
+skilled response kept `send_out_of_range_edit` false but returned the wrong
+`valid_indices` shape. The public oracle also accepts fenced JSON where the
+skill requires raw JSON, so these figures do not yet establish strict output
+reliability.
 
-The live receipt binds 54 completed MCP runs with zero errors. Whole-case
-with-skill results were 1/9 for Haiku, 3/9 for Sonnet, and 9/9 for Opus; every
-baseline arm was 0/9. Eighteen live assertions had identical 100% arm rates.
+The Haiku live receipt binds 18 completed MCP runs with zero errors. Whole-case
+results were 9/9 with the skill and 6/9 without it; assertion-instance results
+were 78/78 and 75/78 respectively. Most live assertions are therefore
+non-discriminating and should be treated as protocol-regression coverage, not
+strong causal evidence for the skill.
+
+Two 2026-07-28 cross-model answer and live receipts remain as historical
+evidence. They are not the release gate for this Haiku-only phase.
 
 Run `node evals/verify-receipts.mjs` to schema-check every receipt, reconstruct
 its Git proofs, hash its bound inputs and artifact inventory, replay objective

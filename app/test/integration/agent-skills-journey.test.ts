@@ -2,10 +2,10 @@
  * Model-free Agent Skills discovery-to-MCP protocol contract.
  *
  * Deterministic host code downloads and verifies the indexed skill, extracts
- * its published edit_session examples, and executes them through the official
- * MCP client against the real Worker/session stack. This proves the advertised
- * bytes and protocol compose; it does not prove an agent discovers them on its
- * own.
+ * its published edit_session operation shapes, and executes them through the
+ * official MCP client against the real Worker/session stack. This proves the
+ * advertised bytes and protocol compose; it does not prove an agent discovers
+ * them on its own.
  */
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { SELF } from 'cloudflare:test';
@@ -41,15 +41,13 @@ async function sha256(bytes: ArrayBuffer): Promise<string> {
     .join('');
 }
 
-function extractExample(skill: string, name: string): Record<string, unknown> {
-  const marker = '<!-- mcp-example:' + name + ' -->';
-  const start = skill.indexOf(marker);
-  expect(start, 'missing published MCP example: ' + name).toBeGreaterThanOrEqual(0);
-  const fenced = skill.slice(start + marker.length).match(
-    /^\s*```json\s*([\s\S]*?)\s*```/
-  );
-  expect(fenced, 'invalid published MCP example: ' + name).not.toBeNull();
-  return JSON.parse(fenced![1]) as Record<string, unknown>;
+function extractEditShape(skill: string, operation: string): Record<string, unknown> {
+  const escaped = operation.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const documented = skill.match(new RegExp(
+    '`(\\{\\s*"operation"\\s*:\\s*"' + escaped + '"[\\s\\S]*?\\})`'
+  ));
+  expect(documented, 'missing published MCP operation: ' + operation).not.toBeNull();
+  return JSON.parse(documented![1]) as Record<string, unknown>;
 }
 
 function extractMcpEndpoint(skill: string, discoveryUrl: string): URL {
@@ -59,11 +57,11 @@ function extractMcpEndpoint(skill: string, discoveryUrl: string): URL {
 }
 
 function extractToolNames(skill: string): string[] {
-  const surface = skill.split('## Call the exact MCP surface')[1]
+  const surface = skill.split('## Use the live edit surface')[1]
     ?.split(/^## /m)[0];
   expect(surface, 'skill must document its MCP tool surface').toBeTypeOf('string');
   return Array.from(
-    surface!.matchAll(/^Use `([a-z][a-z0-9_]*)`/gm),
+    surface!.matchAll(/\b(?:Call|Use) `([a-z][a-z0-9_]*)`/g),
     ([, name]) => name
   );
 }
@@ -74,11 +72,13 @@ function materializeExample(
   sessionId: string,
   trackId: string
 ): Record<string, unknown> {
-  const serialized = JSON.stringify(extractExample(skill, name))
-    .replaceAll('00000000-0000-4000-8000-000000000001', sessionId)
-    .replaceAll('agent-kick-<random-8-hex>', trackId);
-  expect(serialized).not.toContain('<random-8-hex>');
-  return JSON.parse(serialized) as Record<string, unknown>;
+  const operation = name.replaceAll('-', '_');
+  const edit = extractEditShape(skill, operation);
+  if ('track_id' in edit) edit.track_id = trackId;
+  if (operation === 'set_steps') {
+    edit.changes = [0, 4, 8, 12].map((step) => ({ step, value: true }));
+  }
+  return { session_id: sessionId, edit };
 }
 
 async function createSession(): Promise<string> {
@@ -183,6 +183,11 @@ describe('Agent Skills host protocol journey', () => {
     expect(schemaText).toContain('"edit"');
     expect(schemaText).toContain('"changes"');
     expect(schemaText).toContain('"cowbell"');
+    const expectedSampleId = extractEditShape(
+      skill,
+      'set_track_instrument'
+    ).sample_id;
+    expect(expectedSampleId).toBeTypeOf('string');
 
     for (const exampleName of [
       'add-track',
@@ -215,7 +220,7 @@ describe('Agent Skills host protocol journey', () => {
       tracks: [{
         track_id: generatedTrackId,
         name: 'Kick',
-        sample_id: 'sampled:808-kick',
+        sample_id: expectedSampleId,
         step_count: 16,
         active_steps: [0, 4, 8, 12],
       }],

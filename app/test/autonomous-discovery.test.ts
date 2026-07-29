@@ -441,7 +441,7 @@ describe('autonomous discovery trace oracle', () => {
     const repoRoot = resolve(process.cwd(), '..');
     const receipt = JSON.parse(readFileSync(resolve(
       repoRoot,
-      'evals/receipts/2026-07-28-autonomous-claude-sonnet-5.json',
+      'evals/receipts/2026-07-29-haiku-autonomous-1.json',
     ), 'utf8'));
     expect(verifySourceBinding(receipt.source, repoRoot)).toBe(true);
     expect(() => verifySourceBinding({

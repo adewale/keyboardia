@@ -241,11 +241,14 @@ in the Node suite, so the always-on floor needs no Python.
   an agent can discover it and never names it in the prompt. No matrix result is
   committed here, and local activation still would not prove well-known HTTP
   discovery followed by MCP use in one agent run.
-- The committed origin-only receipts prove that full HTTP-discovery-to-MCP
-  journey for one Sonnet and one Opus sample. An uncommitted Haiku diagnostic
-  attempt failed, but without a failure receipt it is not auditable enough to
-  support a phase-specific claim. Autonomous activation is not yet established
-  across the evaluated models.
+- Three committed Haiku receipts prove the full origin-only
+  HTTP-discovery-to-MCP journey in three independent samples. Each began at the
+  origin, fetched the standard well-known catalog before any other network
+  action, verified the indexed skill digest, connected to the same-origin MCP,
+  discovered its tools, and completed a read/edit/read verification chain.
+  Older Sonnet and Opus samples were removed because they predated and did not
+  satisfy that corrected catalog-first contract. Sonnet is intentionally
+  deferred until Haiku meets the reliability bar.
 - Ablation is removal-only, and this skill's frontmatter carries just the two
   required fields, so there is no discovery ablation: removing `description`
   yields an invalid skill rather than a weaker one. Measure triggering by

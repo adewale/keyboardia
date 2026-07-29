@@ -1,5 +1,10 @@
 # Skill evaluation evidence — 2026-07-28
 
+> Historical run record. The Sonnet and Opus autonomous receipts described
+> below were later removed because they predated and did not satisfy the
+> corrected catalog-first trace contract. The current release gate is the
+> source-bound Haiku-only evidence documented in `evals/receipts/README.md`.
+
 ## Verdict
 
 The four missing-evidence objections are fixed:
@@ -42,17 +47,20 @@ noisy, and several assertions have identical arm rates.
   metrics, benchmark, and audit. Verification reconstructs those identities
   without trusting the local checkout.
 
-Committed receipts:
+Receipts produced at the time:
 
-- `evals/receipts/2026-07-28-autonomous-claude-sonnet-5.json`
-- `evals/receipts/2026-07-28-autonomous-claude-opus-5.json`
+- `evals/receipts/2026-07-28-autonomous-claude-sonnet-5.json` (superseded and
+  removed)
+- `evals/receipts/2026-07-28-autonomous-claude-opus-5.json` (superseded and
+  removed)
 - `evals/receipts/2026-07-28-live-execution.json`
 - `evals/receipts/2026-07-28-answer-matrix.json`
 
-`node evals/verify-receipts.mjs` verifies all four offline. The receipts contain
-no host-specific checkout path or live edit capability. These are
-content-addressed self-consistency proofs, not signed provider attestations or
-transparency-log entries.
+At the time, `node evals/verify-receipts.mjs` verified all four offline. The
+current verifier rejects the two removed autonomous receipts under the stronger
+catalog-first contract. The retained receipts contain no host-specific checkout
+path or live edit capability. These are content-addressed self-consistency
+proofs, not signed provider attestations or transparency-log entries.
 
 ## Origin-only autonomous discovery
 
