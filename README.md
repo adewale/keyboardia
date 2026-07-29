@@ -43,7 +43,9 @@ same music-theory module the Key Assistant uses, with its uncertainty stated
 rather than hidden.
 
 See the [stateless MCP rhythm-slice specification](specs/STATELESS-MCP.md) for
-the exact tool contract and current limitations.
+the exact tool contract and current limitations. Directory maintainers can use
+the canonical [MCP listing record](docs/MCP-DIRECTORY-LISTINGS.md), and hosted
+data handling is described in the [MCP privacy notice](docs/MCP-PRIVACY.md).
 
 ## Tech Stack
 

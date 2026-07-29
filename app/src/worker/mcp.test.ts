@@ -220,6 +220,8 @@ describe('stateless MCP endpoint', () => {
       .toContain('Zero-based step index');
     expect(listed.tools.find((tool) => tool.name === 'edit_session')?.annotations)
       .toMatchObject({ destructiveHint: true, idempotentHint: true });
+    expect(listed.tools.find((tool) => tool.name === 'publish_session')?.annotations)
+      .toMatchObject({ readOnlyHint: false, idempotentHint: false, openWorldHint: true });
     expect(client.getInstructions()).toContain('Read an existing session with get_session');
     expect(client.getInstructions()).toContain('Only publish when the user explicitly asks');
     expect(listed.ttlMs).toBeTypeOf('number');

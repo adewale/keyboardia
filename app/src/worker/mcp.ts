@@ -489,7 +489,10 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
         destructiveHint: false,
         // Each call snapshots the music as it stands, producing a new session.
         idempotentHint: false,
-        openWorldHint: false,
+        // The immutable session URL can be shared outside Keyboardia and is
+        // rendered as a public page, so reviewers must treat this as an
+        // external publication even though the editable source stays intact.
+        openWorldHint: true,
       },
     },
     async ({ session_id }) => {
