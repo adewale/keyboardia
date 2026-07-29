@@ -4,200 +4,164 @@
 
 Do not merge PR #69 yet.
 
-The engineering, discovery, protocol-documentation, live-execution, and
-receipt-provenance defects raised in review are fixed. The final frozen Sonnet
-answer matrix also has no run-audit readiness blockers and shows a large
-positive effect: 13/18 skilled runs passed versus 4/18 baseline runs, an
-absolute lift of 50 percentage points.
+The discovery, protocol, validator, redirect, capability-echo, track-ID, and
+readiness-gate defects found in the multi-agent audit are fixed in source commit
+`8b33b5cadadb851c7d7120ab62ab267612d0da0d`. The corrected source is not yet
+release-proven for two external reasons:
 
-That is not yet reliable enough to ship. One core ownership/retry case passed
-only 1/3 skilled repeats, the exact paired sign-flip result is `p=0.0625`, and
-the redaction case exposed another overly literal oracle after the matrix was
-frozen. The oracle was not rewritten post hoc. Haiku has not been run against
-this corrected contract; under the Sonnet-first strategy, it should not be run
-until the remaining Sonnet failure is understood.
+1. both production and staging still return 404 for
+   `/.well-known/agent-skills/index.json`, and deploying the PR branch to shared
+   staging requires explicit authorization;
+2. the newly frozen Sonnet v11 matrix cannot run because the signed-in Claude
+   account has reached its weekly limit, which resets 2026-07-31 at 05:00
+   Europe/London.
 
-## What is fixed
+No failed provider call is counted as a model score.
 
-- The skill now requires one continuous origin-only trace:
-  origin → `/.well-known/agent-skills/index.json` → selected raw `SKILL.md`
-  bytes → SHA-256 verification → same-origin `/mcp` initialization →
-  `tools/list` → `get_session` → `edit_session` → `get_session`.
-- A fresh autonomous Sonnet trace starts with only `https://keyboardia.dev`,
-  has no preconfigured target MCP server, and completes all of those steps.
-- A fresh live MCP sweep exercises 18 calls against the corrected contract.
-- The acceptance contract names all seven canonical tools rather than
-  contradicting the prose with a two-tool requirement.
-- Acknowledgement/compatibility snapshots are explicitly non-authoritative;
-  every write requires a following `get_session` verification.
-- Capability redaction, new-private-handoff, publication, returned-data
-  injection, ownership, uncertain-response, and partial-failure rules are
-  explicit and objectively scored.
-- The full Sonnet comparison has been repeated several times. Failed or flawed
-  v6–v9 matrices are retained as negative evidence rather than overwritten.
-- Receipts bind exact prompts, task bundles, source Git objects, skill,
-  manifest, answer-matrix policy, oracles, harness patch, and committed run
-  artifacts. They self-verify without trusting the current checkout.
+## What the audit changed
 
-## Normative MCP documentation boundary
+- The client-side discovery contract now requires the exact Cloudflare v0.2
+  `$schema` identifier before processing `skills`.
+- The catalog validator requires exactly one entry with
+  `name=collaborate-in-keyboardia` and `type=skill-md`; it no longer selects
+  `skills[0]`.
+- Discovery follows at most five same-origin redirects and rejects a
+  cross-origin hop, loop, or excess redirect.
+- The trace records MCP 2026 connection/version negotiation through
+  `server/discover`. It no longer calls that phase “initialization” or accepts a
+  legacy `initialize` exchange.
+- `tools/list` must expose exactly the seven canonical Keyboardia tools; missing,
+  extra, or duplicate names fail the trace.
+- `add_track` now rejects IDs that do not end in a hyphen plus at least eight
+  hexadecimal characters. This makes the advertised schema and runtime agree.
+- `remix_session` and `publish_session` no longer echo the caller-supplied source
+  UUID or editable URL in their result.
+- Public trigger fixtures use capability placeholders rather than
+  production-shaped bearer UUIDs.
+- The answer-audit gate now marks a regression guard as holding only when the
+  skilled arm is green. An equal 0/0 case is a blocker, not success. The matching
+  harness fix is frozen at `200bfdd`.
 
-Three different concerns had been collapsed into “the MCP documentation”:
+## Normative documentation boundary
 
-1. The final, versioned MCP specification is the sole normative authority for
-   MCP transport, initialization, capability negotiation, and protocol
-   messages. Release-candidate blog posts, SEPs, and SDK guides are useful
-   context or implementation advice, but they do not override the final spec.
-2. The Cloudflare Agent Skills Discovery RFC governs the step before MCP:
-   discovering `/.well-known/agent-skills/index.json`, selecting a `skill-md`
-   entry, fetching its bytes, and checking its digest. The MCP specification
-   begins to govern once the agent reaches and initializes `/mcp`.
-3. A JSON document's `$schema` value is an identifier. It is not an instruction
-   that every agent must fetch that URL at runtime. Keyboardia therefore pins
-   and vendors the Cloudflare schema used for validation while retaining the
-   specified schema identifier.
+The earlier work collapsed three different authorities into “the MCP docs.”
+They must be applied in order:
 
-Before this correction, the prose listed seven tools while the normative
-acceptance check required exactly `get_session` and `edit_session`; one server
-could therefore be both conforming and non-conforming. The acceptance contract
-now requires exactly:
+1. The Cloudflare Agent Skills Discovery RFC governs the pre-MCP HTTP journey:
+   fixed well-known catalog, recognized catalog version, unique typed skill
+   selection, redirects, raw skill bytes, and digest verification.
+2. The final versioned MCP specification governs the `/mcp` protocol. For
+   protocol version `2026-07-28`, the modern probe is `server/discover`; the
+   legacy `initialize` lifecycle is not the operation being performed.
+3. SDK documentation explains how one implementation realizes the final spec.
+   An SDK `connect()` helper may issue `server/discover`, but a receipt must name
+   and verify the wire operation rather than treating the helper name as a
+   normative protocol message.
 
-`get_session`, `edit_session`, `create_session`, `remix_session`,
-`publish_session`, `analyze_session`, and `export_midi`.
+The `$schema` detail is subtle: in the Cloudflare RFC it is an opaque version
+identifier. A client compares it with the version it understands; it is not a
+runtime instruction to fetch or trust whatever document happens to live at
+that URL. Vendoring the schema is useful for publisher CI, but it does not
+replace the client-side exact-identifier check.
 
-## Frozen final Sonnet matrix (v10)
+## Corrected continuous trace contract
 
-The final release matrix was frozen before generation at source commit
-`0107ea15dab85499ab9ab4283d68991bad2e6a04` and tree
-`6b3d82c8b78f16e72580d2527ae3df39a42686c3`.
+The release trace must prove one correlated sequence:
 
-- model: `claude-sonnet-5`
-- cases: 6 hidden cases (4 holdout, 2 holdback)
-- arms: `with_skill` and `without_skill`
-- repeats: 3 per case/arm
-- calls: 36/36 complete; 0 missing; 0 execution errors; 0 timeouts
-- skill: 13/18, 72.2%
-- baseline: 4/18, 22.2%
-- absolute lift: +50.0 percentage points
-- normalized gain: 64.3%
-- exact paired sign-flip: `n=6`, `p=0.0625`
-- provider-reported tokens: 96,187
-- provider-reported cost: $7.0310621
-- summed provider elapsed time: 1,837,677 ms
+```text
+origin
+→ /.well-known/agent-skills/index.json
+→ exact $schema check
+→ unique name/type selection
+→ raw SKILL.md bytes
+→ SHA-256 digest verification
+→ same-origin /mcp
+→ server/discover for 2026-07-28
+→ tools/list with exactly seven tools
+→ create_session
+→ get_session
+→ edit_session
+→ get_session
+→ edit_session
+→ get_session
+```
 
-| Hidden case | With skill | Baseline | Interpretation |
-| --- | ---: | ---: | --- |
-| acknowledgement verification | 3/3 | 2/3 | skilled arm reliable; baseline variable |
-| private capability handoff | 3/3 | 2/3 | skilled arm reliable; baseline variable |
-| uncertain instrument recovery | 3/3 | 0/3 | strong skill-specific lift |
-| fresh track ownership/retry | 1/3 | 0/3 | positive lift, but skilled behavior is unreliable |
-| redact existing capability | 0/3 | 0/3 | safe skilled answers rejected by a literal `"none"` oracle |
-| track-limit partial failure | 3/3 | 0/3 | strong skill-specific lift |
+Unit tests now reject every weaker form of that chain. The previous autonomous
+receipt remains useful historical local evidence, but its origin is
+`http://127.0.0.1:53948`, not `https://keyboardia.dev`, and its old
+`mcp_initialize` label and weaker oracle are not release evidence for the
+corrected contract.
 
-The run-aware audit reports no readiness blockers and no base-saturated
-capability cases. It still reports required findings for repeated-run variance,
-the hidden subset's intentionally absent trigger cases, and only two
-positive-kind cases. Trigger/no-trigger coverage exists in the full 69-case
-manifest and the pre-run full-manifest audit is clean; it is not part of this
-answer-only hidden slice.
+## Sonnet v11 confirmation slice
 
-### v10 commitments
+The v10 population is retained as historical negative evidence, not promoted as
+confirmation. It was selected adaptively after v6–v9, its fresh-track prompt had
+an ambiguous object envelope, its redaction oracle rejected safe no-action text,
+and the old readiness code mislabeled the resulting 0/3 regression as holding.
+Its nominal `p=0.0625` is descriptive, not confirmatory.
 
-- skill tree: `65bbe421e9f8721d950ad3eda03d9c25c60e006799f79b7d6b835e5d23a58c09`
-- source bundle: `cd70c4b058c1c0fb057d340e5272debddf46d5d5d520014fe603cdb3ae04641a`
-- manifest: `6b4bae24e332eed76a31027a8c70e14b79490d48a48cb02537af690ae908e42b`
-- answer-matrix policy: `bc6182e4bd2d503da1085457ea0e1dbf7c1d16f95f8d4513947abc2e78bda978`
-- prepared tasks: `3f7348225a8f1994aa8e5160b62a9be2dd6ab33bf0bffb98d2bdce341863270a`
-- benchmark: `e19f7b9c912a85564da9ab2ee14375efd99ca9acfae726e4af7d781e46f51403`
-- audit: `0545b2e79684cb4e947cc373671a86a8234dc68401c6460899d3718f6ae099f1`
-- receipt: `963e1007d93ab0db6f6860fc42e36800d472fdf0220c2eba4e6348bb0376cd38`
-- receipt result projection:
-  `be38ef6578320a4cbc3bf4e0d0fd55d2c386d0976bfad427a9b4a9c77b2d5d58`
-- patched harness commit: `9261721f7682f756009a06c36405e99d10e86582`
-- patched harness tree: `d3666fcc2766e8f259fc0325135ecd9a6955f614`
+The replacement v11 population was frozen before generation:
 
-The receipt validates against the committed receipt schema and independently
-reconstructs all 36 results.
+- source commit: `8b33b5cadadb851c7d7120ab62ab267612d0da0d`
+- harness commit: `200bfdd4aa9c50dd842f648dfc615fc65db0c4da`
+- prepared-task SHA-256:
+  `e1aa527a2b10420c6f03b5791862b9c7af11461233081b979de3a11654fe2f7f`
+- 8 independent hidden cases: 5 holdout and 3 holdback
+- 2 arms: with skill and without skill
+- 3 repeats per case/arm
+- 48 planned calls
+- 5 positive and 3 adversarial cases
+- full 77-case pre-run manifest audit: no findings and no blockers
 
-## Continuous autonomous trace
+The cases cover normative discovery, acknowledgement verification, private
+handoff, uncertain step recovery, fresh-track ownership, existing-capability
+redaction, track-limit partial failure, and publication source secrecy. The two
+previously defective prompts/oracles were clarified before any v11 answer was
+generated.
 
-The origin-only autonomous receipt is a separate execution population. Sonnet
-received the Keyboardia origin, not a configured Keyboardia MCP connection.
-Its 13-event trace performed catalog fetch, raw skill fetch, exact digest
-verification, MCP initialization, `tools/list`, and six live target calls ending
-in authoritative verification. No target call occurred before discovery.
+An attempt from the preceding source commit exposed an adapter telemetry bug
+(`usage.source` entered a numeric-only contract). The native `run-claude` retry
+then produced provider execution failures with zero tokens and zero cost:
+Claude reported that the weekly account limit had been reached. These are
+operational failures, not answer observations. The final task bundle above was
+refreshed after inlining retired v10 prompts for strict CI and has not produced
+model answers, so there is no v11 benchmark or release receipt yet.
 
-- receipt SHA-256:
-  `8d59e11fcf660e19b23b3f70911a3156e0cd103d0e43482450f003c463e45469`
-- trace SHA-256:
-  `ae8161f40760c22480ad022c8c3823c5e8be94df9e90d08e427662e9774d44bd`
-- answer SHA-256:
-  `370838f7d950eaaf4cf0b04f454df92140a1d5aa3740e123d42cdf0b89bf32cc`
-- prompt SHA-256:
-  `c18939c9933b87a63729fe11fcb3438a5bc386680435304aa79a0072ad6d8b56`
-- invocation SHA-256:
-  `644b98a61b0b673fe3b41da811d9c2ccf7a3fd09e3f730cf68a709e6f9239b67`
+## Evidence corrections
 
-## Fresh live MCP execution sweep
+- The old autonomous and live receipts are loopback Worker evidence. Earlier
+  claims that they began at production were incorrect.
+- v6–v9 files on the evidence branch are immutable aggregate history, not
+  independently regradable prompt/output populations.
+- Receipt verification does not rely on the current checkout's evaluated source
+  bytes or local Git history, given a trusted verifier and installed
+  dependencies. It does still execute verifier code supplied by the checkout.
+- Provider model identity, token counts, and billing remain provider/harness
+  metadata, not signed attestations.
 
-The live receipt contains 18 execution-graded calls. The skill arm passed 100%
-of cases and assertions; the baseline passed 77.8% of cases and 98% of
-assertions. Twenty-five assertions were saturated, so this receipt demonstrates
-live tool reliability and safety regression behavior, not a clean estimate of
-skill lift.
+## Verification completed on the corrected source
 
-- receipt SHA-256:
-  `6972e8b27e30a5f46918639f4b604276c5f504d046e23285e835b499a03f2568`
-- raw run SHA-256:
-  `0205b114aa801bdd993556bf3735ff622b9b49d7518432eaf88a3bba11f9e61b`
+- focused discovery, redirect, manifest, oracle, MCP, and receipt tests: passed
+- TypeScript typecheck: passed
+- build: passed
+- lint: passed
+- built integration suite: 133/133 passed
+- harness regression-gate tests: 57/57 passed
+- full application unit suite: 4,480 passed, 1 skipped
+- the exact PyPI 0.6.0 strict manifest command used by CI: passed locally
+- CI for source commit `8b33b5c`: pending
 
-## Preserved negative eval history
+## Remaining merge blockers
 
-| Matrix | Skill | Baseline | Result |
-| --- | ---: | ---: | --- |
-| v6, 72 calls | 52.8% | 8.3% | four 0/0 cases exposed JSON-envelope/type oracle defects |
-| v7, 72 calls | 80.6% | 55.6% | discovery and remix remained non-discriminating |
-| v8, 72 calls | 83.3% | 41.7% | origin-discovery and public-freeze prompts disclosed their desired answers |
-| v9, 60 calls | 86.7% | 40.0% | audit blocked on one 1/1 capability case and one false 0/0 literal oracle |
-| v10, 36 calls | 72.2% | 22.2% | no readiness blockers; remaining reliability and scoring defects are explicit |
-
-The lower v10 skilled score is not evidence that the skill regressed. The v10
-slice deliberately removed easy, saturated regression cases from the lift
-denominator and introduced a new partial-failure capability case. It is the
-more honest release estimate.
-
-## Verification performed
-
-- focused final Vitest suite: 38/38 passed
-- earlier full application unit suite: 4,465 passed, 1 skipped
-- earlier build/lint/typecheck/integration total: 133 passed
-- skill-eval-harness suite: 830 passed, 5 skipped
-- Cloudflare skill validation: passed
-- strict manifest leakage and ablation validation: passed
-- full 69-case pre-run manifest audit: no blockers or findings
-- final 36-run answer audit: no readiness blockers
-- final answer receipt self-verification: passed
-- autonomous receipt self-verification: passed
-- live execution receipt self-verification: passed
-
-## Why this still should not merge
-
-1. Sonnet followed the fresh-track ownership/retry contract only once in three
-   skilled repeats. That is a core collaboration-safety behavior.
-2. The final six-case paired result is large but misses the predeclared 0.05
-   significance threshold (`p=0.0625`).
-3. The redaction oracle is still too literal: all three skilled outputs were
-   safe, but two used explanatory no-action text rather than the exact string
-   `"none"`. Changing the frozen oracle after inspecting answers would be
-   post-hoc scoring, so the defect remains visible.
-4. Haiku has not been evaluated on the corrected final contract.
-5. The autonomous discovery-to-edit trace is one successful sample, not a
-   repeated reliability distribution.
-6. The live execution sweep has many saturated assertions and therefore proves
-   the MCP surface works more strongly than it proves the skill adds value.
-7. Receipts are content-addressed and self-verifying, but they are not
-   provider-signed attestations of model identity or billing telemetry.
-
-The correct next slice is to repair or simplify fresh-track response shaping,
-freeze a semantically tolerant redaction oracle before generation, then repeat
-the focused Sonnet matrix. Haiku should follow only if that Sonnet gate is
-stable.
+1. Run the frozen 48-call Sonnet v11 matrix after provider capacity resets;
+   grade, audit, and produce a content-bound receipt without changing prompts or
+   oracles.
+2. Produce a fresh autonomous trace under the corrected
+   `$schema`/`server-discover`/exact-seven validator.
+3. With explicit authorization, deploy this branch to staging and repeat the
+   origin-only trace against the external Cloudflare hostname; otherwise wait
+   for an authorized deployment. Production and staging currently return 404
+   for the catalog.
+4. Require green CI for the final source commit.
+5. Publish new durable evidence and update the PR only after those artifacts
+   verify offline.
