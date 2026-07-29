@@ -15,6 +15,8 @@ import { ORACLES as V7_ORACLES } from '../../evals/oracles/hidden-v7-answer.mjs'
 import { ORACLES as V8_ORACLES } from '../../evals/oracles/hidden-v8-answer.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
 import { ORACLES as V9_ORACLES } from '../../evals/oracles/hidden-v9-answer.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
+import { ORACLES as V10_ORACLES } from '../../evals/oracles/hidden-v10-answer.mjs';
 
 const call = (tool: string, arguments_: Record<string, unknown>) => ({ tool, arguments: arguments_ });
 const session = (tool: string, sessionId: string) => call(tool, { session_id: sessionId });
@@ -576,6 +578,46 @@ describe('hidden answer oracles', () => {
     expect(V9_ORACLES['attribution-regression'](JSON.stringify({
       attempted: { tempo: { before: 154, after: 156 } }, observed: { tempo: 156 },
       unattributed: { snare: { active_steps: { before: [2, 12], after: [2, 6, 12] } } },
+    }))).toMatchObject({ passed: true });
+  });
+
+  it('scores the focused v10 lift contracts and accepts semantic no-retry values', () => {
+    const sid = '[SESSION_ID]';
+    expect(V10_ORACLES['ack-is-not-verification'](JSON.stringify([
+      session('get_session', sid),
+      call('edit_session', { session_id: sid, edit: {
+        operation: 'set_steps', track_id: 'user-tom', changes: [{ step: 4, value: true }],
+      } }),
+      session('get_session', sid),
+      call('edit_session', { session_id: sid, edit: { operation: 'set_tempo', tempo: 128 } }),
+      session('get_session', sid),
+    ]))).toMatchObject({ passed: true });
+
+    expect(V10_ORACLES['uncertain-instrument'](JSON.stringify({
+      first_recovery_call: session('get_session', sid),
+      if_present_retry: 'do_not_retry',
+      if_absent_retry: call('edit_session', { session_id: sid, edit: {
+        operation: 'set_track_instrument', track_id: 'user-bell', sample_id: 'sampled:vibraphone',
+      } }),
+    }))).toMatchObject({ passed: true });
+
+    const add = call('edit_session', { session_id: sid, edit: {
+      operation: 'add_track', track_id: 'agent-shaker-a11ce55a', sample_id: 'shaker',
+    } });
+    expect(V10_ORACLES['fresh-owned-track'](JSON.stringify({
+      prefix_proves_ownership: false,
+      initial_add: add,
+      uncertain_recovery: {
+        first_call: session('get_session', sid), if_present_retry: null, if_absent_retry: add,
+      },
+    }))).toMatchObject({ passed: true });
+
+    expect(V10_ORACLES['track-limit-partial'](JSON.stringify({
+      confirmed: ['tempo 128'],
+      next_call: session('get_session', sid),
+      replay_confirmed: false,
+      compensating_edits: [],
+      unfinished: ['add track agent-clave-feedface'],
     }))).toMatchObject({ passed: true });
   });
 });
