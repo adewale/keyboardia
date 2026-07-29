@@ -93,7 +93,8 @@ function verifyEditPostState(editCall, before, after) {
 }
 
 function deriveEndpoint(skill, origin) {
-  const relative = skill.match(/Connect[\s\S]{0,240}?`(\/[^`\s]+)` on the same origin/i);
+  const relative = skill.match(/Connect[\s\S]{0,240}?`(\/[^`\s]+)` on the same origin/i)
+    ?? skill.match(/Connect[\s\S]{0,240}?same-origin\s+`(\/[^`\s]+)`/i);
   invariant(relative, 'verified skill does not advertise a same-origin MCP endpoint');
   return new URL(relative[1], origin).href;
 }

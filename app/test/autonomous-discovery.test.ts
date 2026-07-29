@@ -225,6 +225,24 @@ describe('autonomous discovery trace oracle', () => {
     });
   });
 
+  it('accepts the concise same-origin endpoint wording used by the published skill', () => {
+    const trace = validTrace();
+    const skill = '## Discover\nConnect to same-origin `/mcp`; inspect its live tools.';
+    const digest = `sha256:${createHash('sha256').update(skill).digest('hex')}`;
+    const catalog = JSON.parse(trace[0].response.value.body as string);
+    catalog.skills[0].digest = digest;
+    trace[0].response.value.body = JSON.stringify(catalog);
+    trace[1].response.value.body = skill;
+    trace[2].request.expected_digest = digest;
+    trace[2].response.value.expected_digest = digest;
+    trace[2].response.value.actual_digest = digest;
+
+    expect(validateAutonomousTrace(trace, { origin: ORIGIN })).toMatchObject({
+      passed: true,
+      endpoint: `${ORIGIN}/mcp`,
+    });
+  });
+
   it('rejects MCP initialization before exact digest verification', () => {
     const trace = validTrace();
     trace.splice(2, 1);
