@@ -76,7 +76,8 @@ function namedEntries(value) {
 
 function unwrapSinglePayload(value) {
   let payload = value;
-  if (Array.isArray(payload) && payload.length === 1) payload = payload[0];
+  if (Array.isArray(payload) && payload.length === 1
+      && payload[0] && typeof payload[0] === 'object') payload = payload[0];
   for (const key of ['change', 'value']) {
     if (exactKeys(payload, [key]) && payload[key] && typeof payload[key] === 'object') {
       payload = payload[key];

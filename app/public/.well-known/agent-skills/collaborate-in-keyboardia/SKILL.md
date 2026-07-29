@@ -27,10 +27,15 @@ field the user did not ask to change.
    tempo unless the user directly requested a tempo change.
 4. **Never propose a known-invalid edit.** Validate against the current live
    state first. If an index is outside `step_count`, do not send the edit; ask
-   for an in-range step.
+   for an in-range step. In structured output, any field asking whether to send
+   that out-of-range edit is `false`.
 5. **Separate attribution.** In a structured report, `observed` contains only
    the post-state of fields you attempted to change. Put every unrelated
    before/after delta only in `unattributed`, never in both places.
+6. **Read before recovering from uncertainty.** After an uncertain edit
+   response, the first recovery call is always `get_session`, never
+   `edit_session`. Retry the identical edit only if that read proves the change
+   is absent.
 
 ## Complete the minimum live workflow
 
