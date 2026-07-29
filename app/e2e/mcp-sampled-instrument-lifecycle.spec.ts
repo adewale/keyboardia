@@ -8,27 +8,29 @@ import {
   waitForCollaborationReady,
 } from './global-setup';
 
+const TRACK_ID_RUN_SUFFIX = crypto.randomUUID().replaceAll('-', '').slice(0, 8);
+
 const CONTROL_TRACK = {
-  trackId: 'mcp-control-hihat',
+  trackId: `mcp-control-hihat-${TRACK_ID_RUN_SUFFIX}`,
   name: 'MCP Control Hi-Hat',
   sampleId: 'hihat',
 } as const;
 
 const MCP_SAMPLED_TRACKS = [
   {
-    trackId: 'jazz-brush-snare',
+    trackId: `jazz-brush-snare-${TRACK_ID_RUN_SUFFIX}`,
     name: 'Jazz Brush Snare',
     sampleId: 'sampled:brushes-snare',
     instrumentId: 'brushes-snare',
   },
   {
-    trackId: 'jazz-ride-cymbal',
+    trackId: `jazz-ride-cymbal-${TRACK_ID_RUN_SUFFIX}`,
     name: 'Jazz Ride Cymbal',
     sampleId: 'sampled:acoustic-ride',
     instrumentId: 'acoustic-ride',
   },
   {
-    trackId: 'take5-alto-sax',
+    trackId: `take5-alto-sax-${TRACK_ID_RUN_SUFFIX}`,
     name: 'Take 5 Sax',
     sampleId: 'sampled:alto-sax',
     instrumentId: 'alto-sax',
