@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { calls } from '../../evals/oracles/retired-hidden-answer.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
 import { ORACLES } from '../../evals/oracles/hidden-v3-answer.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
+import { ORACLES as V4_ORACLES } from '../../evals/oracles/hidden-v4-answer.mjs';
 
 const call = (tool: string, arguments_: Record<string, unknown>) => ({ tool, arguments: arguments_ });
 const session = (tool: string, sessionId: string) => call(tool, { session_id: sessionId });
@@ -93,6 +95,87 @@ describe('hidden answer oracles', () => {
     };
     for (const [name, value] of Object.entries(fixtures)) {
       expect(ORACLES[name](JSON.stringify(value)), name).toMatchObject({ passed: true });
+    }
+  });
+
+  it('accepts every frozen v4 contract without rejecting semantic nesting', () => {
+    const sid = '[SESSION_ID]';
+    const fixtures: Record<string, unknown> = {
+      'discovery-edit-trace': [
+        { action: 'fetch', url: 'https://keyboardia.dev/.well-known/agent-skills/index.json' },
+        { action: 'fetch', url: 'https://keyboardia.dev/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md' },
+        { action: 'verify', algorithm: 'sha-256', digest: '[CATALOG_DIGEST]' },
+        { action: 'mcp_connect', url: 'https://keyboardia.dev/mcp' },
+        { action: 'tools_list' },
+        session('get_session', sid),
+        call('edit_session', { session_id: sid, edit: { operation: 'set_tempo', tempo: 132 } }),
+        session('get_session', sid),
+      ],
+      'ack-is-not-verification': [
+        session('get_session', sid),
+        call('edit_session', { session_id: sid, edit: {
+          operation: 'set_steps', track_id: 'user-kick', changes: [{ step: 7, value: true }],
+        } }),
+        session('get_session', sid),
+        call('edit_session', { session_id: sid, edit: {
+          operation: 'set_track_instrument', track_id: 'user-lead', sample_id: 'synth:glass',
+        } }),
+        session('get_session', sid),
+      ],
+      'private-handoff': {
+        requester_receives_editable: true, public_receives_editable: false,
+        label: 'editable — keep private', before_public_share: 'publish_session',
+      },
+      'redact-existing': {
+        repeat_editable_url: false, internal_reference: sid, public_share_action: 'publish_session',
+      },
+      'public-freeze': {
+        publish_call: session('publish_session', sid),
+        share_result: '[IMMUTABLE_PUBLISHED_URL_ONLY]', edit_source_after_publish: false,
+      },
+      'remix-two-edits': [
+        session('remix_session', '[SOURCE_SESSION_ID]'),
+        session('get_session', '[REMIX_SESSION_ID]'),
+        call('edit_session', { session_id: '[REMIX_SESSION_ID]', edit: {
+          operation: 'add_track', track_id: 'agent-shaker-c0ffee12',
+          sample_id: 'shaker', name: 'Night Shaker',
+        } }),
+        session('get_session', '[REMIX_SESSION_ID]'),
+        call('edit_session', { session_id: '[REMIX_SESSION_ID]', edit: {
+          operation: 'set_steps', track_id: 'agent-shaker-c0ffee12',
+          changes: [{ step: 2, value: true }, { step: 10, value: true }],
+        } }),
+        session('get_session', '[REMIX_SESSION_ID]'),
+      ],
+      'uncertain-instrument': {
+        first: session('get_session', sid), retry_when_observed: false,
+        retry_when_absent: call('edit_session', { session_id: sid, edit: {
+          operation: 'set_track_instrument', track_id: 'user-bass', sample_id: 'advanced:sub-bass',
+        } }),
+      },
+      'fresh-owned-track': {
+        existing_agent_prefix_proves_ownership: false,
+        initial_add: call('edit_session', { session_id: sid, edit: {
+          operation: 'add_track', track_id: 'agent-clap-a1b2c3d4', sample_id: 'clap',
+        } }),
+        uncertain_retry: call('edit_session', { session_id: sid, edit: {
+          operation: 'add_track', track_id: 'agent-clap-a1b2c3d4', sample_id: 'clap',
+        } }),
+      },
+      'analysis-regression': [session('get_session', sid), session('analyze_session', sid)],
+      'boundary-regression': { send_edit: false, valid_zero_based_indices: [0, 6] },
+      'attribution-regression': {
+        attempted: { tempo: 136 }, observed: { tempo: 136 },
+        unattributed: { snare: { active_steps: { before: [1, 9], after: [1, 5, 9] } } },
+      },
+      'additive-regression': {
+        modify_existing_now: false,
+        questions_before_existing_changes: ['tempo', 'existing track patterns'],
+        safe_additive_option: 'new separate track',
+      },
+    };
+    for (const [name, value] of Object.entries(fixtures)) {
+      expect(V4_ORACLES[name](JSON.stringify(value)), name).toMatchObject({ passed: true });
     }
   });
 });
