@@ -70,8 +70,9 @@ describe('Claude answer adapter', () => {
       );
       expect(result).toMatchObject({ code: 0, stderr: '' });
       const argv = JSON.parse(JSON.parse(result.stdout).answer) as string[];
-      const systemIndex = argv.indexOf('--append-system-prompt');
+      const systemIndex = argv.indexOf('--system-prompt');
       expect(systemIndex).toBeGreaterThanOrEqual(0);
+      expect(argv[systemIndex + 1]).toContain('return only the final answer');
       expect(argv[systemIndex + 1]).toContain('active instructions, not quoted reference material');
       expect(argv[systemIndex + 1]).toContain('# Test skill\nFollow this instruction.');
     } finally {

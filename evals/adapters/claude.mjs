@@ -71,7 +71,11 @@ const argv = [
   '--no-session-persistence',
 ];
 const skillInstructions = declaredSkillInstructions();
-if (skillInstructions) argv.push('--append-system-prompt', skillInstructions);
+const systemInstructions = [
+  'You are a non-interactive task agent. Follow the user\'s requested response format exactly and return only the final answer. Do not narrate your reasoning or add a preamble unless the user asks for one.',
+  skillInstructions,
+].filter(Boolean).join('\n\n');
+argv.push('--system-prompt', systemInstructions);
 if (model) {
   argv.push('--model', model);
 }
