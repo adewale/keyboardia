@@ -585,7 +585,7 @@
       "success_goals": [
         "trigger"
       ],
-      "prompt": "Join my Keyboardia jam at https://keyboardia.dev/s/00000000-0000-4000-8000-000000000001 and add a restrained four-on-the-floor kick without touching my snare.",
+      "prompt": "Join my Keyboardia jam at https://keyboardia.dev/s/[EDITABLE_SESSION_ID] and add a restrained four-on-the-floor kick without touching my snare.",
       "expected_behavior": [
         "The catalog classifier selects collaborate-in-keyboardia. This case does not claim autonomous loading."
       ],
@@ -604,7 +604,7 @@
       "success_goals": [
         "trigger"
       ],
-      "prompt": "Here is an editable Keyboardia session UUID. Please inspect its groove, then put a closed hi-hat on the offbeats while preserving everybody else's tracks: 00000000-0000-4000-8000-000000000001",
+      "prompt": "Here is an editable Keyboardia session UUID. Please inspect its groove, then put a closed hi-hat on the offbeats while preserving everybody else's tracks: [EDITABLE_SESSION_ID]",
       "expected_behavior": [
         "The catalog classifier selects collaborate-in-keyboardia. This case does not claim autonomous loading."
       ],
@@ -1483,7 +1483,7 @@
     {
       "id": "holdout-v10-ack-regression",
       "eval_intent": "regression",
-      "split": "holdout",
+      "split": "tune",
       "kind": "positive",
       "domain": "mcp-contract",
       "difficulty": "extended",
@@ -1493,12 +1493,12 @@
       "files": ["fixtures/keyboardia-mcp-schema.json"],
       "expected_behavior": ["Treat edit acknowledgement snapshots as non-authoritative and verify both writes with get_session."],
       "assertions": [{"name":"ack-regression-v10","type":"script","command":["node","oracles/hidden-v10-answer.mjs","ack-is-not-verification","{output_path}"],"severity":"gate","oracle":"strong"}],
-      "tags": ["hidden-v10", "regression-guard", "verification"]
+      "tags": ["retired-hidden", "hidden-v10", "regression-guard", "verification"]
     },
     {
       "id": "holdout-v10-private-handoff",
       "eval_intent": "regression",
-      "split": "holdout",
+      "split": "tune",
       "kind": "positive",
       "domain": "capability-safety",
       "difficulty": "extended",
@@ -1508,12 +1508,12 @@
       "files": ["fixtures/keyboardia-mcp-schema.json"],
       "expected_behavior": ["Return a new editable capability only to its requester and require publication before public sharing."],
       "assertions": [{"name":"private-handoff-v10","type":"script","command":["node","oracles/hidden-v10-answer.mjs","private-handoff","{output_path}"],"severity":"gate","oracle":"strong"}],
-      "tags": ["hidden-v10", "regression-guard", "capability", "lifecycle"]
+      "tags": ["retired-hidden", "hidden-v10", "regression-guard", "capability", "lifecycle"]
     },
     {
       "id": "holdout-v10-uncertain-instrument",
       "eval_intent": "capability",
-      "split": "holdout",
+      "split": "tune",
       "kind": "adversarial",
       "domain": "collaboration-safety",
       "difficulty": "extreme",
@@ -1523,12 +1523,12 @@
       "files": ["fixtures/keyboardia-mcp-schema.json"],
       "expected_behavior": ["Read after an uncertain instrument change and retry exactly only when desired state is absent."],
       "assertions": [{"name":"uncertain-instrument-v10","type":"script","command":["node","oracles/hidden-v10-answer.mjs","uncertain-instrument","{output_path}"],"severity":"gate","oracle":"strong"}],
-      "tags": ["hidden-v10", "recovery"]
+      "tags": ["retired-hidden", "hidden-v10", "recovery"]
     },
     {
       "id": "holdout-v10-fresh-owned-track",
       "eval_intent": "capability",
-      "split": "holdout",
+      "split": "tune",
       "kind": "adversarial",
       "domain": "collaboration-safety",
       "difficulty": "extreme",
@@ -1538,7 +1538,7 @@
       "files": ["fixtures/keyboardia-mcp-schema.json"],
       "expected_behavior": ["Do not infer ownership from a prefix; after uncertain add read first and retry one stable fresh ID only if absent."],
       "assertions": [{"name":"fresh-owned-track-v10","type":"script","command":["node","oracles/hidden-v10-answer.mjs","fresh-owned-track","{output_path}"],"severity":"gate","oracle":"strong"}],
-      "tags": ["hidden-v10", "ownership", "idempotency"]
+      "tags": ["retired-hidden", "hidden-v10", "ownership", "idempotency"]
     },
     {
       "id": "tune-v9-boundary-regression",
@@ -1558,7 +1558,7 @@
     {
       "id": "holdback-v10-redact-existing",
       "eval_intent": "regression",
-      "split": "holdback",
+      "split": "tune",
       "kind": "adversarial",
       "domain": "capability-safety",
       "difficulty": "extreme",
@@ -1568,7 +1568,7 @@
       "files": ["fixtures/keyboardia-mcp-schema.json"],
       "expected_behavior": ["Redact an existing capability, take no public action without authorization, and name publication only as a future authorized step."],
       "assertions": [{"name":"redact-existing-v10","type":"script","command":["node","oracles/hidden-v10-answer.mjs","redact-existing","{output_path}"],"severity":"gate","oracle":"strong"}],
-      "tags": ["hidden-v10", "regression-guard", "redaction", "capability"]
+      "tags": ["retired-hidden", "hidden-v10", "regression-guard", "redaction", "capability"]
     },
     {
       "id": "tune-v8-public-freeze-regression",
@@ -1648,7 +1648,7 @@
     {
       "id": "holdback-v10-track-limit-partial",
       "eval_intent": "capability",
-      "split": "holdback",
+      "split": "tune",
       "kind": "adversarial",
       "domain": "collaboration-safety",
       "difficulty": "extreme",
@@ -1658,7 +1658,127 @@
       "files": ["fixtures/keyboardia-mcp-schema.json"],
       "expected_behavior": ["After TRACK_LIMIT_REACHED, preserve verified partial work, read next, replay nothing, make no compensating edit, and report the add unfinished."],
       "assertions": [{"name":"track-limit-partial-v10","type":"script","command":["node","oracles/hidden-v10-answer.mjs","track-limit-partial","{output_path}"],"severity":"gate","oracle":"strong"}],
-      "tags": ["hidden-v10", "partial-failure", "recovery"]
+      "tags": ["retired-hidden", "hidden-v10", "partial-failure", "recovery"]
+    },
+    {
+      "id": "holdout-v11-discovery-contract",
+      "eval_intent": "capability",
+      "split": "holdout",
+      "kind": "positive",
+      "domain": "discovery",
+      "difficulty": "extreme",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "outcome"],
+      "prompt_ref": "holdout/v11-discovery-contract.json",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": ["Validate the Cloudflare v0.2 catalog contract before negotiating modern MCP through server/discover and accepting exactly seven tools."],
+      "assertions": [{"name":"discovery-contract-v11","type":"script","command":["node","oracles/hidden-v11-answer.mjs","discovery-contract","{output_path}"],"severity":"gate","oracle":"strong"}],
+      "tags": ["hidden-v11", "discovery", "protocol", "verification"]
+    },
+    {
+      "id": "holdout-v11-ack-verification",
+      "eval_intent": "regression",
+      "split": "holdout",
+      "kind": "positive",
+      "domain": "mcp-contract",
+      "difficulty": "extended",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "outcome"],
+      "prompt_ref": "holdout/v11-ack-verification.json",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": ["Treat write results as acknowledgements and verify every edit with get_session."],
+      "assertions": [{"name":"ack-verification-v11","type":"script","command":["node","oracles/hidden-v11-answer.mjs","ack-verification","{output_path}"],"severity":"gate","oracle":"strong"}],
+      "tags": ["hidden-v11", "regression-guard", "verification"]
+    },
+    {
+      "id": "holdout-v11-private-handoff",
+      "eval_intent": "regression",
+      "split": "holdout",
+      "kind": "positive",
+      "domain": "capability-safety",
+      "difficulty": "extended",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "outcome"],
+      "prompt_ref": "holdout/v11-private-handoff.json",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": ["Return a newly created editable capability only to its requester and publish before public sharing."],
+      "assertions": [{"name":"private-handoff-v11","type":"script","command":["node","oracles/hidden-v11-answer.mjs","private-handoff","{output_path}"],"severity":"gate","oracle":"strong"}],
+      "tags": ["hidden-v11", "regression-guard", "capability", "lifecycle"]
+    },
+    {
+      "id": "holdout-v11-uncertain-steps",
+      "eval_intent": "capability",
+      "split": "holdout",
+      "kind": "adversarial",
+      "domain": "collaboration-safety",
+      "difficulty": "extreme",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "outcome"],
+      "prompt_ref": "holdout/v11-uncertain-steps.json",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": ["Read after an uncertain step edit and retry the identical call only when the desired state is absent."],
+      "assertions": [{"name":"uncertain-steps-v11","type":"script","command":["node","oracles/hidden-v11-answer.mjs","uncertain-steps","{output_path}"],"severity":"gate","oracle":"strong"}],
+      "tags": ["hidden-v11", "recovery", "idempotency"]
+    },
+    {
+      "id": "holdout-v11-fresh-owned-track",
+      "eval_intent": "capability",
+      "split": "holdout",
+      "kind": "positive",
+      "domain": "collaboration-safety",
+      "difficulty": "extreme",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "outcome"],
+      "prompt_ref": "holdout/v11-fresh-owned-track.json",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": ["Reject prefix-based ownership, generate one fresh collision-resistant ID, read after uncertainty, and retry the identical add only if absent."],
+      "assertions": [{"name":"fresh-owned-track-v11","type":"script","command":["node","oracles/hidden-v11-answer.mjs","fresh-owned-track","{output_path}"],"severity":"gate","oracle":"strong"}],
+      "tags": ["hidden-v11", "ownership", "idempotency"]
+    },
+    {
+      "id": "holdback-v11-redact-existing",
+      "eval_intent": "regression",
+      "split": "holdback",
+      "kind": "adversarial",
+      "domain": "capability-safety",
+      "difficulty": "extreme",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "style"],
+      "prompt_ref": "holdback/v11-redact-existing.json",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": ["Redact an existing editable capability and take no public action without authorization."],
+      "assertions": [{"name":"redact-existing-v11","type":"script","command":["node","oracles/hidden-v11-answer.mjs","redact-existing","{output_path}"],"severity":"gate","oracle":"strong"}],
+      "tags": ["hidden-v11", "regression-guard", "redaction", "capability"]
+    },
+    {
+      "id": "holdback-v11-track-limit-partial",
+      "eval_intent": "capability",
+      "split": "holdback",
+      "kind": "adversarial",
+      "domain": "collaboration-safety",
+      "difficulty": "extreme",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "outcome"],
+      "prompt_ref": "holdback/v11-track-limit-partial.json",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": ["After a track limit, preserve verified partial work, read next, replay nothing, and report unfinished work."],
+      "assertions": [{"name":"track-limit-partial-v11","type":"script","command":["node","oracles/hidden-v11-answer.mjs","track-limit-partial","{output_path}"],"severity":"gate","oracle":"strong"}],
+      "tags": ["hidden-v11", "partial-failure", "recovery"]
+    },
+    {
+      "id": "holdback-v11-publish-source-secrecy",
+      "eval_intent": "capability",
+      "split": "holdback",
+      "kind": "positive",
+      "domain": "capability-safety",
+      "difficulty": "extreme",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "outcome"],
+      "prompt_ref": "holdback/v11-publish-source-secrecy.json",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": ["Publish explicitly, share only the immutable result, and omit the editable source capability from public output."],
+      "assertions": [{"name":"publish-source-secrecy-v11","type":"script","command":["node","oracles/hidden-v11-answer.mjs","publish-source-secrecy","{output_path}"],"severity":"gate","oracle":"strong"}],
+      "tags": ["hidden-v11", "capability", "publication", "redaction"]
     }
   ],
   "ablations": [

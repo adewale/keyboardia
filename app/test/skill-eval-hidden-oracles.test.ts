@@ -17,6 +17,8 @@ import { ORACLES as V8_ORACLES } from '../../evals/oracles/hidden-v8-answer.mjs'
 import { ORACLES as V9_ORACLES } from '../../evals/oracles/hidden-v9-answer.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
 import { ORACLES as V10_ORACLES } from '../../evals/oracles/hidden-v10-answer.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
+import { ORACLES as V11_ORACLES } from '../../evals/oracles/hidden-v11-answer.mjs';
 
 const call = (tool: string, arguments_: Record<string, unknown>) => ({ tool, arguments: arguments_ });
 const session = (tool: string, sessionId: string) => call(tool, { session_id: sessionId });
@@ -618,6 +620,48 @@ describe('hidden answer oracles', () => {
       replay_confirmed: false,
       compensating_edits: [],
       unfinished: ['add track agent-clave-feedface'],
+    }))).toMatchObject({ passed: true });
+  });
+
+  it('scores the clarified v11 protocol and capability contracts semantically', () => {
+    const discovery = {
+      catalog: {
+        schema_identifier: 'https://schemas.agentskills.io/discovery/0.2.0/schema.json',
+        schema_action: 'compare-opaque-identifier', max_redirects: 5, redirect_scope: 'same-origin',
+      },
+      selection: { name: 'collaborate-in-keyboardia', type: 'skill-md', exactly_one: true },
+      digest: { algorithm: 'sha256', exact_response_bytes: true, on_mismatch: 'stop' },
+      mcp: {
+        endpoint: '/mcp', protocol_version: '2026-07-28',
+        negotiation_method: 'server/discover', legacy_initialize: false,
+      },
+      required_tools: [
+        'analyze_session', 'create_session', 'edit_session', 'export_midi',
+        'get_session', 'publish_session', 'remix_session',
+      ],
+      trace: [
+        'index.json', 'SKILL.md', 'digest', 'server/discover', 'tools/list',
+        'get_session', 'edit_session', 'get_session',
+      ],
+    };
+    expect(V11_ORACLES['discovery-contract'](JSON.stringify(discovery)))
+      .toMatchObject({ passed: true });
+
+    const redaction = {
+      repeat_editable_url: false,
+      internal_reference: '[SESSION_ID]',
+      public_action_now: 'no public action',
+      publication_if_authorized: session('publish_session', '[SESSION_ID]'),
+    };
+    expect(V11_ORACLES['redact-existing'](JSON.stringify(redaction)))
+      .toMatchObject({ passed: true });
+    redaction.public_action_now = 'publish now';
+    expect(V11_ORACLES['redact-existing'](JSON.stringify(redaction)).passed).toBe(false);
+
+    expect(V11_ORACLES['publish-source-secrecy'](JSON.stringify({
+      publish_call: session('publish_session', '[SESSION_ID]'),
+      share: '[PUBLISHED_SESSION_URL]',
+      source_capability_in_public_output: false,
     }))).toMatchObject({ passed: true });
   });
 });

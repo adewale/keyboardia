@@ -370,8 +370,9 @@ idempotent.
 ```
 
 Wraps `publishSessionFromState()`, freezing current state into a new immutable
-session. The response carries both the new immutable URL and `source_url`, which
-stays editable.
+session. The response carries only the new immutable session and URL. It does
+not echo the editable source UUID or URL; the caller already supplied that
+bearer capability and must keep it out of public-facing output.
 
 Publishing is never an implicit side effect of editing or exporting — an agent
 calls this only when someone explicitly asks. Publishing an already-published

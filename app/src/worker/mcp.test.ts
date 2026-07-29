@@ -459,7 +459,7 @@ describe('stateless MCP endpoint', () => {
         session_id: SESSION_ID,
         edit: {
           operation: 'add_track',
-          track_id: 'lead-1',
+          track_id: 'lead-agent-a7f3c29d',
           sample_id: 'kick',
           name: 'Ada Lead',
         },
@@ -471,7 +471,7 @@ describe('stateless MCP endpoint', () => {
         session_id: SESSION_ID,
         edit: {
           operation: 'set_steps',
-          track_id: 'lead-1',
+          track_id: 'lead-agent-a7f3c29d',
           changes: [{ step: 2, value: true }, { step: 10, value: true }],
         },
       },
@@ -483,7 +483,7 @@ describe('stateless MCP endpoint', () => {
         session_id: SESSION_ID,
         edit: {
           operation: 'set_track_instrument',
-          track_id: 'lead-1',
+          track_id: 'lead-agent-a7f3c29d',
           sample_id: 'tone:fm-bell',
         },
       },
@@ -494,7 +494,7 @@ describe('stateless MCP endpoint', () => {
       immutable: false,
       tempo: 120,
       tracks: [{
-        track_id: 'lead-1',
+        track_id: 'lead-agent-a7f3c29d',
         name: 'Ada Lead',
         sample_id: 'tone:fm-bell',
         step_count: 16,
@@ -510,7 +510,7 @@ describe('stateless MCP endpoint', () => {
       arguments: { session_id: SESSION_ID },
     });
     expect(verified.structuredContent).toMatchObject({
-      tracks: [{ track_id: 'lead-1', sample_id: 'tone:fm-bell', active_steps: [2, 10] }],
+      tracks: [{ track_id: 'lead-agent-a7f3c29d', sample_id: 'tone:fm-bell', active_steps: [2, 10] }],
     });
   });
 
@@ -525,7 +525,7 @@ describe('stateless MCP endpoint', () => {
         session_id: SESSION_ID,
         edit: {
           operation: 'add_track',
-          track_id: 'kick-agent-a',
+          track_id: 'kick-agent-a7f3c29d',
           sample_id: 'kick',
         },
       },
@@ -537,7 +537,7 @@ describe('stateless MCP endpoint', () => {
         session_id: SESSION_ID,
         edit: {
           operation: 'set_steps',
-          track_id: 'kick-agent-a',
+          track_id: 'kick-agent-a7f3c29d',
           changes: [
             { step: 0, value: true },
             { step: 4, value: true },
@@ -566,7 +566,7 @@ describe('stateless MCP endpoint', () => {
       immutable: false,
       tempo: 124,
       tracks: [{
-        track_id: 'kick-agent-a',
+        track_id: 'kick-agent-a7f3c29d',
         name: 'Kick',
         sample_id: 'kick',
         step_count: 16,
@@ -671,7 +671,7 @@ describe('stateless MCP endpoint', () => {
       name: 'edit_session',
       arguments: {
         session_id: SESSION_ID,
-        edit: { operation: 'add_track', track_id: 'kick', sample_id: 'kick' },
+        edit: { operation: 'add_track', track_id: 'kick-agent-a7f3c29d', sample_id: 'kick' },
       },
     });
     const published = structured(await client.callTool({
@@ -686,7 +686,8 @@ describe('stateless MCP endpoint', () => {
 
     expect(remix.immutable).toBe(false);
     expect(remix.remixed_from).toBe(published.session_id);
-    expect(remix.source_url).toBe(`https://keyboardia.dev/s/${published.session_id}`);
+    expect(remix).not.toHaveProperty('source_url');
+    expect(remix).not.toHaveProperty('source_session_id');
     // The music came across, and the published source is unchanged.
     expect(remix.tracks).toEqual(published.tracks);
     expect(sessions.stored.get(published.session_id as string)?.immutable).toBe(true);
@@ -713,8 +714,8 @@ describe('stateless MCP endpoint', () => {
 
     expect(published.immutable).toBe(true);
     expect(published.session_id).not.toBe(SESSION_ID);
-    expect(published.source_session_id).toBe(SESSION_ID);
-    expect(published.source_url).toBe(`https://keyboardia.dev/s/${SESSION_ID}`);
+    expect(published).not.toHaveProperty('source_session_id');
+    expect(published).not.toHaveProperty('source_url');
     expect(sessions.stored.get(SESSION_ID)?.immutable).toBe(false);
   });
 
@@ -749,7 +750,7 @@ describe('stateless MCP endpoint', () => {
       name: 'edit_session',
       arguments: {
         session_id: SESSION_ID,
-        edit: { operation: 'add_track', track_id: 'kick', sample_id: 'kick' },
+        edit: { operation: 'add_track', track_id: 'kick-agent-a7f3c29d', sample_id: 'kick' },
       },
     });
     await client.callTool({
@@ -758,7 +759,7 @@ describe('stateless MCP endpoint', () => {
         session_id: SESSION_ID,
         edit: {
           operation: 'set_steps',
-          track_id: 'kick',
+          track_id: 'kick-agent-a7f3c29d',
           changes: [{ step: 0, value: true }, { step: 8, value: true }],
         },
       },
@@ -772,7 +773,7 @@ describe('stateless MCP endpoint', () => {
 
     expect(exported.mime_type).toBe('audio/midi');
     expect(exported.encoding).toBe('base64');
-    expect(exported.exported_track_ids).toEqual(['kick']);
+    expect(exported.exported_track_ids).toEqual(['kick-agent-a7f3c29d']);
     expect(Buffer.from(exported.data as string, 'base64').subarray(0, 4).toString('ascii'))
       .toBe('MThd');
     expect(sessions.stored.get(SESSION_ID)).toEqual(before);
@@ -821,7 +822,7 @@ describe('stateless MCP endpoint', () => {
       name: 'edit_session',
       arguments: {
         session_id: SESSION_ID,
-        edit: { operation: 'add_track', track_id: 'kick', sample_id: 'kick' },
+        edit: { operation: 'add_track', track_id: 'kick-agent-a7f3c29d', sample_id: 'kick' },
       },
     });
     await client.callTool({
@@ -830,7 +831,7 @@ describe('stateless MCP endpoint', () => {
         session_id: SESSION_ID,
         edit: {
           operation: 'set_steps',
-          track_id: 'kick',
+          track_id: 'kick-agent-a7f3c29d',
           changes: [0, 4, 8, 12].map((step) => ({ step, value: true })),
         },
       },
@@ -846,7 +847,7 @@ describe('stateless MCP endpoint', () => {
     expect(analysis.pattern_steps).toBe(16);
     expect(analysis.polyrhythm).toBe(false);
     expect(analysis.rhythm).toMatchObject([{
-      track_id: 'kick',
+      track_id: 'kick-agent-a7f3c29d',
       role: 'drum',
       onsets: [0, 4, 8, 12],
       starts_on_downbeat: true,

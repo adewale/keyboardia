@@ -11,7 +11,8 @@ The four missing-evidence objections are fixed:
 
 1. The autonomous trace validator requires one continuous journey from an
    origin-only prompt through well-known discovery, exact-byte digest
-   verification, MCP initialization, `tools/list`, read, edit, and verification.
+   verification, MCP 2026 connection/version negotiation through
+   `server/discover`, `tools/list`, read, edit, and verification.
    Claude Sonnet 5 and Opus 5 each completed that journey against a disposable
    live Worker. Each passed its one observed attempt.
 2. A fresh 54-run live MCP execution sweep ran under the corrected

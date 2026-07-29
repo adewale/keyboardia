@@ -260,7 +260,7 @@ function answerReceiptFixture() {
       ablations: { total: 0, materialized: 0, instruction_simulated: 0 },
       leak_saturated_cases: [], objective_only_cases: [], adversarial_cases: 1,
       judge_only_cases: 0, base_saturated_cases: [], qualitative_only_cases: [],
-      regression_guards_holding: [], blockers: [],
+      regression_guards_holding: [], regression_guards_failing: [], blockers: [],
     },
     findings: [
       { kind: 'missing-positive-evals', severity: 'required', message: 'fixture' },

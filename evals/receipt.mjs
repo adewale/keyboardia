@@ -1629,6 +1629,7 @@ function pairedReadinessSignals(benchmark) {
   const mean = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
   const baseSaturated = [];
   const regressionGuards = [];
+  const regressionGuardsFailing = [];
   const qualitativeOnly = [];
   for (const [caseId, casePairs] of byCase) {
     const combined = casePairs.map((pair) => [
@@ -1637,8 +1638,12 @@ function pairedReadinessSignals(benchmark) {
     if (combined.length === 0) continue;
     const withCombined = mean(combined.map(([left]) => left));
     const withoutCombined = mean(combined.map(([, right]) => right));
+    if (intent.get(caseId) === 'regression') {
+      (withCombined >= 1 - 1e-9 ? regressionGuards : regressionGuardsFailing).push(caseId);
+      continue;
+    }
     if (Math.abs(withCombined - withoutCombined) <= 1e-9) {
-      (intent.get(caseId) === 'regression' ? regressionGuards : baseSaturated).push(caseId);
+      baseSaturated.push(caseId);
       continue;
     }
     const objective = casePairs.map((pair) => [
@@ -1656,6 +1661,7 @@ function pairedReadinessSignals(benchmark) {
     base_saturated_cases: baseSaturated.sort(),
     qualitative_only_cases: qualitativeOnly.sort(),
     regression_guards_holding: regressionGuards.sort(),
+    regression_guards_failing: regressionGuardsFailing.sort(),
   };
 }
 
@@ -1717,6 +1723,9 @@ function expectedAuditReadiness(manifest, benchmark, splits) {
   if (run.base_saturated_cases.length > 0) {
     blockers.push(`${run.base_saturated_cases.length} case(s) are base-saturated (measured with_skill == without_skill) — they cannot measure the skill; cut or harden them`);
   }
+  if (run.regression_guards_failing.length > 0) {
+    blockers.push(`${run.regression_guards_failing.length} regression guard(s) fail in the skilled arm — repair the behavior or oracle before release`);
+  }
   return {
     ablations: {
       total: ablations.length,
@@ -1730,6 +1739,7 @@ function expectedAuditReadiness(manifest, benchmark, splits) {
     base_saturated_cases: run.base_saturated_cases,
     qualitative_only_cases: run.qualitative_only_cases,
     regression_guards_holding: run.regression_guards_holding,
+    regression_guards_failing: run.regression_guards_failing,
     blockers,
   };
 }

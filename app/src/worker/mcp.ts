@@ -9,6 +9,7 @@ import type { Env } from './types';
 import {
   MCP_SAMPLE_IDS,
   McpSessionEditError,
+  NEW_TRACK_ID_PATTERN,
   TRACK_ID_PATTERN,
   compactMcpSession,
   type CompactMcpSession,
@@ -218,7 +219,7 @@ const trackIdSchema = z.string()
     'For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session.'
   );
 const newTrackIdSchema = z.string()
-  .regex(TRACK_ID_PATTERN)
+  .regex(NEW_TRACK_ID_PATTERN)
   .describe(
     'Generate a fresh collision-resistant ID that ends with at least eight hexadecimal characters, such as agent-kick-a7f3c29d. Generate it once and reuse it on retries.'
   );
@@ -376,7 +377,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       'Read an existing session with get_session before editing it.',
       'After every edit_session attempt, call get_session next for the same session before another edit or a final answer; the compact edit_session result is not verification.',
       'Step indexes are zero-based; preserve every track and step the user did not ask to change.',
-      'For add_track, choose a stable unique track_id and reuse it on retry. For set_steps and set_track_instrument, use a track_id returned by get_session.',
+      'For add_track, generate a stable collision-resistant track_id ending in at least eight hexadecimal characters and reuse it on retry. For set_steps and set_track_instrument, use a track_id returned by get_session.',
       'Only publish when the user explicitly asks. A session UUID grants the same access as its share URL, so do not expose it unnecessarily.',
     ].join(' '),
   });
@@ -487,10 +488,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
     async ({ session_id }) => {
       try {
         const remix = await sessions.remixSession(session_id);
-        return lifecycleSuccess(baseUrl, remix, {
-          source_session_id: session_id,
-          source_url: sessionUrl(baseUrl, session_id),
-        });
+        return lifecycleSuccess(baseUrl, remix);
       } catch (error) {
         return toolError(error);
       }
@@ -518,10 +516,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
     async ({ session_id }) => {
       try {
         const published = await sessions.publishSession(session_id);
-        return lifecycleSuccess(baseUrl, published, {
-          source_session_id: session_id,
-          source_url: sessionUrl(baseUrl, session_id),
-        });
+        return lifecycleSuccess(baseUrl, published);
       } catch (error) {
         return toolError(error);
       }

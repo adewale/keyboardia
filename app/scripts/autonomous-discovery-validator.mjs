@@ -18,6 +18,17 @@ import { validateAutonomousReceiptSchema } from '../../evals/validate-autonomous
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/gi;
 const BLOCKED_TARGET = /(?:^|_)(?:publish|remix|export)(?:_|$)/i;
+const DISCOVERY_SCHEMA = 'https://schemas.agentskills.io/discovery/0.2.0/schema.json';
+const MCP_PROTOCOL_VERSION = '2026-07-28';
+const CANONICAL_TOOLS = Object.freeze([
+  'analyze_session',
+  'create_session',
+  'edit_session',
+  'export_midi',
+  'get_session',
+  'publish_session',
+  'remix_session',
+]);
 
 function invariant(condition, message) {
   if (!condition) throw new Error(message);
@@ -104,6 +115,22 @@ function ordered(events, phase, after = -1) {
     event.response?.success === true);
 }
 
+function verifyFetchRouting(event, normalizedOrigin, label) {
+  const finalUrl = new URL(event.response?.value?.url ?? event.request?.url);
+  invariant(finalUrl.origin === normalizedOrigin, `${label} ended on a cross-origin URL`);
+  const redirects = event.response?.value?.redirects ?? [];
+  invariant(Array.isArray(redirects) && redirects.length <= 5,
+    `${label} exceeded the five-redirect limit`);
+  for (const redirect of redirects) {
+    invariant(new URL(redirect.from).origin === normalizedOrigin
+      && new URL(redirect.to).origin === normalizedOrigin,
+    `${label} followed a cross-origin redirect`);
+    invariant(Number.isInteger(redirect.status) && redirect.status >= 300 && redirect.status < 400,
+      `${label} recorded a non-redirect hop`);
+  }
+  return finalUrl;
+}
+
 export function validateAutonomousTrace(events, { origin }) {
   invariant(Array.isArray(events) && events.length > 0, 'trace is empty');
   const normalizedOrigin = new URL(origin).origin;
@@ -132,17 +159,27 @@ export function validateAutonomousTrace(events, { origin }) {
   invariant(!events.slice(0, indexIndex).some((event) => event.phase.startsWith('mcp_')),
     'agent attempted MCP before fetching the catalog');
   const indexFetch = events[indexIndex];
+  const catalogUrl = verifyFetchRouting(indexFetch, normalizedOrigin, 'discovery catalog fetch');
   const index = parseJson(indexFetch.response.value.body, 'discovery catalog');
+  invariant(index.$schema === DISCOVERY_SCHEMA,
+    `catalog has an unsupported or missing $schema; expected ${DISCOVERY_SCHEMA}`);
   invariant(Array.isArray(index.skills) && index.skills.length > 0, 'catalog contains no skills');
 
-  const skillEntry = index.skills[0];
+  const matchingEntries = index.skills.filter((entry) =>
+    entry?.name === 'collaborate-in-keyboardia' && entry?.type === 'skill-md');
+  invariant(matchingEntries.length === 1,
+    `catalog must contain exactly one collaborate-in-keyboardia skill-md entry, got ${matchingEntries.length}`);
+  const [skillEntry] = matchingEntries;
   invariant(typeof skillEntry.url === 'string', 'catalog skill has no URL');
   invariant(/^sha256:[0-9a-f]{64}$/i.test(skillEntry.digest), 'catalog skill has no SHA-256 digest');
-  const expectedSkillUrl = new URL(skillEntry.url, indexFetch.request.url).href;
+  const expectedSkillUrl = new URL(skillEntry.url, catalogUrl).href;
+  invariant(new URL(expectedSkillUrl).origin === normalizedOrigin,
+    'catalog selected a cross-origin skill URL');
   const skillIndex = events.findIndex((event, indexPosition) => indexPosition > indexIndex &&
     event.phase === 'fetch' && event.request.url === expectedSkillUrl && event.response?.success === true);
   invariant(skillIndex > indexIndex, 'agent did not fetch the indexed skill URL');
   const skillFetch = events[skillIndex];
+  verifyFetchRouting(skillFetch, normalizedOrigin, 'skill fetch');
   const independentlyHashed = `sha256:${createHash('sha256')
     .update(Buffer.from(skillFetch.response.value.body, 'utf8')).digest('hex')}`;
   invariant(independentlyHashed.toLowerCase() === skillEntry.digest.toLowerCase(),
@@ -160,29 +197,38 @@ export function validateAutonomousTrace(events, { origin }) {
     'verified digest is not the indexed digest');
 
   const expectedEndpoint = deriveEndpoint(skillFetch.response.value.body, normalizedOrigin);
-  const connectIndex = ordered(events, 'mcp_initialize', verifyIndex);
-  invariant(connectIndex > verifyIndex, 'agent did not initialize MCP after verification');
+  const connectIndex = ordered(events, 'mcp_connect', verifyIndex);
+  invariant(connectIndex > verifyIndex, 'agent did not connect to MCP after verification');
   const connection = events[connectIndex];
   invariant(connection.request.verified_handle === skillFetch.response.value.handle,
     'MCP connection was not derived from the verified skill handle');
   invariant(connection.request.endpoint_url === expectedEndpoint,
     `MCP endpoint ${connection.request.endpoint_url} was not derived from verified skill bytes`);
-  invariant(Array.isArray(connection.response.value.http) &&
-    connection.response.value.http.length > 0 &&
-    connection.response.value.http.every((exchange) => exchange.success === true),
-  'MCP initialization has no successful correlated HTTP exchange');
+  invariant(connection.response.value.protocol_era === 'modern'
+    && connection.response.value.protocol_version === MCP_PROTOCOL_VERSION,
+  `MCP connection did not negotiate modern protocol ${MCP_PROTOCOL_VERSION}`);
+  invariant(connection.response.value.discover
+    && Array.isArray(connection.response.value.discover.supportedVersions)
+    && connection.response.value.discover.supportedVersions.includes(MCP_PROTOCOL_VERSION),
+  `server/discover did not advertise ${MCP_PROTOCOL_VERSION}`);
+  invariant(Array.isArray(connection.response.value.http)
+    && connection.response.value.http.some((exchange) =>
+      exchange.method === 'server/discover' && exchange.success === true),
+  'MCP connection has no successful correlated server/discover exchange');
   const connectionId = connection.response.value.connection_id;
 
   const listIndex = ordered(events, 'mcp_tools_list', connectIndex);
-  invariant(listIndex > connectIndex, 'agent did not call tools/list after MCP initialization');
+  invariant(listIndex > connectIndex, 'agent did not call tools/list after MCP connection');
   const list = events[listIndex];
   invariant(list.request.connection_id === connectionId, 'tools/list used a different connection');
   const liveTools = list.response.value.tools;
   invariant(Array.isArray(liveTools), 'tools/list returned no tool array');
-  const liveNames = new Set(liveTools.map((tool) => tool.name));
-  for (const required of ['create_session', 'get_session', 'edit_session']) {
-    invariant(liveNames.has(required), `tools/list did not expose ${required}`);
-  }
+  const liveNameList = liveTools.map((tool) => tool.name).sort();
+  invariant(new Set(liveNameList).size === liveNameList.length,
+    'tools/list returned duplicate tool names');
+  invariant(JSON.stringify(liveNameList) === JSON.stringify(CANONICAL_TOOLS),
+    `tools/list must expose exactly the seven canonical tools; got ${liveNameList.join(', ')}`);
+  const liveNames = new Set(liveNameList);
 
   const calls = events.slice(listIndex + 1).filter((event) => event.phase === 'mcp_tool_call');
   invariant(calls.length > 0, 'agent made no target MCP calls');
@@ -329,7 +375,7 @@ export function validateAutonomousReceipt(receipt) {
   const phaseToTool = new Map([
     ['fetch', 'mcp__discovery_transport__fetch_url'],
     ['digest_verify', 'mcp__discovery_transport__verify_sha256'],
-    ['mcp_initialize', 'mcp__discovery_transport__connect_mcp'],
+    ['mcp_connect', 'mcp__discovery_transport__connect_mcp'],
     ['mcp_tools_list', 'mcp__discovery_transport__list_mcp_tools'],
     ['mcp_tool_call', 'mcp__discovery_transport__call_mcp_tool'],
     ['random_uuid', 'mcp__discovery_transport__random_uuid'],
@@ -490,6 +536,7 @@ export const AUTONOMOUS_CRITICAL_BINDINGS = Object.freeze({
   skill: 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md',
   manifest: 'app/public/.well-known/agent-skills/index.json',
   transport: 'app/scripts/autonomous-discovery-transport.mjs',
+  transport_dependency: 'app/scripts/same-origin-redirects.mjs',
   validator: 'app/scripts/autonomous-discovery-validator.mjs',
   runner: 'app/scripts/run-autonomous-discovery.mjs',
   answer_adapter: 'evals/adapters/claude-discovery.mjs',

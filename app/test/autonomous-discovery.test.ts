@@ -16,6 +16,11 @@ const SESSION = '7d9349b1-7635-46f2-a112-09db02f747aa';
 const IDEMPOTENCY = '3f1b8a1e-1f5a-4c1d-9a2b-7e0d5c9a4b21';
 const SKILL = '## Connect\nConnect a standards-compliant client to `/mcp` on the same origin.';
 const DIGEST = `sha256:${createHash('sha256').update(SKILL).digest('hex')}`;
+const DISCOVERY_SCHEMA = 'https://schemas.agentskills.io/discovery/0.2.0/schema.json';
+const CANONICAL_TOOLS = [
+  'analyze_session', 'create_session', 'edit_session', 'export_midi',
+  'get_session', 'publish_session', 'remix_session',
+];
 
 function event(
   sequence: number,
@@ -72,8 +77,10 @@ function validTrace() {
       url: `${ORIGIN}/.well-known/agent-skills/index.json`,
       status: 200,
       body: JSON.stringify({
+        $schema: DISCOVERY_SCHEMA,
         skills: [{
           name: 'collaborate-in-keyboardia',
+          type: 'skill-md',
           url: '/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md',
           digest: DIGEST,
         }],
@@ -93,18 +100,23 @@ function validTrace() {
       actual_digest: DIGEST,
       matches: true,
     }),
-    event(4, 'mcp_initialize', {
+    event(4, 'mcp_connect', {
       endpoint_url: `${ORIGIN}/mcp`,
       verified_handle: 'fetch-2',
     }, {
       connection_id: 'connection-1',
       endpoint_url: `${ORIGIN}/mcp`,
+      protocol_era: 'modern',
+      protocol_version: '2026-07-28',
+      discover: { supportedVersions: ['2026-07-28'] },
       server_version: { name: 'keyboardia', version: '1' },
-      http: [{ url: `${ORIGIN}/mcp`, status: 200, success: true }],
+      http: [{
+        url: `${ORIGIN}/mcp`, method: 'server/discover', status: 200, success: true,
+      }],
     }),
     event(5, 'mcp_tools_list', { connection_id: 'connection-1' }, {
       connection_id: 'connection-1',
-      tools: ['create_session', 'get_session', 'edit_session'].map((name) => ({ name })),
+      tools: CANONICAL_TOOLS.map((name) => ({ name })),
     }),
     toolCall(6, 'create_session', { idempotency_key: IDEMPOTENCY }, initial),
     toolCall(7, 'get_session', { session_id: SESSION }, initial),
@@ -143,7 +155,7 @@ function cliTraceFor(trace: ReturnType<typeof validTrace>) {
   const names: Record<string, string> = {
     fetch: 'mcp__discovery_transport__fetch_url',
     digest_verify: 'mcp__discovery_transport__verify_sha256',
-    mcp_initialize: 'mcp__discovery_transport__connect_mcp',
+    mcp_connect: 'mcp__discovery_transport__connect_mcp',
     mcp_tools_list: 'mcp__discovery_transport__list_mcp_tools',
     mcp_tool_call: 'mcp__discovery_transport__call_mcp_tool',
   };
@@ -241,11 +253,65 @@ describe('autonomous discovery trace oracle', () => {
     });
   });
 
-  it('rejects MCP initialization before exact digest verification', () => {
+  it('rejects an MCP connection before exact digest verification', () => {
     const trace = validTrace();
     trace.splice(2, 1);
     expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
       .toThrow(/did not verify/);
+  });
+
+  it('rejects a missing or unrecognized discovery schema before selecting skills', () => {
+    for (const schema of [undefined, 'https://attacker.invalid/schema.json']) {
+      const trace = validTrace();
+      const catalog = JSON.parse(trace[0].response.value.body as string);
+      if (schema === undefined) delete catalog.$schema;
+      else catalog.$schema = schema;
+      trace[0].response.value.body = JSON.stringify(catalog);
+      expect(() => validateAutonomousTrace(trace, { origin: ORIGIN }))
+        .toThrow(/unsupported or missing \$schema/);
+    }
+  });
+
+  it('requires one unique entry with the exact skill name and type', () => {
+    const wrongType = validTrace();
+    const wrongCatalog = JSON.parse(wrongType[0].response.value.body as string);
+    wrongCatalog.skills[0].type = 'text';
+    wrongType[0].response.value.body = JSON.stringify(wrongCatalog);
+    expect(() => validateAutonomousTrace(wrongType, { origin: ORIGIN }))
+      .toThrow(/exactly one collaborate-in-keyboardia skill-md entry/);
+
+    const duplicate = validTrace();
+    const duplicateCatalog = JSON.parse(duplicate[0].response.value.body as string);
+    duplicateCatalog.skills.push(structuredClone(duplicateCatalog.skills[0]));
+    duplicate[0].response.value.body = JSON.stringify(duplicateCatalog);
+    expect(() => validateAutonomousTrace(duplicate, { origin: ORIGIN }))
+      .toThrow(/got 2/);
+  });
+
+  it('requires modern 2026 negotiation through server/discover', () => {
+    const legacy = validTrace();
+    legacy[3].response.value.protocol_era = 'legacy';
+    expect(() => validateAutonomousTrace(legacy, { origin: ORIGIN }))
+      .toThrow(/did not negotiate modern protocol/);
+
+    const noDiscover = validTrace();
+    noDiscover[3].response.value.http = [{
+      url: `${ORIGIN}/mcp`, method: 'initialize', status: 200, success: true,
+    }];
+    expect(() => validateAutonomousTrace(noDiscover, { origin: ORIGIN }))
+      .toThrow(/server\/discover exchange/);
+  });
+
+  it('requires exactly the seven canonical tools', () => {
+    const missing = validTrace();
+    (missing[4].response.value.tools as Array<{ name: string }>).pop();
+    expect(() => validateAutonomousTrace(missing, { origin: ORIGIN }))
+      .toThrow(/exactly the seven canonical tools/);
+
+    const extra = validTrace();
+    (extra[4].response.value.tools as Array<{ name: string }>).push({ name: 'delete_session' });
+    expect(() => validateAutonomousTrace(extra, { origin: ORIGIN }))
+      .toThrow(/exactly the seven canonical tools/);
   });
 
   it('rejects a target result that did not succeed', () => {

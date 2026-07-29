@@ -13,11 +13,13 @@ import { McpServer } from '@modelcontextprotocol/server';
 import { StdioServerTransport } from '@modelcontextprotocol/server/stdio';
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { z } from 'zod';
+import { fetchWithSameOriginRedirects } from './same-origin-redirects.mjs';
 
 const allowedOrigin = new URL(requiredEnv('AUTONOMOUS_DISCOVERY_ORIGIN')).origin;
 const tracePath = requiredEnv('AUTONOMOUS_DISCOVERY_TRACE');
 const MAX_BODY_BYTES = 512 * 1024;
 const FETCH_TIMEOUT_MS = 20_000;
+const MAX_DISCOVERY_REDIRECTS = 5;
 const MAX_TARGET_CALLS = 8;
 const blockedTargetName = /(?:^|_)(?:publish|remix|export)(?:_|$)/i;
 
@@ -49,6 +51,14 @@ function sameOriginUrl(raw) {
   }
   url.hash = '';
   return url;
+}
+
+function modernMethod(request, init) {
+  const header = request.headers.get('mcp-method');
+  if (header) return header;
+  const body = init?.body;
+  if (typeof body !== 'string') return null;
+  try { return JSON.parse(body).method ?? null; } catch { return null; }
 }
 
 function record(phase, request, response) {
@@ -100,20 +110,21 @@ server.registerTool(
   'fetch_url',
   {
     title: 'Fetch exact same-origin bytes',
-    description: 'Fetch an HTTP resource from the supplied site origin without following redirects. For Agent Skills discovery, the standard catalog is at /.well-known/agent-skills/index.json. Returns exact UTF-8 response bytes and an opaque handle.',
+    description: 'Fetch an HTTP resource from the supplied site origin, following at most five same-origin redirects and rejecting every cross-origin hop. For Agent Skills discovery, the standard catalog is at /.well-known/agent-skills/index.json. Returns exact UTF-8 response bytes and an opaque handle.',
     inputSchema: z.object({ url: z.url() }).strict(),
     annotations: { readOnlyHint: true, openWorldHint: true },
   },
   async ({ url: rawUrl }) => audited('fetch_url', 'fetch', { url: rawUrl }, async () => {
     const url = sameOriginUrl(rawUrl);
-    const response = await fetch(url, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      headers: { Accept: 'application/json, text/markdown, text/plain;q=0.9' },
+    const { response, url: finalUrl, redirects } = await fetchWithSameOriginRedirects({
+      url,
+      origin: allowedOrigin,
+      maxRedirects: MAX_DISCOVERY_REDIRECTS,
+      init: {
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        headers: { Accept: 'application/json, text/markdown, text/plain;q=0.9' },
+      },
     });
-    if (response.status >= 300 && response.status < 400) {
-      throw new Error(`redirect denied: HTTP ${response.status}`);
-    }
     if (!response.ok) throw new Error(`fetch failed: HTTP ${response.status}`);
     const bytes = Buffer.from(await response.arrayBuffer());
     if (bytes.byteLength > MAX_BODY_BYTES) {
@@ -121,10 +132,11 @@ server.registerTool(
     }
     const handle = `fetch-${nextHandle++}`;
     const body = bytes.toString('utf8');
-    fetched.set(handle, { url: url.href, bytes, body });
+    fetched.set(handle, { url: finalUrl.href, bytes, body });
     return {
       handle,
-      url: url.href,
+      url: finalUrl.href,
+      redirects,
       status: response.status,
       content_type: response.headers.get('content-type'),
       sha256: sha256(bytes),
@@ -165,7 +177,7 @@ server.registerTool(
   'connect_mcp',
   {
     title: 'Connect to a discovered MCP endpoint',
-    description: 'Initialize an MCP client at a same-origin endpoint derived from digest-verified fetched bytes.',
+    description: 'Connect to a same-origin MCP endpoint derived from digest-verified bytes and negotiate modern protocol version 2026-07-28 through server/discover. This is not the removed legacy initialize handshake.',
     inputSchema: z.object({
       endpoint_url: z.url(),
       verified_handle: z.string().min(1),
@@ -174,7 +186,7 @@ server.registerTool(
   },
   async ({ endpoint_url, verified_handle }) => audited(
     'connect_mcp',
-    'mcp_initialize',
+    'mcp_connect',
     { endpoint_url, verified_handle },
     async () => {
       if (!verified.has(verified_handle)) {
@@ -190,13 +202,19 @@ server.registerTool(
       const httpTrace = [];
       const transport = new StreamableHTTPClientTransport(endpoint, {
         fetch: async (input, init) => {
-          const requestUrl = sameOriginUrl(new Request(input, init).url);
+          const request = new Request(input, init);
+          const requestUrl = sameOriginUrl(request.url);
           const response = await fetch(requestUrl, {
             ...init,
             redirect: 'manual',
             signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
           });
-          httpTrace.push({ url: requestUrl.href, status: response.status, success: response.ok });
+          httpTrace.push({
+            url: requestUrl.href,
+            method: modernMethod(request, init),
+            status: response.status,
+            success: response.ok,
+          });
           return response;
         },
       });
@@ -205,11 +223,20 @@ server.registerTool(
         { versionNegotiation: { mode: { pin: '2026-07-28' } } },
       );
       await client.connect(transport);
+      const protocolVersion = client.getNegotiatedProtocolVersion();
+      const protocolEra = client.getProtocolEra();
+      const discover = client.getDiscoverResult();
+      if (protocolEra !== 'modern' || protocolVersion !== '2026-07-28' || !discover) {
+        throw new Error('MCP connection did not negotiate 2026-07-28 through server/discover');
+      }
       const connectionId = `connection-${nextConnection++}`;
       connections.set(connectionId, { client, endpoint: endpoint.href, tools: null });
       return {
         connection_id: connectionId,
         endpoint_url: endpoint.href,
+        protocol_era: protocolEra,
+        protocol_version: protocolVersion,
+        discover,
         server_version: client.getServerVersion(),
         http: httpTrace,
       };

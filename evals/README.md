@@ -234,8 +234,9 @@ in the Node suite, so the always-on floor needs no Python.
   fabricating a `"delete_track"` payload, not today. Pooling guards with broken
   checks buries the ones worth opening.
 - Repeated calls estimate within-prompt variance; they never increase the
-  number of independent prompts. The Sonnet-first policy uses 12 unique hidden
-  cases and three repeats (72 calls across two arms), and reports both numbers.
+  number of independent prompts. The final v10 Sonnet slice used six unique
+  hidden cases and three repeats (36 calls across two arms); every report must
+  state both independent-case and repeated-call counts.
 - A `trigger` case here measures description-driven selection from a catalog of
   the skill plus five distractors. It does **not** prove autonomous loading. For
   local host activation, run `skill-trigger-matrix`, which mounts the skill where

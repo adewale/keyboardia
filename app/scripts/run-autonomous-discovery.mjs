@@ -32,6 +32,7 @@ function parseArgs(argv) {
   const options = {
     model: 'claude-sonnet-5',
     out: null,
+    origin: null,
     skipBuild: false,
     timeoutMs: DEFAULT_TIMEOUT_MS,
   };
@@ -39,6 +40,7 @@ function parseArgs(argv) {
     const arg = argv[index];
     if (arg === '--model') options.model = argv[++index];
     else if (arg === '--out') options.out = resolve(argv[++index]);
+    else if (arg === '--origin') options.origin = new URL(argv[++index]).origin;
     else if (arg === '--skip-build') options.skipBuild = true;
     else if (arg === '--timeout') options.timeoutMs = Number(argv[++index]) * 1000;
     else throw new Error(`unknown argument: ${arg}`);
@@ -180,6 +182,7 @@ function sourceBinding() {
     { role: 'skill', path: 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md' },
     { role: 'manifest', path: 'app/public/.well-known/agent-skills/index.json' },
     { role: 'transport', path: 'app/scripts/autonomous-discovery-transport.mjs' },
+    { role: 'transport_dependency', path: 'app/scripts/same-origin-redirects.mjs' },
     { role: 'validator', path: 'app/scripts/autonomous-discovery-validator.mjs' },
     { role: 'runner', path: 'app/scripts/run-autonomous-discovery.mjs' },
     { role: 'answer_adapter', path: 'evals/adapters/claude-discovery.mjs' },
@@ -224,26 +227,29 @@ async function main() {
       if (built.status !== 0) throw new Error(`build failed with status ${built.status}`);
     }
 
-    const port = await freePort();
-    const origin = `http://127.0.0.1:${port}`;
-    worker = spawn('npx', [
-      'wrangler', 'dev', '--local', '--port', String(port),
-      '--persist-to', persistence,
-      '--show-interactive-dev-session', 'false',
-      '--var', 'SESSION_CREATE_RATE_LIMIT_PER_MINUTE:100',
-      '--var', 'MCP_RATE_LIMIT_PER_MINUTE:100',
-    ], {
-      cwd: appRoot,
-      stdio: ['ignore', 'pipe', 'pipe'],
-      env: {
-        ...process.env,
-        WRANGLER_SEND_METRICS: 'false',
-        WRANGLER_LOG: 'none',
-      },
-    });
-    worker.stdout.on('data', () => {});
-    worker.stderr.on('data', (chunk) => { workerStderr += chunk; });
-    await waitForWorker(origin, worker);
+    let origin = options.origin;
+    if (!origin) {
+      const port = await freePort();
+      origin = `http://127.0.0.1:${port}`;
+      worker = spawn('npx', [
+        'wrangler', 'dev', '--local', '--port', String(port),
+        '--persist-to', persistence,
+        '--show-interactive-dev-session', 'false',
+        '--var', 'SESSION_CREATE_RATE_LIMIT_PER_MINUTE:100',
+        '--var', 'MCP_RATE_LIMIT_PER_MINUTE:100',
+      ], {
+        cwd: appRoot,
+        stdio: ['ignore', 'pipe', 'pipe'],
+        env: {
+          ...process.env,
+          WRANGLER_SEND_METRICS: 'false',
+          WRANGLER_LOG: 'none',
+        },
+      });
+      worker.stdout.on('data', () => {});
+      worker.stderr.on('data', (chunk) => { workerStderr += chunk; });
+      await waitForWorker(origin, worker);
+    }
 
     const prompt = buildPrompt(origin);
     validateOriginOnlyPrompt(prompt, { origin });
