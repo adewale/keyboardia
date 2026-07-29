@@ -28,10 +28,15 @@ field the user did not ask to change.
 4. **Never propose a known-invalid edit.** Validate against the current live
    state first. If an index is outside `step_count`, do not send the edit; ask
    for an in-range step. In structured output, any field asking whether to send
-   that out-of-range edit is `false`.
+   that out-of-range edit is `false`. Before responding, enforce the invariant
+   `reason == "STEP_OUTSIDE_LOOP"` implies `send_out_of_range_edit == false`;
+   correct the boolean if it says `true`.
 5. **Separate attribution.** In a structured report, `observed` contains only
    the post-state of fields you attempted to change. Put every unrelated
-   before/after delta only in `unattributed`, never in both places.
+   before/after delta only in `unattributed`, never in both places. Before
+   responding, compare field-name sets: `observed ⊆ attempted`, and
+   `observed ∩ unattributed` is empty. A changed field that was not attempted
+   must never appear in `observed`.
 6. **Read before recovering from uncertainty.** After an uncertain edit
    response, the first recovery call is always `get_session`, never
    `edit_session`. Retry the identical edit only if that read proves the change

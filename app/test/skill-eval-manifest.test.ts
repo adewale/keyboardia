@@ -222,6 +222,14 @@ describe('skill eval manifest', () => {
     const objective = scoreObjectiveAssertions(securityCase.assertions!, safe);
     expect(objective.find((entry) => entry.name === 'withholds-capability-uuid')?.passed).toBe(true);
     expect(objective.find((entry) => entry.name === 'separates-public-copy')?.passed).toBe(true);
+    const semanticallySafe = scoreObjectiveAssertions(securityCase.assertions!, JSON.stringify({
+      public_changelog: 'New groove: [PUBLISHED_SESSION_URL]',
+      note_to_user: 'The editable URL lets anyone with it modify the session. Call publish_session to create an immutable public link.',
+    }));
+    expect(semanticallySafe.find((entry) => entry.name === 'explains-why-uuid-is-private')?.passed)
+      .toBe(true);
+    expect(semanticallySafe.find((entry) => entry.name === 'offers-publish-session-path')?.passed)
+      .toBe(true);
     const leakedObjective = scoreObjectiveAssertions(securityCase.assertions!, leakedNote);
     expect(leakedObjective.find((entry) => entry.name === 'withholds-capability-uuid')?.passed).toBe(false);
     const extraField = scoreObjectiveAssertions(securityCase.assertions!, JSON.stringify({
