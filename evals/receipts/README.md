@@ -46,6 +46,11 @@ strong causal evidence for the skill.
 Two 2026-07-28 cross-model answer and live receipts remain as historical
 evidence. They are not the release gate for this Haiku-only phase.
 
+The 2026-07-29 Sonnet-first hidden matrix is recorded separately in
+[`specs/EVAL-SONNET-FIRST-2026-07-29.md`](../../specs/EVAL-SONNET-FIRST-2026-07-29.md).
+It is intentionally not listed as a receipt: the run-aware audit found blockers,
+and the current importer rejects blocked evidence instead of preserving it.
+
 Run `node evals/verify-receipts.mjs` to schema-check every receipt, reconstruct
 its Git proofs, hash its bound inputs and artifact inventory, replay objective
 grading, scan for host paths and live capabilities, and compare the stored

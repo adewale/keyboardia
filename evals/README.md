@@ -247,8 +247,10 @@ in the Node suite, so the always-on floor needs no Python.
   action, verified the indexed skill digest, connected to the same-origin MCP,
   discovered its tools, and completed a read/edit/read verification chain.
   Older Sonnet and Opus samples were removed because they predated and did not
-  satisfy that corrected catalog-first contract. Sonnet is intentionally
-  deferred until Haiku meets the reliability bar.
+  satisfy that corrected catalog-first contract. A later Sonnet-first hidden
+  answer matrix is recorded in `specs/EVAL-SONNET-FIRST-2026-07-29.md`; it did
+  not demonstrate objective skill lift and does not replace the missing Sonnet
+  live trace.
 - Ablation is removal-only, and this skill's frontmatter carries just the two
   required fields, so there is no discovery ablation: removing `description`
   yields an invalid skill rather than a weaker one. Measure triggering by
