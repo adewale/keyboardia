@@ -13,6 +13,8 @@ import { ORACLES as V6_ORACLES } from '../../evals/oracles/hidden-v6-answer.mjs'
 import { ORACLES as V7_ORACLES } from '../../evals/oracles/hidden-v7-answer.mjs';
 // @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
 import { ORACLES as V8_ORACLES } from '../../evals/oracles/hidden-v8-answer.mjs';
+// @ts-expect-error -- dependency-free ESM eval tooling is tested from TypeScript.
+import { ORACLES as V9_ORACLES } from '../../evals/oracles/hidden-v9-answer.mjs';
 
 const call = (tool: string, arguments_: Record<string, unknown>) => ({ tool, arguments: arguments_ });
 const session = (tool: string, sessionId: string) => call(tool, { session_id: sessionId });
@@ -507,6 +509,73 @@ describe('hidden answer oracles', () => {
     expect(V8_ORACLES['attribution-regression'](JSON.stringify({
       attempted: { tempo: { before: 151, after: 153 } }, observed: { tempo: 153 },
       unattributed: { snare: { active_steps: { before: [3, 13], after: [3, 7, 13] } } },
+    }))).toMatchObject({ passed: true });
+  });
+
+  it('scores the frozen v9 contracts with fresh values and semantic envelopes', () => {
+    const sid = '[SESSION_ID]';
+    expect(V9_ORACLES['ack-is-not-verification'](JSON.stringify([
+      session('get_session', sid),
+      call('edit_session', { session_id: sid, edit: {
+        operation: 'set_steps', track_id: 'user-tom', changes: [{ step: 2, value: true }],
+      } }),
+      session('get_session', sid),
+      call('edit_session', { session_id: sid, edit: { operation: 'set_tempo', tempo: 125 } }),
+      session('get_session', sid),
+    ]))).toMatchObject({ passed: true });
+
+    expect(V9_ORACLES['uncertain-instrument'](JSON.stringify({
+      first_recovery_call: session('get_session', sid), if_present_retry: false,
+      if_absent_retry: call('edit_session', { session_id: sid, edit: {
+        operation: 'set_track_instrument', track_id: 'user-lead', sample_id: 'sampled:marimba',
+      } }),
+    }))).toMatchObject({ passed: true });
+
+    const freshAdd = call('edit_session', { session_id: sid, edit: {
+      operation: 'add_track', track_id: 'agent-cabasa-a11ce55a', sample_id: 'cabasa',
+    } });
+    expect(V9_ORACLES['fresh-owned-track'](JSON.stringify({
+      prefix_proves_ownership: false,
+      initial_add: freshAdd,
+      uncertain_recovery: {
+        first_call: session('get_session', sid), if_present_retry: 'do_not_retry',
+        if_absent_retry: freshAdd,
+      },
+    }))).toMatchObject({ passed: true });
+    expect(V9_ORACLES['fresh-owned-track'](JSON.stringify({
+      prefix_proves_ownership: false,
+      initial_add: call('edit_session', { session_id: sid, edit: {
+        operation: 'add_track', track_id: 'agent-cabasa-f00dbabe', sample_id: 'cabasa',
+      } }),
+      uncertain_recovery: {
+        first_call: session('get_session', sid), if_present_retry: false,
+        if_absent_retry: freshAdd,
+      },
+    })).passed).toBe(false);
+
+    expect(V9_ORACLES['boundary-regression'](JSON.stringify({
+      send_edit: false, valid_zero_based_indices: [0, 8],
+    }))).toMatchObject({ passed: true });
+
+    expect(V9_ORACLES['remix-two-edits'](JSON.stringify([
+      session('get_session', '[SOURCE_SESSION_ID]'),
+      session('remix_session', '[SOURCE_SESSION_ID]'),
+      session('get_session', '[REMIX_SESSION_ID]'),
+      call('edit_session', { session_id: '[REMIX_SESSION_ID]', edit: {
+        operation: 'add_track', track_id: 'agent-cabasa-facadade',
+        sample_id: 'cabasa', name: 'Echo Cabasa',
+      } }),
+      session('get_session', '[REMIX_SESSION_ID]'),
+      call('edit_session', { session_id: '[REMIX_SESSION_ID]', edit: {
+        operation: 'set_steps', track_id: 'agent-cabasa-facadade',
+        changes: [{ step: 5, value: true }, { step: 13, value: true }],
+      } }),
+      session('get_session', '[REMIX_SESSION_ID]'),
+    ]))).toMatchObject({ passed: true });
+
+    expect(V9_ORACLES['attribution-regression'](JSON.stringify({
+      attempted: { tempo: { before: 154, after: 156 } }, observed: { tempo: 156 },
+      unattributed: { snare: { active_steps: { before: [2, 12], after: [2, 6, 12] } } },
     }))).toMatchObject({ passed: true });
   });
 });
