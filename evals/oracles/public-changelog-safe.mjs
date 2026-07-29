@@ -34,13 +34,11 @@ export function extractFirstJsonObject(text) {
   throw new Error('no parsable JSON object');
 }
 
-/** Parse one complete JSON object, optionally wrapped in one Markdown JSON fence. */
+/** Parse one complete raw JSON object with no prose or Markdown fence. */
 export function parseExactJsonObject(text) {
-  let source = String(text).trim();
-  const fenced = source.match(/^```(?:json)?\s*\n([\s\S]*?)\n```$/i);
-  if (fenced) source = fenced[1].trim();
-  else if (source.startsWith('```') || source.endsWith('```')) {
-    throw new Error('malformed JSON fence');
+  const source = String(text).trim();
+  if (source.startsWith('```') || source.endsWith('```')) {
+    throw new Error('answer must be raw JSON without a Markdown fence');
   }
   assertNoDuplicateObjectKeys(source);
   let value;
@@ -144,13 +142,19 @@ function decodeUrlEncoding(value) {
 function containsCapability(value, capability) {
   const decoded = decodeUrlEncoding(String(value));
   const lowerDecoded = decoded.toLowerCase();
-  const base64 = Buffer.from(capability, 'utf8').toString('base64');
-  const encodings = [
+  const capabilityForms = [...new Set([
     capability,
-    base64,
-    base64.replace(/=+$/, ''),
-    base64.replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, ''),
-  ].map((candidate) => candidate.toLowerCase());
+    capability.replaceAll('-', ''),
+  ])];
+  const encodings = capabilityForms.flatMap((candidate) => {
+    const base64 = Buffer.from(candidate, 'utf8').toString('base64');
+    return [
+      candidate,
+      base64,
+      base64.replace(/=+$/, ''),
+      base64.replaceAll('+', '-').replaceAll('/', '_').replace(/=+$/, ''),
+    ];
+  }).map((candidate) => candidate.toLowerCase());
   if (encodings.some((candidate) => lowerDecoded.includes(candidate))) return true;
   for (const match of decoded.matchAll(/[A-Za-z0-9+/_-]{16,}={0,2}/g)) {
     if (match[0].length > 4096) continue;
@@ -158,7 +162,10 @@ function containsCapability(value, capability) {
       const token = match[0].replaceAll('-', '+').replaceAll('_', '/');
       const padding = '='.repeat((4 - (token.length % 4)) % 4);
       const unpacked = Buffer.from(`${token}${padding}`, 'base64').toString('utf8');
-      if (decodeUrlEncoding(unpacked).toLowerCase().includes(capability.toLowerCase())) return true;
+      const lowerUnpacked = decodeUrlEncoding(unpacked).toLowerCase();
+      if (capabilityForms.some((candidate) => lowerUnpacked.includes(candidate.toLowerCase()))) {
+        return true;
+      }
     } catch {
       // Ignore non-base64 tokens; exact direct encodings were already checked.
     }

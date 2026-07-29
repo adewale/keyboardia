@@ -389,6 +389,15 @@ describe('autonomous discovery trace oracle', () => {
       `Editable token: ${Buffer.from(SESSION).toString('base64url')}`,
       new Set([SESSION]),
     )).toThrow(/disclosed/);
+    const compact = SESSION.replaceAll('-', '');
+    expect(() => validateRawAnswerCapabilities(
+      `Editable compact token: ${compact}`,
+      new Set([SESSION]),
+    )).toThrow(/disclosed/);
+    expect(() => validateRawAnswerCapabilities(
+      `Editable compact token: ${Buffer.from(compact).toString('base64url')}`,
+      new Set([SESSION]),
+    )).toThrow(/disclosed/);
     const percentEncoded = SESSION.replaceAll('-', '%2D');
     const unicodeEncoded = SESSION.replaceAll('-', '\\u002d');
     const nestedEncodings = [

@@ -794,6 +794,8 @@ describe('eval receipts', () => {
     const encoded = encodeURIComponent(capability).replaceAll('-', '%2D');
     const doubleEncoded = encodeURIComponent(encoded);
     const base64Encoded = Buffer.from(capability).toString('base64');
+    const compact = capability.replaceAll('-', '');
+    const compactBase64 = Buffer.from(compact).toString('base64url');
     const base = {
       source,
       harness: {
@@ -818,7 +820,15 @@ describe('eval receipts', () => {
       (value) => Buffer.from(value).toString('base64'),
       capability,
     );
-    for (const leaked of [capability, encoded, doubleEncoded, base64Encoded, deeplyEncoded]) {
+    for (const leaked of [
+      capability,
+      encoded,
+      doubleEncoded,
+      base64Encoded,
+      compact,
+      compactBase64,
+      deeplyEncoded,
+    ]) {
       expect(() => buildReceipt({
         ...base,
         runs: [{
@@ -840,6 +850,8 @@ describe('eval receipts', () => {
     expect(JSON.stringify(safe)).not.toContain(capability);
     expect(redactCapability('benign%20URL', capability)).toBe('benign%20URL');
     expect(redactCapability(base64Encoded, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(compact, capability)).toBe('<redacted-session-id>');
+    expect(redactCapability(compactBase64, capability)).toBe('<redacted-session-id>');
     expect(redactCapability(deeplyEncoded, capability)).toBe('<redacted-session-id>');
     const returnedCapability = '24a1e192-6ea3-4c2c-8797-28ea4b06f8b9';
     const registered = registerCapabilitiesFromEvidence({

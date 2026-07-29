@@ -1,9 +1,9 @@
 {
   "version": 1,
   "suite": "keyboardia-answer-matrix",
-  "splits": ["tune"],
-  "repeats": 3,
+  "splits": ["holdout", "holdback"],
+  "repeats": 6,
   "models": [
-    "claude-haiku-4-5"
+    "claude-sonnet-5"
   ]
 }

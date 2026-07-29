@@ -260,13 +260,14 @@ function regexEscape(value) {
 }
 
 function encodedCapabilityPattern(sessionId) {
-  const source = [...sessionId].map((character) => {
+  const forms = [...new Set([sessionId, sessionId.replaceAll('-', '')])];
+  const sources = forms.map((form) => [...form].map((character) => {
     const codePoint = character.codePointAt(0);
     const unicode = `\\\\u${codePoint.toString(16).padStart(4, '0')}`;
     const percent = `%${codePoint.toString(16).padStart(2, '0')}`;
     return `(?:${regexEscape(character)}|${unicode}|${percent})`;
-  }).join('');
-  return new RegExp(source, 'gi');
+  }).join(''));
+  return new RegExp(`(?:${sources.join('|')})`, 'gi');
 }
 
 function decodePercentRuns(value) {
