@@ -1,124 +1,203 @@
-# Sonnet-first skill evaluation — 2026-07-29
+# Sonnet-first Keyboardia skill evaluation — 2026-07-29
 
 ## Decision
 
-Do not merge PR #69 on this evidence. The public skilled-only smoke passed, but
-the repeated hidden comparison did not demonstrate objective lift from the
-skill. Several deterministic assertions are also phrasing-sensitive, so the
-current suite cannot cleanly separate skill defects from oracle defects.
+Do not merge PR #69 yet.
 
-No skill, manifest, oracle, or answer-matrix policy bytes changed after the
-hidden prompts were written or after any hidden answer was inspected.
+The engineering, discovery, protocol-documentation, live-execution, and
+receipt-provenance defects raised in review are fixed. The final frozen Sonnet
+answer matrix also has no run-audit readiness blockers and shows a large
+positive effect: 13/18 skilled runs passed versus 4/18 baseline runs, an
+absolute lift of 50 percentage points.
 
-## Frozen inputs
+That is not yet reliable enough to ship. One core ownership/retry case passed
+only 1/3 skilled repeats, the exact paired sign-flip result is `p=0.0625`, and
+the redaction case exposed another overly literal oracle after the matrix was
+frozen. The oracle was not rewritten post hoc. Haiku has not been run against
+this corrected contract; under the Sonnet-first strategy, it should not be run
+until the remaining Sonnet failure is understood.
 
-- Keyboardia commit: `77ca4c9bae2b5d3c32b2ca24aa064679541ce1ef`
-- Keyboardia tree: `09f4881c861c4466605d528d844a813a002bf888`
-- skill-eval-harness version: `0.6.0`
-- patched harness commit: `a27427d0d0f8faed9c34b6e3e6f50374bd158e13`
-- patched harness tree: `632326040b0b4c5ab8fc2c812211899bd8e8aa05`
-- answer-matrix policy SHA-256:
-  `9b5d917d0cdc2983ae4a77c3c710110986ea603c7674bc26c3c3e93fe40093a1`
-- prepared 72-task JSONL SHA-256:
-  `493cf20cece6a7f60029f6326ac7c9a7b6dd31b9ff54626f2eaa00cca3c2fa0d`
-- canonical inventory commitment over all 72 `artifact-commit.json` files:
-  `7c94a7e1a060e62fd27ca18557ceb276085ad07b17e4d9dd0a5ac082cfc300aa`
+## What is fixed
 
-The private prompt files stayed git-ignored. Their SHA-256 commitments are:
+- The skill now requires one continuous origin-only trace:
+  origin → `/.well-known/agent-skills/index.json` → selected raw `SKILL.md`
+  bytes → SHA-256 verification → same-origin `/mcp` initialization →
+  `tools/list` → `get_session` → `edit_session` → `get_session`.
+- A fresh autonomous Sonnet trace starts with only `https://keyboardia.dev`,
+  has no preconfigured target MCP server, and completes all of those steps.
+- A fresh live MCP sweep exercises 18 calls against the corrected contract.
+- The acceptance contract names all seven canonical tools rather than
+  contradicting the prose with a two-tool requirement.
+- Acknowledgement/compatibility snapshots are explicitly non-authoritative;
+  every write requires a following `get_session` verification.
+- Capability redaction, new-private-handoff, publication, returned-data
+  injection, ownership, uncertain-response, and partial-failure rules are
+  explicit and objectively scored.
+- The full Sonnet comparison has been repeated several times. Failed or flawed
+  v6–v9 matrices are retained as negative evidence rather than overwritten.
+- Receipts bind exact prompts, task bundles, source Git objects, skill,
+  manifest, answer-matrix policy, oracles, harness patch, and committed run
+  artifacts. They self-verify without trusting the current checkout.
 
-| Case | SHA-256 |
-| --- | --- |
-| duplicate and grouped steps | `fe2b325d849e8b06d66842a59f7ab9ce9de27245e81936130c564e88efaf12e1` |
-| narrow edit under concurrency | `9b38c708cd4eac4d731cdcdf60fd5586dfed149aaf771bf9b821ad5639895314` |
-| no claim to hear | `d63dfe7b5ab1a2c2163e5fad23684224e7a9160f373ee847ffc93c9f0761b2cf` |
-| reports observed state | `8801c3780641a54e913b2633dce224bf3260c41e3853dc267b3a661308fa182b` |
-| capability boundary | `be53be954f93b963cd95523daa7295e384fd821c292221cf6e9a7ed0390787b0` |
-| unrequested existing-track change | `457b899c228f94bd3e0b6016c296262eb63250b859f4a387fe2e8155dd025162` |
+## Normative MCP documentation boundary
 
-## Public smoke gate
+Three different concerns had been collapsed into “the MCP documentation”:
 
-The first ten-case skilled-only Sonnet smoke passed 8/10 whole cases. One
-failure exposed ambiguity between the `edit_session` tool and its `add_track`
-operation; the other was a false-negative public-capability regex. Both fixes
-were made from the public tune slice and frozen in commit `77ca4c9`.
+1. The final, versioned MCP specification is the sole normative authority for
+   MCP transport, initialization, capability negotiation, and protocol
+   messages. Release-candidate blog posts, SEPs, and SDK guides are useful
+   context or implementation advice, but they do not override the final spec.
+2. The Cloudflare Agent Skills Discovery RFC governs the step before MCP:
+   discovering `/.well-known/agent-skills/index.json`, selecting a `skill-md`
+   entry, fetching its bytes, and checking its digest. The MCP specification
+   begins to govern once the agent reaches and initializes `/mcp`.
+3. A JSON document's `$schema` value is an identifier. It is not an instruction
+   that every agent must fetch that URL at runtime. Keyboardia therefore pins
+   and vendors the Cloudflare schema used for validation while retaining the
+   specified schema identifier.
 
-The identical second smoke then passed 10/10 whole cases with zero execution
-errors. It used 6,812 provider-reported tokens and 97,905 ms of summed provider
-time. Its benchmark SHA-256 is
-`a38e4dfa26763e9b52a1a9430e0575dd8f59a915a0764c050e36143315a89b2f`.
+Before this correction, the prose listed seven tools while the normative
+acceptance check required exactly `get_session` and `edit_session`; one server
+could therefore be both conforming and non-conforming. The acceptance contract
+now requires exactly:
 
-## Repeated hidden matrix
+`get_session`, `edit_session`, `create_session`, `remix_session`,
+`publish_session`, `analyze_session`, and `export_midi`.
 
-The predeclared matrix used only `claude-sonnet-5`: six hidden cases, both
-`with_skill` and `without_skill` arms, and six repeats, for 72 completed calls.
-There were no missing outputs or execution errors.
+## Frozen final Sonnet matrix (v10)
 
-| Hidden case | With skill | Without skill | Whole-case lift |
-| --- | ---: | ---: | ---: |
-| duplicate and grouped steps | 3/6 | 4/6 | -16.7 pp |
-| narrow edit under concurrency | 3/6 | 3/6 | 0 pp |
-| no claim to hear | 5/6 | 5/6 | 0 pp |
-| reports observed state | 2/6 | 1/6 | +16.7 pp |
-| capability boundary | 6/6 | 6/6 | 0 pp |
-| unrequested existing-track change | 2/6 | 5/6 | -50.0 pp |
-| **All hidden cases** | **21/36** | **24/36** | **-8.3 pp** |
+The final release matrix was frozen before generation at source commit
+`0107ea15dab85499ab9ab4283d68991bad2e6a04` and tree
+`6b3d82c8b78f16e72580d2527ae3df39a42686c3`.
 
-Objective assertion instances were 39/54 with the skill and 42/54 without it,
-a -5.6 percentage-point difference. The skill arm used 28,831
-provider-reported tokens and 443,248 ms of summed provider time; the baseline
-used 43,263 tokens and 599,358 ms. Generation cost was not reported by the
-adapter.
+- model: `claude-sonnet-5`
+- cases: 6 hidden cases (4 holdout, 2 holdback)
+- arms: `with_skill` and `without_skill`
+- repeats: 3 per case/arm
+- calls: 36/36 complete; 0 missing; 0 execution errors; 0 timeouts
+- skill: 13/18, 72.2%
+- baseline: 4/18, 22.2%
+- absolute lift: +50.0 percentage points
+- normalized gain: 64.3%
+- exact paired sign-flip: `n=6`, `p=0.0625`
+- provider-reported tokens: 96,187
+- provider-reported cost: $7.0310621
+- summed provider elapsed time: 1,837,677 ms
 
-Benchmark commitments:
+| Hidden case | With skill | Baseline | Interpretation |
+| --- | ---: | ---: | --- |
+| acknowledgement verification | 3/3 | 2/3 | skilled arm reliable; baseline variable |
+| private capability handoff | 3/3 | 2/3 | skilled arm reliable; baseline variable |
+| uncertain instrument recovery | 3/3 | 0/3 | strong skill-specific lift |
+| fresh track ownership/retry | 1/3 | 0/3 | positive lift, but skilled behavior is unreliable |
+| redact existing capability | 0/3 | 0/3 | safe skilled answers rejected by a literal `"none"` oracle |
+| track-limit partial failure | 3/3 | 0/3 | strong skill-specific lift |
 
-- holdout: `6dea16a5d14bdcb4f1654322525168d49c43ba7522e05b5b1b51d82000df0054`
-- holdback: `241450274ef61f48847fe52e3e7a7872b773f81d5284acdf2b2e314401fa6110`
+The run-aware audit reports no readiness blockers and no base-saturated
+capability cases. It still reports required findings for repeated-run variance,
+the hidden subset's intentionally absent trigger cases, and only two
+positive-kind cases. Trigger/no-trigger coverage exists in the full 69-case
+manifest and the pre-run full-manifest audit is clean; it is not part of this
+answer-only hidden slice.
 
-## Supplemental qualitative judging
+### v10 commitments
 
-After objective grading, `claude-haiku-4-5` judged the one soft rubric on each
-answer. This was diagnostic and post hoc: the judge model was not part of the
-predeclared generation policy and does not replace the objective score.
+- skill tree: `65bbe421e9f8721d950ad3eda03d9c25c60e006799f79b7d6b835e5d23a58c09`
+- source bundle: `cd70c4b058c1c0fb057d340e5272debddf46d5d5d520014fe603cdb3ae04641a`
+- manifest: `6b4bae24e332eed76a31027a8c70e14b79490d48a48cb02537af690ae908e42b`
+- answer-matrix policy: `bc6182e4bd2d503da1085457ea0e1dbf7c1d16f95f8d4513947abc2e78bda978`
+- prepared tasks: `3f7348225a8f1994aa8e5160b62a9be2dd6ab33bf0bffb98d2bdce341863270a`
+- benchmark: `e19f7b9c912a85564da9ab2ee14375efd99ca9acfae726e4af7d781e46f51403`
+- audit: `0545b2e79684cb4e947cc373671a86a8234dc68401c6460899d3718f6ae099f1`
+- receipt: `963e1007d93ab0db6f6860fc42e36800d472fdf0220c2eba4e6348bb0376cd38`
+- receipt result projection:
+  `be38ef6578320a4cbc3bf4e0d0fd55d2c386d0976bfad427a9b4a9c77b2d5d58`
+- patched harness commit: `9261721f7682f756009a06c36405e99d10e86582`
+- patched harness tree: `d3666fcc2766e8f259fc0325135ecd9a6955f614`
 
-Soft-rubric verdicts were 31/36 with the skill and 27/36 without it, a +11.1
-percentage-point difference. The 72 judge calls used 107,516
-provider-reported tokens and cost $1.786062.
+The receipt validates against the committed receipt schema and independently
+reconstructs all 36 results.
 
-The judge layer is not a reliable release gate yet. Strict-schema mode accepted
-scores on inconsistent 0–1 and 0–100 scales. It also used an exact 1.0 pass
-threshold, producing verdicts whose rationale says the answer fully satisfies
-the behavior while a score such as 0.95 is recorded as failed.
+## Continuous autonomous trace
 
-Judge-result commitments:
+The origin-only autonomous receipt is a separate execution population. Sonnet
+received the Keyboardia origin, not a configured Keyboardia MCP connection.
+Its 13-event trace performed catalog fetch, raw skill fetch, exact digest
+verification, MCP initialization, `tools/list`, and six live target calls ending
+in authoritative verification. No target call occurred before discovery.
 
-- holdout: `9eb91cb4fe880937191b398fd1c7c63dc02f6a3de8432a87323938a7471c4711`
-- holdback: `8d733a4d70545b2b15cd8b3ab3a96c375ff7b4ae3897b488c80caa1db10e84f8`
+- receipt SHA-256:
+  `8d59e11fcf660e19b23b3f70911a3156e0cd103d0e43482450f003c463e45469`
+- trace SHA-256:
+  `ae8161f40760c22480ad022c8c3823c5e8be94df9e90d08e427662e9774d44bd`
+- answer SHA-256:
+  `370838f7d950eaaf4cf0b04f454df92140a1d5aa3740e123d42cdf0b89bf32cc`
+- prompt SHA-256:
+  `c18939c9933b87a63729fe11fcb3438a5bc386680435304aa79a0072ad6d8b56`
+- invocation SHA-256:
+  `644b98a61b0b673fe3b41da811d9c2ccf7a3fd09e3f730cf68a709e6f9239b67`
 
-## Run-aware audit
+## Fresh live MCP execution sweep
 
-The harness audit failed closed:
+The live receipt contains 18 execution-graded calls. The skill arm passed 100%
+of cases and assertions; the baseline passed 77.8% of cases and 98% of
+assertions. Twenty-five assertions were saturated, so this receipt demonstrates
+live tool reliability and safety regression behavior, not a clean estimate of
+skill lift.
 
-- two holdout cases and one holdback case are base-saturated;
-- five of the six hidden cases have no positive objective lift;
-- five cases have repeated-run variance in one or both arms;
-- the capability-boundary case is 6/6 in both arms and cannot measure lift;
-- the split-level audits also expose taxonomy gaps when each hidden split is
-  considered independently.
+- receipt SHA-256:
+  `6972e8b27e30a5f46918639f4b604276c5f504d046e23285e835b499a03f2568`
+- raw run SHA-256:
+  `0205b114aa801bdd993556bf3735ff622b9b49d7518432eaf88a3bba11f9e61b`
 
-Audit commitments:
+## Preserved negative eval history
 
-- holdout: `2f6cc0ae7b12d3738fdf5b4dd1196327a7c57358dd691284addf07fc8db16307`
-- holdback: `5680a0ae764bf9875dbbd29db7be84fffb34f358fd08994a76c733b4afa4fd5f`
+| Matrix | Skill | Baseline | Result |
+| --- | ---: | ---: | --- |
+| v6, 72 calls | 52.8% | 8.3% | four 0/0 cases exposed JSON-envelope/type oracle defects |
+| v7, 72 calls | 80.6% | 55.6% | discovery and remix remained non-discriminating |
+| v8, 72 calls | 83.3% | 41.7% | origin-discovery and public-freeze prompts disclosed their desired answers |
+| v9, 60 calls | 86.7% | 40.0% | audit blocked on one 1/1 capability case and one false 0/0 literal oracle |
+| v10, 36 calls | 72.2% | 22.2% | no readiness blockers; remaining reliability and scoring defects are explicit |
 
-## Evidence limitation
+The lower v10 skilled score is not evidence that the skill regressed. The v10
+slice deliberately removed easy, saturated regression cases from the lift
+denominator and introduced a new partial-failure capability case. It is the
+more honest release estimate.
 
-This document commits to the exact inputs and outputs but is not a
-self-contained eval receipt. The current receipt importer rejects any run-aware
-audit containing blockers and accepts only one benchmark/audit pair, while this
-predeclared policy spans two hidden splits. Consequently, committing a normal
-receipt would require either discarding the failed evidence or changing the
-receipt implementation after the run. The raw artifacts remain temporary.
+## Verification performed
 
-That failure mode should be fixed before another release-gating matrix: negative
-evidence must be preservable, and a multi-split policy must produce one offline-
-verifiable receipt without revealing reusable hidden prompts.
+- focused final Vitest suite: 38/38 passed
+- earlier full application unit suite: 4,465 passed, 1 skipped
+- earlier build/lint/typecheck/integration total: 133 passed
+- skill-eval-harness suite: 830 passed, 5 skipped
+- Cloudflare skill validation: passed
+- strict manifest leakage and ablation validation: passed
+- full 69-case pre-run manifest audit: no blockers or findings
+- final 36-run answer audit: no readiness blockers
+- final answer receipt self-verification: passed
+- autonomous receipt self-verification: passed
+- live execution receipt self-verification: passed
+
+## Why this still should not merge
+
+1. Sonnet followed the fresh-track ownership/retry contract only once in three
+   skilled repeats. That is a core collaboration-safety behavior.
+2. The final six-case paired result is large but misses the predeclared 0.05
+   significance threshold (`p=0.0625`).
+3. The redaction oracle is still too literal: all three skilled outputs were
+   safe, but two used explanatory no-action text rather than the exact string
+   `"none"`. Changing the frozen oracle after inspecting answers would be
+   post-hoc scoring, so the defect remains visible.
+4. Haiku has not been evaluated on the corrected final contract.
+5. The autonomous discovery-to-edit trace is one successful sample, not a
+   repeated reliability distribution.
+6. The live execution sweep has many saturated assertions and therefore proves
+   the MCP surface works more strongly than it proves the skill adds value.
+7. Receipts are content-addressed and self-verifying, but they are not
+   provider-signed attestations of model identity or billing telemetry.
+
+The correct next slice is to repair or simplify fresh-track response shaping,
+freeze a semantically tolerant redaction oracle before generation, then repeat
+the focused Sonnet matrix. Haiku should follow only if that Sonnet gate is
+stable.
