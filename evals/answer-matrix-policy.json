@@ -4,10 +4,6 @@
   "splits": ["tune"],
   "repeats": 3,
   "models": [
-    "claude-haiku-4-5",
-    "claude-opus-5",
-    "claude-sonnet-5",
-    "gpt-5.4",
-    "gpt-5.4-mini"
+    "claude-haiku-4-5"
   ]
 }

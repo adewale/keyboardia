@@ -182,7 +182,7 @@ manifest:
 KEYBOARDIA_REPO="$(pwd)"
 skill-benchmark prepare evals/shared-benchmark.json --split tune \
   --out /tmp/keyboardia-tasks.jsonl --runs-per-variant 1 \
-  --models claude-haiku-4-5,claude-sonnet-5,claude-opus-5
+  --models claude-haiku-4-5
 skill-benchmark run-subagent --tasks /tmp/keyboardia-tasks.jsonl \
   --runs /tmp/keyboardia-runs \
   --agent-cmd "node $KEYBOARDIA_REPO/evals/adapters/claude.mjs"
