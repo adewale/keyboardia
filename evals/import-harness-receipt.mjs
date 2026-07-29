@@ -206,6 +206,7 @@ function sourceBinding() {
     { role: 'oracle', path: 'evals/oracles/capability-answer.mjs' },
     { role: 'oracle', path: 'evals/oracles/retired-hidden-answer.mjs' },
     { role: 'oracle', path: 'evals/oracles/hidden-v2-answer.mjs' },
+    { role: 'oracle', path: 'evals/oracles/hidden-v3-answer.mjs' },
     // This module is both imported by capability-answer.mjs and invoked
     // directly by the public changelog case, so it is an oracle root too.
     { role: 'oracle', path: 'evals/oracles/public-changelog-safe.mjs' },
@@ -229,8 +230,16 @@ function runEvidence(
   expectedInputBundleHash,
 ) {
   if (!expectedCase) fail(`${task.run_dir} has no case in the supplied manifest`);
-  if (task.prompt !== expectedCase.prompt) {
-    fail(`${task.run_dir} prompt does not match the supplied manifest case`);
+  if (typeof expectedCase.prompt === 'string') {
+    if (task.prompt !== expectedCase.prompt) {
+      fail(`${task.run_dir} prompt does not match the supplied manifest case`);
+    }
+  } else if (typeof expectedCase.prompt_ref === 'string') {
+    if (typeof task.prompt !== 'string' || task.prompt.length === 0) {
+      fail(`${task.run_dir} did not resolve its private prompt_ref`);
+    }
+  } else {
+    fail(`${task.run_dir} has no manifest prompt or prompt_ref`);
   }
   if (task.kind !== (expectedCase.kind ?? 'behavior')) {
     fail(`${task.run_dir} kind does not match the supplied manifest case`);
@@ -356,9 +365,21 @@ async function main() {
     fail('supplied manifest does not match the embedded source manifest');
   }
   const inputBundleByCase = new Map();
+  const privatePromptByCase = new Map();
   const manifestCases = new Map((manifest.cases ?? []).map((evalCase) => [evalCase.id, evalCase]));
   for (const task of tasks) {
     if (!manifestCases.has(task.case_id)) fail(`prepared task has unknown case: ${task.case_id}`);
+    const evalCase = manifestCases.get(task.case_id);
+    if (typeof evalCase.prompt_ref === 'string') {
+      if (typeof task.prompt !== 'string' || task.prompt.length === 0) {
+        fail(`prepared task ${task.run_dir} did not resolve its private prompt_ref`);
+      }
+      const prior = privatePromptByCase.get(task.case_id);
+      if (prior !== undefined && prior !== task.prompt) {
+        fail(`private prompt_ref resolved inconsistently across ${task.case_id} runs`);
+      }
+      privatePromptByCase.set(task.case_id, task.prompt);
+    }
     if (!inputBundleByCase.has(task.case_id)) {
       inputBundleByCase.set(task.case_id, skillEvalInputBundleHash({
         manifestPath: sourceManifest.path,

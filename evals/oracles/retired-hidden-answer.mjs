@@ -27,7 +27,13 @@ export function jsonValues(text) {
         const open = stack.pop();
         if ((open === '{' && char !== '}') || (open === '[' && char !== ']')) break;
         if (stack.length === 0) {
-          try { values.push(JSON.parse(text.slice(start, end + 1))); } catch { /* keep scanning */ }
+          try {
+            values.push(JSON.parse(text.slice(start, end + 1)));
+            // The parsed value already contains all of its descendants. Skip
+            // their opening braces so nested tool-call objects are not counted
+            // again as independent top-level values.
+            start = end;
+          } catch { /* keep scanning */ }
           break;
         }
       }
@@ -55,8 +61,10 @@ export function calls(text) {
       }
     }
   }
-  return found.filter((call, index, all) =>
-    index === all.findIndex((candidate) => isDeepStrictEqual(candidate, call)));
+  // Preserve every occurrence. A GET/EDIT/GET trace legitimately repeats the
+  // exact same GET call, and collapsing structural duplicates destroys the
+  // ordering evidence that the safety oracle is meant to inspect.
+  return found;
 }
 
 export function isRead(call, sessionId = null) {

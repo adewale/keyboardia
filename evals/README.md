@@ -204,10 +204,13 @@ parses the model's JSON, enforces the exact public/private string envelope, and
 checks the decoded public field so Unicode or URL encoding cannot hide an edit
 capability from the veto.
 
-The exact external harness patch used for durable receipts adds
-`audit-manifest --allow-scripts` and immutable input-bundle hashes. The receipt
-embeds that patch and its parent tree, then verifies the patched tree offline;
-the stock 0.6.0 package remains sufficient for CI's manifest-only audit.
+The exact external harness patch used for durable receipts adds immutable input
+bundle hashes, normalized judge scores, JSON-envelope `prompt_ref` resolution,
+correct explicit-positive polarity, full-manifest ablation reference checks,
+and a `hidden` selector for the combined holdout/holdback release slice. The
+receipt embeds that patch and its parent tree, then reconstructs and verifies
+the patched tree offline; stock 0.6.0 remains sufficient for CI's
+manifest-only audit.
 
 `app/test/skill-eval-manifest.test.ts` duplicates the cheapest of those checks
 in the Node suite, so the always-on floor needs no Python.

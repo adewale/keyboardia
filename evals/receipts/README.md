@@ -16,18 +16,17 @@ present. A blocked audit is valid negative evidence: verification reconstructs
 its counts, findings, and readiness instead of rejecting the blocker merely for
 existing.
 
-The answer-matrix importer accepts repeated report pairs, so a policy spanning
-holdout and holdback is preserved in one receipt:
+The patched harness's `hidden` selector grades and audits holdout plus holdback
+as one release population. The importer also accepts repeated report pairs for
+harnesses that emit one report per split:
 
 ```bash
 node evals/import-harness-receipt.mjs \
   --manifest evals/shared-benchmark.json \
-  --tasks /tmp/tasks.jsonl \
+  --tasks /tmp/hidden-tasks.jsonl \
   --runs /tmp/runs \
-  --benchmark /tmp/holdout-benchmark.json \
-  --audit /tmp/holdout-audit.json \
-  --benchmark /tmp/holdback-benchmark.json \
-  --audit /tmp/holdback-audit.json \
+  --benchmark /tmp/hidden-benchmark.json \
+  --audit /tmp/hidden-audit.json \
   --harness-repo /path/to/skill-eval-harness \
   --out /tmp/keyboardia-sonnet-receipt.json
 ```
@@ -39,3 +38,9 @@ author a fresh hidden slice before the next release gate.
 
 Hashes provide offline tamper evidence and source closure. They are not provider
 signatures, runtime attestation, or a transparency log.
+
+For a private `prompt_ref`, the committed manifest binds the reference while
+the receipt content-addresses the exact resolved prompt in both the prepared
+task set and the per-run prompt artifact. Every arm and repeat for a case must
+resolve to identical prompt bytes. This proves what was run without committing
+reusable hidden prompts to the product branch.

@@ -250,7 +250,7 @@ function answerReceiptFixture() {
   };
   const audit = {
     counts: {
-      cases: 1, positive: 0, negative: 0, adversarial: 1, holdout: 0, holdback: 0,
+      cases: 1, positive: 0, negative: 1, adversarial: 1, holdout: 0, holdback: 0,
       trigger: 0, trigger_positive: 0, trigger_negative: 0, ablations: 0,
       objective_assertions: 4, process_assertions: 0, efficiency_assertions: 0,
       judge_assertions: 0, fixture_cases: 1, input_files: 1, domain_tagged: 0,
@@ -264,7 +264,11 @@ function answerReceiptFixture() {
     },
     findings: [
       { kind: 'missing-positive-evals', severity: 'required', message: 'fixture' },
+      { kind: 'missing-negative-evals', severity: 'required', message: 'fixture' },
+      { kind: 'missing-adversarial-evals', severity: 'recommended', message: 'fixture' },
       { kind: 'missing-hidden-splits', severity: 'required', message: 'fixture' },
+      { kind: 'missing-ablation-plan', severity: 'recommended', message: 'fixture' },
+      { kind: 'missing-trigger-no-trigger-cases', severity: 'required', message: 'fixture' },
     ],
     benchmark: { summary: benchmark.summary, case_flags: benchmark.case_flags },
   };

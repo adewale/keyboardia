@@ -1549,7 +1549,7 @@ function expectedAuditCounts(manifest, splits) {
   return {
     cases: selected.length,
     positive: countKind('positive'),
-    negative: countKind('negative') + triggerCases.length,
+    negative: countKind('negative') + countKind('adversarial') + triggerCases.length,
     adversarial: countKind('adversarial'),
     holdout: selected.filter((evalCase) => evalCase.split === 'holdout').length,
     holdback: selected.filter((evalCase) => evalCase.split === 'holdback').length,
@@ -1763,8 +1763,20 @@ function normalizedAuditFindings(audit, benchmark, counts) {
   if (counts.positive < 5) {
     expected.push({ kind: 'missing-positive-evals', severity: 'required' });
   }
+  if (counts.negative < 3) {
+    expected.push({ kind: 'missing-negative-evals', severity: 'required' });
+  }
+  if (counts.adversarial < 3) {
+    expected.push({ kind: 'missing-adversarial-evals', severity: 'recommended' });
+  }
   if (counts.holdout === 0 || counts.holdback === 0) {
     expected.push({ kind: 'missing-hidden-splits', severity: 'required' });
+  }
+  if (counts.ablations === 0) {
+    expected.push({ kind: 'missing-ablation-plan', severity: 'recommended' });
+  }
+  if (counts.trigger_positive < 2 || counts.trigger_negative < 2) {
+    expected.push({ kind: 'missing-trigger-no-trigger-cases', severity: 'required' });
   }
   for (const flag of benchmark.case_flags ?? []) {
     for (const variant of ['with_skill', 'without_skill']) {
@@ -1795,8 +1807,13 @@ function normalizedAuditFindings(audit, benchmark, counts) {
       ...(evidence === undefined ? {} : { evidence }),
     };
   };
+  const derivedKinds = new Set(expected.map((finding) => finding.kind));
   return {
-    actual: (audit.findings ?? []).map(project).map(canonicalJson).sort(),
+    // The raw audit is itself content-addressed. This projection independently
+    // reconstructs the release-relevant findings while leaving advisory
+    // taxonomy/cost prose free to evolve across harness versions.
+    actual: (audit.findings ?? []).filter((finding) => derivedKinds.has(finding.kind))
+      .map(project).map(canonicalJson).sort(),
     expected: expected.map(project).map(canonicalJson).sort(),
   };
 }
@@ -1941,6 +1958,7 @@ function verifyAnswerMatrix(receipt, errors) {
     benchmarkByIdentity.set(identity, result);
   }
   const seen = new Set();
+  const privatePromptByCase = new Map();
   for (const [index, task] of tasks.entries()) {
     const identity = runIdentity(task, true);
     requireValue(!seen.has(identity), `duplicate prepared task identity ${identity}`, errors);
@@ -1955,8 +1973,19 @@ function verifyAnswerMatrix(receipt, errors) {
     const evalCase = manifestCases.get(task.case_id);
     requireValue(Boolean(evalCase), `prepared task ${index} has no embedded manifest case`, errors);
     if (evalCase) {
-      requireValue(task.prompt === evalCase.prompt,
-        `prepared task ${index} prompt does not match embedded manifest`, errors);
+      if (typeof evalCase.prompt === 'string') {
+        requireValue(task.prompt === evalCase.prompt,
+          `prepared task ${index} prompt does not match embedded manifest`, errors);
+      } else if (typeof evalCase.prompt_ref === 'string') {
+        requireValue(typeof task.prompt === 'string' && task.prompt.length > 0,
+          `prepared task ${index} did not resolve embedded prompt_ref`, errors);
+        const prior = privatePromptByCase.get(task.case_id);
+        requireValue(prior === undefined || prior === task.prompt,
+          `prepared task ${index} prompt_ref is inconsistent across runs`, errors);
+        privatePromptByCase.set(task.case_id, task.prompt);
+      } else {
+        errors.push(`prepared task ${index} has no embedded prompt or prompt_ref`);
+      }
       requireValue(task.kind === (evalCase.kind ?? 'behavior'),
         `prepared task ${index} kind does not match embedded manifest`, errors);
       requireValue(task.split === (evalCase.split ?? 'tune'),
