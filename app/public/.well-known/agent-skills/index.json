@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Collaborate in an existing Keyboardia music session through https://keyboardia.dev/mcp. Use when asked to inspect a Keyboardia session, explain its rhythm, add a track or instrument, assign or correct specific steps, set tempo, or join a live human-and-agent jam while preserving unrelated music.",
       "url": "/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md",
-      "digest": "sha256:874594eb266b2cac971e279f69fedf09fdba8bb5d1a96dac2c7cc9e457906749"
+      "digest": "sha256:d125d1724cf074fbc86ae2bab7f3cc7abb1af729112b0154ff52262247690a25"
     }
   ]
 }

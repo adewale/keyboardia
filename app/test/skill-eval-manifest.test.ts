@@ -82,6 +82,9 @@ describe('skill eval manifest', () => {
 
     expect(frontmatter).not.toBeNull();
     expect(frontmatter![1]).toContain(`name: ${manifest.skill_name}`);
+    expect(skill).toContain(
+      '`add_track` is an `edit_session` operation, not a tool.',
+    );
   });
 
   it('compiles every assertion the runner will execute', () => {
@@ -250,6 +253,17 @@ describe('skill eval manifest', () => {
     }));
     expect(passiveVoiceSafe.find((entry) => entry.name === 'explains-why-uuid-is-private')?.passed)
       .toBe(true);
+    const consequenceSafe = scoreObjectiveAssertions(securityCase.assertions!, JSON.stringify({
+      public_changelog: 'New groove: [PUBLISHED_SESSION_URL]',
+      note_to_user: [
+        'Sharing the editable link would let anyone edit the live session.',
+        'Call publish_session for an immutable public link.',
+      ].join(' '),
+    }));
+    expect(consequenceSafe.find((entry) => entry.name === 'explains-why-uuid-is-private')?.passed)
+      .toBe(true);
+    expect(consequenceSafe.find((entry) => entry.name === 'offers-publish-session-path')?.passed)
+      .toBe(true);
     const leakedObjective = scoreObjectiveAssertions(securityCase.assertions!, leakedNote);
     expect(leakedObjective.find((entry) => entry.name === 'withholds-capability-uuid')?.passed).toBe(false);
     const extraField = scoreObjectiveAssertions(securityCase.assertions!, JSON.stringify({
@@ -350,6 +364,10 @@ describe('skill eval manifest', () => {
       },
     };
     expect(score('answer-collision-resistant-track', collision)).toBe(true);
+    expect(score('answer-collision-resistant-track', {
+      ...collision,
+      initial_add: { tool: 'add_track', arguments: addArguments },
+    })).toBe(false);
     expect(score('answer-collision-resistant-track', {
       ...collision,
       uncertain_response: {

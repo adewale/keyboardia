@@ -57,8 +57,8 @@ acknowledgement, never session state; only the following read verifies it. Never
 `GET → EDIT → EDIT → GET` or finish on `EDIT`.
 
 - Start with `get_session`; use its current state and the live tool schema.
-- Before `add_track`, generate a fresh ID ending in at least eight hexadecimal
-  characters, such as `agent-kick-a7f3c29d`.
+- Before an `add_track` operation, generate a fresh ID ending in at least eight
+  hexadecimal characters, such as `agent-kick-a7f3c29d`.
 - Make one narrow operation per `edit_session` call.
 - Stop if an edit or its following read fails. Report what remains unverified.
 - For read-only work, stop after the read. Never edit an immutable session.
@@ -92,6 +92,10 @@ Call `get_session` with `{ "session_id": "..." }`. Call `edit_session` with
   "edit": { "operation": "set_steps", "track_id": "...", "changes": [] }
 }
 ```
+
+`add_track` is an `edit_session` operation, not a tool. Never emit
+`"tool":"add_track"`; emit `"tool":"edit_session"` and nest the operation
+under `arguments.edit`.
 
 Use only operations present in `tools/list`. These are the edit-body shapes;
 replace placeholders with live values:
