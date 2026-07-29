@@ -388,6 +388,21 @@ function exampleReceipt() {
 }
 
 describe('eval receipts', () => {
+  it('binds resolved private prompt bytes into the input bundle', () => {
+    const manifest = JSON.stringify({
+      cases: [{ id: 'private-case', prompt_ref: 'holdout/private.json' }],
+    });
+    const common = {
+      manifestPath: 'evals/manifest.json', manifestContent: manifest,
+      caseId: 'private-case', sourceFiles: [],
+    };
+    const first = skillEvalInputBundleHash({ ...common, resolvedPrompt: 'private prompt one' });
+    const second = skillEvalInputBundleHash({ ...common, resolvedPrompt: 'private prompt two' });
+    expect(first).toMatch(/^[0-9a-f]{64}$/);
+    expect(first).not.toBe(second);
+    expect(() => skillEvalInputBundleHash(common)).toThrow(/cannot build input bundle/);
+  });
+
   it('binds committed inputs and content-addresses exact run artifacts', () => {
     const { root, receipt } = exampleReceipt();
     expect(receipt.source.git_commit).toMatch(/^[0-9a-f]{40}$/);

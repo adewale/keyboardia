@@ -386,6 +386,7 @@ async function main() {
         manifestContent: sourceManifest.content,
         caseId: task.case_id,
         sourceFiles: source.files,
+        resolvedPrompt: task.prompt,
       }));
     }
   }

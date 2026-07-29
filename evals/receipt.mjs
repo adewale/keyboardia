@@ -199,10 +199,13 @@ function localSourceImports(path, content, available, manifestDir) {
   return [...resolved];
 }
 
-export function skillEvalInputBundleHash({ manifestPath, manifestContent, caseId, sourceFiles }) {
+export function skillEvalInputBundleHash({
+  manifestPath, manifestContent, caseId, sourceFiles, resolvedPrompt = null,
+}) {
   const manifest = JSON.parse(manifestContent);
   const evalCase = (manifest.cases ?? []).find((candidate) => candidate.id === caseId);
-  if (!evalCase || typeof evalCase.prompt !== 'string') {
+  const prompt = typeof evalCase?.prompt === 'string' ? evalCase.prompt : resolvedPrompt;
+  if (!evalCase || typeof prompt !== 'string' || prompt.length === 0) {
     throw new Error(`cannot build input bundle for case ${caseId}`);
   }
   const source = new Map(sourceFiles.map((file) => [file.path, file.content]));
@@ -210,7 +213,7 @@ export function skillEvalInputBundleHash({ manifestPath, manifestContent, caseId
   const entries = [{ role: 'manifest', logical: manifestPath, payload: manifestContent }, {
     role: 'prompt',
     logical: `case/${caseId}/prompt`,
-    payload: evalCase.prompt,
+    payload: prompt,
   }];
   for (const relativePath of evalCase.files ?? []) {
     const logical = posix.normalize(posix.join(manifestDir, relativePath));
@@ -1998,6 +2001,7 @@ function verifyAnswerMatrix(receipt, errors) {
         manifestContent: sourceManifest.content,
         caseId: task.case_id,
         sourceFiles,
+        resolvedPrompt: task.prompt,
       });
     } catch (error) {
       errors.push(`prepared task ${index} input bundle cannot be derived: ${error.message}`);
