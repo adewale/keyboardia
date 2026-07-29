@@ -24,7 +24,7 @@ async function main(): Promise<void> {
   console.log('─'.repeat(40));
   console.log('1. Run MCP tests and build.');
   console.log('2. Deploy to staging.keyboardia.dev.');
-  console.log('3. Run the staging MCP smoke, including cross-origin preflight.');
+  console.log('3. Run the staging Agent Skills discovery and MCP smokes.');
   console.log('4. Pause and disclose the verified result.');
   console.log('5. With a second confirmation, deploy to keyboardia.dev and smoke it.\n');
 
@@ -38,6 +38,7 @@ async function main(): Promise<void> {
 
   console.log('\nDeploying and verifying production...\n');
   run('wrangler deploy --env=""');
+  run('npm run smoke:skills:production');
   run('npm run smoke:mcp:production');
   console.log('\n✅ Production deployment and MCP smoke passed.\n');
 }

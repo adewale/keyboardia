@@ -69,12 +69,22 @@ The endpoint:
 The SDK, rather than Keyboardia code, implements protocol envelopes, discovery,
 header validation, JSON-RPC routing, and compatibility behavior.
 
-### Normative protocol reference
+### Normative authority map
 
-The versioned [MCP 2026-07-28 specification](https://modelcontextprotocol.io/specification/2026-07-28)
-is the normative protocol authority. When a release article, SEP, SDK guide, or
-third-party article differs from that final versioned specification, the
-specification controls.
+Keyboardia's origin-to-tool journey crosses a Cloudflare discovery draft and
+the final MCP protocol, then applies a narrower Keyboardia safety profile. The
+complete source ranking, compatibility decisions, and executable conformance
+map are in
+[Agent Skills discovery and MCP authority map](./AGENT-SKILLS-MCP-AUTHORITY.md).
+
+For the MCP layer, the versioned
+[MCP 2026-07-28 specification](https://modelcontextprotocol.io/specification/2026-07-28)
+is authoritative. For the preceding well-known catalog and raw artifact
+verification, Keyboardia adopts the pinned Cloudflare Agent Skills Discovery
+RFC draft v0.2.0. SDK helper names and release articles are not wire messages
+and cannot redefine either layer. Keyboardia-only requirements such as the
+exact seven tools and read/edit/read are product conformance rules, not claims
+about what every MCP implementation must do.
 
 The following sources explain the design lineage or this implementation, but
 are not substitutes for the normative specification:

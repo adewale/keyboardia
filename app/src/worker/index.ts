@@ -33,6 +33,7 @@ import {
 import { matchRoute, extractSessionId } from './route-patterns';
 import { isSessionPagePath } from './routing';
 import { guardMcpRequest, mcpCorsHeaders, validateMcpOrigin } from './mcp-guard';
+import { handleAgentSkillsRequest } from './agent-skills';
 
 // State hashing utilities (still needed for debug endpoints)
 import {
@@ -50,9 +51,10 @@ export { LiveSessionDurableObject } from './live-session';
 export { SessionAllocatorDurableObject } from './session-allocator';
 
 // Security headers for static assets
-// public/_headers still governs assets served straight from the asset router,
-// which is the path production takes for any file that exists in dist. These
-// apply to the responses this Worker builds itself, where _headers does not.
+// public/_headers still governs assets served straight from the asset router.
+// These apply to the responses this Worker builds itself, where _headers does
+// not. Agent Skills discovery has its own explicit response headers because
+// Cloudflare's asset binding does not expose its dot-prefixed paths.
 const SECURITY_HEADERS = {
   // CSP: blob: needed for Tone.js AudioWorklets, cloudflareinsights.com for Web Analytics
   'Content-Security-Policy': "default-src 'self'; script-src 'self' blob: https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://*.keyboardia.dev https://*.keyboardia.dev wss://*.workers.dev https://*.workers.dev https://cloudflareinsights.com; media-src 'self' blob:; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
@@ -108,6 +110,12 @@ export default {
       }
       return new Response(null, { headers: corsHeaders });
     }
+
+    // Serve the well-known discovery contract before the general asset/SPA
+    // fallback. The response contains the exact source bytes bundled at build
+    // time, so the catalog digest can be verified against the served skill.
+    const agentSkillsResponse = handleAgentSkillsRequest(request, path);
+    if (agentSkillsResponse) return agentSkillsResponse;
 
     // ========================================================================
     // OG Image Generation Route (must be before API and SPA routing)

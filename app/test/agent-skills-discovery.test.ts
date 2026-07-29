@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { existsSync, readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import Ajv2020 from 'ajv/dist/2020.js';
 import { describe, expect, it } from 'vitest';
@@ -170,24 +170,21 @@ describe('Cloudflare Agent Skills discovery', () => {
     expect(skill).toContain('before the final answer');
   });
 
-  it('keeps both artifacts on the asset-router path those headers need', () => {
-    // Cloudflare applies _headers only to assets served straight from the asset
-    // router, never to a response this Worker builds around env.ASSETS.fetch.
-    // Production takes the router path because every discovery file exists in
-    // dist and run_worker_first is unset. The integration journey reaches these
-    // files through the binding instead, so it cannot catch either regression.
+  it('bundles the checked-in artifacts instead of relying on dot-path asset routing', () => {
     const wrangler = readFileSync(resolve('wrangler.jsonc'), 'utf8');
-    const ignoreFile = resolve('public/.assetsignore');
+    const worker = readFileSync(resolve('src/worker/index.ts'), 'utf8');
+    const discoveryRoute = readFileSync(resolve('src/worker/agent-skills.ts'), 'utf8');
 
-    expect(wrangler).not.toMatch(/run_worker_first/);
-    expect(
-      existsSync(ignoreFile) &&
-        readFileSync(ignoreFile, 'utf8').split('\n').some((line) => {
-          const pattern = line.trim();
-          return pattern !== '' && !pattern.startsWith('#') &&
-            '/.well-known/agent-skills/index.json'.includes(pattern.replace(/^[!/]+/, ''));
-        }),
-      '.assetsignore must not exclude the discovery artifacts',
-    ).toBe(false);
+    expect(wrangler).toContain('"type": "Text"');
+    expect(wrangler).toContain('**/.well-known/agent-skills/index.json');
+    expect(wrangler).toContain('**/.well-known/agent-skills/**/*.md');
+    expect(worker).toContain("import { handleAgentSkillsRequest } from './agent-skills';");
+    expect(worker).toContain('handleAgentSkillsRequest(request, path)');
+    expect(discoveryRoute).toContain(
+      "../../public/.well-known/agent-skills/index.json",
+    );
+    expect(discoveryRoute).toContain(
+      "../../public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md",
+    );
   });
 });

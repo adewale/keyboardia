@@ -26,7 +26,9 @@
   Permissions-Policy: camera=(), geolocation=(), payment=(), usb=(), microphone=(self), autoplay=(self)
 
 # Agent Skills Discovery v0.2.0
-# Keep discovery cross-origin and give both required artifacts explicit MIME types.
+# The Worker sets these headers on its bundled discovery responses. Keep the
+# asset declarations in sync as defense in depth if Cloudflare later exposes
+# dot-prefixed paths directly through the asset router.
 /.well-known/agent-skills/*
   Access-Control-Allow-Origin: *
   Cache-Control: no-cache
