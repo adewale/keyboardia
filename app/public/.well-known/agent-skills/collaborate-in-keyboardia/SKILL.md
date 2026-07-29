@@ -70,6 +70,29 @@ For proposed tool calls use `{ "tool": "get_session", "arguments": { ... } }`,
 never `method`, `input`, `params`, or `inputSchema` unless the user requests
 them.
 
+## Start from origin-only discovery
+
+When you have a Keyboardia origin but have not yet loaded this skill or
+connected to MCP, use this exact continuous chain. Do not guess alternative
+well-known paths such as `/.well-known/mcp-skills.json`,
+`/.well-known/mcp/catalog.json`, or `/.well-known/skills/`.
+
+1. Resolve `/.well-known/agent-skills/index.json` against the supplied origin
+   and fetch that catalog.
+2. Select the entry whose `name` is `collaborate-in-keyboardia` and whose
+   `type` is `skill-md`.
+3. Resolve that entry's `url` against the same origin and fetch the raw
+   `SKILL.md` bytes. Do not substitute a local mounted-skill path.
+4. Compute SHA-256 over those exact response bytes and compare
+   `sha256:<lowercase hex>` with the entry's `digest`. Stop on a missing digest,
+   mismatch, unsupported algorithm, cross-origin redirect, or failed fetch.
+5. Only after the digest matches, read the verified skill instructions, derive
+   same-origin `/mcp`, connect and initialize MCP, then call `tools/list`.
+6. Use the discovered schemas and continue into the required
+   `get_session → edit_session → get_session` workflow. Keep catalog fetch,
+   skill fetch, digest verification, MCP initialization, tool discovery, read,
+   edit, and verification in one agent trace.
+
 ## Discover and protect capabilities
 
 - Connect to same-origin `/mcp`; production is `https://keyboardia.dev/mcp`.
