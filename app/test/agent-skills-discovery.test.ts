@@ -152,6 +152,8 @@ describe('Cloudflare Agent Skills discovery', () => {
       ).toBe(true);
     }
     expect(skill).not.toMatch(/instrument changes[^.]*UI work/i);
+    expect(skill).toContain('the only allowed next Keyboardia action');
+    expect(skill).toContain('before the final answer');
   });
 
   it('keeps both artifacts on the asset-router path those headers need', () => {

@@ -356,6 +356,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
   }, {
     instructions: [
       'Read an existing session with get_session before editing it.',
+      'After every edit_session attempt, call get_session next for the same session before another edit or a final answer; the compact edit_session result is not verification.',
       'Step indexes are zero-based; preserve every track and step the user did not ask to change.',
       'For add_track, choose a stable unique track_id and reuse it on retry. For set_steps and set_track_instrument, use a track_id returned by get_session.',
       'Only publish when the user explicitly asks. A session UUID grants the same access as its share URL, so do not expose it unnecessarily.',
@@ -390,6 +391,8 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       title: 'Edit Keyboardia session',
       description: [
         'Make one narrow, retry-safe edit to an existing collaborative session.',
+        'After every attempt, the next Keyboardia call must be get_session for the same session.',
+        'Do not make another edit or finish from this tool\'s compact result; it is not verification.',
         'Supported operations: add_track, set_track_instrument, set_steps, and set_tempo.',
         'set_steps changes only the named steps; it never replaces a track or session.',
         'set_track_instrument replaces only a track\'s sound source, keeping its'

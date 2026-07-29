@@ -219,12 +219,15 @@ describe('stateless MCP endpoint', () => {
       .toContain('"kick"');
     expect(JSON.stringify(editTool?.inputSchema))
       .toContain('Zero-based step index');
+    expect(editTool?.description)
+      .toContain('the next Keyboardia call must be get_session');
     expect(editTool?.annotations).toMatchObject({
       readOnlyHint: false,
       destructiveHint: true,
       idempotentHint: true,
     });
     expect(client.getInstructions()).toContain('Read an existing session with get_session');
+    expect(client.getInstructions()).toContain('After every edit_session attempt');
     expect(client.getInstructions()).toContain('Only publish when the user explicitly asks');
     expect(listed.ttlMs).toBeTypeOf('number');
     expect(listed.cacheScope).toBeDefined();
