@@ -7,6 +7,13 @@
     "directory": "./dist",
     "binding": "ASSETS"
   },
+  "rules": [
+    {
+      "type": "Text",
+      "globs": ["**/.well-known/agent-skills/index.json", "**/.well-known/agent-skills/**/*.md"],
+      "fallthrough": true
+    }
+  ],
   "kv_namespaces": [
     {
       "binding": "SESSIONS",

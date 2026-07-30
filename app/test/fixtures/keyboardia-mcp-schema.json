@@ -1,0 +1,541 @@
+{
+  "$comment": "Exact tools/list tool definitions captured from Keyboardia's MCP implementation. app/src/worker/mcp.test.ts fails on any drift.",
+  "protocol_date": "2026-07-28",
+  "server_url": "https://keyboardia.dev/mcp",
+  "tools": [
+    {
+      "name": "get_session",
+      "title": "Get Keyboardia session",
+      "description": "Read the current tempo and compact track patterns from an existing Keyboardia session.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "edit_session",
+      "title": "Edit Keyboardia session",
+      "description": "Make one narrow, retry-safe edit to an existing collaborative session. After every attempt, the next Keyboardia call must be get_session for the same session. A successful call includes a backwards-compatible compact snapshot plus an acknowledgement. That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next. Supported operations: add_track, set_track_instrument, set_steps, and set_tempo. set_steps changes only the named steps; it never replaces a track or session. set_track_instrument replaces only a track's sound source, keeping its pattern, mix, timing, and custom name.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "description": "The target session and one retry-safe edit to apply.",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
+          },
+          "edit": {
+            "description": "Exactly one narrow session edit.",
+            "oneOf": [
+              {
+                "type": "object",
+                "description": "Add one track. Retrying the same track_id and definition is a no-op; a conflicting reuse is rejected.",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "add_track"
+                  },
+                  "track_id": {
+                    "type": "string",
+                  "pattern": "^(?=.{10,64}$)[A-Za-z0-9][A-Za-z0-9._-]*-[0-9a-fA-F]{8,32}$",
+                "description": "Generate a fresh collision-resistant ID that ends with at least eight hexadecimal characters, such as agent-kick-a7f3c29d. Generate it once and reuse it on retries."
+                  },
+                  "sample_id": {
+                    "type": "string",
+                    "description": "The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.",
+                    "enum": [
+                      "advanced:acid-bass",
+                      "advanced:sub-bass",
+                      "advanced:supersaw",
+                      "advanced:thick-lead",
+                      "advanced:tremolo-strings",
+                      "advanced:vibrato-lead",
+                      "advanced:warm-pad",
+                      "advanced:wobble-bass",
+                      "bass",
+                      "cabasa",
+                      "chord",
+                      "clap",
+                      "clave",
+                      "conga",
+                      "cowbell",
+                      "hihat",
+                      "kick",
+                      "lead",
+                      "noise",
+                      "openhat",
+                      "pad",
+                      "pluck",
+                      "rim",
+                      "sampled:808-clap",
+                      "sampled:808-hihat-closed",
+                      "sampled:808-hihat-open",
+                      "sampled:808-kick",
+                      "sampled:808-snare",
+                      "sampled:acoustic-crash",
+                      "sampled:acoustic-guitar",
+                      "sampled:acoustic-hihat-closed",
+                      "sampled:acoustic-hihat-open",
+                      "sampled:acoustic-kick",
+                      "sampled:acoustic-ride",
+                      "sampled:acoustic-snare",
+                      "sampled:alto-sax",
+                      "sampled:brushes-snare",
+                      "sampled:clean-guitar",
+                      "sampled:finger-bass",
+                      "sampled:french-horn",
+                      "sampled:hammond-organ",
+                      "sampled:kalimba",
+                      "sampled:marimba",
+                      "sampled:piano",
+                      "sampled:slap-bass",
+                      "sampled:steel-drums",
+                      "sampled:string-section",
+                      "sampled:vibraphone",
+                      "sampled:vinyl-crackle",
+                      "shaker",
+                      "snare",
+                      "subbass",
+                      "synth:acid",
+                      "synth:bass",
+                      "synth:bell",
+                      "synth:brass",
+                      "synth:clavinet",
+                      "synth:discobass",
+                      "synth:dreampop",
+                      "synth:epiano",
+                      "synth:evolving",
+                      "synth:funkbass",
+                      "synth:glass",
+                      "synth:growl",
+                      "synth:hoover",
+                      "synth:hypersaw",
+                      "synth:jangle",
+                      "synth:lead",
+                      "synth:organ",
+                      "synth:organphase",
+                      "synth:pad",
+                      "synth:pluck",
+                      "synth:reese",
+                      "synth:rhodes",
+                      "synth:shimmer",
+                      "synth:stab",
+                      "synth:strings",
+                      "synth:sub",
+                      "synth:supersaw",
+                      "synth:sweep",
+                      "synth:vibes",
+                      "synth:warmpad",
+                      "synth:wobble",
+                      "synth:wurlitzer",
+                      "tambourine",
+                      "tom",
+                      "tone:am-bell",
+                      "tone:am-tremolo",
+                      "tone:duo-lead",
+                      "tone:fm-bass",
+                      "tone:fm-bell",
+                      "tone:fm-epiano",
+                      "tone:membrane-kick",
+                      "tone:membrane-tom",
+                      "tone:metal-cymbal",
+                      "tone:metal-hihat",
+                      "tone:pluck-string",
+                      "woodblock",
+                      "zap"
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 32,
+                    "description": "Optional display name. The instrument name is used when omitted."
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "sample_id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "description": "Replace only an existing track's sound source while preserving its name, pattern, mix, and timing.",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_track_instrument"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                  },
+                  "sample_id": {
+                    "type": "string",
+                    "description": "The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.",
+                    "enum": [
+                      "advanced:acid-bass",
+                      "advanced:sub-bass",
+                      "advanced:supersaw",
+                      "advanced:thick-lead",
+                      "advanced:tremolo-strings",
+                      "advanced:vibrato-lead",
+                      "advanced:warm-pad",
+                      "advanced:wobble-bass",
+                      "bass",
+                      "cabasa",
+                      "chord",
+                      "clap",
+                      "clave",
+                      "conga",
+                      "cowbell",
+                      "hihat",
+                      "kick",
+                      "lead",
+                      "noise",
+                      "openhat",
+                      "pad",
+                      "pluck",
+                      "rim",
+                      "sampled:808-clap",
+                      "sampled:808-hihat-closed",
+                      "sampled:808-hihat-open",
+                      "sampled:808-kick",
+                      "sampled:808-snare",
+                      "sampled:acoustic-crash",
+                      "sampled:acoustic-guitar",
+                      "sampled:acoustic-hihat-closed",
+                      "sampled:acoustic-hihat-open",
+                      "sampled:acoustic-kick",
+                      "sampled:acoustic-ride",
+                      "sampled:acoustic-snare",
+                      "sampled:alto-sax",
+                      "sampled:brushes-snare",
+                      "sampled:clean-guitar",
+                      "sampled:finger-bass",
+                      "sampled:french-horn",
+                      "sampled:hammond-organ",
+                      "sampled:kalimba",
+                      "sampled:marimba",
+                      "sampled:piano",
+                      "sampled:slap-bass",
+                      "sampled:steel-drums",
+                      "sampled:string-section",
+                      "sampled:vibraphone",
+                      "sampled:vinyl-crackle",
+                      "shaker",
+                      "snare",
+                      "subbass",
+                      "synth:acid",
+                      "synth:bass",
+                      "synth:bell",
+                      "synth:brass",
+                      "synth:clavinet",
+                      "synth:discobass",
+                      "synth:dreampop",
+                      "synth:epiano",
+                      "synth:evolving",
+                      "synth:funkbass",
+                      "synth:glass",
+                      "synth:growl",
+                      "synth:hoover",
+                      "synth:hypersaw",
+                      "synth:jangle",
+                      "synth:lead",
+                      "synth:organ",
+                      "synth:organphase",
+                      "synth:pad",
+                      "synth:pluck",
+                      "synth:reese",
+                      "synth:rhodes",
+                      "synth:shimmer",
+                      "synth:stab",
+                      "synth:strings",
+                      "synth:sub",
+                      "synth:supersaw",
+                      "synth:sweep",
+                      "synth:vibes",
+                      "synth:warmpad",
+                      "synth:wobble",
+                      "synth:wurlitzer",
+                      "tambourine",
+                      "tom",
+                      "tone:am-bell",
+                      "tone:am-tremolo",
+                      "tone:duo-lead",
+                      "tone:fm-bass",
+                      "tone:fm-bell",
+                      "tone:fm-epiano",
+                      "tone:membrane-kick",
+                      "tone:membrane-tom",
+                      "tone:metal-cymbal",
+                      "tone:metal-hihat",
+                      "tone:pluck-string",
+                      "woodblock",
+                      "zap"
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "sample_id"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "description": "Change only the listed steps on an existing track. Read get_session first to obtain its track_id and step_count.",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_steps"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                  },
+                  "changes": {
+                    "minItems": 1,
+                    "maxItems": 128,
+                    "type": "array",
+                    "description": "Assignments for named steps only. Every unmentioned step is preserved.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "step": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 127,
+                          "description": "Zero-based step index. It must be within this track's current step_count."
+                        },
+                        "value": {
+                          "type": "boolean",
+                          "description": "true activates the step; false clears it."
+                        }
+                      },
+                      "required": [
+                        "step",
+                        "value"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "changes"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "description": "Set the session-wide tempo without changing any track.",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_tempo"
+                  },
+                  "tempo": {
+                    "type": "number",
+                    "minimum": 60,
+                    "maximum": 180,
+                    "description": "Session tempo in beats per minute (60-180)."
+                  }
+                },
+                "required": [
+                  "operation",
+                  "tempo"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          }
+        },
+        "required": [
+          "session_id",
+          "edit"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "create_session",
+      "title": "Create Keyboardia session",
+      "description": "Create a new editable Keyboardia session with the normal defaults and return its shareable URL. The session starts with no tracks; use edit_session to add them. Pass the same idempotency_key when retrying so an uncertain attempt cannot leave duplicate sessions behind.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "idempotency_key": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "A UUID you generate for this creation attempt. Reusing it returns the session the first attempt created instead of making another one."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Optional display name for the new session."
+          },
+          "tempo": {
+            "description": "Starting tempo in BPM. Defaults to Keyboardia's own default.",
+            "type": "number",
+            "minimum": 60,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "idempotency_key"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "remix_session",
+      "title": "Remix Keyboardia session",
+      "description": "Copy an existing session — published or editable — into a new editable session that records the original as its source. The source is never modified, so this is how to continue from published work.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "publish_session",
+      "title": "Publish Keyboardia session",
+      "description": "Freeze the current music into a new immutable session and return its URL. The source session stays editable at its own URL. Only call this when someone explicitly asks to publish; it is never a side effect of editing or exporting.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": false,
+        "destructiveHint": false,
+        "idempotentHint": false,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "export_midi",
+      "title": "Export Keyboardia session as MIDI",
+      "description": "Export the session as a base64-encoded Standard MIDI File, matching what Keyboardia's own Export MIDI produces for the same music. The session is not modified. The result lists any session features a MIDI file cannot carry rather than approximating them silently.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    },
+    {
+      "name": "analyze_session",
+      "title": "Analyze Keyboardia session",
+      "description": "Describe what is happening musically in a session — rhythm, pitch content, inferred key, and chords — without changing anything. Use this to explain music rather than to edit it. Results come from the same music-theory module the browser's Key Assistant and Chromatic Grid use, and report where the analysis is uncertain instead of guessing.",
+      "inputSchema": {
+        "type": "object",
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "session_id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$",
+            "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
+          }
+        },
+        "required": [
+          "session_id"
+        ],
+        "additionalProperties": false
+      },
+      "annotations": {
+        "readOnlyHint": true,
+        "destructiveHint": false,
+        "idempotentHint": true,
+        "openWorldHint": false
+      }
+    }
+  ]
+}

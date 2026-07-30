@@ -100,7 +100,7 @@ const CODE_EXTENSIONS = new Set([
 
 const RESOURCE_EXTENSIONS = new Set([
   '.avif', '.css', '.flac', '.gif', '.ico', '.jpeg', '.jpg', '.json', '.less',
-  '.mp3', '.ogg', '.otf', '.png', '.sass', '.scss', '.svg', '.ttf', '.wasm',
+  '.md', '.mp3', '.ogg', '.otf', '.png', '.sass', '.scss', '.svg', '.ttf', '.wasm',
   '.wav', '.webp', '.woff', '.woff2',
 ]);
 
@@ -572,11 +572,13 @@ interface ResourceImportPolicy {
   policyName: string;
   imports: readonly ResourceImportEdge[];
   appliesTo: (module: string) => boolean;
+  isAllowed?: (specifier: string, module: string) => boolean;
 }
 
 export function findResourceImportViolations(policy: ResourceImportPolicy): string[] {
   return policy.imports
-    .filter(edge => policy.appliesTo(edge.importer))
+    .filter(edge => policy.appliesTo(edge.importer)
+      && !policy.isAllowed?.(edge.specifier, edge.importer))
     .map(edge => `${policy.policyName}: ${edge.importer} -> resource:${edge.specifier}`)
     .sort();
 }

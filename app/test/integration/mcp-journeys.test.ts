@@ -156,7 +156,7 @@ describe('MCP v1 onboarding journeys', () => {
         session_id: id,
         edit: {
           operation: 'add_track',
-          track_id: 'kick-agent-a',
+          track_id: 'kick-agent-a7f3c29d',
           sample_id: 'kick',
         },
       },
@@ -175,7 +175,7 @@ describe('MCP v1 onboarding journeys', () => {
         session_id: id,
         edit: {
           operation: 'set_steps',
-          track_id: 'kick-agent-a',
+          track_id: 'kick-agent-a7f3c29d',
           changes: [
             { step: 0, value: true },
             { step: 4, value: true },
@@ -188,14 +188,14 @@ describe('MCP v1 onboarding journeys', () => {
     expect(await browser.waitFor(
       ({ type, trackId, step, value }) =>
         type === 'step_toggled'
-        && trackId === 'kick-agent-a'
+        && trackId === 'kick-agent-a7f3c29d'
         && step === 12
         && value === true,
       'agent step broadcast'
     )).toMatchObject({
       type: 'step_toggled',
       playerId: 'mcp',
-      trackId: 'kick-agent-a',
+      trackId: 'kick-agent-a7f3c29d',
       step: 12,
       value: true,
     });
@@ -232,7 +232,7 @@ describe('MCP v1 onboarding journeys', () => {
       immutable: false,
       tempo: 124,
       tracks: [{
-        track_id: 'kick-agent-a',
+        track_id: 'kick-agent-a7f3c29d',
         name: 'Kick',
         sample_id: 'kick',
         step_count: 16,
@@ -251,7 +251,7 @@ describe('MCP v1 onboarding journeys', () => {
     };
     expect(persisted.state.tempo).toBe(124);
     expect(persisted.state.tracks).toHaveLength(1);
-    expect(persisted.state.tracks[0]?.id).toBe('kick-agent-a');
+    expect(persisted.state.tracks[0]?.id).toBe('kick-agent-a7f3c29d');
     expect(
       persisted.state.tracks[0]?.steps.flatMap((active, step) => active ? [step] : [])
     ).toEqual([0, 4, 8, 12]);
@@ -271,7 +271,7 @@ describe('MCP v1 onboarding journeys', () => {
         session_id: id,
         edit: {
           operation: 'add_track',
-          track_id: 'lead-agent',
+          track_id: 'lead-agent-b8e4d30f',
           sample_id: 'kick',
           name: 'Ada Lead',
         },
@@ -288,7 +288,7 @@ describe('MCP v1 onboarding journeys', () => {
         session_id: id,
         edit: {
           operation: 'set_steps',
-          track_id: 'lead-agent',
+          track_id: 'lead-agent-b8e4d30f',
           changes: [{ step: 3, value: true }, { step: 11, value: true }],
         },
       },
@@ -304,7 +304,7 @@ describe('MCP v1 onboarding journeys', () => {
         session_id: id,
         edit: {
           operation: 'set_track_instrument',
-          track_id: 'lead-agent',
+          track_id: 'lead-agent-b8e4d30f',
           sample_id: 'sampled:808-kick',
         },
       },
@@ -313,35 +313,37 @@ describe('MCP v1 onboarding journeys', () => {
     // A connected browser converges from the existing granular event, not from
     // a replacement snapshot.
     expect(await browser.waitFor(
-      ({ type, trackId }) => type === 'track_sample_set' && trackId === 'lead-agent',
+      ({ type, trackId }) => type === 'track_sample_set' && trackId === 'lead-agent-b8e4d30f',
       'agent instrument broadcast'
     )).toMatchObject({
       type: 'track_sample_set',
       playerId: 'mcp',
-      trackId: 'lead-agent',
+      trackId: 'lead-agent-b8e4d30f',
       name: 'Ada Lead',
     });
 
     expect(result.isError).not.toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       session_id: id,
       immutable: false,
       tempo: 120,
       tracks: [{
-        track_id: 'lead-agent',
-        // The agent swapped a sound; it did not rename a collaborator's track.
+        track_id: 'lead-agent-b8e4d30f',
         name: 'Ada Lead',
         sample_id: 'sampled:808-kick',
         step_count: 16,
         active_steps: [3, 11],
       }],
+      applied: true,
+      verification_required: true,
+      next_tool: 'get_session',
     });
 
     const persisted = await (await SELF.fetch(`http://localhost/api/sessions/${id}`)).json() as {
       state: { tracks: Array<{ id: string; name: string; sampleId: string; steps: boolean[] }> };
     };
     expect(persisted.state.tracks[0]).toMatchObject({
-      id: 'lead-agent',
+      id: 'lead-agent-b8e4d30f',
       name: 'Ada Lead',
       sampleId: 'sampled:808-kick',
     });
@@ -568,7 +570,7 @@ describe('MCP session lifecycle journeys', () => {
       name: 'edit_session',
       arguments: {
         session_id: sessionId,
-        edit: { operation: 'add_track', track_id: 'kick-1', sample_id: 'kick' },
+        edit: { operation: 'add_track', track_id: 'kick-agent-a7f3c29d', sample_id: 'kick' },
       },
     });
     const added = await browser.waitFor(
@@ -576,7 +578,7 @@ describe('MCP session lifecycle journeys', () => {
       'browser sees the agent track'
     );
     expect(added.trackId ?? (added as unknown as { track?: { id: string } }).track?.id)
-      .toBe('kick-1');
+      .toBe('kick-agent-a7f3c29d');
   });
 
   it('resolves a retried create to the same session instead of a duplicate', async () => {
@@ -602,7 +604,7 @@ describe('MCP session lifecycle journeys', () => {
       name: 'edit_session',
       arguments: {
         session_id: id,
-        edit: { operation: 'add_track', track_id: 'kick-1', sample_id: 'kick' },
+        edit: { operation: 'add_track', track_id: 'kick-agent-a7f3c29d', sample_id: 'kick' },
       },
     });
     const published = structured(await agent.callTool({
@@ -653,8 +655,8 @@ describe('MCP session lifecycle journeys', () => {
     }) as ToolResult);
 
     expect(published.immutable).toBe(true);
-    expect(published.source_session_id).toBe(id);
-    expect(published.source_url).toBe(`http://localhost/s/${id}`);
+    expect(published).not.toHaveProperty('source_session_id');
+    expect(published).not.toHaveProperty('source_url');
 
     // The published copy refuses edits; the source still accepts them.
     const blocked = await agent.callTool({
@@ -698,7 +700,7 @@ describe('MCP session lifecycle journeys', () => {
       name: 'edit_session',
       arguments: {
         session_id: id,
-        edit: { operation: 'add_track', track_id: 'kick-1', sample_id: 'kick' },
+        edit: { operation: 'add_track', track_id: 'kick-agent-a7f3c29d', sample_id: 'kick' },
       },
     });
     await agent.callTool({
@@ -707,7 +709,7 @@ describe('MCP session lifecycle journeys', () => {
         session_id: id,
         edit: {
           operation: 'set_steps',
-          track_id: 'kick-1',
+          track_id: 'kick-agent-a7f3c29d',
           changes: [{ step: 0, value: true }, { step: 8, value: true }],
         },
       },
@@ -724,7 +726,7 @@ describe('MCP session lifecycle journeys', () => {
 
     expect(exported.mime_type).toBe('audio/midi');
     expect(exported.filename).toBe('MCP-journey.mid');
-    expect(exported.exported_track_ids).toEqual(['kick-1']);
+    expect(exported.exported_track_ids).toEqual(['kick-agent-a7f3c29d']);
     const bytes = Uint8Array.from(atob(exported.data as string), (char) => char.charCodeAt(0));
     expect(new TextDecoder().decode(bytes.subarray(0, 4))).toBe('MThd');
     expect(bytes.byteLength).toBe(exported.byte_length);
