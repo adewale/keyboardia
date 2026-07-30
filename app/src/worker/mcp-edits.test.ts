@@ -38,14 +38,14 @@ describe('MCP rhythm domain', () => {
     const initial = createInitialSessionState();
     const edit = {
       operation: 'add_track' as const,
-      track_id: 'kick-agent-1',
+      track_id: 'kick-agent-a7f3c29d',
       sample_id: 'kick',
     };
 
     const added = applyMcpSessionEdit(initial, edit);
     expect(added.changed).toBe(true);
     expect(added.state.tracks[0]).toMatchObject({
-      id: 'kick-agent-1',
+      id: 'kick-agent-a7f3c29d',
       name: 'Kick',
       sampleId: 'kick',
       stepCount: 16,
@@ -63,13 +63,13 @@ describe('MCP rhythm domain', () => {
   it('rejects reusing a track ID for a different track', () => {
     const state = applyMcpSessionEdit(createInitialSessionState(), {
       operation: 'add_track',
-      track_id: 'agent-track',
+      track_id: 'agent-track-a7f3c29d',
       sample_id: 'kick',
     }).state;
 
     expect(() => applyMcpSessionEdit(state, {
       operation: 'add_track',
-      track_id: 'agent-track',
+      track_id: 'agent-track-a7f3c29d',
       sample_id: 'snare',
     })).toThrowError(McpSessionEditError);
   });
@@ -91,6 +91,14 @@ describe('MCP rhythm domain', () => {
     for (const trackId of ['kick-agent-1', 'track-1769299200000', 'agent.kick_2']) {
       expect(TRACK_ID_PATTERN.test(trackId)).toBe(true);
     }
+  });
+
+  it('rejects predictable new track IDs without a collision-resistant suffix', () => {
+    expect(() => applyMcpSessionEdit(createInitialSessionState(), {
+      operation: 'add_track',
+      track_id: 'agent-kick-1',
+      sample_id: 'kick',
+    })).toThrowError(/at least eight hexadecimal characters/);
   });
 
   it('sets only named steps and emits existing granular collaboration events', () => {
