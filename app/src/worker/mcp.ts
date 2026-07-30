@@ -352,7 +352,7 @@ function toolError(error: unknown) {
 function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string): McpServer {
   const server = new McpServer({
     name: 'keyboardia',
-    version: '1.0.0',
+    version: '1.1.0',
   }, {
     instructions: [
       'Read an existing session with get_session before editing it.',

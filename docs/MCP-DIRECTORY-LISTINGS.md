@@ -14,7 +14,7 @@ support contact, or directory status changes.
 | Short description | Create, co-edit, analyze, publish, and export collaborative step-sequencer sessions through MCP. |
 | Endpoint | `https://keyboardia.dev/mcp` |
 | Transport | Streamable HTTP |
-| Authentication | None; unlisted session UUIDs act as capabilities |
+| Authentication | No account or MCP OAuth; editable session UUIDs are bearer capabilities |
 | Website | `https://keyboardia.dev/` |
 | Repository | `https://github.com/adewale/keyboardia` |
 | Documentation | `https://github.com/adewale/keyboardia/blob/main/specs/STATELESS-MCP.md` |
@@ -64,6 +64,8 @@ unless a prompt explicitly asks for publication.
   shareable immutable page.
 - The hosted endpoint returns a successful MCP initialization and tool list.
 - The privacy and support links are public.
-- The root Registry manifest version matches the hosted server identity.
+- Unit tests bind the root Registry manifest version to the source server
+  identity, and the publication workflow verifies that version against the live
+  hosted server before requesting Registry credentials.
 - The review prompts are run against production before publication; test
   sessions are durable and should be clearly named.

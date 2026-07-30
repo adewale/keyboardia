@@ -18,6 +18,9 @@ import {
 
 const SESSION_ID = '00000000-0000-4000-8000-000000000001';
 const PROTOCOL_VERSION = '2026-07-28';
+const REGISTRY_MANIFEST = JSON.parse(
+  readFileSync(new URL('../../../server.json', import.meta.url), 'utf8')
+) as { name: string; version: string };
 
 function modernRequest(
   method: string,
@@ -214,6 +217,10 @@ describe('stateless MCP endpoint', () => {
     ]);
     expect(client.getServerCapabilities()?.resources).toBeUndefined();
     expect(client.getServerCapabilities()?.prompts).toBeUndefined();
+    expect(client.getServerVersion()).toEqual({
+      name: 'keyboardia',
+      version: REGISTRY_MANIFEST.version,
+    });
     expect(JSON.stringify(listed.tools.find((tool) => tool.name === 'edit_session')?.inputSchema))
       .toContain('"kick"');
     expect(JSON.stringify(listed.tools.find((tool) => tool.name === 'edit_session')?.inputSchema))
