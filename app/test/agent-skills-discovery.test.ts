@@ -104,7 +104,7 @@ describe('Cloudflare Agent Skills discovery', () => {
     // has no server noun and is guidance, not a denial, so it is not flagged.
     const skill = readFileSync(skillPath, 'utf8');
     const fixture = JSON.parse(
-      readFileSync(resolve('test/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
+      readFileSync(resolve('../evals/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
     ) as { tools: Array<{ name: string }> };
 
     const negation = /\b(cannot|can't|can not|does not|doesn't|do not|don't|unable to|no support for|lacks|never)\b/i;
@@ -128,7 +128,7 @@ describe('Cloudflare Agent Skills discovery', () => {
   it('only names tools the server actually exposes', () => {
     const skill = readFileSync(skillPath, 'utf8');
     const fixture = JSON.parse(
-      readFileSync(resolve('test/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
+      readFileSync(resolve('../evals/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
     ) as { tools: Array<{ name: string }> };
     const live = new Set(fixture.tools.map((tool) => tool.name));
 
@@ -146,7 +146,7 @@ describe('Cloudflare Agent Skills discovery', () => {
   it('documents every edit operation the server exposes', () => {
     const skill = readFileSync(skillPath, 'utf8');
     const fixture = JSON.parse(
-      readFileSync(resolve('test/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
+      readFileSync(resolve('../evals/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
     ) as {
       tools: Array<{
         name: string;

@@ -127,7 +127,58 @@ jobs:
         working-directory: ./app/test/integration
 
       - name: Run integration tests
-        run: npm run test:integration
+        run: npm run test:integration:built
+
+  eval-manifest:
+    name: Eval Manifest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: evals/package-lock.json
+
+      - name: Install eval validation dependencies
+        run: npm ci --ignore-scripts --audit=false
+        working-directory: ./evals
+
+      - name: Audit eval validation dependencies
+        run: npm audit --audit-level=high
+        working-directory: ./evals
+
+      # Proves the eval pipeline runs end to end with no provider, no
+      # credentials, and no spend. The stub adapter is a fixed string, so this
+      # gates the plumbing, never the scores.
+      - name: Run the eval pipeline offline
+        run: node evals/run-benchmark.mjs --agent stub --repeats 1 --quiet --out "$RUNNER_TEMP/stub-run.json"
+
+      - name: Verify committed eval receipts
+        run: node evals/verify-receipts.mjs
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.12.0'
+          enable-cache: true
+          # The harness pin lives in this workflow, so its bytes invalidate the
+          # tool cache without an unrelated Python-project glob scan.
+          cache-dependency-glob: .github/workflows/ci.yml
+
+      - name: Install skill-eval-harness
+        run: uv tool install skill-eval-harness==0.6.0
+
+      # Model-free and agent-free: shape, fixture paths, regex compilation,
+      # prompt leakage, and ablation targets. No API key is involved.
+      - name: Validate eval manifest
+        run: skill-benchmark validate evals/shared-benchmark.json --strict-leakage --leakage-min-chars 1 --check-ablations
+
+      - name: Audit eval manifest
+        run: skill-benchmark audit-manifest evals/shared-benchmark.json --fail-on-blockers --format markdown
 
   build:
     name: Build

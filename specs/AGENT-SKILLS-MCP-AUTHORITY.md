@@ -87,9 +87,8 @@ may be described as a substitute for another.
   `app/scripts/agent-skills-smoke.ts`
 - Deployed MCP protocol and tool surface:
   `app/scripts/mcp-smoke.ts`
-- Autonomous model execution is evaluated separately from this runtime contract;
-  it must not be substituted for, or represented as, deterministic protocol
-  conformance.
+- Continuous autonomous trace validator:
+  `app/scripts/autonomous-discovery-validator.mjs`
 
 The deploy path gates staging and production on both deployed smokes. A green
 MCP smoke can no longer conceal a missing well-known catalog.
