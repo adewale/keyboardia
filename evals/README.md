@@ -77,11 +77,11 @@ default unless `--judge-model` is also supplied.
 | trigger | 4 | catalog selection | whether the model chooses the skill |
 | hidden v2 (`holdout` 6, `holdback` 6) | 12 | `with_skill`, `without_skill` | deterministic script oracles |
 
-Both answer arms receive `../app/test/fixtures/keyboardia-mcp-schema.json`, the exact
+Both answer arms receive `fixtures/keyboardia-mcp-schema.json`, the exact
 `tools/list` output of the live Worker. The baseline is therefore never
 handicapped by a hidden tool contract; the measured lift is workflow and
 collaboration safety, not schema knowledge.
-`app/src/worker/mcp.test.ts` deep-compares that fixture against the live
+`app/src/worker/mcp.test.ts` deep-compares that eval-owned fixture against the live
 `tools/list` result, so schema drift fails the unit suite rather than silently
 degrading the eval.
 

@@ -202,7 +202,7 @@ function sourceBinding() {
     { role: 'skill', path: 'app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md' },
     { role: 'manifest', path: 'evals/shared-benchmark.json' },
     { role: 'answer_matrix_policy', path: 'evals/answer-matrix-policy.json' },
-    { role: 'fixture', path: 'app/test/fixtures/keyboardia-mcp-schema.json' },
+    { role: 'fixture', path: 'evals/fixtures/keyboardia-mcp-schema.json' },
     { role: 'oracle', path: 'evals/oracles/capability-answer.mjs' },
     { role: 'oracle', path: 'evals/oracles/retired-hidden-answer.mjs' },
     { role: 'oracle', path: 'evals/oracles/hidden-v2-answer.mjs' },

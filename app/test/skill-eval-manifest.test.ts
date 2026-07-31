@@ -43,6 +43,7 @@ interface Case {
   files?: string[];
   assertions?: Assertion[];
   expected_behavior?: string[];
+  should_trigger?: boolean;
 }
 
 const manifest = JSON.parse(
@@ -96,6 +97,7 @@ describe('skill eval manifest', () => {
 
       if (testCase.kind === 'trigger') {
         expect(testCase.assertions).toBeUndefined();
+        expect(testCase.should_trigger, `${testCase.id}:should_trigger`).toBeTypeOf('boolean');
         continue;
       }
 
@@ -614,7 +616,7 @@ describe('skill eval manifest', () => {
   it('keeps the skill\'s published edit examples on the fixture surface', () => {
     const skill = readFileSync(resolve('..', manifest.skill_paths[0]!), 'utf8');
     const fixture = JSON.parse(
-      readFileSync(resolve('test/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
+      readFileSync(resolve('../evals/fixtures/keyboardia-mcp-schema.json'), 'utf8'),
     ) as {
       tools: Array<{
         name: string;
