@@ -26,8 +26,24 @@ describe('MCP Registry publication workflow', () => {
     expect(WORKFLOW).not.toMatch(/^\s*uses:\s+[^\s#]+@v\d+/m);
   });
 
-  it('refuses publication until production advertises the manifest version', () => {
+  it('uses the current discovery protocol before accepting the production version', () => {
     expect(PUBLISH_JOB).toContain('https://keyboardia.dev/mcp');
+    expect(PUBLISH_JOB).toContain("'MCP-Protocol-Version: 2026-07-28'");
+    expect(PUBLISH_JOB).toContain("'Mcp-Method: server/discover'");
+    expect(PUBLISH_JOB).toContain('"method":"server/discover"');
+    expect(PUBLISH_JOB).toContain('"io.modelcontextprotocol/protocolVersion":"2026-07-28"');
+    expect(PUBLISH_JOB).toContain('"io.modelcontextprotocol/clientInfo"');
+    expect(PUBLISH_JOB).toContain('"io.modelcontextprotocol/clientCapabilities"');
+    expect(PUBLISH_JOB).not.toContain('"method":"initialize"');
+    expect(PUBLISH_JOB).not.toContain('2025-06-18');
+    expect(PUBLISH_JOB).toContain(
+      '.result._meta["io.modelcontextprotocol/serverInfo"].name'
+    );
+    expect(PUBLISH_JOB).toContain(
+      '.result._meta["io.modelcontextprotocol/serverInfo"].version'
+    );
+    expect(PUBLISH_JOB).toContain('.result.supportedVersions | index("2026-07-28")');
+    expect(PUBLISH_JOB).not.toContain('.result.serverInfo.name');
     expect(PUBLISH_JOB).toContain("manifest_version=\"$(jq -er '.version' server.json)\"");
     expect(PUBLISH_JOB).toContain('if [ "$live_version" != "$manifest_version" ]');
   });

@@ -20,6 +20,7 @@ export const MCP_SAMPLE_IDS = [...VALID_SAMPLE_IDS].sort();
  * are `track-${Date.now()}`, so only MCP callers could reach the collision.
  */
 export const TRACK_ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+export const NEW_TRACK_ID_PATTERN = /^(?=.{10,64}$)[A-Za-z0-9][A-Za-z0-9._-]*-[0-9a-fA-F]{8,32}$/;
 
 export type McpSessionEdit =
   | {
@@ -105,6 +106,16 @@ function assertValidTrackId(trackId: string): void {
   }
 }
 
+function assertCollisionResistantNewTrackId(trackId: string): void {
+  if (!NEW_TRACK_ID_PATTERN.test(trackId)) {
+    throw new McpSessionEditError(
+      'A new track_id must end with a hyphen and at least eight hexadecimal characters.',
+      'INVALID_NEW_TRACK_ID',
+      400
+    );
+  }
+}
+
 function assertUniqueValidChanges(changes: Array<{ step: number; value: boolean }>): void {
   if (changes.length === 0 || changes.length > MAX_STEPS) {
     throw new McpSessionEditError(
@@ -165,6 +176,7 @@ export function applyMcpSessionEdit(
   assertValidTrackId(edit.track_id);
 
   if (edit.operation === 'add_track') {
+    assertCollisionResistantNewTrackId(edit.track_id);
     if (!VALID_SAMPLE_IDS.has(edit.sample_id)) {
       throw new McpSessionEditError(
         `Unknown sample_id: ${edit.sample_id}`,

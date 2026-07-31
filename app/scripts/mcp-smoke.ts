@@ -391,8 +391,10 @@ async function main(): Promise<void> {
   // first run — which the checks below compensate for by making every edit a
   // real state change rather than a re-assertion of what a prior run left.
   const runId = Date.now().toString(36);
-  const kickTrackId = 'smoke-kick';
-  const bystanderTrackId = 'smoke-bystander';
+  // add_track requires a stable collision-resistant suffix. Keep these IDs
+  // fixed so registered smoke sessions do not accumulate tracks between runs.
+  const kickTrackId = 'smoke-kick-00000001';
+  const bystanderTrackId = 'smoke-bystander-00000002';
 
   const sessionPlan = {
     explicit: `${providedSessionId} (--session)`,

@@ -69,17 +69,32 @@ The endpoint:
 The SDK, rather than Keyboardia code, implements protocol envelopes, discovery,
 header validation, JSON-RPC routing, and compatibility behavior.
 
-### Authoritative documentation
+### Normative authority map
+
+Keyboardia's origin-to-tool journey crosses a Cloudflare discovery draft and
+the final MCP protocol, then applies a narrower Keyboardia safety profile. The
+complete source ranking, compatibility decisions, and executable conformance
+map are in
+[Agent Skills discovery and MCP authority map](./AGENT-SKILLS-MCP-AUTHORITY.md).
+
+For the MCP layer, the versioned
+[MCP 2026-07-28 specification](https://modelcontextprotocol.io/specification/2026-07-28)
+is authoritative. For the preceding well-known catalog and raw artifact
+verification, Keyboardia adopts the pinned Cloudflare Agent Skills Discovery
+RFC draft v0.2.0. SDK helper names and release articles are not wire messages
+and cannot redefine either layer. Keyboardia-only requirements such as the
+exact seven tools and read/edit/read are product conformance rules, not claims
+about what every MCP implementation must do.
+
+The following sources explain the design lineage or this implementation, but
+are not substitutes for the normative specification:
 
 - [MCP project's 2026-07-28 release-candidate overview](https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/)
 - [SEP-2575: Make MCP Stateless](https://modelcontextprotocol.io/seps/2575-stateless-mcp)
 - [SEP-2567: Sessionless MCP via Explicit State Handles](https://modelcontextprotocol.io/seps/2567-sessionless-mcp)
 - [Official TypeScript SDK guide for supporting 2026-07-28](https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28)
 - [Official TypeScript SDK HTTP serving guide](https://ts.sdk.modelcontextprotocol.io/v2/serving/http)
-
-The [Microsoft App Service article](https://techcommunity.microsoft.com/blog/appsonazureblog/mcp-just-went-stateless-%E2%80%94-what-the-2026-spec-changes-about-scaling-on-app-servic/4530222)
-is useful deployment commentary, but the MCP project documents above are the
-protocol authorities.
+- [Microsoft App Service deployment commentary](https://techcommunity.microsoft.com/blog/appsonazureblog/mcp-just-went-stateless-%E2%80%94-what-the-2026-spec-changes-about-scaling-on-app-servic/4530222)
 
 The server and test client are pinned to the stable v2.0.0 SDK. Protocol tests
 exercise both the official client transport and raw modern requests so an SDK
@@ -156,8 +171,27 @@ interface EditSessionInput {
 }
 ```
 
-Every successful call returns the same compact current-session shape as
-`get_session`.
+Every successful call returns a backwards-compatible compact snapshot together
+with an acknowledgement:
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "immutable": false,
+  "tempo": 120,
+  "tracks": [],
+  "applied": true,
+  "verification_required": true,
+  "next_tool": "get_session"
+}
+```
+
+The compact snapshot preserves the original public response shape for existing
+clients. It is not authoritative verification: another collaborator can change
+the session before the response is observed. The caller must invoke
+`get_session` next for the same session. The acknowledgement fields make the
+required read → edit → read loop explicit to small agents without breaking
+clients that consume the compact fields.
 
 The tool is annotated `destructiveHint: true`: although each operation is
 narrow and retry-safe, clearing a step, overwriting an instrument, or changing
@@ -282,6 +316,12 @@ Creates an editable session through the same `createSession()` the REST API
 uses, with Keyboardia's normal defaults and no tracks. The agent then shapes it
 with `edit_session`.
 
+The returned editable URL is a bearer capability. When creation was explicitly
+requested, the agent may hand that newly created URL back privately to the
+requesting user and must label it editable/private. It must not disclose an
+existing editable URL or send any editable URL to a public or third-party
+destination. Public sharing requires `publish_session` and the immutable URL.
+
 `idempotency_key` is required and must be a UUID the caller generates. The first
 call records its new session under that key for 24 hours; replaying the key
 returns that same session instead of creating another. This is what keeps an
@@ -324,6 +364,10 @@ not reached KV yet, falling back to KV exactly as the REST route does.
 This is how an agent continues from published work: read the immutable source,
 remix, then edit only the remix.
 
+As with creation, an explicitly requested remix may return its new editable URL
+privately to the requester. That narrow lifecycle handoff does not authorize
+echoing the source capability or publishing an editable link.
+
 Each call deliberately produces a separate remix, so the tool is not marked
 idempotent.
 
@@ -336,8 +380,9 @@ idempotent.
 ```
 
 Wraps `publishSessionFromState()`, freezing current state into a new immutable
-session. The response carries both the new immutable URL and `source_url`, which
-stays editable.
+session. The response carries only the new immutable session and URL. It does
+not echo the editable source UUID or URL; the caller already supplied that
+bearer capability and must keep it out of public-facing output.
 
 Publishing is never an implicit side effect of editing or exporting — an agent
 calls this only when someone explicitly asks. Publishing an already-published
@@ -1059,7 +1104,9 @@ stop and reconsider whether Keyboardia already has the required primitive.
 
 - A pinned official client negotiates MCP `2026-07-28`.
 - No response requires or emits `Mcp-Session-Id`.
-- `tools/list` advertises exactly `get_session` and `edit_session`.
+- `tools/list` advertises exactly the seven tools canonically defined in
+  section 4: `get_session`, `edit_session`, `create_session`, `remix_session`,
+  `publish_session`, `export_midi`, and `analyze_session`.
 - No resources or prompts are advertised.
 - `edit_session` accepts exactly `add_track`, `set_track_instrument`,
   `set_steps`, and `set_tempo`.

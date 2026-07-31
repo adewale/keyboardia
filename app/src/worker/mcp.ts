@@ -9,6 +9,7 @@ import type { Env } from './types';
 import {
   MCP_SAMPLE_IDS,
   McpSessionEditError,
+  NEW_TRACK_ID_PATTERN,
   TRACK_ID_PATTERN,
   compactMcpSession,
   type CompactMcpSession,
@@ -217,6 +218,11 @@ const trackIdSchema = z.string()
   .describe(
     'For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session.'
   );
+const newTrackIdSchema = z.string()
+  .regex(NEW_TRACK_ID_PATTERN)
+  .describe(
+    'Generate a fresh collision-resistant ID that ends with at least eight hexadecimal characters, such as agent-kick-a7f3c29d. Generate it once and reuse it on retries.'
+  );
 const sampleIdSchema = z.enum(sampleIds).describe(
   'The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.'
 );
@@ -226,7 +232,7 @@ const editSchema = z.object({
   edit: z.discriminatedUnion('operation', [
     z.object({
       operation: z.literal('add_track'),
-      track_id: trackIdSchema,
+      track_id: newTrackIdSchema,
       sample_id: sampleIdSchema,
       name: z.string().trim().min(1).max(MAX_TRACK_NAME_LENGTH).optional()
         .describe('Optional display name. The instrument name is used when omitted.'),
@@ -294,6 +300,19 @@ function toolPayload(payload: Record<string, unknown>) {
   };
 }
 
+function editSuccess(session: Session) {
+  return toolPayload({
+    // Keep the compact post-edit snapshot for clients written against the
+    // original MCP response. It is a compatibility view, not verification:
+    // another collaborator can change the session before this reaches the
+    // caller, so get_session remains the only authoritative post-state read.
+    ...compactMcpSession(session),
+    applied: true,
+    verification_required: true,
+    next_tool: 'get_session',
+  });
+}
+
 /**
  * Every session-lifecycle tool answers with the canonical /s/{session_id} URL
  * alongside the resulting music, so an agent always has something clickable to
@@ -356,8 +375,9 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
   }, {
     instructions: [
       'Read an existing session with get_session before editing it.',
+      'After every edit_session attempt, call get_session next for the same session before another edit or a final answer; the compact edit_session result is not verification.',
       'Step indexes are zero-based; preserve every track and step the user did not ask to change.',
-      'For add_track, choose a stable unique track_id and reuse it on retry. For set_steps and set_track_instrument, use a track_id returned by get_session.',
+      'For add_track, generate a stable collision-resistant track_id ending in at least eight hexadecimal characters and reuse it on retry. For set_steps and set_track_instrument, use a track_id returned by get_session.',
       'Only publish when the user explicitly asks. A session UUID grants the same access as its share URL, so do not expose it unnecessarily.',
     ].join(' '),
   });
@@ -390,6 +410,9 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       title: 'Edit Keyboardia session',
       description: [
         'Make one narrow, retry-safe edit to an existing collaborative session.',
+        'After every attempt, the next Keyboardia call must be get_session for the same session.',
+        'A successful call includes a backwards-compatible compact snapshot plus an acknowledgement.',
+        'That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next.',
         'Supported operations: add_track, set_track_instrument, set_steps, and set_tempo.',
         'set_steps changes only the named steps; it never replaces a track or session.',
         'set_track_instrument replaces only a track\'s sound source, keeping its'
@@ -405,7 +428,8 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
     },
     async ({ session_id, edit }) => {
       try {
-        return toolSuccess(compactMcpSession(await sessions.editSession(session_id, edit)));
+        const session = await sessions.editSession(session_id, edit);
+        return editSuccess(session);
       } catch (error) {
         return toolError(error);
       }
@@ -464,10 +488,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
     async ({ session_id }) => {
       try {
         const remix = await sessions.remixSession(session_id);
-        return lifecycleSuccess(baseUrl, remix, {
-          source_session_id: session_id,
-          source_url: sessionUrl(baseUrl, session_id),
-        });
+        return lifecycleSuccess(baseUrl, remix);
       } catch (error) {
         return toolError(error);
       }
@@ -498,10 +519,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
     async ({ session_id }) => {
       try {
         const published = await sessions.publishSession(session_id);
-        return lifecycleSuccess(baseUrl, published, {
-          source_session_id: session_id,
-          source_url: sessionUrl(baseUrl, session_id),
-        });
+        return lifecycleSuccess(baseUrl, published);
       } catch (error) {
         return toolError(error);
       }

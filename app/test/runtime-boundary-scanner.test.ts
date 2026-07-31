@@ -134,6 +134,30 @@ describe('runtime boundary scanner', () => {
     })).toEqual(['Shared resources: shared/constants.ts -> resource:./presentation.css']);
   });
 
+  it('classifies markdown as a resource and keeps allow-lists exact', () => {
+    const graph = scanProductionGraph(SRC_ROOT, {
+      sourceOverrides: new Map([
+        ['shared/constants.ts', `
+          import './allowed.md';
+          import './neighbor.md';
+        `],
+      ]),
+    });
+
+    expect(graph.unresolvedRelativeImports).not.toEqual(expect.arrayContaining([
+      { importer: 'shared/constants.ts', specifier: './allowed.md' },
+      { importer: 'shared/constants.ts', specifier: './neighbor.md' },
+    ]));
+    expect(findResourceImportViolations({
+      policyName: 'Shared resources',
+      imports: graph.resourceImports,
+      appliesTo: module => module === 'shared/constants.ts',
+      isAllowed: specifier => specifier === './allowed.md',
+    })).toEqual([
+      'Shared resources: shared/constants.ts -> resource:./neighbor.md',
+    ]);
+  });
+
   it('records Vite URL workers and compiler-emitted JSX runtime imports', () => {
     expect(extractModuleImports(`
       const worker = new Worker(new URL('./midi.worker.ts', import.meta.url));

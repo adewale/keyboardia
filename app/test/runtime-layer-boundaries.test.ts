@@ -35,6 +35,10 @@ const WORKER_PACKAGES = new Set([
 ]);
 const SHARED_PACKAGES = new Set(['midi-writer-js']);
 const STATE_PACKAGES = new Set(['react']);
+const WORKER_TEXT_RESOURCES = new Set([
+  '../../public/.well-known/agent-skills/index.json',
+  '../../public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md',
+]);
 
 function packageName(specifier: string): string {
   const parts = specifier.split('/');
@@ -132,6 +136,8 @@ describe('runtime dependency boundaries', () => {
       policyName: 'Runtime-neutral resources',
       imports: graph.resourceImports,
       appliesTo: module => runtimeCapabilityModules.includes(module),
+      isAllowed: (specifier, module) =>
+        module === 'worker/agent-skills.ts' && WORKER_TEXT_RESOURCES.has(specifier),
     })).toEqual([]);
   });
 

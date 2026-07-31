@@ -98,8 +98,10 @@ jobs:
             --request POST \
             --header 'Content-Type: application/json' \
             --header 'Accept: application/json, text/event-stream' \
-            --header 'MCP-Protocol-Version: 2025-06-18' \
-            --data '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"keyboardia-registry-gate","version":"1.0.0"}}}' \
+            --header 'MCP-Protocol-Version: 2026-07-28' \
+            --header 'Mcp-Method: server/discover' \
+            --header 'Mcp-Name: keyboardia-registry-gate' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"keyboardia-registry-gate","version":"1.0.0"},"io.modelcontextprotocol/clientCapabilities":{}}}}' \
             --output "$response_file" \
             https://keyboardia.dev/mcp
 
@@ -108,9 +110,17 @@ jobs:
           else
             sed -n 's/^data: //p' "$response_file" | head -n 1 > "$payload_file"
           fi
-          live_name="$(jq -er '.result.serverInfo.name' "$payload_file")"
-          live_version="$(jq -er '.result.serverInfo.version' "$payload_file")"
+          live_protocol_supported="$(
+            jq -er '.result.supportedVersions | index("2026-07-28") != null' "$payload_file"
+          )"
+          live_name="$(
+            jq -er '.result._meta["io.modelcontextprotocol/serverInfo"].name' "$payload_file"
+          )"
+          live_version="$(
+            jq -er '.result._meta["io.modelcontextprotocol/serverInfo"].version' "$payload_file"
+          )"
           manifest_version="$(jq -er '.version' server.json)"
+          test "$live_protocol_supported" = true
           test "$live_name" = keyboardia
           if [ "$live_version" != "$manifest_version" ]; then
             echo "Production identifies as keyboardia@$live_version, but server.json declares $manifest_version" >&2

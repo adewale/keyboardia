@@ -13,9 +13,9 @@ import { sessionTrackToTrack } from '../src/types';
 import { applyMcpSessionEdit } from '../src/worker/mcp-edits';
 
 const MCP_SAMPLED_INSTRUMENTS = [
-  ['jazz-brush-snare', 'sampled:brushes-snare', 'brushes-snare'],
-  ['jazz-ride-cymbal', 'sampled:acoustic-ride', 'acoustic-ride'],
-  ['take5-alto-sax', 'sampled:alto-sax', 'alto-sax'],
+  ['jazz-brush-snare-a7f3c29d', 'sampled:brushes-snare', 'brushes-snare'],
+  ['jazz-ride-cymbal-b8e4d30f', 'sampled:acoustic-ride', 'acoustic-ride'],
+  ['take5-alto-sax-c9f5e410', 'sampled:alto-sax', 'alto-sax'],
 ] as const;
 
 /**
