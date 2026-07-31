@@ -18,6 +18,9 @@ import {
 
 const SESSION_ID = '00000000-0000-4000-8000-000000000001';
 const PROTOCOL_VERSION = '2026-07-28';
+const REGISTRY_MANIFEST = JSON.parse(
+  readFileSync(new URL('../../../server.json', import.meta.url), 'utf8')
+) as { name: string; version: string };
 
 function modernRequest(
   method: string,
@@ -214,6 +217,10 @@ describe('stateless MCP endpoint', () => {
     ]);
     expect(client.getServerCapabilities()?.resources).toBeUndefined();
     expect(client.getServerCapabilities()?.prompts).toBeUndefined();
+    expect(client.getServerVersion()).toEqual({
+      name: 'keyboardia',
+      version: REGISTRY_MANIFEST.version,
+    });
     const editTool = listed.tools.find((tool) => tool.name === 'edit_session');
     expect(JSON.stringify(editTool?.inputSchema))
       .toContain('"kick"');
@@ -226,6 +233,8 @@ describe('stateless MCP endpoint', () => {
       destructiveHint: true,
       idempotentHint: true,
     });
+    expect(listed.tools.find((tool) => tool.name === 'publish_session')?.annotations)
+      .toMatchObject({ readOnlyHint: false, idempotentHint: false, openWorldHint: true });
     expect(client.getInstructions()).toContain('Read an existing session with get_session');
     expect(client.getInstructions()).toContain('After every edit_session attempt');
     expect(client.getInstructions()).toContain('Only publish when the user explicitly asks');
