@@ -26,6 +26,7 @@
  * Usage:
  *   node evals/run-benchmark.mjs --agent claude --repeats 3
  *   node evals/run-benchmark.mjs --agent-cmd './my-adapter.sh' --models gpt-5.4
+ *   node evals/run-benchmark.mjs --agent stub --quiet
  *   node evals/run-benchmark.mjs --rescore results.json --out regraded.json
  */
 import { spawn, spawnSync } from 'node:child_process';
@@ -141,6 +142,7 @@ function parseArgs(argv) {
     judgeCmdOverridden: false,
     judgeModel: null,
     judge: true,
+    quiet: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
@@ -174,6 +176,9 @@ function parseArgs(argv) {
         break;
       case '--no-judge':
         options.judge = false;
+        break;
+      case '--quiet':
+        options.quiet = true;
         break;
       case '--models':
         options.models = value.split(',').map((model) => model.trim()).filter(Boolean);
@@ -1247,9 +1252,11 @@ async function main() {
         capabilities,
       });
       done += 1;
-      process.stderr.write(
-        `  [${done}/${jobs.length}] ${job.model ?? 'default'} ${job.testCase.id} ${job.variant}\n`
-      );
+      if (!options.quiet) {
+        process.stderr.write(
+          `  [${done}/${jobs.length}] ${job.model ?? 'default'} ${job.testCase.id} ${job.variant}\n`
+        );
+      }
       return { ...base, ...outcome };
     }
     const prompt = isTrigger
@@ -1274,9 +1281,11 @@ async function main() {
     }
 
     done += 1;
-    process.stderr.write(
-      `  [${done}/${jobs.length}] ${job.model ?? 'default'} ${job.testCase.id} ${job.variant}\n`
-    );
+    if (!options.quiet) {
+      process.stderr.write(
+        `  [${done}/${jobs.length}] ${job.model ?? 'default'} ${job.testCase.id} ${job.variant}\n`
+      );
+    }
 
     if (!result.ok) {
       return { ...base, ok: false, scorable: false, prompt, attempts, error: result.error };
@@ -1376,7 +1385,10 @@ function emit(runs, options, manifest, receiptContext = null) {
   }
   mkdirSync(dirname(options.out), { recursive: true });
   writeFileSync(options.out, JSON.stringify({ options, summary, runs }, null, 2));
-  process.stdout.write(renderSummary(summary, options) + '\n');
+  const rendered = options.quiet
+    ? renderQuietSummary(summary, options)
+    : renderSummary(summary, options);
+  process.stdout.write(rendered + '\n');
   process.stderr.write(`\nFull transcript written to ${options.out}\n`);
 }
 
@@ -1496,6 +1508,19 @@ export function summarize(runs, options, manifest) {
 
 function percent(value) {
   return value == null ? '  n/a' : `${(value * 100).toFixed(1).padStart(5)}%`;
+}
+
+export function renderQuietSummary(summary, options) {
+  const calls = summary.byModel.reduce((total, entry) => {
+    const answerRuns = Object.values(entry.variants)
+      .reduce((subtotal, variant) => subtotal + (variant.runs ?? 0), 0);
+    return total + answerRuns + (entry.trigger.runs ?? 0);
+  }, 0);
+  return [
+    `Eval complete: ${calls} calls across ${summary.byModel.length} model(s).`,
+    `errors=${summary.errors} unscorable_pairs=${summary.unscorablePairs} ` +
+      `splits=${summary.splits.join(',')} repeats=${options.repeats}`,
+  ].join('\n');
 }
 
 function renderSummary(summary, options) {

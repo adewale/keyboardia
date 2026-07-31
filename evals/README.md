@@ -13,8 +13,13 @@ Ollama server, or your own in-house harness is a flag, not a fork.
 Zero credentials, zero spend — proves your checkout works:
 
 ```bash
+npm ci --ignore-scripts --prefix evals
 node evals/run-benchmark.mjs --agent stub
 ```
+
+Use `--quiet` for CI or other smoke runs that need the final call/error summary
+without one progress line per agent call. The full JSON transcript is still
+written to `--out`.
 
 Against a real agent:
 

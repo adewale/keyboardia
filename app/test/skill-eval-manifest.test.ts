@@ -569,3 +569,40 @@ describe('skill eval manifest', () => {
     }
   });
 });
+
+describe('offline eval CI contract', () => {
+  it('installs only the evaluator schema dependency', () => {
+    const packageJson = JSON.parse(
+      readFileSync(resolve(evalsDir, 'package.json'), 'utf8'),
+    ) as { dependencies: Record<string, string> };
+    const lock = JSON.parse(
+      readFileSync(resolve(evalsDir, 'package-lock.json'), 'utf8'),
+    ) as { packages: Record<string, { version?: string; integrity?: string }> };
+
+    expect(packageJson.dependencies).toEqual({ ajv: '8.18.0' });
+    expect(Object.keys(lock.packages).sort()).toEqual([
+      '',
+      'node_modules/ajv',
+      'node_modules/fast-deep-equal',
+      'node_modules/fast-uri',
+      'node_modules/json-schema-traverse',
+      'node_modules/require-from-string',
+    ]);
+    expect(lock.packages['node_modules/ajv']).toMatchObject({
+      version: '8.18.0',
+      integrity: expect.stringMatching(/^sha512-/),
+    });
+  });
+
+  it('pins the lightweight, quiet evaluator job', () => {
+    const workflow = readFileSync(resolve('../.github/workflows/ci.yml'), 'utf8');
+
+    expect(workflow).toContain('cache-dependency-path: evals/package-lock.json');
+    expect(workflow).toMatch(
+      /Install eval validation dependencies[\s\S]*?working-directory: \.\/evals/,
+    );
+    expect(workflow).toContain('--agent stub --repeats 1 --quiet');
+    expect(workflow).toContain("version: '0.12.0'");
+    expect(workflow).toContain('cache-dependency-glob: .github/workflows/ci.yml');
+  });
+});

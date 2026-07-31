@@ -6,8 +6,9 @@
  * third-party adapter breaks silently and the evals quietly become
  * Claude-only — which is exactly what this guards.
  */
-import { execFileSync } from 'node:child_process';
-import { readdirSync, readFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 // @ts-expect-error -- dependency-free ESM adapter helper, checked here rather than by tsc
@@ -71,6 +72,32 @@ describe('eval adapter contract', () => {
       expect(readme, field).toContain(field);
     }
     expect(readme).toContain('run-subagent --agent-cmd');
+  });
+
+  it('keeps CI smoke output concise without dropping the transcript', () => {
+    const tempRoot = mkdtempSync(resolve(tmpdir(), 'keyboardia-eval-quiet-'));
+    const transcript = resolve(tempRoot, 'run.json');
+    try {
+      const result = spawnSync('node', [
+        resolve('../evals/run-benchmark.mjs'),
+        '--agent', 'stub',
+        '--cases', 'answer-collision-resistant-track',
+        '--quiet',
+        '--out', transcript,
+      ], {
+        cwd: resolve('..'),
+        encoding: 'utf8',
+      });
+
+      expect(result.status, result.stderr).toBe(0);
+      expect(result.stderr).toContain('Running 2 agent calls');
+      expect(result.stderr).not.toMatch(/\[\d+\/2\]/);
+      expect(result.stdout).toContain('Eval complete: 2 calls across 1 model(s).');
+      expect(result.stdout).toContain('errors=0 unscorable_pairs=0');
+      expect(JSON.parse(readFileSync(transcript, 'utf8')).runs).toHaveLength(2);
+    } finally {
+      rmSync(tempRoot, { recursive: true, force: true });
+    }
   });
 
   it('keeps provider labels out of numeric harness telemetry', () => {
