@@ -605,6 +605,10 @@ describe('offline eval CI contract', () => {
     expect(workflow).toMatch(
       /Install eval validation dependencies[\s\S]*?working-directory: \.\/evals/,
     );
+    expect(workflow).toContain('npm ci --ignore-scripts --audit=false');
+    expect(workflow).toMatch(
+      /Audit eval validation dependencies[\s\S]*?npm audit --audit-level=high/,
+    );
     expect(workflow).toContain('--agent stub --repeats 1 --quiet');
     expect(workflow).toContain("version: '0.12.0'");
     expect(workflow).toContain('cache-dependency-glob: .github/workflows/ci.yml');

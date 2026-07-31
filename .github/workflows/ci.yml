@@ -144,7 +144,11 @@ jobs:
           cache-dependency-path: evals/package-lock.json
 
       - name: Install eval validation dependencies
-        run: npm ci --ignore-scripts
+        run: npm ci --ignore-scripts --audit=false
+        working-directory: ./evals
+
+      - name: Audit eval validation dependencies
+        run: npm audit --audit-level=high
         working-directory: ./evals
 
       # Proves the eval pipeline runs end to end with no provider, no
