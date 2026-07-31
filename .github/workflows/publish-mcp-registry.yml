@@ -64,7 +64,7 @@ jobs:
 
       - name: Verify the publication input
         run: |
-          test "$(find registry-artifact -mindepth 1 -maxdepth 1 -exec printf x \\; | wc -c)" -eq 1
+          test "$(find registry-artifact -mindepth 1 -maxdepth 1 -exec printf x \; | wc -c)" -eq 1
           test -f registry-artifact/server.json
           test ! -L registry-artifact/server.json
           cp registry-artifact/server.json server.json

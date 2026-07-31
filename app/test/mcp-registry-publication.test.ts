@@ -1,4 +1,13 @@
-import { readFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 const WORKFLOW = readFileSync(
@@ -7,6 +16,17 @@ const WORKFLOW = readFileSync(
 );
 const VALIDATE_JOB = WORKFLOW.split('\n  validate:\n', 2)[1]?.split('\n  publish:\n', 1)[0] ?? '';
 const PUBLISH_JOB = WORKFLOW.split('\n  publish:\n', 2)[1] ?? '';
+const VERIFY_INPUT_SCRIPT = (
+  PUBLISH_JOB
+    .split('      - name: Verify the publication input\n        run: |\n', 2)[1]
+    ?.split('\n\n      - name:', 1)[0]
+    .replace(/^ {10}/gm, '')
+  ?? ''
+);
+const SERVER_MANIFEST = readFileSync(
+  new URL('../../server.json', import.meta.url),
+  'utf8'
+);
 
 describe('MCP Registry publication workflow', () => {
   it('keeps validation unprivileged and passes only its validated manifest to the OIDC job', () => {
@@ -24,6 +44,32 @@ describe('MCP Registry publication workflow', () => {
       'actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c'
     );
     expect(WORKFLOW).not.toMatch(/^\s*uses:\s+[^\s#]+@v\d+/m);
+  });
+
+  it('executes the exact publication-input shell and rejects extra artifact files', () => {
+    expect(VERIFY_INPUT_SCRIPT).not.toBe('');
+    const worktree = mkdtempSync(join(tmpdir(), 'keyboardia-registry-input-'));
+    const artifactDirectory = join(worktree, 'registry-artifact');
+    mkdirSync(artifactDirectory);
+    writeFileSync(join(artifactDirectory, 'server.json'), SERVER_MANIFEST);
+
+    try {
+      execFileSync(
+        'bash',
+        ['-e', '-u', '-o', 'pipefail', '-c', VERIFY_INPUT_SCRIPT],
+        { cwd: worktree, stdio: 'pipe' }
+      );
+      expect(readFileSync(join(worktree, 'server.json'), 'utf8')).toBe(SERVER_MANIFEST);
+
+      writeFileSync(join(artifactDirectory, 'unexpected.txt'), 'unexpected');
+      expect(() => execFileSync(
+        'bash',
+        ['-e', '-u', '-o', 'pipefail', '-c', VERIFY_INPUT_SCRIPT],
+        { cwd: worktree, stdio: 'pipe' }
+      )).toThrow();
+    } finally {
+      rmSync(worktree, { recursive: true, force: true });
+    }
   });
 
   it('uses the current discovery protocol before accepting the production version', () => {
