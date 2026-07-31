@@ -346,7 +346,7 @@ describe('stateless MCP endpoint', () => {
     const client = await connectClient(new MemorySessionAdapter(), []);
     const listed = await client.listTools();
     const fixture = JSON.parse(readFileSync(
-      new URL('../../test/fixtures/keyboardia-mcp-schema.json', import.meta.url),
+      new URL('../../../evals/fixtures/keyboardia-mcp-schema.json', import.meta.url),
       'utf8'
     )) as {
       protocol_date: string;
