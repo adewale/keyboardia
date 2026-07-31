@@ -73,7 +73,7 @@ default unless `--judge-model` is also supplied.
 
 | Slice | Unique cases | Arms | Scored by |
 | --- | ---: | --- | --- |
-| public answer regressions | 16 | `with_skill`, `without_skill` | script / structured / guard + soft judge |
+| public answer regressions | 17 | `with_skill`, `without_skill` | script / structured / guard + soft judge |
 | trigger | 4 | catalog selection | whether the model chooses the skill |
 | hidden v2 (`holdout` 6, `holdback` 6) | 12 | `with_skill`, `without_skill` | deterministic script oracles |
 

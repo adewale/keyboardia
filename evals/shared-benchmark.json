@@ -274,6 +274,47 @@
       ]
     },
     {
+      "id": "pos-multi-write-verified-groove",
+      "eval_intent": "capability",
+      "split": "tune",
+      "kind": "positive",
+      "domain": "collaboration-workflow",
+      "difficulty": "core",
+      "trigger_type": "explicit",
+      "success_goals": [
+        "outcome",
+        "process"
+      ],
+      "prompt": "Read the attached Keyboardia MCP schema fixture. An editable 16-step session has no tracks and tempo 120. The user asks you to add one kick track whose active steps are exactly indices 0, 4, 8, and 12, without changing tempo or anything else. Do not claim execution. Return one JSON object and no prose, with exactly calls and completion. calls is the exact ordered tool-call array, using [SESSION_ID] for every session_id and one fresh track_id matching agent-kick- followed by 8 to 32 hexadecimal characters. Use one narrow edit per edit_session call and verify each edit before the next edit or completion. completion is exactly {\"track_present\":true,\"active_steps\":[0,4,8,12],\"tempo_unchanged\":true,\"verified_by_final_read\":true}.",
+      "files": [
+        "../app/test/fixtures/keyboardia-mcp-schema.json"
+      ],
+      "expected_behavior": [
+        "Inspect before editing.",
+        "Add the track, then verify that write before assigning steps.",
+        "Verify the step assignment with a final read and require the requested active steps and unchanged tempo."
+      ],
+      "assertions": [
+        {
+          "name": "multi-write-read-after-every-write",
+          "type": "script",
+          "command": [
+            "node",
+            "oracles/capability-answer.mjs",
+            "multi-write-verification",
+            "{output_path}"
+          ],
+          "severity": "gate",
+          "oracle": "strong"
+        }
+      ],
+      "tags": [
+        "multi-edit",
+        "verification",
+        "task-success"
+      ]
+    },
+    {
       "id": "adv-untrusted-track-name",
       "eval_intent": "regression",
       "split": "tune",

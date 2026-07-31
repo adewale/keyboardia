@@ -281,6 +281,65 @@ export function publishedSessionAnswer(text) {
   return pass('immutable source is remixed before the shaker edit targets only the remix');
 }
 
+export function multiWriteVerificationAnswer(text) {
+  const parsed = parse(text);
+  if (parsed.error) return fail(parsed.error);
+  const value = parsed.value;
+  if (!exactKeys(value, ['calls', 'completion'])) {
+    return fail('expected exactly calls and completion');
+  }
+  if (!Array.isArray(value.calls) || value.calls.length !== 5) {
+    return fail('calls must contain exactly five entries');
+  }
+
+  const sessionId = '[SESSION_ID]';
+  const [initialRead, addCall, addVerification, stepsCall, finalRead] = value.calls;
+  if (!getSessionCall(initialRead, sessionId)) {
+    return fail('first call must inspect [SESSION_ID]');
+  }
+  if (!editSessionCall(addCall, sessionId)) {
+    return fail('second call must edit [SESSION_ID]');
+  }
+  const add = addCall.arguments.edit;
+  if (!exactKeys(add, ['operation', 'track_id', 'sample_id'])
+      || add.operation !== 'add_track' || add.sample_id !== 'kick'
+      || typeof add.track_id !== 'string' || add.track_id.length > 64
+      || !/^agent-kick-[0-9a-fA-F]{8,32}$/.test(add.track_id)) {
+    return fail('second call must add one kick with a fresh bounded agent-kick ID');
+  }
+  if (!getSessionCall(addVerification, sessionId)) {
+    return fail('add_track must be followed immediately by get_session');
+  }
+  if (!editSessionCall(stepsCall, sessionId)) {
+    return fail('fourth call must edit [SESSION_ID]');
+  }
+  const setSteps = stepsCall.arguments.edit;
+  if (!exactKeys(setSteps, ['operation', 'track_id', 'changes'])
+      || setSteps.operation !== 'set_steps' || setSteps.track_id !== add.track_id
+      || !Array.isArray(setSteps.changes) || setSteps.changes.length !== 4) {
+    return fail('fourth call must assign four steps on the newly added track');
+  }
+  const normalizedChanges = setSteps.changes
+    .map((change) => exactKeys(change, ['step', 'value']) ? change : null)
+    .sort((left, right) => (left?.step ?? 0) - (right?.step ?? 0));
+  const expectedChanges = [0, 4, 8, 12].map((step) => ({ step, value: true }));
+  if (!isDeepStrictEqual(normalizedChanges, expectedChanges)) {
+    return fail('set_steps changes must assign exactly indices 0, 4, 8, and 12');
+  }
+  if (!getSessionCall(finalRead, sessionId)) {
+    return fail('set_steps must be followed immediately by a final get_session');
+  }
+  if (!isDeepStrictEqual(value.completion, {
+    track_present: true,
+    active_steps: [0, 4, 8, 12],
+    tempo_unchanged: true,
+    verified_by_final_read: true,
+  })) {
+    return fail('completion must require the exact verified track, steps, and unchanged tempo');
+  }
+  return pass('inspect/add/verify/set-steps/verify trace proves the complete narrow task');
+}
+
 export function unsupportedEditsAnswer(text) {
   const parsed = parse(text);
   if (parsed.error) return fail(parsed.error);
@@ -328,6 +387,7 @@ export const CAPABILITY_ORACLES = {
   'concurrent-delta': concurrentDeltaAnswer,
   'partial-track-limit': partialTrackLimitAnswer,
   'published-session': publishedSessionAnswer,
+  'multi-write-verification': multiWriteVerificationAnswer,
   'unsupported-edits': unsupportedEditsAnswer,
   'step-beyond-loop': stepBeyondLoopAnswer,
 };

@@ -487,6 +487,68 @@ describe('skill eval manifest', () => {
       '"edit":{"operation":"add_track","track_id":"agent-shaker-a1b2c3d4","sample_id":"shaker"}}}}',
     ].join(''))).toBe(false);
 
+    const verifiedGroove = {
+      calls: [
+        { tool: 'get_session', arguments: { session_id: '[SESSION_ID]' } },
+        {
+          tool: 'edit_session',
+          arguments: {
+            session_id: '[SESSION_ID]',
+            edit: {
+              operation: 'add_track',
+              track_id: 'agent-kick-a1b2c3d4',
+              sample_id: 'kick',
+            },
+          },
+        },
+        { tool: 'get_session', arguments: { session_id: '[SESSION_ID]' } },
+        {
+          tool: 'edit_session',
+          arguments: {
+            session_id: '[SESSION_ID]',
+            edit: {
+              operation: 'set_steps',
+              track_id: 'agent-kick-a1b2c3d4',
+              changes: [0, 4, 8, 12].map((step) => ({ step, value: true })),
+            },
+          },
+        },
+        { tool: 'get_session', arguments: { session_id: '[SESSION_ID]' } },
+      ],
+      completion: {
+        track_present: true,
+        active_steps: [0, 4, 8, 12],
+        tempo_unchanged: true,
+        verified_by_final_read: true,
+      },
+    };
+    expect(score('pos-multi-write-verified-groove', verifiedGroove)).toBe(true);
+    expect(score('pos-multi-write-verified-groove', {
+      ...verifiedGroove,
+      calls: verifiedGroove.calls.filter((_, index) => index !== 2),
+    })).toBe(false);
+    expect(score('pos-multi-write-verified-groove', {
+      ...verifiedGroove,
+      calls: verifiedGroove.calls.slice(0, 4),
+    })).toBe(false);
+    expect(score('pos-multi-write-verified-groove', {
+      ...verifiedGroove,
+      calls: verifiedGroove.calls.map((call, index) => index === 3 ? {
+        ...call,
+        arguments: {
+          ...call.arguments,
+          edit: {
+            ...call.arguments.edit,
+            track_id: 'agent-kick-deadbeef',
+          },
+        },
+      } : call),
+    })).toBe(false);
+    expect(score('pos-multi-write-verified-groove', {
+      ...verifiedGroove,
+      completion: { ...verifiedGroove.completion, tempo_unchanged: false },
+    })).toBe(false);
+
     const unsupported = {
       unsupported: { delete_track: true, rename_track: true, reverb: true },
       supported_alternative: { tool: 'get_session', arguments: { session_id: '[SESSION_ID]' } },
