@@ -13,6 +13,7 @@ const expectedNames = [
   'ChevronUp',
   'Close',
   'CopyLink',
+  'DragHandle',
   'FxActive',
   'FxBypass',
   'Minus',
@@ -56,6 +57,7 @@ describe('semantic icon exports', () => {
     ['Stop', icons.Stop, 'lucide-square'],
     ['QR code', icons.Qr, 'lucide-qr-code'],
     ['Scale lock', icons.ScaleLock, 'lucide-lock'],
+    ['Drag handle', icons.DragHandle, 'lucide-grip-vertical'],
   ])('maps %s to the intended Lucide glyph', (_name, Icon, className) => {
     render(<Icon data-testid="icon" aria-hidden="true" />);
     expect(screen.getByTestId('icon').classList.contains(className)).toBe(true);
