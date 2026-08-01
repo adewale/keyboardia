@@ -9,27 +9,35 @@ is what outlived them: one open gap, one retraction, and the reviewed geometry.
 Full history is on the branch `claude/keyboardia-icon-replacement-4pdqvo` if the discarded material
 is ever wanted.
 
-## 1. Open: `⠿` and `⚙` were never decided
+## 1. The drag handle `⠿` was never decided
 
 Re-scanning `app/src/components` against `main` (`b2ea754`) turns up 15 remaining glyph
 occurrences. Most are not icon candidates — the `×` in `StepCountDropdown`'s `7×2` / `5×3` labels
 and in `TrackRow`'s `harmonicity 1.5×` are multiplication signs and correctly stay text. The
 parameter-lock badges (`⌒ ↑ ↓ − +`) and the `♪` marks are settled as text by the shipped spec.
 
-Two are neither:
+One is neither:
 
 | Mark | Site | |
 |---|---|---|
 | `⠿` | `TrackRow.tsx:600` | drag handle |
-| `⚙` | `TrackRow.tsx:707` | pattern-tools toggle |
 
-They appear in **none** of the shipped spec's three lists — not the replacement table, not the
-"remains text" list — and in none of the 23 exports in `app/src/icons/index.ts`. They were not
-decided either way; they were missed.
+It appears in **none** of the shipped spec's lists — not the replacement table, not the "remains
+text" list — and in none of the 23 exports in `app/src/icons/index.ts`. It was not decided either
+way; it was missed. `GripVertical` covers it, so resolving it needs no custom drawing layer: one
+barrel export, one glyph swap. **Done in PR #85.**
 
-Both are ordinary generic concepts with stock Lucide equivalents (`GripVertical`, `Settings2`), so
-resolving them needs no custom drawing layer and fits the shipped architecture as-is: two barrel
-exports, two glyph swaps. This is the actionable follow-up.
+> **Correction.** An earlier version of this file also listed `⚙` (`TrackRow.tsx:707`,
+> pattern-tools toggle) as undecided. That was a misreading: the shipped spec's "remains text or
+> existing domain marks" list includes *"the compact desktop velocity and pattern-tools marks"* —
+> which covers both `▎` and `⚙`. The gear is settled, and PR #85 leaves it alone.
+>
+> Separately worth raising, but not acted on: `⚙` is U+2699, an emoji-presentation codepoint that
+> some platforms render in colour — the precise failure mode the icon system exists to prevent, and
+> in tension with the spec's own first goal ("replace only platform-dependent glyphs whose SVG
+> equivalent is materially clearer"). Reopening it is a decision for `specs/ICON-SYSTEM.md`, not a
+> gap to fill quietly. Note also that Lucide's `Settings2` is a **sliders** icon, not a gear — the
+> like-for-like replacement is `Settings`.
 
 ## 2. Retracted: the track-row density argument
 
