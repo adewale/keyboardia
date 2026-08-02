@@ -171,4 +171,8 @@ Client A ←→ Durable Object ←→ Client B
 
 ## License
 
-Private - All rights reserved
+[MIT](LICENSE)
+
+Bundled instrument samples are third-party content with their own licenses
+(CC0, public domain, and similar free-use terms), documented in
+[app/public/instruments/LICENSE.md](app/public/instruments/LICENSE.md).

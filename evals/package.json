@@ -1,6 +1,7 @@
 {
   "name": "keyboardia-evals",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "dependencies": {
     "ajv": "8.18.0"
