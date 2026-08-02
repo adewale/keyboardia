@@ -2,8 +2,9 @@
 
 **Status**: PROPOSED
 **Date**: 2026-08-02
-**Related**: `SYNTHESIS-ENGINE.md`, `HELD-NOTES.md`, `research/TONEJS-COMPARISON.md`,
-`research/AUDIO_ENGINEERING_101.md` §7, `../docs/AUDIO-ENGINEERING-PATTERNS.md`
+**Related**: `SYNTHESIS-ENGINE.md`, `HELD-NOTES.md`, `SESSION-NOTATION.md`,
+`research/TONEJS-COMPARISON.md`, `research/AUDIO_ENGINEERING_101.md` §7,
+`../docs/AUDIO-ENGINEERING-PATTERNS.md`
 
 ## Overview
 
@@ -15,6 +16,104 @@ spec catalogs the concrete bugs in the current implementations and proposes a
 phased plan: fix the bugs, promote the envelope to first-class per-track
 session state behind one canonical type, expose it in the UI and MCP, then
 consolidate the synth engines.
+
+## Goals
+
+1. **One meaning for "release: 0.3"** — a single canonical envelope type and
+   one translate module, so envelope values mean the same thing on every
+   engine and every preset is portable.
+2. **Restore the multiplayer invariant** — envelope changes sync like every
+   other sonic dimension; two collaborators always hear the same music.
+3. **Persistence and publishability** — envelope moves survive reload, are
+   captured by publish, and carry through remix.
+4. **Per-track, full-envelope control** — all four ADSR stages editable per
+   track (today: two stages, all advanced tracks at once, ephemeral).
+5. **Agent parity** — MCP agents can read and shape envelopes, not just swap
+   presets whose envelopes are baked in.
+6. **Step-sequencer-native expression** — per-step envelope locks, gate time,
+   and tempo-relative times, following the hardware idioms
+   (Elektron/OP-1/303) our tie implementation already follows.
+7. **Fewer envelope implementations** — retire the hand-rolled analytical
+   mirror in the native engine, the source of our worst envelope bugs.
+
+## Motivating Questions & Insights
+
+This spec came out of four questions asked while auditing the current ADSR
+handling. Recording them here because the answers, not the bullet list of
+fixes, are the actual rationale.
+
+### Q1: What would be better/worse if we switched to Tone.js for everything?
+
+- The 2025-12 `research/TONEJS-COMPARISON.md` recommended staying native, but
+  its premises are stale: we now ship `tone@15.1.22` for the advanced synth,
+  `tone:*` presets, and the effects chain. The bundle-size argument is
+  already conceded; the marginal cost of using Tone more is near zero.
+- The two worst envelope bugs in our history were both in hand-rolled paths:
+  the release-collapse bug (reading `AudioParam.value` at note-off) that
+  forced the `holdAtTime`/`amplitudeAt` analytical-mirror machinery, and
+  bug_009 (envelope anchored before the pitch worklet's grain latency).
+  Consolidating to `Tone.AmplitudeEnvelope` deletes the first class of trap
+  entirely.
+- But "everything" is unreachable: the sample path (pitch worklet, choke
+  groups, LRU cache, manifest `releaseTime`) has no Tone equivalent, and
+  migrating `synth:*` presets changes how published sessions sound — Tone's
+  default curves differ from our exponential ramps and `release/4` time
+  constants. Offline PCM tests get harder under Tone's global-context model.
+- **Insight**: the strongest version is "one *synth* engine", not "Tone for
+  everything" — fold `synth:*` into the Tone-based advanced engine with a
+  per-preset render-comparison gate, keep samples custom, and never adopt
+  `Tone.Transport` (our scheduler stays the timing authority).
+
+### Q2: How can users use ADSR through our UI or MCP server today?
+
+- Barely, and unevenly. Preset choice is the primary lever (every preset is a
+  baked envelope). The XY pad's Envelope Shape maps attack/release only, hits
+  only advanced-synth tracks, applies to all of them at once, and lives in
+  ephemeral engine overrides — not synced, not persisted, not publishable.
+- Per-step controls interact with the envelope rather than shaping it:
+  velocity/volume p-locks scale the peak, `tie` suppresses re-attack.
+- MCP has **zero** envelope access: `edit_session` supports only `add_track`,
+  `set_track_instrument`, `set_steps` (booleans), and `set_tempo`; an agent
+  cannot make a pad swell or tighten a bass release except by swapping
+  presets. `analyze_session` doesn't report envelope character either.
+- **Insight**: decay and sustain are unreachable *everywhere*; the envelope
+  is the only major sonic dimension with no session-state representation —
+  effects, FM params, volume, transpose, and swing all sync, envelopes don't.
+
+### Q3: How does ADSR normally work in step synthesizers?
+
+- The gate drives the envelope: a trig opens it, gate time (often a per-step
+  % of the step) closes it. At 16ths/120 BPM a step is 125ms, so sustain is
+  reached only when the gate outlasts attack + decay — decay dominates at
+  step timescales, which is why hardware simplifies to AD/AHD shapes
+  (Elektron amp pages, 303, Volcas).
+- Ties/slides suppress retriggering so envelopes breathe across steps (303
+  slide, Elektron trigless trigs, OP-1 hold — `HELD-NOTES.md` cites the
+  OP-1's ADSR + hold directly). Our `tie` p-lock is exactly this idiom.
+- Per-step parameter locks on envelope params are the Elektron innovation;
+  accent scaling the envelope peak is universal (our velocity lane matches).
+- **Insight**: we are already idiomatic on durations, ties, and accent. The
+  gaps are gate time, per-step envelope locks, user-facing decay/sustain, and
+  tempo-relative envelope times (presets are tuned for 120 BPM and drift
+  musically at other tempi).
+
+### Q4: What's wrong with our current approach?
+
+- Three parallel implementations of one concept (plus decay curves baked into
+  procedural PCM in `samples.ts`), each with its own bug class and its own
+  meaning for "release".
+- The native engine maintains duplicated truth: scheduled automation and the
+  analytical `amplitudeAt`/`filterFrequencyAt` must agree exactly; drift is a
+  silent audible bug — that is precisely how the release-collapse bug
+  happened.
+- Concrete small defects: a falsy-zero release default (`release || 0.5`),
+  wall-clock `setTimeout` voice cleanup racing the audio clock, release-tail
+  truncation that contradicts the documented semantics, and XY ranges that
+  silently disagree with the type's documented ranges.
+- **Insight**: the root cause of the user-facing problems is architectural,
+  not audio-DSP: the envelope was never promoted into the session document,
+  so every control surface built on top of it (XY pad, future MCP ops)
+  inherits ephemerality and non-syncing.
 
 ## Current State
 
@@ -60,28 +159,6 @@ Decay and sustain are unreachable everywhere.
 Envelope overrides are the one sonic dimension that is local-only: two
 collaborators looking at the same session can hear different music the moment
 one of them rides the Envelope Shape pad.
-
-## Step-Sequencer Context
-
-How hardware grooveboxes (Elektron, TE OP-1/OP-Z, TB-303, Volcas) handle
-envelopes, for grounding — `HELD-NOTES.md` already cites the OP-1's
-ADSR + hold as prior art:
-
-- **The gate drives the envelope.** A trig opens the gate; gate time (often a
-  per-step percentage of the step) closes it and starts the release. At 16ths
-  and 120 BPM a step is 125ms, so sustain is only reached when the gate
-  outlasts attack + decay — decay dominates at step timescales, which is why
-  hardware often simplifies to AD/AHD shapes.
-- **Ties/slides suppress retriggering** so envelopes breathe across steps —
-  our `tie` p-lock is exactly this idiom.
-- **Per-step parameter locks on envelope params** (the Elektron innovation) —
-  we have the p-lock plumbing but not envelope fields.
-- **Accent scales the envelope peak** — our velocity lane matches this.
-
-Keyboardia is idiomatic on durations, ties, and accent. The departures: no
-gate-time control, no per-step envelope locks, no user-facing decay/sustain,
-and fixed-seconds envelopes with no tempo-relative option (presets are tuned
-for 120 BPM).
 
 ## Problems
 
@@ -169,7 +246,7 @@ Phased; each phase ships independently.
       local-only, global-across-tracks, and lost-on-reload at once. The
       engine `advancedOverrides` path for envelope fields is then deleted.
 
-### Phase 3 — Expose it (UI + MCP)
+### Phase 3 — Expose it (UI + MCP + notation)
 
 - [ ] Per-track envelope editor (four sliders or a drag-editable A/D/S/R
       curve) in the track controls, populated from the effective envelope
@@ -178,6 +255,8 @@ Phased; each phase ships independently.
       by the same shared clamp; include effective envelope values in
       `get_session` and envelope character in `analyze_session` so agents can
       read and shape the dimension rather than only swapping presets.
+- [ ] Extend `SESSION-NOTATION.md` (v2.3) with a track-level `[env:A,D,S,R]`
+      annotation in the style of `[fm:H,M]`, mapping to `track.envelope`.
 - [ ] MIDI export: document envelope as a listed non-carryable feature
       (matching the existing "report rather than approximate" posture).
 
@@ -199,14 +278,87 @@ Phased; each phase ships independently.
 
 - [ ] Per-step envelope p-locks: optional `attack`/`decay`/`release` on
       `ParameterLock` — Elektron-style, and the plumbing is already shaped
-      for it.
+      for it. Notation: per-step lists mirroring `[pitches:...]`, e.g.
+      `[releases:...]` with `-` for unlocked steps.
 - [ ] Per-track gate time (% of step before release starts) so note length is
-      not purely grid-derived and `tie` is not the only lengthener. Note:
-      `REMOVE-GATE-MODE.md` removed *sample gating at step boundaries*; this
-      is the different, synth-oriented control that spec's research cited as
-      the industry-standard articulation model.
+      not purely grid-derived and `tie` is not the only lengthener. Notation:
+      `[gate:75]`. Note: `REMOVE-GATE-MODE.md` removed *sample gating at step
+      boundaries*; this is the different, synth-oriented control that spec's
+      research cited as the industry-standard articulation model.
 - [ ] Optional tempo-relative envelope times (release expressed in step
       fractions) so presets tuned at 120 BPM stay musical at other tempi.
+
+## Example Sessions
+
+What the phases unlock, in `SESSION-NOTATION.md` notation. The `[env:...]`,
+`[releases:...]`, and `[gate:...]` annotations are the proposed v2.3
+extensions from Phases 3 and 5; everything else is current notation. Unknown
+annotations degrade gracefully per the notation spec, so these examples are
+shareable today and gain meaning as phases land.
+
+### A. One preset, three characters (Phase 2+3: per-track envelopes)
+
+The same `synth:pad` preset serving as pluck, chords, and swell — impossible
+today because the envelope is baked into the preset and XY tweaks hit every
+advanced track at once, ephemerally.
+
+```
+[bpm:110]
+Pluck:  x-x--xx-x-x--x-- [synth:pad, env:0.005,0.15,0.2,0.08, pitches:12,15,12,10,15,12,10,8]
+Chords: x-------x------- [synth:pad, env:0.4,0.3,0.8,2.5]
+Swell:  x--------------- [synth:pad, env:2.0,0.5,1.0,4.0, transpose:-12]
+```
+
+`Pluck` is a tight 5ms-attack stab; `Chords` breathes over two beats;
+`Swell` takes two seconds to bloom and four to fade — one instrument, three
+envelope identities, all synced, persisted, and publishable.
+
+### B. Acid line with per-step release locks (Phase 5: envelope p-locks + ties)
+
+The 303 move: mostly choked 50ms releases, with two steps locked long so
+they sing, and a tie for the slide. Accents (`X`) scale the envelope peak as
+they already do today.
+
+```
+[bpm:130, swing:55]
+Kick: x---x---x---x---
+Hat:  --x---x---x---x-
+Acid: X-xx--x-X-xx--x- [synth:acid, transpose:-12, env:0.001,0.12,0.3,0.05,
+                        pitches:0,0,12,-,-,3,0,0,0,12,-,-,5,0,-,-,
+                        releases:-,-,-,-,-,-,0.8,-,-,-,-,-,-,1.2,-,-]
+```
+
+Steps 7 and 14 escape the choke and ring over the groove; everything else
+stays tight. Today this requires two tracks and still can't be expressed.
+
+### C. Gated stabs against a washed pad (Phase 5: gate time)
+
+Gate time decouples articulation from the grid: the stab track releases at
+25% of each step regardless of tempo, while the pad holds its gate the full
+step and lets its long release overlap.
+
+```
+[bpm:124]
+Stab: x--x--x-x--x--x- [synth:stab, gate:25, env:0.001,0.2,0.25,0.15]
+Pad:  x---------------x--------------- [synth:dreampop, stepCount:32, gate:100, env:1.2,0.4,0.9,6.0]
+```
+
+### D. An agent shaping sound over MCP (Phase 3)
+
+Today an agent can only swap presets. After Phase 3, "make the chords
+swell more" is one operation:
+
+```json
+{
+  "operation": "set_track_envelope",
+  "track_id": "chords",
+  "envelope": { "attack": 0.8, "decay": 0.3, "sustain": 0.85, "release": 3.5 }
+}
+```
+
+…and `get_session` returns the effective envelope per track, so
+`analyze_session` can finally describe articulation ("tight plucks over a
+slow-attack pad") instead of being blind to the dimension.
 
 ## Non-Goals
 
@@ -230,6 +382,8 @@ Phased; each phase ships independently.
   mirroring `mcp-edits.test.ts`.
 - Voice-lifecycle test that survives simulated timer throttling (Phase 1
   cleanup change).
+- Notation round-trip tests for `[env:...]`, `[releases:...]`, and
+  `[gate:...]` once the v2.3 extensions land.
 
 ## Open Questions
 
@@ -242,3 +396,6 @@ Phased; each phase ships independently.
 3. Per-step envelope p-locks and tied steps: does a tie inherit the first
    step's locked envelope (recommended — one note, one envelope) or re-read
    locks per step?
+4. Does `[env:...]` on a sample track mean anything beyond attack/release?
+   Recommend: apply attack/release, ignore decay/sustain, and say so in the
+   notation spec rather than approximating silently.
