@@ -331,7 +331,36 @@ Acid: X-xx--x-X-xx--x- [synth:acid, transpose:-12, env:0.001,0.12,0.3,0.05,
 Steps 7 and 14 escape the choke and ring over the groove; everything else
 stays tight. Today this requires two tracks and still can't be expressed.
 
-### C. Gated stabs against a washed pad (Phase 5: gate time)
+### C. "Mr Jangles" (Phases 2+5: velocity vs. envelope attack, on sample tracks)
+
+A piano where every key is struck as hard as possible, against a brush kit
+played with varying levels of attack in a smooth jazz feel. The point of the
+pairing: **velocity and envelope attack are different dimensions.** The piano
+is pinned at maximum velocity (`X` on every hit — zero dynamic variation),
+so all the smoothness in the session comes from the drums, which vary both
+their strike level (`o`/`x`/`X` scaling the envelope peak) and their onset
+shape (per-step `attacks:` locks softening the envelope attack into brush
+swells).
+
+```
+[bpm:96, swing:62]
+Piano: X--X---X--X---X-                  [sampled:piano, pitches:0,4,5,9,7]
+Brush: o-o-o-oo-o-o-oo-                  [sampled:brushes-snare, env:0.06,0.1,0.8,0.3,
+                                          attacks:0.12,0.08,0.1,0.06,-,0.1,0.08,0.05,-]
+Snare: ----x--o----X-o-                  [sampled:acoustic-snare, attacks:-,0.06,-,0.06]
+Kick:  o-------o---o---                  [sampled:acoustic-kick]
+```
+
+The brush track sweeps in with 50–120ms attacks and two crisper unlocked
+hits; the snare keeps its backbeat and rimshot crisp (`-` = no lock ⇒
+default onset) while its ghosts are brushed soft; the kick is feathered at
+ghost level throughout. Today this session is impossible twice over: sampled
+instruments have a hard-coded 3ms declick attack (`note-schedule.ts`), so no
+sample can swell — and there are no per-step envelope locks. It also
+exercises open question 4: `[env:...]` on a sample track applies
+attack/release and ignores decay/sustain.
+
+### D. Gated stabs against a washed pad (Phase 5: gate time)
 
 Gate time decouples articulation from the grid: the stab track releases at
 25% of each step regardless of tempo, while the pad holds its gate the full
@@ -343,7 +372,7 @@ Stab: x--x--x-x--x--x- [synth:stab, gate:25, env:0.001,0.2,0.25,0.15]
 Pad:  x---------------x--------------- [synth:dreampop, stepCount:32, gate:100, env:1.2,0.4,0.9,6.0]
 ```
 
-### D. An agent shaping sound over MCP (Phase 3)
+### E. An agent shaping sound over MCP (Phase 3)
 
 Today an agent can only swap presets. After Phase 3, "make the chords
 swell more" is one operation:
