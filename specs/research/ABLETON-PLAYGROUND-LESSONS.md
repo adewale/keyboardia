@@ -258,9 +258,11 @@ it.
    groups instruments into six labeled, colored families; let the *chosen
    family* set creation defaults (bass → low octave + scale-locked view;
    keys/pads → held notes on; drums → drum mode). Same pedagogical effect —
-   role-appropriate defaults — with zero new UI surface. The ensemble
-   indicator idea is **cut**: new passive UI in an already-dense frame,
-   revisit only with user evidence.
+   role-appropriate defaults — with zero new UI surface; the concrete
+   mechanism (today's single `ADD_TRACK` path, the family lookup, and the
+   persisted-field vs. client-view split) is traced in the deep dive below.
+   The ensemble indicator idea is **cut**: new passive UI in an
+   already-dense frame, revisit only with user evidence.
 3. **Scale-lock-first default for new melodic tracks — KEPT** (L3). It
    *reduces* effective first-touch complexity, and the escape hatch (the
    Events/All toggle) already exists. A default flip, not a feature.
@@ -314,14 +316,40 @@ downstream of role-less tracks.
 ### UI surfacing (revised under the complexity budget)
 
 1. **Category-driven creation defaults** (kept — replaces the "role verbs"
-   idea). The picker already groups by six labeled families; when a track is
-   created, let the chosen family set the defaults: bass → low octave +
-   scale-locked view; keys/pads → held notes on; drums → drum mode, 16 steps.
-   Role becomes a *creation-time preset derived from data that already
-   exists* — no new buttons, no stored field, no migration, fully reversible
-   per track. An earlier draft proposed four explicit "Add a beat / bassline
-   / chords / melody" verbs; same pedagogy, but four new tested UI flows —
-   the family-derived version delivers it inside the one existing flow.
+   idea). An earlier draft proposed four explicit "Add a beat / bassline /
+   chords / melody" verbs; same pedagogy, but four new tested UI flows. The
+   family-derived version delivers it inside the one existing flow:
+
+   *How track creation works today:* there is exactly one path — the
+   `SamplePicker` opens, the user picks one of the 70 instruments (already
+   displayed in the six labeled, color-coded families), and `ADD_TRACK`
+   fires. The reducer (`app/src/state/grid.tsx:174`) then builds the same
+   generic shell regardless of what was chosen: empty steps, `volume: 1`,
+   `transpose: 0`, 16 steps. Picking "808 Sub Bass" and picking "Hi-Hat"
+   produce identical workspaces; only the sound differs.
+
+   *The change:* at the moment `ADD_TRACK` fires, derive the family from the
+   chosen `sampleId` (`getInstrumentCategory()` in
+   `app/src/components/sample-constants.ts` already does this) and vary the
+   creation defaults instead of always stamping the generic shell — Bass
+   family → `transpose: -12`, chromatic view opening scale-locked; Drums →
+   drum view, 16 steps exactly as now; Keys/Pads → defaults friendly to
+   held/tied notes. The whole change is one pure function (family → creation
+   defaults) applied inside the existing `ADD_TRACK` handling — one dispatch,
+   one code path, unit-testable with no component work. Because `ADD_TRACK`
+   creates the track client-side and syncs it whole, the defaults ride the
+   existing multiplayer path with no protocol change.
+
+   *Nuance an implementation spec must state:* of those defaults, `transpose`
+   and `stepCount` are persisted `Track` fields (`app/src/types.ts:82`),
+   while "which view opens" (the ●/♪ drum-vs-chromatic presentation) is
+   client-side UI state — a local presentation default, per player, not
+   synced session data. That split is fine here (each player's view is
+   already their own), but it must be stated, not discovered.
+
+   The user's sound choice still *functions* as a role choice, and the
+   workspace still responds as if it understands the job — no new buttons,
+   no stored role field, no migration, fully reversible per track.
 2. **Derived category tinting/grouping** (kept, opportunistic) — the category
    colors already exist; tint track headers by derived category and offer
    sort-by-category. Cheap, addresses pain point 8.
