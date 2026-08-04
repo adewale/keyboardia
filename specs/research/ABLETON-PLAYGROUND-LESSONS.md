@@ -169,11 +169,6 @@ export. But export is a menu item, not a *moment*.
 **Gap → candidates:**
 - Surface "take this further" as a designed moment (post-publish is the
   natural spot: publish → share link / QR / **download MIDI for your DAW**).
-- Ableton's Live Set export library is documented publicly; an `.als` export
-  target alongside MIDI is feasible and would land Keyboardia sessions
-  directly in the DAW with tracks and clips intact — the exact funnel
-  Learning Music validated. (Research spike before committing: the format is
-  gzipped XML; scope to tracks/clips/tempo only.)
 - Write Keyboardia's own "where to go from here": what publishing means,
   what remixing means, how to invite an agent — three pathways, like Ableton's.
 
@@ -284,10 +279,12 @@ it.
    (bassline/melody/chordal classification) is **deferred**: it's the
    caveat-heavy, fuzzy part, and agents can already infer function from the
    register, range, and simultaneity data the analysis emits today.
-6. **`.als` export — DOWNGRADED to "don't build now"** (L7). See the revised
-   verdict in the deep dive below. Surfacing the *existing* MIDI export at
-   the publish moment stays: that's placement of a built thing, near-zero new
-   code.
+6. **`.als` export — CUT entirely** (L7). A second export surface fails the
+   budget on its face: every future musical feature would owe two export
+   mappings, and the result can only be verified by hand in Ableton Live,
+   outside CI. What stays is placement of the built thing: surface the
+   existing MIDI export at the publish moment. (A format-viability spike
+   existed in an earlier revision of this file; git history has it.)
 7. **i18n — DROPPED from the list** (L8). Ableton ships 15+ locales because
    their strings are content-data by architecture. Retrofitting extraction
    across 38 components touches everything and serves no current user demand.
@@ -366,90 +363,6 @@ the concrete mechanism.
 
 ---
 
-## Deep dive: `.als` export viability (spike result)
-
-Question from L7: is exporting an Ableton Live Set (`.als`) feasible, and
-worth it next to the existing MIDI export? Short answer: **feasible, modest
-scope, one real payoff, one real cost.**
-
-### Findings
-
-1. **Ableton's official export library is not usable here.** The
-   [Live Set Export kit](https://ableton.github.io/export/) is Objective-C
-   for iOS (`libALSExportKit.a`, requires UIKit/AVFoundation), distributed
-   under a request-access partner license. Wrong platform and wrong license
-   for a web app on Cloudflare Workers. Any Keyboardia `.als` export means
-   generating the format ourselves.
-2. **The format is approachable.** `.als` is gzipped XML. It is undocumented
-   by Ableton but extensively mapped by the community: format notes
-   ([Qpai/ableton-als-file-format](https://github.com/Qpai/ableton-als-file-format)),
-   open-source readers ([alsd](https://github.com/andrewcb/alsd), Apache-2.0;
-   [pyableton](https://pypi.org/project/pyableton)), and writers/editors
-   ([buildable](https://pypi.org/project/buildable/0.1.0),
-   [guard-live-set](https://github.com/mgarriss/guard-live-set)). Generating
-   compatible files for interoperability without Ableton's SDK is the
-   established third-party path.
-3. **Template injection, not from-scratch XML.** The robust community method:
-   save a minimal set from Live once (N MIDI tracks, empty device chains),
-   keep that XML as a skeleton, inject `<MidiClip>` elements (notes as
-   `KeyTrack`/`MidiNoteEvent` with beat-time, duration, velocity), tempo, and
-   track names. Gzip via native `CompressionStream` — supported in browsers
-   and in workerd, no new dependency. All the hard musical math (note timing,
-   track selection, GM drum mapping) already lives in the shared
-   `midi-core.ts` + [MIDI-MAPPINGS](../../docs/MIDI-MAPPINGS.md) and is
-   reused as-is.
-4. **The one real payoff: polyrhythm fidelity.** SMF export must flatten
-   per-track loop lengths by LCM expansion
-   ([MIDI-EXPORT](../MIDI-EXPORT.md): "Track A: 16 steps → loops 4×"), so a
-   3-against-16 session arrives in the DAW as a *bounce* of the polyrhythm.
-   `.als` Session-view clips each carry their own loop braces: the same
-   session arrives as short looping clips that stay generative — drag any
-   clip longer and the phase relationships keep evolving. Since per-track
-   step counts (3–128) are Keyboardia's signature feature, `.als` is the only
-   export that preserves it. (Secondary wins: Session-view-ready layout,
-   named tracks, tempo. Sounds are *not* included — clips are silent until
-   the user drops instruments, same as importing a `.mid`.)
-5. **The real costs: verification and a second fidelity surface.** No
-   official spec; the schema varies by Live version. Mitigations: target one
-   older schema generation (Live's backward compatibility is historically
-   excellent) and lock the generated XML with golden-file tests. But the
-   *final* proof is opening the file in real Ableton Live, which cannot run
-   in CI — a permanent manual step in a codebase whose culture is property
-   tests, determinism contracts, and eval harnesses. And the deeper cost,
-   under-weighted in the first draft of this doc: a second exporter doubles
-   the fidelity matrix forever. [MIDI-EXPORT](../MIDI-EXPORT.md) maintains an
-   explicit feature-fidelity table (p-locks, ties, velocity, polyrhythms…);
-   every future musical feature would owe *two* export mappings, two test
-   suites, and one un-automatable verification ritual.
-6. **Posture notes.** Interoperability files generated from community
-   knowledge, no Ableton SDK or assets involved — the same footing as the
-   listed open-source tools. UI copy should say "Export for Ableton Live"
-   (compatibility statement), not imply endorsement. The open
-   [DAWproject](https://github.com/bitwig/dawproject) format is the
-   interchange alternative (Bitwig, Studio One, Cubase) but **Live does not
-   read it**, so it serves a different funnel, not this one.
-
-### Verdict (revised 2026-08 under the complexity budget)
-
-*Technically* viable as a contained feature — the format findings above
-stand. But **don't build it now.** The payoff is narrow (polyrhythm
-preservation and Session-view layout; no sounds travel either way), the
-demand is speculative, and the cost is structural: a second exporter that
-every future musical feature must keep in sync, verified by hand outside CI,
-in a codebase that has already had to excise one feature at a cost of ~85
-files. This is precisely the shape of addition the complexity budget exists
-to refuse.
-
-What survives: surface the existing MIDI export at the publish moment
-(placement, not construction), and note the polyrhythm flattening honestly in
-the export docs — "clips arrive unrolled to the common cycle; re-crop clip
-loop braces in your DAW to restore independent loops" costs one sentence.
-Reopen `.als` only on real user pull (repeated requests, or evidence the
-LCM-unrolled MIDI is losing users at the DAW handoff), and if reopened, the
-hand-built prototype (one `.als` from "Polyrhythm Demo", verified in Live
-Lite/Intro/Suite) remains the correct first step before any exporter code.
-
----
 
 ## Sources
 
