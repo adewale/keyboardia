@@ -2,6 +2,11 @@
 
 Research compiled from web sources to inform Keyboardia development.
 
+> **Note (2026-08):** Written pre-v1; the "Key Takeaways" below predate
+> persistence, MIDI export, and publishing. For a current-state analysis of
+> the Playground page as a designed experience, see
+> [ABLETON-PLAYGROUND-LESSONS.md](./ABLETON-PLAYGROUND-LESSONS.md).
+
 ---
 
 ## Overview
