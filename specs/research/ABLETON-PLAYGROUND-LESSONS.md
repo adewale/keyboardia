@@ -4,7 +4,7 @@
 > **Created:** August 2026
 > **Source page:** <https://learningmusic.ableton.com/the-playground.html>
 > **Purpose:** Extract product/UX lessons from the *capstone* page of Ableton's Learning Music course and map them against Keyboardia's current state (post-Phase 36).
-> **See also:** [ABLETON-LEARNING-MUSIC-ANALYSIS.md](./ABLETON-LEARNING-MUSIC-ANALYSIS.md) (technical analysis: audio scheduling, export mechanics — written pre-v1, its "Key Takeaways" predate persistence/export/publishing), [COMPOSITION-AFFORDANCES.md](./COMPOSITION-AFFORDANCES.md) (gap analysis vs. hardware/software sequencers).
+> **See also:** [ABLETON-LEARNING-MUSIC-ANALYSIS.md](./ABLETON-LEARNING-MUSIC-ANALYSIS.md) (technical analysis: audio scheduling, export mechanics — written pre-v1, its "Key Takeaways" predate persistence/export/publishing), [ABLETON-LEARNING-SYNTHS-ENVELOPES-ANALYSIS.md](./ABLETON-LEARNING-SYNTHS-ENVELOPES-ANALYSIS.md) (primary-source sibling analysis; its "content-as-data architecture" finding underpins the complexity-budget section below), [COMPOSITION-AFFORDANCES.md](./COMPOSITION-AFFORDANCES.md) (gap analysis vs. hardware/software sequencers).
 
 ---
 
@@ -33,6 +33,11 @@ why the design choices around it are worth close reading.
 ---
 
 ## Eight lessons, mapped to Keyboardia
+
+> The "Gap → candidate" notes below record the *first-pass* ideas each lesson
+> suggested. Several were later narrowed, replaced, or cut — the
+> "Recommendations, reconsidered under the complexity budget" section is the
+> current disposition; the lessons themselves are unchanged.
 
 ### L1. The playground is the last page, not the first
 
@@ -207,22 +212,86 @@ floor-lowering move that leaves the ceiling untouched.
 
 ---
 
-## Recommendations in priority order
+## Recommendations, reconsidered under the complexity budget
 
-1. **Seeded session starts** (L2) — reuse `example-sessions.ts`; kills the
-   silent empty state. Small.
-2. **Role-shaped add-track verbs** (L4) — "Add a beat / bassline / chords /
-   melody" with per-role picker filtering and defaults. Medium; also
-   addresses three pain points in COMPOSITION-AFFORDANCES. Deep dive below.
-3. **Scale-lock-first default for new melodic tracks** (L3) — one default
-   flip plus visible escape hatch. Small.
-4. **Annotated deconstruction examples** (L5+L6) — 3–5 published sessions
-   that each teach one idea, notes generated with the existing theory module.
-   Medium, mostly content.
-5. **Export as a graduation moment + `.als` spike** (L7) — surface MIDI
-   export post-publish now; the `.als` spike is done, see "Deep dive: `.als`
-   export viability" below. Small.
-6. **i18n groundwork** (L8) — string extraction only, when convenient. Low.
+> **Revised 2026-08 (post-rebase).** The first version of this list had an
+> additive bias: new verbs, new indicators, a second export format. Re-reading
+> it against the codebase's own trajectory changed several dispositions. The
+> lessons (L1–L8) stand; what changed is what they're worth *building*.
+
+### The complexity budget, measured
+
+- **~52K lines of non-test TS/TSX, ~51K lines of tests, 38 components.** The
+  ~1:1 test-to-source ratio is a strength, and it means every feature line
+  costs roughly double. UI features also carry CSS, mobile-orientation
+  behavior, and e2e coverage.
+- **Removing one unused toggle cost ~85 files.** [REMOVE-GATE-MODE](../REMOVE-GATE-MODE.md)
+  unwound `playbackMode` — "78 files reference this unused feature," "UI
+  toggle does nothing for 80% of instruments." Features here grow tentacles;
+  the exit price is paid in dozens of files.
+- **The codebase has already needed remediation.** [DUPLICATION-REMEDIATION-PLAN](../../docs/DUPLICATION-REMEDIATION-PLAN.md)
+  catalogued 89 duplication patterns; an entire 103-test package was later
+  deleted as never-run.
+- **The UI has already outgrown one screen class.** [MOBILE-INTERFACE-SIMPLIFICATION](../MOBILE-INTERFACE-SIMPLIFICATION.md)
+  had to split mobile into consumption (portrait) and creation (landscape)
+  modes because the full surface stopped fitting.
+- **Ableton's counter-example is architectural, not just aesthetic.** Per the
+  [sibling Learning Synths analysis](./ABLETON-LEARNING-SYNTHS-ENVELOPES-ANALYSIS.md),
+  their entire course is JSON data over ~a dozen embed components — richness
+  scales as *content* while the code vocabulary stays tiny. The Playground
+  feels effortless because almost nothing on it is code that didn't already
+  exist.
+
+**The resulting rule, in priority order:** prefer content-shaped changes
+(data, presets, prose), then default-shaped (flip a default, enrich an
+existing flow), then schema-text-shaped (tool descriptions), and treat
+new-interactive-surface changes as needing to pay for themselves with a
+consolidation or removal elsewhere. Keyboardia's grid vocabulary is its
+"embed vocabulary" — the leverage is in feeding it better data, not widening
+it.
+
+### Revised dispositions
+
+1. **Seeded session starts — KEPT, narrowed to content-only** (L2). No
+   template chooser, no new mode: an empty-session state offering "start from
+   a groove" backed by the existing `example-sessions.ts` data. One
+   empty-state panel; the highest-leverage change on the list and now also
+   the cheapest.
+2. **Category-driven track defaults — REPLACES role verbs** (L4). The
+   original idea added four "Add a beat / bassline / chords / melody" verbs —
+   four new buttons, four code paths, four tested flows. The picker already
+   groups instruments into six labeled, colored families; let the *chosen
+   family* set creation defaults (bass → low octave + scale-locked view;
+   keys/pads → held notes on; drums → drum mode). Same pedagogical effect —
+   role-appropriate defaults — with zero new UI surface. The ensemble
+   indicator idea is **cut**: new passive UI in an already-dense frame,
+   revisit only with user evidence.
+3. **Scale-lock-first default for new melodic tracks — KEPT** (L3). It
+   *reduces* effective first-touch complexity, and the escape hatch (the
+   Events/All toggle) already exists. A default flip, not a feature.
+4. **Annotated deconstructions — KEPT as pure content, UI ambitions cut**
+   (L5+L6). Sessions have a `name` and nothing else to hang prose on — and
+   that's fine: ship 3–5 published example sessions whose *patterns* teach
+   (mute the snare, feel the backbeat go), named accordingly. Explanation
+   lives where explanation already lives: docs and the agent surface
+   (`analyze_session`). Building an in-session annotation layer is exactly
+   the kind of surface the budget says no to; if it's ever wanted, it should
+   follow the sibling doc's content-as-data pattern, not a bespoke component.
+5. **MCP: schema text now, ensemble block trimmed** (L4-via-MCP). Documenting
+   the family → `sample_id` grouping in tool descriptions is pure text.
+   Adding a derived `instrument_family` per track to `analyze_session` is one
+   deterministic catalog lookup. The originally proposed *function inference*
+   (bassline/melody/chordal classification) is **deferred**: it's the
+   caveat-heavy, fuzzy part, and agents can already infer function from the
+   register, range, and simultaneity data the analysis emits today.
+6. **`.als` export — DOWNGRADED to "don't build now"** (L7). See the revised
+   verdict in the deep dive below. Surfacing the *existing* MIDI export at
+   the publish moment stays: that's placement of a built thing, near-zero new
+   code.
+7. **i18n — DROPPED from the list** (L8). Ableton ships 15+ locales because
+   their strings are content-data by architecture. Retrofitting extraction
+   across 38 components touches everything and serves no current user demand.
+   Noted as a fact about reach, not a recommendation.
 
 ---
 
@@ -245,27 +314,27 @@ four fixed sections provide for free. COMPOSITION-AFFORDANCES pain points 3
 (tedious melody), 7 (clumsy chords), and 8 (no track organization) are all
 downstream of role-less tracks.
 
-### UI surfacing (ranked by leverage/effort)
+### UI surfacing (revised under the complexity budget)
 
-1. **Empty-state and add-track verbs** — "Add a beat / bassline / chords /
-   melody." Each verb pre-filters the picker to its categories and applies
-   role-appropriate creation defaults: beat → drum mode, 16 steps; bassline →
-   chromatic view, low octave, scale lock on; chords → keys/pads, held notes;
-   melody → leads, scale lock on. Role is a *creation-time preset*, not a
-   stored field — zero schema change, no migration, fully reversible per
-   track. This is the Playground's section model translated into Keyboardia's
-   idiom (verbs on the empty state rather than fixed panels).
-2. **Derived category tinting/grouping** — the category colors already exist;
-   tint track headers by derived category, and offer sort-by-category. Cheap,
-   addresses pain point 8, and makes the ensemble legible at a glance.
-3. **Ensemble indicator** — a small passive display (natural home: Scale
-   Sidebar) showing which jobs are filled: beat / bass / harmony / melody.
-   Doubles as a nudge ("no bass yet") without blocking anything. This is the
-   deepest Playground lesson — arrangement awareness by *layout* — in
-   indicator form.
+1. **Category-driven creation defaults** (kept — replaces the "role verbs"
+   idea). The picker already groups by six labeled families; when a track is
+   created, let the chosen family set the defaults: bass → low octave +
+   scale-locked view; keys/pads → held notes on; drums → drum mode, 16 steps.
+   Role becomes a *creation-time preset derived from data that already
+   exists* — no new buttons, no stored field, no migration, fully reversible
+   per track. An earlier draft proposed four explicit "Add a beat / bassline
+   / chords / melody" verbs; same pedagogy, but four new tested UI flows —
+   the family-derived version delivers it inside the one existing flow.
+2. **Derived category tinting/grouping** (kept, opportunistic) — the category
+   colors already exist; tint track headers by derived category and offer
+   sort-by-category. Cheap, addresses pain point 8.
+3. **Ensemble indicator** (cut) — a passive "which jobs are filled" display
+   was the deepest translation of the Playground's section model, but it is
+   new surface in an already-dense frame. Revisit only with user evidence;
+   the agent surface covers the need meanwhile (see below).
 
-All three pass the [UI-PHILOSOPHY](../UI-PHILOSOPHY.md) tests: no modals, no
-hidden modes, roles as defaults never walls.
+All surviving items pass the [UI-PHILOSOPHY](../UI-PHILOSOPHY.md) tests: no
+modals, no hidden modes, roles as defaults never walls.
 
 ### MCP surfacing
 
@@ -274,21 +343,22 @@ information (`tools/list` deliberately has no instrument resource). An agent
 asked for "a bassline that fits" must currently guess families from ID
 strings and infer ensemble gaps by reading raw tracks.
 
-1. **`analyze_session` ensemble block** (highest value) — extend the shared
-   analysis with per-track instrument family (from the catalog) plus inferred
-   *function* (register + monophony → bassline; simultaneous pitches across
-   tracks → chordal; high mobile monophonic line → melody), and a
-   session-level `missing_roles` summary. Lives in `session-analysis.ts`, so
-   the browser gets it too; must follow the module's existing honesty
-   contract (deterministic ordering, `caveats` when ambiguous). This turns
-   "add a bassline that fits" from a guess into: read ensemble gap → pick
-   bass-family instrument → `set_steps` inside the inferred key.
-2. **Category info in the tool schema text** — cheap: document the family →
-   `sample_id` grouping in the `add_track`/`set_track_instrument` description
-   so agents choose sensible sounds without an extra round-trip.
-3. **Role hint on `add_track`** (v2, optional) — a `role` parameter that
-   selects a sensible default instrument per role. Lower priority: agents can
-   already compose the primitives once (1) and (2) exist.
+1. **Category info in the tool schema text** (do first — pure text) —
+   document the family → `sample_id` grouping in the
+   `add_track`/`set_track_instrument` descriptions so agents choose sensible
+   sounds without an extra round-trip. Zero runtime change.
+2. **Per-track `instrument_family` in `analyze_session`** (small,
+   deterministic) — one catalog lookup added to the shared analysis, so both
+   browser and agents see the ensemble's family makeup. Trivially testable,
+   honors the module's determinism contract.
+3. **Function inference and `missing_roles`** (deferred) — classifying tracks
+   as bassline/melody/chordal from register, monophony, and simultaneity was
+   the original centerpiece, but it is the fuzzy, caveat-heavy part, and the
+   analysis *already emits* the register, range, and chord-moment data an
+   agent needs to draw those conclusions itself. Add it only if agent evals
+   show models failing to make that inference from the raw signals.
+4. **Role hint on `add_track`** (deferred, v2 at earliest) — agents can
+   compose the primitives once (1) and (2) exist.
 
 The STATELESS-MCP v2 candidate journeys ("Agent explains the music," "Agent
 finds a starting point") already point this direction; the ensemble block is
@@ -339,15 +409,18 @@ scope, one real payoff, one real cost.**
    export that preserves it. (Secondary wins: Session-view-ready layout,
    named tracks, tempo. Sounds are *not* included — clips are silent until
    the user drops instruments, same as importing a `.mid`.)
-5. **The one real cost: verification.** No official spec; the schema varies
-   by Live version. Mitigations: target one older schema generation (Live's
-   backward compatibility is historically excellent — current Live opens sets
-   from many versions back and upgrades them) and lock the generated XML with
-   golden-file tests. But the *final* proof is opening the file in real
-   Ableton Live, which cannot run in CI. For a codebase with this testing
-   culture (property tests, determinism contracts, eval harness), a permanent
-   manual open-in-Live step on every release that touches the exporter is the
-   main ongoing cost.
+5. **The real costs: verification and a second fidelity surface.** No
+   official spec; the schema varies by Live version. Mitigations: target one
+   older schema generation (Live's backward compatibility is historically
+   excellent) and lock the generated XML with golden-file tests. But the
+   *final* proof is opening the file in real Ableton Live, which cannot run
+   in CI — a permanent manual step in a codebase whose culture is property
+   tests, determinism contracts, and eval harnesses. And the deeper cost,
+   under-weighted in the first draft of this doc: a second exporter doubles
+   the fidelity matrix forever. [MIDI-EXPORT](../MIDI-EXPORT.md) maintains an
+   explicit feature-fidelity table (p-locks, ties, velocity, polyrhythms…);
+   every future musical feature would owe *two* export mappings, two test
+   suites, and one un-automatable verification ritual.
 6. **Posture notes.** Interoperability files generated from community
    knowledge, no Ableton SDK or assets involved — the same footing as the
    listed open-source tools. UI copy should say "Export for Ableton Live"
@@ -356,15 +429,25 @@ scope, one real payoff, one real cost.**
    interchange alternative (Bitwig, Studio One, Cubase) but **Live does not
    read it**, so it serves a different funnel, not this one.
 
-### Verdict
+### Verdict (revised 2026-08 under the complexity budget)
 
-Viable as a small, contained feature **if scoped hard**: MIDI clips only, one
-target schema, template injection, empty device chains, browser-side first.
-Recommended next step if pursued: hand-build one `.als` from a real
-polyrhythmic session (e.g. "Polyrhythm Demo"), verify it opens in Live
-Lite/Intro/Suite, then decide whether the manual-verification tail is worth
-the polyrhythm-preserving funnel. MIDI export remains the universal baseline
-either way.
+*Technically* viable as a contained feature — the format findings above
+stand. But **don't build it now.** The payoff is narrow (polyrhythm
+preservation and Session-view layout; no sounds travel either way), the
+demand is speculative, and the cost is structural: a second exporter that
+every future musical feature must keep in sync, verified by hand outside CI,
+in a codebase that has already had to excise one feature at a cost of ~85
+files. This is precisely the shape of addition the complexity budget exists
+to refuse.
+
+What survives: surface the existing MIDI export at the publish moment
+(placement, not construction), and note the polyrhythm flattening honestly in
+the export docs — "clips arrive unrolled to the common cycle; re-crop clip
+loop braces in your DAW to restore independent loops" costs one sentence.
+Reopen `.als` only on real user pull (repeated requests, or evidence the
+LCM-unrolled MIDI is losing users at the DAW handoff), and if reopened, the
+hand-built prototype (one `.als` from "Polyrhythm Demo", verified in Live
+Lite/Intro/Suite) remains the correct first step before any exporter code.
 
 ---
 
