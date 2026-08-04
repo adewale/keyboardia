@@ -213,16 +213,158 @@ floor-lowering move that leaves the ceiling untouched.
    silent empty state. Small.
 2. **Role-shaped add-track verbs** (L4) — "Add a beat / bassline / chords /
    melody" with per-role picker filtering and defaults. Medium; also
-   addresses three pain points in COMPOSITION-AFFORDANCES.
+   addresses three pain points in COMPOSITION-AFFORDANCES. Deep dive below.
 3. **Scale-lock-first default for new melodic tracks** (L3) — one default
    flip plus visible escape hatch. Small.
 4. **Annotated deconstruction examples** (L5+L6) — 3–5 published sessions
    that each teach one idea, notes generated with the existing theory module.
    Medium, mostly content.
 5. **Export as a graduation moment + `.als` spike** (L7) — surface MIDI
-   export post-publish now; time-boxed research spike on Ableton Live Set
-   export format before committing further. Small + spike.
+   export post-publish now; the `.als` spike is done, see "Deep dive: `.als`
+   export viability" below. Small.
 6. **i18n groundwork** (L8) — string extraction only, when convenient. Low.
+
+---
+
+## Deep dive: surfacing roles in the UI and via MCP
+
+Written after auditing what already exists. Three role-adjacent layers are
+in the codebase today:
+
+| Layer | Where | Granularity |
+|---|---|---|
+| Instrument categories | `app/src/shared/instrument-catalog.ts` — `INSTRUMENT_GROUPS`: Drums, Bass, Keys, Leads, Pads, FX, each with label, color, and category order; picker renders by category | 6 sound families, runtime-neutral (browser + Worker) |
+| Derived track category | `getInstrumentCategory(sampleId)` in `app/src/components/sample-constants.ts` | Any track's family is computable **today** with zero schema change |
+| Analysis role | `analyze_session` / `app/src/music/session-analysis.ts` emits per-track `role: drum \| pitched` — deterministic, caveated, shared by browser and MCP | Binary, but already part of the eval-fed contract |
+
+So "roles" is not a new concept to introduce — it's two existing taxonomies
+(sound families, analysis roles) waiting to be joined and given verbs. The
+missing piece is *function*: nothing says "this track is the bassline" or
+"this ensemble has no bass," which is exactly the awareness the Playground's
+four fixed sections provide for free. COMPOSITION-AFFORDANCES pain points 3
+(tedious melody), 7 (clumsy chords), and 8 (no track organization) are all
+downstream of role-less tracks.
+
+### UI surfacing (ranked by leverage/effort)
+
+1. **Empty-state and add-track verbs** — "Add a beat / bassline / chords /
+   melody." Each verb pre-filters the picker to its categories and applies
+   role-appropriate creation defaults: beat → drum mode, 16 steps; bassline →
+   chromatic view, low octave, scale lock on; chords → keys/pads, held notes;
+   melody → leads, scale lock on. Role is a *creation-time preset*, not a
+   stored field — zero schema change, no migration, fully reversible per
+   track. This is the Playground's section model translated into Keyboardia's
+   idiom (verbs on the empty state rather than fixed panels).
+2. **Derived category tinting/grouping** — the category colors already exist;
+   tint track headers by derived category, and offer sort-by-category. Cheap,
+   addresses pain point 8, and makes the ensemble legible at a glance.
+3. **Ensemble indicator** — a small passive display (natural home: Scale
+   Sidebar) showing which jobs are filled: beat / bass / harmony / melody.
+   Doubles as a nudge ("no bass yet") without blocking anything. This is the
+   deepest Playground lesson — arrangement awareness by *layout* — in
+   indicator form.
+
+All three pass the [UI-PHILOSOPHY](../UI-PHILOSOPHY.md) tests: no modals, no
+hidden modes, roles as defaults never walls.
+
+### MCP surfacing
+
+The MCP schema embeds a flat 99-ID `sample_id` enum with no category
+information (`tools/list` deliberately has no instrument resource). An agent
+asked for "a bassline that fits" must currently guess families from ID
+strings and infer ensemble gaps by reading raw tracks.
+
+1. **`analyze_session` ensemble block** (highest value) — extend the shared
+   analysis with per-track instrument family (from the catalog) plus inferred
+   *function* (register + monophony → bassline; simultaneous pitches across
+   tracks → chordal; high mobile monophonic line → melody), and a
+   session-level `missing_roles` summary. Lives in `session-analysis.ts`, so
+   the browser gets it too; must follow the module's existing honesty
+   contract (deterministic ordering, `caveats` when ambiguous). This turns
+   "add a bassline that fits" from a guess into: read ensemble gap → pick
+   bass-family instrument → `set_steps` inside the inferred key.
+2. **Category info in the tool schema text** — cheap: document the family →
+   `sample_id` grouping in the `add_track`/`set_track_instrument` description
+   so agents choose sensible sounds without an extra round-trip.
+3. **Role hint on `add_track`** (v2, optional) — a `role` parameter that
+   selects a sensible default instrument per role. Lower priority: agents can
+   already compose the primitives once (1) and (2) exist.
+
+The STATELESS-MCP v2 candidate journeys ("Agent explains the music," "Agent
+finds a starting point") already point this direction; the ensemble block is
+the concrete mechanism.
+
+---
+
+## Deep dive: `.als` export viability (spike result)
+
+Question from L7: is exporting an Ableton Live Set (`.als`) feasible, and
+worth it next to the existing MIDI export? Short answer: **feasible, modest
+scope, one real payoff, one real cost.**
+
+### Findings
+
+1. **Ableton's official export library is not usable here.** The
+   [Live Set Export kit](https://ableton.github.io/export/) is Objective-C
+   for iOS (`libALSExportKit.a`, requires UIKit/AVFoundation), distributed
+   under a request-access partner license. Wrong platform and wrong license
+   for a web app on Cloudflare Workers. Any Keyboardia `.als` export means
+   generating the format ourselves.
+2. **The format is approachable.** `.als` is gzipped XML. It is undocumented
+   by Ableton but extensively mapped by the community: format notes
+   ([Qpai/ableton-als-file-format](https://github.com/Qpai/ableton-als-file-format)),
+   open-source readers ([alsd](https://github.com/andrewcb/alsd), Apache-2.0;
+   [pyableton](https://pypi.org/project/pyableton)), and writers/editors
+   ([buildable](https://pypi.org/project/buildable/0.1.0),
+   [guard-live-set](https://github.com/mgarriss/guard-live-set)). Generating
+   compatible files for interoperability without Ableton's SDK is the
+   established third-party path.
+3. **Template injection, not from-scratch XML.** The robust community method:
+   save a minimal set from Live once (N MIDI tracks, empty device chains),
+   keep that XML as a skeleton, inject `<MidiClip>` elements (notes as
+   `KeyTrack`/`MidiNoteEvent` with beat-time, duration, velocity), tempo, and
+   track names. Gzip via native `CompressionStream` — supported in browsers
+   and in workerd, no new dependency. All the hard musical math (note timing,
+   track selection, GM drum mapping) already lives in the shared
+   `midi-core.ts` + [MIDI-MAPPINGS](../../docs/MIDI-MAPPINGS.md) and is
+   reused as-is.
+4. **The one real payoff: polyrhythm fidelity.** SMF export must flatten
+   per-track loop lengths by LCM expansion
+   ([MIDI-EXPORT](../MIDI-EXPORT.md): "Track A: 16 steps → loops 4×"), so a
+   3-against-16 session arrives in the DAW as a *bounce* of the polyrhythm.
+   `.als` Session-view clips each carry their own loop braces: the same
+   session arrives as short looping clips that stay generative — drag any
+   clip longer and the phase relationships keep evolving. Since per-track
+   step counts (3–128) are Keyboardia's signature feature, `.als` is the only
+   export that preserves it. (Secondary wins: Session-view-ready layout,
+   named tracks, tempo. Sounds are *not* included — clips are silent until
+   the user drops instruments, same as importing a `.mid`.)
+5. **The one real cost: verification.** No official spec; the schema varies
+   by Live version. Mitigations: target one older schema generation (Live's
+   backward compatibility is historically excellent — current Live opens sets
+   from many versions back and upgrades them) and lock the generated XML with
+   golden-file tests. But the *final* proof is opening the file in real
+   Ableton Live, which cannot run in CI. For a codebase with this testing
+   culture (property tests, determinism contracts, eval harness), a permanent
+   manual open-in-Live step on every release that touches the exporter is the
+   main ongoing cost.
+6. **Posture notes.** Interoperability files generated from community
+   knowledge, no Ableton SDK or assets involved — the same footing as the
+   listed open-source tools. UI copy should say "Export for Ableton Live"
+   (compatibility statement), not imply endorsement. The open
+   [DAWproject](https://github.com/bitwig/dawproject) format is the
+   interchange alternative (Bitwig, Studio One, Cubase) but **Live does not
+   read it**, so it serves a different funnel, not this one.
+
+### Verdict
+
+Viable as a small, contained feature **if scoped hard**: MIDI clips only, one
+target schema, template injection, empty device chains, browser-side first.
+Recommended next step if pursued: hand-build one `.als` from a real
+polyrhythmic session (e.g. "Polyrhythm Demo"), verify it opens in Live
+Lite/Intro/Suite, then decide whether the manual-verification tail is worth
+the polyrhythm-preserving funnel. MIDI export remains the universal baseline
+either way.
 
 ---
 
