@@ -1,0 +1,427 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Category Color — Options & Recommendation</title>
+<style>
+  :root {
+    --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1;
+    --brand: #e85a30; --hl: #17a673; --bad: #c0392b;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --hl: #2fc58c; --bad: #e06555; }
+  }
+  :root[data-theme="light"] { --ground:#eef0f3; --panel:#ffffff; --ink:#1b1f24; --muted:#59626e; --line:#d5dae1; --hl:#17a673; --bad:#c0392b; }
+  :root[data-theme="dark"] { --ground:#0c0d0f; --panel:#16181b; --ink:#e8eaed; --muted:#97a0ab; --line:#2a2e34; --hl:#2fc58c; --bad:#e06555; }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); margin: 0; padding: 44px 24px 90px; line-height: 1.5; }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 34px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); font-weight: 600; }
+  header h1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 10px; line-height: 1.08; text-wrap: balance; }
+  .lede { color: var(--muted); max-width: 68ch; margin: 0; font-size: 15.5px; }
+  .lede b { color: var(--ink); }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .opt { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; }
+  .opt h3 { margin: 0; font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .opt h3 .num { font-family: var(--mono); font-size: 10px; color: var(--muted); font-weight: 700; }
+  .opt p { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .opt p b { color: var(--ink); font-weight: 600; }
+  .verdict { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 3px; margin-left: auto; }
+  .verdict.no { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+  .verdict.meh { color: #b98207; background: color-mix(in srgb, #b98207 14%, transparent); }
+  .verdict.yes { color: var(--hl); background: color-mix(in srgb, var(--hl) 13%, transparent); }
+  .jobs { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .jobs b { color: var(--ink); }
+
+  /* ------- Keyboardia specimen (always dark) ------- */
+  .spec {
+    background: #121212; border-radius: 7px; padding: 10px; display: flex; flex-direction: column; gap: 4px;
+    color: rgba(255,255,255,0.87); font-size: 10.5px;
+    --raised: #2a2a2a; --bd: #3a3a3a; --mut: rgba(255,255,255,0.6); --dim: rgba(255,255,255,0.38);
+    --acc: #e85a30; --yellow: #f1c40f; --purpleS: #9b59b6;
+    --cat-drums: #e67e22; --cat-bass: #9b59b6; --cat-keys: #3498db;
+  }
+  .r { display: grid; grid-template-columns: 46px 20px 20px 1fr; column-gap: 6px; align-items: center;
+       background: #1e1e1e; border-radius: 6px; padding: 5px 8px; position: relative; }
+  .r .nm { font-weight: 600; font-size: 10.5px; padding: 2px 5px; border-radius: 4px; }
+  .r .b { height: 18px; border-radius: 4px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut);
+          font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .r .cells { display: flex; gap: 2px; }
+  .c { width: 11px; height: 18px; border-radius: 2px; background: var(--raised); border: 1px solid var(--bd); box-sizing: border-box; }
+  .c.on { background: var(--acc); border-color: #f07048; }
+  .r.soloed { outline: 2px solid var(--purpleS); outline-offset: -1px; }
+  .r.soloed .b.s { background: rgba(155,89,182,0.25); border-color: var(--purpleS); color: #e4c9f2; }
+  .r.muted { opacity: 0.55; }
+  .r.muted .b.m { background: rgba(241,196,15,0.2); border-color: var(--yellow); color: #f7e3a1; }
+
+  /* Option variants */
+  .v-grip .r { grid-template-columns: 14px 46px 20px 20px 1fr; }
+  .v-grip .grip { font-size: 9px; letter-spacing: 1px; color: var(--dim, rgba(255,255,255,0.38)); justify-self: center; cursor: grab; }
+  .v-gripdots .grip { color: var(--cat); font-weight: 700; }
+  .v-gripbg .grip { background: color-mix(in srgb, var(--cat) 20%, transparent); border: 1px solid color-mix(in srgb, var(--cat) 40%, transparent); border-radius: 3px; padding: 1px 2px; color: rgba(255,255,255,0.6); }
+  .v-strip3 .r { border-left: 3px solid var(--cat); padding-left: 8px; }
+  .v-strip1 .r { border-left: 1px solid var(--cat); padding-left: 10px; }
+  .v-dot .r { grid-template-columns: 10px 46px 20px 20px 1fr; }
+  .v-dot .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cat); justify-self: center; }
+  .v-wash .r { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 8%, #1e1e1e) 0 92px, #1e1e1e 112px); }
+  .v-cells .c.on { background: var(--cat); border-color: color-mix(in srgb, var(--cat) 70%, #fff); }
+  .v-label .r .nm { background: color-mix(in srgb, var(--cat) 14%, transparent); border: 1px solid color-mix(in srgb, var(--cat) 42%, transparent); }
+  /* Label-execution variants (refining O6) */
+  .l-fill .r .nm { background: color-mix(in srgb, var(--cat) 16%, transparent); }
+  .l-outline .r .nm { border: 1px solid color-mix(in srgb, var(--cat) 55%, transparent); }
+  .l-under .r .nm { border-radius: 0; border-bottom: 2px solid var(--cat); padding-bottom: 1px; }
+  .l-tick .r .nm { position: relative; padding-left: 10px; }
+  .l-tick .r .nm::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--cat); }
+  .l-flag .r .nm { background: color-mix(in srgb, var(--cat) 14%, transparent); border-radius: 2px; display: block; }
+  .cat-drums { --cat: #e67e22; } .cat-bass { --cat: #9b59b6; } .cat-keys { --cat: #3498db; }
+
+  .note { font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+  .note b { color: var(--ink); }
+
+  .rec { background: var(--panel); border: 1px solid color-mix(in srgb, var(--hl) 40%, var(--line)); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .rec h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .rec p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .rec p b, .rec li b { color: var(--ink); }
+  .rec ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 5px; }
+  .principle { font-size: 15px; font-weight: 700; color: var(--ink); border-left: 3px solid var(--hl); padding-left: 12px; }
+
+  /* C-12 before/after specimens */
+  .ba { display: flex; flex-direction: column; gap: 6px; }
+  .ba .tag2 { font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em; color: var(--muted); font-weight: 700; }
+  .gone { outline: 2px dashed var(--bad); outline-offset: 2px; border-radius: 4px; position: relative; }
+  .gone::after { content: "CUT"; position: absolute; top: -7px; right: -6px; font-family: var(--mono); font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; background: var(--bad); color: #fff; border-radius: 2px; padding: 0 3px; }
+  .tick-nm { position: relative; padding-left: 9px; font-weight: 600; }
+  .tick-nm::before { content: ""; position: absolute; left: 0; top: 1px; bottom: 1px; width: 3px; border-radius: 2px; background: var(--cat); }
+  .mx { display: flex; flex-direction: column; align-items: center; gap: 4px; background: #1e1e1e; border: 1px solid var(--bd, #3a3a3a); border-radius: 6px; padding: 6px 8px; width: 64px; font-size: 9px; }
+  .mx .catbar { width: 100%; height: 4px; border-radius: 2px; background: var(--cat); }
+  .mx .fader { width: 4px; height: 34px; background: #2a2a2a; border-radius: 2px; position: relative; }
+  .mx .fader i { position: absolute; top: 30%; left: 50%; transform: translate(-50%,-50%); width: 12px; height: 6px; border-radius: 2px; background: #fff; }
+  .mx .bb { display: flex; gap: 3px; }
+  .mx .bb span { width: 16px; height: 14px; border: 1px solid #3a3a3a; border-radius: 3px; background: #2a2a2a; font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; }
+  .pk { display: flex; align-items: center; gap: 6px; background: #202020; border: 1px solid #3a3a3a; border-radius: 5px; padding: 4px 8px; font-size: 9.5px; font-weight: 600; }
+  .pk.before { border-left: 3px solid var(--cat); }
+  .po-row { display: flex; align-items: center; gap: 6px; font-size: 9.5px; }
+  .po-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cat); }
+  .po-range { flex: 1; height: 5px; background: #2a2a2a; border-radius: 2px; position: relative; }
+  .po-range i { position: absolute; left: 20%; width: 45%; top: 0; bottom: 0; border-radius: 2px; background: color-mix(in srgb, var(--cat) 55%, transparent); }
+  .mh { display: flex; align-items: center; gap: 6px; background: #1e1e1e; border: 1px solid #3a3a3a; border-radius: 6px; padding: 5px 9px; font-size: 10px; }
+  .mh .tb { font-size: 8.5px; color: rgba(255,255,255,0.55); border: 1px solid #3a3a3a; border-radius: 3px; padding: 0 4px; }
+  .mh .ms { margin-left: auto; display: flex; gap: 3px; }
+  .mh .ms span { width: 15px; height: 13px; border: 1px solid #3a3a3a; border-radius: 3px; background: #2a2a2a; font-size: 6.5px; font-weight: 700; color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; }
+  .flash2 { animation: flashk2 1.6s ease-in-out infinite; }
+  @keyframes flashk2 { 0%,55%,100% { box-shadow: none; } 65%,80% { box-shadow: 0 0 0 2px #43A047, 0 0 8px #43A047; } }
+  @media (prefers-reduced-motion: reduce) { .flash2 { animation: none; } }
+  .plumb { font-family: var(--mono); font-size: 10.5px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; overflow-x: auto; white-space: nowrap; }
+  .plumb b { color: var(--ink); }
+
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th { text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--line); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  .y { color: var(--hl); font-weight: 700; } .n { color: var(--bad); font-weight: 700; } .m { color: #b98207; font-weight: 700; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Keyboardia · design exploration · category color on track rows</span>
+    <h1>Category Color: eight options, one principle</h1>
+    <p class="lede">The strip's jobs are <b>scanning</b> (find the drums without reading), <b>sectioning</b> (same-hue neighbors
+      read as a block), and <b>anchoring</b> (row identity survives horizontal scroll) — all <b>classification, never state</b>.
+      Every option below is drawn on the same three rows, including a <b>soloed</b> row (purple outline) and a <b>muted</b>
+      row (yellow M, dimmed) — because the real test is whether classification stays legible <i>and quiet</i> next to state.</p>
+  </header>
+
+  <div class="grid2">
+
+    <div class="opt">
+      <h3><span class="num">O1</span> 3px strip — today <span class="verdict no">reject</span></h3>
+      <div class="spec v-strip3">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>A filled edge is the vocabulary of <b>state</b> — next to the solo outline it reads as a second selection system, and 16 rows make a rainbow gutter that outshouts the music.</p>
+      <p class="jobs">scan <b>✓</b> · section <b>✓</b> · anchor <b>✓</b> · quiet-vs-state <b>✗</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O2</span> 1px hairline — v1 proposal <span class="verdict no">reject</span></h3>
+      <div class="spec v-strip1">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Quiet, but <b>hue barely survives 1px</b> — orange vs pink vs purple become "some colored line," and it still spends the row's edge (a state channel) on classification. A refinement of the wrong idea.</p>
+      <p class="jobs">scan <b>~</b> · section <b>~</b> · anchor <b>✓</b> · quiet-vs-state <b>✓</b> · hue legibility <b>✗</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O3</span> Category dot <span class="verdict meh">runner-up</span></h3>
+      <div class="spec v-dot">
+        <div class="r cat-drums"><span class="dot"></span><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="dot"></span><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="dot"></span><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The Linear/label idiom: an 8px dot holds hue far better than a 1px line and scans beautifully. But it <b>adds a column</b> to the control template Arc 1 just fought to shrink, and dots don't fuse, so sectioning dies.</p>
+      <p class="jobs">scan <b>✓✓</b> · section <b>✗</b> · anchor <b>✓</b> · quiet-vs-state <b>✓</b> · cost: +1 column</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O4</span> Control-zone wash <span class="verdict meh">plausible</span></h3>
+      <div class="spec v-wash">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Color-science inversion: <b>big area, low chroma</b> (~8%) instead of small area, high chroma. Hue is readable, sectioning is the best of any option. But it tints the chrome itself — the calm dark surface gets faintly striped, and it visually couples with mute/solo row treatments.</p>
+      <p class="jobs">scan <b>✓</b> · section <b>✓✓</b> · anchor <b>✓</b> · quiet-vs-state <b>~</b> · cost: chrome purity</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O5</span> Category-colored cells <span class="verdict no">reject</span></h3>
+      <div class="spec v-cells">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The Ableton answer — maximum scanning, and it kills the brand: <b>orange = a note</b> is Keyboardia's signature and the anchor of the whole state palette (velocity fill, p-lock badges, playhead contrast). Classification must not colonize the music itself.</p>
+      <p class="jobs">scan <b>✓✓</b> · section <b>✓✓</b> · anchor <b>✓</b> · state hierarchy <b>✗✗</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O6</span> Category-tinted name label <span class="verdict yes">recommended</span></h3>
+      <div class="spec v-label">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The track name becomes a <b>label chip</b>: ~14% category tint + 42% hairline border, white text. Labels are the universal idiom for <b>classification</b> — exactly the strip's job — and it restyles an element that already exists in the column template. The row edge returns to neutral, owned by state alone.</p>
+      <p class="jobs">scan <b>✓</b> · section <b>✓</b> (stacked chips align) · anchor <b>✓</b> · quiet-vs-state <b>✓✓</b> · cost: none</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O7</span> Colored grip dots <span class="verdict meh">tested</span></h3>
+      <div class="spec v-grip v-gripdots">
+        <div class="r cat-drums"><span class="grip">⠿</span><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="grip">⠿</span><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="grip">⠿</span><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Real advantages: the grip column <b>already exists</b> (zero template cost, unlike O3's dot), the name stays maximally clean, and the least-used control earns a second job. But six hairline dots carry hue like a 1px line does — squint and orange/pink/purple converge — and the color now lives <b>on an interactive affordance</b>: the most colorful thing in the control zone is the control you use least, and it has to survive hover/drag states.</p>
+      <p class="jobs">scan <b>~</b> · section <b>✗</b> · anchor <b>✓</b> · quiet-vs-state <b>✓</b> · hue at glyph weight <b>✗</b> · cost <b>0</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O8</span> Tinted grip background <span class="verdict meh">tested</span></h3>
+      <div class="spec v-grip v-gripbg">
+        <div class="r cat-drums"><span class="grip">⠿</span><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="grip">⠿</span><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="grip">⠿</span><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Fixes O7's hue problem — area does the work, like the label. But now the grip reads as a <b>colored button</b>: chip styling is press-me vocabulary, promoting a drag handle into the row's most tappable-looking control. And both grip variants share a structural flaw: <b>the grip is desktop-only</b> (mobile rows, MixerPanel, and SamplePicker have no grip), so the category system fragments exactly where the label idiom travels intact.</p>
+      <p class="jobs">scan <b>✓</b> · section <b>✗</b> · anchor <b>✓</b> · quiet-vs-state <b>~</b> (button-like) · hue <b>✓</b> · cost <b>0</b> · presence <b>✗</b> desktop-only</p>
+    </div>
+
+  </div>
+
+  <div class="note"><b>Accessibility note:</b> every option encodes category in hue, which fails color-blind users equally — but in O6 the carrier is the <b>name itself</b>, so the text remains the discriminator and color is purely an accelerator. If a second channel is ever wanted, the label has room for a small category glyph (● ~ ♪) without a new column.</div>
+
+  <table>
+    <tr><th>Option</th><th>Scan</th><th>Section</th><th>Anchor</th><th>Quiet vs state</th><th>Hue legible</th><th>Template cost</th></tr>
+    <tr><td>O1 · 3px strip (today)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">✗</td><td class="y">✓</td><td>0</td></tr>
+    <tr><td>O2 · 1px hairline</td><td class="m">~</td><td class="m">~</td><td class="y">✓</td><td class="y">✓</td><td class="n">✗</td><td>0</td></tr>
+    <tr><td>O3 · dot</td><td class="y">✓✓</td><td class="n">✗</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">+1 col</td></tr>
+    <tr><td>O4 · zone wash</td><td class="y">✓</td><td class="y">✓✓</td><td class="y">✓</td><td class="m">~</td><td class="y">✓</td><td>0</td></tr>
+    <tr><td>O5 · colored cells</td><td class="y">✓✓</td><td class="y">✓✓</td><td class="y">✓</td><td class="n">✗✗</td><td class="y">✓</td><td>0</td></tr>
+    <tr><td><b>O6 · name label</b></td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓✓</td><td class="y">✓</td><td><b>0</b></td></tr>
+    <tr><td>O7 · colored grip dots</td><td class="m">~</td><td class="n">✗</td><td class="y">✓</td><td class="y">✓</td><td class="n">✗</td><td>0 · desktop-only</td></tr>
+    <tr><td>O8 · tinted grip background</td><td class="y">✓</td><td class="n">✗</td><td class="y">✓</td><td class="m">~</td><td class="y">✓</td><td>0 · desktop-only</td></tr>
+  </table>
+
+  <header style="margin-top:6px">
+    <h1 style="font-size:22px; margin:0 0 6px">Refining the winner: six executions of the name label</h1>
+    <p class="lede">The label <i>placement</i> won; the chip <i>styling</i> deserves the same scrutiny O8 got — border + fill is
+      button vocabulary, and the name doesn't need to look pressable to carry a hue. Same three test rows.</p>
+  </header>
+
+  <div class="grid2">
+    <div class="opt">
+      <h3><span class="num">L1</span> Chip: fill + border <span class="verdict meh">first draft</span></h3>
+      <div class="spec v-label">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The O6 spec as first drafted. The border makes it the same "pressable chip" the O8 critique rejected — ×16 rows of hairline boxes is quiet noise, and it visually rhymes with the M/S buttons beside it.</p>
+      <p class="jobs">hue <b>✓</b> · quiet <b>~</b> (button-ish) · text <b>✓</b> · section <b>✓</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L2</span> Fill only <span class="verdict meh">runner-up</span></h3>
+      <div class="spec l-fill">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Drop the border and the GitHub-label read appears: soft, clearly a tag, not a button. The tint sits <i>under</i> the text, so contrast dips a hair, and the softness costs some hue certainty at 16%.</p>
+      <p class="jobs">hue <b>✓</b> · quiet <b>✓</b> · text <b>✓−</b> · section <b>✓</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L3</span> Outline only <span class="verdict no">reject</span></h3>
+      <div class="spec l-outline">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The hairline problem, third appearance: 1px of hue around a box is as illegible as 1px along an edge — and an outline is exactly how <b>selection</b> is drawn. Both failure modes at once.</p>
+      <p class="jobs">hue <b>✗</b> · quiet <b>✗</b> (selection idiom) · text <b>✓✓</b> · section <b>~</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L4</span> Underline <span class="verdict meh">elegant, ambiguous</span></h3>
+      <div class="spec l-under">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Typographic and quiet, and 2px × the name's width is enough area for hue. But an underline under clickable text is the web's oldest <b>link</b> idiom — it promises navigation, not classification — and descenders collide with it.</p>
+      <p class="jobs">hue <b>✓−</b> · quiet <b>✓</b> · text <b>✓</b> · section <b>✗</b> · idiom <b>✗</b> link</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L5</span> Name tick <span class="verdict yes">recommended</span></h3>
+      <div class="spec l-tick">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>A solid 3px bar, text-height, flush-left <b>inside the name slot</b> — the original strip's one virtue (solid color carries hue) kept, and both of its sins fixed: it binds to <b>identity by Proximity</b> instead of squatting on the state edge, and it's text-height, not row-height. Zero button vocabulary; the name's pixels stay untouched.</p>
+      <p class="jobs">hue <b>✓✓</b> (solid area) · quiet <b>✓✓</b> · text <b>✓✓</b> (untouched) · section <b>~</b> (ticks column-align) · portable <b>✓✓</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L6</span> Slot flag <span class="verdict meh">loud</span></h3>
+      <div class="spec l-flag">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The full name slot tinted edge-to-edge, squared — a flag, not a pill. Best sectioning of the label family (flags stack into a color column), but a filled block behind text is also how a <b>selected cell</b> looks, and it's the boldest thing on an unselected row.</p>
+      <p class="jobs">hue <b>✓✓</b> · quiet <b>~</b> (selected-cell read) · text <b>~</b> · section <b>✓✓</b></p>
+    </div>
+  </div>
+
+  <div class="rec">
+    <h2>Adopted: the name tick (O6 · L5)</h2>
+    <p class="principle">Edges signal state. Labels signal class. Proximity binds color to identity.</p>
+    <p>The label <i>placement</i> stands — classification lives with the name — but the winning execution is the <b>tick</b>:
+      a solid, text-height bar flush-left inside the name slot. It is the original strip's one virtue (solid color carries
+      hue) with both of its sins corrected: bound to the name by Proximity instead of squatting on the row's state edge,
+      and text-height instead of row-height. No box, no border, no button vocabulary — the name's pixels are untouched.</p>
+    <ul>
+      <li><b>Spec:</b> a <code style="font-family:var(--mono)">3px</code> bar at full category saturation, height = the name's text box (top/bottom inset 2px), radius 2px, 6–7px clear of the text, flush-left in the existing name slot. Text stays <code style="font-family:var(--mono)">--color-text</code>; the tick dims with the row when muted; the row's left border is removed entirely. Name keeps its click-preview / rename behaviors — during rename, the tick stays beside the input.</li>
+      <li><b>Consistency (Repetition):</b> the same label treatment carries category in the MixerPanel channel headers and the SamplePicker rows — one rule everywhere color classifies.</li>
+      <li><b>Hue as solid area:</b> 3×16px of 100% saturation reads its hue instantly — more certain than any tint or hairline, at a fraction of the ink.</li>
+      <li><b>Vocabulary cost: zero.</b> No new affordance, no new column — a pseudo-element on the existing name slot. Where a bigger color surface is wanted (e.g., the SamplePicker's category headers), the L2 fill-only label is the sanctioned bolder sibling.</li>
+      <li><b>If sectioning ever needs reinforcement</b> (many same-category adjacent tracks), the O4 wash at ≤6% can be layered later as a group treatment — a separate decision, gated like everything else.</li>
+      <li><b>On the grip variants (O7/O8):</b> their real merits — zero template cost, a clean name, double-duty for the least-used control — don't survive their structural flaw: the grip exists only on desktop track rows, so category would vanish on mobile, in the mixer, and in the picker, fragmenting the one system the label keeps whole. And color on an interactive affordance either promotes the wrong control (chip-styled O8 reads as press-me) or under-delivers hue (glyph-weight O7).</li>
+    </ul>
+  </div>
+
+  <header style="margin-top:6px">
+    <h1 style="font-size:22px; margin:0 0 6px">C-12, shown: five paint paths become one carrier</h1>
+    <p class="lede">Every surface that names a track currently paints category its own way. After adoption, each renders
+      the <b>name component</b> — which brings its tick — and the bespoke treatment is <b>deleted</b> (red = cut).</p>
+  </header>
+
+  <div class="grid2">
+
+    <div class="opt">
+      <h3><span class="num">1</span> TrackRow <span class="verdict yes">done at adoption</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center">
+        <div class="ba"><span class="tag2">TODAY</span>
+          <div class="r cat-bass" style="border-left:3px solid var(--cat); grid-template-columns: 46px 20px 20px;"><span class="nm gone" style="outline-offset:-16px; outline:none">Bass</span><span class="b">M</span><span class="b">S</span></div>
+          <span class="tag2" style="color:var(--bad)">3px edge strip → CUT</span></div>
+        <div class="ba"><span class="tag2">AFTER</span>
+          <div class="r cat-bass" style="grid-template-columns: 54px 20px 20px;"><span class="tick-nm">Bass</span><span class="b">M</span><span class="b">S</span></div>
+          <span class="tag2" style="color:var(--hl)">tick via name component</span></div>
+      </div>
+      <p>The edge returns to state; the name carries class.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">2</span> MixerPanel channel <span class="verdict yes">bar deleted</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center">
+        <div class="ba" style="align-items:center"><span class="tag2">TODAY</span>
+          <div class="mx cat-bass"><span class="catbar gone"></span><span>Bass</span><span class="bb"><span>M</span><span>S</span></span><span class="fader"><i></i></span></div></div>
+        <div class="ba" style="align-items:center"><span class="tag2">AFTER</span>
+          <div class="mx cat-bass"><span class="tick-nm">Bass</span><span class="bb"><span>M</span><span>S</span></span><span class="fader"><i></i></span></div></div>
+      </div>
+      <p>The channel's separate category bar — its own element and CSS — goes; the channel header is just the name component.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">3</span> SamplePicker item <span class="verdict yes">border styling deleted</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center">
+        <div class="ba"><span class="tag2">TODAY</span>
+          <div class="pk before cat-keys gone">🎹 Rhodes</div>
+          <span class="tag2" style="color:var(--bad)">per-item --category-color border</span></div>
+        <div class="ba"><span class="tag2">AFTER</span>
+          <div class="pk cat-keys"><span class="tick-nm">Rhodes</span></div>
+          <span class="tag2" style="color:var(--hl)">same tick; headers may use the L2 fill</span></div>
+      </div>
+      <p>The picker's dynamic <code style="font-family:var(--mono);font-size:10px">--category-color</code> plumbing collapses into the shared <code style="font-family:var(--mono);font-size:10px">--cat</code> mapping.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">4</span> PitchOverview row <span class="verdict yes">dot deleted</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center; padding:8px 14px">
+        <div class="ba" style="min-width:120px"><span class="tag2">TODAY</span>
+          <div class="po-row cat-bass"><span class="po-dot gone"></span><span>Bass</span><span class="po-range"><i></i></span></div></div>
+        <div class="ba" style="min-width:120px"><span class="tag2">AFTER</span>
+          <div class="po-row cat-bass"><span class="tick-nm">Bass</span><span class="po-range"><i></i></span></div></div>
+      </div>
+      <p>The overview's own track marker becomes the same name-plus-tick as everywhere else.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">5</span> Mobile portrait header <span class="verdict yes">♪ badge deleted</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center">
+        <div class="ba" style="min-width:130px"><span class="tag2">TODAY</span>
+          <div class="mh cat-bass"><span>Bass</span><span class="tb gone">♪</span><span class="ms"><span>M</span><span>S</span></span></div></div>
+        <div class="ba" style="min-width:130px"><span class="tag2">AFTER</span>
+          <div class="mh cat-bass"><span class="tick-nm">Bass</span><span class="ms"><span>M</span><span>S</span></span></div></div>
+      </div>
+      <p>The track-type badge is classification with no portrait action — the tick's hue already answers it. Category reaches mobile for the first time, by deletion.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">G</span> The guard: player ≠ category <span class="verdict no">never merge</span></h3>
+      <div class="spec" style="gap:10px">
+        <div class="r cat-bass" style="grid-template-columns: 54px 20px 1fr;"><span class="tick-nm">Bass</span><span class="b">M</span><span class="cells"><span class="c on flash2"></span><span class="c"></span><span class="c on"></span><span class="c"></span></span></div>
+        <span style="width:20px;height:20px;border-radius:50%;background:#43A047;color:#0b0b0b;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center">F</span>
+      </div>
+      <p>Two colored marks near names, one rule each: the <b>purple tick</b> classifies the track; the <b>green flash</b> attributes the edit to Green Fox. They look mergeable and must never be — people are not classifications, and attribution depends on player color meaning exactly one thing.</p>
+    </div>
+
+  </div>
+
+  <div class="plumb"><b>One plumbing path:</b> sample-constants.ts (category → hue) ──► <b>--cat</b> on the row/item ──► name component's <b>::before tick</b>. Deleted: TrackRow border-left rules · MixerPanel .catbar · SamplePicker --category-color wiring · PitchOverview dot · portrait ♪ badge.</div>
+</div>
+
+<script>
+  document.querySelectorAll('[data-c]').forEach(el => {
+    el.dataset.c.split('').forEach(b => {
+      const c = document.createElement('span');
+      c.className = 'c' + (b === '1' ? ' on' : '');
+      el.appendChild(c);
+    });
+  });
+</script>
+
+</html>

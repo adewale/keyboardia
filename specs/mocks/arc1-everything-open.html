@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arc 1 — Everything Open</title>
+<style>
+  :root {
+    --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1;
+    --brand: #e85a30; --hl: #17a673; --warn: #b98207;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --hl: #2fc58c; --warn: #d9a62e; }
+  }
+  :root[data-theme="light"] { --ground:#eef0f3; --panel:#ffffff; --ink:#1b1f24; --muted:#59626e; --line:#d5dae1; --hl:#17a673; --warn:#b98207; }
+  :root[data-theme="dark"] { --ground:#0c0d0f; --panel:#16181b; --ink:#e8eaed; --muted:#97a0ab; --line:#2a2e34; --hl:#2fc58c; --warn:#d9a62e; }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); margin: 0; padding: 44px 24px 90px; line-height: 1.5; }
+  .wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); font-weight: 600; }
+  header h1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 10px; line-height: 1.08; text-wrap: balance; }
+  .lede { color: var(--muted); max-width: 72ch; margin: 0; font-size: 15.5px; }
+  .lede b { color: var(--ink); }
+
+  .row2 { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
+  @media (max-width: 1000px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
+  .framewrap { overflow-x: auto; padding-bottom: 6px; }
+  .frame { background: #060607; border-radius: 14px; padding: 11px; width: fit-content;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.07); }
+
+  .notes { display: flex; flex-direction: column; gap: 9px; font-size: 12.8px; color: var(--muted); }
+  .notes h2 { font-size: 15px; font-weight: 750; margin: 0 0 2px; color: var(--ink); }
+  .notes .li { display: grid; grid-template-columns: 20px 1fr; gap: 8px; align-items: start; }
+  .notes .li b { color: var(--ink); font-weight: 600; }
+  .n { width: 18px; height: 18px; border-radius: 50%; background: var(--hl); color: #04130c; font-family: var(--mono); font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .n.x { background: var(--warn); color: #1a1204; }
+
+  section { border-top: 2px solid var(--line); padding-top: 20px; display: flex; flex-direction: column; gap: 14px; }
+  .sechead { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .sechead h2 { font-size: 20px; font-weight: 780; margin: 0; letter-spacing: -0.01em; }
+  .sechead .ph { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600; }
+  .sub { margin: 0; color: var(--muted); font-size: 13.5px; max-width: 78ch; }
+  .sub b { color: var(--ink); }
+
+  /* ---------- app ---------- */
+  .app {
+    background: #121212; border-radius: 7px; color: rgba(255,255,255,0.87);
+    font-family: var(--sans); font-size: 11px; position: relative; width: 900px;
+    --raised: #2a2a2a; --bd: #3a3a3a; --mut: rgba(255,255,255,0.6); --dim: rgba(255,255,255,0.38);
+    --acc: #e85a30; --blue: #3498db; --purple: #9b59b6; --green: #1db954; --teal: #4ecdc4;
+    --yellow: #f1c40f; --cyan: #00bcd4; --err: #e74c3c; --active: #444444;
+    --cellw: 15px; --cellgap: 2px;
+  }
+  .bar { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: #1a1a1a; border-bottom: 1px solid #2c2c2c; border-radius: 7px 7px 0 0; position: relative; }
+  .play { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #06130a; display: flex; align-items: center; justify-content: center; font-size: 11px; flex: none; }
+  .lcd { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 12px; background: #252525; border: 1px solid var(--bd); border-radius: 5px; padding: 3px 8px; text-align: center; }
+  .lcd small { display: block; font-size: 7.5px; font-weight: 500; color: var(--mut); letter-spacing: 0.1em; }
+  .btn { height: 24px; min-width: 24px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+  .btn.pur { border-color: rgba(155,89,182,0.6); color: #e4c9f2; background: rgba(155,89,182,0.12); }
+  .btn.saved { border-color: rgba(29,185,84,0.5); color: #baf0cd; }
+  .spacer { flex: 1; }
+  .avs { display: flex; }
+  .av { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #1a1a1a; margin-left: -5px; font-size: 8px; font-weight: 800; color: #0b0b0b; display: flex; align-items: center; justify-content: center; }
+  .chip { min-width: 30px; height: 24px; padding: 0 7px; border-radius: 5px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-family: var(--mono); font-size: 9.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
+  .chip.cur { background: rgba(232,90,48,0.16); border-color: var(--acc); color: #ffd9c9; }
+  .chip.cur::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--acc); }
+  .chip.sm { height: 18px; min-width: 24px; font-size: 8px; padding: 0 6px; }
+  .chip.sm.cur::before { width: 3px; height: 3px; }
+
+  .dd { position: absolute; z-index: 8; background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 6px; padding: 4px; font-size: 10px; min-width: 118px; box-shadow: 0 10px 24px rgba(0,0,0,0.6); }
+  .dd .grp { font-family: var(--mono); font-size: 7.5px; letter-spacing: 0.12em; color: var(--dim); padding: 3px 7px 1px; }
+  .dd .opt { padding: 4px 7px; border-radius: 3px; color: var(--mut); display: flex; justify-content: space-between; gap: 10px; }
+  .dd .opt.sel { background: rgba(52,152,219,0.15); color: #cfe8f8; }
+
+  /* aux panel */
+  .fx { display: flex; align-items: center; gap: 13px; padding: 9px 12px; background: #191919; border-bottom: 1px solid #2c2c2c; }
+  .fx .byp { height: 22px; padding: 0 8px; border-radius: 5px; border: 1px solid rgba(29,185,84,0.5); background: rgba(29,185,84,0.12); color: #baf0cd; font-size: 9.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+  .xy { width: 54px; height: 54px; border: 1px solid var(--bd); border-radius: 6px; background: #1a1a1a; position: relative; flex: none; }
+  .xy::before, .xy::after { content: ""; position: absolute; background: rgba(255,255,255,0.1); }
+  .xy::before { left: 50%; top: 0; bottom: 0; width: 1px; } .xy::after { top: 50%; left: 0; right: 0; height: 1px; }
+  .xy .puck { position: absolute; left: 60%; top: 32%; width: 10px; height: 10px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 7px rgba(0,188,212,0.6); }
+  .sl { display: flex; flex-direction: column; gap: 3px; font-size: 8px; color: var(--mut); letter-spacing: 0.08em; }
+  .hs { width: 84px; height: 4px; background: var(--raised); border-radius: 2px; position: relative; }
+  .hs .f { position: absolute; left: 0; top: 0; bottom: 0; width: 55%; background: var(--cyan); border-radius: 2px; }
+  .hs .t { position: absolute; left: 55%; top: 50%; transform: translate(-50%,-50%); width: 11px; height: 11px; border-radius: 50%; background: #fff; }
+
+  /* rows: ONE column template shared by track / lane / pitch rows */
+  .rows { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 5px; }
+  .tr, .lanerow, .pitchrow {
+    display: grid; align-items: center; column-gap: 6px;
+    grid-template-columns: 14px 56px 22px 22px 40px 22px 1fr;
+    background: #1e1e1e; border-radius: 7px; padding: 5px 8px;
+  }
+  .tr.drums, .lanerow.drums, .pitchrow.drums { --cat: #e67e22; }
+  .tr.bass, .lanerow.bass, .pitchrow.bass { --cat: #9b59b6; }
+  .tr.keys, .lanerow.keys, .pitchrow.keys { --cat: #3498db; }
+  .lanerow, .pitchrow { background: #191919; padding-top: 3px; padding-bottom: 5px; margin-top: -3px; }
+  .tn { font-weight: 600; font-size: 11px; position: relative; padding-left: 10px; }
+  .tn::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--cat, transparent); }
+  .mb { width: 100%; height: 20px; border-radius: 4px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-size: 8.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .mb.on { background: rgba(232,90,48,0.16); border-color: var(--acc); color: #ffd9c9; }
+  .mb.mute { background: rgba(241,196,15,0.16); border-color: var(--yellow); color: #f7e3a1; }
+  .grip { color: var(--dim); font-size: 8px; letter-spacing: 1px; }
+  .slot-empty { visibility: hidden; }
+  .steps, .lanebars, .pcells { display: flex; gap: var(--cellgap); align-items: flex-end; grid-column: 7; }
+  .cell { width: var(--cellw); height: 22px; border-radius: 2.5px; background: var(--raised); border: 1px solid var(--bd); flex: none; box-sizing: border-box; position: relative; }
+  .cell.on { background: var(--acc); border-color: #f07048; box-shadow: 0 0 4px rgba(232,90,48,0.35); }
+  .cell.ph { outline: 2px solid #fff; outline-offset: -1px; }
+  .cell.sel { outline: 2px solid var(--blue); outline-offset: -1px; }
+  .cell.flash { animation: fl 1.6s ease-in-out infinite; }
+  @keyframes fl { 0%,55%,100% { box-shadow: none; } 65%,82% { box-shadow: 0 0 0 2px #43A047, 0 0 9px #43A047; } }
+  @media (prefers-reduced-motion: reduce) { .cell.flash { animation: none; box-shadow: 0 0 0 2px #43A047; } }
+  .cell .bdg { position: absolute; top: 0; right: 1px; font-size: 7px; font-weight: 800; color: #cfe8f8; line-height: 1; }
+  .lanebars { height: 26px; }
+  .lanebars b { width: var(--cellw); box-sizing: border-box; background: linear-gradient(180deg, #e67e22, var(--purple)); border-radius: 2px 2px 0 0; flex: none; }
+  .lane-label { grid-column: 5; display: flex; gap: 2px; justify-content: center; }
+  .pcell { width: var(--cellw); height: 13px; border-radius: 2px; background: #232323; border: 1px solid #333; flex: none; box-sizing: border-box; }
+  .pcell.on { background: var(--blue); border-color: #5dade2; box-shadow: 0 0 5px rgba(52,152,219,0.45); }
+  .pname { grid-column: 6; font-family: var(--mono); font-size: 7.5px; color: var(--dim); text-align: right; }
+  .pitchrow { padding-top: 1px; padding-bottom: 1px; margin-top: -4px; }
+  .pitchrow.last { padding-bottom: 5px; }
+
+  /* inspector — inline strip */
+  .insp { background: var(--raised); border-radius: 6px; padding: 8px 12px; margin-top: 6px; width: 100%; box-sizing: border-box;
+    font-size: 10px; color: var(--mut); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; position: relative; }
+  .insp .t { font-weight: 700; color: rgba(255,255,255,0.87); font-size: 11px; min-width: 56px; }
+  .insp .g { display: flex; align-items: center; gap: 7px; }
+  .insp .btn { height: 20px; font-size: 9px; }
+  .pclear { padding: 4px 8px; border: 1px solid var(--err); border-radius: 4px; background: transparent; color: var(--err); font-size: 12px; margin-left: auto; }
+
+  .toast { background: #1e1e1e; border: 1px solid var(--bd); border-left: 3px solid var(--teal); border-radius: 6px; padding: 5px 9px; font-size: 9.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); width: fit-content; margin: 0 12px 10px; }
+
+  .tag { position: absolute; z-index: 9; font-family: var(--mono); font-size: 8px; font-weight: 800; letter-spacing: 0.06em; background: var(--hl); color: #04130c; border-radius: 3px; padding: 1px 5px; }
+
+  .ledger { display: grid; grid-template-columns: repeat(auto-fit, minmax(215px, 1fr)); gap: 10px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 13px 15px; display: flex; flex-direction: column; gap: 5px; }
+  .card .big { font-size: 27px; font-weight: 800; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .card .cap { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .card p { margin: 0; font-size: 12.3px; color: var(--muted); }
+  .card p b { color: var(--ink); }
+  .card.good { border-color: color-mix(in srgb, var(--hl) 45%, var(--line)); }
+
+  .callout { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 13px 16px; font-size: 13px; color: var(--muted); }
+  .callout b { color: var(--ink); }
+  .callout code { font-family: var(--mono); font-size: 11.5px; }
+  .callout.q { border-left: 3px solid var(--warn); }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 78ch; border-top: 1px solid var(--line); padding-top: 16px; }
+  footer b { color: var(--ink); }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Keyboardia · Arc 1 · maximum-density stress test</span>
+    <h1>Everything Open</h1>
+    <p class="lede">The consolidated UI with <b>every surface that can be open at once, open at once</b> — aux panel,
+      all three property lanes, the pitch lane, a track inspector, a dropdown, a live selection, remote attribution,
+      and a toast. If the vocabulary is real, this should still read. Note the thing the test reveals:
+      <b>"everything" is now bounded by design</b> — several surfaces are deliberately mutually exclusive, so the
+      worst case is smaller than today's.</p>
+  </header>
+
+  <div class="row2">
+    <div class="framewrap"><div class="frame"><div class="app">
+
+      <!-- TRANSPORT -->
+      <div class="bar">
+        <span class="play">▶</span>
+        <span class="lcd">118<small>BPM ⇅</small></span>
+        <span class="lcd">12%<small>SWING ⇅</small></span>
+        <span class="btn">A min ▾</span>
+        <span style="display:inline-flex;gap:3px"><span class="chip cur">FX</span><span class="chip">MIX</span><span class="chip">PITCH</span></span>
+        <span class="spacer"></span>
+        <span class="btn saved">✓ Saved</span>
+        <span class="btn pur">Publish</span><span class="btn">Remix</span><span class="btn">MIDI</span>
+        <span class="btn" style="border-color:#555">Invite ▾</span>
+        <span class="avs"><span class="av" style="background:#43A047">F</span><span class="av" style="background:#1E88E5">P</span><span class="av" style="background:#FDD835">C</span></span>
+        <span class="dd" style="right:64px; top:34px;">
+          <span class="opt sel">Copy link <span>✓</span></span>
+          <span class="opt">Show QR code</span>
+        </span>
+        <span class="tag" style="right:60px; top:64px;">1 · dropdown</span>
+      </div>
+
+      <!-- AUX PANEL (one at a time) -->
+      <div class="fx">
+        <span class="byp">● Active</span>
+        <div class="xy"><div class="puck"></div></div>
+        <span class="btn">Warm Hall ▾</span>
+        <span class="sl">MIX<span class="hs"><span class="f"></span><span class="t"></span></span></span>
+        <span class="sl">DECAY<span class="hs"><span class="f" style="width:35%"></span><span class="t" style="left:35%"></span></span></span>
+        <span class="sl">DRIVE<span class="hs"><span class="f" style="width:18%"></span><span class="t" style="left:18%"></span></span></span>
+        <span style="font-family:var(--mono); font-size:8px; color:var(--dim); margin-left:auto">2 · aux panel — FX, MIX or PITCH, never two</span>
+      </div>
+
+      <div class="rows">
+
+        <!-- KICK: row + velocity lane -->
+        <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb on">LANE</span><span class="mb">C</span>
+          <span class="steps" data-steps="1000100010001000" data-ph="4"></span></div>
+        <div class="lanerow drums">
+          <span class="lane-label"><span class="chip sm cur">VEL</span></span>
+          <span class="lanebars" data-lane="92,0,0,0,64,0,0,0,86,0,0,0,58,0,0,72"></span></div>
+
+        <!-- BASS: row (muted) + velocity lane + INSPECTOR -->
+        <div class="tr bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb mute">M</span><span class="mb">S</span><span class="mb on">LANE</span><span class="mb">C</span>
+          <span class="steps" data-steps="1001001010010000" data-ph="4" data-sel="0,3,6" data-flash="8"></span></div>
+        <div class="lanerow bass">
+          <span class="lane-label"><span class="chip sm cur">VEL</span></span>
+          <span class="lanebars" data-lane="88,0,0,70,0,0,54,0,0,0,80,0,0,0,0,0"></span></div>
+        <div style="position:relative">
+          <div class="insp">
+            <span class="t"><span class="tn" style="--cat:#9b59b6">Bass</span></span>
+            <span class="g">transpose <span class="lcd" style="font-size:11px;padding:2px 7px">−5<small>⇅</small></span></span>
+            <span class="g">steps <span class="btn" style="height:20px">32 ▾</span></span>
+            <span class="g">swing <span class="btn" style="height:20px">— ▾</span></span>
+            <span class="g" style="gap:5px"><span class="btn">⧉ Copy</span><span class="btn">⌫ Clear</span><span class="btn">✕ Delete</span><span class="btn">⚙ Tools</span></span>
+            <span class="pclear">✕</span>
+          </div>
+          <span class="dd" style="left:196px; top:36px;">
+            <span class="grp">TRIPLET</span><span class="opt">12</span><span class="opt">24</span>
+            <span class="grp">STANDARD</span><span class="opt sel">32 <span>✓</span></span><span class="opt">64</span>
+          </span>
+          <span class="tag" style="left:6px; top:-8px;">3 · inspector</span>
+        </div>
+
+        <!-- KEYS: row + PITCH lane (chromatic) -->
+        <div class="tr keys" style="margin-top:44px"><span class="grip">⠿</span><span class="tn">Keys</span><span class="mb">M</span><span class="mb">S</span><span class="mb on">LANE</span><span class="mb">C</span>
+          <span class="steps" data-steps="0010000100001001" data-ph="4"></span></div>
+        <div class="lanerow keys">
+          <span class="lane-label"><span class="chip sm">VEL</span><span class="chip sm cur">PITCH</span></span>
+          <span class="pname">+7</span>
+          <span class="pcells" data-p="0000000100000000"></span></div>
+        <div class="lanerow keys pitchrow"><span class="pname">+5</span>
+          <span class="pcells" data-p="0000000000000001"></span></div>
+        <div class="lanerow keys pitchrow"><span class="pname">+3</span>
+          <span class="pcells" data-p="0010000000000000"></span></div>
+        <div class="lanerow keys pitchrow last"><span class="pname">0</span>
+          <span class="pcells" data-p="0000000000001000"></span></div>
+        <span class="tag" style="position:static; align-self:flex-start; margin-left:100px;">4 · property lane — VEL or PITCH, one lane per track</span>
+
+      </div>
+
+      <div class="toast">⟳ Green Fox cleared <b style="color:#fff">▍Keys</b> · step 9</div>
+    </div></div></div>
+
+    <div class="notes">
+      <h2>What's open</h2>
+      <div class="li"><span class="n">1</span><span><b>A dropdown</b> (Invite ▾) — the one portal component; only one can exist at a time by construction.</span></div>
+      <div class="li"><span class="n">2</span><span><b>One aux panel</b> (FX). MIX and PITCH are the same chip row — <b>opening one closes the others</b>. Today all three can be open simultaneously, stacked.</span></div>
+      <div class="li"><span class="n">3</span><span><b>One inspector</b>, inline under Bass, with its <b>steps ▾ dropdown</b> also open. Escape closes the dropdown, then the inspector — the cascade.</span></div>
+      <div class="li"><span class="n">4</span><span><b>Every track's property lane</b> — Kick and Bass on VEL, Keys on PITCH. These <b>are</b> concurrent: one lane per track, its property chosen by the chip.</span></div>
+      <div class="li"><span class="n">5</span><span><b>Live state on top:</b> a 3-step selection (blue), a remote attribution flash (green), a mute (yellow), a playhead (white), and a toast naming the track by its tick.</span></div>
+      <h2 style="margin-top:6px">What can't be open</h2>
+      <div class="li"><span class="n x">✕</span><span><b>A second aux panel</b> — chip rows are one-of-N.</span></div>
+      <div class="li"><span class="n x">✕</span><span><b>A second inspector</b> — disclose is single-target, so the Escape cascade always has one unambiguous next step.</span></div>
+      <div class="li"><span class="n x">✕</span><span><b>Pattern tools / pitch view / velocity as three separate stacked panels</b> per track — that was today's arrangement; now the lane is one row and tools live in the inspector.</span></div>
+    </div>
+  </div>
+
+  <!-- LEDGER -->
+  <section>
+    <div class="sechead"><h2>The density ledger</h2><span class="ph">worst case, Arc 1 vs today</span></div>
+    <p class="sub">Counting <b>simultaneously open surfaces</b> for a three-track session with everything expanded.
+      Today each track can stack a pitch view, a velocity lane and a pattern-tools panel independently, while the
+      transport can hold FX, Mixer and Pitch at once.</p>
+    <div class="ledger">
+      <div class="card"><span class="cap">Today · worst case</span><span class="big">13</span>
+        <p>3 transport panels + (3 tracks × 3 panels) + 1 drawer. Roughly <b>3× the viewport height</b>, and the grid is pushed off-screen.</p></div>
+      <div class="card good"><span class="cap">Arc 1 · worst case</span><span class="big">5</span>
+        <p>1 aux panel + 3 property lanes + 1 inspector. Every track's cells stay visible — the frame above <b>is</b> the worst case.</p></div>
+      <div class="card good"><span class="cap">Bounded by design</span><span class="big">2</span>
+        <p>Only two things scale with track count (lanes, and nothing else). Panels are one-of-N; disclose is single-target.</p></div>
+      <div class="card"><span class="cap">Surfaces per track</span><span class="big">3 → 1</span>
+        <p>Pitch view, velocity lane and pattern tools become <b>one lane</b> (property-switched) plus the shared inspector.</p></div>
+    </div>
+    <div class="callout"><b>The claim this tests:</b> consolidation isn't just fewer control <i>types</i> — it caps
+      how bad the screen can get. In Arc 1 the maximum is a constant (1 panel + 1 inspector) plus one row per track,
+      so the grid never leaves the screen no matter how much is open.</div>
+  </section>
+
+  <!-- OPEN QUESTION -->
+  <section>
+    <div class="sechead"><h2>One decision this mock forces</h2><span class="ph">needs your call before Arc 1</span></div>
+    <div class="callout q"><b>Is the chromatic grid a property lane, or its own surface?</b>
+      Pitch <i>is</i> a per-step property (<code>parameterLocks[i].pitch</code>), so the tidy answer is the one drawn
+      above: the lane's property chip switches between <b>VEL</b> (bars) and <b>PITCH</b> (a grid of note rows), which
+      makes ♪ and ▎ collapse into a single toggle and keeps every per-step editor in one place, column-aligned.
+      The counter-argument: the chromatic grid is a <b>note-entry</b> surface with its own vertical axis, scale
+      colouring, and Grid/PianoRoll modes — it is much taller than a lane and arguably a different job.
+      <b>If you prefer it separate</b>, the row keeps two toggles (LANE and ♪), the worst case rises from 5 surfaces
+      to 8, and C-4's "13 → 6 controls" becomes "13 → 7". Drawn here as the consolidated option because it's the one
+      that has to be argued <i>out</i> of, not into, the plan.</div>
+  </section>
+
+  <footer>
+    <b>Read the frame as a promise:</b> this is as busy as Arc 1 ever gets. Compare it with the baseline frame in the
+    arc storyboard — the same session, before consolidation, cannot show you all three tracks at once in this state.
+    Companion docs: AFFORDANCES.md (C-1…C-12, the layout law), EVOLUTION-ROADMAP.md §5 Arc 1.
+  </footer>
+</div>
+
+<script>
+  document.querySelectorAll('[data-steps]').forEach(el => {
+    const bits = el.dataset.steps.split('');
+    const ph = parseInt(el.dataset.ph ?? '-1', 10);
+    const sel = (el.dataset.sel ?? '').split(',').filter(s => s !== '').map(Number);
+    const flash = parseInt(el.dataset.flash ?? '-1', 10);
+    bits.forEach((b, i) => {
+      const c = document.createElement('span');
+      let cls = 'cell' + (b === '1' ? ' on' : '');
+      if (i === ph) cls += ' ph';
+      if (sel.includes(i)) cls += ' sel';
+      if (i === flash) cls += ' flash';
+      c.className = cls;
+      if (b === '1' && (i === 3 || i === 10)) {
+        const bd = document.createElement('span'); bd.className = 'bdg'; bd.textContent = i === 3 ? '↑' : '⌒'; c.appendChild(bd);
+      }
+      el.appendChild(c);
+    });
+  });
+  document.querySelectorAll('[data-lane]').forEach(el => {
+    el.dataset.lane.split(',').forEach(v => {
+      const bar = document.createElement('b');
+      const h = parseInt(v, 10);
+      bar.style.height = h + '%';
+      if (h === 0) bar.style.visibility = 'hidden';
+      el.appendChild(bar);
+    });
+  });
+  document.querySelectorAll('[data-p]').forEach(el => {
+    el.dataset.p.split('').forEach(b => {
+      const c = document.createElement('span');
+      c.className = 'pcell' + (b === '1' ? ' on' : '');
+      el.appendChild(c);
+    });
+  });
+</script>
+
+</html>
