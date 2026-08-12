@@ -484,7 +484,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --workers=2
-          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 208 17
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 209 19
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -496,7 +496,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 161 52
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 163 52
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
