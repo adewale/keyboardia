@@ -23,9 +23,7 @@ async function setupTwoAdvancedTracks(page: Page) {
   await page.waitForLoadState('domcontentloaded');
 
   // Landing-page start (mock API creates the session).
-  const startButton = page.locator(
-    '.landing-btn.primary, button:has-text("Start Session"), button:has-text("Start")'
-  ).first();
+  const startButton = page.getByRole('button', { name: 'Start Session', exact: true });
   if (await startButton.isVisible({ timeout: 3000 }).catch(() => false)) {
     await startButton.click();
     await page.waitForURL(/\/s\//, { timeout: 15000 });
