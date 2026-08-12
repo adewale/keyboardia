@@ -373,7 +373,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:collaboration:worker
-          node scripts/assert-playwright-stats.mjs test-results/worker-results.json 74 0
+          node scripts/assert-playwright-stats.mjs test-results/worker-results.json 76 0
         env:
           CI: 'true'
           PLAYWRIGHT_OUTPUT_DIR: 'test-results/worker-artifacts'
