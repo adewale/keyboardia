@@ -41,14 +41,21 @@ test.describe('Accessibility', () => {
     const count = await controls.count();
     expect(count).toBeGreaterThan(0);
 
+    // Compute subtree exclusions in one browser pass. Doing one evaluate per
+    // control scales linearly in protocol round-trips and timed out once the
+    // instrument catalogue plus pitch controls pushed the page past 180
+    // visible controls.
+    const excludedIndices = new Set(await controls.evaluateAll((elements) =>
+      elements.flatMap((element, index) =>
+        element.closest('[inert], [aria-hidden="true"]') !== null ? [index] : [],
+      ),
+    ));
+
     for (let index = 0; index < count; index += 1) {
-      const control = controls.nth(index);
       // Elements inside an inert or aria-hidden subtree are not in the
       // accessibility tree at all, so requiring a name from them is meaningless.
-      const excluded = await control.evaluate(
-        (element) => element.closest('[inert], [aria-hidden="true"]') !== null,
-      );
-      if (excluded) continue;
+      if (excludedIndices.has(index)) continue;
+      const control = controls.nth(index);
       await expect(control, `control ${index}`).toHaveAccessibleName(/\S/);
     }
   });

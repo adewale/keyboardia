@@ -5,8 +5,8 @@
   "samples": [
     { "instrumentId": "808-kick", "file": "kick.mp3", "nodeLeadingSilenceMs": 0.022675736961451247 },
     { "instrumentId": "808-snare", "file": "snare.mp3", "nodeLeadingSilenceMs": 0 },
-    { "instrumentId": "acoustic-kick", "file": "kick-vl3.mp3", "nodeLeadingSilenceMs": 4.376417233560091 },
-    { "instrumentId": "acoustic-snare", "file": "snare-vl1.mp3", "nodeLeadingSilenceMs": 3.7188208616780045 },
+    { "instrumentId": "acoustic-kick", "file": "source-0009.m4a", "nodeLeadingSilenceMs": 1.5873015873015872 },
+    { "instrumentId": "acoustic-snare", "file": "source-0023.m4a", "nodeLeadingSilenceMs": 23.650793650793652 },
     { "instrumentId": "string-section", "file": "G5.mp3", "nodeLeadingSilenceMs": 19.81859410430839 }
   ]
 }
