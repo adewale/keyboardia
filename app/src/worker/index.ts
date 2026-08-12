@@ -1197,6 +1197,7 @@ async function handleApiRequest(
       tracks: session.state.tracks,
       tempo: session.state.tempo,
       swing: session.state.swing,
+      scale: session.state.scale,
     });
     const serverStateHash = hashState(canonicalState);
 

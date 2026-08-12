@@ -1,0 +1,515 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-hihat-closed",
+  "acceptanceBasis": "owner-directed-automatic-enrichment",
+  "authority": "Explicit user request in the 2026-08-12 Keyboardia sound-quality task",
+  "perceptualPreferenceClaimed": false,
+  "automaticGates": {
+    "sourceHashes": true,
+    "deliveryHashes": true,
+    "objectiveHardErrors": 0,
+    "objectiveReviewFlags": 5,
+    "chromiumDecoded": 16,
+    "webkitDecoded": 16,
+    "runtimeEventsChecked": 5632,
+    "runtimeSilentEvents": 0
+  },
+  "before": {
+    "coverage": {
+      "mappings": 4,
+      "roots": 1,
+      "largestRootGap": 0,
+      "worstShiftSemitones": 31,
+      "meanShiftSemitones": 13.045454545454545,
+      "completeVelocityRoots": 1,
+      "velocityRootCompleteness": 1,
+      "maxRoundRobins": 1,
+      "orphanFiles": 0,
+      "payloadBytes": 23998
+    },
+    "runtime": {
+      "eventsChecked": 5632,
+      "silentEvents": 0,
+      "maxPitchShiftSemitones": 31,
+      "deterministicRoundRobinGroups": 0
+    }
+  },
+  "after": {
+    "instrumentId": "acoustic-hihat-closed",
+    "buildReportSha256": "a1142b9ef80374d7cef6a66386619ee7386aff153c6a480f014ceb3642303ab4",
+    "outputHashes": [
+      "39edae8e23e1aa6f8cb0d138f5df83bcfe2f93b89c6b2f6b5e8badc54f3195b9",
+      "3b2560e3315f2dbb8d114cf3390db8c2cc76f06367cfcbe24e4fb83f983a8368",
+      "e4ba9a6533befbf337e527369e3fa7c6e3fe8ae200ce5e53246d1543b038cce9",
+      "f4c7363cfaee2978832982193a3d0470e38abe66bd3fd7eaec3c0411a4d8fc2f",
+      "139226512edd0d7c6c04531348022ba81ea59789673f4052b7433940ace00e2f",
+      "cd16af1c34272662c445d30f329353fff7189887f316a90111160f0cde035b6e",
+      "6949fdcc683d35d2ea6a6e0a8c082efe30084e38c6e61138371282d4dd458f5f",
+      "9da7c975fb9b29d849e83481796c5055722c0d9293def498ffa31c1476f7291b",
+      "2fb822f26f76867d8b23f863482b5aa1b388589920c9452210046aea0050b6be",
+      "8c751f26a13bc1c4139c36490cf4c9b47a39ea3c2f80fbfaf9d752d252686483",
+      "348dec1e9e9edee0c075ae0a70ca021b5bd7b0e03ce0d95378bd2661c2d159a3",
+      "5a8f66f50170bf1c4f5543e92b14fdfd5223ebf878ea8edbd9a96f7bbc0538ac",
+      "806e4a9f48070270aee05fb2f1ed1e2689d6ac4dc1bda899dde803156615c057",
+      "bcd620e74d0726824f9ef7c8e283ccb276e24bf18acd3ca1405d0e13cb34967f",
+      "f9e716e580515e88b3d627c3f2db24a99241868bcc3fc4ede95724521be8a431",
+      "849f690815acabddb06429a20f033145224e5b879c65c44cd2f4ea35aef61230"
+    ],
+    "coverage": {
+      "mappings": 16,
+      "roots": 1,
+      "largestRootGap": 0,
+      "worstShiftSemitones": 31,
+      "meanShiftSemitones": 13.045454545454545,
+      "completeVelocityRoots": 1,
+      "velocityRootCompleteness": 1,
+      "maxRoundRobins": 4,
+      "orphanFiles": 0,
+      "payloadBytes": 231850
+    },
+    "quality": {
+      "hardErrors": 0,
+      "reviewFlags": 5
+    },
+    "runtime": {
+      "eventsChecked": 5632,
+      "silentEvents": 0,
+      "maxPitchShiftSemitones": 31,
+      "deterministicRoundRobinGroups": 4
+    },
+    "reviewFindings": [
+      "source-0001.m4a: LEADING_SILENCE",
+      "source-0002.m4a: LEADING_SILENCE",
+      "source-0003.m4a: LEADING_SILENCE",
+      "source-0004.m4a: LEADING_SILENCE",
+      "source-0005.m4a: LEADING_SILENCE"
+    ],
+    "requiredAnchorIds": [
+      "low-soft",
+      "mid-medium",
+      "high-loud"
+    ],
+    "pitchSpanSemitones": 12,
+    "browser": {
+      "version": 1,
+      "chromium": true,
+      "webkit": true,
+      "entries": [
+        {
+          "browser": "chromium",
+          "file": "source-0001.m4a",
+          "ok": true,
+          "durationSec": 0.7590022675736962,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.004891403019428253,
+          "energy": 0.00024218573352088394
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0002.m4a",
+          "ok": true,
+          "durationSec": 0.56,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.00713084964081645,
+          "energy": 0.00036499343930994685
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0003.m4a",
+          "ok": true,
+          "durationSec": 0.661859410430839,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.005863232538104057,
+          "energy": 0.0002853960709916481
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0004.m4a",
+          "ok": true,
+          "durationSec": 0.6231746031746032,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.005320330616086721,
+          "energy": 0.0003137708763558959
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0005.m4a",
+          "ok": true,
+          "durationSec": 0.6266666666666667,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.013432718813419342,
+          "energy": 0.000812568006747201
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0006.m4a",
+          "ok": true,
+          "durationSec": 0.5856235827664399,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.01152348518371582,
+          "energy": 0.0007659891277717098
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0007.m4a",
+          "ok": true,
+          "durationSec": 0.7079591836734694,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.015947598963975906,
+          "energy": 0.0009008681738647849
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0008.m4a",
+          "ok": true,
+          "durationSec": 0.6613378684807256,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.01500843744724989,
+          "energy": 0.0008074529159127067
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0009.m4a",
+          "ok": true,
+          "durationSec": 0.6959637188208617,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.02474958263337612,
+          "energy": 0.001587644389953715
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0010.m4a",
+          "ok": true,
+          "durationSec": 0.6994104308390022,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.026753423735499382,
+          "energy": 0.0014458091276535279
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0011.m4a",
+          "ok": true,
+          "durationSec": 0.7221995464852607,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.027552569285035133,
+          "energy": 0.0015950170278896656
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0012.m4a",
+          "ok": true,
+          "durationSec": 0.7228571428571429,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.03276461362838745,
+          "energy": 0.0017982894494467997
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0013.m4a",
+          "ok": true,
+          "durationSec": 0.7810430839002268,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.09986463934183121,
+          "energy": 0.0072097030662061695
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0014.m4a",
+          "ok": true,
+          "durationSec": 0.7676190476190476,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.10999590903520584,
+          "energy": 0.006808314580072084
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0015.m4a",
+          "ok": true,
+          "durationSec": 0.7302267573696145,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.09407512098550797,
+          "energy": 0.006852071747609554
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0016.m4a",
+          "ok": true,
+          "durationSec": 0.7622902494331065,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.09016471356153488,
+          "energy": 0.007065582424556392
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0001.m4a",
+          "ok": true,
+          "durationSec": 0.7589795918367347,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.00495104119181633,
+          "energy": 0.00024219973140264498
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0002.m4a",
+          "ok": true,
+          "durationSec": 0.56,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.006792786065489054,
+          "energy": 0.00036500859500448687
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0003.m4a",
+          "ok": true,
+          "durationSec": 0.6619954648526077,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.00561396824195981,
+          "energy": 0.00028542349421052275
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0004.m4a",
+          "ok": true,
+          "durationSec": 0.6229931972789116,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.005746796727180481,
+          "energy": 0.0003138480163622298
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0005.m4a",
+          "ok": true,
+          "durationSec": 0.6259863945578231,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.013149404898285866,
+          "energy": 0.0008130896055404247
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0006.m4a",
+          "ok": true,
+          "durationSec": 0.5849886621315192,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.012825063429772854,
+          "energy": 0.0007665553587827764
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0007.m4a",
+          "ok": true,
+          "durationSec": 0.7079818594104308,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.016533367335796356,
+          "energy": 0.000900824538225998
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0008.m4a",
+          "ok": true,
+          "durationSec": 0.6609977324263039,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.012758064083755016,
+          "energy": 0.0008081791212812689
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0009.m4a",
+          "ok": true,
+          "durationSec": 0.6959863945578232,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.02552145905792713,
+          "energy": 0.0015871306134305923
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0010.m4a",
+          "ok": true,
+          "durationSec": 0.6989795918367347,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.028979357331991196,
+          "energy": 0.0014463673350662172
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0011.m4a",
+          "ok": true,
+          "durationSec": 0.7219954648526077,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.028890559449791908,
+          "energy": 0.0015955755021198174
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0012.m4a",
+          "ok": true,
+          "durationSec": 0.7229931972789115,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.030222909525036812,
+          "energy": 0.0017980455821889093
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0013.m4a",
+          "ok": true,
+          "durationSec": 0.7809977324263039,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.09986463189125061,
+          "energy": 0.0072098822363572505
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0014.m4a",
+          "ok": true,
+          "durationSec": 0.766984126984127,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.10999590158462524,
+          "energy": 0.006811529279842765
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0015.m4a",
+          "ok": true,
+          "durationSec": 0.73,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.09407511353492737,
+          "energy": 0.006852924455234488
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0016.m4a",
+          "ok": true,
+          "durationSec": 0.7619954648526077,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.09444092214107513,
+          "energy": 0.007067411998435318
+        }
+      ]
+    }
+  },
+  "recipeSha256": "a9246b80f17a2730ba309c707e098ce38ce6429df2923f7f15f25602db4685a9",
+  "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+  "manifestSha256": "2353e320b617285179ac63f0bf862ea1689674595175fb9d7d660ac877ac68f1",
+  "outputs": [
+    {
+      "file": "source-0001.m4a",
+      "sha256": "39edae8e23e1aa6f8cb0d138f5df83bcfe2f93b89c6b2f6b5e8badc54f3195b9",
+      "sizeBytes": 15517
+    },
+    {
+      "file": "source-0002.m4a",
+      "sha256": "3b2560e3315f2dbb8d114cf3390db8c2cc76f06367cfcbe24e4fb83f983a8368",
+      "sizeBytes": 11460
+    },
+    {
+      "file": "source-0003.m4a",
+      "sha256": "e4ba9a6533befbf337e527369e3fa7c6e3fe8ae200ce5e53246d1543b038cce9",
+      "sizeBytes": 13573
+    },
+    {
+      "file": "source-0004.m4a",
+      "sha256": "f4c7363cfaee2978832982193a3d0470e38abe66bd3fd7eaec3c0411a4d8fc2f",
+      "sizeBytes": 12730
+    },
+    {
+      "file": "source-0005.m4a",
+      "sha256": "139226512edd0d7c6c04531348022ba81ea59789673f4052b7433940ace00e2f",
+      "sizeBytes": 13241
+    },
+    {
+      "file": "source-0006.m4a",
+      "sha256": "cd16af1c34272662c445d30f329353fff7189887f316a90111160f0cde035b6e",
+      "sizeBytes": 12472
+    },
+    {
+      "file": "source-0007.m4a",
+      "sha256": "6949fdcc683d35d2ea6a6e0a8c082efe30084e38c6e61138371282d4dd458f5f",
+      "sizeBytes": 15056
+    },
+    {
+      "file": "source-0008.m4a",
+      "sha256": "9da7c975fb9b29d849e83481796c5055722c0d9293def498ffa31c1476f7291b",
+      "sizeBytes": 13756
+    },
+    {
+      "file": "source-0009.m4a",
+      "sha256": "2fb822f26f76867d8b23f863482b5aa1b388589920c9452210046aea0050b6be",
+      "sizeBytes": 14781
+    },
+    {
+      "file": "source-0010.m4a",
+      "sha256": "8c751f26a13bc1c4139c36490cf4c9b47a39ea3c2f80fbfaf9d752d252686483",
+      "sizeBytes": 14509
+    },
+    {
+      "file": "source-0011.m4a",
+      "sha256": "348dec1e9e9edee0c075ae0a70ca021b5bd7b0e03ce0d95378bd2661c2d159a3",
+      "sizeBytes": 15129
+    },
+    {
+      "file": "source-0012.m4a",
+      "sha256": "5a8f66f50170bf1c4f5543e92b14fdfd5223ebf878ea8edbd9a96f7bbc0538ac",
+      "sizeBytes": 15134
+    },
+    {
+      "file": "source-0013.m4a",
+      "sha256": "806e4a9f48070270aee05fb2f1ed1e2689d6ac4dc1bda899dde803156615c057",
+      "sizeBytes": 16517
+    },
+    {
+      "file": "source-0014.m4a",
+      "sha256": "bcd620e74d0726824f9ef7c8e283ccb276e24bf18acd3ca1405d0e13cb34967f",
+      "sizeBytes": 16346
+    },
+    {
+      "file": "source-0015.m4a",
+      "sha256": "f9e716e580515e88b3d627c3f2db24a99241868bcc3fc4ede95724521be8a431",
+      "sizeBytes": 15447
+    },
+    {
+      "file": "source-0016.m4a",
+      "sha256": "849f690815acabddb06429a20f033145224e5b879c65c44cd2f4ea35aef61230",
+      "sizeBytes": 16182
+    }
+  ],
+  "committedRecipeSha256": "88d1aadbd609f622dae684de656d56693dd72df0b546318f307c9e9319b1e190",
+  "evidenceSha256": {
+    "objective-audit.json": "a06be47ba7413bb981d51f2b508a9166c7454b7ddc9a4f5b25b5ca63686b4602",
+    "browser-decode.json": "7344415b366e4b7b330fd2f2b60620889ddffeb822912e60d6cca850bb16df95",
+    "before-after.json": "4033463240c8460d936fc398b6053eca4f6b9aaa7e285e02e397fe4a02d680f6",
+    "runtime-contract.json": "8ce6bfd124c48ed9c4ff5857f4538a674ed550205711a08d2c3ad3ce75c3e83d",
+    "source-master-audit.json": "49944a38eb23266bdf90abb229a5540b835db008ac7c4b5b410f9bfc09393f99",
+    "build-report.json": "a1142b9ef80374d7cef6a66386619ee7386aff153c6a480f014ceb3642303ab4"
+  }
+}

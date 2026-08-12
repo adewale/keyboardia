@@ -3,6 +3,8 @@
   "name": "Vibraphone",
   "type": "sampled",
   "releaseTime": 1,
+  "gainDb": -2.75,
+  "velocityCrossfade": 8,
   "playableRange": {
     "min": 47,
     "max": 94
@@ -29,13 +31,15 @@
       "note": 57,
       "file": "A3-mf.mp3",
       "velocityMin": 0,
-      "velocityMax": 79
+      "velocityMax": 79,
+      "gainDb": 2.235
     },
     {
       "note": 57,
       "file": "A3-ff.mp3",
       "velocityMin": 80,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": 2.235
     },
     {
       "note": 60,
@@ -89,13 +93,15 @@
       "note": 74,
       "file": "D5-mf.mp3",
       "velocityMin": 0,
-      "velocityMax": 79
+      "velocityMax": 79,
+      "gainDb": -0.671
     },
     {
       "note": 74,
       "file": "D5-ff.mp3",
       "velocityMin": 80,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": -0.671
     },
     {
       "note": 77,

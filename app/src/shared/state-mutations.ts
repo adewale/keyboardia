@@ -32,6 +32,7 @@ import {
   clamp,
 } from './constants';
 import { MAX_TRACK_NAME_LENGTH } from './validation';
+import { isValidPan } from './validation';
 import { setTrackInstrument } from './track-instrument';
 // Import runtime-neutral pattern operations (Phase 32: Sync fix)
 import {
@@ -58,6 +59,7 @@ export function createDefaultTrack(
     steps: Array(MAX_STEPS).fill(false),
     parameterLocks: Array(MAX_STEPS).fill(null),
     volume: 1,
+    pan: 0,
     muted: false,
     soloed: false,
     transpose: 0,
@@ -222,6 +224,14 @@ export function applyMutation(
 
     case 'set_track_volume': {
       return updateTrackField(state, message.trackId, 'volume', clamp(message.volume, MIN_VOLUME, MAX_VOLUME));
+    }
+
+    case 'set_track_pan': {
+      // Public transports reject invalid pan. The pure mutation mirrors that
+      // policy by refusing to coerce an out-of-range value into a hard side.
+      return isValidPan(message.pan)
+        ? updateTrackField(state, message.trackId, 'pan', message.pan)
+        : state;
     }
 
     case 'set_track_transpose': {

@@ -16,6 +16,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { createHash } from 'node:crypto';
 
 import {
   DEFAULT_QUALITY_THRESHOLDS,
@@ -27,6 +28,11 @@ import {
   type SampleContext,
   type SampleQualityMetrics,
 } from './sample-quality-core';
+import { findVelocityRmsInversions } from './sample-velocity-core';
+import {
+  compensatedSampleStartOffset,
+  measureDecodedLeadingSilenceSeconds,
+} from '../src/audio/sample-onset';
 
 const INSTRUMENTS_DIR = 'public/instruments';
 const DEFAULT_JSON_REPORT = 'test-results/sample-quality/metrics.json';
@@ -52,6 +58,8 @@ interface ManifestSample {
   loop?: boolean;
   loopStart?: number;
   loopEnd?: number;
+  gainDb?: number;
+  startOffset?: number;
 }
 
 interface Manifest {
@@ -61,6 +69,8 @@ interface Manifest {
   playableRange?: { min: number; max: number };
   playbackNote?: number;
   unpitched?: boolean;
+  gainDb?: number;
+  startOffset?: number;
 }
 
 interface DecodeAudioContextLike {
@@ -94,11 +104,12 @@ interface QualityWaiver {
   code: string;
   instrumentId: string;
   file?: string;
+  sha256: string;
   reason: string;
 }
 
 interface QualityBaseline {
-  version: 1;
+  version: 2;
   waivers: QualityWaiver[];
 }
 
@@ -236,12 +247,18 @@ function readBaseline(pathname: string | null, instruments: Set<string> | null):
   if (pathname === null) return [];
   if (!fs.existsSync(pathname)) throw new Error(`Sample-quality baseline not found: ${pathname}`);
   const baseline = JSON.parse(fs.readFileSync(pathname, 'utf-8')) as QualityBaseline;
-  if (baseline.version !== 1 || !Array.isArray(baseline.waivers)) {
+  if (baseline.version !== 2 || !Array.isArray(baseline.waivers)) {
     throw new Error(`Invalid sample-quality baseline schema in ${pathname}`);
   }
   for (const waiver of baseline.waivers) {
-    if (!waiver.code || !waiver.instrumentId || !waiver.reason) {
+    if (!waiver.code || !waiver.instrumentId || !waiver.file || !waiver.sha256 || !waiver.reason) {
       throw new Error(`Invalid waiver in ${pathname}: ${JSON.stringify(waiver)}`);
+    }
+    const boundFile = path.resolve(INSTRUMENTS_DIR, waiver.instrumentId, waiver.file);
+    if (!fs.existsSync(boundFile)) throw new Error(`Waiver-bound file is missing: ${boundFile}`);
+    const actualHash = createHash('sha256').update(fs.readFileSync(boundFile)).digest('hex');
+    if (actualHash !== waiver.sha256) {
+      throw new Error(`Waiver hash mismatch for ${waiver.instrumentId}/${waiver.file}; re-audit the changed source`);
     }
   }
   return instruments
@@ -280,37 +297,93 @@ function addGroupIssues(
   }
 }
 
+function canonicalVelocityCandidate(
+  entries: SampleMetricEntry[],
+  instrumentId: string,
+): SampleQualityMetrics | null {
+  const atCanonicalVelocity = entries
+    .map(entry => entry.metrics)
+    .filter(metrics => metrics.instrumentId === instrumentId)
+    .filter(metrics => (metrics.velocityMin ?? 0) <= 90 && (metrics.velocityMax ?? 127) >= 90)
+    .sort((left, right) =>
+      Math.abs(left.note - 60) - Math.abs(right.note - 60)
+      || right.note - left.note
+      || left.file.localeCompare(right.file)
+    );
+  return atCanonicalVelocity[0] ?? null;
+}
+
+/** Enforce the plan's C4/MIDI-90 K-weighted tonal calibration contract. */
+function addTonalLoudnessIssues(
+  entries: SampleMetricEntry[],
+  manifests: Manifest[],
+  thresholds: QualityThresholds,
+  issues: QualityIssue[],
+): void {
+  const reference = canonicalVelocityCandidate(entries, 'piano');
+  if (reference?.loudnessKMax === null || reference === null) {
+    issues.push({
+      severity: 'error',
+      code: 'LOUDNESS_REFERENCE_MISSING',
+      instrumentId: 'piano',
+      file: 'manifest.json',
+      message: 'Piano C4/MIDI-90 K-weighted reference could not be measured',
+    });
+    return;
+  }
+  const referenceLoudness = reference.loudnessKMax + reference.playbackGainDb;
+  for (const manifest of manifests) {
+    if (manifest.playbackNote !== undefined || manifest.unpitched === true) continue;
+    const candidate = canonicalVelocityCandidate(entries, manifest.id);
+    if (candidate?.loudnessKMax === null || candidate === null) {
+      issues.push({
+        severity: 'error',
+        code: 'LOUDNESS_MEASURE_UNAVAILABLE',
+        instrumentId: manifest.id,
+        file: 'manifest.json',
+        message: 'Canonical C4/MIDI-90 K-weighted loudness could not be measured',
+      });
+      continue;
+    }
+    const delivered = candidate.loudnessKMax + candidate.playbackGainDb;
+    const delta = delivered - referenceLoudness;
+    if (Math.abs(delta) > thresholds.tonalLoudnessToleranceDb) {
+      issues.push({
+        severity: 'error',
+        code: 'TONAL_LOUDNESS_MISMATCH',
+        instrumentId: manifest.id,
+        file: candidate.file,
+        message: `Canonical K-weighted loudness differs from piano C4-mf by ${delta.toFixed(2)} dB after manifest trim`,
+        value: delta,
+        threshold: `±${thresholds.tonalLoudnessToleranceDb} dB`,
+      });
+    }
+  }
+}
+
 function addVelocityIssues(
   instrumentId: string,
   entries: SampleMetricEntry[],
   thresholds: QualityThresholds,
   issues: QualityIssue[]
 ): void {
-  const byNote = new Map<number, SampleMetricEntry[]>();
-  for (const entry of entries) {
-    if (entry.metrics.velocityMin === undefined && entry.metrics.velocityMax === undefined) continue;
-    const current = byNote.get(entry.metrics.note) ?? [];
-    current.push(entry);
-    byNote.set(entry.metrics.note, current);
-  }
-
-  for (const [note, noteEntries] of byNote) {
-    const sorted = [...noteEntries].sort((a, b) => (a.metrics.velocityMin ?? 0) - (b.metrics.velocityMin ?? 0));
-    for (let i = 1; i < sorted.length; i++) {
-      const previous = sorted[i - 1].metrics;
-      const current = sorted[i].metrics;
-      if (current.activeRmsDb + thresholds.velocityInversionDb < previous.activeRmsDb) {
-        issues.push({
-          severity: 'review',
-          code: 'VELOCITY_RMS_INVERSION',
-          instrumentId,
-          file: current.file,
-          message: `Velocity layer for note ${note} is ${(previous.activeRmsDb - current.activeRmsDb).toFixed(1)} dB quieter than the lower layer`,
-          value: current.activeRmsDb - previous.activeRmsDb,
-          threshold: `>= -${thresholds.velocityInversionDb} dB`,
-        });
-      }
-    }
+  const velocitySamples = entries
+    .map(entry => ({
+      ...entry.metrics,
+      activeRmsDb: entry.metrics.activeRmsDb + entry.metrics.playbackGainDb,
+    }))
+    .filter(metrics => metrics.velocityMin !== undefined || metrics.velocityMax !== undefined);
+  for (const inversion of findVelocityRmsInversions(velocitySamples, thresholds.velocityInversionDb)) {
+    const representative = [...inversion.higher.samples].sort((left, right) => left.file.localeCompare(right.file))[0];
+    issues.push({
+      severity: 'review',
+      code: 'VELOCITY_RMS_INVERSION',
+      instrumentId,
+      file: representative.file,
+      message: `Aggregated velocity layer ${inversion.higher.velocityMin}-${inversion.higher.velocityMax} for note ${inversion.higher.note} is ${(-inversion.deltaDb).toFixed(1)} dB quieter than the lower layer`,
+      value: inversion.deltaDb,
+      threshold: `>= -${thresholds.velocityInversionDb} dB`,
+    });
   }
 }
 
@@ -331,7 +404,9 @@ function addLevelStepIssues(
   for (let i = 1; i < sorted.length; i++) {
     const previous = sorted[i - 1];
     const current = sorted[i];
-    const step = Math.abs(current.activeRmsDb - previous.activeRmsDb);
+    const previousDelivered = previous.activeRmsDb + previous.playbackGainDb;
+    const currentDelivered = current.activeRmsDb + current.playbackGainDb;
+    const step = Math.abs(currentDelivered - previousDelivered);
     if (step > thresholds.noteLevelStepDb) {
       issues.push({
         severity: 'review',
@@ -442,7 +517,7 @@ function buildInstrumentSummaries(entries: SampleMetricEntry[], issues: QualityI
       reviewCount: instrumentIssues.filter(issue => issue.severity === 'review').length,
       errorCount: instrumentIssues.filter(issue => issue.severity === 'error').length,
       maxPeakDb: Math.max(...instrumentEntries.map(entry => entry.metrics.peakDb)),
-      maxLeadingSilenceMs: Math.max(...instrumentEntries.map(entry => entry.metrics.leadingSilenceMs)),
+      maxLeadingSilenceMs: Math.max(...instrumentEntries.map(entry => entry.metrics.effectiveLeadingSilenceMs)),
       worstPitchCents: worstPitch?.foldedCents ?? null,
       worstPitchConfidence: worstPitch?.confidence ?? null,
       worstNoteLevelStepDb: maxIssueValue(instrumentIssues, 'NOTE_LEVEL_STEP'),
@@ -542,7 +617,7 @@ function renderMarkdown(report: SampleQualityReport): string {
   lines.push('');
   lines.push('- `error` means objective decode/measurement defects that should block CI unless explicitly waived.');
   lines.push('- `review` means measurable risk that needs A/B listening or source-specific judgment.');
-  lines.push('- Baseline waivers require a reason and fail as `STALE_WAIVER` when the issue stops occurring.');
+  lines.push('- Baseline dispositions require an exact source hash and reason; changed files and stale findings both fail.');
   lines.push('- Metrics are generated from decoded PCM via Web Audio in Node; Chromium codec support is covered by the blocking browser decode smoke test.');
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -571,20 +646,30 @@ async function main(): Promise<void> {
       const pitched = manifest.playbackNote === undefined && manifest.unpitched !== true;
       for (const sample of manifest.samples) {
         const filePath = path.join(instrumentDir, sample.file);
-        const context: SampleContext = {
-          instrumentId: manifest.id,
-          instrumentName: manifest.name,
-          file: sample.file,
-          note: sample.note,
-          velocityMin: sample.velocityMin,
-          velocityMax: sample.velocityMax,
-          loop: sample.loop,
-          loopStart: sample.loopStart,
-          loopEnd: sample.loopEnd,
-          pitched,
-        };
         try {
           const decoded = await decodeFile(audioContext, filePath);
+          const configuredStart = sample.startOffset ?? manifest.startOffset;
+          const adaptCodecDelay = sample.file.toLowerCase().endsWith('.m4a')
+            || manifest.playbackNote !== undefined;
+          const playbackStartOffset = compensatedSampleStartOffset(
+            configuredStart,
+            adaptCodecDelay ? measureDecodedLeadingSilenceSeconds(decoded) : 0,
+            adaptCodecDelay,
+          );
+          const context: SampleContext = {
+            instrumentId: manifest.id,
+            instrumentName: manifest.name,
+            file: sample.file,
+            note: sample.note,
+            velocityMin: sample.velocityMin,
+            velocityMax: sample.velocityMax,
+            loop: sample.loop,
+            loopStart: sample.loopStart,
+            loopEnd: sample.loopEnd,
+            pitched,
+            playbackGainDb: (manifest.gainDb ?? 0) + (sample.gainDb ?? 0),
+            playbackStartOffsetMs: (playbackStartOffset ?? 0) * 1000,
+          };
           const { metrics } = analyzeDecodedSampleWithMono(context, decoded);
           entries.push({ metrics });
           rawIssues.push(...classifySampleIssues(metrics, thresholds));
@@ -607,6 +692,7 @@ async function main(): Promise<void> {
 
   addGroupIssues(entries, thresholds, rawIssues);
   addRangeIssues(manifests, thresholds, rawIssues);
+  addTonalLoudnessIssues(entries, manifests, thresholds, rawIssues);
 
   const { unwaivedIssues, waivedIssues } = applyWaivers(sortIssues(rawIssues), waivers);
   const sortedUnwaivedIssues = sortIssues(unwaivedIssues);

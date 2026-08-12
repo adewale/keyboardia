@@ -27,7 +27,7 @@ import {
   STEPS_PER_BEAT,
 } from './timing-calculations';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
-import { velocityFromMultiplier } from './velocity';
+import { resolveHumanizedNoteDynamics } from './note-dynamics';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { getTrackStep, shouldTrackPlay, shouldTrackTrigger } from './track-step';
 
@@ -51,7 +51,10 @@ interface NoteParams {
   pitchSemitones: number;
   time: number;
   duration: number;
-  volumeMultiplier: number;
+  midiVelocity: number;
+  noteGain: number;
+  hasExplicitLock: boolean;
+  loopIteration: number;
 }
 
 /** Result of checking if a tied note should be skipped */
@@ -70,6 +73,7 @@ export class Scheduler implements IScheduler {
   private getState: (() => GridState) | null = null;
   private lastNotifiedStep: number = -1; // Track last UI update to prevent flickering
   private lastNotifiedBeat: number = -1; // Phase 31A: Track last beat to prevent duplicate callbacks
+  private loopIteration: number = 0;
 
   // Phase 10: Multiplayer clock sync
   private isMultiplayerMode: boolean = false;
@@ -144,6 +148,7 @@ export class Scheduler implements IScheduler {
     this.isRunning = true;
     this.lastNotifiedStep = -1;
     this.totalStepsScheduled = 0; // Phase 13B: Reset step counter for drift-free timing
+    this.loopIteration = 0;
     this.activeNotes.clear(); // Phase 29B: Reset active notes for tie tracking
     this.getState = getState;
 
@@ -296,7 +301,9 @@ export class Scheduler implements IScheduler {
 
       // Phase 31G: Advance to next step - respect loop region if set
       // If loopRegion is defined, playhead stays within [start, end]
+      const previousStep = this.currentStep;
       this.currentStep = advanceStep(this.currentStep, state.loopRegion ?? null, MAX_STEPS);
+      if (this.currentStep <= previousStep) this.loopIteration++;
       this.totalStepsScheduled++;
 
       // Phase 13B: Use multiplicative timing to prevent drift
@@ -358,18 +365,18 @@ export class Scheduler implements IScheduler {
    * Replaces the large switch statement with a cleaner dispatch.
    */
   private playInstrumentNote(params: NoteParams): void {
-    const { instrumentType, presetId, pitchSemitones, time, duration, volumeMultiplier, noteId, trackId } = params;
+    const { instrumentType, presetId, pitchSemitones, time, duration, midiVelocity, noteGain, noteId, trackId } = params;
 
     // All play methods route through TrackBus, whose volumeGain already
-    // multiplies by track.volume. Pass only the per-note (p-lock)
-    // multiplier here so the bus doesn't double-apply the track volume
+    // multiplies by track.volume. Pass only canonical per-note gain here so
+    // the bus doesn't double-apply the track volume
     // (bug_010 — for the affected branches the previous code passed
-    // `volume = track.volume × volumeMultiplier` and the bus then
-    // multiplied by track.volume again, giving track.volume² × multiplier).
+    // `volume = track.volume × noteGain` and the bus then multiplied by
+    // track.volume again, giving track.volume² × noteGain).
     switch (instrumentType) {
       case 'synth':
-        logger.audio.log(`Playing synth ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, duration, volumeMultiplier, trackId);
+        logger.audio.log(`Playing synth ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, gain=${noteGain}, velocity=${midiVelocity}, dur=${duration.toFixed(3)}`);
+        audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, duration, noteGain, trackId, midiVelocity);
         break;
 
       case 'sampled': {
@@ -378,11 +385,8 @@ export class Scheduler implements IScheduler {
           return;
         }
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones;
-        // The volume p-lock doubles as the step's dynamics: it scales the
-        // note gain (linearly) AND selects the velocity layer (timbre).
-        const velocity = velocityFromMultiplier(volumeMultiplier);
-        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volumeMultiplier.toFixed(2)}, vel=${velocity}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volumeMultiplier, trackId, velocity);
+        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, gain=${noteGain.toFixed(3)}, vel=${midiVelocity}, dur=${duration.toFixed(3)}`);
+        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, noteGain, trackId, midiVelocity);
         break;
       }
 
@@ -391,8 +395,8 @@ export class Scheduler implements IScheduler {
           logger.audio.warn(`Tone.js not ready, skipping ${params.sampleId}`);
           return;
         }
-        logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volumeMultiplier, trackId);
+        logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, gain=${noteGain.toFixed(3)}, velocity=${midiVelocity}, dur=${duration.toFixed(3)}`);
+        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, noteGain, trackId, midiVelocity);
         break;
 
       case 'advanced':
@@ -400,14 +404,35 @@ export class Scheduler implements IScheduler {
           logger.audio.warn(`Advanced synth not ready, skipping ${params.sampleId}`);
           return;
         }
-        logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volumeMultiplier, trackId);
+        logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, gain=${noteGain.toFixed(3)}, velocity=${midiVelocity}, dur=${duration.toFixed(3)}`);
+        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, noteGain, trackId, midiVelocity);
         break;
 
       case 'sample':
       default:
-        logger.audio.log(`Playing ${params.sampleId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSample(params.sampleId, trackId, time, duration, pitchSemitones, volumeMultiplier);
+        logger.audio.log(`Playing ${params.sampleId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, gain=${noteGain}, velocity=${midiVelocity}, dur=${duration.toFixed(3)}`);
+        if (params.hasExplicitLock) {
+          audioEngine.playSample(
+            params.sampleId,
+            trackId,
+            time,
+            duration,
+            pitchSemitones,
+            noteGain,
+            midiVelocity,
+          );
+        } else {
+          audioEngine.playSample(
+            params.sampleId,
+            trackId,
+            time,
+            duration,
+            pitchSemitones,
+            noteGain,
+            midiVelocity,
+            `${noteId}-loop-${params.loopIteration}`,
+          );
+        }
         break;
     }
   }
@@ -481,7 +506,13 @@ export class Scheduler implements IScheduler {
       // Per-step dynamics belong to the voice envelope. The shared track bus
       // stays at the base fader so a lock cannot square its own gain or alter
       // overlapping release tails.
-      const volumeMultiplier = pLock?.volume ?? 1;
+      const dynamics = resolveHumanizedNoteDynamics(
+        pLock?.volume,
+        track.sampleId,
+        track.id,
+        globalStep,
+        this.loopIteration,
+      );
 
       // Parse instrument and build note params
       const { type: instrumentType, presetId } = parseInstrumentId(track.sampleId);
@@ -494,7 +525,8 @@ export class Scheduler implements IScheduler {
         pitchSemitones,
         time: swungTime,
         duration: tiedDuration,
-        volumeMultiplier,
+        ...dynamics,
+        loopIteration: this.loopIteration,
       };
 
       // Play the note

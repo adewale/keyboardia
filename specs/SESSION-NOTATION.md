@@ -2,9 +2,9 @@
 
 > Implementation specification for Keyboardia's text pattern notation format.
 
-**Version:** 2.0.0
-**Last Updated:** January 2026
-**Source of Truth:** `app/src/shared/sync-types.ts`, `app/src/shared/state.ts`
+**Version:** 2.3.0
+**Last Updated:** August 2026
+**Source of Truth:** `app/src/shared/sync-types.ts`, `app/src/shared/state.ts`, `app/src/shared/track-pan.ts`
 
 ---
 
@@ -61,11 +61,18 @@ Label: pattern [key:value, key:value, ...]
 | `[bpm:120]` | Session tempo | 60-180 BPM |
 | `[swing:60]` | Swing percentage | 0-100 |
 | `[transpose:-2]` | Track pitch offset | ±24 semitones |
+| `[pan:-20]` | Track stereo position as an integer percentage | -100 (left) to +100 (right) |
 | `[stepCount:32]` | Per-track loop length | See valid step counts |
 | `[pitches:0,7,5,3]` | Per-step pitch sequence | ±24 semitones per step |
 | `[synth:acid]` | Instrument/preset hint | String identifier |
 | `[tie:true]` | Note tie (legato) | Boolean per step |
 | `[fm:2.5,8]` | FM synth params (harmonicity, modIndex) | 0.5-10, 0-20 |
+
+Pan has one intentional unit boundary: session JSON, sync, and audio use the
+normalized range `[-1, 1]`, while notation and the mixer display whole percent.
+For example, `[pan:-20]` parses to `-0.20`; formatting `0.20` produces
+`[pan:20]`. Values outside `[-100, 100]`, decimals, and non-finite values are
+rejected rather than clamped at this public boundary.
 
 ### Valid Step Counts
 
@@ -104,6 +111,7 @@ Bass: x-------x-------x-------x---x--- [stepCount:32]
 | **Pitch offset** | `[pitches:...]` or p-lock | ±24 semitones (4 octaves) |
 | **Volume offset** | `[vol:0.5]` or p-lock | 0-1 multiplier per step |
 | **Track transpose** | `[transpose:-2]` | ±24 semitones |
+| **Stereo position** | `[pan:-20]` | -100% left to +100% right |
 | **Polyrhythm** | `[stepCount:N]` | 3-128 steps (26 valid values) |
 | **Swing** | `[swing:60]` | 0-100% (global and per-track) |
 | **Tempo** | `[bpm:120]` | 60-180 BPM |
@@ -228,6 +236,7 @@ interface SessionTrack {
   steps: boolean[];                                 // Up to 128 steps
   parameterLocks: (ParameterLock | null)[];         // Up to 128 slots
   volume: number;                                   // 0-1
+  pan?: number;                                     // -1 left to +1 right; legacy default 0
   muted: boolean;
   soloed?: boolean;                                 // Solo mode
   transpose: number;                                // -24 to +24 semitones
@@ -333,6 +342,7 @@ const VALID_STEP_COUNTS = [
 | `[swing:60]` | `swing: 60` (global) or `track.swing: 60` (per-track) |
 | `[stepCount:32]` | `track.stepCount: 32` |
 | `[transpose:-2]` | `track.transpose: -2` |
+| `[pan:-20]` | `track.pan: -0.20` |
 | `[pitches:0,7,5,3]` | `parameterLocks[0].pitch = 0`, `[1].pitch = 7`, ... |
 | `[tie]` | `parameterLocks[i].tie = true` |
 | `[fm:2.5,8]` | `track.fmParams: { harmonicity: 2.5, modulationIndex: 8 }` |
@@ -398,6 +408,7 @@ Parsed:
 | v2.0 | Effects (reverb, delay, chorus, distortion) | ✅ Implemented |
 | v2.1 | Scale state / Key Assistant | ✅ Implemented |
 | v2.2 | Loop regions | ✅ Implemented |
+| v2.3 | Normalized track pan and `[pan:PERCENT]` notation | ✅ Implemented |
 
 ---
 
@@ -414,6 +425,7 @@ Features demonstrated:
 - **Loop region** — `loopRegion: { start: 0, end: 32 }`
 - **Parameter locks** — Per-step pitch and volume overrides
 - **Dynamics** — Volume-based accents and ghost notes
+- **Stereo pan** — Stored as normalized `[-1, 1]`; notation uses integer percent at the text boundary
 
 Use this as a reference implementation when creating session seed files.
 
@@ -428,4 +440,4 @@ Use this as a reference implementation when creating session seed files.
 
 ---
 
-*This specification reflects the implementation as of January 2026. For design philosophy, historical context, and future evolution principles, see the research document.*
+*This specification reflects the implementation as of August 2026. For design philosophy, historical context, and future evolution principles, see the research document.*

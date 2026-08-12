@@ -1,0 +1,609 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-ride",
+  "hardErrors": 0,
+  "reviewFlags": 0,
+  "issues": [],
+  "entries": [
+    {
+      "file": "source-0001.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0001.m4a",
+        "note": 51,
+        "velocityMin": 0,
+        "velocityMax": 42,
+        "durationSec": 10.89015873015873,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.0034510584082454443,
+        "peakDb": -49.240953806554884,
+        "rmsDb": -77.20479630514821,
+        "activeRmsDb": -76.43919701547397,
+        "loudnessKMax": -59.14867465761206,
+        "playbackGainDb": 0,
+        "dcOffset": 2.843090103059867e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 27.198243208919077,
+        "leadingSilenceMs": 8.049886621315192,
+        "effectiveLeadingSilenceMs": 8.049886621315192,
+        "trailingSilenceMs": 2092.5850340136053,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -84.2661730784638,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.049886621315192,
+        "activeEndMs": 8797.551020408162,
+        "spectral": {
+          "centroidHz": 9291.915757291043,
+          "highFrequencyRatio": 0.7822581837885956
+        },
+        "pitch": {
+          "midi": 56.03053040693264,
+          "frequencyHz": 208.0188679245283,
+          "rawCents": 503.0530406932641,
+          "foldedCents": 503.05304069326417,
+          "confidence": 0.20803508558611852
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.15695678858613304,
+          "monoLossDb": -2.3771504599651325,
+          "leftRightBalanceDb": 0.00005206122574608705
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0002.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0002.m4a",
+        "note": 51,
+        "velocityMin": 0,
+        "velocityMax": 42,
+        "durationSec": 8.17342403628118,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.0076277414336800575,
+        "peakDb": -42.352080743116375,
+        "rmsDb": -72.63265304919065,
+        "activeRmsDb": -70.75016341407354,
+        "loudnessKMax": -54.83373337893328,
+        "playbackGainDb": 0,
+        "dcOffset": 3.540995441867309e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 28.398082670957162,
+        "leadingSilenceMs": 6.326530612244898,
+        "effectiveLeadingSilenceMs": 6.326530612244898,
+        "trailingSilenceMs": 3054.8072562358275,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -84.4752279104769,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 6.326530612244898,
+        "activeEndMs": 5118.59410430839,
+        "spectral": {
+          "centroidHz": 9694.819263560043,
+          "highFrequencyRatio": 0.8092895086321097
+        },
+        "pitch": {
+          "midi": 55.310745148993846,
+          "frequencyHz": 199.54751131221718,
+          "rawCents": 431.07451489938455,
+          "foldedCents": 431.07451489938467,
+          "confidence": 0.3038200513338194
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.3392850135727157,
+          "monoLossDb": -1.7416605451167806,
+          "leftRightBalanceDb": 0.10326526183947199
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0003.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0003.m4a",
+        "note": 51,
+        "velocityMin": 0,
+        "velocityMax": 42,
+        "durationSec": 8.800362811791382,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.006599654909223318,
+        "peakDb": -43.609575455642386,
+        "rmsDb": -72.329786911386,
+        "activeRmsDb": -71.1754168643892,
+        "loudnessKMax": -54.09435433666344,
+        "playbackGainDb": 0,
+        "dcOffset": 1.3681861310299825e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 27.565841408746827,
+        "leadingSilenceMs": 6.054421768707483,
+        "effectiveLeadingSilenceMs": 6.054421768707483,
+        "trailingSilenceMs": 2151.7687074829932,
+        "attackMs": 35.3968253968254,
+        "tailLevelDbRelPeak": -79.29501748168417,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 6.054421768707483,
+        "activeEndMs": 6648.571428571428,
+        "spectral": {
+          "centroidHz": 9360.773932900865,
+          "highFrequencyRatio": 0.799449215119564
+        },
+        "pitch": {
+          "midi": 56.03053040693264,
+          "frequencyHz": 208.0188679245283,
+          "rawCents": 503.0530406932641,
+          "foldedCents": 503.05304069326417,
+          "confidence": 0.256984974024081
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.24910206121580442,
+          "monoLossDb": -2.045336494256332,
+          "leftRightBalanceDb": 0.4187490147560011
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0004.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0004.m4a",
+        "note": 51,
+        "velocityMin": 0,
+        "velocityMax": 42,
+        "durationSec": 7.616145124716553,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.0070965890772640705,
+        "peakDb": -42.97900683086947,
+        "rmsDb": -72.70717652729498,
+        "activeRmsDb": -71.05145928001932,
+        "loudnessKMax": -54.693483562053416,
+        "playbackGainDb": 0,
+        "dcOffset": 2.9026676673118985e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 28.072452449149843,
+        "leadingSilenceMs": 6.4852607709750565,
+        "effectiveLeadingSilenceMs": 6.4852607709750565,
+        "trailingSilenceMs": 2539.1156462585036,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -77.52010547480685,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 6.4852607709750565,
+        "activeEndMs": 5077.006802721088,
+        "spectral": {
+          "centroidHz": 9558.457583094258,
+          "highFrequencyRatio": 0.794306677193939
+        },
+        "pitch": {
+          "midi": 55.54736396436791,
+          "frequencyHz": 202.29357798165137,
+          "rawCents": 454.7363964367911,
+          "foldedCents": 454.736396436791,
+          "confidence": 0.20668728507544945
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.29244441650436737,
+          "monoLossDb": -1.9001324898630907,
+          "leftRightBalanceDb": 0.7801701493489828
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0005.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0005.m4a",
+        "note": 51,
+        "velocityMin": 43,
+        "velocityMax": 85,
+        "durationSec": 8.475283446712018,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.017055224627256393,
+        "peakDb": -35.36285112614544,
+        "rmsDb": -64.92844206082741,
+        "activeRmsDb": -63.843830412815535,
+        "loudnessKMax": -45.70743047360447,
+        "playbackGainDb": 0,
+        "dcOffset": 1.8117000420931795e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 28.480979286670088,
+        "leadingSilenceMs": 1.9501133786848073,
+        "effectiveLeadingSilenceMs": 1.9501133786848073,
+        "trailingSilenceMs": 1884.0362811791383,
+        "attackMs": 44.807256235827666,
+        "tailLevelDbRelPeak": -87.358286675073,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.9501133786848073,
+        "activeEndMs": 6591.224489795918,
+        "spectral": {
+          "centroidHz": 10301.38003711546,
+          "highFrequencyRatio": 0.828028068258849
+        },
+        "pitch": {
+          "midi": 54.54458736469834,
+          "frequencyHz": 190.9090909090909,
+          "rawCents": 354.45873646983375,
+          "foldedCents": 354.45873646983375,
+          "confidence": 0.39105920970694147
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.35587483331372693,
+          "monoLossDb": -1.6942713836154153,
+          "leftRightBalanceDb": 0.9052743982886845
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0006.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0006.m4a",
+        "note": 51,
+        "velocityMin": 43,
+        "velocityMax": 85,
+        "durationSec": 8.52172335600907,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03471803665161133,
+        "peakDb": -29.18889685394353,
+        "rmsDb": -63.06175185977999,
+        "activeRmsDb": -60.49115570102969,
+        "loudnessKMax": -43.12570134905465,
+        "playbackGainDb": 0,
+        "dcOffset": -6.653544168487903e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 31.302258847086158,
+        "leadingSilenceMs": 1.0204081632653061,
+        "effectiveLeadingSilenceMs": 1.0204081632653061,
+        "trailingSilenceMs": 3823.401360544218,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -105.58683858220475,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.0204081632653061,
+        "activeEndMs": 4698.299319727891,
+        "spectral": {
+          "centroidHz": 11127.044689989672,
+          "highFrequencyRatio": 0.8600768332337619
+        },
+        "pitch": {
+          "midi": 49.67692174937921,
+          "frequencyHz": 144.11764705882354,
+          "rawCents": -132.30782506207888,
+          "foldedCents": -132.3078250620789,
+          "confidence": 0.21127517692935124
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.3922507273728624,
+          "monoLossDb": -1.5733009847441437,
+          "leftRightBalanceDb": 0.14521237975690288
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0007.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0007.m4a",
+        "note": 51,
+        "velocityMin": 43,
+        "velocityMax": 85,
+        "durationSec": 8.150204081632653,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.035122718662023544,
+        "peakDb": -29.088237500980448,
+        "rmsDb": -62.05655822710178,
+        "activeRmsDb": -59.70376062720476,
+        "loudnessKMax": -42.01150688455231,
+        "playbackGainDb": 0,
+        "dcOffset": 5.190114884475004e-8,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 30.61552312622431,
+        "leadingSilenceMs": 1.2244897959183674,
+        "effectiveLeadingSilenceMs": 1.2244897959183674,
+        "trailingSilenceMs": 3419.591836734694,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -95.42837369374028,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.2244897959183674,
+        "activeEndMs": 4730.589569160998,
+        "spectral": {
+          "centroidHz": 11310.462129832667,
+          "highFrequencyRatio": 0.8540374700546306
+        },
+        "pitch": {
+          "midi": 55.07731679699978,
+          "frequencyHz": 196.875,
+          "rawCents": 407.73167969997814,
+          "foldedCents": 407.73167969997814,
+          "confidence": 0.1717423096765779
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.31729080661919123,
+          "monoLossDb": -1.8141198561405838,
+          "leftRightBalanceDb": 0.30303498108182997
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0008.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0008.m4a",
+        "note": 51,
+        "velocityMin": 43,
+        "velocityMax": 85,
+        "durationSec": 7.732244897959184,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.05072101950645447,
+        "peakDb": -25.89624051199905,
+        "rmsDb": -62.352629426850086,
+        "activeRmsDb": -60.84941996518409,
+        "loudnessKMax": -42.65016689092241,
+        "playbackGainDb": 0,
+        "dcOffset": 5.418943547995951e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 34.95317945318504,
+        "leadingSilenceMs": 1.6326530612244898,
+        "effectiveLeadingSilenceMs": 1.6326530612244898,
+        "trailingSilenceMs": 2267.0068027210887,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -106.91513092963103,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.6326530612244898,
+        "activeEndMs": 5465.215419501134,
+        "spectral": {
+          "centroidHz": 11791.640379722696,
+          "highFrequencyRatio": 0.8709809998011292
+        },
+        "pitch": {
+          "midi": 51.58919086616471,
+          "frequencyHz": 160.94890510948906,
+          "rawCents": 58.91908661647065,
+          "foldedCents": 58.91908661647062,
+          "confidence": 0.21603884938010914
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.3693354527449063,
+          "monoLossDb": -1.645218004679839,
+          "leftRightBalanceDb": -0.04589149466553567
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0009.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0009.m4a",
+        "note": 51,
+        "velocityMin": 86,
+        "velocityMax": 127,
+        "durationSec": 7.801904761904762,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.045792385935783386,
+        "peakDb": -26.78413455388382,
+        "rmsDb": -58.21336083336014,
+        "activeRmsDb": -57.37013909875762,
+        "loudnessKMax": -39.19854077342727,
+        "playbackGainDb": 0,
+        "dcOffset": -2.5645292557007744e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 30.586004544873795,
+        "leadingSilenceMs": 1.1111111111111112,
+        "effectiveLeadingSilenceMs": 1.1111111111111112,
+        "trailingSilenceMs": 1377.936507936508,
+        "attackMs": 42.94784580498867,
+        "tailLevelDbRelPeak": -95.71924402395072,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.1111111111111112,
+        "activeEndMs": 6423.9455782312925,
+        "spectral": {
+          "centroidHz": 11274.60467778443,
+          "highFrequencyRatio": 0.8423322717815093
+        },
+        "pitch": {
+          "midi": 52.167393268284286,
+          "frequencyHz": 166.41509433962264,
+          "rawCents": 116.7393268284286,
+          "foldedCents": 116.7393268284286,
+          "confidence": 0.26862676729967927
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.36282585991710353,
+          "monoLossDb": -1.667278205835996,
+          "leftRightBalanceDb": 0.4248088793714214
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0010.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0010.m4a",
+        "note": 51,
+        "velocityMin": 86,
+        "velocityMax": 127,
+        "durationSec": 6.3854875283446715,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.08555114269256592,
+        "peakDb": -21.35548370568109,
+        "rmsDb": -57.07259168262493,
+        "activeRmsDb": -55.64549918403457,
+        "loudnessKMax": -38.623656588378836,
+        "playbackGainDb": 0,
+        "dcOffset": 1.101797237660498e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 34.29001547835348,
+        "leadingSilenceMs": 1.2698412698412698,
+        "effectiveLeadingSilenceMs": 1.2698412698412698,
+        "trailingSilenceMs": 1788.9569160997733,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -110.54997900249042,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.2698412698412698,
+        "activeEndMs": 4596.507936507937,
+        "spectral": {
+          "centroidHz": 11440.803851118362,
+          "highFrequencyRatio": 0.844150985495673
+        },
+        "pitch": {
+          "midi": 50.01975157574046,
+          "frequencyHz": 147,
+          "rawCents": -98.02484242595426,
+          "foldedCents": -98.02484242595426,
+          "confidence": 0.11772621504774287
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.37087355666927174,
+          "monoLossDb": -1.641032193030685,
+          "leftRightBalanceDb": 0.3012034746306258
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0011.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0011.m4a",
+        "note": 51,
+        "velocityMin": 86,
+        "velocityMax": 127,
+        "durationSec": 7.662585034013605,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.0775524377822876,
+        "peakDb": -22.208090920577973,
+        "rmsDb": -57.68913215660766,
+        "activeRmsDb": -56.47937956395532,
+        "loudnessKMax": -38.29769785481607,
+        "playbackGainDb": 0,
+        "dcOffset": -1.392268581528823e-8,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 34.271288643377346,
+        "leadingSilenceMs": 1.6780045351473922,
+        "effectiveLeadingSilenceMs": 1.6780045351473922,
+        "trailingSilenceMs": 1863.265306122449,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -104.51362553553807,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.6780045351473922,
+        "activeEndMs": 5799.297052154195,
+        "spectral": {
+          "centroidHz": 11704.876838355947,
+          "highFrequencyRatio": 0.8561613085767332
+        },
+        "pitch": {
+          "midi": 55.07731679699978,
+          "frequencyHz": 196.875,
+          "rawCents": 407.73167969997814,
+          "foldedCents": 407.73167969997814,
+          "confidence": 0.2586664584812175
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.3671520646646644,
+          "monoLossDb": -1.65240135603502,
+          "leftRightBalanceDb": 0.185875587752469
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0012.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-ride",
+        "instrumentName": "Ride Cymbal",
+        "file": "source-0012.m4a",
+        "note": 51,
+        "velocityMin": 86,
+        "velocityMax": 127,
+        "durationSec": 8.057324263038549,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.11089001595973969,
+        "peakDb": -19.10215108040434,
+        "rmsDb": -56.17132095284931,
+        "activeRmsDb": -54.10507182841852,
+        "loudnessKMax": -36.124800804940115,
+        "playbackGainDb": 0,
+        "dcOffset": -2.485215810163312e-8,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 35.002920748014176,
+        "leadingSilenceMs": 1.1337868480725624,
+        "effectiveLeadingSilenceMs": 1.1337868480725624,
+        "trailingSilenceMs": 3052.3356009070294,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.1337868480725624,
+        "activeEndMs": 5004.965986394557,
+        "spectral": {
+          "centroidHz": 11922.532252834499,
+          "highFrequencyRatio": 0.8605871139881703
+        },
+        "pitch": {
+          "midi": 47.105473288986495,
+          "frequencyHz": 124.22535211267606,
+          "rawCents": -389.45267110135046,
+          "foldedCents": -389.45267110135046,
+          "confidence": 0.3483966445910155
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.2816721699151432,
+          "monoLossDb": -1.932983185695697,
+          "leftRightBalanceDb": 0.26755523104384804
+        }
+      },
+      "issues": []
+    }
+  ]
+}

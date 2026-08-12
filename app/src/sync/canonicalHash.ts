@@ -19,6 +19,8 @@
  */
 
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
+import type { ScaleState } from '../shared/sync-types';
+import { normalizeSessionScale } from '../shared/scale-defaults';
 
 // Minimal track type for hash input
 interface TrackForHash {
@@ -28,6 +30,7 @@ interface TrackForHash {
   steps: boolean[];
   parameterLocks: (unknown | null)[];
   volume: number;
+  pan?: number;
   muted: boolean;
   soloed?: boolean;
   transpose: number;
@@ -41,6 +44,7 @@ export interface StateForHash {
   swing: number;
   version?: number;
   effects?: unknown;
+  scale?: ScaleState;
 }
 
 interface CanonicalTrack {
@@ -50,6 +54,7 @@ interface CanonicalTrack {
   steps: boolean[];
   parameterLocks: (unknown | null)[];
   volume: number;
+  pan: number;
   // NOTE: muted and soloed are EXCLUDED from hash
   // They are local-only state ("My Ears, My Control" philosophy)
   transpose: number;
@@ -61,6 +66,7 @@ interface CanonicalState {
   tracks: CanonicalTrack[];
   tempo: number;
   swing: number;
+  scale: ScaleState;
 }
 
 /**
@@ -104,6 +110,7 @@ function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
     steps,
     parameterLocks,
     volume: track.volume,
+    pan: track.pan ?? 0,
     // muted: EXCLUDED - local-only
     // soloed: EXCLUDED - local-only
     transpose: track.transpose,
@@ -125,6 +132,7 @@ export function canonicalizeForHash(state: StateForHash): CanonicalState {
     tracks: state.tracks.map(canonicalizeTrack),
     tempo: state.tempo,
     swing: state.swing,
+    scale: normalizeSessionScale(state.scale, 'legacy-session'),
   };
 }
 

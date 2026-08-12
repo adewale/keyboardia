@@ -23,7 +23,13 @@ test.describe('mock publish contract', () => {
     expect(createdResponse.status()).toBe(201);
     const created = await createdResponse.json();
     const stored = await request.get(`${base}/api/sessions/${created.id}`).then(response => response.json());
-    expect(stored.state).toEqual({ tracks: [], tempo: 120, swing: 0, version: 1 });
+    expect(stored.state).toEqual({
+      tracks: [],
+      tempo: 120,
+      swing: 0,
+      scale: { root: 'C', scaleId: 'minor-pentatonic', locked: true },
+      version: 1,
+    });
 
     const invalidCases = [
       { state: { tracks: [], tempo: 500, swing: 0, version: 1 } },

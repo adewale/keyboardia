@@ -333,7 +333,11 @@ test('hostile persisted metadata is rejected identically by both backends', asyn
   };
   expect(unchangedSession.name).toBe('Metadata Control');
   expect(unchangedSession.state.tempo).toBe(120);
-  expect(unchangedSession.state.scale).toBeUndefined();
+  expect(unchangedSession.state.scale).toEqual({
+    root: 'C',
+    scaleId: 'minor-pentatonic',
+    locked: true,
+  });
   expect(unchangedSession.state.loopRegion ?? null).toBeNull();
   expect(activeStepIndices(unchangedSession.state.tracks[0].steps)).toEqual([3]);
 });

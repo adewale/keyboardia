@@ -7,11 +7,26 @@ import { describe, expect, it } from 'vitest';
 import { parseListeningDecision } from '../scripts/sample-pipeline-evidence';
 
 const decisionsRoot = path.resolve('sample-pipeline/decisions');
+const curationReceipt = JSON.parse(
+  fs.readFileSync(path.resolve('sample-pipeline/enrichment/technical-curation.json'), 'utf8'),
+) as {
+  policy: { perceptualPreferenceClaimed: boolean };
+  instruments: Array<{
+    id: string;
+    manifestSha256: string;
+    shipped: Array<{ sha256: string }>;
+  }>;
+};
+const mappingCalibrationReceipt = JSON.parse(
+  fs.readFileSync(path.resolve('sample-pipeline/enrichment/mapping-calibration.json'), 'utf8'),
+) as {
+  instruments: Array<{ id: string; manifestSha256: string }>;
+};
 const sha256File = (filename: string): string => createHash('sha256').update(fs.readFileSync(filename)).digest('hex');
 const sorted = (values: readonly string[]): string[] => [...values].sort((left, right) => left.localeCompare(right));
 
 describe('exact-hash human rejection decisions', () => {
-  it('retains current production for all ten blind-test rejections without waiving unresolved findings', () => {
+  it('retains their exact historical evidence without confusing later owner-directed enrichment with human preference', () => {
     const files = fs.readdirSync(decisionsRoot).filter(filename => filename.endsWith('.json')).sort();
     expect(files).toHaveLength(10);
 
@@ -50,8 +65,23 @@ describe('exact-hash human rejection decisions', () => {
       const productionManifest = JSON.parse(fs.readFileSync(productionManifestPath, 'utf8'));
       const productionHashes = [...new Set<string>(productionManifest.samples.map((sample: { file: string }) => sample.file))]
         .map(file => sha256File(path.join(productionRoot, file)));
-      expect(sha256File(productionManifestPath)).toBe(comparison.before.buildReportSha256);
-      expect(sorted(productionHashes)).toEqual(sorted(comparison.before.outputHashes));
+      const enrichmentReceiptPath = path.resolve('sample-pipeline/enrichment/evidence', instrumentId, 'promotion.json');
+      if (fs.existsSync(enrichmentReceiptPath)) {
+        const enrichment = JSON.parse(fs.readFileSync(enrichmentReceiptPath, 'utf8'));
+        const curation = curationReceipt.instruments.find(entry => entry.id === instrumentId);
+        expect(enrichment.acceptanceBasis).toBe('owner-directed-automatic-enrichment');
+        expect(enrichment.perceptualPreferenceClaimed).toBe(false);
+        expect(curationReceipt.policy.perceptualPreferenceClaimed).toBe(false);
+        expect(curation).toBeDefined();
+        expect(sha256File(productionManifestPath)).toBe(curation!.manifestSha256);
+        expect(sorted(productionHashes)).toEqual(sorted(curation!.shipped.map(output => output.sha256)));
+      } else {
+        const calibration = mappingCalibrationReceipt.instruments.find(entry => entry.id === instrumentId);
+        expect(sha256File(productionManifestPath)).toBe(
+          calibration?.manifestSha256 ?? comparison.before.buildReportSha256,
+        );
+        expect(sorted(productionHashes)).toEqual(sorted(comparison.before.outputHashes));
+      }
       expect(fs.existsSync(path.join(productionRoot, 'build-report.json'))).toBe(false);
     }
   });

@@ -1,5 +1,6 @@
 # Keyboardia Synthesis Engine Architecture
 
+> **Status:** Implemented; updated for Phase 43 on 2026-08-10.
 > Technical reference for the audio synthesis and playback system.
 
 ## Overview
@@ -16,16 +17,19 @@ Keyboardia uses a hybrid audio architecture combining:
 │                                                             │
 │  Tracks (Sample/Synth)                                      │
 │    ↓ (with pitch/volume per-step locks)                     │
-│    ├→ Track Gain Node (volume control per track)            │
+│    ├→ Track Bus (volume, mute, normalized pan −1…+1)        │
 │    ↓                                                        │
-│  Master Gain (overall volume)                               │
+│  Master Gain (−3 dB measured input trim)                    │
 │    ↓                                                        │
-│  Compressor/Limiter (prevents clipping)                     │
+│  Compressor (−10 dB, 3:1, 15 ms / 200 ms) → Makeup Trim    │
 │    ↓                                                        │
-│  Tone.js Effects Chain (if enabled)                         │
-│    ├→ Distortion → Chorus → Delay → Reverb                  │
+│  Distortion → Chorus → Delay                                │
+│    ├→ dry ────────────────────────────────────────────┐      │
+│    └→ 275 Hz HPF → wet convolution reverb (15% send) ┤      │
 │    ↓                                                        │
-│  Audio Destination (speakers)                               │
+│  Limiter (−1 dB) → Output Trim (−1 dB measured safety)      │
+│    → Tone.Destination (Volume → Gain)                       │
+│    ↓ raw AudioContext destination (speakers)                │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -43,17 +47,22 @@ The main orchestrator for all audio operations.
 - Sample playback with pitch shifting
 - Synth note triggering
 - Track volume management
-- Master output chain (gain → compressor → effects)
+- Master output chain and synchronized pre/post/heard-output capture taps
 
 **Platform Support:**
 - iOS Safari (`webkitAudioContext`, "interrupted" state handling)
 - Chrome/Firefox/Edge (standard `AudioContext`)
 - Mobile (touch event listeners for context unlock)
 
-**Compressor Settings:**
+**Compressor Settings (native fallback and Tone path):**
 ```typescript
-threshold: -6dB, knee: 12, ratio: 4:1, attack: 3ms, release: 250ms
+threshold: -10dB, knee: 12, ratio: 3:1, attack: 15ms, release: 200ms
 ```
+
+Chromium's measured 1.67027698 dB compressor auto-makeup is explicitly
+nulled. The measured through gain is effectively 0 dB and compressor lookahead
+is 6 ms. The parallel room starts with Freeverb immediately, then hot-swaps to
+a generated `Tone.Reverb` convolution IR when ready.
 
 ### 2. Scheduler (`/audio/scheduler.ts`)
 
@@ -91,8 +100,9 @@ Web Audio API-based subtractive synthesis.
 
 **Architecture:**
 - 16-voice polyphonic with voice stealing
-- Single oscillator per voice
+- Detuned dual oscillators for intended tonal presets (sub stays single)
 - Low-pass filter with resonance
+- MIDI-velocity-to-filter mapping (velocity 90 preserves 88.9% of cutoff)
 - ADSR envelope
 
 **24 Presets:**

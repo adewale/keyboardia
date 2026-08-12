@@ -86,6 +86,7 @@ export interface Track {
   steps: boolean[]; // Up to 128 steps - true/false for on/off
   parameterLocks: (ParameterLock | null)[]; // Up to 128 slots, null = no lock
   volume: number;
+  pan?: number; // Normalized equal-power stereo position [-1, 1], legacy default 0
   muted: boolean;
   soloed: boolean; // When any track is soloed, only soloed tracks play
   transpose: number; // Semitones offset for entire track (-24 to +24), default 0
@@ -105,6 +106,7 @@ import type { SessionTrack } from './shared/state';
 export function sessionTrackToTrack(sessionTrack: SessionTrack): Track {
   return {
     ...sessionTrack,
+    pan: sessionTrack.pan ?? 0,
     soloed: sessionTrack.soloed ?? false,
     stepCount: sessionTrack.stepCount ?? DEFAULT_STEP_COUNT,
   };
@@ -122,6 +124,10 @@ export interface Sample {
   id: string;
   name: string;
   buffer: AudioBuffer | null;
+  /** Deterministic alternate renders for repeated procedural hits. */
+  variations?: readonly AudioBuffer[];
+  /** Source-side calibration; independent of the authored track fader. */
+  playbackGain?: number;
   url: string;
 }
 
@@ -138,6 +144,7 @@ export type GridAction =
   | ({ type: 'SET_PLAYING'; isPlaying: boolean } & BaseAction)
   | ({ type: 'SET_CURRENT_STEP'; step: number } & BaseAction)
   | ({ type: 'SET_TRACK_VOLUME'; trackId: string; volume: number } & BaseAction)
+  | ({ type: 'SET_TRACK_PAN'; trackId: string; pan: number } & BaseAction)
   | ({ type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number } & BaseAction)
   | ({ type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number } & BaseAction)
   | ({ type: 'SET_FM_PARAMS'; trackId: string; fmParams: FMParams } & BaseAction)

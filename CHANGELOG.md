@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Sound quality parity (August 2026)
+
+**Added:**
+- Synchronized Chromium capture taps, deterministic offline render fixtures,
+  pure audio metrics, six audition sessions, and a dev A/B/null audition page.
+- Persisted scale-lock defaults, deterministic per-note gain humanization,
+  velocity-layer crossfades, per-track pan, and 40 ms parameter smoothing.
+- Async convolution reverb with an instant Freeverb fallback, velocity-sensitive
+  filters, richer dual-oscillator presets, and revised procedural drum DSP.
+
+**Changed:**
+- Master routing is now `−3 dB trim → compressor → makeup → effects → −1 dB
+  limiter → Tone.Destination`; measured through gain is effectively unity.
+- Default unlocked timbre velocity is MIDI 90 while explicit velocity p-locks
+  preserve their previous MIDI-export mapping.
+- Sample manifests are calibrated to piano C4-mf within the gating ±2.5 dB
+  delivered-loudness window. Rejected sample candidates remain unpromoted.
+
+**Fixed:**
+- Reconnected the shipping compressor, nulled Chromium's measured 1.67027698 dB
+  compressor auto-makeup, and protected the reverb send from low-frequency mud.
+- Corrected swept-oscillator phase integration, kick frequency law, lazy pan
+  state loss, missing scale hashes/migrations, and decoder-specific onset logic.
+
+Objective evidence and listening limitations are documented in
+[`specs/research/SOUND-QUALITY-PARITY-IMPLEMENTATION-2026-08-10.md`](specs/research/SOUND-QUALITY-PARITY-IMPLEMENTATION-2026-08-10.md).
+
 ### Planned
 - Phase 29: Keyboard Shortcuts (global hotkeys for efficient workflow)
 - Phase 30: Mobile UI Polish (action sheets, loading states)

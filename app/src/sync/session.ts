@@ -10,6 +10,8 @@ import { logger } from '../utils/logger';
 // Import Session types from canonical source (shared/state.ts)
 import type { Session, SessionState } from '../shared/state';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
+import { normalizeSessionScale } from '../shared/scale-defaults';
+import { normalizeSessionEffects } from '../shared/effects-defaults';
 
 // Re-export for consumers that import from here
 export type { Session, SessionState } from '../shared/state';
@@ -299,6 +301,7 @@ export async function loadSession(sessionId: string): Promise<Session | null> {
   }
 
   const session = await response.json() as Session;
+  session.state.scale = normalizeSessionScale(session.state.scale, 'legacy-session');
   currentSessionId = session.id;
   lastSavedStates.set(session.id, JSON.stringify(session.state));
 
@@ -561,8 +564,8 @@ export function sessionToGridState(session: Session): Partial<GridState> {
     tracks: session.state.tracks?.map(normalizeTrack) ?? [],
     tempo: session.state.tempo,
     swing: session.state.swing,
-    effects: session.state.effects,
-    scale: session.state.scale,
+    effects: normalizeSessionEffects(session.state.effects, 'legacy-session'),
+    scale: normalizeSessionScale(session.state.scale, 'legacy-session'),
     loopRegion: session.state.loopRegion ?? null,
   };
 }

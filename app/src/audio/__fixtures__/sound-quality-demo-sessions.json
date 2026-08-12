@@ -1,0 +1,94 @@
+{
+  "schemaVersion": 1,
+  "source": "specs/SOUND-QUALITY-PARITY-PLAN.md Appendix A",
+  "sessions": [
+    {
+      "id": "S1",
+      "name": "Downbeat Pileup",
+      "tempo": 120,
+      "tracks": [
+        { "name": "Hats", "instrument": "hihat", "pattern": "x-x-x-x-x-x-x-x-" },
+        { "name": "Kick", "instrument": "sampled:808-kick", "pattern": "x---------------" },
+        { "name": "Sub", "instrument": "synth:sub", "pattern": "x---------------" },
+        { "name": "Stab", "instrument": "synth:stab", "pattern": "x---------------" },
+        { "name": "Chord", "instrument": "chord", "pattern": "x---------------" },
+        { "name": "OpenHat", "instrument": "openhat", "pattern": "x---------------" },
+        { "name": "Snare", "instrument": "sampled:acoustic-snare", "pattern": "--------x-------" },
+        { "name": "Clap", "instrument": "sampled:808-clap", "pattern": "--------x-------" }
+      ]
+    },
+    {
+      "id": "S2A",
+      "name": "Sour vs Sweet — chromatic",
+      "tempo": 120,
+      "tracks": [
+        { "name": "Melody", "instrument": "sampled:marimba", "pattern": "x-x-x-x-x-x-x-x-", "pitchOffsets": [0, 1, 6, 3, 8, 1, 11, 6] },
+        { "name": "Drone", "instrument": "synth:pad", "pattern": "xxxxxxxxxxxxxxxx", "pitchOffsets": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "tieSteps": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] }
+      ]
+    },
+    {
+      "id": "S2B",
+      "name": "Sour vs Sweet — C minor pentatonic",
+      "tempo": 120,
+      "scale": { "root": "C", "type": "minorPentatonic", "locked": true },
+      "tracks": [
+        { "name": "Melody", "instrument": "sampled:marimba", "pattern": "x-x-x-x-x-x-x-x-", "pitchOffsets": [0, 3, 5, 7, 10, 12, 10, 7] },
+        { "name": "Drone", "instrument": "synth:pad", "pattern": "xxxxxxxxxxxxxxxx", "pitchOffsets": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "tieSteps": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] }
+      ]
+    },
+    {
+      "id": "S2b",
+      "name": "Pentatonic groove",
+      "tempo": 120,
+      "tracks": [
+        { "name": "Marimba", "instrument": "sampled:marimba", "pattern": "x--x--x---x--x--", "pitchOffsets": [0, 3, 7, 10, 7] },
+        { "name": "Kick", "instrument": "sampled:808-kick", "pattern": "x---x---x---x---" },
+        { "name": "Hat", "instrument": "sampled:808-hihat-closed", "pattern": "--x---x---x---x-" },
+        { "name": "Clap", "instrument": "sampled:808-clap", "pattern": "----x-------x---" }
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Machine Gun",
+      "tempo": 120,
+      "tracks": [
+        { "name": "Roll", "instrument": "sampled:acoustic-snare", "pattern": "xxxxxxxxxxxxxxxx" },
+        { "name": "Groove", "instrument": "sampled:brushes-snare", "pattern": "o-o-x-o-o-x-o-X-", "volumeLocks": { "0": 0.3, "2": 0.3, "4": 1, "6": 0.3, "8": 0.3, "10": 1, "12": 0.3, "14": 1 } },
+        { "name": "Hat", "instrument": "sampled:acoustic-hihat-closed", "pattern": "x-x-x-x-x-x-x-x-" }
+      ]
+    },
+    {
+      "id": "S4",
+      "name": "Piano Ballad",
+      "tempo": 72,
+      "tracks": [
+        { "name": "Piano", "instrument": "sampled:piano", "pattern": "X-----x---o-----", "pitchOffsets": [0, 3, 7], "volumeLocks": { "0": 1, "10": 0.3 } },
+        { "name": "Piano 2", "instrument": "sampled:piano", "pattern": "------------x--X", "pitchOffsets": [10, 12], "volumeLocks": { "15": 1 } },
+        { "name": "Crescendo", "instrument": "sampled:piano", "pattern": "x-x-x-x-x-x-----", "pitchOffsets": [0, 0, 0, 0, 0, 0], "velocities": [0.3, 0.45, 0.6, 0.75, 0.9, 1] }
+      ]
+    },
+    {
+      "id": "S5",
+      "name": "Wide Kit",
+      "tempo": 120,
+      "tracks": [
+        { "name": "Kick", "instrument": "sampled:acoustic-kick", "pattern": "x---x---x---x---", "pan": 0 },
+        { "name": "Snare", "instrument": "sampled:acoustic-snare", "pattern": "----x-------x---", "pan": -0.1 },
+        { "name": "Hat", "instrument": "sampled:acoustic-hihat-closed", "pattern": "x-x-x-x-x-x-x-x-", "pan": 0.2 },
+        { "name": "Ride", "instrument": "sampled:acoustic-ride", "pattern": "--x---x---x---x-", "pan": 0.35 },
+        { "name": "Conga", "instrument": "conga", "pattern": "--x--x----x--x--", "pan": -0.3 },
+        { "name": "Shaker", "instrument": "shaker", "pattern": "-x-x-x-x-x-x-x-x", "pan": 0.12 },
+        { "name": "Bass", "instrument": "sampled:finger-bass", "pattern": "x-----x-x-----x-", "pan": 0 }
+      ]
+    },
+    {
+      "id": "S6",
+      "name": "Acid Line",
+      "tempo": 120,
+      "tracks": [
+        { "name": "Acid", "instrument": "synth:acid", "pattern": "x-o-x-x-o-x-o-X-", "pitchOffsets": [0, 0, 12, 3, 3, 15, 10, 12], "volumeLocks": { "2": 0.3, "8": 0.3, "12": 0.3, "14": 1 } },
+        { "name": "Pad", "instrument": "synth:strings", "pattern": "xxxxxxxxxxxxxxxx", "pitchOffsets": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], "tieSteps": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15] }
+      ]
+    }
+  ]
+}

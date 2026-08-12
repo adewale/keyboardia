@@ -18,6 +18,7 @@
 
 import { logger } from '../utils/logger';
 import { clampVolume, clampPan, clampGain } from '../shared/validation';
+import { slewAudioParam } from './constants';
 
 export class TrackBus {
   private context: AudioContext;
@@ -102,7 +103,9 @@ export class TrackBus {
    */
   setPan(value: number): void {
     if (this.disposed) return;
-    this.panNode.pan.setValueAtTime(clampPan(value), this.context.currentTime);
+    const now = this.context.currentTime;
+    const target = clampPan(value);
+    slewAudioParam(this.panNode.pan, target, now);
   }
 
   /**

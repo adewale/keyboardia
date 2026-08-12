@@ -173,11 +173,12 @@ describe('Per-track tone/advanced synth instances', () => {
     await engine.warmAdvancedSynthForTrack('trackA');
     await engine.warmAdvancedSynthForTrack('trackB');
 
-    engine.playAdvancedSynth('supersaw', 0, 0, 0.1, 1, 'trackA');
+    engine.playAdvancedSynth('supersaw', 0, 0, 0.1, 0.42, 'trackA', 37);
     engine.playAdvancedSynth('wobble-bass', 0, 0, 0.1, 1, 'trackB');
 
     expect(advancedInstances.length).toBe(2);
     expect(advancedInstances[0]).not.toBe(advancedInstances[1]);
+    expect(advancedInstances[0].playNoteSpy.mock.calls[0].slice(3)).toEqual([0.42, 37]);
   });
 
   it('never disconnects a shared output when a different track plays (the hijack bug)', async () => {

@@ -120,8 +120,11 @@ This document provides a comprehensive analysis of how volume works across all s
 - All new samples must be peak-normalized to within ±2 dB of piano
 - Progressive loading: C4 first for piano, single samples for drums
 
-**Validation Requirement:**
-All sampled instruments must pass `npm run validate:samples` before being committed.
+**Validation Requirement (updated by Phase 43):**
+All sampled instruments must pass the CI-wired `npm run validate:sample-quality`
+gate. It measures delivered K-weighted loudness near C4 and enforces a ±2.5 dB
+window around piano C4-mf. `validate:samples` remains a legacy diagnostic and is
+not the release gate.
 
 ## Volume Guidelines by Category
 
@@ -277,42 +280,41 @@ const OUTPUT_GAIN = 0.7;
 const VOICE_OUTPUT_GAIN = 0.3;
 const ENGINE_OUTPUT_GAIN = 0.7;
 
-// Audio Engine (engine.ts)
-const MASTER_GAIN = 1.0;
-const COMPRESSOR_THRESHOLD = -6; // dB
-const COMPRESSOR_RATIO = 4:1;
+// Audio Engine (audio/constants.ts), measured in Chromium
+const MASTER_GAIN = 10 ** (-3 / 20);
+const COMPRESSOR_THRESHOLD = -10; // dB
+const COMPRESSOR_RATIO = 3;
 ```
 
 ## Clipping Prevention
 
 The audio engine uses a compressor to prevent clipping when multiple sources play:
 
-- **Worst Case**: 16 voices at ENVELOPE_PEAK = 0.85 × 16 = 13.6 (would clip)
-- **Compressor**: 4:1 ratio starting at -6dB handles this gracefully
-- **Result**: Clean output even with maximum polyphony
+- **Capacity probe**: deterministic 16-source render measured at −3.92 dBFS pre-compressor
+- **Compressor**: 3:1 ratio from −10 dBFS, followed by explicit makeup compensation
+- **Result**: −4.36 dBFS post-makeup peak, 0.21 dB recovery attenuation, monotonic recovery
 
 ## Sampled Instrument Validation
 
 ### Reference Standard
 
-Piano C3 is the reference sample for all volume validation:
+Piano C4-mf is the reference sample for delivered loudness validation:
 
 | Metric | Value | Tool |
 |--------|-------|------|
-| Peak Level | -1.4 dB | `ffmpeg -af volumedetect` |
-| Integrated Loudness | -13.85 LUFS | `ffmpeg -af loudnorm` |
-| True Peak | -1.36 dB | `ffmpeg -af loudnorm` |
+| `loudnessKMax` | −13.7609 | BS.1770 K weighting, 400 ms maximum |
+| Delivered window | ±2.5 dB | raw metric plus manifest/sample gain |
 
 ### Validation Process
 
 1. **Run validation script:**
    ```bash
-   npm run validate:samples
+   npm run validate:sample-quality
    ```
 
 2. **Tolerance rules:**
-   - Peak: Must be within ±2 dB of -1.4 dB (i.e., -3.4 to +0.6 dB)
-   - LUFS: Informational only (short samples have naturally lower LUFS)
+   - Delivered `loudnessKMax`: must be within ±2.5 dB of piano C4-mf
+   - Peak, DC, onset, pitch, tails, loops, stereo, and layer continuity remain independent checks
 
 3. **Normalization command (if needed):**
    ```bash

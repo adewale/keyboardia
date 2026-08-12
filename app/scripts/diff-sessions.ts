@@ -17,6 +17,7 @@
 
 import type { Session, SessionTrack } from '../src/shared/state';
 import type { ParameterLock } from '../src/shared/sync-types';
+import { normalizedPanToPercent } from '../src/shared/track-pan';
 
 // ============================================================================
 // Environment Detection
@@ -156,6 +157,7 @@ function trackToNotation(track: SessionTrack): string {
 
   if (track.transpose !== 0) meta.push(`transpose:${track.transpose}`);
   if (track.volume !== 1) meta.push(`vol:${track.volume}`);
+  if ((track.pan ?? 0) !== 0) meta.push(`pan:${normalizedPanToPercent(track.pan ?? 0)}`);
   if (track.muted) meta.push('muted');
   if (track.soloed) meta.push('soloed');
   if (stepCount !== 16) meta.push(`steps:${stepCount}`);
@@ -180,6 +182,7 @@ function trackContentHash(track: SessionTrack): string {
     parameterLocks: track.parameterLocks.slice(0, stepCount),
     transpose: track.transpose,
     volume: track.volume,
+    pan: track.pan ?? 0,
     muted: track.muted,
     soloed: track.soloed ?? false,
     stepCount,

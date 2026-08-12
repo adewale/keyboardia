@@ -34,6 +34,7 @@ function createBaseTrack(): StateForHash['tracks'][0] {
     steps: [true, false, false, false, true, false, false, false],
     parameterLocks: [null, null, null, null, { volume: 0.5 }, null, null, null],
     volume: 0.8,
+    pan: 0,
     muted: false,
     soloed: false,
     transpose: 0,
@@ -115,6 +116,14 @@ describe('Canonical Hash Completeness', () => {
       const state1 = createBaseState();
       const state2 = createBaseState();
       state2.tracks[0].volume = 0.5;
+
+      expect(computeHash(state1)).not.toBe(computeHash(state2));
+    });
+
+    it('changing track.pan changes the hash', () => {
+      const state1 = createBaseState();
+      const state2 = createBaseState();
+      state2.tracks[0].pan = -0.35;
 
       expect(computeHash(state1)).not.toBe(computeHash(state2));
     });
@@ -248,6 +257,16 @@ describe('Canonical Hash Completeness', () => {
 
       const state2 = createBaseState();
       state2.tracks[0].swing = undefined;
+
+      expect(computeHash(state1)).toBe(computeHash(state2));
+    });
+
+    it('undefined track.pan normalizes to center', () => {
+      const state1 = createBaseState();
+      state1.tracks[0].pan = 0;
+
+      const state2 = createBaseState();
+      state2.tracks[0].pan = undefined;
 
       expect(computeHash(state1)).toBe(computeHash(state2));
     });

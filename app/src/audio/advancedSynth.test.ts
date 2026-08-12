@@ -9,6 +9,7 @@ import {
   AdvancedSynthVoice,
   AdvancedSynthEngine,
   ADVANCED_SYNTH_PRESETS,
+  advancedVelocityFilterFrequency,
   isAdvancedSynth,
   getAdvancedSynthPresetId,
 } from './advancedSynth';
@@ -16,6 +17,15 @@ import { semitoneToFrequency } from './constants';
 
 // Mock Tone.js
 vi.mock('tone', () => {
+  const automatable = (initial: number) => {
+    const param = {
+      value: initial,
+      cancelScheduledValues: vi.fn(),
+      setTargetAtTime: vi.fn((value: number) => { param.value = value; }),
+    };
+    return param;
+  };
+
   class MockOscillator {
     type = 'sawtooth';
     frequency = {
@@ -37,7 +47,7 @@ vi.mock('tone', () => {
   }
 
   class MockGain {
-    gain = { value: 1 };
+    gain = automatable(1);
     connect = vi.fn().mockReturnThis();
     dispose = vi.fn();
     constructor(value?: number) {
@@ -49,8 +59,8 @@ vi.mock('tone', () => {
 
   class MockFilter {
     type = 'lowpass';
-    frequency = { value: 2000 };
-    Q = { value: 1 };
+    frequency = automatable(2000);
+    Q = automatable(1);
     connect = vi.fn().mockReturnThis();
     dispose = vi.fn();
   }
@@ -126,7 +136,7 @@ vi.mock('tone', () => {
   }
 
   class MockAdd {
-    addend = { value: 0 };
+    addend = automatable(0);
     connect = vi.fn().mockReturnThis();
     dispose = vi.fn();
     constructor(value?: number) {
@@ -137,7 +147,7 @@ vi.mock('tone', () => {
   }
 
   class MockLFO {
-    frequency = { value: 5 };
+    frequency = automatable(5);
     type = 'sine';
     min = -1;
     max = 1;
@@ -182,6 +192,26 @@ vi.mock('tone', () => {
     }),
     now: vi.fn().mockReturnValue(0),
   };
+});
+
+describe('advanced synth velocity timbre', () => {
+  it('keeps MIDI 90 near the authored cutoff and makes soft notes darker', () => {
+    const base = 4000;
+    const atDefault = advancedVelocityFilterFrequency(base, 90);
+    const soft = advancedVelocityFilterFrequency(base, Math.round(0.3 * 127));
+    const full = advancedVelocityFilterFrequency(base, 127);
+
+    expect(atDefault / base).toBeGreaterThanOrEqual(0.85);
+    expect(atDefault / base).toBeLessThanOrEqual(0.9);
+    expect(soft).toBeLessThan(atDefault);
+    expect(full).toBe(base);
+  });
+
+  it('clamps hostile velocity and frequency inputs to the filter domain', () => {
+    expect(advancedVelocityFilterFrequency(10, -100)).toBe(20);
+    expect(advancedVelocityFilterFrequency(40_000, 10_000)).toBe(20_000);
+    expect(advancedVelocityFilterFrequency(1000, Number.NaN)).toBe(1000);
+  });
 });
 
 describe('AdvancedSynthVoice', () => {
@@ -272,6 +302,8 @@ describe('AdvancedSynthVoice', () => {
 
       expect(voice['filter']!.frequency.value).toBe(1234);
       expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
+      expect(voice['filter']!.frequency.setTargetAtTime).toHaveBeenLastCalledWith(1234, 0, 0.04);
+      expect(voice['filterEnvAdder']!.addend.setTargetAtTime).toHaveBeenLastCalledWith(1234, 0, 0.04);
     });
 
     it('scales sync-enabled LFO rates from the sequencer tempo', () => {
@@ -422,6 +454,36 @@ describe('AdvancedSynthEngine', () => {
 
     it('plays with scheduled time', () => {
       expect(() => engine.playNoteSemitone(0, 0.5, 0.1)).not.toThrow();
+    });
+
+    it('uses MIDI velocity for cutoff while preserving noteGain as amplitude', () => {
+      const voice = engine['voices'][0];
+      const trigger = vi.spyOn(voice, 'triggerAttackRelease');
+
+      engine.playNoteSemitone(0, 0.5, 0.1, 0.42, 90);
+
+      const expectedCutoff = advancedVelocityFilterFrequency(
+        ADVANCED_SYNTH_PRESETS.supersaw.filter.frequency,
+        90,
+      );
+      expect(voice['filterEnvAdder']!.addend.value).toBeCloseTo(expectedCutoff, 8);
+      expect(trigger).toHaveBeenCalledWith(
+        expect.any(Number),
+        0.5,
+        expect.any(Number),
+        0.42,
+      );
+    });
+
+    it('applies velocity relative to a live filter-frequency override', () => {
+      engine.setFilterFrequency(2000);
+
+      engine.playNoteSemitone(0, 0.5, 0.1, 1, 90);
+
+      expect(engine['voices'][0]['filterEnvAdder']!.addend.value).toBeCloseTo(
+        advancedVelocityFilterFrequency(2000, 90),
+        8,
+      );
     });
   });
 
@@ -591,22 +653,22 @@ describe('LFO destinations', () => {
   it('switching from amplitude LFO preset preserves output gain', () => {
     // This test reproduces a bug where switching FROM a preset with
     // lfo.destination='amplitude' (like tremolo-strings) TO another preset
-    // would leave the output gain at 0 instead of resetting to 0.5
+    // would leave the voice-local output gain at 0 instead of unity
 
-    // First apply a non-amplitude preset - output gain should be 0.5
+    // First apply a non-amplitude preset - voice output should be unity
     engine.setPreset('supersaw');
     const voice = engine['voices'][0];
     const output = voice.getOutput();
     expect(output).not.toBeNull();
-    expect(output!.gain.value).toBe(0.5);
+    expect(output!.gain.value).toBe(1);
 
     // Apply tremolo-strings (amplitude LFO) - this connects LFO to output.gain
     engine.setPreset('tremolo-strings');
     // The LFO now controls output.gain, but we don't care about the exact value here
 
-    // Switch back to supersaw - output gain should be reset to 0.5
+    // Switch back to supersaw - voice output should be reset to unity
     engine.setPreset('supersaw');
-    expect(output!.gain.value).toBe(0.5);
+    expect(output!.gain.value).toBe(1);
   });
 });
 
@@ -795,7 +857,7 @@ describe('preset transition safety (auto-expanding)', () => {
 
   describe('output.gain preserved after LFO disconnect', () => {
     it.each(allTransitions)(
-      '%s → %s: output.gain should be 0.5',
+      '%s → %s: voice output.gain should be unity',
       (fromPreset, toPreset) => {
         // Apply source preset
         engine.setPreset(fromPreset);
@@ -811,7 +873,7 @@ describe('preset transition safety (auto-expanding)', () => {
         const voice = engine['voices'][0];
         const output = voice.getOutput();
         expect(output).not.toBeNull();
-        expect(output!.gain.value).toBe(0.5);
+        expect(output!.gain.value).toBe(1);
       }
     );
   });

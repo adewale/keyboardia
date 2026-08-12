@@ -51,6 +51,7 @@ test.describe('Multiplayer real-time sync', () => {
           steps: Array(128).fill(false),
           parameterLocks: Array(128).fill(null),
           volume: 1,
+          pan: 0,
           muted: false,
           transpose: 0,
           stepCount: 16,
@@ -154,6 +155,70 @@ test.describe('Multiplayer real-time sync', () => {
     console.log('[TEST] Tempo change synced successfully between clients');
   });
 
+  test('pan reaches the engine after a local edit, remote sync, and reload', async () => {
+    await Promise.all([
+      page1.goto(`${baseUrl}/s/${sessionId}`),
+      page2.goto(`${baseUrl}/s/${sessionId}`),
+    ]);
+    await Promise.all([waitForAppReady(page1), waitForAppReady(page2)]);
+
+    // Create a lazy bus in each page so the dev inspection hook observes the
+    // actual engine boundary, not only React state.
+    await page1.locator('.step-cell').first().click();
+    await expect(page2.locator('.step-cell').first()).toHaveClass(/active/, { timeout: 5000 });
+    await Promise.all([
+      page1.getByRole('button', { name: 'Play' }).first().click(),
+      page2.getByRole('button', { name: 'Play' }).first().click(),
+    ]);
+    await page1.waitForTimeout(300);
+
+    await Promise.all([
+      page1.getByRole('button', { name: 'Open mixer' }).click(),
+      page2.getByRole('button', { name: 'Open mixer' }).click(),
+    ]);
+    const pan1 = page1.getByRole('slider', { name: 'Test pan' });
+    const pan2 = page2.getByRole('slider', { name: 'Test pan' });
+    await pan1.fill('-20');
+    await expect(pan2).toHaveValue('-20', { timeout: 5000 });
+
+    for (const page of [page1, page2]) {
+      await expect.poll(() => page.evaluate(() =>
+        window.__audioEngine__?.getTrackPan('mp-test-track')
+      )).toBe(-0.2);
+    }
+
+    await page2.waitForTimeout(500);
+    await page2.reload();
+    await waitForAppReady(page2);
+    await page2.getByRole('button', { name: 'Play' }).first().click();
+    await page2.getByRole('button', { name: 'Open mixer' }).click();
+    await expect(page2.getByRole('slider', { name: 'Test pan' })).toHaveValue('-20');
+    await expect.poll(() => page2.evaluate(() =>
+      window.__audioEngine__?.getTrackPan('mp-test-track')
+    )).toBe(-0.2);
+  });
+
+  test('scale unlock syncs to the other client and survives reload', async () => {
+    await Promise.all([
+      page1.goto(`${baseUrl}/s/${sessionId}`),
+      page2.goto(`${baseUrl}/s/${sessionId}`),
+    ]);
+    await Promise.all([waitForAppReady(page1), waitForAppReady(page2)]);
+
+    const selector1 = page1.locator('.scale-selector');
+    const selector2 = page2.locator('.scale-selector');
+    await expect(selector1).toHaveClass(/locked/);
+    await expect(selector2).toHaveClass(/locked/);
+
+    await page1.locator('.scale-lock-btn').click();
+    await expect(selector1).not.toHaveClass(/locked/);
+    await expect(selector2).not.toHaveClass(/locked/, { timeout: 5000 });
+
+    await page2.reload();
+    await waitForAppReady(page2);
+    await expect(page2.locator('.scale-selector')).not.toHaveClass(/locked/);
+  });
+
   test('mute/solo remain local (do not sync)', async () => {
     // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
@@ -236,6 +301,7 @@ test.describe('Multiplayer connection resilience', () => {
           steps: Array(128).fill(false),
           parameterLocks: Array(128).fill(null),
           volume: 1,
+          pan: 0,
           muted: false,
           transpose: 0,
           stepCount: 16,

@@ -3,6 +3,7 @@
   "name": "Grand Piano",
   "type": "sampled",
   "releaseTime": 0.5,
+  "velocityCrossfade": 8,
   "playableRange": {
     "min": 30,
     "max": 78
@@ -89,19 +90,22 @@
       "note": 60,
       "file": "C4-pp.mp3",
       "velocityMin": 0,
-      "velocityMax": 50
+      "velocityMax": 50,
+      "gainDb": 1.87
     },
     {
       "note": 60,
       "file": "C4-mf.mp3",
       "velocityMin": 51,
-      "velocityMax": 100
+      "velocityMax": 100,
+      "gainDb": 1.87
     },
     {
       "note": 60,
       "file": "C4-ff.mp3",
       "velocityMin": 101,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": 1.87
     },
     {
       "note": 65,

@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "capturedAt": "2026-08-12",
+  "description": "Immutable pre-enrichment coverage and runtime baseline for the eight automatically promoted libraries.",
+  "instruments": {
+    "acoustic-kick": {
+      "coverage": { "mappings": 4, "roots": 1, "largestRootGap": 0, "worstShiftSemitones": 37, "meanShiftSemitones": 15.62, "completeVelocityRoots": 1, "velocityRootCompleteness": 1, "maxRoundRobins": 1, "orphanFiles": 0, "payloadBytes": 57018 },
+      "runtime": { "eventsChecked": 6400, "silentEvents": 0, "maxPitchShiftSemitones": 37, "deterministicRoundRobinGroups": 0 }
+    },
+    "acoustic-snare": {
+      "coverage": { "mappings": 4, "roots": 1, "largestRootGap": 0, "worstShiftSemitones": 35, "meanShiftSemitones": 14.75, "completeVelocityRoots": 1, "velocityRootCompleteness": 1, "maxRoundRobins": 1, "orphanFiles": 0, "payloadBytes": 76243 },
+      "runtime": { "eventsChecked": 6144, "silentEvents": 0, "maxPitchShiftSemitones": 35, "deterministicRoundRobinGroups": 0 }
+    },
+    "acoustic-hihat-closed": {
+      "coverage": { "mappings": 4, "roots": 1, "largestRootGap": 0, "worstShiftSemitones": 31, "meanShiftSemitones": 13.045454545454545, "completeVelocityRoots": 1, "velocityRootCompleteness": 1, "maxRoundRobins": 1, "orphanFiles": 0, "payloadBytes": 23998 },
+      "runtime": { "eventsChecked": 5632, "silentEvents": 0, "maxPitchShiftSemitones": 31, "deterministicRoundRobinGroups": 0 }
+    },
+    "acoustic-hihat-open": {
+      "coverage": { "mappings": 4, "roots": 1, "largestRootGap": 0, "worstShiftSemitones": 27, "meanShiftSemitones": 11.4, "completeVelocityRoots": 1, "velocityRootCompleteness": 1, "maxRoundRobins": 1, "orphanFiles": 0, "payloadBytes": 196614 },
+      "runtime": { "eventsChecked": 5120, "silentEvents": 0, "maxPitchShiftSemitones": 27, "deterministicRoundRobinGroups": 0 }
+    },
+    "acoustic-ride": {
+      "coverage": { "mappings": 3, "roots": 1, "largestRootGap": 0, "worstShiftSemitones": 22, "meanShiftSemitones": 9.457142857142857, "completeVelocityRoots": 1, "velocityRootCompleteness": 1, "maxRoundRobins": 1, "orphanFiles": 0, "payloadBytes": 225829 },
+      "runtime": { "eventsChecked": 4480, "silentEvents": 0, "maxPitchShiftSemitones": 22, "deterministicRoundRobinGroups": 0 }
+    },
+    "acoustic-crash": {
+      "coverage": { "mappings": 3, "roots": 1, "largestRootGap": 0, "worstShiftSemitones": 24, "meanShiftSemitones": 10.216216216216216, "completeVelocityRoots": 1, "velocityRootCompleteness": 1, "maxRoundRobins": 1, "orphanFiles": 0, "payloadBytes": 289777 },
+      "runtime": { "eventsChecked": 4736, "silentEvents": 0, "maxPitchShiftSemitones": 24, "deterministicRoundRobinGroups": 0 }
+    },
+    "finger-bass": {
+      "coverage": { "mappings": 6, "roots": 6, "largestRootGap": 12, "worstShiftSemitones": 6, "meanShiftSemitones": 2.326530612244898, "completeVelocityRoots": 6, "velocityRootCompleteness": 1, "maxRoundRobins": 1, "orphanFiles": 0, "payloadBytes": 266499 },
+      "runtime": { "eventsChecked": 6272, "silentEvents": 0, "maxPitchShiftSemitones": 6, "deterministicRoundRobinGroups": 0 }
+    },
+    "steel-drums": {
+      "coverage": { "mappings": 24, "roots": 8, "largestRootGap": 3, "worstShiftSemitones": 6, "meanShiftSemitones": 1.6470588235294117, "completeVelocityRoots": 8, "velocityRootCompleteness": 1, "maxRoundRobins": 1, "orphanFiles": 0, "payloadBytes": 669782 },
+      "runtime": { "eventsChecked": 4352, "silentEvents": 0, "maxPitchShiftSemitones": 6, "deterministicRoundRobinGroups": 0 }
+    }
+  }
+}

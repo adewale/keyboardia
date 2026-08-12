@@ -28,6 +28,8 @@ function createMockStereoPannerNode() {
     pan: {
       value: 0,
       setValueAtTime: vi.fn((value: number) => { node.pan.value = value; }),
+      setTargetAtTime: vi.fn((value: number) => { node.pan.value = value; }),
+      cancelScheduledValues: vi.fn(),
     },
     connect: vi.fn(),
     disconnect: vi.fn(),
@@ -172,6 +174,17 @@ describe('TrackBusManager', () => {
       const manager = new TrackBusManager(context, masterGain);
       expect(manager.getTrackPan('track-1')).toBe(0);
     });
+
+    it('retains pan set before lazy bus creation and applies it on creation', () => {
+      const manager = new TrackBusManager(context, masterGain);
+
+      manager.setTrackPan('track-1', -0.2);
+      expect(manager.getTrackPan('track-1')).toBe(-0.2);
+      expect(manager.hasBus('track-1')).toBe(false);
+
+      const bus = manager.getOrCreateBus('track-1');
+      expect(bus.getPan()).toBe(-0.2);
+    });
   });
 
   describe('removeBus', () => {
@@ -188,6 +201,15 @@ describe('TrackBusManager', () => {
     it('should not throw when removing non-existent bus', () => {
       const manager = new TrackBusManager(context, masterGain);
       expect(() => manager.removeBus('track-1')).not.toThrow();
+    });
+
+    it('clears retained volume and pan even when no bus exists', () => {
+      const manager = new TrackBusManager(context, masterGain);
+      manager.setTrackVolume('track-1', 0.25);
+      manager.setTrackPan('track-1', 0.2);
+      manager.removeBus('track-1');
+      expect(manager.getTrackVolume('track-1')).toBe(1);
+      expect(manager.getTrackPan('track-1')).toBe(0);
     });
   });
 

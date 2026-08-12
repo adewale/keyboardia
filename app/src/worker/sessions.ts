@@ -4,6 +4,7 @@
 
 import type { Env, Session, SessionState } from './types';
 import { createInitialSessionState } from '../shared/session-defaults';
+import { normalizeSessionScale } from '../shared/scale-defaults';
 
 // Sessions are permanent by default (no TTL)
 const CURRENT_VERSION = 1;
@@ -107,6 +108,10 @@ export async function getSession(
     remixedFromName: data.remixedFromName ?? null,
     remixCount: data.remixCount ?? 0,
     immutable: data.immutable ?? false,
+    state: {
+      ...data.state,
+      scale: normalizeSessionScale(data.state.scale, 'legacy-session'),
+    },
   };
 
   // Update lastAccessedAt on read (async, don't await)
@@ -184,7 +189,13 @@ export async function remixSessionFromState(
     remixedFromName: source.name ?? sourceName,
     remixCount: 0,
     immutable: false,  // Remixes are always editable
-    state: { ...source.state },
+    state: {
+      ...source.state,
+      // Defensive legacy normalization: both DO and KV readers already do
+      // this, but allocation must never turn an absent source scale into the
+      // locked fresh-session default.
+      scale: normalizeSessionScale(source.state.scale, 'legacy-session'),
+    },
   };
 
   // Increment remix count on source (async, don't block)
@@ -283,7 +294,10 @@ export async function publishSessionFromState(
     remixedFromName: sourceName,
     remixCount: 0,
     immutable: true,  // KEY: This is a frozen snapshot
-    state: { ...source.state },
+    state: {
+      ...source.state,
+      scale: normalizeSessionScale(source.state.scale, 'legacy-session'),
+    },
   };
 
   try {

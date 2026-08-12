@@ -14,7 +14,11 @@
  */
 
 import MidiWriter from 'midi-writer-js';
-import { DEFAULT_STEP_COUNT } from './constants';
+import {
+  DEFAULT_STEP_COUNT,
+  DEFAULT_STEP_MIDI_VELOCITY,
+  MIDI_VELOCITY_MAX,
+} from './constants';
 import type { ParameterLock } from './sync-types';
 import { instrumentPresetId, isDrumInstrument } from './instrument-classification';
 import {
@@ -35,8 +39,10 @@ export const STEPS_PER_BEAT = 4;
 /** Ticks per step (128 / 4 = 32) */
 export const TICKS_PER_STEP = TICKS_PER_QUARTER / STEPS_PER_BEAT;
 
-/** Default velocity as percentage (100% = MIDI 127) */
-export const DEFAULT_VELOCITY = 100;
+/** Default writer percentage that encodes to canonical MIDI velocity 90. */
+export const DEFAULT_VELOCITY = Math.round(
+  DEFAULT_STEP_MIDI_VELOCITY * 100 / MIDI_VELOCITY_MAX,
+);
 
 /** Base MIDI note for synth tracks (Middle C / C4) */
 export const BASE_NOTE = 60;
@@ -214,7 +220,8 @@ export function getSynthNotePitch(
  */
 export function getVelocity(pLock: ParameterLock | null): number {
   if (pLock?.volume !== undefined) {
-    // Convert 0-1 to 0-100 percentage, minimum 1
+    // Preserve the established explicit-lock mapping. Only the unlocked
+    // default changed to MIDI 90; authored velocity lanes remain compatible.
     return Math.max(1, Math.round(pLock.volume * 100));
   }
   return DEFAULT_VELOCITY;

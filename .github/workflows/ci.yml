@@ -99,6 +99,9 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+      - name: Run required offline audio renders
+        run: npm run test:audio-render
+
   integration-tests:
     name: Integration Tests
     runs-on: ubuntu-latest
@@ -322,7 +325,7 @@ jobs:
           # by the real-Worker Linux visual lane. populated-visual.spec.ts is
           # deterministic mock-backed evidence and remains in this lane.
           npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 83 69
+          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 84 70
         env:
           USE_MOCK_API: '1'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -370,7 +373,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:collaboration:worker
-          node scripts/assert-playwright-stats.mjs test-results/worker-results.json 73 0
+          node scripts/assert-playwright-stats.mjs test-results/worker-results.json 74 0
         env:
           CI: 'true'
           PLAYWRIGHT_OUTPUT_DIR: 'test-results/worker-artifacts'
@@ -481,7 +484,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --workers=2
-          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 206 17
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 208 17
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -493,7 +496,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 160 52
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 161 52
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'

@@ -6,7 +6,7 @@
       "type": "skill-md",
       "description": "Create, inspect, edit, remix, publish, analyze, or export Keyboardia music sessions through https://keyboardia.dev/mcp. Use for live human-and-agent jams, rhythm or instrument edits, session analysis, and lifecycle work while preserving unrelated music and protecting editable links.",
       "url": "/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md",
-      "digest": "sha256:8a3049e6f0f4eb43e6978ccc97c7dd28a8ee2a266820929f8f8739ea64339bbd"
+      "digest": "sha256:edb6f6cdaaf6d91fc4085094aea337fb591500e3f31453132b1ce35e929fe782"
     }
   ]
 }

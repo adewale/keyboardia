@@ -54,6 +54,7 @@ async function createTestSession(request: Parameters<typeof createSessionWithRet
     ],
     tempo: 120,
     swing: 0,
+    scale: { root: 'C', scaleId: 'minor-pentatonic', locked: false },
     version: 1,
   });
 }
@@ -242,6 +243,7 @@ async function createScaleLockTestSession(request: Parameters<typeof createSessi
     ],
     tempo: 120,
     swing: 0,
+    scale: { root: 'C', scaleId: 'major', locked: true },
     version: 1,
   });
 }
@@ -265,23 +267,9 @@ test.describe('Chromatic Grid Scale Lock', () => {
   test('should show out-of-scale warning badge when scale is locked with out-of-scale notes', async ({ page }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Chromatic grid expand toggle hidden on mobile');
 
-    // ScaleSelector is in the Transport bar - set root to C and scale to major
+    // The fixture is explicitly locked to C major.
     const scaleSelector = page.locator('.scale-selector');
     await expect(scaleSelector).toBeVisible({ timeout: 5000 });
-
-    // Set root to C
-    const rootSelect = page.locator('.scale-root-select');
-    await rootSelect.selectOption('C');
-
-    // Set scale to major
-    const scaleSelect = page.locator('.scale-type-select');
-    await scaleSelect.selectOption('major');
-
-    // Toggle scale lock ON
-    const lockToggle = page.locator('.scale-lock-btn');
-    await lockToggle.click();
-
-    // Wait for scale lock to be active
     await expect(scaleSelector).toHaveClass(/locked/);
 
     // Click the pitch toggle to expand chromatic grid
@@ -301,19 +289,9 @@ test.describe('Chromatic Grid Scale Lock', () => {
   test('should still show out-of-scale pitches when scale is locked (guardrail #1)', async ({ page }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Chromatic grid expand toggle hidden on mobile');
 
-    // Set up scale lock to C major via ScaleSelector in Transport bar
+    // The fixture is explicitly locked to C major.
     const scaleSelector = page.locator('.scale-selector');
     await expect(scaleSelector).toBeVisible({ timeout: 5000 });
-
-    const rootSelect = page.locator('.scale-root-select');
-    await rootSelect.selectOption('C');
-
-    const scaleSelect = page.locator('.scale-type-select');
-    await scaleSelect.selectOption('major');
-
-    const lockToggle = page.locator('.scale-lock-btn');
-    await lockToggle.click();
-
     await expect(scaleSelector).toHaveClass(/locked/);
 
     // Expand chromatic grid
@@ -350,14 +328,70 @@ test.describe('Chromatic Grid Scale Lock', () => {
     const chromaticGrid = page.locator('.chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
 
-    // Initially no scale-locked class
-    await expect(chromaticGrid).not.toHaveClass(/scale-locked/);
+    // Persisted lock is applied on hydration.
+    await expect(chromaticGrid).toHaveClass(/scale-locked/);
 
-    // Toggle scale lock via ScaleSelector
+    // Explicit unlock removes it, and a second click restores it.
     const lockToggle = page.locator('.scale-lock-btn');
+    await lockToggle.click();
+    await expect(chromaticGrid).not.toHaveClass(/scale-locked/);
     await lockToggle.click();
 
     // Verify scale-locked class is now applied
     await expect(chromaticGrid).toHaveClass(/scale-locked/);
+  });
+});
+
+test.describe('Fresh Session Scale Guardrail', () => {
+  test('five arbitrary visible pitch clicks stay inside C minor pentatonic', async ({ page, request }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Chromatic grid expand toggle hidden on mobile');
+    const { id } = await createSessionWithRetry(request, {
+      tracks: [{
+        id: 'fresh-scale-track',
+        name: 'Piano',
+        sampleId: 'sampled:piano',
+        steps: Array(128).fill(false),
+        parameterLocks: Array(128).fill(null),
+        volume: 1,
+        pan: 0,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        stepCount: 16,
+      }],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    });
+
+    await page.goto(`${API_BASE}/s/${id}`);
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    const scaleSelector = page.locator('.scale-selector');
+    await expect(scaleSelector).toHaveClass(/locked/);
+    await expect(page.locator('.scale-root-select')).toHaveValue('C');
+    await expect(page.locator('.scale-type-select')).toHaveValue('minor-pentatonic');
+
+    await page.locator('.expand-toggle').first().click();
+    const rows = page.locator('.chromatic-row');
+    await expect(rows.first()).toBeVisible();
+    for (let index = 0; index < 5; index++) {
+      await rows.nth(index).locator('.chromatic-cell').nth(index).click();
+    }
+
+    await expect.poll(async () => {
+      const response = await request.get(`${API_BASE}/api/sessions/${id}`);
+      const session = await response.json();
+      return session.state.tracks[0].steps.filter(Boolean).length;
+    }).toBe(5);
+
+    const session = await request.get(`${API_BASE}/api/sessions/${id}`).then(response => response.json());
+    const track = session.state.tracks[0];
+    const enteredPitches = track.steps.flatMap((active: boolean, step: number) =>
+      active ? [track.parameterLocks[step]?.pitch ?? 0] : [],
+    );
+    expect(enteredPitches).toHaveLength(5);
+    expect(enteredPitches.every((pitch: number) => [0, 3, 5, 7, 10].includes(((pitch % 12) + 12) % 12))).toBe(true);
   });
 });

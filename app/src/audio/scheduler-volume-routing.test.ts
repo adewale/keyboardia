@@ -39,6 +39,7 @@ vi.mock('./engine', () => ({
 import { Scheduler } from './scheduler';
 import type { GridState } from '../types';
 import { aTrackWithSteps, aState } from './__fixtures__/builders';
+import { resolveNoteDynamics } from './note-dynamics';
 
 interface FlushOptions { trackVolume: number; pLockVolume?: number; sampleId: string; }
 
@@ -80,54 +81,66 @@ describe('Scheduler volume routing (bug_010)', () => {
     vi.restoreAllMocks();
   });
 
-  it('passes volumeMultiplier (not track.volume × multiplier) to playSampledInstrument', () => {
+  it('passes canonical noteGain (not track.volume × gain) to playSampledInstrument', () => {
     flushOneNote(scheduler, { trackVolume: 0.5, pLockVolume: 0.8, sampleId: 'sampled:piano' });
     expect(playSampledInstrument).toHaveBeenCalledTimes(1);
     const volumeArg = playSampledInstrument.mock.calls[0][5];
-    expect(volumeArg).toBe(0.8);                  // multiplier only
-    expect(volumeArg).not.toBe(0.5 * 0.8);        // not the bug
+    expect(volumeArg).toBe(resolveNoteDynamics(0.8).noteGain);
+    expect(volumeArg).not.toBe(0.5 * resolveNoteDynamics(0.8).noteGain);
   });
 
-  it('passes volumeMultiplier (not track.volume × multiplier) to playToneSynth', () => {
+  it('passes canonical noteGain (not track.volume × gain) to playToneSynth', () => {
     flushOneNote(scheduler, { trackVolume: 0.3, pLockVolume: 0.6, sampleId: 'tone:fm-bass' });
     expect(playToneSynth).toHaveBeenCalledTimes(1);
     const volumeArg = playToneSynth.mock.calls[0][4];
-    expect(volumeArg).toBe(0.6);
-    expect(volumeArg).not.toBe(0.3 * 0.6);
+    expect(volumeArg).toBe(resolveNoteDynamics(0.6).noteGain);
+    expect(volumeArg).not.toBe(0.3 * resolveNoteDynamics(0.6).noteGain);
   });
 
-  it('passes volumeMultiplier (not track.volume × multiplier) to playAdvancedSynth', () => {
+  it('passes canonical noteGain (not track.volume × gain) to playAdvancedSynth', () => {
     flushOneNote(scheduler, { trackVolume: 0.7, pLockVolume: 0.4, sampleId: 'advanced:supersaw' });
     expect(playAdvancedSynth).toHaveBeenCalledTimes(1);
     const volumeArg = playAdvancedSynth.mock.calls[0][4];
-    expect(volumeArg).toBe(0.4);
-    expect(volumeArg).not.toBe(0.7 * 0.4);
+    expect(volumeArg).toBe(resolveNoteDynamics(0.4).noteGain);
+    expect(volumeArg).not.toBe(0.7 * resolveNoteDynamics(0.4).noteGain);
   });
 
-  it('still passes volumeMultiplier to playSynthNote (unchanged behavior)', () => {
+  it('passes canonical noteGain to playSynthNote', () => {
     flushOneNote(scheduler, { trackVolume: 0.5, pLockVolume: 0.8, sampleId: 'synth:bass' });
     expect(playSynthNote).toHaveBeenCalledTimes(1);
-    expect(playSynthNote.mock.calls[0][5]).toBe(0.8);
+    expect(playSynthNote.mock.calls[0][5]).toBe(resolveNoteDynamics(0.8).noteGain);
   });
 
-  it('still passes volumeMultiplier to playSample (unchanged behavior)', () => {
+  it('passes canonical noteGain to playSample', () => {
     flushOneNote(scheduler, { trackVolume: 0.5, pLockVolume: 0.8, sampleId: '808-kick' });
     expect(playSample).toHaveBeenCalledTimes(1);
-    expect(playSample.mock.calls[0][5]).toBe(0.8);
+    expect(playSample.mock.calls[0][5]).toBe(resolveNoteDynamics(0.8).noteGain);
   });
 
-  it('uses 1 (no p-lock) when none is set, regardless of track.volume', () => {
+  it('keys unlocked sample variation while explicit locks bypass it', () => {
+    flushOneNote(scheduler, { trackVolume: 1, sampleId: 'hihat' });
+    expect(playSample.mock.calls[0][7]).toMatch(/-loop-0$/);
+
+    playSample.mockClear();
+    flushOneNote(scheduler, { trackVolume: 1, pLockVolume: 1, sampleId: 'hihat' });
+    expect(playSample.mock.calls[0]).toHaveLength(7);
+  });
+
+  it('humanizes an unlocked note independently of track.volume', () => {
     flushOneNote(scheduler, { trackVolume: 0.42, sampleId: 'tone:fm-bass' });
-    expect(playToneSynth.mock.calls[0][4]).toBe(1);
+    const gain = playToneSynth.mock.calls[0][4] as number;
+    expect(gain).toBeGreaterThan(10 ** (-0.75 / 20));
+    expect(gain).toBeLessThan(10 ** (0.75 / 20));
+    expect(gain).not.toBe(0.42);
   });
 
   it('never automates the shared track bus for a per-note volume lock', () => {
     flushOneNote(scheduler, { trackVolume: 0.5, pLockVolume: 0.5, sampleId: 'sampled:piano' });
 
-    // The voice receives 0.5 while the bus remains at the track's stable base
-    // fader. Applying 0.5 to both stages would produce 0.25 and would also
+    // The voice receives perceptual note gain while the bus remains at the
+    // stable base fader. Applying it to both stages would also
     // attenuate release tails from neighbouring notes.
-    expect(playSampledInstrument.mock.calls[0][5]).toBe(0.5);
+    expect(playSampledInstrument.mock.calls[0][5]).toBe(resolveNoteDynamics(0.5).noteGain);
     expect(setTrackVolume).not.toHaveBeenCalled();
   });
 
@@ -156,8 +169,9 @@ describe('Scheduler volume routing (bug_010)', () => {
           flushOneNote(scheduler, { trackVolume, pLockVolume, sampleId });
           expect(spy).toHaveBeenCalledTimes(1);
           const arg = spy.mock.calls[0][volumeArgIndex];
-          expect(arg).toBeCloseTo(pLockVolume, 10);
-          expect(arg).not.toBeCloseTo(trackVolume * pLockVolume, 10);
+          const expectedGain = resolveNoteDynamics(pLockVolume).noteGain;
+          expect(arg).toBeCloseTo(expectedGain, 10);
+          expect(arg).not.toBeCloseTo(trackVolume * expectedGain, 10);
         },
       ),
       { numRuns: 200, seed: 0x4ce5e771 },

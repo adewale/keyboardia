@@ -18,8 +18,11 @@ export const ATTACK_FADE_SEC = 0.003;
 /** Notes shorter than this are stretched so they remain audible. */
 export const MIN_NOTE_DURATION_SEC = 0.1;
 
-/** Margin after the release ramp before the source is hard-stopped. */
-export const RELEASE_TAIL_GUARD_SEC = 0.01;
+/** Floor reached by the exponential release before a short linear fade to zero. */
+export const RELEASE_FLOOR_GAIN = 0.001;
+
+/** Audible-silence ramp after the release floor before source disposal. */
+export const RELEASE_TAIL_GUARD_SEC = 0.03;
 
 /** Floor for the release ramp length (exponential ramps need time > 0). */
 const MIN_RELEASE_SEC = 0.01;

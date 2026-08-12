@@ -31,6 +31,8 @@ import { READONLY_MESSAGE_TYPES, isStateMutatingBroadcast, assertNever, VALID_ST
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { getSession, updateSession, updateSessionName } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
+import { createInitialSessionState } from '../shared/session-defaults';
+import { normalizeSessionScale } from '../shared/scale-defaults';
 // Observability 2.0: Wide events
 import {
   emitWsSessionEvent,
@@ -79,7 +81,7 @@ import {
   mirrorPattern,
   applyEuclidean,
 } from '../shared/pattern-operations';
-import { MAX_TRACK_NAME_LENGTH, isValidNumber } from '../shared/validation';
+import { MAX_TRACK_NAME_LENGTH, isValidNumber, isValidPan } from '../shared/validation';
 import { getIdentityFromId } from '../shared/identity';
 import { setTrackInstrument } from '../shared/track-instrument';
 import { validateCompleteSessionState } from './validation';
@@ -419,6 +421,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           playerId: MCP_ACTOR_ID,
         });
         break;
+      case 'track_pan_set':
+        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
       case 'step_toggled':
         this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
         break;
@@ -699,7 +704,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       // FIRST: Check DO storage for latest state (survives hibernation, has pending changes)
       const storedState = await this.ctx.storage.get<SessionState>('state');
       if (storedState) {
-        this.state = storedState;
+        this.state = {
+          ...storedState,
+          scale: normalizeSessionScale(storedState.scale, 'legacy-session'),
+        };
         // Still need to load immutable flag from KV (session metadata)
         const session = await getSession(this.env, sessionId);
         this.immutable = session?.immutable ?? false;
@@ -709,19 +717,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         // FALLBACK: Load from KV (long-term external persistence)
         const session = await getSession(this.env, sessionId);
         if (session) {
-          this.state = session.state;
+          this.state = {
+            ...session.state,
+            scale: normalizeSessionScale(session.state.scale, 'legacy-session'),
+          };
           // Phase 21: Load immutable flag to enforce read-only on published sessions
           this.immutable = session.immutable ?? false;
           // Validate and repair state loaded from KV
           this.validateAndRepairState('loadFromKV');
         } else {
           // Create default state if session doesn't exist
-          this.state = {
-            tracks: [],
-            tempo: 120,
-            swing: 0,
-            version: 1,
-          };
+          this.state = createInitialSessionState();
           this.immutable = false;
         }
       }
@@ -996,6 +1002,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         break;
       case 'set_track_volume':
         this.handleSetTrackVolume(ws, player, msg);
+        break;
+      case 'set_track_pan':
+        this.handleSetTrackPan(ws, player, msg);
         break;
       case 'set_track_transpose':
         this.handleSetTrackTranspose(ws, player, msg);
@@ -2046,6 +2055,23 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }),
   });
 
+  private handleSetTrackPan = createTrackMutationHandler<
+    { trackId: string; pan: number },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    // Public mutations reject invalid normalized values. Clamping is reserved
+    // for invariant repair of already-corrupted persisted state.
+    validate: (msg) => isValidPan(msg.pan) ? msg : null,
+    mutate: (track, msg) => { track.pan = msg.pan; },
+    toBroadcast: (msg, playerId) => ({
+      type: 'track_pan_set',
+      trackId: msg.trackId,
+      pan: msg.pan,
+      playerId,
+    }),
+  });
+
   private handleSetTrackTranspose = createTrackMutationHandler<
     { trackId: string; transpose: number },
     ServerMessage
@@ -2355,6 +2381,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       tracks: this.state.tracks,
       tempo: this.state.tempo,
       swing: this.state.swing,
+      scale: this.state.scale,
     };
     const canonicalState = canonicalizeForHash(comparableState);
     const serverHash = hashState(canonicalState);

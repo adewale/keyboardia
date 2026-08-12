@@ -4,6 +4,8 @@ import type { Session, SessionState, SessionTrack } from '../shared/state';
 import { createDefaultTrack } from '../shared/state-mutations';
 import { setTrackInstrument } from '../shared/track-instrument';
 import { MAX_TRACK_NAME_LENGTH, sanitizeTrackName } from '../shared/validation';
+import { isValidPan } from '../shared/validation';
+import { recommendedTrackPan } from '../shared/track-pan';
 
 export const MCP_ACTOR_ID = 'mcp';
 
@@ -35,6 +37,11 @@ export type McpSessionEdit =
       sample_id: string;
     }
   | {
+      operation: 'set_track_pan';
+      track_id: string;
+      pan: number;
+    }
+  | {
       operation: 'set_steps';
       track_id: string;
       changes: Array<{ step: number; value: boolean }>;
@@ -47,6 +54,7 @@ export type McpSessionEdit =
 export type McpEditEvent =
   | { type: 'track_added'; track: SessionTrack }
   | { type: 'track_instrument_set'; trackId: string; sampleId: string; name: string }
+  | { type: 'track_pan_set'; trackId: string; pan: number }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean }
   | { type: 'tempo_changed'; tempo: number };
 
@@ -56,6 +64,7 @@ export interface CompactMcpTrack {
   sample_id: string;
   step_count: number;
   active_steps: number[];
+  pan: number;
 }
 
 export interface CompactMcpSession {
@@ -91,6 +100,7 @@ export function compactMcpSession(session: Pick<Session, 'id' | 'immutable' | 's
         active_steps: track.steps
           .slice(0, stepCount)
           .flatMap((active, step) => active ? [step] : []),
+        pan: track.pan ?? 0,
       };
     }),
   };
@@ -215,6 +225,7 @@ export function applyMcpSessionEdit(
     }
 
     const track = createDefaultTrack(edit.track_id, edit.sample_id, name);
+    track.pan = recommendedTrackPan(edit.sample_id, state.tracks.length);
     return {
       state: { ...state, tracks: [...state.tracks, track] },
       events: [{ type: 'track_added', track }],
@@ -252,6 +263,35 @@ export function applyMcpSessionEdit(
         sampleId: edit.sample_id,
         name: result.track.name,
       }],
+      changed: true,
+    };
+  }
+
+  if (edit.operation === 'set_track_pan') {
+    if (!isValidPan(edit.pan)) {
+      throw new McpSessionEditError(
+        'pan must be a finite normalized number from -1 to 1.',
+        'INVALID_PAN',
+        400
+      );
+    }
+    const trackIndex = state.tracks.findIndex((track) => track.id === edit.track_id);
+    if (trackIndex === -1) {
+      throw new McpSessionEditError(
+        `Track not found: ${edit.track_id}`,
+        'TRACK_NOT_FOUND',
+        404
+      );
+    }
+    const track = state.tracks[trackIndex]!;
+    if ((track.pan ?? 0) === edit.pan) {
+      return { state, events: [], changed: false };
+    }
+    const tracks = [...state.tracks];
+    tracks[trackIndex] = { ...track, pan: edit.pan };
+    return {
+      state: { ...state, tracks },
+      events: [{ type: 'track_pan_set', trackId: edit.track_id, pan: edit.pan }],
       changed: true,
     };
   }

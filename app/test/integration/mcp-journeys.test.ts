@@ -235,6 +235,7 @@ describe('MCP v1 onboarding journeys', () => {
         track_id: 'kick-agent-a7f3c29d',
         name: 'Kick',
         sample_id: 'kick',
+        pan: 0,
         step_count: 16,
         active_steps: [0, 4, 8, 12],
       }],

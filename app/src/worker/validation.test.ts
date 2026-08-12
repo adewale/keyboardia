@@ -24,6 +24,7 @@ describe('validateSessionState', () => {
       steps: [true, false, false, false],
       parameterLocks: [null, null, null, null],
       volume: 1,
+      pan: 0,
       muted: false,
       transpose: 0,
       stepCount: 4,
@@ -46,6 +47,29 @@ describe('validateSessionState', () => {
       });
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
+    });
+
+    it.each([-1, -0.25, 0, 0.25, 1])('should accept canonical pan %p', (pan) => {
+      const result = validateSessionState({
+        tracks: [{ ...validTrack, pan }],
+        tempo: 120,
+        swing: 0,
+        effects: validEffects,
+        version: 1,
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it.each([-1.01, 1.01, NaN, Infinity, -Infinity, '0'])('should reject invalid public pan %p', (pan) => {
+      const result = validateSessionState({
+        tracks: [{ ...validTrack, pan }],
+        tempo: 120,
+        swing: 0,
+        effects: validEffects,
+        version: 1,
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(error => error.includes('pan'))).toBe(true);
     });
 
     it.each([
@@ -398,6 +422,7 @@ describe('sampleId validation', () => {
     steps: [true, false, false, false],
     parameterLocks: [null, null, null, null],
     volume: 1,
+    pan: 0,
     muted: false,
     transpose: 0,
     stepCount: 4,

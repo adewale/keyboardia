@@ -37,6 +37,8 @@ describe('actionToMessage', () => {
     }],
     ['track volume', { type: 'SET_TRACK_VOLUME', trackId: 'track-6', volume: 0.75 },
       { type: 'set_track_volume', trackId: 'track-6', volume: 0.75 }],
+    ['track pan', { type: 'SET_TRACK_PAN', trackId: 'track-6', pan: -0.25 },
+      { type: 'set_track_pan', trackId: 'track-6', pan: -0.25 }],
     ['track transpose', { type: 'SET_TRACK_TRANSPOSE', trackId: 'track-7', transpose: -5 },
       { type: 'set_track_transpose', trackId: 'track-7', transpose: -5 }],
     ['track length', { type: 'SET_TRACK_STEP_COUNT', trackId: 'track-8', stepCount: 32 },

@@ -211,11 +211,11 @@ describe('getSynthNotePitch', () => {
 // ============================================================================
 
 describe('getVelocity', () => {
-  it('returns DEFAULT_VELOCITY (100) with no p-lock', () => {
+  it('returns the MIDI-90 writer percentage with no p-lock', () => {
     expect(getVelocity(null)).toBe(DEFAULT_VELOCITY);
   });
 
-  it('returns DEFAULT_VELOCITY (100) with p-lock but no volume', () => {
+  it('returns the MIDI-90 writer percentage with a non-volume p-lock', () => {
     const pLock: ParameterLock = { pitch: 5 };
     expect(getVelocity(pLock)).toBe(DEFAULT_VELOCITY);
   });

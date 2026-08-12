@@ -30,6 +30,7 @@ import {
   MIN_TEMPO, MAX_TEMPO,
   MIN_SWING, MAX_SWING,
   MIN_VOLUME, MAX_VOLUME,
+  MIN_PAN, MAX_PAN,
   MIN_TRANSPOSE, MAX_TRANSPOSE,
 } from '../../src/shared/constants';
 
@@ -47,6 +48,7 @@ function createGoldenGridState(): GridState {
         steps: [true, false, false, false, true, false, false, false, ...Array(120).fill(false)],
         parameterLocks: [{ volume: 0.8 }, null, null, null, { pitch: 2 }, ...Array(123).fill(null)],
         volume: 0.9,
+        pan: 0,
         muted: false,
         soloed: false,
         transpose: 0,
@@ -59,6 +61,7 @@ function createGoldenGridState(): GridState {
         steps: [false, false, false, false, true, false, false, false, ...Array(120).fill(false)],
         parameterLocks: Array(MAX_STEPS).fill(null),
         volume: 1.0,
+        pan: 0,
         muted: false,
         soloed: false,
         transpose: 0,
@@ -84,6 +87,7 @@ function createGoldenSessionState(): SessionState {
         steps: [true, false, false, false, true, false, false, false, ...Array(120).fill(false)],
         parameterLocks: [{ volume: 0.8 }, null, null, null, { pitch: 2 }, ...Array(123).fill(null)],
         volume: 0.9,
+        pan: 0,
         muted: false,
         soloed: false,
         transpose: 0,
@@ -96,6 +100,7 @@ function createGoldenSessionState(): SessionState {
         steps: [false, false, false, false, true, false, false, false, ...Array(120).fill(false)],
         parameterLocks: Array(MAX_STEPS).fill(null),
         volume: 1.0,
+        pan: 0,
         muted: false,
         soloed: false,
         transpose: 0,
@@ -212,6 +217,22 @@ describe('Golden Mutations - Track', () => {
       const state = createGoldenGridState();
       const result = gridReducer(state, { type: 'SET_TRACK_VOLUME', trackId: 'track-1', volume: 2.0 });
       expect(result.tracks[0].volume).toBe(MAX_VOLUME);
+    });
+  });
+
+  describe('SET_TRACK_PAN', () => {
+    it('sets pan to an exact normalized value within bounds', () => {
+      const state = createGoldenGridState();
+      const result = gridReducer(state, { type: 'SET_TRACK_PAN', trackId: 'track-1', pan: -0.4 });
+      expect(result.tracks[0].pan).toBe(-0.4);
+    });
+
+    it('rejects pan outside the canonical range', () => {
+      const state = createGoldenGridState();
+      const below = gridReducer(state, { type: 'SET_TRACK_PAN', trackId: 'track-1', pan: MIN_PAN - 0.1 });
+      const above = gridReducer(state, { type: 'SET_TRACK_PAN', trackId: 'track-1', pan: MAX_PAN + 0.1 });
+      expect(below).toEqual(state);
+      expect(above).toEqual(state);
     });
   });
 

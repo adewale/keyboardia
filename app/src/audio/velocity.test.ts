@@ -1,9 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   velocityFromMultiplier,
-  MIDI_VELOCITY_MAX,
-  DEFAULT_MIDI_VELOCITY,
 } from './velocity';
+import { DEFAULT_MIDI_VELOCITY, MIDI_VELOCITY_MAX } from '../shared/constants';
 
 /**
  * The volume p-lock (a.k.a. the Velocity Lane) stores a 0–1 multiplier.

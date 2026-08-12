@@ -234,6 +234,37 @@
   text-align: center;
 }
 
+/* Normalized per-track pan, displayed as signed percent at the UI boundary. */
+.channel-pan {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.channel-pan .pan-label {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.channel-pan .pan-slider {
+  width: 64px;
+  accent-color: var(--color-cyan);
+}
+
+.channel-pan .pan-value {
+  min-width: 40px;
+  color: var(--color-text);
+  font-size: 10px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Per-track swing */
 .channel-swing {
   display: flex;

@@ -158,8 +158,10 @@ export function useSession(
             if (gridState.tracks && gridState.tempo !== undefined && gridState.swing !== undefined) {
               // Old sessions omit extended fields. Hash and dispatch the actual
               // backwards-compatible state that LOAD_STATE will apply.
-              const loadedEffects = gridState.effects ?? state.effects;
-              const loadedScale = gridState.scale ?? state.scale;
+              // sessionToGridState makes both legacy-missing policies explicit;
+              // do not inherit fresh-session effects or scale here.
+              const loadedEffects = gridState.effects;
+              const loadedScale = gridState.scale;
               const loadedLoopRegion = gridState.loopRegion ?? null;
               expectedStateHashRef.current = JSON.stringify({
                 tracks: gridState.tracks,

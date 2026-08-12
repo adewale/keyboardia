@@ -38,6 +38,7 @@ function createMockAction(type: string): GridAction {
     steps: Array(16).fill(false),
     parameterLocks: Array(16).fill(null),
     volume: 0.8,
+    pan: 0,
     muted: false,
     soloed: false,
     transpose: 0,
@@ -69,6 +70,8 @@ function createMockAction(type: string): GridAction {
       return { type: 'SET_TRACK_SAMPLE', trackId: 'test-track-1', sampleId: 'snare', name: 'Snare' };
     case 'SET_TRACK_VOLUME':
       return { type: 'SET_TRACK_VOLUME', trackId: 'test-track-1', volume: 0.5 };
+    case 'SET_TRACK_PAN':
+      return { type: 'SET_TRACK_PAN', trackId: 'test-track-1', pan: 0.25 };
     case 'SET_TRACK_TRANSPOSE':
       return { type: 'SET_TRACK_TRANSPOSE', trackId: 'test-track-1', transpose: 3 };
     case 'SET_TRACK_STEP_COUNT':

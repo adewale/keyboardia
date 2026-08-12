@@ -1,6 +1,13 @@
 import type { GridState, Sample } from '../types';
-import { createSynthesizedSamples } from './samples';
-import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } from './synth';
+import { createSynthesizedSamples, selectSampleBuffer } from './samples';
+import {
+  synthEngine,
+  SYNTH_PRESETS,
+  semitoneToFrequency,
+  serializeSynthParams as encodeSynthParams,
+  deserializeSynthParams as decodeSynthParams,
+  type SynthParams,
+} from './synth';
 import { logger } from '../utils/logger';
 import { ToneEffectsChain, type EffectsState, DEFAULT_EFFECTS_STATE } from './toneEffects';
 import { ToneSynthManager, isToneSynth, getToneSynthPreset, type ToneSynthType } from './toneSynths';
@@ -32,34 +39,37 @@ import { upgradeToWorkletScheduler } from './scheduler';
 import { audioMetrics, type AudioMetricsSnapshot } from './metrics/audio-metrics';
 import * as Tone from 'tone';
 import { clamp, DEFAULT_TEMPO, MIN_TEMPO, MAX_TEMPO } from '../shared/constants';
+import {
+  MASTER_COMPRESSOR_SETTINGS,
+  MASTER_INPUT_TRIM,
+  MASTER_MAKEUP_GAIN,
+  MASTER_OUTPUT_TRIM,
+  NOTE_FADE_SECONDS,
+} from './constants';
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 
 // Audio Engineering Constants
-const FADE_TIME = 0.003; // 3ms fade to prevent clicks/pops
+const FADE_TIME = NOTE_FADE_SECONDS;
 
 // Grain size used by pitch-shift.worklet.ts. The worklet introduces one
 // grain of latency before producing meaningful output, so the envelope
 // ramp on its output must be delayed by grainSize / sampleRate seconds.
 // KEEP IN SYNC with processorOptions.grainSize (default 1024).
 const PITCH_SHIFT_GRAIN_SIZE = 1024;
-const COMPRESSOR_SETTINGS = {
-  threshold: -6,    // Start compressing at -6dB
-  knee: 12,         // Soft knee for natural sound
-  ratio: 4,         // 4:1 compression ratio
-  attack: 0.003,    // 3ms attack
-  release: 0.25,    // 250ms release
-};
-
 export class AudioEngine {
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
+  private makeupTrim: GainNode | null = null;
+  private outputTrim: GainNode | null = null;
   private samples: Map<string, Sample> = new Map();
   private trackBusManager: TrackBusManager | null = null; // Phase 25: Unified audio bus
   /** Base faders may arrive from session state before AudioContext/buses exist. */
   private pendingTrackVolumes = new Map<string, number>();
+  /** Pan can arrive from a load or collaborator before AudioContext exists. */
+  private pendingTrackPans = new Map<string, number>();
   /** IDs from the last grid snapshot, used to reclaim remotely removed tracks. */
   private syncedTrackIds = new Set<string>();
   private initialized = false;
@@ -221,6 +231,24 @@ export class AudioEngine {
     return this.audioContext;
   }
 
+  /** Synchronized master-bus tap points for the Phase 43 measurement rig. */
+  getMasterCaptureTaps(): {
+    preCompressor: AudioNode;
+    postMakeup: AudioNode;
+    userOutput: AudioNode;
+  } | null {
+    const toneTaps = this.toneEffects?.getCaptureTaps();
+    if (toneTaps) return toneTaps;
+    if (!this.masterGain || !this.compressor) return null;
+    // The native fallback shares the calibrated post-compressor makeup trim;
+    // without it Chromium's DynamicsCompressor adds about 1.86 dB at -20 dBFS.
+    return {
+      preCompressor: this.masterGain,
+      postMakeup: this.makeupTrim ?? this.compressor,
+      userOutput: this.outputTrim ?? this.makeupTrim ?? this.compressor,
+    };
+  }
+
   async initialize(): Promise<void> {
     if (this.initialized) return;
     if (this.initializationPromise) return this.initializationPromise;
@@ -247,26 +275,35 @@ export class AudioEngine {
 
     // Create master gain
     this.masterGain = this.audioContext.createGain();
-    this.masterGain.gain.value = 1.0;
+    this.masterGain.gain.value = MASTER_INPUT_TRIM;
 
     // Phase 25: Initialize track bus manager for unified audio routing
     this.trackBusManager = new TrackBusManager(this.audioContext, this.masterGain);
     for (const [trackId, volume] of this.pendingTrackVolumes) {
       this.trackBusManager.setTrackVolume(trackId, volume);
     }
+    for (const [trackId, pan] of this.pendingTrackPans) {
+      this.trackBusManager.setTrackPan(trackId, pan);
+    }
 
     // Create compressor/limiter to prevent clipping when multiple sources play
     // This is essential - without it, 8 samples at 0.85 each could sum to 6.8 (clipping)
     this.compressor = this.audioContext.createDynamicsCompressor();
-    this.compressor.threshold.value = COMPRESSOR_SETTINGS.threshold;
-    this.compressor.knee.value = COMPRESSOR_SETTINGS.knee;
-    this.compressor.ratio.value = COMPRESSOR_SETTINGS.ratio;
-    this.compressor.attack.value = COMPRESSOR_SETTINGS.attack;
-    this.compressor.release.value = COMPRESSOR_SETTINGS.release;
+    this.compressor.threshold.value = MASTER_COMPRESSOR_SETTINGS.threshold;
+    this.compressor.knee.value = MASTER_COMPRESSOR_SETTINGS.knee;
+    this.compressor.ratio.value = MASTER_COMPRESSOR_SETTINGS.ratio;
+    this.compressor.attack.value = MASTER_COMPRESSOR_SETTINGS.attack;
+    this.compressor.release.value = MASTER_COMPRESSOR_SETTINGS.release;
+    this.makeupTrim = this.audioContext.createGain();
+    this.makeupTrim.gain.value = MASTER_MAKEUP_GAIN;
+    this.outputTrim = this.audioContext.createGain();
+    this.outputTrim.gain.value = MASTER_OUTPUT_TRIM;
 
-    // Signal chain: tracks -> masterGain -> compressor -> destination
+    // Signal chain: tracks -> masterGain -> compressor -> makeup -> safety trim -> destination
     this.masterGain.connect(this.compressor);
-    this.compressor.connect(this.audioContext.destination);
+    this.compressor.connect(this.makeupTrim);
+    this.makeupTrim.connect(this.outputTrim);
+    this.outputTrim.connect(this.audioContext.destination);
 
     // Initialize synth engine
     synthEngine.initialize(this.audioContext, this.masterGain);
@@ -673,7 +710,8 @@ export class AudioEngine {
     time: number,
     duration?: number,
     volume: number = 1,
-    trackId?: string
+    trackId?: string,
+    midiVelocity: number = DEFAULT_MIDI_VELOCITY,
   ): void {
     const quarantine = getSampledInstrumentQuarantine(presetName);
     if (quarantine) {
@@ -694,7 +732,7 @@ export class AudioEngine {
       ? this.trackBusManager.getBusInput(trackId)
       : undefined;
 
-    synthEngine.playNote(noteId, frequency, actualPreset, time, duration, volume, destination);
+    synthEngine.playNote(noteId, frequency, actualPreset, time, duration, volume, destination, midiVelocity);
   }
 
   /**
@@ -717,6 +755,16 @@ export class AudioEngine {
 
   getSynthPresets(): string[] {
     return Object.keys(SYNTH_PRESETS);
+  }
+
+  /** Stable JSON boundary for authored synth definitions and future editors. */
+  serializeSynthParams(params: SynthParams): string {
+    return encodeSynthParams(params);
+  }
+
+  /** Validate and copy an authored synth definition before it reaches audio nodes. */
+  deserializeSynthParams(serialized: string): SynthParams {
+    return decodeSynthParams(serialized);
   }
 
   isInitialized(): boolean {
@@ -754,6 +802,20 @@ export class AudioEngine {
     this.trackBusManager?.setTrackVolume(trackId, volume);
   }
 
+  setTrackPan(trackId: string, pan: number): void {
+    // Session/remote updates can precede both manager initialization and its
+    // lazy TrackBus. Retain at both boundaries, matching authored faders.
+    this.pendingTrackPans.set(trackId, pan);
+    this.trackBusManager?.setTrackPan(trackId, pan);
+  }
+
+  /** Read the reconciled pan even while the per-track bus is still lazy. */
+  getTrackPan(trackId: string): number {
+    return this.trackBusManager?.getTrackPan(trackId)
+      ?? this.pendingTrackPans.get(trackId)
+      ?? 0;
+  }
+
   /**
    * Reconcile authored audio state from local or multiplayer grid snapshots.
    * This runs while stopped too, so previews and the first scheduled note use
@@ -768,6 +830,10 @@ export class AudioEngine {
       const volume = track.volume ?? 1;
       if (this.pendingTrackVolumes.get(track.id) !== volume) {
         this.setTrackVolume(track.id, volume);
+      }
+      const pan = track.pan ?? 0;
+      if (this.pendingTrackPans.get(track.id) !== pan) {
+        this.setTrackPan(track.id, pan);
       }
       const currentFM = this.trackFMOverrides.get(track.id);
       if (track.fmParams) {
@@ -815,8 +881,13 @@ export class AudioEngine {
     time: number,
     duration?: number,
     pitchSemitones: number = 0,
-    volume: number = 1
+    volume: number = 1,
+    midiVelocity: number = DEFAULT_MIDI_VELOCITY,
+    variationKey?: string,
   ): void {
+    // Procedural/user samples currently have no velocity-to-timbre mapping.
+    // Keep the explicit contract so one can be added without coupling gain.
+    void midiVelocity;
     if (!this.audioContext || !this.masterGain) {
       logger.audio.warn('AudioContext not initialized');
       return;
@@ -844,7 +915,8 @@ export class AudioEngine {
     }
 
     const source = this.audioContext.createBufferSource();
-    source.buffer = sample.buffer;
+    source.buffer = selectSampleBuffer(sample, variationKey);
+    if (!source.buffer) return;
 
     // Phase 25: Get track bus input for unified audio routing
     if (!this.trackBusManager) {
@@ -903,7 +975,8 @@ export class AudioEngine {
     const actualStartTime = Math.max(time, currentTime);
     const envStart = computeEnvelopeStart({ eventTime: time, currentTime, pitchLatencySec });
     envGain.gain.setValueAtTime(0, envStart);
-    envGain.gain.linearRampToValueAtTime(volume, envStart + FADE_TIME);
+    const calibratedVolume = volume * (sample.playbackGain ?? 1);
+    envGain.gain.linearRampToValueAtTime(calibratedVolume, envStart + FADE_TIME);
     envGain.connect(trackInput);
 
     // For recordings, try playing immediately to test
@@ -940,12 +1013,16 @@ export class AudioEngine {
 
     const source = this.audioContext.createBufferSource();
     source.buffer = sample.buffer;
-    source.connect(this.masterGain);
+    const sourceGain = this.audioContext.createGain();
+    sourceGain.gain.value = sample.playbackGain ?? 1;
+    source.connect(sourceGain);
+    sourceGain.connect(this.masterGain);
     source.start();
 
     // Memory leak fix: disconnect when done
     source.onended = () => {
       source.disconnect();
+      sourceGain.disconnect();
     };
   }
 
@@ -956,6 +1033,7 @@ export class AudioEngine {
    */
   removeTrackGain(trackId: string): void {
     this.pendingTrackVolumes.delete(trackId);
+    this.pendingTrackPans.delete(trackId);
     this.syncedTrackIds.delete(trackId);
     this.trackFMOverrides.delete(trackId);
     this.toneSynthRegistry.remove(trackId);
@@ -1246,8 +1324,11 @@ export class AudioEngine {
     time: number,
     duration: string | number = '8n',
     volume: number = 1,
-    trackId?: string
+    trackId?: string,
+    midiVelocity: number = DEFAULT_MIDI_VELOCITY,
   ): void {
+    // Tone presets currently use the canonical note gain only.
+    void midiVelocity;
     if (!this.toneInitialized) {
       logger.audio.warn('Cannot play Tone.js synth: not initialized');
       return;
@@ -1331,7 +1412,8 @@ export class AudioEngine {
     time: number,
     duration: number = 0.3,
     volume: number = 1,
-    trackId?: string
+    trackId?: string,
+    midiVelocity: number = DEFAULT_MIDI_VELOCITY,
   ): void {
     if (!this.toneInitialized) {
       logger.audio.error('playAdvancedSynth BLOCKED: Tone.js not initialized', {
@@ -1375,7 +1457,7 @@ export class AudioEngine {
 
     synth.setPreset(presetName);
     const toneTime = this.toToneRelativeTime(time);
-    synth.playNoteSemitone(semitone, duration, toneTime, volume);
+    synth.playNoteSemitone(semitone, duration, toneTime, volume, midiVelocity);
   }
 
   /**
@@ -1674,6 +1756,8 @@ export class AudioEngine {
     // Disconnect native audio nodes
     this.masterGain?.disconnect();
     this.compressor?.disconnect();
+    this.makeupTrim?.disconnect();
+    this.outputTrim?.disconnect();
 
     // Clear sample buffers
     this.samples.clear();
@@ -1683,10 +1767,13 @@ export class AudioEngine {
     this.advancedOverrides = {};
     this.trackFMOverrides.clear();
     this.pendingTrackVolumes.clear();
+    this.pendingTrackPans.clear();
     this.syncedTrackIds.clear();
     this.trackBusManager = null;
     this.masterGain = null;
     this.compressor = null;
+    this.makeupTrim = null;
+    this.outputTrim = null;
     this.toneInitialized = false;
     this.toneInitPromise = null;
     this.initializationPromise = null;

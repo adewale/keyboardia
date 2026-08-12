@@ -24,18 +24,48 @@ import {
   dbToGain,
   type LoopSpec,
 } from './sample-selection';
-import { computeNoteSchedule } from './note-schedule';
+import { computeNoteSchedule, RELEASE_FLOOR_GAIN } from './note-schedule';
 import {
   sampledInstrumentChokeRegistry,
   type ChokeGroupRegistry,
   type ChokeableVoice,
 } from './choke-groups';
 import { DEFAULT_MIDI_VELOCITY } from './velocity';
+import { isDrumInstrument } from '../shared/instrument-classification';
+import {
+  compensatedSampleStartOffset,
+  measureDecodedLeadingSilenceSeconds,
+} from './sample-onset';
 
 /** Bound aggregate request/decode pressure across every deep sample library. */
 const MAX_CONCURRENT_SAMPLE_LOADS = 6;
 let activeSampleLoads = 0;
 const pendingSampleLoadSlots: Array<() => void> = [];
+
+/**
+ * Engine-owned drum balance. Keeping these trims outside content manifests
+ * preserves the exact hashes used to pin prior human sample decisions.
+ */
+export const SAMPLED_INSTRUMENT_OUTPUT_GAIN_DB: Readonly<Record<string, number>> = Object.freeze({
+  '808-kick': 0,
+  '808-snare': -3,
+  '808-hihat-closed': -9,
+  '808-hihat-open': -8,
+  '808-clap': -4,
+  'acoustic-kick': 0,
+  'acoustic-snare': -3,
+  'acoustic-hihat-closed': -9,
+  'acoustic-hihat-open': -8,
+  'acoustic-ride': -7,
+  'brushes-snare': -4,
+});
+
+export function sampledInstrumentOutputGainDb(
+  instrumentId: string,
+  manifestGainDb = 0,
+): number {
+  return manifestGainDb + (SAMPLED_INSTRUMENT_OUTPUT_GAIN_DB[instrumentId] ?? 0);
+}
 
 async function withSampleLoadSlot<T>(operation: () => Promise<T>): Promise<T> {
   if (activeSampleLoads >= MAX_CONCURRENT_SAMPLE_LOADS) {
@@ -116,6 +146,8 @@ export interface InstrumentManifest {
    * dynamics once already — see commit 747c90f).
    */
   gainDb?: number;
+  /** Shared non-destructive decode-onset trim (for codec encoder delay). */
+  startOffset?: number;
   /** Width in MIDI velocity units for equal-power-free linear layer blending. */
   velocityCrossfade?: number;
   /** Notes whose complete layer/RR sets must decode before playback is ready. */
@@ -464,9 +496,14 @@ export class SampledInstrument {
   }
 
   private loadedSampleFromMapping(mapping: SampleMapping, buffer: AudioBuffer, cacheKey: string): LoadedSample {
-    const start = Number.isFinite(mapping.startOffset) && (mapping.startOffset ?? -1) >= 0
-      ? mapping.startOffset
-      : undefined;
+    const configuredStart = mapping.startOffset ?? this.manifest?.startOffset;
+    const adaptCodecDelay = isDrumInstrument(`sampled:${this.instrumentId}`)
+      || mapping.file?.toLowerCase().endsWith('.m4a') === true;
+    const start = compensatedSampleStartOffset(
+      configuredStart,
+      adaptCodecDelay ? measureDecodedLeadingSilenceSeconds(buffer) : 0,
+      adaptCodecDelay,
+    );
     const end = Number.isFinite(mapping.endOffset) && (mapping.endOffset ?? 0) > (start ?? 0) && (mapping.endOffset ?? Infinity) <= buffer.duration
       ? mapping.endOffset
       : undefined;
@@ -571,9 +608,12 @@ export class SampledInstrument {
       }
     }
 
-    // Ensure AudioContext is running (required for iOS/mobile)
-    if (this.audioContext.state !== 'running') {
-      this.audioContext.resume();
+    // Ensure a live AudioContext is running (required for iOS/mobile).
+    // OfflineAudioContext is intentionally suspended until startRendering();
+    // calling resume() on it either throws or creates an unhandled rejection.
+    const isOfflineContext = 'startRendering' in this.audioContext;
+    if (!isOfflineContext && this.audioContext.state !== 'running') {
+      void this.audioContext.resume().catch(() => {});
     }
 
     const sampleInfos = this.findNearestSamples(adjustedMidiNote, velocity, articulation);
@@ -587,7 +627,10 @@ export class SampledInstrument {
     });
     const sources: AudioBufferSourceNode[] = [];
     const gains: GainNode[] = [];
-    const instrumentGain = dbToGain(this.manifest.gainDb ?? 0);
+    const instrumentGain = dbToGain(sampledInstrumentOutputGainDb(
+      this.instrumentId,
+      this.manifest.gainDb ?? 0,
+    ));
 
     for (const sampleInfo of sampleInfos) {
       const source = this.audioContext.createBufferSource();
@@ -619,7 +662,11 @@ export class SampledInstrument {
 
       if (schedule.release) {
         gainNode.gain.setValueAtTime(effectiveVolume, schedule.release.start);
-        gainNode.gain.exponentialRampToValueAtTime(0.001, schedule.release.end);
+        gainNode.gain.exponentialRampToValueAtTime(RELEASE_FLOOR_GAIN, schedule.release.end);
+        // Finish at exact digital silence before disposal. The previous hard
+        // stop stepped directly from -60 dB to zero and could truncate a long
+        // resonant source at a non-zero sample value.
+        gainNode.gain.linearRampToValueAtTime(0, schedule.release.stopTime);
         source.stop(schedule.release.stopTime);
       }
       sources.push(source);

@@ -1,0 +1,648 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-hihat-open",
+  "hardErrors": 0,
+  "reviewFlags": 2,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-hihat-open",
+      "file": "Samples/mid/hh/mid_hh_open_vl1_rr2.flac",
+      "message": "Estimated pitch is 350.8 cents from mapped note",
+      "value": 350.8019526838531,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-hihat-open",
+      "file": "Samples/mid/hh/mid_hh_open_vl1_rr3.flac",
+      "message": "Estimated pitch is 350.8 cents from mapped note",
+      "value": 350.8019526838531,
+      "threshold": 10
+    }
+  ],
+  "entries": [
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl1_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl1_rr1.flac",
+        "note": 46,
+        "velocityMin": 0,
+        "velocityMax": 31,
+        "durationSec": 8.77154195011338,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.013953072018921375,
+        "peakDb": -37.106603282954104,
+        "rmsDb": -69.29057826560171,
+        "activeRmsDb": -67.34547196646791,
+        "loudnessKMax": -50.50573690097727,
+        "playbackGainDb": 0,
+        "dcOffset": 3.153045767329036e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 30.2388686835138,
+        "leadingSilenceMs": 8.458049886621316,
+        "effectiveLeadingSilenceMs": 8.458049886621316,
+        "trailingSilenceMs": 3243.8548752834467,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -85.10892758962014,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.458049886621316,
+        "activeEndMs": 5527.664399092971,
+        "spectral": {
+          "centroidHz": 7044.014636806762,
+          "highFrequencyRatio": 0.6582925639110574
+        },
+        "pitch": {
+          "midi": 49.50801952683853,
+          "frequencyHz": 142.71844660194174,
+          "rawCents": 350.8019526838531,
+          "foldedCents": 350.8019526838531,
+          "confidence": 0.4238733455452867
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.30769839496700335,
+          "monoLossDb": -1.9039864786368885,
+          "leftRightBalanceDb": -3.0081822277319814
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl1_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl1_rr2.flac",
+        "note": 46,
+        "velocityMin": 0,
+        "velocityMax": 31,
+        "durationSec": 7.460113378684807,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.01496983040124178,
+        "peakDb": -36.49566239824526,
+        "rmsDb": -67.46974267645928,
+        "activeRmsDb": -66.50199410005116,
+        "loudnessKMax": -49.73818875502723,
+        "playbackGainDb": 0,
+        "dcOffset": 1.482989320162067e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 30.0063317018059,
+        "leadingSilenceMs": 8.36734693877551,
+        "effectiveLeadingSilenceMs": 8.36734693877551,
+        "trailingSilenceMs": 1493.6734693877552,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -82.2286867994378,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.36734693877551,
+        "activeEndMs": 5966.4172335600915,
+        "spectral": {
+          "centroidHz": 6178.300113789015,
+          "highFrequencyRatio": 0.6043110109110172
+        },
+        "pitch": {
+          "midi": 49.50801952683853,
+          "frequencyHz": 142.71844660194174,
+          "rawCents": 350.8019526838531,
+          "foldedCents": 350.8019526838531,
+          "confidence": 0.5850743746752858
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.3050468398654323,
+          "monoLossDb": -1.9276761451943871,
+          "leftRightBalanceDb": -3.397780894771562
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-hihat-open",
+          "file": "Samples/mid/hh/mid_hh_open_vl1_rr2.flac",
+          "message": "Estimated pitch is 350.8 cents from mapped note",
+          "value": 350.8019526838531,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl1_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl1_rr3.flac",
+        "note": 46,
+        "velocityMin": 0,
+        "velocityMax": 31,
+        "durationSec": 7.671700680272109,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.018071768805384636,
+        "peakDb": -34.85998676081977,
+        "rmsDb": -67.06442834138994,
+        "activeRmsDb": -65.61289811585986,
+        "loudnessKMax": -48.955226762780704,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000012999506710181135,
+        "dcOffsetDb": -117.72146254941865,
+        "crestFactorDb": 30.752911355040094,
+        "leadingSilenceMs": 8.956916099773242,
+        "effectiveLeadingSilenceMs": 8.956916099773242,
+        "trailingSilenceMs": 2197.4603174603176,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -84.06680971672316,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.956916099773242,
+        "activeEndMs": 5474.21768707483,
+        "spectral": {
+          "centroidHz": 5986.158504362018,
+          "highFrequencyRatio": 0.6224948220182833
+        },
+        "pitch": {
+          "midi": 49.50801952683853,
+          "frequencyHz": 142.71844660194174,
+          "rawCents": 350.8019526838531,
+          "foldedCents": 350.8019526838531,
+          "confidence": 0.5801424519032135
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.317514639482345,
+          "monoLossDb": -1.9074996621466889,
+          "leftRightBalanceDb": -3.8211049916999764
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-hihat-open",
+          "file": "Samples/mid/hh/mid_hh_open_vl1_rr3.flac",
+          "message": "Estimated pitch is 350.8 cents from mapped note",
+          "value": 350.8019526838531,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl2_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl2_rr1.flac",
+        "note": 46,
+        "velocityMin": 32,
+        "velocityMax": 63,
+        "durationSec": 7.841496598639456,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.031272709369659424,
+        "peakDb": -30.096689824249236,
+        "rmsDb": -61.87032334289333,
+        "activeRmsDb": -59.30322887834858,
+        "loudnessKMax": -43.04356711529539,
+        "playbackGainDb": 0,
+        "dcOffset": 5.255607250334385e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 29.206539054099334,
+        "leadingSilenceMs": 8.480725623582767,
+        "effectiveLeadingSilenceMs": 8.480725623582767,
+        "trailingSilenceMs": 3505.170068027211,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -84.85528300006848,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.480725623582767,
+        "activeEndMs": 4336.303854875284,
+        "spectral": {
+          "centroidHz": 6684.532309899853,
+          "highFrequencyRatio": 0.5832756750967641
+        },
+        "pitch": {
+          "midi": 49.56413737335221,
+          "frequencyHz": 143.1818181818182,
+          "rawCents": 356.413737335221,
+          "foldedCents": 356.41373733522096,
+          "confidence": 0.32342921357191623
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.22898708643416893,
+          "monoLossDb": -2.1803064560768224,
+          "leftRightBalanceDb": -3.604054269729777
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl2_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl2_rr2.flac",
+        "note": 46,
+        "velocityMin": 32,
+        "velocityMax": 63,
+        "durationSec": 7.199705215419501,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03256676346063614,
+        "peakDb": -29.744508004035588,
+        "rmsDb": -60.719149052235295,
+        "activeRmsDb": -59.11099202106079,
+        "loudnessKMax": -42.61236179352301,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000010043787929003753,
+        "dcOffsetDb": -119.96204931670476,
+        "crestFactorDb": 29.366484017025204,
+        "leadingSilenceMs": 8.775510204081632,
+        "effectiveLeadingSilenceMs": 8.775510204081632,
+        "trailingSilenceMs": 2224.53514739229,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -82.74842072494293,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.775510204081632,
+        "activeEndMs": 4975.14739229025,
+        "spectral": {
+          "centroidHz": 6257.258552365142,
+          "highFrequencyRatio": 0.5719910190287988
+        },
+        "pitch": {
+          "midi": 43.46813114647695,
+          "frequencyHz": 100.68493150684931,
+          "rawCents": -253.18688535230507,
+          "foldedCents": -253.18688535230507,
+          "confidence": 0.2624487769196013
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.30471187131570804,
+          "monoLossDb": -1.954642300739837,
+          "leftRightBalanceDb": -3.9900954448576558
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl2_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl2_rr3.flac",
+        "note": 46,
+        "velocityMin": 32,
+        "velocityMax": 63,
+        "durationSec": 8.052086167800454,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03755684942007065,
+        "peakDb": -28.506216941999163,
+        "rmsDb": -60.72730715023327,
+        "activeRmsDb": -59.23424477283015,
+        "loudnessKMax": -42.08710473478463,
+        "playbackGainDb": 0,
+        "dcOffset": -7.447376863680395e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 30.72802783083099,
+        "leadingSilenceMs": 8.208616780045352,
+        "effectiveLeadingSilenceMs": 8.208616780045352,
+        "trailingSilenceMs": 2340.9523809523807,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -88.26421468313325,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.208616780045352,
+        "activeEndMs": 5711.111111111111,
+        "spectral": {
+          "centroidHz": 6360.624642228983,
+          "highFrequencyRatio": 0.5711672914728837
+        },
+        "pitch": {
+          "midi": 49.45208299840017,
+          "frequencyHz": 142.25806451612902,
+          "rawCents": 345.2082998400172,
+          "foldedCents": 345.20829984001716,
+          "confidence": 0.38633758691599407
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.30041225950165307,
+          "monoLossDb": -1.9702310927535054,
+          "leftRightBalanceDb": -4.041067642549037
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl3_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl3_rr1.flac",
+        "note": 46,
+        "velocityMin": 64,
+        "velocityMax": 95,
+        "durationSec": 9.561814058956916,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.05670257657766342,
+        "peakDb": -24.92794412442145,
+        "rmsDb": -57.42965311468775,
+        "activeRmsDb": -56.43080983806897,
+        "loudnessKMax": -38.09632281408649,
+        "playbackGainDb": 0,
+        "dcOffset": 3.520509299231991e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 31.50286571364751,
+        "leadingSilenceMs": 8.684807256235827,
+        "effectiveLeadingSilenceMs": 8.684807256235827,
+        "trailingSilenceMs": 1958.4580498866212,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -96.91667813450893,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.684807256235827,
+        "activeEndMs": 7603.333333333334,
+        "spectral": {
+          "centroidHz": 6314.2225194832445,
+          "highFrequencyRatio": 0.5636869061176033
+        },
+        "pitch": {
+          "midi": 47.65039880526585,
+          "frequencyHz": 128.19767441860466,
+          "rawCents": 165.03988052658514,
+          "foldedCents": 165.0398805265852,
+          "confidence": 0.25618988851780555
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.25776821171651504,
+          "monoLossDb": -2.081511262957911,
+          "leftRightBalanceDb": -3.4730369552498788
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl3_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl3_rr2.flac",
+        "note": 46,
+        "velocityMin": 64,
+        "velocityMax": 95,
+        "durationSec": 10.128707482993198,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.06274598091840744,
+        "peakDb": -24.048281738247837,
+        "rmsDb": -55.41782913064503,
+        "activeRmsDb": -54.58790471657042,
+        "loudnessKMax": -36.10996227470832,
+        "playbackGainDb": 0,
+        "dcOffset": 8.692841366280844e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 30.539622978322583,
+        "leadingSilenceMs": 8.616780045351474,
+        "effectiveLeadingSilenceMs": 8.616780045351474,
+        "trailingSilenceMs": 1754.920634920635,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -90.69114708172606,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.616780045351474,
+        "activeEndMs": 8373.764172335601,
+        "spectral": {
+          "centroidHz": 6784.19205761706,
+          "highFrequencyRatio": 0.5821235690395516
+        },
+        "pitch": {
+          "midi": 49.3963266201238,
+          "frequencyHz": 141.80064308681673,
+          "rawCents": 339.63266201238014,
+          "foldedCents": 339.63266201238014,
+          "confidence": 0.42870567466091014
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.323454556247129,
+          "monoLossDb": -1.8798142319284619,
+          "leftRightBalanceDb": -3.6153603566373107
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl3_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl3_rr3.flac",
+        "note": 46,
+        "velocityMin": 64,
+        "velocityMax": 95,
+        "durationSec": 10.279024943310658,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.06000157818198204,
+        "peakDb": -24.43674653008966,
+        "rmsDb": -56.77361183958183,
+        "activeRmsDb": -56.25407017202448,
+        "loudnessKMax": -36.77790644959788,
+        "playbackGainDb": 0,
+        "dcOffset": 2.6182230191388013e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 31.81732364193482,
+        "leadingSilenceMs": 7.687074829931973,
+        "effectiveLeadingSilenceMs": 7.687074829931973,
+        "trailingSilenceMs": 1153.3106575963718,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -85.09715220519345,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.687074829931973,
+        "activeEndMs": 9125.691609977324,
+        "spectral": {
+          "centroidHz": 6649.464822183871,
+          "highFrequencyRatio": 0.5799239595230292
+        },
+        "pitch": {
+          "midi": 45.38905773230853,
+          "frequencyHz": 112.5,
+          "rawCents": -61.09422676914704,
+          "foldedCents": -61.0942267691471,
+          "confidence": 0.35746832939390444
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.2510578990880817,
+          "monoLossDb": -2.108310520993618,
+          "leftRightBalanceDb": -3.610010874144018
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl4_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl4_rr1.flac",
+        "note": 46,
+        "velocityMin": 96,
+        "velocityMax": 127,
+        "durationSec": 11.41437641723356,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.2780703008174896,
+        "peakDb": -11.116907865999783,
+        "rmsDb": -41.87919436078312,
+        "activeRmsDb": -38.6555624521765,
+        "loudnessKMax": -20.741718409884815,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000011691649090984316,
+        "dcOffsetDb": -118.64248455759572,
+        "crestFactorDb": 27.538654586176712,
+        "leadingSilenceMs": 7.414965986394558,
+        "effectiveLeadingSilenceMs": 7.414965986394558,
+        "trailingSilenceMs": 5974.081632653061,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -104.34404964857058,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.414965986394558,
+        "activeEndMs": 5440.272108843537,
+        "spectral": {
+          "centroidHz": 6582.335949637836,
+          "highFrequencyRatio": 0.6242946042241219
+        },
+        "pitch": {
+          "midi": 49.45208299840017,
+          "frequencyHz": 142.25806451612902,
+          "rawCents": 345.2082998400172,
+          "foldedCents": 345.20829984001716,
+          "confidence": 0.28999425200026624
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.2899584252596958,
+          "monoLossDb": -1.9866208042906504,
+          "leftRightBalanceDb": -3.6751121037177157
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl4_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl4_rr2.flac",
+        "note": 46,
+        "velocityMin": 96,
+        "velocityMax": 127,
+        "durationSec": 12.231224489795919,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3150392174720764,
+        "peakDb": -10.03270759902907,
+        "rmsDb": -42.037794649934625,
+        "activeRmsDb": -38.28675829370565,
+        "loudnessKMax": -20.590598324587706,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000015256601132265897,
+        "dcOffsetDb": -116.33084415581854,
+        "crestFactorDb": 28.254050694676582,
+        "leadingSilenceMs": 7.619047619047619,
+        "effectiveLeadingSilenceMs": 7.619047619047619,
+        "trailingSilenceMs": 7067.95918367347,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -104.99872292541417,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.619047619047619,
+        "activeEndMs": 5163.242630385487,
+        "spectral": {
+          "centroidHz": 6814.212659517798,
+          "highFrequencyRatio": 0.6153397584196891
+        },
+        "pitch": {
+          "midi": 49.12020688356579,
+          "frequencyHz": 139.55696202531647,
+          "rawCents": 312.0206883565793,
+          "foldedCents": 312.0206883565793,
+          "confidence": 0.2800433785985849
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.26054799690462427,
+          "monoLossDb": -2.0626276172945612,
+          "leftRightBalanceDb": -3.196558375757043
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/hh/mid_hh_open_vl4_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-hihat-open",
+        "instrumentName": "Acoustic Hi-Hat (Open)",
+        "file": "Samples/mid/hh/mid_hh_open_vl4_rr3.flac",
+        "note": 46,
+        "velocityMin": 96,
+        "velocityMax": 127,
+        "durationSec": 11.455804988662132,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3202056884765625,
+        "peakDb": -9.891419141523805,
+        "rmsDb": -41.927677672506604,
+        "activeRmsDb": -38.08065886340343,
+        "loudnessKMax": -20.375005983591695,
+        "playbackGainDb": 0,
+        "dcOffset": -3.20211124223194e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 28.18923972187962,
+        "leadingSilenceMs": 8.956916099773242,
+        "effectiveLeadingSilenceMs": 8.956916099773242,
+        "trailingSilenceMs": 6723.832199546485,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -109.9303729784031,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.956916099773242,
+        "activeEndMs": 4731.950113378684,
+        "spectral": {
+          "centroidHz": 6442.271738796913,
+          "highFrequencyRatio": 0.6011833327210147
+        },
+        "pitch": {
+          "midi": 49.56413737335221,
+          "frequencyHz": 143.1818181818182,
+          "rawCents": 356.413737335221,
+          "foldedCents": 356.41373733522096,
+          "confidence": 0.2614377867490504
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.21731566877349678,
+          "monoLossDb": -2.228312043023308,
+          "leftRightBalanceDb": -3.881338441977914
+        }
+      },
+      "issues": []
+    }
+  ]
+}

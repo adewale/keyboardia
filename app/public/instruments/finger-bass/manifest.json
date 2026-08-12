@@ -7,35 +7,1059 @@
     "min": 18,
     "max": 66
   },
+  "gainDb": 10.306921938864457,
+  "velocityCrossfade": 4,
   "credits": {
     "source": "Karoryfer Meatbass",
     "url": "https://github.com/sfzinstruments/karoryfer.meatbass",
-    "license": "CC0"
+    "license": "CC0 1.0 Universal (Public Domain)",
+    "licenseUrl": "https://github.com/sfzinstruments/karoryfer.meatbass/blob/ac9e859564bda286ab5ec672d00ff1aa2fef2895/LICENSE",
+    "changes": "Complete tonal pizzicato map: fourteen roots, four velocity layers, four deterministic round robins; AAC-LC delivery, uniform group leveling, and manifest trim calibrated to the canonical C4/MIDI-90 loudness contract. Delivery curated by objective defect, onset, headroom, DC, and within-layer level consistency metrics; at most two variants per tonal layer, four per snare velocity zone."
   },
   "samples": [
     {
+      "note": 21,
+      "file": "source-0014.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-21-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 21,
+      "file": "source-0016.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-21-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 21,
+      "file": "source-0012.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-21-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 21,
+      "file": "source-0011.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-21-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 21,
+      "file": "source-0006.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-21-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 21,
+      "file": "source-0007.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-21-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 21,
+      "file": "source-0003.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-21-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 21,
+      "file": "source-0002.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-21-0-32",
+      "roundRobinIndex": 1
+    },
+    {
       "note": 24,
-      "file": "C1.mp3"
+      "file": "source-0079.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-24-97-127",
+      "roundRobinIndex": 0,
+      "gainDb": -0.906
+    },
+    {
+      "note": 24,
+      "file": "source-0078.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-24-97-127",
+      "roundRobinIndex": 1,
+      "gainDb": -0.906
+    },
+    {
+      "note": 24,
+      "file": "source-0075.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-24-65-96",
+      "roundRobinIndex": 0,
+      "gainDb": -0.906
+    },
+    {
+      "note": 24,
+      "file": "source-0074.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-24-65-96",
+      "roundRobinIndex": 1,
+      "gainDb": -0.906
+    },
+    {
+      "note": 24,
+      "file": "source-0071.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-24-33-64",
+      "roundRobinIndex": 0,
+      "gainDb": -0.906
+    },
+    {
+      "note": 24,
+      "file": "source-0069.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-24-33-64",
+      "roundRobinIndex": 1,
+      "gainDb": -0.906
+    },
+    {
+      "note": 24,
+      "file": "source-0068.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-24-0-32",
+      "roundRobinIndex": 0,
+      "gainDb": -0.906
+    },
+    {
+      "note": 24,
+      "file": "source-0067.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-24-0-32",
+      "roundRobinIndex": 1,
+      "gainDb": -0.906
+    },
+    {
+      "note": 27,
+      "file": "source-0142.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-27-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 27,
+      "file": "source-0144.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-27-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 27,
+      "file": "source-0139.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-27-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 27,
+      "file": "source-0137.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-27-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 27,
+      "file": "source-0133.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-27-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 27,
+      "file": "source-0136.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-27-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 27,
+      "file": "source-0130.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-27-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 27,
+      "file": "source-0129.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-27-0-32",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 30,
+      "file": "source-0190.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-30-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 30,
+      "file": "source-0192.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-30-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 30,
+      "file": "source-0187.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-30-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 30,
+      "file": "source-0185.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-30-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 30,
+      "file": "source-0182.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-30-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 30,
+      "file": "source-0184.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-30-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 30,
+      "file": "source-0178.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-30-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 30,
+      "file": "source-0179.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-30-0-32",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 33,
+      "file": "source-0031.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-33-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 33,
+      "file": "source-0032.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-33-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 33,
+      "file": "source-0026.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-33-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 33,
+      "file": "source-0027.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-33-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 33,
+      "file": "source-0024.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-33-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 33,
+      "file": "source-0022.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-33-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 33,
+      "file": "source-0017.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-33-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 33,
+      "file": "source-0020.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-33-0-32",
+      "roundRobinIndex": 1
     },
     {
       "note": 36,
-      "file": "C2.mp3"
+      "file": "source-0095.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-36-97-127",
+      "roundRobinIndex": 0,
+      "gainDb": -2.597
+    },
+    {
+      "note": 36,
+      "file": "source-0094.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-36-97-127",
+      "roundRobinIndex": 1,
+      "gainDb": -2.597
+    },
+    {
+      "note": 36,
+      "file": "source-0091.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-36-65-96",
+      "roundRobinIndex": 0,
+      "gainDb": -2.597
+    },
+    {
+      "note": 36,
+      "file": "source-0089.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-36-65-96",
+      "roundRobinIndex": 1,
+      "gainDb": -2.597
+    },
+    {
+      "note": 36,
+      "file": "source-0088.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-36-33-64",
+      "roundRobinIndex": 0,
+      "gainDb": -2.597
+    },
+    {
+      "note": 36,
+      "file": "source-0087.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-36-33-64",
+      "roundRobinIndex": 1,
+      "gainDb": -2.597
+    },
+    {
+      "note": 36,
+      "file": "source-0083.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-36-0-32",
+      "roundRobinIndex": 0,
+      "gainDb": -2.597
+    },
+    {
+      "note": 36,
+      "file": "source-0084.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-36-0-32",
+      "roundRobinIndex": 1,
+      "gainDb": -2.597
+    },
+    {
+      "note": 39,
+      "file": "source-0160.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-39-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 39,
+      "file": "source-0158.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-39-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 39,
+      "file": "source-0154.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-39-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 39,
+      "file": "source-0155.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-39-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 39,
+      "file": "source-0149.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-39-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 39,
+      "file": "source-0150.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-39-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 39,
+      "file": "source-0145.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-39-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 39,
+      "file": "source-0146.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-39-0-32",
+      "roundRobinIndex": 1
     },
     {
       "note": 42,
-      "file": "Gb2.mp3"
+      "file": "source-0208.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-42-97-127",
+      "roundRobinIndex": 0,
+      "gainDb": 1.721
+    },
+    {
+      "note": 42,
+      "file": "source-0207.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-42-97-127",
+      "roundRobinIndex": 1,
+      "gainDb": 1.721
+    },
+    {
+      "note": 42,
+      "file": "source-0202.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-42-65-96",
+      "roundRobinIndex": 0,
+      "gainDb": 1.721
+    },
+    {
+      "note": 42,
+      "file": "source-0204.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-42-65-96",
+      "roundRobinIndex": 1,
+      "gainDb": 1.721
+    },
+    {
+      "note": 42,
+      "file": "source-0197.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-42-33-64",
+      "roundRobinIndex": 0,
+      "gainDb": 1.721
+    },
+    {
+      "note": 42,
+      "file": "source-0198.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-42-33-64",
+      "roundRobinIndex": 1,
+      "gainDb": 1.721
+    },
+    {
+      "note": 42,
+      "file": "source-0193.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-42-0-32",
+      "roundRobinIndex": 0,
+      "gainDb": 1.721
+    },
+    {
+      "note": 42,
+      "file": "source-0194.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-42-0-32",
+      "roundRobinIndex": 1,
+      "gainDb": 1.721
+    },
+    {
+      "note": 45,
+      "file": "source-0046.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-45-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 45,
+      "file": "source-0047.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-45-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 45,
+      "file": "source-0044.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-45-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 45,
+      "file": "source-0042.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-45-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 45,
+      "file": "source-0039.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-45-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 45,
+      "file": "source-0038.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-45-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 45,
+      "file": "source-0033.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-45-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 45,
+      "file": "source-0035.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-45-0-32",
+      "roundRobinIndex": 1
     },
     {
       "note": 48,
-      "file": "C3.mp3"
+      "file": "source-0111.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-48-97-127",
+      "roundRobinIndex": 0,
+      "gainDb": 3.014
+    },
+    {
+      "note": 48,
+      "file": "source-0110.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-48-97-127",
+      "roundRobinIndex": 1,
+      "gainDb": 3.014
+    },
+    {
+      "note": 48,
+      "file": "source-0107.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-48-65-96",
+      "roundRobinIndex": 0,
+      "gainDb": 3.014
+    },
+    {
+      "note": 48,
+      "file": "source-0108.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-48-65-96",
+      "roundRobinIndex": 1,
+      "gainDb": 3.014
+    },
+    {
+      "note": 48,
+      "file": "source-0104.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-48-33-64",
+      "roundRobinIndex": 0,
+      "gainDb": 3.014
+    },
+    {
+      "note": 48,
+      "file": "source-0102.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-48-33-64",
+      "roundRobinIndex": 1,
+      "gainDb": 3.014
+    },
+    {
+      "note": 48,
+      "file": "source-0097.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-48-0-32",
+      "roundRobinIndex": 0,
+      "gainDb": 3.014
+    },
+    {
+      "note": 48,
+      "file": "source-0100.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-48-0-32",
+      "roundRobinIndex": 1,
+      "gainDb": 3.014
+    },
+    {
+      "note": 51,
+      "file": "source-0174.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-51-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 51,
+      "file": "source-0176.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-51-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 51,
+      "file": "source-0171.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-51-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 51,
+      "file": "source-0172.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-51-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 51,
+      "file": "source-0165.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-51-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 51,
+      "file": "source-0167.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-51-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 51,
+      "file": "source-0164.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-51-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 51,
+      "file": "source-0161.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-51-0-32",
+      "roundRobinIndex": 1
     },
     {
       "note": 54,
-      "file": "Gb3.mp3"
+      "file": "source-0223.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-54-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 54,
+      "file": "source-0221.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-54-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 54,
+      "file": "source-0217.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-54-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 54,
+      "file": "source-0218.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-54-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 54,
+      "file": "source-0215.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-54-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 54,
+      "file": "source-0213.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-54-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 54,
+      "file": "source-0212.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-54-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 54,
+      "file": "source-0211.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-54-0-32",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 57,
+      "file": "source-0062.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-57-97-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 57,
+      "file": "source-0061.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-57-97-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 57,
+      "file": "source-0058.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-57-65-96",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 57,
+      "file": "source-0059.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-57-65-96",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 57,
+      "file": "source-0054.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-57-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 57,
+      "file": "source-0053.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-57-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 57,
+      "file": "source-0051.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-57-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 57,
+      "file": "source-0050.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-57-0-32",
+      "roundRobinIndex": 1
     },
     {
       "note": 60,
-      "file": "C4.mp3"
+      "file": "source-0127.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-60-97-127",
+      "roundRobinIndex": 0,
+      "gainDb": 1.045
+    },
+    {
+      "note": 60,
+      "file": "source-0126.m4a",
+      "velocityMin": 97,
+      "velocityMax": 127,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-60-97-127",
+      "roundRobinIndex": 1,
+      "gainDb": 1.045
+    },
+    {
+      "note": 60,
+      "file": "source-0122.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-60-65-96",
+      "roundRobinIndex": 0,
+      "gainDb": -1.045
+    },
+    {
+      "note": 60,
+      "file": "source-0121.m4a",
+      "velocityMin": 65,
+      "velocityMax": 96,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-60-65-96",
+      "roundRobinIndex": 1,
+      "gainDb": -1.045
+    },
+    {
+      "note": 60,
+      "file": "source-0120.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-60-33-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 60,
+      "file": "source-0119.m4a",
+      "velocityMin": 33,
+      "velocityMax": 64,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-60-33-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 60,
+      "file": "source-0115.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-60-0-32",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 60,
+      "file": "source-0114.m4a",
+      "velocityMin": 0,
+      "velocityMax": 32,
+      "articulation": "pizz",
+      "roundRobinGroup": "pizz-60-0-32",
+      "roundRobinIndex": 1
     }
   ]
 }

@@ -1,7 +1,7 @@
 import { createMcpHandler, McpServer, type McpHttpHandler } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { analyzeSession } from '../music/session-analysis';
-import { MAX_STEPS, MAX_TEMPO, MIN_TEMPO } from '../shared/constants';
+import { MAX_PAN, MAX_STEPS, MAX_TEMPO, MIN_PAN, MIN_TEMPO } from '../shared/constants';
 import type { Session } from '../shared/state';
 import { PatternExpansionError } from '../shared/pattern-expansion';
 import { MAX_SESSION_NAME_LENGTH, MAX_TRACK_NAME_LENGTH } from '../shared/validation';
@@ -216,7 +216,7 @@ const sessionIdSchema = z.uuid().describe(
 const trackIdSchema = z.string()
   .regex(TRACK_ID_PATTERN)
   .describe(
-    'For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session.'
+    'For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session.'
   );
 const newTrackIdSchema = z.string()
   .regex(NEW_TRACK_ID_PATTERN)
@@ -245,6 +245,14 @@ const editSchema = z.object({
       sample_id: sampleIdSchema,
     }).strict().describe(
       'Replace only an existing track\'s sound source while preserving its name, pattern, mix, and timing.'
+    ),
+    z.object({
+      operation: z.literal('set_track_pan'),
+      track_id: trackIdSchema,
+      pan: z.number().finite().min(MIN_PAN).max(MAX_PAN)
+        .describe('Normalized equal-power stereo position: -1 left, 0 center, 1 right.'),
+    }).strict().describe(
+      'Set one existing track\'s normalized stereo position without changing its notes or level.'
     ),
     z.object({
       operation: z.literal('set_steps'),
@@ -377,7 +385,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
       'Read an existing session with get_session before editing it.',
       'After every edit_session attempt, call get_session next for the same session before another edit or a final answer; the compact edit_session result is not verification.',
       'Step indexes are zero-based; preserve every track and step the user did not ask to change.',
-      'For add_track, generate a stable collision-resistant track_id ending in at least eight hexadecimal characters and reuse it on retry. For set_steps and set_track_instrument, use a track_id returned by get_session.',
+      'For add_track, generate a stable collision-resistant track_id ending in at least eight hexadecimal characters and reuse it on retry. For set_steps, set_track_instrument, and set_track_pan, use a track_id returned by get_session.',
       'Only publish when the user explicitly asks. A session UUID grants the same access as its share URL, so do not expose it unnecessarily.',
     ].join(' '),
   });
@@ -413,7 +421,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
         'After every attempt, the next Keyboardia call must be get_session for the same session.',
         'A successful call includes a backwards-compatible compact snapshot plus an acknowledgement.',
         'That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next.',
-        'Supported operations: add_track, set_track_instrument, set_steps, and set_tempo.',
+        'Supported operations: add_track, set_track_instrument, set_track_pan, set_steps, and set_tempo.',
         'set_steps changes only the named steps; it never replaces a track or session.',
         'set_track_instrument replaces only a track\'s sound source, keeping its'
         + ' pattern, mix, timing, and custom name.',

@@ -18,6 +18,7 @@ import {
   getStepDuration,
   STEPS_PER_BEAT,
 } from '../timing-calculations';
+import { resolveHumanizedNoteDynamics } from '../note-dynamics';
 
 interface NoteEvent {
   type: 'note';
@@ -27,7 +28,10 @@ interface NoteEvent {
   pitchSemitones: number;
   time: number;
   duration: number;
-  volumeMultiplier: number;
+  midiVelocity: number;
+  noteGain: number;
+  hasExplicitLock: boolean;
+  loopIteration: number;
 }
 
 interface StepEvent {
@@ -72,6 +76,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
   private activeNotes = new Map<string, { globalStep: number; pitch: number }>();
   private lastNotifiedStep = -1;
   private lastNotifiedBeat = -1;
+  private loopIteration = 0;
 
   constructor() {
     super();
@@ -118,6 +123,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
     this.lastTempo = state.tempo;
     this.lastNotifiedStep = -1;
     this.lastNotifiedBeat = -1;
+    this.loopIteration = 0;
     this.activeNotes.clear();
     this.currentStep = initialStep ?? state.loopRegion?.start ?? 0;
   }
@@ -183,7 +189,9 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
       // note event is received, which captures MessagePort transit latency.
 
       // Advance step (loop-region aware)
+      const previousStep = this.currentStep;
       this.currentStep = advanceStep(this.currentStep, state.loopRegion, state.maxSteps);
+      if (this.currentStep <= previousStep) this.loopIteration++;
 
       this.totalStepsScheduled++;
       this.nextStepTime = calculateStepTime(
@@ -236,8 +244,13 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
       // Track active note
       this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
 
-      // Volume
-      const volumeMultiplier = pLock?.volume ?? 1;
+      const dynamics = resolveHumanizedNoteDynamics(
+        pLock?.volume,
+        track.sampleId,
+        track.id,
+        globalStep,
+        this.loopIteration,
+      );
 
       // Emit note event to main thread
       this.port.postMessage({
@@ -248,7 +261,8 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
         pitchSemitones,
         time: swungTime,
         duration: tiedDuration,
-        volumeMultiplier,
+        ...dynamics,
+        loopIteration: this.loopIteration,
       } satisfies NoteEvent);
     }
   }

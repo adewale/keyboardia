@@ -459,9 +459,14 @@ export function parseSfz(input: string): SfzRegion[] {
     const loKey = noteNameToMidi(merged.lokey) ?? key;
     const hiKey = noteNameToMidi(merged.hikey) ?? key;
     const sequenceLength = positiveInteger(merged.seq_length);
+    // SFZ defines pitch_keycenter's default as MIDI 60. Real maps use that
+    // default for a C4 master while declaring a wider playable key range.
+    // Apply it only when a key range makes the region playable; a completely
+    // unmapped/orphan region should remain visibly invalid to the importer.
     const rootMidi = noteNameToMidi(merged.pitch_keycenter)
       ?? key
-      ?? (loKey !== undefined && loKey === hiKey ? loKey : undefined);
+      ?? (loKey !== undefined && loKey === hiKey ? loKey : undefined)
+      ?? (loKey !== undefined || hiKey !== undefined ? 60 : undefined);
     regions.push({
       sample: joinSamplePath(defaultPath, merged.sample),
       rootMidi,

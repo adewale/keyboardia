@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WorkletSchedulerState } from '../scheduler-types';
 
 interface PortHarness {
@@ -64,6 +64,10 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
+beforeEach(() => {
+  vi.stubGlobal('currentTime', 0);
+});
+
 describe('production scheduler worklet', () => {
   it('runs the inclusive loop region used by GridState', () => {
     const processor = new Processor();
@@ -109,5 +113,69 @@ describe('production scheduler worklet', () => {
     expect(notes).toHaveLength(1);
     expect(notes[0]?.time).toBeCloseTo(0.03125, 8);
     expect(notes[0]?.duration).toBeCloseTo(0.225, 8);
+  });
+
+  it('carries stable MIDI velocity and loop-varying deterministic note gain', () => {
+    vi.stubGlobal('currentTime', 0.3);
+    const processor = new Processor();
+    start(processor, state({
+      loopRegion: { start: 0, end: 0 },
+      tracks: [{
+        id: 'track-humanized',
+        sampleId: 'sampled:piano',
+        steps: [true],
+        stepCount: 1,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        swing: 0,
+        parameterLocks: [null],
+      }],
+    }));
+
+    processor.process();
+    const notes = processor.port.postMessage.mock.calls
+      .map(([event]) => event as {
+        type: string;
+        midiVelocity?: number;
+        noteGain?: number;
+        hasExplicitLock?: boolean;
+        loopIteration?: number;
+      })
+      .filter((event) => event.type === 'note');
+
+    expect(notes.length).toBeGreaterThanOrEqual(3);
+    expect(notes.slice(0, 3).map(note => note.midiVelocity)).toEqual([90, 90, 90]);
+    expect(notes.slice(0, 3).map(note => note.loopIteration)).toEqual([0, 1, 2]);
+    expect(new Set(notes.slice(0, 3).map(note => note.noteGain)).size).toBeGreaterThan(1);
+    expect(notes.every(note => note.hasExplicitLock === false)).toBe(true);
+  });
+
+  it('keeps explicit locks exact across loop iterations', () => {
+    vi.stubGlobal('currentTime', 0.3);
+    const processor = new Processor();
+    start(processor, state({
+      loopRegion: { start: 0, end: 0 },
+      tracks: [{
+        id: 'track-locked',
+        sampleId: 'sampled:piano',
+        steps: [true],
+        stepCount: 1,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        swing: 0,
+        parameterLocks: [{ volume: 0.5 }],
+      }],
+    }));
+
+    processor.process();
+    const notes = processor.port.postMessage.mock.calls
+      .map(([event]) => event as { type: string; midiVelocity?: number; noteGain?: number })
+      .filter((event) => event.type === 'note');
+
+    expect(notes.length).toBeGreaterThanOrEqual(3);
+    expect(notes.every(note => note.midiVelocity === 64)).toBe(true);
+    expect(notes.every(note => note.noteGain === 0.1)).toBe(true);
   });
 });

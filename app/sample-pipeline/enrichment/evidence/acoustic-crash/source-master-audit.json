@@ -1,0 +1,609 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-crash",
+  "hardErrors": 0,
+  "reviewFlags": 0,
+  "issues": [],
+  "entries": [
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl1_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl1_rr1.flac",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 42,
+        "durationSec": 11.430589569160997,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.06654451787471771,
+        "peakDb": -23.53775434242695,
+        "rmsDb": -50.848409710271426,
+        "activeRmsDb": -50.03841458606228,
+        "loudnessKMax": -33.20345875831813,
+        "playbackGainDb": 0,
+        "dcOffset": -1.2417790152481873e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 26.500660243635327,
+        "leadingSilenceMs": 7.619047619047619,
+        "effectiveLeadingSilenceMs": 7.619047619047619,
+        "trailingSilenceMs": 1938.2086167800453,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -91.83397961015507,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.619047619047619,
+        "activeEndMs": 9492.35827664399,
+        "spectral": {
+          "centroidHz": 4908.585452084588,
+          "highFrequencyRatio": 0.4720219984214474
+        },
+        "pitch": {
+          "midi": 48.90243872304268,
+          "frequencyHz": 137.8125,
+          "rawCents": -9.756127695732175,
+          "foldedCents": -9.756127695732175,
+          "confidence": 0.20757073229338333
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.5616621801626465,
+          "monoLossDb": -1.1237084074630834,
+          "leftRightBalanceDb": 2.2047072510577044
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl1_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl1_rr2.flac",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 42,
+        "durationSec": 11.948707482993198,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.06948491930961609,
+        "peakDb": -23.162188849578488,
+        "rmsDb": -51.24501059308946,
+        "activeRmsDb": -50.53628962022661,
+        "loudnessKMax": -33.527266109411414,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000013550181628170374,
+        "dcOffsetDb": -117.361097668362,
+        "crestFactorDb": 27.374100770648127,
+        "leadingSilenceMs": 7.845804988662131,
+        "effectiveLeadingSilenceMs": 7.845804988662131,
+        "trailingSilenceMs": 1792.063492063492,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -89.55104986528676,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.845804988662131,
+        "activeEndMs": 10156.621315192744,
+        "spectral": {
+          "centroidHz": 4922.703346667494,
+          "highFrequencyRatio": 0.4897514079079784
+        },
+        "pitch": {
+          "midi": 49.45208299840017,
+          "frequencyHz": 142.25806451612902,
+          "rawCents": 45.20829984001722,
+          "foldedCents": 45.20829984001716,
+          "confidence": 0.29522245383954754
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.574933370767503,
+          "monoLossDb": -1.082738322242796,
+          "leftRightBalanceDb": 2.0902870533770748
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl1_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl1_rr3.flac",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 42,
+        "durationSec": 10.966031746031746,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.06480193138122559,
+        "peakDb": -23.76824100119652,
+        "rmsDb": -51.4919458189234,
+        "activeRmsDb": -50.60508750146616,
+        "loudnessKMax": -33.07838762853045,
+        "playbackGainDb": 0,
+        "dcOffset": -2.9910242016869314e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 26.836846500269633,
+        "leadingSilenceMs": 7.414965986394558,
+        "effectiveLeadingSilenceMs": 7.414965986394558,
+        "trailingSilenceMs": 2019.092970521542,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -88.73118424492876,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.414965986394558,
+        "activeEndMs": 8946.916099773242,
+        "spectral": {
+          "centroidHz": 5892.277383417269,
+          "highFrequencyRatio": 0.5669827119355761
+        },
+        "pitch": {
+          "midi": 48.90243872304268,
+          "frequencyHz": 137.8125,
+          "rawCents": -9.756127695732175,
+          "foldedCents": -9.756127695732175,
+          "confidence": 0.18057898790344978
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.5766711889550914,
+          "monoLossDb": -1.091176266503131,
+          "leftRightBalanceDb": 2.3816574584540815
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl1_rr4.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl1_rr4.flac",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 42,
+        "durationSec": 12.018843537414966,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.04348931461572647,
+        "peakDb": -27.232348733772373,
+        "rmsDb": -53.77827396478514,
+        "activeRmsDb": -53.11246804011147,
+        "loudnessKMax": -36.02583910444774,
+        "playbackGainDb": 0,
+        "dcOffset": 4.692982824474503e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 25.880119306339093,
+        "leadingSilenceMs": 7.437641723356009,
+        "effectiveLeadingSilenceMs": 7.437641723356009,
+        "trailingSilenceMs": 1702.3582766439908,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -84.2605556365794,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.437641723356009,
+        "activeEndMs": 10316.462585034014,
+        "spectral": {
+          "centroidHz": 5506.196071772447,
+          "highFrequencyRatio": 0.5176441945574713
+        },
+        "pitch": {
+          "midi": 48.42225057686813,
+          "frequencyHz": 134.04255319148936,
+          "rawCents": -57.77494231318698,
+          "foldedCents": -57.77494231318701,
+          "confidence": 0.23118583756791078
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.5987654335282531,
+          "monoLossDb": -1.0229445176159706,
+          "leftRightBalanceDb": 2.186316277705994
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl2_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl2_rr1.flac",
+        "note": 49,
+        "velocityMin": 43,
+        "velocityMax": 85,
+        "durationSec": 12.62358276643991,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.12093358486890793,
+        "peakDb": -18.349061460414053,
+        "rmsDb": -44.8087917938122,
+        "activeRmsDb": -44.20066562702033,
+        "loudnessKMax": -26.415108577842773,
+        "playbackGainDb": 0,
+        "dcOffset": -5.834783523963961e-8,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 25.851604166606275,
+        "leadingSilenceMs": 7.392290249433106,
+        "effectiveLeadingSilenceMs": 7.392290249433106,
+        "trailingSilenceMs": 1642.267573696145,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -92.00924590686512,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.392290249433106,
+        "activeEndMs": 10981.292517006803,
+        "spectral": {
+          "centroidHz": 4643.292516265353,
+          "highFrequencyRatio": 0.4482797393644085
+        },
+        "pitch": {
+          "midi": 52.69808127136449,
+          "frequencyHz": 171.5953307392996,
+          "rawCents": 369.80812713644866,
+          "foldedCents": 369.80812713644866,
+          "confidence": 0.205585917527327
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.5055679843691412,
+          "monoLossDb": -1.3068211609422202,
+          "leftRightBalanceDb": 2.8056227304278964
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl2_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl2_rr2.flac",
+        "note": 49,
+        "velocityMin": 43,
+        "velocityMax": 85,
+        "durationSec": 11.537097505668934,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.08795002847909927,
+        "peakDb": -21.115280311551963,
+        "rmsDb": -46.14440380316189,
+        "activeRmsDb": -45.576445033653755,
+        "loudnessKMax": -28.44553841150899,
+        "playbackGainDb": 0,
+        "dcOffset": -4.0012628888802004e-8,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 24.461164722101792,
+        "leadingSilenceMs": 6.8480725623582765,
+        "effectiveLeadingSilenceMs": 6.8480725623582765,
+        "trailingSilenceMs": 1407.7097505668935,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -93.55188373047355,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 6.8480725623582765,
+        "activeEndMs": 10129.36507936508,
+        "spectral": {
+          "centroidHz": 4800.949865792802,
+          "highFrequencyRatio": 0.459566873929496
+        },
+        "pitch": {
+          "midi": 49.67692174937921,
+          "frequencyHz": 144.11764705882354,
+          "rawCents": 67.69217493792112,
+          "foldedCents": 67.6921749379211,
+          "confidence": 0.12268891782117859
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.4998993531560837,
+          "monoLossDb": -1.3183052730118612,
+          "leftRightBalanceDb": 2.7180123061021906
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl2_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl2_rr3.flac",
+        "note": 49,
+        "velocityMin": 43,
+        "velocityMax": 85,
+        "durationSec": 10.834149659863945,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.10978034138679504,
+        "peakDb": -19.189508460308197,
+        "rmsDb": -44.39088847780775,
+        "activeRmsDb": -43.72956228546357,
+        "loudnessKMax": -26.491374958926002,
+        "playbackGainDb": 0,
+        "dcOffset": -7.252760479568718e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 24.540053825155375,
+        "leadingSilenceMs": 7.165532879818595,
+        "effectiveLeadingSilenceMs": 7.165532879818595,
+        "trailingSilenceMs": 1523.310657596372,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -88.44012969360352,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.165532879818595,
+        "activeEndMs": 9310.816326530612,
+        "spectral": {
+          "centroidHz": 4582.572588670247,
+          "highFrequencyRatio": 0.4431519237611162
+        },
+        "pitch": {
+          "midi": 48.109368437549406,
+          "frequencyHz": 131.6417910447761,
+          "rawCents": -89.06315624505936,
+          "foldedCents": -89.06315624505936,
+          "confidence": 0.22535782314205605
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.49069130751712453,
+          "monoLossDb": -1.3577124327750754,
+          "leftRightBalanceDb": 2.986544703071004
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl2_rr4.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl2_rr4.flac",
+        "note": 49,
+        "velocityMin": 43,
+        "velocityMax": 85,
+        "durationSec": 12.890272108843538,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.13944190740585327,
+        "peakDb": -17.11213370410998,
+        "rmsDb": -45.0884493172894,
+        "activeRmsDb": -43.44520334005214,
+        "loudnessKMax": -26.52096268758871,
+        "playbackGainDb": 0,
+        "dcOffset": -1.3561289496861452e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 26.33306963594216,
+        "leadingSilenceMs": 7.210884353741497,
+        "effectiveLeadingSilenceMs": 7.210884353741497,
+        "trailingSilenceMs": 4054.1723356009074,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -100.58231848219472,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.210884353741497,
+        "activeEndMs": 8836.07709750567,
+        "spectral": {
+          "centroidHz": 5008.494404386996,
+          "highFrequencyRatio": 0.4764191344046869
+        },
+        "pitch": {
+          "midi": 46.67204017930668,
+          "frequencyHz": 121.15384615384616,
+          "rawCents": -232.7959820693323,
+          "foldedCents": -232.7959820693323,
+          "confidence": 0.16863491321628707
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.4801964610258851,
+          "monoLossDb": -1.3897569963911005,
+          "leftRightBalanceDb": 3.035561473363775
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl3_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl3_rr1.flac",
+        "note": 49,
+        "velocityMin": 86,
+        "velocityMax": 127,
+        "durationSec": 14.107233560090704,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.23215241730213165,
+        "peakDb": -12.68453579709496,
+        "rmsDb": -39.79642539846124,
+        "activeRmsDb": -36.05373579367479,
+        "loudnessKMax": -19.335074501675024,
+        "playbackGainDb": 0,
+        "dcOffset": -5.771269222630428e-9,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 23.369199996579827,
+        "leadingSilenceMs": 7.165532879818595,
+        "effectiveLeadingSilenceMs": 7.165532879818595,
+        "trailingSilenceMs": 8141.564625850339,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -104.21307146654141,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.165532879818595,
+        "activeEndMs": 5965.646258503401,
+        "spectral": {
+          "centroidHz": 4826.288681923538,
+          "highFrequencyRatio": 0.4582719194246097
+        },
+        "pitch": {
+          "midi": 50.01975157574046,
+          "frequencyHz": 147,
+          "rawCents": 101.97515757404574,
+          "foldedCents": 101.97515757404574,
+          "confidence": 0.10724350174217007
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.4416878864006651,
+          "monoLossDb": -1.4938324022627016,
+          "leftRightBalanceDb": 2.9167293947111492
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl3_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl3_rr2.flac",
+        "note": 49,
+        "velocityMin": 86,
+        "velocityMax": 127,
+        "durationSec": 13.776349206349206,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.23271597921848297,
+        "peakDb": -12.663475905545729,
+        "rmsDb": -40.56609850569069,
+        "activeRmsDb": -36.970527306306444,
+        "loudnessKMax": -20.404454642263236,
+        "playbackGainDb": 0,
+        "dcOffset": -9.09215752838902e-8,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 24.307051400760713,
+        "leadingSilenceMs": 7.09750566893424,
+        "effectiveLeadingSilenceMs": 7.09750566893424,
+        "trailingSilenceMs": 7750.113378684807,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -101.77633027792326,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.09750566893424,
+        "activeEndMs": 6026.213151927438,
+        "spectral": {
+          "centroidHz": 4783.936453588992,
+          "highFrequencyRatio": 0.4314481116296706
+        },
+        "pitch": {
+          "midi": 52.63084879661198,
+          "frequencyHz": 170.93023255813952,
+          "rawCents": 363.0848796611979,
+          "foldedCents": 363.0848796611979,
+          "confidence": 0.13431272784129153
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.44209247584583183,
+          "monoLossDb": -1.481846748793826,
+          "leftRightBalanceDb": 2.6820650264258217
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl3_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl3_rr3.flac",
+        "note": 49,
+        "velocityMin": 86,
+        "velocityMax": 127,
+        "durationSec": 13.057097505668935,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.22168493270874023,
+        "peakDb": -13.085276472741596,
+        "rmsDb": -40.66790416574105,
+        "activeRmsDb": -37.59090870247674,
+        "loudnessKMax": -20.781483835424744,
+        "playbackGainDb": 0,
+        "dcOffset": 5.856593067478719e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 24.50563222973514,
+        "leadingSilenceMs": 7.188208616780045,
+        "effectiveLeadingSilenceMs": 7.188208616780045,
+        "trailingSilenceMs": 6621.383219954649,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -99.64539762146968,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.188208616780045,
+        "activeEndMs": 6435.691609977324,
+        "spectral": {
+          "centroidHz": 4626.141693423153,
+          "highFrequencyRatio": 0.4113563701650396
+        },
+        "pitch": {
+          "midi": 45.83642992526204,
+          "frequencyHz": 115.44502617801047,
+          "rawCents": -316.35700747379616,
+          "foldedCents": -316.35700747379616,
+          "confidence": 0.14945107376685973
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.4361100658788605,
+          "monoLossDb": -1.5123201864745468,
+          "leftRightBalanceDb": 2.9648925842352662
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/mid/crash/mid_crash_crash_vl3_rr4.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "Samples/mid/crash/mid_crash_crash_vl3_rr4.flac",
+        "note": 49,
+        "velocityMin": 86,
+        "velocityMax": 127,
+        "durationSec": 13.502063492063492,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.18510228395462036,
+        "peakDb": -14.651764450142458,
+        "rmsDb": -41.87038419331708,
+        "activeRmsDb": -38.9884280409958,
+        "loudnessKMax": -22.291778030683634,
+        "playbackGainDb": 0,
+        "dcOffset": 5.478283872917188e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 24.33666359085334,
+        "leadingSilenceMs": 7.324263038548753,
+        "effectiveLeadingSilenceMs": 7.324263038548753,
+        "trailingSilenceMs": 6541.814058956917,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -102.04841481578391,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.324263038548753,
+        "activeEndMs": 6960.2267573696145,
+        "spectral": {
+          "centroidHz": 4886.2006007384025,
+          "highFrequencyRatio": 0.454293170466678
+        },
+        "pitch": {
+          "midi": 52.430703902852414,
+          "frequencyHz": 168.9655172413793,
+          "rawCents": 343.07039028524144,
+          "foldedCents": 343.0703902852415,
+          "confidence": 0.1837181879041048
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.4692661807182,
+          "monoLossDb": -1.4096431313758053,
+          "leftRightBalanceDb": 2.814861906149578
+        }
+      },
+      "issues": []
+    }
+  ]
+}

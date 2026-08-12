@@ -16,7 +16,7 @@ import { loadWorkletModule } from './worklet-support';
 import { audioMetrics } from './metrics/audio-metrics';
 import { measureAndReportLateness } from './scheduler-worklet-lateness';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
-import { velocityFromMultiplier } from './velocity';
+import { resolveNoteDynamics } from './note-dynamics';
 import { logger } from '../utils/logger';
 import schedulerWorkletUrl from './worklets/scheduler.worklet.ts?worker&url';
 
@@ -30,7 +30,12 @@ interface NoteEvent {
   pitchSemitones: number;
   time: number;
   duration: number;
-  volumeMultiplier: number;
+  midiVelocity?: number;
+  noteGain?: number;
+  hasExplicitLock?: boolean;
+  loopIteration?: number;
+  /** Legacy event compatibility for a host/worklet rolling update. */
+  volumeMultiplier?: number;
 }
 
 interface StepEvent {
@@ -254,23 +259,23 @@ export class SchedulerWorkletHost implements IScheduler {
     presetId: string,
     event: NoteEvent
   ): void {
+    const fallback = resolveNoteDynamics(event.volumeMultiplier);
+    const midiVelocity = event.midiVelocity ?? fallback.midiVelocity;
+    const noteGain = event.noteGain ?? fallback.noteGain;
     switch (instrumentType) {
       case 'synth':
         audioEngine.playSynthNote(
           event.noteId, presetId, event.pitchSemitones,
-          event.time, event.duration, event.volumeMultiplier, event.trackId
+          event.time, event.duration, noteGain, event.trackId, midiVelocity
         );
         break;
 
-      // All bus-routed branches pass volumeMultiplier (p-lock only); the
-      // bus's volumeGain handles per-track volume. See bug_010.
+      // All bus-routed branches pass canonical noteGain only; the bus's
+      // volumeGain handles per-track volume. See bug_010.
       case 'sampled': {
         if (!audioEngine.isSampledInstrumentReady(presetId)) return;
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + event.pitchSemitones;
-        // Same dynamics derivation as the main-thread scheduler (parity):
-        // the volume p-lock scales gain AND selects the velocity layer.
-        const velocity = velocityFromMultiplier(event.volumeMultiplier);
-        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, event.volumeMultiplier, event.trackId, velocity);
+        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, noteGain, event.trackId, midiVelocity);
         break;
       }
 
@@ -278,18 +283,39 @@ export class SchedulerWorkletHost implements IScheduler {
         if (!audioEngine.isToneSynthReady('tone')) return;
         audioEngine.playToneSynth(
           presetId as Parameters<typeof audioEngine.playToneSynth>[0],
-          event.pitchSemitones, event.time, event.duration, event.volumeMultiplier, event.trackId
+          event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity
         );
         break;
 
       case 'advanced':
         if (!audioEngine.isToneSynthReady('advanced')) return;
-        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, event.volumeMultiplier, event.trackId);
+        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity);
         break;
 
       case 'sample':
       default:
-        audioEngine.playSample(event.sampleId, event.trackId, event.time, event.duration, event.pitchSemitones, event.volumeMultiplier);
+        if (event.hasExplicitLock) {
+          audioEngine.playSample(
+            event.sampleId,
+            event.trackId,
+            event.time,
+            event.duration,
+            event.pitchSemitones,
+            noteGain,
+            midiVelocity,
+          );
+        } else {
+          audioEngine.playSample(
+            event.sampleId,
+            event.trackId,
+            event.time,
+            event.duration,
+            event.pitchSemitones,
+            noteGain,
+            midiVelocity,
+            `${event.noteId}-loop-${event.loopIteration ?? 0}`,
+          );
+        }
         break;
     }
   }

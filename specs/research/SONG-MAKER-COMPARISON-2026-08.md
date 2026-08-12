@@ -1,13 +1,24 @@
 # Song Maker vs Keyboardia: Measured Sound Comparison
 
-**Research Date**: 2026-08-04
+**Research Date**: 2026-08-04; live product revalidated 2026-08-11
 **Method**: Direct inspection of Song Maker's production bundle plus
 download and analysis of representative sample assets; Keyboardia facts
 verified against the repository pinned in the accompanying
 `SONG-MAKER-COMPARISON-2026-08-RECEIPT.md`. The receipt records URLs,
 hashes, commands, tool versions, and limitations so later readers can tell
 whether the live external assets have changed.
-**Status**: Complete. Action items live in `specs/SOUND-QUALITY-PARITY-PLAN.md`.
+**Status**: Baseline and candidate re-analysis complete. Comparative listening
+and first-contact studies remain open; action items live in
+`specs/SOUND-QUALITY-PARITY-PLAN.md`.
+
+On 2026-08-11 the live Song Maker settings were re-read in the browser:
+4 bars, 4 beats/bar, split 2, Major, C, Middle register, 2 octaves, 120 BPM,
+Marimba, and Electronic. It still opens directly on the playable Song Area—no
+landing-page choice is required. The decoded live bundle remained 1,021,930
+bytes with SHA-256
+`d855d8e785f2e478fc3e4fb7956b4f6b716670dbdf3adc72a1a1bc5ad287ef1e`,
+identical to the 2026-08-04 receipt. The source-inspection findings below
+therefore remain applicable to that exact live build.
 
 > Prior art gap: before this document, "Song Maker" appeared nowhere in this
 > repo, and the two Chrome Music Lab mentions
@@ -106,7 +117,12 @@ instrument="marimba", percussion="electronic", percussionNotes=2
 
 ---
 
-## 2. Keyboardia, same categories (verified file:line)
+## 2. Keyboardia baseline before Phase 43 (verified file:line)
+
+This section is the historical baseline, not "Keyboardia today." The current
+candidate is compared in §3. It is an uncommitted local worktree based on
+`4b7ffc266c1351bddd26ec8a1ebda027491fde2b`; it is not evidence about the
+deployed product or the docs-only state of PR 88.
 
 ### 2.1 Sound sources
 
@@ -202,26 +218,96 @@ ARCHITECTURE.md:46`, `UNIFIED-AUDIO-BUS.md:29` and `:620-622`,
 
 ---
 
-## 3. Attribute scorecard
+## 3. Re-analysis against the Phase 43 candidate (2026-08-11)
 
-| Attribute | Song Maker | Keyboardia today | Verdict |
+### 3.1 What genuinely improved
+
+- The disconnected Keyboardia compressor is now in the measured path with
+  conservative input trim, makeup, and a limiter. Browser capture shows stable
+  through-gain and recovery. This is a real correctness improvement, not proof
+  that mastering beats Song Maker's much simpler −6 dB sampler path.
+- New Keyboardia sessions persist a locked pitch set and MIDI-90 default
+  timbre; explicit velocity locks remain exact. Deterministic gain variation
+  removes bit-identical repeated levels.
+- Sample loudness and piano layer transitions have executable gates. Decoder
+  onset compensation is bounded and the browser test now covers every sampled
+  percussion file affected by the runtime policy.
+- Per-track pan is end-to-end controllable. Re-testing shipped stereo assets
+  disproved the blanket auto-spread premise: the real acoustic fixture already
+  measured −0.526 dB S/M, and the earlier pan preset narrowed it to −2.951 dB
+  with a +1.055 dB mono-fold change. The corrected policy centers sampled and
+  user audio, auto-spreads only known mono sources, and keeps manual placement.
+- A real 16-track, mixed-engine browser session now complements the synthetic
+  16-source compressor canary. The latter is retained as a controlled DSP test,
+  not mislabeled as product-capacity evidence.
+- Legacy sessions with no effects field now migrate to explicit dry effects;
+  they no longer inherit the new-session 15% room.
+
+### 3.2 What did not close
+
+- Keyboardia still has the same heterogeneous source-content problem: broad
+  library, sparse maps on several instruments, no shipped round-robin content,
+  and 81 unwaived sample-review flags. Gain variation is not timbral variation.
+- Song Maker's 20-root tonal maps retain the ≤1.5-semitone repitch advantage;
+  Keyboardia's candidate did not replace the mappings rejected in July's blind
+  review. That restraint was correct, but the audible content question remains.
+- Long natural tails/held-note behavior remains different. Keyboardia's
+  release values can be comparable, but hard source stops can still truncate
+  recordings.
+- Song Maker presents one coherent instrument, two percussion lanes, a major
+  scale, and a playable canvas immediately. Keyboardia still presents a
+  landing page, a very broad palette, then an intentionally blank session.
+  The earlier claim that examples solve this was an assumption, not a measured
+  novice outcome.
+- No matched Song Maker loopback capture, randomized preference result,
+  novice-task result, listener-level estimate, or confidence interval exists.
+  Consequently "parity" and "preferred" remain unsupported.
+- The convolution room, compressor, humanization, and panning are Keyboardia
+  production choices. Song Maker's inspected live chain does not contain
+  matching processors, so their existence cannot be counted as reference
+  parity.
+
+### 3.3 Current scorecard
+
+| Attribute | Song Maker live | Keyboardia Phase 43 candidate | Current verdict |
 |---|---|---|---|
-| Source material | 20-root tonal sample sets; exact provenance unconfirmed | Procedural synthesis + thinner multisamples | Working hypothesis: largest gap |
-| Repitch distance | ≤ 1.5 st | up to 7 st (piano 3.5, horn 7) | Gap |
-| Per-note variation | velocity = 0.8v + 0.2·rand | bit-identical hits at vel 127 | Gap |
-| Note tails | 400 ms release, natural overlap | comparable release (0.5–0.8 s manifests) but hard stop truncates held notes/long decays | Narrow gap |
-| Wrong-note protection | scale-locked by default | chromatic by default (lock exists, off) | Gap (canonical state/migration change) |
-| Mix bus | live sampler default −6 dB; no master dynamics found | unity gains → orphaned compressor → −1 dB wall | Gap to measure; disconnected node is a bug |
-| Space | checked tonal recordings are stereo | many stereo sources, but no per-track pan control and effects default dry | Placement-control gap |
-| Timing/scheduling | Tone.Transport | lookahead/worklet infrastructure + lateness metrics | Not comparatively measured |
-| Engine capability | Tone.Sampler | superset (velocity layers, RR, choke, loops, LRU) | **Keyboardia ahead** |
-| Palette breadth | 5 + 4 instruments | 99 catalog instruments (32 synth + 26 sampled + 22 procedural + 11 tone + 8 advanced; README's "70" is stale) | Keyboardia ahead (but uncurated) |
+| First contact | Direct constrained canvas | Landing page → blank/broad studio | **Song Maker advantage; unmeasured magnitude** |
+| Starter curation | 5 tonal voices, 4 two-sound kits; marimba/electronic default | 99 instruments; sampled 808 landing examples, no curated in-session starter mode | **Song Maker advantage for coherence; Keyboardia breadth is a Pro-mode advantage** |
+| Tonal root density | 20 roots, ≤1.5 st nearest-root distance | Several sparser maps, up to 7 st in audited range data | **Gap remains** |
+| Repeated-note behavior | Randomized tonal trigger gain | Bounded deterministic gain variation; zero shipped RR maps | **Level repetition narrowed; timbral gap remains** |
+| Note tails | 0.4 s sampler release plus recorded tails | Comparable manifest releases on some instruments; hard stops remain | **Narrow but unresolved gap** |
+| Pitch guardrail | C major locked by default | C minor pentatonic locked for new sessions; legacy stays unlocked | **Capability close; beginner outcome not compared** |
+| Headroom/mix safety | −6 dB sampler, no inspected master dynamics | Measured trim/compressor/makeup/limiter | **Keyboardia bug fixed; no comparative preference inference** |
+| Stereo/placement | Intrinsic stereo in checked tonal assets, no track-pan UI found | Intrinsic stereo plus manual pan; safe default centers unanalysed stereo | **Keyboardia control advantage; no sound-preference result** |
+| Engine capability | Tone.Sampler-centered | Velocity layers, crossfade, RR engine, choke, loops, LRU, multiple synth engines | **Keyboardia ahead technically** |
+| Evidence of preference | None supplied by bundle inspection | Internal gates only | **No winner established** |
 
-**Conclusion**: source inspection points to content, calibration, defaults,
-and placement as the highest-value hypotheses. Engine capability is not an
-obvious blocker; timing parity remains unproven. Phase 43.0 measures the
-baselines before implementation choices; see
-`specs/SOUND-QUALITY-PARITY-PLAN.md`.
+### 3.4 How to close the gap rather than add more machinery
+
+1. Build a flagged **Guided** entry path: direct canvas; one blind-reviewed
+   pitched voice; two percussion lanes; C major; 120 BPM; small range; advanced
+   controls collapsed. Preserve **Studio** mode with the full Keyboardia
+   palette and collaboration features.
+2. Treat the starter set as a product: commission, calibrate, or select a small
+   coherent group by hash-bound blind review. Prioritize attack character,
+   natural tail, cross-note consistency, and low repitch distance. Promote only
+   what listeners prefer; do not equate more roots with better sound.
+3. Measure first contact with novices and no coaching: time to first sound,
+   time to a replayable coherent loop, completion, restarts, and desire to
+   continue. Compare current Keyboardia, Guided Keyboardia, and Song Maker.
+4. Capture the same musical cells from both products, level-match them, and run
+   randomized preference trials by attribute. Report listener-level rates and
+   confidence intervals. This tells the team whether the next dollar belongs
+   in content, tails, mix defaults, or interaction.
+5. Keep Phase 43's audio work as regression infrastructure. Graduate the 15%
+   room, humanization amount, and any automatic placement only when each wins
+   its isolated trial; otherwise keep it optional or roll it back.
+
+**Bottom line:** the candidate is safer, more expressive, and better measured.
+It is not yet demonstrated to be closer to Song Maker in the two outcomes that
+matter most: what a novice produces quickly and which matched result listeners
+prefer. The shortest path to closing the gap is curation plus comparative
+evidence, not another synthesis engine or a more elaborate master chain.
 
 ---
 

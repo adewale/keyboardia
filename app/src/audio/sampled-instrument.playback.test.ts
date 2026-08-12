@@ -7,7 +7,11 @@ import {
   FakeGainNode,
   makeSampleFetchStub,
 } from './__fakes__/FakeWebAudio';
-import { ATTACK_FADE_SEC, RELEASE_TAIL_GUARD_SEC } from './note-schedule';
+import {
+  ATTACK_FADE_SEC,
+  RELEASE_FLOOR_GAIN,
+  RELEASE_TAIL_GUARD_SEC,
+} from './note-schedule';
 
 /**
  * Behavioural tests for SampledInstrument.playNote — the function that
@@ -72,6 +76,16 @@ afterEach(() => {
 const SINGLE_SAMPLE = { samples: [{ note: 60, file: 'C4.mp3' }] };
 
 describe('playNote scheduling (P1)', () => {
+  it('does not try to resume an OfflineAudioContext before rendering', async () => {
+    const { ctx, instrument } = await loadInstrument({ manifest: SINGLE_SAMPLE });
+    ctx.state = 'suspended';
+    Object.assign(ctx, { startRendering: vi.fn() });
+
+    instrument.playNote('offline', 60, 0, 0.25, 1);
+
+    expect(ctx.resumeCalls).toBe(0);
+  });
+
   it('starts the source at the scheduled time, not immediately', async () => {
     const { ctx, instrument } = await loadInstrument({ manifest: SINGLE_SAMPLE });
     ctx.currentTime = 1.0;
@@ -106,7 +120,11 @@ describe('playNote scheduling (P1)', () => {
     expect(hold.time).toBe(5.5);
     // ...then released over releaseTime.
     const release = gain.eventsOfType('exponentialRampToValueAtTime')[0];
+    expect(release.value).toBe(RELEASE_FLOOR_GAIN);
     expect(release.time).toBeCloseTo(6.3, 10);
+    const silence = gain.eventsOfType('linearRampToValueAtTime').at(-1)!;
+    expect(silence.value).toBe(0);
+    expect(silence.time).toBeCloseTo(6.3 + RELEASE_TAIL_GUARD_SEC, 10);
     // Source stops after the release tail.
     expect(ctx.lastSource.stopCalls[0]).toBeCloseTo(
       6.3 + RELEASE_TAIL_GUARD_SEC,
@@ -172,7 +190,7 @@ describe('velocity layers (P2)', () => {
     expect(ctx.lastSource.buffer?.label).toBe('C4-ff.mp3');
   });
 
-  it('defaults to full velocity when none is given (un-locked step = full hit)', async () => {
+  it('retains the full-velocity fallback when no layer input is given', async () => {
     const { ctx, instrument } = await loadInstrument({ manifest: THREE_LAYERS });
     instrument.playNote('n1', 60, 0, 0.25, 1);
     expect(ctx.lastSource.buffer?.label).toBe('C4-ff.mp3');
@@ -212,6 +230,45 @@ describe('sample-specific playback metadata (pipeline stages 5-6)', () => {
 
     expect(ctx.lastSource.playbackRate.value).toBeCloseTo(2 ** (-50 / 1200), 10);
     expect(ctx.lastSource.startCalls[0]).toEqual({ when: 2, offset: 0.1, duration: 0.9 });
+  });
+
+  it('uses a manifest-wide codec-delay trim unless a sample overrides it', async () => {
+    const { ctx, instrument } = await loadInstrument({
+      manifest: {
+        startOffset: 0.048,
+        samples: [{ note: 60, file: 'C4.m4a' }],
+      },
+    });
+
+    instrument.playNote('n1', 60, 2, 0.25, 1);
+
+    expect(ctx.lastSource.startCalls[0]).toEqual({ when: 2, offset: 0.048 });
+  });
+
+  it('adapts short decoder priming for percussion without clipping the attack', async () => {
+    const id = '808-kick';
+    const fullManifest: InstrumentManifest = {
+      id,
+      name: '808 Kick',
+      type: 'sampled',
+      releaseTime: 0.5,
+      playbackNote: 36,
+      samples: [{ note: 36, file: 'kick.mp3' }],
+    };
+    vi.stubGlobal('fetch', makeSampleFetchStub(fullManifest));
+    const ctx = new FakeAudioContext();
+    ctx.decodeAudioData = async () => {
+      const buffer = ctx.createBuffer(1, 48_000, 48_000);
+      buffer.getChannelData(0)[624] = 0.9; // 13 ms decoder priming
+      return buffer;
+    };
+    const instrument = new SampledInstrument(id);
+    instrument.initialize(ctx.asAudioContext(), new FakeGainNode() as unknown as AudioNode);
+    expect(await instrument.ensureLoaded()).toBe(true);
+
+    instrument.playNote('kick', 60, 2, 0.25, 1);
+
+    expect(ctx.lastSource.startCalls[0].offset).toBeCloseTo(0.008, 8);
   });
 });
 

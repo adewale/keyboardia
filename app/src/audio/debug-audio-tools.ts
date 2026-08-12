@@ -13,6 +13,9 @@
 
 import { logger } from '../utils/logger';
 import type { AudioEngine } from './engine';
+import { MasterCaptureRecorder, type MasterCapture } from './capture-recorder';
+
+const masterCaptureRecorder = new MasterCaptureRecorder();
 
 // Type declaration for window globals
 declare global {
@@ -22,6 +25,7 @@ declare global {
     __visualizeAudioRouting__: () => void;
     __monitorFMParams__: (trackId?: string) => FMMonitorResult;
     __startVolumeMetering__: (trackId?: string) => () => void;
+    __captureMaster__?: (seconds: number) => Promise<MasterCapture>;
   }
 }
 
@@ -72,13 +76,15 @@ export function inspectTrackBuses(): TrackBusInspection {
     return { busCount: 0, buses: [], masterGainValue: 0, timestamp: new Date().toISOString() };
   }
 
-  const activeTrackIds = trackBusManager.getActiveTrackIds?.() ?? [];
-  const buses: TrackBusInfo[] = activeTrackIds.map((trackId: string) => ({
+  const knownTrackIds = trackBusManager.getKnownTrackIds?.()
+    ?? trackBusManager.getActiveTrackIds?.()
+    ?? [];
+  const buses: TrackBusInfo[] = knownTrackIds.map((trackId: string) => ({
     trackId,
     volume: trackBusManager.getTrackVolume?.(trackId) ?? 1,
     muted: trackBusManager.isTrackMuted?.(trackId) ?? false,
     pan: trackBusManager.getTrackPan?.(trackId) ?? 0,
-    isDisposed: false,
+    isDisposed: !(trackBusManager.hasBus?.(trackId) ?? false),
   }));
 
   const result: TrackBusInspection = {
@@ -100,6 +106,8 @@ export function inspectTrackBuses(): TrackBusInspection {
 // Type for accessing internal trackBusManager
 interface TrackBusManagerDebug {
   getActiveTrackIds(): string[];
+  getKnownTrackIds(): string[];
+  hasBus(trackId: string): boolean;
   getTrackVolume(trackId: string): number;
   isTrackMuted(trackId: string): boolean;
   getTrackPan(trackId: string): number;
@@ -310,6 +318,18 @@ export function initAudioDebugTools(): void {
   window.__visualizeAudioRouting__ = visualizeAudioRouting;
   window.__monitorFMParams__ = monitorFMParams;
   window.__startVolumeMetering__ = startVolumeMetering;
+  if (import.meta.env.DEV) {
+    window.__captureMaster__ = async (seconds: number) => {
+      const engine = getEngine();
+      const context = engine?.getAudioContext();
+      const taps = engine?.getMasterCaptureTaps();
+      if (!context || !taps) {
+        throw new Error('Initialize audio and Tone effects with a real play click before capture');
+      }
+      await masterCaptureRecorder.initialize(context);
+      return masterCaptureRecorder.capture(taps, seconds);
+    };
+  }
 
   logger.audio.log(`
 [Audio Debug Tools] Initialized
@@ -318,5 +338,6 @@ export function initAudioDebugTools(): void {
      __visualizeAudioRouting__()    - Show audio routing diagram
      __monitorFMParams__()          - Monitor FM synth parameters
      __startVolumeMetering__()      - Start real-time volume metering (returns stop function)
+     __captureMaster__(seconds)     - Capture synchronized master-bus PCM taps (dev only)
   `);
 }

@@ -7,37 +7,124 @@
     "min": 34,
     "max": 73
   },
+  "playbackNote": 46,
+  "chokeGroup": "acoustic-hihat",
+  "gainDb": 10.891419141523805,
   "credits": {
     "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",
-    "license": "CC0 1.0 Universal (Public Domain)"
+    "license": "CC0 1.0 Universal (Public Domain)",
+    "licenseUrl": "https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE",
+    "changes": "Complete same-mic velocity/variation mapping; deterministic round-robin selection; AAC-LC delivery and uniform group leveling. Delivery curated by objective defect, onset, headroom, DC, and within-layer level consistency metrics; at most two variants per tonal layer, four per snare velocity zone."
   },
   "samples": [
     {
       "note": 46,
-      "file": "hihat-open-vl1.mp3",
+      "file": "source-0001.m4a",
       "velocityMin": 0,
-      "velocityMax": 31
+      "velocityMax": 31,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-0-31",
+      "roundRobinIndex": 0
     },
     {
       "note": 46,
-      "file": "hihat-open-vl2.mp3",
+      "file": "source-0002.m4a",
+      "velocityMin": 0,
+      "velocityMax": 31,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-0-31",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 46,
+      "file": "source-0003.m4a",
+      "velocityMin": 0,
+      "velocityMax": 31,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-0-31",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 46,
+      "file": "source-0004.m4a",
       "velocityMin": 32,
-      "velocityMax": 63
+      "velocityMax": 63,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-32-63",
+      "roundRobinIndex": 0
     },
     {
       "note": 46,
-      "file": "hihat-open-vl3.mp3",
+      "file": "source-0005.m4a",
+      "velocityMin": 32,
+      "velocityMax": 63,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-32-63",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 46,
+      "file": "source-0006.m4a",
+      "velocityMin": 32,
+      "velocityMax": 63,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-32-63",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 46,
+      "file": "source-0007.m4a",
       "velocityMin": 64,
-      "velocityMax": 95
+      "velocityMax": 95,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-64-95",
+      "roundRobinIndex": 0
     },
     {
       "note": 46,
-      "file": "hihat-open-vl4.mp3",
+      "file": "source-0008.m4a",
+      "velocityMin": 64,
+      "velocityMax": 95,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-64-95",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 46,
+      "file": "source-0009.m4a",
+      "velocityMin": 64,
+      "velocityMax": 95,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-64-95",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 46,
+      "file": "source-0010.m4a",
       "velocityMin": 96,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-96-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 46,
+      "file": "source-0011.m4a",
+      "velocityMin": 96,
+      "velocityMax": 127,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-96-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 46,
+      "file": "source-0012.m4a",
+      "velocityMin": 96,
+      "velocityMax": 127,
+      "articulation": "hihat-open",
+      "roundRobinGroup": "hihat-open-46-96-127",
+      "roundRobinIndex": 2
     }
-  ],
-  "playbackNote": 46,
-  "chokeGroup": "acoustic-hihat"
+  ]
 }

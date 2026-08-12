@@ -157,11 +157,18 @@ describe('describeUnsupportedMidiFeatures', () => {
     );
   }
 
-  it('finds nothing to report for music a MIDI file can carry', () => {
+  it('reports the persisted new-session room that MIDI cannot carry', () => {
     expect(describeUnsupportedMidiFeatures(
       session([track('kick', 'kick', [0])]),
       [track('kick', 'kick', [0])]
-    )).toEqual([]);
+    )).toContainEqual(expect.objectContaining({ feature: 'effects' }));
+  });
+
+  it('finds nothing to report for a legacy effects-absent compatible session', () => {
+    const source = session([track('kick', 'kick', [0])]);
+    delete source.state.effects;
+
+    expect(describeUnsupportedMidiFeatures(source, source.state.tracks)).toEqual([]);
   });
 
   it('reports per-track swing, which the exporter cannot represent', () => {

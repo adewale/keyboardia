@@ -49,6 +49,26 @@ export const DEFAULT_SWING = 0;
 export const MIN_VOLUME = 0;
 export const MAX_VOLUME = 1;
 
+/** Highest value in the MIDI velocity domain. */
+export const MIDI_VELOCITY_MAX = 127;
+
+/**
+ * Compatibility fallback when no dynamics information exists at all.
+ * Sequenced unlocked steps use DEFAULT_STEP_MIDI_VELOCITY instead.
+ */
+export const DEFAULT_MIDI_VELOCITY = MIDI_VELOCITY_MAX;
+
+/** Canonical unlocked sequencer-step velocity for playback and MIDI export. */
+export const DEFAULT_STEP_MIDI_VELOCITY = 90;
+
+// =============================================================================
+// Pan Constraints (normalized equal-power stereo position)
+// =============================================================================
+
+export const MIN_PAN = -1;
+export const MAX_PAN = 1;
+export const DEFAULT_PAN = 0;
+
 // =============================================================================
 // Transpose Constraints (semitones)
 // =============================================================================

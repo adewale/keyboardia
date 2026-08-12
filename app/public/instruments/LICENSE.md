@@ -24,14 +24,14 @@ from Public Domain to CC0 to permissive free-use terms.
 | Alto Sax (`alto-sax`) | [Karoryfer Weresax (Alto Saxophone)](https://github.com/sfzinstruments/karoryfer.weresax) | CC0 1.0 Universal (Public Domain) |
 | Brush Snare (`brushes-snare`) | [Swirly Drums by Karoryfer Samples](https://github.com/sfzinstruments/karoryfer.swirly-drums) | CC0 1.0 |
 | Clean Electric Guitar (`clean-guitar`) | [Karoryfer - Black and Green Guitars (Green Gretsch Anniversary)](https://github.com/sfzinstruments/karoryfer.black-and-green-guitars) | CC0 1.0 Universal (Public Domain) |
-| Finger Bass (`finger-bass`) | [Karoryfer Meatbass](https://github.com/sfzinstruments/karoryfer.meatbass) | CC0 |
+| Finger Bass (`finger-bass`) | [Karoryfer Meatbass](https://github.com/sfzinstruments/karoryfer.meatbass) | CC0 1.0 Universal (Public Domain) |
 | French Horn (`french-horn`) | [VSCO 2 Community Edition (F Horn Sustain)](https://github.com/sgossner/VSCO-2-CE) | CC0 1.0 Universal (Public Domain) |
 | Hammond Organ (`hammond-organ`) | [FreePats Project - Drawbar Organ Emulation (setBfree)](https://freepats.zenvoid.org/Organ/electric-organ.html) | CC0 1.0 Universal (Public Domain) |
 | Kalimba (`kalimba`) | [VCSL (Kalimba, Kenya) — keys retuned to equal temperament (<=45 cents)](https://github.com/sgossner/VCSL) | CC0 1.0 Universal (Public Domain) |
 | Marimba (`marimba`) | [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | CC0 1.0 Universal (Public Domain) |
 | Grand Piano (`piano`) | [University of Iowa Electronic Music Studios (Steinway grand, MIS)](https://theremin.music.uiowa.edu/MISpiano.html) | Free for any projects, without restrictions |
 | Slap Bass (`slap-bass`) | [Karoryfer Growlybass](https://github.com/sfzinstruments/karoryfer.growlybass) | CC0 1.0 |
-| Steel Drums (`steel-drums`) | [jSteelDrum2 by Jack Learman (hand-made Trinidad steel pan)](https://github.com/jlearman/jSteelDrum2) | The Unlicense (Public Domain) |
+| Steel Drums (`steel-drums`) | [jSteelDrum v2 by Jack Learman (hand-made Trinidad steel pan)](https://github.com/sfzinstruments/jlearman.SteelDrum) | The Unlicense (Public Domain) |
 | String Section (`string-section`) | [VSCO 2 Community Edition (Cello & Viola Sections)](https://github.com/sgossner/VSCO-2-CE) | CC0 1.0 Universal (Public Domain) |
 | Vibraphone (`vibraphone`) | [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | CC0 1.0 Universal (Public Domain) |
 | Vinyl Crackle (`vinyl-crackle`) | [Procedurally Generated](https://keyboardia.com) | CC0 Public Domain |
@@ -44,17 +44,18 @@ from Public Domain to CC0 to permissive free-use terms.
 - **License:** CC0 1.0 Universal (Public Domain)
 - **Used by:** `hammond-organ`
 
-### jSteelDrum2 by Jack Learman (hand-made Trinidad steel pan)
-
-- **URL:** https://github.com/jlearman/jSteelDrum2
-- **License:** The Unlicense (Public Domain)
-- **Used by:** `steel-drums`
-
 ### Discord GM Bank - Martin HD28 Steel String (Jeff Learman)
 
 - **URL:** https://github.com/sfzinstruments/Discord-SFZ-GM-Bank
 - **License:** CC0 1.0 Universal (Public Domain)
 - **Used by:** `acoustic-guitar`
+
+### jSteelDrum v2 by Jack Learman (hand-made Trinidad steel pan)
+
+- **URL:** https://github.com/sfzinstruments/jlearman.SteelDrum
+- **License:** The Unlicense (Public Domain) — https://github.com/sfzinstruments/jlearman.SteelDrum/blob/e429428dd65dc645e4c9b1f134da4d2e40c400c6/LICENSE
+- **Keyboardia adaptation:** All usable SFZ mappings retained across 24 chromatic roots and five velocity zones; deterministic round-robin conversion; AAC-LC delivery and uniform group leveling. Delivery curated by objective defect, onset, headroom, DC, and within-layer level consistency metrics; at most two variants per tonal layer, four per snare velocity zone.
+- **Used by:** `steel-drums`
 
 ### Karoryfer - Black and Green Guitars (Green Gretsch Anniversary)
 
@@ -71,7 +72,8 @@ from Public Domain to CC0 to permissive free-use terms.
 ### Karoryfer Meatbass
 
 - **URL:** https://github.com/sfzinstruments/karoryfer.meatbass
-- **License:** CC0
+- **License:** CC0 1.0 Universal (Public Domain) — https://github.com/sfzinstruments/karoryfer.meatbass/blob/ac9e859564bda286ab5ec672d00ff1aa2fef2895/LICENSE
+- **Keyboardia adaptation:** Complete tonal pizzicato map: fourteen roots, four velocity layers, four deterministic round robins; AAC-LC delivery, uniform group leveling, and manifest trim calibrated to the canonical C4/MIDI-90 loudness contract. Delivery curated by objective defect, onset, headroom, DC, and within-layer level consistency metrics; at most two variants per tonal layer, four per snare velocity zone.
 - **Used by:** `finger-bass`
 
 ### Swirly Drums by Karoryfer Samples
@@ -89,7 +91,8 @@ from Public Domain to CC0 to permissive free-use terms.
 ### Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)
 
 - **URL:** https://github.com/sfzinstruments/virtuosity_drums
-- **License:** CC0 1.0 Universal (Public Domain)
+- **License:** CC0 1.0 Universal (Public Domain) — https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE
+- **Keyboardia adaptation:** Complete same-mic velocity/variation mapping; deterministic round-robin selection; AAC-LC delivery and uniform group leveling. Delivery curated by objective defect, onset, headroom, DC, and within-layer level consistency metrics; at most two variants per tonal layer, four per snare velocity zone.
 - **Used by:** `acoustic-crash`, `acoustic-hihat-closed`, `acoustic-hihat-open`, `acoustic-kick`, `acoustic-ride`, `acoustic-snare`
 
 ### VCSL (Kalimba, Kenya) — keys retuned to equal temperament (<=45 cents)

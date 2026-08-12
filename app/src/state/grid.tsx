@@ -10,12 +10,15 @@ import { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
 // Phase 3 refactoring: Delegate SYNCED actions to applyMutation
 import { delegateToApplyMutation, maybeInvalidateSelection } from './state-adapters';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
+import {
+  DEFAULT_NEW_SESSION_SCALE_STATE,
+  normalizeSessionScale,
+} from '../shared/scale-defaults';
+import { recommendedTrackPan } from '../shared/track-pan';
 
-// Default scale state - C minor pentatonic, unlocked (Phase 29E)
+// Backwards-compatible export for UI consumers. New sessions are scale-locked.
 export const DEFAULT_SCALE_STATE: ScaleState = {
-  root: 'C',
-  scaleId: 'minor-pentatonic',
-  locked: false,
+  ...DEFAULT_NEW_SESSION_SCALE_STATE,
 };
 
 // Initial state factory - starts empty, session will load or reset
@@ -80,6 +83,13 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         type: 'set_track_volume',
         trackId: action.trackId,
         volume: action.volume,
+      });
+
+    case 'SET_TRACK_PAN':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_pan',
+        trackId: action.trackId,
+        pan: action.pan,
       });
 
     case 'SET_TRACK_TRANSPOSE':
@@ -184,6 +194,7 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         steps: Array(MAX_STEPS).fill(false),
         parameterLocks: Array(MAX_STEPS).fill(null),
         volume: 1,
+        pan: recommendedTrackPan(action.sampleId, state.tracks.length),
         muted: false,
         soloed: false,
         transpose: 0,
@@ -248,6 +259,7 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
           steps,
           parameterLocks,
           stepCount: serverTrack.stepCount ?? STEPS_PER_PAGE,
+          pan: serverTrack.pan ?? 0,
           // BUG-10 FIX: Preserve local muted/soloed for existing tracks
           // For new tracks, use server value (or default to false)
           muted: localTrack ? localTrack.muted : (serverTrack.muted ?? false),
@@ -256,8 +268,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       });
       // Load effects if provided, otherwise keep current or use default
       const effects = action.effects ?? state.effects ?? DEFAULT_EFFECTS_STATE;
-      // Load scale if provided, otherwise keep current or use default
-      const scale = action.scale ?? state.scale ?? DEFAULT_SCALE_STATE;
+      // Missing persisted scale means a legacy unrestricted session. Never
+      // inherit the fresh-session lock while hydrating old material.
+      const scale = normalizeSessionScale(action.scale, 'legacy-session');
       return {
         ...state,
         tracks: tracksWithDefaults,

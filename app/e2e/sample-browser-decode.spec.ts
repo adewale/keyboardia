@@ -1,11 +1,17 @@
 import { expect, test } from './global-setup';
 import fs from 'fs';
 import path from 'path';
+import {
+  MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS,
+  compensatedSampleStartOffset,
+} from '../src/audio/sample-onset';
+import { isDrumInstrument } from '../src/shared/instrument-classification';
 
 interface BrowserDecodeSample {
   instrumentId: string;
   file: string;
   url: string;
+  startOffset: number;
 }
 
 interface BrowserDecodeResult extends BrowserDecodeSample {
@@ -13,6 +19,7 @@ interface BrowserDecodeResult extends BrowserDecodeSample {
   duration?: number;
   sampleRate?: number;
   channels?: number;
+  leadingSilenceMs?: number;
   error?: string;
 }
 
@@ -28,7 +35,8 @@ function loadReferencedSamples(): BrowserDecodeSample[] {
       const manifestPath = path.join(root, instrumentId, 'manifest.json');
       if (!fs.existsSync(manifestPath)) return [];
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as {
-        samples?: Array<{ file?: string }>;
+        startOffset?: number;
+        samples?: Array<{ file?: string; startOffset?: number }>;
       };
       return (manifest.samples ?? [])
         .filter((sample): sample is { file: string } => typeof sample.file === 'string' && sample.file.length > 0)
@@ -36,6 +44,7 @@ function loadReferencedSamples(): BrowserDecodeSample[] {
           instrumentId,
           file: sample.file,
           url: `/instruments/${encodeURIComponent(instrumentId)}/${encodeUrlPath(sample.file)}`,
+          startOffset: sample.startOffset ?? manifest.startOffset ?? 0,
         }));
     })
     .sort((a, b) => `${a.instrumentId}/${a.file}`.localeCompare(`${b.instrumentId}/${b.file}`));
@@ -103,12 +112,32 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
         }
         const buffer = await response.arrayBuffer();
         const decoded = await context.decodeAudioData(buffer.slice(0));
+        let peak = 0;
+        for (let channel = 0; channel < decoded.numberOfChannels; channel++) {
+          for (const value of decoded.getChannelData(channel)) peak = Math.max(peak, Math.abs(value));
+        }
+        const threshold = Math.max(10 ** (-70 / 20), peak * 10 ** (-50 / 20));
+        let onsetFrame = decoded.length;
+        for (let frame = 0; frame < decoded.length; frame++) {
+          let active = false;
+          for (let channel = 0; channel < decoded.numberOfChannels; channel++) {
+            if (Math.abs(decoded.getChannelData(channel)[frame]) > threshold) {
+              active = true;
+              break;
+            }
+          }
+          if (active) {
+            onsetFrame = frame;
+            break;
+          }
+        }
         out[index] = {
           ...item,
           ok: true,
           duration: decoded.duration,
           sampleRate: decoded.sampleRate,
           channels: decoded.numberOfChannels,
+          leadingSilenceMs: onsetFrame * 1000 / decoded.sampleRate,
         };
       } catch (error) {
         out[index] = { ...item, ok: false, error: error instanceof Error ? error.message : String(error) };
@@ -136,4 +165,57 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
   const failures = results.filter(result => !result.ok);
   expect(results).toHaveLength(samples.length);
   expect(failures).toEqual([]);
+
+  const calibration = JSON.parse(
+    fs.readFileSync('scripts/sample-onset-calibration.json', 'utf-8'),
+  ) as {
+    toleranceMs: number;
+    effectiveOnsetBudgetMs: number;
+    samples: Array<{ instrumentId: string; file: string; nodeLeadingSilenceMs: number }>;
+  };
+  for (const expected of calibration.samples) {
+    const browser = results.find(result =>
+      result.instrumentId === expected.instrumentId && result.file === expected.file
+    );
+    expect(browser, `${expected.instrumentId}/${expected.file} was not decoded`).toBeDefined();
+    const adaptive = isDrumInstrument(`sampled:${expected.instrumentId}`);
+    const browserStart = compensatedSampleStartOffset(
+      browser!.startOffset,
+      browser!.leadingSilenceMs! / 1000,
+      adaptive,
+    ) ?? 0;
+    const nodeStart = compensatedSampleStartOffset(
+      browser!.startOffset,
+      expected.nodeLeadingSilenceMs / 1000,
+      adaptive,
+    ) ?? 0;
+    const browserEffectiveOnset = Math.max(0, browser!.leadingSilenceMs! - browserStart * 1000);
+    const nodeEffectiveOnset = Math.max(0, expected.nodeLeadingSilenceMs - nodeStart * 1000);
+    expect(
+      Math.abs(browserEffectiveOnset - nodeEffectiveOnset),
+      `${expected.instrumentId}/${expected.file} effective browser and Node onset disagree`,
+    ).toBeLessThanOrEqual(calibration.toleranceMs);
+    expect(browserEffectiveOnset)
+      .toBeLessThanOrEqual(calibration.effectiveOnsetBudgetMs);
+  }
+
+  // Playback adapts every sampled percussion instrument, not just the small
+  // cross-decoder calibration subset above. Exercise that complete runtime
+  // scope so adding a new drum file cannot silently widen the untested set.
+  const sampledPercussion = results.filter(result =>
+    result.ok && isDrumInstrument(`sampled:${result.instrumentId}`)
+  );
+  expect(sampledPercussion.length).toBeGreaterThan(0);
+  for (const browser of sampledPercussion) {
+    const start = compensatedSampleStartOffset(
+      browser.startOffset,
+      browser.leadingSilenceMs! / 1000,
+      true,
+    ) ?? 0;
+    const effectiveOnsetMs = Math.max(0, browser.leadingSilenceMs! - start * 1000);
+    expect(
+      effectiveOnsetMs,
+      `${browser.instrumentId}/${browser.file} exceeds the runtime percussion-onset budget`,
+    ).toBeLessThanOrEqual(MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS * 1000 + 1e-6);
+  }
 });

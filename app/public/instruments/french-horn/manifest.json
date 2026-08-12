@@ -3,6 +3,8 @@
   "name": "French Horn",
   "type": "sampled",
   "releaseTime": 0.6,
+  "gainDb": 7.25,
+  "velocityCrossfade": 8,
   "credits": {
     "source": "VSCO 2 Community Edition (F Horn Sustain)",
     "url": "https://github.com/sgossner/VSCO-2-CE",
@@ -29,13 +31,15 @@
       "note": 39,
       "file": "Eb2-soft.m4a",
       "velocityMin": 0,
-      "velocityMax": 80
+      "velocityMax": 80,
+      "gainDb": -1.769
     },
     {
       "note": 39,
       "file": "Eb2-loud.m4a",
       "velocityMin": 81,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": -1.769
     },
     {
       "note": 43,
@@ -53,37 +57,43 @@
       "note": 46,
       "file": "Bb2-soft.m4a",
       "velocityMin": 0,
-      "velocityMax": 80
+      "velocityMax": 80,
+      "gainDb": 2.99
     },
     {
       "note": 46,
       "file": "Bb2-loud.m4a",
       "velocityMin": 81,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": 2.99
     },
     {
       "note": 50,
       "file": "D3-soft.m4a",
       "velocityMin": 0,
-      "velocityMax": 80
+      "velocityMax": 80,
+      "gainDb": -1.576
     },
     {
       "note": 50,
       "file": "D3-loud.m4a",
       "velocityMin": 81,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": -1.576
     },
     {
       "note": 53,
       "file": "F3-soft.m4a",
       "velocityMin": 0,
-      "velocityMax": 80
+      "velocityMax": 80,
+      "gainDb": -0.161
     },
     {
       "note": 53,
       "file": "F3-loud.m4a",
       "velocityMin": 81,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": -0.161
     },
     {
       "note": 60,
@@ -99,11 +109,13 @@
     },
     {
       "note": 74,
-      "file": "D5-soft.m4a"
+      "file": "D5-soft.m4a",
+      "gainDb": -3.307
     },
     {
       "note": 77,
-      "file": "F5-soft.m4a"
+      "file": "F5-soft.m4a",
+      "gainDb": -0.988
     }
   ]
 }

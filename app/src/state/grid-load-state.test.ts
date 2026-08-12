@@ -218,6 +218,39 @@ describe('LOAD_STATE: Local-Only State Preservation (BUG-10)', () => {
   });
 
   describe('other state should still update from server', () => {
+    it('treats a missing persisted scale as an unlocked legacy session', () => {
+      const localState = createTestState({
+        scale: { root: 'C', scaleId: 'minor-pentatonic', locked: true },
+      });
+
+      const newState = gridReducer(localState, {
+        type: 'LOAD_STATE',
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+      });
+
+      expect(newState.scale).toEqual({
+        root: 'C',
+        scaleId: 'minor-pentatonic',
+        locked: false,
+      });
+    });
+
+    it('preserves an explicitly persisted scale lock', () => {
+      const localState = createTestState();
+
+      const newState = gridReducer(localState, {
+        type: 'LOAD_STATE',
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        scale: { root: 'D', scaleId: 'major', locked: true },
+      });
+
+      expect(newState.scale).toEqual({ root: 'D', scaleId: 'major', locked: true });
+    });
+
     it('should update tempo from server', () => {
       const localState = createTestState({ tempo: 100 });
 

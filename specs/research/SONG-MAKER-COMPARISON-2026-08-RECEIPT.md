@@ -2,6 +2,12 @@
 
 **Captured:** 2026-08-04
 
+**Live revalidation:** 2026-08-11. The decoded bundle was again 1,021,930
+bytes with the same SHA-256 listed below. Browser inspection again showed the
+direct Song Area and defaults of 4 bars, 4 beats/bar, split 2, Major, C,
+Middle register, 2 octaves, 120 BPM, Marimba, and Electronic. No new source
+version was introduced between the two comparison passes.
+
 **Keyboardia comparison base:** `049e97c54fdf7053ebb2382f86053f6e2432fe58`
 
 **Pre-audit, pre-rebase PR head inspected:**

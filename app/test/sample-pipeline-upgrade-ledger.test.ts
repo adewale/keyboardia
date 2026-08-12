@@ -11,7 +11,7 @@ import { parseSampleRecipe } from '../scripts/sample-pipeline-core';
 
 interface LedgerEntry {
   id: string;
-  status: 'retained-audited' | 'candidate-rejected-current-retained' | 'candidate-blocked-current-retained' | 'promoted-legacy-reviewed' | 'quarantined';
+  status: 'retained-audited' | 'candidate-rejected-current-retained' | 'candidate-blocked-current-retained' | 'promoted-legacy-reviewed' | 'promoted-owner-directed-automatic-enrichment' | 'quarantined';
   evidence?: string[];
   candidate?: { recipe: string; baseline: string; decision?: string };
   rationale: string;
@@ -26,6 +26,12 @@ interface UpgradeLedger {
     result: string;
     statement: string;
     candidatePromotions: number;
+  };
+  automaticEnrichment: {
+    authority: string;
+    promotedInstruments: number;
+    perceptualPreferenceClaimed: boolean;
+    evidenceRoot: string;
   };
   instruments: LedgerEntry[];
 }
@@ -48,17 +54,23 @@ describe('existing-instrument upgrade disposition ledger', () => {
     expect(actual).toHaveLength(27);
   });
 
-  it('records the completed human evaluation and validates every retain/reject/block disposition', () => {
+  it('preserves the historical human evaluation and validates every current disposition', () => {
     const rejected = ledger.instruments.filter(entry => entry.status === 'candidate-rejected-current-retained');
     const blocked = ledger.instruments.filter(entry => entry.status === 'candidate-blocked-current-retained');
-    expect(rejected).toHaveLength(10);
-    expect(blocked.map(entry => entry.id)).toEqual(['finger-bass']);
-    expect(ledger.programStatus).toBe('evaluation-complete-current-retained');
+    const enriched = ledger.instruments.filter(entry => entry.status === 'promoted-owner-directed-automatic-enrichment');
+    expect(rejected).toHaveLength(3);
+    expect(blocked).toHaveLength(0);
+    expect(enriched).toHaveLength(8);
+    expect(ledger.programStatus).toBe('complete-owner-directed-automatic-enrichment-promoted');
     expect(Date.parse(ledger.completedAt)).not.toBeNaN();
     expect(ledger.humanReview).toEqual(expect.objectContaining({
       stage: 'blinded-low-mid-high-anchors',
       result: 'current-preferred-for-all-decision-ready-candidates',
       candidatePromotions: 0,
+    }));
+    expect(ledger.automaticEnrichment).toEqual(expect.objectContaining({
+      promotedInstruments: 8,
+      perceptualPreferenceClaimed: false,
     }));
 
     for (const entry of ledger.instruments) {
@@ -91,6 +103,12 @@ describe('existing-instrument upgrade disposition ledger', () => {
         expect(SAMPLED_INSTRUMENTS).toContain(entry.id);
         expect(fs.existsSync(path.resolve('public/instruments', entry.id, 'manifest.json')), entry.id).toBe(true);
         expect(entry.evidence?.length).toBeGreaterThan(0);
+        if (entry.status === 'promoted-owner-directed-automatic-enrichment') {
+          const receipt = JSON.parse(fs.readFileSync(resolveEvidence(entry.evidence![0]), 'utf8'));
+          expect(receipt.instrumentId).toBe(entry.id);
+          expect(receipt.acceptanceBasis).toBe('owner-directed-automatic-enrichment');
+          expect(receipt.perceptualPreferenceClaimed).toBe(false);
+        }
       }
       for (const evidence of entry.evidence ?? []) expect(fs.existsSync(resolveEvidence(evidence)), `${entry.id}: ${evidence}`).toBe(true);
     }

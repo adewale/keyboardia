@@ -52,8 +52,13 @@ const VALIDATORS = [
   },
   {
     name: 'Sample Quality Audit',
-    script: 'npx tsx scripts/validate-sample-quality.ts',
-    description: 'Decodes samples and reports pitch, onset, level, loop, phase, and clipping metrics',
+    script: 'npx tsx scripts/validate-sample-quality.ts --strict',
+    description: 'Decodes samples and blocks every unwaived pitch, onset, level, loop, phase, and clipping finding',
+  },
+  {
+    name: 'Enrichment/Curation Receipt',
+    script: 'node --import tsx scripts/promote-complete-sample-enrichment.ts --verify-only',
+    description: 'Checks shipped and archived sample hashes, curated mappings, source revisions, and license profile',
   },
   {
     name: 'Release Time Validation',

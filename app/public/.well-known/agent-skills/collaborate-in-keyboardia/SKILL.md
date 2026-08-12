@@ -149,6 +149,9 @@ replace placeholders with live values:
 - `{ "operation": "set_track_instrument", "track_id": "existing-id",
   "sample_id": "kick" }`: change only the sound source; preserve the pattern,
   mix, timing, and name.
+- `{ "operation": "set_track_pan", "track_id": "existing-id", "pan": -0.2 }`:
+  place one track in the stereo field with a normalized value from -1 (left) to
+  1 (right); 0 is centered. Preserve its instrument, pattern, volume, and name.
 - `{ "operation": "set_steps", "track_id": "existing-id", "changes": [] }`:
   assign only listed booleans. Group one track's related step assignments into
   one call; do not duplicate a step or send an empty real `changes` array.

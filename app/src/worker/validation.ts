@@ -27,6 +27,8 @@ import {
   DELAY_MAX_FEEDBACK,
   CHORUS_MIN_FREQUENCY,
   CHORUS_MAX_FREQUENCY,
+  MIN_PAN,
+  MAX_PAN,
 } from '../shared/constants';
 import { VALID_STEP_COUNTS, VALID_STEP_COUNTS_SET } from './types';
 import { MAX_SESSION_NAME_LENGTH } from '../shared/validation';
@@ -188,6 +190,15 @@ function validateTrack(track: unknown, index: number): string[] {
   // Volume
   if (t.volume !== undefined && (typeof t.volume !== 'number' || t.volume < 0 || t.volume > 1)) {
     errors.push(`${prefix}: volume must be between 0 and 1`);
+  }
+
+  if (t.pan !== undefined && (
+    typeof t.pan !== 'number'
+    || !Number.isFinite(t.pan)
+    || t.pan < MIN_PAN
+    || t.pan > MAX_PAN
+  )) {
+    errors.push(`${prefix}: pan must be a finite number between ${MIN_PAN} and ${MAX_PAN}`);
   }
 
   // Transpose (±24 semitones = 4 octaves total range)

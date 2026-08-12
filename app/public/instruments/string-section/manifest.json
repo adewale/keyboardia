@@ -3,6 +3,7 @@
   "name": "String Section",
   "type": "sampled",
   "releaseTime": 0.8,
+  "gainDb": 4.5,
   "playableRange": {
     "min": 33,
     "max": 88
@@ -19,7 +20,8 @@
     },
     {
       "note": 40,
-      "file": "E2.mp3"
+      "file": "E2.mp3",
+      "gainDb": 0.329
     },
     {
       "note": 43,
@@ -63,7 +65,8 @@
     },
     {
       "note": 79,
-      "file": "G5.mp3"
+      "file": "G5.mp3",
+      "startOffset": 0.0198
     },
     {
       "note": 83,

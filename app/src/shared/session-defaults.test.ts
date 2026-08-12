@@ -1,13 +1,22 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSessionState } from './session-defaults';
+import { DEFAULT_EFFECTS_STATE } from './effects-defaults';
+import { DEFAULT_NEW_SESSION_SCALE_STATE } from './scale-defaults';
+
+const DEFAULT_STATE = {
+  tracks: [],
+  tempo: 120,
+  swing: 0,
+  effects: DEFAULT_EFFECTS_STATE,
+  scale: DEFAULT_NEW_SESSION_SCALE_STATE,
+  version: 1,
+};
 
 describe('createInitialSessionState', () => {
   it('constructs a complete default state when no fields are supplied', () => {
-    expect(createInitialSessionState()).toEqual({ tracks: [], tempo: 120, swing: 0, version: 1 });
-    expect(createInitialSessionState({ tracks: [] })).toEqual({ tracks: [], tempo: 120, swing: 0, version: 1 });
-    expect(createInitialSessionState({ tracks: undefined, effects: undefined })).toEqual({
-      tracks: [], tempo: 120, swing: 0, version: 1,
-    });
+    expect(createInitialSessionState()).toEqual(DEFAULT_STATE);
+    expect(createInitialSessionState({ tracks: [] })).toEqual(DEFAULT_STATE);
+    expect(createInitialSessionState({ tracks: undefined, effects: undefined })).toEqual(DEFAULT_STATE);
   });
 
   it('preserves complete extended state while enforcing the current version', () => {
@@ -23,5 +32,16 @@ describe('createInitialSessionState', () => {
     expect(createInitialSessionState({ tracks: [], tempo: 123, swing: 7, effects, scale, version: 99 })).toEqual({
       tracks: [], tempo: 123, swing: 7, effects, scale, version: 1,
     });
+  });
+
+  it('returns detached new-session effects so callers cannot mutate the default', () => {
+    const first = createInitialSessionState();
+    const second = createInitialSessionState();
+
+    first.effects!.reverb.wet = 0.9;
+
+    expect(second.effects).toEqual(DEFAULT_EFFECTS_STATE);
+    expect(second.effects).not.toBe(DEFAULT_EFFECTS_STATE);
+    expect(second.effects!.reverb).not.toBe(DEFAULT_EFFECTS_STATE.reverb);
   });
 });

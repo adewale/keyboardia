@@ -63,6 +63,7 @@ function createTestGridState(): GridState {
         steps: [true, false, false, false, true, false, false, false, ...Array(120).fill(false)],
         parameterLocks: [{ volume: 0.8 }, null, null, null, { pitch: 2 }, ...Array(123).fill(null)],
         volume: 0.9,
+        pan: 0,
         muted: false,
         soloed: false,
         transpose: 0,
@@ -75,6 +76,7 @@ function createTestGridState(): GridState {
         steps: [false, false, false, false, true, false, false, false, ...Array(120).fill(false)],
         parameterLocks: Array(MAX_STEPS).fill(null),
         volume: 0.7,
+        pan: 0,
         muted: false,
         soloed: false,
         transpose: 3,
@@ -192,6 +194,20 @@ describe('Reducer-Mutation Equivalence', () => {
     it('SET_TRACK_VOLUME: gridReducer and applyMutation are equivalent', () => {
       const gridState = createTestGridState();
       const action: GridAction = { type: 'SET_TRACK_VOLUME', trackId: 'track-1', volume: 0.5 };
+
+      const reducerResult = gridReducer(gridState, action);
+      const message = actionToMessage(action);
+      expect(message).not.toBeNull();
+      const sessionState = gridStateToSessionState(gridState);
+      const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
+
+      const reducerAsSession = gridStateToSessionState(reducerResult);
+      expectEquivalentAndChanged(reducerAsSession, mutationResult, sessionState);
+    });
+
+    it('SET_TRACK_PAN: gridReducer and applyMutation are equivalent', () => {
+      const gridState = createTestGridState();
+      const action: GridAction = { type: 'SET_TRACK_PAN', trackId: 'track-1', pan: -0.35 };
 
       const reducerResult = gridReducer(gridState, action);
       const message = actionToMessage(action);
@@ -561,6 +577,7 @@ describe('Reducer-Mutation Equivalence', () => {
         'SET_TEMPO',
         'SET_SWING',
         'SET_TRACK_VOLUME',
+        'SET_TRACK_PAN',
         'SET_TRACK_TRANSPOSE',
         'SET_TRACK_SAMPLE',
         'SET_TRACK_INSTRUMENT',

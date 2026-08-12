@@ -33,6 +33,7 @@ function makeTrack(overrides: Partial<Track> = {}): Track {
     steps: Array(128).fill(false),
     parameterLocks: Array(128).fill(null),
     volume: 0.8,
+    pan: 0,
     muted: false,
     soloed: false,
     transpose: 0,

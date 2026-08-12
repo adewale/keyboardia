@@ -15,6 +15,7 @@
  */
 
 import { semitoneToFrequency } from './constants';
+import { getSourceCalibration } from './source-calibration';
 import type { WaveformType, LFODestination } from './synth-types';
 import { SYNTH_CONSTANTS } from './synth-types';
 
@@ -31,6 +32,10 @@ export interface Osc2Config {
   detune: number;   // Cents: -100 to +100 (fine tuning for beating/chorus)
   coarse: number;   // Semitones: -24 to +24 (octave/interval shifts)
   mix: number;      // 0 = osc1 only, 1 = osc2 only, 0.5 = equal mix
+  /** Shared is subtractive synthesis; bypass preserves the layer's harmonics. */
+  filterRouting?: 'shared' | 'bypass';
+  /** Optional source-level contour, still bounded by the main amp envelope. */
+  levelEnvelope?: Pick<FilterEnvConfig, 'attack' | 'decay' | 'sustain'>;
 }
 
 /**
@@ -64,11 +69,58 @@ export interface SynthParams {
   decay: number;           // 0-1 seconds
   sustain: number;         // 0-1 amplitude
   release: number;         // 0-2 seconds
+  /** Source-side loudness calibration; independent of track and note gain. */
+  outputGainDb?: number;
 
   // === ENHANCED (optional) ===
   osc2?: Osc2Config;       // Second oscillator for layering/detuning
   filterEnv?: FilterEnvConfig;  // Filter envelope modulation
   lfo?: LFOConfig;         // Low frequency oscillator
+}
+
+/**
+ * Equal-power shaped crossfade, normalized so even perfectly correlated
+ * oscillators cannot exceed the level of either endpoint.
+ */
+export function peakSafeOscillatorMix(mix: number): readonly [number, number] {
+  const position = Math.max(0, Math.min(1, mix));
+  const left = Math.cos(position * Math.PI / 2);
+  const right = Math.sin(position * Math.PI / 2);
+  const peak = left + right;
+  return [left / peak, right / peak];
+}
+
+const WAVEFORMS = new Set<WaveformType>(['sine', 'triangle', 'sawtooth', 'square']);
+
+/** JSON boundary for authored/custom synth definitions. */
+export function serializeSynthParams(params: SynthParams): string {
+  return JSON.stringify({ version: 1, params });
+}
+
+export function deserializeSynthParams(serialized: string): SynthParams {
+  const payload = JSON.parse(serialized) as { version?: unknown; params?: Partial<SynthParams> };
+  const params = payload.params;
+  if (payload.version !== 1 || !params || !params.waveform || !WAVEFORMS.has(params.waveform)) {
+    throw new Error('Unsupported or invalid synth-parameter payload');
+  }
+  const required = ['filterCutoff', 'filterResonance', 'attack', 'decay', 'sustain', 'release'] as const;
+  if (required.some(key => !Number.isFinite(params[key]))) throw new Error('Synth-parameter payload has non-finite core values');
+  if (params.osc2 && (!WAVEFORMS.has(params.osc2.waveform) || !Number.isFinite(params.osc2.mix))) {
+    throw new Error('Synth-parameter payload has an invalid oscillator layer');
+  }
+  return JSON.parse(JSON.stringify(params)) as SynthParams;
+}
+
+/**
+ * Keyboard velocity opens the native synth filter without changing the note's
+ * resolved amplitude. At the canonical velocity (90) the cutoff is 88.9% of
+ * the preset value; a soft 0.3-normalized strike is 68.3% of the full-velocity
+ * cutoff, producing a clearly darker render while retaining audibility.
+ */
+export function velocityFilterCutoff(baseCutoff: number, midiVelocity: number): number {
+  const normalized = Math.max(0, Math.min(127, midiVelocity)) / 127;
+  const multiplier = 0.3 + 0.7 * Math.sqrt(normalized);
+  return Math.max(MIN_FILTER_FREQ, Math.min(MAX_FILTER_FREQ, baseCutoff * multiplier));
 }
 
 // Audio Engineering Constants (from shared synth-types.ts)
@@ -92,6 +144,13 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     decay: 0.2,
     sustain: 0.5,
     release: 0.1,
+    outputGainDb: -3.5,
+    filterEnv: {
+      amount: 0.5,
+      attack: 0.003,
+      decay: 0.24,
+      sustain: 0.08,
+    },
   },
   lead: {
     waveform: 'square',
@@ -101,24 +160,45 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     decay: 0.1,
     sustain: 0.8,
     release: 0.3,
+    outputGainDb: -7,
+    filterEnv: {
+      amount: 0.35,
+      attack: 0.005,
+      decay: 0.28,
+      sustain: 0.2,
+    },
   },
   pad: {
-    waveform: 'sine',
-    filterCutoff: 5000,
+    waveform: 'triangle',
+    filterCutoff: 1200,
     filterResonance: 2,
     attack: 0.05,   // Fast attack for step sequencer; long release creates pad feel
-    decay: 0.3,
+    decay: 0.15,
     sustain: 0.85,
     release: 1.0,
+    outputGainDb: -4,
+    filterEnv: {
+      amount: 0.35,
+      attack: 0.35,
+      decay: 0.8,
+      sustain: 0.5,
+    },
   },
   pluck: {
-    waveform: 'triangle',
-    filterCutoff: 3500,
-    filterResonance: 10,
+    waveform: 'sawtooth',
+    filterCutoff: 900,
+    filterResonance: 2,
     attack: 0.005,
     decay: 0.4,
     sustain: 0.15,
     release: 0.25,
+    outputGainDb: -2,
+    filterEnv: {
+      amount: 0.75,
+      attack: 0.001,
+      decay: 0.22,
+      sustain: 0.03,
+    },
   },
   acid: {
     waveform: 'sawtooth',
@@ -128,6 +208,12 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     decay: 0.15,
     sustain: 0.35,
     release: 0.1,
+    filterEnv: {
+      amount: 0.8,
+      attack: 0.001,
+      decay: 0.18,
+      sustain: 0.05,
+    },
   },
 
   // === FUNK / SOUL ===
@@ -194,7 +280,7 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     filterCutoff: 3000,
     filterResonance: 0.5,
     attack: 0.05,   // Fast attack for step sequencer; sustain + release create lush swell
-    decay: 0.3,
+    decay: 0.15,
     sustain: 0.8,
     release: 0.8,   // Longer release for Philly strings feel
   },
@@ -235,7 +321,7 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     filterCutoff: 6000,
     filterResonance: 0.5,
     attack: 0.05,   // Fast attack for step sequencer compatibility
-    decay: 0.3,
+    decay: 0.15,
     sustain: 0.8,
     release: 2.0,   // Long release creates ethereal tail
   },
@@ -282,7 +368,7 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     filterCutoff: 4000,
     filterResonance: 2,
     attack: 0.01,
-    decay: 0.2,
+    decay: 0.12,
     sustain: 0.8,
     release: 0.3,
     osc2: {
@@ -403,7 +489,7 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     filterCutoff: 300,
     filterResonance: 8,
     attack: 0.05,
-    decay: 0.2,
+    decay: 0.12,
     sustain: 0.8,
     release: 1.0,
     osc2: {
@@ -429,7 +515,7 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     filterCutoff: 1500,
     filterResonance: 2,
     attack: 0.05,
-    decay: 0.3,
+    decay: 0.15,
     sustain: 0.85,
     release: 1.5,
     osc2: {
@@ -606,6 +692,44 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
   // See: lessons-learned.md "Sampled Instrument Race Condition"
 };
 
+// Explicit authored layers replace the old inference of "copy osc1 and add a
+// detune value". These preserve the current neutral voicing while making every
+// layer's topology serializable and independently editable.
+const EXPLICIT_OSC2_BY_PRESET: Readonly<Record<string, Osc2Config>> = {
+  bass: { waveform: 'sawtooth', detune: 4, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  lead: { waveform: 'square', detune: 9, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  pad: { waveform: 'triangle', detune: 10, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  pluck: { waveform: 'sawtooth', detune: 7, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  acid: { waveform: 'sawtooth', detune: 5, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  funkbass: { waveform: 'square', detune: 4, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  clavinet: { waveform: 'sawtooth', detune: 8, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  rhodes: { waveform: 'sine', detune: 8, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  organ: { waveform: 'square', detune: 7, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  wurlitzer: { waveform: 'triangle', detune: 8, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  discobass: { waveform: 'sawtooth', detune: 4, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  strings: { waveform: 'sawtooth', detune: 10, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  brass: { waveform: 'sawtooth', detune: 8, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  stab: { waveform: 'square', detune: 8, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  shimmer: { waveform: 'triangle', detune: 11, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  jangle: { waveform: 'sawtooth', detune: 8, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  dreampop: { waveform: 'triangle', detune: 11, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+  bell: { waveform: 'sine', detune: 7, coarse: 0, mix: 0.42, filterRouting: 'shared' },
+};
+
+for (const [presetId, osc2] of Object.entries(EXPLICIT_OSC2_BY_PRESET)) {
+  const preset = SYNTH_PRESETS[presetId];
+  if (!preset || preset.osc2) continue;
+  preset.osc2 = { ...osc2 };
+}
+
+for (const [presetId, preset] of Object.entries(SYNTH_PRESETS)) {
+  const calibration = getSourceCalibration(`synth:${presetId}`);
+  if (calibration?.kind !== 'fixed') {
+    throw new Error(`Synth preset has no fixed source calibration: ${presetId}`);
+  }
+  preset.outputGainDb = calibration.gainDb;
+}
+
 import { logger } from '../utils/logger';
 import { registerHmrDispose } from '../utils/hmr';
 
@@ -640,7 +764,8 @@ export class SynthEngine {
     time: number,
     duration?: number,
     volume: number = 1,
-    destination?: GainNode
+    destination?: GainNode,
+    midiVelocity: number = 90,
   ): void {
     // DEBUG: Log entry to verify method is being called
     logger.audio.log(`SynthEngine.playNote: noteId=${noteId}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, duration=${duration}, vol=${volume}`);
@@ -673,7 +798,7 @@ export class SynthEngine {
     // Phase 25: Use provided destination or fall back to masterGain
     const outputNode = destination ?? this.masterGain;
     const voice = new SynthVoice(this.audioContext, outputNode, params);
-    voice.start(frequency, time, volume);
+    voice.start(frequency, time, volume, midiVelocity);
     logger.audio.log(`SynthEngine voice created and started: noteId=${noteId}, preset=${params.waveform}, vol=${volume}, activeVoices=${this.activeVoices.size + 1}`);
 
     if (duration !== undefined) {
@@ -738,6 +863,7 @@ class SynthVoice {
   private cleanupTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private noteStartTime = 0;
   private envelopePeak: number = MIN_GAIN_VALUE;
+  private activeFilterCutoff: number;
 
   // Core nodes (always present)
   private oscillator1: OscillatorNode;
@@ -748,6 +874,7 @@ class SynthVoice {
   private oscillator2: OscillatorNode | null = null;
   private osc1Gain: GainNode | null = null;
   private osc2Gain: GainNode | null = null;
+  private osc2BaseLevel = 0;
   private lfoOscillator: OscillatorNode | null = null;
   private lfoGain: GainNode | null = null;
   private filterEnvGain: GainNode | null = null;
@@ -759,6 +886,7 @@ class SynthVoice {
   ) {
     this.params = params;
     this.audioContext = audioContext;
+    this.activeFilterCutoff = params.filterCutoff;
 
     // Create main filter (shared by all oscillators)
     this.filter = audioContext.createBiquadFilter();
@@ -785,8 +913,8 @@ class SynthVoice {
       this.osc2Gain = audioContext.createGain();
 
       // Set mix levels (osc2.mix: 0 = osc1 only, 1 = osc2 only)
-      const osc1Level = 1 - params.osc2.mix;
-      const osc2Level = params.osc2.mix;
+      const [osc1Level, osc2Level] = peakSafeOscillatorMix(params.osc2.mix);
+      this.osc2BaseLevel = osc2Level;
       this.osc1Gain.gain.value = osc1Level;
       this.osc2Gain.gain.value = osc2Level;
 
@@ -795,7 +923,7 @@ class SynthVoice {
       this.oscillator1.connect(this.osc1Gain);
       this.osc1Gain.connect(this.filter);
       this.oscillator2.connect(this.osc2Gain);
-      this.osc2Gain.connect(this.filter);
+      this.osc2Gain.connect(params.osc2.filterRouting === 'bypass' ? this.gainNode : this.filter);
     } else {
       // Single oscillator: osc1 -> filter
       this.oscillator1.connect(this.filter);
@@ -863,9 +991,17 @@ class SynthVoice {
     }
   }
 
-  start(frequency: number, time: number, volume: number = 1): void {
+  start(
+    frequency: number,
+    time: number,
+    volume: number = 1,
+    midiVelocity: number = 90,
+  ): void {
     this.noteStartTime = time;
-    this.envelopePeak = Math.max(ENVELOPE_PEAK * volume, MIN_GAIN_VALUE);
+    const sourceGain = 10 ** ((this.params.outputGainDb ?? 0) / 20);
+    this.envelopePeak = Math.max(ENVELOPE_PEAK * volume * sourceGain, MIN_GAIN_VALUE);
+    this.activeFilterCutoff = velocityFilterCutoff(this.params.filterCutoff, midiVelocity);
+    this.filter.frequency.setValueAtTime(this.activeFilterCutoff, time);
 
     // Set oscillator 1 frequency
     this.oscillator1.frequency.setValueAtTime(frequency, time);
@@ -878,6 +1014,17 @@ class SynthVoice {
       this.oscillator2.frequency.setValueAtTime(osc2Frequency, time);
       // Apply fine detune in cents
       this.oscillator2.detune.setValueAtTime(this.params.osc2.detune, time);
+      const layerEnvelope = this.params.osc2.levelEnvelope;
+      if (layerEnvelope && this.osc2Gain) {
+        const attackEnd = time + Math.max(layerEnvelope.attack, 0.001);
+        const decayEnd = attackEnd + Math.max(layerEnvelope.decay, 0.001);
+        this.osc2Gain.gain.setValueAtTime(MIN_GAIN_VALUE, time);
+        this.osc2Gain.gain.exponentialRampToValueAtTime(Math.max(this.osc2BaseLevel, MIN_GAIN_VALUE), attackEnd);
+        this.osc2Gain.gain.exponentialRampToValueAtTime(
+          Math.max(this.osc2BaseLevel * layerEnvelope.sustain, MIN_GAIN_VALUE),
+          decayEnd,
+        );
+      }
     }
 
     // === Amplitude Envelope (ADSR) ===
@@ -901,7 +1048,7 @@ class SynthVoice {
 
     // === Filter Envelope (if configured) ===
     if (this.params.filterEnv) {
-      this.applyFilterEnvelope(time);
+      this.applyFilterEnvelope(time, this.activeFilterCutoff);
     }
 
     // Start oscillators
@@ -918,12 +1065,10 @@ class SynthVoice {
    * Apply filter envelope modulation.
    * The envelope controls how the filter cutoff changes over time.
    */
-  private applyFilterEnvelope(time: number): void {
+  private applyFilterEnvelope(time: number, baseCutoff: number): void {
     if (!this.params.filterEnv) return;
 
     const { amount, attack, decay, sustain } = this.params.filterEnv;
-    const baseCutoff = this.params.filterCutoff;
-
     // Calculate target frequencies
     // amount > 0: filter opens (cutoff goes up)
     // amount < 0: filter closes (cutoff goes down)
@@ -978,8 +1123,8 @@ class SynthVoice {
 
   private filterFrequencyAt(time: number): number {
     const env = this.params.filterEnv;
-    if (!env || time <= this.noteStartTime) return this.params.filterCutoff;
-    const base = this.params.filterCutoff;
+    if (!env || time <= this.noteStartTime) return this.activeFilterCutoff;
+    const base = this.activeFilterCutoff;
     const peak = Math.max(
       Math.min(base + env.amount * base * 4, MAX_FILTER_FREQ),
       MIN_FILTER_FREQ,

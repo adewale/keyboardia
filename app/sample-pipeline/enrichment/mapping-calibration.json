@@ -1,0 +1,736 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-12T11:30:48.960Z",
+  "policy": {
+    "velocity": "minimal weighted isotonic correction to delivered layer RMS",
+    "notes": "forward minimum correction limiting adjacent loudest-layer steps to 2.8 dB",
+    "arrangementAwareness": false,
+    "collisionAwareness": false
+  },
+  "canonicalAnchorAdjustment": {
+    "instrumentId": "finger-bass",
+    "gainDb": 0.5,
+    "reason": "Keep C4/MIDI-90 delivered loudness inside the canonical piano-relative tolerance after layer smoothing."
+  },
+  "instruments": [
+    {
+      "id": "acoustic-guitar",
+      "corrections": [
+        {
+          "layer": "43/0-127",
+          "gainDb": -3.75
+        },
+        {
+          "layer": "74/0-127",
+          "gainDb": 1.421
+        },
+        {
+          "layer": "77/0-127",
+          "gainDb": -2.412
+        },
+        {
+          "layer": "80/0-127",
+          "gainDb": 1.091
+        },
+        {
+          "layer": "83/0-127",
+          "gainDb": -1.319
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 3.75,
+      "manifestSha256": "87f8e0cebe2c9f250a09269fa7a59ce4278a7bed3205e5ef9ff09d4754ab3a57"
+    },
+    {
+      "id": "finger-bass",
+      "corrections": [
+        {
+          "layer": "24/97-127",
+          "gainDb": -0.906
+        },
+        {
+          "layer": "24/65-96",
+          "gainDb": -0.906
+        },
+        {
+          "layer": "24/33-64",
+          "gainDb": -0.906
+        },
+        {
+          "layer": "24/0-32",
+          "gainDb": -0.906
+        },
+        {
+          "layer": "36/97-127",
+          "gainDb": -2.597
+        },
+        {
+          "layer": "36/65-96",
+          "gainDb": -2.597
+        },
+        {
+          "layer": "36/33-64",
+          "gainDb": -2.597
+        },
+        {
+          "layer": "36/0-32",
+          "gainDb": -2.597
+        },
+        {
+          "layer": "42/97-127",
+          "gainDb": 1.721
+        },
+        {
+          "layer": "42/65-96",
+          "gainDb": 1.721
+        },
+        {
+          "layer": "42/33-64",
+          "gainDb": 1.721
+        },
+        {
+          "layer": "42/0-32",
+          "gainDb": 1.721
+        },
+        {
+          "layer": "48/97-127",
+          "gainDb": 3.014
+        },
+        {
+          "layer": "48/65-96",
+          "gainDb": 3.014
+        },
+        {
+          "layer": "48/33-64",
+          "gainDb": 3.014
+        },
+        {
+          "layer": "48/0-32",
+          "gainDb": 3.014
+        },
+        {
+          "layer": "60/97-127",
+          "gainDb": 1.045
+        },
+        {
+          "layer": "60/65-96",
+          "gainDb": -1.045
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 3.014,
+      "manifestSha256": "e7ac9d291d4b59e701b746923af70e21493d0c3ad88de87f657bca95c7026f1a"
+    },
+    {
+      "id": "french-horn",
+      "corrections": [
+        {
+          "layer": "39/0-80",
+          "gainDb": -1.769
+        },
+        {
+          "layer": "39/81-127",
+          "gainDb": -1.769
+        },
+        {
+          "layer": "46/0-80",
+          "gainDb": 2.99
+        },
+        {
+          "layer": "46/81-127",
+          "gainDb": 2.99
+        },
+        {
+          "layer": "50/0-80",
+          "gainDb": -1.576
+        },
+        {
+          "layer": "50/81-127",
+          "gainDb": -1.576
+        },
+        {
+          "layer": "53/0-80",
+          "gainDb": -0.161
+        },
+        {
+          "layer": "53/81-127",
+          "gainDb": -0.161
+        },
+        {
+          "layer": "74/0-127",
+          "gainDb": -3.307
+        },
+        {
+          "layer": "77/0-127",
+          "gainDb": -0.988
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 3.307,
+      "manifestSha256": "5dd1360946b9b1923807768391797840036740b7fc0adf1dab82a8e8f32e806c"
+    },
+    {
+      "id": "kalimba",
+      "corrections": [
+        {
+          "layer": "61/0-127",
+          "gainDb": -0.005
+        },
+        {
+          "layer": "73/0-127",
+          "gainDb": -0.22
+        },
+        {
+          "layer": "81/0-127",
+          "gainDb": 0.101
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 0.22,
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38"
+    },
+    {
+      "id": "marimba",
+      "corrections": [
+        {
+          "layer": "48/0-50",
+          "gainDb": 4.187
+        },
+        {
+          "layer": "48/51-100",
+          "gainDb": 4.187
+        },
+        {
+          "layer": "48/101-127",
+          "gainDb": 4.187
+        },
+        {
+          "layer": "72/0-50",
+          "gainDb": 1.179
+        },
+        {
+          "layer": "72/51-100",
+          "gainDb": 1.179
+        },
+        {
+          "layer": "72/101-127",
+          "gainDb": 1.179
+        },
+        {
+          "layer": "79/0-50",
+          "gainDb": -0.026
+        },
+        {
+          "layer": "79/51-100",
+          "gainDb": -0.026
+        },
+        {
+          "layer": "79/101-127",
+          "gainDb": -0.026
+        },
+        {
+          "layer": "83/0-50",
+          "gainDb": 3.029
+        },
+        {
+          "layer": "83/51-100",
+          "gainDb": 3.029
+        },
+        {
+          "layer": "83/101-127",
+          "gainDb": 3.029
+        },
+        {
+          "layer": "96/0-50",
+          "gainDb": -0.724
+        },
+        {
+          "layer": "96/51-100",
+          "gainDb": 1.046
+        },
+        {
+          "layer": "96/101-127",
+          "gainDb": 0.161
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 4.187,
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f"
+    },
+    {
+      "id": "piano",
+      "corrections": [
+        {
+          "layer": "60/0-50",
+          "gainDb": 1.87
+        },
+        {
+          "layer": "60/51-100",
+          "gainDb": 1.87
+        },
+        {
+          "layer": "60/101-127",
+          "gainDb": 1.87
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 1.87,
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00"
+    },
+    {
+      "id": "steel-drums",
+      "corrections": [
+        {
+          "layer": "60/0-40",
+          "gainDb": -2.039
+        },
+        {
+          "layer": "61/0-40",
+          "gainDb": -2.557
+        },
+        {
+          "layer": "62/0-40",
+          "gainDb": -2.402
+        },
+        {
+          "layer": "63/0-40",
+          "gainDb": -2.749
+        },
+        {
+          "layer": "64/0-40",
+          "gainDb": -2.141
+        },
+        {
+          "layer": "65/0-40",
+          "gainDb": -3.705
+        },
+        {
+          "layer": "66/0-40",
+          "gainDb": -2.16
+        },
+        {
+          "layer": "67/0-40",
+          "gainDb": -0.67
+        },
+        {
+          "layer": "68/0-40",
+          "gainDb": -2.82
+        },
+        {
+          "layer": "69/0-40",
+          "gainDb": -3.389
+        },
+        {
+          "layer": "70/0-40",
+          "gainDb": -1.57
+        },
+        {
+          "layer": "77/0-40",
+          "gainDb": 0.56
+        },
+        {
+          "layer": "82/0-40",
+          "gainDb": 0.413
+        },
+        {
+          "layer": "60/41-64",
+          "gainDb": -1.315
+        },
+        {
+          "layer": "61/41-64",
+          "gainDb": -1.626
+        },
+        {
+          "layer": "62/41-64",
+          "gainDb": 0.662
+        },
+        {
+          "layer": "63/41-64",
+          "gainDb": -1.436
+        },
+        {
+          "layer": "64/41-64",
+          "gainDb": -1.664
+        },
+        {
+          "layer": "65/41-64",
+          "gainDb": -2.776
+        },
+        {
+          "layer": "66/41-64",
+          "gainDb": -0.74
+        },
+        {
+          "layer": "67/41-64",
+          "gainDb": -0.984
+        },
+        {
+          "layer": "68/41-64",
+          "gainDb": -2.763
+        },
+        {
+          "layer": "69/41-64",
+          "gainDb": -1.718
+        },
+        {
+          "layer": "70/41-64",
+          "gainDb": 0.314
+        },
+        {
+          "layer": "71/41-64",
+          "gainDb": -0.97
+        },
+        {
+          "layer": "72/41-64",
+          "gainDb": -2.273
+        },
+        {
+          "layer": "73/41-64",
+          "gainDb": -1.298
+        },
+        {
+          "layer": "74/41-64",
+          "gainDb": -2.959
+        },
+        {
+          "layer": "75/41-64",
+          "gainDb": -0.575
+        },
+        {
+          "layer": "76/41-64",
+          "gainDb": -0.543
+        },
+        {
+          "layer": "77/41-64",
+          "gainDb": -1.024
+        },
+        {
+          "layer": "78/41-64",
+          "gainDb": -1.384
+        },
+        {
+          "layer": "80/41-64",
+          "gainDb": -2.026
+        },
+        {
+          "layer": "81/41-64",
+          "gainDb": -0.527
+        },
+        {
+          "layer": "82/41-64",
+          "gainDb": 0.413
+        },
+        {
+          "layer": "60/65-88",
+          "gainDb": 1.316
+        },
+        {
+          "layer": "61/65-88",
+          "gainDb": 1.207
+        },
+        {
+          "layer": "62/65-88",
+          "gainDb": 1.138
+        },
+        {
+          "layer": "63/65-88",
+          "gainDb": -0.807
+        },
+        {
+          "layer": "64/65-88",
+          "gainDb": -0.07
+        },
+        {
+          "layer": "65/65-88",
+          "gainDb": 1.434
+        },
+        {
+          "layer": "66/65-88",
+          "gainDb": 0.343
+        },
+        {
+          "layer": "67/65-88",
+          "gainDb": 0.813
+        },
+        {
+          "layer": "68/65-88",
+          "gainDb": 0.209
+        },
+        {
+          "layer": "69/65-88",
+          "gainDb": 0.811
+        },
+        {
+          "layer": "70/65-88",
+          "gainDb": -0.304
+        },
+        {
+          "layer": "71/65-88",
+          "gainDb": -1.813
+        },
+        {
+          "layer": "72/65-88",
+          "gainDb": 0.241
+        },
+        {
+          "layer": "73/65-88",
+          "gainDb": 0.649
+        },
+        {
+          "layer": "74/65-88",
+          "gainDb": 1.075
+        },
+        {
+          "layer": "75/65-88",
+          "gainDb": -0.135
+        },
+        {
+          "layer": "76/65-88",
+          "gainDb": -0.408
+        },
+        {
+          "layer": "77/65-88",
+          "gainDb": 0.898
+        },
+        {
+          "layer": "78/65-88",
+          "gainDb": 0.257
+        },
+        {
+          "layer": "79/65-88",
+          "gainDb": -0.576
+        },
+        {
+          "layer": "80/65-88",
+          "gainDb": 0.612
+        },
+        {
+          "layer": "81/65-88",
+          "gainDb": -0.646
+        },
+        {
+          "layer": "82/65-88",
+          "gainDb": -0.914
+        },
+        {
+          "layer": "83/65-88",
+          "gainDb": -0.437
+        },
+        {
+          "layer": "60/89-112",
+          "gainDb": 1.867
+        },
+        {
+          "layer": "61/89-112",
+          "gainDb": 1.749
+        },
+        {
+          "layer": "62/89-112",
+          "gainDb": 0.249
+        },
+        {
+          "layer": "63/89-112",
+          "gainDb": 0.558
+        },
+        {
+          "layer": "64/89-112",
+          "gainDb": 2.593
+        },
+        {
+          "layer": "65/89-112",
+          "gainDb": 3.246
+        },
+        {
+          "layer": "66/89-112",
+          "gainDb": 0.299
+        },
+        {
+          "layer": "67/89-112",
+          "gainDb": 0.841
+        },
+        {
+          "layer": "68/89-112",
+          "gainDb": 3.125
+        },
+        {
+          "layer": "69/89-112",
+          "gainDb": 2.345
+        },
+        {
+          "layer": "70/89-112",
+          "gainDb": 1.406
+        },
+        {
+          "layer": "71/89-112",
+          "gainDb": 1.855
+        },
+        {
+          "layer": "72/89-112",
+          "gainDb": 0.241
+        },
+        {
+          "layer": "73/89-112",
+          "gainDb": 0.649
+        },
+        {
+          "layer": "74/89-112",
+          "gainDb": 1.075
+        },
+        {
+          "layer": "75/89-112",
+          "gainDb": -0.135
+        },
+        {
+          "layer": "76/89-112",
+          "gainDb": -0.408
+        },
+        {
+          "layer": "77/89-112",
+          "gainDb": 0.898
+        },
+        {
+          "layer": "78/89-112",
+          "gainDb": 0.257
+        },
+        {
+          "layer": "79/89-112",
+          "gainDb": -0.576
+        },
+        {
+          "layer": "80/89-112",
+          "gainDb": 0.612
+        },
+        {
+          "layer": "81/89-112",
+          "gainDb": -0.646
+        },
+        {
+          "layer": "82/89-112",
+          "gainDb": -0.914
+        },
+        {
+          "layer": "83/89-112",
+          "gainDb": -0.437
+        },
+        {
+          "layer": "60/113-127",
+          "gainDb": 0.171
+        },
+        {
+          "layer": "61/113-127",
+          "gainDb": 1.227
+        },
+        {
+          "layer": "62/113-127",
+          "gainDb": 0.352
+        },
+        {
+          "layer": "63/113-127",
+          "gainDb": 2.805
+        },
+        {
+          "layer": "64/113-127",
+          "gainDb": 1.282
+        },
+        {
+          "layer": "65/113-127",
+          "gainDb": 1.8
+        },
+        {
+          "layer": "66/113-127",
+          "gainDb": 2.259
+        },
+        {
+          "layer": "68/113-127",
+          "gainDb": 2.248
+        },
+        {
+          "layer": "69/113-127",
+          "gainDb": 1.952
+        },
+        {
+          "layer": "70/113-127",
+          "gainDb": 0.155
+        },
+        {
+          "layer": "71/113-127",
+          "gainDb": 0.927
+        },
+        {
+          "layer": "72/113-127",
+          "gainDb": 1.791
+        },
+        {
+          "layer": "74/113-127",
+          "gainDb": 0.809
+        },
+        {
+          "layer": "75/113-127",
+          "gainDb": 0.846
+        },
+        {
+          "layer": "76/113-127",
+          "gainDb": 1.359
+        },
+        {
+          "layer": "77/113-127",
+          "gainDb": 1.466
+        },
+        {
+          "layer": "78/113-127",
+          "gainDb": 0.87
+        },
+        {
+          "layer": "79/113-127",
+          "gainDb": 1.152
+        },
+        {
+          "layer": "80/113-127",
+          "gainDb": 0.801
+        },
+        {
+          "layer": "81/113-127",
+          "gainDb": 1.819
+        },
+        {
+          "layer": "82/113-127",
+          "gainDb": 1.74
+        },
+        {
+          "layer": "83/113-127",
+          "gainDb": 0.874
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 3.705,
+      "manifestSha256": "75030bd7a06cd8214ce73fcd539579d624ee0179dd73a2b54f1e0dd95694e8d5"
+    },
+    {
+      "id": "string-section",
+      "corrections": [
+        {
+          "layer": "40/0-127",
+          "gainDb": 0.329
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 0.329,
+      "manifestSha256": "bdc67d2d03c9f27b3b359e9fdc2844afc1f29db14a03c6937a7cf98786b4407f"
+    },
+    {
+      "id": "vibraphone",
+      "corrections": [
+        {
+          "layer": "57/0-79",
+          "gainDb": 2.235
+        },
+        {
+          "layer": "57/80-127",
+          "gainDb": 2.235
+        },
+        {
+          "layer": "74/0-79",
+          "gainDb": -0.671
+        },
+        {
+          "layer": "74/80-127",
+          "gainDb": -0.671
+        }
+      ],
+      "maxAbsoluteCorrectionDb": 2.235,
+      "manifestSha256": "0475f0a638c7aadd6f92de60fa91c506403be1fc7a471e0d3424f34a76a9c831"
+    }
+  ]
+}

@@ -192,6 +192,7 @@ describe('Agent Skills host protocol journey', () => {
     for (const exampleName of [
       'add-track',
       'set-track-instrument',
+      'set-track-pan',
       'set-steps',
       'set-tempo',
     ]) {
@@ -230,6 +231,10 @@ describe('Agent Skills host protocol journey', () => {
         expect(verified.structuredContent).toMatchObject({
           tracks: [{ track_id: generatedTrackId, sample_id: expectedSampleId }],
         });
+      } else if (exampleName === 'set-track-pan') {
+        expect(verified.structuredContent).toMatchObject({
+          tracks: [{ track_id: generatedTrackId, pan: -0.2 }],
+        });
       } else if (exampleName === 'set-steps') {
         expect(verified.structuredContent).toMatchObject({
           tracks: [{ track_id: generatedTrackId, active_steps: [0, 4, 8, 12] }],
@@ -252,6 +257,7 @@ describe('Agent Skills host protocol journey', () => {
         track_id: generatedTrackId,
         name: 'Kick',
         sample_id: expectedSampleId,
+        pan: -0.2,
         step_count: 16,
         active_steps: [0, 4, 8, 12],
       }],

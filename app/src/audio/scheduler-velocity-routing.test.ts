@@ -11,6 +11,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fc from 'fast-check';
 import { velocityFromMultiplier } from './velocity';
+import { resolveNoteDynamics } from './note-dynamics';
+import { DEFAULT_STEP_MIDI_VELOCITY } from '../shared/constants';
 
 const playSampledInstrument = vi.fn<(...args: unknown[]) => void>();
 
@@ -36,8 +38,9 @@ import { aTrackWithSteps, aState } from './__fixtures__/builders';
 /** Velocity is the 8th positional argument of playSampledInstrument. */
 const VELOCITY_ARG = 7;
 
-function flushOneSampledNote(pLockVolume?: number): void {
+function flushOneSampledNote(pLockVolume?: number, loopIteration = 0): void {
   const scheduler = new Scheduler();
+  (scheduler as unknown as { loopIteration: number }).loopIteration = loopIteration;
   const track = aTrackWithSteps({
     sampleId: 'sampled:piano',
     activeSteps: [0],
@@ -71,9 +74,9 @@ describe('main-thread Scheduler velocity routing', () => {
     );
   });
 
-  it('sends full velocity for steps with no p-lock', () => {
+  it('sends calibrated MIDI 90 for steps with no p-lock', () => {
     flushOneSampledNote(undefined);
-    expect(playSampledInstrument.mock.calls[0][VELOCITY_ARG]).toBe(127);
+    expect(playSampledInstrument.mock.calls[0][VELOCITY_ARG]).toBe(DEFAULT_STEP_MIDI_VELOCITY);
   });
 
   it('property: passed velocity always equals velocityFromMultiplier(p-lock)', () => {
@@ -86,6 +89,26 @@ describe('main-thread Scheduler velocity routing', () => {
         );
       })
     );
+  });
+
+  it('varies unlocked gain by loop iteration without moving the layer', () => {
+    flushOneSampledNote(undefined, 0);
+    const first = playSampledInstrument.mock.calls[0];
+    playSampledInstrument.mockClear();
+    flushOneSampledNote(undefined, 1);
+    const second = playSampledInstrument.mock.calls[0];
+
+    expect(first[VELOCITY_ARG]).toBe(90);
+    expect(second[VELOCITY_ARG]).toBe(90);
+    expect(first[5]).not.toBe(second[5]);
+  });
+
+  it('keeps explicit volume locks exact across loop iterations', () => {
+    flushOneSampledNote(0.5, 0);
+    const firstGain = playSampledInstrument.mock.calls[0][5];
+    playSampledInstrument.mockClear();
+    flushOneSampledNote(0.5, 9);
+    expect(playSampledInstrument.mock.calls[0][5]).toBe(firstGain);
   });
 });
 
@@ -103,8 +126,8 @@ describe('SchedulerWorkletHost velocity routing (parity with main-thread)', () =
       pitchSemitones: 0,
       time: 1.5,
       duration: 0.125,
-      volume: volumeMultiplier,
-      volumeMultiplier,
+      ...resolveNoteDynamics(volumeMultiplier),
+      loopIteration: 0,
     });
   }
 

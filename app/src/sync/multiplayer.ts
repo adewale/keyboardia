@@ -1338,6 +1338,9 @@ export class MultiplayerConnection {
       case 'track_volume_set':
         this.handleTrackVolumeSet(msg);
         break;
+      case 'track_pan_set':
+        this.handleTrackPanSet(msg);
+        break;
       case 'track_transpose_set':
         this.handleTrackTransposeSet(msg);
         break;
@@ -1780,6 +1783,16 @@ export class MultiplayerConnection {
     volume: msg.volume,
   }));
 
+  private handleTrackPanSet = createRemoteHandler<{
+    trackId: string;
+    pan: number;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_PAN',
+    trackId: msg.trackId,
+    pan: msg.pan,
+  }));
+
   private handleTrackTransposeSet = createRemoteHandler<{
     trackId: string;
     transpose: number;
@@ -2080,6 +2093,7 @@ export class MultiplayerConnection {
           id: t.id.slice(0, 8),
           stepCount: t.stepCount ?? DEFAULT_STEP_COUNT,
           volume: t.volume,
+          pan: t.pan ?? 0,
           transpose: t.transpose,
           swing: (t as { swing?: number }).swing ?? 0,
           activeSteps: t.steps.filter(Boolean).length,
@@ -2313,6 +2327,12 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         type: 'set_track_volume',
         trackId: action.trackId,
         volume: action.volume,
+      };
+    case 'SET_TRACK_PAN':
+      return {
+        type: 'set_track_pan',
+        trackId: action.trackId,
+        pan: action.pan,
       };
     case 'SET_TRACK_TRANSPOSE':
       return {

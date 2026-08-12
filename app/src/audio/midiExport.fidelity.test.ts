@@ -55,6 +55,7 @@ function createTrack(overrides: Partial<Track> = {}): Track {
     steps: Array(128).fill(false),
     parameterLocks: Array(128).fill(null),
     volume: 1,
+    pan: 0,
     muted: false,
     soloed: false,
     transpose: 0,
@@ -231,6 +232,17 @@ describe('MIDI File Structure', () => {
 
     expect(names).toContain('Tempo');
     expect(names).toContain('My Kick');
+  });
+
+  it('does not emit pan automation or otherwise change MIDI bytes', () => {
+    const steps = Array(128).fill(false);
+    steps[0] = true;
+    const centered = exportToMidi(createState({ tracks: [createTrack({ steps, pan: 0 })] }))._midiData;
+    const left = exportToMidi(createState({ tracks: [createTrack({ steps, pan: -1 })] }))._midiData;
+    const right = exportToMidi(createState({ tracks: [createTrack({ steps, pan: 1 })] }))._midiData;
+
+    expect([...left]).toEqual([...centered]);
+    expect([...right]).toEqual([...centered]);
   });
 });
 
@@ -481,7 +493,7 @@ describe('MIDI Note Pitch', () => {
 // ============================================================================
 
 describe('MIDI Velocity', () => {
-  it('uses default velocity 127 (100%) with no p-lock', () => {
+  it('uses calibrated default MIDI velocity 90 with no p-lock', () => {
     const steps = Array(128).fill(false);
     steps[0] = true;
 
@@ -491,7 +503,7 @@ describe('MIDI Velocity', () => {
     const midi = parseMidiData(_midiData);
     const notes = extractNoteEvents(midi);
 
-    expect(notes[0].velocity).toBe(127);
+    expect(notes[0].velocity).toBe(90);
   });
 
   it('scales velocity based on volume p-lock', () => {

@@ -1,8 +1,16 @@
 # Sound Quality Parity Plan
 
-> **Status:** Proposed (v3 — revised after follow-up multi-agent audit)
+> **Status:** Automatically verifiable implementation complete (2026-08-12).
+> Catalogue calibration, safety-only master dynamics, technical sample curation,
+> hash-bound sample dispositions, an opt-in starter arrangement, and neutral
+> synth-layer structure are implemented. No user-visible automatic-correction
+> analyser was added. Comparative listener preference remains a separate claim,
+> not an implementation-completeness gate.
 > **Phase:** 43
 > **Date:** 2026-08-04
+> **Reassessed:** 2026-08-11
+> **Implementation receipt:** `specs/research/SOUND-QUALITY-PARITY-IMPLEMENTATION-2026-08-10.md`
+> **Completion receipt:** `specs/research/SOUND-QUALITY-COMPLETION-2026-08-12.md`
 > **Prerequisite reading:** `specs/research/SONG-MAKER-COMPARISON-2026-08.md`
 > **Related:** `specs/research/ABLETON-LEARNING-SYNTHS-ENVELOPES-ANALYSIS.md`
 > (sibling analysis, merged separately — its ranked recommendations are
@@ -14,6 +22,20 @@
 > scale-lock flip. Its seeded-start disposition was evaluated and
 > **rejected 2026-08-04** — Keyboardia's home page example picker
 > already serves it; see 43.2 item 3)
+
+**v4 reassessment.** The implementation audit found that the plan conflated
+three different outcomes: a correct audio graph, better values on
+Keyboardia-only fixtures, and preference over Song Maker. Only the first two
+have evidence. It also found that S5's mono proxy did not represent the
+shipping stereo samples, the browser capacity fixture drove synthetic sources
+rather than a 16-track session, missing legacy effects could inherit the new
+15% room, and onset adaptation covered more files than its browser assertion.
+The implementation now separates the legacy/new effects policies, leaves
+unanalysed stereo and user audio centered, exercises shipped stereo files,
+covers all sampled percussion onsets, and adds a real 16-track capture fixture.
+The plan now treats curation and first contact as primary work rather than a
+non-goal. None of those corrections supplies the still-missing cross-app
+capture or listener confidence interval.
 
 **v3 revision note.** The follow-up audit corrected the engine capacity
 model, removed predetermined mix and stereo targets, split gain variation
@@ -46,13 +68,20 @@ sample-content work is a re-diagnosis and re-review, not a promotion.
 
 ## Goal
 
-Close the audible gap between Keyboardia and Chrome Music Lab's Song Maker.
-Repository and bundle inspection identified five working hypotheses to
-measure: mix-bus dynamics, first-contact constraints, per-note variation,
-sample content/calibration, and stereo placement. They are not comparative
-measurements yet; Phase 43.0 decides which gaps are audible and how large
-they are. Each implementation phase ships independently, and each carries
-three kinds of proof:
+Close the experienced gap between Keyboardia and Chrome Music Lab's Song Maker.
+"Experienced" deliberately includes the path to a coherent first loop, not
+only the waveform after a loop already exists. Keep two claim levels separate:
+
+1. **Internal improvement:** a Keyboardia bug is removed or a preregistered
+   Keyboardia-only metric improves without breaking its guards.
+2. **Comparative improvement:** a matched Song Maker/Keyboardia capture or
+   first-contact study shows a preregistered benefit with uncertainty reported.
+
+Repository and bundle inspection identified five working hypotheses—mix-bus
+dynamics, first-contact constraints, per-note variation, sample
+content/calibration, and stereo placement. They remain hypotheses until their
+own comparative gate is run. Each implementation phase carries three kinds of
+proof:
 
 1. **Automated verification** — rendered/captured-PCM assertions (config
    assertions only as secondary guards; see "Why config tests failed us").
@@ -63,8 +92,11 @@ three kinds of proof:
 
 ## Non-goals
 
-- Matching Song Maker's 5-instrument curation. The defaults get good;
-  the palette stays broad.
+- Removing Keyboardia's broad palette or advanced workflow. A curated starter
+  experience is in scope; the full palette remains available through
+  progressive disclosure.
+- Copying Song Maker's recordings, branding, or exact interface. Keyboardia
+  uses its own licensed content and interaction design.
 - New composition features (pattern chaining, automation curves) —
   `specs/research/MUSICAL-COVERAGE-ANALYSIS.md` priorities 7–8.
 - Changing scheduling/timing (both products use lookahead scheduling, but
@@ -74,6 +106,48 @@ three kinds of proof:
   ±ms jitter creates flam risk on coincident kick+hat. The reason is
   musical, not technical — audio is client-local, so a seeded timing
   jitter *would* sync fine; we still don't want it.
+
+## Assumption audit and revised causal model (v4)
+
+| Earlier assumption | What the implementation showed | Disposition |
+|---|---|---|
+| Fixing the master bus would substantially close the Song Maker gap | It fixed a real disconnected-node bug and passed stability gates; Song Maker's inspected live path has no comparable master compressor/reverb | Keep as correctness work; do not call it parity evidence |
+| Conservative panning would make the shipping mix wider | The procedural mono proxy widened, but the real acoustic/sample fixture began at −0.526 dB S/M and the planned preset moved to −2.951 dB while mono fold changed +1.055 dB | Auto-spread only sources Keyboardia creates as mono; center sampled/user audio unless explicitly placed |
+| More engine capability produces a better beginner result | Keyboardia already has the more capable engine; Song Maker still wins on constraint, coherent content, and immediacy | Shift investment from engine breadth to curation and first contact |
+| The example carousel solves seeded first contact | No test established equivalence; Song Maker opens directly on one constrained instrument/percussion canvas | Reopen the decision; prototype a guided path and measure it |
+| Keyboardia-only metrics can establish preference | They can establish regressions and internal improvement only | Require matched captures and listener-/participant-level intervals for comparative claims |
+| Denser multisampling is the obvious content fix | July's blind review rejected every staged replacement | Curate and commission/review by ear; mapping density is a diagnostic, not the acceptance criterion |
+
+## If starting again: revised execution order
+
+1. **Preregister and capture the baseline before product changes.** Freeze both
+   builds/hashes, create the same music, capture both outputs, define listener
+   and novice-task sample sizes, randomization, primary endpoints, and rollback
+   criteria. A same-build null is a rig check, not a comparative result.
+2. **Prototype first contact before adding DSP.** Behind a flag, open a guided
+   canvas with one curated pitched voice, two percussion lanes, C major,
+   120 BPM, a small range, and advanced controls collapsed. Keep a clear
+   "Studio" path to the full Keyboardia palette. Compare time-to-first-sound,
+   time-to-coherent-loop, completion, and replay intent against current
+   Keyboardia and Song Maker.
+3. **Fix correctness and compatibility in small PRs.** Master routing,
+   canonical defaults/migrations, decoder onset handling, and deterministic
+   measurement each land with a regression that fails if the fix is removed.
+4. **Curate content before broadening the engine.** Choose a small starter set
+   by hash-bound blind review; improve/commission source recordings where the
+   matched A/B still loses. Do not promote on provenance, root density, or
+   automated metrics alone.
+5. **Add optional polish only after causal isolation.** Trial humanization,
+   room, and placement independently. Preserve explicit locks and legacy
+   sessions; roll back defaults that do not win their preregistered comparison.
+6. **Run the matched outcome gates, then graduate.** Ship the guided path and
+   claim gap closure only when the task and listening endpoints pass with
+   reported confidence intervals.
+
+For reviewability this would be several pull requests: evidence rig; legacy
+migrations/master correctness; content calibration; guided first contact behind
+a flag; then separately proven default changes. The current Phase 43 worktree
+is useful evidence, but too broad to be the ideal review unit.
 
 ## Why config tests failed us
 
@@ -273,8 +347,10 @@ cap nor a hypothetical 16-way full-scale sum describes S1: S1 has six
 simultaneous sources at step 0 and three at step 8, with different peak
 times and spectra. Establish two browser baselines before choosing a trim:
 (a) S1 as the musical regression fixture; and (b) an explicit maximum-
-capacity fixture covering the allowed 16 tracks and each engine's own
-polyphony. The fix is **measured headroom**, not a predetermined constant.
+capacity fixture that is an actual allowed 16-track session. Per-engine
+voice-cap tests remain separate contracts; a 16-source synthetic burst is a
+controlled master-chain canary, not evidence that the product-capacity path
+ran. The fix is **measured headroom**, not a predetermined constant.
 
 ### Change
 
@@ -299,8 +375,10 @@ polyphony. The fix is **measured headroom**, not a predetermined constant.
    Post-reverb glue at these settings would re-compress every delay repeat
    and reverb tail (each S4 piano hit ducking its own tail 1–4 dB —
    directly against Phase 43.2's goal). Pre-effects placement stabilizes
-   distortion drive and leaves tails untouched; the −1 dB limiter still
-   catches the bounded wet sum.
+   distortion drive and leaves tails untouched. The compressor-style −1 dB
+   limiter conditions the wet sum; a final linear output trim is selected by
+   the actual 16-track heard-output gate because the limiter threshold alone is
+   not a hard sample-peak ceiling.
 3. **Implement as `Tone.Compressor`** inside `ToneEffectsChain`, not by
    splicing the native node: `Tone.Limiter` *is* a wrapped
    `DynamicsCompressorNode` (ratio 20, threshold −1 — note for the docs:
@@ -444,22 +522,15 @@ Headphones, fixed volume, loop 4 bars, listen **only to the hi-hats**.
    at **5 % wet on everything**, behind a high/low quality switch — low
    wet + convolution quality, degradable on weak devices, is a reference
    pattern worth testing here.)
-3. **No in-session seeding — DECIDED 2026-08-04, resolved by pointing at
-   the home page.** Both variants of the "nobody faces silence" item —
-   auto-seeding new sessions (v1/v2 of this plan) and the empty-state
-   "start from a groove" offer panel (`ABLETON-PLAYGROUND-LESSONS.md`
-   disposition 1) — were rejected: **the landing page's example-session
-   picker already is that surface.** A user who reaches an empty session
-   passed a screen offering playing grooves and chose blank; a second
-   in-session copy of that offer duplicates the home page. The empty
-   grid is a chosen canvas, not a cold start. Consequences kept from
-   this decision: the landing page is confirmed as the first-contact
-   surface (which raises the stakes on item 6 below), and the
-   cold-start work in this phase is scale lock + reverb, not content
-   seeding. (The audited auto-seed blast-radius checklist — three
-   creation call sites, MCP contract, four e2e emptiness assertions,
-   autosave race guard — lives in this file's v2 git history should the
-   decision ever be revisited.)
+3. **Guided first contact — REOPENED 2026-08-11.** The earlier decision
+   assumed that offering examples on a landing page was equivalent to Song
+   Maker opening directly on a constrained canvas. No task evidence supported
+   that equivalence. Do not silently seed every API/MCP-created session.
+   Instead prototype a flagged guided UI path with a curated starter palette
+   and progressive disclosure, preserve an explicit blank/Studio path, and
+   run the preregistered novice comparison before making it the default. The
+   blast radius includes all creation call sites, MCP semantics, existing E2E
+   emptiness assertions, and autosave races.
 4. **Default step velocity → MIDI 90 (not 100, shared with export):**
    - v1's edit (`velocity.ts:19`) is a **no-op** — the live path is
      `pLock?.volume ?? 1` (`scheduler.ts:484`, `scheduler.worklet.ts:240`)
@@ -808,9 +879,10 @@ Crescendo:x-x-x-x-x-x-----  offset 0 on all six hits; velocities
 
 ### Change
 
-1. **Per-track pan** (state default 0, `MixerPanel` knob, auto-spread
-   ±8–20 % alternating by add-order; kick/bass/sub-class centered —
-   requires the `instrument-classification.ts` extension from 43.4).
+1. **Per-track pan** (state default 0 and a `MixerPanel` knob). Auto-spread
+   ±8–20 % applies only to sources Keyboardia creates as mono. Sampled and
+   user-recorded audio remains centered because it can already contain
+   intentional stereo; kick/bass/sub also remain centered.
    Define units once: canonical state, WebSocket/REST/MCP payloads, and the
    engine use a normalized float in `[-1, 1]`; the UI displays percent and
    converts at its boundary. Thus auto-spread is canonical ±0.08…0.20.
@@ -903,9 +975,12 @@ row and Source-of-Truth header update.
 
 - Sync: pan mutations converge (property), hash completeness/parity
   updated, golden mutations extended.
-- Render (offline lane, native pan nodes): measure S5's unpanned baseline,
-  then set a target band from that capture; do not predeclare a master
-  `midSideRatioDb` range. Centered kick/bass stems must have balanced L/R
+- Render (offline lane, native pan nodes): keep the procedural mono-source
+  test as a DSP canary, but make shipped stereo samples the acceptance fixture.
+  Safe automatic placement must preserve their measured S/M baseline; manual
+  placement must create a measurable change without violating mono fold-down.
+  Do not predeclare a universal `midSideRatioDb` direction or range. Centered
+  kick/bass stems must have balanced L/R
   output and **no increase** in S/M ratio relative to their own pre-pan
   source baselines—`StereoPannerNode` at center preserves intrinsic stereo,
   so an absolute stem target such as ≤ −40 dB is impossible for the current
@@ -1128,7 +1203,7 @@ are **browser-lane only** (§43.0 lane rules).
 | S3 gain humanization | 0 dB hit-level variance | non-zero RMS/peak dB variance inside class budget; p-locked = 0 | offline |
 | S3 RR timbral variation (only after RR content lands) | 1.000 normalized correlation | < 0.99 | offline |
 | Cross-instrument `loudnessKMax` spread (mf, ~C4) | (measure) | ±2.5 dB window | offline |
-| S5 spatial change | measure master and centered-stem S/M baselines | master improves by a measured post-baseline target; centered stems add no S/M; mono fold-down Δ ≤ 1 dB | offline |
+| S5 placement safety | real shipped-sample mix plus centered-stem S/M baselines | automatic policy preserves unanalysed stereo; manual pan changes placement; centered stems add no S/M; mono fold-down Δ ≤ 1 dB | offline |
 | Fresh-session scale guardrail | chromatic | 100 % entered pitches in-scale; explicit unlock persists/syncs | e2e |
 | Piano layer-boundary adjacent `logSpectralDistance` | hard-switch capture | crossfade maximum ≤ 75 % of hard-switch maximum; one layer outside blend window | offline |
 | Kick sweep: rendered instantaneous-frequency vs designed curve | (fails today — sweep bug) | matches 150→40 Hz | offline |
@@ -1141,6 +1216,13 @@ threshold; report the preference rate and binomial confidence interval
 rather than treating 4/5 trials as conclusive. Sample *content* promotion
 additionally follows the SAMPLE-PIPELINE-V2 process (three-anchor + full-set,
 hash-bound, committed decisions).
+
+First-contact comparison: preregister a novice task with no coaching. Record
+time-to-first-audible-note, time-to-one-replayable/coherent loop, completion,
+error/restart count, and a post-task "would continue" rating. Analyze at the
+participant level and report intervals. The guided Keyboardia variant must beat
+current Keyboardia on the primary endpoint and reach the preregistered Song
+Maker equivalence margin before first-contact parity can be claimed.
 
 Regression: full suite green (unit, property, golden mutations, hash
 parity, Playwright with updated inventories); `npm run test:mutation` run
@@ -1165,19 +1247,21 @@ config sets `break: null`).
   so browser and MCP-created sessions agree. Its risk surface includes
   create/load/remix semantics, legacy absent-scale migration, two-client
   synchronization, the scale-flip test inventory, MIDI-export default
-  parity, and visual-regression re-baselining. In-session content seeding
-  remains rejected.
+  parity, and visual-regression re-baselining. Missing legacy effects must
+  migrate to an explicit dry state; they must never inherit the new-session
+  room. The earlier blanket rejection of guided/seeded first contact is
+  withdrawn pending the flagged task study above.
 - **Lane discipline:** no Tone import in the offline lane, no dynamics
   assertions offline, capture spec Chromium-only serialized. §43.0.6
   inventory updates accompany every new Playwright spec.
 - **Registration:** add Phase 43 rows to `specs/ROADMAP.md` (summary
   table + `### Phase 43` section referencing this doc) and
   `specs/STATUS.md` when execution starts.
-- Order: **43.0 → 43.1 → 43.2 → 43.3** (43.0.3 is a hard prerequisite of
-  43.1's proof); then 43.4 (diagnosis + process-bound re-review), 43.5
-  (sync surface), 43.6 (preset data + DSP pass). 43.0–43.3 are each
-  roughly a day; 43.4 is open-ended (human listening gates); 43.5–43.6
-  are days.
+- Remaining order after the v4 correction: **cross-app baseline and novice
+  study design → guided prototype → curated starter-set review → matched
+  captures/listening → only then default graduation**. Internal Phase 43
+  gates continue to run as regressions, but passing them does not advance the
+  comparative claim by itself.
 
 ---
 
@@ -1219,9 +1303,8 @@ colon-safe instrument ids, `[pan:±N]`, step-addressed ties) in
 | S5 | Wide Kit | stereo image | 43.5 |
 | S6 | Acid Line | synth + drum voicing | 43.6 |
 
-**S2b groove** (a candidate for the home page's example-session list —
-in-session seeding was rejected, see 43.2 item 3; 5 active melody steps,
-5 offsets):
+**S2b groove** (a candidate for the flagged guided-start study described in
+43.2 item 3; 5 active melody steps, 5 offsets):
 
 ```
 Marimba: x--x--x---x--x--   sampled:marimba, offsets 0,3,7,10,7

@@ -6,6 +6,14 @@ import {
   musicalTimeToSeconds,
 } from './toneEffects';
 import { MIN_TEMPO } from '../shared/constants';
+import {
+  MASTER_COMPRESSOR_SETTINGS,
+  MASTER_LIMITER_THRESHOLD_DB,
+  MASTER_MAKEUP_GAIN,
+  MASTER_OUTPUT_TRIM,
+  REVERB_PREDELAY_SECONDS,
+  REVERB_SEND_HIGHPASS_HZ,
+} from './constants';
 
 /**
  * Tests for ToneEffectsChain
@@ -22,42 +30,80 @@ import { MIN_TEMPO } from '../shared/constants';
 
 // Mock Tone.js for unit tests (real Tone.js requires AudioContext)
 vi.mock('tone', () => {
+  const automatable = (initial: number) => {
+    const param = {
+      value: initial,
+      cancelScheduledValues: vi.fn(),
+      setTargetAtTime: vi.fn((value: number) => { param.value = value; }),
+    };
+    return param;
+  };
+
   // Use class syntax to satisfy Vitest's constructor check
   class MockGain {
-    gain = { value: 1 };
+    gain: ReturnType<typeof automatable>;
     connect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
+    constructor(value = 1) {
+      this.gain = automatable(value);
+    }
+  }
+
+  class MockCompressor {
+    options: typeof MASTER_COMPRESSOR_SETTINGS;
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+    constructor(options: typeof MASTER_COMPRESSOR_SETTINGS) {
+      this.options = options;
+    }
+  }
+
+  class MockFilter {
+    frequency: number;
+    type: string;
+    connect = vi.fn().mockReturnThis();
+    disconnect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+    constructor(frequency: number, type: string) {
+      this.frequency = frequency;
+      this.type = type;
+    }
   }
 
   class MockFreeverb {
-    roomSize = { value: 0.7 };
-    dampening = 3000;
-    wet = { value: 0 };
+    roomSize: ReturnType<typeof automatable>;
+    dampening: number;
+    wet = automatable(0);
     connect = vi.fn().mockReturnThis();
+    disconnect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
+    constructor(options: { roomSize: number; dampening: number }) {
+      this.roomSize = automatable(options.roomSize);
+      this.dampening = options.dampening;
+    }
   }
 
   class MockFeedbackDelay {
-    delayTime: { value: number };
-    feedback: { value: number };
-    wet = { value: 0 };
+    delayTime = automatable(0);
+    feedback = automatable(0);
+    wet = automatable(0);
     maxDelay: number;
     connect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
     constructor(options: { delayTime: number; feedback: number; maxDelay: number }) {
-      this.delayTime = { value: options.delayTime };
-      this.feedback = { value: options.feedback };
+      this.delayTime.value = options.delayTime;
+      this.feedback.value = options.feedback;
       this.maxDelay = options.maxDelay;
     }
   }
 
   class MockChorus {
-    frequency = { value: 1.5 };
+    frequency = automatable(1.5);
     depth = 0.5;
-    wet = { value: 0 };
+    wet = automatable(0);
     connect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
@@ -65,27 +111,37 @@ vi.mock('tone', () => {
   }
 
   class MockReverb {
-    decay = 2;
-    wet = { value: 0 };
+    decay: number;
+    preDelay: number;
+    wet = automatable(0);
     ready = Promise.resolve();
     connect = vi.fn().mockReturnThis();
+    disconnect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
+    constructor(options: { decay: number; preDelay: number; wet: number }) {
+      this.decay = options.decay;
+      this.preDelay = options.preDelay;
+      this.wet.value = options.wet;
+    }
   }
 
   class MockDistortion {
     distortion = 0;
-    wet = { value: 0 };
+    wet = automatable(0);
     connect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
   }
 
   class MockLimiter {
-    threshold = { value: -1 };
+    threshold: { value: number };
     connect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
+    constructor(threshold = -1) {
+      this.threshold = { value: threshold };
+    }
   }
 
   return {
@@ -94,7 +150,10 @@ vi.mock('tone', () => {
       state: 'running',
       rawContext: {},
     }),
+    now: vi.fn().mockReturnValue(0),
     Gain: MockGain,
+    Compressor: MockCompressor,
+    Filter: MockFilter,
     Freeverb: MockFreeverb,
     FeedbackDelay: MockFeedbackDelay,
     Chorus: MockChorus,
@@ -121,6 +180,16 @@ describe('ToneEffectsChain', () => {
       expect(chain.isReady()).toBe(true);
     });
 
+    it('hot-swaps the instant room for a fully-wet convolution reverb', async () => {
+      await vi.waitFor(() => {
+        expect(chain['reverb']).toBe(chain['convolutionReverb']);
+      });
+      const room = chain['convolutionReverb'];
+      expect(room?.decay).toBe(DEFAULT_EFFECTS_STATE.reverb.decay);
+      expect(room?.preDelay).toBe(REVERB_PREDELAY_SECONDS);
+      expect(room?.wet.value).toBe(1);
+    });
+
     it('initializes with default state', () => {
       const state = chain.getState();
       expect(state).toEqual(DEFAULT_EFFECTS_STATE);
@@ -130,17 +199,60 @@ describe('ToneEffectsChain', () => {
       // Verify effects are created
       expect(chain.isReady()).toBe(true);
     });
+
+    it('keeps dynamics in the active Tone path and uses a parallel high-passed reverb', () => {
+      const input = chain['input'];
+      const compressor = chain['compressor'];
+      const makeupTrim = chain['makeupTrim'];
+      const distortion = chain['distortion'];
+      const chorus = chain['chorus'];
+      const delay = chain['delay'];
+      const highpass = chain['reverbHighpass'];
+      const reverb = chain['reverb'];
+      const wetGain = chain['reverbWetGain'];
+      const limiter = chain['limiter'];
+      const outputTrim = chain['outputTrim'];
+
+      expect((compressor as unknown as { options: typeof MASTER_COMPRESSOR_SETTINGS } | null)?.options)
+        .toEqual(MASTER_COMPRESSOR_SETTINGS);
+      expect(makeupTrim?.gain.value).toBe(MASTER_MAKEUP_GAIN);
+      expect(highpass?.['frequency']).toBe(REVERB_SEND_HIGHPASS_HZ);
+      expect(highpass?.['type']).toBe('highpass');
+      expect(limiter?.threshold.value).toBe(MASTER_LIMITER_THRESHOLD_DB);
+      expect(outputTrim?.gain.value).toBe(MASTER_OUTPUT_TRIM);
+      expect(input?.connect).toHaveBeenCalledWith(compressor);
+      expect(compressor?.connect).toHaveBeenCalledWith(makeupTrim);
+      expect(makeupTrim?.connect).toHaveBeenCalledWith(distortion);
+      expect(distortion?.connect).toHaveBeenCalledWith(chorus);
+      expect(chorus?.connect).toHaveBeenCalledWith(delay);
+      expect(delay?.connect).toHaveBeenCalledWith(limiter);
+      expect(delay?.connect).toHaveBeenCalledWith(highpass);
+      expect(highpass?.connect).toHaveBeenCalledWith(reverb);
+      expect(reverb?.connect).toHaveBeenCalledWith(wetGain);
+      expect(wetGain?.connect).toHaveBeenCalledWith(limiter);
+      expect(limiter?.connect).toHaveBeenCalledWith(outputTrim);
+      expect(outputTrim?.toDestination).toHaveBeenCalled();
+    });
   });
 
   describe('reverb controls', () => {
     it('sets reverb wet correctly', () => {
       chain.setReverbWet(0.5);
       expect(chain.getState().reverb.wet).toBe(0.5);
+      expect(chain['reverbWetGain']?.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.5, 0, 0.04);
     });
 
-    it('sets reverb decay correctly', () => {
+    it('sets convolution reverb decay correctly', async () => {
+      await vi.waitFor(() => expect(chain['convolutionReverb']).toBe(chain['reverb']));
       chain.setReverbDecay(3.0);
       expect(chain.getState().reverb.decay).toBe(3.0);
+      expect(chain['convolutionReverb']?.decay).toBe(3);
+    });
+
+    it('initializes a fully-wet parallel room with the persisted wet return gain', async () => {
+      await vi.waitFor(() => expect(chain['convolutionReverb']).toBe(chain['reverb']));
+      expect(chain['reverb']?.wet.value).toBe(1);
+      expect(chain['reverbWetGain']?.gain.value).toBe(0);
     });
 
     it('clamps reverb wet to 0-1 range', () => {
@@ -367,7 +479,7 @@ describe('ToneEffectsChain', () => {
 });
 
 describe('DEFAULT_EFFECTS_STATE', () => {
-  it('has all effects disabled by default (wet = 0)', () => {
+  it('opens a restrained room by default while creative effects remain dry', () => {
     expect(DEFAULT_EFFECTS_STATE.reverb.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.delay.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.chorus.wet).toBe(0);
