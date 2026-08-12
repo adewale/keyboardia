@@ -178,7 +178,10 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
       result.instrumentId === expected.instrumentId && result.file === expected.file
     );
     expect(browser, `${expected.instrumentId}/${expected.file} was not decoded`).toBeDefined();
-    const adaptive = isDrumInstrument(`sampled:${expected.instrumentId}`);
+    // Match SampledInstrument.loadedSampleFromMapping: percussion and AAC
+    // deliveries compensate bounded decoder priming at playback time.
+    const adaptive = isDrumInstrument(`sampled:${expected.instrumentId}`)
+      || browser!.file.toLowerCase().endsWith('.m4a');
     const browserStart = compensatedSampleStartOffset(
       browser!.startOffset,
       browser!.leadingSilenceMs! / 1000,

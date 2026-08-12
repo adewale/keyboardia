@@ -2034,8 +2034,8 @@
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "string-section",
-      "file": "G5.mp3",
-      "sha256": "5a7d3b82a6187f5a0de8412083384c4d1ac44eb3c0bc3ee6cb9b2c94265457a7",
+      "file": "G5.m4a",
+      "sha256": "ea07725ee36a14ebf400284fa3cd74de44305cefc6c7c8dd1dd43af7e9eb9f91",
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {

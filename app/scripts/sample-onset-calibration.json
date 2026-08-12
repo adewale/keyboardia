@@ -7,6 +7,6 @@
     { "instrumentId": "808-snare", "file": "snare.mp3", "nodeLeadingSilenceMs": 0 },
     { "instrumentId": "acoustic-kick", "file": "source-0009.m4a", "nodeLeadingSilenceMs": 1.5873015873015872 },
     { "instrumentId": "acoustic-snare", "file": "source-0023.m4a", "nodeLeadingSilenceMs": 23.650793650793652 },
-    { "instrumentId": "string-section", "file": "G5.mp3", "nodeLeadingSilenceMs": 19.81859410430839 }
+    { "instrumentId": "string-section", "file": "G5.m4a", "nodeLeadingSilenceMs": 23.28798185941043 }
   ]
 }
