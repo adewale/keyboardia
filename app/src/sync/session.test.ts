@@ -11,6 +11,7 @@
 import { describe, it, expect } from 'vitest';
 import { sessionToGridState } from './session';
 import type { Session } from '../shared/state';
+import { LEGACY_MISSING_EFFECTS_STATE } from '../shared/effects-defaults';
 
 const EFFECTS = {
   bypass: false,
@@ -70,11 +71,21 @@ describe('sessionToGridState', () => {
     expect(grid.loopRegion).toBeNull();
   });
 
-  it('leaves optional fields undefined for sessions saved before they existed', () => {
+  it('migrates missing legacy effects to dry and scale to unlocked', () => {
     const grid = sessionToGridState(session({}));
 
-    expect(grid.effects).toBeUndefined();
-    expect(grid.scale).toBeUndefined();
+    expect(grid.effects).toEqual(LEGACY_MISSING_EFFECTS_STATE);
+    expect(grid.scale).toEqual({ root: 'C', scaleId: 'minor-pentatonic', locked: false });
+  });
+
+  it('returns detached legacy effects instead of sharing the migration constant', () => {
+    const first = sessionToGridState(session({}));
+    const second = sessionToGridState(session({}));
+
+    first.effects!.reverb.wet = 0.9;
+
+    expect(second.effects).toEqual(LEGACY_MISSING_EFFECTS_STATE);
+    expect(second.effects).not.toBe(LEGACY_MISSING_EFFECTS_STATE);
   });
 
   it('returns nothing for malformed session data', () => {

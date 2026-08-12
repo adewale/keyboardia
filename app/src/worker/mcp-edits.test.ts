@@ -30,6 +30,7 @@ describe('MCP rhythm domain', () => {
         sample_id: 'kick',
         step_count: 16,
         active_steps: [0, 8],
+        pan: 0,
       }],
     });
   });
@@ -335,6 +336,35 @@ describe('MCP rhythm domain', () => {
 
       expect(result.state.tracks[1]).toBe(theirs);
       expect(result.state.tracks.map((t) => t.id)).toEqual(['lead-1', 'snare-1']);
+    });
+  });
+
+  describe('set_track_pan', () => {
+    it('uses normalized units, preserves the track, and is retry-safe', () => {
+      const track = createDefaultTrack('lead-1', 'synth:lead', 'Lead');
+      track.steps[3] = true;
+      const state = createInitialSessionState({ tracks: [track] });
+      const edit = { operation: 'set_track_pan' as const, track_id: 'lead-1', pan: -0.2 };
+
+      const result = applyMcpSessionEdit(state, edit);
+      expect(result.state.tracks[0]).toEqual({ ...track, pan: -0.2 });
+      expect(result.events).toEqual([{ type: 'track_pan_set', trackId: 'lead-1', pan: -0.2 }]);
+      expect(applyMcpSessionEdit(result.state, edit)).toEqual({
+        state: result.state,
+        events: [],
+        changed: false,
+      });
+    });
+
+    it.each([NaN, Infinity, -1.01, 1.01])('rejects invalid pan %s with no mutation', (pan) => {
+      const track = createDefaultTrack('lead-1', 'synth:lead', 'Lead');
+      const state = createInitialSessionState({ tracks: [track] });
+      expect(() => applyMcpSessionEdit(state, {
+        operation: 'set_track_pan',
+        track_id: 'lead-1',
+        pan,
+      })).toThrowError(/normalized number from -1 to 1/);
+      expect(state.tracks[0]?.pan).toBe(0);
     });
   });
 });

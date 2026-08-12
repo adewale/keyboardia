@@ -88,6 +88,7 @@ function expandMacros(input: string, macros: ReadonlyMap<string, string>): strin
 export function preprocessSfzFile(filename: string, includeRoot = path.dirname(path.resolve(filename))): SfzPreprocessResult {
   const entry = path.resolve(filename);
   const boundary = path.resolve(includeRoot);
+  const entryDirectory = path.dirname(entry);
   const macros = new Map<string, string>();
   const errors: string[] = [];
 
@@ -121,11 +122,12 @@ export function preprocessSfzFile(filename: string, includeRoot = path.dirname(p
       } else {
         const includePath = expandMacros(match[3], macros).replaceAll('\\', path.sep);
         const siblingRelative = path.resolve(path.dirname(absolute), includePath);
-        const entryRelative = path.resolve(boundary, includePath);
+        const entryRelative = path.resolve(entryDirectory, includePath);
         // SFZ archives disagree on include roots: some includes are relative to
         // the including file, while ARIA-style maps commonly keep every
-        // include path relative to the entry map. Prefer the local path when
-        // it exists and otherwise resolve against the entry map directory.
+        // include path relative to the entry map. `boundary` is only the
+        // containment root; it may intentionally be wider than the entry map
+        // directory and must not change include resolution.
         const included = fs.existsSync(siblingRelative) ? siblingRelative : entryRelative;
         output += visit(included, [...stack, absolute]);
       }
@@ -256,16 +258,22 @@ function convertRandomRegions(
 
   const epsilon = 1e-8;
   for (const [identity, group] of groups) {
-    const incomplete = group.some(({ region }) => region.randomLow === undefined || region.randomHigh === undefined);
-    if (incomplete) {
-      errors.push(`SFZ random group ${identity} has incomplete lorand/hirand pairs`);
-      continue;
-    }
-    const sorted = [...group].sort((left, right) => left.region.randomLow! - right.region.randomLow!);
-    const contiguous = Math.abs(sorted[0].region.randomLow!) <= epsilon
-      && Math.abs(sorted.at(-1)!.region.randomHigh! - 1) <= epsilon
-      && sorted.every(({ region }, index) => region.randomLow! < region.randomHigh!
-        && (index === 0 || Math.abs(region.randomLow! - sorted[index - 1].region.randomHigh!) <= epsilon));
+    // SFZ defines omitted lorand/hirand as 0 and 1 respectively. Real-world
+    // maps therefore commonly spell a complete sequence as `hirand=0.25`,
+    // `lorand=0.25 hirand=0.5`, ..., `lorand=0.75`. Normalize those spec
+    // defaults before proving that the ranges form one contiguous partition.
+    // A region with neither opcode never enters this conversion group.
+    const normalizedGroup = group.map(({ region, index }) => ({
+      region,
+      index,
+      low: region.randomLow ?? 0,
+      high: region.randomHigh ?? 1,
+    }));
+    const sorted = normalizedGroup.sort((left, right) => left.low - right.low);
+    const contiguous = Math.abs(sorted[0].low) <= epsilon
+      && Math.abs(sorted.at(-1)!.high - 1) <= epsilon
+      && sorted.every(({ low, high }, index) => low < high
+        && (index === 0 || Math.abs(low - sorted[index - 1].high) <= epsilon));
     if (!contiguous) {
       errors.push(`SFZ random group ${identity} ranges do not form contiguous 0..1 coverage`);
       continue;
@@ -279,6 +287,30 @@ function convertRandomRegions(
     warnings.push(`${identity}: explicitly converted ${sorted.length} contiguous SFZ random ranges to deterministic round robin`);
   }
   return { regions: converted, errors, warnings };
+}
+
+function normalizeSequenceDefaults(regions: readonly SfzRegion[]): SfzRegion[] {
+  return regions.map(region => region.sequenceLength !== undefined && region.sequencePosition === undefined
+    ? { ...region, sequencePosition: 1 }
+    : { ...region });
+}
+
+function deduplicateExactRegions(regions: readonly SfzRegion[]): { regions: SfzRegion[]; duplicateCount: number } {
+  const seen = new Set<string>();
+  const unique: SfzRegion[] = [];
+  for (const region of regions) {
+    // The parser always creates this flat shape in a stable property order.
+    // Exact duplicates can arise when an SFZ top-level program includes the
+    // same playable region behind controller branches that Keyboardia does not
+    // model (for example normal and "epic" kit views). Keeping both would
+    // create a broken round-robin group; collapsing them preserves one copy of
+    // the identical sample/playback mapping without guessing about controllers.
+    const identity = JSON.stringify(region);
+    if (seen.has(identity)) continue;
+    seen.add(identity);
+    unique.push({ ...region });
+  }
+  return { regions: unique, duplicateCount: regions.length - unique.length };
 }
 
 function sourceId(index: number): SourceId {
@@ -316,9 +348,16 @@ export async function generateSfzImport(options: GenerateSfzImportOptions): Prom
   if (options.mappedRootMidi !== undefined) regions = regions.map(region => ({ ...region, rootMidi: options.mappedRootMidi }));
   if (regions.length === 0) errors.push('SFZ selection contains no regions');
 
+  const deduplicated = deduplicateExactRegions(regions);
+  regions = deduplicated.regions;
+
   const coverage = normalizeVelocityCoverage(regions, options.articulation, options.velocityZeroPolicy ?? 'reject');
   errors.push(...coverage.errors);
-  const converted = convertRandomRegions(coverage.regions, options.articulation, options.randomPolicy);
+  const converted = convertRandomRegions(
+    normalizeSequenceDefaults(coverage.regions),
+    options.articulation,
+    options.randomPolicy,
+  );
   errors.push(...converted.errors);
 
   const samplePaths = new Set<string>();
@@ -377,7 +416,14 @@ export async function generateSfzImport(options: GenerateSfzImportOptions): Prom
       preprocessedSfzSha256: createHash('sha256').update(preprocessed.value).digest('hex'),
       sources,
       mappings: imported.mappings,
-      warnings: [...coverage.warnings, ...converted.warnings, ...imported.warnings],
+      warnings: [
+        ...(deduplicated.duplicateCount > 0
+          ? [`Collapsed ${deduplicated.duplicateCount} exact duplicate SFZ region${deduplicated.duplicateCount === 1 ? '' : 's'} from controller-branched includes`]
+          : []),
+        ...coverage.warnings,
+        ...converted.warnings,
+        ...imported.warnings,
+      ],
     },
   };
 }

@@ -17,6 +17,7 @@ import * as Tone from 'tone';
 import { logger } from '../utils/logger';
 import { parseInstrumentId } from './instrument-types';
 import { NOTE_NAMES } from '../music/music-theory';
+import { TONE_SOURCE_GAIN_DB, dbToGain } from './source-calibration';
 
 /**
  * Synth type identifiers used in sample IDs
@@ -125,7 +126,7 @@ export const TONE_SYNTH_PRESETS: Record<ToneSynthType, ToneSynthPreset> = {
       harmonicity: 1,
       envelope: {
         attack: 0.1,
-        decay: 0.2,
+        decay: 0.12,
         sustain: 0.8,
         release: 0.5,
       },
@@ -259,6 +260,7 @@ export class ToneSynthManager {
   private synths: Map<BaseSynthType, Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.PluckSynth | Tone.DuoSynth> = new Map();
   private output: Tone.Gain | null = null;
   private pluckGain: Tone.Gain | null = null;
+  private sourceGains: Map<BaseSynthType, Tone.Gain> = new Map();
   private activePresets: Map<BaseSynthType, ToneSynthType> = new Map();
   private fmOverride: { harmonicity: number; modulationIndex: number } | null = null;
   private ready = false;
@@ -274,7 +276,7 @@ export class ToneSynthManager {
     logger.audio.log('Initializing ToneSynthManager...');
 
     // Create output gain node
-    this.output = new Tone.Gain(0.7);
+    this.output = new Tone.Gain(1);
 
     this.ready = true;
     logger.audio.log('ToneSynthManager initialized');
@@ -303,13 +305,11 @@ export class ToneSynthManager {
     if (!synth) {
       synth = this.createSynth(type);
       if (this.output) {
-        if (type === 'pluck') {
-          this.pluckGain = new Tone.Gain(1);
-          synth.connect(this.pluckGain);
-          this.pluckGain.connect(this.output);
-        } else {
-          synth.connect(this.output);
-        }
+        const sourceGain = new Tone.Gain(1);
+        synth.connect(sourceGain);
+        sourceGain.connect(this.output);
+        this.sourceGains.set(type, sourceGain);
+        if (type === 'pluck') this.pluckGain = sourceGain;
       }
       this.synths.set(type, synth);
     }
@@ -361,6 +361,7 @@ export class ToneSynthManager {
     }
 
     const synth = this.getSynth(preset.type);
+    const sourceGain = this.sourceGains.get(preset.type);
 
     // Presets describe instrument changes, not note events. Reapplying on every
     // note erased live FM controls immediately before the attack.
@@ -391,6 +392,7 @@ export class ToneSynthManager {
       startTime = lastTime + 0.001;
     }
     this.lastScheduledTime.set(preset.type, startTime);
+    sourceGain?.gain.setValueAtTime(dbToGain(TONE_SOURCE_GAIN_DB[presetName]), startTime);
 
     // PluckSynth doesn't have triggerAttackRelease
     // Use try-catch to handle cases where Tone.js internal state rejects the time
@@ -399,7 +401,7 @@ export class ToneSynthManager {
     // Volume P-lock is passed as velocity (4th param of triggerAttackRelease)
     try {
       if (preset.type === 'pluck') {
-        this.pluckGain?.gain.setValueAtTime(volume, startTime);
+        this.pluckGain?.gain.setValueAtTime(volume * dbToGain(TONE_SOURCE_GAIN_DB[presetName]), startTime);
         (synth as Tone.PluckSynth).triggerAttack(noteValue, startTime);
       } else {
         (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
@@ -413,7 +415,7 @@ export class ToneSynthManager {
       logger.audio.warn(`Tone.js timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
       try {
         if (preset.type === 'pluck') {
-          this.pluckGain?.gain.setValueAtTime(volume, retryTime);
+          this.pluckGain?.gain.setValueAtTime(volume * dbToGain(TONE_SOURCE_GAIN_DB[presetName]), retryTime);
           (synth as Tone.PluckSynth).triggerAttack(noteValue, retryTime);
         } else {
           (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
@@ -538,7 +540,10 @@ export class ToneSynthManager {
     this.activePresets.clear();
     this.fmOverride = null;
 
-    this.pluckGain?.dispose();
+    for (const gain of this.sourceGains.values()) {
+      gain.dispose();
+    }
+    this.sourceGains.clear();
     this.pluckGain = null;
 
     // Dispose output

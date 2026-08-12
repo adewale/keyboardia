@@ -74,6 +74,7 @@ export const MCP_RHYTHM_EVAL_CASES: McpRhythmEvalCase[] = [
         track_id: 'existing-snare',
         name: 'Snare',
         sample_id: 'snare',
+        pan: 0,
         step_count: 16,
         active_steps: [4, 12],
       }],
@@ -97,6 +98,7 @@ export const MCP_RHYTHM_EVAL_CASES: McpRhythmEvalCase[] = [
         track_id: 'existing-kick',
         name: 'Kick',
         sample_id: 'kick',
+        pan: 0,
         step_count: 16,
         active_steps: [0, 4, 8],
       }],
@@ -120,6 +122,7 @@ export const MCP_RHYTHM_EVAL_CASES: McpRhythmEvalCase[] = [
         track_id: 'existing-hats',
         name: 'Hi-Hat',
         sample_id: 'hihat',
+        pan: 0,
         step_count: 16,
         active_steps: [0, 2, 4, 6, 8, 10, 12, 14],
       }],
@@ -143,6 +146,7 @@ export const MCP_RHYTHM_EVAL_CASES: McpRhythmEvalCase[] = [
         track_id: 'existing-clap',
         name: 'Clap',
         sample_id: 'clap',
+        pan: 0,
         step_count: 16,
         active_steps: [7],
       }],
@@ -166,6 +170,7 @@ export const MCP_RHYTHM_EVAL_CASES: McpRhythmEvalCase[] = [
         track_id: 'existing-rim',
         name: 'Rim',
         sample_id: 'rim',
+        pan: 0,
         step_count: 16,
         active_steps: [3, 7, 11, 15],
       }],
@@ -226,7 +231,8 @@ function sameTrackMetadata(
     && a.track_id === b.track_id
     && a.name === b.name
     && a.sample_id === b.sample_id
-    && a.step_count === b.step_count;
+    && a.step_count === b.step_count
+    && a.pan === b.pan;
 }
 
 function sameTrack(a: CompactMcpTrack | undefined, b: CompactMcpTrack | undefined): boolean {

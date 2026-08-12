@@ -28,6 +28,8 @@ function createMockStereoPannerNode() {
     pan: {
       value: 0,
       setValueAtTime: vi.fn((value: number) => { node.pan.value = value; }),
+      setTargetAtTime: vi.fn((value: number) => { node.pan.value = value; }),
+      cancelScheduledValues: vi.fn(),
     },
     connect: vi.fn(),
     disconnect: vi.fn(),
@@ -134,6 +136,14 @@ describe('TrackBus', () => {
 
       bus.setPan(1);
       expect(bus.getPan()).toBe(1);
+    });
+
+    it('smooths pan changes with the shared continuous-parameter slew', () => {
+      const bus = new TrackBus(context, destination);
+      bus.setPan(0.5);
+      const panner = vi.mocked(context.createStereoPanner).mock.results[0]?.value;
+      expect(panner.pan.cancelScheduledValues).toHaveBeenCalledWith(context.currentTime);
+      expect(panner.pan.setTargetAtTime).toHaveBeenCalledWith(0.5, context.currentTime, 0.04);
     });
 
     it('should clamp pan to valid range', () => {

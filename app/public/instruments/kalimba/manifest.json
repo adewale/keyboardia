@@ -3,12 +3,13 @@
   "name": "Kalimba",
   "type": "sampled",
   "releaseTime": 1,
+  "gainDb": 9.5,
   "playableRange": {
     "min": 53,
     "max": 87
   },
   "credits": {
-    "source": "VCSL (Kalimba, Kenya) \u2014 keys retuned to equal temperament (<=45 cents)",
+    "source": "VCSL (Kalimba, Kenya) — keys retuned to equal temperament (<=45 cents)",
     "url": "https://github.com/sgossner/VCSL",
     "license": "CC0 1.0 Universal (Public Domain)"
   },
@@ -19,7 +20,8 @@
     },
     {
       "note": 61,
-      "file": "Cs4.mp3"
+      "file": "Cs4.mp3",
+      "gainDb": -0.005
     },
     {
       "note": 63,
@@ -39,7 +41,8 @@
     },
     {
       "note": 73,
-      "file": "Cs5.mp3"
+      "file": "Cs5.mp3",
+      "gainDb": -0.22
     },
     {
       "note": 75,
@@ -51,7 +54,8 @@
     },
     {
       "note": 81,
-      "file": "A5.mp3"
+      "file": "A5.mp3",
+      "gainDb": 0.101
     }
   ]
 }

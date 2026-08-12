@@ -19,7 +19,8 @@
     },
     {
       "note": 43,
-      "file": "G2.m4a"
+      "file": "G2.m4a",
+      "gainDb": -3.75
     },
     {
       "note": 46,
@@ -59,20 +60,24 @@
     },
     {
       "note": 74,
-      "file": "D5.m4a"
+      "file": "D5.m4a",
+      "gainDb": 1.421
     },
     {
       "note": 77,
-      "file": "F5.m4a"
+      "file": "F5.m4a",
+      "gainDb": -2.412
     },
     {
       "note": 80,
-      "file": "Ab5.m4a"
+      "file": "Ab5.m4a",
+      "gainDb": 1.091
     },
     {
       "note": 83,
-      "file": "B5.m4a"
+      "file": "B5.m4a",
+      "gainDb": -1.319
     }
   ],
-  "gainDb": 2.5
+  "gainDb": 6.5
 }

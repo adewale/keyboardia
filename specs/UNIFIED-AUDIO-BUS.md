@@ -1,8 +1,12 @@
 # Unified Audio Bus Architecture
 
-> **Status:** Proposed
-> **Phase:** 25A (after Volume P-Lock Fix)
-> **Priority:** High - Architectural debt causing inconsistent behavior
+> **Status:** Implemented (Phase 24); signal flow refreshed for Phase 43
+> **Phase:** 24, extended by Phase 43
+> **Priority:** Complete
+
+The historical problem analysis below is retained to explain why the bus was
+introduced. The current implementation routes every source through a per-track
+bus and the measured master chain shown in the diagram.
 
 ## Problem Statement
 
@@ -20,7 +24,7 @@ The Volume P-Lock bug (Phase 25 fix) required identical changes to 5 different c
 
 ---
 
-## Current State Analysis
+## Historical Pre-Unification State Analysis
 
 ### The Five Play Methods
 
@@ -66,7 +70,7 @@ No one unified the routing architecture as new sources were added.
 
 ---
 
-## Proposed Solution: Unified Audio Bus
+## Implemented Solution: Unified Audio Bus
 
 ### Architecture Diagram
 
@@ -97,24 +101,28 @@ No one unified the routing architecture as new sources were added.
                                  │
                                  ▼
                         ┌────────────────┐
-                        │   masterGain   │
-                        └───────┬────────┘
-                                │
-                                ▼
-                        ┌────────────────┐
-                        │  Effects Chain │
-                        │ (reverb, delay)│
+                        │ masterGain −3dB│
                         └───────┬────────┘
                                 │
                                 ▼
                         ┌────────────────┐
                         │  Compressor    │
+                        │ + makeup trim  │
                         └───────┬────────┘
                                 │
                                 ▼
                         ┌────────────────┐
-                        │  Destination   │
-                        │  (speakers)    │
+                        │ Dist/Chorus/   │
+                        │ Delay + HPF    │
+                        │ Reverb send    │
+                        └───────┬────────┘
+                                │
+                                ▼
+                        ┌────────────────┐
+                        │ Limiter −1dB   │
+                        │ Tone.Dest      │
+                        │ Volume → Gain  │
+                        │ → speakers     │
                         └────────────────┘
 ```
 
@@ -613,13 +621,21 @@ function generateAudioGraph(): string {
 
   // Add master chain
   nodes.push('  masterGain[Master Gain]');
-  nodes.push('  effects[Effects Chain]');
   nodes.push('  compressor[Compressor]');
-  nodes.push('  destination[Speakers]');
+  nodes.push('  makeup[Makeup Trim]');
+  nodes.push('  effects[Distortion / Chorus / Delay + parallel HPF Reverb]');
+  nodes.push('  limiter[Limiter -1 dB]');
+  nodes.push('  outputTrim[Output Trim -1 dB]');
+  nodes.push('  toneDestination[Tone.Destination: Volume to Gain]');
+  nodes.push('  destination[Raw AudioContext Destination / Speakers]');
 
-  edges.push('  masterGain --> effects');
-  edges.push('  effects --> compressor');
-  edges.push('  compressor --> destination');
+  edges.push('  masterGain --> compressor');
+  edges.push('  compressor --> makeup');
+  edges.push('  makeup --> effects');
+  edges.push('  effects --> limiter');
+  edges.push('  limiter --> outputTrim');
+  edges.push('  outputTrim --> toneDestination');
+  edges.push('  toneDestination --> destination');
 
   return `graph TD\n${nodes.join('\n')}\n${edges.join('\n')}`;
 }

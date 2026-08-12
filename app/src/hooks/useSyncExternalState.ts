@@ -12,7 +12,7 @@
  * TASK-006 from DUPLICATION-REMEDIATION-PLAN.md
  */
 
-import { useEffect, useState, useCallback, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 
 /**
  * Hook that syncs external state to local state with JSON.stringify comparison.
@@ -76,30 +76,30 @@ export function useSyncExternalStateWithSideEffect<T>(
   onExternalChange?: (state: T) => void
 ): [T, Dispatch<SetStateAction<T>>] {
   const [localState, setLocalState] = useState<T>(externalState ?? initialValue);
+  const onExternalChangeRef = useRef(onExternalChange);
+  const serializedExternalState = externalState === undefined
+    ? undefined
+    : JSON.stringify(externalState);
 
-  // Track whether we should call the side effect
-  const shouldApplySideEffect = useCallback(
-    (newState: T) => {
-      if (onExternalChange) {
-        onExternalChange(newState);
-      }
-    },
-    [onExternalChange]
-  );
+  useEffect(() => {
+    onExternalChangeRef.current = onExternalChange;
+  }, [onExternalChange]);
 
   // Sync external state to local state when it changes
+  // The serialized value is the semantic dependency: parent components may
+  // recreate an equivalent state object and an inline callback on each render.
   useEffect(() => {
     if (externalState !== undefined) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: syncing external prop to local state
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional external-prop synchronization.
       setLocalState(prev => {
         // Only update if values actually differ
-        if (JSON.stringify(prev) === JSON.stringify(externalState)) return prev;
+        if (JSON.stringify(prev) === serializedExternalState) return prev;
         return externalState;
       });
       // Call side effect when external state changes
-      shouldApplySideEffect(externalState);
+      onExternalChangeRef.current?.(externalState);
     }
-  }, [externalState, shouldApplySideEffect]);
+  }, [serializedExternalState]); // eslint-disable-line react-hooks/exhaustive-deps -- Compare by value, not object identity.
 
   return [localState, setLocalState];
 }

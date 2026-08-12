@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "programStatus": "evaluation-complete-current-retained",
+  "programStatus": "complete-owner-directed-automatic-enrichment-promoted",
   "instruments": [
     {
       "id": "808-clap",
@@ -49,14 +49,14 @@
     },
     {
       "id": "acoustic-crash",
-      "status": "candidate-rejected-current-retained",
+      "status": "promoted-owner-directed-automatic-enrichment",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-crash.json",
         "baseline": "sample-pipeline/baselines/acoustic-crash.json",
         "decision": "sample-pipeline/decisions/acoustic-crash.json"
       },
-      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit crash candidate adds eleven velocity zones and up to four deterministic variants.",
-      "evidence": []
+      "rationale": "The historical MuldjordKit candidate remains rejected. A separate pinned CC0 Virtuosity Drums crash tranche was automatically promoted under explicit owner direction with twelve full-length delivery files, four deterministic variants, zero hard defects, and no claim of perceptual preference.",
+      "evidence": ["sample-pipeline/enrichment/evidence/acoustic-crash/promotion.json"]
     },
     {
       "id": "acoustic-guitar",
@@ -69,58 +69,58 @@
     },
     {
       "id": "acoustic-hihat-closed",
-      "status": "candidate-rejected-current-retained",
+      "status": "promoted-owner-directed-automatic-enrichment",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-hihat-closed.json",
         "baseline": "sample-pipeline/baselines/acoustic-hihat-closed.json",
         "decision": "sample-pipeline/decisions/acoustic-hihat-closed.json"
       },
-      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit closed-hat candidate adds fourteen velocity zones and up to five deterministic variants.",
-      "evidence": []
+      "rationale": "The historical MuldjordKit candidate remains rejected. A separate pinned CC0 Virtuosity Drums closed-hat tranche was automatically promoted under explicit owner direction with sixteen delivery files, four deterministic variants, zero hard defects, and no claim of perceptual preference.",
+      "evidence": ["sample-pipeline/enrichment/evidence/acoustic-hihat-closed/promotion.json"]
     },
     {
       "id": "acoustic-hihat-open",
-      "status": "candidate-rejected-current-retained",
+      "status": "promoted-owner-directed-automatic-enrichment",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-hihat-open.json",
         "baseline": "sample-pipeline/baselines/acoustic-hihat-open.json",
         "decision": "sample-pipeline/decisions/acoustic-hihat-open.json"
       },
-      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit open-hat candidate adds fourteen velocity zones and up to five deterministic variants while retaining the shared choke group.",
-      "evidence": []
+      "rationale": "The historical MuldjordKit candidate remains rejected. A separate pinned CC0 Virtuosity Drums open-hat tranche was automatically promoted under explicit owner direction with twelve full-length delivery files, three deterministic variants, zero hard defects, and the existing choke contract preserved.",
+      "evidence": ["sample-pipeline/enrichment/evidence/acoustic-hihat-open/promotion.json"]
     },
     {
       "id": "acoustic-kick",
-      "status": "candidate-rejected-current-retained",
+      "status": "promoted-owner-directed-automatic-enrichment",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-kick.json",
         "baseline": "sample-pipeline/baselines/acoustic-kick.json",
         "decision": "sample-pipeline/decisions/acoustic-kick.json"
       },
-      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit kick candidate adds fourteen velocity zones and up to five deterministic variants.",
-      "evidence": []
+      "rationale": "The historical MuldjordKit candidate remains rejected. A separate pinned CC0 Virtuosity Drums kick tranche was automatically promoted under explicit owner direction with sixteen delivery files, four deterministic variants, zero hard defects, and no claim of perceptual preference.",
+      "evidence": ["sample-pipeline/enrichment/evidence/acoustic-kick/promotion.json"]
     },
     {
       "id": "acoustic-ride",
-      "status": "candidate-rejected-current-retained",
+      "status": "promoted-owner-directed-automatic-enrichment",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-ride.json",
         "baseline": "sample-pipeline/baselines/acoustic-ride.json",
         "decision": "sample-pipeline/decisions/acoustic-ride.json"
       },
-      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit right ride-bow candidate adds eight velocity zones and up to four deterministic variants.",
-      "evidence": []
+      "rationale": "The historical MuldjordKit candidate remains rejected. A separate pinned CC0 Virtuosity Drums ride tranche was automatically promoted under explicit owner direction with twelve full-length delivery files, four deterministic variants, zero hard defects, and no claim of perceptual preference.",
+      "evidence": ["sample-pipeline/enrichment/evidence/acoustic-ride/promotion.json"]
     },
     {
       "id": "acoustic-snare",
-      "status": "candidate-rejected-current-retained",
+      "status": "promoted-owner-directed-automatic-enrichment",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-snare.json",
         "baseline": "sample-pipeline/baselines/acoustic-snare.json",
         "decision": "sample-pipeline/decisions/acoustic-snare.json"
       },
-      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit center-snare candidate adds fourteen velocity zones and up to five deterministic variants.",
-      "evidence": []
+      "rationale": "The historical MuldjordKit candidate remains rejected. A separate pinned CC0 Virtuosity Drums snare tranche was automatically promoted under explicit owner direction with thirty-six measured velocity gradations, zero hard defects, and no claim of perceptual preference.",
+      "evidence": ["sample-pipeline/enrichment/evidence/acoustic-snare/promotion.json"]
     },
     {
       "id": "alto-sax",
@@ -155,13 +155,13 @@
     },
     {
       "id": "finger-bass",
-      "status": "candidate-blocked-current-retained",
+      "status": "promoted-owner-directed-automatic-enrichment",
       "candidate": {
         "recipe": "sample-pipeline/recipes/finger-bass.json",
         "baseline": "sample-pipeline/baselines/finger-bass.json"
       },
-      "rationale": "FreePats Bass YR corrects the upright-bass identity mismatch, but its MIDI 26\u201345 candidate contracts the current 18\u201366 playable-range contract and is blocked pending a deeper exact-identity source.",
-      "evidence": []
+      "rationale": "The historical FreePats Bass YR candidate remains blocked. The pinned CC0 Meatbass source already represented by this product ID was automatically expanded to 224 mappings across fourteen roots, four velocity layers, and four deterministic variants without contracting the playable range; the existing finger-bass/upright-bass naming mismatch remains explicit.",
+      "evidence": ["sample-pipeline/enrichment/evidence/finger-bass/promotion.json"]
     },
     {
       "id": "french-horn",
@@ -230,14 +230,14 @@
     },
     {
       "id": "steel-drums",
-      "status": "candidate-rejected-current-retained",
+      "status": "promoted-owner-directed-automatic-enrichment",
       "candidate": {
         "recipe": "sample-pipeline/recipes/steel-drums.json",
         "baseline": "sample-pipeline/baselines/steel-drums.json",
         "decision": "sample-pipeline/decisions/steel-drums.json"
       },
-      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. jSteelDrum expands eight roots to twenty-four, expands three native velocity layers to five, and adds up to two curated deterministic variants per zone.",
-      "evidence": []
+      "rationale": "The historical curated jSteelDrum candidate remains rejected. Under explicit owner direction the pinned Unlicense jSteelDrum map was completely imported and automatically promoted: 401 mappings, twenty-four chromatic roots, five velocity layers, and up to six deterministic variants; one objectively clipped source master was excluded.",
+      "evidence": ["sample-pipeline/enrichment/evidence/steel-drums/promotion.json"]
     },
     {
       "id": "string-section",
@@ -267,11 +267,17 @@
       "rationale": "Current generated texture passes hard gates; generic CC0 texture pools did not establish the same vinyl-crackle identity."
     }
   ],
-  "completedAt": "2026-07-10T19:19:27.000Z",
+  "completedAt": "2026-08-12T00:00:00.000Z",
   "humanReview": {
     "stage": "blinded-low-mid-high-anchors",
     "result": "current-preferred-for-all-decision-ready-candidates",
     "statement": "I kept preferring the current samples in all the blind tests.",
     "candidatePromotions": 0
+  },
+  "automaticEnrichment": {
+    "authority": "Explicit user request in the 2026-08-12 Keyboardia sound-quality task",
+    "promotedInstruments": 8,
+    "perceptualPreferenceClaimed": false,
+    "evidenceRoot": "sample-pipeline/enrichment/evidence"
   }
 }

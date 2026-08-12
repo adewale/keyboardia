@@ -2354,23 +2354,23 @@ Building these features together ensures each new capability reinforces the othe
 
 All new sampled instruments must be validated against piano (the reference sample):
 
-| Metric | Reference (Piano C3) | Tolerance | Validation |
+| Metric | Reference | Tolerance | Validation |
 |--------|---------------------|-----------|------------|
-| Peak Level | -1.4 dB | ±2 dB | `ffmpeg -af volumedetect` |
-| LUFS | -13.85 | ±6 dB* | `ffmpeg -af loudnorm` |
+| Delivered `loudnessKMax` | Piano C4-mf | ±2.5 dB | `npm run validate:sample-quality` |
+| Browser onset (percussion) | Node decode receipt | ≤5 ms effective | Playwright browser-decode gate |
 
 *LUFS tolerance is wider because short percussive samples naturally measure lower than sustained sounds.
 
-**Validation Script:** `scripts/validate-sample-volume.sh`
+**Gating validator:** `scripts/validate-sample-quality.ts`
 ```bash
-npm run validate:samples   # Runs volume validation against piano reference
+npm run validate:sample-quality
 ```
 
 **Process for adding new samples:**
 1. Source CC0/Public Domain samples
 2. Convert to MP3 (128kbps, 44.1kHz)
-3. Run `npm run validate:samples` - must pass
-4. If peak is off, normalize with: `ffmpeg -af "volume=NdB"` where N is the difference
+3. Run `npm run validate:sample-quality` - must pass
+4. Calibrate delivered level with manifest `gainDb`; do not destructively normalize source evidence
 5. Update manifest.json with credits
 6. Update LICENSE.md
 
@@ -3518,6 +3518,40 @@ Web UI for operations team (requires auth):
 4. **Alerts** — Email/Slack on quota warnings
 
 **Outcome:** Operations visibility and automated cleanup of stale data.
+
+---
+
+### Phase 43: Sound Quality Parity ✅ Implemented
+
+Close the most important measured polish gaps while keeping Keyboardia's broad
+instrument palette. The implementation follows
+[`SOUND-QUALITY-PARITY-PLAN.md`](./SOUND-QUALITY-PARITY-PLAN.md); objective
+results are recorded in
+[`research/SOUND-QUALITY-PARITY-IMPLEMENTATION-2026-08-10.md`](./research/SOUND-QUALITY-PARITY-IMPLEMENTATION-2026-08-10.md).
+The automatically verifiable follow-up has its own before/after receipt in
+[`research/AUTOMATIC-AUDIO-IMPROVEMENTS-2026-08-11.md`](./research/AUTOMATIC-AUDIO-IMPROVEMENTS-2026-08-11.md).
+
+- Repaired and measured the master compressor/effects topology, −3 dB input
+  trim, auto-makeup null, −1 dB limiter, −1 dB post-limiter safety trim, and
+  synchronized browser capture taps including a real 16-track capacity path.
+- New sessions persist a locked C minor-pentatonic guardrail while legacy
+  missing-scale sessions migrate to explicit unlocked state.
+- Split velocity timbre from perceptual note gain, added deterministic bounded
+  humanization, and preserved explicit p-locks exactly.
+- Calibrated delivered sampled-instrument loudness to piano C4-mf, added tonal
+  velocity crossfades, and browser-checked percussion onset. Previously rejected
+  content remains rejected; no sample was promoted without human approval.
+- Calibrated procedural/core-source trims, added moving filter envelopes to all
+  core presets, filtered procedural hats with deterministic alternates, and
+  replaced the release hard-stop discontinuity with a zero-ending tail.
+- Added synced per-track pan, 40 ms continuous-control slew, and a convolution
+  reverb that hot-swaps over the instant Freeverb fallback.
+- Deepened native/advanced synth response and corrected procedural kick, snare,
+  and hi-hat DSP.
+
+**Automated outcome:** all defined numeric gates pass. The human, level-matched
+Song Maker preference trial remains a release-quality listening task and is not
+represented as completed by automation.
 
 ---
 

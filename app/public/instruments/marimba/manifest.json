@@ -3,6 +3,8 @@
   "name": "Marimba",
   "type": "sampled",
   "releaseTime": 0.8,
+  "gainDb": 4.25,
+  "velocityCrossfade": 8,
   "credits": {
     "source": "Versilian Community Sample Library (VCSL)",
     "url": "https://github.com/sgossner/VCSL",
@@ -35,19 +37,22 @@
       "note": 48,
       "file": "C3-pp.mp3",
       "velocityMin": 0,
-      "velocityMax": 50
+      "velocityMax": 50,
+      "gainDb": 4.187
     },
     {
       "note": 48,
       "file": "C3-mf.mp3",
       "velocityMin": 51,
-      "velocityMax": 100
+      "velocityMax": 100,
+      "gainDb": 4.187
     },
     {
       "note": 48,
       "file": "C3-ff.mp3",
       "velocityMin": 101,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": 4.187
     },
     {
       "note": 55,
@@ -107,55 +112,64 @@
       "note": 72,
       "file": "C5-pp.mp3",
       "velocityMin": 0,
-      "velocityMax": 50
+      "velocityMax": 50,
+      "gainDb": 1.179
     },
     {
       "note": 72,
       "file": "C5-mf.mp3",
       "velocityMin": 51,
-      "velocityMax": 100
+      "velocityMax": 100,
+      "gainDb": 1.179
     },
     {
       "note": 72,
       "file": "C5-ff.mp3",
       "velocityMin": 101,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": 1.179
     },
     {
       "note": 79,
       "file": "G5-pp.mp3",
       "velocityMin": 0,
-      "velocityMax": 50
+      "velocityMax": 50,
+      "gainDb": -0.026
     },
     {
       "note": 79,
       "file": "G5-mf.mp3",
       "velocityMin": 51,
-      "velocityMax": 100
+      "velocityMax": 100,
+      "gainDb": -0.026
     },
     {
       "note": 79,
       "file": "G5-ff.mp3",
       "velocityMin": 101,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": -0.026
     },
     {
       "note": 83,
       "file": "B5-pp.mp3",
       "velocityMin": 0,
-      "velocityMax": 50
+      "velocityMax": 50,
+      "gainDb": 3.029
     },
     {
       "note": 83,
       "file": "B5-mf.mp3",
       "velocityMin": 51,
-      "velocityMax": 100
+      "velocityMax": 100,
+      "gainDb": 3.029
     },
     {
       "note": 83,
       "file": "B5-ff.mp3",
       "velocityMin": 101,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": 3.029
     },
     {
       "note": 89,
@@ -179,19 +193,22 @@
       "note": 96,
       "file": "C7-pp.mp3",
       "velocityMin": 0,
-      "velocityMax": 50
+      "velocityMax": 50,
+      "gainDb": -0.724
     },
     {
       "note": 96,
       "file": "C7-mf.mp3",
       "velocityMin": 51,
-      "velocityMax": 100
+      "velocityMax": 100,
+      "gainDb": 1.046
     },
     {
       "note": 96,
       "file": "C7-ff.mp3",
       "velocityMin": 101,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "gainDb": 0.161
     }
   ]
 }

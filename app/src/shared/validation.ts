@@ -12,6 +12,8 @@ import {
   clamp,
   MIN_VOLUME,
   MAX_VOLUME,
+  MIN_PAN,
+  MAX_PAN,
 } from './constants';
 
 // Re-export clamp from constants (single source of truth)
@@ -75,6 +77,11 @@ export function isValidNumber(value: unknown): value is number {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+/** Public pan payloads are normalized finite numbers; transports reject bad input. */
+export function isValidPan(value: unknown): value is number {
+  return isValidNumber(value) && value >= MIN_PAN && value <= MAX_PAN;
+}
+
 // =============================================================================
 // Domain-Specific Clamps
 // =============================================================================
@@ -100,7 +107,7 @@ export function clampVolume(volume: number): number {
  * Used in track pan controls.
  */
 export function clampPan(pan: number): number {
-  return clamp(pan, -1, 1);
+  return clamp(pan, MIN_PAN, MAX_PAN);
 }
 
 /**

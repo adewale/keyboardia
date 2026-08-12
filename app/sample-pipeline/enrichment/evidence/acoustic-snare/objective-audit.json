@@ -1,0 +1,2652 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-snare",
+  "hardErrors": 0,
+  "reviewFlags": 47,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0001.m4a",
+      "message": "Effective leading silence 24.2ms may feel late (decoded 24.2ms)",
+      "value": 24.195011337868483,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0012.m4a",
+      "message": "Effective leading silence 24.3ms may feel late (decoded 24.3ms)",
+      "value": 24.285714285714285,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0023.m4a",
+      "message": "Effective leading silence 23.7ms may feel late (decoded 23.7ms)",
+      "value": 23.650793650793652,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0031.m4a",
+      "message": "Effective leading silence 23.6ms may feel late (decoded 23.6ms)",
+      "value": 23.6281179138322,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0031.m4a",
+      "message": "38:snare higher velocity 11-14 is 2.14 dB quieter than 8-10"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0032.m4a",
+      "message": "Effective leading silence 23.5ms may feel late (decoded 23.5ms)",
+      "value": 23.46938775510204,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0033.m4a",
+      "message": "Effective leading silence 23.5ms may feel late (decoded 23.5ms)",
+      "value": 23.46938775510204,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0034.m4a",
+      "message": "Effective leading silence 23.5ms may feel late (decoded 23.5ms)",
+      "value": 23.46938775510204,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0034.m4a",
+      "message": "38:snare higher velocity 22-24 is 0.63 dB quieter than 18-21"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0035.m4a",
+      "message": "Effective leading silence 23.5ms may feel late (decoded 23.5ms)",
+      "value": 23.46938775510204,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0035.m4a",
+      "message": "38:snare higher velocity 25-27 is 4.25 dB quieter than 22-24"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0036.m4a",
+      "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+      "value": 33.44671201814059,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0002.m4a",
+      "message": "Effective leading silence 32.4ms may feel late (decoded 32.4ms)",
+      "value": 32.38095238095238,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0003.m4a",
+      "message": "Effective leading silence 32.7ms may feel late (decoded 32.7ms)",
+      "value": 32.6530612244898,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0003.m4a",
+      "message": "38:snare higher velocity 35-38 is 2.23 dB quieter than 32-34"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0004.m4a",
+      "message": "Effective leading silence 26.7ms may feel late (decoded 26.7ms)",
+      "value": 26.689342403628117,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0005.m4a",
+      "message": "Effective leading silence 20.8ms may feel late (decoded 20.8ms)",
+      "value": 20.816326530612244,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0006.m4a",
+      "message": "Effective leading silence 16.7ms may feel late (decoded 16.7ms)",
+      "value": 16.689342403628117,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0006.m4a",
+      "message": "38:snare higher velocity 46-48 is 1.67 dB quieter than 42-45"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0007.m4a",
+      "message": "Effective leading silence 23.6ms may feel late (decoded 23.6ms)",
+      "value": 23.60544217687075,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0008.m4a",
+      "message": "Effective leading silence 33.0ms may feel late (decoded 33.0ms)",
+      "value": 32.99319727891156,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0009.m4a",
+      "message": "Effective leading silence 16.8ms may feel late (decoded 16.8ms)",
+      "value": 16.802721088435373,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0010.m4a",
+      "message": "Effective leading silence 23.2ms may feel late (decoded 23.2ms)",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0010.m4a",
+      "message": "38:snare higher velocity 60-63 is 3.50 dB quieter than 56-59"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0011.m4a",
+      "message": "Effective leading silence 33.5ms may feel late (decoded 33.5ms)",
+      "value": 33.49206349206349,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0011.m4a",
+      "message": "Estimated pitch is 190.8 cents from mapped note",
+      "value": 190.80275110115394,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0013.m4a",
+      "message": "Effective leading silence 21.6ms may feel late (decoded 21.6ms)",
+      "value": 21.564625850340136,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0014.m4a",
+      "message": "Effective leading silence 25.2ms may feel late (decoded 25.2ms)",
+      "value": 25.170068027210885,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0014.m4a",
+      "message": "38:snare higher velocity 71-73 is 0.13 dB quieter than 67-70"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0015.m4a",
+      "message": "Effective leading silence 33.5ms may feel late (decoded 33.5ms)",
+      "value": 33.46938775510204,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0016.m4a",
+      "message": "Effective leading silence 32.1ms may feel late (decoded 32.1ms)",
+      "value": 32.06349206349206,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0017.m4a",
+      "message": "Effective leading silence 33.6ms may feel late (decoded 33.6ms)",
+      "value": 33.5827664399093,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0017.m4a",
+      "message": "38:snare higher velocity 81-84 is 0.51 dB quieter than 78-80"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0018.m4a",
+      "message": "Effective leading silence 26.1ms may feel late (decoded 26.1ms)",
+      "value": 26.077097505668934,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0019.m4a",
+      "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+      "value": 33.44671201814059,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0020.m4a",
+      "message": "Effective leading silence 33.5ms may feel late (decoded 33.5ms)",
+      "value": 33.53741496598639,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0021.m4a",
+      "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+      "value": 33.44671201814059,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0021.m4a",
+      "message": "38:snare higher velocity 96-98 is 0.94 dB quieter than 92-95"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0022.m4a",
+      "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+      "value": 33.42403628117914,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0024.m4a",
+      "message": "Effective leading silence 14.5ms may feel late (decoded 14.5ms)",
+      "value": 14.467120181405896,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0025.m4a",
+      "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+      "value": 33.40136054421769,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0025.m4a",
+      "message": "38:snare higher velocity 106-109 is 1.01 dB quieter than 103-105"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0026.m4a",
+      "message": "Effective leading silence 16.8ms may feel late (decoded 16.8ms)",
+      "value": 16.848072562358276,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0027.m4a",
+      "message": "Effective leading silence 29.3ms may feel late (decoded 29.3ms)",
+      "value": 29.29705215419501,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0028.m4a",
+      "message": "Effective leading silence 13.4ms may feel late (decoded 13.4ms)",
+      "value": 13.44671201814059,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0029.m4a",
+      "message": "Effective leading silence 30.6ms may feel late (decoded 30.6ms)",
+      "value": 30.56689342403628,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "acoustic-snare",
+      "file": "source-0030.m4a",
+      "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+      "value": 33.40136054421769,
+      "threshold": 10
+    }
+  ],
+  "entries": [
+    {
+      "file": "source-0001.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0001.m4a",
+        "note": 38,
+        "velocityMin": 0,
+        "velocityMax": 3,
+        "durationSec": 1.9504761904761905,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.013974778354167938,
+        "peakDb": -37.09310142958235,
+        "rmsDb": -64.64034758319897,
+        "activeRmsDb": -63.1088592937267,
+        "loudnessKMax": -54.70560083634568,
+        "playbackGainDb": 0,
+        "dcOffset": 6.54707792967004e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 26.015757864144362,
+        "leadingSilenceMs": 24.195011337868483,
+        "effectiveLeadingSilenceMs": 24.195011337868483,
+        "trailingSilenceMs": 562.9478458049887,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -74.44265278776767,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.195011337868483,
+        "activeEndMs": 1387.5056689342405,
+        "spectral": {
+          "centroidHz": 3410.2403509303053,
+          "highFrequencyRatio": 0.3300828280971138
+        },
+        "pitch": {
+          "midi": 34.295670128394654,
+          "frequencyHz": 59.274193548387096,
+          "rawCents": -370.4329871605346,
+          "foldedCents": -370.4329871605346,
+          "confidence": 0.020350976299360824
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7386275214337124,
+          "monoLossDb": -0.6116997314483369,
+          "leftRightBalanceDb": -0.5306131518295222
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0001.m4a",
+          "message": "Effective leading silence 24.2ms may feel late (decoded 24.2ms)",
+          "value": 24.195011337868483,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0012.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0012.m4a",
+        "note": 38,
+        "velocityMin": 4,
+        "velocityMax": 7,
+        "durationSec": 1.6253968253968254,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.01648327335715294,
+        "peakDb": -35.65913078022463,
+        "rmsDb": -62.56084051989355,
+        "activeRmsDb": -55.939801969621215,
+        "loudnessKMax": -53.344956625983336,
+        "playbackGainDb": 0,
+        "dcOffset": 0.0000020940486147346437,
+        "dcOffsetDb": -113.58026480208416,
+        "crestFactorDb": 20.280671189396582,
+        "leadingSilenceMs": 24.285714285714285,
+        "effectiveLeadingSilenceMs": 24.285714285714285,
+        "trailingSilenceMs": 1249.6145124716554,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -68.37537519592074,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.285714285714285,
+        "activeEndMs": 375.7596371882086,
+        "spectral": {
+          "centroidHz": 3520.718346129661,
+          "highFrequencyRatio": 0.3472678870281201
+        },
+        "pitch": {
+          "midi": 39.33828298900894,
+          "frequencyHz": 79.31654676258992,
+          "rawCents": 133.82829890089383,
+          "foldedCents": 133.82829890089386,
+          "confidence": 0.3821710782861502
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7936753506582604,
+          "monoLossDb": -0.4822336020043034,
+          "leftRightBalanceDb": -0.8580708843791872
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0012.m4a",
+          "message": "Effective leading silence 24.3ms may feel late (decoded 24.3ms)",
+          "value": 24.285714285714285,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0023.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0023.m4a",
+        "note": 38,
+        "velocityMin": 8,
+        "velocityMax": 10,
+        "durationSec": 2.043356009070295,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.019824499264359474,
+        "peakDb": -34.055955469334016,
+        "rmsDb": -61.807190826567734,
+        "activeRmsDb": -53.818561282330045,
+        "loudnessKMax": -51.63626517448916,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000016863957578405632,
+        "dcOffsetDb": -95.46080997883804,
+        "crestFactorDb": 19.76260581299603,
+        "leadingSilenceMs": 23.650793650793652,
+        "effectiveLeadingSilenceMs": 23.650793650793652,
+        "trailingSilenceMs": 1697.3242630385487,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -82.48282770384237,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.650793650793652,
+        "activeEndMs": 346.0090702947846,
+        "spectral": {
+          "centroidHz": 3468.8726444147787,
+          "highFrequencyRatio": 0.33729323002834655
+        },
+        "pitch": {
+          "midi": 39.24512218757275,
+          "frequencyHz": 78.89087656529517,
+          "rawCents": 124.5122187572747,
+          "foldedCents": 124.5122187572747,
+          "confidence": 0.318830043978664
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7859458980178504,
+          "monoLossDb": -0.5009457769090292,
+          "leftRightBalanceDb": -0.8385221141617618
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0023.m4a",
+          "message": "Effective leading silence 23.7ms may feel late (decoded 23.7ms)",
+          "value": 23.650793650793652,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0031.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0031.m4a",
+        "note": 38,
+        "velocityMin": 11,
+        "velocityMax": 14,
+        "durationSec": 1.555736961451247,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.025653086602687836,
+        "peakDb": -31.817207454031866,
+        "rmsDb": -57.74091610529449,
+        "activeRmsDb": -55.95516005635619,
+        "loudnessKMax": -48.784889755527786,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000009080165870396607,
+        "dcOffsetDb": -100.83812436010695,
+        "crestFactorDb": 24.13795260232433,
+        "leadingSilenceMs": 23.6281179138322,
+        "effectiveLeadingSilenceMs": 23.6281179138322,
+        "trailingSilenceMs": 501.8367346938776,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -99.89736827582999,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.6281179138322,
+        "activeEndMs": 1053.8775510204082,
+        "spectral": {
+          "centroidHz": 3474.3638410058293,
+          "highFrequencyRatio": 0.3334128526519156
+        },
+        "pitch": {
+          "midi": 34.48283238900687,
+          "frequencyHz": 59.91847826086956,
+          "rawCents": -351.7167610993127,
+          "foldedCents": -351.7167610993127,
+          "confidence": 0.2607073000076094
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7814901275179228,
+          "monoLossDb": -0.5132886188939547,
+          "leftRightBalanceDb": -0.9200445109505972
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0031.m4a",
+          "message": "Effective leading silence 23.6ms may feel late (decoded 23.6ms)",
+          "value": 23.6281179138322,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0031.m4a",
+          "message": "38:snare higher velocity 11-14 is 2.14 dB quieter than 8-10"
+        }
+      ]
+    },
+    {
+      "file": "source-0032.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0032.m4a",
+        "note": 38,
+        "velocityMin": 15,
+        "velocityMax": 17,
+        "durationSec": 1.6021768707482993,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03078576922416687,
+        "peakDb": -30.232999810014295,
+        "rmsDb": -56.43243682942049,
+        "activeRmsDb": -54.93842791125399,
+        "loudnessKMax": -47.352344358431054,
+        "playbackGainDb": 0,
+        "dcOffset": -5.636870315697356e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 24.705428101239693,
+        "leadingSilenceMs": 23.46938775510204,
+        "effectiveLeadingSilenceMs": 23.46938775510204,
+        "trailingSilenceMs": 443.69614512471657,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -82.18499109250325,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.46938775510204,
+        "activeEndMs": 1158.4580498866212,
+        "spectral": {
+          "centroidHz": 3411.5363068169477,
+          "highFrequencyRatio": 0.3358711839579749
+        },
+        "pitch": {
+          "midi": 34.76742521669256,
+          "frequencyHz": 60.91160220994475,
+          "rawCents": -323.25747833074416,
+          "foldedCents": -323.25747833074416,
+          "confidence": 0.03542788673321819
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7833229284813751,
+          "monoLossDb": -0.5053309548092878,
+          "leftRightBalanceDb": -0.7623405850968594
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0032.m4a",
+          "message": "Effective leading silence 23.5ms may feel late (decoded 23.5ms)",
+          "value": 23.46938775510204,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0033.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0033.m4a",
+        "note": 38,
+        "velocityMin": 18,
+        "velocityMax": 21,
+        "durationSec": 1.509297052154195,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.04739078879356384,
+        "peakDb": -26.486121252962313,
+        "rmsDb": -52.39060383858045,
+        "activeRmsDb": -47.31606881417545,
+        "loudnessKMax": -43.656782478371156,
+        "playbackGainDb": 0,
+        "dcOffset": 0.0000014030478246348578,
+        "dcOffsetDb": -117.05855050500617,
+        "crestFactorDb": 20.829947561213146,
+        "leadingSilenceMs": 23.46938775510204,
+        "effectiveLeadingSilenceMs": 23.46938775510204,
+        "trailingSilenceMs": 1016.9387755102042,
+        "attackMs": 20.74829931972789,
+        "tailLevelDbRelPeak": -85.87603200118818,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.46938775510204,
+        "activeEndMs": 492.3356009070295,
+        "spectral": {
+          "centroidHz": 3240.1481942228424,
+          "highFrequencyRatio": 0.30315513328095456
+        },
+        "pitch": {
+          "midi": 37.9909216931568,
+          "frequencyHz": 73.37770382695507,
+          "rawCents": -0.9078306843200323,
+          "foldedCents": -0.9078306843200608,
+          "confidence": 0.2539519259462414
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.821219002855963,
+          "monoLossDb": -0.4145745081236543,
+          "leftRightBalanceDb": -0.780965959553087
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0033.m4a",
+          "message": "Effective leading silence 23.5ms may feel late (decoded 23.5ms)",
+          "value": 23.46938775510204,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0034.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0034.m4a",
+        "note": 38,
+        "velocityMin": 22,
+        "velocityMax": 24,
+        "durationSec": 1.6253968253968254,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.04402877017855644,
+        "peakDb": -27.125268903630726,
+        "rmsDb": -53.01072634187265,
+        "activeRmsDb": -47.94613596554751,
+        "loudnessKMax": -43.946919987841184,
+        "playbackGainDb": 0,
+        "dcOffset": -0.00001038866299097459,
+        "dcOffsetDb": -99.66880684097434,
+        "crestFactorDb": 20.820867061916786,
+        "leadingSilenceMs": 23.46938775510204,
+        "effectiveLeadingSilenceMs": 23.46938775510204,
+        "trailingSilenceMs": 1095.8049886621316,
+        "attackMs": 21.360544217687075,
+        "tailLevelDbRelPeak": -104.46206667204851,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.46938775510204,
+        "activeEndMs": 529.5691609977324,
+        "spectral": {
+          "centroidHz": 3224.9290105384193,
+          "highFrequencyRatio": 0.30574976486274136
+        },
+        "pitch": {
+          "midi": 37.70523302386627,
+          "frequencyHz": 72.17675941080196,
+          "rawCents": -29.47669761337295,
+          "foldedCents": -29.47669761337295,
+          "confidence": 0.2617353037253679
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8173423982429983,
+          "monoLossDb": -0.41907393497100576,
+          "leftRightBalanceDb": -0.48998204513849947
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0034.m4a",
+          "message": "Effective leading silence 23.5ms may feel late (decoded 23.5ms)",
+          "value": 23.46938775510204,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0034.m4a",
+          "message": "38:snare higher velocity 22-24 is 0.63 dB quieter than 18-21"
+        }
+      ]
+    },
+    {
+      "file": "source-0035.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0035.m4a",
+        "note": 38,
+        "velocityMin": 25,
+        "velocityMax": 27,
+        "durationSec": 1.8808163265306121,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.045102789998054504,
+        "peakDb": -26.915931848346624,
+        "rmsDb": -52.88307012129846,
+        "activeRmsDb": -52.191357200891346,
+        "loudnessKMax": -43.2234133072825,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000018462736301499795,
+        "dcOffsetDb": -114.67407866362757,
+        "crestFactorDb": 25.275425352544726,
+        "leadingSilenceMs": 23.46938775510204,
+        "effectiveLeadingSilenceMs": 23.46938775510204,
+        "trailingSilenceMs": 253.718820861678,
+        "attackMs": 17.891156462585034,
+        "tailLevelDbRelPeak": -80.61187084761278,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.46938775510204,
+        "activeEndMs": 1627.0748299319728,
+        "spectral": {
+          "centroidHz": 3233.4006252203417,
+          "highFrequencyRatio": 0.316018248391741
+        },
+        "pitch": {
+          "midi": 34.50637058500631,
+          "frequencyHz": 60,
+          "rawCents": -349.36294149936913,
+          "foldedCents": -349.36294149936913,
+          "confidence": 0.42175093615439585
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8118570159019518,
+          "monoLossDb": -0.43060182460193164,
+          "leftRightBalanceDb": -0.34541251350208535
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0035.m4a",
+          "message": "Effective leading silence 23.5ms may feel late (decoded 23.5ms)",
+          "value": 23.46938775510204,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0035.m4a",
+          "message": "38:snare higher velocity 25-27 is 4.25 dB quieter than 22-24"
+        }
+      ]
+    },
+    {
+      "file": "source-0036.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0036.m4a",
+        "note": 38,
+        "velocityMin": 28,
+        "velocityMax": 31,
+        "durationSec": 1.6718367346938776,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.06609789282083511,
+        "peakDb": -23.596247709189058,
+        "rmsDb": -48.668003380547106,
+        "activeRmsDb": -47.08374962693607,
+        "loudnessKMax": -39.61994943970722,
+        "playbackGainDb": 0,
+        "dcOffset": 0.0000015289246386723194,
+        "dcOffsetDb": -116.3122784122946,
+        "crestFactorDb": 23.48750191774701,
+        "leadingSilenceMs": 33.44671201814059,
+        "effectiveLeadingSilenceMs": 33.44671201814059,
+        "trailingSilenceMs": 477.8004535147392,
+        "attackMs": 8.979591836734693,
+        "tailLevelDbRelPeak": -97.66245352929784,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.44671201814059,
+        "activeEndMs": 1194.0136054421769,
+        "spectral": {
+          "centroidHz": 3315.452051831547,
+          "highFrequencyRatio": 0.3253237779871653
+        },
+        "pitch": {
+          "midi": 39.620811588180345,
+          "frequencyHz": 80.62157221206581,
+          "rawCents": 162.0811588180345,
+          "foldedCents": 162.0811588180345,
+          "confidence": 0.20319053167632067
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8306634322934882,
+          "monoLossDb": -0.3842278584925708,
+          "leftRightBalanceDb": -0.02376759878740057
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0036.m4a",
+          "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+          "value": 33.44671201814059,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0002.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0002.m4a",
+        "note": 38,
+        "velocityMin": 32,
+        "velocityMax": 34,
+        "durationSec": 1.9272562358276644,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.07610417902469635,
+        "peakDb": -22.371829892831933,
+        "rmsDb": -47.997674977277995,
+        "activeRmsDb": -42.6949772540782,
+        "loudnessKMax": -38.352597734228574,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000022679055749224004,
+        "dcOffsetDb": -92.88750062824435,
+        "crestFactorDb": 20.32314736124627,
+        "leadingSilenceMs": 32.38095238095238,
+        "effectiveLeadingSilenceMs": 32.38095238095238,
+        "trailingSilenceMs": 1326.5759637188207,
+        "attackMs": 9.909297052154194,
+        "tailLevelDbRelPeak": -91.28070549044787,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 32.38095238095238,
+        "activeEndMs": 600.657596371882,
+        "spectral": {
+          "centroidHz": 3377.8643469442522,
+          "highFrequencyRatio": 0.3278272079540672
+        },
+        "pitch": {
+          "midi": 38.576843620836684,
+          "frequencyHz": 75.90361445783132,
+          "rawCents": 57.68436208366836,
+          "foldedCents": 57.68436208366836,
+          "confidence": 0.41671929567042065
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8369683895547062,
+          "monoLossDb": -0.3692832666703056,
+          "leftRightBalanceDb": 0.009989159286585857
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0002.m4a",
+          "message": "Effective leading silence 32.4ms may feel late (decoded 32.4ms)",
+          "value": 32.38095238095238,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0003.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0003.m4a",
+        "note": 38,
+        "velocityMin": 35,
+        "velocityMax": 38,
+        "durationSec": 1.7647165532879818,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.07720755785703659,
+        "peakDb": -22.24680368889495,
+        "rmsDb": -47.253810307505724,
+        "activeRmsDb": -44.92573756203449,
+        "loudnessKMax": -37.985124589118705,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000008612906094418498,
+        "dcOffsetDb": -101.29700575647354,
+        "crestFactorDb": 22.678933873139542,
+        "leadingSilenceMs": 32.6530612244898,
+        "effectiveLeadingSilenceMs": 32.6530612244898,
+        "trailingSilenceMs": 699.7052154195012,
+        "attackMs": 9.501133786848072,
+        "tailLevelDbRelPeak": -91.0500607182506,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 32.6530612244898,
+        "activeEndMs": 1064.9886621315193,
+        "spectral": {
+          "centroidHz": 3338.795552827738,
+          "highFrequencyRatio": 0.32644947476253416
+        },
+        "pitch": {
+          "midi": 39.36944832684141,
+          "frequencyHz": 79.45945945945945,
+          "rawCents": 136.94483268414075,
+          "foldedCents": 136.9448326841407,
+          "confidence": 0.39209871630081156
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.839768998776362,
+          "monoLossDb": -0.36271692789089904,
+          "leftRightBalanceDb": -0.05706409762609826
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0003.m4a",
+          "message": "Effective leading silence 32.7ms may feel late (decoded 32.7ms)",
+          "value": 32.6530612244898,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0003.m4a",
+          "message": "38:snare higher velocity 35-38 is 2.23 dB quieter than 32-34"
+        }
+      ]
+    },
+    {
+      "file": "source-0004.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0004.m4a",
+        "note": 38,
+        "velocityMin": 39,
+        "velocityMax": 41,
+        "durationSec": 1.6253968253968254,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.08462534099817276,
+        "peakDb": -21.449991366236098,
+        "rmsDb": -46.302699675984044,
+        "activeRmsDb": -44.790511747278146,
+        "loudnessKMax": -37.39143656170707,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000008007184563179569,
+        "dcOffsetDb": -101.93040322042319,
+        "crestFactorDb": 23.340520381042047,
+        "leadingSilenceMs": 26.689342403628117,
+        "effectiveLeadingSilenceMs": 26.689342403628117,
+        "trailingSilenceMs": 451.3151927437642,
+        "attackMs": 15.600907029478458,
+        "tailLevelDbRelPeak": -110.07334967963814,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 26.689342403628117,
+        "activeEndMs": 1174.0589569160998,
+        "spectral": {
+          "centroidHz": 3071.9760745833987,
+          "highFrequencyRatio": 0.2834785106460303
+        },
+        "pitch": {
+          "midi": 39.58919086616471,
+          "frequencyHz": 80.47445255474453,
+          "rawCents": 158.91908661647065,
+          "foldedCents": 158.91908661647062,
+          "confidence": 0.1820885088335764
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.835903087787646,
+          "monoLossDb": -0.37200128502600993,
+          "leftRightBalanceDb": 0.12126519196879444
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0004.m4a",
+          "message": "Effective leading silence 26.7ms may feel late (decoded 26.7ms)",
+          "value": 26.689342403628117,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0005.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0005.m4a",
+        "note": 38,
+        "velocityMin": 42,
+        "velocityMax": 45,
+        "durationSec": 1.6950566893424037,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.07881614565849304,
+        "peakDb": -22.06769614459151,
+        "rmsDb": -47.37766796717631,
+        "activeRmsDb": -43.28205164515318,
+        "loudnessKMax": -38.20518088954022,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000012099417671409949,
+        "dcOffsetDb": -98.34471062371915,
+        "crestFactorDb": 21.214355500561677,
+        "leadingSilenceMs": 20.816326530612244,
+        "effectiveLeadingSilenceMs": 20.816326530612244,
+        "trailingSilenceMs": 1014.2176870748299,
+        "attackMs": 21.60997732426304,
+        "tailLevelDbRelPeak": -92.42930555603401,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 20.816326530612244,
+        "activeEndMs": 680.8163265306122,
+        "spectral": {
+          "centroidHz": 2696.110838331227,
+          "highFrequencyRatio": 0.22760675663609678
+        },
+        "pitch": {
+          "midi": 39.18329233438551,
+          "frequencyHz": 78.6096256684492,
+          "rawCents": 118.32923343855128,
+          "foldedCents": 118.32923343855123,
+          "confidence": 0.36010804123033824
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8089149537491438,
+          "monoLossDb": -0.44004255878114773,
+          "leftRightBalanceDb": -0.5515636563984735
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0005.m4a",
+          "message": "Effective leading silence 20.8ms may feel late (decoded 20.8ms)",
+          "value": 20.816326530612244,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0006.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0006.m4a",
+        "note": 38,
+        "velocityMin": 46,
+        "velocityMax": 48,
+        "durationSec": 1.9736961451247166,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.09243204444646835,
+        "peakDb": -20.68354881939337,
+        "rmsDb": -46.79815080243512,
+        "activeRmsDb": -44.952707264743594,
+        "loudnessKMax": -36.97170166502905,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000016158878845711744,
+        "dcOffsetDb": -95.83177550490697,
+        "crestFactorDb": 24.269158445350225,
+        "leadingSilenceMs": 16.689342403628117,
+        "effectiveLeadingSilenceMs": 16.689342403628117,
+        "trailingSilenceMs": 666.6893424036281,
+        "attackMs": 25.011337868480727,
+        "tailLevelDbRelPeak": -105.29377750051582,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 16.689342403628117,
+        "activeEndMs": 1306.984126984127,
+        "spectral": {
+          "centroidHz": 2558.2753174979507,
+          "highFrequencyRatio": 0.21672367205560444
+        },
+        "pitch": {
+          "midi": 36.9295104103271,
+          "frequencyHz": 69.01408450704226,
+          "rawCents": -107.04895896729028,
+          "foldedCents": -107.04895896729028,
+          "confidence": 0.249297690243084
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8132009443608195,
+          "monoLossDb": -0.4258619563611588,
+          "leftRightBalanceDb": -0.029710304922384155
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0006.m4a",
+          "message": "Effective leading silence 16.7ms may feel late (decoded 16.7ms)",
+          "value": 16.689342403628117,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0006.m4a",
+          "message": "38:snare higher velocity 46-48 is 1.67 dB quieter than 42-45"
+        }
+      ]
+    },
+    {
+      "file": "source-0007.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0007.m4a",
+        "note": 38,
+        "velocityMin": 49,
+        "velocityMax": 52,
+        "durationSec": 1.7182766439909296,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.09690628945827484,
+        "peakDb": -20.27296070493285,
+        "rmsDb": -45.804999770071916,
+        "activeRmsDb": -44.138266363387935,
+        "loudnessKMax": -36.545923157487195,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000021669809036119513,
+        "dcOffsetDb": -93.28289831714307,
+        "crestFactorDb": 23.865305658455082,
+        "leadingSilenceMs": 23.60544217687075,
+        "effectiveLeadingSilenceMs": 23.60544217687075,
+        "trailingSilenceMs": 524.1269841269841,
+        "attackMs": 19.206349206349206,
+        "tailLevelDbRelPeak": -89.64675089214525,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.60544217687075,
+        "activeEndMs": 1194.126984126984,
+        "spectral": {
+          "centroidHz": 2614.122353673381,
+          "highFrequencyRatio": 0.21818320974141836
+        },
+        "pitch": {
+          "midi": 34.22600266822018,
+          "frequencyHz": 59.036144578313255,
+          "rawCents": -377.3997331779817,
+          "foldedCents": -377.3997331779817,
+          "confidence": 0.19227421209937182
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8019741963374436,
+          "monoLossDb": -0.45423907107894934,
+          "leftRightBalanceDb": -0.32631771221844585
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0007.m4a",
+          "message": "Effective leading silence 23.6ms may feel late (decoded 23.6ms)",
+          "value": 23.60544217687075,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0008.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0008.m4a",
+        "note": 38,
+        "velocityMin": 53,
+        "velocityMax": 55,
+        "durationSec": 1.6950566893424037,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.10533612966537476,
+        "peakDb": -19.54845285681212,
+        "rmsDb": -44.866540889488476,
+        "activeRmsDb": -39.940553672834,
+        "loudnessKMax": -35.75302493623413,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000032038915178011347,
+        "dcOffsetDb": -109.8864439467495,
+        "crestFactorDb": 20.392100816021884,
+        "leadingSilenceMs": 32.99319727891156,
+        "effectiveLeadingSilenceMs": 32.99319727891156,
+        "trailingSilenceMs": 1116.8934240362812,
+        "attackMs": 9.365079365079364,
+        "tailLevelDbRelPeak": -82.42227235267173,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 32.99319727891156,
+        "activeEndMs": 578.1405895691611,
+        "spectral": {
+          "centroidHz": 3166.4579766572397,
+          "highFrequencyRatio": 0.2877911001339817
+        },
+        "pitch": {
+          "midi": 38.487681155130815,
+          "frequencyHz": 75.51369863013699,
+          "rawCents": 48.76811551308151,
+          "foldedCents": 48.76811551308151,
+          "confidence": 0.4163266356219988
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8260390646501502,
+          "monoLossDb": -0.39579513483856216,
+          "leftRightBalanceDb": -0.21393674515424654
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0008.m4a",
+          "message": "Effective leading silence 33.0ms may feel late (decoded 33.0ms)",
+          "value": 32.99319727891156,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0009.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0009.m4a",
+        "note": 38,
+        "velocityMin": 56,
+        "velocityMax": 59,
+        "durationSec": 1.6486167800453515,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.12687230110168457,
+        "peakDb": -17.93266366397542,
+        "rmsDb": -43.270788583226945,
+        "activeRmsDb": -38.78136373115457,
+        "loudnessKMax": -34.286163987217584,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000041773082671245156,
+        "dcOffsetDb": -87.58206949028688,
+        "crestFactorDb": 20.848700067179152,
+        "leadingSilenceMs": 16.802721088435373,
+        "effectiveLeadingSilenceMs": 16.802721088435373,
+        "trailingSilenceMs": 1045.487528344671,
+        "attackMs": 25.192743764172338,
+        "tailLevelDbRelPeak": -90.31327013229047,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 16.802721088435373,
+        "activeEndMs": 603.1065759637189,
+        "spectral": {
+          "centroidHz": 2434.1099980647564,
+          "highFrequencyRatio": 0.21634224251292525
+        },
+        "pitch": {
+          "midi": 38.16462556334736,
+          "frequencyHz": 74.11764705882354,
+          "rawCents": 16.462556334735723,
+          "foldedCents": 16.462556334735723,
+          "confidence": 0.4261253274005842
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8190428738671935,
+          "monoLossDb": -0.41189754601920475,
+          "leftRightBalanceDb": -0.0033171862848450765
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0009.m4a",
+          "message": "Effective leading silence 16.8ms may feel late (decoded 16.8ms)",
+          "value": 16.802721088435373,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0010.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0010.m4a",
+        "note": 38,
+        "velocityMin": 60,
+        "velocityMax": 63,
+        "durationSec": 1.7414965986394557,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.13432149589061737,
+        "peakDb": -17.43708960520493,
+        "rmsDb": -43.13722301263798,
+        "activeRmsDb": -42.283841416830015,
+        "loudnessKMax": -33.89542021164333,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000015713631617822172,
+        "dcOffsetDb": -96.07446864889867,
+        "crestFactorDb": 24.84675181162509,
+        "leadingSilenceMs": 23.242630385487526,
+        "effectiveLeadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 287.4829931972789,
+        "attackMs": 19.750566893424036,
+        "tailLevelDbRelPeak": -91.71637074883265,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 1453.9909297052154,
+        "spectral": {
+          "centroidHz": 2696.7808438469046,
+          "highFrequencyRatio": 0.24678247749514115
+        },
+        "pitch": {
+          "midi": 37.12020688356579,
+          "frequencyHz": 69.77848101265823,
+          "rawCents": -87.97931164342074,
+          "foldedCents": -87.97931164342071,
+          "confidence": 0.0753867174954811
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8158792390586219,
+          "monoLossDb": -0.42076085423844606,
+          "leftRightBalanceDb": -0.3195632378140508
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0010.m4a",
+          "message": "Effective leading silence 23.2ms may feel late (decoded 23.2ms)",
+          "value": 23.242630385487526,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0010.m4a",
+          "message": "38:snare higher velocity 60-63 is 3.50 dB quieter than 56-59"
+        }
+      ]
+    },
+    {
+      "file": "source-0011.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0011.m4a",
+        "note": 38,
+        "velocityMin": 64,
+        "velocityMax": 66,
+        "durationSec": 1.6718367346938776,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.12414927780628204,
+        "peakDb": -18.12111604907659,
+        "rmsDb": -43.224955257349755,
+        "activeRmsDb": -39.76344117372852,
+        "loudnessKMax": -34.122390376331005,
+        "playbackGainDb": 0,
+        "dcOffset": 7.20889496981079e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 21.642325124651936,
+        "leadingSilenceMs": 33.49206349206349,
+        "effectiveLeadingSilenceMs": 33.49206349206349,
+        "trailingSilenceMs": 884.9659863945578,
+        "attackMs": 9.047619047619047,
+        "tailLevelDbRelPeak": -90.9038058395561,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.49206349206349,
+        "activeEndMs": 786.8480725623582,
+        "spectral": {
+          "centroidHz": 3129.9861677798312,
+          "highFrequencyRatio": 0.28703789420904435
+        },
+        "pitch": {
+          "midi": 39.90802751101154,
+          "frequencyHz": 81.97026022304833,
+          "rawCents": 190.80275110115394,
+          "foldedCents": 190.80275110115394,
+          "confidence": 0.5461125204120832
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8045897243890999,
+          "monoLossDb": -0.4465741514309365,
+          "leftRightBalanceDb": -0.06219756431594578
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0011.m4a",
+          "message": "Effective leading silence 33.5ms may feel late (decoded 33.5ms)",
+          "value": 33.49206349206349,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0011.m4a",
+          "message": "Estimated pitch is 190.8 cents from mapped note",
+          "value": 190.80275110115394,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0013.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0013.m4a",
+        "note": 38,
+        "velocityMin": 67,
+        "velocityMax": 70,
+        "durationSec": 1.9040362811791383,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.16015183925628662,
+        "peakDb": -15.909361386738212,
+        "rmsDb": -41.97616895378835,
+        "activeRmsDb": -36.71192232738798,
+        "loudnessKMax": -32.41350955836687,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000015352998321304166,
+        "dcOffsetDb": -96.27613595130752,
+        "crestFactorDb": 20.802560940649766,
+        "leadingSilenceMs": 21.564625850340136,
+        "effectiveLeadingSilenceMs": 21.564625850340136,
+        "trailingSilenceMs": 1315.9637188208617,
+        "attackMs": 20.861678004535147,
+        "tailLevelDbRelPeak": -113.62524795533871,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 21.564625850340136,
+        "activeEndMs": 588.0498866213152,
+        "spectral": {
+          "centroidHz": 2478.8915315413483,
+          "highFrequencyRatio": 0.21404920437970879
+        },
+        "pitch": {
+          "midi": 38.13555361614509,
+          "frequencyHz": 73.99328859060402,
+          "rawCents": 13.555361614508854,
+          "foldedCents": 13.55536161450891,
+          "confidence": 0.4819842361011125
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8383036354951329,
+          "monoLossDb": -0.3661969283786074,
+          "leftRightBalanceDb": 0.06951617083380217
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0013.m4a",
+          "message": "Effective leading silence 21.6ms may feel late (decoded 21.6ms)",
+          "value": 21.564625850340136,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0014.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0014.m4a",
+        "note": 38,
+        "velocityMin": 71,
+        "velocityMax": 73,
+        "durationSec": 1.555736961451247,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.16237863898277283,
+        "peakDb": -15.789422061266173,
+        "rmsDb": -41.12881500374372,
+        "activeRmsDb": -36.84319346574724,
+        "loudnessKMax": -32.348481773954695,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000027753085298744684,
+        "dcOffsetDb": -91.13377459047479,
+        "crestFactorDb": 21.053771404481072,
+        "leadingSilenceMs": 25.170068027210885,
+        "effectiveLeadingSilenceMs": 25.170068027210885,
+        "trailingSilenceMs": 950.6802721088435,
+        "attackMs": 17.551020408163264,
+        "tailLevelDbRelPeak": -112.43646042482632,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 25.170068027210885,
+        "activeEndMs": 605.0340136054422,
+        "spectral": {
+          "centroidHz": 2697.9686169552433,
+          "highFrequencyRatio": 0.23711360540812382
+        },
+        "pitch": {
+          "midi": 38.22291632713899,
+          "frequencyHz": 74.36762225969646,
+          "rawCents": 22.291632713898935,
+          "foldedCents": 22.291632713898935,
+          "confidence": 0.38671120068191045
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8144584439386143,
+          "monoLossDb": -0.425152440812824,
+          "leftRightBalanceDb": -0.4236419928263325
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0014.m4a",
+          "message": "Effective leading silence 25.2ms may feel late (decoded 25.2ms)",
+          "value": 25.170068027210885,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0014.m4a",
+          "message": "38:snare higher velocity 71-73 is 0.13 dB quieter than 67-70"
+        }
+      ]
+    },
+    {
+      "file": "source-0015.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0015.m4a",
+        "note": 38,
+        "velocityMin": 74,
+        "velocityMax": 77,
+        "durationSec": 1.811156462585034,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.17398348450660706,
+        "peakDb": -15.189839508838457,
+        "rmsDb": -41.10246513937981,
+        "activeRmsDb": -36.65264479709764,
+        "loudnessKMax": -31.732278764059078,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000010502453528662564,
+        "dcOffsetDb": -99.57418462910589,
+        "crestFactorDb": 21.46280528825919,
+        "leadingSilenceMs": 33.46938775510204,
+        "effectiveLeadingSilenceMs": 33.46938775510204,
+        "trailingSilenceMs": 1127.641723356009,
+        "attackMs": 9.160997732426305,
+        "tailLevelDbRelPeak": -104.23185207646206,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.46938775510204,
+        "activeEndMs": 683.4920634920635,
+        "spectral": {
+          "centroidHz": 3030.659549832078,
+          "highFrequencyRatio": 0.27432435649884446
+        },
+        "pitch": {
+          "midi": 39.27612011974078,
+          "frequencyHz": 79.03225806451613,
+          "rawCents": 127.61201197407814,
+          "foldedCents": 127.61201197407809,
+          "confidence": 0.3963726026486173
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8312220093799404,
+          "monoLossDb": -0.38310479328859476,
+          "leftRightBalanceDb": -0.1262909031900339
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0015.m4a",
+          "message": "Effective leading silence 33.5ms may feel late (decoded 33.5ms)",
+          "value": 33.46938775510204,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0016.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0016.m4a",
+        "note": 38,
+        "velocityMin": 78,
+        "velocityMax": 80,
+        "durationSec": 1.9736961451247166,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.21034854650497437,
+        "peakDb": -13.54120969167514,
+        "rmsDb": -39.46582265214617,
+        "activeRmsDb": -34.085167029685934,
+        "loudnessKMax": -29.69275557575924,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000021187183697235326,
+        "dcOffsetDb": -93.47853535944806,
+        "crestFactorDb": 20.543957338010795,
+        "leadingSilenceMs": 32.06349206349206,
+        "effectiveLeadingSilenceMs": 32.06349206349206,
+        "trailingSilenceMs": 1369.9092970521542,
+        "attackMs": 10.544217687074829,
+        "tailLevelDbRelPeak": -94.0558238606444,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 32.06349206349206,
+        "activeEndMs": 603.7641723356008,
+        "spectral": {
+          "centroidHz": 2976.0692415392746,
+          "highFrequencyRatio": 0.27628170798123963
+        },
+        "pitch": {
+          "midi": 38.3989755443704,
+          "frequencyHz": 75.12776831345826,
+          "rawCents": 39.89755443704013,
+          "foldedCents": 39.89755443704007,
+          "confidence": 0.507152529531668
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8130242879267642,
+          "monoLossDb": -0.42675722167578617,
+          "leftRightBalanceDb": -0.1952258916428835
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0016.m4a",
+          "message": "Effective leading silence 32.1ms may feel late (decoded 32.1ms)",
+          "value": 32.06349206349206,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0017.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0017.m4a",
+        "note": 38,
+        "velocityMin": 81,
+        "velocityMax": 84,
+        "durationSec": 1.6950566893424037,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.2294011265039444,
+        "peakDb": -12.788089075404205,
+        "rmsDb": -38.71666801444582,
+        "activeRmsDb": -34.59596804691292,
+        "loudnessKMax": -29.57674090399754,
+        "playbackGainDb": 0,
+        "dcOffset": -0.00001860796728466361,
+        "dcOffsetDb": -94.60602132327402,
+        "crestFactorDb": 21.807878971508714,
+        "leadingSilenceMs": 33.5827664399093,
+        "effectiveLeadingSilenceMs": 33.5827664399093,
+        "trailingSilenceMs": 1005.1927437641723,
+        "attackMs": 8.979591836734693,
+        "tailLevelDbRelPeak": -97.60366450176195,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.5827664399093,
+        "activeEndMs": 689.8412698412698,
+        "spectral": {
+          "centroidHz": 2883.040009783438,
+          "highFrequencyRatio": 0.25037999231524627
+        },
+        "pitch": {
+          "midi": 39.620811588180345,
+          "frequencyHz": 80.62157221206581,
+          "rawCents": 162.0811588180345,
+          "foldedCents": 162.0811588180345,
+          "confidence": 0.28716266465881246
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8141335663336781,
+          "monoLossDb": -0.4242634895795647,
+          "leftRightBalanceDb": -0.22503079373220855
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0017.m4a",
+          "message": "Effective leading silence 33.6ms may feel late (decoded 33.6ms)",
+          "value": 33.5827664399093,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0017.m4a",
+          "message": "38:snare higher velocity 81-84 is 0.51 dB quieter than 78-80"
+        }
+      ]
+    },
+    {
+      "file": "source-0018.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0018.m4a",
+        "note": 38,
+        "velocityMin": 85,
+        "velocityMax": 87,
+        "durationSec": 1.9969160997732427,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.25523337721824646,
+        "peakDb": -11.861250659059552,
+        "rmsDb": -38.59093009296704,
+        "activeRmsDb": -33.002865725918596,
+        "loudnessKMax": -28.78929553644254,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000020523463758152028,
+        "dcOffsetDb": -93.7549868243186,
+        "crestFactorDb": 21.14161506685904,
+        "leadingSilenceMs": 26.077097505668934,
+        "effectiveLeadingSilenceMs": 26.077097505668934,
+        "trailingSilenceMs": 1419.387755102041,
+        "attackMs": 16.235827664399093,
+        "tailLevelDbRelPeak": -93.36363944665061,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 26.077097505668934,
+        "activeEndMs": 577.5056689342404,
+        "spectral": {
+          "centroidHz": 2743.853940233876,
+          "highFrequencyRatio": 0.2520340270802658
+        },
+        "pitch": {
+          "midi": 38.01975157574046,
+          "frequencyHz": 73.5,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.41476564942738803
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8229230513638318,
+          "monoLossDb": -0.40263184140257535,
+          "leftRightBalanceDb": 0.0343813130997942
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0018.m4a",
+          "message": "Effective leading silence 26.1ms may feel late (decoded 26.1ms)",
+          "value": 26.077097505668934,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0019.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0019.m4a",
+        "note": 38,
+        "velocityMin": 88,
+        "velocityMax": 91,
+        "durationSec": 1.787936507936508,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.24931512773036957,
+        "peakDb": -12.065027378941931,
+        "rmsDb": -38.098355776784,
+        "activeRmsDb": -32.67957073037945,
+        "loudnessKMax": -28.75193883653385,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000054081529071635236,
+        "dcOffsetDb": -85.33902075775379,
+        "crestFactorDb": 20.61454335143752,
+        "leadingSilenceMs": 33.44671201814059,
+        "effectiveLeadingSilenceMs": 33.44671201814059,
+        "trailingSilenceMs": 1241.111111111111,
+        "attackMs": 9.43310657596372,
+        "tailLevelDbRelPeak": -95.68141553105242,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.44671201814059,
+        "activeEndMs": 546.8027210884354,
+        "spectral": {
+          "centroidHz": 2984.631445765681,
+          "highFrequencyRatio": 0.28359981879782126
+        },
+        "pitch": {
+          "midi": 38.16462556334736,
+          "frequencyHz": 74.11764705882354,
+          "rawCents": 16.462556334735723,
+          "foldedCents": 16.462556334735723,
+          "confidence": 0.4346050438268285
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8179105619983326,
+          "monoLossDb": -0.415488597261573,
+          "leftRightBalanceDb": -0.2573695886606746
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0019.m4a",
+          "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+          "value": 33.44671201814059,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0020.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0020.m4a",
+        "note": 38,
+        "velocityMin": 92,
+        "velocityMax": 95,
+        "durationSec": 1.5789569160997732,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.31506383419036865,
+        "peakDb": -10.032028922428847,
+        "rmsDb": -36.08137516668343,
+        "activeRmsDb": -31.579716668475864,
+        "loudnessKMax": -27.25787420457669,
+        "playbackGainDb": 0,
+        "dcOffset": -0.00006651275996144394,
+        "dcOffsetDb": -83.5419006129588,
+        "crestFactorDb": 21.547687746047018,
+        "leadingSilenceMs": 33.53741496598639,
+        "effectiveLeadingSilenceMs": 33.53741496598639,
+        "trailingSilenceMs": 985.4421768707483,
+        "attackMs": 9.45578231292517,
+        "tailLevelDbRelPeak": -93.68661092441515,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.53741496598639,
+        "activeEndMs": 593.4920634920635,
+        "spectral": {
+          "centroidHz": 2898.4698843585593,
+          "highFrequencyRatio": 0.2638181196475286
+        },
+        "pitch": {
+          "midi": 38.193746412081836,
+          "frequencyHz": 74.24242424242425,
+          "rawCents": 19.37464120818362,
+          "foldedCents": 19.374641208183675,
+          "confidence": 0.44906326243234546
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8102124962149916,
+          "monoLossDb": -0.4344626654517708,
+          "leftRightBalanceDb": -0.3324171907047514
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0020.m4a",
+          "message": "Effective leading silence 33.5ms may feel late (decoded 33.5ms)",
+          "value": 33.53741496598639,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0021.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0021.m4a",
+        "note": 38,
+        "velocityMin": 96,
+        "velocityMax": 98,
+        "durationSec": 1.9040362811791383,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3009304404258728,
+        "peakDb": -10.430677585156849,
+        "rmsDb": -37.041024421272695,
+        "activeRmsDb": -32.521119581635695,
+        "loudnessKMax": -27.416780578668128,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000012843824729364416,
+        "dcOffsetDb": -97.82611259152404,
+        "crestFactorDb": 22.090441996478845,
+        "leadingSilenceMs": 33.44671201814059,
+        "effectiveLeadingSilenceMs": 33.44671201814059,
+        "trailingSilenceMs": 1198.140589569161,
+        "attackMs": 8.88888888888889,
+        "tailLevelDbRelPeak": -99.1276661249478,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.44671201814059,
+        "activeEndMs": 705.8730158730159,
+        "spectral": {
+          "centroidHz": 2875.6396697642936,
+          "highFrequencyRatio": 0.26660724531662433
+        },
+        "pitch": {
+          "midi": 39.620811588180345,
+          "frequencyHz": 80.62157221206581,
+          "rawCents": 162.0811588180345,
+          "foldedCents": 162.0811588180345,
+          "confidence": 0.31065218388361104
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.818427962407839,
+          "monoLossDb": -0.41334857728633434,
+          "leftRightBalanceDb": 0.024294002749597886
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0021.m4a",
+          "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+          "value": 33.44671201814059,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0021.m4a",
+          "message": "38:snare higher velocity 96-98 is 0.94 dB quieter than 92-95"
+        }
+      ]
+    },
+    {
+      "file": "source-0022.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0022.m4a",
+        "note": 38,
+        "velocityMin": 99,
+        "velocityMax": 102,
+        "durationSec": 1.9736961451247166,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3824126124382019,
+        "peakDb": -8.349355851873463,
+        "rmsDb": -35.10216819403726,
+        "activeRmsDb": -29.482255795911676,
+        "loudnessKMax": -25.365124189177976,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000036814367185976466,
+        "dcOffsetDb": -88.679653207019,
+        "crestFactorDb": 21.132899944038215,
+        "leadingSilenceMs": 33.42403628117914,
+        "effectiveLeadingSilenceMs": 33.42403628117914,
+        "trailingSilenceMs": 1399.2063492063492,
+        "attackMs": 8.93424036281179,
+        "tailLevelDbRelPeak": -110.87024695040093,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.42403628117914,
+        "activeEndMs": 574.4671201814059,
+        "spectral": {
+          "centroidHz": 3138.0566107544587,
+          "highFrequencyRatio": 0.30131937053251656
+        },
+        "pitch": {
+          "midi": 38.3989755443704,
+          "frequencyHz": 75.12776831345826,
+          "rawCents": 39.89755443704013,
+          "foldedCents": 39.89755443704007,
+          "confidence": 0.4861897022167451
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8258431450235368,
+          "monoLossDb": -0.3961854581040755,
+          "leftRightBalanceDb": -0.19983896487677733
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0022.m4a",
+          "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+          "value": 33.42403628117914,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0024.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0024.m4a",
+        "note": 38,
+        "velocityMin": 103,
+        "velocityMax": 105,
+        "durationSec": 2.066575963718821,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.39585044980049133,
+        "peakDb": -8.04937714479937,
+        "rmsDb": -34.832789428516705,
+        "activeRmsDb": -29.204334365736106,
+        "loudnessKMax": -24.91791810750271,
+        "playbackGainDb": 0,
+        "dcOffset": -0.00013939688375115688,
+        "dcOffsetDb": -77.11493869761587,
+        "crestFactorDb": 21.154957220936733,
+        "leadingSilenceMs": 14.467120181405896,
+        "effectiveLeadingSilenceMs": 14.467120181405896,
+        "trailingSilenceMs": 1486.689342403628,
+        "attackMs": 26.91609977324263,
+        "tailLevelDbRelPeak": -114.64206347574216,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 14.467120181405896,
+        "activeEndMs": 579.8639455782313,
+        "spectral": {
+          "centroidHz": 1999.0787506488646,
+          "highFrequencyRatio": 0.1691997230381323
+        },
+        "pitch": {
+          "midi": 38.01975157574046,
+          "frequencyHz": 73.5,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.42143044680909525
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8321050964415335,
+          "monoLossDb": -0.3808746174217147,
+          "leftRightBalanceDb": -0.025156782638160458
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0024.m4a",
+          "message": "Effective leading silence 14.5ms may feel late (decoded 14.5ms)",
+          "value": 14.467120181405896,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0025.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0025.m4a",
+        "note": 38,
+        "velocityMin": 106,
+        "velocityMax": 109,
+        "durationSec": 1.9736961451247166,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.37234804034233093,
+        "peakDb": -8.581018549894265,
+        "rmsDb": -34.88962892649785,
+        "activeRmsDb": -30.211560437631455,
+        "loudnessKMax": -25.16993977416692,
+        "playbackGainDb": 0,
+        "dcOffset": 0.00007305385365687161,
+        "dcOffsetDb": -82.72713739397187,
+        "crestFactorDb": 21.63054188773719,
+        "leadingSilenceMs": 33.40136054421769,
+        "effectiveLeadingSilenceMs": 33.40136054421769,
+        "trailingSilenceMs": 1268.1632653061226,
+        "attackMs": 8.594104308390023,
+        "tailLevelDbRelPeak": -102.22543225688815,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.40136054421769,
+        "activeEndMs": 705.5102040816327,
+        "spectral": {
+          "centroidHz": 2736.0813445705126,
+          "highFrequencyRatio": 0.24682224814490464
+        },
+        "pitch": {
+          "midi": 39.526122160746766,
+          "frequencyHz": 80.18181818181819,
+          "rawCents": 152.6122160746766,
+          "foldedCents": 152.61221607467655,
+          "confidence": 0.4178166579487432
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8305261527223687,
+          "monoLossDb": -0.3846376497912668,
+          "leftRightBalanceDb": -0.07917059100196139
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0025.m4a",
+          "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+          "value": 33.40136054421769,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0025.m4a",
+          "message": "38:snare higher velocity 106-109 is 1.01 dB quieter than 103-105"
+        }
+      ]
+    },
+    {
+      "file": "source-0026.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0026.m4a",
+        "note": 38,
+        "velocityMin": 110,
+        "velocityMax": 112,
+        "durationSec": 2.089795918367347,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.4620685875415802,
+        "peakDb": -6.705871095804643,
+        "rmsDb": -33.424104116469195,
+        "activeRmsDb": -27.703830831038548,
+        "loudnessKMax": -23.447517776396836,
+        "playbackGainDb": 0,
+        "dcOffset": -0.00010952446044790005,
+        "dcOffsetDb": -79.20977755232728,
+        "crestFactorDb": 20.997959735233902,
+        "leadingSilenceMs": 16.848072562358276,
+        "effectiveLeadingSilenceMs": 16.848072562358276,
+        "trailingSilenceMs": 1513.1292517006802,
+        "attackMs": 24.01360544217687,
+        "tailLevelDbRelPeak": -108.19948705583153,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 16.848072562358276,
+        "activeEndMs": 576.6439909297052,
+        "spectral": {
+          "centroidHz": 2243.2332922092505,
+          "highFrequencyRatio": 0.19490769896671856
+        },
+        "pitch": {
+          "midi": 37.96213974057461,
+          "frequencyHz": 73.25581395348837,
+          "rawCents": -3.7860259425393394,
+          "foldedCents": -3.786025942539368,
+          "confidence": 0.47342097053283755
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8263234319818892,
+          "monoLossDb": -0.39552505180441266,
+          "leftRightBalanceDb": -0.27195577663880593
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0026.m4a",
+          "message": "Effective leading silence 16.8ms may feel late (decoded 16.8ms)",
+          "value": 16.848072562358276,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0027.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0027.m4a",
+        "note": 38,
+        "velocityMin": 113,
+        "velocityMax": 116,
+        "durationSec": 2.089795918367347,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5521803498268127,
+        "peakDb": -5.158381048959699,
+        "rmsDb": -31.45985862057571,
+        "activeRmsDb": -25.34138434753848,
+        "loudnessKMax": -21.53834616584512,
+        "playbackGainDb": 0,
+        "dcOffset": 0.00004849403465989445,
+        "dcOffsetDb": -86.2862336294509,
+        "crestFactorDb": 20.18300329857878,
+        "leadingSilenceMs": 29.29705215419501,
+        "effectiveLeadingSilenceMs": 29.29705215419501,
+        "trailingSilenceMs": 1549.7278911564624,
+        "attackMs": 12.811791383219955,
+        "tailLevelDbRelPeak": -96.15374729185989,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 29.29705215419501,
+        "activeEndMs": 540.0453514739229,
+        "spectral": {
+          "centroidHz": 2660.5455128271606,
+          "highFrequencyRatio": 0.23811269525103
+        },
+        "pitch": {
+          "midi": 37.933405558890016,
+          "frequencyHz": 73.13432835820896,
+          "rawCents": -6.659444110998436,
+          "foldedCents": -6.659444110998493,
+          "confidence": 0.4402074082621116
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8429272132399874,
+          "monoLossDb": -0.35549983198092766,
+          "leftRightBalanceDb": -0.1436992065182386
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0027.m4a",
+          "message": "Effective leading silence 29.3ms may feel late (decoded 29.3ms)",
+          "value": 29.29705215419501,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0028.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0028.m4a",
+        "note": 38,
+        "velocityMin": 117,
+        "velocityMax": 119,
+        "durationSec": 1.9969160997732427,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6229716539382935,
+        "peakDb": -4.110634277675412,
+        "rmsDb": -31.02069835765451,
+        "activeRmsDb": -25.210814058467555,
+        "loudnessKMax": -21.271188537048566,
+        "playbackGainDb": 0,
+        "dcOffset": -0.00003340587624071834,
+        "dcOffsetDb": -89.52354264314027,
+        "crestFactorDb": 21.10017978079214,
+        "leadingSilenceMs": 13.44671201814059,
+        "effectiveLeadingSilenceMs": 13.44671201814059,
+        "trailingSilenceMs": 1459.4557823129253,
+        "attackMs": 28.979591836734695,
+        "tailLevelDbRelPeak": -106.2640289544234,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 13.44671201814059,
+        "activeEndMs": 537.437641723356,
+        "spectral": {
+          "centroidHz": 1849.8635491331931,
+          "highFrequencyRatio": 0.1563460739565679
+        },
+        "pitch": {
+          "midi": 38.25213547414363,
+          "frequencyHz": 74.49324324324324,
+          "rawCents": 25.213547414362836,
+          "foldedCents": 25.213547414362893,
+          "confidence": 0.30557306022051944
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8333149276839233,
+          "monoLossDb": -0.3790445676099462,
+          "leftRightBalanceDb": -0.29201203838890677
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0028.m4a",
+          "message": "Effective leading silence 13.4ms may feel late (decoded 13.4ms)",
+          "value": 13.44671201814059,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0029.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0029.m4a",
+        "note": 38,
+        "velocityMin": 120,
+        "velocityMax": 123,
+        "durationSec": 1.8808163265306121,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6885868906974792,
+        "peakDb": -3.2408249928342965,
+        "rmsDb": -30.118725649380046,
+        "activeRmsDb": -24.444154339452346,
+        "loudnessKMax": -20.632773281055915,
+        "playbackGainDb": 0,
+        "dcOffset": 0.00012670147117806012,
+        "dcOffsetDb": -77.94436684663994,
+        "crestFactorDb": 21.20332934661805,
+        "leadingSilenceMs": 30.56689342403628,
+        "effectiveLeadingSilenceMs": 30.56689342403628,
+        "trailingSilenceMs": 1341.0884353741496,
+        "attackMs": 11.383219954648528,
+        "tailLevelDbRelPeak": -105.25102543528332,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 30.56689342403628,
+        "activeEndMs": 539.7052154195011,
+        "spectral": {
+          "centroidHz": 2655.6286088156094,
+          "highFrequencyRatio": 0.23453167732048286
+        },
+        "pitch": {
+          "midi": 38.106530406513365,
+          "frequencyHz": 73.86934673366834,
+          "rawCents": 10.653040651336454,
+          "foldedCents": 10.653040651336482,
+          "confidence": 0.4356242809869843
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.837002923629027,
+          "monoLossDb": -0.36989545094607673,
+          "leftRightBalanceDb": -0.22636602888807808
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0029.m4a",
+          "message": "Effective leading silence 30.6ms may feel late (decoded 30.6ms)",
+          "value": 30.56689342403628,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0030.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "source-0030.m4a",
+        "note": 38,
+        "velocityMin": 124,
+        "velocityMax": 127,
+        "durationSec": 1.9272562358276644,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6886787414550781,
+        "peakDb": -3.2396664573619303,
+        "rmsDb": -29.71573169471352,
+        "activeRmsDb": -23.90938671633279,
+        "loudnessKMax": -20.139946719606826,
+        "playbackGainDb": 0,
+        "dcOffset": 0.00013939995519976923,
+        "dcOffsetDb": -77.11474731622305,
+        "crestFactorDb": 20.669720258970862,
+        "leadingSilenceMs": 33.40136054421769,
+        "effectiveLeadingSilenceMs": 33.40136054421769,
+        "trailingSilenceMs": 1387.7097505668935,
+        "attackMs": 8.571428571428571,
+        "tailLevelDbRelPeak": -94.94228709098567,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 33.40136054421769,
+        "activeEndMs": 539.5238095238095,
+        "spectral": {
+          "centroidHz": 2817.7779267231344,
+          "highFrequencyRatio": 0.2550584734473428
+        },
+        "pitch": {
+          "midi": 37.790445700368004,
+          "frequencyHz": 72.53289473684211,
+          "rawCents": -20.955429963199634,
+          "foldedCents": -20.955429963199663,
+          "confidence": 0.3423522471253404
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8389099958362202,
+          "monoLossDb": -0.36552768447354606,
+          "leftRightBalanceDb": -0.2493973457545873
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "acoustic-snare",
+          "file": "source-0030.m4a",
+          "message": "Effective leading silence 33.4ms may feel late (decoded 33.4ms)",
+          "value": 33.40136054421769,
+          "threshold": 10
+        }
+      ]
+    }
+  ]
+}

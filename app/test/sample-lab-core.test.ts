@@ -201,6 +201,13 @@ describe('SFZ inspection', () => {
     });
   });
 
+  it('honors the SFZ default pitch_keycenter of MIDI 60 for mapped key ranges', () => {
+    const regions = parseSfz('<group> lokey=59 hikey=65\n<region> sample=C4.wav');
+    expect(regions).toEqual([
+      expect.objectContaining({ sample: 'C4.wav', rootMidi: 60, loKey: 59, hiKey: 65 }),
+    ]);
+  });
+
   it('recognizes random-range and filename round-robin mappings', () => {
     const randomSfz = `
       <group> key=48 lovel=0 hivel=127

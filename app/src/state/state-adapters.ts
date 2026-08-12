@@ -61,6 +61,7 @@ function trackToSessionTrack(track: Track): SessionTrack {
     steps: track.steps,
     parameterLocks: track.parameterLocks,
     volume: track.volume,
+    pan: track.pan,
     muted: track.muted,
     soloed: track.soloed,
     transpose: track.transpose,
@@ -95,6 +96,7 @@ export function applySessionToGridState(
       steps: sessionTrack.steps,
       parameterLocks: sessionTrack.parameterLocks,
       volume: sessionTrack.volume,
+      pan: sessionTrack.pan ?? 0,
       // LOCAL-ONLY: Preserve muted/soloed from original (My Ears, My Control)
       // For new tracks, use session value or default to false
       muted: originalTrack ? originalTrack.muted : (sessionTrack.muted ?? false),

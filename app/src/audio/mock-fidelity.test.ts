@@ -91,6 +91,7 @@ describe('Mock-fidelity contract: AudioEngine', () => {
     'isSampledInstrumentReady',
     'getCurrentTime',
     'setTrackVolume',
+    'setTrackPan',
     'syncGridAudioState',
     'playSampledInstrument',
     'playToneSynth',

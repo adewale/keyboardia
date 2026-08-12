@@ -32,6 +32,7 @@ import { SchedulerWorkletHost } from './scheduler-worklet-host';
 import { audioEngine } from './engine';
 import { audioMetrics } from './metrics/audio-metrics';
 import type { GridState } from '../types';
+import { resolveNoteDynamics } from './note-dynamics';
 
 function makeState(): GridState {
   return {
@@ -64,7 +65,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
     host.start(makeState);
   });
 
-  function sampleNoteEvent(eventTime: number, volumeMultiplier = 1) {
+  function sampleNoteEvent(eventTime: number, volumeLock?: number) {
     return {
       type: 'note',
       trackId: 't1',
@@ -73,7 +74,8 @@ describe('SchedulerWorkletHost lateness metrics', () => {
       pitchSemitones: 0,
       time: eventTime,
       duration: 0.1,
-      volumeMultiplier,
+      ...resolveNoteDynamics(volumeLock),
+      loopIteration: 0,
     };
   }
 
@@ -103,9 +105,19 @@ describe('SchedulerWorkletHost lateness metrics', () => {
     dispatchTo(host, sampleNoteEvent(10.05, 0.5));
 
     expect(audioEngine.playSample).toHaveBeenCalledWith(
-      'sample:kick', 't1', 10.05, 0.1, 0, 0.5,
+      'sample:kick', 't1', 10.05, 0.1, 0, 0.1, 64,
     );
     expect(audioEngine.setTrackVolume).not.toHaveBeenCalled();
+  });
+
+  it('keys unlocked sample variation and bypasses it for explicit locks', () => {
+    dispatchTo(host, sampleNoteEvent(10.05));
+    expect(audioEngine.playSample).toHaveBeenLastCalledWith(
+      'sample:kick', 't1', 10.05, 0.1, 0, 1, 90, 'n1-loop-0',
+    );
+
+    dispatchTo(host, sampleNoteEvent(10.1, 1));
+    expect(vi.mocked(audioEngine.playSample).mock.calls.at(-1)).toHaveLength(7);
   });
 
   it.each([
@@ -121,6 +133,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
       0.1,
       1,
       't1',
+      90,
     );
   });
 

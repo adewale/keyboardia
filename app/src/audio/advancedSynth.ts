@@ -11,9 +11,33 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
-import { NOTE_DURATIONS_120BPM, semitoneToFrequency } from './constants';
+import { NOTE_DURATIONS_120BPM, semitoneToFrequency, slewAudioParam } from './constants';
 import { parseInstrumentId } from './instrument-types';
 import type { WaveformType, LFODestination, ADSREnvelope as BaseADSREnvelope, FilterType } from './synth-types';
+import { DEFAULT_MIDI_VELOCITY, MIDI_VELOCITY_MAX } from '../shared/constants';
+import { ADVANCED_SOURCE_GAIN_DB, dbToGain } from './source-calibration';
+import { peakSafeOscillatorMix } from './synth';
+
+const MIN_ADVANCED_FILTER_FREQUENCY = 20;
+const MAX_ADVANCED_FILTER_FREQUENCY = 20_000;
+
+/**
+ * Open the advanced-voice filter with MIDI velocity, independently of note
+ * amplitude. The canonical sequencer velocity (90) retains 88.9% of the
+ * authored cutoff, so the richer timbre does not make defaults suddenly dull.
+ */
+export function advancedVelocityFilterFrequency(
+  baseCutoff: number,
+  midiVelocity: number,
+): number {
+  const velocity = Number.isFinite(midiVelocity) ? midiVelocity : DEFAULT_MIDI_VELOCITY;
+  const normalized = Math.max(0, Math.min(MIDI_VELOCITY_MAX, velocity)) / MIDI_VELOCITY_MAX;
+  const multiplier = 0.3 + 0.7 * Math.sqrt(normalized);
+  return Math.max(
+    MIN_ADVANCED_FILTER_FREQUENCY,
+    Math.min(MAX_ADVANCED_FILTER_FREQUENCY, baseCutoff * multiplier),
+  );
+}
 
 /**
  * Oscillator configuration (from spec Section 2.1.1)
@@ -111,7 +135,7 @@ export const ADVANCED_SYNTH_PRESETS: Record<string, AdvancedSynthPreset> = {
     name: 'Warm Pad',
     oscillator1: { waveform: 'sawtooth', level: 0.4, detune: -10, coarseDetune: 0 },
     oscillator2: { waveform: 'triangle', level: 0.6, detune: 10, coarseDetune: 12 },
-    amplitudeEnvelope: { attack: 0.5, decay: 0.3, sustain: 0.8, release: 1.5 },
+    amplitudeEnvelope: { attack: 0.5, decay: 0.15, sustain: 0.8, release: 1.5 },
     filter: { frequency: 1500, resonance: 1, type: 'lowpass', envelopeAmount: 0.4 },
     filterEnvelope: { attack: 0.8, decay: 0.5, sustain: 0.6, release: 1.0 },
     lfo: { frequency: 0.3, waveform: 'triangle', destination: 'filter', amount: 0.15, sync: false },
@@ -135,7 +159,7 @@ export const ADVANCED_SYNTH_PRESETS: Record<string, AdvancedSynthPreset> = {
     name: 'Tremolo Strings',
     oscillator1: { waveform: 'sawtooth', level: 0.5, detune: -5, coarseDetune: 0 },
     oscillator2: { waveform: 'sawtooth', level: 0.5, detune: 5, coarseDetune: 0 },
-    amplitudeEnvelope: { attack: 0.3, decay: 0.2, sustain: 0.8, release: 0.8 },
+    amplitudeEnvelope: { attack: 0.3, decay: 0.12, sustain: 0.8, release: 0.8 },
     filter: { frequency: 2500, resonance: 0.5, type: 'lowpass', envelopeAmount: 0.2 },
     filterEnvelope: { attack: 0.4, decay: 0.3, sustain: 0.7, release: 0.6 },
     lfo: { frequency: 5, waveform: 'sine', destination: 'amplitude', amount: 0.25, sync: false },
@@ -266,8 +290,8 @@ export class AdvancedSynthVoice {
       max: 1,
     });
 
-    // Create output gain (0.5 for balanced volume with other engines)
-    this.output = new Tone.Gain(0.5);
+    // Per-preset calibration lives on the engine output; voices stay at unity.
+    this.output = new Tone.Gain(1);
 
     // Connect signal flow
     // Oscillators → Gains → Filter → Amp Envelope → Output
@@ -305,16 +329,17 @@ export class AdvancedSynthVoice {
    *   effectiveCutoff = baseCutoff + filterEnvelope + filterLFO
    */
   setFilterFrequency(hz: number): void {
+    const now = Tone.now();
     if (this.filter) {
-      this.filter.frequency.value = hz;
+      slewAudioParam(this.filter.frequency, hz, now);
     }
     if (this.filterEnvAdder) {
-      this.filterEnvAdder.addend.value = hz;
+      slewAudioParam(this.filterEnvAdder.addend, hz, now);
     }
   }
 
   setLfoRate(hz: number): void {
-    if (this.lfo) this.lfo.frequency.value = hz;
+    if (this.lfo) slewAudioParam(this.lfo.frequency, hz, Tone.now());
   }
 
   setTempo(bpm: number): void {
@@ -392,9 +417,9 @@ export class AdvancedSynthVoice {
     // that could have been modulated by the previous preset's LFO.
     // See docs/AUDIO-ENGINEERING-PATTERNS.md for full explanation.
 
-    // Reset output gain to default (in case previous preset used amplitude LFO)
+    // Reset the voice-local gain to unity (source trim lives on engine output).
     if (this.output) {
-      this.output.gain.value = 0.5;
+      this.output.gain.value = 1;
     }
 
     // Reset oscillator detune to preset values (in case previous preset used pitch LFO)
@@ -444,10 +469,10 @@ export class AdvancedSynthVoice {
     if (import.meta.env.DEV) {
       const issues: string[] = [];
 
-      // Check output gain (should be 0.5 unless amplitude LFO is active)
+      // Voice output is unity unless an amplitude LFO owns the AudioParam.
       if (this.output && this.preset?.lfo.destination !== 'amplitude') {
-        if (this.output.gain.value !== 0.5) {
-          issues.push(`output.gain is ${this.output.gain.value}, expected 0.5`);
+        if (this.output.gain.value !== 1) {
+          issues.push(`output.gain is ${this.output.gain.value}, expected 1`);
         }
       }
 
@@ -718,7 +743,7 @@ export class AdvancedSynthEngine {
     logger.audio.log('Initializing AdvancedSynthEngine...');
 
     // Create output gain
-    this.output = new Tone.Gain(0.7);
+    this.output = new Tone.Gain(1);
 
     // Create voice pool
     for (let i = 0; i < AdvancedSynthEngine.MAX_VOICES; i++) {
@@ -852,6 +877,7 @@ export class AdvancedSynthEngine {
     const activeVoices = this.voices.filter(v => v.isActive()).length;
     this.currentPreset = preset;
     this.currentPresetId = presetId;
+    if (this.output) this.output.gain.value = dbToGain(ADVANCED_SOURCE_GAIN_DB[presetId as keyof typeof ADVANCED_SOURCE_GAIN_DB]);
 
     // Apply the instrument definition, then restore live control overrides.
     for (const voice of this.voices) voice.applyPreset(preset);
@@ -900,14 +926,18 @@ export class AdvancedSynthEngine {
     const ov = this.overrides;
     for (const voice of this.voices) {
       if (ov.filterFrequency !== undefined) voice.setFilterFrequency(ov.filterFrequency);
-      if (ov.filterResonance !== undefined && voice['filter']) voice['filter'].Q.value = ov.filterResonance;
+      if (ov.filterResonance !== undefined && voice['filter']) {
+        slewAudioParam(voice['filter'].Q, ov.filterResonance, Tone.now());
+      }
       if (ov.lfoRate !== undefined) voice.setLfoRate(ov.lfoRate);
       if (ov.lfoAmount !== undefined) this.applyLfoAmount(voice, ov.lfoAmount);
       if (ov.attack !== undefined && voice['ampEnvelope']) voice['ampEnvelope'].attack = ov.attack;
       if (ov.release !== undefined && voice['ampEnvelope']) voice['ampEnvelope'].release = ov.release;
       if (ov.oscMix !== undefined) {
-        if (voice['osc1Gain']) voice['osc1Gain'].gain.value = 1 - ov.oscMix;
-        if (voice['osc2Gain']) voice['osc2Gain'].gain.value = ov.oscMix;
+        const now = Tone.now();
+        const [osc1Level, osc2Level] = peakSafeOscillatorMix(ov.oscMix);
+        if (voice['osc1Gain']) slewAudioParam(voice['osc1Gain'].gain, osc1Level, now);
+        if (voice['osc2Gain']) slewAudioParam(voice['osc2Gain'].gain, osc2Level, now);
       }
     }
   }
@@ -931,8 +961,9 @@ export class AdvancedSynthEngine {
    */
   setFilterResonance(q: number): void {
     this.overrides.filterResonance = q;
+    const now = Tone.now();
     for (const voice of this.voices) {
-      if (voice['filter']) voice['filter'].Q.value = q;
+      if (voice['filter']) slewAudioParam(voice['filter'].Q, q, now);
     }
   }
 
@@ -979,11 +1010,13 @@ export class AdvancedSynthEngine {
    */
   setOscMix(mix: number): void {
     this.overrides.oscMix = mix;
+    const now = Tone.now();
+    const [osc1Level, osc2Level] = peakSafeOscillatorMix(mix);
     for (const voice of this.voices) {
       const osc1Gain = voice['osc1Gain'] as Tone.Gain | null;
       const osc2Gain = voice['osc2Gain'] as Tone.Gain | null;
-      if (osc1Gain) osc1Gain.gain.value = 1 - mix;
-      if (osc2Gain) osc2Gain.gain.value = mix;
+      if (osc1Gain) slewAudioParam(osc1Gain.gain, osc1Level, now);
+      if (osc2Gain) slewAudioParam(osc2Gain.gain, osc2Level, now);
     }
   }
 
@@ -1021,10 +1054,11 @@ export class AdvancedSynthEngine {
     semitone: number,
     duration: number | string,
     time?: number,
-    volume: number = 1
+    volume: number = 1,
+    midiVelocity: number = DEFAULT_MIDI_VELOCITY,
   ): void {
     const frequency = semitoneToFrequency(semitone);
-    this.playNoteFrequency(frequency, duration, time, volume);
+    this.playNoteFrequency(frequency, duration, time, volume, midiVelocity);
   }
 
   /**
@@ -1035,7 +1069,8 @@ export class AdvancedSynthEngine {
     frequency: number,
     duration: number | string,
     time?: number,
-    volume: number = 1
+    volume: number = 1,
+    midiVelocity: number = DEFAULT_MIDI_VELOCITY,
   ): void {
     // Track all play attempts for diagnostics
     this.playAttempts++;
@@ -1060,6 +1095,8 @@ export class AdvancedSynthEngine {
     // Apply current preset
     if (this.currentPreset) {
       voice.applyPreset(this.currentPreset);
+      const baseCutoff = this.overrides.filterFrequency ?? this.currentPreset.filter.frequency;
+      voice.setFilterFrequency(advancedVelocityFilterFrequency(baseCutoff, midiVelocity));
     } else {
       this.recordFailure('no preset applied');
       return;
@@ -1078,7 +1115,7 @@ export class AdvancedSynthEngine {
     }
     this.lastScheduledTime = startTime;
 
-    logger.audio.log(`AdvancedSynth playing: freq=${frequency.toFixed(1)}Hz, duration=${duration}, time=${startTime.toFixed(3)}, vol=${volume}, preset=${this.currentPreset?.name}`);
+    logger.audio.log(`AdvancedSynth playing: freq=${frequency.toFixed(1)}Hz, duration=${duration}, time=${startTime.toFixed(3)}, vol=${volume}, velocity=${midiVelocity}, preset=${this.currentPreset?.name}`);
 
     // Use try-catch to handle cases where Tone.js internal state rejects the time
     // This can happen during rapid BPM changes

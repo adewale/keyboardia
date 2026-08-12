@@ -110,6 +110,7 @@ function stubEngineInternals(engine: AudioEngine): void {
   const fakeBusManager = {
     getBusInput: () => ({ connect: vi.fn(), disconnect: vi.fn() }),
     setTrackVolume: vi.fn(),
+    setTrackPan: vi.fn(),
   };
   (engine as unknown as { trackBusManager: unknown }).trackBusManager = fakeBusManager;
 }
@@ -129,6 +130,7 @@ describe('Phase 3: global controls fan out + overrides', () => {
     const bus = {
       getBusInput: () => ({ connect: vi.fn(), disconnect: vi.fn() }),
       setTrackVolume: vi.fn<(trackId: string, volume: number) => void>(),
+      setTrackPan: vi.fn<(trackId: string, pan: number) => void>(),
       removeBus: vi.fn<(trackId: string) => void>(),
     };
     (engine as unknown as { trackBusManager: unknown }).trackBusManager = bus;
@@ -141,9 +143,21 @@ describe('Phase 3: global controls fan out + overrides', () => {
     engine.syncGridAudioState(withTrack);
     expect(bus.setTrackVolume).toHaveBeenCalledOnce();
     expect(bus.setTrackVolume).toHaveBeenCalledWith('A', 0.25);
+    expect(bus.setTrackPan).toHaveBeenCalledOnce();
+    expect(bus.setTrackPan).toHaveBeenCalledWith('A', 0);
 
     engine.syncGridAudioState({ tempo: 96, tracks: [] });
     expect(bus.removeBus).toHaveBeenCalledWith('A');
+  });
+
+  it('retains pan before audio initialization and clears it with track lifecycle', () => {
+    const engine = new AudioEngine();
+    engine.setTrackPan('A', -0.2);
+    const pending = (engine as unknown as { pendingTrackPans: Map<string, number> }).pendingTrackPans;
+    expect(pending.get('A')).toBe(-0.2);
+
+    engine.removeTrackGain('A');
+    expect(pending.has('A')).toBe(false);
   });
 
   it('sequencer tempo fans out and is inherited by synths created later', async () => {

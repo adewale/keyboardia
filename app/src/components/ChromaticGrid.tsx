@@ -4,6 +4,7 @@ import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { previewInstrument, signalMusicIntent } from '../audio/audioTriggers';
 import { isInScale, isRoot, isFifth, isFourth, NOTE_NAMES as CHROMATIC_NOTES, type NoteName, type ScaleId } from '../music/music-theory';
 import { isInRange, isInOptimalRange, getPitchShiftQuality, needsPitchShiftWarning } from '../audio/instrument-ranges';
+import { canEnterPitchWithScaleLock } from '../music/scale-entry';
 import './ChromaticGrid.css';
 
 interface ChromaticGridProps {
@@ -214,6 +215,12 @@ export const ChromaticGrid = memo(function ChromaticGrid({
     const isActive = track.steps[stepIndex];
     const currentPitch = track.parameterLocks[stepIndex]?.pitch ?? 0;
 
+    // Existing out-of-scale legacy notes remain visible and removable, but a
+    // locked grid must never create or move another note onto that pitch.
+    if ((!isActive || currentPitch !== pitch) && !canEnterPitchWithScaleLock(pitch, scale)) {
+      return;
+    }
+
     // Tier 2: Clicking on chromatic grid signals music intent
     signalMusicIntent('chromatic_click');
 
@@ -252,7 +259,7 @@ export const ChromaticGrid = memo(function ChromaticGrid({
       onSetParameterLock(stepIndex, { ...currentLock, pitch: pitch === 0 ? undefined : pitch });
       previewSound(pitch);
     }
-  }, [track, onSetParameterLock, onToggleStep]);
+  }, [track, onSetParameterLock, onToggleStep, scale]);
 
   return (
     <div className={`chromatic-grid ${scale?.locked ? 'scale-locked' : ''} view-mode-${viewMode}`}>

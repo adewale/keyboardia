@@ -67,6 +67,10 @@ This is the fundamental requirement. If a track plays during real-time playback,
 
 This ensures users experience no surprises when opening their exported MIDI in a DAW.
 
+One explicit exception is stereo pan. Keyboardia stores pan as a continuous
+audio-mix control, but the current SMF export does not emit MIDI CC 10. Exported
+tracks therefore open centered and can be positioned in the destination DAW.
+
 ---
 
 ## Track Selection Logic
@@ -142,6 +146,7 @@ Step (off)                    →     (nothing)
 Parameter lock: pitch         →     Note number offset
 Parameter lock: volume        →     Velocity (0-127)
 Track transpose               →     Added to note number
+Track pan                     →     Not exported (no MIDI CC 10)
 Track selection               →     See "Track Selection Logic" above
 Swing                         →     Timing offset on off-beat steps
 ```
@@ -652,6 +657,7 @@ The behavioral parity tests above verify track selection logic. We also have com
 | **Program Changes** | Correct GM programs, 0-indexed |
 | **Polyrhythms** | LCM expansion, correct loop counts |
 | **Track Selection** | Mute/solo behavior |
+| **Pan omission** | Changing track pan leaves the exported MIDI bytes unchanged; no CC 10 is emitted |
 
 **Implementation:** `app/src/audio/midiExport.fidelity.test.ts`
 
@@ -757,6 +763,7 @@ The midi-writer-js library handles track/header structure correctly. If corrupti
 | Export completes in < 100ms | ⚠️ Unmeasured | No performance benchmarks yet |
 | Works on mobile Safari/Chrome | ⚠️ Untested | File download should work; no Web MIDI API needed |
 | Behavioral parity (mute/solo states) | ✅ Verified | 6+ dedicated unit tests + fidelity tests |
+| Track pan behavior | ✅ Explicitly omitted | No CC 10; fidelity test proves pan does not alter MIDI bytes |
 
 ---
 
@@ -785,10 +792,9 @@ MIDI files are extremely compact (<100KB for complex sessions). Browser memory l
 
 ### Why MIDI Export Is Unaffected by Effects Latency
 
-Keyboardia's audio engine has two signal paths:
+Keyboardia's audio engine uses one unified output path:
 
-1. **Native synth path**: `masterGain → compressor → destination` (direct, minimal latency)
-2. **Effects path**: `masterGain → effects chain → limiter → destination` (added processing latency)
+`track bus → masterGain(−3 dB) → compressor → makeup trim → effects → limiter(−1 dB) → output trim(−1 dB) → Tone.Destination (Volume → Gain) → raw AudioContext destination`
 
 When effects are enabled, Tone.js nodes (distortion, chorus, delay, reverb, limiter) introduce small processing delays (a few milliseconds per node, totaling <10ms).
 

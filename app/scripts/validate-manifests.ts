@@ -92,6 +92,7 @@ interface Manifest {
   };
   chokeGroup?: string;
   gainDb?: number;
+  startOffset?: number;
   unpitched?: boolean;
   velocityCrossfade?: number;
   priorityNotes?: number[];
@@ -482,6 +483,14 @@ function validateManifest(
       type: 'critical',
       code: 'INVALID_GAIN_DB',
       message: `gainDb must be a finite number within ±${MAX_GAIN_DB}, got: ${JSON.stringify(manifest.gainDb)}`,
+    });
+  }
+  if (manifest.startOffset !== undefined &&
+      (!Number.isFinite(manifest.startOffset) || manifest.startOffset < 0)) {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_START_OFFSET',
+      message: `manifest startOffset must be finite and >= 0, got: ${JSON.stringify(manifest.startOffset)}`,
     });
   }
 

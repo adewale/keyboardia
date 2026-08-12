@@ -28,6 +28,9 @@ import {
   isDrumInstrument,
   instrumentPresetId,
   DRUM_INSTRUMENT_IDS,
+  isBassInstrument,
+  isKickInstrument,
+  shouldKeepInstrumentCentered,
 } from './instrument-classification';
 import { INSTRUMENT_CATEGORIES } from '../components/sample-constants';
 
@@ -182,5 +185,14 @@ describe('instrumentPresetId', () => {
 
   it('keeps everything after the first separator', () => {
     expect(instrumentPresetId('a:b:c')).toBe('b:c');
+  });
+});
+
+describe('mix-role classification', () => {
+  it('distinguishes kick and bass/sub roles used by calibration and panning', () => {
+    expect(isKickInstrument('sampled:808-kick')).toBe(true);
+    expect(isBassInstrument('advanced:sub-bass')).toBe(true);
+    expect(shouldKeepInstrumentCentered('sampled:finger-bass')).toBe(true);
+    expect(shouldKeepInstrumentCentered('sampled:acoustic-snare')).toBe(false);
   });
 });

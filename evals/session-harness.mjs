@@ -16,7 +16,7 @@ import { MAX_STEPS, DEFAULT_STEP_COUNT } from './constants.mjs';
  * parameterLocks array of the same length. Session invariants reject anything
  * else, so build it here rather than in every case.
  */
-function buildTrack({ id, name, sample_id, active_steps = [], step_count = DEFAULT_STEP_COUNT }) {
+function buildTrack({ id, name, sample_id, active_steps = [], step_count = DEFAULT_STEP_COUNT, pan = 0 }) {
   const steps = Array(MAX_STEPS).fill(false);
   for (const step of active_steps) {
     steps[step] = true;
@@ -28,6 +28,7 @@ function buildTrack({ id, name, sample_id, active_steps = [], step_count = DEFAU
     steps,
     parameterLocks: Array(MAX_STEPS).fill(null),
     volume: 1,
+    pan,
     muted: false,
     soloed: false,
     transpose: 0,

@@ -19,6 +19,12 @@ let mockContextId = 0;
 let currentMockContext: { id: number } | null = null;
 
 vi.mock('tone', () => {
+  const mockParam = (value: number | string) => ({
+    value,
+    cancelScheduledValues: vi.fn().mockReturnThis(),
+    setTargetAtTime: vi.fn().mockReturnThis(),
+  });
+
   // Base mock class with context tracking
   const createMockClass = () => {
     return class {
@@ -36,39 +42,54 @@ vi.mock('tone', () => {
   };
 
   class MockGain extends createMockClass() {
-    gain = { value: 1 };
+    gain = mockParam(1);
   }
 
   class MockFreeverb extends createMockClass() {
-    roomSize = { value: 0.7 };
+    roomSize = mockParam(0.7);
     dampening = 3000;
-    wet = { value: 0 };
+    wet = mockParam(0);
+  }
+
+  class MockReverb extends createMockClass() {
+    decay = 1.5;
+    preDelay = 0.01;
+    wet = mockParam(1);
+    ready = Promise.resolve();
   }
 
   class MockFeedbackDelay extends createMockClass() {
-    delayTime = { value: '8n' };
-    feedback = { value: 0.3 };
-    wet = { value: 0 };
+    delayTime = mockParam('8n');
+    feedback = mockParam(0.3);
+    wet = mockParam(0);
   }
 
   class MockChorus extends createMockClass() {
-    frequency = { value: 1.5 };
+    frequency = mockParam(1.5);
     depth = 0.5;
-    wet = { value: 0 };
+    wet = mockParam(0);
   }
 
   class MockDistortion extends createMockClass() {
     distortion = 0;
-    wet = { value: 0 };
+    wet = mockParam(0);
   }
 
   class MockLimiter extends createMockClass() {
-    threshold = { value: -1 };
+    threshold = mockParam(-1);
+  }
+
+  class MockCompressor extends createMockClass() {
+    threshold = mockParam(-10);
+    ratio = mockParam(3);
+    knee = mockParam(12);
+    attack = mockParam(0.015);
+    release = mockParam(0.2);
   }
 
   class MockOscillator extends createMockClass() {
-    frequency = { value: 440 };
-    detune = { value: 0 };
+    frequency = mockParam(440);
+    detune = mockParam(0);
     type = 'sawtooth';
   }
 
@@ -77,8 +98,8 @@ vi.mock('tone', () => {
   }
 
   class MockFilter extends createMockClass() {
-    frequency = { value: 1000 };
-    Q = { value: 1 };
+    frequency = mockParam(1000);
+    Q = mockParam(1);
     type = 'lowpass';
   }
 
@@ -101,8 +122,8 @@ vi.mock('tone', () => {
   }
 
   class MockLFO extends createMockClass() {
-    frequency = { value: 5 };
-    amplitude = { value: 1 };
+    frequency = mockParam(5);
+    amplitude = mockParam(1);
     type = 'sine';
   }
 
@@ -111,7 +132,7 @@ vi.mock('tone', () => {
   }
 
   class MockAdd extends createMockClass() {
-    addend = { value: 0 };
+    addend = mockParam(0);
     constructor(value?: number) {
       super();
       if (value !== undefined) this.addend.value = value;
@@ -159,10 +180,12 @@ vi.mock('tone', () => {
     now: vi.fn(() => 0),
     Gain: MockGain,
     Freeverb: MockFreeverb,
+    Reverb: MockReverb,
     FeedbackDelay: MockFeedbackDelay,
     Chorus: MockChorus,
     Distortion: MockDistortion,
     Limiter: MockLimiter,
+    Compressor: MockCompressor,
     Oscillator: MockOscillator,
     Noise: MockNoise,
     Filter: MockFilter,

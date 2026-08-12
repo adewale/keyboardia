@@ -1,5 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const localPort = Number(process.env.E2E_PORT ?? 5175);
+
 const ignoredSpecs: RegExp[] = [];
 if (process.env.E2E_FUNCTIONAL_ONLY === '1') ignoredSpecs.push(/e2e\/visual\.spec\.ts$/);
 
@@ -12,6 +14,7 @@ if (process.env.E2E_FUNCTIONAL_ONLY === '1') ignoredSpecs.push(/e2e\/visual\.spe
 const headlessWebkitAudioSpecs = [
   /e2e\/advanced-sub-bass-session\.spec\.ts$/,
   /e2e\/all-instruments-master-output\.spec\.ts$/,
+  /e2e\/capture-session\.spec\.ts$/,
   /e2e\/instrument-range-session\.spec\.ts$/,
   /e2e\/mcp-sampled-instrument-lifecycle\.spec\.ts$/,
   /e2e\/per-track-advanced-meters\.spec\.ts$/,
@@ -61,7 +64,7 @@ export default defineConfig({
 
   use: {
     // Support PLAYWRIGHT_BASE_URL for full-stack testing against wrangler dev
-    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5175',
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || `http://localhost:${localPort}`,
     headless: true,
 
     // Tracing for debugging failures
@@ -111,12 +114,14 @@ export default defineConfig({
       // video capture keeps an additional media pipeline alive.
       workers: 1,
       use: { ...devices['iPhone 14'], video: 'off' },
+      testIgnore: [...ignoredSpecs, ...headlessWebkitAudioSpecs],
       // Can run independently for local testing; CI still runs chromium first via workflow order
     },
     {
       name: 'mobile-safari-large',
       use: { ...devices['iPhone 15 Pro Max'] },
       dependencies: ['chromium'],
+      testIgnore: [...ignoredSpecs, ...headlessWebkitAudioSpecs],
     },
   ],
 
@@ -126,9 +131,9 @@ export default defineConfig({
     ? undefined
     : {
         command: process.env.USE_MOCK_API
-          ? 'USE_MOCK_API=1 npm run dev -- --port 5175'
-          : 'npm run dev -- --port 5175',
-        port: 5175,
+          ? `USE_MOCK_API=1 npm run dev -- --port ${localPort}`
+          : `npm run dev -- --port ${localPort}`,
+        port: localPort,
         // Mock-API tests must not reuse an existing non-mock Vite server;
         // doing so routes /api to the real backend proxy and hides regressions
         // as 405s or stale session data.

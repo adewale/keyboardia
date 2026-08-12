@@ -3,6 +3,8 @@
   "name": "Alto Sax",
   "type": "sampled",
   "releaseTime": 0.4,
+  "gainDb": 0.25,
+  "velocityCrossfade": 8,
   "credits": {
     "source": "Karoryfer Weresax (Alto Saxophone)",
     "url": "https://github.com/sfzinstruments/karoryfer.weresax",

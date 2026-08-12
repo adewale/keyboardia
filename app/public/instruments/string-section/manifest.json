@@ -3,6 +3,7 @@
   "name": "String Section",
   "type": "sampled",
   "releaseTime": 0.8,
+  "gainDb": 4.5,
   "playableRange": {
     "min": 33,
     "max": 88
@@ -10,7 +11,8 @@
   "credits": {
     "source": "VSCO 2 Community Edition (Cello & Viola Sections)",
     "url": "https://github.com/sgossner/VSCO-2-CE",
-    "license": "CC0 1.0 Universal (Public Domain)"
+    "license": "CC0 1.0 Universal (Public Domain)",
+    "changes": "G5 delivery re-encoded from Strings/Viola Section/susvib/ViolaEns_susvib_G4_v1_1.wav at source revision 440300901dfe9275fd84e0b7763af1f8443ae62e (SHA-256 624a70ef842744cb7847a07fba3115ace5689746a107da91f237bf2534d42b03): trim 19.7505669 ms, +15.5 dB, 44.1 kHz stereo 160 kbps AAC-LC. This avoids decoder-specific MP3 priming."
   },
   "samples": [
     {
@@ -19,7 +21,8 @@
     },
     {
       "note": 40,
-      "file": "E2.mp3"
+      "file": "E2.mp3",
+      "gainDb": 0.329
     },
     {
       "note": 43,
@@ -63,7 +66,7 @@
     },
     {
       "note": 79,
-      "file": "G5.mp3"
+      "file": "G5.m4a"
     },
     {
       "note": 83,

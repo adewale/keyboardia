@@ -34,6 +34,7 @@ export interface SessionTrack {
   steps: boolean[];
   parameterLocks: (ParameterLock | null)[];
   volume: number;
+  pan?: number;             // Normalized stereo position [-1, 1], default 0
   muted: boolean;
   soloed?: boolean;        // When any track is soloed, only soloed tracks play
   playbackMode?: string;   // DEPRECATED: Ignored on load, kept for backwards compatibility

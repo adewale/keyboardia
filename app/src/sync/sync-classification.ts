@@ -38,6 +38,7 @@ export const SYNCED_ACTIONS = new Set([
   'SET_TRACK_INSTRUMENT',  // Change instrument - shared (issue #63)
   'SET_TRACK_SAMPLE',      // Track setting - shared (legacy alias)
   'SET_TRACK_VOLUME',      // Track parameter - shared
+  'SET_TRACK_PAN',         // Normalized stereo position - shared
   'SET_TRACK_TRANSPOSE',   // Track parameter - shared
   'SET_TRACK_STEP_COUNT',  // Track setting - shared
   'SET_TRACK_SWING',       // Track parameter - shared (Phase 31D: Per-track swing)

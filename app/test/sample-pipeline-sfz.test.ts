@@ -84,6 +84,79 @@ describe('operational SFZ-to-Pipeline-v2 import', () => {
     expect(imported.value.preprocessedSfzSha256).toMatch(/^[a-f0-9]{64}$/);
   });
 
+  it('honors SFZ lorand/hirand defaults at the ends of a complete random partition', async () => {
+    const root = makeSourceTree();
+    fs.writeFileSync(path.join(root, 'default-random-bounds.sfz'), [
+      '<group> key=60 lovel=0 hivel=127',
+      '<region> hirand=0.5 sample=Samples/soft one.flac',
+      '<region> lorand=0.5 sample=Samples/soft two.flac',
+    ].join('\n'));
+
+    const imported = await generateSfzImport({
+      sfzFile: path.join(root, 'default-random-bounds.sfz'),
+      sourceRoot: root,
+      articulation: 'sustain',
+      container: 'm4a',
+      randomPolicy: 'deterministic-round-robin',
+    });
+
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    expect(imported.value.mappings.map(mapping => mapping.roundRobin)).toEqual([
+      { group: 'sustain-60-0-127', index: 0, count: 2 },
+      { group: 'sustain-60-0-127', index: 1, count: 2 },
+    ]);
+  });
+
+  it('honors the SFZ seq_position default of one when seq_length is declared', async () => {
+    const root = makeSourceTree();
+    fs.writeFileSync(path.join(root, 'sequence-default.sfz'), [
+      '<group> key=60 lovel=0 hivel=127',
+      '<region> seq_length=2 sample=Samples/soft one.flac',
+      '<region> seq_length=2 seq_position=2 sample=Samples/soft two.flac',
+    ].join('\n'));
+
+    const imported = await generateSfzImport({
+      sfzFile: path.join(root, 'sequence-default.sfz'),
+      sourceRoot: root,
+      articulation: 'sustain',
+      container: 'm4a',
+      randomPolicy: 'reject',
+    });
+
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    expect(imported.value.mappings.map(mapping => mapping.roundRobin)).toEqual([
+      { group: 'sustain-60-0-127', index: 0, count: 2 },
+      { group: 'sustain-60-0-127', index: 1, count: 2 },
+    ]);
+  });
+
+  it('collapses exact duplicate regions introduced by controller-branched includes', async () => {
+    const root = makeSourceTree();
+    fs.writeFileSync(path.join(root, 'controller-branches.sfz'), [
+      '<group> key=60 lovel=0 hivel=127 seq_length=2 seq_position=1',
+      '<region> sample=Samples/soft one.flac',
+      '<region> sample=Samples/soft one.flac',
+      '<group> key=60 lovel=0 hivel=127 seq_length=2 seq_position=2',
+      '<region> sample=Samples/soft two.flac',
+      '<region> sample=Samples/soft two.flac',
+    ].join('\n'));
+
+    const imported = await generateSfzImport({
+      sfzFile: path.join(root, 'controller-branches.sfz'),
+      sourceRoot: root,
+      articulation: 'sustain',
+      container: 'm4a',
+      randomPolicy: 'reject',
+    });
+
+    expect(imported.ok).toBe(true);
+    if (!imported.ok) return;
+    expect(imported.value.mappings).toHaveLength(2);
+    expect(imported.value.warnings.join('\n')).toContain('Collapsed 2 exact duplicate SFZ regions');
+  });
+
   it('fails closed on random regions without an explicit conversion policy', async () => {
     const root = makeSourceTree();
     const imported = await generateSfzImport({
@@ -115,6 +188,19 @@ describe('operational SFZ-to-Pipeline-v2 import', () => {
     expect(expanded.value).toContain('<region>  lokey=59 hikey=61 pitch_keycenter=60 sample=soft one.flac');
     expect(expanded.value).toContain('<region>  lokey=62 hikey=64 pitch_keycenter=63 sample=soft one.flac');
     expect(expanded.value).not.toContain('$KEY');
+  });
+
+  it('resolves nested ARIA-style includes against the entry map while enforcing a wider source boundary', () => {
+    const root = makeSourceTree();
+    fs.mkdirSync(path.join(root, 'Programs', 'mappings'), { recursive: true });
+    fs.writeFileSync(path.join(root, 'Programs', 'main.sfz'), '#include "mappings/all.sfz"');
+    fs.writeFileSync(path.join(root, 'Programs', 'mappings', 'all.sfz'), '#include "mappings/voice.sfz"');
+    fs.writeFileSync(path.join(root, 'Programs', 'mappings', 'voice.sfz'), '<region> key=60 sample=../Samples/soft one.flac');
+
+    const expanded = preprocessSfzFile(path.join(root, 'Programs', 'main.sfz'), root);
+    expect(expanded.ok).toBe(true);
+    if (!expanded.ok) return;
+    expect(expanded.value).toContain('<region> key=60 sample=../Samples/soft one.flac');
   });
 
   it('rejects include and master escapes through symlinked ancestors', async () => {

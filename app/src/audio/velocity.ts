@@ -3,20 +3,17 @@
  *
  * The sequencer's dynamics live in the volume p-lock (0–1 multiplier,
  * surfaced in the UI as the Velocity Lane). Sampled instruments select
- * velocity layers by MIDI velocity (0–127). This module is the single
- * conversion point between the two domains — every scheduler
- * implementation must derive velocity through here so the main-thread
- * and worklet paths stay in parity.
+ * velocity layers by MIDI velocity (0–127). Schedulers use the richer
+ * resolveNoteDynamics contract; this compatibility helper remains the pure
+ * explicit-lock conversion used by tests and non-scheduler callers.
  *
  * Correctness by construction: the function is total (any double in,
  * valid velocity out) and clamping, so downstream layer selection never
  * sees an out-of-range or non-integer velocity.
  */
 
-export const MIDI_VELOCITY_MAX = 127;
-
-/** Velocity used when no dynamics information exists (un-locked step = full hit). */
-export const DEFAULT_MIDI_VELOCITY = MIDI_VELOCITY_MAX;
+import { DEFAULT_MIDI_VELOCITY, MIDI_VELOCITY_MAX } from '../shared/constants';
+export { DEFAULT_MIDI_VELOCITY } from '../shared/constants';
 
 /**
  * Convert a 0–1 volume multiplier to an integer MIDI velocity in [0, 127].

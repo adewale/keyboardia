@@ -39,6 +39,8 @@ import { copyToClipboard } from './utils/clipboard'
 import { AsyncActionLatch } from './utils/AsyncActionLatch'
 import { downloadMidi } from './audio/midiExport'
 import { createSession, updateUrlWithSession } from './sync/session'
+import { LANDING_SAMPLES } from './data/landing-session-defaults'
+import { createStarterSessionState } from './data/starter-session'
 import './App.css'
 
 // Feature flags - recording is hidden (Shared Sample Recording archived)
@@ -660,8 +662,6 @@ function hasSessionInUrl(): boolean {
 
 // Default drum samples for landing page example patterns
 // Must match valid sample IDs from sample-constants.ts
-const LANDING_SAMPLES = ['kick', 'snare', 'hihat', 'clap'];
-
 function App() {
   const [showLanding, setShowLanding] = useState(() => !hasSessionInUrl());
 
@@ -682,6 +682,12 @@ function App() {
       swing: 0,
       version: 1,
     });
+    updateUrlWithSession(session.id);
+    setShowLanding(false);
+  }, []);
+
+  const handleStartStarter = useCallback(async () => {
+    const session = await createSession(createStarterSessionState());
     updateUrlWithSession(session.id);
     setShowLanding(false);
   }, []);
@@ -717,6 +723,7 @@ function App() {
     return (
       <LandingPage
         onStartSession={handleStartSession}
+        onStartStarter={handleStartStarter}
         onSelectExample={handleSelectExample}
       />
     );

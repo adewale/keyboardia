@@ -10,6 +10,7 @@ import "./LandingPage.css";
 
 interface LandingPageProps {
   onStartSession: () => void;
+  onStartStarter: () => void;
   onSelectExample: (pattern: number[][], bpm: number) => void;
 }
 
@@ -27,7 +28,7 @@ const demoPattern = [
   [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
 ];
 
-export function LandingPage({ onStartSession }: LandingPageProps) {
+export function LandingPage({ onStartSession, onStartStarter }: LandingPageProps) {
   const [playhead, setPlayhead] = useState(0);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const slidesRef = useRef<HTMLDivElement>(null);
@@ -82,9 +83,14 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
             · <span className="s">Share</span>
           </span>
         </div>
-        <button className="landing-btn primary" onClick={onStartSession}>
-          Start Session
-        </button>
+        <div className="landing-start-actions">
+          <button className="landing-btn" onClick={onStartStarter}>
+            Start with Groove
+          </button>
+          <button className="landing-btn primary" onClick={onStartSession}>
+            Start Session
+          </button>
+        </div>
       </header>
 
       <section className="landing-features">

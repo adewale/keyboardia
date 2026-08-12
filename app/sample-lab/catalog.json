@@ -165,14 +165,15 @@
         "attribution": "Karoryfer Meatbass by Drogomir Smolken; recorded by Ludwik Zamenhof; CC0 1.0"
       },
       "targets": [
-        "upright-bass"
+        "upright-bass",
+        "finger-bass"
       ],
       "formats": [
         "sfz",
         "wav"
       ],
       "notes": [
-        "Pizzicato upright-bass map with four velocity layers and four round robins; evaluation-only for a future upright-bass ID, never a finger-bass substitute."
+        "Pizzicato upright-bass map with four velocity layers and four round robins. The legacy finger-bass ID already ships this source identity; enrichment improves its coverage and repetition but does not resolve that naming/identity mismatch."
       ]
     },
     {
@@ -472,17 +473,24 @@
         "scope": "archive",
         "evidenceUrl": "https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE",
         "evidenceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
-        "attribution": "Virtuosity Drums; CC0 1.0"
+        "attribution": "Virtuosity Drums by Versilian Studios and Karoryfer Samples; CC0 1.0"
       },
       "targets": [
         "acoustic-drums",
         "acoustic-kick",
         "acoustic-snare",
+        "acoustic-hihat-closed",
+        "acoustic-hihat-open",
+        "acoustic-ride",
+        "acoustic-crash",
         "cymbals"
       ],
       "formats": [
         "sfz",
-        "wav"
+        "flac"
+      ],
+      "notes": [
+        "Production's existing CC0 source family; enrichment retains every usable mid-mic mapping for the six shipped acoustic-kit identities."
       ]
     }
   ],

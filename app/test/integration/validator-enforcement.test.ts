@@ -29,7 +29,7 @@ interface ServerMessage {
   swing?: number;
   playerId?: string;
   state?: {
-    tracks: Array<{ id: string; steps: boolean[]; volume: number; transpose: number }>;
+    tracks: Array<{ id: string; steps: boolean[]; volume: number; pan?: number; transpose: number }>;
     tempo: number;
     swing: number;
   };
@@ -55,6 +55,7 @@ function track(id: string) {
     steps: Array(128).fill(false),
     parameterLocks: Array(128).fill(null),
     volume: 1,
+    pan: 0,
     muted: false,
     soloed: false,
     transpose: 0,
@@ -319,6 +320,29 @@ it('does not let a non-numeric track volume corrupt session state', async () => 
   expect(Number.isFinite(track.volume), `volume became ${track.volume}`).toBe(true);
   expect(track.volume).toBeGreaterThanOrEqual(0);
   expect(track.volume).toBeLessThanOrEqual(1);
+});
+
+it('rejects invalid pan assignments and accepts a normalized one', async () => {
+  const sessionId = await createSession();
+  const client = await connect(sessionId);
+
+  client.socket.send(JSON.stringify({
+    type: 'set_track_pan', trackId: 't1', pan: 'left', seq: 1,
+  }));
+  client.socket.send(JSON.stringify({
+    type: 'set_track_pan', trackId: 't1', pan: 1.1, seq: 2,
+  }));
+  client.socket.send(JSON.stringify({
+    type: 'set_track_pan', trackId: 't1', pan: -0.3, seq: 3,
+  }));
+
+  await client.inbox.waitFor(
+    (message) => message.type === 'track_pan_set' && message.clientSeq === 3,
+    'valid track_pan_set',
+  );
+
+  const track = await trackState(sessionId, 'pan-observer');
+  expect(track.pan).toBe(-0.3);
 });
 
 it('does not let a non-numeric transpose corrupt session state', async () => {

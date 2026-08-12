@@ -36,6 +36,9 @@ import {
   MAX_SWING,
   MIN_VOLUME,
   MAX_VOLUME,
+  MIN_PAN,
+  MAX_PAN,
+  DEFAULT_PAN,
   MIN_PLOCK_PITCH,
   MAX_PLOCK_PITCH,
   MIN_PLOCK_VOLUME,
@@ -300,6 +303,16 @@ function checkVolumeWithinBounds(tracks: SessionTrack[]): string[] {
   return violations;
 }
 
+function checkPanWithinBounds(tracks: SessionTrack[]): string[] {
+  const violations: string[] = [];
+  for (const track of tracks) {
+    if (track.pan !== undefined && !isValidNumberInRange(track.pan, MIN_PAN, MAX_PAN)) {
+      violations.push(`Track ${track.id}: pan ${track.pan} is outside valid range [${MIN_PAN}, ${MAX_PAN}]`);
+    }
+  }
+  return violations;
+}
+
 function checkLoopRegionWithinBounds(loopRegion: unknown): string[] {
   if (loopRegion === undefined || loopRegion === null) return [];
   if (!loopRegion || typeof loopRegion !== 'object' || Array.isArray(loopRegion)) {
@@ -337,6 +350,7 @@ export function validateStateInvariants(state: SessionState): InvariantResult {
   violations.push(...checkSwingWithinBounds(state.swing));
   violations.push(...checkStepCountWithinBounds(state.tracks));
   violations.push(...checkVolumeWithinBounds(state.tracks));
+  violations.push(...checkPanWithinBounds(state.tracks));
   violations.push(...checkLoopRegionWithinBounds((state as { loopRegion?: unknown }).loopRegion));
 
   return {
@@ -514,6 +528,19 @@ export function repairStateInvariants(state: SessionState): {
     } else if (track.volume > MAX_VOLUME) {
       repairs.push(`Clamped volume from ${track.volume} to ${MAX_VOLUME} for track ${track.id}`);
       track.volume = MAX_VOLUME;
+    }
+
+    // Stored state is repaired for compatibility. Public mutation boundaries
+    // reject bad pan instead of turning it into a surprising hard-left/right.
+    if (!Number.isFinite(track.pan)) {
+      repairs.push(`Replaced non-finite pan ${track.pan} with ${DEFAULT_PAN} for track ${track.id}`);
+      track.pan = DEFAULT_PAN;
+    } else if (track.pan! < MIN_PAN) {
+      repairs.push(`Clamped pan from ${track.pan} to ${MIN_PAN} for track ${track.id}`);
+      track.pan = MIN_PAN;
+    } else if (track.pan! > MAX_PAN) {
+      repairs.push(`Clamped pan from ${track.pan} to ${MAX_PAN} for track ${track.id}`);
+      track.pan = MAX_PAN;
     }
   }
 

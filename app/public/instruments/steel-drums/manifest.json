@@ -7,155 +7,2395 @@
     "min": 54,
     "max": 87
   },
+  "gainDb": 4.75,
+  "velocityCrossfade": 4,
   "credits": {
-    "source": "jSteelDrum2 by Jack Learman (hand-made Trinidad steel pan)",
-    "url": "https://github.com/jlearman/jSteelDrum2",
-    "license": "The Unlicense (Public Domain)"
+    "source": "jSteelDrum v2 by Jack Learman (hand-made Trinidad steel pan)",
+    "url": "https://github.com/sfzinstruments/jlearman.SteelDrum",
+    "license": "The Unlicense (Public Domain)",
+    "licenseUrl": "https://github.com/sfzinstruments/jlearman.SteelDrum/blob/e429428dd65dc645e4c9b1f134da4d2e40c400c6/LICENSE",
+    "changes": "All usable SFZ mappings retained across 24 chromatic roots and five velocity zones; deterministic round-robin conversion; AAC-LC delivery and uniform group leveling. Delivery curated by objective defect, onset, headroom, DC, and within-layer level consistency metrics; at most two variants per tonal layer, four per snare velocity zone."
   },
   "samples": [
     {
       "note": 60,
-      "file": "C4-pp.mp3",
+      "file": "source-0002.m4a",
       "velocityMin": 0,
-      "velocityMax": 50
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.461,
+      "roundRobinGroup": "sustain-60-0-40",
+      "roundRobinIndex": 0
     },
     {
       "note": 60,
-      "file": "C4-mf.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "file": "source-0003.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.461,
+      "roundRobinGroup": "sustain-60-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 61,
+      "file": "source-0017.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -0.057,
+      "roundRobinGroup": "sustain-61-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 61,
+      "file": "source-0015.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -0.057,
+      "roundRobinGroup": "sustain-61-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 62,
+      "file": "source-0029.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.098,
+      "roundRobinGroup": "sustain-62-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 62,
+      "file": "source-0030.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.098,
+      "roundRobinGroup": "sustain-62-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 63,
+      "file": "source-0042.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -0.249,
+      "roundRobinGroup": "sustain-63-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 63,
+      "file": "source-0043.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -0.249,
+      "roundRobinGroup": "sustain-63-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 64,
+      "file": "source-0057.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.359,
+      "roundRobinGroup": "sustain-64-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 64,
+      "file": "source-0056.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.359,
+      "roundRobinGroup": "sustain-64-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 65,
+      "file": "source-0069.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -1.205,
+      "roundRobinGroup": "sustain-65-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 65,
+      "file": "source-0070.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -1.205,
+      "roundRobinGroup": "sustain-65-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 66,
+      "file": "source-0086.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.34,
+      "roundRobinGroup": "sustain-66-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 66,
+      "file": "source-0085.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.34,
+      "roundRobinGroup": "sustain-66-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 67,
+      "file": "source-0099.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 1.83,
+      "roundRobinGroup": "sustain-67-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 67,
+      "file": "source-0098.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 1.83,
+      "roundRobinGroup": "sustain-67-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 68,
+      "file": "source-0111.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -0.32,
+      "roundRobinGroup": "sustain-68-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 68,
+      "file": "source-0113.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -0.32,
+      "roundRobinGroup": "sustain-68-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 69,
+      "file": "source-0125.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -0.889,
+      "roundRobinGroup": "sustain-69-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 69,
+      "file": "source-0126.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": -0.889,
+      "roundRobinGroup": "sustain-69-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 70,
+      "file": "source-0138.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.93,
+      "roundRobinGroup": "sustain-70-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 70,
+      "file": "source-0140.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 0.93,
+      "roundRobinGroup": "sustain-70-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 71,
+      "file": "source-0153.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-71-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 71,
+      "file": "source-0152.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-71-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 72,
+      "file": "source-0212.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-72-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 72,
+      "file": "source-0211.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-72-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 73,
+      "file": "source-0224.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-73-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 73,
+      "file": "source-0225.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-73-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 74,
+      "file": "source-0237.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-74-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 74,
+      "file": "source-0238.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-74-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 75,
+      "file": "source-0251.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-75-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 75,
+      "file": "source-0252.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-75-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 76,
+      "file": "source-0263.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-76-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 76,
+      "file": "source-0264.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-76-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 77,
+      "file": "source-0277.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 3.06,
+      "roundRobinGroup": "sustain-77-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 77,
+      "file": "source-0278.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 3.06,
+      "roundRobinGroup": "sustain-77-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 78,
+      "file": "source-0292.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-78-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 78,
+      "file": "source-0291.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-78-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 79,
+      "file": "source-0306.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-79-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 79,
+      "file": "source-0305.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-79-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 80,
+      "file": "source-0320.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-80-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 80,
+      "file": "source-0318.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-80-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 81,
+      "file": "source-0331.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-81-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 81,
+      "file": "source-0332.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-81-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 82,
+      "file": "source-0344.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.913,
+      "roundRobinGroup": "sustain-82-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 82,
+      "file": "source-0343.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.913,
+      "roundRobinGroup": "sustain-82-0-40",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 83,
+      "file": "source-0355.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-83-0-40",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 83,
+      "file": "source-0357.m4a",
+      "velocityMin": 0,
+      "velocityMax": 40,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-83-0-40",
+      "roundRobinIndex": 1
     },
     {
       "note": 60,
-      "file": "C4-ff.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127
+      "file": "source-0005.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.185,
+      "roundRobinGroup": "sustain-60-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 60,
+      "file": "source-0006.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.185,
+      "roundRobinGroup": "sustain-60-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 61,
+      "file": "source-0019.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.874,
+      "roundRobinGroup": "sustain-61-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 61,
+      "file": "source-0020.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.874,
+      "roundRobinGroup": "sustain-61-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 62,
+      "file": "source-0033.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 3.162,
+      "roundRobinGroup": "sustain-62-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 62,
+      "file": "source-0034.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 3.162,
+      "roundRobinGroup": "sustain-62-41-64",
+      "roundRobinIndex": 1
     },
     {
       "note": 63,
-      "file": "Ds4-pp.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50
+      "file": "source-0047.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.064,
+      "roundRobinGroup": "sustain-63-41-64",
+      "roundRobinIndex": 0
     },
     {
       "note": 63,
-      "file": "Ds4-mf.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "file": "source-0045.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.064,
+      "roundRobinGroup": "sustain-63-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 64,
+      "file": "source-0059.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.836,
+      "roundRobinGroup": "sustain-64-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 64,
+      "file": "source-0058.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.836,
+      "roundRobinGroup": "sustain-64-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 65,
+      "file": "source-0073.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": -0.276,
+      "roundRobinGroup": "sustain-65-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 65,
+      "file": "source-0071.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": -0.276,
+      "roundRobinGroup": "sustain-65-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 66,
+      "file": "source-0087.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.76,
+      "roundRobinGroup": "sustain-66-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 66,
+      "file": "source-0088.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.76,
+      "roundRobinGroup": "sustain-66-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 67,
+      "file": "source-0101.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.516,
+      "roundRobinGroup": "sustain-67-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 67,
+      "file": "source-0103.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.516,
+      "roundRobinGroup": "sustain-67-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 68,
+      "file": "source-0114.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": -0.263,
+      "roundRobinGroup": "sustain-68-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 68,
+      "file": "source-0117.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": -0.263,
+      "roundRobinGroup": "sustain-68-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 69,
+      "file": "source-0127.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.782,
+      "roundRobinGroup": "sustain-69-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 69,
+      "file": "source-0129.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.782,
+      "roundRobinGroup": "sustain-69-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 70,
+      "file": "source-0142.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 2.814,
+      "roundRobinGroup": "sustain-70-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 70,
+      "file": "source-0143.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 2.814,
+      "roundRobinGroup": "sustain-70-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 71,
+      "file": "source-0155.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.53,
+      "roundRobinGroup": "sustain-71-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 71,
+      "file": "source-0157.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.53,
+      "roundRobinGroup": "sustain-71-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 72,
+      "file": "source-0214.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.227,
+      "roundRobinGroup": "sustain-72-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 72,
+      "file": "source-0216.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.227,
+      "roundRobinGroup": "sustain-72-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 73,
+      "file": "source-0226.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.202,
+      "roundRobinGroup": "sustain-73-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 73,
+      "file": "source-0229.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.202,
+      "roundRobinGroup": "sustain-73-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 74,
+      "file": "source-0240.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": -0.459,
+      "roundRobinGroup": "sustain-74-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 74,
+      "file": "source-0241.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": -0.459,
+      "roundRobinGroup": "sustain-74-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 75,
+      "file": "source-0254.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.925,
+      "roundRobinGroup": "sustain-75-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 75,
+      "file": "source-0255.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.925,
+      "roundRobinGroup": "sustain-75-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 76,
+      "file": "source-0268.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.957,
+      "roundRobinGroup": "sustain-76-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 76,
+      "file": "source-0270.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.957,
+      "roundRobinGroup": "sustain-76-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 77,
+      "file": "source-0282.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.476,
+      "roundRobinGroup": "sustain-77-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 77,
+      "file": "source-0280.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.476,
+      "roundRobinGroup": "sustain-77-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 78,
+      "file": "source-0295.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.116,
+      "roundRobinGroup": "sustain-78-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 78,
+      "file": "source-0294.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.116,
+      "roundRobinGroup": "sustain-78-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 79,
+      "file": "source-0309.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-79-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 79,
+      "file": "source-0307.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-79-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 80,
+      "file": "source-0323.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.474,
+      "roundRobinGroup": "sustain-80-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 80,
+      "file": "source-0322.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 0.474,
+      "roundRobinGroup": "sustain-80-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 81,
+      "file": "source-0334.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.973,
+      "roundRobinGroup": "sustain-81-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 81,
+      "file": "source-0335.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 1.973,
+      "roundRobinGroup": "sustain-81-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 82,
+      "file": "source-0346.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 2.913,
+      "roundRobinGroup": "sustain-82-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 82,
+      "file": "source-0347.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 2.913,
+      "roundRobinGroup": "sustain-82-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 83,
+      "file": "source-0358.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-83-41-64",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 83,
+      "file": "source-0359.m4a",
+      "velocityMin": 41,
+      "velocityMax": 64,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-83-41-64",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 60,
+      "file": "source-0010.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.816,
+      "roundRobinGroup": "sustain-60-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 60,
+      "file": "source-0009.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.816,
+      "roundRobinGroup": "sustain-60-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 61,
+      "file": "source-0023.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.707,
+      "roundRobinGroup": "sustain-61-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 61,
+      "file": "source-0022.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.707,
+      "roundRobinGroup": "sustain-61-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 62,
+      "file": "source-0035.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.638,
+      "roundRobinGroup": "sustain-62-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 62,
+      "file": "source-0038.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.638,
+      "roundRobinGroup": "sustain-62-65-88",
+      "roundRobinIndex": 1
     },
     {
       "note": 63,
-      "file": "Ds4-ff.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127
+      "file": "source-0050.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 1.693,
+      "roundRobinGroup": "sustain-63-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 63,
+      "file": "source-0051.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 1.693,
+      "roundRobinGroup": "sustain-63-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 64,
+      "file": "source-0062.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.43,
+      "roundRobinGroup": "sustain-64-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 64,
+      "file": "source-0064.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.43,
+      "roundRobinGroup": "sustain-64-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 65,
+      "file": "source-0075.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.934,
+      "roundRobinGroup": "sustain-65-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 65,
+      "file": "source-0078.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.934,
+      "roundRobinGroup": "sustain-65-65-88",
+      "roundRobinIndex": 1
     },
     {
       "note": 66,
-      "file": "Fs4-pp.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50
+      "file": "source-0093.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.843,
+      "roundRobinGroup": "sustain-66-65-88",
+      "roundRobinIndex": 0
     },
     {
       "note": 66,
-      "file": "Fs4-mf.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "file": "source-0091.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.843,
+      "roundRobinGroup": "sustain-66-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 67,
+      "file": "source-0107.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.313,
+      "roundRobinGroup": "sustain-67-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 67,
+      "file": "source-0106.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.313,
+      "roundRobinGroup": "sustain-67-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 68,
+      "file": "source-0120.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.709,
+      "roundRobinGroup": "sustain-68-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 68,
+      "file": "source-0119.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.709,
+      "roundRobinGroup": "sustain-68-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 69,
+      "file": "source-0131.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.311,
+      "roundRobinGroup": "sustain-69-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 69,
+      "file": "source-0130.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.311,
+      "roundRobinGroup": "sustain-69-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 70,
+      "file": "source-0145.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.196,
+      "roundRobinGroup": "sustain-70-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 70,
+      "file": "source-0144.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.196,
+      "roundRobinGroup": "sustain-70-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 71,
+      "file": "source-0159.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 0.687,
+      "roundRobinGroup": "sustain-71-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 71,
+      "file": "source-0161.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 0.687,
+      "roundRobinGroup": "sustain-71-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 72,
+      "file": "source-0218.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.741,
+      "roundRobinGroup": "sustain-72-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 72,
+      "file": "source-0219.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.741,
+      "roundRobinGroup": "sustain-72-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 73,
+      "file": "source-0232.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.149,
+      "roundRobinGroup": "sustain-73-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 73,
+      "file": "source-0231.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.149,
+      "roundRobinGroup": "sustain-73-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 74,
+      "file": "source-0244.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.575,
+      "roundRobinGroup": "sustain-74-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 74,
+      "file": "source-0243.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.575,
+      "roundRobinGroup": "sustain-74-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 75,
+      "file": "source-0256.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.365,
+      "roundRobinGroup": "sustain-75-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 75,
+      "file": "source-0257.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.365,
+      "roundRobinGroup": "sustain-75-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 76,
+      "file": "source-0271.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.092,
+      "roundRobinGroup": "sustain-76-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 76,
+      "file": "source-0272.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.092,
+      "roundRobinGroup": "sustain-76-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 77,
+      "file": "source-0285.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.398,
+      "roundRobinGroup": "sustain-77-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 77,
+      "file": "source-0286.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.398,
+      "roundRobinGroup": "sustain-77-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 78,
+      "file": "source-0299.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.757,
+      "roundRobinGroup": "sustain-78-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 78,
+      "file": "source-0297.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.757,
+      "roundRobinGroup": "sustain-78-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 79,
+      "file": "source-0312.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 1.924,
+      "roundRobinGroup": "sustain-79-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 79,
+      "file": "source-0310.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 1.924,
+      "roundRobinGroup": "sustain-79-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 80,
+      "file": "source-0324.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.112,
+      "roundRobinGroup": "sustain-80-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 80,
+      "file": "source-0325.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 3.112,
+      "roundRobinGroup": "sustain-80-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 81,
+      "file": "source-0338.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 1.854,
+      "roundRobinGroup": "sustain-81-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 81,
+      "file": "source-0336.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 1.854,
+      "roundRobinGroup": "sustain-81-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 82,
+      "file": "source-0348.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 1.586,
+      "roundRobinGroup": "steel-drums-82:65-88:sustain",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 83,
+      "file": "source-0362.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.063,
+      "roundRobinGroup": "sustain-83-65-88",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 83,
+      "file": "source-0363.m4a",
+      "velocityMin": 65,
+      "velocityMax": 88,
+      "articulation": "sustain",
+      "gainDb": 2.063,
+      "roundRobinGroup": "sustain-83-65-88",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 60,
+      "file": "source-0013.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 4.367,
+      "roundRobinGroup": "sustain-60-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 60,
+      "file": "source-0011.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 4.367,
+      "roundRobinGroup": "sustain-60-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 61,
+      "file": "source-0028.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 4.249,
+      "roundRobinGroup": "sustain-61-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 61,
+      "file": "source-0025.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 4.249,
+      "roundRobinGroup": "sustain-61-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 62,
+      "file": "source-0041.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.749,
+      "roundRobinGroup": "sustain-62-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 62,
+      "file": "source-0039.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.749,
+      "roundRobinGroup": "sustain-62-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 63,
+      "file": "source-0054.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.058,
+      "roundRobinGroup": "sustain-63-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 63,
+      "file": "source-0053.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.058,
+      "roundRobinGroup": "sustain-63-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 64,
+      "file": "source-0066.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 5.093,
+      "roundRobinGroup": "sustain-64-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 64,
+      "file": "source-0065.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 5.093,
+      "roundRobinGroup": "sustain-64-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 65,
+      "file": "source-0082.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 5.746,
+      "roundRobinGroup": "sustain-65-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 65,
+      "file": "source-0080.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 5.746,
+      "roundRobinGroup": "sustain-65-89-112",
+      "roundRobinIndex": 1
     },
     {
       "note": 66,
-      "file": "Fs4-ff.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127
+      "file": "source-0094.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.799,
+      "roundRobinGroup": "sustain-66-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 66,
+      "file": "source-0096.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.799,
+      "roundRobinGroup": "sustain-66-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 67,
+      "file": "source-0109.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.341,
+      "roundRobinGroup": "sustain-67-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 67,
+      "file": "source-0108.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.341,
+      "roundRobinGroup": "sustain-67-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 68,
+      "file": "source-0123.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 5.625,
+      "roundRobinGroup": "sustain-68-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 68,
+      "file": "source-0122.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 5.625,
+      "roundRobinGroup": "sustain-68-89-112",
+      "roundRobinIndex": 1
     },
     {
       "note": 69,
-      "file": "A4-pp.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50
+      "file": "source-0137.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 4.845,
+      "roundRobinGroup": "sustain-69-89-112",
+      "roundRobinIndex": 0
     },
     {
       "note": 69,
-      "file": "A4-mf.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "file": "source-0136.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 4.845,
+      "roundRobinGroup": "sustain-69-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 70,
+      "file": "source-0150.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.906,
+      "roundRobinGroup": "sustain-70-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 70,
+      "file": "source-0148.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.906,
+      "roundRobinGroup": "sustain-70-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 71,
+      "file": "source-0163.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 4.355,
+      "roundRobinGroup": "sustain-71-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 71,
+      "file": "source-0164.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 4.355,
+      "roundRobinGroup": "sustain-71-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 72,
+      "file": "source-0218.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.741,
+      "roundRobinGroup": "sustain-72-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 72,
+      "file": "source-0219.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.741,
+      "roundRobinGroup": "sustain-72-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 73,
+      "file": "source-0232.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.149,
+      "roundRobinGroup": "sustain-73-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 73,
+      "file": "source-0231.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.149,
+      "roundRobinGroup": "sustain-73-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 74,
+      "file": "source-0244.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.575,
+      "roundRobinGroup": "sustain-74-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 74,
+      "file": "source-0243.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.575,
+      "roundRobinGroup": "sustain-74-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 75,
+      "file": "source-0256.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.365,
+      "roundRobinGroup": "sustain-75-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 75,
+      "file": "source-0257.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.365,
+      "roundRobinGroup": "sustain-75-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 76,
+      "file": "source-0271.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.092,
+      "roundRobinGroup": "sustain-76-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 76,
+      "file": "source-0272.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.092,
+      "roundRobinGroup": "sustain-76-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 77,
+      "file": "source-0285.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.398,
+      "roundRobinGroup": "sustain-77-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 77,
+      "file": "source-0286.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.398,
+      "roundRobinGroup": "sustain-77-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 78,
+      "file": "source-0299.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.757,
+      "roundRobinGroup": "sustain-78-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 78,
+      "file": "source-0297.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.757,
+      "roundRobinGroup": "sustain-78-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 79,
+      "file": "source-0312.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 1.924,
+      "roundRobinGroup": "sustain-79-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 79,
+      "file": "source-0310.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 1.924,
+      "roundRobinGroup": "sustain-79-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 80,
+      "file": "source-0324.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.112,
+      "roundRobinGroup": "sustain-80-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 80,
+      "file": "source-0325.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 3.112,
+      "roundRobinGroup": "sustain-80-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 81,
+      "file": "source-0338.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 1.854,
+      "roundRobinGroup": "sustain-81-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 81,
+      "file": "source-0336.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 1.854,
+      "roundRobinGroup": "sustain-81-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 82,
+      "file": "source-0348.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 1.586,
+      "roundRobinGroup": "steel-drums-82:89-112:sustain",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 83,
+      "file": "source-0362.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.063,
+      "roundRobinGroup": "sustain-83-89-112",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 83,
+      "file": "source-0363.m4a",
+      "velocityMin": 89,
+      "velocityMax": 112,
+      "articulation": "sustain",
+      "gainDb": 2.063,
+      "roundRobinGroup": "sustain-83-89-112",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 60,
+      "file": "source-0169.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.671,
+      "roundRobinGroup": "sustain-60-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 60,
+      "file": "source-0168.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.671,
+      "roundRobinGroup": "sustain-60-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 61,
+      "file": "source-0171.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.727,
+      "roundRobinGroup": "sustain-61-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 61,
+      "file": "source-0170.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.727,
+      "roundRobinGroup": "sustain-61-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 62,
+      "file": "source-0173.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.852,
+      "roundRobinGroup": "sustain-62-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 62,
+      "file": "source-0176.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.852,
+      "roundRobinGroup": "sustain-62-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 63,
+      "file": "source-0179.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 5.305,
+      "roundRobinGroup": "sustain-63-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 63,
+      "file": "source-0178.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 5.305,
+      "roundRobinGroup": "sustain-63-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 64,
+      "file": "source-0184.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.782,
+      "roundRobinGroup": "sustain-64-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 64,
+      "file": "source-0182.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.782,
+      "roundRobinGroup": "sustain-64-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 65,
+      "file": "source-0185.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.3,
+      "roundRobinGroup": "sustain-65-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 65,
+      "file": "source-0188.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.3,
+      "roundRobinGroup": "sustain-65-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 66,
+      "file": "source-0191.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.759,
+      "roundRobinGroup": "sustain-66-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 66,
+      "file": "source-0192.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.759,
+      "roundRobinGroup": "sustain-66-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 67,
+      "file": "source-0195.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-67-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 67,
+      "file": "source-0194.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-67-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 68,
+      "file": "source-0200.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.748,
+      "roundRobinGroup": "sustain-68-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 68,
+      "file": "source-0198.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.748,
+      "roundRobinGroup": "sustain-68-113-127",
+      "roundRobinIndex": 1
     },
     {
       "note": 69,
-      "file": "A4-ff.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127
+      "file": "source-0201.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.452,
+      "roundRobinGroup": "sustain-69-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 69,
+      "file": "source-0203.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.452,
+      "roundRobinGroup": "sustain-69-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 70,
+      "file": "source-0207.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.655,
+      "roundRobinGroup": "sustain-70-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 70,
+      "file": "source-0206.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.655,
+      "roundRobinGroup": "sustain-70-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 71,
+      "file": "source-0210.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.427,
+      "roundRobinGroup": "sustain-71-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 71,
+      "file": "source-0208.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.427,
+      "roundRobinGroup": "sustain-71-113-127",
+      "roundRobinIndex": 1
     },
     {
       "note": 72,
-      "file": "C5-pp.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50
+      "file": "source-0223.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.291,
+      "roundRobinGroup": "sustain-72-113-127",
+      "roundRobinIndex": 0
     },
     {
       "note": 72,
-      "file": "C5-mf.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "file": "source-0221.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.291,
+      "roundRobinGroup": "sustain-72-113-127",
+      "roundRobinIndex": 1
     },
     {
-      "note": 72,
-      "file": "C5-ff.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127
+      "note": 73,
+      "file": "source-0236.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-73-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 73,
+      "file": "source-0233.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 2.5,
+      "roundRobinGroup": "sustain-73-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 74,
+      "file": "source-0248.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.309,
+      "roundRobinGroup": "sustain-74-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 74,
+      "file": "source-0247.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.309,
+      "roundRobinGroup": "sustain-74-113-127",
+      "roundRobinIndex": 1
     },
     {
       "note": 75,
-      "file": "Ds5-pp.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50
+      "file": "source-0261.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.346,
+      "roundRobinGroup": "sustain-75-113-127",
+      "roundRobinIndex": 0
     },
     {
       "note": 75,
-      "file": "Ds5-mf.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "file": "source-0262.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.346,
+      "roundRobinGroup": "sustain-75-113-127",
+      "roundRobinIndex": 1
     },
     {
-      "note": 75,
-      "file": "Ds5-ff.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127
+      "note": 76,
+      "file": "source-0275.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.859,
+      "roundRobinGroup": "sustain-76-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 76,
+      "file": "source-0276.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.859,
+      "roundRobinGroup": "sustain-76-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 77,
+      "file": "source-0290.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.966,
+      "roundRobinGroup": "sustain-77-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 77,
+      "file": "source-0288.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.966,
+      "roundRobinGroup": "sustain-77-113-127",
+      "roundRobinIndex": 1
     },
     {
       "note": 78,
-      "file": "Fs5-pp.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50
+      "file": "source-0302.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.37,
+      "roundRobinGroup": "sustain-78-113-127",
+      "roundRobinIndex": 0
     },
     {
       "note": 78,
-      "file": "Fs5-mf.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "file": "source-0301.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.37,
+      "roundRobinGroup": "sustain-78-113-127",
+      "roundRobinIndex": 1
     },
     {
-      "note": 78,
-      "file": "Fs5-ff.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127
+      "note": 79,
+      "file": "source-0317.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.652,
+      "roundRobinGroup": "sustain-79-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 79,
+      "file": "source-0315.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.652,
+      "roundRobinGroup": "sustain-79-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 80,
+      "file": "source-0328.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.301,
+      "roundRobinGroup": "sustain-80-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 80,
+      "file": "source-0327.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.301,
+      "roundRobinGroup": "sustain-80-113-127",
+      "roundRobinIndex": 1
     },
     {
       "note": 81,
-      "file": "A5-pp.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50
+      "file": "source-0340.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.319,
+      "roundRobinGroup": "sustain-81-113-127",
+      "roundRobinIndex": 0
     },
     {
       "note": 81,
-      "file": "A5-mf.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "file": "source-0339.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.319,
+      "roundRobinGroup": "sustain-81-113-127",
+      "roundRobinIndex": 1
     },
     {
-      "note": 81,
-      "file": "A5-ff.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127
+      "note": 82,
+      "file": "source-0352.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.24,
+      "roundRobinGroup": "sustain-82-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 82,
+      "file": "source-0354.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 4.24,
+      "roundRobinGroup": "sustain-82-113-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 83,
+      "file": "source-0365.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.374,
+      "roundRobinGroup": "sustain-83-113-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 83,
+      "file": "source-0368.m4a",
+      "velocityMin": 113,
+      "velocityMax": 127,
+      "articulation": "sustain",
+      "gainDb": 3.374,
+      "roundRobinGroup": "sustain-83-113-127",
+      "roundRobinIndex": 1
     }
   ]
 }

@@ -35,6 +35,7 @@ export const MESSAGE_TO_STATE_BROADCAST = {
   set_track_instrument: 'track_sample_set',
   set_track_sample: 'track_sample_set',
   set_track_volume: 'track_volume_set',
+  set_track_pan: 'track_pan_set',
   set_track_transpose: 'track_transpose_set',
   set_track_step_count: 'track_step_count_set',
   set_track_swing: 'track_swing_set',

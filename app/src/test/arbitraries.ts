@@ -86,6 +86,9 @@ export const arbSwing = fc.integer({ min: 0, max: 100 });
 /** Volume (0-2, where 1 is default) */
 export const arbVolume = fc.float({ min: 0, max: 2, noNaN: true });
 
+/** Canonical stereo pan (-1 hard left, 0 center, 1 hard right). */
+export const arbPan = fc.float({ min: -1, max: 1, noNaN: true });
+
 /** Transpose in semitones */
 export const arbTranspose = fc.integer({ min: -24, max: 24 });
 
@@ -155,6 +158,7 @@ export const arbTrackForHash = fc.record({
   steps: arbStepsArray,
   parameterLocks: arbLocksArray,
   volume: arbVolume,
+  pan: fc.option(arbPan, { nil: undefined }),
   muted: fc.boolean(),
   soloed: fc.boolean(),
   transpose: arbTranspose,
@@ -201,6 +205,7 @@ export const arbAllMutationTypes = fc.constantFrom(
   'toggle_step', 'clear_track', 'rotate_pattern', 'invert_pattern',
   'reverse_pattern', 'mirror_pattern', 'euclidean_fill', 'add_track',
   'delete_track', 'reorder_tracks', 'set_track_sample', 'set_track_volume',
+  'set_track_pan',
   'set_track_transpose', 'set_track_step_count', 'set_track_swing',
   'set_track_name', 'set_parameter_lock', 'set_tempo', 'set_swing',
   'set_loop_region', 'set_effects', 'set_scale', 'set_fm_params',
@@ -289,6 +294,7 @@ export const arbSessionTrack: fc.Arbitrary<SessionTrack> = fc.record({
   steps: arbStepsArray,
   parameterLocks: arbLocksArray,
   volume: fc.float({ min: 0, max: 2, noNaN: true }),
+  pan: fc.option(arbPan, { nil: undefined }),
   muted: fc.boolean(),
   soloed: fc.boolean(),
   transpose: arbTranspose,
@@ -438,6 +444,11 @@ export function arbMutationForState(state: SessionState): fc.Arbitrary<ClientMes
         type: fc.constant('set_track_volume' as const),
         trackId: arbTrackId,
         volume: fc.float({ min: 0, max: 2, noNaN: true }),
+      }),
+      fc.record({
+        type: fc.constant('set_track_pan' as const),
+        trackId: arbTrackId,
+        pan: arbPan,
       }),
       fc.record({
         type: fc.constant('set_track_transpose' as const),
@@ -597,6 +608,11 @@ export function arbIndependentMutationPair(
         type: fc.constant('set_track_volume' as const),
         trackId: fc.constant(track1.id),
         volume: fc.float({ min: 0, max: 2, noNaN: true }),
+      }),
+      fc.record({
+        type: fc.constant('set_track_pan' as const),
+        trackId: fc.constant(track1.id),
+        pan: arbPan,
       })
     ),
     fc.oneof(
@@ -609,6 +625,11 @@ export function arbIndependentMutationPair(
         type: fc.constant('set_track_volume' as const),
         trackId: fc.constant(track2.id),
         volume: fc.float({ min: 0, max: 2, noNaN: true }),
+      }),
+      fc.record({
+        type: fc.constant('set_track_pan' as const),
+        trackId: fc.constant(track2.id),
+        pan: arbPan,
       })
     )
   );

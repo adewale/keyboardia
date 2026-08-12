@@ -41,8 +41,9 @@ import { calculateBackoffDelay } from '../src/utils/retry';
 
 // Use local dev server - in CI we run with USE_MOCK_API=1
 // which provides mocked API responses via Vite plugin
-// Port 5175 matches playwright.config.ts webServer config
-export const API_BASE = process.env.BASE_URL || 'http://localhost:5175';
+// E2E_PORT matches playwright.config.ts and lets concurrent worktrees avoid
+// falsely failing on a shared default port.
+export const API_BASE = process.env.BASE_URL || `http://localhost:${process.env.E2E_PORT ?? 5175}`;
 
 /**
  * Session state from the API response.
@@ -56,6 +57,7 @@ export interface SessionState {
     steps: boolean[];
     parameterLocks: (null | Record<string, number>)[];
     volume: number;
+    pan: number;
     muted: boolean;
     transpose: number;
     stepCount: number;
@@ -182,6 +184,7 @@ export function createPopulatedSessionWithRetry(
       ),
       parameterLocks: Array(128).fill(null),
       volume: 1,
+      pan: 0,
       muted: false,
       transpose: 0,
       stepCount: 27,

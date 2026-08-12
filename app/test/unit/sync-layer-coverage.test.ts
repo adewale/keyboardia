@@ -45,6 +45,7 @@ function createMockAction(type: string): GridAction {
     steps: Array(128).fill(false),
     parameterLocks: Array(128).fill(null),
     volume: 0.8,
+    pan: 0,
     muted: false,
     soloed: false,
     transpose: 0,
@@ -83,6 +84,8 @@ function createMockAction(type: string): GridAction {
       return { type: 'SET_TRACK_SAMPLE', trackId: 'test-track-1', sampleId: 'snare', name: 'Snare' };
     case 'SET_TRACK_VOLUME':
       return { type: 'SET_TRACK_VOLUME', trackId: 'test-track-1', volume: 0.5 };
+    case 'SET_TRACK_PAN':
+      return { type: 'SET_TRACK_PAN', trackId: 'test-track-1', pan: -0.25 };
     case 'SET_TRACK_TRANSPOSE':
       return { type: 'SET_TRACK_TRANSPOSE', trackId: 'test-track-1', transpose: 3 };
     case 'SET_TRACK_STEP_COUNT':
@@ -429,6 +432,7 @@ function roundTripState(): SessionState {
       steps: Array.from({ length: 128 }, (_, i) => i % 5 === 0 || i === 3),
       parameterLocks: Array.from({ length: 128 }, (_, i) => (i === 4 ? { volume: 0.4 } : null)),
       volume: 0.8,
+      pan: 0,
       muted: false,
       soloed: false,
       transpose: 0,
@@ -440,6 +444,7 @@ function roundTripState(): SessionState {
       steps: Array(128).fill(true),
       parameterLocks: Array(128).fill(null),
       volume: 0.5,
+      pan: -0.1,
       muted: false,
       soloed: false,
       transpose: 5,

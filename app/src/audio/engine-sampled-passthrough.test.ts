@@ -56,7 +56,7 @@ describe('playSampledInstrument pass-through', () => {
     expect(velocity).toBe(37);
   });
 
-  it('defaults to full velocity when the caller does not specify one', () => {
+  it('retains the full-velocity fallback when the caller does not specify one', () => {
     audioEngine.playSampledInstrument('piano', 'n1', 60, 0, 0.5, 0.8);
     const velocity = playNote.mock.calls[0][5];
     expect(velocity).toBe(127);

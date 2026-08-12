@@ -161,7 +161,7 @@ describe('characterization: playSampledInstrument', () => {
     expect(args[6]).toMatchObject({ connect: expect.any(Function) });    // destination = bus input
   });
 
-  it('defaults velocity to 127 (full hit) when the caller omits it', () => {
+  it('retains the full-velocity fallback when the caller omits it', () => {
     const { engine } = setupEngine();
     const inst = makeFakeInstrument();
     sampledRegistryGet.mockReturnValue(inst);

@@ -13,7 +13,7 @@ The first Keyboardia MCP server is the smallest useful collaborative music surfa
 
 - one stateless HTTP endpoint, `/mcp`;
 - two rhythm tools, `get_session` and `edit_session`;
-- four edits, `add_track`, `set_track_instrument`, `set_steps`, and `set_tempo`;
+- five edits, `add_track`, `set_track_instrument`, `set_track_pan`, `set_steps`, and `set_tempo`;
 - no resources, prompts, authentication, MCP sessions, presence, journal, revisions, undo, or full-state replacement.
 
 The rhythm slice works only with an existing Keyboardia session. The session
@@ -149,6 +149,7 @@ Output:
       "track_id": "kick-agent-1",
       "name": "Kick",
       "sample_id": "kick",
+      "pan": 0,
       "step_count": 16,
       "active_steps": [0, 4, 8, 12]
     }
@@ -156,8 +157,9 @@ Output:
 }
 ```
 
-The compact result deliberately omits internal arrays, parameter locks, mix
-state, effects, scale, metadata, players, revisions, and storage details.
+The compact result deliberately omits internal arrays, parameter locks, volume
+and local mute/solo state, effects, scale, metadata, players, revisions, and storage details.
+It includes normalized track `pan` because agents can read and edit that shared field.
 `active_steps` contains only active steps inside the track's current loop.
 
 ### `edit_session`
@@ -167,7 +169,7 @@ Input wraps exactly one edit:
 ```typescript
 interface EditSessionInput {
   session_id: string;
-  edit: AddTrack | SetTrackInstrument | SetSteps | SetTempo;
+  edit: AddTrack | SetTrackInstrument | SetTrackPan | SetSteps | SetTempo;
 }
 ```
 
@@ -259,6 +261,24 @@ broadcasts the granular, backward-compatible `track_sample_set` event after one
 durable write. See
 [specs/CHANGE-INSTRUMENT.md](CHANGE-INSTRUMENT.md), which also documents the
 engine-state (FM parameter) compatibility policy this operation applies.
+
+#### `set_track_pan`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "set_track_pan",
+    "track_id": "kick-agent-1",
+    "pan": -0.2
+  }
+}
+```
+
+Pan is normalized: `-1` is hard left, `0` is center, and `1` is hard right.
+The boundary rejects non-finite and out-of-range values rather than clamping
+them. Retrying the same assignment is a no-op. The compact response exposes the
+resulting `pan`, and connected browsers receive `track_pan_set`.
 
 #### `set_steps`
 
@@ -574,7 +594,7 @@ Application errors return MCP tool errors without mutation. The full set is
 `SESSION_NOT_FOUND`, `SESSION_PUBLISHED`, `SESSION_ID_REQUIRED`,
 `SESSION_REQUEST_FAILED`, `INVALID_REQUEST`, `INVALID_TRACK_ID`,
 `INVALID_TRACK_NAME`, `INVALID_SAMPLE_ID`, `INVALID_TEMPO`, `INVALID_STEPS`,
-`INVALID_STEP`, `DUPLICATE_STEP`, `TRACK_NOT_FOUND`, `TRACK_ID_CONFLICT`,
+`INVALID_STEP`, `DUPLICATE_STEP`, `INVALID_PAN`, `TRACK_NOT_FOUND`, `TRACK_ID_CONFLICT`,
 `TRACK_LIMIT_REACHED`, and `STEP_OUTSIDE_LOOP`.
 
 Anything else is an `INTERNAL_ERROR` carrying a fixed message. The underlying
@@ -585,7 +605,7 @@ Unsupported operations are not advertised and do not have placeholder
 handlers:
 
 - calling an unknown tool receives the standard MCP unknown-tool error;
-- supplying an edit other than the four schema variants receives the
+- supplying an edit other than the five schema variants receives the
   standard invalid-parameters error;
 - there is no custom `unsupported_for_now` response matrix.
 
@@ -598,7 +618,7 @@ This is smaller and gives agents an exact capability description through
 |---|---|
 | HTTP MCP protocol | Official `@modelcontextprotocol/server` v2 handler |
 | Tool definitions and DO adapter | `app/src/worker/mcp.ts` |
-| Compact representation and four pure edits | `app/src/worker/mcp-edits.ts` |
+| Compact representation and five pure edits | `app/src/worker/mcp-edits.ts` |
 | Endpoint routing | `app/src/worker/index.ts` |
 | Serialization, persistence, immutable check, browser broadcast | `app/src/worker/live-session.ts` |
 | Instrument enum | Existing `VALID_SAMPLE_IDS` |
@@ -747,7 +767,7 @@ can only be checked against real infrastructure:
    response carries `Mcp-Session-Id`;
 4. `tools/list` advertises exactly the v1 surface, with the instrument enum in
    the `edit_session` schema and no resources or prompts;
-5. `add_track`, `set_steps` (set, clear, and restore), and `set_tempo` each
+5. `add_track`, `set_track_pan`, `set_steps` (set, clear, and restore), and `set_tempo` each
    change what they name, and identical retries are no-ops;
 6. a bystander track added first is byte-identical afterwards — the safety rule
    the whole design exists to enforce;
@@ -1109,7 +1129,7 @@ stop and reconsider whether Keyboardia already has the required primitive.
   `publish_session`, `export_midi`, and `analyze_session`.
 - No resources or prompts are advertised.
 - `edit_session` accepts exactly `add_track`, `set_track_instrument`,
-  `set_steps`, and `set_tempo`.
+  `set_track_pan`, `set_steps`, and `set_tempo`.
 - Two independent clients can mutate and read the same real Durable
   Object-backed session.
 - A connected browser-protocol client receives existing granular broadcasts

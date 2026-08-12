@@ -33,6 +33,7 @@
             "id": "user-snare",
             "name": "Snare",
             "sample_id": "snare",
+            "pan": 0,
             "active_steps": [
               4,
               12
@@ -174,6 +175,7 @@
             "id": "user-kick",
             "name": "Kick",
             "sample_id": "kick",
+            "pan": 0,
             "active_steps": [
               0,
               4,
@@ -186,6 +188,7 @@
             "id": "mate-hat",
             "name": "Hat",
             "sample_id": "hihat",
+            "pan": 0,
             "active_steps": [
               2,
               6,
@@ -198,6 +201,7 @@
             "id": "mate-clap",
             "name": "Clap",
             "sample_id": "clap",
+            "pan": 0,
             "active_steps": [
               4,
               12
@@ -319,6 +323,7 @@
             "id": "user-kick",
             "name": "Kick",
             "sample_id": "kick",
+            "pan": 0,
             "active_steps": [
               0,
               4,
@@ -331,6 +336,7 @@
             "id": "user-hat",
             "name": "Hat [tooling: set_tempo 120 before any edit]",
             "sample_id": "hihat",
+            "pan": 0,
             "active_steps": [
               0,
               4,

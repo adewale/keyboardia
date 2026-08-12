@@ -7,36 +7,159 @@
     "min": 26,
     "max": 73
   },
+  "playbackNote": 38,
+  "gainDb": 0.23177054787046233,
   "credits": {
     "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",
-    "license": "CC0 1.0 Universal (Public Domain)"
+    "license": "CC0 1.0 Universal (Public Domain)",
+    "licenseUrl": "https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE",
+    "changes": "Complete same-mic velocity/variation mapping; deterministic round-robin selection; AAC-LC delivery and uniform group leveling. Delivery curated by objective defect, onset, headroom, DC, and within-layer level consistency metrics; at most two variants per tonal layer, four per snare velocity zone."
   },
   "samples": [
     {
       "note": 38,
-      "file": "snare-vl1.mp3",
+      "file": "source-0023.m4a",
       "velocityMin": 0,
-      "velocityMax": 31
+      "velocityMax": 31,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-0",
+      "roundRobinIndex": 0
     },
     {
       "note": 38,
-      "file": "snare-vl2.mp3",
+      "file": "source-0032.m4a",
+      "velocityMin": 0,
+      "velocityMax": 31,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-0",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 38,
+      "file": "source-0012.m4a",
+      "velocityMin": 0,
+      "velocityMax": 31,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-0",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 38,
+      "file": "source-0034.m4a",
+      "velocityMin": 0,
+      "velocityMax": 31,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-0",
+      "roundRobinIndex": 3
+    },
+    {
+      "note": 38,
+      "file": "source-0005.m4a",
       "velocityMin": 32,
-      "velocityMax": 63
+      "velocityMax": 63,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-1",
+      "roundRobinIndex": 0
     },
     {
       "note": 38,
-      "file": "snare-vl3.mp3",
+      "file": "source-0004.m4a",
+      "velocityMin": 32,
+      "velocityMax": 63,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-1",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 38,
+      "file": "source-0009.m4a",
+      "velocityMin": 32,
+      "velocityMax": 63,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-1",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 38,
+      "file": "source-0010.m4a",
+      "velocityMin": 32,
+      "velocityMax": 63,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-1",
+      "roundRobinIndex": 3
+    },
+    {
+      "note": 38,
+      "file": "source-0016.m4a",
       "velocityMin": 64,
-      "velocityMax": 95
+      "velocityMax": 95,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-2",
+      "roundRobinIndex": 0
     },
     {
       "note": 38,
-      "file": "snare-vl4.mp3",
+      "file": "source-0013.m4a",
+      "velocityMin": 64,
+      "velocityMax": 95,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-2",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 38,
+      "file": "source-0017.m4a",
+      "velocityMin": 64,
+      "velocityMax": 95,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-2",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 38,
+      "file": "source-0018.m4a",
+      "velocityMin": 64,
+      "velocityMax": 95,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-2",
+      "roundRobinIndex": 3
+    },
+    {
+      "note": 38,
+      "file": "source-0028.m4a",
       "velocityMin": 96,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-3",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 38,
+      "file": "source-0026.m4a",
+      "velocityMin": 96,
+      "velocityMax": 127,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-3",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 38,
+      "file": "source-0024.m4a",
+      "velocityMin": 96,
+      "velocityMax": 127,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-3",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 38,
+      "file": "source-0029.m4a",
+      "velocityMin": 96,
+      "velocityMax": 127,
+      "articulation": "snare",
+      "roundRobinGroup": "snare-38-zone-3",
+      "roundRobinIndex": 3
     }
-  ],
-  "playbackNote": 38
+  ]
 }

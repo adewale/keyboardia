@@ -292,7 +292,7 @@ describe('ToneSynthManager', () => {
       // Gain 0 is the manager output; gain 1 is the pluck-only VCA.
       const pluckGain = toneTestState.gains[1];
       expect(pluckGain).toBeDefined();
-      expect(pluckGain.gain.setValueAtTime).toHaveBeenCalledWith(0.35, 0.2);
+      expect(pluckGain.gain.setValueAtTime).toHaveBeenLastCalledWith(0.35 * (10 ** (-6 / 20)), 0.2);
     });
   });
 

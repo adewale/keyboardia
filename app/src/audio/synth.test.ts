@@ -1,5 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { SYNTH_PRESETS, type SynthParams } from './synth';
+import {
+  SYNTH_PRESETS,
+  deserializeSynthParams,
+  peakSafeOscillatorMix,
+  serializeSynthParams,
+  type SynthParams,
+  velocityFilterCutoff,
+} from './synth';
+
+describe('neutral oscillator structure', () => {
+  it('keeps correlated oscillator-layer gain at unity or below', () => {
+    for (const mix of [0, 0.1, 0.25, 0.5, 0.75, 0.9, 1]) {
+      const [first, second] = peakSafeOscillatorMix(mix);
+      expect(first + second).toBeCloseTo(1, 10);
+      expect(first).toBeGreaterThanOrEqual(0);
+      expect(second).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('round-trips explicit layer routing and envelopes through JSON', () => {
+    const params: SynthParams = {
+      ...SYNTH_PRESETS.pluck,
+      osc2: {
+        waveform: 'sine', detune: 0, coarse: -12, mix: 0.25,
+        filterRouting: 'bypass',
+        levelEnvelope: { attack: 0.001, decay: 0.04, sustain: 0.1 },
+      },
+    };
+    expect(deserializeSynthParams(serializeSynthParams(params))).toEqual(params);
+  });
+});
 
 /**
  * These tests verify that all synth presets are properly configured
@@ -56,6 +86,40 @@ describe('Synth preset parameters', () => {
     it.each(presets)('%s filter resonance should be 0-30', (_name, params) => {
       expect(params.filterResonance).toBeGreaterThanOrEqual(0);
       expect(params.filterResonance).toBeLessThanOrEqual(30);
+    });
+  });
+
+  describe('Phase 43.6 timbre response', () => {
+    it('keeps the canonical velocity close to the preset cutoff and darkens soft notes', () => {
+      const base = 4000;
+      expect(velocityFilterCutoff(base, 90) / base).toBeGreaterThanOrEqual(0.85);
+      expect(velocityFilterCutoff(base, 90) / base).toBeLessThanOrEqual(0.9);
+      expect(velocityFilterCutoff(base, Math.round(127 * 0.3)))
+        .toBeLessThanOrEqual(velocityFilterCutoff(base, 127) * 0.75);
+    });
+
+    it('layers formerly bare melodic presets while preserving a mono-stable sub', () => {
+      const expectedLayered = [
+        'bass', 'lead', 'pad', 'pluck', 'acid', 'funkbass', 'clavinet',
+        'rhodes', 'organ', 'wurlitzer', 'discobass', 'strings', 'brass',
+        'stab', 'shimmer', 'jangle', 'dreampop', 'bell',
+      ];
+      for (const id of expectedLayered) {
+        const osc2 = SYNTH_PRESETS[id].osc2;
+        expect(osc2, `${id} is still single-oscillator`).toBeDefined();
+        expect(Math.abs(osc2!.detune)).toBeLessThanOrEqual(id.includes('bass') ? 5 : 12);
+      }
+      expect(SYNTH_PRESETS.sub.osc2).toBeUndefined();
+    });
+
+    it('gives the acid preset a fast, positive filter envelope', () => {
+      expect(SYNTH_PRESETS.acid.filterEnv).toMatchObject({
+        amount: expect.any(Number),
+        attack: expect.any(Number),
+        decay: expect.any(Number),
+      });
+      expect(SYNTH_PRESETS.acid.filterEnv!.amount).toBeGreaterThan(0);
+      expect(SYNTH_PRESETS.acid.filterEnv!.attack).toBeLessThanOrEqual(0.01);
     });
   });
 

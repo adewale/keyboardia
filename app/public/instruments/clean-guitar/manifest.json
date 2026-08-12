@@ -3,6 +3,7 @@
   "name": "Clean Electric Guitar",
   "type": "sampled",
   "releaseTime": 0.3,
+  "gainDb": -2,
   "playableRange": {
     "min": 37,
     "max": 82

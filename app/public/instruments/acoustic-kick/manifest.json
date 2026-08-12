@@ -7,36 +7,159 @@
     "min": 24,
     "max": 73
   },
+  "playbackNote": 36,
+  "gainDb": 12.660820039695189,
   "credits": {
     "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",
-    "license": "CC0 1.0 Universal (Public Domain)"
+    "license": "CC0 1.0 Universal (Public Domain)",
+    "licenseUrl": "https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE",
+    "changes": "Complete same-mic velocity/variation mapping; deterministic round-robin selection; AAC-LC delivery and uniform group leveling. Delivery curated by objective defect, onset, headroom, DC, and within-layer level consistency metrics; at most two variants per tonal layer, four per snare velocity zone."
   },
   "samples": [
     {
       "note": 36,
-      "file": "kick-vl1.mp3",
+      "file": "source-0001.m4a",
       "velocityMin": 0,
-      "velocityMax": 31
+      "velocityMax": 31,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-0-31",
+      "roundRobinIndex": 0
     },
     {
       "note": 36,
-      "file": "kick-vl2.mp3",
+      "file": "source-0002.m4a",
+      "velocityMin": 0,
+      "velocityMax": 31,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-0-31",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 36,
+      "file": "source-0003.m4a",
+      "velocityMin": 0,
+      "velocityMax": 31,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-0-31",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 36,
+      "file": "source-0004.m4a",
+      "velocityMin": 0,
+      "velocityMax": 31,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-0-31",
+      "roundRobinIndex": 3
+    },
+    {
+      "note": 36,
+      "file": "source-0005.m4a",
       "velocityMin": 32,
-      "velocityMax": 63
+      "velocityMax": 63,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-32-63",
+      "roundRobinIndex": 0
     },
     {
       "note": 36,
-      "file": "kick-vl3.mp3",
+      "file": "source-0006.m4a",
+      "velocityMin": 32,
+      "velocityMax": 63,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-32-63",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 36,
+      "file": "source-0007.m4a",
+      "velocityMin": 32,
+      "velocityMax": 63,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-32-63",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 36,
+      "file": "source-0008.m4a",
+      "velocityMin": 32,
+      "velocityMax": 63,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-32-63",
+      "roundRobinIndex": 3
+    },
+    {
+      "note": 36,
+      "file": "source-0009.m4a",
       "velocityMin": 64,
-      "velocityMax": 95
+      "velocityMax": 95,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-64-95",
+      "roundRobinIndex": 0
     },
     {
       "note": 36,
-      "file": "kick-vl4.mp3",
+      "file": "source-0010.m4a",
+      "velocityMin": 64,
+      "velocityMax": 95,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-64-95",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 36,
+      "file": "source-0011.m4a",
+      "velocityMin": 64,
+      "velocityMax": 95,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-64-95",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 36,
+      "file": "source-0012.m4a",
+      "velocityMin": 64,
+      "velocityMax": 95,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-64-95",
+      "roundRobinIndex": 3
+    },
+    {
+      "note": 36,
+      "file": "source-0013.m4a",
       "velocityMin": 96,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-96-127",
+      "roundRobinIndex": 0
+    },
+    {
+      "note": 36,
+      "file": "source-0014.m4a",
+      "velocityMin": 96,
+      "velocityMax": 127,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-96-127",
+      "roundRobinIndex": 1
+    },
+    {
+      "note": 36,
+      "file": "source-0015.m4a",
+      "velocityMin": 96,
+      "velocityMax": 127,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-96-127",
+      "roundRobinIndex": 2
+    },
+    {
+      "note": 36,
+      "file": "source-0016.m4a",
+      "velocityMin": 96,
+      "velocityMax": 127,
+      "articulation": "kick",
+      "roundRobinGroup": "kick-36-96-127",
+      "roundRobinIndex": 3
     }
-  ],
-  "playbackNote": 36
+  ]
 }

@@ -39,6 +39,26 @@ export const DRUM_INSTRUMENT_IDS = new Set([
   'tone:metal-hihat',
 ]);
 
+/** Low-frequency anchors stay centered so equal-power panning cannot thin them. */
+export const KICK_INSTRUMENT_IDS = new Set([
+  'kick',
+  'sampled:808-kick',
+  'sampled:acoustic-kick',
+  'tone:membrane-kick',
+]);
+
+export const BASS_INSTRUMENT_IDS = new Set([
+  'bass',
+  'subbass',
+  'synth:bass',
+  'synth:sub',
+  'advanced:mono-bass',
+  'advanced:sub-bass',
+  'tone:fm-bass',
+  'sampled:finger-bass',
+  'sampled:slap-bass',
+]);
+
 /**
  * Prefixes for audio the user supplied, which has no known pitch mapping.
  *
@@ -66,4 +86,20 @@ export function instrumentPresetId(sampleId: string): string {
   const normalized = sampleId.trim().toLowerCase();
   const separator = normalized.indexOf(':');
   return separator === -1 ? normalized : normalized.slice(separator + 1);
+}
+
+function normalizedInstrumentId(sampleId: string): string {
+  return sampleId.trim().toLowerCase();
+}
+
+export function isKickInstrument(sampleId: string): boolean {
+  return KICK_INSTRUMENT_IDS.has(normalizedInstrumentId(sampleId));
+}
+
+export function isBassInstrument(sampleId: string): boolean {
+  return BASS_INSTRUMENT_IDS.has(normalizedInstrumentId(sampleId));
+}
+
+export function shouldKeepInstrumentCentered(sampleId: string): boolean {
+  return isKickInstrument(sampleId) || isBassInstrument(sampleId);
 }

@@ -3,7 +3,7 @@ import { VALID_SAMPLE_IDS } from '../components/sample-constants';
 import { parseInstrumentId } from './instrument-types';
 import { Scheduler } from './scheduler';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
-import { velocityFromMultiplier } from './velocity';
+import { resolveNoteDynamics } from './note-dynamics';
 import type { GridState, Track } from '../types';
 
 const playSampledInstrument = vi.fn<(...args: unknown[]) => void>();
@@ -102,6 +102,7 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
     const track = flushOneStep(scheduler, sampleId);
     const { type, presetId } = parseInstrumentId(sampleId);
     const noteId = `${track.id}-step-0`;
+    const dynamics = resolveNoteDynamics(VOLUME_LOCK);
 
     // The track bus remains at its base fader; only the voice receives the
     // per-note multiplier, so 73% does not become 73% squared.
@@ -116,9 +117,9 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           SCHEDULER_BASE_MIDI_NOTE + PITCH_LOCK,
           STEP_TIME,
           EXPECTED_NOTE_DURATION,
-          VOLUME_LOCK,
+          dynamics.noteGain,
           track.id,
-          velocityFromMultiplier(VOLUME_LOCK),
+          dynamics.midiVelocity,
         );
         expect(playSample).not.toHaveBeenCalled();
         break;
@@ -130,8 +131,9 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           PITCH_LOCK,
           STEP_TIME,
           EXPECTED_NOTE_DURATION,
-          VOLUME_LOCK,
+          dynamics.noteGain,
           track.id,
+          dynamics.midiVelocity,
         );
         break;
       case 'tone':
@@ -141,8 +143,9 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           PITCH_LOCK,
           STEP_TIME,
           EXPECTED_NOTE_DURATION,
-          VOLUME_LOCK,
+          dynamics.noteGain,
           track.id,
+          dynamics.midiVelocity,
         );
         break;
       case 'advanced':
@@ -152,8 +155,9 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           PITCH_LOCK,
           STEP_TIME,
           EXPECTED_NOTE_DURATION,
-          VOLUME_LOCK,
+          dynamics.noteGain,
           track.id,
+          dynamics.midiVelocity,
         );
         break;
       case 'sample':
@@ -165,7 +169,8 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           STEP_TIME,
           EXPECTED_NOTE_DURATION,
           PITCH_LOCK,
-          VOLUME_LOCK,
+          dynamics.noteGain,
+          dynamics.midiVelocity,
         );
         break;
     }

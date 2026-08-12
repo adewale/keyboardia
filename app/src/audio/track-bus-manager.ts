@@ -18,7 +18,7 @@
 import { TrackBus } from './track-bus';
 import { meteringHost } from './metering-host';
 import { logger } from '../utils/logger';
-import { clampVolume } from '../shared/validation';
+import { clampPan, clampVolume } from '../shared/validation';
 
 export class TrackBusManager {
   private context: AudioContext;
@@ -27,6 +27,8 @@ export class TrackBusManager {
   /** Base faders are state, not transient node properties. Keep them even
    * before a lazy bus exists so loaded sessions sound correct on first play. */
   private desiredVolumes: Map<string, number> = new Map();
+  /** Pan is authored state too; retain it across the second lazy-bus race. */
+  private desiredPans: Map<string, number> = new Map();
   private disposed = false;
 
   constructor(context: AudioContext, masterGain: GainNode) {
@@ -49,6 +51,8 @@ export class TrackBusManager {
       bus = new TrackBus(this.context, this.masterGain);
       const desiredVolume = this.desiredVolumes.get(trackId);
       if (desiredVolume !== undefined) bus.setVolume(desiredVolume);
+      const desiredPan = this.desiredPans.get(trackId);
+      if (desiredPan !== undefined) bus.setPan(desiredPan);
       this.buses.set(trackId, bus);
       // Connect to metering worklet for VU meters
       if (meteringHost.isAvailable()) {
@@ -118,9 +122,11 @@ export class TrackBusManager {
    * Set pan for a track (-1 to 1)
    */
   setTrackPan(trackId: string, pan: number): void {
+    const clamped = clampPan(pan);
+    this.desiredPans.set(trackId, clamped);
     const bus = this.buses.get(trackId);
     if (bus && !bus.isDisposed()) {
-      bus.setPan(pan);
+      bus.setPan(clamped);
     }
   }
 
@@ -128,8 +134,7 @@ export class TrackBusManager {
    * Get pan for a track
    */
   getTrackPan(trackId: string): number {
-    const bus = this.buses.get(trackId);
-    return bus && !bus.isDisposed() ? bus.getPan() : 0;
+    return this.desiredPans.get(trackId) ?? 0;
   }
 
   /**
@@ -145,6 +150,7 @@ export class TrackBusManager {
       logger.audio.log(`Removed TrackBus for track: ${trackId}`);
     }
     this.desiredVolumes.delete(trackId);
+    this.desiredPans.delete(trackId);
   }
 
   /**
@@ -155,6 +161,15 @@ export class TrackBusManager {
       const bus = this.buses.get(id);
       return bus && !bus.isDisposed();
     });
+  }
+
+  /** Authored controls can exist before a lazy audio bus; expose both for QA. */
+  getKnownTrackIds(): string[] {
+    return [...new Set([
+      ...this.buses.keys(),
+      ...this.desiredVolumes.keys(),
+      ...this.desiredPans.keys(),
+    ])];
   }
 
   /**
@@ -177,6 +192,7 @@ export class TrackBusManager {
     }
     this.buses.clear();
     this.desiredVolumes.clear();
+    this.desiredPans.clear();
     logger.audio.log('TrackBusManager disposed');
   }
 

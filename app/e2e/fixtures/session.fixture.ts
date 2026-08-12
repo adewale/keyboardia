@@ -20,6 +20,7 @@ export interface TrackData {
   steps: boolean[];
   parameterLocks: (null | Record<string, number>)[];
   volume: number;
+  pan: number;
   muted: boolean;
   transpose: number;
   stepCount: number;
@@ -52,6 +53,7 @@ export function createTrack(overrides: Partial<TrackData> = {}): TrackData {
     steps: overrides.steps || Array(128).fill(false),
     parameterLocks: overrides.parameterLocks || Array(128).fill(null),
     volume: overrides.volume ?? 1,
+    pan: overrides.pan ?? 0,
     muted: overrides.muted ?? false,
     transpose: overrides.transpose ?? 0,
     stepCount: overrides.stepCount ?? 16,

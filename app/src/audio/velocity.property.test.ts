@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
-import { velocityFromMultiplier, MIDI_VELOCITY_MAX } from './velocity';
+import { velocityFromMultiplier } from './velocity';
+import { MIDI_VELOCITY_MAX } from '../shared/constants';
 
 /**
  * Property-based tests for the volume-multiplier → MIDI-velocity bridge.

@@ -33,7 +33,7 @@
     {
       "name": "edit_session",
       "title": "Edit Keyboardia session",
-      "description": "Make one narrow, retry-safe edit to an existing collaborative session. After every attempt, the next Keyboardia call must be get_session for the same session. A successful call includes a backwards-compatible compact snapshot plus an acknowledgement. That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next. Supported operations: add_track, set_track_instrument, set_steps, and set_tempo. set_steps changes only the named steps; it never replaces a track or session. set_track_instrument replaces only a track's sound source, keeping its pattern, mix, timing, and custom name.",
+      "description": "Make one narrow, retry-safe edit to an existing collaborative session. After every attempt, the next Keyboardia call must be get_session for the same session. A successful call includes a backwards-compatible compact snapshot plus an acknowledgement. That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next. Supported operations: add_track, set_track_instrument, set_track_pan, set_steps, and set_tempo. set_steps changes only the named steps; it never replaces a track or session. set_track_instrument replaces only a track's sound source, keeping its pattern, mix, timing, and custom name.",
       "inputSchema": {
         "type": "object",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -191,7 +191,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
                   },
                   "sample_id": {
                     "type": "string",
@@ -308,6 +308,33 @@
               },
               {
                 "type": "object",
+                "description": "Set one existing track's normalized stereo position without changing its notes or level.",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_track_pan"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
+                  },
+                  "pan": {
+                    "type": "number",
+                    "minimum": -1,
+                    "maximum": 1,
+                    "description": "Normalized equal-power stereo position: -1 left, 0 center, 1 right."
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "pan"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
                 "description": "Change only the listed steps on an existing track. Read get_session first to obtain its track_id and step_count.",
                 "properties": {
                   "operation": {
@@ -317,7 +344,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
                   },
                   "changes": {
                     "minItems": 1,

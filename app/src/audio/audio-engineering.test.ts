@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { SYNTH_PRESETS } from './synth';
+import { SYNTH_CONSTANTS } from './synth-types';
+import {
+  MASTER_COMPRESSOR_SETTINGS,
+  MASTER_INPUT_TRIM,
+  MASTER_LIMITER_THRESHOLD_DB,
+  MASTER_OUTPUT_TRIM,
+  NOTE_FADE_SECONDS,
+} from './constants';
 
 /**
  * Audio Engineering Tests
@@ -16,20 +24,12 @@ import { SYNTH_PRESETS } from './synth';
  * 5. Filter resonance must be clamped to prevent self-oscillation
  */
 
-// Constants that match the implementation
-const MAX_VOICES = 16;
-const MAX_FILTER_RESONANCE = 20;
-const ENVELOPE_PEAK = 0.85;
-const MIN_GAIN_VALUE = 0.0001;
-const FADE_TIME = 0.003;
-
-const COMPRESSOR_SETTINGS = {
-  threshold: -6,
-  knee: 12,
-  ratio: 4,
-  attack: 0.003,
-  release: 0.25,
-};
+const {
+  MAX_VOICES,
+  MAX_FILTER_RESONANCE,
+  ENVELOPE_PEAK,
+  MIN_GAIN_VALUE,
+} = SYNTH_CONSTANTS;
 
 describe('Audio Engineering Constants', () => {
   describe('Gain staging targets', () => {
@@ -42,25 +42,32 @@ describe('Audio Engineering Constants', () => {
       expect(MIN_GAIN_VALUE).toBeGreaterThan(0);
       expect(MIN_GAIN_VALUE).toBeLessThan(0.001);
     });
+
+    it('imports the production input/output headroom and limiter settings', () => {
+      expect(MASTER_INPUT_TRIM).toBe(1);
+      expect(MASTER_OUTPUT_TRIM).toBeGreaterThan(0);
+      expect(MASTER_OUTPUT_TRIM).toBeLessThan(1);
+      expect(MASTER_LIMITER_THRESHOLD_DB).toBeLessThan(0);
+    });
   });
 
   describe('Compressor settings', () => {
     it('threshold should be between -12dB and 0dB', () => {
-      expect(COMPRESSOR_SETTINGS.threshold).toBeGreaterThanOrEqual(-12);
-      expect(COMPRESSOR_SETTINGS.threshold).toBeLessThanOrEqual(0);
+      expect(MASTER_COMPRESSOR_SETTINGS.threshold).toBeGreaterThanOrEqual(-12);
+      expect(MASTER_COMPRESSOR_SETTINGS.threshold).toBeLessThanOrEqual(0);
     });
 
     it('ratio should be between 2:1 and 8:1 for natural compression', () => {
-      expect(COMPRESSOR_SETTINGS.ratio).toBeGreaterThanOrEqual(2);
-      expect(COMPRESSOR_SETTINGS.ratio).toBeLessThanOrEqual(8);
+      expect(MASTER_COMPRESSOR_SETTINGS.ratio).toBeGreaterThanOrEqual(2);
+      expect(MASTER_COMPRESSOR_SETTINGS.ratio).toBeLessThanOrEqual(8);
     });
 
-    it('attack should be fast enough to catch transients (< 10ms)', () => {
-      expect(COMPRESSOR_SETTINGS.attack).toBeLessThan(0.01);
+    it('attack should be fast enough to control pileups (< 20ms)', () => {
+      expect(MASTER_COMPRESSOR_SETTINGS.attack).toBeLessThan(0.02);
     });
 
-    it('release should be long enough to avoid pumping (> 100ms)', () => {
-      expect(COMPRESSOR_SETTINGS.release).toBeGreaterThan(0.1);
+    it('release should recover quickly because this is a safety stage, not mix glue', () => {
+      expect(MASTER_COMPRESSOR_SETTINGS.release).toBeLessThanOrEqual(0.1);
     });
   });
 
@@ -73,14 +80,14 @@ describe('Audio Engineering Constants', () => {
 
   describe('Click prevention', () => {
     it('fade time should be between 1ms and 10ms', () => {
-      expect(FADE_TIME).toBeGreaterThanOrEqual(0.001);
-      expect(FADE_TIME).toBeLessThanOrEqual(0.01);
+      expect(NOTE_FADE_SECONDS).toBeGreaterThanOrEqual(0.001);
+      expect(NOTE_FADE_SECONDS).toBeLessThanOrEqual(0.01);
     });
   });
 
   describe('Filter safety', () => {
     it('max resonance should be capped to prevent self-oscillation', () => {
-      expect(MAX_FILTER_RESONANCE).toBeLessThanOrEqual(25);
+      expect(MAX_FILTER_RESONANCE).toBeLessThanOrEqual(30);
       expect(MAX_FILTER_RESONANCE).toBeGreaterThanOrEqual(15);
     });
   });

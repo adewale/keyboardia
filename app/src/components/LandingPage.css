@@ -85,6 +85,12 @@
   border-color: var(--color-accent-light);
 }
 
+.landing-start-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 /* Features section */
 .landing-features {
   display: grid;

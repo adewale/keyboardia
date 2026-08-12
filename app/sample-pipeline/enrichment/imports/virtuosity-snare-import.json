@@ -1,0 +1,587 @@
+{
+  "sfzFile": "Programs/06-mid-mic.sfz",
+  "preprocessedSfzSha256": "4aa930e8cbdafb3dc25e102668cf40d3cea65feee7ada689beaadb880f58e82f",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "Samples/mid/snare/mid_snare_center_vl1.flac",
+      "sha256": "fb7368a000e278a0eb98cd6e7be952cc6c3de4890b398564af28b0aa17421013"
+    },
+    {
+      "id": "source-0002",
+      "path": "Samples/mid/snare/mid_snare_center_vl10.flac",
+      "sha256": "6cc5a666fb7a72817fb8abb6dd0ce19fe7b83f560eb4b8f1db6ba75f05357fc9"
+    },
+    {
+      "id": "source-0003",
+      "path": "Samples/mid/snare/mid_snare_center_vl11.flac",
+      "sha256": "c0cf2badfb4754b1a6ec319f25e0bd163966f8d22e1f46b6b3615d667163cd0d"
+    },
+    {
+      "id": "source-0004",
+      "path": "Samples/mid/snare/mid_snare_center_vl12.flac",
+      "sha256": "fb0ac55618a3dcd2317c74dc53c9607b0e0fe2957161d55de077794b976636a7"
+    },
+    {
+      "id": "source-0005",
+      "path": "Samples/mid/snare/mid_snare_center_vl13.flac",
+      "sha256": "dc38d9a5fb82334cc4e355abb6637ebc647a8d0e200a40a1fe55a108ea1c97ff"
+    },
+    {
+      "id": "source-0006",
+      "path": "Samples/mid/snare/mid_snare_center_vl14.flac",
+      "sha256": "939edc3f6391275bb5c6347999d44a7f192f56ba5c8548a771ea5d4cd19b7f9f"
+    },
+    {
+      "id": "source-0007",
+      "path": "Samples/mid/snare/mid_snare_center_vl15.flac",
+      "sha256": "a4edeed14ddd7859be556e4de9cedc0e96b516a628dc5778cece626281a513fd"
+    },
+    {
+      "id": "source-0008",
+      "path": "Samples/mid/snare/mid_snare_center_vl16.flac",
+      "sha256": "dd4e1de6e84465f94b26e8dbdfdf0f4e72999a7d5ed348a76ab9c8a73d74da79"
+    },
+    {
+      "id": "source-0009",
+      "path": "Samples/mid/snare/mid_snare_center_vl17.flac",
+      "sha256": "276e357d2532f0fbb62e1ba179085450c9f70cd328b794ffeab499af66608444"
+    },
+    {
+      "id": "source-0010",
+      "path": "Samples/mid/snare/mid_snare_center_vl18.flac",
+      "sha256": "482fe977e0d07dd85bffe94b3cecad6916ba9b7e51db24e8fcb0051171bb75b6"
+    },
+    {
+      "id": "source-0011",
+      "path": "Samples/mid/snare/mid_snare_center_vl19.flac",
+      "sha256": "a1087c8676b6949a13b26e8856bc26da846f153c5f552276560bcc2953cf93bf"
+    },
+    {
+      "id": "source-0012",
+      "path": "Samples/mid/snare/mid_snare_center_vl2.flac",
+      "sha256": "cd53336ce2661de9fdbdc9bf4299b0308f58650be494fad13ad042955e84debd"
+    },
+    {
+      "id": "source-0013",
+      "path": "Samples/mid/snare/mid_snare_center_vl20.flac",
+      "sha256": "7359d9dfb4f18a05e318d4d8aff59d0f77112e973056854b478d2023b3b59af4"
+    },
+    {
+      "id": "source-0014",
+      "path": "Samples/mid/snare/mid_snare_center_vl21.flac",
+      "sha256": "284e440372d5d654aa8b257d4616a8f07b98c601d13b5ec22f6df45f811152b5"
+    },
+    {
+      "id": "source-0015",
+      "path": "Samples/mid/snare/mid_snare_center_vl22.flac",
+      "sha256": "7c01f6d0a6243aad309fb13e3eff881fa518ddf99fc9923e0c5a6c297fbe05e6"
+    },
+    {
+      "id": "source-0016",
+      "path": "Samples/mid/snare/mid_snare_center_vl23.flac",
+      "sha256": "ae24195a251b7ac3616f7fd63958ed387ef8258ead28df818b4852f604d17b14"
+    },
+    {
+      "id": "source-0017",
+      "path": "Samples/mid/snare/mid_snare_center_vl24.flac",
+      "sha256": "ecb864c8354eadb761c9b77bdbdc1b35294dc73f95e83e4ee50eb4f2b8bda21d"
+    },
+    {
+      "id": "source-0018",
+      "path": "Samples/mid/snare/mid_snare_center_vl25.flac",
+      "sha256": "d88f0b22c50d368bf54ad0c1416a96e11933d5b69b79fd2d2ecf4e9f40689033"
+    },
+    {
+      "id": "source-0019",
+      "path": "Samples/mid/snare/mid_snare_center_vl26.flac",
+      "sha256": "8d1d69d9f219539c395e3e0b7f5bf1966460a7b5e44268c554c98fb374b98282"
+    },
+    {
+      "id": "source-0020",
+      "path": "Samples/mid/snare/mid_snare_center_vl27.flac",
+      "sha256": "ad8f6b22ce3c7cdc05189546a05a9de0cf26f637f5fd31251b72d131307c16ae"
+    },
+    {
+      "id": "source-0021",
+      "path": "Samples/mid/snare/mid_snare_center_vl28.flac",
+      "sha256": "f8df18766689f44fa92ca17980555fac7e462b2f9c7afd56ef703b24bef36e03"
+    },
+    {
+      "id": "source-0022",
+      "path": "Samples/mid/snare/mid_snare_center_vl29.flac",
+      "sha256": "e1755d79b9f06131283b09a96a7b318ad97a646e7bf8bc49dca5e7a72db1a0c6"
+    },
+    {
+      "id": "source-0023",
+      "path": "Samples/mid/snare/mid_snare_center_vl3.flac",
+      "sha256": "14ddb03b5f58350592cb019aea6d5eeefd25a6d58b8dfeed5311981d400e678e"
+    },
+    {
+      "id": "source-0024",
+      "path": "Samples/mid/snare/mid_snare_center_vl30.flac",
+      "sha256": "3b26473469dfdbf7de685ede8eaea791fa28d6bccb745ad72d40e20f62913e5e"
+    },
+    {
+      "id": "source-0025",
+      "path": "Samples/mid/snare/mid_snare_center_vl31.flac",
+      "sha256": "8829bb069e3b501d583c3adb15b52b6cf04c02de4ce6b333ce94a92b65c966b4"
+    },
+    {
+      "id": "source-0026",
+      "path": "Samples/mid/snare/mid_snare_center_vl32.flac",
+      "sha256": "eaf9025d6b879877add05f2314022f2c2b030c334780a0476a97ed1109f2755a"
+    },
+    {
+      "id": "source-0027",
+      "path": "Samples/mid/snare/mid_snare_center_vl33.flac",
+      "sha256": "846baf072181910762da1a9bbd172b3afc8b2b1a4747658617aafcf39725092e"
+    },
+    {
+      "id": "source-0028",
+      "path": "Samples/mid/snare/mid_snare_center_vl34.flac",
+      "sha256": "bb619e82bfb6ddd3afc1c0a37c9fd1d4caab6202290aa3eb622516f13b549f64"
+    },
+    {
+      "id": "source-0029",
+      "path": "Samples/mid/snare/mid_snare_center_vl35.flac",
+      "sha256": "5df491351cd73a73de5919e6ed65882fa41e5ead8750796e4f3d81051fbbc9ff"
+    },
+    {
+      "id": "source-0030",
+      "path": "Samples/mid/snare/mid_snare_center_vl36.flac",
+      "sha256": "61bfa8b38925b5a39053b30ad5640297e5ed49da3bd275a94691fee8a6f752f5"
+    },
+    {
+      "id": "source-0031",
+      "path": "Samples/mid/snare/mid_snare_center_vl4.flac",
+      "sha256": "c460c634bd8834bbd213064f2bc2c184047722b101ffe59e7b0430b0481a0786"
+    },
+    {
+      "id": "source-0032",
+      "path": "Samples/mid/snare/mid_snare_center_vl5.flac",
+      "sha256": "8547b8263e6e25137679ae49fb5300700926dd7596cfb3e7995655c6ddcb7cdf"
+    },
+    {
+      "id": "source-0033",
+      "path": "Samples/mid/snare/mid_snare_center_vl6.flac",
+      "sha256": "782824f97d12d8b2a309593aebe2fd379c55652d36f480db141d4885cf8638a8"
+    },
+    {
+      "id": "source-0034",
+      "path": "Samples/mid/snare/mid_snare_center_vl7.flac",
+      "sha256": "631e2cec78d03e4a5fc5038ac4e6f42bd496fd801dafdfa04218ffcce271a65d"
+    },
+    {
+      "id": "source-0035",
+      "path": "Samples/mid/snare/mid_snare_center_vl8.flac",
+      "sha256": "f65954acb066c296f88e8d496775325c7e1818f97156db53699621e84147896a"
+    },
+    {
+      "id": "source-0036",
+      "path": "Samples/mid/snare/mid_snare_center_vl9.flac",
+      "sha256": "7b09f9300b8a6c14fac6dda739b0cba6dfc8cae916aad864082e5b9f39eb1d14"
+    }
+  ],
+  "mappings": [
+    {
+      "sourceId": "source-0001",
+      "output": "source-0001.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 0,
+        "max": 3
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0012",
+      "output": "source-0012.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 4,
+        "max": 7
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0023",
+      "output": "source-0023.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 8,
+        "max": 10
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0031",
+      "output": "source-0031.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 11,
+        "max": 14
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0032",
+      "output": "source-0032.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 15,
+        "max": 17
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0033",
+      "output": "source-0033.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 18,
+        "max": 21
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0034",
+      "output": "source-0034.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 22,
+        "max": 24
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0035",
+      "output": "source-0035.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 25,
+        "max": 27
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0036",
+      "output": "source-0036.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 28,
+        "max": 31
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0002",
+      "output": "source-0002.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 32,
+        "max": 34
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0003",
+      "output": "source-0003.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 35,
+        "max": 38
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0004",
+      "output": "source-0004.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 39,
+        "max": 41
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0005",
+      "output": "source-0005.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 42,
+        "max": 45
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0006",
+      "output": "source-0006.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 46,
+        "max": 48
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0007",
+      "output": "source-0007.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 49,
+        "max": 52
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0008",
+      "output": "source-0008.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 53,
+        "max": 55
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0009",
+      "output": "source-0009.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 56,
+        "max": 59
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0010",
+      "output": "source-0010.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 60,
+        "max": 63
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0011",
+      "output": "source-0011.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 64,
+        "max": 66
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0013",
+      "output": "source-0013.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 67,
+        "max": 70
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0014",
+      "output": "source-0014.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 71,
+        "max": 73
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0015",
+      "output": "source-0015.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 74,
+        "max": 77
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0016",
+      "output": "source-0016.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 78,
+        "max": 80
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0017",
+      "output": "source-0017.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 81,
+        "max": 84
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0018",
+      "output": "source-0018.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 85,
+        "max": 87
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0019",
+      "output": "source-0019.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 88,
+        "max": 91
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0020",
+      "output": "source-0020.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 92,
+        "max": 95
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0021",
+      "output": "source-0021.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 96,
+        "max": 98
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0022",
+      "output": "source-0022.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 99,
+        "max": 102
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0024",
+      "output": "source-0024.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 103,
+        "max": 105
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0025",
+      "output": "source-0025.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 106,
+        "max": 109
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0026",
+      "output": "source-0026.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 110,
+        "max": 112
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0027",
+      "output": "source-0027.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 113,
+        "max": 116
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0028",
+      "output": "source-0028.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 117,
+        "max": 119
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0029",
+      "output": "source-0029.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 120,
+        "max": 123
+      },
+      "articulation": "snare"
+    },
+    {
+      "sourceId": "source-0030",
+      "output": "source-0030.m4a",
+      "rootMidi": 38,
+      "velocity": {
+        "min": 124,
+        "max": 127
+      },
+      "articulation": "snare"
+    }
+  ],
+  "warnings": [
+    "Collapsed 36 exact duplicate SFZ regions from controller-branched includes",
+    "sfz region 1 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 2 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 3 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 4 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 5 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 6 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 7 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 8 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 9 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 10 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 11 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 12 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 13 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 14 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 15 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 16 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 17 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 18 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 19 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 20 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 21 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 22 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 23 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 24 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 25 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 26 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 27 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 28 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 29 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 30 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 31 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 32 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 33 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 34 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 35 key range 38-38 imported as root 38; review nearest-root boundaries",
+    "sfz region 36 key range 38-38 imported as root 38; review nearest-root boundaries"
+  ]
+}

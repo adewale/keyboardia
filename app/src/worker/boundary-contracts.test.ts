@@ -74,6 +74,7 @@ describe('Track/SessionTrack field parity', () => {
     'steps',
     'parameterLocks',
     'volume',
+    'pan',
     'muted',
     'soloed',       // Added: was missing, caused hash mismatch bug
     'transpose',
@@ -90,6 +91,7 @@ describe('Track/SessionTrack field parity', () => {
     'steps',
     'parameterLocks',
     'volume',
+    'pan',
     'muted',
     'soloed',       // Added: was missing, caused hash mismatch bug
     'transpose',
@@ -101,6 +103,7 @@ describe('Track/SessionTrack field parity', () => {
   const OPTIONAL_SESSION_TRACK_FIELDS: (keyof SessionTrack)[] = [
     'soloed',     // Optional in SessionTrack, required in Track
     'stepCount',  // Optional in SessionTrack, required in Track
+    'pan',        // Optional in both for legacy sessions; canonical default is center
   ];
 
   it('SessionTrack should include all Track fields', () => {
@@ -138,8 +141,8 @@ describe('Track/SessionTrack field parity', () => {
   });
 
   it('should have matching field counts', () => {
-    expect(TRACK_FIELDS.length).toBe(10);  // Updated: removed playbackMode
-    expect(SESSION_TRACK_FIELDS.length).toBe(10);
+    expect(TRACK_FIELDS.length).toBe(11);  // Updated: removed playbackMode, added pan
+    expect(SESSION_TRACK_FIELDS.length).toBe(11);
   });
 
   it('optional SessionTrack fields should be documented', () => {
@@ -148,6 +151,7 @@ describe('Track/SessionTrack field parity', () => {
     // add it to OPTIONAL_SESSION_TRACK_FIELDS and update canonicalizeForHash
     expect(OPTIONAL_SESSION_TRACK_FIELDS).toContain('soloed');
     expect(OPTIONAL_SESSION_TRACK_FIELDS).toContain('stepCount');
+    expect(OPTIONAL_SESSION_TRACK_FIELDS).toContain('pan');
   });
 });
 
@@ -246,6 +250,7 @@ describe('isStateMutatingBroadcast', () => {
       'track_cleared',
       'track_sample_set',
       'track_volume_set',
+      'track_pan_set',
       'track_transpose_set',
       'track_step_count_set',
       'effects_changed',
@@ -302,6 +307,7 @@ describe('isStateMutatingBroadcast', () => {
       'set_track_instrument', // -> track_sample_set during rolling deploy (#63)
       'set_track_sample', // -> track_sample_set (legacy alias)
       'set_track_volume', // -> track_volume_set
+      'set_track_pan',    // -> track_pan_set
       'set_track_transpose', // -> track_transpose_set
       'set_track_step_count', // -> track_step_count_set
       'set_track_swing',  // -> track_swing_set (Phase 31D)
@@ -364,6 +370,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_track_instrument',  // Change instrument (issue #63)
       'set_track_sample',      // Legacy alias of set_track_instrument
       'set_track_volume',
+      'set_track_pan',
       'set_track_transpose',
       'set_track_step_count',
       'set_track_swing',       // Phase 31D: Per-track swing
@@ -447,6 +454,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_tempo',
       'set_track_instrument', // Change instrument (issue #63)
       'set_track_name',     // Track naming
+      'set_track_pan',
       'set_track_sample',
       'set_track_step_count',
       'set_track_swing',      // Phase 31D: Per-track swing

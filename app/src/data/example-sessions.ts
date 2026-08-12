@@ -14,6 +14,7 @@
 
 export interface ExampleTrack {
   steps: boolean[];
+  pan: number;
 }
 
 export interface ExampleSession {
@@ -87,7 +88,18 @@ function getUuidForEnvironment(productionUuid: string): string {
  * Curated example sessions with environment-aware UUIDs.
  * Production uses original UUIDs, staging/local use synced copies.
  */
-export const EXAMPLE_SESSIONS: ExampleSession[] = [
+type ExampleSessionSeed = Omit<ExampleSession, 'tracks'> & {
+  tracks: Array<Omit<ExampleTrack, 'pan'>>;
+};
+
+function withCenteredExamplePans(sessions: ExampleSessionSeed[]): ExampleSession[] {
+  return sessions.map(session => ({
+    ...session,
+    tracks: session.tracks.map(track => ({ ...track, pan: 0 })),
+  }));
+}
+
+export const EXAMPLE_SESSIONS: ExampleSession[] = withCenteredExamplePans([
   {
     uuid: getUuidForEnvironment("568f178d-87b2-4113-a157-4b663de664c5"),
     name: "Shaker Groove",
@@ -1095,7 +1107,7 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
       { steps: [false, false, true, false, true, false, true, false, false, true, true, true, true, false, false, false] },
     ],
   },
-];
+]);
 
 /**
  * Resolve an example link for the active deployment. Replayable local demos

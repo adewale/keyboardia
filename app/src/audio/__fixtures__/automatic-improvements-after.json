@@ -1,0 +1,187 @@
+{
+  "capturedAt": "2026-08-12T11:40:24.735Z",
+  "candidate": "Complete neutral sound-quality implementation",
+  "measurementCommand": "node --import tsx scripts/measure-automatic-audio-improvements.ts --output src/audio/__fixtures__/automatic-improvements-after.json",
+  "schemaVersion": 1,
+  "sampleRate": 44100,
+  "procedural": {
+    "kick": {
+      "peakDbfs": 0,
+      "rmsDb": -13.080966,
+      "loudnessKMax": -13.984888,
+      "spectralCentroidHz": 70.434997,
+      "lowMidDb": -68.656895,
+      "highDb": -218.763942,
+      "decayBelowMinus60Seconds": null,
+      "variationCount": 1,
+      "adjacentVariationCorrelation": 1,
+      "playbackGainDb": 0
+    },
+    "snare": {
+      "peakDbfs": -0.891322,
+      "rmsDb": -18.485721,
+      "loudnessKMax": -16.835294,
+      "spectralCentroidHz": 9350.576458,
+      "lowMidDb": -67.531367,
+      "highDb": -76.020614,
+      "decayBelowMinus60Seconds": null,
+      "variationCount": 4,
+      "adjacentVariationCorrelation": 0.452929,
+      "playbackGainDb": 1
+    },
+    "hihat": {
+      "peakDbfs": -7.586282,
+      "rmsDb": -25.935481,
+      "loudnessKMax": -22.585649,
+      "spectralCentroidHz": 12172.638166,
+      "lowMidDb": -96.414167,
+      "highDb": -76.426843,
+      "decayBelowMinus60Seconds": null,
+      "variationCount": 4,
+      "adjacentVariationCorrelation": 0.975073,
+      "playbackGainDb": -4
+    },
+    "openhat": {
+      "peakDbfs": -6.730348,
+      "rmsDb": -25.114923,
+      "loudnessKMax": -21.766307,
+      "spectralCentroidHz": 12144.343366,
+      "lowMidDb": -102.02549,
+      "highDb": -81.036582,
+      "decayBelowMinus60Seconds": null,
+      "variationCount": 4,
+      "adjacentVariationCorrelation": 0.97454,
+      "playbackGainDb": -4
+    },
+    "bass": {
+      "peakDbfs": -1,
+      "rmsDb": -12.708961,
+      "loudnessKMax": -14.828879,
+      "spectralCentroidHz": 161.880816,
+      "lowMidDb": -59.760993,
+      "highDb": -212.808911,
+      "decayBelowMinus60Seconds": null,
+      "variationCount": 1,
+      "adjacentVariationCorrelation": 1,
+      "playbackGainDb": -1
+    },
+    "lead": {
+      "peakDbfs": -11.544681,
+      "rmsDb": -14.561146,
+      "loudnessKMax": -13.562961,
+      "spectralCentroidHz": 1048.364079,
+      "lowMidDb": -53.470277,
+      "highDb": -183.420169,
+      "decayBelowMinus60Seconds": null,
+      "variationCount": 1,
+      "adjacentVariationCorrelation": 1,
+      "playbackGainDb": -10
+    },
+    "pluck": {
+      "peakDbfs": 0,
+      "rmsDb": -14.606569,
+      "loudnessKMax": -15.105302,
+      "spectralCentroidHz": 701.884909,
+      "lowMidDb": -60.852441,
+      "highDb": -219.401854,
+      "decayBelowMinus60Seconds": null,
+      "variationCount": 1,
+      "adjacentVariationCorrelation": 1,
+      "playbackGainDb": 0
+    },
+    "pad": {
+      "peakDbfs": -7.438381,
+      "rmsDb": -17.382313,
+      "loudnessKMax": -13.206889,
+      "spectralCentroidHz": 220.120377,
+      "lowMidDb": -62.385969,
+      "highDb": -218.620244,
+      "decayBelowMinus60Seconds": null,
+      "variationCount": 1,
+      "adjacentVariationCorrelation": 1,
+      "playbackGainDb": -5.5
+    }
+  },
+  "corePresets": {
+    "bass": {
+      "peakDbfs": -0.141695,
+      "loudnessKMax": -15.025013,
+      "earlyCentroidHz": 1102.310838,
+      "middleCentroidHz": 698.820978,
+      "lateCentroidHz": 789.411054,
+      "earlyToLateCentroidRatio": 1.396371,
+      "hasFilterEnvelope": true,
+      "hasSecondOscillator": true
+    },
+    "lead": {
+      "peakDbfs": -5.342593,
+      "loudnessKMax": -13.436328,
+      "earlyCentroidHz": 1978.237049,
+      "middleCentroidHz": 1731.85319,
+      "lateCentroidHz": 1588.045029,
+      "earlyToLateCentroidRatio": 1.245706,
+      "hasFilterEnvelope": true,
+      "hasSecondOscillator": true
+    },
+    "pad": {
+      "peakDbfs": -6.287536,
+      "loudnessKMax": -14.749288,
+      "earlyCentroidHz": 353.378207,
+      "middleCentroidHz": 552.444029,
+      "lateCentroidHz": 492.683888,
+      "earlyToLateCentroidRatio": 0.717251,
+      "hasFilterEnvelope": true,
+      "hasSecondOscillator": true
+    },
+    "pluck": {
+      "peakDbfs": -0.361863,
+      "loudnessKMax": -15.724385,
+      "earlyCentroidHz": 1190.994514,
+      "middleCentroidHz": 748.816655,
+      "lateCentroidHz": 864.401256,
+      "earlyToLateCentroidRatio": 1.377826,
+      "hasFilterEnvelope": true,
+      "hasSecondOscillator": true
+    }
+  },
+  "release": {
+    "attackFadeSeconds": 0.003,
+    "tailGuardSeconds": 0.03,
+    "representativeSchedule": {
+      "startTime": 1,
+      "attackEnd": 1.003,
+      "release": {
+        "start": 1.25,
+        "end": 1.65,
+        "stopTime": 1.68
+      }
+    },
+    "releaseFloorGain": 0.001,
+    "finalGainBeforeHardStop": 0
+  },
+  "master": {
+    "compressor": {
+      "threshold": -1,
+      "knee": 0,
+      "ratio": 8,
+      "attack": 0.003,
+      "release": 0.08
+    },
+    "outputTrimDb": -1.75,
+    "real16TrackBrowser": {
+      "preCompressorPeakDbfs": 7.020071129002583,
+      "postMakeupPeakDbfs": 1.4320983953143842,
+      "heardOutputPeakDbfs": -0.3536474630931238,
+      "heardOutputTruePeakDbfs": -0.288630208637162
+    },
+    "browserCalibration": {
+      "latencyFrames": 288,
+      "throughGainDb": -3.930748811919181e-8,
+      "maxAttenuationDb": 0.0022149402286077364,
+      "recoveryMonotonic": true,
+      "controlledHatDeltaDb": -0.05945776453238489,
+      "capacityPrePeakDbfs": -0.9195057284760126,
+      "capacityPostPeakDbfs": -0.9574654864550514
+    }
+  }
+}

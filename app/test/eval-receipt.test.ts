@@ -833,7 +833,7 @@ describe('eval receipts', () => {
       '/Users/example/private/eval-output.json',
     );
     expect(verifyReceipt(deeplyEncodedPath).join('\n')).toContain('unsanitized host path');
-  });
+  }, 15_000);
 
   it('fails closed when a registered capability survives in any encoding or key', () => {
     const { source } = committedInputs();

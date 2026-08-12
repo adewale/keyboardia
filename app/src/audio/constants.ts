@@ -84,6 +84,71 @@ export const C4_MIDI_NOTE = 60;
 export const SCHEDULER_BASE_MIDI_NOTE = C4_MIDI_NOTE;
 
 // ============================================================================
+// Master bus - SOUND-QUALITY-PARITY-PLAN Phase 43.1
+// ============================================================================
+
+/**
+ * The source-calibration contract now supplies normal operating headroom.
+ * Unity here means the master dynamics stage is a safety net, not a mixer.
+ */
+export const MASTER_INPUT_TRIM = 1;
+
+/** Compressor settings are deliberately identical in both master paths. */
+export const MASTER_COMPRESSOR_SETTINGS = Object.freeze({
+  threshold: -1,
+  knee: 0,
+  ratio: 8,
+  attack: 0.003,
+  release: 0.08,
+});
+
+/** Re-measured by the browser capture receipt when the safety curve changes. */
+export const MASTER_COMPRESSOR_AUTO_MAKEUP_DB = 0.5248653331;
+
+/** Keep normal programme at unity; the output ceiling supplies final margin. */
+export const MASTER_MAKEUP_GAIN = 10 ** (-MASTER_COMPRESSOR_AUTO_MAKEUP_DB / 20);
+
+/** Tone's fast compressor-style limiter threshold. */
+export const MASTER_LIMITER_THRESHOLD_DB = -2;
+
+/**
+ * Post-limiter safety margin. Tone.Limiter can overshoot its nominal threshold
+ * on the user-reachable mixed-engine capacity fixture; a final linear trim
+ * preserves the compressor response while keeping rendered samples below full
+ * scale. This is gain staging, not a claim of true-peak limiting.
+ */
+export const MASTER_OUTPUT_TRIM_DB = -1.75;
+export const MASTER_OUTPUT_TRIM = 10 ** (MASTER_OUTPUT_TRIM_DB / 20);
+
+/** Remove low-frequency energy before it is sent into the parallel reverb. */
+export const REVERB_SEND_HIGHPASS_HZ = 275;
+
+/** Short pre-delay keeps the dry transient distinct from the room response. */
+export const REVERB_PREDELAY_SECONDS = 0.015;
+
+/** Uniform smoothing at the engine boundary for user-dragged controls. */
+export const CONTINUOUS_PARAMETER_SLEW_SECONDS = 0.04;
+
+/** Short note-edge fade used by the live engine to prevent clicks. */
+export const NOTE_FADE_SECONDS = 0.003;
+
+/** Minimal shape shared by Web Audio AudioParam and Tone.Param. */
+export interface SlewableAudioParam {
+  cancelScheduledValues(startTime: number): unknown;
+  setTargetAtTime(value: number, startTime: number, timeConstant: number): unknown;
+}
+
+/** Apply a click-resistant target ramp without duplicating automation policy. */
+export function slewAudioParam(
+  param: SlewableAudioParam,
+  value: number,
+  startTime: number,
+): void {
+  param.cancelScheduledValues(startTime);
+  param.setTargetAtTime(value, startTime, CONTINUOUS_PARAMETER_SLEW_SECONDS);
+}
+
+// ============================================================================
 // Sample Processing Constants - SINGLE SOURCE OF TRUTH
 // ============================================================================
 

@@ -1,0 +1,36 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-11",
+  "lane": "playwright-chromium-real-audio",
+  "sampleRate": 48000,
+  "fixture": "deterministic repeated kit, isolated 8 kHz/16-source canary, and user-reachable 16-track mixed-engine session",
+  "metrics": {
+    "processorLatencyFrames": 288,
+    "processorLatencyMs": 6,
+    "throughGainDb": 0.00000046436125607462383,
+    "postPileupMaxAttenuationDb": 0.21012732020422692,
+    "recoveryMonotonic": true,
+    "controlledHatDeltaDb": -0.31254781045576585,
+    "sameBuildRepeatNullResidualDb": -264.3700495242908,
+    "repeatAlignmentFrames": 9344,
+    "maxRenderFrameDrift": 256,
+    "controlledCanaryPrePeakDbfs": -3.9195048944153243,
+    "controlledCanaryPostPeakDbfs": -4.36147852352051,
+    "capacityTrackCount": 16,
+    "capacityPrePeakDbfs": 3.5456455454465123,
+    "capacityPostMakeupPeakDbfs": 0.7234735495617233,
+    "capacityHeardOutputPeakDbfs": -0.2701277856889639,
+    "capacityHeardOutputTruePeakDbfs": -0.2701277856889639,
+    "masterOutputTrimDb": -1
+  },
+  "budgets": {
+    "throughGainAbsoluteDb": 0.1,
+    "postPileupMaxAttenuationDb": 4,
+    "controlledHatAbsoluteDeltaDb": 2,
+    "sameBuildRepeatNullResidualDb": -60,
+    "maxRenderFrameDriftMs": 10,
+    "capacityHeardOutputPeakDbfs": 0,
+    "capacityHeardOutputTruePeakDbfs": 0
+  },
+  "result": "pass"
+}

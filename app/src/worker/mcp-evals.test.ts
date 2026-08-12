@@ -18,6 +18,7 @@ const baseline: CompactMcpSession = {
     track_id: 'existing-snare',
     name: 'Snare',
     sample_id: 'snare',
+    pan: 0,
     step_count: 16,
     active_steps: [4, 12],
   }],
@@ -27,6 +28,7 @@ function track(overrides: Partial<CompactMcpTrack> & { track_id: string }): Comp
   return {
     name: 'Hi-Hat',
     sample_id: 'hihat',
+    pan: 0,
     step_count: 16,
     active_steps: [],
     ...overrides,

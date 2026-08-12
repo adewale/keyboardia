@@ -278,6 +278,12 @@ export function StepSequencer() {
     audioEngine.setTrackVolume(trackId, volume);
   }, [dispatch]);
 
+  const handleSetPan = useCallback((trackId: string, pan: number) => {
+    dispatch({ type: 'SET_TRACK_PAN', trackId, pan });
+    // Immediate local feedback; syncGridAudioState handles load/remote paths.
+    audioEngine.setTrackPan(trackId, pan);
+  }, [dispatch]);
+
   // Phase 31B: Pattern manipulation handlers
   const handleRotatePattern = useCallback((trackId: string, direction: 'left' | 'right') => {
     dispatch({ type: 'ROTATE_PATTERN', trackId, direction });
@@ -638,6 +644,7 @@ export function StepSequencer() {
             onToggleMute={handleToggleMute}
             onToggleSolo={handleToggleSolo}
             onSetVolume={handleSetVolume}
+            onSetPan={handleSetPan}
             onSetSwing={handleSetTrackSwing}
           />
         </div>

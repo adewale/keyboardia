@@ -42,6 +42,8 @@ import {
   MAX_PLOCK_VOLUME,
   MIN_CURSOR_POSITION,
   MAX_CURSOR_POSITION,
+  MIN_PAN,
+  MAX_PAN,
 } from '../shared/constants';
 import { validateSessionState } from './validation';
 import { SCALES } from '../music/music-theory';
@@ -92,6 +94,7 @@ const arbMinimalTrack = fc.record({
   steps: fc.constant(new Array(MAX_STEPS).fill(false)),
   parameterLocks: fc.constant(new Array(MAX_STEPS).fill(null)),
   volume: fc.float({ min: Math.fround(MIN_VOLUME), max: Math.fround(MAX_VOLUME), noNaN: true }),
+  pan: fc.float({ min: Math.fround(MIN_PAN), max: Math.fround(MAX_PAN), noNaN: true }),
   muted: fc.boolean(),
   soloed: fc.boolean(),
   transpose: fc.integer({ min: MIN_TRANSPOSE, max: MAX_TRANSPOSE }),
@@ -785,6 +788,7 @@ describe('VA-005: non-finite values are detected and repaired', () => {
     steps: Array(MAX_STEPS).fill(false),
     parameterLocks: Array(MAX_STEPS).fill(null),
     volume: 1,
+    pan: 0,
     muted: false,
     soloed: false,
     transpose: 0,
@@ -825,6 +829,25 @@ describe('VA-005: non-finite values are detected and repaired', () => {
     expect(validateStateInvariants(repairedState).valid).toBe(true);
   });
 
+  it.each(NON_FINITE)('reports a track pan of %p as a violation and repairs it to center', (pan) => {
+    const state = stateWith({ tracks: [trackWith({ pan })] });
+    expect(validateStateInvariants(state).valid, `pan ${pan} accepted`).toBe(false);
+
+    const { repairedState } = repairStateInvariants(state);
+    expect(repairedState.tracks[0].pan).toBe(0);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it.each([MIN_PAN - 0.25, MAX_PAN + 0.25])(
+    'clamps corrupted stored pan %p while public mutations remain strict',
+    (pan) => {
+      const state = stateWith({ tracks: [trackWith({ pan })] });
+      const { repairedState } = repairStateInvariants(state);
+      expect(repairedState.tracks[0].pan).toBe(pan < MIN_PAN ? MIN_PAN : MAX_PAN);
+      expect(validateStateInvariants(repairedState).valid).toBe(true);
+    },
+  );
+
   it.each(NON_FINITE)('reports a stepCount of %p as a violation and repairs it', (stepCount) => {
     const state = stateWith({ tracks: [trackWith({ stepCount })] });
     expect(validateStateInvariants(state).valid, `stepCount ${stepCount} accepted`).toBe(false);
@@ -861,6 +884,15 @@ describe('VA-005: non-finite values are detected and repaired', () => {
     const { repairedState } = repairStateInvariants(stateWith({ tracks: [track] }));
 
     expect(Number.isFinite(repairedState.tracks[0].volume)).toBe(true);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it('repairs a legacy track with no pan to center', () => {
+    const track = trackWith({});
+    delete (track as unknown as Record<string, unknown>).pan;
+    const { repairedState } = repairStateInvariants(stateWith({ tracks: [track] }));
+
+    expect(repairedState.tracks[0].pan).toBe(0);
     expect(validateStateInvariants(repairedState).valid).toBe(true);
   });
 

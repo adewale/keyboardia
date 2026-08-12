@@ -57,8 +57,13 @@ describe('Holby example session', () => {
       tempo: demo.state.tempo,
       tracks: demo.state.tracks.slice(0, 4).map((track) => ({
         steps: condenseToThumbnail(track),
+        pan: 0,
       })),
     });
+  });
+
+  it('keeps every curated thumbnail centered unless spatial intent is explicitly authored', () => {
+    expect(EXAMPLE_SESSIONS.flatMap(session => session.tracks).every(track => track.pan === 0)).toBe(true);
   });
 
   it('uses an absolute staging URL from local builds backed by the real API', () => {

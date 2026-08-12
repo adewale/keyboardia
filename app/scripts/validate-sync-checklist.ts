@@ -50,10 +50,14 @@ const MUTATING_TYPES = [
   'set_track_instrument',
   'set_track_sample',
   'set_track_volume',
+  'set_track_pan',
   'set_track_transpose',
   'set_track_step_count',
+  'set_track_swing',
+  'set_track_name',
   'set_effects',
   'set_fm_params',
+  'euclidean_fill',
 ] as const;
 
 /**
@@ -73,10 +77,14 @@ const CLIENT_TO_SERVER_MAP: Record<string, string> = {
   set_track_instrument: 'track_sample_set', // rollout-compatible response
   set_track_sample: 'track_sample_set',
   set_track_volume: 'track_volume_set',
+  set_track_pan: 'track_pan_set',
   set_track_transpose: 'track_transpose_set',
   set_track_step_count: 'track_step_count_set',
+  set_track_swing: 'track_swing_set',
+  set_track_name: 'track_name_set',
   set_effects: 'effects_changed',
   set_fm_params: 'fm_params_changed',
+  euclidean_fill: 'euclidean_filled',
 };
 
 /**

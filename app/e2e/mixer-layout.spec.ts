@@ -20,9 +20,7 @@ async function setupSession(page: Page) {
   await page.goto('/');
   await page.waitForLoadState('domcontentloaded');
 
-  const startButton = page.locator(
-    '.landing-btn.primary, button:has-text("Start Session"), button:has-text("Start"), button:has-text("Create")'
-  ).first();
+  const startButton = page.getByRole('button', { name: 'Start Session', exact: true });
   const isLanding = await startButton.isVisible({ timeout: 3000 }).catch(() => false);
 
   if (isLanding) {

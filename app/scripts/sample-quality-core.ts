@@ -1,3 +1,5 @@
+import { loudnessKMax } from '../src/test/audio-measures';
+
 export interface DecodedAudioLike {
   numberOfChannels: number;
   sampleRate: number;
@@ -17,6 +19,10 @@ export interface SampleContext {
   loopStart?: number;
   loopEnd?: number;
   pitched: boolean;
+  /** Instrument + sample gain applied by production playback. */
+  playbackGainDb?: number;
+  /** Runtime playback trim used to remove measured codec/onset delay. */
+  playbackStartOffsetMs?: number;
 }
 
 export interface QualityThresholds {
@@ -35,6 +41,7 @@ export interface QualityThresholds {
   velocityInversionDb: number;
   noteLevelStepDb: number;
   rangeOverextensionSemitones: number;
+  tonalLoudnessToleranceDb: number;
 }
 
 export interface SpectralMetrics {
@@ -87,10 +94,15 @@ export interface SampleQualityMetrics {
   peakDb: number;
   rmsDb: number;
   activeRmsDb: number;
+  /** Maximum 400ms BS.1770 K-weighted loudness (LKFS/LUFS). */
+  loudnessKMax: number | null;
+  /** Manifest gain used when evaluating delivered playback loudness. */
+  playbackGainDb: number;
   dcOffset: number;
   dcOffsetDb: number;
   crestFactorDb: number | null;
   leadingSilenceMs: number;
+  effectiveLeadingSilenceMs: number;
   trailingSilenceMs: number;
   attackMs: number | null;
   tailLevelDbRelPeak: number | null;
@@ -149,6 +161,7 @@ export const DEFAULT_QUALITY_THRESHOLDS: QualityThresholds = {
   velocityInversionDb: 1,
   noteLevelStepDb: 3,
   rangeOverextensionSemitones: 6,
+  tonalLoudnessToleranceDb: 2.5,
 };
 
 const NEGATIVE_INFINITY_DB = -120;
@@ -538,6 +551,13 @@ export function analyzeDecodedSampleWithMono(context: SampleContext, decoded: De
   const tailWindow = Math.min(mono.length, Math.floor(decoded.sampleRate * 0.02));
   const tailPeak = tailWindow > 0 ? calculatePeak(mono, mono.length - tailWindow, mono.length) : 0;
   const spectral = calculateSpectralMetrics(mono, decoded.sampleRate, activeStart, activeEnd);
+  const supportedKRate = decoded.sampleRate === 44100 || decoded.sampleRate === 48000
+    ? decoded.sampleRate
+    : null;
+  const kChannels = Array.from(
+    { length: decoded.numberOfChannels },
+    (_, channel) => decoded.getChannelData(channel),
+  );
   const pitch = context.pitched
     ? estimatePitch(mono, decoded.sampleRate, context.note, activeStart, activeEnd)
     : { midi: null, frequencyHz: null, rawCents: null, foldedCents: null, confidence: 0 };
@@ -556,10 +576,18 @@ export function analyzeDecodedSampleWithMono(context: SampleContext, decoded: De
     peakDb: amplitudeToDb(peak),
     rmsDb: amplitudeToDb(wholeRms),
     activeRmsDb: amplitudeToDb(activeRms),
+    loudnessKMax: supportedKRate === null
+      ? null
+      : loudnessKMax(kChannels, supportedKRate),
+    playbackGainDb: context.playbackGainDb ?? 0,
     dcOffset,
     dcOffsetDb: amplitudeToDb(Math.abs(dcOffset)),
     crestFactorDb: activeRms > 0 ? amplitudeToDb(peak / activeRms) : null,
     leadingSilenceMs: active.leadingSilenceMs,
+    effectiveLeadingSilenceMs: Math.max(
+      0,
+      active.leadingSilenceMs - (context.playbackStartOffsetMs ?? 0),
+    ),
     trailingSilenceMs: active.trailingSilenceMs,
     attackMs: calculateAttackMs(mono, decoded.sampleRate, activeStart, peak),
     tailLevelDbRelPeak: peak > 0 ? amplitudeToDb(tailPeak / peak) : null,
@@ -611,10 +639,16 @@ export function classifySampleIssues(
   } else if (metrics.dcOffsetDb > thresholds.dcWarnDb) {
     add('review', 'DC_OFFSET', `DC offset ${metrics.dcOffsetDb.toFixed(1)} dBFS should be reviewed`, metrics.dcOffsetDb, thresholds.dcWarnDb);
   }
-  if (metrics.leadingSilenceMs > thresholds.leadingSilenceMs) {
-    add('review', 'LEADING_SILENCE', `Leading silence ${metrics.leadingSilenceMs.toFixed(1)}ms may feel late`, metrics.leadingSilenceMs, thresholds.leadingSilenceMs);
+  if (metrics.effectiveLeadingSilenceMs > thresholds.leadingSilenceMs) {
+    add(
+      'review',
+      'LEADING_SILENCE',
+      `Effective leading silence ${metrics.effectiveLeadingSilenceMs.toFixed(1)}ms may feel late (decoded ${metrics.leadingSilenceMs.toFixed(1)}ms)`,
+      metrics.effectiveLeadingSilenceMs,
+      thresholds.leadingSilenceMs,
+    );
   }
-  if (metrics.tailLevelDbRelPeak !== null && metrics.tailLevelDbRelPeak > thresholds.tailTruncationDbRelPeak && metrics.trailingSilenceMs < 5) {
+  if (!metrics.loop && metrics.tailLevelDbRelPeak !== null && metrics.tailLevelDbRelPeak > thresholds.tailTruncationDbRelPeak && metrics.trailingSilenceMs < 5) {
     add('review', 'TAIL_TRUNCATION', `Tail remains ${metrics.tailLevelDbRelPeak.toFixed(1)} dB below peak at EOF; possible truncation`, metrics.tailLevelDbRelPeak, thresholds.tailTruncationDbRelPeak);
   }
   if (

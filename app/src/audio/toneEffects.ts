@@ -36,6 +36,23 @@ import {
   MIN_TEMPO,
   MAX_TEMPO,
 } from '../shared/constants';
+import {
+  MASTER_COMPRESSOR_SETTINGS,
+  MASTER_LIMITER_THRESHOLD_DB,
+  MASTER_MAKEUP_GAIN,
+  MASTER_OUTPUT_TRIM,
+  REVERB_PREDELAY_SECONDS,
+  REVERB_SEND_HIGHPASS_HZ,
+  slewAudioParam,
+} from './constants';
+
+/** Map the persisted decay range logarithmically onto Freeverb room size. */
+export function decayToRoomSize(decaySeconds: number): number {
+  const decay = clamp(decaySeconds, REVERB_MIN_DECAY, REVERB_MAX_DECAY);
+  const position = Math.log10(decay / REVERB_MIN_DECAY)
+    / Math.log10(REVERB_MAX_DECAY / REVERB_MIN_DECAY);
+  return clamp(0.1 + position * 0.85, 0.1, 0.95);
+}
 
 /** Convert Tone-style note/measure notation to seconds at the sequencer BPM. */
 export function musicalTimeToSeconds(notation: string, bpm: number): number {
@@ -58,14 +75,17 @@ export function musicalTimeToSeconds(notation: string, bpm: number): number {
  * ToneEffectsChain - Manages Tone.js effects for the hybrid audio engine
  *
  * Signal flow:
- * Input → Distortion → Chorus → Delay → Reverb → Limiter → Output
+ * Input → Compressor → Makeup → Distortion → Chorus → Delay
+ *                                      ↘ dry ───────────────┐
+ *                                       HPF → wet Reverb ──┼→ Limiter → Output
  *
  * This order is intentional:
  * - Distortion adds grit to the original signal first
  * - Chorus adds stereo width
  * - Delay creates rhythmic echoes
  * - Reverb adds space (applied last for natural sound)
- * - Limiter prevents clipping (at -1dB threshold)
+ * - Limiter conditions transients; a final -1 dB trim supplies measured
+ *   sample-peak headroom on the 16-track product-capacity fixture
  */
 
 /**
@@ -82,12 +102,19 @@ function cloneEffectsState(state: EffectsState): EffectsState {
 }
 
 export class ToneEffectsChain {
-  private reverb: Tone.Freeverb | null = null;
+  /** Active room processor: instant Freeverb until the convolution IR is ready. */
+  private reverb: Tone.Freeverb | Tone.Reverb | null = null;
+  private convolutionReverb: Tone.Reverb | null = null;
   private delay: Tone.FeedbackDelay | null = null;
   private chorus: Tone.Chorus | null = null;
   private distortion: Tone.Distortion | null = null;
   private limiter: Tone.Limiter | null = null; // Phase 22: Prevent clipping when effects enabled
+  private outputTrim: Tone.Gain | null = null;
   private input: Tone.Gain | null = null;
+  private compressor: Tone.Compressor | null = null;
+  private makeupTrim: Tone.Gain | null = null;
+  private reverbHighpass: Tone.Filter | null = null;
+  private reverbWetGain: Tone.Gain | null = null;
 
   private state: EffectsState = cloneEffectsState(DEFAULT_EFFECTS_STATE);
   private tempo = DEFAULT_TEMPO;
@@ -108,14 +135,20 @@ export class ToneEffectsChain {
 
     // Create input gain node
     this.input = new Tone.Gain(1);
+    this.compressor = new Tone.Compressor(MASTER_COMPRESSOR_SETTINGS);
+    this.makeupTrim = new Tone.Gain(MASTER_MAKEUP_GAIN);
 
-    // Create effects with default settings
-    // Using Freeverb instead of Reverb for instant ready (no async IR generation)
+    // Create an instant fallback first. A higher-quality convolution room is
+    // generated in the background and hot-swapped without blocking playback.
     this.reverb = new Tone.Freeverb({
-      roomSize: 0.7,
+      roomSize: decayToRoomSize(this.state.reverb.decay),
       dampening: 3000,
     });
-    this.reverb.wet.value = this.state.reverb.wet;
+    // Reverb is a true parallel send. Its own mix is fully wet and the
+    // serializable wet control drives a dedicated send-return gain.
+    this.reverb.wet.value = 1;
+    this.reverbHighpass = new Tone.Filter(REVERB_SEND_HIGHPASS_HZ, 'highpass');
+    this.reverbWetGain = new Tone.Gain(this.state.reverb.wet);
 
     this.delay = new Tone.FeedbackDelay({
       delayTime: musicalTimeToSeconds(this.state.delay.time, this.tempo),
@@ -140,19 +173,87 @@ export class ToneEffectsChain {
     // When effects are enabled, we bypass the native compressor, so we need
     // a limiter here to prevent harsh digital clipping from reverb tails,
     // distortion peaks, or multiple voices summing above 0dB.
-    // -1dB threshold gives ~1dB headroom to avoid intersample peaks.
-    this.limiter = new Tone.Limiter(-1);
+    // Tone.Limiter is compressor-based and can overshoot its threshold. The
+    // final output trim below is calibrated by the heard-output capacity gate.
+    this.limiter = new Tone.Limiter(MASTER_LIMITER_THRESHOLD_DB);
+    this.outputTrim = new Tone.Gain(MASTER_OUTPUT_TRIM);
 
-    // Connect chain: input → distortion → chorus → delay → reverb → limiter → destination
-    this.input.connect(this.distortion);
+    // Serial dynamics and color stages.
+    this.input.connect(this.compressor);
+    this.compressor.connect(this.makeupTrim);
+    this.makeupTrim.connect(this.distortion);
     this.distortion.connect(this.chorus);
     this.chorus.connect(this.delay);
-    this.delay.connect(this.reverb);
-    this.reverb.connect(this.limiter);
-    this.limiter.toDestination();
+
+    // Parallel high-passed reverb: preserve the dry path and keep bass energy
+    // out of the room tail.
+    this.delay.connect(this.limiter);
+    this.delay.connect(this.reverbHighpass);
+    this.reverbHighpass.connect(this.reverb);
+    this.reverb.connect(this.reverbWetGain);
+    this.reverbWetGain.connect(this.limiter);
+    this.limiter.connect(this.outputTrim);
+    this.outputTrim.toDestination();
 
     this.ready = true;
+    void this.initializeConvolutionReverb();
     logger.audio.log('ToneEffectsChain initialized');
+  }
+
+  /**
+   * Generate Tone.Reverb's convolution IR asynchronously, then replace the
+   * algorithmic fallback. Connecting the ready node before disconnecting the
+   * fallback avoids a silent render quantum during the swap.
+   */
+  private async initializeConvolutionReverb(): Promise<void> {
+    const fallback = this.reverb;
+    const highpass = this.reverbHighpass;
+    const wetGain = this.reverbWetGain;
+    if (!fallback || !highpass || !wetGain || !this.ready) return;
+
+    const convolution = new Tone.Reverb({
+      decay: this.state.reverb.decay,
+      preDelay: REVERB_PREDELAY_SECONDS,
+      wet: 1,
+    });
+    convolution.wet.value = 1;
+    this.convolutionReverb = convolution;
+
+    try {
+      // A decay update starts a newer generation. Always wait for the latest
+      // promise before exposing the convolver as the audible room.
+      let generation = convolution.ready;
+      await generation;
+      while (generation !== convolution.ready) {
+        generation = convolution.ready;
+        await generation;
+      }
+    } catch (error) {
+      if (this.convolutionReverb === convolution) this.convolutionReverb = null;
+      convolution.dispose();
+      logger.audio.warn('Convolution reverb generation failed; retaining Freeverb fallback', error);
+      return;
+    }
+
+    if (
+      !this.ready
+      || this.convolutionReverb !== convolution
+      || this.reverb !== fallback
+      || !this.reverbHighpass
+      || !this.reverbWetGain
+    ) {
+      if (this.convolutionReverb === convolution) this.convolutionReverb = null;
+      convolution.dispose();
+      return;
+    }
+
+    convolution.connect(wetGain);
+    highpass.connect(convolution);
+    highpass.disconnect(fallback);
+    fallback.disconnect(wetGain);
+    this.reverb = convolution;
+    fallback.dispose();
+    logger.audio.log('Convolution reverb ready; replaced Freeverb fallback');
   }
 
   /**
@@ -160,6 +261,28 @@ export class ToneEffectsChain {
    */
   getInput(): Tone.Gain | null {
     return this.input;
+  }
+
+  /**
+   * Raw Web Audio tap points used by the synchronized measurement recorder.
+   * They are deliberately read-only: the recorder fans out from each node and
+   * never changes the production routing.
+   */
+  getCaptureTaps(): {
+    preCompressor: AudioNode;
+    postMakeup: AudioNode;
+    userOutput: AudioNode;
+  } | null {
+    if (!this.compressor || !this.makeupTrim) return null;
+    const destination = Tone.getDestination();
+    return {
+      // Tone.Compressor exposes the native DynamicsCompressorNode as both its
+      // input and output; tapping it therefore captures post-compression PCM.
+      // Fan out from the upstream input gain to obtain a genuine pre tap.
+      preCompressor: this.input!.output as unknown as AudioNode,
+      postMakeup: this.makeupTrim.output as unknown as AudioNode,
+      userOutput: destination.output as unknown as AudioNode,
+    };
   }
 
   /**
@@ -180,17 +303,20 @@ export class ToneEffectsChain {
 
   setReverbWet(wet: number): void {
     this.state.reverb.wet = clamp(wet, 0, 1);
-    if (this.reverb && this.enabled) {
-      this.reverb.wet.value = this.state.reverb.wet;
+    if (this.reverbWetGain && this.enabled) {
+      slewAudioParam(this.reverbWetGain.gain, this.state.reverb.wet, Tone.now());
     }
   }
 
   setReverbDecay(decay: number): void {
     this.state.reverb.decay = clamp(decay, REVERB_MIN_DECAY, REVERB_MAX_DECAY);
-    if (this.reverb) {
+    if (this.reverb && 'roomSize' in this.reverb) {
       // Freeverb uses roomSize (0-1) instead of decay
       // Map decay (0.1-10s) to roomSize (0.1-0.99)
-      this.reverb.roomSize.value = clamp(this.state.reverb.decay / 10, 0.1, 0.99);
+      slewAudioParam(this.reverb.roomSize, decayToRoomSize(this.state.reverb.decay), Tone.now());
+    }
+    if (this.convolutionReverb) {
+      this.convolutionReverb.decay = this.state.reverb.decay;
     }
   }
 
@@ -199,7 +325,7 @@ export class ToneEffectsChain {
   setDelayWet(wet: number): void {
     this.state.delay.wet = clamp(wet, 0, 1);
     if (this.delay && this.enabled) {
-      this.delay.wet.value = this.state.delay.wet;
+      slewAudioParam(this.delay.wet, this.state.delay.wet, Tone.now());
     }
   }
 
@@ -222,7 +348,7 @@ export class ToneEffectsChain {
   setDelayFeedback(feedback: number): void {
     this.state.delay.feedback = clamp(feedback, 0, DELAY_MAX_FEEDBACK);
     if (this.delay) {
-      this.delay.feedback.value = this.state.delay.feedback;
+      slewAudioParam(this.delay.feedback, this.state.delay.feedback, Tone.now());
     }
   }
 
@@ -231,7 +357,7 @@ export class ToneEffectsChain {
   setChorusWet(wet: number): void {
     this.state.chorus.wet = clamp(wet, 0, 1);
     if (this.chorus && this.enabled) {
-      this.chorus.wet.value = this.state.chorus.wet;
+      slewAudioParam(this.chorus.wet, this.state.chorus.wet, Tone.now());
     }
   }
 
@@ -254,7 +380,7 @@ export class ToneEffectsChain {
   setDistortionWet(wet: number): void {
     this.state.distortion.wet = clamp(wet, 0, 1);
     if (this.distortion && this.enabled) {
-      this.distortion.wet.value = this.state.distortion.wet;
+      slewAudioParam(this.distortion.wet, this.state.distortion.wet, Tone.now());
     }
   }
 
@@ -310,13 +436,13 @@ export class ToneEffectsChain {
 
     if (!enabled) {
       // Bypass: set all wet to 0 (state is preserved in this.state)
-      if (this.reverb) this.reverb.wet.value = 0;
+      if (this.reverbWetGain) this.reverbWetGain.gain.value = 0;
       if (this.delay) this.delay.wet.value = 0;
       if (this.chorus) this.chorus.wet.value = 0;
       if (this.distortion) this.distortion.wet.value = 0;
     } else {
       // Un-bypass: restore from current state (may have changed while bypassed)
-      if (this.reverb) this.reverb.wet.value = this.state.reverb.wet;
+      if (this.reverbWetGain) this.reverbWetGain.gain.value = this.state.reverb.wet;
       if (this.delay) this.delay.wet.value = this.state.delay.wet;
       if (this.chorus) this.chorus.wet.value = this.state.chorus.wet;
       if (this.distortion) this.distortion.wet.value = this.state.distortion.wet;
@@ -337,18 +463,32 @@ export class ToneEffectsChain {
     logger.audio.log('Disposing ToneEffectsChain...');
 
     this.input?.dispose();
+    this.compressor?.dispose();
+    this.makeupTrim?.dispose();
     this.distortion?.dispose();
     this.chorus?.dispose();
     this.delay?.dispose();
     this.reverb?.dispose();
+    if (this.convolutionReverb && this.convolutionReverb !== this.reverb) {
+      this.convolutionReverb.dispose();
+    }
+    this.reverbHighpass?.dispose();
+    this.reverbWetGain?.dispose();
     this.limiter?.dispose();
+    this.outputTrim?.dispose();
 
     this.input = null;
+    this.compressor = null;
+    this.makeupTrim = null;
     this.distortion = null;
     this.chorus = null;
     this.delay = null;
     this.reverb = null;
+    this.convolutionReverb = null;
+    this.reverbHighpass = null;
+    this.reverbWetGain = null;
     this.limiter = null;
+    this.outputTrim = null;
 
     this.ready = false;
     this.enabled = true;

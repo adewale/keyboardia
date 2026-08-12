@@ -96,6 +96,43 @@ it('Router: creates a new session via POST /api/sessions', async () => {
   const data = await response.json() as { id: string; url: string };
   expect(data.id).toBeDefined();
   expect(data.url).toContain('/s/');
+
+  const storedResponse = await SELF.fetch(`http://localhost/api/sessions/${data.id}`);
+  const stored = await storedResponse.json() as { state: { scale?: unknown } };
+  expect(stored.state.scale).toEqual({
+    root: 'C', scaleId: 'minor-pentatonic', locked: true,
+  });
+});
+
+it('DO: version-1 state with no scale hydrates as explicitly unlocked', async () => {
+  const sessionId = '00000000-0000-4000-8000-000000004302';
+  const legacyState = { tracks: [], tempo: 120, swing: 0, version: 1 };
+  await (env as unknown as Env).SESSIONS.put(`session:${sessionId}`, JSON.stringify({
+    id: sessionId,
+    name: 'Legacy no-scale fixture',
+    createdAt: 1,
+    updatedAt: 1,
+    lastAccessedAt: 1,
+    remixedFrom: null,
+    remixedFromName: null,
+    remixCount: 0,
+    immutable: false,
+    state: legacyState,
+  }));
+
+  const doId = (env as unknown as Env).LIVE_SESSIONS.idFromName(sessionId);
+  const stub = (env as unknown as Env).LIVE_SESSIONS.get(doId);
+  await runInDurableObject(stub, async (_instance, durableState) => {
+    await durableState.storage.put('sessionId', sessionId);
+    await durableState.storage.put('state', legacyState);
+  });
+
+  const response = await stub.fetch(`http://placeholder/api/sessions/${sessionId}`);
+  expect(response.status).toBe(200);
+  const session = await response.json() as { state: { scale?: unknown } };
+  expect(session.state.scale).toEqual({
+    root: 'C', scaleId: 'minor-pentatonic', locked: false,
+  });
 });
 
 it('Router: loads session via GET /api/sessions/:id', async () => {

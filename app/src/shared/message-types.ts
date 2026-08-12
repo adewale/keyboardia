@@ -66,6 +66,7 @@ export type ClientMessageBase =
   // server ignores the caller-supplied name and runs the shared operation.
   | { type: 'set_track_sample'; trackId: string; sampleId: string; name: string }
   | { type: 'set_track_volume'; trackId: string; volume: number }
+  | { type: 'set_track_pan'; trackId: string; pan: number }
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
   | { type: 'set_track_swing'; trackId: string; swing: number }  // Phase 31D: Per-track swing
@@ -124,6 +125,7 @@ export type ServerMessageBase =
   // shared operation; older clients use it without crashing on an unknown type.
   | { type: 'track_sample_set'; trackId: string; sampleId: string; name: string; playerId: string }
   | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string }
+  | { type: 'track_pan_set'; trackId: string; pan: number; playerId: string }
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
   | { type: 'track_swing_set'; trackId: string; swing: number; playerId: string }  // Phase 31D

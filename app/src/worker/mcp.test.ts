@@ -578,6 +578,7 @@ describe('stateless MCP endpoint', () => {
         track_id: 'kick-agent-a7f3c29d',
         name: 'Kick',
         sample_id: 'kick',
+        pan: 0,
         step_count: 16,
         active_steps: [0, 4, 8, 12],
       }],
@@ -645,6 +646,26 @@ describe('stateless MCP endpoint', () => {
     }));
 
     expect(second.session_id).not.toBe(first.session_id);
+  });
+
+  it('creates and analyzes the canonical locked scale default', async () => {
+    const sessions = new MemorySessionAdapter();
+    const client = await connectClient(sessions, []);
+    const created = structured(await client.callTool({
+      name: 'create_session',
+      arguments: { idempotency_key: IDEMPOTENCY_KEY },
+    }));
+
+    const analysis = structured(await client.callTool({
+      name: 'analyze_session',
+      arguments: { session_id: created.session_id },
+    }));
+
+    expect(analysis.declared_key).toMatchObject({
+      root: 'C',
+      scale_id: 'minor-pentatonic',
+      locked: true,
+    });
   });
 
   it('rejects a guessable idempotency key before it reaches storage', async () => {

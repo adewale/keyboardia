@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react';
 import type { Track } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
+import { formatPanNotation, normalizedPanToPercent, parsePanNotation } from '../shared/track-pan';
 import { getInstrumentCategory, getInstrumentName } from './sample-constants';
 import { TrackMeter } from './TrackMeter';
 import './MixerPanel.css';
@@ -11,6 +12,7 @@ interface MixerPanelProps {
   onToggleMute: (trackId: string) => void;
   onToggleSolo: (trackId: string) => void;
   onSetVolume: (trackId: string, volume: number) => void;
+  onSetPan: (trackId: string, pan: number) => void;
   onSetSwing?: (trackId: string, swing: number) => void;
 }
 
@@ -24,6 +26,7 @@ export const MixerPanel = memo(function MixerPanel({
   onToggleMute,
   onToggleSolo,
   onSetVolume,
+  onSetPan,
   onSetSwing,
 }: MixerPanelProps) {
   return (
@@ -41,6 +44,7 @@ export const MixerPanel = memo(function MixerPanel({
             onToggleMute={() => onToggleMute(track.id)}
             onToggleSolo={() => onToggleSolo(track.id)}
             onSetVolume={(volume) => onSetVolume(track.id, volume)}
+            onSetPan={(pan) => onSetPan(track.id, pan)}
             onSetSwing={onSetSwing ? (swing) => onSetSwing(track.id, swing) : undefined}
           />
         ))}
@@ -55,6 +59,7 @@ interface MixerChannelProps {
   onToggleMute: () => void;
   onToggleSolo: () => void;
   onSetVolume: (volume: number) => void;
+  onSetPan: (pan: number) => void;
   onSetSwing?: (swing: number) => void;
 }
 
@@ -64,11 +69,14 @@ const MixerChannel = memo(function MixerChannel({
   onToggleMute,
   onToggleSolo,
   onSetVolume,
+  onSetPan,
   onSetSwing,
 }: MixerChannelProps) {
   const category = getInstrumentCategory(track.sampleId);
   const volume = track.volume ?? 1;
   const swing = track.swing ?? 0;
+  const pan = track.pan ?? 0;
+  const panPercent = normalizedPanToPercent(pan);
   const isMuted = track.muted;
   const isSoloed = track.soloed;
   const isAudible = anySoloed ? isSoloed : !isMuted;
@@ -80,6 +88,11 @@ const MixerChannel = memo(function MixerChannel({
   const handleSwingChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onSetSwing?.(Number(e.target.value));
   }, [onSetSwing]);
+
+  const handlePanChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const normalized = parsePanNotation(`pan:${e.target.value}`);
+    if (normalized !== null) onSetPan(normalized);
+  }, [onSetPan]);
 
   return (
     <div
@@ -150,6 +163,25 @@ const MixerChannel = memo(function MixerChannel({
       {/* Volume percentage */}
       <div className="channel-volume-value">
         {Math.round(volume * 100)}%
+      </div>
+
+      {/* Pan is normalized in state/engine and converted to percent only here. */}
+      <div className="channel-pan">
+        <label className="pan-label" htmlFor={`mixer-pan-${track.id}`}>Pan</label>
+        <input
+          id={`mixer-pan-${track.id}`}
+          type="range"
+          className="pan-slider"
+          min="-100"
+          max="100"
+          step="1"
+          value={panPercent}
+          onChange={handlePanChange}
+          title={`Pan: ${panPercent}% (${formatPanNotation(pan)})`}
+          aria-label={`${track.name} pan`}
+          aria-valuetext={`${panPercent}%`}
+        />
+        <span className="pan-value">{panPercent}%</span>
       </div>
 
       {/* Per-track swing (if handler provided) */}

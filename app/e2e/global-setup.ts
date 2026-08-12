@@ -188,8 +188,11 @@ export async function waitForAppReady(page: Page): Promise<void> {
   const isLanding = await landingPage.isVisible().catch(() => false);
 
   if (isLanding) {
-    // Click the "Start" button to create a session and enter the sequencer
-    const startButton = page.locator('.landing-btn.primary, button:has-text("Start"), button:has-text("Create")').first();
+    // Enter the ordinary blank-session path explicitly. The landing page also
+    // offers "Start with Groove"; broad `:has-text("Start")` matching would
+    // select that earlier button and silently contaminate tests that rely on a
+    // fresh, empty session.
+    const startButton = page.getByRole('button', { name: 'Start Session', exact: true });
     await startButton.waitFor({ state: 'visible', timeout: 5000 });
     await startButton.click();
 
