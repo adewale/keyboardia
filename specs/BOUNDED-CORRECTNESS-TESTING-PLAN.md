@@ -106,7 +106,8 @@ seeds, ≤ 60 s added. **Build**: 4 d. **Impact**: 9.
 ### B3 — Playback × mutation race lane
 **Half**: musical. **What**: the audio equivalent of write-during-checkpoint:
 a remote mutation landing while the lookahead scheduler
-(`audio/scheduler.ts`, 25 ms timer / 100 ms window) has notes in flight —
+(`audio/scheduler.ts`, 25 ms timer / 150 ms window — `SCHEDULE_AHEAD_SEC =
+0.15`; several older repo docs still say 100 ms) has notes in flight —
 tempo change mid-window, `stepCount` change mid-loop, instrument swap
 mid-note, track delete with a tied note sounding, stop/start churn. No test
 races these today. Drive the real scheduler and engine through the existing

@@ -20,7 +20,7 @@ ran in-process for every integration result below.
 | B4 musical conservation oracles | **Done — 10 tests, 3 subjects** | `scale-entry.property.test.ts`, `midi-core.roundtrip.property.test.ts`, `session-render-conservation.render.test.ts` |
 | B5 soak + seed promotion | **Done — 242 fresh seeds, 0 to promote** | `FUZZ_SEEDS` binding in `test/integration/vitest.config.ts` |
 | B6 kill-validation | **Done — 6/6 kills** | sabotage log below |
-| B7 client reconnect-boundary lane | **Folded into B1's client half** (3 tests cross the reconnect boundary with schedules) | `src/sync/seq-regression.test.ts` |
+| B7 client reconnect-boundary lane | **Partially folded into B1's client half** (2 of its 3 tests cross the reconnect boundary; scripted scenarios, not generated schedules) | `src/sync/seq-regression.test.ts` |
 | B8 deviation inventory | **Done** | `docs/STORAGE-ARCHITECTURE.md` §Paved-Path Deviation Inventory |
 
 Gates after all additions: `validate:test-antipatterns` ✅ (315 files),
@@ -54,9 +54,11 @@ The full causal chain is now pinned by green tests at each link:
    past the old high-water mark**, at which point it self-heals.
 
 Phase-26 selective clearing was analyzed but not end-to-end tested:
-`clearOnSnapshot` only deletes *confirmed* mutations and cross-epoch
-comparisons err toward keeping them until the age fallback — so mis-clear
-looks unlikely by reading, but that is analysis, not evidence.
+`clearOnSnapshot` only deletes *confirmed* mutations, and cross-epoch
+comparisons err toward keeping them indefinitely (its age-fallback branch is
+unreachable when both serverSeqs are defined; aging-out happens via the
+separate interval-driven `pruneOldMutations()`) — so mis-clear looks
+unlikely by reading, but that is analysis, not evidence.
 
 **User-visible symptom to watch for**: a client in a busy session
 reconnecting every few seconds after a server restart/eviction, healing on
@@ -140,6 +142,11 @@ harness failure from subject failure:
 
 ## Not done / left open
 
+- **`fc.scheduler()` was not used.** The plan named it as the exploration
+  mechanism for B2/B3/B7; the delivered lanes hand-roll seeded schedules
+  (`mulberry32`) instead — which explore but do not *shrink*. The receipt's
+  original "Done" labels understated this substitution; the shrinkability
+  upgrade is now tracked as T1 of the PBT program (issue #97).
 - **Nightly CI wiring** for the soak (the mechanism — `FUZZ_SEEDS` — is in
   place and exercised; adding the workflow file is a deliberate follow-up).
 - **Historical-commit archaeology** beyond the tempo-reformula re-find
@@ -151,3 +158,61 @@ harness failure from subject failure:
   reset `SyncHealth` on reconnect) are one decision and three small diffs
   away, and the inverse-kill test will flag the server half the moment it
   changes.
+
+## Addendum — multi-agent audit remediation (2026-08-13)
+
+A five-dimension adversarial audit of this branch (simplicity, oracle
+precision, harness correctness, doc-claims accuracy, blast radius; ~60 doc
+claims verified, 56 held) produced confirmed findings that were then fixed
+in place:
+
+- **Oracle precision (high)**: the negative-ack silence test used `ack: 50`
+  against `serverSeq = 1` — gap −49, whose *magnitude* is also under the
+  50 threshold, so a `Math.abs(ackGap)`-based detector would have passed it.
+  Now `ack: 100` (gap −99): the test discriminates the sign, and the
+  re-run `abs()` sabotage fails it as required.
+- **Harness (high)**: a malformed `FUZZ_SEEDS` override (`"abc"`, `","` —
+  or `"0xc0ffee"`, which radix-10 `parseInt` coerces to 0 despite being a
+  committed seed) silently reduced both fuzz lanes to a zero-seed vacuous
+  pass (reproduced: 3 ms green run). Parsing is now fail-closed
+  (`parseSeedOverride` in `src/test/seeded-random.ts`).
+- **Harness (medium)**: `waitFor`'s timeout left a dangling frame-consuming
+  waiter that could swallow frames a later `absent()` asserts about; it now
+  removes itself. `absent()` was simplified to pure buffer inspection,
+  which is also immune to waiter interference.
+- **Calibration (medium)**: the race lane's `>= 5` trigger floor became a
+  liveness assertion (last trigger in the final quarter of the run); the
+  tempo generator now respects `MAX_TEMPO`; the render lane asserts the
+  refractory's two bounds explicitly and compares onset times against a
+  literal grid rather than the subject's own `getStepDuration`. The
+  auditor's suggested near-duplicate threshold (1.0× min step duration)
+  was itself refuted by running it: seed 777 produces a legitimate
+  38.5 ms gap because consecutive BPM-change rebases compound compression
+  beyond any single-change derivation. Final form: a 1 ms exact
+  double-fire epsilon, with catch-up-burst pathologies owned by the
+  never-into-the-past oracle (which is what killed the historical
+  sabotage).
+- **Hygiene (low)**: `mulberry32`/`randInt` re-declarations replaced with
+  imports from `src/test/seeded-random.ts` (three files); the scheduler
+  race lane resets the instance registry per case and stops the scheduler
+  in `afterEach`; integration teardowns await the DO's async close work;
+  two tautological assertions removed; the redundant monotonicity oracle
+  folded into the near-duplicate oracle (which implies it).
+- **Docs**: this receipt's B7 row corrected (2 of 3 tests cross the
+  reconnect boundary; scripted, not generated schedules); the
+  `fc.scheduler()` substitution disclosed under "Not done"; the plan's
+  lookahead figure corrected to 150 ms (`SCHEDULE_AHEAD_SEC = 0.15` — the
+  100 ms figure also persists in older docs: `README.md`,
+  `specs/ARCHITECTURE.md`, `specs/AUDIOWORKLET-ENGINE.md`, follow-up
+  material); the deviation inventory's allocator row now points at the
+  real covering test (`mcp-adapter.test.ts`).
+
+Adversarially refuted (recorded so they are not re-raised): the `absent()`
+waiter type-cast was *correct* (both cleanup paths verified) — replaced
+anyway because the buffer-only form is simpler and stronger; the overlap
+fuzz's quiescence predicate cannot pass wrongly (reused seqs stall it into
+timeout; the strict per-client equality is safe because the DO serializes
+one identical frame to every socket); the 400 ms absence window rests on
+causal ordering (ack check precedes mutation dispatch), not timing luck;
+`swing: 0` in the race fixture is not load-bearing (all fixture steps are
+even, so the swing path is dead there either way).

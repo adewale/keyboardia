@@ -29,6 +29,7 @@ import {
   evictDurableObject,
 } from 'cloudflare:test';
 import { it, expect } from 'vitest';
+import { parseSeedOverride } from '../../src/test/seeded-random';
 
 interface Env {
   SESSIONS: KVNamespace;
@@ -263,10 +264,14 @@ it('multi-client: KV flushes only when the LAST client disconnects', async () =>
 // masquerade as an oracle failure (a graceful-disconnect op alone may poll
 // KV for up to 2s, so the per-seed budget is generous).
 const DEFAULT_SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee, 2024, 555, 31337, 4096];
-const FUZZ_SEED_OVERRIDE = (env as unknown as { FUZZ_SEEDS?: string }).FUZZ_SEEDS;
-const FUZZ_SEEDS = FUZZ_SEED_OVERRIDE
-  ? FUZZ_SEED_OVERRIDE.split(',').map((s) => Number.parseInt(s.trim(), 10)).filter(Number.isFinite)
-  : DEFAULT_SEEDS;
+// Fail-closed parse: a malformed override (e.g. "abc", or "0xc0ffee" which
+// parseInt would silently coerce to 0) throws instead of degrading this lane
+// to a zero-seed vacuous pass. NOTE: the FUZZ_SEEDS binding drives BOTH this
+// lane and overlap-fuzz.test.ts.
+const FUZZ_SEEDS = parseSeedOverride(
+  (env as unknown as { FUZZ_SEEDS?: string }).FUZZ_SEEDS,
+  DEFAULT_SEEDS,
+);
 const FUZZ_TIMEOUT_MS = Math.max(120_000, FUZZ_SEEDS.length * 12_000);
 
 it('fuzz: read-your-writes through the DO holds across any interleaving; KV converges at write/disconnect points', async () => {

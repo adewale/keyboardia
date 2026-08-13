@@ -13,6 +13,7 @@
 import { describe, expect, it } from 'vitest';
 import { renderProceduralPattern, type ProceduralHit } from '../test/session-render';
 import { getStepDuration } from './timing-calculations';
+import { mulberry32 } from '../test/seeded-random';
 
 /** RMS-envelope onset detector: rising edges above threshold with a refractory gap. */
 function detectOnsets(
@@ -50,16 +51,6 @@ function detectOnsets(
   return onsets;
 }
 
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 /** Seeded pattern of kick hits on steps spaced ≥ 2 apart (clean decay separation). */
 function seededPattern(seed: number, maxStep: number): number[] {
   const rng = mulberry32(seed);
@@ -84,17 +75,29 @@ describe('rendered audio conserves scheduled onsets', () => {
     const hits: ProceduralHit[] = steps.map((step) => ({ step, sampleId: 'kick' }));
     const rendered = await renderProceduralPattern({ hits, tempo, seed });
 
-    // Refractory gap: 1.6 steps — wider than the kick's internal second bump
-    // (~155 ms), narrower than the guaranteed 2-step hit spacing.
-    const onsets = detectOnsets(rendered.channels[0], rendered.sampleRate, stepDuration * 1.6);
+    // The kick's exp(-8t) envelope re-crosses the 25% RMS threshold until
+    // ~0.18 s, so the refractory must clear that decay tail AND stay under
+    // the guaranteed 2-step hit spacing. Assert both bounds explicitly so a
+    // tempo or fixture change fails loudly here rather than silently
+    // mis-detecting onsets (at 180 BPM, 1.6 steps would dip below the tail).
+    const KICK_DECAY_TAIL_SEC = 0.18;
+    const refractory = stepDuration * 1.6;
+    expect(refractory, 'refractory clears the kick decay tail').toBeGreaterThan(KICK_DECAY_TAIL_SEC);
+    expect(refractory, 'refractory under the 2-step hit spacing').toBeLessThan(2 * stepDuration);
+    const onsets = detectOnsets(rendered.channels[0], rendered.sampleRate, refractory);
 
     expect(onsets.length, `seed=${seed} onset count for steps [${steps.join(',')}]`).toBe(steps.length);
     for (const [i, step] of steps.entries()) {
-      const scheduled = step * stepDuration;
+      // Literal 1/8 s per 16th step at 120 BPM — deliberately NOT
+      // getStepDuration, which the renderer itself uses to place hits;
+      // sharing the subject's arithmetic would shift both sides of the
+      // comparison equally and hide a step-duration regression. Tolerance is
+      // 2x the detector's 5 ms window quantization.
+      const scheduled = step * 0.125;
       expect(
         Math.abs(onsets[i] - scheduled),
         `seed=${seed} hit ${i} (step ${step}) timing`,
-      ).toBeLessThan(0.025);
+      ).toBeLessThan(0.010);
     }
   });
 });

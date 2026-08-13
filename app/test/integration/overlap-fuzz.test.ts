@@ -25,35 +25,26 @@
  */
 import { env, SELF } from 'cloudflare:test';
 import { it, expect, afterEach } from 'vitest';
+import { mulberry32, randInt, parseSeedOverride } from '../../src/test/seeded-random';
 
 interface Env {
   SESSIONS: KVNamespace;
   LIVE_SESSIONS: DurableObjectNamespace;
+  /** Comma-separated decimal soak seeds; empty/absent = committed regression seeds. */
+  FUZZ_SEEDS?: string;
 }
 
 const LIVE_SESSIONS = (env as unknown as Env).LIVE_SESSIONS;
 const stubFor = (id: string) => LIVE_SESSIONS.get(LIVE_SESSIONS.idFromName(id));
 
-// Same seed-override mechanism as the state-machine fuzz (vitest.config.ts).
-const SEED_OVERRIDE = (env as unknown as { FUZZ_SEEDS?: string }).FUZZ_SEEDS;
-const SEEDS = SEED_OVERRIDE
-  ? SEED_OVERRIDE.split(',').map((s) => Number.parseInt(s.trim(), 10)).filter(Number.isFinite)
-  : [11, 23, 37];
+// Soak-mode override. NOTE: the FUZZ_SEEDS binding (vitest.config.ts) drives
+// BOTH this lane and state-machine-fuzz.test.ts; the parse fails closed so a
+// malformed override can never become a zero-seed vacuous pass.
+const SEEDS = parseSeedOverride((env as unknown as Env).FUZZ_SEEDS, [11, 23, 37]);
 const WAVES_PER_SEED = 3;
 const OPS_PER_CLIENT_PER_WAVE = 4;
 const CLIENTS = 3;
 const TIMEOUT_MS = Math.max(60_000, SEEDS.length * 20_000);
-
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const randInt = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
 
 const track = (id: string) => ({
   id,
@@ -69,11 +60,16 @@ const track = (id: string) => ({
 });
 
 const sockets: WebSocket[] = [];
-afterEach(() => {
+// ws.close() starts async DO work (webSocketClose -> last-player KV flush)
+// that outlives synchronous teardown; under singleWorker + shared storage it
+// would land inside the next test. Close, then give it a beat to settle.
+async function closeAllSockets(reason: string): Promise<void> {
   for (const ws of sockets.splice(0)) {
-    try { ws.close(1000, 'test done'); } catch { /* already closed */ }
+    try { ws.close(1000, reason); } catch { /* already closed */ }
   }
-});
+  await new Promise((r) => setTimeout(r, 20));
+}
+afterEach(() => closeAllSockets('test done'));
 
 interface ServerMsg {
   type: string;
@@ -259,9 +255,10 @@ it('concurrent mutation waves conserve sequence numbers and converge on every cl
     // ORACLE 4 — server structural invariants.
     const dbg = await stub.fetch(`http://do/api/sessions/${id}/debug`);
     const invariants = ((await dbg.json()) as { invariants: { valid: boolean; violations: string[] } }).invariants;
+    // (`invariants.valid` is defined as violations.length === 0, so asserting
+    // the array is the same check with the better failure message.)
     expect(invariants.violations, `seed=${seed} invariant violations`).toEqual([]);
-    expect(invariants.valid, `seed=${seed} invariants valid`).toBe(true);
 
-    for (const ws of sockets.splice(0)) ws.close(1000, 'seed done');
+    await closeAllSockets('seed done');
   }
 }, TIMEOUT_MS);

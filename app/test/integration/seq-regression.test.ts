@@ -28,10 +28,13 @@ const LIVE_SESSIONS = (env as unknown as Env).LIVE_SESSIONS;
 const stubFor = (id: string) => LIVE_SESSIONS.get(LIVE_SESSIONS.idFromName(id));
 
 const sockets: WebSocket[] = [];
-afterEach(() => {
+afterEach(async () => {
   for (const ws of sockets.splice(0)) {
     try { ws.close(1000, 'test done'); } catch { /* already closed */ }
   }
+  // ws.close() starts async DO work (webSocketClose -> last-player KV flush)
+  // that outlives synchronous teardown under singleWorker + shared storage.
+  await new Promise((r) => setTimeout(r, 20));
 });
 
 async function createSession(): Promise<string> {
@@ -73,25 +76,27 @@ function listen(ws: WebSocket) {
       const idx = buf.findIndex(pred);
       if (idx >= 0) return Promise.resolve(buf.splice(idx, 1)[0]);
       return new Promise((resolve, reject) => {
-        const timer = setTimeout(
-          () => reject(new Error(`timeout waiting for ${tag}`)),
-          timeoutMs,
-        );
-        waiters.push({ pred, resolve, timer });
+        const entry = { pred, resolve, timer: setTimeout(() => {
+          // Remove the waiter on timeout: a stale entry would keep consuming
+          // matching frames forever (the handler routes each frame to the
+          // first matching waiter and never buffers it), which could swallow
+          // a frame a later absent() check is asserting about.
+          const i = waiters.indexOf(entry);
+          if (i >= 0) waiters.splice(i, 1);
+          reject(new Error(`timeout waiting for ${tag}`));
+        }, timeoutMs) };
+        waiters.push(entry);
       });
     },
-    /** Bounded absence check: true if no buffered/incoming frame matches within windowMs. */
-    absent(pred: (m: ServerMsg) => boolean, windowMs: number): Promise<boolean> {
-      if (buf.some(pred)) return Promise.resolve(false);
-      return new Promise((resolve) => {
-        const timer = setTimeout(() => {
-          const i = waiters.findIndex((w) => w.resolve === hit);
-          if (i >= 0) waiters.splice(i, 1);
-          resolve(true);
-        }, windowMs);
-        const hit = () => { clearTimeout(timer); resolve(false); };
-        waiters.push({ pred, resolve: hit as unknown as (m: ServerMsg) => void, timer });
-      });
+    /**
+     * Bounded absence check: wait out the window, then inspect the buffer.
+     * No waiter is registered — the handler buffers every unclaimed frame,
+     * so buffer inspection alone is the strongest form of this check (it
+     * cannot be defeated by another waiter consuming the frame).
+     */
+    async absent(pred: (m: ServerMsg) => boolean, windowMs: number): Promise<boolean> {
+      await new Promise((r) => setTimeout(r, windowMs));
+      return !buf.some(pred);
     },
   };
 }
@@ -152,10 +157,14 @@ it('negative ack gap is silent; the same detector proves positive gaps push a sn
   ws.send(setTempo(101, 1));
   await inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === 101, 'first tempo');
 
-  // A client from the pre-eviction epoch acks 50 while serverSeq is 1:
-  // ackGap = 1 - 50 = -49. The threshold check (`ackGap > 50`) is false, so
-  // the server does nothing — no snapshot, no log, no resync.
-  ws.send(setTempo(102, 2, 50));
+  // A client from the pre-eviction epoch acks 100 while serverSeq is 1:
+  // ackGap = 1 - 100 = -99. The threshold check (`ackGap > 50`) is false, so
+  // the server does nothing — no snapshot, no log, no resync. The magnitude
+  // (99) deliberately EXCEEDS the threshold so this test discriminates the
+  // sign: a magnitude-based detector (`Math.abs(ackGap) > 50`) would push a
+  // snapshot here and fail this assertion. 99 is also the realistic worst
+  // case — serverSeq rewinds to the last persisted multiple of 100.
+  ws.send(setTempo(102, 2, 100));
   await inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === 102, 'negative-ack tempo');
   expect(
     await inbox.absent((m) => m.type === 'snapshot', 400),
@@ -169,6 +178,7 @@ it('negative ack gap is silent; the same detector proves positive gaps push a sn
     await inbox.waitFor((m) => m.type === 'tempo_changed' && m.seq === i, `seq ${i}`);
   }
   ws.send(setTempo(150, 54, 0));
-  const snap = await inbox.waitFor((m) => m.type === 'snapshot', 'recovery snapshot', 5_000);
-  expect(snap.type).toBe('snapshot');
+  // The await IS the assertion: waitFor only resolves on a snapshot frame
+  // and rejects on timeout, proving the positive-gap path pushes one.
+  await inbox.waitFor((m) => m.type === 'snapshot', 'recovery snapshot pushed for positive ack gap', 5_000);
 }, 60_000);
