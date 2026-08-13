@@ -1,7 +1,9 @@
 # Bounded Correctness Testing Plan
 
 **Date**: 2026-08-13
-**Status**: Proposed (v2 — supersedes v1 of this file, which proposed
+**Status**: Executed locally in scoped form on 2026-08-13 — results,
+findings, and exact numbers in
+`specs/research/BOUNDED-PLAN-EXECUTION-2026-08.md`. Originally: Proposed (v2 — supersedes v1 of this file, which proposed
 production telemetry alongside test lanes; that direction was **declined in
 review on 2026-08-13**. This version is bounded by construction: every task
 is test-lane or docs only, changes **zero shipped code paths**, and its

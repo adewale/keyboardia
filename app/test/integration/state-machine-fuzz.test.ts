@@ -256,8 +256,21 @@ it('multi-client: KV flushes only when the LAST client disconnects', async () =>
 // Fuzz: random interleavings of the whole state machine
 // =============================================================================
 
+// Fixed regression seeds by default; a soak run overrides them via the
+// FUZZ_SEEDS binding (see vitest.config.ts). A seed that fails in a soak
+// gets promoted into this list with a comment naming what it caught.
+// The timeout scales with seed count so a soak batch cannot time out and
+// masquerade as an oracle failure (a graceful-disconnect op alone may poll
+// KV for up to 2s, so the per-seed budget is generous).
+const DEFAULT_SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee, 2024, 555, 31337, 4096];
+const FUZZ_SEED_OVERRIDE = (env as unknown as { FUZZ_SEEDS?: string }).FUZZ_SEEDS;
+const FUZZ_SEEDS = FUZZ_SEED_OVERRIDE
+  ? FUZZ_SEED_OVERRIDE.split(',').map((s) => Number.parseInt(s.trim(), 10)).filter(Number.isFinite)
+  : DEFAULT_SEEDS;
+const FUZZ_TIMEOUT_MS = Math.max(120_000, FUZZ_SEEDS.length * 12_000);
+
 it('fuzz: read-your-writes through the DO holds across any interleaving; KV converges at write/disconnect points', async () => {
-  const SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee, 2024, 555, 31337, 4096];
+  const SEEDS = FUZZ_SEEDS;
 
   for (const seed of SEEDS) {
     const rng = mulberry32(seed);
@@ -353,4 +366,4 @@ it('fuzz: read-your-writes through the DO holds across any interleaving; KV conv
 
     if (conn) conn.ws.close(1000, 'fuzz done');
   }
-}, 120_000);
+}, FUZZ_TIMEOUT_MS);
