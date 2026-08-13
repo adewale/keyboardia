@@ -1,0 +1,15 @@
+{
+  "id": "transpose-escape",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "differentPixels": 3263,
+  "rawDifferentPixels": 6041,
+  "maxObservedChannelDelta": 210,
+  "beforeSha256": "fd390decd12c8c09175b8059d883cc33490fe54a4fe058e61e063adb8357d17c",
+  "afterSha256": "ddbcd566880a9f3b34a57003dd578d41970d5e0e74a33cb3c0f344a040be9f94",
+  "diffSha256": "8e119e06e23db240e29923473a1c61e39261ec461335af61d1c1373499768f32"
+}

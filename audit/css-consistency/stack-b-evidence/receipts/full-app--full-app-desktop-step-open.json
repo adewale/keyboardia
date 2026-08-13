@@ -1,0 +1,15 @@
+{
+  "id": "full-app-desktop-step-open",
+  "group": "full-app",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "differentPixels": 48542,
+  "rawDifferentPixels": 110280,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "5af15f257e20fcdbde0e99a1cead7505d0182bb4a8418f2056b10f30ecf4cef2",
+  "afterSha256": "6e61b518032e3ab40ce6b57bd4cac7d057cfdb344f0938576dabfe017bb92d7f",
+  "diffSha256": "3bbe1bf476d55d96c6a335f70e56e6fa81c0767643996f0564fbe38569e94be8"
+}

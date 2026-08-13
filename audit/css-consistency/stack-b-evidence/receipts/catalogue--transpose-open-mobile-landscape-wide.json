@@ -1,0 +1,15 @@
+{
+  "id": "transpose-open-mobile-landscape-wide",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 844,
+    "height": 390
+  },
+  "differentPixels": 15785,
+  "rawDifferentPixels": 45729,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "53c0fbfc9145bc1689a1459370574a9a8d3b9b6de09cff3d16ff2fc0905db4bb",
+  "afterSha256": "6bba55c0eb2b99b8b64620bba58d99192cefe7ea872638f5ae0125de6512377d",
+  "diffSha256": "055c3b01cfb1983906d998e2361db426d742334f581b40df7a87b6f30bc0014b"
+}

@@ -228,6 +228,40 @@ result, not a hidden benefit.
   repair the fixture or the implementation; do not update snapshots until the
   source of the disagreement is understood and approved.
 
+#### Lessons learned from the Stack B candidate
+
+The complete dropdown candidate is implemented in one maintainer-requested
+draft PR, with merge blocked on visual approval. Its evidence added four
+lessons before approval:
+
+1. **A responsive component state is not proof that the product exposes that
+   component in the same mode.** The catalogue can render the shared portalled
+   dropdown at landscape dimensions, but production landscape uses a native
+   step-count select and transpose buttons inside `TrackDrawer`. Full-product
+   portrait and landscape screenshots are therefore identity canaries, not
+   approved-pixel baselines for this dropdown family.
+2. **Expected-difference tests can be stricter than snapshots.** The Stack B
+   contract keeps ARIA, every visible rectangle, all non-decorative computed
+   properties, and pixels outside a target-plus-halo mask exact. An image update
+   alone cannot authorize a layout or behavior regression.
+3. **Stabilize unrelated asynchronous UI by cause.** A static production build
+   has no WebSocket, so connection text can change between geometry capture and
+   screenshot. The canary removes only the live presence/status region from
+   layout; it does not add timing sleeps or broaden pixel tolerances.
+4. **Review crops must ignore zero-area descendants.** CSS descendants of a
+   hidden parent can retain `display:flex` while producing a 0×0 rectangle.
+   Target-region capture now requires positive geometry, preventing invisible
+   controls from turning an identity screenshot into a one-pixel crop.
+
+Candidate CSS scorecard (subject to visual approval): product files remain 41;
+product declarations increase from 5,036 to 5,050; product CSS lines increase
+from 10,987 to 11,009; the shared dropdown recipe increases by one declaration
+from 127 to 128; raw colors outside `index.css` fall from 346 to 341; duplicate
+dropdown declarations remain zero; `!important` remains 20. The declaration
+and line increases are the explicit maintenance cost of adding visual depth,
+focus color, and feature-specific tokens rather than hiding new values as raw
+component colors.
+
 #### Consequences for Stack C
 
 - Stack A does **not** make Stack C implementation-ready. It strengthens the
@@ -734,9 +768,11 @@ and behavior—not pixel similarity.
 2. **Complete — A checkpoint:** the scorecard above shows net CSS deletion and
    zero remaining duplicate component declarations, so the dropdown pilot is a
    go; broader abstraction is not implied.
-3. **Next — Dropdown B eligibility:** close issue #93's dropdown-only brief,
-   accessibility, density, and touch decisions. Run one independent B pilot
-   with reviewed baselines in the same PR, then make a B stop/go decision.
+3. **In review — Dropdown B pilot:** the dropdown-only brief, accessibility,
+   density, touch decision, deterministic expected-difference contract, and 25
+   before/after pairs are implemented in one maintainer-requested draft PR.
+   Merge and any later Stack B surface remain blocked on visual approval and a
+   recorded stop/revise/continue decision.
 4. **C0 in parallel, per surface:** merge only the viewport, FX, picker-
    characterization, or touch decision needed by that surface; then implement
    it as one vertical slice. Do not make all A/B wait for all C0 decisions.

@@ -1,0 +1,15 @@
+{
+  "id": "step-count-open-mobile-landscape-compact",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 480,
+    "height": 320
+  },
+  "differentPixels": 13320,
+  "rawDifferentPixels": 40774,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "22b81a9cebc4e18b23a556ca4bcc16662583f0f94c5d1c746a070c1cc47a28c0",
+  "afterSha256": "09f8066250933c46e2dfc17e25c5463ad9b89e80b97fe1bd52329da5b486ab59",
+  "diffSha256": "7879b3eabfec137a808e58f5d7902ac9494ca6f91d7d436c02bc0792370c32b4"
+}

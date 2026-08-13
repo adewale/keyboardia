@@ -1,0 +1,15 @@
+{
+  "id": "step-count-open-reduced-motion",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "differentPixels": 36795,
+  "rawDifferentPixels": 83599,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "bb19fa4eb894378521fb227eb6edd305acd0bcdf8d7c8f91dd6c97cd72e2d4ac",
+  "afterSha256": "05cfc3dc0042a1ce8d7c050f32fd46d0fd995fa4e1405fd5497734763d652aa2",
+  "diffSha256": "9b2412efda0f1e1b565e41641066bc27c5772800287d6f52adee17274a477016"
+}

@@ -63,6 +63,22 @@
   --color-accent-hover: #f07048;      /* Accent hover state */
   --color-accent-muted: rgba(232, 90, 48, 0.2); /* Subtle accent backgrounds */
   --color-accent-glow: rgba(232, 90, 48, 0.6);  /* Glow effects */
+  /* Stack B dropdown pilot. Feature-specific until another component shares
+     both these values and their instrument-control meaning. */
+  --dropdown-control-background: linear-gradient(180deg, #34343a 0%, #242429 100%) #242429;
+  --dropdown-control-border: #4f4f58;
+  --dropdown-control-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 2px 4px rgba(0, 0, 0, 0.32);
+  --dropdown-control-hover-background: linear-gradient(180deg, #3d3d44 0%, #2c2c31 100%) #2c2c31;
+  --dropdown-control-open-background: linear-gradient(180deg, #402923 0%, #2a201e 100%) #2a201e;
+  --dropdown-menu-background: linear-gradient(180deg, #2c2c32 0%, #1d1d21 100%) #1d1d21;
+  --dropdown-menu-border: #54545e;
+  --dropdown-menu-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 14px 32px rgba(0, 0, 0, 0.55);
+  --dropdown-option-hover-background: linear-gradient(180deg, #3b3b42 0%, #303036 100%) #333339;
+  --dropdown-option-selected-background:
+    linear-gradient(90deg, var(--color-accent) 0 3px, transparent 3px),
+    linear-gradient(90deg, rgba(232, 90, 48, 0.26) 0%, rgba(232, 90, 48, 0.1) 100%)
+    rgba(232, 90, 48, 0.2);
+  --dropdown-option-secondary-text: rgba(255, 255, 255, 0.68);
   /* Exact legacy channel fallback used by selection glow. This deliberately
      does not normalize to --color-accent in Stack A. */
   --color-selection-glow-rgb: 255, 160, 100;

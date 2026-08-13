@@ -30,6 +30,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'stack-b-chromium',
+      testMatch: 'stack-b-visual.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'stack-a-mobile-webkit',
       testMatch: 'stack-a-mobile-behavior.spec.ts',
       use: { ...devices['iPhone 13'], browserName: 'webkit', hasTouch: true },

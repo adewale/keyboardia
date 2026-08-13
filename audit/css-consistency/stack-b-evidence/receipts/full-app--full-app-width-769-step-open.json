@@ -1,0 +1,15 @@
+{
+  "id": "full-app-width-769-step-open",
+  "group": "full-app",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 769,
+    "height": 1024
+  },
+  "differentPixels": 50782,
+  "rawDifferentPixels": 115374,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "2f174b200745b8e66b17fb796354d637d9fdec17499494acbd9238e8bd3507e6",
+  "afterSha256": "010e624adb94193b74cc34247810dcb3fa4df598bfeb4e87f787959e596e6c11",
+  "diffSha256": "8aa3b6a1533ddb608854151118ee2fa57d17bff3c3aca8bb270bd301f9464acf"
+}

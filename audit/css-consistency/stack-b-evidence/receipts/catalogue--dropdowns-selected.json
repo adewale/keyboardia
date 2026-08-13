@@ -1,0 +1,15 @@
+{
+  "id": "dropdowns-selected",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "differentPixels": 2609,
+  "rawDifferentPixels": 5942,
+  "maxObservedChannelDelta": 84,
+  "beforeSha256": "752cbfe9439feb4b90df6b3d7b36615cefc4eccf8a97c14a0235c9ea753a44e3",
+  "afterSha256": "d5c4397ca4654c079480da8eaa0d3b2ef3878a0445fc0293bcc517c6e9bd7eaa",
+  "diffSha256": "1366d35b1a2d90b04e6fe092a324acb338510bc53ad1cda71ae77577d3b07c88"
+}

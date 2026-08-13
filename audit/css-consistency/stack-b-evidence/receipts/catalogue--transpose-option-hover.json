@@ -1,0 +1,15 @@
+{
+  "id": "transpose-option-hover",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "differentPixels": 31400,
+  "rawDifferentPixels": 74383,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "c03da6d09e30ff9f607369bbc1fad2022ebed36e4e253ceb91eb2aaf1a09aedf",
+  "afterSha256": "150bfec8449a39b1ebc38eb4d6f60b783df6deb943905dbd6d77c806a1b3dab2",
+  "diffSha256": "16c87177a0d9d026e8542d75b779031899a1a42a256f44fc24b7d91fd54f1849"
+}

@@ -1,0 +1,15 @@
+{
+  "id": "transpose-open",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "differentPixels": 31937,
+  "rawDifferentPixels": 74369,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "2262a20e556f5fac16a948bc3288a4aba78d2c914ce2476863b363f38db71b25",
+  "afterSha256": "c47e2c6b2637505fc16edde7c065d6ec4d6e4236dadc59f80cdc5d5db4289abf",
+  "diffSha256": "b372b3f702a11b6ae03c4b77f221dfba6e88084b465a87ce20497fd68d9fd23f"
+}

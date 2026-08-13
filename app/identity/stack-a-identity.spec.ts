@@ -1,5 +1,6 @@
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { stackAStates, type StackAAction, type StackAExpectation } from './manifest';
+import { stackBStateIdSet } from './stack-b-manifest';
 import { comparePngs } from '../scripts/png-identity.mjs';
 
 const styleProperties = [
@@ -180,7 +181,7 @@ async function attachDifference(
 }
 
 test.describe('Stack A base-versus-head identity', () => {
-  for (const state of stackAStates) {
+  for (const state of stackAStates.filter((candidate) => !stackBStateIdSet.has(candidate.id))) {
     test(`${state.id} @stack-a-identity`, async ({ page }, testInfo) => {
       const base = await captureContract(page, 'base', state);
       const head = await captureContract(page, 'head', state);

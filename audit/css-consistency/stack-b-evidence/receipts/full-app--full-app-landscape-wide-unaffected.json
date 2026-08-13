@@ -1,0 +1,15 @@
+{
+  "id": "full-app-landscape-wide-unaffected",
+  "group": "full-app",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 844,
+    "height": 390
+  },
+  "differentPixels": 0,
+  "rawDifferentPixels": 0,
+  "maxObservedChannelDelta": 0,
+  "beforeSha256": "11c15d38ca7c3ec180e36486edcbd922640cb605c510ad3042183cd05da477dc",
+  "afterSha256": "11c15d38ca7c3ec180e36486edcbd922640cb605c510ad3042183cd05da477dc",
+  "diffSha256": "b66789c14b1c229b528102c5498e90857b5a8a574a927051d247841409e96802"
+}

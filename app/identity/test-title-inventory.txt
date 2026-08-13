@@ -1,22 +1,29 @@
-stack-a-identity.spec.ts › Stack A base-versus-head identity › dropdowns-default-collision-canary @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › dropdowns-selected @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › dropdowns-disabled @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-focused @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-trigger-hover @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-selection @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-open @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-escape @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-option-hover @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-selection @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-reduced-motion @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-mobile-portrait @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-header-hover-mobile-portrait @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-open-mobile-portrait @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-mobile-landscape-compact @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-open-mobile-landscape-wide @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-width-768 @stack-a-identity
-stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-width-769 @stack-a-identity
+stack-b-visual.spec.ts › Stack B approved dropdown differences › dropdowns-default-collision-canary @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › dropdowns-selected @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › dropdowns-disabled @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-open @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-focused @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-trigger-hover @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-selection @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-open @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-escape @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-option-hover @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-selection @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-open-reduced-motion @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-open-mobile-portrait @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-header-hover-mobile-portrait @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-open-mobile-portrait @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-open-mobile-landscape-compact @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-open-mobile-landscape-wide @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-open-width-768 @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-open-width-769 @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-desktop-step-open @stack-b-full-app
+stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-mobile-portrait-hidden @stack-b-full-app
+stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-landscape-compact-unaffected @stack-b-full-app
+stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-landscape-wide-unaffected @stack-b-full-app
+stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-width-768-step-open @stack-b-full-app
+stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-width-769-step-open @stack-b-full-app
+stack-b-visual.spec.ts › Stack B approved dropdown differences › approved palette contrast and minimum target size @stack-b-accessibility
 stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-desktop-expanded @stack-a-identity
 stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-collapsed @stack-a-identity
 stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-expanded @stack-a-identity

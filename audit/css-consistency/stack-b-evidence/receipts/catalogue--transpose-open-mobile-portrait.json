@@ -1,0 +1,15 @@
+{
+  "id": "transpose-open-mobile-portrait",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "differentPixels": 31875,
+  "rawDifferentPixels": 71722,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "bced812755cd8ff8212219343c47ddbdb9a70f5ba241d4085c312ffd74a2bc08",
+  "afterSha256": "f05dd6c414b17aff37db750b594c90ea1104bcb5fd192e0c6979f9024b55afd4",
+  "diffSha256": "9ddc1df3b645752986cec7d7c94e720a128fa5c4ed51631da41f11c699f1250a"
+}

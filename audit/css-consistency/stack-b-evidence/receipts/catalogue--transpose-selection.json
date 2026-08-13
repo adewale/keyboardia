@@ -1,0 +1,15 @@
+{
+  "id": "transpose-selection",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "differentPixels": 2620,
+  "rawDifferentPixels": 5958,
+  "maxObservedChannelDelta": 50,
+  "beforeSha256": "75aecb219a8454c165ca86c17dbcf833f7d65e6f2ad62ed1714eca906475bac6",
+  "afterSha256": "322703622ef02ff7ae13e546cb6b5f3fa2b49b19e36065690d24a5e85633abd9",
+  "diffSha256": "aa1a22441a0d8d407d0f2da1ebaf6b83fa0984cbaf30b82d62a7f9e148c93157"
+}

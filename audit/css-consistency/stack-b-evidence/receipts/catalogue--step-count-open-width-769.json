@@ -1,0 +1,15 @@
+{
+  "id": "step-count-open-width-769",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 769,
+    "height": 1024
+  },
+  "differentPixels": 36795,
+  "rawDifferentPixels": 83599,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "c46e0a124360cec271ea9e1b84fbd2eef9cfd91e88506fd34abc44c1bd07aad4",
+  "afterSha256": "16c366205c4181a3d13fd9a1eb3fe92a9509b38d721c89df074f66c74a2f6d12",
+  "diffSha256": "f84b0ae231d9185d36a209ce7216bcb3b0e92bf317f9eb026e611b897882effa"
+}

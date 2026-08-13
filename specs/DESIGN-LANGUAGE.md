@@ -378,6 +378,45 @@ The landing page step grid animates at 150ms intervals, showing a beat pattern. 
 | Modal | `0 8px 32px rgba(0,0,0,0.5)` | Bottom sheets, modals |
 | CTA | `0 4px 20px rgba(232, 90, 48, 0.4)` | Primary CTA button |
 
+### Dropdown visual pilot (Stack B)
+
+The step-count and transpose dropdowns are the first candidate application of
+a compact, instrument-panel treatment. Approval is recorded only when the
+evidence PR lands. This is a surface-specific pilot, not a new product-wide
+primitive.
+
+| Property | Pilot rule |
+|----------|------------|
+| Control surface | Dark vertical gradient (`#34343a` to `#242429`) |
+| Menu surface | Dark vertical gradient (`#2c2c32` to `#1d1d21`) |
+| Edge | Quiet grey edge plus an inset top highlight |
+| Trigger radius | 7px, except connected group corners owned by `TrackRow` |
+| Menu radius | 10px |
+| Depth | Inset highlight plus a compact trigger shadow or 32px menu shadow |
+| Disclosure accent | Keyboardia orange; transpose remains blue when active but closed |
+| Focus | 2px information-blue outline, 2px offset |
+| Selected option | Orange-tinted gradient with a 3px inset leading marker |
+| Density | Preserve the existing 36px trigger and existing option/menu geometry |
+| Motion | Preserve the existing 150ms open animation; remove it under reduced motion |
+
+The visual influence is tactile music hardware: layered dark surfaces, a
+legible readout hierarchy, restrained orange emphasis, and depth created with
+edges and inset highlights. It deliberately does not copy the comparison
+artifact's tiny low-contrast labels or its unlabelled controls.
+
+The same decoration remains responsive in desktop, portrait component
+fixtures, compact landscape, wide landscape, and the 768/769 boundary. Product
+visibility remains mode-specific: portrait consumption does not expose these
+editing controls, and landscape `TrackDrawer` uses a native step-count select
+plus separate transpose buttons instead of this dropdown family. Production
+portrait and landscape therefore remain pixel-identical in this pilot.
+
+Stack B freezes DOM/accessibility order, names and roles, keyboard/touch
+behavior, dismissal and focus recovery, portal placement, hit areas, layout
+geometry, and product-mode behavior. The existing 36px trigger is larger than
+WCAG 2.2's 24px minimum but below Keyboardia's aspirational 44px mobile target;
+changing it is explicitly deferred to a Stack C product decision.
+
 ---
 
 ## Icon Language

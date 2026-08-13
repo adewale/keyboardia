@@ -1,0 +1,15 @@
+{
+  "id": "step-count-open-mobile-portrait",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "differentPixels": 36537,
+  "rawDifferentPixels": 84155,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "f39a8353264c967f0773159bc7711a0da3dfa2159294c56de29ad724a37bd2c2",
+  "afterSha256": "fb5a2a98e39551d131aed60eec1661826463f2dc44d6b5a47bde8479c576d089",
+  "diffSha256": "c233b89e2473fdf84ce91ccb785117a92b41a27b1bbf83346fa8569a7bf4806e"
+}
