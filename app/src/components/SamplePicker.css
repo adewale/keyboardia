@@ -71,23 +71,30 @@
 }
 
 /* Category header - clickable to expand/collapse */
-.category-header {
+.sample-picker .category-header {
   display: flex;
   align-items: center;
   gap: 8px;
   width: 100%;
-  padding: 10px 12px;
+  /* Preserve the production cascade formerly supplied by the later-loaded
+     unscoped StepCountDropdown rule. */
+  padding: 8px 12px 4px;
   background: transparent;
   border: none;
+  color: var(--color-text-muted, #888);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.category-header:hover {
+.sample-picker .category-header:hover {
   background: var(--color-surface-hover);
 }
 
-.category-label {
+.sample-picker .category-label {
   font-size: 13px;
   font-weight: 600;
   color: var(--category-color, var(--color-text-muted));
@@ -194,12 +201,11 @@
   }
 
   /* Header is not clickable on desktop */
-  .category-header {
+  .sample-picker .category-header {
     cursor: default;
-    padding: 8px 12px;
   }
 
-  .category-header:hover {
+  .sample-picker .category-header:hover {
     background: transparent;
   }
 
@@ -229,11 +235,7 @@
     gap: 6px;
   }
 
-  .category-header {
-    padding: 12px;
-  }
-
-  .category-label {
+  .sample-picker .category-label {
     font-size: 14px;
   }
 
@@ -257,11 +259,7 @@
     border-radius: 8px;
   }
 
-  .category-header {
-    padding: 10px;
-  }
-
-  .category-label {
+  .sample-picker .category-label {
     font-size: 13px;
   }
 

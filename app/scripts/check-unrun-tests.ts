@@ -45,7 +45,7 @@ const run = (command: string, args: string[], cwd?: string) => {
   }
 };
 
-const onDisk = ['src', 'test', 'e2e', 'scripts']
+const onDisk = ['src', 'test', 'e2e', 'identity', 'scripts']
   .flatMap(filesBelow)
   .filter((file) => !file.split(path.sep).includes('node_modules'))
   .filter((file) => /(?:\.test|\.spec)\.tsx?$/.test(file))
@@ -69,7 +69,17 @@ const e2e = run('npx', ['playwright', 'test', '--list', '--reporter=json'])
   .map((line) => line.replace(/.*"file":\s*"([^"]+)".*/, '$1'))
   .map((file) => (path.isAbsolute(file) ? path.relative(process.cwd(), file) : path.join('e2e', file)));
 
-const collected = [...new Set([...unit, ...integration, ...e2e])];
+const identity = run(
+  'npx',
+  ['playwright', 'test', '--config', 'playwright.stack-a.config.ts', '--list', '--reporter=json'],
+)
+  .split('\n').filter((line) => /"file":/.test(line))
+  .map((line) => line.replace(/.*"file":\s*"([^"]+)".*/, '$1'))
+  .map((file) => (
+    path.isAbsolute(file) ? path.relative(process.cwd(), file) : path.join('identity', file)
+  ));
+
+const collected = [...new Set([...unit, ...integration, ...e2e, ...identity])];
 
 if (!collected.length) {
   console.error('❌ No lane reported collecting anything — the runners did not answer.');

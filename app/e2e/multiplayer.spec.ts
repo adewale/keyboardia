@@ -155,7 +155,11 @@ test.describe('Multiplayer real-time sync', () => {
     console.log('[TEST] Tempo change synced successfully between clients');
   });
 
-  test('pan reaches the engine after a local edit, remote sync, and reload', async () => {
+  test('pan reaches the engine after a local edit, remote sync, and reload', async ({ browserName }) => {
+    test.skip(
+      browserName === 'webkit',
+      'Headless WebKit cannot reliably create the real-audio track bus; Chromium owns this engine contract.',
+    );
     await Promise.all([
       page1.goto(`${baseUrl}/s/${sessionId}`),
       page2.goto(`${baseUrl}/s/${sessionId}`),

@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:stack-a": "vite build --config vite.stack-a.config.ts --outDir dist-stack-a",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "npm run test:unit",
@@ -28,6 +29,7 @@
     "test:e2e:mobile": "npx playwright test e2e/mobile-iphone.spec.ts --project=mobile-safari",
     "test:e2e:populated-visual": "USE_MOCK_API=1 npx playwright test e2e/populated-visual.spec.ts --project=chromium",
     "test:e2e:all-local": "npx playwright test --project=chromium && npm run test:e2e:mobile",
+    "test:identity": "playwright test --config playwright.stack-a.config.ts",
     "test:e2e:full-stack": "tsx scripts/test-e2e-full-stack.ts",
     "test:e2e:full-stack:smoke": "tsx scripts/test-e2e-full-stack.ts --smoke",
     "test:e2e:session-contract:worker": "tsx scripts/test-e2e-full-stack.ts --session-contract",
@@ -92,6 +94,8 @@
     "test:mutation": "stryker run",
     "validate:dead-exports": "tsx scripts/check-dead-exports.ts",
     "validate:unrun-tests": "tsx scripts/check-unrun-tests.ts",
+    "validate:css-consistency": "node scripts/check-css-consistency.mjs",
+    "metrics:css-consistency": "node scripts/report-css-consistency.mjs",
     "typecheck": "tsc -b"
   },
   "lint-staged": {
@@ -134,6 +138,7 @@
     "lint-staged": "^16.2.7",
     "midi-file": "^1.2.4",
     "node-web-audio-api": "^2.0.0",
+    "pngjs": "5.0.0",
     "ts-morph": "^27.0.2",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",

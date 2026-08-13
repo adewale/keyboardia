@@ -63,6 +63,9 @@
   --color-accent-hover: #f07048;      /* Accent hover state */
   --color-accent-muted: rgba(232, 90, 48, 0.2); /* Subtle accent backgrounds */
   --color-accent-glow: rgba(232, 90, 48, 0.6);  /* Glow effects */
+  /* Exact legacy channel fallback used by selection glow. This deliberately
+     does not normalize to --color-accent in Stack A. */
+  --color-selection-glow-rgb: 255, 160, 100;
   /* Legacy alias */
   --color-brand: var(--color-accent);
   --color-accent-light: var(--color-accent-hover);
@@ -73,6 +76,11 @@
   --color-warning: #ffc107;           /* Attention, pending, caution */
   --color-error: #e74c3c;             /* Error, disconnected, destructive */
   --color-secondary: #d4a054;         /* Volume locks, secondary indicators */
+  /* Exact aliases for the existing FX master backgrounds. */
+  --color-fx-active-muted: rgba(78, 205, 196, 0.15);
+  --color-fx-active-muted-hover: rgba(78, 205, 196, 0.25);
+  --color-fx-bypassed-muted: rgba(255, 152, 0, 0.15);
+  --color-fx-bypassed-muted-hover: rgba(255, 152, 0, 0.25);
   /* Legacy alias */
   --color-danger: var(--color-error);
 
@@ -143,6 +151,9 @@
   --motion-press-duration: 90ms;
   --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --motion-press-scale: 0.96;
+
+  /* Exact fallback already repeated by pitch/key readouts. */
+  --font-mono: 'SF Mono', 'Consolas', monospace;
 }
 
 * {
