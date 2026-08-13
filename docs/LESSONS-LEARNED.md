@@ -71,6 +71,9 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
 - [Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row](#lesson-61-an-unplaced-child-of-a-full-grid-silently-adds-a-row)
 - [Lesson 62: Track Row Width Is Load-Bearing for Drag During Playback](#lesson-62-track-row-width-is-load-bearing-for-drag-during-playback)
+- [Lesson 63: A Component Fixture Must Reproduce Production Asset Order](#lesson-63-a-component-fixture-must-reproduce-production-asset-order)
+- [Lesson 64: Cross-Browser Coverage Needs a Named Authority per Contract](#lesson-64-cross-browser-coverage-needs-a-named-authority-per-contract)
+- [Lesson 65: Evidence Expires When the Merge Base Moves](#lesson-65-evidence-expires-when-the-merge-base-moves)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5761,3 +5764,87 @@ gap. CI's macOS visual job caught it on the published Holby baseline.
 Layout changes have to be checked against every state that renders the layout,
 not just the state the new control appears in. The template that carries a new
 control now sits behind a modifier class that only the rows rendering it carry.
+
+---
+
+## Lesson 63: A Component Fixture Must Reproduce Production Asset Order
+
+**Date:** August 2026
+**Context:** Stack A CSS consistency ([#94](https://github.com/adewale/keyboardia/pull/94))
+
+### What happened
+
+The 42-contract base-versus-head component catalogue passed, but the ordinary
+full-app Linux screenshots found three regressions. Sample-picker category
+headers were 4px taller on desktop and 12px taller at the 768px boundary.
+
+Production lazy-loads the picker before the track/dropdown bundle. That made a
+later unscoped Step Count `.category-header` rule supply the picker's winning
+padding. The focused catalogue imported the components in the opposite order.
+It therefore proved exact equality inside a CSS cascade that production never
+used. Scoping the picker correctly removed the accidental production override,
+so the refactor changed pixels even though the focused comparison was green.
+
+### The fix
+
+The old computed padding is now explicit on both affected component roots, and
+the catalogue loads their styles in production order. The focused 42-state
+comparison and the full-app visual canary must both pass; snapshots are not
+updated merely because those two layers disagree.
+
+### The rule
+
+**A component fixture is a deterministic state factory, not proof of production
+composition.** It must reproduce stylesheet/bundle order, and every affected
+responsive mode needs at least one production-built full-app canary. If focused
+and full-app evidence disagree, investigate the harness or implementation
+before approving any new baseline.
+
+---
+
+## Lesson 64: Cross-Browser Coverage Needs a Named Authority per Contract
+
+**Date:** August 2026
+**Context:** Stack A CSS consistency rebase ([#94](https://github.com/adewale/keyboardia/pull/94))
+
+### What happened
+
+After the Stack A branch rebased, a new multiplayer E2E assertion required a
+real Web Audio track bus. It was deterministic in Chromium, but headless WebKit
+could not reliably establish that precondition. Serial execution, retries, and
+longer timeouts did not turn an unavailable capability into useful coverage.
+
+### The fix
+
+Chromium owns and gates the real-audio contract. WebKit records a reviewed,
+inventory-checked skip for that assertion and continues to own its UI, layout,
+collaboration, and emulated-touch contracts.
+
+### The rule
+
+**More browser runs are not automatically stronger evidence.** Name the browser
+or physical device that can authoritatively prove each contract. Capability
+skips must be explicit and inventory-gated; do not disguise them as retries or
+silently weaken the assertion.
+
+---
+
+## Lesson 65: Evidence Expires When the Merge Base Moves
+
+**Date:** August 2026
+**Context:** Stack A CSS consistency rebase ([#94](https://github.com/adewale/keyboardia/pull/94))
+
+### What happened
+
+While Stack A was under review, `main` gained unrelated CSS and audio-test work.
+The relative CSS reductions survived, but the absolute metrics, comparison
+commit, workflow inventory, and browser obligations changed. Evidence against
+the old merge base no longer described the PR GitHub would actually merge.
+
+### The rule
+
+Rebase immediately before final visual approval and regenerate metrics,
+screenshots, changed-pixel masks, accessibility/behavior contracts, and any
+device evidence against that exact base/head pair. A later base movement
+invalidates approval until affected evidence is refreshed. Stacked PRs reduce
+review size; they do not make inherited evidence permanent.

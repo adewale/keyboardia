@@ -1,19 +1,25 @@
 import { basename, resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 
-const [resultsFile, expectedArg, skippedArg] = process.argv.slice(2);
+const [resultsFile, expectedArg, skippedArg, inventoryArg] = process.argv.slice(2);
 if (!resultsFile || expectedArg === undefined || skippedArg === undefined) {
-  throw new Error('Usage: node scripts/assert-playwright-stats.mjs <results.json> <expected> <skipped>');
+  throw new Error(
+    'Usage: node scripts/assert-playwright-stats.mjs <results.json> <expected|inventory> <skipped> [inventory.txt]',
+  );
 }
+const inventoryFile = inventoryArg
+  ? resolve(inventoryArg)
+  : new URL('../e2e/test-title-inventory.txt', import.meta.url);
+const reviewed = new Set(readFileSync(inventoryFile, 'utf8')
+  .split(/\r?\n/).map((line) => line.trim()).filter(Boolean));
 const report = JSON.parse(readFileSync(resolve(resultsFile), 'utf8'));
-const contract = { expected: Number(expectedArg), skipped: Number(skippedArg), flaky: 0, unexpected: 0 };
+const expected = expectedArg === 'inventory' ? reviewed.size : Number(expectedArg);
+const contract = { expected, skipped: Number(skippedArg), flaky: 0, unexpected: 0 };
 const actual = Object.fromEntries(Object.keys(contract).map((key) => [key, report.stats?.[key] ?? 0]));
 if (JSON.stringify(actual) !== JSON.stringify(contract)) {
   throw new Error(`Playwright disposition contract failed: ${JSON.stringify({ contract, actual })}`);
 }
 
-const reviewed = new Set(readFileSync(new URL('../e2e/test-title-inventory.txt', import.meta.url), 'utf8')
-  .split(/\r?\n/).map((line) => line.trim()).filter(Boolean));
 const observed = [];
 const walk = (suites, ancestors = []) => {
   for (const suite of suites ?? []) {

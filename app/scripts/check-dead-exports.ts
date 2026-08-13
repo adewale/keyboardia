@@ -50,7 +50,11 @@ const units: SourceUnit[] = sourceFiles
       source: readFileSync(file, 'utf8'),
       isTest: test,
       role: test ? 'test' : build ? 'build' : 'runtime',
-      isEntry: test || build || ['src/main.tsx', 'src/worker/index.ts'].includes(file.replaceAll('\\', '/')),
+      isEntry: test || build || [
+        'src/main.tsx',
+        'src/stack-a-catalog/main.tsx',
+        'src/worker/index.ts',
+      ].includes(file.replaceAll('\\', '/')),
     } satisfies SourceUnit;
   });
 const reachability = analyzeExportReachability(units, excluded);

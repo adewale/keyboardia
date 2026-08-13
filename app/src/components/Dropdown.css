@@ -1,0 +1,216 @@
+/* Shared skin for the two grouped, portalled dropdowns.
+ *
+ * Component files set only the variables that represent real differences.
+ * Keep the legacy component classes in the markup for stable test and product
+ * selectors; the dropdown-* classes are the owned styling contract.
+ */
+
+.dropdown-shell {
+  position: relative;
+  display: inline-block;
+}
+
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 8px;
+  background: var(--color-surface-elevated, #2a2a2a);
+  border: 1px solid var(--color-border, #444);
+  border-radius: 4px;
+  color: var(--dropdown-trigger-color, var(--color-text, #fff));
+  font-size: 13px;
+  font-family: var(--dropdown-trigger-font, inherit);
+  cursor: pointer;
+  transition: var(--dropdown-trigger-transition, border-color 0.15s, background 0.15s);
+  min-width: 50px;
+  box-sizing: border-box;
+}
+
+.dropdown-trigger:hover:not(:disabled) {
+  border-color: var(--color-accent, #ff6b35);
+  background: var(--color-surface-hover, #333);
+}
+
+.dropdown-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.dropdown-trigger.open {
+  border-color: var(--color-cyan);
+  background: var(--color-cyan-muted);
+  color: var(--color-cyan);
+}
+
+.dropdown-value {
+  font-weight: var(--dropdown-value-weight, 600);
+  min-width: var(--dropdown-value-min-width, 24px);
+  text-align: right;
+}
+
+.dropdown-chevron {
+  display: inline-flex;
+  line-height: 0;
+  opacity: 0.7;
+}
+
+.dropdown-menu {
+  /* Preserve the common assembled-app cascade that formerly arrived from
+   * SamplePicker's unscoped category selectors. */
+  --dropdown-category-header-gap: 8px;
+  --dropdown-category-header-width: 100%;
+  --dropdown-category-header-background: transparent;
+  --dropdown-category-header-border: none;
+  --dropdown-category-header-cursor: default;
+  --dropdown-category-header-transition: background 0.15s ease;
+  --dropdown-category-label-color: var(--color-text-muted, #888);
+  --dropdown-category-label-font-size: 13px;
+  --dropdown-category-label-font-weight: 600;
+  --dropdown-category-label-text-align: left;
+
+  background: var(--color-surface-elevated, #2a2a2a);
+  border: 1px solid var(--color-border, #444);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  min-width: var(--dropdown-menu-min-width, 140px);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 10000;
+  animation: var(--dropdown-animation-name, dropdown-appear) 0.15s ease-out;
+}
+
+@keyframes dropdown-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Preserve TransposeDropdown's existing computed animation name. */
+@keyframes transpose-dropdown-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dropdown-category-header {
+  display: flex;
+  align-items: center;
+  gap: var(--dropdown-category-header-gap, 0);
+  width: var(--dropdown-category-header-width, auto);
+  padding: var(--dropdown-category-header-padding, 8px 12px 4px);
+  background: var(--dropdown-category-header-background, initial);
+  border: var(--dropdown-category-header-border, initial);
+  color: var(--color-text-muted, #888);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: var(--dropdown-category-header-cursor, auto);
+  transition: var(--dropdown-category-header-transition, none);
+}
+
+.dropdown-category-header:hover {
+  background: var(--dropdown-category-header-hover-background, transparent);
+}
+
+.dropdown-category-label {
+  flex: 1;
+  color: var(--dropdown-category-label-color, inherit);
+  font-size: var(--dropdown-category-label-font-size, inherit);
+  font-weight: var(--dropdown-category-label-font-weight, inherit);
+  text-align: var(--dropdown-category-label-text-align, inherit);
+}
+
+.dropdown-category-options {
+  padding-bottom: 4px;
+}
+
+.dropdown-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: var(--color-text, #fff);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+  text-align: left;
+}
+
+.dropdown-option:hover {
+  background: var(--color-surface-hover, #333);
+}
+
+.dropdown-option.selected {
+  background: var(--color-accent-muted, rgba(255, 107, 53, 0.15));
+}
+
+.dropdown-option-value {
+  font-weight: 600;
+  font-family: var(--dropdown-option-value-font, inherit);
+  min-width: var(--dropdown-option-value-min-width, 24px);
+  text-align: right;
+}
+
+.dropdown-option-label {
+  flex: 1;
+  color: var(--color-text-muted, #888);
+  font-size: 12px;
+}
+
+.dropdown-option-check {
+  color: var(--color-accent, #ff6b35);
+  font-size: 12px;
+}
+
+.dropdown-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dropdown-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb {
+  background: var(--color-border, #444);
+  border-radius: 3px;
+}
+
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted, #666);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-menu {
+    animation: none;
+  }
+}
+
+@media (max-width: 768px) {
+  .dropdown-menu {
+    --dropdown-category-header-cursor: pointer;
+    --dropdown-category-header-hover-background: var(--color-surface-hover);
+    --dropdown-category-label-font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dropdown-menu {
+    --dropdown-category-label-font-size: 13px;
+  }
+}

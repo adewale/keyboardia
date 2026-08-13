@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useDropdownMenu } from '../hooks/useDropdownMenu';
 import { Check, ChevronDown, ChevronUp } from '../icons';
+import './Dropdown.css';
 import './TransposeDropdown.css';
 
 /**
@@ -83,7 +84,7 @@ export const TransposeDropdown = memo(function TransposeDropdown({
   const menu = isOpen
     ? createPortal(
         <div
-          className="transpose-menu"
+          className="dropdown-menu transpose-menu"
           role="listbox"
           ref={menuRef}
           style={{
@@ -96,12 +97,12 @@ export const TransposeDropdown = memo(function TransposeDropdown({
             const category = TRANSPOSE_CATEGORIES[categoryKey];
 
             return (
-              <div key={categoryKey} className="menu-category">
-                <div className="category-header">
-                  <span className="category-label">{category.label}</span>
+              <div key={categoryKey} className="dropdown-category menu-category">
+                <div className="dropdown-category-header category-header">
+                  <span className="dropdown-category-label category-label">{category.label}</span>
                 </div>
 
-                <div className="category-options">
+                <div className="dropdown-category-options category-options">
                   {category.values.map(transposeValue => {
                     const isSelected = transposeValue === value;
                     const label = TRANSPOSE_LABELS[transposeValue] || '';
@@ -110,14 +111,14 @@ export const TransposeDropdown = memo(function TransposeDropdown({
                     return (
                       <button
                         key={transposeValue}
-                        className={`transpose-option ${isSelected ? 'selected' : ''}`}
+                        className={`dropdown-option transpose-option ${isSelected ? 'selected' : ''}`}
                         onClick={() => handleSelect(transposeValue)}
                         role="option"
                         aria-selected={isSelected}
                       >
-                        <span className="option-value">{display}</span>
-                        <span className="option-label">{label}</span>
-                        {isSelected && <span className="option-check"><Check size={13} aria-hidden="true" /></span>}
+                        <span className="dropdown-option-value option-value">{display}</span>
+                        <span className="dropdown-option-label option-label">{label}</span>
+                        {isSelected && <span className="dropdown-option-check option-check"><Check size={13} aria-hidden="true" /></span>}
                       </button>
                     );
                   })}
@@ -131,18 +132,18 @@ export const TransposeDropdown = memo(function TransposeDropdown({
     : null;
 
   return (
-    <div className="transpose-dropdown">
+    <div className="dropdown-shell transpose-dropdown">
       <button
         ref={triggerRef}
-        className={`transpose-trigger ${isOpen ? 'open' : ''} ${value !== 0 ? 'active' : ''}`}
+        className={`dropdown-trigger transpose-trigger ${isOpen ? 'open' : ''} ${value !== 0 ? 'active' : ''}`}
         onClick={toggle}
         disabled={disabled}
         title={`Transpose: ${displayValue} semitones`}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <span className="transpose-value">{displayValue}</span>
-        <span className="transpose-chevron">
+        <span className="dropdown-value transpose-value">{displayValue}</span>
+        <span className="dropdown-chevron transpose-chevron">
           {isOpen
             ? <ChevronUp size={12} aria-hidden="true" />
             : <ChevronDown size={12} aria-hidden="true" />}

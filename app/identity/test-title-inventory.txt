@@ -1,0 +1,42 @@
+stack-a-identity.spec.ts › Stack A base-versus-head identity › dropdowns-default-collision-canary @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › dropdowns-selected @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › dropdowns-disabled @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-focused @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-trigger-hover @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-selection @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-open @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-escape @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-option-hover @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-selection @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-reduced-motion @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-mobile-portrait @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-header-hover-mobile-portrait @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-open-mobile-portrait @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-mobile-landscape-compact @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › transpose-open-mobile-landscape-wide @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-width-768 @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › step-count-open-width-769 @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-desktop-expanded @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-collapsed @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-expanded @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-change-current @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-selection @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-landscape-narrow @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-landscape-wide @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › standalone-fx-closed @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › standalone-fx-open-active @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › standalone-fx-open-bypassed @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › standalone-fx-disabled @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › desktop-integrated-fx-open @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › desktop-integrated-fx-active-hover @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › desktop-integrated-fx-bypassed-hover @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › landscape-drawer-closed @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › landscape-drawer-open @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › landscape-drawer-keyboard-focus @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › landscape-drawer-delete-action @stack-a-identity
+stack-a-identity.spec.ts › Stack A base-versus-head identity › landscape-drawer-reduced-motion @stack-a-identity
+stack-a-mobile-behavior.spec.ts › Stack A mobile WebKit behavior identity › touch selects step count @stack-a-mobile
+stack-a-mobile-behavior.spec.ts › Stack A mobile WebKit behavior identity › touch selects transpose @stack-a-mobile
+stack-a-mobile-behavior.spec.ts › Stack A mobile WebKit behavior identity › touch expands a picker category @stack-a-mobile
+stack-a-mobile-behavior.spec.ts › Stack A mobile WebKit behavior identity › touch invokes the landscape drawer action @stack-a-mobile

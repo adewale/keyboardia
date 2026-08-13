@@ -529,7 +529,7 @@
 
 .track-name-input:focus {
   border-color: var(--color-accent-light);
-  box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb, 255, 160, 100), 0.2);
+  box-shadow: 0 0 0 2px rgba(var(--color-selection-glow-rgb, 255, 160, 100), 0.2);
 }
 
 /* Phase 31H: Pitch/Step group - Transpose + Key badge + Steps as one logical unit */

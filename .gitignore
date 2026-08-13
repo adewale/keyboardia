@@ -1,4 +1,5 @@
 node_modules/
+app/dist-stack-a/
 app/.wrangler/
 app/test-output.mid
 .pi-subagents/

@@ -211,7 +211,7 @@
   padding: 8px 14px;
   border: 2px solid var(--color-success);
   border-radius: 6px;
-  background: var(--color-success-muted, rgba(78, 205, 196, 0.15));
+  background: var(--color-fx-active-muted, rgba(78, 205, 196, 0.15));
   color: var(--color-success);
   font-size: 12px;
   font-weight: 600;
@@ -220,7 +220,7 @@
 }
 
 .fx-master-toggle:hover:not(:disabled) {
-  background: var(--color-success-muted, rgba(78, 205, 196, 0.25));
+  background: var(--color-fx-active-muted-hover, rgba(78, 205, 196, 0.25));
   filter: brightness(1.1);
 }
 
@@ -234,12 +234,12 @@
 
 .fx-master-toggle.bypassed {
   border-color: var(--color-warning);
-  background: var(--color-warning-muted, rgba(255, 152, 0, 0.15));
+  background: var(--color-fx-bypassed-muted, rgba(255, 152, 0, 0.15));
   color: var(--color-warning);
 }
 
 .fx-master-toggle.bypassed:hover:not(:disabled) {
-  background: var(--color-warning-muted, rgba(255, 152, 0, 0.25));
+  background: var(--color-fx-bypassed-muted-hover, rgba(255, 152, 0, 0.25));
 }
 
 .master-indicator {
@@ -636,4 +636,3 @@
 .step-sequencer[data-orientation="landscape"] .transport-fx-panel {
   display: none !important;
 }
-

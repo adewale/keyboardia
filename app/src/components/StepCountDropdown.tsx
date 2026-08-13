@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { STEP_COUNT_OPTIONS } from '../types';
 import { useDropdownMenu } from '../hooks/useDropdownMenu';
 import { Check, ChevronDown, ChevronUp } from '../icons';
+import './Dropdown.css';
 import './StepCountDropdown.css';
 
 /**
@@ -99,7 +100,7 @@ export const StepCountDropdown = memo(function StepCountDropdown({
   const menu = isOpen
     ? createPortal(
         <div
-          className="step-count-menu"
+          className="dropdown-menu step-count-menu"
           role="listbox"
           ref={menuRef}
           style={{
@@ -112,12 +113,12 @@ export const StepCountDropdown = memo(function StepCountDropdown({
             const category = STEP_CATEGORIES[categoryKey];
 
             return (
-              <div key={categoryKey} className="menu-category">
-                <div className="category-header">
-                  <span className="category-label">{category.label}</span>
+              <div key={categoryKey} className="dropdown-category menu-category">
+                <div className="dropdown-category-header category-header">
+                  <span className="dropdown-category-label category-label">{category.label}</span>
                 </div>
 
-                <div className="category-options">
+                <div className="dropdown-category-options category-options">
                   {category.values.map(stepValue => {
                     // Only show values that are in STEP_COUNT_OPTIONS
                     if (!STEP_COUNT_OPTIONS.includes(stepValue)) return null;
@@ -127,14 +128,14 @@ export const StepCountDropdown = memo(function StepCountDropdown({
                     return (
                       <button
                         key={stepValue}
-                        className={`step-option ${isSelected ? 'selected' : ''}`}
+                        className={`dropdown-option step-option ${isSelected ? 'selected' : ''}`}
                         onClick={() => handleSelect(stepValue)}
                         role="option"
                         aria-selected={isSelected}
                       >
-                        <span className="option-value">{stepValue}</span>
-                        <span className="option-label">{label}</span>
-                        {isSelected && <span className="option-check"><Check size={13} aria-hidden="true" /></span>}
+                        <span className="dropdown-option-value option-value">{stepValue}</span>
+                        <span className="dropdown-option-label option-label">{label}</span>
+                        {isSelected && <span className="dropdown-option-check option-check"><Check size={13} aria-hidden="true" /></span>}
                       </button>
                     );
                   })}
@@ -148,18 +149,18 @@ export const StepCountDropdown = memo(function StepCountDropdown({
     : null;
 
   return (
-    <div className="step-count-dropdown">
+    <div className="dropdown-shell step-count-dropdown">
       <button
         ref={triggerRef}
-        className={`step-count-trigger ${isOpen ? 'open' : ''}`}
+        className={`dropdown-trigger step-count-trigger ${isOpen ? 'open' : ''}`}
         onClick={toggle}
         disabled={disabled}
         title={`${value} steps (${currentLabel})`}
         aria-expanded={isOpen}
         aria-haspopup="listbox"
       >
-        <span className="step-count-value">{value}</span>
-        <span className="step-count-chevron">
+        <span className="dropdown-value step-count-value">{value}</span>
+        <span className="dropdown-chevron step-count-chevron">
           {isOpen
             ? <ChevronUp size={12} aria-hidden="true" />
             : <ChevronDown size={12} aria-hidden="true" />}
