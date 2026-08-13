@@ -149,6 +149,7 @@ The repo is further along than most codebases on L2–L4's *mechanisms*:
 | Client/server canonical state hash — our `integrity_check` across the network boundary | `app/src/sync/canonicalHash.ts`; born from the production hash-mismatch incident (`docs/LESSONS-LEARNED.md` Lesson 14) | L2/L3 |
 | Property-based testing culture (fast-check) | `app/package.json:134`; `app/src/worker/validation.property.test.ts`; Lesson 26 | L2 |
 | Real-DO testing discipline — "Do not create a second in-memory implementation of `LiveSessionDurableObject`" | `specs/TESTING.md` boundary rule | L1 (prerequisite) |
+| Seeded lifecycle fuzz over the real stack: random sequences of WS mutations, REST writes, hibernation, eviction, reconnects, with read-your-writes and KV-convergence asserted after every op, replayable by seed | `app/test/integration/state-machine-fuzz.test.ts`; wake paths covered deterministically in `eviction-recovery.test.ts` | L1 (partial), L7 |
 | Documented production-only failure modes and wake-path discipline | Lessons 13, 14, 40 in `docs/LESSONS-LEARNED.md` | L6 |
 | Dual-storage awareness, including that DO and KV can diverge | `docs/STORAGE-ARCHITECTURE.md`; Lesson 2 | L3 |
 
@@ -168,22 +169,33 @@ justifies keeping the KV secondary copy and verifying it (G4 below).
 
 ## 4. The gaps, each anchored to verified code
 
-### G1 (L1/L2): We randomize inputs, never schedules
+### G1 (L1/L2): We explore sequences, not overlaps — and with one client
 
-Our property tests are strong on *value* space (`fc.assert` over states and
-mutations) but nothing in any lane races mutations against the events that
-reorder them in production: hibernation/eviction wake, reconnection, the KV
-save debounce, snapshot pushes. Those orderings are exactly where Lessons 2,
-13, 14, and 40 came from — each was discovered in production, which is the
-expensive way.
+The workers-pool lane already walks the cross-layer lifecycle state machine
+with seeded randomness: `state-machine-fuzz.test.ts` drives random sequences
+of WS mutations, REST writes, hibernation, eviction, disconnects, and
+reconnects against the real Worker/DO/KV stack, asserting read-your-writes
+and KV convergence after every op, replayable by seed. That is genuinely the
+Antithesis method at our altitude — with two structural limits: **every op
+is awaited to completion before the next begins, and there is exactly one
+client**. Overlap races — a mutation landing while `saveToKV` is in flight,
+a REST PUT racing a WS mutation, eviction mid-persist, two clients mutating
+during a snapshot push — are precisely the WAL-Reset shape (a write *during*
+a checkpoint) and are structurally unreachable by a one-op-at-a-time,
+one-client fuzz. Lessons 2, 13, 14, and 40 all live in that unreached space;
+each was discovered in production, which is the expensive way.
 
-**Proposal — a "no lost acked mutation" harness** (the direct translation of
-the Antithesis workload):
+**Proposal — extend the existing fuzz into a "no lost acked mutation"
+harness** (the direct translation of the Antithesis workload):
 
 - Runs in the workers-pool lane against the real `LiveSessionDurableObject`
   (the `specs/TESTING.md` boundary rule already mandates this).
-- N simulated clients issue randomized mutation streams and record every
-  server ack (`seq`/`clientSeq`).
+- N (2–4) concurrent clients issue randomized mutation streams and record
+  every server ack (`seq`/`clientSeq`). Ops are *launched without awaiting
+  completion*; a deterministic scheduler explores the order in which
+  in-flight ops progress — `fc.scheduler()` from fast-check, already a
+  dependency (`app/package.json:134`), exists for exactly this and is
+  currently unused.
 - Between steps, the harness injects the reordering events we actually have:
   simulated eviction (drop the instance, reload from storage — Lesson 40's
   wake paths), reconnect with `ack` replay, forced `saveToKV`, snapshot
