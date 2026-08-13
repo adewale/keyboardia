@@ -286,6 +286,12 @@ or a per-session debug flag, not on by default.
 
 ## 5. Recommended order
 
+> **Status update (2026-08-13):** the production-touching items below
+> (telemetry, counters, convergence audit) were **declined in review** in
+> favor of a bounded, test-lane-only approach. The adopted plan is
+> `specs/BOUNDED-CORRECTNESS-TESTING-PLAN.md`; this table is retained as
+> the analysis record.
+
 | # | Action | Gap | Effort | Payoff |
 |---|---|---|---|---|
 | 1 | Log + resync on negative `ackGap` | G2 | ~10 lines | Makes our known impossible state visible; directly tests the eviction/seq hypothesis in production |
