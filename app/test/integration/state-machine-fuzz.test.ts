@@ -29,7 +29,9 @@ import {
   evictDurableObject,
 } from 'cloudflare:test';
 import { it, expect } from 'vitest';
+import fc from 'fast-check';
 import { parseSeedOverride } from '../../src/test/seeded-random';
+import { STATE_MACHINE_KNOWN_FAILURES, type StateMachineOp } from './known-failures';
 
 interface Env {
   SESSIONS: KVNamespace;
@@ -144,16 +146,6 @@ async function connect(id: string, playerId: string) {
   return { ws, inbox };
 }
 
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const randInt = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
 
 // =============================================================================
 // Targeted transition tests (the edges most likely to desync)
@@ -274,101 +266,141 @@ const FUZZ_SEEDS = parseSeedOverride(
 );
 const FUZZ_TIMEOUT_MS = Math.max(120_000, FUZZ_SEEDS.length * 12_000);
 
-it('fuzz: read-your-writes through the DO holds across any interleaving; KV converges at write/disconnect points', async () => {
-  const SEEDS = FUZZ_SEEDS;
+// Schedules are generated and shrunk by fast-check (issue #97, T1): on
+// failure the op sequence minimizes to the smallest failing schedule, and
+// known failures in known-failures.ts replay first as a committed example
+// database (T2). Per-op value randomness also comes from fast-check, so
+// individual decisions shrink too (hegel-skill mistake #6 retired).
 
-  for (const seed of SEEDS) {
-    const rng = mulberry32(seed);
-    const id = await createSession(120, 0);
+const smOpArb: fc.Arbitrary<StateMachineOp> = fc.oneof(
+  { weight: 3, arbitrary: fc.record({ kind: fc.constant<'ws_tempo'>('ws_tempo'), tempo: fc.integer({ min: 60, max: 180 }) }) },
+  { weight: 2, arbitrary: fc.record({ kind: fc.constant<'ws_swing'>('ws_swing'), swing: fc.integer({ min: 0, max: 100 }) }) },
+  { weight: 2, arbitrary: fc.record({ kind: fc.constant<'rest_put'>('rest_put'), tempo: fc.integer({ min: 60, max: 180 }), swing: fc.integer({ min: 0, max: 100 }) }) },
+  { weight: 2, arbitrary: fc.record({ kind: fc.constant<'rest_patch'>('rest_patch'), tempo: fc.integer({ min: 60, max: 180 }), swing: fc.integer({ min: 0, max: 100 }) }) },
+  { weight: 1, arbitrary: fc.record({ kind: fc.constant<'patch_name'>('patch_name'), n: fc.nat(9999) }) },
+  { weight: 1, arbitrary: fc.constant<StateMachineOp>({ kind: 'hibernate' }) },
+  { weight: 1, arbitrary: fc.constant<StateMachineOp>({ kind: 'evict_close' }) },
+  { weight: 1, arbitrary: fc.constant<StateMachineOp>({ kind: 'disconnect' }) },
+  { weight: 2, arbitrary: fc.constant<StateMachineOp>({ kind: 'reconnect' }) },
+);
+const smScheduleArb = fc.array(smOpArb, { minLength: 8, maxLength: 18 });
 
-    // Oracle of the canonical (DO-authoritative) state.
-    const canonical = { tempo: 120, swing: 0, name: null as string | null };
-    // What KV is expected to hold (only updated at KV-writing events).
-    const kvExpect = { tempo: 120, swing: 0, name: null as string | null };
+/** Execute one schedule; assert both cross-layer invariants after every op. */
+async function runStateMachineSchedule(ops: StateMachineOp[]): Promise<void> {
+  const id = await createSession(120, 0);
 
-    let conn: { ws: WebSocket; inbox: ReturnType<typeof listen> } | null = null;
-    const playerId = `fuzz-${seed}`;
-    const opCount = randInt(rng, 10, 18);
-    const tag = (op: string, i: number) => `seed=${seed} op#${i}=${op}`;
+  // Oracle of the canonical (DO-authoritative) state.
+  const canonical = { tempo: 120, swing: 0, name: null as string | null };
+  // What KV is expected to hold (only updated at KV-writing events).
+  const kvExpect = { tempo: 120, swing: 0, name: null as string | null };
 
-    for (let i = 0; i < opCount; i++) {
-      const roll = rng();
+  let conn: { ws: WebSocket; inbox: ReturnType<typeof listen> } | null = null;
+  const playerId = 'fuzz-fc';
 
-      if (roll < 0.22 && conn) {
-        // WS mutation (DO storage only; KV lags)
-        if (rng() < 0.5) {
-          const tempo = randInt(rng, 60, 180);
-          conn.ws.send(JSON.stringify({ type: 'set_tempo', tempo, seq: i + 1 }));
-          await conn.inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === tempo, tag('ws_tempo', i));
-          canonical.tempo = tempo;
-        } else {
-          const swing = randInt(rng, 0, 100);
-          conn.ws.send(JSON.stringify({ type: 'set_swing', swing, seq: i + 1 }));
-          await conn.inbox.waitFor((m) => m.type === 'swing_changed' && m.swing === swing, tag('ws_swing', i));
-          canonical.swing = swing;
-        }
-      } else if (roll < 0.4) {
-        // REST PUT (DO + KV)
-        const tempo = randInt(rng, 60, 180), swing = randInt(rng, 0, 100);
-        await restPutState(id, tempo, swing);
-        canonical.tempo = tempo; canonical.swing = swing;
-        kvExpect.tempo = tempo; kvExpect.swing = swing;
-      } else if (roll < 0.52) {
-        // REST PATCH state (DO + KV)
-        const tempo = randInt(rng, 60, 180), swing = randInt(rng, 0, 100);
-        await restPatchState(id, tempo, swing);
-        canonical.tempo = tempo; canonical.swing = swing;
-        kvExpect.tempo = tempo; kvExpect.swing = swing;
-      } else if (roll < 0.6) {
-        // REST PATCH name (KV only)
-        const name = `n${randInt(rng, 0, 9999)}`;
-        await restPatchName(id, name);
-        canonical.name = name; kvExpect.name = name;
-      } else if (roll < 0.72) {
-        // Hibernate (state survives; socket, if any, resumes)
-        await ensureRunning(id);
-        await evictDurableObject(stubFor(id));
-      } else if (roll < 0.8) {
-        // Evict + close sockets
-        await ensureRunning(id);
-        await evictDurableObject(stubFor(id), { webSockets: 'close' });
-        conn = null;
-      } else if (roll < 0.9) {
-        // Graceful disconnect (flushes KV) -> KV must converge to canonical
-        if (conn) {
-          conn.ws.close(1000, 'bye');
-          conn = null;
-          kvExpect.tempo = canonical.tempo; kvExpect.swing = canonical.swing; kvExpect.name = canonical.name;
-          for (let k = 0; k < 100; k++) {
-            const kv = await readKv(id);
-            if (kv && kv.state.tempo === canonical.tempo && kv.state.swing === canonical.swing) break;
-            await new Promise((r) => setTimeout(r, 20));
+  try {
+    for (const [i, op] of ops.entries()) {
+      const tag = (label: string) => `op#${i}=${op.kind} ${label}`;
+
+      switch (op.kind) {
+        case 'ws_tempo':
+          if (conn) {
+            conn.ws.send(JSON.stringify({ type: 'set_tempo', tempo: op.tempo, seq: i + 1 }));
+            await conn.inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === op.tempo, tag('ws_tempo'));
+            canonical.tempo = op.tempo;
           }
+          break;
+        case 'ws_swing':
+          if (conn) {
+            conn.ws.send(JSON.stringify({ type: 'set_swing', swing: op.swing, seq: i + 1 }));
+            await conn.inbox.waitFor((m) => m.type === 'swing_changed' && m.swing === op.swing, tag('ws_swing'));
+            canonical.swing = op.swing;
+          }
+          break;
+        case 'rest_put':
+          await restPutState(id, op.tempo, op.swing);
+          canonical.tempo = op.tempo; canonical.swing = op.swing;
+          kvExpect.tempo = op.tempo; kvExpect.swing = op.swing;
+          break;
+        case 'rest_patch':
+          await restPatchState(id, op.tempo, op.swing);
+          canonical.tempo = op.tempo; canonical.swing = op.swing;
+          kvExpect.tempo = op.tempo; kvExpect.swing = op.swing;
+          break;
+        case 'patch_name': {
+          const name = `n${op.n}`;
+          await restPatchName(id, name);
+          canonical.name = name; kvExpect.name = name;
+          break;
         }
-      } else {
-        // (Re)connect
-        if (!conn) conn = await connect(id, playerId);
+        case 'hibernate':
+          // State survives; the socket, if any, resumes on the same connection.
+          await ensureRunning(id);
+          await evictDurableObject(stubFor(id));
+          break;
+        case 'evict_close':
+          await ensureRunning(id);
+          await evictDurableObject(stubFor(id), { webSockets: 'close' });
+          conn = null;
+          break;
+        case 'disconnect':
+          // Graceful disconnect flushes KV -> KV must converge to canonical.
+          if (conn) {
+            conn.ws.close(1000, 'bye');
+            conn = null;
+            kvExpect.tempo = canonical.tempo; kvExpect.swing = canonical.swing; kvExpect.name = canonical.name;
+            for (let k = 0; k < 100; k++) {
+              const kv = await readKv(id);
+              if (kv && kv.state.tempo === canonical.tempo && kv.state.swing === canonical.swing) break;
+              await new Promise((r) => setTimeout(r, 20));
+            }
+          }
+          break;
+        case 'reconnect':
+          if (!conn) conn = await connect(id, playerId);
+          break;
       }
 
       // ---- INVARIANT 1: read-your-writes through the DO, after every op ----
       // NOTE: restGet routes through the DO and triggers ensureStateLoaded(), so
       // it also reloads state on the HTTP path. This fuzz therefore validates the
       // cross-layer *consistency* contract, not the pure-WS-wake reload bug — that
-      // path is covered deterministically by eviction-recovery.test.ts (Layer 10.5
-      // + the Layer 11 fuzz, which deliberately omits any HTTP call after eviction).
+      // path is covered deterministically by eviction-recovery.test.ts.
       const got = await restGet(id);
-      expect(got.state.tempo, `tempo ${tag('-', i)}`).toBe(canonical.tempo);
-      expect(got.state.swing, `swing ${tag('-', i)}`).toBe(canonical.swing);
-      expect(got.name, `name ${tag('-', i)}`).toBe(canonical.name);
+      expect(got.state.tempo, tag('tempo')).toBe(canonical.tempo);
+      expect(got.state.swing, tag('swing')).toBe(canonical.swing);
+      expect(got.name, tag('name')).toBe(canonical.name);
 
       // ---- INVARIANT 2: KV convergence at the points where it must hold ----
       const kv = await readKv(id);
-      expect(kv, `kv present ${tag('-', i)}`).not.toBeNull();
-      expect(kv!.state.tempo, `kv tempo ${tag('-', i)}`).toBe(kvExpect.tempo);
-      expect(kv!.state.swing, `kv swing ${tag('-', i)}`).toBe(kvExpect.swing);
-      expect(kv!.name, `kv name ${tag('-', i)}`).toBe(kvExpect.name);
+      expect(kv, tag('kv present')).not.toBeNull();
+      expect(kv!.state.tempo, tag('kv tempo')).toBe(kvExpect.tempo);
+      expect(kv!.state.swing, tag('kv swing')).toBe(kvExpect.swing);
+      expect(kv!.name, tag('kv name')).toBe(kvExpect.name);
     }
-
+  } finally {
     if (conn) conn.ws.close(1000, 'fuzz done');
+  }
+}
+
+it('fuzz: read-your-writes through the DO holds across any interleaving; KV converges at write/disconnect points', async () => {
+  // Known failures replay first (committed example database, issue #97 T2).
+  for (const [i, schedule] of STATE_MACHINE_KNOWN_FAILURES.entries()) {
+    try {
+      await runStateMachineSchedule(schedule);
+    } catch (e) {
+      throw new Error(`known-failure #${i} regressed: ${(e as Error).message}`);
+    }
+  }
+
+  for (const seed of FUZZ_SEEDS) {
+    await fc.assert(
+      fc.asyncProperty(smScheduleArb, runStateMachineSchedule),
+      {
+        seed: seed | 0, // fc seeds are int32; soak values (e.g. a CI run id) fold in
+        numRuns: 1,
+        interruptAfterTimeLimit: Math.max(30_000, Math.floor(FUZZ_TIMEOUT_MS / FUZZ_SEEDS.length) - 5_000),
+        markInterruptAsFailure: true,
+      },
+    );
   }
 }, FUZZ_TIMEOUT_MS);

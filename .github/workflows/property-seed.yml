@@ -37,3 +37,41 @@ jobs:
         run: npm run test:unit
         env:
           FC_SEED: ${{ github.run_id }}
+
+  integration-fuzz-rotating-seed:
+    name: Integration fuzz lanes with a rotating soak seed
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build worker assets
+        run: npm run build
+
+      - name: Install integration test dependencies
+        run: npm ci
+        working-directory: ./app/test/integration
+
+      # FUZZ_SEEDS drives both fuzz lanes (state-machine + overlap). The
+      # run id is a plain decimal, so the fail-closed parse accepts it; a
+      # failure prints the fast-check-shrunk schedule + seed for promotion
+      # into test/integration/known-failures.ts (issue #97 T2).
+      - name: Run fuzz lanes with this run's replayable soak seed
+        run: npx vitest run state-machine-fuzz.test.ts overlap-fuzz.test.ts
+        working-directory: ./app/test/integration
+        env:
+          FUZZ_SEEDS: ${{ github.run_id }}
