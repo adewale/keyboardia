@@ -74,10 +74,10 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 63: A Component Fixture Must Reproduce Production Asset Order](#lesson-63-a-component-fixture-must-reproduce-production-asset-order)
 - [Lesson 64: Cross-Browser Coverage Needs a Named Authority per Contract](#lesson-64-cross-browser-coverage-needs-a-named-authority-per-contract)
 - [Lesson 65: Evidence Expires When the Merge Base Moves](#lesson-65-evidence-expires-when-the-merge-base-moves)
-- [Lesson 66: A Durability Cursor That Lags Its Events Creates an Epoch Problem for Every Consumer](#lesson-66-a-durability-cursor-that-lags-its-events-creates-an-epoch-problem-for-every-consumer)
-- [Lesson 67: A Kill Against One Fix Shape Is Not a Kill Against the Property](#lesson-67-a-kill-against-one-fix-shape-is-not-a-kill-against-the-property)
-- [Lesson 68: The Harness Lies Before the Subject Does](#lesson-68-the-harness-lies-before-the-subject-does)
-- [Lesson 69: A Test-Configuration Knob Must Fail Closed](#lesson-69-a-test-configuration-knob-must-fail-closed)
+- [Lesson 66: Eviction Rewinds Any Counter You Persist Only Sometimes](#lesson-66-eviction-rewinds-any-counter-you-persist-only-sometimes)
+- [Lesson 67: Validate a Kill Against Two Shapes of the Fix](#lesson-67-validate-a-kill-against-two-shapes-of-the-fix)
+- [Lesson 68: Rule Out the Harness Before Blaming the Subject](#lesson-68-rule-out-the-harness-before-blaming-the-subject)
+- [Lesson 69: A Malformed Test Knob Must Kill the Run, Not Shrink It](#lesson-69-a-malformed-test-knob-must-kill-the-run-not-shrink-it)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5855,7 +5855,7 @@ review size; they do not make inherited evidence permanent.
 
 ---
 
-## Lesson 66: A Durability Cursor That Lags Its Events Creates an Epoch Problem for Every Consumer
+## Lesson 66: Eviction Rewinds Any Counter You Persist Only Sometimes
 
 **Date:** August 2026
 **Context:** The SQLite WAL-Reset investigation applied to our own stack
@@ -5864,36 +5864,38 @@ review size; they do not make inherited evidence permanent.
 
 ### What happened
 
-`serverSeq` is persisted every 100 mutating broadcasts (or on a graceful
-flush), but hibernated WebSockets survive eviction. So an ungraceful eviction
-rewinds the counter *underneath live connections*: the server re-issues
-sequence numbers clients have already seen, on sockets that never closed.
-No data is lost — state persists per mutation — but every consumer of the
-counter inherits an epoch problem: the client counts each regressed frame as
-out-of-order, trips reconnect recovery after 11 of them, and because neither
-`scheduleReconnect()` nor `handleOpen()` resets `SyncHealth` (only the
-never-called `disconnect()` does), the stale high-water mark survives each
-reconnect. The client churns until the new epoch outruns the old mark.
-Meanwhile its stale `ack` exceeds `serverSeq`, and the server's recovery
-check only fires on positive gaps — the window is silent by construction.
+The server persists `serverSeq` every 100 mutating broadcasts, or when a
+graceful disconnect flushes state. Hibernated WebSockets survive eviction.
+Together those two facts mean an ungraceful eviction restores a stale
+counter underneath sockets that never closed: the server re-issues sequence
+numbers those clients already received.
 
-This is the WAL-Reset shape in miniature: a rare lifecycle event, a counter
-whose durability lags its use, and recovery logic designed for a different
-failure (gaps) reacting to this one (regression) by making it worse.
+No mutation is lost — the server persists state itself on every write. The
+damage lands on the counter's consumers. The client counts each regressed
+frame as out-of-order and reconnects after eleven of them. Nothing on the
+reconnect path resets `SyncHealth` (only `disconnect()` does, and nothing
+calls it), so the stale high-water mark survives and the client reconnects
+again every eleven frames until the new counter climbs past the old mark.
+The client also echoes the stale mark as its `ack`. The server's recovery
+check is `ackGap > ACK_GAP_THRESHOLD`; a regressed counter makes the gap
+negative, the check stays false, and the server does nothing.
+
+SQLite's WAL-Reset bug has the same anatomy: a rare lifecycle event
+restores stale bookkeeping, and recovery code built for a different failure
+handles this one by making it worse.
 
 ### The rule
 
-Any counter that survives restarts must either be persisted at least as
-often as its consumers observe it, or every wake/reconnect path must
-re-establish the epoch explicitly. When writing recovery logic, enumerate
-the *impossible* readings (here: ack > serverSeq) and handle them loudly —
-an impossible reading routed through logic built for a possible one is how
-a bounded defect becomes churn. And when a reconnect exists to recover from
-confusion, it must reset the state that was confused.
+Persist a counter at least as often as its consumers observe it, or make
+every wake and reconnect path re-establish the epoch. When you write
+recovery logic, enumerate the impossible readings — here, a client acking a
+sequence number the server never sent — and fail loudly on them. A
+reconnect that exists to clear confusion must clear the state that got
+confused.
 
 ---
 
-## Lesson 67: A Kill Against One Fix Shape Is Not a Kill Against the Property
+## Lesson 67: Validate a Kill Against Two Shapes of the Fix
 
 **Date:** August 2026
 **Context:** Multi-agent audit of the seq-regression tests
@@ -5901,37 +5903,34 @@ confusion, it must reset the state that was confused.
 
 ### What happened
 
-The negative-ack silence test was "kill-validated": sabotaging the server
-with `ackGap > THRESHOLD || ackGap < 0` made it fail, so we trusted it. The
-audit then observed the test acked 50 against `serverSeq = 1` — a gap of
-−49 whose *magnitude* (49) is also under the threshold of 50. A different,
-equally plausible fix shape — `Math.abs(ackGap) > THRESHOLD` — passed the
-test untouched. The oracle had been validated against one implementation of
-the fix, not against the property ("only positive gaps trigger recovery").
-Changing the constant to 100 (gap −99, magnitude 99) made the test straddle
-the boundary: it now fails under any magnitude-based detector, verified by
-re-running the `Math.abs` sabotage.
+We validated the negative-ack silence test with one sabotage: make the
+server resync on negative gaps too, watch the test fail. It failed, so we
+trusted the test. The audit then read the constant. The test acked 50
+while `serverSeq` was 1 — a gap of −49, whose magnitude (49) also sits
+under the threshold of 50. A server that checked `Math.abs(ackGap) > 50`
+would pass the test unchanged. The sabotage had proven the test detects
+one shape of the fix; we concluded it detects the property. Acking 100
+instead puts the magnitude at 99, on the far side of the threshold, and
+the re-run `Math.abs` sabotage now fails the test.
 
-The audit's own suggestions were subject to the same rule in reverse: its
-proposed duplicate-trigger threshold (1.0× step duration, derived from a
-single BPM-change analysis) was refuted by simply running it — seed 777
-produces a legitimate 38.5 ms gap because consecutive tempo rebases compound
-compression. The executable check beat both the original constant and the
-reviewer's derivation.
+The audit was subject to the same rule in reverse. A reviewer derived a
+tighter duplicate-trigger threshold (1.0× step duration) from a
+single-tempo-change analysis. Running it refuted it: seed 777 produces a
+legitimate 38.5 ms gap, because consecutive BPM rebases compound
+compression past any single-change floor. Both constants were settled by
+running code, not by argument.
 
 ### The rule
 
-Pick test constants so that every plausible alternative implementation is
-discriminated — put them on the far side of whatever boundary separates the
-behaviors (here: magnitude above threshold, sign negative). Validate a kill
-against at least two distinct shapes of the fix, not one. And treat review
-suggestions about thresholds as hypotheses to execute, not edits to apply:
-both directions of this lesson were settled by running the code, not by
-argument.
+Place each test constant on the far side of every boundary that separates
+plausible implementations — here, magnitude above the threshold and sign
+negative, so signed and unsigned detectors give different answers.
+Validate a kill against at least two shapes of the fix. Treat a reviewer's
+proposed threshold as a hypothesis to run, not an edit to apply.
 
 ---
 
-## Lesson 68: The Harness Lies Before the Subject Does
+## Lesson 68: Rule Out the Harness Before Blaming the Subject
 
 **Date:** August 2026
 **Context:** Executing the bounded correctness plan
@@ -5939,38 +5938,39 @@ argument.
 
 ### What happened
 
-In one working session, every first failure signal was false, four separate
-times, in four different ways:
+Four failures in one working session pointed at the subject. All four came
+from the rig:
 
-1. A 50-seed soak batch "failed" — actually the fuzz's fixed 120 s timeout,
-   masquerading as an oracle failure. (Fix: timeout scales with seed count.)
-2. "A snapshot arrived after the negative ack" — actually the handshake
-   snapshot the worker queues at connect, sitting in the listener buffer.
-   (Fix: consume connection-setup frames before absence assertions.)
-3. Two soak batches failed with the exact signature of a sabotage that was
-   running concurrently in the same working tree — contamination, not
-   discovery. (Rule: sabotage runs and soaks never share a working tree.)
-4. The scheduler race lane "crashed the scheduler" — actually the harness
-   fabricating a track with no `steps` via `{...undefined, stepCount}`, a
-   state the reducer can never produce, admitted by an `as Track` cast.
+1. A 50-seed soak batch reported FAIL. The fuzz had a fixed 120-second
+   timeout and 50 seeds exceed it. The timeout now scales with seed count.
+2. A snapshot appeared to answer a negative ack. The worker queues a
+   snapshot at connect; it was sitting in the listener buffer. The test now
+   consumes handshake frames before asserting absence.
+3. Two soak batches failed with the exact signature of a sabotage edit
+   running at the same time in the same working tree. Contamination. The
+   rule since: mutation experiments and observation runs get separate
+   trees.
+4. The scheduler appeared to crash on a track with no `steps`. The harness
+   had built that track itself — `{...undefined, stepCount}` after a delete
+   emptied the list, admitted by an `as Track` cast. The reducer cannot
+   produce that state.
 
-The subject was innocent all four times. Anti-pattern #14 (asserting through
-fault-masking layers) is usually written about production code; it applies
-with equal force to the test rig itself.
+The subject was innocent all four times. Anti-pattern #14 (asserting
+through fault-masking layers) is usually written about production code; the
+test rig earns the same suspicion.
 
 ### The rule
 
-Before attributing a failure to the subject, positively rule out the
-harness: distinguish timeout from assertion in every reporter, drain setup
-traffic before absence checks, never run mutation experiments concurrently
-with observation runs in one tree, and never construct test states through
-type casts that the production reducer could not have produced. Symmetric
-rule for green runs: a lane that can silently do less work than it claims
-(see Lesson 69) lies in the other direction.
+Before attributing a failure to the subject, rule out the harness: make
+reporters distinguish timeout from assertion, drain setup traffic before
+absence checks, keep sabotage and observation in separate working trees,
+and construct test states only through paths the production reducer could
+take. Green runs carry the mirror risk — a lane that can quietly do less
+work than it claims (Lesson 69).
 
 ---
 
-## Lesson 69: A Test-Configuration Knob Must Fail Closed
+## Lesson 69: A Malformed Test Knob Must Kill the Run, Not Shrink It
 
 **Date:** August 2026
 **Context:** The `FUZZ_SEEDS` soak override
@@ -5980,23 +5980,21 @@ at 3 ms)
 ### What happened
 
 The soak override parsed seeds with
-`split(',').map(s => parseInt(s, 10)).filter(Number.isFinite)`. Any
-malformed value — `"abc"`, `","`, a stray space — parsed to an empty list,
-the `for (const seed of SEEDS)` body never ran, and both fuzz lanes passed
-in 3 ms having tested nothing. Worse, radix-10 `parseInt` silently coerces
-plausible input: `"0xc0ffee"` — literally one of the committed regression
-seeds, copy-pasteable from the source — becomes seed `0`; `"1e6"` becomes
-`1`; `"12abc"` becomes `12`. A soak configured with any of these reports
-green while exploring the wrong space or none at all. The static always-green
-gate cannot see this class: the vacuity is runtime-dynamic.
+`split(',').map(s => parseInt(s, 10)).filter(Number.isFinite)`. Feed it
+`"abc"`, `","`, or a stray space and the list comes back empty, the
+`for (const seed of SEEDS)` body never runs, and both fuzz lanes pass in
+3 ms while testing nothing. Radix-10 `parseInt` adds a second trap: it
+coerces `"0xc0ffee"` to `0` — and `0xc0ffee` is one of the committed
+regression seeds, exactly the value a developer would copy-paste into the
+env var. `"1e6"` becomes `1`; `"12abc"` becomes `12`. The static
+always-green gate cannot flag any of this, because the vacuity exists only
+at runtime.
 
 ### The rule
 
-Configuration that controls how much a test does must fail closed: an
-override is either fully valid or the run dies loudly — never "as much of it
-as parsed". Reject entries that don't round-trip
-(`String(parsed) !== trimmed`), throw on an empty result, and put the
-contract in the error message. The general form: any knob that can reduce a
-lane's work below its committed default is a knob that can silently convert
-the lane into a green no-op, and it needs a guard at the point of parsing,
-not a reminder in a doc.
+An override is either fully valid or the run dies with an error that names
+the contract. `parseSeedOverride` now rejects any entry that fails the
+round-trip check (`String(parsed) !== trimmed`) and throws when the result
+is empty. The general form: any knob that can reduce a lane's work below
+its committed default can convert that lane into a green no-op — so guard
+it where it parses, not in a doc.
