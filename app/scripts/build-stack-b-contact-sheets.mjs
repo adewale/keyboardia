@@ -26,7 +26,7 @@ const sheets = [
     id: '02-menu-states',
     title: 'Open menu states',
     rows: [
-      ['catalogue--step-count-open', '9. Step menu — layered surface, stronger depth, orange selected state'],
+      ['catalogue--step-count-open', '9. Step menu — layered surface, compact depth, neutral selected row + orange check'],
       ['catalogue--transpose-open', '10. Transpose menu — the same shared visual hierarchy'],
       ['catalogue--transpose-option-hover', '11. Option hover — tactile dark gradient'],
       ['catalogue--step-count-open-reduced-motion', '12. Reduced motion — same settled pixels, entrance animation still removed'],

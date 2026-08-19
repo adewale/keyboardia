@@ -18,9 +18,10 @@ not a pixel target.
    retaining transpose blue when it is active and closed.
 4. Add the documented information-blue `:focus-visible` outline.
 5. Give portalled menus a layered dark surface, clearer edge, 10px corners,
-   inset highlight, and stronger elevation.
-6. Give hovered options a tactile gradient and selected options a restrained
-   orange gradient with a leading inset marker.
+   inset highlight, and compact elevation.
+6. Give hovered options a tactile gradient and selected options a quiet neutral
+   tonal fill. Retain the orange check as the semantic selection indicator;
+   do not add a tinted row, leading rail, or other decorative marker.
 7. Increase secondary option-label and selected-check contrast without changing
    typography or layout.
 8. Keep the decoration responsive in desktop, component portrait, compact
@@ -54,6 +55,16 @@ not a pixel target.
   aspiration remains a Stack C decision because enlarging hit areas changes
   behavior.
 - Reduced motion continues to remove the menu entrance animation.
+
+## Selection-state consistency
+
+- A chosen item in a single-choice menu uses two cues: a neutral tonal row and
+  an orange check. Step-count and transpose share the same rule through
+  `Dropdown.css`; neither component may introduce its own selected treatment.
+- Blue outlines remain reserved for selecting sequencer objects for editing.
+- Feature-coloured filled controls remain reserved for modes and on/off states.
+- Orange trigger treatment means the popup is open, not that its current value
+  is selected. The check inside the menu carries that meaning.
 
 Measured contrast for the candidate treatment is 12.97:1 for primary menu
 text, 8.38:1 for secondary option labels, 6.83:1 for category labels, 5.38:1

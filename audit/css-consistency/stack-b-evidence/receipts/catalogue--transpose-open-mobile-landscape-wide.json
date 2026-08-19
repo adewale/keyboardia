@@ -6,10 +6,10 @@
     "width": 844,
     "height": 390
   },
-  "differentPixels": 15785,
-  "rawDifferentPixels": 45729,
+  "differentPixels": 15677,
+  "rawDifferentPixels": 43805,
   "maxObservedChannelDelta": 240,
   "beforeSha256": "53c0fbfc9145bc1689a1459370574a9a8d3b9b6de09cff3d16ff2fc0905db4bb",
-  "afterSha256": "6bba55c0eb2b99b8b64620bba58d99192cefe7ea872638f5ae0125de6512377d",
-  "diffSha256": "055c3b01cfb1983906d998e2361db426d742334f581b40df7a87b6f30bc0014b"
+  "afterSha256": "d71cca90dbc4e6e0ebe4aacf91b849e54afccca9d4e580229dfc02cdb0105da6",
+  "diffSha256": "e5bd9cbb8d07052652c66dd01ed367340744707d208a61ef33cdcb3dded8a677"
 }

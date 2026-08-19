@@ -163,6 +163,8 @@
 }
 
 .dropdown-option.selected {
+  /* A selected choice uses tonal hierarchy plus the existing checkmark.
+   * Keep brand orange on the check instead of tinting or striping the row. */
   background: var(--dropdown-option-selected-background);
 }
 

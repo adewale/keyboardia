@@ -252,10 +252,18 @@ lessons before approval:
    hidden parent can retain `display:flex` while producing a 0×0 rectangle.
    Target-region capture now requires positive geometry, preventing invisible
    controls from turning an identity screenshot into a one-pixel crop.
+5. **Consistent selection does not mean one colour for every `.active`
+   class.** The rejected menu treatment reused orange as row tint, leading rail,
+   check, and open-trigger state. The approved replacement defines cues by
+   meaning: single-choice popup items use a neutral tonal row plus orange check;
+   sequencer-object selection keeps its information-blue outline; modes and
+   binary actions keep their owning feature colours; and the playhead remains
+   white. A focused browser contract now proves the two `aria-selected`
+   dropdown families compute to the same selected surface and indicator.
 
 Candidate CSS scorecard (subject to visual approval): product files remain 41;
 product declarations increase from 5,036 to 5,050; product CSS lines increase
-from 10,987 to 11,009; the shared dropdown recipe increases by one declaration
+from 10,987 to 11,008; the shared dropdown recipe increases by one declaration
 from 127 to 128; raw colors outside `index.css` fall from 346 to 341; duplicate
 dropdown declarations remain zero; `!important` remains 20. The declaration
 and line increases are the explicit maintenance cost of adding visual depth,

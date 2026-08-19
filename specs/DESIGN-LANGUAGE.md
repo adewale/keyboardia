@@ -392,10 +392,10 @@ primitive.
 | Edge | Quiet grey edge plus an inset top highlight |
 | Trigger radius | 7px, except connected group corners owned by `TrackRow` |
 | Menu radius | 10px |
-| Depth | Inset highlight plus a compact trigger shadow or 32px menu shadow |
+| Depth | Inset highlight plus compact trigger and menu shadows |
 | Disclosure accent | Keyboardia orange; transpose remains blue when active but closed |
 | Focus | 2px information-blue outline, 2px offset |
-| Selected option | Orange-tinted gradient with a 3px inset leading marker |
+| Selected option | Neutral tonal fill plus the existing orange check; no tinted row or leading rail |
 | Density | Preserve the existing 36px trigger and existing option/menu geometry |
 | Motion | Preserve the existing 150ms open animation; remove it under reduced motion |
 
@@ -416,6 +416,23 @@ behavior, dismissal and focus recovery, portal placement, hit areas, layout
 geometry, and product-mode behavior. The existing 36px trigger is larger than
 WCAG 2.2's 24px minimum but below Keyboardia's aspirational 44px mobile target;
 changing it is explicitly deferred to a Stack C product decision.
+
+#### Selection grammar
+
+Selection cues follow the meaning of the state instead of treating every
+`.active` class alike:
+
+| State meaning | Visual cue | Examples |
+|---------------|------------|----------|
+| Chosen item in a single-choice popup | Neutral tonal row plus orange check | Step count, transpose |
+| Selected sequencer object for editing | Information-blue outline/tint | Step and range selection |
+| Chosen view or mode | Filled segment using the owning feature colour | Pitch view, chromatic view |
+| Enabled binary action | Owning semantic/feature colour plus its label or icon | Mute, solo, tie, effects |
+| Current playback position | White playhead treatment | Step grid, portrait grid |
+
+Hover changes surface brightness, focus uses the information-blue outline, and
+an open dropdown trigger uses orange. Those interaction states must not be used
+as substitutes for the selected-item cue.
 
 ---
 

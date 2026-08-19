@@ -503,4 +503,39 @@ test.describe('Stack B approved dropdown differences', () => {
       expect(size.height).toBeGreaterThanOrEqual(24);
     }
   });
+
+  test('single-choice menus share the selected-item grammar @stack-b-accessibility', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(stateUrl('head', 'dropdowns'));
+    await expect(page.locator('[data-stack-a-ready]')).toBeVisible();
+
+    const readSelectedStyle = async (trigger: string, menu: string) => {
+      await page.locator(trigger).click();
+      const selected = page.locator(`${menu} [role="option"][aria-selected="true"]`);
+      const unselected = page.locator(`${menu} [role="option"][aria-selected="false"]`).first();
+      await expect(selected).toHaveCount(1);
+      await expect(selected.locator('.dropdown-option-check')).toBeVisible();
+      const style = await selected.evaluate((element) => {
+        const selectedStyle = getComputedStyle(element);
+        const checkStyle = getComputedStyle(element.querySelector('.dropdown-option-check')!);
+        return {
+          backgroundColor: selectedStyle.backgroundColor,
+          backgroundImage: selectedStyle.backgroundImage,
+          checkColor: checkStyle.color,
+        };
+      });
+      expect(await unselected.evaluate((element) => getComputedStyle(element).backgroundColor))
+        .toBe('rgba(0, 0, 0, 0)');
+      await page.keyboard.press('Escape');
+      return style;
+    };
+
+    const step = await readSelectedStyle('.step-count-trigger', '.step-count-menu');
+    const transpose = await readSelectedStyle('.transpose-trigger', '.transpose-menu');
+
+    expect(step).toEqual(transpose);
+    expect(step.backgroundColor).toBe('rgb(53, 53, 59)');
+    expect(step.backgroundImage).toContain('linear-gradient');
+    expect(step.checkColor).toBe('rgb(240, 112, 72)');
+  });
 });

@@ -23,7 +23,7 @@ hash receipts are retained beside these contact sheets.
 - Total named pairs: 25
 - Intentionally changed pairs: 22
 - Exact-identity product pairs: 3 (portrait, compact landscape, wide landscape)
-- Pixels beyond the 6/255 raster allowance: 513,086 across the 22 changed pairs
+- Pixels beyond the 6/255 raster allowance: 500,482 across the 22 changed pairs
 - Accessibility trees: exact base/head identity
 - Visible element and dropdown rectangles: exact base/head identity
 - Non-decorative computed styles: exact base/head identity
@@ -31,7 +31,7 @@ hash receipts are retained beside these contact sheets.
 - Touch event payloads and dismissal: exact base/head identity in emulated-touch WebKit
 
 CSS scorecard: 41 product CSS files (unchanged), 5,050 declarations (+14),
-11,009 lines (+22), 128 shared-dropdown declarations (+1), 341 raw colors
+11,008 lines (+21), 128 shared-dropdown declarations (+1), 341 raw colors
 outside `index.css` (-5), zero duplicated dropdown declarations (unchanged),
 and 20 `!important` declarations (unchanged).
 
@@ -51,7 +51,7 @@ still require zero changed pixels beyond the 6/255 same-process raster allowance
 | 6 | Step selection result | [PNG](before/catalogue--step-count-selection.png) | [PNG](after/catalogue--step-count-selection.png) | Styled closed result; event remains exact |
 | 7 | Transpose Escape result | [PNG](before/catalogue--transpose-escape.png) | [PNG](after/catalogue--transpose-escape.png) | Styled closed result; dismissal remains exact |
 | 8 | Transpose selection result | [PNG](before/catalogue--transpose-selection.png) | [PNG](after/catalogue--transpose-selection.png) | Styled closed result; event remains exact |
-| 9 | Step menu open | [PNG](before/catalogue--step-count-open.png) | [PNG](after/catalogue--step-count-open.png) | Layered menu and orange selected state |
+| 9 | Step menu open | [PNG](before/catalogue--step-count-open.png) | [PNG](after/catalogue--step-count-open.png) | Layered menu and neutral tonal selected row with orange check |
 | 10 | Transpose menu open | [PNG](before/catalogue--transpose-open.png) | [PNG](after/catalogue--transpose-open.png) | Same shared visual hierarchy |
 | 11 | Transpose option hover | [PNG](before/catalogue--transpose-option-hover.png) | [PNG](after/catalogue--transpose-option-hover.png) | Tactile option gradient |
 | 12 | Reduced-motion menu | [PNG](before/catalogue--step-count-open-reduced-motion.png) | [PNG](after/catalogue--step-count-open-reduced-motion.png) | Same settled pixels; animation remains removed |
