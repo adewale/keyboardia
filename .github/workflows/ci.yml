@@ -302,13 +302,13 @@ jobs:
         uses: actions/cache@v5
         with:
           path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-chromium-${{ hashFiles('app/package-lock.json') }}
+          key: playwright-${{ runner.os }}-chromium-webkit-${{ hashFiles('app/package-lock.json') }}
 
       - name: Install sample-decode browser system dependencies
-        run: npx playwright install-deps chromium
+        run: npx playwright install-deps chromium webkit
 
-      - name: Install sample-decode browser binary
-        run: npx playwright install chromium
+      - name: Install sample-decode browser binaries
+        run: npx playwright install chromium webkit
 
       - name: Verify Pipeline v2 real encode/decode contract
         run: npx vitest run test/sample-pipeline-real-contract.test.ts
