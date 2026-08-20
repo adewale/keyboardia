@@ -121,8 +121,11 @@ const headSha = git(['rev-parse', 'HEAD']);
 const baseOwnsHarness = harnessExistsAtBase(baseSha);
 try {
   if (process.env.STACK_B_WRITE_EVIDENCE === '1') {
-    const trackedChanges = git(['status', '--porcelain', '--untracked-files=no']);
-    if (trackedChanges) {
+    const sourceChanges = git(['status', '--porcelain', '--untracked-files=no'])
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .filter((line) => !line.slice(3).startsWith('audit/css-consistency/stack-b-evidence/'));
+    if (sourceChanges.length > 0) {
       throw new Error(
         'Commit all tracked source changes before writing Stack B evidence so receipts can bind to an immutable head.',
       );
