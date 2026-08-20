@@ -800,13 +800,17 @@ and behavior—not pixel similarity.
 2. **Complete — A checkpoint:** the scorecard above shows net CSS deletion and
    zero remaining duplicate component declarations, so the dropdown pilot is a
    go; broader abstraction is not implied.
-3. **In review — Dropdown B pilot:** the dropdown-only brief, accessibility,
-   density, touch decision, deterministic expected-difference contract, and 27
-   before/after pairs are implemented in one maintainer-requested draft PR.
+3. **Implementation complete — Dropdown B pilot:** the dropdown-only brief,
+   accessibility, density, touch decision, deterministic expected-difference
+   contract, and 27 before/after pairs are implemented in one
+   maintainer-requested PR. The maintainer approved Option 1 for the selected
+   row and the remaining evidence package. The pilot decision is **stop**: do
+   not begin another Stack B surface without its own surface-specific gate.
    The final approval package is source-revision-bound and covers desktop,
    portrait, 480×320 and 667×375 landscape, 844×390 wide landscape, 1024×768
-   tablet landscape, and the 768/769 boundary. Merge remains blocked until the
-   repaired CI checks pass and the stop/revise/continue decision is recorded.
+   tablet landscape, and the 768/769 boundary. PR #95 may merge after its
+   required CI checks pass; that merge does not authorize a product-wide Stack
+   B rollout.
 4. **C0 in parallel, per surface:** merge only the viewport, FX, picker-
    characterization, or touch decision needed by that surface; then implement
    it as one vertical slice. Do not make all A/B wait for all C0 decisions.
