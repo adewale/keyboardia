@@ -124,7 +124,7 @@ try {
     const sourceChanges = git(['status', '--porcelain', '--untracked-files=no'])
       .split(/\r?\n/)
       .filter(Boolean)
-      .filter((line) => !line.slice(3).startsWith('audit/css-consistency/stack-b-evidence/'));
+      .filter((line) => !line.includes('audit/css-consistency/stack-b-evidence/'));
     if (sourceChanges.length > 0) {
       throw new Error(
         'Commit all tracked source changes before writing Stack B evidence so receipts can bind to an immutable head.',
