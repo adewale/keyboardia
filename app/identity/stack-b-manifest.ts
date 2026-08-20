@@ -65,10 +65,22 @@ export const stackBFullAppStates: StackBFullAppState[] = [
     intendedResult: 'Compact landscape remains pixel-identical because TrackDrawer uses a native select and transpose buttons.',
   },
   {
+    id: 'full-app-landscape-narrow-unaffected',
+    viewport: { width: 667, height: 375 },
+    action: 'hidden-landscape',
+    intendedResult: 'Narrow landscape remains pixel-identical because TrackDrawer uses other controls.',
+  },
+  {
     id: 'full-app-landscape-wide-unaffected',
     viewport: { width: 844, height: 390 },
     action: 'hidden-landscape',
     intendedResult: 'Wide landscape remains pixel-identical because TrackDrawer uses a native select and transpose buttons.',
+  },
+  {
+    id: 'full-app-tablet-landscape-step-open',
+    viewport: { width: 1024, height: 768 },
+    action: 'desktop-step',
+    intendedResult: 'Tablet landscape keeps the desktop editor and receives the pilot skin.',
   },
   {
     id: 'full-app-width-768-step-open',

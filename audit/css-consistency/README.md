@@ -227,6 +227,13 @@ result, not a hidden benefit.
   canary for the affected surface and responsive modes. If they disagree,
   repair the fixture or the implementation; do not update snapshots until the
   source of the disagreement is understood and approved.
+- Bind approval to an immutable source revision, not merely to image hashes.
+  The final evidence-only commit records base/source SHAs, generator schema,
+  input/config hashes, check results, and every review-file hash; CI rejects
+  source drift after that approved revision.
+- Measure contrast against every opaque gradient stop that can be rendered,
+  including non-text selection indicators. A fallback `background-color` is
+  not the visible surface when an opaque gradient covers it.
 
 #### Lessons learned from the Stack B candidate
 
@@ -260,6 +267,23 @@ lessons before approval:
    binary actions keep their owning feature colours; and the playhead remains
    white. A focused browser contract now proves the two `aria-selected`
    dropdown families compute to the same selected surface and indicator.
+6. **A screenshot hash proves integrity, not freshness.** Receipts must name the
+   immutable source revision that produced the pixels, and CI must reject later
+   product, harness, workflow, or documentation changes until evidence is
+   regenerated. Contact sheets and focused approval crops belong in the same
+   bound file inventory as their raw images.
+7. **Machine pixel authority and human review rendering are different jobs.**
+   Same-process Linux Chromium comparisons enforce containment and identity in
+   CI. Committed Chromium screenshots may be rendered on the review machine as
+   long as their source revision and environment are explicit; they are not
+   cross-platform golden screenshots.
+8. **Responsive evidence follows the named product matrix, even for unchanged
+   modes.** The 480×320 and 667×375 landscape canaries prove that the native
+   TrackDrawer path remains exact, while 1024×768 proves the tablet-landscape
+   desktop editor receives the approved dropdown treatment.
+9. **Approval sheets must show the decision at useful scale.** An exhaustive
+   menu sheet is not enough when its most important row is hard to inspect. The
+   package now includes a dedicated full-height selected-option comparison.
 
 Candidate CSS scorecard (subject to visual approval): product files remain 41;
 product declarations increase from 5,036 to 5,050; product CSS lines increase
@@ -777,10 +801,12 @@ and behavior—not pixel similarity.
    zero remaining duplicate component declarations, so the dropdown pilot is a
    go; broader abstraction is not implied.
 3. **In review — Dropdown B pilot:** the dropdown-only brief, accessibility,
-   density, touch decision, deterministic expected-difference contract, and 25
+   density, touch decision, deterministic expected-difference contract, and 27
    before/after pairs are implemented in one maintainer-requested draft PR.
-   Merge and any later Stack B surface remain blocked on visual approval and a
-   recorded stop/revise/continue decision.
+   The final approval package is source-revision-bound and covers desktop,
+   portrait, 480×320 and 667×375 landscape, 844×390 wide landscape, 1024×768
+   tablet landscape, and the 768/769 boundary. Merge remains blocked until the
+   repaired CI checks pass and the stop/revise/continue decision is recorded.
 4. **C0 in parallel, per surface:** merge only the viewport, FX, picker-
    characterization, or touch decision needed by that surface; then implement
    it as one vertical slice. Do not make all A/B wait for all C0 decisions.

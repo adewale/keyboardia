@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { platform, release } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { PNG } from 'pngjs';
@@ -18,6 +19,23 @@ import {
 
 const evidenceRoot = resolve(process.cwd(), '..', 'audit', 'css-consistency', 'stack-b-evidence');
 const writeEvidence = process.env.STACK_B_WRITE_EVIDENCE === '1';
+const evidenceGenerator = {
+  name: 'app/identity/stack-b-visual.spec.ts',
+  version: 2,
+} as const;
+const approvedDropdownTokens = {
+  '--dropdown-control-background': 'linear-gradient(180deg, #34343a 0%, #242429 100%) #242429',
+  '--dropdown-control-border': '#4f4f58',
+  '--dropdown-control-shadow': 'inset 0 1px 0 rgba(255, 255, 255, .1), 0 2px 4px rgba(0, 0, 0, .32)',
+  '--dropdown-control-hover-background': 'linear-gradient(180deg, #3d3d44 0%, #2c2c31 100%) #2c2c31',
+  '--dropdown-control-open-background': 'linear-gradient(180deg, #402923 0%, #2a201e 100%) #2a201e',
+  '--dropdown-menu-background': 'linear-gradient(180deg, #2c2c32 0%, #1d1d21 100%) #1d1d21',
+  '--dropdown-menu-border': '#54545e',
+  '--dropdown-menu-shadow': 'inset 0 1px 0 rgba(255, 255, 255, .09), 0 4px 10px rgba(0, 0, 0, .35)',
+  '--dropdown-option-hover-background': 'linear-gradient(180deg, #3b3b42 0%, #303036 100%) #333339',
+  '--dropdown-option-selected-background': 'linear-gradient(180deg, #3a3a41 0%, #323238 100%) #35353b',
+  '--dropdown-option-secondary-text': 'rgba(255, 255, 255, .68)',
+} as const;
 const holby = JSON.parse(readFileSync(resolve(process.cwd(), 'scripts/demo-sessions/holby.json'), 'utf8')) as {
   name: string;
   state: unknown;
@@ -305,9 +323,25 @@ function digest(buffer: Buffer) {
   return createHash('sha256').update(buffer).digest('hex');
 }
 
-function parseRgb(value: string) {
-  const channels = value.match(/[\d.]+/g)?.map(Number);
-  if (!channels || channels.length < 3) throw new Error(`Unsupported computed color: ${value}`);
+function parseColor(value: string) {
+  const color = value.trim();
+  const hex = color.match(/^#([\da-f]{3}|[\da-f]{6}|[\da-f]{8})$/i)?.[1];
+  if (hex) {
+    const expanded = hex.length === 3
+      ? [...hex].map((channel) => `${channel}${channel}`).join('')
+      : hex;
+    return [
+      Number.parseInt(expanded.slice(0, 2), 16),
+      Number.parseInt(expanded.slice(2, 4), 16),
+      Number.parseInt(expanded.slice(4, 6), 16),
+      expanded.length === 8 ? Number.parseInt(expanded.slice(6, 8), 16) / 255 : 1,
+    ];
+  }
+  const functional = color.match(/^rgba?\(([^)]+)\)$/i)?.[1];
+  const channels = functional?.split(/[,\s/]+/).filter(Boolean).map(Number);
+  if (!channels || channels.length < 3 || channels.some(Number.isNaN)) {
+    throw new Error(`Unsupported computed color: ${value}`);
+  }
   return [channels[0], channels[1], channels[2], channels[3] ?? 1];
 }
 
@@ -321,8 +355,8 @@ function relativeLuminance([red, green, blue]: number[]) {
 }
 
 function contrastRatio(foreground: string, background: string) {
-  const [backgroundRed, backgroundGreen, backgroundBlue] = parseRgb(background);
-  const [foregroundRed, foregroundGreen, foregroundBlue, alpha] = parseRgb(foreground);
+  const [backgroundRed, backgroundGreen, backgroundBlue] = parseColor(background);
+  const [foregroundRed, foregroundGreen, foregroundBlue, alpha] = parseColor(foreground);
   const compositedForeground = [
     foregroundRed * alpha + backgroundRed * (1 - alpha),
     foregroundGreen * alpha + backgroundGreen * (1 - alpha),
@@ -332,6 +366,15 @@ function contrastRatio(foreground: string, background: string) {
   const backgroundLuminance = relativeLuminance([backgroundRed, backgroundGreen, backgroundBlue]);
   return (Math.max(foregroundLuminance, backgroundLuminance) + 0.05)
     / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05);
+}
+
+function backgroundSamples(backgroundColor: string, backgroundImage: string) {
+  const gradientColors = backgroundImage.match(/rgba?\([^)]+\)|#[\da-f]{3,8}/gi) ?? [];
+  return [...new Set([backgroundColor, ...gradientColors])];
+}
+
+function minimumContrast(foreground: string, backgrounds: string[]) {
+  return Math.min(...backgrounds.map((background) => contrastRatio(foreground, background)));
 }
 
 function cropForReview(buffer: Buffer, regions: TargetRegion[]) {
@@ -352,19 +395,30 @@ function cropForReview(buffer: Buffer, regions: TargetRegion[]) {
   return PNG.sync.write(target);
 }
 
-async function baseSha(page: Page) {
+async function comparisonRevisions(page: Page) {
   const response = await page.request.get('http://127.0.0.1:4179/__stack-a-ready');
   expect(response.ok()).toBe(true);
-  return (await response.json() as { baseSha: string }).baseSha;
+  return response.json() as Promise<{ baseSha: string; headSha: string }>;
 }
 
 async function preserveEvidence(
   group: 'catalogue' | 'full-app',
   id: string,
   baseRevision: string,
+  headRevision: string,
+  inputConfig: unknown,
   base: CapturedContract,
   head: CapturedContract,
   diff: ReturnType<typeof comparePngs>,
+  checks: {
+    accessibilityTreeIdentity: true;
+    geometryAndStyleViolations: 0;
+    targetGeometryIdentity: true;
+    unexpectedChangedPixels: 0;
+    pixelExpectation: 'changed' | 'identical';
+    result: 'passed';
+  },
+  browserVersion: string,
   testInfo: TestInfo,
 ) {
   await Promise.all([
@@ -391,6 +445,15 @@ async function preserveEvidence(
     id,
     group,
     baseRevision,
+    headRevision,
+    generator: evidenceGenerator,
+    inputConfigSha256: digest(Buffer.from(JSON.stringify(inputConfig))),
+    environment: {
+      browser: 'chromium',
+      browserVersion,
+      platform: platform(),
+      platformRelease: release(),
+    },
     viewport: diff.beforeSize,
     differentPixels: diff.differentPixels,
     rawDifferentPixels: diff.rawDifferentPixels,
@@ -398,6 +461,7 @@ async function preserveEvidence(
     beforeSha256: digest(base.screenshot),
     afterSha256: digest(head.screenshot),
     diffSha256: digest(diff.diff),
+    checks,
   }, null, 2)}\n`);
 }
 
@@ -409,25 +473,50 @@ async function assertApprovedDifference(
   base: CapturedContract,
   head: CapturedContract,
   expectsVisualDifference: boolean,
+  inputConfig: unknown,
 ) {
-  const revision = await baseSha(page);
-  const migration = revision === STACK_B_MIGRATION_BASE_SHA;
+  const { baseSha: baseRevision, headSha: headRevision } = await comparisonRevisions(page);
+  const migration = baseRevision === STACK_B_MIGRATION_BASE_SHA;
   const pixels = comparePngs(base.screenshot, head.screenshot);
-  await preserveEvidence(group, id, revision, base, head, pixels, testInfo);
+  const violations = styleViolations(base, head);
+  const targetGeometryIdentity = JSON.stringify(head.regions) === JSON.stringify(base.regions);
+  const changedOutsideTargets = unexpectedChangedPixels(base.screenshot, head.screenshot, base.regions);
 
   expect(head.aria, 'accessibility-tree identity failed').toBe(base.aria);
-  expect(styleViolations(base, head), 'geometry or non-decorative style changed').toEqual([]);
+  expect(violations, 'geometry or non-decorative style changed').toEqual([]);
   expect(head.regions, 'dropdown target geometry changed').toEqual(base.regions);
   expect(
-    unexpectedChangedPixels(base.screenshot, head.screenshot, base.regions),
+    changedOutsideTargets,
     'pixels changed outside dropdown controls and their approved decorative halo',
   ).toBe(0);
 
+  const pixelExpectation = migration && expectsVisualDifference ? 'changed' : 'identical';
   if (!migration || !expectsVisualDifference) {
     expect(pixels.differentPixels, 'this state must remain pixel-identical').toBe(0);
   } else {
     expect(pixels.differentPixels, 'the approved Stack B migration produced no visual change').toBeGreaterThan(0);
   }
+
+  await preserveEvidence(
+    group,
+    id,
+    baseRevision,
+    headRevision,
+    inputConfig,
+    base,
+    head,
+    pixels,
+    {
+      accessibilityTreeIdentity: true,
+      geometryAndStyleViolations: 0,
+      targetGeometryIdentity: targetGeometryIdentity as true,
+      unexpectedChangedPixels: changedOutsideTargets as 0,
+      pixelExpectation,
+      result: 'passed',
+    },
+    page.context().browser()?.version() ?? 'unknown',
+    testInfo,
+  );
 }
 
 test.describe('Stack B approved dropdown differences', () => {
@@ -435,7 +524,7 @@ test.describe('Stack B approved dropdown differences', () => {
     test(`${state.id} @stack-b-visual`, async ({ page }, testInfo) => {
       const base = await captureCatalogue(page, 'base', state);
       const head = await captureCatalogue(page, 'head', state);
-      await assertApprovedDifference(page, testInfo, 'catalogue', state.id, base, head, true);
+      await assertApprovedDifference(page, testInfo, 'catalogue', state.id, base, head, true, state);
     });
   }
 
@@ -451,6 +540,7 @@ test.describe('Stack B approved dropdown differences', () => {
         base,
         head,
         state.action === 'desktop-step',
+        state,
       );
     });
   }
@@ -462,14 +552,17 @@ test.describe('Stack B approved dropdown differences', () => {
     const trigger = page.locator('.step-count-trigger');
     await trigger.click();
     await expect(page.locator('.step-count-menu')).toBeVisible();
+    await settleForScreenshot(page);
 
     const colors = await page.evaluate(() => {
       const read = (selector: string) => getComputedStyle(document.querySelector(selector)!);
       const triggerStyle = read('.step-count-trigger');
       const menuStyle = read('.step-count-menu');
+      const selectedStyle = read('.step-count-menu [role="option"][aria-selected="true"]');
+      const selectedCheckStyle = read('.step-count-menu [aria-selected="true"] .dropdown-option-check');
       return {
         openText: triggerStyle.color,
-        openBackground: triggerStyle.backgroundColor,
+        openBackgrounds: [triggerStyle.backgroundColor, triggerStyle.backgroundImage],
         focusOutline: (() => {
           const probe = document.createElement('span');
           probe.style.color = 'var(--color-info)';
@@ -478,19 +571,35 @@ test.describe('Stack B approved dropdown differences', () => {
           probe.remove();
           return color;
         })(),
-        adjacentSurface: getComputedStyle(document.documentElement).getPropertyValue('--color-surface').trim(),
+        adjacentSurface: (() => {
+          const probe = document.createElement('span');
+          probe.style.backgroundColor = 'var(--color-surface)';
+          document.body.append(probe);
+          const color = getComputedStyle(probe).backgroundColor;
+          probe.remove();
+          return color;
+        })(),
         primaryText: read('.step-count-menu .dropdown-option-value').color,
         secondaryText: read('.step-count-menu .dropdown-option-label').color,
         categoryText: read('.step-count-menu .dropdown-category-label').color,
-        menuBackground: menuStyle.backgroundColor,
+        menuBackgrounds: [menuStyle.backgroundColor, menuStyle.backgroundImage],
+        selectedCheck: selectedCheckStyle.color,
+        selectedBackgrounds: [selectedStyle.backgroundColor, selectedStyle.backgroundImage],
       };
     });
 
-    expect(contrastRatio(colors.openText, colors.openBackground)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(colors.primaryText, colors.menuBackground)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(colors.secondaryText, colors.menuBackground)).toBeGreaterThanOrEqual(4.5);
-    expect(contrastRatio(colors.categoryText, colors.menuBackground)).toBeGreaterThanOrEqual(4.5);
+    const openBackgrounds = backgroundSamples(...colors.openBackgrounds as [string, string]);
+    const menuBackgrounds = backgroundSamples(...colors.menuBackgrounds as [string, string]);
+    const selectedBackgrounds = backgroundSamples(...colors.selectedBackgrounds as [string, string]);
+    expect(
+      minimumContrast(colors.openText, openBackgrounds),
+      `open-trigger contrast samples: ${JSON.stringify({ foreground: colors.openText, openBackgrounds })}`,
+    ).toBeGreaterThanOrEqual(4.5);
+    expect(minimumContrast(colors.primaryText, menuBackgrounds)).toBeGreaterThanOrEqual(4.5);
+    expect(minimumContrast(colors.secondaryText, menuBackgrounds)).toBeGreaterThanOrEqual(4.5);
+    expect(minimumContrast(colors.categoryText, menuBackgrounds)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(colors.focusOutline, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
+    expect(minimumContrast(colors.selectedCheck, selectedBackgrounds)).toBeGreaterThanOrEqual(3);
 
     const targetSizes = await page.locator('.dropdown-trigger:visible, .dropdown-option:visible')
       .evaluateAll((targets) => targets.map((target) => {
@@ -535,7 +644,123 @@ test.describe('Stack B approved dropdown differences', () => {
 
     expect(step).toEqual(transpose);
     expect(step.backgroundColor).toBe('rgb(53, 53, 59)');
-    expect(step.backgroundImage).toContain('linear-gradient');
+    expect(step.backgroundImage)
+      .toBe('linear-gradient(rgb(58, 58, 65) 0%, rgb(50, 50, 56) 100%)');
     expect(step.checkColor).toBe('rgb(240, 112, 72)');
+  });
+
+  test('approved dropdown decorative recipe is exact @stack-b-visual', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(stateUrl('head', 'dropdowns'));
+    await expect(page.locator('[data-stack-a-ready]')).toBeVisible();
+
+    const tokens = await page.evaluate((names) => {
+      const root = getComputedStyle(document.documentElement);
+      return Object.fromEntries(names.map((name) => [name, root.getPropertyValue(name).trim()]));
+    }, Object.keys(approvedDropdownTokens));
+    expect(tokens).toEqual(approvedDropdownTokens);
+
+    const trigger = page.locator('.step-count-trigger');
+    const closedStyle = await trigger.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        borderTopColor: style.borderTopColor,
+        boxShadow: style.boxShadow,
+      };
+    });
+    expect(closedStyle).toEqual({
+      backgroundColor: 'rgb(36, 36, 41)',
+      backgroundImage: 'linear-gradient(rgb(52, 52, 58) 0%, rgb(36, 36, 41) 100%)',
+      borderTopColor: 'rgb(79, 79, 88)',
+      boxShadow: 'rgba(255, 255, 255, 0.1) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.32) 0px 2px 4px 0px',
+    });
+
+    await trigger.hover();
+    await settleForScreenshot(page);
+    const hoverStyle = await trigger.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        borderTopColor: style.borderTopColor,
+      };
+    });
+    expect(hoverStyle).toEqual({
+      backgroundColor: 'rgb(44, 44, 49)',
+      backgroundImage: 'linear-gradient(rgb(61, 61, 68) 0%, rgb(44, 44, 49) 100%)',
+      borderTopColor: 'rgb(232, 90, 48)',
+    });
+    await page.mouse.move(0, 0);
+
+    await trigger.focus();
+    const focusStyle = await trigger.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        outlineColor: style.outlineColor,
+        outlineOffset: style.outlineOffset,
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+      };
+    });
+    expect(focusStyle).toEqual({
+      outlineColor: 'rgb(52, 152, 219)',
+      outlineOffset: '2px',
+      outlineStyle: 'solid',
+      outlineWidth: '2px',
+    });
+
+    await trigger.click();
+    await settleForScreenshot(page);
+    const openStyle = await trigger.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        borderTopColor: style.borderTopColor,
+        color: style.color,
+      };
+    });
+    expect(openStyle).toEqual({
+      backgroundColor: 'rgb(42, 32, 30)',
+      backgroundImage: 'linear-gradient(rgb(64, 41, 35) 0%, rgb(42, 32, 30) 100%)',
+      borderTopColor: 'rgb(240, 112, 72)',
+      color: 'rgb(240, 112, 72)',
+    });
+    const menu = page.locator('.step-count-menu');
+    await expect(menu).toBeVisible();
+    const menuStyle = await menu.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        borderRadius: style.borderRadius,
+        borderTopColor: style.borderTopColor,
+        boxShadow: style.boxShadow,
+      };
+    });
+    expect(menuStyle).toEqual({
+      backgroundColor: 'rgb(29, 29, 33)',
+      backgroundImage: 'linear-gradient(rgb(44, 44, 50) 0%, rgb(29, 29, 33) 100%)',
+      borderRadius: '10px',
+      borderTopColor: 'rgb(84, 84, 94)',
+      boxShadow: 'rgba(255, 255, 255, 0.09) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.35) 0px 4px 10px 0px',
+    });
+
+    const unselected = menu.locator('[role="option"][aria-selected="false"]').first();
+    await unselected.hover();
+    await settleForScreenshot(page);
+    const optionHoverStyle = await unselected.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+      };
+    });
+    expect(optionHoverStyle).toEqual({
+      backgroundColor: 'rgb(51, 51, 57)',
+      backgroundImage: 'linear-gradient(rgb(59, 59, 66) 0%, rgb(48, 48, 54) 100%)',
+    });
   });
 });

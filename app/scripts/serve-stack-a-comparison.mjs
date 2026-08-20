@@ -55,8 +55,11 @@ const protectedHarnessPaths = [
   'app/identity/stack-b-visual.spec.ts',
   'app/identity/test-title-inventory.txt',
   'app/playwright.stack-a.config.ts',
+  'app/scripts/build-stack-b-contact-sheets.mjs',
+  'app/scripts/finalize-stack-b-evidence.mjs',
   'app/scripts/png-identity.mjs',
   'app/scripts/serve-stack-a-comparison.mjs',
+  'app/scripts/verify-stack-b-evidence.mjs',
   'app/src/stack-a-catalog',
   'app/stack-a.html',
   'app/vite.stack-a.config.ts',
@@ -114,8 +117,17 @@ function cleanup() {
 }
 
 const baseSha = baseRevision();
+const headSha = git(['rev-parse', 'HEAD']);
 const baseOwnsHarness = harnessExistsAtBase(baseSha);
 try {
+  if (process.env.STACK_B_WRITE_EVIDENCE === '1') {
+    const trackedChanges = git(['status', '--porcelain', '--untracked-files=no']);
+    if (trackedChanges) {
+      throw new Error(
+        'Commit all tracked source changes before writing Stack B evidence so receipts can bind to an immutable head.',
+      );
+    }
+  }
   if (baseOwnsHarness) assertProtectedHarnessUnchanged(baseSha);
   execFileSync('git', ['worktree', 'add', '--detach', baseCheckout, baseSha], {
     cwd: repoRoot,
@@ -161,7 +173,7 @@ const server = createServer((request, response) => {
   const pathname = new URL(request.url || '/', 'http://127.0.0.1').pathname;
   if (pathname === '/__stack-a-ready') {
     response.writeHead(200, { 'content-type': 'application/json' });
-    response.end(JSON.stringify({ baseSha }));
+    response.end(JSON.stringify({ baseSha, headSha }));
     return;
   }
 

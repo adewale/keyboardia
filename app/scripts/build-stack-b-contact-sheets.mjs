@@ -25,6 +25,7 @@ const sheets = [
   {
     id: '02-menu-states',
     title: 'Open menu states',
+    frameHeight: 500,
     rows: [
       ['catalogue--step-count-open', '9. Step menu — layered surface, compact depth, neutral selected row + orange check'],
       ['catalogue--transpose-open', '10. Transpose menu — the same shared visual hierarchy'],
@@ -52,9 +53,19 @@ const sheets = [
       ['full-app--full-app-desktop-step-open', '20. Desktop product — every visible trigger plus an open step menu'],
       ['full-app--full-app-mobile-portrait-hidden', '21. Portrait product — exact identity; editing dropdowns remain absent'],
       ['full-app--full-app-landscape-compact-unaffected', '22. Compact landscape product — exact identity; TrackDrawer uses other controls'],
-      ['full-app--full-app-landscape-wide-unaffected', '23. Wide landscape product — exact identity; TrackDrawer uses other controls'],
-      ['full-app--full-app-width-768-step-open', '24. Production boundary at 768px'],
-      ['full-app--full-app-width-769-step-open', '25. Production boundary at 769px'],
+      ['full-app--full-app-landscape-narrow-unaffected', '23. Narrow landscape product — exact identity; TrackDrawer uses other controls'],
+      ['full-app--full-app-landscape-wide-unaffected', '24. Wide landscape product — exact identity; TrackDrawer uses other controls'],
+      ['full-app--full-app-tablet-landscape-step-open', '25. Tablet landscape product — desktop editor with open step menu'],
+      ['full-app--full-app-width-768-step-open', '26. Production boundary at 768px'],
+      ['full-app--full-app-width-769-step-open', '27. Production boundary at 769px'],
+    ],
+  },
+  {
+    id: '05-selected-option-approval-focus',
+    title: 'Selected option approval focus',
+    frameHeight: 520,
+    rows: [
+      ['catalogue--step-count-open', '9. Focused approval view — neutral tonal row plus orange check; no rail or tinted banner'],
     ],
   },
 ];
@@ -94,7 +105,7 @@ try {
       .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
       figure { margin: 0; min-width: 0; }
       figcaption { margin: 0 0 8px; color: #bbb; font: 700 12px ui-monospace, monospace; text-transform: uppercase; letter-spacing: .12em; }
-      .frame { display: grid; place-items: center; width: 100%; height: 360px; padding: 12px; overflow: hidden; background: #101012; border: 1px solid #303038; border-radius: 8px; }
+      .frame { display: grid; place-items: center; width: 100%; height: ${sheet.frameHeight ?? 360}px; padding: 12px; overflow: hidden; background: #101012; border: 1px solid #303038; border-radius: 8px; }
       img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
     </style></head><body>
       <header><h1>${escapeHtml(sheet.title)}</h1><p>Stack B dropdown pilot — left is merge base, right is candidate head</p></header>

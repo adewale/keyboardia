@@ -29,7 +29,7 @@
   box-sizing: border-box;
 }
 
-.dropdown-trigger:hover:not(:disabled) {
+.dropdown-trigger:hover:not(:disabled):not(.open) {
   border-color: var(--color-accent, #ff6b35);
   background: var(--dropdown-control-hover-background);
 }

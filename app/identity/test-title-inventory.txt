@@ -20,11 +20,14 @@ stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-
 stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-desktop-step-open @stack-b-full-app
 stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-mobile-portrait-hidden @stack-b-full-app
 stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-landscape-compact-unaffected @stack-b-full-app
+stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-landscape-narrow-unaffected @stack-b-full-app
 stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-landscape-wide-unaffected @stack-b-full-app
+stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-tablet-landscape-step-open @stack-b-full-app
 stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-width-768-step-open @stack-b-full-app
 stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-width-769-step-open @stack-b-full-app
 stack-b-visual.spec.ts › Stack B approved dropdown differences › approved palette contrast and minimum target size @stack-b-accessibility
 stack-b-visual.spec.ts › Stack B approved dropdown differences › single-choice menus share the selected-item grammar @stack-b-accessibility
+stack-b-visual.spec.ts › Stack B approved dropdown differences › approved dropdown decorative recipe is exact @stack-b-visual
 stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-desktop-expanded @stack-a-identity
 stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-collapsed @stack-a-identity
 stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-expanded @stack-a-identity

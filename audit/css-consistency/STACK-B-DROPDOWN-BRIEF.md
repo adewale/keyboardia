@@ -65,20 +65,31 @@ not a pixel target.
 - Feature-coloured filled controls remain reserved for modes and on/off states.
 - Orange trigger treatment means the popup is open, not that its current value
   is selected. The check inside the menu carries that meaning.
+- The project-wide taxonomy also classifies `aria-current` chooser items,
+  sequencer-object selection, modes, binary actions, playback, pagination, and
+  native selects. This pilot changes and mechanically enforces only the shared
+  custom single-choice popup row.
 
-Measured contrast for the candidate treatment is 12.97:1 for primary menu
-text, 8.38:1 for secondary option labels, 6.83:1 for category labels, 5.38:1
-for orange open-trigger text, and 5.29:1 for the information-blue focus outline
-against the adjacent dark surface.
+Worst-stop measured contrast for the candidate treatment is 10.88:1 for
+primary menu text, 7.28:1 for secondary option labels, 6.03:1 for category
+labels, 4.56:1 for orange open-trigger text, 5.29:1 for the information-blue
+focus outline against the adjacent dark surface, and 3.82:1 for the orange
+selected check against the lightest selected-row gradient stop.
 
 ## Evidence and approval
 
-Chromium is the pixel authority. Emulated-touch WebKit proves touch behavior,
-not pixels. The PR must include named base/head images for every dropdown state
-in the merge-base-owned catalogue and production-build canaries for desktop,
-portrait, compact landscape, wide landscape, and the 768/769 boundary.
+Same-process Chromium comparison on GitHub Actions Linux is the machine pixel
+authority. The committed Chromium review images are provenance-bound human
+evidence, not cross-platform pixel baselines. Emulated-touch WebKit proves
+touch behavior, not pixels. The PR must include named base/head images for
+every dropdown state in the merge-base-owned catalogue and production-build
+canaries for desktop, portrait, 480×320 and 667×375 landscape, 844×390 wide
+landscape, 1024×768 tablet landscape, and the 768/769 boundary.
 
-Approval is valid only for the exact merge-base/head pair recorded in the
-evidence receipt. Moving the merge base expires the images. The PR remains a
-draft until the maintainer approves the before/after evidence and records a
-stop, revise, or continue decision for any later Stack B surface.
+Approval is valid only for the exact merge base and approved source revision
+recorded in every receipt. The following commit may contain only the generated
+evidence package; CI rejects any product, harness, workflow, or documentation
+drift after the approved source revision. Moving the merge base expires the
+images. The PR remains a draft until the maintainer approves the before/after
+evidence and records a stop, revise, or continue decision for any later Stack B
+surface.

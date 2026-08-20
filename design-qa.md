@@ -35,10 +35,11 @@ No actionable P0, P1, or P2 mismatches remain.
 - Behavior and accessibility: the visible accessibility tree, keyboard/touch
   behavior, focus recovery, event payloads, and target rectangles remain exact.
   The selected menu item retains both a tonal surface and a non-colour check.
-- Responsiveness: in-app checks at 375 x 812, 480 x 320, 844 x 390, 768 x 1024,
-  and 769 x 1024 found one visible selected item, the same selected background,
-  and no horizontal overflow. Production portrait and both landscape modes
-  remain pixel-identical because they do not expose this dropdown family.
+- Responsiveness: the approval matrix covers 375 x 812, 480 x 320, 667 x 375,
+  844 x 390, 768 x 1024, 769 x 1024, and 1024 x 768. Visible dropdown states
+  retain one selected item and no horizontal overflow. Production portrait and
+  the three landscape-only TrackDrawer states remain pixel-identical because
+  they do not expose this dropdown family.
 
 ## Full-view comparison evidence
 
@@ -49,10 +50,11 @@ crisp edge, and restrained depth.
 
 ## Focused-region comparison evidence
 
-The implementation screenshot is already a focused crop around both grouped
-triggers, the open menu, selected row, and surrounding collision-canary content.
-No smaller crop is required to judge typography, check alignment, row fill, or
-shadow extent.
+The implementation screenshot is a focused crop around both grouped triggers,
+the open menu, selected row, and surrounding collision-canary content. The
+approval package also includes a dedicated full-height selected-option sheet so
+the neutral row, check alignment, and shadow extent remain legible when GitHub
+scales the exhaustive contact sheet.
 
 ## Browser verification
 
@@ -70,7 +72,7 @@ shadow extent.
    a `0 14px 32px` menu shadow.
 2. The implementation replaces that treatment with the selected Option 1
    neutral tonal row and orange check, and reduces the shadow to `0 4px 10px`.
-3. The post-fix combined comparison and five responsive in-app checks found no
+3. The post-fix combined comparison and seven responsive in-app checks found no
    remaining P0/P1/P2 issue.
 
 ## Implementation checklist
@@ -80,7 +82,9 @@ shadow extent.
 - [x] Replace the wide diffuse menu shadow with compact depth.
 - [x] Keep step-count and transpose selected states identical.
 - [x] Preserve geometry, behavior, accessibility, and reduced motion.
-- [x] Verify desktop, portrait, compact/wide landscape, and 768/769 boundaries.
+- [x] Verify desktop, portrait, compact/narrow/wide landscape, tablet landscape,
+      and 768/769 boundaries.
+- [x] Bind the approval images and receipts to an immutable source revision.
 
 ## Follow-up polish
 

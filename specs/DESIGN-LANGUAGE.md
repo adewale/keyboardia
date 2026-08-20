@@ -425,14 +425,21 @@ Selection cues follow the meaning of the state instead of treating every
 | State meaning | Visual cue | Examples |
 |---------------|------------|----------|
 | Chosen item in a single-choice popup | Neutral tonal row plus orange check | Step count, transpose |
+| Current item in an in-place chooser | Owning accent inset outline plus `aria-current` | Current instrument in Sample Picker |
 | Selected sequencer object for editing | Information-blue outline/tint | Step and range selection |
 | Chosen view or mode | Filled segment using the owning feature colour | Pitch view, chromatic view |
 | Enabled binary action | Owning semantic/feature colour plus its label or icon | Mute, solo, tie, effects |
 | Current playback position | White playhead treatment | Step grid, portrait grid |
+| Current page within a paged editor | Filled dot using the owning feature treatment | Portrait pattern page |
+| Native single-choice control | Platform-native selected option and focus treatment | Landscape step-count select |
 
 Hover changes surface brightness, focus uses the information-blue outline, and
 an open dropdown trigger uses orange. Those interaction states must not be used
-as substitutes for the selected-item cue.
+as substitutes for the selected-item cue. A non-default numeric value, such as
+transpose, may use its feature colour without claiming that the surrounding
+control is a selected object. Stack B mechanically locks the shared custom
+popup row; the other rows classify existing semantics and remain outside this
+surface-specific visual change.
 
 ---
 
