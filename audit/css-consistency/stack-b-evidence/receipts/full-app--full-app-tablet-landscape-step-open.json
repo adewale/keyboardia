@@ -1,13 +1,13 @@
 {
-  "id": "step-count-selection",
-  "group": "catalogue",
+  "id": "full-app-tablet-landscape-step-open",
+  "group": "full-app",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
   "headRevision": "5913fddaa8a56ebbd2472960dcc86650121d6bd7",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
     "version": 2
   },
-  "inputConfigSha256": "65843401ff105029757e8b39edafe1d2dff796dcbe390a225a98cd854f2883a3",
+  "inputConfigSha256": "425251cad408228a350bad857b91842a33add5e3ea8864501761e48244835f2b",
   "environment": {
     "browser": "chromium",
     "browserVersion": "143.0.7499.4",
@@ -15,15 +15,15 @@
     "platformRelease": "25.5.0"
   },
   "viewport": {
-    "width": 1280,
-    "height": 800
+    "width": 1024,
+    "height": 768
   },
-  "differentPixels": 2620,
-  "rawDifferentPixels": 5958,
-  "maxObservedChannelDelta": 50,
-  "beforeSha256": "0b738c9a7fbf7e322eed5c7e922c8901347ee0b4b125ff17054c549a880175b0",
-  "afterSha256": "322703622ef02ff7ae13e546cb6b5f3fa2b49b19e36065690d24a5e85633abd9",
-  "diffSha256": "aa1a22441a0d8d407d0f2da1ebaf6b83fa0984cbaf30b82d62a7f9e148c93157",
+  "differentPixels": 47677,
+  "rawDifferentPixels": 100177,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "3f37bbf7410fef12a47cdaee771bbcb4accf3c6f49927ba0e01036bb271632a3",
+  "afterSha256": "8f344bd5e1d5e634428e4f79bbb5a21daa3dc57d85d65c99865aac5174840b78",
+  "diffSha256": "cb73e1128fdf8930211e0819f6b3fa0e732bd3ea2264f2bd9cd62a07da10b0a2",
   "checks": {
     "accessibilityTreeIdentity": true,
     "geometryAndStyleViolations": 0,

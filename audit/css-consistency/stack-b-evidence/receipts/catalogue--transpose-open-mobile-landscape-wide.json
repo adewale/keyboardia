@@ -2,6 +2,18 @@
   "id": "transpose-open-mobile-landscape-wide",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "headRevision": "5913fddaa8a56ebbd2472960dcc86650121d6bd7",
+  "generator": {
+    "name": "app/identity/stack-b-visual.spec.ts",
+    "version": 2
+  },
+  "inputConfigSha256": "725deb90e5b63831daadaa4097887b6fc23d387e7bd571772a4bb2c4998a5bce",
+  "environment": {
+    "browser": "chromium",
+    "browserVersion": "143.0.7499.4",
+    "platform": "darwin",
+    "platformRelease": "25.5.0"
+  },
   "viewport": {
     "width": 844,
     "height": 390
@@ -11,5 +23,13 @@
   "maxObservedChannelDelta": 240,
   "beforeSha256": "53c0fbfc9145bc1689a1459370574a9a8d3b9b6de09cff3d16ff2fc0905db4bb",
   "afterSha256": "d71cca90dbc4e6e0ebe4aacf91b849e54afccca9d4e580229dfc02cdb0105da6",
-  "diffSha256": "e5bd9cbb8d07052652c66dd01ed367340744707d208a61ef33cdcb3dded8a677"
+  "diffSha256": "e5bd9cbb8d07052652c66dd01ed367340744707d208a61ef33cdcb3dded8a677",
+  "checks": {
+    "accessibilityTreeIdentity": true,
+    "geometryAndStyleViolations": 0,
+    "targetGeometryIdentity": true,
+    "unexpectedChangedPixels": 0,
+    "pixelExpectation": "changed",
+    "result": "passed"
+  }
 }

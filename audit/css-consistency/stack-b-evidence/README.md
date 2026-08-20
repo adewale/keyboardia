@@ -1,9 +1,9 @@
 # Stack B dropdown evidence
 
 This is the maintainer-approval package for the complete dropdown visual pilot.
-Every pair shows merge base on the left and candidate head on the right. The
-full-resolution images, changed-pixel visualizations, review crops, and JSON
-hash receipts are retained beside these contact sheets.
+Every pair shows the merge base on the left and the approved source revision
+on the right. The full-resolution images, changed-pixel visualizations, review
+crops, and JSON hash receipts are retained beside these contact sheets.
 
 ## Review sheets
 
@@ -15,20 +15,27 @@ hash receipts are retained beside these contact sheets.
 
 ![Production-build canaries](contact-sheets/04-production-build-canaries.png)
 
+![Selected option approval focus](contact-sheets/05-selected-option-approval-focus.png)
+
 ## Evidence contract
 
+<!-- generated-evidence-summary:start -->
 - Merge base: `58264dd5ae274f63b1cd80b72aa823b76b21f28b`
-- Pixel authority: Chromium 143.0.7499.4, Playwright 1.57.0, macOS 26.5.1
-- Viewports: 1280×800, 375×812, 480×320, 844×390, 768×1024, 769×1024
-- Total named pairs: 25
-- Intentionally changed pairs: 22
-- Exact-identity product pairs: 3 (portrait, compact landscape, wide landscape)
-- Pixels beyond the 6/255 raster allowance: 500,482 across the 22 changed pairs
+- Approved source revision: `5913fddaa8a56ebbd2472960dcc86650121d6bd7`
+- Receipt generator: `app/identity/stack-b-visual.spec.ts` schema v2
+- Human-review renderer: Chromium 143.0.7499.4, darwin 25.5.0
+- Canonical machine authority: same-process Chromium comparisons on GitHub Actions Linux; committed review PNGs are provenance-bound evidence, not cross-platform pixel baselines
+- Viewports: 1280×800, 375×812, 480×320, 768×1024, 769×1024, 844×390, 667×375, 1024×768
+- Total named pairs: 27
+- Intentionally changed pairs: 23
+- Exact-identity product pairs: 4
+- Pixels beyond the 6/255 raster allowance: 548,159 across the 23 changed pairs
 - Accessibility trees: exact base/head identity
 - Visible element and dropdown rectangles: exact base/head identity
 - Non-decorative computed styles: exact base/head identity
 - Pixels outside dropdown controls and their focus/shadow halos: 0
 - Touch event payloads and dismissal: exact base/head identity in emulated-touch WebKit
+<!-- generated-evidence-summary:end -->
 
 CSS scorecard: 41 product CSS files (unchanged), 5,050 declarations (+14),
 11,008 lines (+21), 128 shared-dropdown declarations (+1), 341 raw colors
@@ -38,6 +45,23 @@ and 20 `!important` declarations (unchanged).
 The raw changed-pixel count is descriptive, not a tolerance. Each changed
 pixel must fall inside the approved target regions; unchanged product modes
 still require zero changed pixels beyond the 6/255 same-process raster allowance.
+
+## Regenerate and verify
+
+From `app/`, with a clean tracked worktree at the source revision:
+
+```sh
+STACK_B_WRITE_EVIDENCE=1 npx playwright test --config playwright.stack-a.config.ts --project=stack-b-chromium
+node scripts/build-stack-b-contact-sheets.mjs
+node scripts/finalize-stack-b-evidence.mjs
+npm run validate:stack-b-evidence
+```
+
+The test writes receipts only after ARIA, geometry, style containment, pixel
+containment, and the expected changed/identical result pass. The finalizer binds
+the README, receipts, raw images, review crops, contact sheets, reference, and
+QA comparison into `approval-manifest.json`. CI verifies the hashes and rejects
+any non-evidence change after the recorded source revision.
 
 ## State inventory
 
@@ -65,12 +89,15 @@ still require zero changed pixels beyond the 6/255 same-process raster allowance
 | 20 | Product desktop | [PNG](before/full-app--full-app-desktop-step-open.png) | [PNG](after/full-app--full-app-desktop-step-open.png) | All visible row triggers and open menu |
 | 21 | Product portrait | [PNG](before/full-app--full-app-mobile-portrait-hidden.png) | [PNG](after/full-app--full-app-mobile-portrait-hidden.png) | Exact identity; editing dropdowns absent |
 | 22 | Product compact landscape | [PNG](before/full-app--full-app-landscape-compact-unaffected.png) | [PNG](after/full-app--full-app-landscape-compact-unaffected.png) | Exact identity; TrackDrawer uses other controls |
-| 23 | Product wide landscape | [PNG](before/full-app--full-app-landscape-wide-unaffected.png) | [PNG](after/full-app--full-app-landscape-wide-unaffected.png) | Exact identity; TrackDrawer uses other controls |
-| 24 | Product width 768 | [PNG](before/full-app--full-app-width-768-step-open.png) | [PNG](after/full-app--full-app-width-768-step-open.png) | Production boundary styling |
-| 25 | Product width 769 | [PNG](before/full-app--full-app-width-769-step-open.png) | [PNG](after/full-app--full-app-width-769-step-open.png) | Production boundary-neighbour styling |
+| 23 | Product narrow landscape | [PNG](before/full-app--full-app-landscape-narrow-unaffected.png) | [PNG](after/full-app--full-app-landscape-narrow-unaffected.png) | Exact identity at 667×375; TrackDrawer uses other controls |
+| 24 | Product wide landscape | [PNG](before/full-app--full-app-landscape-wide-unaffected.png) | [PNG](after/full-app--full-app-landscape-wide-unaffected.png) | Exact identity; TrackDrawer uses other controls |
+| 25 | Product tablet landscape | [PNG](before/full-app--full-app-tablet-landscape-step-open.png) | [PNG](after/full-app--full-app-tablet-landscape-step-open.png) | Desktop editor styling at 1024×768 |
+| 26 | Product width 768 | [PNG](before/full-app--full-app-width-768-step-open.png) | [PNG](after/full-app--full-app-width-768-step-open.png) | Production boundary styling |
+| 27 | Product width 769 | [PNG](before/full-app--full-app-width-769-step-open.png) | [PNG](after/full-app--full-app-width-769-step-open.png) | Production boundary-neighbour styling |
 
 ## Approval
 
-This evidence is a candidate, not an approval. Merge remains blocked until the
-maintainer approves these pairs. Any merge-base movement expires the package
-and requires a complete regeneration.
+The maintainer selected Option 1 and approved the remaining visual direction.
+Approval applies to the exact merge base and approved source revision above;
+the following commit is evidence-only. Any merge-base movement or source drift
+expires the package and requires a complete regeneration.
