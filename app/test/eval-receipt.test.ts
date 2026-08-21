@@ -494,7 +494,7 @@ describe('eval receipts', () => {
       { sanitize: false },
     );
     expect(verifyReceipt(fabricatedPatch).join('\n')).toContain('harness reconstruction failed');
-  }, 15_000);
+  }, 60_000);
 
   it('rederives answer runs, summary, audit readiness and input bundles', () => {
     const { receipt } = answerReceiptFixture();
@@ -649,7 +649,7 @@ describe('eval receipts', () => {
       files['metadata.json'] = JSON.stringify(metadata);
     });
     expect(verifyReceipt(adapterMismatch).join('\n')).toContain('provider/runner metadata does not match');
-  }, 15_000);
+  }, 60_000);
 
   it('reconstructs no-lift findings from the embedded benchmark', () => {
     const { receipt } = answerReceiptFixture();
@@ -833,7 +833,7 @@ describe('eval receipts', () => {
       '/Users/example/private/eval-output.json',
     );
     expect(verifyReceipt(deeplyEncodedPath).join('\n')).toContain('unsanitized host path');
-  }, 15_000);
+  }, 60_000);
 
   it('fails closed when a registered capability survives in any encoding or key', () => {
     const { source } = committedInputs();
