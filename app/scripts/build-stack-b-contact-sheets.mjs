@@ -17,9 +17,9 @@ const sheets = [
       ['catalogue--dropdowns-disabled', '3. Disabled — decorative skin under the unchanged 0.5 opacity'],
       ['catalogue--step-count-focused', '4. Keyboard focus — explicit 2px information-blue outline'],
       ['catalogue--step-count-trigger-hover', '5. Trigger hover — brighter gradient and orange edge'],
-      ['catalogue--step-count-selection', '6. Step selection outcome — closed trigger after the same event payload'],
-      ['catalogue--transpose-escape', '7. Escape outcome — closed trigger after unchanged dismissal/focus behavior'],
-      ['catalogue--transpose-selection', '8. Transpose selection outcome — closed trigger after the same event payload'],
+      ['catalogue--step-count-selection', '6. Step selection — same event payload; focus ownership returns to trigger'],
+      ['catalogue--transpose-escape', '7. Escape — same dismissal; keyboard focus returns visibly to trigger'],
+      ['catalogue--transpose-selection', '8. Transpose selection — same event payload; focus ownership returns to trigger'],
     ],
   },
   {
