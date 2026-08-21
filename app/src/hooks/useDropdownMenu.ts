@@ -36,7 +36,7 @@ interface UseDropdownMenuReturn<T extends HTMLElement, M extends HTMLElement> {
   setIsOpen: (open: boolean) => void;
   /** Toggle the menu open/closed */
   toggle: () => void;
-  /** Close the menu */
+  /** Close the menu and restore focus to its trigger */
   close: () => void;
   /** Current menu position for fixed positioning */
   menuPosition: MenuPosition;
@@ -105,7 +105,6 @@ export function useDropdownMenu<
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        e.preventDefault();
         close();
       }
     };

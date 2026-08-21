@@ -27,19 +27,24 @@ No actionable P0, P1, or P2 mismatches remain.
 - Colors and visual tokens: the selected row is a neutral graphite gradient
   (`#3a3a41` to `#323238`, `#35353b` fallback). Orange is confined to the
   existing check and open-trigger affordance. The menu shadow is compact
-  (`0 4px 10px rgba(0,0,0,.35)`) instead of a wide diffuse halo.
+  (`0 4px 10px rgba(0,0,0,.35)`) instead of a wide diffuse halo. Active
+  transpose blue is lifted to `#5eb3ea` so its 13px text remains at least
+  4.67:1 on the brighter hover gradient.
 - Focus and lines: keyboard focus is a single information-blue outline over the
-  trigger's neutral compact shadow. The control edge (`#6c6c76`, 3.21:1), menu
-  edge (`#70707b`, 3.41:1), and scrollbar (`#787883`, at least 3.18:1) form a
-  restrained neutral ladder and independently clear WCAG 1.4.11.
+  trigger's neutral compact shadow and inset on options, never an orange halo.
+  The control edge (`#6c6c76`, 3.21:1), menu edge (`#74747f`, at least 3.00:1
+  against its fill and 3.11:1 against an elevated neighbour), and scrollbar
+  (`#787883`, at least 3.18:1) form a restrained neutral ladder and independently
+  clear WCAG 1.4.11.
 - Image quality and asset fidelity: this surface has no product imagery. The
   existing Lucide check remains sharp and aligned; no substitute asset or CSS
   drawing was introduced.
 - Copy and content: production labels and values are unchanged.
-- Behavior and accessibility: the visible accessibility tree, touch behavior,
-  event payloads, and target rectangles remain exact. Selection and Escape now
-  return focus to the owning trigger; direct Playwright assertions cover both
-  dropdowns and focus an option before Escape. The selected menu item retains
+- Behavior and accessibility: the visible accessibility tree, touch event
+  payloads, and target rectangles remain exact. Selection by keyboard, pointer,
+  or touch and Escape now return focus to the owning trigger; outside clicks
+  keep the clicked target focused. Direct Playwright assertions cover those
+  ownership rules. The selected menu item retains
   both a tonal surface and a non-colour check.
 - Responsiveness: the approval matrix covers 375 x 812, 480 x 320, 667 x 375,
   844 x 390, 768 x 1024, 769 x 1024, and 1024 x 768. Visible dropdown states

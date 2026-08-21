@@ -389,12 +389,13 @@ primitive.
 |----------|------------|
 | Control surface | Dark vertical gradient (`#34343a` to `#242429`) |
 | Menu surface | Dark vertical gradient (`#2c2c32` to `#1d1d21`) |
-| Edge | Three-step neutral line ladder: control `#6c6c76`, elevated menu `#70707b`, scrollbar `#787883`; each boundary independently clears 3:1 against its adjacent surface |
+| Edge | Three-step neutral line ladder: control `#6c6c76`, elevated menu `#74747f`, scrollbar `#787883`; each boundary independently clears 3:1 against its adjacent surface |
 | Trigger radius | 7px, except connected group corners owned by `TrackRow` |
 | Menu radius | 10px |
 | Depth | Inset highlight plus compact trigger and menu shadows |
 | Disclosure accent | Keyboardia orange; transpose remains blue when active but closed |
-| Focus | 2px information-blue outline, 2px offset, with neutral component depth and no orange halo |
+| Active transpose value | Dropdown-specific light blue `#5eb3ea`, preserving feature identity while clearing 4.5:1 on closed and hover surfaces |
+| Focus | 2px information-blue outline, outside triggers and inset on popup options, with no orange halo |
 | Selected option | Neutral tonal fill plus the existing orange check; no tinted row or leading rail |
 | Density | Preserve the existing 36px trigger and existing option/menu geometry |
 | Motion | Preserve the existing 150ms open animation; remove it under reduced motion |
@@ -411,11 +412,11 @@ editing controls, and landscape `TrackDrawer` uses a native step-count select
 plus separate transpose buttons instead of this dropdown family. Production
 portrait and landscape therefore remain pixel-identical in this pilot.
 
-Stack B freezes DOM/accessibility order, names and roles, touch behavior,
-selection payloads, dismissal, portal placement, hit areas, layout geometry,
-and product-mode behavior. It repairs one keyboard contract: selection and
-Escape return focus to the owning trigger; outside clicks keep focus on their
-clicked target. The existing 36px trigger is larger than
+Stack B freezes DOM/accessibility order, names and roles, touch event payloads,
+dismissal, portal placement, hit areas, layout geometry, and product-mode
+behavior. It repairs one focus-ownership contract across keyboard, pointer,
+and touch: selection and Escape return focus to the owning trigger; outside
+clicks keep focus on their clicked target. The existing 36px trigger is larger than
 WCAG 2.2's 24px minimum but below Keyboardia's aspirational 44px mobile target;
 changing it is explicitly deferred to a Stack C product decision.
 

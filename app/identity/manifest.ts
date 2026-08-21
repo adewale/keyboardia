@@ -127,6 +127,16 @@ export const stackAStates: StackAState[] = [
     expectations: [{ selector: '.transpose-option', visible: true }],
   },
   {
+    id: 'transpose-option-focused',
+    story: 'dropdowns',
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { type: 'click', selector: '.transpose-trigger' },
+      { type: 'focus', selector: '.transpose-option', index: 0 },
+    ],
+    expectations: [{ selector: '.transpose-option', focused: true }],
+  },
+  {
     id: 'transpose-selection',
     story: 'dropdowns',
     viewport: { width: 1280, height: 800 },

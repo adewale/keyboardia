@@ -162,6 +162,12 @@
   background: var(--dropdown-option-hover-background);
 }
 
+.dropdown-option:focus-visible {
+  outline: 2px solid var(--color-info);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
 .dropdown-option.selected {
   /* A selected choice uses tonal hierarchy plus the existing checkmark.
    * Keep brand orange on the check instead of tinting or striping the row. */

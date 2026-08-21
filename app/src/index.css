@@ -71,12 +71,13 @@
   --dropdown-control-hover-background: linear-gradient(180deg, #3d3d44 0%, #2c2c31 100%) #2c2c31;
   --dropdown-control-open-background: linear-gradient(180deg, #402923 0%, #2a201e 100%) #2a201e;
   --dropdown-menu-background: linear-gradient(180deg, #2c2c32 0%, #1d1d21 100%) #1d1d21;
-  --dropdown-menu-border: #70707b;
+  --dropdown-menu-border: #74747f;
   --dropdown-scrollbar-thumb: #787883;
   --dropdown-menu-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.09), 0 4px 10px rgba(0, 0, 0, 0.35);
   --dropdown-option-hover-background: linear-gradient(180deg, #3b3b42 0%, #303036 100%) #333339;
   --dropdown-option-selected-background: linear-gradient(180deg, #3a3a41 0%, #323238 100%) #35353b;
   --dropdown-option-secondary-text: rgba(255, 255, 255, 0.68);
+  --dropdown-transpose-active-color: #5eb3ea;
   /* Exact legacy channel fallback used by selection glow. This deliberately
      does not normalize to --color-accent in Stack A. */
   --color-selection-glow-rgb: 255, 160, 100;

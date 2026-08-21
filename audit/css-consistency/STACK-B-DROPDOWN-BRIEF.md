@@ -41,12 +41,14 @@ not a pixel target.
 
 ## Preserved contracts and scoped behavior repair
 
-- No TSX, DOM, role, accessible name, event payload, touch, portal, visibility,
+- No TSX, DOM, role, accessible name, event payload, portal, visibility,
   disclosure, persistence, breakpoint, or product-mode change.
 - The only intentional behavior change is deterministic focus restoration to
-  the owning trigger after option selection or Escape. Menu dismissal and
-  selection payloads remain unchanged; direct Playwright assertions cover both
-  dropdowns and make Escape discriminating by focusing an option first.
+  the owning trigger after option selection, whether activated by keyboard,
+  pointer, or touch, and after Escape. Menu dismissal and selection payloads
+  remain unchanged; direct Playwright assertions cover both dropdowns, touch
+  selection, and Escape from a focused option. Outside clicks preserve focus
+  on the clicked target.
 - Trigger, option, category, menu, and hit-area rectangles must be identical at
   base and head.
 - Animation names, durations, easing, and reduced-motion behavior remain exact.
@@ -59,11 +61,13 @@ not a pixel target.
 ## Accessibility target
 
 - Primary and secondary text retain at least 4.5:1 contrast on their resulting
-  dark surfaces.
+  dark surfaces. Active transpose blue uses a dropdown-specific lighter blue
+  so it also clears 4.5:1 in both closed and hover gradients.
 - The closed neutral control edge, open menu edge, and menu scrollbar thumb
   each retain at least 3:1 contrast against the surface they identify, measured
   independently under WCAG 1.4.11 and against every opaque menu-gradient stop.
-- Keyboard focus is visible with a 2px information-blue outline and 2px offset.
+- Keyboard focus is visible with a 2px information-blue outline: 2px outside
+  triggers and inset on menu options so it is not clipped by menu overflow.
 - Focused triggers retain the neutral dropdown shadow; orange remains reserved
   for hover/open borders and disclosure rather than a second focus ring.
 - Disabled controls keep their existing semantics and 0.5 opacity.
@@ -92,8 +96,12 @@ primary menu text, 7.28:1 for secondary option labels, 6.03:1 for category
 labels, 4.56:1 for orange open-trigger text, 5.29:1 for the information-blue
 focus outline against the adjacent dark surface, and 3.82:1 for the orange
 selected check against the lightest selected-row gradient stop. The neutral
-control edge is 3.21:1 against the card, the elevated menu edge is 3.41:1
-against the card, and the scrollbar thumb is at least 3.18:1 against the menu.
+control edge is 3.21:1 against the card; the elevated menu edge is at least
+3.00:1 against its own lightest fill, 3.11:1 against an elevated `#2a2a2a`
+neighbour, and 3.61:1 against the card; and the scrollbar thumb is at least
+3.18:1 against the menu.
+Active transpose text is at least 4.67:1 against its hover gradient and 5.36:1
+when closed.
 
 ## Evidence and approval
 

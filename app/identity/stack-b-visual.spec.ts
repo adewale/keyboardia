@@ -21,7 +21,7 @@ const evidenceRoot = resolve(process.cwd(), '..', 'audit', 'css-consistency', 's
 const writeEvidence = process.env.STACK_B_WRITE_EVIDENCE === '1';
 const evidenceGenerator = {
   name: 'app/identity/stack-b-visual.spec.ts',
-  version: 3,
+  version: 4,
 } as const;
 const approvedDropdownTokens = {
   '--dropdown-control-background': 'linear-gradient(180deg, #34343a 0%, #242429 100%) #242429',
@@ -30,12 +30,13 @@ const approvedDropdownTokens = {
   '--dropdown-control-hover-background': 'linear-gradient(180deg, #3d3d44 0%, #2c2c31 100%) #2c2c31',
   '--dropdown-control-open-background': 'linear-gradient(180deg, #402923 0%, #2a201e 100%) #2a201e',
   '--dropdown-menu-background': 'linear-gradient(180deg, #2c2c32 0%, #1d1d21 100%) #1d1d21',
-  '--dropdown-menu-border': '#70707b',
+  '--dropdown-menu-border': '#74747f',
   '--dropdown-scrollbar-thumb': '#787883',
   '--dropdown-menu-shadow': 'inset 0 1px 0 rgba(255, 255, 255, .09), 0 4px 10px rgba(0, 0, 0, .35)',
   '--dropdown-option-hover-background': 'linear-gradient(180deg, #3b3b42 0%, #303036 100%) #333339',
   '--dropdown-option-selected-background': 'linear-gradient(180deg, #3a3a41 0%, #323238 100%) #35353b',
   '--dropdown-option-secondary-text': 'rgba(255, 255, 255, .68)',
+  '--dropdown-transpose-active-color': '#5eb3ea',
 } as const;
 const holby = JSON.parse(readFileSync(resolve(process.cwd(), 'scripts/demo-sessions/holby.json'), 'utf8')) as {
   name: string;
@@ -589,6 +590,7 @@ test.describe('Stack B approved dropdown differences', () => {
           probe.remove();
           return color;
         })(),
+        elevatedSurface: 'rgb(42, 42, 42)',
         primaryText: read('.step-count-menu .dropdown-option-value').color,
         secondaryText: read('.step-count-menu .dropdown-option-label').color,
         categoryText: read('.step-count-menu .dropdown-category-label').color,
@@ -620,6 +622,8 @@ test.describe('Stack B approved dropdown differences', () => {
     expect(contrastRatio(colors.focusOutline, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(neutralControlBorder, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(colors.menuBorder, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(colors.menuBorder, colors.elevatedSurface)).toBeGreaterThanOrEqual(3);
+    expect(minimumContrast(colors.menuBorder, menuBackgrounds)).toBeGreaterThanOrEqual(3);
     expect(minimumContrast(colors.scrollbarThumb, menuBackgrounds)).toBeGreaterThanOrEqual(3);
     expect(minimumContrast(colors.selectedCheck, selectedBackgrounds)).toBeGreaterThanOrEqual(3);
 
@@ -633,6 +637,25 @@ test.describe('Stack B approved dropdown differences', () => {
       expect(size.width).toBeGreaterThanOrEqual(24);
       expect(size.height).toBeGreaterThanOrEqual(24);
     }
+
+    await page.goto(stateUrl('head', 'dropdowns', 'selected'));
+    await expect(page.locator('[data-stack-a-ready]')).toBeVisible();
+    const activeTranspose = page.locator('.transpose-trigger.active');
+    const readActiveTranspose = () => activeTranspose.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        color: style.color,
+        backgrounds: [style.backgroundColor, style.backgroundImage],
+      };
+    });
+    const activeClosed = await readActiveTranspose();
+    expect(minimumContrast(activeClosed.color, backgroundSamples(...activeClosed.backgrounds as [string, string])))
+      .toBeGreaterThanOrEqual(4.5);
+    await activeTranspose.hover();
+    await settleForScreenshot(page);
+    const activeHover = await readActiveTranspose();
+    expect(minimumContrast(activeHover.color, backgroundSamples(...activeHover.backgrounds as [string, string])))
+      .toBeGreaterThanOrEqual(4.5);
   });
 
   test('single-choice menus share the selected-item grammar @stack-b-accessibility', async ({ page }) => {
@@ -671,7 +694,7 @@ test.describe('Stack B approved dropdown differences', () => {
     expect(step.checkColor).toBe('rgb(240, 112, 72)');
   });
 
-  test('selection and Escape restore focus to their trigger @stack-b-accessibility', async ({ page }) => {
+  test('selection, Escape and outside click preserve expected focus ownership @stack-b-accessibility', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(stateUrl('head', 'dropdowns'));
     await expect(page.locator('[data-stack-a-ready]')).toBeVisible();
@@ -695,6 +718,12 @@ test.describe('Stack B approved dropdown differences', () => {
     await page.keyboard.press('Escape');
     await expect(page.locator('.transpose-menu')).toHaveCount(0);
     await expect(transposeTrigger).toBeFocused();
+
+    await stepTrigger.click();
+    const outsideTarget = page.locator('.sample-picker .category-header').first();
+    await outsideTarget.click();
+    await expect(page.locator('.step-count-menu')).toHaveCount(0);
+    await expect(outsideTarget).toBeFocused();
   });
 
   test('approved dropdown decorative recipe is exact @stack-b-visual', async ({ page }) => {
@@ -801,12 +830,31 @@ test.describe('Stack B approved dropdown differences', () => {
       backgroundColor: 'rgb(29, 29, 33)',
       backgroundImage: 'linear-gradient(rgb(44, 44, 50) 0%, rgb(29, 29, 33) 100%)',
       borderRadius: '10px',
-      borderTopColor: 'rgb(112, 112, 123)',
+      borderTopColor: 'rgb(116, 116, 127)',
       boxShadow: 'rgba(255, 255, 255, 0.09) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.35) 0px 4px 10px 0px',
       scrollbarThumbBackgroundDeclaration: 'var(--dropdown-scrollbar-thumb)',
     });
 
     const unselected = menu.locator('[role="option"][aria-selected="false"]').first();
+    await unselected.focus();
+    const optionFocusStyle = await unselected.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        outlineColor: style.outlineColor,
+        outlineOffset: style.outlineOffset,
+        outlineStyle: style.outlineStyle,
+        outlineWidth: style.outlineWidth,
+        boxShadow: style.boxShadow,
+      };
+    });
+    expect(optionFocusStyle).toEqual({
+      outlineColor: 'rgb(52, 152, 219)',
+      outlineOffset: '-2px',
+      outlineStyle: 'solid',
+      outlineWidth: '2px',
+      boxShadow: 'none',
+    });
+
     await unselected.hover();
     await settleForScreenshot(page);
     const optionHoverStyle = await unselected.evaluate((element) => {

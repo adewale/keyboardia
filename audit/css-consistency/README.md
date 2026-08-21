@@ -300,17 +300,33 @@ approved evidence and final consistency audit produced thirteen lessons:
     orange open border and allowed the old 2.06:1 neutral edge to pass. The
     repaired test captures the closed edge before interaction. Independent
     negative controls now prove the old control edge (2.06:1), menu edge
-    (2.23:1), and scrollbar (1.85:1 at the lightest menu stop) each fail.
+    (2.23:1), and pre-pilot global scrollbar (`#3a3a3a`, 1.22:1 at the
+    lightest menu stop) each fail. The 1.85:1 result seen during development
+    belonged to the stronger intermediate `#54545e` scrollbar.
 13. **Focus recovery needs a discriminating direct assertion.** Escape looked
     correct while the trigger happened to retain focus. The evidence action now
     moves focus to an option before Escape, and a head-only contract directly
     proves focus returns after both dropdown selections and Escape. Removing
     the hook repair makes that contract fail.
+14. **Focus ownership is a cross-modality contract.** The shared close path is
+    also used by touch selection, while outside dismissal deliberately is not.
+    Emulated-touch tests now assert that selection returns focus to the trigger,
+    and the head-only contract proves clicking a focusable outside target keeps
+    focus there. This prevents a future cleanup from silently stealing focus.
+15. **Text contrast must cover semantic variants and interaction states.** The
+    original text audit missed active transpose blue on the brighter hover
+    gradient. A dropdown-specific `#5eb3ea` keeps feature identity while
+    clearing 4.5:1 in both closed and hover states, and both are now asserted.
+16. **Focus colour belongs to focus, not to a global button default.** Popup
+    options inherited an orange button halo even though Keyboardia reserves
+    orange for open/hover disclosure. The shared option rule now uses the same
+    information-blue focus grammar as triggers, with an inset outline that is
+    not clipped by menu overflow.
 
 Approved pilot CSS scorecard: product files remain 41;
-product declarations increase from 5,036 to 5,051; product CSS lines increase
-from 10,987 to 11,009; the shared dropdown recipe increases by one declaration
-from 127 to 128; raw colors outside `index.css` fall from 346 to 340; duplicate
+product declarations increase from 5,036 to 5,055; product CSS lines increase
+from 10,987 to 11,016; the shared dropdown recipe increases by four declarations
+from 127 to 131; raw colors outside `index.css` fall from 346 to 340; duplicate
 dropdown declarations remain zero; `!important` remains 20. The declaration
 and line increases are the explicit maintenance cost of adding visual depth,
 focus color, and feature-specific tokens rather than hiding new values as raw
@@ -439,10 +455,11 @@ independent contracts:
 | Accessibility tree | Role, name, expanded, selected, disabled, and reading-order changes |
 | Computed style/geometry | Subtle targeted differences hidden by broad page noise |
 
-#### Storybook as the state catalogue
+#### Focused state catalogue (Storybook or equivalent)
 
-Add a minimal React/Vite Storybook for only the component families Stack A may
-change. Initially cover:
+Stack A implemented a minimal React/Vite catalogue rather than adding the
+Storybook dependency. That accepted equivalent imports real production
+components and global CSS in production cascade order. It covers:
 
 - Step count and transpose: closed, open, selected, focused, and disabled.
 - Sample picker: add/change variants and collapsed/expanded categories.
@@ -450,20 +467,20 @@ change. Initially cover:
 - Landscape drawer: closed, open, keyboard-focused, and destructive-action
   states.
 
-Use story `play` functions to reach interactive states through the real control
-rather than introducing screenshot-only component props. Screenshot the whole
-Storybook preview for portalled dropdown menus because the menu is attached to
-`document.body`, outside the component root.
+Reach interactive states through the real control rather than introducing
+screenshot-only component props. Screenshot the whole catalogue page for
+portalled dropdown menus because the menu is attached to `document.body`,
+outside the component root.
 
 Use frozen `isPlaying` and `currentStep` story state for playing screenshots;
 never capture a live scheduler tick. Full-app tests should assert scheduler and
 audio progression without pixel capture.
 
-Component isolation can conceal Keyboardia's global CSS collisions. Add a
-composite collision-canary story that loads and renders StepCountDropdown and
-SamplePicker together, and retain full-application Playwright coverage for
-lazy stylesheet load-order behavior. Storybook is a deterministic state
-factory; it is not a replacement for the assembled application.
+Component isolation can conceal Keyboardia's global CSS collisions. The
+catalogue therefore includes a composite collision canary that renders
+StepCountDropdown and SamplePicker together, plus full-application Playwright
+coverage for lazy stylesheet load-order behavior. A focused catalogue is a
+deterministic state factory; it is not a replacement for the assembled app.
 
 #### Strict Playwright identity suite
 
@@ -495,10 +512,10 @@ baselines with canonical Chromium.
 #### Same-job base-versus-head comparison
 
 The strongest Stack A CI gate renders the PR merge-base and PR head in the same
-pinned environment. This gate can only become authoritative after Storybook
-and the identity manifest have merged to `main`:
+pinned environment. It became authoritative after the catalogue and identity
+manifest merged to `main`:
 
-1. Check out and build both revisions, including their static Storybooks.
+1. Check out and build both revisions, including their static catalogues.
 2. Serve them on separate ports.
 3. Use the same browser process and fixed state manifest to capture both.
 4. Compare paired screenshots with the documented raster allowance and no
@@ -829,17 +846,17 @@ and behavior—not pixel similarity.
 2. **Complete — A checkpoint:** the scorecard above shows net CSS deletion and
    zero remaining duplicate component declarations, so the dropdown pilot is a
    go; broader abstraction is not implied.
-3. **Implementation complete — Dropdown B pilot:** the dropdown-only brief,
-   accessibility, density, touch decision, deterministic expected-difference
-   contract, and 27 before/after pairs are implemented in one
-   maintainer-requested PR. The maintainer approved Option 1 for the selected
-   row and the remaining evidence package. The pilot decision is **stop**: do
-   not begin another Stack B surface without its own surface-specific gate.
-   The final approval package is source-revision-bound and covers desktop,
-   portrait, 480×320 and 667×375 landscape, 844×390 wide landscape, 1024×768
-   tablet landscape, and the 768/769 boundary. PR #95 may merge after its
-   required CI checks pass; that merge does not authorize a product-wide Stack
-   B rollout.
+3. **Implementation complete; renewed review pending — Dropdown B pilot:** the
+   dropdown-only brief, accessibility, density, touch decision, deterministic
+   expected-difference contract, and 28 before/after pairs are implemented in
+   one maintainer-requested PR. The maintainer approved Option 1 for the
+   selected row; the later focus-ownership and non-text-contrast corrections
+   require review of the regenerated source-bound evidence and final CI. The
+   pilot decision remains **stop**: do not begin another Stack B surface
+   without its own surface-specific gate. The package covers desktop, portrait,
+   480×320 and 667×375 landscape, 844×390 wide landscape, 1024×768 tablet
+   landscape, and the 768/769 boundary. Merging PR #95 after renewed approval
+   does not authorize a product-wide Stack B rollout.
 4. **C0 in parallel, per surface:** merge only the viewport, FX, picker-
    characterization, or touch decision needed by that surface; then implement
    it as one vertical slice. Do not make all A/B wait for all C0 decisions.

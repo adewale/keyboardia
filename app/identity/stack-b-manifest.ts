@@ -19,6 +19,7 @@ export const stackBStateIds = [
   'transpose-open',
   'transpose-escape',
   'transpose-option-hover',
+  'transpose-option-focused',
   'transpose-selection',
   'step-count-open-reduced-motion',
   'step-count-open-mobile-portrait',
