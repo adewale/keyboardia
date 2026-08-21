@@ -2,10 +2,10 @@
   "id": "full-app-tablet-landscape-step-open",
   "group": "full-app",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
+  "headRevision": "cd09032e3209eade232660a23b839937fe7c036d",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 3
+    "version": 4
   },
   "inputConfigSha256": "425251cad408228a350bad857b91842a33add5e3ea8864501761e48244835f2b",
   "environment": {
@@ -18,12 +18,12 @@
     "width": 1024,
     "height": 768
   },
-  "differentPixels": 47701,
-  "rawDifferentPixels": 100177,
+  "differentPixels": 47798,
+  "rawDifferentPixels": 100206,
   "maxObservedChannelDelta": 240,
   "beforeSha256": "3f37bbf7410fef12a47cdaee771bbcb4accf3c6f49927ba0e01036bb271632a3",
-  "afterSha256": "a38379092d937344841e43254f999a86d11f66f191e0be4424953e45782460c4",
-  "diffSha256": "04a69fb5d2ebd350393ea34ac7fdc4d771635c3f79ff5a3f59ca26cb97a7ecdb",
+  "afterSha256": "cb52aeb619fbc113d582e4f1bb545cb190814282b4b2b5dadd1cf26eadb6b8a5",
+  "diffSha256": "5188e01ca9b1b9a4673326c0b5d8c2825ef7e1b92411325a33f465ee5e81cefc",
   "checks": {
     "accessibilityTreeIdentity": true,
     "geometryAndStyleViolations": 0,

@@ -2,10 +2,10 @@
   "id": "transpose-open-mobile-landscape-wide",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
+  "headRevision": "cd09032e3209eade232660a23b839937fe7c036d",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 3
+    "version": 4
   },
   "inputConfigSha256": "725deb90e5b63831daadaa4097887b6fc23d387e7bd571772a4bb2c4998a5bce",
   "environment": {
@@ -22,7 +22,7 @@
   "rawDifferentPixels": 43805,
   "maxObservedChannelDelta": 240,
   "beforeSha256": "53c0fbfc9145bc1689a1459370574a9a8d3b9b6de09cff3d16ff2fc0905db4bb",
-  "afterSha256": "cb589a3c2118f56a2296423a287ffcb70edf37bf2a71980082221ba959c435e1",
+  "afterSha256": "e8956ec33abe5ddcf70ff6070eb54ef7ce50e4584c0425bbdb369155cce3ab65",
   "diffSha256": "f547501f0a957ea96cd5bedc3be112ca07bb60a169a32a88cd92f6a2b7d5a757",
   "checks": {
     "accessibilityTreeIdentity": true,

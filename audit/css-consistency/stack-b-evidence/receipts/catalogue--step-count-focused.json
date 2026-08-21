@@ -2,10 +2,10 @@
   "id": "step-count-focused",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
+  "headRevision": "cd09032e3209eade232660a23b839937fe7c036d",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 3
+    "version": 4
   },
   "inputConfigSha256": "6f3b16d217736bc82c00e7eaf35369f6f6b106a37b5922bfccd6c1bfa96dcadc",
   "environment": {

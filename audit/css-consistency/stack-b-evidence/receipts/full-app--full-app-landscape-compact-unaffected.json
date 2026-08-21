@@ -2,10 +2,10 @@
   "id": "full-app-landscape-compact-unaffected",
   "group": "full-app",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
+  "headRevision": "cd09032e3209eade232660a23b839937fe7c036d",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 3
+    "version": 4
   },
   "inputConfigSha256": "4cde19660dd381058ba8f3c4ecd5625b78e2f608bdc6e076d48c0560293a97d4",
   "environment": {

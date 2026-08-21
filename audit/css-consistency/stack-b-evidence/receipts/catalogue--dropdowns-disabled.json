@@ -2,10 +2,10 @@
   "id": "dropdowns-disabled",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
+  "headRevision": "cd09032e3209eade232660a23b839937fe7c036d",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 3
+    "version": 4
   },
   "inputConfigSha256": "dfe2cf353ec8e7372f2bb94ee9f823e7891f764040c4627fc6ef67a31debab8c",
   "environment": {

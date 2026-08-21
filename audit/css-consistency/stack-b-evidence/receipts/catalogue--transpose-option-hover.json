@@ -2,10 +2,10 @@
   "id": "transpose-option-hover",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
+  "headRevision": "cd09032e3209eade232660a23b839937fe7c036d",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 3
+    "version": 4
   },
   "inputConfigSha256": "b578829641b1aef8431ea361a46a82a9027a025ef0bf97f7a6d3796d3268f6ef",
   "environment": {
@@ -18,12 +18,12 @@
     "width": 1280,
     "height": 800
   },
-  "differentPixels": 30287,
+  "differentPixels": 30288,
   "rawDifferentPixels": 68387,
   "maxObservedChannelDelta": 240,
   "beforeSha256": "c03da6d09e30ff9f607369bbc1fad2022ebed36e4e253ceb91eb2aaf1a09aedf",
-  "afterSha256": "904b25df1992f663654bdf18eeccf20e9b5b34e829b4974c71d94ffcfe04a4b6",
-  "diffSha256": "62bbf62a67f65fcce8270cf6f2c9af5133eaef6b693d4ac446427170f555b82a",
+  "afterSha256": "dd7b92fa6cbb904cfbf8912eb8e8e57ab9222a5631a06c3dd15f106d02a0ebeb",
+  "diffSha256": "29bb422451ff2ae74f73d1abdebfb6f741df00dd979210eef4e9094863c9a995",
   "checks": {
     "accessibilityTreeIdentity": true,
     "geometryAndStyleViolations": 0,
