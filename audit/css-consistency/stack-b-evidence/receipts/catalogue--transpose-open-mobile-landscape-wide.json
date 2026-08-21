@@ -2,7 +2,7 @@
   "id": "transpose-open-mobile-landscape-wide",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "f952ca5bde61101d5e2d499405bd0be341475153",
+  "headRevision": "de74a2617aac2e7547cea5002583d72b15c25f5d",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
     "version": 2

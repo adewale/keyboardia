@@ -21,8 +21,8 @@ crops, and JSON hash receipts are retained beside these contact sheets.
 
 <!-- generated-evidence-summary:start -->
 - Merge base: `58264dd5ae274f63b1cd80b72aa823b76b21f28b`
-- Approved source revision: `f952ca5bde61101d5e2d499405bd0be341475153`
-- Receipt generator: `app/identity/stack-b-visual.spec.ts` schema v2
+- Approved source revision: `de74a2617aac2e7547cea5002583d72b15c25f5d`
+- Receipt generator: `app/identity/stack-b-visual.spec.ts` generator v2
 - Human-review renderer: Chromium 143.0.7499.4, darwin 25.5.0
 - Canonical machine authority: same-process Chromium comparisons on GitHub Actions Linux; committed review PNGs are provenance-bound evidence, not cross-platform pixel baselines
 - Viewports: 1280×800, 375×812, 480×320, 768×1024, 769×1024, 844×390, 667×375, 1024×768
@@ -38,8 +38,8 @@ crops, and JSON hash receipts are retained beside these contact sheets.
 <!-- generated-evidence-summary:end -->
 
 CSS scorecard: 41 product CSS files (unchanged), 5,050 declarations (+14),
-11,008 lines (+21), 128 shared-dropdown declarations (+1), 341 raw colors
-outside `index.css` (-5), zero duplicated dropdown declarations (unchanged),
+11,008 lines (+21), 128 shared-dropdown declarations (+1), 340 raw colors
+outside `index.css` (-6), zero duplicated dropdown declarations (unchanged),
 and 20 `!important` declarations (unchanged).
 
 The raw changed-pixel count is descriptive, not a tolerance. Each changed
