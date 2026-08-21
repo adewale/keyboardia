@@ -2,10 +2,10 @@
   "id": "full-app-landscape-wide-unaffected",
   "group": "full-app",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "de74a2617aac2e7547cea5002583d72b15c25f5d",
+  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 2
+    "version": 3
   },
   "inputConfigSha256": "9a6b3d2863ab3f52fadfa1b6f80b8d7496aba3c237fcfc381091276f6f6f97a0",
   "environment": {

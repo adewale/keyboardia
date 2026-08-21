@@ -21,15 +21,15 @@ crops, and JSON hash receipts are retained beside these contact sheets.
 
 <!-- generated-evidence-summary:start -->
 - Merge base: `58264dd5ae274f63b1cd80b72aa823b76b21f28b`
-- Approved source revision: `de74a2617aac2e7547cea5002583d72b15c25f5d`
-- Receipt generator: `app/identity/stack-b-visual.spec.ts` generator v2
+- Approved source revision: `d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe`
+- Receipt generator: `app/identity/stack-b-visual.spec.ts` generator v3
 - Human-review renderer: Chromium 143.0.7499.4, darwin 25.5.0
 - Canonical machine authority: same-process Chromium comparisons on GitHub Actions Linux; committed review PNGs are provenance-bound evidence, not cross-platform pixel baselines
 - Viewports: 1280×800, 375×812, 480×320, 768×1024, 769×1024, 844×390, 667×375, 1024×768
 - Total named pairs: 27
 - Intentionally changed pairs: 23
 - Exact-identity product pairs: 4
-- Pixels beyond the 6/255 raster allowance: 548,159 across the 23 changed pairs
+- Pixels beyond the 6/255 raster allowance: 548,156 across the 23 changed pairs
 - Accessibility trees: exact base/head identity
 - Visible element and dropdown rectangles: exact base/head identity
 - Non-decorative computed styles: exact base/head identity
@@ -37,8 +37,11 @@ crops, and JSON hash receipts are retained beside these contact sheets.
 - Touch event payloads and dismissal: exact base/head identity in emulated-touch WebKit
 <!-- generated-evidence-summary:end -->
 
-CSS scorecard: 41 product CSS files (unchanged), 5,050 declarations (+14),
-11,008 lines (+21), 128 shared-dropdown declarations (+1), 340 raw colors
+The head-only accessibility contract also directly asserts focus restoration
+after both dropdown selections and after Escape from a focused option.
+
+CSS scorecard: 41 product CSS files (unchanged), 5,051 declarations (+15),
+11,009 lines (+22), 128 shared-dropdown declarations (+1), 340 raw colors
 outside `index.css` (-6), zero duplicated dropdown declarations (unchanged),
 and 20 `!important` declarations (unchanged).
 
@@ -72,9 +75,9 @@ any non-evidence change after the recorded source revision.
 | 3 | Disabled | [PNG](before/catalogue--dropdowns-disabled.png) | [PNG](after/catalogue--dropdowns-disabled.png) | New decoration under unchanged opacity |
 | 4 | Keyboard focus | [PNG](before/catalogue--step-count-focused.png) | [PNG](after/catalogue--step-count-focused.png) | 2px information-blue focus outline |
 | 5 | Trigger hover | [PNG](before/catalogue--step-count-trigger-hover.png) | [PNG](after/catalogue--step-count-trigger-hover.png) | Brighter gradient and orange edge |
-| 6 | Step selection result | [PNG](before/catalogue--step-count-selection.png) | [PNG](after/catalogue--step-count-selection.png) | Styled closed result; event remains exact |
-| 7 | Transpose Escape result | [PNG](before/catalogue--transpose-escape.png) | [PNG](after/catalogue--transpose-escape.png) | Styled closed result; dismissal remains exact |
-| 8 | Transpose selection result | [PNG](before/catalogue--transpose-selection.png) | [PNG](after/catalogue--transpose-selection.png) | Styled closed result; event remains exact |
+| 6 | Step selection result | [PNG](before/catalogue--step-count-selection.png) | [PNG](after/catalogue--step-count-selection.png) | Event remains exact; focus returns to trigger |
+| 7 | Transpose Escape result | [PNG](before/catalogue--transpose-escape.png) | [PNG](after/catalogue--transpose-escape.png) | Dismissal remains exact; focus returns to trigger |
+| 8 | Transpose selection result | [PNG](before/catalogue--transpose-selection.png) | [PNG](after/catalogue--transpose-selection.png) | Event remains exact; focus returns to trigger |
 | 9 | Step menu open | [PNG](before/catalogue--step-count-open.png) | [PNG](after/catalogue--step-count-open.png) | Layered menu and neutral tonal selected row with orange check |
 | 10 | Transpose menu open | [PNG](before/catalogue--transpose-open.png) | [PNG](after/catalogue--transpose-open.png) | Same shared visual hierarchy |
 | 11 | Transpose option hover | [PNG](before/catalogue--transpose-option-hover.png) | [PNG](after/catalogue--transpose-option-hover.png) | Tactile option gradient |

@@ -2,12 +2,12 @@
   "id": "transpose-escape",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "de74a2617aac2e7547cea5002583d72b15c25f5d",
+  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 2
+    "version": 3
   },
-  "inputConfigSha256": "b78150b7855e6b51bf5f2cc947bc1d7364383cd3ae5b670a3d629b288413bfb1",
+  "inputConfigSha256": "b9098a22c5177a61d3490c64ae29f3d984f9bf4a99b13a2d9e70fe0b3c4e4427",
   "environment": {
     "browser": "chromium",
     "browserVersion": "143.0.7499.4",
@@ -18,12 +18,12 @@
     "width": 1280,
     "height": 800
   },
-  "differentPixels": 3263,
+  "differentPixels": 2999,
   "rawDifferentPixels": 6041,
-  "maxObservedChannelDelta": 210,
-  "beforeSha256": "fd390decd12c8c09175b8059d883cc33490fe54a4fe058e61e063adb8357d17c",
-  "afterSha256": "ddbcd566880a9f3b34a57003dd578d41970d5e0e74a33cb3c0f344a040be9f94",
-  "diffSha256": "8e119e06e23db240e29923473a1c61e39261ec461335af61d1c1373499768f32",
+  "maxObservedChannelDelta": 189,
+  "beforeSha256": "cac542ecdc97309e8d1094c37de2863041197284e350dd370df9a8f3d8ab003f",
+  "afterSha256": "a015ec8fdad0de83525fee5b21945d228aca0dfd6744521eb7e1db7a36579056",
+  "diffSha256": "46698ab9336cc01982e8dd916b06725629b0ca7696f392cbc093b2f622a5f20c",
   "checks": {
     "accessibilityTreeIdentity": true,
     "geometryAndStyleViolations": 0,

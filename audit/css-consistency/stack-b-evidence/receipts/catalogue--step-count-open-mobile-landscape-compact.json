@@ -2,10 +2,10 @@
   "id": "step-count-open-mobile-landscape-compact",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "de74a2617aac2e7547cea5002583d72b15c25f5d",
+  "headRevision": "d4952e8e8cdc8fb51f88a195ee32d3e1a828e0fe",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 2
+    "version": 3
   },
   "inputConfigSha256": "9714b002812fdbb38086affa4782664a18efad8b28b6d59063886f54a38f1ab4",
   "environment": {
@@ -18,12 +18,12 @@
     "width": 480,
     "height": 320
   },
-  "differentPixels": 13144,
+  "differentPixels": 13154,
   "rawDifferentPixels": 39437,
   "maxObservedChannelDelta": 240,
   "beforeSha256": "22b81a9cebc4e18b23a556ca4bcc16662583f0f94c5d1c746a070c1cc47a28c0",
-  "afterSha256": "03db98d58cfa8d83f0c35b5bd9355901eb7e7c5fac83e7539955401669bf58ab",
-  "diffSha256": "7446e304194244b80e52e4a8c2b7d8a0f83555dae65a6cbbb3ecfed8ce26493b",
+  "afterSha256": "7e79bf5b1204d204c07c828cc3039b22c331f44d0b72e3f3c5dd88096d2392f8",
+  "diffSha256": "e3f72357b0926ce008a9d0da5c2e0519dfbfd74b918434096c8743592b22467a",
   "checks": {
     "accessibilityTreeIdentity": true,
     "geometryAndStyleViolations": 0,
