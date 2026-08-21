@@ -116,6 +116,20 @@ try {
     mkdirSync(dirname(output), { recursive: true });
     await page.screenshot({ path: output, fullPage: true, animations: 'disabled' });
   }
+
+  const comparisonOutput = resolve(evidenceRoot, 'qa', 'option-1-source-vs-implementation.png');
+  mkdirSync(dirname(comparisonOutput), { recursive: true });
+  await page.setViewportSize({ width: 634, height: 454 });
+  await page.setContent(`<!doctype html><html><head><style>
+    * { box-sizing: border-box; }
+    html, body { width: 634px; height: 454px; margin: 0; overflow: hidden; background: #0b0b0d; }
+    body { display: grid; grid-template-columns: 305px 305px; gap: 24px; }
+    img { display: block; width: 305px; height: 454px; object-fit: fill; }
+  </style></head><body>
+    <img src="${dataUrl(resolve(evidenceRoot, 'reference', 'option-1-tonal-selection.png'))}" alt="Approved Option 1 reference">
+    <img src="${dataUrl(resolve(evidenceRoot, 'review', 'after', 'catalogue--step-count-open.png'))}" alt="Candidate implementation">
+  </body></html>`, { waitUntil: 'load' });
+  await page.screenshot({ path: comparisonOutput, animations: 'disabled' });
 } finally {
   await browser.close();
 }
