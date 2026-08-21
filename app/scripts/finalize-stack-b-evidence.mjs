@@ -52,7 +52,7 @@ const changedPixels = changed.reduce((sum, receipt) => sum + receipt.differentPi
 const generatedSummary = `${summaryStart}
 - Merge base: \`${baseRevision}\`
 - Approved source revision: \`${headRevision}\`
-- Receipt generator: \`${receipts[0].generator.name}\` schema v${receipts[0].generator.version}
+- Receipt generator: \`${receipts[0].generator.name}\` generator v${receipts[0].generator.version}
 - Human-review renderer: Chromium ${environment.browserVersion}, ${environment.platform} ${environment.platformRelease}
 - Canonical machine authority: same-process Chromium comparisons on GitHub Actions Linux; committed review PNGs are provenance-bound evidence, not cross-platform pixel baselines
 - Viewports: ${viewports.join(', ')}

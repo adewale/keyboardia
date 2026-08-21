@@ -16,7 +16,9 @@ not a pixel target.
 2. Use a brighter variant of that treatment on hover.
 3. Replace the inconsistent cyan open treatment with Keyboardia orange while
    retaining transpose blue when it is active and closed.
-4. Add the documented information-blue `:focus-visible` outline.
+4. Add the documented information-blue `:focus-visible` outline while keeping
+   the trigger's neutral compact shadow; focused-but-closed controls must not
+   inherit the global orange focus halo.
 5. Give portalled menus a layered dark surface, clearer edge, 10px corners,
    inset highlight, and compact elevation.
 6. Give hovered options a tactile gradient and selected options a quiet neutral
@@ -24,7 +26,9 @@ not a pixel target.
    do not add a tinted row, leading rail, or other decorative marker.
 7. Increase secondary option-label and selected-check contrast without changing
    typography or layout.
-8. Keep the decoration responsive in desktop, component portrait, compact
+8. Use the elevated menu-edge tone for the menu scrollbar thumb instead of
+   dropping back to the lower-level global border tone.
+9. Keep the decoration responsive in desktop, component portrait, compact
    landscape, wide landscape, and the 768/769 boundary. Keep the production
    portrait and landscape surfaces pixel-identical: portrait hides editing,
    while landscape `TrackDrawer` uses a native select and transpose buttons
@@ -49,6 +53,8 @@ not a pixel target.
 - Primary and secondary text retain at least 4.5:1 contrast on their resulting
   dark surfaces.
 - Keyboard focus is visible with a 2px information-blue outline and 2px offset.
+- Focused triggers retain the neutral dropdown shadow; orange remains reserved
+  for hover/open borders and disclosure rather than a second focus ring.
 - Disabled controls keep their existing semantics and 0.5 opacity.
 - The existing 36px triggers and option heights remain unchanged. They satisfy
   WCAG 2.2 Target Size (Minimum), while the separate 44px Keyboardia mobile

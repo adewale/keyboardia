@@ -389,12 +389,12 @@ primitive.
 |----------|------------|
 | Control surface | Dark vertical gradient (`#34343a` to `#242429`) |
 | Menu surface | Dark vertical gradient (`#2c2c32` to `#1d1d21`) |
-| Edge | Quiet grey edge plus an inset top highlight |
+| Edge | Quiet grey edge plus an inset top highlight; the menu scrollbar thumb uses the menu-edge tone |
 | Trigger radius | 7px, except connected group corners owned by `TrackRow` |
 | Menu radius | 10px |
 | Depth | Inset highlight plus compact trigger and menu shadows |
 | Disclosure accent | Keyboardia orange; transpose remains blue when active but closed |
-| Focus | 2px information-blue outline, 2px offset |
+| Focus | 2px information-blue outline, 2px offset, with neutral component depth and no orange halo |
 | Selected option | Neutral tonal fill plus the existing orange check; no tinted row or leading rail |
 | Density | Preserve the existing 36px trigger and existing option/menu geometry |
 | Motion | Preserve the existing 150ms open animation; remove it under reduced motion |

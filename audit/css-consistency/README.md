@@ -237,9 +237,8 @@ result, not a hidden benefit.
 
 #### Lessons learned from the Stack B candidate
 
-The complete dropdown candidate is implemented in one maintainer-requested
-draft PR, with merge blocked on visual approval. Its evidence added four
-lessons before approval:
+The complete dropdown pilot is implemented in one maintainer-requested PR. Its
+approved evidence and final consistency audit produced eleven lessons:
 
 1. **A responsive component state is not proof that the product exposes that
    component in the same mode.** The catalogue can render the shared portalled
@@ -284,11 +283,21 @@ lessons before approval:
 9. **Approval sheets must show the decision at useful scale.** An exhaustive
    menu sheet is not enough when its most important row is hard to inspect. The
    package now includes a dedicated full-height selected-option comparison.
+10. **Visual inference must be checked against computed style.** The final audit
+    initially read the quiet neutral trigger edge as an orange inner focus halo,
+    but Chromium reported the normal neutral dropdown shadow. The final recipe
+    now asserts the complete computed shadow as well as the blue outline, so a
+    genuinely mixed focus treatment fails mechanically.
+11. **One-time migration allowances must expire.** Stack B permits reviewed
+    decorative differences only while the comparison base is the frozen Stack
+    B migration SHA. Later dropdown changes return to exact computed-style
+    identity instead of relying on the 6/255 raster allowance to catch small
+    line or text colour drift.
 
-Candidate CSS scorecard (subject to visual approval): product files remain 41;
+Approved pilot CSS scorecard: product files remain 41;
 product declarations increase from 5,036 to 5,050; product CSS lines increase
 from 10,987 to 11,008; the shared dropdown recipe increases by one declaration
-from 127 to 128; raw colors outside `index.css` fall from 346 to 341; duplicate
+from 127 to 128; raw colors outside `index.css` fall from 346 to 340; duplicate
 dropdown declarations remain zero; `!important` remains 20. The declaration
 and line increases are the explicit maintenance cost of adding visual depth,
 focus color, and feature-specific tokens rather than hiding new values as raw

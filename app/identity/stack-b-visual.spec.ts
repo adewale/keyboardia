@@ -267,7 +267,7 @@ async function captureFullApp(
   return readPageContract(page);
 }
 
-function styleViolations(base: CapturedContract, head: CapturedContract) {
+function styleViolations(base: CapturedContract, head: CapturedContract, migration: boolean) {
   const violations: string[] = [];
   if (base.elements.length !== head.elements.length) {
     return [`visible element count changed: ${base.elements.length} → ${head.elements.length}`];
@@ -284,7 +284,11 @@ function styleViolations(base: CapturedContract, head: CapturedContract) {
     }
     for (const property of styleProperties) {
       if (after.values[property] === before.values[property]) continue;
-      if (!before.dropdownTarget || !after.dropdownTarget || !stackBDecorativeProperties.has(property)) {
+      const approvedMigrationDifference = migration
+        && before.dropdownTarget
+        && after.dropdownTarget
+        && stackBDecorativeProperties.has(property);
+      if (!approvedMigrationDifference) {
         violations.push(
           `element ${index} changed non-approved ${property}: ${before.values[property]} → ${after.values[property]}`,
         );
@@ -478,7 +482,7 @@ async function assertApprovedDifference(
   const { baseSha: baseRevision, headSha: headRevision } = await comparisonRevisions(page);
   const migration = baseRevision === STACK_B_MIGRATION_BASE_SHA;
   const pixels = comparePngs(base.screenshot, head.screenshot);
-  const violations = styleViolations(base, head);
+  const violations = styleViolations(base, head, migration);
   const targetGeometryIdentity = JSON.stringify(head.regions) === JSON.stringify(base.regions);
   const changedOutsideTargets = unexpectedChangedPixels(base.screenshot, head.screenshot, base.regions);
 
@@ -495,6 +499,10 @@ async function assertApprovedDifference(
     expect(pixels.differentPixels, 'this state must remain pixel-identical').toBe(0);
   } else {
     expect(pixels.differentPixels, 'the approved Stack B migration produced no visual change').toBeGreaterThan(0);
+    expect(
+      styleViolations(base, head, false).length,
+      'decorative exceptions must expire after the one-time Stack B migration',
+    ).toBeGreaterThan(0);
   }
 
   await preserveEvidence(
@@ -702,6 +710,7 @@ test.describe('Stack B approved dropdown differences', () => {
         outlineOffset: style.outlineOffset,
         outlineStyle: style.outlineStyle,
         outlineWidth: style.outlineWidth,
+        boxShadow: style.boxShadow,
       };
     });
     expect(focusStyle).toEqual({
@@ -709,6 +718,7 @@ test.describe('Stack B approved dropdown differences', () => {
       outlineOffset: '2px',
       outlineStyle: 'solid',
       outlineWidth: '2px',
+      boxShadow: 'rgba(255, 255, 255, 0.1) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.32) 0px 2px 4px 0px',
     });
 
     await trigger.click();
@@ -738,6 +748,7 @@ test.describe('Stack B approved dropdown differences', () => {
         borderRadius: style.borderRadius,
         borderTopColor: style.borderTopColor,
         boxShadow: style.boxShadow,
+        scrollbarThumbBackground: getComputedStyle(element, '::-webkit-scrollbar-thumb').backgroundColor,
       };
     });
     expect(menuStyle).toEqual({
@@ -746,6 +757,7 @@ test.describe('Stack B approved dropdown differences', () => {
       borderRadius: '10px',
       borderTopColor: 'rgb(84, 84, 94)',
       boxShadow: 'rgba(255, 255, 255, 0.09) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.35) 0px 4px 10px 0px',
+      scrollbarThumbBackground: 'rgb(84, 84, 94)',
     });
 
     const unselected = menu.locator('[role="option"][aria-selected="false"]').first();

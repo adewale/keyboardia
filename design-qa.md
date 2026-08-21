@@ -28,6 +28,9 @@ No actionable P0, P1, or P2 mismatches remain.
   (`#3a3a41` to `#323238`, `#35353b` fallback). Orange is confined to the
   existing check and open-trigger affordance. The menu shadow is compact
   (`0 4px 10px rgba(0,0,0,.35)`) instead of a wide diffuse halo.
+- Focus and lines: keyboard focus is a single information-blue outline over the
+  trigger's neutral compact shadow. The menu scrollbar reuses the elevated menu
+  edge instead of dropping back to the lower-level global border tone.
 - Image quality and asset fidelity: this surface has no product imagery. The
   existing Lucide check remains sharp and aligned; no substitute asset or CSS
   drawing was introduced.
@@ -81,6 +84,8 @@ scales the exhaustive contact sheet.
 - [x] Remove the leading accent marker and orange row tint.
 - [x] Replace the wide diffuse menu shadow with compact depth.
 - [x] Keep step-count and transpose selected states identical.
+- [x] Keep focused-but-closed triggers free of an orange halo.
+- [x] Keep the menu scrollbar on the elevated menu-edge tone.
 - [x] Preserve geometry, behavior, accessibility, and reduced motion.
 - [x] Verify desktop, portrait, compact/narrow/wide landscape, tablet landscape,
       and 768/769 boundaries.

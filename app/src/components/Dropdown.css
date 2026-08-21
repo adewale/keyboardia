@@ -195,7 +195,7 @@
 }
 
 .dropdown-menu::-webkit-scrollbar-thumb {
-  background: var(--color-border, #444);
+  background: var(--dropdown-menu-border);
   border-radius: 3px;
 }
 
