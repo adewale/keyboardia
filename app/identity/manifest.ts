@@ -133,8 +133,9 @@ export const stackAStates: StackAState[] = [
     actions: [
       { type: 'click', selector: '.transpose-trigger' },
       { type: 'focus', selector: '.transpose-option', index: 0 },
+      { type: 'press', key: 'Tab' },
     ],
-    expectations: [{ selector: '.transpose-option', focused: true }],
+    expectations: [{ selector: '.transpose-option:focus', focused: true }],
   },
   {
     id: 'transpose-selection',
