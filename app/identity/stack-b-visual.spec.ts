@@ -742,13 +742,19 @@ test.describe('Stack B approved dropdown differences', () => {
     await expect(menu).toBeVisible();
     const menuStyle = await menu.evaluate((element) => {
       const style = getComputedStyle(element);
+      const scrollbarThumbRule = [...document.styleSheets]
+        .flatMap((sheet) => [...sheet.cssRules])
+        .find((rule): rule is CSSStyleRule => (
+          rule instanceof CSSStyleRule
+          && rule.selectorText === '.dropdown-menu::-webkit-scrollbar-thumb'
+        ));
       return {
         backgroundColor: style.backgroundColor,
         backgroundImage: style.backgroundImage,
         borderRadius: style.borderRadius,
         borderTopColor: style.borderTopColor,
         boxShadow: style.boxShadow,
-        scrollbarThumbBackground: getComputedStyle(element, '::-webkit-scrollbar-thumb').backgroundColor,
+        scrollbarThumbBackgroundDeclaration: scrollbarThumbRule?.style.background,
       };
     });
     expect(menuStyle).toEqual({
@@ -757,7 +763,7 @@ test.describe('Stack B approved dropdown differences', () => {
       borderRadius: '10px',
       borderTopColor: 'rgb(84, 84, 94)',
       boxShadow: 'rgba(255, 255, 255, 0.09) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.35) 0px 4px 10px 0px',
-      scrollbarThumbBackground: 'rgb(84, 84, 94)',
+      scrollbarThumbBackgroundDeclaration: 'var(--dropdown-menu-border)',
     });
 
     const unselected = menu.locator('[role="option"][aria-selected="false"]').first();
