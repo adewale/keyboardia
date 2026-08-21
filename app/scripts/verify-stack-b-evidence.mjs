@@ -89,7 +89,7 @@ for (const name of actualReceipts) {
 
 const readme = readFileSync(resolve(evidenceRoot, 'README.md'), 'utf8');
 assert(readme.includes(manifest.baseRevision), 'Evidence README omits the approved base revision');
-assert(readme.includes(manifest.headRevision), 'Evidence README omits the approved source revision');
+assert(readme.includes(manifest.headRevision), 'Evidence README omits the candidate source revision');
 
 const requestedBase = process.env.STACK_A_BASE_REF
   || (process.env.GITHUB_BASE_REF ? `origin/${process.env.GITHUB_BASE_REF}` : 'origin/main');
@@ -101,13 +101,13 @@ if (currentBase === migrationBase) {
     ['cat-file', '-e', `${manifest.headRevision}^{commit}`],
     { cwd: repoRoot, stdio: 'ignore' },
   );
-  assert(candidateExists.status === 0, 'The approved source revision is unavailable');
+  assert(candidateExists.status === 0, 'The candidate source revision is unavailable');
   const isAncestor = spawnSync(
     'git',
     ['merge-base', '--is-ancestor', manifest.headRevision, 'HEAD'],
     { cwd: repoRoot, stdio: 'ignore' },
   );
-  assert(isAncestor.status === 0, 'The approved source revision is not an ancestor of HEAD');
+  assert(isAncestor.status === 0, 'The candidate source revision is not an ancestor of HEAD');
   const drift = git(['diff', '--name-only', manifest.headRevision, 'HEAD', '--'])
     .split(/\r?\n/)
     .filter(Boolean)
