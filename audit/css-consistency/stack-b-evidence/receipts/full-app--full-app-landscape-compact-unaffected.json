@@ -2,7 +2,7 @@
   "id": "full-app-landscape-compact-unaffected",
   "group": "full-app",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "cd09032e3209eade232660a23b839937fe7c036d",
+  "headRevision": "24be63398a05c6cc88435b31f4c91b871d26f464",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
     "version": 4

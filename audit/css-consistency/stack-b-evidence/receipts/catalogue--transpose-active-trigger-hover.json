@@ -1,5 +1,5 @@
 {
-  "id": "step-count-open-mobile-landscape-compact",
+  "id": "transpose-active-trigger-hover",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
   "headRevision": "24be63398a05c6cc88435b31f4c91b871d26f464",
@@ -7,7 +7,7 @@
     "name": "app/identity/stack-b-visual.spec.ts",
     "version": 4
   },
-  "inputConfigSha256": "9714b002812fdbb38086affa4782664a18efad8b28b6d59063886f54a38f1ab4",
+  "inputConfigSha256": "64e46da2f2b1fb7f962bb012d42de7bf7133c6543b27ae7282a69fdd6b35d160",
   "environment": {
     "browser": "chromium",
     "browserVersion": "143.0.7499.4",
@@ -15,15 +15,15 @@
     "platformRelease": "25.5.0"
   },
   "viewport": {
-    "width": 480,
-    "height": 320
+    "width": 1280,
+    "height": 800
   },
-  "differentPixels": 13155,
-  "rawDifferentPixels": 39437,
-  "maxObservedChannelDelta": 240,
-  "beforeSha256": "22b81a9cebc4e18b23a556ca4bcc16662583f0f94c5d1c746a070c1cc47a28c0",
-  "afterSha256": "62f6b6e148bbf9d3c775dda940307136a452904baeac807242b04d6874999b0f",
-  "diffSha256": "b8dd180943a2f5e045676d84a2750ab76081dc49f09b53904a6205f289b72761",
+  "differentPixels": 2592,
+  "rawDifferentPixels": 5818,
+  "maxObservedChannelDelta": 82,
+  "beforeSha256": "a3e68d4c6a496466a6859951a4041e16e8075ffde28992b78d83849a0e9c3692",
+  "afterSha256": "10c44b380b4385e45d6ccaefb35c71cc8beceee72bd29b78ae0849b5ef142a4d",
+  "diffSha256": "a71ede14b0c6870047733bde74cb62b24be41ad630005695f9f06aea8fcdb64a",
   "checks": {
     "accessibilityTreeIdentity": true,
     "geometryAndStyleViolations": 0,
