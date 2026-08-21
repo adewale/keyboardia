@@ -11,6 +11,8 @@ Keyboardia facts verified by reading this repository at
 **Status**: Static comparison complete. **No matched listening capture was
 made** — no claim below asserts that one app is preferred by listeners. §5
 separates what is measured from what is inference.
+**Follow-up**: `specs/PHASE-44-SOUND-CHANGES.md` turns §4 into a plan with
+preregistered metrics, and withdraws §4.7 on measurement.
 
 > Prior art: "tone-nets" appears nowhere else in this repo. It joins
 > `SONG-MAKER-COMPARISON-2026-08.md` (Chrome Music Lab) and the two Ableton
@@ -345,15 +347,22 @@ still parked; the poll costs nothing when the clock is healthy.
 Lock-screen transport for a session someone is jamming to, plus the signal to
 iOS that this is media. Cheap, and it pairs naturally with 4.1.
 
-### 4.7 Make loop points the default expectation, not an opt-in
+### 4.7 Loop points — **measured and withdrawn (2026-08-19)**
 
-100% of the EMU bank's samples loop — that is what buys arbitrary note length
-from 158 ms of audio. Keyboardia's `LoopSpec` exists
-(`sampled-instrument.ts:164-165, 638-642`) but is per-mapping and optional, so
-sustained instruments (`string-section`, `hammond-organ`, `french-horn`) are
-limited by recorded length on long steps and tied notes. Auditing which shipped
-manifests actually carry loops, and adding them where a sustain is musically
-expected, is content work with a clear acceptance test.
+The original form of this item reasoned from the EMU bank's 100% loop rate:
+Keyboardia's `LoopSpec` exists (`sampled-instrument.ts:164-165, 638-642`) but
+only `hammond-organ` declares one, so sustaining instruments looked
+length-limited on tied notes.
+
+Measurement does not support it. `npm run measure:velocity-timbre` reports
+usable sample length per instrument, and every sustaining instrument holds far
+past a realistic tied note: `string-section` 9.34 s, `french-horn` 9.70 s,
+`piano` 6.98 s, `alto-sax` 5.86 s, `clean-guitar` 5.10 s. The two short ones,
+`acoustic-guitar` (2.06 s) and `slap-bass` (0.42 s), are plucked instruments
+where decaying to silence is correct.
+
+`specs/PHASE-44-SOUND-CHANGES.md` §4 replaces this recommendation with a
+regression guard, so the ceiling is watched rather than widened.
 
 ### 4.8 Two explicit quality tiers
 
