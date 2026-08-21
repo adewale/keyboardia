@@ -389,7 +389,7 @@ primitive.
 |----------|------------|
 | Control surface | Dark vertical gradient (`#34343a` to `#242429`) |
 | Menu surface | Dark vertical gradient (`#2c2c32` to `#1d1d21`) |
-| Edge | Quiet grey edge plus an inset top highlight; the menu scrollbar thumb uses the menu-edge tone |
+| Edge | Three-step neutral line ladder: control `#6c6c76`, elevated menu `#70707b`, scrollbar `#787883`; each boundary independently clears 3:1 against its adjacent surface |
 | Trigger radius | 7px, except connected group corners owned by `TrackRow` |
 | Menu radius | 10px |
 | Depth | Inset highlight plus compact trigger and menu shadows |
@@ -411,9 +411,11 @@ editing controls, and landscape `TrackDrawer` uses a native step-count select
 plus separate transpose buttons instead of this dropdown family. Production
 portrait and landscape therefore remain pixel-identical in this pilot.
 
-Stack B freezes DOM/accessibility order, names and roles, keyboard/touch
-behavior, dismissal and focus recovery, portal placement, hit areas, layout
-geometry, and product-mode behavior. The existing 36px trigger is larger than
+Stack B freezes DOM/accessibility order, names and roles, touch behavior,
+selection payloads, dismissal, portal placement, hit areas, layout geometry,
+and product-mode behavior. It repairs one keyboard contract: selection and
+Escape return focus to the owning trigger; outside clicks keep focus on their
+clicked target. The existing 36px trigger is larger than
 WCAG 2.2's 24px minimum but below Keyboardia's aspirational 44px mobile target;
 changing it is explicitly deferred to a Stack C product decision.
 

@@ -27,6 +27,7 @@ stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-wi
 stack-b-visual.spec.ts › Stack B approved dropdown differences › full-app-width-769-step-open @stack-b-full-app
 stack-b-visual.spec.ts › Stack B approved dropdown differences › approved palette contrast and minimum target size @stack-b-accessibility
 stack-b-visual.spec.ts › Stack B approved dropdown differences › single-choice menus share the selected-item grammar @stack-b-accessibility
+stack-b-visual.spec.ts › Stack B approved dropdown differences › selection and Escape restore focus to their trigger @stack-b-accessibility
 stack-b-visual.spec.ts › Stack B approved dropdown differences › approved dropdown decorative recipe is exact @stack-b-visual
 stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-desktop-expanded @stack-a-identity
 stack-a-identity.spec.ts › Stack A base-versus-head identity › picker-add-mobile-collapsed @stack-a-identity

@@ -108,6 +108,7 @@ export const stackAStates: StackAState[] = [
     viewport: { width: 1280, height: 800 },
     actions: [
       { type: 'click', selector: '.transpose-trigger' },
+      { type: 'focus', selector: '.transpose-option', index: 0 },
       { type: 'press', key: 'Escape' },
     ],
     expectations: [

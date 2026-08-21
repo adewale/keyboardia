@@ -21,16 +21,17 @@ const evidenceRoot = resolve(process.cwd(), '..', 'audit', 'css-consistency', 's
 const writeEvidence = process.env.STACK_B_WRITE_EVIDENCE === '1';
 const evidenceGenerator = {
   name: 'app/identity/stack-b-visual.spec.ts',
-  version: 2,
+  version: 3,
 } as const;
 const approvedDropdownTokens = {
   '--dropdown-control-background': 'linear-gradient(180deg, #34343a 0%, #242429 100%) #242429',
-  '--dropdown-control-border': '#4f4f58',
+  '--dropdown-control-border': '#6c6c76',
   '--dropdown-control-shadow': 'inset 0 1px 0 rgba(255, 255, 255, .1), 0 2px 4px rgba(0, 0, 0, .32)',
   '--dropdown-control-hover-background': 'linear-gradient(180deg, #3d3d44 0%, #2c2c31 100%) #2c2c31',
   '--dropdown-control-open-background': 'linear-gradient(180deg, #402923 0%, #2a201e 100%) #2a201e',
   '--dropdown-menu-background': 'linear-gradient(180deg, #2c2c32 0%, #1d1d21 100%) #1d1d21',
-  '--dropdown-menu-border': '#54545e',
+  '--dropdown-menu-border': '#70707b',
+  '--dropdown-scrollbar-thumb': '#787883',
   '--dropdown-menu-shadow': 'inset 0 1px 0 rgba(255, 255, 255, .09), 0 4px 10px rgba(0, 0, 0, .35)',
   '--dropdown-option-hover-background': 'linear-gradient(180deg, #3b3b42 0%, #303036 100%) #333339',
   '--dropdown-option-selected-background': 'linear-gradient(180deg, #3a3a41 0%, #323238 100%) #35353b',
@@ -558,6 +559,7 @@ test.describe('Stack B approved dropdown differences', () => {
     await page.goto(stateUrl('head', 'dropdowns'));
     await expect(page.locator('[data-stack-a-ready]')).toBeVisible();
     const trigger = page.locator('.step-count-trigger');
+    const neutralControlBorder = await trigger.evaluate((element) => getComputedStyle(element).borderTopColor);
     await trigger.click();
     await expect(page.locator('.step-count-menu')).toBeVisible();
     await settleForScreenshot(page);
@@ -591,6 +593,15 @@ test.describe('Stack B approved dropdown differences', () => {
         secondaryText: read('.step-count-menu .dropdown-option-label').color,
         categoryText: read('.step-count-menu .dropdown-category-label').color,
         menuBackgrounds: [menuStyle.backgroundColor, menuStyle.backgroundImage],
+        menuBorder: menuStyle.borderTopColor,
+        scrollbarThumb: (() => {
+          const probe = document.createElement('span');
+          probe.style.color = 'var(--dropdown-scrollbar-thumb)';
+          document.body.append(probe);
+          const color = getComputedStyle(probe).color;
+          probe.remove();
+          return color;
+        })(),
         selectedCheck: selectedCheckStyle.color,
         selectedBackgrounds: [selectedStyle.backgroundColor, selectedStyle.backgroundImage],
       };
@@ -607,6 +618,9 @@ test.describe('Stack B approved dropdown differences', () => {
     expect(minimumContrast(colors.secondaryText, menuBackgrounds)).toBeGreaterThanOrEqual(4.5);
     expect(minimumContrast(colors.categoryText, menuBackgrounds)).toBeGreaterThanOrEqual(4.5);
     expect(contrastRatio(colors.focusOutline, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(neutralControlBorder, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(colors.menuBorder, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
+    expect(minimumContrast(colors.scrollbarThumb, menuBackgrounds)).toBeGreaterThanOrEqual(3);
     expect(minimumContrast(colors.selectedCheck, selectedBackgrounds)).toBeGreaterThanOrEqual(3);
 
     const targetSizes = await page.locator('.dropdown-trigger:visible, .dropdown-option:visible')
@@ -657,6 +671,32 @@ test.describe('Stack B approved dropdown differences', () => {
     expect(step.checkColor).toBe('rgb(240, 112, 72)');
   });
 
+  test('selection and Escape restore focus to their trigger @stack-b-accessibility', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(stateUrl('head', 'dropdowns'));
+    await expect(page.locator('[data-stack-a-ready]')).toBeVisible();
+
+    const stepTrigger = page.locator('.step-count-trigger');
+    await stepTrigger.click();
+    await page.locator('.step-count-menu [role="option"]').first().click();
+    await expect(page.locator('.step-count-menu')).toHaveCount(0);
+    await expect(stepTrigger).toBeFocused();
+
+    const transposeTrigger = page.locator('.transpose-trigger');
+    await transposeTrigger.click();
+    await page.locator('.transpose-menu [role="option"]').first().click();
+    await expect(page.locator('.transpose-menu')).toHaveCount(0);
+    await expect(transposeTrigger).toBeFocused();
+
+    await transposeTrigger.click();
+    const transposeOption = page.locator('.transpose-menu [role="option"]').first();
+    await transposeOption.focus();
+    await expect(transposeOption).toBeFocused();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.transpose-menu')).toHaveCount(0);
+    await expect(transposeTrigger).toBeFocused();
+  });
+
   test('approved dropdown decorative recipe is exact @stack-b-visual', async ({ page }) => {
     await page.setViewportSize({ width: 1280, height: 800 });
     await page.goto(stateUrl('head', 'dropdowns'));
@@ -681,7 +721,7 @@ test.describe('Stack B approved dropdown differences', () => {
     expect(closedStyle).toEqual({
       backgroundColor: 'rgb(36, 36, 41)',
       backgroundImage: 'linear-gradient(rgb(52, 52, 58) 0%, rgb(36, 36, 41) 100%)',
-      borderTopColor: 'rgb(79, 79, 88)',
+      borderTopColor: 'rgb(108, 108, 118)',
       boxShadow: 'rgba(255, 255, 255, 0.1) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.32) 0px 2px 4px 0px',
     });
 
@@ -761,9 +801,9 @@ test.describe('Stack B approved dropdown differences', () => {
       backgroundColor: 'rgb(29, 29, 33)',
       backgroundImage: 'linear-gradient(rgb(44, 44, 50) 0%, rgb(29, 29, 33) 100%)',
       borderRadius: '10px',
-      borderTopColor: 'rgb(84, 84, 94)',
+      borderTopColor: 'rgb(112, 112, 123)',
       boxShadow: 'rgba(255, 255, 255, 0.09) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.35) 0px 4px 10px 0px',
-      scrollbarThumbBackgroundDeclaration: 'var(--dropdown-menu-border)',
+      scrollbarThumbBackgroundDeclaration: 'var(--dropdown-scrollbar-thumb)',
     });
 
     const unselected = menu.locator('[role="option"][aria-selected="false"]').first();

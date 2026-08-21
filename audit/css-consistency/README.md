@@ -198,15 +198,16 @@ result, not a hidden benefit.
 
 #### Consequences for Stack B
 
-- The dropdown pilot is **verification-unblocked**, not product-unblocked.
-  Issue #93 still needs an approved visual brief, accessibility target, and
-  density/touch decision before any pixel changes.
+- The dropdown pilot became **verification-unblocked** after issue #93 recorded
+  its approved visual brief, accessibility target, and density/touch decision.
 - Stack B must use the merge-base-owned manifest and add approved changed-pixel
   evidence in a separate implementation PR. It may extend coverage only in a
   preceding harness PR.
 - Every intentional change must map to a named state and viewport. Unchanged
-  ARIA, event payloads, focus/dismissal, geometry outside the target, and
-  reduced-motion behavior remain exact.
+  ARIA, event payloads, dismissal, geometry outside the target, and
+  reduced-motion behavior remain exact. The final audit pulled one narrowly
+  scoped behavior repair into this pilot: selection and Escape now restore
+  focus to the owning trigger and are asserted directly.
 - Prefer feature-specific tokens during the pilot. Promote a value to a shared
   semantic token only after two real consumers share meaning as well as value.
 - Keep Stack B surface-sized. Do not start FX or picker visual consolidation
@@ -232,13 +233,14 @@ result, not a hidden benefit.
   input/config hashes, check results, and every review-file hash; CI rejects
   source drift after that approved revision.
 - Measure contrast against every opaque gradient stop that can be rendered,
-  including non-text selection indicators. A fallback `background-color` is
-  not the visible surface when an opaque gradient covers it.
+  including non-text selection indicators and each independently meaningful
+  control/menu boundary. A fallback `background-color` is not the visible
+  surface when an opaque gradient covers it.
 
 #### Lessons learned from the Stack B candidate
 
 The complete dropdown pilot is implemented in one maintainer-requested PR. Its
-approved evidence and final consistency audit produced eleven lessons:
+approved evidence and final consistency audit produced thirteen lessons:
 
 1. **A responsive component state is not proof that the product exposes that
    component in the same mode.** The catalogue can render the shared portalled
@@ -293,10 +295,21 @@ approved evidence and final consistency audit produced eleven lessons:
     B migration SHA. Later dropdown changes return to exact computed-style
     identity instead of relying on the 6/255 raster allowance to catch small
     line or text colour drift.
+12. **A contrast assertion must sample the neutral state it names.** The first
+    control-edge check read the trigger after opening it, so it measured the
+    orange open border and allowed the old 2.06:1 neutral edge to pass. The
+    repaired test captures the closed edge before interaction. Independent
+    negative controls now prove the old control edge (2.06:1), menu edge
+    (2.23:1), and scrollbar (1.85:1 at the lightest menu stop) each fail.
+13. **Focus recovery needs a discriminating direct assertion.** Escape looked
+    correct while the trigger happened to retain focus. The evidence action now
+    moves focus to an option before Escape, and a head-only contract directly
+    proves focus returns after both dropdown selections and Escape. Removing
+    the hook repair makes that contract fail.
 
 Approved pilot CSS scorecard: product files remain 41;
-product declarations increase from 5,036 to 5,050; product CSS lines increase
-from 10,987 to 11,008; the shared dropdown recipe increases by one declaration
+product declarations increase from 5,036 to 5,051; product CSS lines increase
+from 10,987 to 11,009; the shared dropdown recipe increases by one declaration
 from 127 to 128; raw colors outside `index.css` fall from 346 to 340; duplicate
 dropdown declarations remain zero; `!important` remains 20. The declaration
 and line increases are the explicit maintenance cost of adding visual depth,
@@ -575,7 +588,7 @@ visual-consistency pilot](https://github.com/adewale/keyboardia/issues/93).
    keyboard, reduced-motion, zoom/reflow, and touch-target acceptance criteria.
    Automated axe checks are a gate but do not constitute complete accessibility
    approval.
-5. **Deterministic evidence:** The relevant Storybook stories and full-app
+5. **Deterministic evidence:** The relevant component-catalogue and full-app
    Playwright states must exist before implementation. The focused fixture must
    reproduce production stylesheet and bundle order, and at least one
    production-built canary must cover every affected responsive mode. Stack B
@@ -583,9 +596,10 @@ visual-consistency pilot](https://github.com/adewale/keyboardia/issues/93).
    reviewed pixel diff. A focused/full-app disagreement blocks baseline updates.
 6. **Behavior freeze:** DOM and accessible order, role/name, keyboard and touch
    behavior, focus path, hit area, visibility, default disclosure, and product
-   state remain unchanged. Reordering, hiding, progressive disclosure, target
-   enlargement, or changed default expansion is Stack C even when presented as
-   styling.
+   state remain unchanged unless the maintainer explicitly pulls forward a
+   narrowly scoped blocker repair with its own direct test. Reordering, hiding,
+   progressive disclosure, target enlargement, or changed default expansion is
+   Stack C even when presented as styling.
 7. **No imminent structural replacement:** Do not visually normalize a surface
    that a planned behavior PR will soon remove or reorganize. Finish or reject
    that product change first.
@@ -627,8 +641,13 @@ C work is an early contract repair that unblocks A or B; optional redesigns
 come later as independent product slices.
 
 Classify work by its highest impact. Stack A changes neither pixels nor
-behavior. Stack B changes approved pixels while preserving DOM/accessibility
-order, hit areas, visibility, focus paths, and disclosure. Any change to those
+behavior. Stack B changes approved pixels while normally preserving
+DOM/accessibility order, hit areas, visibility, focus paths, and disclosure.
+This pilot includes one explicitly requested Stack C pull-forward—restoring
+trigger focus after selection and Escape—because shipping the visual focus
+treatment without a reliable focus owner would leave a verified accessibility
+gap. It has a direct negative-control-backed test and is not precedent for
+bundling broader behavior work into visual pilots. Any other change to those
 contracts is Stack C. On one surface, planned structural Stack C work
 supersedes Stack B rather than depending on it; unrelated A-lite and B work may
 proceed while that surface waits for its C decision.
@@ -788,9 +807,10 @@ and behavior—not pixel similarity.
      two real shared-rule consumers; no increase in `!important`, maximum
      specificity, or recovery overrides; acceptable identity-job duration and
      flake rate.
-   - Stack B: every changed pixel maps to the approved brief; behavior remains
-     frozen; contrast, focus, target size, and design-language decisions pass;
-     a reviewer records go/no-go before the next surface.
+   - Stack B: every changed pixel maps to the approved brief; the sole approved
+     behavior repair is directly tested; all other behavior remains frozen;
+     contrast, focus, target size, and design-language decisions pass; a
+     reviewer records go/no-go before the next surface.
    - Stack C: one outcome, guardrail, rollback threshold, and feasible
      observation method; test audio, multiplayer, persistence, publication,
      accessibility, and mobile only where the impact manifest selects them.
