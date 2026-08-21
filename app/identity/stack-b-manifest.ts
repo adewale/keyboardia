@@ -15,6 +15,7 @@ export const stackBStateIds = [
   'step-count-open',
   'step-count-focused',
   'step-count-trigger-hover',
+  'transpose-active-trigger-hover',
   'step-count-selection',
   'transpose-open',
   'transpose-escape',

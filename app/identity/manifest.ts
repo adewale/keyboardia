@@ -79,6 +79,14 @@ export const stackAStates: StackAState[] = [
     expectations: [{ selector: '.step-count-trigger', visible: true }],
   },
   {
+    id: 'transpose-active-trigger-hover',
+    story: 'dropdowns',
+    variant: 'selected',
+    viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'hover', selector: '.transpose-trigger.active' }],
+    expectations: [{ selector: '.transpose-trigger.active', visible: true }],
+  },
+  {
     id: 'step-count-selection',
     story: 'dropdowns',
     viewport: { width: 1280, height: 800 },

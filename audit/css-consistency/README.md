@@ -240,7 +240,7 @@ result, not a hidden benefit.
 #### Lessons learned from the Stack B candidate
 
 The complete dropdown pilot is implemented in one maintainer-requested PR. Its
-approved evidence and final consistency audit produced thirteen lessons:
+candidate evidence and final consistency audit produced sixteen lessons:
 
 1. **A responsive component state is not proof that the product exposes that
    component in the same mode.** The catalogue can render the shared portalled
@@ -299,7 +299,7 @@ approved evidence and final consistency audit produced thirteen lessons:
     control-edge check read the trigger after opening it, so it measured the
     orange open border and allowed the old 2.06:1 neutral edge to pass. The
     repaired test captures the closed edge before interaction. Independent
-    negative controls now prove the old control edge (2.06:1), menu edge
+    independent calculations prove the old control edge (2.06:1), menu edge
     (2.23:1), and pre-pilot global scrollbar (`#3a3a3a`, 1.22:1 at the
     lightest menu stop) each fail. The 1.85:1 result seen during development
     belonged to the stronger intermediate `#54545e` scrollbar.
@@ -323,7 +323,7 @@ approved evidence and final consistency audit produced thirteen lessons:
     information-blue focus grammar as triggers, with an inset outline that is
     not clipped by menu overflow.
 
-Approved pilot CSS scorecard: product files remain 41;
+Candidate pilot CSS scorecard: product files remain 41;
 product declarations increase from 5,036 to 5,055; product CSS lines increase
 from 10,987 to 11,016; the shared dropdown recipe increases by four declarations
 from 127 to 131; raw colors outside `index.css` fall from 346 to 340; duplicate
@@ -848,7 +848,7 @@ and behavior—not pixel similarity.
    go; broader abstraction is not implied.
 3. **Implementation complete; renewed review pending — Dropdown B pilot:** the
    dropdown-only brief, accessibility, density, touch decision, deterministic
-   expected-difference contract, and 28 before/after pairs are implemented in
+   expected-difference contract, and 29 before/after pairs are implemented in
    one maintainer-requested PR. The maintainer approved Option 1 for the
    selected row; the later focus-ownership and non-text-contrast corrections
    require review of the regenerated source-bound evidence and final CI. The

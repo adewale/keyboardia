@@ -102,6 +102,7 @@ scales the exhaustive contact sheet.
 
 ## Follow-up polish
 
-None required for this approved direction.
+No implementation polish is required by this QA pass. Renewed maintainer
+approval of the regenerated focus and contrast evidence remains pending.
 
 final result: passed

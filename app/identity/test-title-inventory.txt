@@ -4,6 +4,7 @@ stack-b-visual.spec.ts › Stack B approved dropdown differences › dropdowns-d
 stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-open @stack-b-visual
 stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-focused @stack-b-visual
 stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-trigger-hover @stack-b-visual
+stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-active-trigger-hover @stack-b-visual
 stack-b-visual.spec.ts › Stack B approved dropdown differences › step-count-selection @stack-b-visual
 stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-open @stack-b-visual
 stack-b-visual.spec.ts › Stack B approved dropdown differences › transpose-escape @stack-b-visual

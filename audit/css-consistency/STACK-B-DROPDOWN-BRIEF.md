@@ -113,11 +113,11 @@ every dropdown state in the merge-base-owned catalogue and production-build
 canaries for desktop, portrait, 480×320 and 667×375 landscape, 844×390 wide
 landscape, 1024×768 tablet landscape, and the 768/769 boundary.
 
-Approval is valid only for the exact merge base and approved source revision
+Approval is valid only for the exact merge base and candidate source revision
 recorded in every receipt. The following commit may contain only the generated
 evidence package; CI rejects any product, harness, workflow, or documentation
-drift after the approved source revision. Moving the merge base expires the
-images. The candidate remained a draft until the maintainer approved the
-before/after evidence. This final revision records the later focus-recovery and
-non-text-contrast corrections before the stop, revise, or continue decision for
-any additional Stack B surface.
+drift after that candidate source. Moving the merge base expires the images.
+The maintainer approved the earlier Option 1 selection direction; the later
+focus-recovery and contrast corrections require renewed review of the bound
+before/after evidence before merge. The stop decision still applies to any
+additional Stack B surface.
