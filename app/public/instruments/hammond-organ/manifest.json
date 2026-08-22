@@ -3,6 +3,7 @@
   "name": "Hammond Organ",
   "type": "sampled",
   "releaseTime": 0.3,
+  "velocityFilterAnchorHz": 2628,
   "gainDb": -3,
   "playableRange": {
     "min": 36,

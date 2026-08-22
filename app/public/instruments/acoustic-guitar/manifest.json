@@ -3,6 +3,7 @@
   "name": "Acoustic Guitar",
   "type": "sampled",
   "releaseTime": 0.4,
+  "velocityFilterAnchorHz": 6031,
   "playableRange": {
     "min": 34,
     "max": 83

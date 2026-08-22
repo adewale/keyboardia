@@ -252,7 +252,7 @@ describe('ToneEffectsChain', () => {
     it('initializes a fully-wet parallel room with the persisted wet return gain', async () => {
       await vi.waitFor(() => expect(chain['convolutionReverb']).toBe(chain['reverb']));
       expect(chain['reverb']?.wet.value).toBe(1);
-      expect(chain['reverbWetGain']?.gain.value).toBe(0);
+      expect(chain['reverbWetGain']?.gain.value).toBe(DEFAULT_EFFECTS_STATE.reverb.wet);
     });
 
     it('clamps reverb wet to 0-1 range', () => {

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Phase 44 sound changes (August 2026)
+
+**Added:**
+- Per-voice velocity lowpass on sampled instruments: soft velocity-lane steps
+  now darken as well as quieten (nine instruments carry measured
+  `velocityFilterAnchorHz` manifests); steps at or above the default velocity
+  render through a byte-identical graph.
+- Mobile output routed through a hidden media element so the iOS ringer
+  switch no longer silences playback; `navigator.mediaSession` transport
+  state; a bounded clock-liveness gate after context resume.
+- Sustain ceiling guard (`validate:sustain-ceiling`) pinning every sustaining
+  instrument's measured sample length above the longest 16-step tied note.
+- "Whisper to Roar" demo session exercising the velocity filter, kit
+  velocity layers, tied sustains, and the new default room.
+
+**Changed:**
+- New sessions default to a bass-protected reverb at wet 0.15; sessions that
+  never stored effects keep rendering dry.
+
 ### Sound quality parity (August 2026)
 
 **Added:**

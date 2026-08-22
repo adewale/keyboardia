@@ -46,23 +46,30 @@ interface MockSession {
 }
 
 // The only in-memory HTTP backend used by offline development and browser CI.
-const holbyArtifact = JSON.parse(
-  readFileSync(new URL('./scripts/demo-sessions/holby.json', import.meta.url), 'utf8'),
-) as { name: string; state: SessionState }
-const holbyTimestamp = Date.parse('2026-07-10T00:00:00.000Z')
-const mockSessions = new Map<string, MockSession>([
-  ['8444f694-0a9a-41f3-815d-b9c6eb518c50', {
-    id: '8444f694-0a9a-41f3-815d-b9c6eb518c50',
-    name: holbyArtifact.name,
-    state: structuredClone(holbyArtifact.state),
-    createdAt: holbyTimestamp,
-    updatedAt: holbyTimestamp,
-    lastAccessedAt: holbyTimestamp,
+interface DemoArtifact { name: string; state: SessionState }
+function seededDemo(id: string, file: string, seededAt: string): [string, MockSession] {
+  const artifact = JSON.parse(
+    readFileSync(new URL(`./scripts/demo-sessions/${file}`, import.meta.url), 'utf8'),
+  ) as DemoArtifact
+  const timestamp = Date.parse(seededAt)
+  return [id, {
+    id,
+    name: artifact.name,
+    state: structuredClone(artifact.state),
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    lastAccessedAt: timestamp,
     remixedFrom: null,
     remixedFromName: null,
     remixCount: 0,
     immutable: true,
-  }],
+  }]
+}
+const mockSessions = new Map<string, MockSession>([
+  seededDemo('8444f694-0a9a-41f3-815d-b9c6eb518c50', 'holby.json', '2026-07-10T00:00:00.000Z'),
+  // Phase 44 dynamics demo: velocity-lane writing on filter-anchored
+  // instruments plus the new default room.
+  seededDemo('b7e0b220-3185-49ef-b9b0-15ab9df76aec', 'whisper-to-roar.json', '2026-08-22T00:00:00.000Z'),
 ]);
 
 /**

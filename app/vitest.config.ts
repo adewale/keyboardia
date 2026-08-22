@@ -20,6 +20,13 @@ export default defineConfig({
     // exploring a different random slice of the input space every run.
     // Override with FC_SEED=<n>. See src/test/setup-fast-check.ts.
     setupFiles: ['./src/test/setup-fast-check.ts'],
+    // The 5s vitest default assumes a fast developer machine. The heaviest
+    // tests here are CPU-bound (offline audio decode/render, production-graph
+    // AST scans) and measure 2-13s in isolation on a 4-core runner; with
+    // maxThreads using every core, full-suite contention pushes them past 5s
+    // nondeterministically. 30s keeps hang detection while removing
+    // machine-speed flakes.
+    testTimeout: 30_000,
     // pool: 'threads' is the default; we keep isolation on so module-
     // level state doesn't leak between files. `vmThreads` is faster but
     // requires every test to be isolation-safe — given how many of our

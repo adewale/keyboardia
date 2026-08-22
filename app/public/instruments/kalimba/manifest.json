@@ -3,6 +3,7 @@
   "name": "Kalimba",
   "type": "sampled",
   "releaseTime": 1,
+  "velocityFilterAnchorHz": 14691,
   "gainDb": 9.5,
   "playableRange": {
     "min": 53,
