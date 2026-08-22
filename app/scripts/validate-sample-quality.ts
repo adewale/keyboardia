@@ -35,6 +35,7 @@ import {
 } from '../src/audio/sample-onset';
 import {
   measurementsEqual,
+  measurementsExactlyEqual,
   sampleQualityEvaluatorBundleSha256,
   sha256File,
   type SampleQualityBaseline,
@@ -141,13 +142,19 @@ interface SampleQualityReport {
 interface CliOptions {
   instruments: Set<string> | null;
   strict: boolean;
+  requireCleanSubject: boolean;
   writeReports: boolean;
   jsonReport: string;
   markdownReport: string;
   baselinePath: string | null;
 }
 
-function cleanSubjectCommit(): string {
+interface SubjectState {
+  commit: string;
+  treeStatus: string;
+}
+
+function subjectState(): SubjectState {
   const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
     cwd: process.cwd(),
     encoding: 'utf8',
@@ -157,21 +164,25 @@ function cleanSubjectCommit(): string {
     ['status', '--porcelain=v1', '--untracked-files=all'],
     { cwd: process.cwd(), encoding: 'utf8' },
   ).trim();
-  if (treeStatus.length > 0) {
+  if (!FULL_COMMIT_ID.test(subjectCommit)) {
+    throw new Error('Sample-quality report requires a full Git subject commit');
+  }
+  return { commit: subjectCommit, treeStatus };
+}
+
+function assertCleanSubject(state: SubjectState, phase: 'start' | 'end'): void {
+  if (state.treeStatus.length > 0) {
     throw new Error(
-      `Sample-quality evidence requires a clean subject tree; found:\n${treeStatus}`,
+      `Sample-quality evidence requires a clean subject tree at ${phase}; found:\n${state.treeStatus}`,
     );
   }
-  if (!FULL_COMMIT_ID.test(subjectCommit)) {
-    throw new Error('Sample-quality evidence requires a full Git subject commit');
-  }
-  return subjectCommit;
 }
 
 function parseArgs(argv: string[]): CliOptions {
   const instruments = new Set<string>();
   let sawInstrumentFilter = false;
   let strict = false;
+  let requireCleanSubject = false;
   let writeReports = true;
   let jsonReport = DEFAULT_JSON_REPORT;
   let markdownReport = DEFAULT_MARKDOWN_REPORT;
@@ -194,6 +205,8 @@ function parseArgs(argv: string[]): CliOptions {
       instruments.add(arg.slice('--instrument='.length));
     } else if (arg === '--strict' || arg === '--fail-on-review') {
       strict = true;
+    } else if (arg === '--require-clean-subject') {
+      requireCleanSubject = true;
     } else if (arg === '--no-write') {
       writeReports = false;
     } else if (arg === '--json') {
@@ -224,6 +237,7 @@ function parseArgs(argv: string[]): CliOptions {
   return {
     instruments: sawInstrumentFilter ? instruments : null,
     strict,
+    requireCleanSubject,
     writeReports,
     jsonReport,
     markdownReport,
@@ -237,6 +251,7 @@ function printHelp(): void {
   console.log('Options:');
   console.log('  --instrument <id>     Audit one instrument; repeatable');
   console.log('  --strict              Exit non-zero on unwaived review flags as well as errors');
+  console.log('  --require-clean-subject  Require one unchanged clean commit for evidence');
   console.log('  --no-baseline         Do not apply scripts/sample-quality-baseline.json waivers');
   console.log('  --baseline <path>     Baseline/waiver JSON path');
   console.log('  --no-write            Do not write JSON/Markdown reports');
@@ -500,7 +515,7 @@ function issueMatchesWaiver(issue: QualityIssue, waiver: SampleQualityWaiver): b
     issue.instrumentId === waiver.instrumentId &&
     waiver.file === issue.file &&
     measurementsEqual(issue.value, waiver.measuredValue) &&
-    measurementsEqual(issue.threshold, waiver.threshold);
+    measurementsExactlyEqual(issue.threshold, waiver.threshold);
 }
 
 function applyWaivers(issues: QualityIssue[], waivers: SampleQualityWaiver[]): {
@@ -669,7 +684,7 @@ function renderMarkdown(report: SampleQualityReport): string {
   lines.push('');
   lines.push('- `error` means objective decode/measurement defects that should block CI unless explicitly waived.');
   lines.push('- `review` means measurable risk that needs A/B listening or source-specific judgment.');
-  lines.push('- Baseline dispositions bind the source file, complete manifest, six-decimal measured value/threshold, and evaluator bundle; material changes fail closed.');
+  lines.push('- Current baseline entries bind the source file, complete manifest, evaluator bundle, and six-decimal stored measurement/threshold; an issue measurement may deviate from its stored canonical value by at most 0.000001, while thresholds remain exact.');
   lines.push('- Metrics are generated from decoded PCM via Web Audio in Node; Chromium codec support is covered by the blocking browser decode smoke test.');
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -682,7 +697,8 @@ function writeReport(pathname: string, content: string): void {
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
-  const startingSubjectCommit = cleanSubjectCommit();
+  const startingSubject = subjectState();
+  if (options.requireCleanSubject) assertCleanSubject(startingSubject, 'start');
   const manifests = readManifests(options);
   const waivers = readBaseline(options.baselinePath, options.instruments);
   const thresholds = DEFAULT_QUALITY_THRESHOLDS;
@@ -755,18 +771,22 @@ async function main(): Promise<void> {
   const baselineSha256 = options.baselinePath === null
     ? null
     : sha256File(path.resolve(options.baselinePath));
-  const endingSubjectCommit = cleanSubjectCommit();
-  if (endingSubjectCommit !== startingSubjectCommit) {
+  const endingSubject = subjectState();
+  if (options.requireCleanSubject) assertCleanSubject(endingSubject, 'end');
+  if (endingSubject.commit !== startingSubject.commit) {
     throw new Error(
       `Sample-quality evidence subject commit changed during capture: `
-      + `${startingSubjectCommit} -> ${endingSubjectCommit}`,
+      + `${startingSubject.commit} -> ${endingSubject.commit}`,
     );
   }
+  const subjectTreeClean = startingSubject.treeStatus.length === 0
+    && endingSubject.treeStatus.length === 0
+    && endingSubject.commit === startingSubject.commit;
   const report: SampleQualityReport = {
     version: 1,
     generatedAt: new Date().toISOString(),
-    subjectCommit: startingSubjectCommit,
-    subjectTreeClean: true,
+    subjectCommit: startingSubject.commit,
+    subjectTreeClean,
     evaluatorBundleSha256,
     baselineSha256,
     thresholds,

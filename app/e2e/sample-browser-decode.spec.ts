@@ -25,7 +25,19 @@ interface BrowserDecodeResult extends BrowserDecodeSample {
   error?: string;
 }
 
-function cleanSubjectCommit(): string {
+interface SubjectState {
+  commit: string;
+  treeStatus: string;
+}
+
+function requireCleanEvidenceSubject(): boolean {
+  const value = process.env.KEYBOARDIA_REQUIRE_CLEAN_AUDIO_EVIDENCE;
+  if (value === undefined || value === '0') return false;
+  if (value === '1') return true;
+  throw new Error('KEYBOARDIA_REQUIRE_CLEAN_AUDIO_EVIDENCE must be 0 or 1');
+}
+
+function subjectState(): SubjectState {
   const repositoryRoot = path.resolve(process.cwd(), '..');
   const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
     cwd: repositoryRoot,
@@ -36,15 +48,18 @@ function cleanSubjectCommit(): string {
     ['status', '--porcelain=v1', '--untracked-files=all'],
     { cwd: repositoryRoot, encoding: 'utf8' },
   ).trim();
-  if (trackedChanges.length > 0) {
+  if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(subjectCommit)) {
+    throw new Error('Browser-decode report requires a full Git subject commit');
+  }
+  return { commit: subjectCommit, treeStatus: trackedChanges };
+}
+
+function assertCleanEvidenceSubject(state: SubjectState, phase: 'start' | 'end'): void {
+  if (state.treeStatus.length > 0) {
     throw new Error(
-      `Browser-decode evidence requires a clean tracked subject tree; found:\n${trackedChanges}`,
+      `Browser-decode evidence requires a clean subject tree at ${phase}; found:\n${state.treeStatus}`,
     );
   }
-  if (!/^[a-f0-9]{40}$/.test(subjectCommit)) {
-    throw new Error('Browser-decode evidence requires a full Git subject commit');
-  }
-  return subjectCommit;
 }
 
 function encodeUrlPath(value: string): string {
@@ -79,7 +94,9 @@ function loadReferencedSamples(): BrowserDecodeSample[] {
 test('browser decodeAudioData decodes every referenced sampled-instrument file', async ({ page, browserName }) => {
   test.setTimeout(120_000);
 
-  const startingSubjectCommit = cleanSubjectCommit();
+  const requireCleanSubject = requireCleanEvidenceSubject();
+  const startingSubject = subjectState();
+  if (requireCleanSubject) assertCleanEvidenceSubject(startingSubject, 'start');
   const samples = loadReferencedSamples();
   await page.goto('/');
 
@@ -289,21 +306,26 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
     version: page.context().browser()?.version() ?? 'unknown',
     userAgent: await page.evaluate(() => navigator.userAgent),
   };
-  const endingSubjectCommit = cleanSubjectCommit();
-  if (endingSubjectCommit !== startingSubjectCommit) {
+  const endingSubject = subjectState();
+  if (requireCleanSubject) assertCleanEvidenceSubject(endingSubject, 'end');
+  if (endingSubject.commit !== startingSubject.commit) {
     throw new Error(
       `Browser-decode evidence subject commit changed during capture: `
-      + `${startingSubjectCommit} -> ${endingSubjectCommit}`,
+      + `${startingSubject.commit} -> ${endingSubject.commit}`,
     );
   }
+  const subjectTreeClean = startingSubject.treeStatus.length === 0
+    && endingSubject.treeStatus.length === 0
+    && endingSubject.commit === startingSubject.commit;
   fs.mkdirSync('reports/instrument-quality', { recursive: true });
   fs.writeFileSync(
     `reports/instrument-quality/browser-decode-${browserName}.json`,
     `${JSON.stringify({
-      schemaVersion: 1,
+      schemaVersion: 2,
       claim: 'cross-decoder-sample-onset-evidence',
       generatedAt: new Date().toISOString(),
-      subjectCommit: startingSubjectCommit,
+      subjectCommit: startingSubject.commit,
+      subjectTreeClean,
       browser: browserIdentity,
       results,
     }, null, 2)}\n`,

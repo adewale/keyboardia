@@ -43,7 +43,7 @@ import {
   type LiveQualityReport,
 } from './instrument-quality-live-receipt';
 import {
-  boundMeasurement,
+  measurementsEqual,
   sampleQualityEvaluatorBundleSha256,
 } from './sample-quality-baseline-core';
 import {
@@ -512,16 +512,84 @@ function validateFullSampleQualityReport(
   return value as unknown as SampleQualityReport;
 }
 
-function stableSampleQualityReceipt(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(stableSampleQualityReceipt);
-  if (typeof value === 'number') return boundMeasurement(value);
+function stableSampleQualityReceiptForHash(value: unknown, atRoot = true): unknown {
+  if (Array.isArray(value)) {
+    return value.map(entry => stableSampleQualityReceiptForHash(entry, false));
+  }
   if (!isRecord(value)) return value;
   return Object.fromEntries(
     Object.keys(value)
-      .filter(key => key !== 'generatedAt')
+      .filter(key => !atRoot || key !== 'generatedAt')
       .sort()
-      .map(key => [key, stableSampleQualityReceipt(value[key])]),
+      .map(key => [key, stableSampleQualityReceiptForHash(value[key], false)]),
   );
+}
+
+const EXACT_SAMPLE_NUMERIC_FIELDS = new Set([
+  'note',
+  'velocityMin',
+  'velocityMax',
+  'sampleRate',
+  'channels',
+  'playbackGainDb',
+  'clippingSamples',
+  'flatTopRuns',
+]);
+const DECODER_DERIVED_INSTRUMENT_FIELDS = new Set([
+  'maxPeakDb',
+  'maxLeadingSilenceMs',
+  'worstPitchCents',
+  'worstPitchConfidence',
+  'worstNoteLevelStepDb',
+  'maxLoopDerivativeRatio',
+  'minStereoCorrelation',
+]);
+
+function isDecoderDerivedMeasurementPath(pathParts: readonly string[]): boolean {
+  if ((pathParts.length === 2
+      && pathParts[0] === 'issues'
+      && pathParts[1] === 'value')
+    || (pathParts.length === 3
+      && pathParts[0] === 'waivedIssues'
+      && pathParts[1] === 'issue'
+      && pathParts[2] === 'value')) return true;
+  if (pathParts[0] === 'samples') {
+    return pathParts.length > 2
+      || (pathParts.length === 2 && !EXACT_SAMPLE_NUMERIC_FIELDS.has(pathParts[1]));
+  }
+  return pathParts.length === 2
+    && pathParts[0] === 'instruments'
+    && DECODER_DERIVED_INSTRUMENT_FIELDS.has(pathParts[1]);
+}
+
+function stableSampleQualityReceiptsEqual(
+  left: unknown,
+  right: unknown,
+  pathParts: readonly string[] = [],
+): boolean {
+  if (typeof left === 'number' && typeof right === 'number') {
+    return isDecoderDerivedMeasurementPath(pathParts)
+      ? measurementsEqual(left, right)
+      : Object.is(left, right);
+  }
+  if (typeof left === 'number' || typeof right === 'number') return false;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left)
+      && Array.isArray(right)
+      && left.length === right.length
+      && left.every((entry, index) =>
+        stableSampleQualityReceiptsEqual(entry, right[index], pathParts));
+  }
+  if (isRecord(left) || isRecord(right)) {
+    if (!isRecord(left) || !isRecord(right)) return false;
+    const atRoot = pathParts.length === 0;
+    const leftKeys = Object.keys(left).filter(key => !atRoot || key !== 'generatedAt').sort();
+    const rightKeys = Object.keys(right).filter(key => !atRoot || key !== 'generatedAt').sort();
+    return JSON.stringify(leftKeys) === JSON.stringify(rightKeys)
+      && leftKeys.every(key =>
+        stableSampleQualityReceiptsEqual(left[key], right[key], [...pathParts, key]));
+  }
+  return Object.is(left, right);
 }
 
 function sha256Text(value: string): string {
@@ -540,6 +608,7 @@ function recomputeCanonicalSampleQualityReport(
       'tsx',
       path.resolve(APP_DIR, 'scripts/validate-sample-quality.ts'),
       '--strict',
+      '--require-clean-subject',
       '--json',
       jsonReport,
       '--markdown',
@@ -572,9 +641,9 @@ function assertCanonicalSampleQualityEvidence(
   expectedSubjectCommit: string,
 ): void {
   const recomputed = recomputeCanonicalSampleQualityReport(expectedSubjectCommit);
-  const suppliedStable = JSON.stringify(stableSampleQualityReceipt(supplied));
-  const recomputedStable = JSON.stringify(stableSampleQualityReceipt(recomputed));
-  if (suppliedStable !== recomputedStable) {
+  if (!stableSampleQualityReceiptsEqual(supplied, recomputed)) {
+    const suppliedStable = JSON.stringify(stableSampleQualityReceiptForHash(supplied));
+    const recomputedStable = JSON.stringify(stableSampleQualityReceiptForHash(recomputed));
     throw new Error(
       'Sample-quality evidence does not match canonical decoded recomputation; '
       + `supplied=${sha256Text(suppliedStable)}, recomputed=${sha256Text(recomputedStable)}`,
@@ -1126,6 +1195,17 @@ function main(): void {
   };
   const markdown = renderMarkdown(provenance, generatedAt, instruments, sampleReport, liveReport, matrixReport, options);
 
+  if (sampleReport || liveReport) {
+    const publicationHeadCommit = instrumentQualityHeadCommit();
+    const publicationTreeStatus = instrumentQualitySubjectTreeStatus();
+    if (publicationHeadCommit !== subjectCommit || publicationTreeStatus.length > 0) {
+      throw new Error(
+        `Dynamic audio evidence subject changed before ranking publication; `
+        + `HEAD=${publicationHeadCommit}, subject=${subjectCommit}`
+        + `${publicationTreeStatus ? `, changes:\n${publicationTreeStatus}` : ''}`,
+      );
+    }
+  }
   fs.mkdirSync(path.dirname(options.jsonReport), { recursive: true });
   fs.mkdirSync(path.dirname(options.markdownReport), { recursive: true });
   fs.writeFileSync(options.jsonReport, `${JSON.stringify(payload, null, 2)}\n`);

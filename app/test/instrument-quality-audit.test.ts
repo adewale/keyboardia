@@ -5,18 +5,75 @@ import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
 import {
+  LIVE_RECEIPT_SCHEMA_VERSION,
+  expectedLiveEngineDispatchIdentity,
+  type LiveInstrumentSpec,
+} from '../scripts/instrument-quality-live-receipt';
+import {
   sampleQualityEvaluatorBundleSha256,
   sha256File,
 } from '../scripts/sample-quality-baseline-core';
 
 const APP_ROOT = path.resolve(import.meta.dirname, '..');
 const REPOSITORY_ROOT = path.resolve(APP_ROOT, '..');
+const EVIDENCE_ROOT = path.resolve(REPOSITORY_ROOT, 'docs/evidence');
+
+function uniqueCandidateEvidence(prefix: string): string {
+  const matches = fs.readdirSync(EVIDENCE_ROOT)
+    .filter(filename => filename.startsWith(prefix) && filename.endsWith('.json'))
+    .sort();
+  if (matches.length !== 1) {
+    throw new Error(`Expected one ${prefix}*.json evidence fixture, found ${matches.length}`);
+  }
+  return path.resolve(EVIDENCE_ROOT, matches[0]);
+}
 
 function currentSubjectCommit(): string {
   return execFileSync('git', ['rev-parse', 'HEAD'], {
     cwd: APP_ROOT,
     encoding: 'utf8',
   }).trim();
+}
+
+function currentCandidateSampleReport(): Record<string, unknown> {
+  const report = JSON.parse(fs.readFileSync(
+    uniqueCandidateEvidence('candidate-sample-quality-'),
+    'utf8',
+  )) as Record<string, unknown>;
+  report.subjectCommit = currentSubjectCommit();
+  report.evaluatorBundleSha256 = sampleQualityEvaluatorBundleSha256(APP_ROOT);
+  report.baselineSha256 = sha256File(
+    path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
+  );
+  return report;
+}
+
+function currentLiveReportFixture(): Record<string, unknown> {
+  const report = JSON.parse(fs.readFileSync(
+    uniqueCandidateEvidence('candidate-live-primary-'),
+    'utf8',
+  )) as Record<string, unknown>;
+  report.schemaVersion = LIVE_RECEIPT_SCHEMA_VERSION;
+  report.subjectCommit = currentSubjectCommit();
+
+  const positionByInstrument = new Map<string, number>();
+  for (const session of report.sessions as Array<{ instruments: string[] }>) {
+    session.instruments.forEach((instrumentId, index) => {
+      positionByInstrument.set(instrumentId, index);
+    });
+  }
+  for (const item of report.instruments as Array<LiveInstrumentSpec & {
+    trackId: string;
+    observedEngineDispatches: unknown[];
+  }>) {
+    const position = positionByInstrument.get(item.sampleId);
+    if (position === undefined) throw new Error(`Live fixture session omits ${item.sampleId}`);
+    item.observedEngineDispatches = [{
+      ...expectedLiveEngineDispatchIdentity(item, item.trackId),
+      eventTimeSeconds: position + 1,
+    }];
+  }
+  return report;
 }
 
 function filteredSampleReport(overrides: Record<string, unknown> = {}): Record<string, unknown> {
@@ -116,30 +173,27 @@ describe('instrument quality audit evidence coverage', () => {
     }
   });
 
+  it('accepts a complete receipt after independent canonical decoded recomputation', () => {
+    const sampleReport = currentCandidateSampleReport();
+    const liveReport = currentLiveReportFixture();
+    expect(sampleReport.waivedIssues as unknown[]).toHaveLength(203);
+
+    const result = runRequiredAudit(sampleReport, liveReport);
+    expect(`${result.stdout}\n${result.stderr}`).toContain('JSON report:');
+    expect(result.status).toBe(0);
+  }, 120_000);
+
   it('rejects deleting all 203 decoded findings and rewriting the dependent totals', () => {
-    const sampleReport = JSON.parse(fs.readFileSync(
-      path.resolve(REPOSITORY_ROOT, 'docs/evidence/candidate-sample-quality-553398b.json'),
-      'utf8',
-    )) as Record<string, unknown>;
-    const liveReport = JSON.parse(fs.readFileSync(
-      path.resolve(REPOSITORY_ROOT, 'docs/evidence/candidate-live-primary-553398b.json'),
-      'utf8',
-    )) as Record<string, unknown>;
+    const sampleReport = currentCandidateSampleReport();
+    const liveReport = currentLiveReportFixture();
     const waivedIssues = sampleReport.waivedIssues as unknown[];
     expect(waivedIssues).toHaveLength(203);
 
-    sampleReport.subjectCommit = currentSubjectCommit();
-    sampleReport.evaluatorBundleSha256 = sampleQualityEvaluatorBundleSha256(APP_ROOT);
-    sampleReport.baselineSha256 = sha256File(
-      path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
-    );
     sampleReport.waivedIssues = [];
     sampleReport.totals = {
       ...(sampleReport.totals as Record<string, unknown>),
       waivedIssues: 0,
     };
-    liveReport.subjectCommit = currentSubjectCommit();
-
     const result = runRequiredAudit(sampleReport, liveReport);
     expect(result.status).not.toBe(0);
     expect(`${result.stdout}\n${result.stderr}`).toMatch(/does not match canonical decoded recomputation/);
