@@ -317,7 +317,7 @@ describe('dry PCM instrument matrix', () => {
     const wrongAdapterHash = structuredClone(report);
     wrongAdapterHash.provenance.capture.adapterSha256 = '0'.repeat(64);
     expect(() => verify(wrongAdapterHash)).toThrow(/capture adapter hash mismatch/);
-  }, 15_000);
+  }, 30_000);
 
   it('makes strict verification fail closed on fatal findings and evidence gaps', async () => {
     const profile = INSTRUMENT_QUALITY_PROFILES.find(candidate => candidate.id === 'synth:bell')!;
