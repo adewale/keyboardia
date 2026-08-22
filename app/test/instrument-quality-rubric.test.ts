@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  formatIssueActions,
   reviewIssueBurden,
   scoreInstrument,
   type InstrumentScoreInput,
@@ -42,6 +43,24 @@ describe('instrument quality rubric', () => {
       points: 40,
       detail: 'Canonical live sequencer note was silent',
     });
+  });
+
+  it('treats any complete-matrix fatal finding as critical repair debt', () => {
+    const result = scoreInstrument({ ...cleanInput, dryPcmFatalCount: 7 });
+    expect(result.score).toBe(40);
+    expect(result.band).toBe('critical');
+    expect(result.components).toContainEqual({
+      id: 'dry-pcm-fatal',
+      points: 40,
+      detail: '7 fatal delivered-PCM matrix findings',
+    });
+  });
+
+  it('reports every issue action instead of truncating after two classes', () => {
+    expect(formatIssueActions(
+      { FIRST: 3, SECOND: 2, THIRD: 1 },
+      { FIRST: 'fix first', SECOND: 'fix second', THIRD: 'fix third' },
+    )).toEqual(['fix first (3)', 'fix second (2)', 'fix third (1)']);
   });
 
   it('normalizes accepted sample findings by decoded file count', () => {

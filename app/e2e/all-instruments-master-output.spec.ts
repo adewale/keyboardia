@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { createSessionWithRetry, API_BASE } from './test-utils';
@@ -10,7 +11,7 @@ import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
 import { MAX_TRACKS } from '../src/types';
 
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
-const REPORT_DIR = resolve(THIS_DIR, '../test-results/audio-output');
+const REPORT_DIR = resolve(THIS_DIR, '../reports/instrument-quality');
 
 const SILENCE_PEAK = 1e-4;
 const SILENCE_RMS = 1e-5;
@@ -234,10 +235,16 @@ async function clickPlayButton(page: Page): Promise<void> {
   await playButton.click();
 }
 
-test('every catalog instrument sequencer step produces live master output', async ({ page, request }) => {
+test('every catalog instrument sequencer step produces live master output', async ({ page, request, browserName }) => {
   test.setTimeout(240_000);
   const specs = allInstrumentSpecs();
   expect(specs).toHaveLength(99);
+  expect(new Set(specs.map(spec => spec.sampleId)).size).toBe(specs.length);
+  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: resolve(THIS_DIR, '../..'),
+    encoding: 'utf8',
+  }).trim();
+  expect(subjectCommit).toMatch(/^[a-f0-9]{40}$/);
 
   // Codec precondition — see e2e/sample-browser-decode.spec.ts for the same
   // check and the full reasoning.
@@ -273,6 +280,7 @@ test('every catalog instrument sequencer step produces live master output', asyn
   });
 
   const results: TrackProbeResult[] = [];
+  const audioSampleRates = new Set<number>();
   const sessionResults: Array<{
     sessionId: string;
     instruments: string[];
@@ -294,6 +302,13 @@ test('every catalog instrument sequencer step produces live master output', asyn
     await expect(page.locator('.track-row')).toHaveCount(tracks.length, { timeout: 20_000 });
 
     await prepareAudioForTracks(page, tracks);
+    audioSampleRates.add(await page.evaluate(() => {
+      type Engine = { getAudioContext?: () => AudioContext | null };
+      const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
+      const sampleRate = engine?.getAudioContext?.()?.sampleRate;
+      if (!sampleRate) throw new Error('AudioContext sample rate unavailable');
+      return sampleRate;
+    }));
     await attachOutputAnalysers(page, tracks.map(t => t.id));
     await clickPlayButton(page);
     const energy = await sampleOutputEnergy(page);
@@ -315,9 +330,19 @@ test('every catalog instrument sequencer step produces live master output', asyn
 
   mkdirSync(REPORT_DIR, { recursive: true });
   writeFileSync(
-    resolve(REPORT_DIR, 'all-instruments-master-output.json'),
+    resolve(REPORT_DIR, 'live-master-output.json'),
     JSON.stringify(
       {
+        schemaVersion: 1,
+        claim: 'live-post-track-signal-evidence',
+        generatedAt: new Date().toISOString(),
+        subjectCommit,
+        browser: {
+          name: browserName,
+          version: page.context().browser()?.version() ?? 'unknown',
+          userAgent: await page.evaluate(() => navigator.userAgent),
+        },
+        audioSampleRates: [...audioSampleRates].sort((left, right) => left - right),
         generatedFrom: 'Chromium live sequencer sessions for every INSTRUMENT_CATEGORIES entry; per-track bus analysers + masterGain analyser',
         silencePeakThreshold: SILENCE_PEAK,
         silenceRmsThreshold: SILENCE_RMS,

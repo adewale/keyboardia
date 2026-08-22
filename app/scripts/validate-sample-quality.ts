@@ -16,7 +16,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { createHash } from 'node:crypto';
 
 import {
   DEFAULT_QUALITY_THRESHOLDS,
@@ -33,6 +32,13 @@ import {
   compensatedSampleStartOffset,
   measureDecodedLeadingSilenceSeconds,
 } from '../src/audio/sample-onset';
+import {
+  measurementsEqual,
+  sampleQualityEvaluatorBundleSha256,
+  sha256File,
+  type SampleQualityBaseline,
+  type SampleQualityWaiver,
+} from './sample-quality-baseline-core';
 
 const INSTRUMENTS_DIR = 'public/instruments';
 const DEFAULT_JSON_REPORT = 'test-results/sample-quality/metrics.json';
@@ -71,6 +77,8 @@ interface Manifest {
   unpitched?: boolean;
   gainDb?: number;
   startOffset?: number;
+  /** Manifest-approved ceiling for decoder-specific adaptive codec delay. */
+  maxAdaptiveCodecDelay?: number;
 }
 
 interface DecodeAudioContextLike {
@@ -96,26 +104,13 @@ interface InstrumentSummary {
   worstNoteLevelStepDb: number;
   velocityInversions: number;
   rangeOverextensions: number;
-  maxLoopDiffRatio: number | null;
+  maxLoopDerivativeRatio: number | null;
   minStereoCorrelation: number | null;
-}
-
-interface QualityWaiver {
-  code: string;
-  instrumentId: string;
-  file?: string;
-  sha256: string;
-  reason: string;
-}
-
-interface QualityBaseline {
-  version: 2;
-  waivers: QualityWaiver[];
 }
 
 interface WaivedQualityIssue {
   issue: QualityIssue;
-  waiver: QualityWaiver;
+  waiver: SampleQualityWaiver;
 }
 
 interface SampleQualityReport {
@@ -243,23 +238,51 @@ function readManifests(options: CliOptions): Manifest[] {
   return manifests;
 }
 
-function readBaseline(pathname: string | null, instruments: Set<string> | null): QualityWaiver[] {
+function isBoundMeasurement(value: unknown): value is number | string | null {
+  return value === null || typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value));
+}
+
+function readBaseline(pathname: string | null, instruments: Set<string> | null): SampleQualityWaiver[] {
   if (pathname === null) return [];
   if (!fs.existsSync(pathname)) throw new Error(`Sample-quality baseline not found: ${pathname}`);
-  const baseline = JSON.parse(fs.readFileSync(pathname, 'utf-8')) as QualityBaseline;
-  if (baseline.version !== 2 || !Array.isArray(baseline.waivers)) {
+  const baseline = JSON.parse(fs.readFileSync(pathname, 'utf-8')) as SampleQualityBaseline;
+  if (baseline.version !== 3 || !Array.isArray(baseline.waivers)) {
     throw new Error(`Invalid sample-quality baseline schema in ${pathname}`);
   }
+  const evaluatorBundleSha256 = sampleQualityEvaluatorBundleSha256();
+  if (baseline.evaluatorBundleSha256 !== evaluatorBundleSha256) {
+    throw new Error(
+      `Sample-quality baseline evaluator bundle is stale: expected ${evaluatorBundleSha256}, ` +
+      `received ${baseline.evaluatorBundleSha256 ?? 'missing'}`
+    );
+  }
+  const identities = new Set<string>();
   for (const waiver of baseline.waivers) {
-    if (!waiver.code || !waiver.instrumentId || !waiver.file || !waiver.sha256 || !waiver.reason) {
+    const hasMeasuredValue = Object.prototype.hasOwnProperty.call(waiver, 'measuredValue');
+    const hasThreshold = Object.prototype.hasOwnProperty.call(waiver, 'threshold');
+    if (!waiver.code || !waiver.instrumentId || !waiver.file || !waiver.sha256 ||
+      !waiver.manifestSha256 || !waiver.reason || !hasMeasuredValue || !hasThreshold ||
+      !isBoundMeasurement(waiver.measuredValue) || !isBoundMeasurement(waiver.threshold)) {
       throw new Error(`Invalid waiver in ${pathname}: ${JSON.stringify(waiver)}`);
     }
-    const boundFile = path.resolve(INSTRUMENTS_DIR, waiver.instrumentId, waiver.file);
+    const instrumentDir = path.resolve(INSTRUMENTS_DIR, waiver.instrumentId);
+    const boundFile = path.resolve(instrumentDir, waiver.file);
+    if (boundFile !== instrumentDir && !boundFile.startsWith(`${instrumentDir}${path.sep}`)) {
+      throw new Error(`Waiver-bound file escapes its instrument directory: ${waiver.instrumentId}/${waiver.file}`);
+    }
     if (!fs.existsSync(boundFile)) throw new Error(`Waiver-bound file is missing: ${boundFile}`);
-    const actualHash = createHash('sha256').update(fs.readFileSync(boundFile)).digest('hex');
+    const actualHash = sha256File(boundFile);
     if (actualHash !== waiver.sha256) {
       throw new Error(`Waiver hash mismatch for ${waiver.instrumentId}/${waiver.file}; re-audit the changed source`);
     }
+    const manifestPath = path.resolve(instrumentDir, 'manifest.json');
+    if (!fs.existsSync(manifestPath)) throw new Error(`Waiver-bound manifest is missing: ${manifestPath}`);
+    if (sha256File(manifestPath) !== waiver.manifestSha256) {
+      throw new Error(`Waiver manifest hash mismatch for ${waiver.instrumentId}; re-audit the changed mapping`);
+    }
+    const identity = `${waiver.code}\0${waiver.instrumentId}\0${waiver.file}`;
+    if (identities.has(identity)) throw new Error(`Duplicate waiver in ${pathname}: ${identity.replaceAll('\0', '/')}`);
+    identities.add(identity);
   }
   return instruments
     ? baseline.waivers.filter(waiver => instruments.has(waiver.instrumentId))
@@ -445,13 +468,15 @@ function addRangeIssues(manifests: Manifest[], thresholds: QualityThresholds, is
   }
 }
 
-function issueMatchesWaiver(issue: QualityIssue, waiver: QualityWaiver): boolean {
+function issueMatchesWaiver(issue: QualityIssue, waiver: SampleQualityWaiver): boolean {
   return issue.code === waiver.code &&
     issue.instrumentId === waiver.instrumentId &&
-    (waiver.file === undefined || waiver.file === issue.file);
+    waiver.file === issue.file &&
+    measurementsEqual(issue.value, waiver.measuredValue) &&
+    measurementsEqual(issue.threshold, waiver.threshold);
 }
 
-function applyWaivers(issues: QualityIssue[], waivers: QualityWaiver[]): {
+function applyWaivers(issues: QualityIssue[], waivers: SampleQualityWaiver[]): {
   unwaivedIssues: QualityIssue[];
   waivedIssues: WaivedQualityIssue[];
 } {
@@ -500,8 +525,8 @@ function buildInstrumentSummaries(entries: SampleMetricEntry[], issues: QualityI
     const pitchCandidates = instrumentEntries
       .map(entry => entry.metrics.pitch)
       .filter(pitch => pitch.foldedCents !== null && pitch.confidence > 0);
-    const loopDiffs = instrumentEntries
-      .map(entry => entry.metrics.loop?.windowDiffRatio ?? null)
+    const loopDerivativeRatios = instrumentEntries
+      .map(entry => entry.metrics.loop?.derivativeDiscontinuityRatio ?? null)
       .filter((value): value is number => value !== null);
     const stereoCorrelations = instrumentEntries
       .map(entry => entry.metrics.stereo?.correlation ?? null)
@@ -523,7 +548,7 @@ function buildInstrumentSummaries(entries: SampleMetricEntry[], issues: QualityI
       worstNoteLevelStepDb: maxIssueValue(instrumentIssues, 'NOTE_LEVEL_STEP'),
       velocityInversions: instrumentIssues.filter(issue => issue.code === 'VELOCITY_RMS_INVERSION').length,
       rangeOverextensions: instrumentIssues.filter(issue => issue.code === 'RANGE_OVEREXTENSION').length,
-      maxLoopDiffRatio: loopDiffs.length === 0 ? null : Math.max(...loopDiffs),
+      maxLoopDerivativeRatio: loopDerivativeRatios.length === 0 ? null : Math.max(...loopDerivativeRatios),
       minStereoCorrelation: stereoCorrelations.length === 0 ? null : Math.min(...stereoCorrelations),
     } satisfies InstrumentSummary;
   }).sort((a, b) => b.errorCount - a.errorCount || b.reviewCount - a.reviewCount || a.id.localeCompare(b.id));
@@ -572,7 +597,7 @@ function renderMarkdown(report: SampleQualityReport): string {
   lines.push('');
   lines.push('## Instrument overview');
   lines.push('');
-  lines.push('| Instrument | Samples | Errors | Review | Peak dBFS | Max lead ms | Worst pitch ¢ | Level step dB | Loop diff % | Min stereo corr |');
+  lines.push('| Instrument | Samples | Errors | Review | Peak dBFS | Max lead ms | Worst pitch ¢ | Level step dB | Loop slope ratio | Min stereo corr |');
   lines.push('|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|');
   for (const row of report.instruments) {
     lines.push([
@@ -584,7 +609,7 @@ function renderMarkdown(report: SampleQualityReport): string {
       formatNumber(row.maxLeadingSilenceMs),
       formatNumber(row.worstPitchCents),
       formatNumber(row.worstNoteLevelStepDb),
-      row.maxLoopDiffRatio === null ? '—' : (row.maxLoopDiffRatio * 100).toFixed(1),
+      formatNumber(row.maxLoopDerivativeRatio, 2),
       formatNumber(row.minStereoCorrelation, 3),
     ].join(' | ').replace(/^/, '| ').replace(/$/, ' |'));
   }
@@ -617,7 +642,7 @@ function renderMarkdown(report: SampleQualityReport): string {
   lines.push('');
   lines.push('- `error` means objective decode/measurement defects that should block CI unless explicitly waived.');
   lines.push('- `review` means measurable risk that needs A/B listening or source-specific judgment.');
-  lines.push('- Baseline dispositions require an exact source hash and reason; changed files and stale findings both fail.');
+  lines.push('- Baseline dispositions bind the source file, complete manifest, exact measured value/threshold, and evaluator bundle; any change fails closed.');
   lines.push('- Metrics are generated from decoded PCM via Web Audio in Node; Chromium codec support is covered by the blocking browser decode smoke test.');
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -655,6 +680,7 @@ async function main(): Promise<void> {
             configuredStart,
             adaptCodecDelay ? measureDecodedLeadingSilenceSeconds(decoded) : 0,
             adaptCodecDelay,
+            manifest.maxAdaptiveCodecDelay,
           );
           const context: SampleContext = {
             instrumentId: manifest.id,

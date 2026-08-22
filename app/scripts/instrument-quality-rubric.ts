@@ -33,6 +33,8 @@ export interface InstrumentScoreInput {
   targetVelocityLayers: number;
   medianRoundRobins: number | null;
   targetRoundRobins: number;
+  /** Fatal delivered-PCM gates from a complete dry matrix, when present. */
+  dryPcmFatalCount?: number;
 }
 
 export interface InstrumentScore {
@@ -49,8 +51,8 @@ export const REVIEW_ISSUE_WEIGHTS: Readonly<Record<string, number>> = Object.fre
   TAIL_TRUNCATION: 2,
   PITCH_DEVIATION: 2,
   LOOP_SEAM_UNCHECKED: 2,
-  LOOP_SEAM_DIFF: 3,
-  LOOP_SEAM_CORRELATION: 3,
+  LOOP_VALUE_DISCONTINUITY: 3,
+  LOOP_DERIVATIVE_DISCONTINUITY: 3,
   NEGATIVE_PHASE_CORRELATION: 3,
   MONO_LOSS: 3,
   VELOCITY_RMS_INVERSION: 3,
@@ -84,6 +86,16 @@ export function reviewIssueBurden(
   };
 }
 
+/** Render every measured issue class; reporting must not silently hide debt. */
+export function formatIssueActions(
+  counts: Readonly<Record<string, number>>,
+  actions: Readonly<Record<string, string>>,
+): string[] {
+  return Object.entries(counts).map(([code, count]) =>
+    `${actions[code] ?? `investigate ${code.toLowerCase()}`} (${count})`
+  );
+}
+
 export function scoreInstrument(input: InstrumentScoreInput): InstrumentScore {
   const components: ScoreComponent[] = [];
 
@@ -93,6 +105,15 @@ export function scoreInstrument(input: InstrumentScoreInput): InstrumentScore {
 
   if (input.liveMeasured && input.liveSilent) {
     add(components, 'live-silence', 40, 'Canonical live sequencer note was silent');
+  }
+
+  if ((input.dryPcmFatalCount ?? 0) > 0) {
+    add(
+      components,
+      'dry-pcm-fatal',
+      40,
+      `${input.dryPcmFatalCount} fatal delivered-PCM matrix finding${input.dryPcmFatalCount === 1 ? '' : 's'}`,
+    );
   }
 
   if (input.livePeakDbfs !== null && Number.isFinite(input.livePeakDbfs)) {

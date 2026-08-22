@@ -35,9 +35,10 @@ export interface QualityThresholds {
   minPitchConfidence: number;
   phaseCorrelationMin: number;
   monoLossDb: number;
-  loopCorrelationMin: number;
-  loopDiffRatioMax: number;
-  loopLowpassBoxcarSamples: number;
+  /** Maximum boundary-value discontinuity, relative to sample peak. */
+  loopValueJumpDbMax: number;
+  /** Maximum C1 (slope) discontinuity, normalized by local derivative RMS. */
+  loopDerivativeRatioMax: number;
   velocityInversionDb: number;
   noteLevelStepDb: number;
   rangeOverextensionSemitones: number;
@@ -64,9 +65,10 @@ export interface PitchMetrics {
 export interface LoopMetrics {
   checked: boolean;
   skippedReason?: string;
+  /** Difference between the signal values at loopEnd and loopStart. */
   seamJumpDb: number | null;
-  windowDiffRatio: number | null;
-  correlation: number | null;
+  /** Difference between the incoming/outgoing slopes at the boundary. */
+  derivativeDiscontinuityRatio: number | null;
 }
 
 export interface StereoMetrics {
@@ -140,8 +142,8 @@ export interface QualityIssue {
  * - free-decay tails above about -35 dB relative to peak can sound truncated,
  * - pitch JND for complex tones is roughly 5-10 cents,
  * - adjacent note/layer level steps above 3 dB read as uneven,
- * - loop seams compare 5ms windows after an 8-sample (~5.5kHz at 44.1kHz)
- *   box lowpass so lossy high-harmonic requantization does not false-positive,
+ * - loop seams compare the actual boundary value and first derivative; windows
+ *   away from the seam are not phase-aligned and therefore are not compared,
  * - playable ranges more than 6 semitones past the outer sampled notes are
  *   audible overextensions unless waived.
  */
@@ -155,9 +157,8 @@ export const DEFAULT_QUALITY_THRESHOLDS: QualityThresholds = {
   minPitchConfidence: 0.52,
   phaseCorrelationMin: -0.2,
   monoLossDb: -3,
-  loopCorrelationMin: 0.9,
-  loopDiffRatioMax: 0.1,
-  loopLowpassBoxcarSamples: 8,
+  loopValueJumpDbMax: -35,
+  loopDerivativeRatioMax: 4,
   velocityInversionDb: 1,
   noteLevelStepDb: 3,
   rangeOverextensionSemitones: 6,
@@ -247,25 +248,71 @@ function findActiveRegion(mono: Float32Array, sampleRate: number, peak: number):
   };
 }
 
+/** Runtime starts on the first audible frame in any channel, not mono fold-down. */
+function findAnyChannelLeadingSilenceMs(
+  decoded: DecodedAudioLike,
+  peak: number,
+): number {
+  if (decoded.sampleRate <= 0 || decoded.length <= 0 || peak <= 0) return 0;
+  const threshold = Math.max(10 ** (-70 / 20), peak * 10 ** (-50 / 20));
+  for (let frame = 0; frame < decoded.length; frame++) {
+    for (let channel = 0; channel < decoded.numberOfChannels; channel++) {
+      if (Math.abs(decoded.getChannelData(channel)[frame] ?? 0) > threshold) {
+        return (frame / decoded.sampleRate) * 1000;
+      }
+    }
+  }
+  return 0;
+}
+
 function countFlatTopRuns(decoded: DecodedAudioLike, peak: number): { clippingSamples: number; flatTopRuns: number } {
   let clippingSamples = 0;
   let flatTopRuns = 0;
   if (peak <= 0) return { clippingSamples, flatTopRuns };
-  const flatThreshold = peak > 0.97 ? Math.max(0.985 * peak, 0.95) : 1.01;
+  // A level threshold alone is not evidence of a flat top: smooth peaks spend
+  // several frames near their maximum, and attenuating a clipped source used
+  // to disable this check entirely. Detect the scale-invariant *shape* instead:
+  // at least four near-peak samples with effectively zero slope, bounded by
+  // substantially steeper edges. Multiplying every sample by a gain therefore
+  // leaves this count unchanged.
+  const nearPeakThreshold = peak * 0.9;
+  const flatDelta = Math.max(peak * 1e-5, Number.EPSILON);
+  const edgeDelta = flatDelta * 4;
   for (let channel = 0; channel < decoded.numberOfChannels; channel++) {
     const data = decoded.getChannelData(channel);
-    let run = 0;
-    for (const sample of data) {
+    let runStart = -1;
+    const finishRun = (end: number): void => {
+      if (runStart < 0) return;
+      const runLength = end - runStart + 1;
+      const hasEdges = runStart > 0 && end + 1 < data.length;
+      if (
+        runLength >= 4
+        && hasEdges
+        && Math.abs(data[runStart] - data[runStart - 1]) > edgeDelta
+        && Math.abs(data[end + 1] - data[end]) > edgeDelta
+      ) {
+        flatTopRuns++;
+      }
+      runStart = -1;
+    };
+    for (let i = 0; i < data.length; i++) {
+      const sample = data[i];
       const abs = Math.abs(sample);
       if (abs >= 0.999) clippingSamples++;
-      if (abs >= flatThreshold) {
-        run++;
-      } else {
-        if (run >= 4) flatTopRuns++;
-        run = 0;
+
+      if (i === 0) continue;
+      const previous = data[i - 1];
+      const flatPair = abs >= nearPeakThreshold
+        && Math.abs(previous) >= nearPeakThreshold
+        && Math.sign(sample) === Math.sign(previous)
+        && Math.abs(sample - previous) <= flatDelta;
+      if (flatPair) {
+        if (runStart < 0) runStart = i - 1;
+      } else if (runStart >= 0) {
+        finishRun(i - 1);
       }
     }
-    if (run >= 4) flatTopRuns++;
+    finishRun(data.length - 1);
   }
   return { clippingSamples, flatTopRuns };
 }
@@ -425,17 +472,96 @@ export function estimatePitch(
   };
 }
 
-function lowpassBoxcar(data: Float32Array, taps: number): Float32Array {
-  const size = Math.max(1, Math.floor(taps));
-  if (data.length < size) return new Float32Array();
-  const out = new Float32Array(data.length - size + 1);
-  let sum = 0;
-  for (let i = 0; i < data.length; i++) {
-    sum += data[i];
-    if (i >= size) sum -= data[i - size];
-    if (i >= size - 1) out[i - size + 1] = sum / size;
+/**
+ * Wide-band YIN-style fundamental estimator for matrix octave validation.
+ * Unlike estimatePitch(), this does not search around the declared note and
+ * does not fold octaves, so C3/C5 cannot masquerade as an in-tune C4.
+ */
+export function estimateAbsolutePitch(
+  mono: Float32Array,
+  sampleRate: number,
+  midiNote: number,
+  activeStart: number | null,
+  activeEnd: number | null,
+): PitchMetrics {
+  if (activeStart === null || activeEnd === null || activeEnd - activeStart < 512 || sampleRate <= 0) {
+    return { midi: null, frequencyHz: null, rawCents: null, foldedCents: null, confidence: 0 };
   }
-  return out;
+  const activeLength = activeEnd - activeStart + 1;
+  const size = Math.min(Math.max(PITCH_WINDOW_SIZE, 8192), activeLength);
+  const start = Math.min(
+    activeStart + Math.floor(activeLength * 0.2),
+    Math.max(activeStart, activeEnd - size + 1),
+  );
+  const segment = new Float64Array(size);
+  const mean = calculateMean(mono, start, start + size);
+  let energy = 0;
+  for (let i = 0; i < size; i++) {
+    const value = mono[start + i] - mean;
+    segment[i] = value;
+    energy += value * value;
+  }
+  if (energy <= 1e-12) {
+    return { midi: null, frequencyHz: null, rawCents: null, foldedCents: null, confidence: 0 };
+  }
+
+  const minLag = Math.max(2, Math.floor(sampleRate / 5000));
+  const maxLag = Math.min(Math.ceil(sampleRate / 30), Math.floor(size / 2));
+  if (maxLag <= minLag) {
+    return { midi: null, frequencyHz: null, rawCents: null, foldedCents: null, confidence: 0 };
+  }
+  // FFT autocorrelation keeps the wide search O(N log N), rather than doing
+  // a multi-million-operation lag scan for every matrix case.
+  const fftSize = nextPowerOfTwo(size * 2);
+  const real = new Float64Array(fftSize);
+  const imag = new Float64Array(fftSize);
+  real.set(segment);
+  fft(real, imag);
+  for (let i = 0; i < fftSize; i++) {
+    real[i] = real[i] * real[i] + imag[i] * imag[i];
+    imag[i] = 0;
+  }
+  // For real power spectra, a second forward FFT has the inverse's real part;
+  // divide by N. (The imaginary sign is irrelevant to autocorrelation.)
+  fft(real, imag);
+  const prefixSquares = new Float64Array(size + 1);
+  for (let i = 0; i < size; i++) prefixSquares[i + 1] = prefixSquares[i] + segment[i] * segment[i];
+  const nsdf = new Float64Array(maxLag + 1);
+  for (let lag = minLag; lag <= maxLag; lag++) {
+    const overlapEnergy = prefixSquares[size - lag] + (prefixSquares[size] - prefixSquares[lag]);
+    nsdf[lag] = overlapEnergy > 1e-20 ? (2 * (real[lag] / fftSize)) / overlapEnergy : 0;
+  }
+  const peaks: number[] = [];
+  for (let lag = minLag + 1; lag < maxLag; lag++) {
+    if (nsdf[lag] > 0 && nsdf[lag] >= nsdf[lag - 1] && nsdf[lag] > nsdf[lag + 1]) peaks.push(lag);
+  }
+  if (peaks.length === 0) {
+    return { midi: null, frequencyHz: null, rawCents: null, foldedCents: null, confidence: 0 };
+  }
+  const strongest = Math.max(...peaks.map(lag => nsdf[lag]));
+  const bestLag = peaks.find(lag => nsdf[lag] >= Math.max(0.6, strongest * 0.9)) ?? 0;
+  const confidence = bestLag > 0 ? Math.max(0, Math.min(1, nsdf[bestLag])) : 0;
+  if (!Number.isFinite(confidence) || confidence <= 0) {
+    return { midi: null, frequencyHz: null, rawCents: null, foldedCents: null, confidence: 0 };
+  }
+  const before = nsdf[Math.max(minLag, bestLag - 1)];
+  const center = nsdf[bestLag];
+  const after = nsdf[Math.min(maxLag, bestLag + 1)];
+  const denominator = before - 2 * center + after;
+  const offset = Math.abs(denominator) > 1e-12
+    ? Math.max(-0.5, Math.min(0.5, 0.5 * (before - after) / denominator))
+    : 0;
+  const refinedLag = bestLag + offset;
+  const frequencyHz = sampleRate / refinedLag;
+  const midi = frequencyToMidi(frequencyHz);
+  const rawCents = (midi - midiNote) * 100;
+  return {
+    midi,
+    frequencyHz,
+    rawCents,
+    foldedCents: foldCents(rawCents),
+    confidence,
+  };
 }
 
 function calculateLoopMetrics(
@@ -445,48 +571,62 @@ function calculateLoopMetrics(
   context: SampleContext
 ): LoopMetrics | null {
   if (!context.loop) return null;
-  const start = Math.max(0, Math.floor((context.loopStart ?? 0) * sampleRate));
-  const endExclusive = context.loopEnd === undefined
+  // Loop points originate as integer source frames. Round instead of floor so
+  // JSON decimal serialization cannot move an exact source marker one frame.
+  const start = Math.max(0, Math.round((context.loopStart ?? 0) * sampleRate));
+  const endBoundary = context.loopEnd === undefined
     ? mono.length
-    : Math.min(mono.length, Math.floor(context.loopEnd * sampleRate));
-  const loopLength = endExclusive - start;
-  const window = Math.min(Math.floor(sampleRate * 0.005), endExclusive, mono.length - start, loopLength);
+    : Math.min(mono.length, Math.round(context.loopEnd * sampleRate));
+  const loopLength = endBoundary - start;
+  const window = Math.min(Math.floor(sampleRate * 0.005), loopLength);
   if (peak <= 0) {
-    return { checked: false, skippedReason: 'silent loop sample', seamJumpDb: null, windowDiffRatio: null, correlation: null };
+    return { checked: false, skippedReason: 'silent loop sample', seamJumpDb: null, derivativeDiscontinuityRatio: null };
   }
-  if (start < 0 || start >= mono.length || endExclusive <= start || window < 16) {
-    return { checked: false, skippedReason: 'loop region too short for 5ms seam window', seamJumpDb: null, windowDiffRatio: null, correlation: null };
-  }
-
-  const beforeRaw = mono.slice(endExclusive - window, endExclusive);
-  const afterRaw = mono.slice(start, start + window);
-  const lowpassTaps = DEFAULT_QUALITY_THRESHOLDS.loopLowpassBoxcarSamples;
-  const before = lowpassBoxcar(beforeRaw, lowpassTaps);
-  const after = lowpassBoxcar(afterRaw, lowpassTaps);
-  const length = Math.min(before.length, after.length);
-  if (length < 16) {
-    return { checked: false, skippedReason: 'loop seam window too short after lowpass', seamJumpDb: null, windowDiffRatio: null, correlation: null };
+  if (start < 0 || start + 1 >= mono.length || endBoundary <= start || endBoundary > mono.length || window < 16) {
+    return { checked: false, skippedReason: 'loop region too short for boundary analysis', seamJumpDb: null, derivativeDiscontinuityRatio: null };
   }
 
-  const seamJump = Math.abs(mono[endExclusive - 1] - mono[start]);
-  let diffSquares = 0;
-  let signalSquares = 0;
-  let dot = 0;
-  let beforeSquares = 0;
-  let afterSquares = 0;
-  for (let i = 0; i < length; i++) {
-    const beforeSample = before[i];
-    const afterSample = after[i];
-    const diff = beforeSample - afterSample;
-    diffSquares += diff * diff;
-    signalSquares += beforeSample * beforeSample;
-    dot += beforeSample * afterSample;
-    beforeSquares += beforeSample * beforeSample;
-    afterSquares += afterSample * afterSample;
+  // Web Audio's continuous-time loop boundary at E transitions from the slope
+  // approaching x[E] to x[start]. For the authoritative SFZ loops x[E] is the
+  // continuity oracle even though the last discrete sample emitted beforehand
+  // is E-1; duplicating E by mapping loopEnd to E+1 worsens the rendered slope.
+  const endValue = endBoundary < mono.length
+    ? mono[endBoundary]
+    : 2 * mono[mono.length - 1] - mono[mono.length - 2];
+  const leftSlope = endBoundary < mono.length
+    ? mono[endBoundary] - mono[endBoundary - 1]
+    : mono[mono.length - 1] - mono[mono.length - 2];
+  const rightSlope = mono[start + 1] - mono[start];
+
+  let derivativeSquares = 0;
+  let derivativeCount = 0;
+  const leftFirst = Math.max(1, endBoundary - window + 1);
+  const leftLast = Math.min(endBoundary, mono.length - 1);
+  for (let i = leftFirst; i <= leftLast; i++) {
+    const derivative = mono[i] - mono[i - 1];
+    derivativeSquares += derivative * derivative;
+    derivativeCount++;
   }
-  const windowDiffRatio = Math.sqrt(diffSquares / length) / (Math.sqrt(signalSquares / length) + 1e-12);
-  const correlation = dot / Math.sqrt(Math.max(1e-20, beforeSquares * afterSquares));
-  return { checked: true, seamJumpDb: amplitudeToDb(seamJump / peak), windowDiffRatio, correlation };
+  const rightLast = Math.min(mono.length - 1, start + window);
+  for (let i = start + 1; i <= rightLast; i++) {
+    const derivative = mono[i] - mono[i - 1];
+    derivativeSquares += derivative * derivative;
+    derivativeCount++;
+  }
+  if (derivativeCount < 16) {
+    return { checked: false, skippedReason: 'loop derivative neighborhoods are too short', seamJumpDb: null, derivativeDiscontinuityRatio: null };
+  }
+
+  const derivativeRms = Math.sqrt(derivativeSquares / derivativeCount);
+  const derivativeDifference = Math.abs(leftSlope - rightSlope);
+  const derivativeDiscontinuityRatio = derivativeRms <= 1e-12
+    ? derivativeDifference <= 1e-12 ? 0 : Number.POSITIVE_INFINITY
+    : derivativeDifference / derivativeRms;
+  return {
+    checked: true,
+    seamJumpDb: amplitudeToDb(Math.abs(endValue - mono[start]) / peak),
+    derivativeDiscontinuityRatio,
+  };
 }
 
 function calculateStereoMetrics(decoded: DecodedAudioLike, activeStart: number | null, activeEnd: number | null): StereoMetrics | null {
@@ -538,6 +678,7 @@ export function analyzeDecodedSampleWithMono(context: SampleContext, decoded: De
     peak = Math.max(peak, calculatePeak(decoded.getChannelData(channel)));
   }
   const active = findActiveRegion(mono, decoded.sampleRate, peak);
+  const anyChannelLeadingSilenceMs = findAnyChannelLeadingSilenceMs(decoded, peak);
   const activeStart = active.start;
   const activeEnd = active.end;
   const activeRms = activeStart === null || activeEnd === null
@@ -583,10 +724,10 @@ export function analyzeDecodedSampleWithMono(context: SampleContext, decoded: De
     dcOffset,
     dcOffsetDb: amplitudeToDb(Math.abs(dcOffset)),
     crestFactorDb: activeRms > 0 ? amplitudeToDb(peak / activeRms) : null,
-    leadingSilenceMs: active.leadingSilenceMs,
+    leadingSilenceMs: anyChannelLeadingSilenceMs,
     effectiveLeadingSilenceMs: Math.max(
       0,
-      active.leadingSilenceMs - (context.playbackStartOffsetMs ?? 0),
+      anyChannelLeadingSilenceMs - (context.playbackStartOffsetMs ?? 0),
     ),
     trailingSilenceMs: active.trailingSilenceMs,
     attackMs: calculateAttackMs(mono, decoded.sampleRate, activeStart, peak),
@@ -626,8 +767,15 @@ export function classifySampleIssues(
     add('error', 'NON_FINITE_METRIC', 'Decoded sample produced non-finite quality metrics');
     return issues;
   }
-  if (metrics.peakDb > thresholds.hotPeakDb) {
-    add('review', 'HOT_PEAK', `Peak ${metrics.peakDb.toFixed(1)} dBFS leaves little/no lossy-codec headroom`, metrics.peakDb, thresholds.hotPeakDb);
+  const lossyDelivery = /\.(?:aac|m4a|mp3|ogg|opus|webm)$/i.test(metrics.file);
+  if (lossyDelivery && metrics.peakDb > thresholds.hotPeakDb) {
+    add(
+      'review',
+      'HOT_PEAK',
+      `Decoded lossy peak ${metrics.peakDb.toFixed(1)} dBFS leaves little/no codec crest margin`,
+      metrics.peakDb,
+      thresholds.hotPeakDb,
+    );
   }
   if (metrics.flatTopRuns > 3) {
     add('error', 'FLAT_TOP_CLIPPING', `${metrics.flatTopRuns} flat-top clipping runs detected`, metrics.flatTopRuns, 3);
@@ -662,11 +810,26 @@ export function classifySampleIssues(
     if (!metrics.loop.checked) {
       add('review', 'LOOP_SEAM_UNCHECKED', `Loop seam could not be checked: ${metrics.loop.skippedReason ?? 'unknown reason'}`);
     } else {
-      if (metrics.loop.windowDiffRatio !== null && metrics.loop.windowDiffRatio > thresholds.loopDiffRatioMax) {
-        add('review', 'LOOP_SEAM_DIFF', `Loop seam window differs by ${(metrics.loop.windowDiffRatio * 100).toFixed(1)}% of signal RMS`, metrics.loop.windowDiffRatio, thresholds.loopDiffRatioMax);
+      if (metrics.loop.seamJumpDb !== null && metrics.loop.seamJumpDb > thresholds.loopValueJumpDbMax) {
+        add(
+          'review',
+          'LOOP_VALUE_DISCONTINUITY',
+          `Loop boundary value jumps at ${metrics.loop.seamJumpDb.toFixed(1)} dB relative to peak`,
+          metrics.loop.seamJumpDb,
+          thresholds.loopValueJumpDbMax,
+        );
       }
-      if (metrics.loop.correlation !== null && metrics.loop.correlation < thresholds.loopCorrelationMin) {
-        add('review', 'LOOP_SEAM_CORRELATION', `Loop seam correlation ${metrics.loop.correlation.toFixed(3)} is low`, metrics.loop.correlation, thresholds.loopCorrelationMin);
+      if (
+        metrics.loop.derivativeDiscontinuityRatio !== null
+        && metrics.loop.derivativeDiscontinuityRatio > thresholds.loopDerivativeRatioMax
+      ) {
+        add(
+          'review',
+          'LOOP_DERIVATIVE_DISCONTINUITY',
+          `Loop boundary slope changes by ${metrics.loop.derivativeDiscontinuityRatio.toFixed(2)}× local derivative RMS`,
+          metrics.loop.derivativeDiscontinuityRatio,
+          thresholds.loopDerivativeRatioMax,
+        );
       }
     }
   }
