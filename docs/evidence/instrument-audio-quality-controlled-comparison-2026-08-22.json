@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "claim": "summary-only controlled technical comparison; not listening or complete-matrix evidence",
+  "claim": "historical summary-only controlled technical comparison; rebuild raw receipts before relying on it; not listening or complete-matrix evidence",
   "generatedAt": "2026-08-22T14:50:24.572Z",
   "method": {
     "originalSourceCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
@@ -9,6 +9,19 @@
     "candidateSubjectCommit": "d096b8445356a35d1e58714cba9f97afac3953e0",
     "candidateEvaluatorCommit": "aafae6a51a9710ae4419d1eeddfe2b4a492c49cb",
     "description": "The synthetic control combines origin/main runtime, assets, manifests, and source calibration with the candidate's hardened receipt producers and equivalent final scoring math. This was necessary because the hardened auditor correctly refuses a dirty or mixed tree labelled as origin/main.",
+    "reconstruction": {
+      "script": "app/scripts/reconstruct-instrument-quality-control.ts",
+      "documentation": "docs/INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md",
+      "requiresHistoricalSyntheticCommits": false,
+      "retainsFreshRawReceipts": [
+        "control decoded sample report and bound baseline",
+        "control 99-instrument Chromium live report",
+        "control stack-ranked report",
+        "candidate decoded sample report and bound baseline",
+        "candidate 99-instrument Chromium live report",
+        "candidate stack-ranked report"
+      ]
+    },
     "exceptions": [
       "The control imports the newer sample-onset helper with the evaluator; old manifests and call sites use its unchanged 30 ms default behavior.",
       "The control auditor predates the candidate's label-only measured-finding wording change; thresholds, metrics, scores, and issue counts are unchanged.",

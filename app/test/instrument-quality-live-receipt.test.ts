@@ -2,9 +2,14 @@ import { describe, expect, it } from 'vitest';
 
 import { MAX_TRACKS } from '../src/types';
 import {
+  LIVE_CAPTURE_CHANNEL_COUNT,
+  LIVE_CAPTURE_DURATION_SECONDS,
+  LIVE_CAPTURE_METHOD,
   LIVE_GENERATED_FROM,
+  LIVE_PEAK_METRIC,
   LIVE_RECEIPT_CLAIM,
   LIVE_RECEIPT_SCHEMA_VERSION,
+  LIVE_RMS_METRIC,
   LIVE_SILENCE_PEAK_THRESHOLD,
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
@@ -18,11 +23,16 @@ const SUBJECT = 'a'.repeat(40);
 
 function validReceipt(): LiveQualityReport {
   const specs = expectedLiveInstrumentSpecs();
+  const capturedFrames = LIVE_CAPTURE_DURATION_SECONDS * 48_000;
+  const channelSampleCount = capturedFrames * LIVE_CAPTURE_CHANNEL_COUNT;
   const sessions = Array.from({ length: Math.ceil(specs.length / MAX_TRACKS) }, (_, index) => ({
     sessionId: `session-${index}`,
     instruments: specs.slice(index * MAX_TRACKS, (index + 1) * MAX_TRACKS).map(spec => spec.sampleId),
+    sampleRate: 48_000,
     masterPeak: 0.2,
     masterRms: 0.04,
+    capturedFrames,
+    channelSampleCount,
   }));
   return {
     schemaVersion: LIVE_RECEIPT_SCHEMA_VERSION,
@@ -32,6 +42,13 @@ function validReceipt(): LiveQualityReport {
     browser: { name: 'chromium', version: '140.0.0', userAgent: 'fixture chromium' },
     audioSampleRates: [48_000],
     generatedFrom: LIVE_GENERATED_FROM,
+    capture: {
+      method: LIVE_CAPTURE_METHOD,
+      durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
+      channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
+      peakMetric: LIVE_PEAK_METRIC,
+      rmsMetric: LIVE_RMS_METRIC,
+    },
     silencePeakThreshold: LIVE_SILENCE_PEAK_THRESHOLD,
     silenceRmsThreshold: LIVE_SILENCE_RMS_THRESHOLD,
     tempo: LIVE_TEMPO,
@@ -43,6 +60,8 @@ function validReceipt(): LiveQualityReport {
       sessionId: sessions[Math.floor(index / MAX_TRACKS)].sessionId,
       peak: 0.1,
       rms: 0.02,
+      capturedFrames,
+      channelSampleCount,
     })),
     diagnostics: { pageErrors: [], consoleErrors: [] },
   };
@@ -87,6 +106,14 @@ describe('live instrument-quality receipt', () => {
     const rates = validReceipt();
     rates.audioSampleRates = [48_000, 44_100];
     expect(() => validateLiveQualityReport(rates, SUBJECT)).toThrow(/unique, sorted, and supported/);
+
+    const incompleteCapture = validReceipt();
+    incompleteCapture.instruments[0].channelSampleCount -= 1;
+    expect(() => validateLiveQualityReport(incompleteCapture, SUBJECT)).toThrow(/every channel sample/);
+
+    const maxBlockRms = validReceipt();
+    maxBlockRms.capture.rmsMetric = 'maximum-block-rms' as typeof LIVE_RMS_METRIC;
+    expect(() => validateLiveQualityReport(maxBlockRms, SUBJECT)).toThrow(/capture settings/);
 
     const browser = validReceipt();
     browser.browser.name = 'webkit';

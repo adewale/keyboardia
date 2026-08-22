@@ -35,14 +35,20 @@ This report distinguishes three things that must not be conflated:
 
 The compatibility snapshot combines original `58264dd5` runtime, assets,
 manifests, and source calibration with hardened receipt producers and equivalent
-final scoring math. Its Git provenance is necessarily synthetic because the
-auditor rejects a mixed tree labelled as literal `58264dd5`. It imports the
-newer onset helper, whose 30 ms default behaves identically for the old
-manifests, and predates a label-only report wording change. The controlled
-summary, method, exceptions, artifact hashes, issue-code totals, and nonzero
-instrument scores are retained in
+final scoring math. Its historical Git provenance is synthetic because the
+auditor rejects a mixed tree labelled as literal `58264dd5`; those historical
+synthetic commits are not required for reconstruction. The tracked
+[`reconstruction tool`](../app/scripts/reconstruct-instrument-quality-control.ts)
+creates fresh local compatibility commits, regenerates the bound baseline, and
+retains raw decoded, 99-instrument live, and ranked receipts for both sides.
+The exact method and exceptions are documented in
+[`INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md`](./INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md).
+The original controlled summary, method, exceptions, artifact hashes,
+issue-code totals, and nonzero instrument scores are retained in
 [`instrument-audio-quality-controlled-comparison-2026-08-22.json`](./evidence/instrument-audio-quality-controlled-comparison-2026-08-22.json).
-The previous 223.2-point/307-finding report is history, not causal evidence.
+It is a historical snapshot, not a substitute for the reconstruction's raw
+receipts. The previous 223.2-point/307-finding report is history, not causal
+evidence.
 
 | Controlled score mover | Before | After | Change |
 |---|---:|---:|---:|
@@ -99,9 +105,11 @@ These changes improve the validity of the conclusions rather than the sound:
 - Every one of the 99 IDs has an exact role profile. The plan contains 1,683
   deterministic dry-PCM cases with exact frame geometry, provenance, pitch,
   release, stereo, range, velocity, repeat, and polyphony lanes.
-- Sample dispositions now bind source SHA, manifest SHA, exact measured value,
-  threshold, and evaluator identity. A mapping edit can no longer silently
-  reuse an audio-file-only waiver.
+- Sample dispositions now bind source SHA, manifest SHA, six-decimal canonical
+  measured value, threshold, and evaluator identity. Raw metrics and pass/fail
+  thresholds keep full precision; only disposition identity removes sub-micro
+  cross-platform decoder noise. A mapping edit can no longer silently reuse an
+  audio-file-only disposition.
 - The Markdown report retains every improvement action. It no longer truncates
   an instrument to two issue classes while the JSON contains more.
 - Live and sample receipts bind the full subject commit, catalogue coverage,
@@ -191,12 +199,18 @@ settle before final level calibration.
 
 ## Branch and issue coverage
 
-GitHub reported eight open PRs and four open issues at the final check. None
-implements a validated fix for the remaining decoded findings, roots/layers,
-bass headroom, hi-hat calibration, or full-matrix evidence gap. PR 87 remains an
-ADSR specification only. PR 98 advanced and opened during final verification;
-it now implements a soft-note low-pass for nine sampled packs, a 15% default
-reverb for new sessions, and adjacent but incomplete mobile-output/clock work.
+GitHub reported ten open PRs and four open issues at the 2026-08-22T19:35:20+01:00
+remote check. None implements a validated fix for the remaining decoded
+findings, roots/layers, bass headroom, hi-hat calibration, or full-matrix
+evidence gap on top of this PR's subject. PR 87 advanced during this audit and
+now implements envelope v2 across runtime, persistence, UI, MCP, MIDI/notation,
+migration, and tests. It overlaps this PR in eleven files and has seven direct
+textual conflicts; because it still carries the old Hammond MP3 catalogue and
+does not carry this PR's recovery/growl/procedural-boundary fixes, it must rebase
+after PR 100 and retain both regression sets rather than taking either side
+wholesale. PR 98 implements a soft-note low-pass for nine sampled packs, a 15%
+default reverb for new sessions, and adjacent but incomplete mobile-output/clock
+work.
 Its native route is later bypassed by the Tone effects destination path, its
 unlock can be skipped for an already-running context, and its clock failure only
 logs rather than failing closed. Three packs already have mapped velocity zones
@@ -204,16 +218,16 @@ that its filename-based classifier misses, so the filter rationale and anchors
 need re-audit. That is genuine adjacent work on
 velocity timbre, but it adds neither real velocity layers nor new roots and
 does not clear any current ranked deficit. Its canonical MIDI-90 path is
-deliberately bypassed; strict sample validation is currently blocked by an
-unrebound manifest disposition, and the changed soft-note sound still needs the
-pinned velocity/full matrix and listening before integration; the default
-reverb also needs the preregistered tail, peak, loudness, and pumping gates. Its
+deliberately bypassed. Its latest tip rebinds the formerly stale slap-bass
+disposition and restores the Stack A contract, but the changed soft-note sound
+still needs re-solving against PR 100's replacement acoustic asset, the pinned
+velocity/full matrix, and listening before integration; the default reverb also
+needs the preregistered tail, peak, loudness, and pumping gates. Its
 aggregate raw-duration sustain guard is useful telemetry, but does not prove
 every mapped note sustains for two seconds because it ignores playback rate and
-manifest offsets. Its strict instrument validation is currently failing on
-stale bound manifest evidence. The dormant Safari branch contains old recovery
-work; its relevant behavior was reimplemented and tested on current `main`
-rather than merging its stale catalogue wholesale.
+manifest offsets. Its visual-regression check remains red. The dormant Safari
+branch contains old recovery work; its relevant behavior was reimplemented and
+tested on current `main` rather than merging its stale catalogue wholesale.
 
 ## Costs and claim boundary
 
@@ -258,3 +272,17 @@ node --import tsx scripts/audit-instrument-quality.ts \
 
 Use `npm run audit:instrument-quality:full` only after supplying the complete
 matrix receipt.
+
+Reconstruct the same-evaluator before/after comparison, including fresh raw
+receipts for both sides, with:
+
+```sh
+cd app
+npm run audit:instrument-quality:control -- \
+  --base-ref 58264dd5ae274f63b1cd80b72aa823b76b21f28b \
+  --evaluator-ref HEAD \
+  --output-dir ../instrument-quality-controlled-rebuild
+```
+
+Inspect the exact overlay and compatibility exceptions without running either
+browser capture by replacing `--output-dir ...` with `--plan`.

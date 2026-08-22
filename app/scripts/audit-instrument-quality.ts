@@ -55,6 +55,7 @@ const DEFAULT_LIVE_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/li
 const DEFAULT_JSON_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/report.json');
 const DEFAULT_MARKDOWN_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/INSTRUMENT-QUALITY.md');
 const DEFAULT_MATRIX_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/dry-pcm-matrix.json');
+const DEFAULT_MATRIX_PCM_ROOT = path.resolve(APP_DIR, 'reports/instrument-quality/dry-pcm-matrix-pcm');
 const MANIFEST_ROOT = path.resolve(APP_DIR, 'public/instruments');
 
 type InstrumentType = 'sample' | 'sampled' | 'synth' | 'tone' | 'advanced';
@@ -66,6 +67,7 @@ interface CliOptions {
   jsonReport: string;
   markdownReport: string;
   matrixReport: string;
+  matrixPcmRoot: string;
   requireEvidence: boolean;
   requireMatrix: boolean;
   evaluatorCommit: string | null;
@@ -265,6 +267,7 @@ function parseArgs(argv: readonly string[]): CliOptions {
     jsonReport: DEFAULT_JSON_REPORT,
     markdownReport: DEFAULT_MARKDOWN_REPORT,
     matrixReport: DEFAULT_MATRIX_REPORT,
+    matrixPcmRoot: DEFAULT_MATRIX_PCM_ROOT,
     requireEvidence: false,
     requireMatrix: false,
     evaluatorCommit: null,
@@ -290,6 +293,8 @@ function parseArgs(argv: readonly string[]): CliOptions {
       options.markdownReport = pathname(argument, index++);
     } else if (argument === '--matrix-report') {
       options.matrixReport = pathname(argument, index++);
+    } else if (argument === '--matrix-pcm-root') {
+      options.matrixPcmRoot = pathname(argument, index++);
     } else if (argument === '--require-evidence') {
       options.requireEvidence = true;
     } else if (argument === '--require-matrix') {
@@ -305,6 +310,7 @@ function parseArgs(argv: readonly string[]): CliOptions {
       console.log('  --json <path>           Output machine-readable ranking');
       console.log('  --markdown <path>       Output human-readable ranking');
       console.log('  --matrix-report <path>  Dry post-track PCM matrix JSON');
+      console.log('  --matrix-pcm-root <dir> Content-addressed planar Float32LE matrix sidecars');
       console.log('  --require-evidence      Fail if either dynamic receipt is absent');
       console.log('  --require-matrix        Fail unless the complete pinned PCM matrix is present');
       console.log('  --evaluator-commit <id> Pinned evaluator commit (defaults to HEAD)');
@@ -696,8 +702,8 @@ function renderMarkdown(
       ? `- Browser lane: **run**, with ${liveReport.diagnostics.pageErrors.length} page errors and ${liveReport.diagnostics.consoleErrors.length} console/readiness errors.`
       : `- Browser lane: **not run** (expected \`${relativePath(options.liveReport)}\`).`,
     matrixReport
-      ? `- Dry PCM matrix: **${matrixReport.capturedCaseCount}/${matrixReport.expectedCaseCount} cases**, ${matrixReport.results.reduce((total, result) => total + result.fatalFindings.length, 0)} fatal findings and ${matrixReport.results.reduce((total, result) => total + result.evidenceGaps.length, 0)} non-scoring evidence gaps; PCM hashes retained in the JSON receipt.`
-      : `- Dry PCM matrix: **not run** (expected \`${relativePath(options.matrixReport)}\`; use \`--require-matrix\` for fail-closed CI).`,
+      ? `- Dry PCM matrix: **${matrixReport.capturedCaseCount}/${matrixReport.expectedCaseCount} cases**, ${matrixReport.results.reduce((total, result) => total + result.fatalFindings.length, 0)} fatal findings and ${matrixReport.results.reduce((total, result) => total + result.evidenceGaps.length, 0)} non-scoring evidence gaps; metrics and hashes were recomputed from content-addressed planar Float32LE sidecars.`
+      : `- Dry PCM matrix: **not run** (expected \`${relativePath(options.matrixReport)}\` plus sidecars under \`${relativePath(options.matrixPcmRoot)}\`; use \`--require-matrix\` for fail-closed CI).`,
     `- Runtime: **${provenance.runtime.node} / ${provenance.runtime.platform}-${provenance.runtime.arch}**; sample rates: **${provenance.sampleRates.join(', ') || 'not reported'}**; browser: **${provenance.browser ? `${provenance.browser.name} ${provenance.browser.version}` : 'not reported'}**.`,
     '',
     '## Stack-ranked instruments (worst first)',
@@ -800,10 +806,14 @@ function main(): void {
   }
   if (matrixReport) {
     validateDryPcmMatrixReport(matrixReport, undefined, {
-      evaluatorCommit,
-      subjectCommit,
-      evaluatorTreeSha256: currentEvaluatorTreeSha256,
-      evaluatorDirty,
+      pcmArtifactRoot: options.matrixPcmRoot,
+      expectedBinding: {
+        evaluatorCommit,
+        subjectCommit,
+        evaluatorTreeSha256: currentEvaluatorTreeSha256,
+        evaluatorDirty,
+      },
+      requirePass: options.requireMatrix,
     });
   }
 
