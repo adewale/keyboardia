@@ -11,6 +11,7 @@ import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
 import { MAX_TRACKS } from '../src/types';
 import {
   LIVE_ACTIVE_STEP,
+  LIVE_ACTIVE_STEP_OFFSET_SECONDS,
   LIVE_CAPTURE_ALIGNMENT,
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
@@ -27,6 +28,7 @@ import {
   LIVE_RECEIPT_CLAIM,
   LIVE_RECEIPT_SCHEMA_VERSION,
   LIVE_RMS_METRIC,
+  LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
   LIVE_SILENCE_PEAK_THRESHOLD,
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
@@ -613,6 +615,8 @@ test('every catalog instrument sequencer step produces live master output', asyn
   expect(specs).toHaveLength(99);
   expect(new Set(specs.map(spec => spec.sampleId)).size).toBe(specs.length);
   expect(LIVE_STEP_COUNT * (60 / LIVE_TEMPO / 4)).toBe(LIVE_PATTERN_PERIOD_SECONDS);
+  expect(LIVE_ACTIVE_STEP * (60 / LIVE_TEMPO / 4)).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
+  expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
   expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
   const subjectCommit = cleanSubjectCommit();
   await installDeterministicRandom(page);
@@ -738,6 +742,8 @@ test('every catalog instrument sequencer step produces live master output', asyn
     schedule: {
       preparation: LIVE_PREPARATION_METHOD,
       activeStep: LIVE_ACTIVE_STEP,
+      activeStepOffsetSeconds: LIVE_ACTIVE_STEP_OFFSET_SECONDS,
+      schedulerLookaheadSeconds: LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
       expectedEventsPerTrack: LIVE_EXPECTED_EVENTS_PER_TRACK,
       patternPeriodSeconds: LIVE_PATTERN_PERIOD_SECONDS,
       unmuteSettleSeconds: LIVE_UNMUTE_SETTLE_SECONDS,
