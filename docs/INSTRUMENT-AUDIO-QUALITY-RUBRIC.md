@@ -183,7 +183,10 @@ on missing frames or any `currentFrame` discontinuity. Process isolation avoids
 render gaps observed when successive real-time AudioContexts shared one
 headless Chromium process. The seeded generator resets immediately before audio
 engine initialization, so unrelated page startup cannot consume part of a
-procedural instrument's random sequence. The quick smoke proves this adapter path
+procedural instrument's random sequence. A case may use at most three fresh
+process attempts, and only a typed nonzero-render-drift rejection is retryable;
+every rejected attempt is retained in the smoke receipt. Accepted PCM still
+requires zero missing frames and zero render drift. The quick smoke proves this adapter path
 with six captures (five engine families plus a distinct seed-A replay); it is
 explicitly **not** the complete 1,683-case matrix:
 

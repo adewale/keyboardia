@@ -12,6 +12,7 @@ import { createE2EContext } from './browser-context';
 
 const TOTAL_STEPS = 128;
 const CAPTURE_LEAD_SECONDS = 0.35;
+const MAX_PROCESS_ATTEMPTS_PER_CASE = 3;
 
 /**
  * Test-only recorder. It receives the real TrackBus output after the centered
@@ -126,6 +127,15 @@ export interface BrowserCaptureDiagnostics {
   userAgent: string;
 }
 
+export interface BrowserCaptureRejectedAttempt {
+  caseId: string;
+  captureAttemptId: string;
+  processAttempt: number;
+  maxRenderFrameDrift: number;
+  browserVersion: string;
+  reason: 'audio-worklet-render-frame-drift';
+}
+
 export interface ChromiumDryPcmCaptureAdapterOptions {
   browser: Browser;
   request: APIRequestContext;
@@ -135,6 +145,27 @@ export interface ChromiumDryPcmCaptureAdapterOptions {
 export interface ChromiumIsolatedDryPcmCaptureAdapterOptions {
   request: APIRequestContext;
   baseUrl: string;
+}
+
+class AudioWorkletRenderDriftError extends Error {
+  readonly caseId: string;
+  readonly captureAttemptId: string;
+  readonly maxRenderFrameDrift: number;
+  readonly browserVersion: string;
+
+  constructor(
+    caseId: string,
+    captureAttemptId: string,
+    maxRenderFrameDrift: number,
+    browserVersion: string,
+  ) {
+    super(`${caseId}: AudioWorklet render-frame drift was ${maxRenderFrameDrift}`);
+    this.name = 'AudioWorkletRenderDriftError';
+    this.caseId = caseId;
+    this.captureAttemptId = captureAttemptId;
+    this.maxRenderFrameDrift = maxRenderFrameDrift;
+    this.browserVersion = browserVersion;
+  }
 }
 
 function inactiveTrack(trackId: string, instrumentId: string): Record<string, unknown> {
@@ -562,8 +593,11 @@ export class ChromiumDryPcmCaptureAdapter {
         throw new Error(`${matrixCase.id}: returned channel geometry is not contiguous`);
       }
       if (captured.maxRenderFrameDrift !== 0) {
-        throw new Error(
-          `${matrixCase.id}: AudioWorklet render-frame drift was ${captured.maxRenderFrameDrift}`,
+        throw new AudioWorkletRenderDriftError(
+          matrixCase.id,
+          captureAttemptId,
+          captured.maxRenderFrameDrift,
+          this.options.browser.version(),
         );
       }
       if (captured.randomCalls < 0) throw new Error(`${matrixCase.id}: seeded random receipt is missing`);
@@ -609,6 +643,7 @@ export class ChromiumDryPcmCaptureAdapter {
  */
 export class ChromiumIsolatedDryPcmCaptureAdapter {
   private readonly diagnostics: BrowserCaptureDiagnostics[] = [];
+  private readonly rejectedAttempts: BrowserCaptureRejectedAttempt[] = [];
   private readonly options: ChromiumIsolatedDryPcmCaptureAdapterOptions;
 
   constructor(options: ChromiumIsolatedDryPcmCaptureAdapterOptions) {
@@ -619,19 +654,37 @@ export class ChromiumIsolatedDryPcmCaptureAdapter {
     return this.diagnostics;
   }
 
+  getRejectedAttempts(): readonly BrowserCaptureRejectedAttempt[] {
+    return this.rejectedAttempts;
+  }
+
   async capture(matrixCase: DryPcmMatrixCase): Promise<DryPcmCapture> {
-    const browser = await chromium.launch({ headless: true });
-    try {
-      const adapter = new ChromiumDryPcmCaptureAdapter({
-        browser,
-        request: this.options.request,
-        baseUrl: this.options.baseUrl,
-      });
-      const capture = await adapter.capture(matrixCase);
-      this.diagnostics.push(...adapter.getDiagnostics());
-      return capture;
-    } finally {
-      await browser.close();
+    for (let processAttempt = 1; processAttempt <= MAX_PROCESS_ATTEMPTS_PER_CASE; processAttempt++) {
+      const browser = await chromium.launch({ headless: true });
+      try {
+        const adapter = new ChromiumDryPcmCaptureAdapter({
+          browser,
+          request: this.options.request,
+          baseUrl: this.options.baseUrl,
+        });
+        const capture = await adapter.capture(matrixCase);
+        this.diagnostics.push(...adapter.getDiagnostics());
+        return capture;
+      } catch (error) {
+        if (!(error instanceof AudioWorkletRenderDriftError)) throw error;
+        this.rejectedAttempts.push({
+          caseId: error.caseId,
+          captureAttemptId: error.captureAttemptId,
+          processAttempt,
+          maxRenderFrameDrift: error.maxRenderFrameDrift,
+          browserVersion: error.browserVersion,
+          reason: 'audio-worklet-render-frame-drift',
+        });
+        if (processAttempt === MAX_PROCESS_ATTEMPTS_PER_CASE) throw error;
+      } finally {
+        await browser.close();
+      }
     }
+    throw new Error(`${matrixCase.id}: exhausted Chromium process attempts`);
   }
 }
