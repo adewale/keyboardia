@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 1,
+  "controlBaseCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "candidateAndEvaluatorCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
+  "overlay": [
+    {
+      "path": "app/scripts/audit-instrument-quality.ts",
+      "evaluatorBlobSha256": "655d753483a287e6a74091b691f3aa70ba99d26753e5945c15ba37e10c273c5a",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/instrument-quality-provenance.ts",
+      "evaluatorBlobSha256": "c91f13e98dbfa8ea75be0d8b97ccd1ad2f1a0ee6ad36448edee575d3297bc71d",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/instrument-quality-rubric.ts",
+      "evaluatorBlobSha256": "8a4fbc342079afb137555e4512ba82f7097ce31c12e75fa64d5a22b984d038f2",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/instrument-quality-profiles.ts",
+      "evaluatorBlobSha256": "eaa2cc1fc22b583c926bfa75d10e7d468047ff8405a879f50f5d27b78bdbc2e0",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/instrument-quality-matrix.ts",
+      "evaluatorBlobSha256": "4bee418572e7ab8647802fd07dbc7d67e523379e28336e8440795a80fff3961f",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/instrument-quality-matrix-cli.ts",
+      "evaluatorBlobSha256": "72a97932e9ae8c7d711a7a7c62e500aaedd3cd96075b44cdb7039fd1488ec679",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/capture-instrument-quality-smoke.ts",
+      "evaluatorBlobSha256": "7bb4d9a68ec888efda106b2022729a9c9aa59fc801d0ce6da4b96349144e3f53",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/instrument-quality-live-receipt.ts",
+      "evaluatorBlobSha256": "1bb571d5458993b28c61627b3ffaa064161fcc1d7b47282fc9f2714a757cc796",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/sample-quality-core.ts",
+      "evaluatorBlobSha256": "3586417a5543452b8542a492f73c26f4eece3e1d7cc819c62a5aafae9ebcb818",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/sample-quality-baseline-core.ts",
+      "evaluatorBlobSha256": "952c05438edeeb4ccd49828a6b02dda51e914a60b96ed8f609f91117ed2efabb",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/sample-velocity-core.ts",
+      "evaluatorBlobSha256": "a2ecd7b81cabbd185bbb040e44820efe41bf2d2ccafbb51a09ca6ffa0e1693b7",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/validate-sample-quality.ts",
+      "evaluatorBlobSha256": "a821f1c0749c4d713af0de3e7ee577f087f6b44d8099098698d155e314650283",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/scripts/bind-sample-quality-dispositions.ts",
+      "evaluatorBlobSha256": "111f2c4bc882ab35eb11a41a608f391229a1ac55d110aeacce34a887ee4da7da",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/e2e/all-instruments-master-output.spec.ts",
+      "evaluatorBlobSha256": "2d14309803c499eccffa208b59fe9d8dd2b8e173ce3c1def981cd565a078802a",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/e2e/dry-pcm-browser-adapter.ts",
+      "evaluatorBlobSha256": "476bd0ad5fb455249bba22418e1c82ac59a052767cd2dde0e89d08e2d2e3b7c0",
+      "compatibilityException": false
+    },
+    {
+      "path": "app/src/test/audio-measures.ts",
+      "evaluatorBlobSha256": "e078761dae431aefc446e30663c16902c798578721b71c23ea845fb73a371306",
+      "compatibilityException": true
+    },
+    {
+      "path": "app/src/audio/sample-onset.ts",
+      "evaluatorBlobSha256": "0f519c155a0f42205670580a7fcd838d4aeeddde1cccc09b53e8c30e923dfb53",
+      "compatibilityException": true
+    }
+  ],
+  "preservedSubjectPaths": [
+    "app/public/",
+    "app/src/audio/",
+    "app/src/components/",
+    "app/src/shared/",
+    "app/src/types.ts",
+    "app/package.json",
+    "app/package-lock.json",
+    "app/playwright.config.ts",
+    "app/vite.config.ts"
+  ],
+  "exceptions": [
+    "The compatibility control overlays src/audio/sample-onset.ts because the hardened decoded evaluator requires its newer API. Base manifests and runtime call sites retain their original defaults; this is not represented as literal base-commit provenance.",
+    "The compatibility control overlays src/test/audio-measures.ts; this is test-only measurement code, not delivered runtime DSP.",
+    "The current checkout's node_modules and Playwright browser installation are reused. Runtime package/lock/config files remain those committed in each subject clone.",
+    "Each live lane is captured twice in independent Playwright processes. Structural fields, classifications, and derived audit decisions must match exactly; scalar energy spread must remain at or below the prospective 0.5 dB evaluator-stability alarm. Neither capture is averaged or selected.",
+    "Two-run decision stability in one Chromium/runtime environment is not PCM identity, a statistical confidence interval, level-matched listening evidence, or a complete dry-PCM matrix."
+  ]
+}

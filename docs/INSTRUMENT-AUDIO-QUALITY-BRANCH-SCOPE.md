@@ -1,24 +1,31 @@
 # Instrument quality branch scope — 2026-08-22
 
-The audit inspected all 49 GitHub branch heads (48 non-main plus `main`) and
-resolved open pull requests independently of branch naming. The final remote
-check at 2026-08-22T19:35:20+01:00 found ten open pull requests and four open
-issues.
+The audit inspected all available GitHub branch heads and resolved open pull
+requests independently of branch naming. The final remote check on 2026-08-22
+found nine open pull requests and three open issues.
 
 That check used `main` at `58264dd5`, PR 87 at `8f995a7`, PR 98 at `5d02fe1`,
-and this remediation PR 100 at `ed8ad28`. Both audio-adjacent branches advanced
+and the then-remote remediation PR 100 at `ed8ad28` (the final local evaluated
+subject is `553398b`). Both audio-adjacent branches advanced
 materially while this audit was running: PR 87 is now a 210-file production
 envelope implementation, while PR 98 has repaired its previously stale bound
 sample disposition and Stack A contract. Their current overlap and sequencing
 requirements are detailed below.
 
+At that snapshot PR 87 was `CLEAN` with 13/13 checks passing. PR 98 was
+`UNSTABLE` with only visual regression failing. PR 100's remote head was ten
+local commits behind and its only failing check was the stale Linux sample
+disposition audit; the local fix canonicalizes only disposition identity to six
+decimal places, keeps raw metrics/thresholds unchanged, and passed the same
+strict audit under Linux Node 24. The pushed-head status must be checked again
+before merge.
+
 | PR | Head | Audio impact |
 |---:|---|---|
 | 100 | `codex/audio-quality-remediation` | This objective-audio remediation and evaluator PR; audit findings and remaining work are reported in its description |
-| 99 | `codex/sitewide-text-colour-safety` | CSS/text-colour safety stacked on PR 95; no audio change |
+| 99 | `codex/sitewide-text-colour-safety` | Sample-picker CSS/text-colour safety; explicitly no musical/audio behavior change |
 | 98 | `claude/tone-nets-keyboardia-comparison-vwa218` | Velocity-dependent sampled filtering, new-session reverb, incomplete mobile output/clock wiring, and MediaSession work; validation caveats below |
 | 96 | `claude/wal-reset-bug-learnings-ojery3` | Adds correctness/onset-related tests and research; no production DSP, manifest, sample, calibration, or catalogue change |
-| 95 | `codex/stack-b-dropdown-visual-pilot` | CSS and visual evidence only |
 | 87 | `claude/adsr-handling-1fbpmm` | Production envelope-v2 runtime, persistence, UI, MCP, MIDI/notation, migration, and tests; conflicts and evidence caveats below |
 | 85 | `claude/icon-grip-gear` | Icon/UI only |
 | 84 | `agent/sonnet-v11-handoff` | Evaluation documentation only |
@@ -69,7 +76,7 @@ the solver samples the first six alphabetically sorted files per pack rather
 than the complete map. The branch does **not** add genuine velocity layers, new
 roots, or sample bytes; it bypasses the filter at the canonical MIDI-90 lane
 used by the v1 ranking, and it does not repair any of the 203 decoded findings,
-the two bass headroom failures, or the complete-matrix evidence gap.
+the three post-track headroom priorities, or the complete-matrix evidence gap.
 
 The tip's focused/unit/type/manifests tests and aggregate sustain telemetry pass.
 Its latest commits rebind the slap-bass disposition and restore the Stack A
@@ -113,8 +120,9 @@ findings originally reproduced on `origin/main`:
 - native, Tone, and sampled paths give different meanings to the same release
   value.
 
-PR 87 and PR 100 now overlap in eleven files, with direct textual conflicts in
-the Hammond manifest and six shared engine/control files. PR 87 was built on the
+PR 87 and PR 100 now overlap in eleven files. A current three-way simulation
+has no textual conflict markers, but the Hammond manifest and shared
+engine/control paths require semantic reconciliation. PR 87 was built on the
 old Hammond MP3 catalogue and old loop coordinates; it also lacks PR 100's
 stale-Tone-context fail-closed recovery, bounded growl modulation, and intrinsic
 zero procedural-envelope gain that removes the measured one-frame boundary
@@ -126,12 +134,13 @@ sets of focused regressions, translate sustained-Hammond loop state to the new
 WAV coordinates, and regenerate all resource and evaluator evidence. PR 98
 should follow the same ordering: re-solve its acoustic filter anchor against
 the replacement asset, rebind manifests under the current baseline schema, and
-resolve its French-horn and engine conflicts semantically. Differences between
+resolve its concrete French-horn-manifest, sample-baseline, and engine conflicts
+semantically. Differences between
 engine envelope curves remain measurable matrix/listening concerns rather than
 something to erase with one shared formula.
 
-No open issue tracks any of the concrete decoded-sample, loop, headroom,
-stereo/mono, map-coverage, or full-PCM evidence deficits. Issue 93 and PR 95
-cover the Stack B dropdown visual pilot; issues 92, 75, and 97 and PR 96 cover
-adjacent MCP, mix-ownership, and property-test work. None is instrument-quality
-remediation.
+No open issue tracks any of the concrete decoded-sample, headroom,
+stereo/mono, map-coverage, scheduling-offset, listening, or full-PCM evidence
+deficits. Issues 92, 75, and 97 and PR 96 cover adjacent MCP,
+mix-ownership, and property-test work. None is instrument-quality remediation.
+A detailed umbrella issue is therefore warranted after PR 100 is stable.
