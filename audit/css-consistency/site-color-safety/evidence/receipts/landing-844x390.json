@@ -1,0 +1,25 @@
+{
+  "id": "landing-844x390",
+  "baseRevision": "96d9a29cc9532a2aca33e5c6f5223e12e9d8bdf8",
+  "headRevision": "50f69bd035b842c8fe66fccf81bbc0fe08c176ba",
+  "generator": {
+    "name": "app/identity/site-color-safety.spec.ts",
+    "version": 1
+  },
+  "viewport": {
+    "width": 844,
+    "height": 390
+  },
+  "environment": {
+    "browser": "chromium",
+    "browserVersion": "143.0.7499.4",
+    "platform": "darwin"
+  },
+  "beforeSha256": "2e30ee46d98708097253c19489f0c53359382c3443ef91d33e4f3b4d2eed9f3b",
+  "afterSha256": "422dcdf4447dabb4ee9a6912ee07846e2ae64fd59c06b5c9c3b309823c4a8f7a",
+  "diffSha256": "31207b99817447215798aa95bec42a8a562343d738dcafd422a4f6b26249dc03",
+  "differentPixels": 5015,
+  "rawDifferentPixels": 5238,
+  "maxObservedChannelDelta": 237,
+  "result": "passed"
+}

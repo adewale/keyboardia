@@ -1,0 +1,25 @@
+{
+  "id": "landing-primary-hover-1280x800",
+  "baseRevision": "96d9a29cc9532a2aca33e5c6f5223e12e9d8bdf8",
+  "headRevision": "50f69bd035b842c8fe66fccf81bbc0fe08c176ba",
+  "generator": {
+    "name": "app/identity/site-color-safety.spec.ts",
+    "version": 1
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "environment": {
+    "browser": "chromium",
+    "browserVersion": "143.0.7499.4",
+    "platform": "darwin"
+  },
+  "beforeSha256": "7dae0af1a9047a7a3e127f9739af2a5be4c2d85c704a26dba02987a90e1179bb",
+  "afterSha256": "8416ca31031954f455b601c47e4d182bfd1ad58c4f435b2dcf1498e18878d7de",
+  "diffSha256": "39e3c8088cd64d903cd5d0157d702dc054ba290ed5759b4728fc1004c2083c3a",
+  "differentPixels": 2298,
+  "rawDifferentPixels": 2583,
+  "maxObservedChannelDelta": 237,
+  "result": "passed"
+}
