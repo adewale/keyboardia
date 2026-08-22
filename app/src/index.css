@@ -74,6 +74,7 @@
   /* Use for: status indicators, alerts, validation */
   --color-success: #1db954;           /* Connected, saved, positive - Spotify green */
   --color-warning: #ffc107;           /* Attention, pending, caution */
+  --color-warning-muted: rgba(255, 193, 7, 0.12); /* Warning panel background */
   --color-error: #e74c3c;             /* Error, disconnected, destructive */
   --color-secondary: #d4a054;         /* Volume locks, secondary indicators */
   /* Exact aliases for the existing FX master backgrounds. */
@@ -83,6 +84,9 @@
   --color-fx-bypassed-muted-hover: rgba(255, 152, 0, 0.25);
   /* Legacy alias */
   --color-danger: var(--color-error);
+
+  /* ===== ELEVATION ===== */
+  --shadow-panel: 0 8px 22px rgba(0, 0, 0, 0.2);
 
   /* ===== 6. FEATURE COLORS - UI categories ===== */
   /* These map to instrument categories and UI features */

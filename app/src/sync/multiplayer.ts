@@ -9,9 +9,23 @@
  * - Clock synchronization for audio sync
  */
 
-import type { GridAction, Track, ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
+import type {
+  GridAction,
+  Track,
+  ParameterLock,
+  EffectsState,
+  FMParams,
+  TrackEnvelope,
+  EnvelopeTimeUnit,
+  ScaleState,
+  EnvelopeDuration,
+  EnvelopeStageName,
+  SamplePlaybackMode,
+  TrackEnvelopeV2,
+} from '../types';
 import { sessionTrackToTrack, sessionTracksToTracks, DEFAULT_STEP_COUNT } from '../types';
 import { logger } from '../utils/logger';
+import { dispatchToastEvent } from '../utils/toastEvents';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
 import { createAuthoritativeHandler, createRemoteHandler } from './handler-factory';
@@ -49,6 +63,7 @@ import type { SessionState, SessionTrack } from '../shared/state';
 
 // Import shared constants
 import { MAX_MESSAGE_SIZE } from '../shared/constants';
+import { projectCanonicalStateForEnvelopeV2Capability } from '../shared/rolling-envelope-state-v2';
 
 // NOTE: Message type definitions (ClientMessage, ServerMessage, etc.) have been
 // consolidated into src/shared/message-types.ts and are imported above.
@@ -104,6 +119,7 @@ export interface MultiplayerState {
 
 // Import shared message constants (canonical definitions in src/shared/messages.ts)
 import { isStateMutatingMessage, assertNever } from '../shared/messages';
+import { TRACK_ENVELOPE_CAPABILITIES, TRACK_ENVELOPE_V2_CAPABILITY } from '../shared/message-types';
 
 // Phase 26: Re-export mutation tracking types from standalone module
 export type { TrackedMutation, MutationStats } from './mutation-tracker';
@@ -482,6 +498,7 @@ export class MultiplayerConnection {
 
   // BUG-06: Track last message received for stale session detection
   private lastMessageReceivedAt: number = 0;
+  private serverCapabilities = new Set<string>();
 
   // Note: state is public (not private) for HandlerContext compatibility
   // The handler-factory.ts createRemoteHandler needs access to this.state.playerId
@@ -1009,6 +1026,10 @@ export class MultiplayerConnection {
     return this.state.status === 'connected';
   }
 
+  supportsCapability(capability: string): boolean {
+    return this.serverCapabilities.has(capability);
+  }
+
   /**
    * Subscribe to state changes.
    * Returns an unsubscribe function.
@@ -1056,7 +1077,11 @@ export class MultiplayerConnection {
     // Build WebSocket URL with playerId for ghost avatar prevention
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const playerId = getOrCreatePlayerId(this.sessionId);
-    const wsUrl = `${protocol}//${window.location.host}/api/sessions/${this.sessionId}/ws?playerId=${playerId}`;
+    const query = new URLSearchParams({
+      playerId,
+      capabilities: TRACK_ENVELOPE_CAPABILITIES.join(','),
+    });
+    const wsUrl = `${protocol}//${window.location.host}/api/sessions/${this.sessionId}/ws?${query}`;
 
     logger.ws.log('Connecting to', wsUrl);
 
@@ -1171,7 +1196,11 @@ export class MultiplayerConnection {
 
     const state = this.getStateForHash() as StateForHash;
     const canonicalState = canonicalizeForHash(state);
-    const hash = hashState(canonicalState);
+    const comparableCanonicalState = projectCanonicalStateForEnvelopeV2Capability(
+      canonicalState,
+      this.supportsCapability(TRACK_ENVELOPE_V2_CAPABILITY),
+    );
+    const hash = hashState(comparableCanonicalState);
     logger.ws.log(`Sending state hash: ${hash}`);
     this.send({ type: 'state_hash', hash });
   }
@@ -1359,6 +1388,33 @@ export class MultiplayerConnection {
       case 'fm_params_changed':
         this.handleFMParamsChanged(msg);
         break;
+      case 'track_envelope_set':
+        this.handleTrackEnvelopeSet(msg);
+        break;
+      case 'track_envelope_time_unit_set':
+        this.handleTrackEnvelopeTimeUnitSet(msg);
+        break;
+      case 'track_gate_set':
+        this.handleTrackGateSet(msg);
+        break;
+      case 'track_envelope_v2_set':
+        this.handleTrackEnvelopeV2Set(msg);
+        break;
+      case 'track_envelope_units_v2_converted':
+        this.handleTrackEnvelopeUnitsV2Converted(msg);
+        break;
+      case 'track_sample_playback_mode_v2_set':
+        this.handleTrackSamplePlaybackModeV2Set(msg);
+        break;
+      case 'track_gate_v2_set':
+        this.handleTrackGateV2Set(msg);
+        break;
+      case 'envelope_lock_v2_set':
+        this.handleEnvelopeLockV2Set(msg);
+        break;
+      case 'mutation_rejected':
+        this.handleMutationRejected(msg);
+        break;
       case 'playback_started':
         this.handlePlaybackStarted(msg);
         break;
@@ -1434,8 +1490,9 @@ export class MultiplayerConnection {
         this.updateState({ error: msg.message });
         break;
       default:
-        // Exhaustive check - if TypeScript complains here, a message type is missing
-        assertNever(msg, `[WS] Unhandled server message type: ${(msg as { type: string }).type}`);
+        // Future servers can add broadcasts while an older tab is still open.
+        // Ignore unknown messages instead of crashing the socket handler.
+        logger.ws.warn('Ignoring unsupported server message type:', (msg as { type?: string }).type ?? 'unknown');
     }
   }
 
@@ -1443,7 +1500,7 @@ export class MultiplayerConnection {
   // Message Handlers
   // ============================================================================
 
-  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; serverSeq?: number; playingPlayerIds?: string[] }): void {
+  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; capabilities?: string[]; immutable?: boolean; snapshotTimestamp?: number; serverSeq?: number; playingPlayerIds?: string[] }): void {
     // Debug assertion: check if snapshot is expected
     const wasConnected = this.state.status === 'connected';
     debugAssert.snapshotExpected(wasConnected, this.lastToggle);
@@ -1463,6 +1520,8 @@ export class MultiplayerConnection {
       }
     }
 
+
+    this.serverCapabilities = new Set(msg.capabilities ?? []);
 
     // Update timestamp tracking
     if (msg.snapshotTimestamp) {
@@ -1853,6 +1912,135 @@ export class MultiplayerConnection {
     fmParams: msg.fmParams,
   }));
 
+  /** Envelope is authoritative shared state, including our own acknowledgement. */
+  private handleTrackEnvelopeSet = createAuthoritativeHandler<{
+    trackId: string;
+    envelope: TrackEnvelope | null;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_ENVELOPE',
+    trackId: msg.trackId,
+    envelope: msg.envelope ?? undefined,
+  }));
+
+  private handleTrackEnvelopeTimeUnitSet = createAuthoritativeHandler<{
+    trackId: string;
+    unit: EnvelopeTimeUnit;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_ENVELOPE_TIME_UNIT',
+    trackId: msg.trackId,
+    unit: msg.unit,
+  }));
+
+  private handleTrackGateSet = createAuthoritativeHandler<{
+    trackId: string;
+    gate: number;
+    playerId: string;
+  }>((msg) => ({ type: 'SET_TRACK_GATE', trackId: msg.trackId, gate: msg.gate }));
+
+  private handleTrackEnvelopeV2Set = createAuthoritativeHandler<{
+    trackId: string;
+    envelope: TrackEnvelopeV2 | null;
+    operationId: string;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_ENVELOPE_V2',
+    trackId: msg.trackId,
+    envelope: msg.envelope ?? undefined,
+    operationId: msg.operationId,
+  }));
+
+  private handleTrackEnvelopeUnitsV2Converted = createAuthoritativeHandler<{
+    trackId: string;
+    envelope: TrackEnvelopeV2;
+    clampedStages?: EnvelopeStageName[];
+    operationId: string;
+    playerId: string;
+  }>(function (msg) {
+    if (msg.clampedStages && msg.clampedStages.length > 0 && typeof window !== 'undefined') {
+      dispatchToastEvent(
+        `Envelope conversion reached the limit for ${msg.clampedStages.join(', ')}.`,
+        'warning',
+      );
+    }
+    return {
+      type: 'SET_TRACK_ENVELOPE_V2',
+      trackId: msg.trackId,
+      envelope: msg.envelope,
+      operationId: msg.operationId,
+    };
+  });
+
+  private handleTrackSamplePlaybackModeV2Set = createAuthoritativeHandler<{
+    trackId: string;
+    mode: SamplePlaybackMode | null;
+    operationId: string;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2',
+    trackId: msg.trackId,
+    mode: msg.mode ?? undefined,
+    operationId: msg.operationId,
+  }));
+
+  private handleTrackGateV2Set = createAuthoritativeHandler<{
+    trackId: string;
+    gate: number;
+    operationId: string;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_GATE_V2',
+    trackId: msg.trackId,
+    gate: msg.gate,
+    operationId: msg.operationId,
+  }));
+
+  private handleEnvelopeLockV2Set = createAuthoritativeHandler<{
+    trackId: string;
+    step: number;
+    stage: EnvelopeStageName;
+    duration: EnvelopeDuration | null;
+    operationId: string;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_ENVELOPE_LOCK_V2',
+    trackId: msg.trackId,
+    step: msg.step,
+    stage: msg.stage,
+    duration: msg.duration ?? undefined,
+    operationId: msg.operationId,
+  }));
+
+  private handleMutationRejected(msg: {
+    operationId: string;
+    code: string;
+    message: string;
+    trackId?: string;
+    authoritativeTrack?: SessionTrack;
+  }): void {
+    logger.ws.warn('Mutation rejected by server', {
+      operationId: msg.operationId,
+      code: msg.code,
+      trackId: msg.trackId,
+      message: msg.message,
+    });
+    if (msg.authoritativeTrack && this.dispatch) {
+      this.dispatch({
+        type: 'REPLACE_TRACK_AUTHORITATIVE',
+        track: sessionTrackToTrack(msg.authoritativeTrack),
+        isRemote: true,
+      });
+    }
+    if (typeof window !== 'undefined') {
+      dispatchToastEvent(msg.message, 'error');
+      window.dispatchEvent(new CustomEvent('keyboardia-envelope-mutation-rejected', {
+        detail: { operationId: msg.operationId },
+      }));
+    }
+    this.updateState({ error: msg.message });
+  }
+
   private handlePlaybackStarted(msg: { playerId: string; startTime: number; tempo: number }): void {
     logger.ws.log('Playback started by', msg.playerId, 'at', msg.startTime);
 
@@ -2222,6 +2410,7 @@ export class MultiplayerConnection {
 
     // BUG-06: Reset stale session tracking
     this.lastMessageReceivedAt = 0;
+    this.serverCapabilities.clear();
 
     // Reset connection storm detection on intentional disconnect
     this.connectionStormDetector.reset();
@@ -2368,6 +2557,57 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         trackId: action.trackId,
         fmParams: action.fmParams,
       };
+    case 'SET_TRACK_ENVELOPE':
+      return {
+        type: 'set_track_envelope',
+        trackId: action.trackId,
+        envelope: action.envelope ?? null,
+      };
+    case 'SET_TRACK_ENVELOPE_TIME_UNIT':
+      return {
+        type: 'set_track_envelope_time_unit',
+        trackId: action.trackId,
+        unit: action.unit,
+      };
+    case 'SET_TRACK_GATE':
+      return { type: 'set_track_gate', trackId: action.trackId, gate: action.gate };
+    case 'SET_TRACK_ENVELOPE_V2':
+      return {
+        type: 'set_track_envelope_v2',
+        trackId: action.trackId,
+        envelope: action.envelope ?? null,
+        operationId: action.operationId,
+      };
+    case 'CONVERT_TRACK_ENVELOPE_UNITS_V2':
+      return {
+        type: 'convert_track_envelope_units_v2',
+        trackId: action.trackId,
+        targetUnit: action.targetUnit,
+        operationId: action.operationId,
+      };
+    case 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2':
+      return {
+        type: 'set_track_sample_playback_mode_v2',
+        trackId: action.trackId,
+        mode: action.mode ?? null,
+        operationId: action.operationId,
+      };
+    case 'SET_TRACK_GATE_V2':
+      return {
+        type: 'set_track_gate_v2',
+        trackId: action.trackId,
+        gate: action.gate,
+        operationId: action.operationId,
+      };
+    case 'SET_ENVELOPE_LOCK_V2':
+      return {
+        type: 'set_envelope_lock_v2',
+        trackId: action.trackId,
+        step: action.step,
+        stage: action.stage,
+        duration: action.duration ?? null,
+        operationId: action.operationId,
+      };
     case 'COPY_SEQUENCE':
       return {
         type: 'copy_sequence',
@@ -2452,6 +2692,7 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
     case 'REMOTE_MUTE_SET':
     case 'REMOTE_SOLO_SET':
     case 'SET_TRACK_STEPS':
+    case 'REPLACE_TRACK_AUTHORITATIVE':
       return null;
 
     // =========================================================================

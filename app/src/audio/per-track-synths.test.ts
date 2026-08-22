@@ -57,6 +57,7 @@ vi.mock('./toneSynths', async () => {
     semitoneToNoteName(semitone: number): string { return `note-${semitone}`; }
     getPresetNames(): string[] { return ['fm-bass']; }
     setFMParams(_h: number, _m: number): void {}
+    setEnvelope(): void {}
     getFMParams(): unknown { return null; }
     dispose(): void { this._instance.disposeSpy(); }
   }
@@ -82,6 +83,7 @@ vi.mock('./advancedSynth', async () => {
     isReady(): boolean { return true; }
     getOutput(): FakeOutput { return this._instance.output; }
     setTempo(_bpm: number): void {}
+    setEnvelope(): void {}
     setPreset(_name: string): void {}
     playNoteSemitone(...args: unknown[]): void { this._instance.playNoteSpy(...args); }
     getDiagnostics(): unknown { return { activeVoices: 0 }; }
@@ -89,8 +91,6 @@ vi.mock('./advancedSynth', async () => {
     setFilterResonance(_v: number): void {}
     setLfoRate(_v: number): void {}
     setLfoAmount(_v: number): void {}
-    setAttack(_v: number): void {}
-    setRelease(_v: number): void {}
     setOscMix(_v: number): void {}
     dispose(): void { this._instance.disposeSpy(); }
   }
@@ -178,7 +178,7 @@ describe('Per-track tone/advanced synth instances', () => {
 
     expect(advancedInstances.length).toBe(2);
     expect(advancedInstances[0]).not.toBe(advancedInstances[1]);
-    expect(advancedInstances[0].playNoteSpy.mock.calls[0].slice(3)).toEqual([0.42, 37]);
+    expect(advancedInstances[0].playNoteSpy.mock.calls[0].slice(3)).toEqual([0.42, 37, undefined]);
   });
 
   it('never disconnects a shared output when a different track plays (the hijack bug)', async () => {

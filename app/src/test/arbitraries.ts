@@ -14,6 +14,11 @@ import type { ParameterLock, EffectsState, ScaleState, FMParams } from '../share
 import type { SessionState, SessionTrack } from '../shared/state';
 import type { ClientMessageBase } from '../shared/message-types';
 import type { MutationState } from '../sync/mutation-tracker';
+import type {
+  EnvelopeDuration,
+  EnvelopeStageName,
+  TrackEnvelopeV2,
+} from '../shared/envelope-contract-v2';
 
 // Value imports
 import { NOTE_NAMES, SCALES, type NoteName, type ScaleId } from '../music/music-theory';
@@ -92,6 +97,52 @@ export const arbPan = fc.float({ min: -1, max: 1, noNaN: true });
 /** Transpose in semitones */
 export const arbTranspose = fc.integer({ min: -24, max: 24 });
 
+const durationMaxByStage = {
+  attack: { seconds: 4, steps: 48 },
+  hold: { seconds: 8, steps: 96 },
+  decay: { seconds: 8, steps: 96 },
+  release: { seconds: 8, steps: 96 },
+} as const;
+
+export const arbEnvelopeDuration = (
+  stage: EnvelopeStageName,
+): fc.Arbitrary<EnvelopeDuration> => fc.oneof(
+  fc.record({
+    value: arbFloat32(0, durationMaxByStage[stage].seconds),
+    unit: fc.constant('seconds' as const),
+  }),
+  fc.record({
+    value: arbFloat32(0, durationMaxByStage[stage].steps),
+    unit: fc.constant('steps' as const),
+  }),
+);
+
+export const arbTrackEnvelopeV2: fc.Arbitrary<TrackEnvelopeV2> = fc.oneof(
+  fc.record({
+    model: fc.constant('ad' as const),
+    attack: arbEnvelopeDuration('attack'),
+    decay: arbEnvelopeDuration('decay'),
+  }),
+  fc.record({
+    model: fc.constant('ahd' as const),
+    attack: arbEnvelopeDuration('attack'),
+    hold: arbEnvelopeDuration('hold'),
+    decay: arbEnvelopeDuration('decay'),
+  }),
+  fc.record({
+    model: fc.constant('ar' as const),
+    attack: arbEnvelopeDuration('attack'),
+    release: arbEnvelopeDuration('release'),
+  }),
+  fc.record({
+    model: fc.constant('adsr' as const),
+    attack: arbEnvelopeDuration('attack'),
+    decay: arbEnvelopeDuration('decay'),
+    sustain: arbFloat32(0, 1),
+    release: arbEnvelopeDuration('release'),
+  }),
+);
+
 // =============================================================================
 // Pattern Arbitraries
 // =============================================================================
@@ -113,6 +164,13 @@ export const arbParameterLock: fc.Arbitrary<ParameterLock | null> = fc.oneof(
     pitch: fc.option(fc.integer({ min: -24, max: 24 }), { nil: undefined }),
     volume: fc.option(fc.float({ min: 0, max: 1, noNaN: true }), { nil: undefined }),
     tie: fc.option(fc.boolean(), { nil: undefined }),
+    attack: fc.option(fc.float({ min: 0, max: 4, noNaN: true }), { nil: undefined }),
+    decay: fc.option(fc.float({ min: 0, max: 4, noNaN: true }), { nil: undefined }),
+    release: fc.option(fc.float({ min: 0, max: 8, noNaN: true }), { nil: undefined }),
+    attackDuration: fc.option(arbEnvelopeDuration('attack'), { nil: undefined }),
+    holdDuration: fc.option(arbEnvelopeDuration('hold'), { nil: undefined }),
+    decayDuration: fc.option(arbEnvelopeDuration('decay'), { nil: undefined }),
+    releaseDuration: fc.option(arbEnvelopeDuration('release'), { nil: undefined }),
   })
 );
 
@@ -164,6 +222,20 @@ export const arbTrackForHash = fc.record({
   transpose: arbTranspose,
   stepCount: fc.option(arbStepCount, { nil: undefined }),
   swing: fc.option(arbSwing, { nil: undefined }),
+  fmParams: fc.option(fc.record({
+    harmonicity: arbFloat32(.5, 10),
+    modulationIndex: arbFloat32(0, 20),
+  }), { nil: undefined }),
+  envelope: fc.option(fc.record({
+    attack: arbFloat32(0, 4),
+    decay: arbFloat32(0, 4),
+    sustain: arbFloat32(0, 1),
+    release: arbFloat32(0, 8),
+  }), { nil: undefined }),
+  envelopeTimeUnit: fc.option(fc.constantFrom('seconds' as const, 'steps' as const), { nil: undefined }),
+  envelopeV2: fc.option(arbTrackEnvelopeV2, { nil: undefined }),
+  samplePlaybackMode: fc.option(fc.constantFrom('trigger' as const, 'gate' as const, 'loop' as const), { nil: undefined }),
+  gate: fc.option(arbFloat32(0, 100), { nil: undefined }),
 });
 
 // =============================================================================
@@ -208,6 +280,8 @@ export const arbAllMutationTypes = fc.constantFrom(
   'set_track_pan',
   'set_track_transpose', 'set_track_step_count', 'set_track_swing',
   'set_track_name', 'set_parameter_lock', 'set_tempo', 'set_swing',
+  'set_track_envelope_v2', 'convert_track_envelope_units_v2',
+  'set_track_sample_playback_mode_v2', 'set_track_gate_v2', 'set_envelope_lock_v2',
   'set_loop_region', 'set_effects', 'set_scale', 'set_fm_params',
   'copy_sequence', 'move_sequence', 'batch_clear_steps',
   'batch_set_parameter_locks', 'mute_track', 'solo_track',
@@ -300,6 +374,20 @@ export const arbSessionTrack: fc.Arbitrary<SessionTrack> = fc.record({
   transpose: arbTranspose,
   stepCount: fc.option(arbStepCount, { nil: undefined }),
   swing: fc.option(arbSwing, { nil: undefined }),
+  fmParams: fc.option(fc.record({
+    harmonicity: arbFloat32(.5, 10),
+    modulationIndex: arbFloat32(0, 20),
+  }), { nil: undefined }),
+  envelope: fc.option(fc.record({
+    attack: arbFloat32(0, 4),
+    decay: arbFloat32(0, 4),
+    sustain: arbFloat32(0, 1),
+    release: arbFloat32(0, 8),
+  }), { nil: undefined }),
+  envelopeTimeUnit: fc.option(fc.constantFrom('seconds' as const, 'steps' as const), { nil: undefined }),
+  envelopeV2: fc.option(arbTrackEnvelopeV2, { nil: undefined }),
+  samplePlaybackMode: fc.option(fc.constantFrom('trigger' as const, 'gate' as const, 'loop' as const), { nil: undefined }),
+  gate: fc.option(arbFloat32(0, 100), { nil: undefined }),
 });
 
 /** SessionState for sync convergence testing */
@@ -491,6 +579,44 @@ export function arbMutationForState(state: SessionState): fc.Arbitrary<ClientMes
         trackId: arbTrackId,
         fmParams: arbFMParams,
       }),
+      // Rolling-safe v2 envelope mutations
+      fc.record({
+        type: fc.constant('set_track_envelope_v2' as const),
+        trackId: arbTrackId,
+        envelope: fc.oneof(fc.constant(null), arbTrackEnvelopeV2),
+        operationId: fc.uuid(),
+      }),
+      fc.record({
+        type: fc.constant('convert_track_envelope_units_v2' as const),
+        trackId: arbTrackId,
+        targetUnit: fc.constantFrom('seconds' as const, 'steps' as const),
+        operationId: fc.uuid(),
+      }),
+      fc.record({
+        type: fc.constant('set_track_sample_playback_mode_v2' as const),
+        trackId: arbTrackId,
+        mode: fc.oneof(
+          fc.constant(null),
+          fc.constantFrom('trigger' as const, 'gate' as const, 'loop' as const),
+        ),
+        operationId: fc.uuid(),
+      }),
+      fc.record({
+        type: fc.constant('set_track_gate_v2' as const),
+        trackId: arbTrackId,
+        gate: arbFloat32(0, 100),
+        operationId: fc.uuid(),
+      }),
+      arbTrackId.chain(trackId => fc.constantFrom(
+        'attack' as const, 'hold' as const, 'decay' as const, 'release' as const,
+      ).chain(stage => fc.record({
+        type: fc.constant('set_envelope_lock_v2' as const),
+        trackId: fc.constant(trackId),
+        step: arbStepIndex,
+        stage: fc.constant(stage),
+        duration: fc.oneof(fc.constant(null), arbEnvelopeDuration(stage)),
+        operationId: fc.uuid(),
+      }))),
       // Local-only mutations
       fc.record({
         type: fc.constant('mute_track' as const),
@@ -517,6 +643,9 @@ export function arbMutationForState(state: SessionState): fc.Arbitrary<ClientMes
             lock: fc.record({
               pitch: fc.option(fc.integer({ min: -24, max: 24 }), { nil: undefined }),
               volume: fc.option(fc.float({ min: 0, max: 1, noNaN: true }), { nil: undefined }),
+              attack: fc.option(fc.float({ min: 0, max: 4, noNaN: true }), { nil: undefined }),
+              decay: fc.option(fc.float({ min: 0, max: 4, noNaN: true }), { nil: undefined }),
+              release: fc.option(fc.float({ min: 0, max: 8, noNaN: true }), { nil: undefined }),
             }),
           }),
           { minLength: 1, maxLength: 5 }

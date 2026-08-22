@@ -2,6 +2,12 @@
   "id": "hammond-organ",
   "name": "Hammond Organ",
   "type": "sampled",
+  "decodedSampleRate": 44100,
+  "loopApproval": {
+    "status": "legacy-shipped-characterization",
+    "crossfadeFrames": 0,
+    "note": "Frame coordinates reproduce the existing shipped timestamp loops; a future asset promotion still requires blind listening approval."
+  },
   "releaseTime": 0.3,
   "gainDb": -3,
   "playableRange": {
@@ -19,91 +25,104 @@
       "file": "C2.mp3",
       "loop": true,
       "loopStart": 0.999478,
-      "loopEnd": 4.745283
+      "loopEnd": 4.745283,
+      "sustainLoop": { "startFrame": 44077, "endFrame": 209267, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 40,
       "file": "E2.mp3",
       "loop": true,
       "loopStart": 0.999864,
-      "loopEnd": 4.446168
+      "loopEnd": 4.446168,
+      "sustainLoop": { "startFrame": 44094, "endFrame": 196076, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 44,
       "file": "Gs2.mp3",
       "loop": true,
       "loopStart": 0.999841,
-      "loopEnd": 4.746485
+      "loopEnd": 4.746485,
+      "sustainLoop": { "startFrame": 44093, "endFrame": 209320, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 48,
       "file": "C3.mp3",
       "loop": true,
       "loopStart": 0.994195,
-      "loopEnd": 4.747642
+      "loopEnd": 4.747642,
+      "sustainLoop": { "startFrame": 43844, "endFrame": 209371, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 52,
       "file": "E3.mp3",
       "loop": true,
       "loopStart": 0.999932,
-      "loopEnd": 4.749615
+      "loopEnd": 4.749615,
+      "sustainLoop": { "startFrame": 44097, "endFrame": 209458, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 56,
       "file": "Gs3.mp3",
       "loop": true,
       "loopStart": 0.99805,
-      "loopEnd": 3.791156
+      "loopEnd": 3.791156,
+      "sustainLoop": { "startFrame": 44014, "endFrame": 167190, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 60,
       "file": "C4.mp3",
       "loop": true,
       "loopStart": 0.999932,
-      "loopEnd": 3.973651
+      "loopEnd": 3.973651,
+      "sustainLoop": { "startFrame": 44097, "endFrame": 175238, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 64,
       "file": "E4.mp3",
       "loop": true,
       "loopStart": 0.998073,
-      "loopEnd": 3.87102
+      "loopEnd": 3.87102,
+      "sustainLoop": { "startFrame": 44015, "endFrame": 170712, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 68,
       "file": "Gs4.mp3",
       "loop": true,
       "loopStart": 0.998526,
-      "loopEnd": 4.376735
+      "loopEnd": 4.376735,
+      "sustainLoop": { "startFrame": 44035, "endFrame": 193014, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 72,
       "file": "C5.mp3",
       "loop": true,
       "loopStart": 0.998073,
-      "loopEnd": 4.229773
+      "loopEnd": 4.229773,
+      "sustainLoop": { "startFrame": 44015, "endFrame": 186533, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 76,
       "file": "E5.mp3",
       "loop": true,
       "loopStart": 0.999773,
-      "loopEnd": 4.179093
+      "loopEnd": 4.179093,
+      "sustainLoop": { "startFrame": 44090, "endFrame": 184298, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 80,
       "file": "Gs5.mp3",
       "loop": true,
       "loopStart": 0.999705,
-      "loopEnd": 4.190136
+      "loopEnd": 4.190136,
+      "sustainLoop": { "startFrame": 44087, "endFrame": 184785, "crossfadeFrames": 0, "direction": "forward" }
     },
     {
       "note": 84,
       "file": "C6.mp3",
       "loop": true,
       "loopStart": 0.99839,
-      "loopEnd": 4.056168
+      "loopEnd": 4.056168,
+      "sustainLoop": { "startFrame": 44029, "endFrame": 178877, "crossfadeFrames": 0, "direction": "forward" }
     }
   ]
 }

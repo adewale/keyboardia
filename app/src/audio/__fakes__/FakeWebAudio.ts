@@ -14,6 +14,7 @@ export interface AutomationEvent {
     | 'linearRampToValueAtTime'
     | 'exponentialRampToValueAtTime'
     | 'setTargetAtTime'
+    | 'cancelAndHoldAtTime'
     | 'cancelScheduledValues';
   value: number;
   time: number;
@@ -42,7 +43,17 @@ export class FakeAudioParam {
     return this;
   }
   cancelScheduledValues(time: number): this {
+    for (let index = this.events.length - 1; index >= 0; index--) {
+      if (this.events[index].time >= time) this.events.splice(index, 1);
+    }
     this.events.push({ type: 'cancelScheduledValues', value: 0, time });
+    return this;
+  }
+  cancelAndHoldAtTime(time: number): this {
+    for (let index = this.events.length - 1; index >= 0; index--) {
+      if (this.events[index].time > time) this.events.splice(index, 1);
+    }
+    this.events.push({ type: 'cancelAndHoldAtTime', value: this.value, time });
     return this;
   }
 
@@ -142,12 +153,16 @@ export class FakeBufferSourceNode {
 export class FakeAudioContext {
   state: AudioContextState = 'running';
   currentTime = 0;
-  readonly sampleRate = 44100;
+  readonly sampleRate: number;
   readonly createdSources: FakeBufferSourceNode[] = [];
   readonly createdGains: FakeGainNode[] = [];
   resumeCalls = 0;
   /** Duration assigned to decoded buffers (override per test if needed). */
   decodedDuration = 5;
+
+  constructor(sampleRate = 44100) {
+    this.sampleRate = sampleRate;
+  }
 
   createBufferSource(): FakeBufferSourceNode {
     const node = new FakeBufferSourceNode();
@@ -164,7 +179,7 @@ export class FakeAudioContext {
   }
   decodeAudioData(data: ArrayBuffer): Promise<FakeAudioBuffer> {
     const label = new TextDecoder().decode(data);
-    return Promise.resolve(new FakeAudioBuffer(label, this.decodedDuration));
+    return Promise.resolve(new FakeAudioBuffer(label, this.decodedDuration, this.sampleRate));
   }
   resume(): Promise<void> {
     this.resumeCalls += 1;
@@ -202,6 +217,19 @@ type UsedAudioContextSurface = Pick<
 >;
 const _surfaceCheck: Record<keyof UsedAudioContextSurface, unknown> = new FakeAudioContext();
 void _surfaceCheck;
+
+type UsedAudioParamSurface = Pick<
+  AudioParam,
+  | 'value'
+  | 'setValueAtTime'
+  | 'linearRampToValueAtTime'
+  | 'exponentialRampToValueAtTime'
+  | 'setTargetAtTime'
+  | 'cancelScheduledValues'
+  | 'cancelAndHoldAtTime'
+>;
+const _audioParamSurfaceCheck: Record<keyof UsedAudioParamSurface, unknown> = new FakeAudioParam();
+void _audioParamSurfaceCheck;
 
 /**
  * fetch stub for instrument loading: serves `manifest` for manifest.json

@@ -7,7 +7,10 @@
  * IMPORTANT: Changes here affect both client and server. Run full test suite.
  */
 
-import type { ParameterLock, FMParams, EffectsState, ScaleState } from './sync-types';
+import type {
+  ParameterLock, FMParams, TrackEnvelope, EnvelopeTimeUnit, EffectsState, ScaleState,
+  SamplePlaybackMode, TrackEnvelopeV2,
+} from './sync-types';
 
 /**
  * Session state - the core data model for a Keyboardia session.
@@ -41,6 +44,12 @@ export interface SessionTrack {
   transpose: number;
   stepCount?: number;      // Per-track loop length (1-128), defaults to 16
   fmParams?: FMParams;     // Optional FM synth params (only for tone:fm-* presets)
+  envelope?: TrackEnvelope; // Optional per-track amplitude envelope override
+  envelopeTimeUnit?: EnvelopeTimeUnit; // seconds (default) or sixteenth-note steps
+  /** Rolling-safe canonical envelope. The v1 fields above remain a legacy projection. */
+  envelopeV2?: TrackEnvelopeV2;
+  samplePlaybackMode?: SamplePlaybackMode;
+  gate?: number;            // Percent of final step held before release (0-100)
   swing?: number;          // Phase 31D: Per-track swing (0-100), 0 = uses global swing only
 }
 

@@ -61,8 +61,6 @@ vi.mock('./advancedSynth', async () => {
     setFilterResonance(): void {}
     setLfoRate(): void {}
     setLfoAmount(): void {}
-    setAttack(): void {}
-    setRelease(): void {}
     setOscMix(): void {}
     dispose(): void {}
   }
@@ -121,6 +119,26 @@ describe('Preview synth (merged_bug_002)', () => {
     expect(toneInstances.length).toBeGreaterThanOrEqual(1);
     const calledOne = toneInstances.some(i => i.playNoteSpy.mock.calls.length === 1);
     expect(calledOne).toBe(true);
+  });
+
+  it('dispatches Tone AHD as a finite attack-hold-decay schedule', async () => {
+    const { engine } = await makePreparedEngine();
+    engine.playToneSynth('membrane-kick', 0, 0, 0.01, 1, undefined, undefined, undefined, {
+      model: 'ahd',
+      attackSeconds: 0.1,
+      holdSeconds: 0.4,
+      decaySeconds: 0.8,
+    });
+    const call = toneInstances.find(instance => instance.playNoteSpy.mock.calls.length > 0)
+      ?.playNoteSpy.mock.calls[0];
+    expect(call).toEqual([
+      'membrane-kick',
+      'n0',
+      0.5,
+      0.001,
+      1,
+      { attack: 0.1, decay: 0, sustain: 1, release: 0.8 },
+    ]);
   });
 
   it('plays the FIRST advanced preview synchronously (no silent first note)', async () => {

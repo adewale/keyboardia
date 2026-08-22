@@ -51,6 +51,10 @@ drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should correctly h
 drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should handle multiple paint operations in sequence
 drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should maintain consistent state after rapid paint operations
 drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should not leave paint mode stuck after interrupted drag
+envelope-v2-headless.spec.ts › Envelope v2 headless correctness profile › preserves notation and runtime audio state while editor exposure is disabled
+envelope-v2.spec.ts › Envelope v2 browser contract › edits a finite-sample AHD envelope with one committed exact value
+envelope-v2.spec.ts › Envelope v2 browser contract › keeps portrait consumption-only and exposes the same editor after rotating
+envelope-v2.spec.ts › Envelope v2 browser contract › renders loop-capable sample and oscillator models from the shared capability table
 feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Ctrl+Click to toggle step selection
 feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Shift+Click to extend selection
 feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can drag to paint multiple steps
@@ -210,6 +214,7 @@ session-race.spec.ts › Session Loading Race Condition › edits made after loa
 session-race.spec.ts › Session Loading Race Condition › loaded session data persists after initial load
 session-race.spec.ts › Session Loading Race Condition › new session can be created and edited without data loss
 session-race.spec.ts › Session Loading Race Condition › session data survives rapid page refresh
+tone-envelope-release.spec.ts › Tone envelope audible release contract › renders the shared 300ms release and authored zero in real Chromium Web Audio
 track-reorder.spec.ts › Track reorder browser contract › cancels outside the track list without reordering or leaking visual state
 track-reorder.spec.ts › Track reorder browser contract › does not initiate a drag from the track name
 track-reorder.spec.ts › Track reorder browser contract › exposes one accessible drag handle per track

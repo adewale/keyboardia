@@ -113,6 +113,82 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         fmParams: action.fmParams,
       });
 
+    case 'SET_TRACK_ENVELOPE':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_envelope',
+        trackId: action.trackId,
+        envelope: action.envelope ?? null,
+      });
+
+    case 'SET_TRACK_ENVELOPE_TIME_UNIT':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_envelope_time_unit',
+        trackId: action.trackId,
+        unit: action.unit,
+      });
+
+    case 'SET_TRACK_GATE':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_gate',
+        trackId: action.trackId,
+        gate: action.gate,
+      });
+
+    case 'SET_TRACK_ENVELOPE_V2':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_envelope_v2',
+        trackId: action.trackId,
+        envelope: action.envelope ?? null,
+        operationId: action.operationId,
+      });
+
+    case 'CONVERT_TRACK_ENVELOPE_UNITS_V2':
+      return delegateToApplyMutation(state, {
+        type: 'convert_track_envelope_units_v2',
+        trackId: action.trackId,
+        targetUnit: action.targetUnit,
+        operationId: action.operationId,
+      });
+
+    case 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_sample_playback_mode_v2',
+        trackId: action.trackId,
+        mode: action.mode ?? null,
+        operationId: action.operationId,
+      });
+
+    case 'SET_TRACK_GATE_V2':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_gate_v2',
+        trackId: action.trackId,
+        gate: action.gate,
+        operationId: action.operationId,
+      });
+
+    case 'SET_ENVELOPE_LOCK_V2':
+      return delegateToApplyMutation(state, {
+        type: 'set_envelope_lock_v2',
+        trackId: action.trackId,
+        step: action.step,
+        stage: action.stage,
+        duration: action.duration ?? null,
+        operationId: action.operationId,
+      });
+
+    case 'REPLACE_TRACK_AUTHORITATIVE':
+      return {
+        ...state,
+        tracks: state.tracks.map(track => track.id === action.track.id
+          ? {
+              ...action.track,
+              // Reconciliation must not overwrite per-listener mix state.
+              muted: track.muted,
+              soloed: track.soloed,
+            }
+          : track),
+      };
+
     // =========================================================================
     // LOCAL_ONLY ACTIONS - Mix controls (My Ears, My Control philosophy)
     // Each player controls their own mute/solo preferences

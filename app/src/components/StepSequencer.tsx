@@ -1,6 +1,18 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { clamp } from '../shared/validation';
-import type { ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
+import type {
+  ParameterLock,
+  EffectsState,
+  FMParams,
+  TrackEnvelope,
+  TrackEnvelopeV2,
+  EnvelopeDuration,
+  EnvelopeDurationUnit,
+  EnvelopeStageName,
+  SamplePlaybackMode,
+  EnvelopeTimeUnit,
+  ScaleState,
+} from '../types';
 import { useGrid } from '../state/grid';
 import { useStableCallback, useStableGetter } from '../hooks/useStableCallback';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
@@ -32,6 +44,8 @@ import { DEFAULT_STEP_COUNT } from '../types';
 import { detectMirrorDirection } from '../shared/pattern-operations';
 import { AsyncActionLatch } from '../utils/AsyncActionLatch';
 import { resolveTrackReorder } from './track-reorder';
+import { convertTrackEnvelopeUnitsWithReportV2 } from '../shared/envelope-contract-v2';
+import { dispatchToastEvent } from '../utils/toastEvents';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -41,6 +55,7 @@ import './PortraitGrid.css';
 export function StepSequencer() {
   const { state, dispatch: gridDispatch } = useGrid();
   const multiplayer = useMultiplayerContext();
+  const supportsEnvelopeV2 = multiplayer?.supportsEnvelopeV2 ?? true;
   const orientationMode = useOrientationMode();
   const isPortraitMode = orientationMode === 'portrait';
 
@@ -54,6 +69,12 @@ export function StepSequencer() {
   const playbackStartLatchRef = useRef(new AsyncActionLatch());
   const [copySource, setCopySource] = useState<string | null>(null);
   const getCopySource = useStableGetter(copySource);
+  const envelopeUndoStackRef = useRef<Array<{
+    trackId: string;
+    before?: TrackEnvelopeV2;
+    after?: TrackEnvelopeV2;
+    operationId: string;
+  }>>([]);
 
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -173,7 +194,7 @@ export function StepSequencer() {
 
       // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
       const hasToneTracks = getState().tracks.some(
-        t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
+        t => t.sampleId.startsWith('synth:') || t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
       );
       if (hasToneTracks && !audioEngine.isToneInitialized()) {
         logger.audio.log('Initializing Tone.js synths before playback...');
@@ -269,6 +290,143 @@ export function StepSequencer() {
     dispatch({ type: 'SET_FM_PARAMS', trackId, fmParams });
     // Also apply FM params to the audio engine immediately for real-time preview
     audioEngine.setFMParams(trackId, fmParams.harmonicity, fmParams.modulationIndex);
+  }, [dispatch]);
+
+  const handleSetEnvelope = useCallback((trackId: string, envelope?: TrackEnvelope) => {
+    dispatch({ type: 'SET_TRACK_ENVELOPE', trackId, envelope });
+  }, [dispatch]);
+
+  const handleSetEnvelopeTimeUnit = useCallback((trackId: string, unit: EnvelopeTimeUnit) => {
+    dispatch({ type: 'SET_TRACK_ENVELOPE_TIME_UNIT', trackId, unit });
+  }, [dispatch]);
+
+  const rememberEnvelopeEdit = useCallback((
+    trackId: string,
+    before: TrackEnvelopeV2 | undefined,
+    after: TrackEnvelopeV2 | undefined,
+    operationId: string,
+  ) => {
+    if (JSON.stringify(before) === JSON.stringify(after)) return;
+    const stack = envelopeUndoStackRef.current;
+    stack.push({ trackId, before, after, operationId });
+    // Bound retained object graphs in a long performance session.
+    if (stack.length > 50) stack.splice(0, stack.length - 50);
+  }, []);
+
+  const handleSetEnvelopeV2 = useCallback((trackId: string, envelope?: TrackEnvelopeV2) => {
+    const before = getState().tracks.find(track => track.id === trackId)?.envelopeV2;
+    const operationId = crypto.randomUUID();
+    rememberEnvelopeEdit(trackId, before, envelope, operationId);
+    dispatch({
+      type: 'SET_TRACK_ENVELOPE_V2',
+      trackId,
+      envelope,
+      operationId,
+    });
+  }, [dispatch, getState, rememberEnvelopeEdit]);
+
+  const handlePreviewEnvelopeV2 = useCallback((trackId: string, envelope: TrackEnvelopeV2) => {
+    const current = getState();
+    audioEngine.syncGridAudioState({
+      tempo: current.tempo,
+      tracks: current.tracks.map(track => track.id === trackId ? { ...track, envelopeV2: envelope } : track),
+    });
+  }, [getState]);
+
+  const handleConvertEnvelopeUnitsV2 = useCallback((
+    trackId: string,
+    targetUnit: EnvelopeDurationUnit,
+  ) => {
+    const current = getState();
+    const before = current.tracks.find(track => track.id === trackId)?.envelopeV2;
+    if (!before) return;
+    const converted = convertTrackEnvelopeUnitsWithReportV2(before, targetUnit, current.tempo);
+    const operationId = crypto.randomUUID();
+    rememberEnvelopeEdit(trackId, before, converted.envelope, operationId);
+    dispatch({
+      type: 'CONVERT_TRACK_ENVELOPE_UNITS_V2',
+      trackId,
+      targetUnit,
+      operationId,
+    });
+    if (!multiplayer?.isConnected && converted.clampedStages.length > 0) {
+      dispatchToastEvent(
+        `Envelope conversion reached the limit for ${converted.clampedStages.join(', ')}.`,
+        'warning',
+      );
+    }
+  }, [dispatch, getState, multiplayer?.isConnected, rememberEnvelopeEdit]);
+
+  const handleFocusTrack = useCallback((trackId: string) => {
+    if (getState().focus?.trackId === trackId) return;
+    dispatch({ type: 'FOCUS_TRACK', trackId });
+  }, [dispatch, getState]);
+
+  useEffect(() => {
+    const handleUndo = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey) || event.shiftKey || event.key.toLowerCase() !== 'z') return;
+      const target = event.target;
+      if (target instanceof HTMLElement
+          && (target.isContentEditable || target.matches('input, textarea, select'))) return;
+      const entry = envelopeUndoStackRef.current.pop();
+      if (!entry) return;
+
+      event.preventDefault();
+      const current = getState().tracks.find(track => track.id === entry.trackId)?.envelopeV2;
+      if (JSON.stringify(current) !== JSON.stringify(entry.after)) {
+        envelopeUndoStackRef.current = [];
+        dispatchToastEvent('Envelope undo was skipped because the track changed elsewhere.', 'warning');
+        return;
+      }
+      dispatch({
+        type: 'SET_TRACK_ENVELOPE_V2',
+        trackId: entry.trackId,
+        envelope: entry.before,
+        operationId: crypto.randomUUID(),
+      });
+    };
+    const handleRejected = (event: Event) => {
+      const operationId = (event as CustomEvent<{ operationId?: string }>).detail?.operationId;
+      if (!operationId) return;
+      envelopeUndoStackRef.current = envelopeUndoStackRef.current.filter(
+        entry => entry.operationId !== operationId,
+      );
+    };
+    window.addEventListener('keydown', handleUndo);
+    window.addEventListener('keyboardia-envelope-mutation-rejected', handleRejected);
+    return () => {
+      window.removeEventListener('keydown', handleUndo);
+      window.removeEventListener('keyboardia-envelope-mutation-rejected', handleRejected);
+    };
+  }, [dispatch, getState]);
+
+  const handleSetEnvelopeLockV2 = useCallback((
+    trackId: string,
+    step: number,
+    stage: EnvelopeStageName,
+    duration?: EnvelopeDuration,
+  ) => {
+    dispatch({
+      type: 'SET_ENVELOPE_LOCK_V2',
+      trackId,
+      step,
+      stage,
+      duration,
+      operationId: crypto.randomUUID(),
+    });
+  }, [dispatch]);
+
+  const handleSetSamplePlaybackModeV2 = useCallback((trackId: string, mode?: SamplePlaybackMode) => {
+    dispatch({
+      type: 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2',
+      trackId,
+      mode,
+      operationId: crypto.randomUUID(),
+    });
+  }, [dispatch]);
+
+  const handleSetGateV2 = useCallback((trackId: string, gate: number) => {
+    dispatch({ type: 'SET_TRACK_GATE_V2', trackId, gate, operationId: crypto.randomUUID() });
   }, [dispatch]);
 
   // Phase 25: Handle track volume changes
@@ -614,6 +772,13 @@ export function StepSequencer() {
         onTogglePitch={handleTogglePitch}
         isPitchOpen={isPitchOpen}
         hasMelodicTracks={hasMelodicTracks}
+        tracks={state.tracks}
+        selectedTrackId={state.focus?.trackId}
+        supportsEnvelopeV2={supportsEnvelopeV2}
+        envelopeEditingEnabled={features.envelopeV2}
+        onEnvelopeChange={isPublished || !features.envelopeV2 ? undefined : handleSetEnvelope}
+        onEnvelopeV2Change={isPublished || !features.envelopeV2 ? undefined : handleSetEnvelopeV2}
+        onEnvelopePreview={isPublished || !features.envelopeV2 ? undefined : handlePreviewEnvelopeV2}
       />}
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) - landscape only */}
@@ -740,6 +905,7 @@ export function StepSequencer() {
                   track={track}
                   trackIndex={trackIndex}
                   currentStep={state.isPlaying ? state.currentStep : -1}
+                  tempo={state.tempo}
                   swing={state.swing}
                   anySoloed={anySoloed}
                   hasSteps={hasSteps}
@@ -761,6 +927,18 @@ export function StepSequencer() {
                   onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
                   onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
                   onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
+                  onSetEnvelope={(envelope) => handleSetEnvelope(track.id, envelope)}
+                  onSetEnvelopeV2={(envelope) => handleSetEnvelopeV2(track.id, envelope)}
+                  onPreviewEnvelopeV2={(envelope) => handlePreviewEnvelopeV2(track.id, envelope)}
+                  onConvertEnvelopeUnitsV2={(unit) => handleConvertEnvelopeUnitsV2(track.id, unit)}
+                  onSetEnvelopeLockV2={(step, stage, duration) => (
+                    handleSetEnvelopeLockV2(track.id, step, stage, duration)
+                  )}
+                  onSetSamplePlaybackModeV2={(mode) => handleSetSamplePlaybackModeV2(track.id, mode)}
+                  onSetEnvelopeTimeUnit={(unit) => handleSetEnvelopeTimeUnit(track.id, unit)}
+                  onSetGate={(gate) => handleSetGateV2(track.id, gate)}
+                  supportsEnvelopeV2={supportsEnvelopeV2}
+                  onFocusTrack={() => handleFocusTrack(track.id)}
                   onSetVolume={(volume) => handleSetVolume(track.id, volume)}
                   scale={state.scale}
                   onRotatePattern={(direction) => handleRotatePattern(track.id, direction)}

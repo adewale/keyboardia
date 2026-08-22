@@ -1,4 +1,4 @@
-import type { GridState, Track } from '../types';
+import type { GridState } from '../types';
 import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
@@ -21,15 +21,23 @@ import {
 import {
   advanceStep,
   calculateStepTime,
-  calculateSwingDelay,
-  calculateTiedDuration,
   getStepDuration,
   STEPS_PER_BEAT,
 } from './timing-calculations';
+import type { EnvelopeNoteLock } from './envelope-translate';
+import { DEFAULT_TRACK_GATE } from '../shared/envelope';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { resolveHumanizedNoteDynamics } from './note-dynamics';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
-import { getTrackStep, shouldTrackPlay, shouldTrackTrigger } from './track-step';
+import { shouldTrackPlay, shouldTrackTrigger } from './track-step';
+import {
+  resolveNoteEventV2,
+  type ActiveNoteCursorV2,
+  type ResolvedNoteEventV2,
+  type SchedulerTrackV2,
+} from './resolved-note-event-v2';
+import { getEnvelopeCapability } from '../shared/envelope-capabilities';
+import type { ResolvedEnvelopeV2, SamplePlaybackMode } from '../shared/envelope-contract-v2';
 
 // =============================================================================
 // Constants
@@ -55,12 +63,11 @@ interface NoteParams {
   noteGain: number;
   hasExplicitLock: boolean;
   loopIteration: number;
-}
-
-/** Result of checking if a tied note should be skipped */
-interface TieCheckResult {
-  shouldSkip: boolean;
-  activePitch?: number;
+  volumeMultiplier: number;
+  playbackMode: SamplePlaybackMode;
+  resolvedEnvelope: ResolvedEnvelopeV2;
+  authoredEnvelope: boolean;
+  envelopeLock?: EnvelopeNoteLock;
 }
 
 export class Scheduler implements IScheduler {
@@ -91,9 +98,10 @@ export class Scheduler implements IScheduler {
   // Phase 22: Track previous tempo to detect BPM changes during playback
   private lastTempo: number = 0;
 
-  // Phase 29B: Track which tracks had active notes in the previous step (for tie handling)
-  // Key: trackId, Value: { globalStep, pitch } of the last triggered note
-  private activeNotes: Map<string, { globalStep: number; pitch: number }> = new Map();
+  // The shared resolver uses the monotonic scheduling ordinal, rather than a
+  // wrapped grid index, so ties survive page/custom-loop boundaries correctly.
+  private activeNotes: Map<string, ActiveNoteCursorV2> = new Map();
+  private playbackEpoch = 0;
 
   constructor() {
     this.scheduleLoop = this.scheduleLoop.bind(this);
@@ -146,6 +154,7 @@ export class Scheduler implements IScheduler {
     }
 
     this.isRunning = true;
+    this.playbackEpoch += 1;
     this.lastNotifiedStep = -1;
     this.totalStepsScheduled = 0; // Phase 13B: Reset step counter for drift-free timing
     this.loopIteration = 0;
@@ -322,50 +331,15 @@ export class Scheduler implements IScheduler {
   // ===========================================================================
 
   /**
-   * Calculate swing-adjusted time for a step.
-   * Combines global and track swing using the blending formula.
-   */
-  private calculateSwingTime(
-    trackStep: number,
-    time: number,
-    duration: number,
-    globalSwing: number,
-    trackSwing: number
-  ): number {
-    return time + calculateSwingDelay(trackStep, globalSwing, trackSwing, duration);
-  }
-
-  /**
-   * Check if a tied note should skip triggering (TB-303 style).
-   * Returns whether to skip and the pitch to continue if skipping.
-   */
-  private checkTiedNote(
-    track: Track,
-    globalStep: number,
-    hasTie: boolean
-  ): TieCheckResult {
-    if (!hasTie) {
-      return { shouldSkip: false };
-    }
-
-    const activeNote = this.activeNotes.get(track.id);
-    const previousGlobalStep = (globalStep - 1 + MAX_STEPS) % MAX_STEPS;
-
-    if (activeNote && activeNote.globalStep === previousGlobalStep) {
-      // Note is tied from previous step - update tracking and skip triggering
-      this.activeNotes.set(track.id, { globalStep, pitch: activeNote.pitch });
-      return { shouldSkip: true, activePitch: activeNote.pitch };
-    }
-
-    return { shouldSkip: false };
-  }
-
-  /**
    * Play a note on the appropriate instrument.
    * Replaces the large switch statement with a cleaner dispatch.
    */
   private playInstrumentNote(params: NoteParams): void {
-    const { instrumentType, presetId, pitchSemitones, time, duration, midiVelocity, noteGain, noteId, trackId } = params;
+    const {
+      instrumentType, presetId, pitchSemitones, time, duration, midiVelocity,
+      noteGain, noteId, trackId, envelopeLock, playbackMode, resolvedEnvelope,
+      authoredEnvelope,
+    } = params;
 
     // All play methods route through TrackBus, whose volumeGain already
     // multiplies by track.volume. Pass only canonical per-note gain here so
@@ -376,7 +350,11 @@ export class Scheduler implements IScheduler {
     switch (instrumentType) {
       case 'synth':
         logger.audio.log(`Playing synth ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, gain=${noteGain}, velocity=${midiVelocity}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, duration, noteGain, trackId, midiVelocity);
+        if (authoredEnvelope) {
+          audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, duration, noteGain, trackId, midiVelocity, envelopeLock, resolvedEnvelope, true);
+        } else {
+          audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, duration, noteGain, trackId, midiVelocity, envelopeLock, resolvedEnvelope);
+        }
         break;
 
       case 'sampled': {
@@ -386,7 +364,19 @@ export class Scheduler implements IScheduler {
         }
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones;
         logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, gain=${noteGain.toFixed(3)}, vel=${midiVelocity}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, noteGain, trackId, midiVelocity);
+        audioEngine.playSampledInstrument(
+          presetId,
+          noteId,
+          midiNote,
+          time,
+          duration,
+          noteGain,
+          trackId,
+          midiVelocity,
+          envelopeLock,
+          playbackMode,
+          resolvedEnvelope,
+        );
         break;
       }
 
@@ -396,7 +386,7 @@ export class Scheduler implements IScheduler {
           return;
         }
         logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, gain=${noteGain.toFixed(3)}, velocity=${midiVelocity}, dur=${duration.toFixed(3)}`);
-        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, noteGain, trackId, midiVelocity);
+        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, noteGain, trackId, midiVelocity, envelopeLock, resolvedEnvelope);
         break;
 
       case 'advanced':
@@ -405,34 +395,25 @@ export class Scheduler implements IScheduler {
           return;
         }
         logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, gain=${noteGain.toFixed(3)}, velocity=${midiVelocity}, dur=${duration.toFixed(3)}`);
-        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, noteGain, trackId, midiVelocity);
+        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, noteGain, trackId, midiVelocity, envelopeLock, resolvedEnvelope);
         break;
 
       case 'sample':
       default:
         logger.audio.log(`Playing ${params.sampleId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, gain=${noteGain}, velocity=${midiVelocity}, dur=${duration.toFixed(3)}`);
-        if (params.hasExplicitLock) {
-          audioEngine.playSample(
-            params.sampleId,
-            trackId,
-            time,
-            duration,
-            pitchSemitones,
-            noteGain,
-            midiVelocity,
-          );
-        } else {
-          audioEngine.playSample(
-            params.sampleId,
-            trackId,
-            time,
-            duration,
-            pitchSemitones,
-            noteGain,
-            midiVelocity,
-            `${noteId}-loop-${params.loopIteration}`,
-          );
-        }
+        audioEngine.playSample(
+          params.sampleId,
+          trackId,
+          time,
+          duration,
+          pitchSemitones,
+          noteGain,
+          midiVelocity,
+          params.hasExplicitLock ? undefined : `${noteId}-loop-${params.loopIteration}`,
+          envelopeLock,
+          resolvedEnvelope,
+          playbackMode,
+        );
         break;
     }
   }
@@ -450,12 +431,13 @@ export class Scheduler implements IScheduler {
     globalStep: number,
     time: number,
     duration: number
-  ): void {
+  ): ResolvedNoteEventV2[] {
     const state = this.getState?.();
-    if (!state) return;
+    if (!state) return [];
 
     const anySoloed = state.tracks.some(t => t.soloed);
     const globalSwing = state.swing / 100;
+    const resolvedEvents: ResolvedNoteEventV2[] = [];
 
     // DEBUG: Log solo state on first step of each bar
     if (globalStep === 0 && anySoloed) {
@@ -464,48 +446,52 @@ export class Scheduler implements IScheduler {
     }
 
     for (const track of state.tracks) {
-      // Use the same full trigger decision exercised by track-step.test.ts.
-      // This keeps mute/solo and polyrhythm activation out of parallel copies.
+      // Keep debug-only mute/solo reporting outside the pure event resolver.
       if (!shouldTrackTrigger(track, globalStep, anySoloed)) {
         if (anySoloed && globalStep === 0 && !shouldTrackPlay(track, anySoloed)) {
           logger.audio.log(`[SOLO DEBUG] Track "${track.sampleId}" NOT playing (soloed=${track.soloed}, muted=${track.muted})`);
         }
+      }
+
+      const latencyProbe = (audioEngine as typeof audioEngine & {
+        getAudibleOutputLatencySeconds?: (sampleId: string, pitchSemitones: number) => number;
+      }).getAudibleOutputLatencySeconds;
+      const schedulerTrack: SchedulerTrackV2 = {
+        ...track,
+        largePitchShiftLatencySeconds: latencyProbe?.call(audioEngine, track.sampleId, 7) ?? 0,
+      };
+      const resolution = resolveNoteEventV2({
+        track: schedulerTrack,
+        globalStep,
+        scheduleOrdinal: this.totalStepsScheduled,
+        playbackEpoch: this.playbackEpoch,
+        stepTimeSeconds: time,
+        stepDurationSeconds: duration,
+        globalSwing,
+        anySoloed,
+        activeNote: this.activeNotes.get(track.id),
+        loopRegion: state.loopRegion ?? null,
+        maxSteps: MAX_STEPS,
+        defaultStepCount: DEFAULT_STEP_COUNT,
+        defaultGatePercent: DEFAULT_TRACK_GATE,
+        defaultPlaybackMode: getEnvelopeCapability(track.sampleId).defaultPlaybackMode ?? 'gate',
+        tempoBpm: state.tempo,
+      });
+
+      if (resolution.kind === 'silent') continue;
+      this.activeNotes.set(track.id, resolution.activeNote);
+      if (resolution.kind === 'tie-continuation') {
+        logger.audio.log(`Tied note on ${track.sampleId}, continuing voice ${resolution.activeNote.voiceId}`);
         continue;
       }
 
-      // Calculate track-local step position (shared with track-step.ts so the
-      // polyrhythm maths has exactly one implementation).
-      const trackStepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
-      const trackStep = getTrackStep(globalStep, trackStepCount);
-
-      // Calculate swing-adjusted time
-      const trackSwing = (track.swing ?? 0) / 100;
-      const swungTime = this.calculateSwingTime(trackStep, time, duration, globalSwing, trackSwing);
-
-      // Get parameter lock for this step
-      const pLock = track.parameterLocks[trackStep];
-      const trackTranspose = track.transpose ?? 0;
-      const pitchSemitones = trackTranspose + (pLock?.pitch ?? 0);
-
-      // Check for tied notes (TB-303 style)
-      const tieCheck = this.checkTiedNote(track, globalStep, pLock?.tie === true);
-      if (tieCheck.shouldSkip) {
-        logger.audio.log(`Tied note on ${track.sampleId} at step ${trackStep}, continuing from previous (pitch=${tieCheck.activePitch})`);
-        continue;
-      }
-
-      // Calculate tied note duration
-      const tiedDuration = calculateTiedDuration(track, trackStep, trackStepCount, duration);
-
-      // Track this note as active for tie detection in next step
-      this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
+      const event = resolution.event;
+      resolvedEvents.push(event);
 
       // Debug: Track note scheduling
-      instrumentNoteSchedule(track.sampleId, trackStep, swungTime, this.isRunning);
+      instrumentNoteSchedule(track.sampleId, event.trackStep, event.time, this.isRunning);
 
-      // Per-step dynamics belong to the voice envelope. The shared track bus
-      // stays at the base fader so a lock cannot square its own gain or alter
-      // overlapping release tails.
+      const pLock = track.parameterLocks[event.trackStep];
       const dynamics = resolveHumanizedNoteDynamics(
         pLock?.volume,
         track.sampleId,
@@ -517,14 +503,19 @@ export class Scheduler implements IScheduler {
       // Parse instrument and build note params
       const { type: instrumentType, presetId } = parseInstrumentId(track.sampleId);
       const noteParams: NoteParams = {
-        trackId: track.id,
-        noteId: `${track.id}-step-${globalStep}`,
-        sampleId: track.sampleId,
+        trackId: event.trackId,
+        noteId: event.noteId,
+        sampleId: event.sampleId,
         instrumentType,
         presetId,
-        pitchSemitones,
-        time: swungTime,
-        duration: tiedDuration,
+        pitchSemitones: event.pitchSemitones,
+        time: event.time,
+        duration: event.duration,
+        volumeMultiplier: event.volumeMultiplier,
+        playbackMode: event.playbackMode,
+        resolvedEnvelope: event.resolvedEnvelope,
+        authoredEnvelope: event.authoredEnvelope,
+        envelopeLock: event.envelopeLock,
         ...dynamics,
         loopIteration: this.loopIteration,
       };
@@ -532,6 +523,7 @@ export class Scheduler implements IScheduler {
       // Play the note
       this.playInstrumentNote(noteParams);
     }
+    return resolvedEvents;
   }
 
   getCurrentStep(): number {

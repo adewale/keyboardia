@@ -18,25 +18,18 @@ import { measureAndReportLateness } from './scheduler-worklet-lateness';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { resolveNoteDynamics } from './note-dynamics';
 import { logger } from '../utils/logger';
+import { DEFAULT_TRACK_GATE } from '../shared/envelope';
+import type { ResolvedNoteEventV2 } from './resolved-note-event-v2';
 import schedulerWorkletUrl from './worklets/scheduler.worklet.ts?worker&url';
 
 // ─── Event types from the worklet ────────────────────────────────────────
 
-interface NoteEvent {
-  type: 'note';
-  trackId: string;
-  noteId: string;
-  sampleId: string;
-  pitchSemitones: number;
-  time: number;
-  duration: number;
+type NoteEvent = ResolvedNoteEventV2 & {
   midiVelocity?: number;
   noteGain?: number;
   hasExplicitLock?: boolean;
   loopIteration?: number;
-  /** Legacy event compatibility for a host/worklet rolling update. */
-  volumeMultiplier?: number;
-}
+};
 
 interface StepEvent {
   type: 'step';
@@ -61,6 +54,7 @@ export class SchedulerWorkletHost implements IScheduler {
   private currentStep = 0;
   private moduleLoaded = false;
   private pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+  private playbackEpoch = 0;
 
   // Callbacks
   private onStepChange: ((step: number) => void) | null = null;
@@ -129,6 +123,7 @@ export class SchedulerWorkletHost implements IScheduler {
     }
 
     this.isRunning = true;
+    this.playbackEpoch += 1;
 
     const state = getState();
     const workletState = this.serializeState(state);
@@ -160,6 +155,7 @@ export class SchedulerWorkletHost implements IScheduler {
       initialStep,
       initialNextStepTime,
       multiplayer: this.multiplayerConfig.enabled,
+      playbackEpoch: this.playbackEpoch,
     });
 
     logger.audio.log('SchedulerWorkletHost started');
@@ -264,10 +260,11 @@ export class SchedulerWorkletHost implements IScheduler {
     const noteGain = event.noteGain ?? fallback.noteGain;
     switch (instrumentType) {
       case 'synth':
-        audioEngine.playSynthNote(
-          event.noteId, presetId, event.pitchSemitones,
-          event.time, event.duration, noteGain, event.trackId, midiVelocity
-        );
+        if (event.authoredEnvelope) {
+          audioEngine.playSynthNote(event.noteId, presetId, event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity, event.envelopeLock, event.resolvedEnvelope, true);
+        } else {
+          audioEngine.playSynthNote(event.noteId, presetId, event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity, event.envelopeLock, event.resolvedEnvelope);
+        }
         break;
 
       // All bus-routed branches pass canonical noteGain only; the bus's
@@ -275,7 +272,19 @@ export class SchedulerWorkletHost implements IScheduler {
       case 'sampled': {
         if (!audioEngine.isSampledInstrumentReady(presetId)) return;
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + event.pitchSemitones;
-        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, noteGain, event.trackId, midiVelocity);
+        audioEngine.playSampledInstrument(
+          presetId,
+          event.noteId,
+          midiNote,
+          event.time,
+          event.duration,
+          noteGain,
+          event.trackId,
+          midiVelocity,
+          event.envelopeLock,
+          event.playbackMode,
+          event.resolvedEnvelope,
+        );
         break;
       }
 
@@ -283,39 +292,31 @@ export class SchedulerWorkletHost implements IScheduler {
         if (!audioEngine.isToneSynthReady('tone')) return;
         audioEngine.playToneSynth(
           presetId as Parameters<typeof audioEngine.playToneSynth>[0],
-          event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity
+          event.pitchSemitones, event.time, event.duration, noteGain, event.trackId,
+          midiVelocity, event.envelopeLock, event.resolvedEnvelope,
         );
         break;
 
       case 'advanced':
         if (!audioEngine.isToneSynthReady('advanced')) return;
-        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity);
+        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity, event.envelopeLock, event.resolvedEnvelope);
         break;
 
       case 'sample':
       default:
-        if (event.hasExplicitLock) {
-          audioEngine.playSample(
-            event.sampleId,
-            event.trackId,
-            event.time,
-            event.duration,
-            event.pitchSemitones,
-            noteGain,
-            midiVelocity,
-          );
-        } else {
-          audioEngine.playSample(
-            event.sampleId,
-            event.trackId,
-            event.time,
-            event.duration,
-            event.pitchSemitones,
-            noteGain,
-            midiVelocity,
-            `${event.noteId}-loop-${event.loopIteration ?? 0}`,
-          );
-        }
+        audioEngine.playSample(
+          event.sampleId,
+          event.trackId,
+          event.time,
+          event.duration,
+          event.pitchSemitones,
+          noteGain,
+          midiVelocity,
+          event.hasExplicitLock ? undefined : `${event.noteId}-loop-${event.loopIteration ?? 0}`,
+          event.envelopeLock,
+          event.resolvedEnvelope,
+          event.playbackMode,
+        );
         break;
     }
   }
@@ -323,6 +324,9 @@ export class SchedulerWorkletHost implements IScheduler {
   // ─── Serialization ─────────────────────────────────────────────────────
 
   private serializeState(state: GridState): WorkletSchedulerState {
+    const latencyProbe = (audioEngine as typeof audioEngine & {
+      getAudibleOutputLatencySeconds?: (sampleId: string, pitchSemitones: number) => number;
+    }).getAudibleOutputLatencySeconds;
     return {
       tempo: state.tempo,
       swing: state.swing,
@@ -338,12 +342,24 @@ export class SchedulerWorkletHost implements IScheduler {
         soloed: t.soloed,
         transpose: t.transpose ?? 0,
         swing: t.swing ?? 0,
+        gate: t.gate ?? DEFAULT_TRACK_GATE,
+        envelopeTimeUnit: t.envelopeTimeUnit ?? 'seconds',
+        envelopeV2: t.envelopeV2,
+        samplePlaybackMode: t.samplePlaybackMode,
+        largePitchShiftLatencySeconds: latencyProbe?.call(audioEngine, t.sampleId, 7) ?? 0,
         parameterLocks: t.parameterLocks.map((pl): WorkletPLock | null => {
           if (!pl) return null;
           return {
             pitch: pl.pitch,
             volume: pl.volume,
             tie: pl.tie,
+            attack: pl.attack,
+            decay: pl.decay,
+            release: pl.release,
+            attackDuration: pl.attackDuration,
+            holdDuration: pl.holdDuration,
+            decayDuration: pl.decayDuration,
+            releaseDuration: pl.releaseDuration,
           };
         }),
       })),

@@ -5,6 +5,9 @@ import { Scheduler } from './scheduler';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { resolveNoteDynamics } from './note-dynamics';
 import type { GridState, Track } from '../types';
+import { getEnvelopeCapability } from '../shared/envelope-capabilities';
+import { getPresetTrackEnvelopeV2 } from '../shared/envelope';
+import { resolveEnvelopeV2 } from '../shared/envelope-contract-v2';
 
 const playSampledInstrument = vi.fn<(...args: unknown[]) => void>();
 const playToneSynth = vi.fn<(...args: unknown[]) => void>();
@@ -101,8 +104,15 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
   it.each(ALL_VALID_SAMPLE_IDS)('%s active step routes to the expected play method', (sampleId) => {
     const track = flushOneStep(scheduler, sampleId);
     const { type, presetId } = parseInstrumentId(sampleId);
-    const noteId = `${track.id}-step-0`;
+    const noteId = `${track.id}:voice:0:0`;
     const dynamics = resolveNoteDynamics(VOLUME_LOCK);
+    const playbackMode = getEnvelopeCapability(sampleId).defaultPlaybackMode ?? 'gate';
+    const resolvedEnvelope = resolveEnvelopeV2(getPresetTrackEnvelopeV2(sampleId), 120);
+    const expectedDuration = playbackMode === 'trigger'
+      || resolvedEnvelope.model === 'ad'
+      || resolvedEnvelope.model === 'ahd'
+      ? STEP_DURATION
+      : EXPECTED_NOTE_DURATION;
 
     // The track bus remains at its base fader; only the voice receives the
     // per-note multiplier, so 73% does not become 73% squared.
@@ -116,10 +126,13 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           noteId,
           SCHEDULER_BASE_MIDI_NOTE + PITCH_LOCK,
           STEP_TIME,
-          EXPECTED_NOTE_DURATION,
+          expectedDuration,
           dynamics.noteGain,
           track.id,
           dynamics.midiVelocity,
+          undefined,
+          playbackMode,
+          resolvedEnvelope,
         );
         expect(playSample).not.toHaveBeenCalled();
         break;
@@ -130,10 +143,12 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           presetId,
           PITCH_LOCK,
           STEP_TIME,
-          EXPECTED_NOTE_DURATION,
+          expectedDuration,
           dynamics.noteGain,
           track.id,
           dynamics.midiVelocity,
+          undefined,
+          resolvedEnvelope,
         );
         break;
       case 'tone':
@@ -142,10 +157,12 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           presetId,
           PITCH_LOCK,
           STEP_TIME,
-          EXPECTED_NOTE_DURATION,
+          expectedDuration,
           dynamics.noteGain,
           track.id,
           dynamics.midiVelocity,
+          undefined,
+          resolvedEnvelope,
         );
         break;
       case 'advanced':
@@ -154,10 +171,12 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           presetId,
           PITCH_LOCK,
           STEP_TIME,
-          EXPECTED_NOTE_DURATION,
+          expectedDuration,
           dynamics.noteGain,
           track.id,
           dynamics.midiVelocity,
+          undefined,
+          resolvedEnvelope,
         );
         break;
       case 'sample':
@@ -167,10 +186,14 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           sampleId,
           track.id,
           STEP_TIME,
-          EXPECTED_NOTE_DURATION,
+          expectedDuration,
           PITCH_LOCK,
           dynamics.noteGain,
           dynamics.midiVelocity,
+          undefined,
+          undefined,
+          resolvedEnvelope,
+          playbackMode,
         );
         break;
     }
@@ -182,5 +205,41 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
       playSynthNote.mock.calls.length +
       playSample.mock.calls.length;
     expect(totalPlaybackCalls).toBe(1);
+  });
+
+  it('applies gate and forwards A/D/R locks as one note-level envelope override', () => {
+    const track = buildTrack('synth:lead');
+    track.gate = 50;
+    track.parameterLocks[0] = {
+      pitch: PITCH_LOCK,
+      volume: VOLUME_LOCK,
+      attack: 0,
+      decay: .25,
+      release: 2,
+    };
+    const state: GridState = { tracks: [track], tempo: 120, swing: 0, isPlaying: true, currentStep: 0 };
+    (scheduler as unknown as { getState: () => GridState }).getState = () => state;
+    (scheduler as unknown as { scheduleStep: (state: GridState, step: number, time: number, duration: number) => void })
+      .scheduleStep(state, 0, STEP_TIME, STEP_DURATION);
+
+    expect(playSynthNote).toHaveBeenCalledWith(
+      `${track.id}:voice:0:0`,
+      'lead',
+      PITCH_LOCK,
+      STEP_TIME,
+      STEP_DURATION * .5,
+      resolveNoteDynamics(VOLUME_LOCK).noteGain,
+      track.id,
+      resolveNoteDynamics(VOLUME_LOCK).midiVelocity,
+      { attack: 0, decay: .25, release: 2 },
+      {
+        model: 'adsr',
+        attackSeconds: 0,
+        decaySeconds: .25,
+        sustain: .8,
+        releaseSeconds: 2,
+      },
+      true,
+    );
   });
 });

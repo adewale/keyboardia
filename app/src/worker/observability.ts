@@ -214,6 +214,7 @@ export interface WsSessionEvent {
   snapshotsSentCount?: number;     // Manual snapshots sent (excluding initial)
   rejectedMutationCount?: number;  // Mutations rejected (published session)
   duplicateOpsHandled?: number;    // Duplicate track/delete operations
+  stateRepairCount?: number;       // Invariant repairs applied while loading/editing
 
   // Outcome (Boris Tane pattern)
   outcome: 'ok' | 'error';

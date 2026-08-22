@@ -3302,7 +3302,7 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
   });
 
   describe('Canonicalization Edge Cases', () => {
-    it('tracks with fmParams produce same hash (fmParams excluded from canonical)', () => {
+    it('tracks with different fmParams produce different hashes', () => {
       const state1 = createSessionState(2);
       const state2 = JSON.parse(JSON.stringify(state1)) as SessionState;
 
@@ -3316,8 +3316,8 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
       const hash1 = hashState(canonicalizeForHash(result1));
       const hash2 = hashState(canonicalizeForHash(result2));
 
-      // Should match because fmParams is excluded from canonical hash
-      expect(hash1).toBe(hash2);
+      // FM parameters change shared sound state and must be divergence-visible.
+      expect(hash1).not.toBe(hash2);
     });
 
     it('tracks with different muted/soloed produce same hash (local-only fields)', () => {

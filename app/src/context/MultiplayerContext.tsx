@@ -11,6 +11,8 @@ export type SessionStatus = 'loading' | 'ready' | 'error' | 'not_found';
 
 export interface MultiplayerContextValue {
   isConnected: boolean;
+  /** False only when a connected server lacks the rolling v2 capability. */
+  supportsEnvelopeV2: boolean;
   playerCount: number;
   dispatch: (action: GridAction) => void;
   handleMuteChange: (trackId: string, muted: boolean) => void;

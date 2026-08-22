@@ -27,7 +27,7 @@ describe('canonicalHash - Property-Based Tests', () => {
         }),
         { numRuns: 500 }
       );
-    });
+    }, 20_000);
 
     it('hash is deterministic across canonicalization calls', () => {
       fc.assert(

@@ -19,6 +19,7 @@ import {
   MAX_TRANSPOSE,
   VALID_DELAY_TIMES,
   isValidIntegerInRange,
+  validateParameterLock,
 } from './invariants';
 import { LEGACY_UNAVAILABLE_SAMPLE_IDS, VALID_SAMPLE_IDS } from '../shared/instrument-catalog';
 import {
@@ -33,6 +34,8 @@ import {
 import { VALID_STEP_COUNTS, VALID_STEP_COUNTS_SET } from './types';
 import { MAX_SESSION_NAME_LENGTH } from '../shared/validation';
 import { NOTE_NAMES, SCALES } from '../music/music-theory';
+import { ENVELOPE_RANGES, TRACK_GATE_RANGE, isTrackEnvelope } from '../shared/envelope';
+import { isSamplePlaybackMode, validateTrackEnvelopeV2 } from '../shared/envelope-contract-v2';
 
 // ============================================================================
 // Session ID Validation
@@ -187,6 +190,32 @@ function validateTrack(track: unknown, index: number): string[] {
     errors.push(`${prefix}: steps cannot exceed ${MAX_STEPS}`);
   }
 
+  if (!Array.isArray(t.parameterLocks)) {
+    errors.push(`${prefix}: parameterLocks must be an array`);
+  } else if (t.parameterLocks.length > MAX_STEPS) {
+    errors.push(`${prefix}: parameterLocks cannot exceed ${MAX_STEPS}`);
+  } else {
+    const allowed = new Set([
+      'pitch', 'volume', 'tie', 'attack', 'decay', 'release',
+      'attackDuration', 'holdDuration', 'decayDuration', 'releaseDuration',
+    ]);
+    t.parameterLocks.forEach((lock, step) => {
+      if (lock === null) return;
+      const normalized = validateParameterLock(lock);
+      if (!normalized || !lock || typeof lock !== 'object' || Array.isArray(lock)) {
+        errors.push(`${prefix}: parameterLocks[${step}] is malformed`);
+        return;
+      }
+      const input = lock as Record<string, unknown>;
+      const keys = Object.keys(input);
+      if (keys.some((key) => !allowed.has(key))
+          || keys.some((key) => JSON.stringify(input[key])
+            !== JSON.stringify((normalized as Record<string, unknown>)[key]))) {
+        errors.push(`${prefix}: parameterLocks[${step}] contains invalid or out-of-range fields`);
+      }
+    });
+  }
+
   // Volume
   if (t.volume !== undefined && (typeof t.volume !== 'number' || t.volume < 0 || t.volume > 1)) {
     errors.push(`${prefix}: volume must be between 0 and 1`);
@@ -212,6 +241,39 @@ function validateTrack(track: unknown, index: number): string[] {
     if (!VALID_STEP_COUNTS_SET.has(t.stepCount as typeof VALID_STEP_COUNTS[number])) {
       errors.push(`${prefix}: stepCount must be one of ${VALID_STEP_COUNTS.join(', ')}`);
     }
+  }
+
+  if (t.envelope !== undefined) {
+    if (!isTrackEnvelope(t.envelope)) {
+      errors.push(`${prefix}: envelope must contain finite attack, decay, sustain, and release numbers`);
+    } else {
+      for (const field of ['attack', 'decay', 'sustain', 'release'] as const) {
+        const value = t.envelope[field];
+        const range = ENVELOPE_RANGES[field];
+        if (value < range.min || value > range.max) {
+          errors.push(`${prefix}: envelope.${field} must be between ${range.min} and ${range.max}`);
+        }
+      }
+    }
+  }
+  if (t.envelopeTimeUnit !== undefined
+      && t.envelopeTimeUnit !== 'seconds'
+      && t.envelopeTimeUnit !== 'steps') {
+    errors.push(`${prefix}: envelopeTimeUnit must be "seconds" or "steps"`);
+  }
+  if (t.envelopeV2 !== undefined) {
+    const validation = validateTrackEnvelopeV2(t.envelopeV2);
+    if (!validation.valid) {
+      errors.push(`${prefix}: envelopeV2 is invalid: ${validation.errors.join('; ')}`);
+    }
+  }
+  if (t.samplePlaybackMode !== undefined && !isSamplePlaybackMode(t.samplePlaybackMode)) {
+    errors.push(`${prefix}: samplePlaybackMode must be "trigger", "gate", or "loop"`);
+  }
+  if (t.gate !== undefined
+      && (typeof t.gate !== 'number' || !Number.isFinite(t.gate)
+        || t.gate < TRACK_GATE_RANGE.min || t.gate > TRACK_GATE_RANGE.max)) {
+    errors.push(`${prefix}: gate must be between ${TRACK_GATE_RANGE.min} and ${TRACK_GATE_RANGE.max}`);
   }
 
   return errors;

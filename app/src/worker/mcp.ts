@@ -4,6 +4,8 @@ import { analyzeSession } from '../music/session-analysis';
 import { MAX_PAN, MAX_STEPS, MAX_TEMPO, MIN_PAN, MIN_TEMPO } from '../shared/constants';
 import type { Session } from '../shared/state';
 import { PatternExpansionError } from '../shared/pattern-expansion';
+import { ENVELOPE_RANGES, TRACK_GATE_RANGE } from '../shared/envelope';
+import { ENVELOPE_DURATION_RANGES_V2, type EnvelopeStageName } from '../shared/envelope-contract-v2';
 import { MAX_SESSION_NAME_LENGTH, MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 import type { Env } from './types';
 import {
@@ -54,12 +56,17 @@ export interface McpDeferralContext {
 }
 
 class McpSessionAdapterError extends Error {
+  readonly code: string;
+  readonly status: number;
+
   constructor(
     message: string,
-    readonly code: string,
-    readonly status: number
+    code: string,
+    status: number
   ) {
     super(message);
+    this.code = code;
+    this.status = status;
     this.name = 'McpSessionAdapterError';
   }
 }
@@ -227,9 +234,65 @@ const sampleIdSchema = z.enum(sampleIds).describe(
   'The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.'
 );
 
+const envelopeUnitSchema = z.enum(['seconds', 'steps']);
+const envelopeDurationSchema = (stage: EnvelopeStageName) => z.discriminatedUnion('unit', [
+  z.object({
+    value: z.number()
+      .min(ENVELOPE_DURATION_RANGES_V2[stage].seconds.min)
+      .max(ENVELOPE_DURATION_RANGES_V2[stage].seconds.max),
+    unit: z.literal('seconds'),
+  }).strict(),
+  z.object({
+    value: z.number()
+      .min(ENVELOPE_DURATION_RANGES_V2[stage].steps.min)
+      .max(ENVELOPE_DURATION_RANGES_V2[stage].steps.max),
+    unit: z.literal('steps'),
+  }).strict(),
+]);
+const legacyEnvelopeSchema = z.object({
+  attack: z.number().min(ENVELOPE_RANGES.attack.min).max(ENVELOPE_RANGES.attack.max),
+  decay: z.number().min(ENVELOPE_RANGES.decay.min).max(ENVELOPE_RANGES.decay.max),
+  sustain: z.number().min(ENVELOPE_RANGES.sustain.min).max(ENVELOPE_RANGES.sustain.max),
+  release: z.number().min(ENVELOPE_RANGES.release.min).max(ENVELOPE_RANGES.release.max),
+}).strict();
+const expandedEnvelopeSchema = z.discriminatedUnion('model', [
+  z.object({ model: z.literal('ad'), attack: envelopeDurationSchema('attack'), decay: envelopeDurationSchema('decay') }).strict(),
+  z.object({
+    model: z.literal('ahd'), attack: envelopeDurationSchema('attack'),
+    hold: envelopeDurationSchema('hold'), decay: envelopeDurationSchema('decay'),
+  }).strict(),
+  z.object({ model: z.literal('ar'), attack: envelopeDurationSchema('attack'), release: envelopeDurationSchema('release') }).strict(),
+  z.object({
+    model: z.literal('adsr'), attack: envelopeDurationSchema('attack'), decay: envelopeDurationSchema('decay'),
+    sustain: z.number().min(0).max(1), release: envelopeDurationSchema('release'),
+  }).strict(),
+]);
+const compactStage = (stage: EnvelopeStageName, unit: 'seconds' | 'steps') => z.number()
+  .min(ENVELOPE_DURATION_RANGES_V2[stage][unit].min)
+  .max(ENVELOPE_DURATION_RANGES_V2[stage][unit].max);
+const compactEnvelopeSchema = z.union((['seconds', 'steps'] as const).flatMap(unit => [
+  z.object({ model: z.literal('ad'), attack: compactStage('attack', unit), decay: compactStage('decay', unit), duration_unit: z.literal(unit) }).strict(),
+  z.object({ model: z.literal('ahd'), attack: compactStage('attack', unit), hold: compactStage('hold', unit), decay: compactStage('decay', unit), duration_unit: z.literal(unit) }).strict(),
+  z.object({ model: z.literal('ar'), attack: compactStage('attack', unit), release: compactStage('release', unit), duration_unit: z.literal(unit) }).strict(),
+  z.object({ model: z.literal('adsr'), attack: compactStage('attack', unit), decay: compactStage('decay', unit), sustain: z.number().min(0).max(1), release: compactStage('release', unit), duration_unit: z.literal(unit) }).strict(),
+]));
+const mcpEnvelopeSchema = z.union([
+  legacyEnvelopeSchema,
+  expandedEnvelopeSchema,
+  compactEnvelopeSchema,
+]);
+
+const envelopeLockEditSchema = (stage: EnvelopeStageName) => z.object({
+  operation: z.literal('set_envelope_lock'),
+  track_id: trackIdSchema,
+  step: z.number().int().min(0).max(MAX_STEPS - 1),
+  stage: z.literal(stage),
+  duration: envelopeDurationSchema(stage).nullable(),
+}).strict().describe(`Set or clear one onset-owned sparse ${stage} lock.`);
+
 const editSchema = z.object({
   session_id: sessionIdSchema,
-  edit: z.discriminatedUnion('operation', [
+  edit: z.union([
     z.object({
       operation: z.literal('add_track'),
       track_id: newTrackIdSchema,
@@ -281,6 +344,39 @@ const editSchema = z.object({
       tempo: z.number().min(MIN_TEMPO).max(MAX_TEMPO)
         .describe(`Session tempo in beats per minute (${MIN_TEMPO}-${MAX_TEMPO}).`),
     }).strict().describe('Set the session-wide tempo without changing any track.'),
+    z.object({
+      operation: z.literal('set_track_envelope'),
+      track_id: trackIdSchema,
+      envelope: mcpEnvelopeSchema.nullable().describe(
+        'AD, AHD, AR, or ADSR override. Timed stages may be expanded per value or compact with duration_unit; null resets.'
+      ),
+      gate: z.number().min(TRACK_GATE_RANGE.min).max(TRACK_GATE_RANGE.max).optional(),
+      sample_playback_mode: z.enum(['trigger', 'gate', 'loop']).optional(),
+    }).strict().describe('Set one track\'s amplitude envelope and optional associated gate/playback behavior atomically.'),
+    z.object({
+      operation: z.literal('set_track_envelope_time_unit'),
+      track_id: trackIdSchema,
+      unit: z.enum(['seconds', 'steps']),
+    }).strict().describe('Interpret this track\'s authored envelope times in seconds or sixteenth-note steps.'),
+    z.object({
+      operation: z.literal('set_track_gate'),
+      track_id: trackIdSchema,
+      gate: z.number().min(TRACK_GATE_RANGE.min).max(TRACK_GATE_RANGE.max),
+    }).strict().describe('Set the note gate percentage on the final tied segment.'),
+    z.object({
+      operation: z.literal('convert_track_envelope_units'),
+      track_id: trackIdSchema,
+      target_unit: envelopeUnitSchema,
+    }).strict().describe('Convert every timed stage atomically at the current session tempo.'),
+    z.object({
+      operation: z.literal('set_track_sample_playback_mode'),
+      track_id: trackIdSchema,
+      mode: z.enum(['trigger', 'gate', 'loop']).nullable(),
+    }).strict().describe('Set sample note-off behavior, or null to restore the manifest default.'),
+    envelopeLockEditSchema('attack'),
+    envelopeLockEditSchema('hold'),
+    envelopeLockEditSchema('decay'),
+    envelopeLockEditSchema('release'),
   ]).describe('Exactly one narrow session edit.'),
 }).strict().describe('The target session and one retry-safe edit to apply.');
 
@@ -421,7 +517,7 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
         'After every attempt, the next Keyboardia call must be get_session for the same session.',
         'A successful call includes a backwards-compatible compact snapshot plus an acknowledgement.',
         'That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next.',
-        'Supported operations: add_track, set_track_instrument, set_track_pan, set_steps, and set_tempo.',
+        'Supported operations: add_track, set_track_instrument, set_track_pan, set_track_envelope, set_track_envelope_time_unit, set_track_gate, convert_track_envelope_units, set_track_sample_playback_mode, set_envelope_lock, set_steps, and set_tempo.',
         'set_steps changes only the named steps; it never replaces a track or session.',
         'set_track_instrument replaces only a track\'s sound source, keeping its'
         + ' pattern, mix, timing, and custom name.',

@@ -37,6 +37,7 @@ type ToneSynthManagerSurface = Pick<
   | 'semitoneToNoteName'
   | 'getPresetNames'
   | 'setFMParams'
+  | 'setEnvelope'
   | 'resetFMParams'
   | 'getFMParams'
   | 'dispose'
@@ -64,6 +65,7 @@ export class FakeToneSynthManager implements ToneSynthManagerSurface {
   /** Recorder for playNote / playNoteSemitone calls. Tests assert on this. */
   readonly playNoteCalls: PlayNoteCall[] = [];
   readonly setFMParamsCalls: Array<{ harmonicity: number; modulationIndex: number }> = [];
+  setEnvelope(): void {}
   /** Set to true after `dispose()` has been called. */
   disposed = false;
 

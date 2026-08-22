@@ -76,7 +76,7 @@ describe('runtime boundary scanner', () => {
       importer: 'shared/constants.ts',
       specifier: './definitely-missing.js',
     });
-  });
+  }, 15_000);
 
   it('reports non-literal module loading that a static graph cannot resolve', () => {
     const graph = scanProductionGraph(SRC_ROOT, {

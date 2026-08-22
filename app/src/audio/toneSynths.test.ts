@@ -5,6 +5,8 @@ import {
   type ToneSynthType,
 } from './toneSynths';
 import { semitoneToFrequency } from './constants';
+import { resolveEnvelopeV2 } from '../shared/envelope-contract-v2';
+import { resolvedEnvelopeV2ToToneSchedule } from './envelope-translate';
 
 /**
  * Tests for Tone.js Advanced Synths Integration
@@ -26,9 +28,14 @@ const toneTestState = vi.hoisted(() => ({
     harmonicity: { value: number };
     modulationIndex: { value: number };
     set: ReturnType<typeof vi.fn>;
+    triggerAttackRelease: ReturnType<typeof vi.fn>;
   }>,
   gains: [] as Array<{
     gain: { value: number; setValueAtTime: ReturnType<typeof vi.fn> };
+  }>,
+  envelopes: [] as Array<{
+    attack: number; decay: number; sustain: number; release: number;
+    triggerAttackRelease: ReturnType<typeof vi.fn>;
   }>,
 }));
 
@@ -150,6 +157,20 @@ vi.mock('tone', () => {
     }
   }
 
+  class MockAmplitudeEnvelope {
+    attack = 0.003;
+    decay = 0;
+    sustain = 1;
+    release = 0.1;
+    triggerAttackRelease = vi.fn();
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+    constructor(config?: { attack?: number; decay?: number; sustain?: number; release?: number }) {
+      Object.assign(this, config);
+      toneTestState.envelopes.push(this);
+    }
+  }
+
   return {
     start: vi.fn().mockResolvedValue(undefined),
     now: vi.fn().mockReturnValue(0),
@@ -161,6 +182,7 @@ vi.mock('tone', () => {
     DuoSynth: MockDuoSynth,
     PolySynth: MockPolySynth,
     Gain: MockGain,
+    AmplitudeEnvelope: MockAmplitudeEnvelope,
   };
 });
 
@@ -218,6 +240,7 @@ describe('ToneSynthManager', () => {
   beforeEach(async () => {
     toneTestState.fmSynths.length = 0;
     toneTestState.gains.length = 0;
+    toneTestState.envelopes.length = 0;
     manager = new ToneSynthManager();
     await manager.initialize();
   });
@@ -274,6 +297,61 @@ describe('ToneSynthManager', () => {
       expect(toneTestState.fmSynths[0].set).toHaveBeenCalledTimes(1);
     });
 
+    it('applies track and note ADSR overrides through the Tone preset boundary', () => {
+      manager.setEnvelope({ attack: .4, decay: .3, sustain: .6, release: 2 });
+      manager.playNote('fm-epiano', 'C4', '8n', 0);
+      expect(toneTestState.fmSynths[0].set).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          envelope: {
+            attack: .4, decay: .3, sustain: .6, release: 2,
+            attackCurve: 'linear', decayCurve: 'linear', releaseCurve: 'exponential',
+          },
+        }),
+      );
+
+      manager.playNote('fm-epiano', 'E4', '8n', .1, 1, {
+        attack: 0, decay: .1, sustain: .2, release: 0,
+      });
+      expect(toneTestState.fmSynths[0].set).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          envelope: {
+            attack: 0, decay: .1, sustain: .2, release: 0,
+            attackCurve: 'linear', decayCurve: 'linear', releaseCurve: 'exponential',
+          },
+        }),
+      );
+    });
+
+    it('carries the canonical 300ms release and gate duration into Tone unchanged', () => {
+      const resolved = resolveEnvelopeV2({
+        model: 'adsr',
+        attack: { value: 0.01, unit: 'seconds' },
+        decay: { value: 2, unit: 'steps' },
+        sustain: 0.7,
+        release: { value: 0.3, unit: 'seconds' },
+      }, 120);
+      const schedule = resolvedEnvelopeV2ToToneSchedule(resolved, 0.125);
+
+      manager.playNote('fm-bass', 'C4', schedule.duration, 0, 1, schedule.envelope);
+
+      expect(schedule.envelope.release).toBe(0.3);
+      expect(toneTestState.fmSynths[0].set).toHaveBeenLastCalledWith(
+        expect.objectContaining({
+          envelope: {
+            attack: 0.01,
+            decay: 0.25,
+            sustain: 0.7,
+            release: 0.3,
+            attackCurve: 'linear',
+            decayCurve: 'linear',
+            releaseCurve: 'exponential',
+          },
+        }),
+      );
+      expect(toneTestState.fmSynths[0].triggerAttackRelease)
+        .toHaveBeenCalledWith('C4', 0.125, 0.001, 1);
+    });
+
     it('resets FM overrides to the active preset without replacing the synth', () => {
       manager.playNote('fm-bass', 'C4', '8n', 0);
       manager.setFMParams(9, 19);
@@ -286,13 +364,16 @@ describe('ToneSynthManager', () => {
       expect(toneTestState.fmSynths[0].set).toHaveBeenCalledTimes(1);
     });
 
-    it('applies velocity to pluck-string at the scheduled note time', () => {
-      manager.playNote('pluck-string', 'C4', '8n', 0.2, 0.35);
+    it('applies ADSR, gate duration, and velocity to pluck-string', () => {
+      manager.playNote('pluck-string', 'C4', .25, 0.2, 0.35, {
+        attack: .04, decay: .1, sustain: .6, release: .2,
+      });
 
-      // Gain 0 is the manager output; gain 1 is the pluck-only VCA.
-      const pluckGain = toneTestState.gains[1];
-      expect(pluckGain).toBeDefined();
-      expect(pluckGain.gain.setValueAtTime).toHaveBeenLastCalledWith(0.35 * (10 ** (-6 / 20)), 0.2);
+      const envelope = toneTestState.envelopes[0];
+      expect(envelope).toMatchObject({ attack: .04, decay: .1, sustain: .6, release: .2 });
+      expect(envelope.triggerAttackRelease).toHaveBeenCalledWith(.25, .2, .35);
+      expect(toneTestState.gains[1]?.gain.setValueAtTime)
+        .toHaveBeenLastCalledWith(10 ** (-6 / 20), 0.2);
     });
   });
 

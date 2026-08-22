@@ -43,6 +43,27 @@
   flex-wrap: wrap;
 }
 
+.notation-copy-label-short {
+  display: none;
+}
+
+/* Keep the title and complete action set on one row in short landscape
+   viewports. The controls already own their internal 8px rhythm; matching it
+   here avoids a one-line wrap caused by the notation action alone. */
+@media (max-width: 900px) and (orientation: landscape) {
+  .header-top {
+    gap: 8px;
+  }
+
+  .notation-copy-label-long {
+    display: none;
+  }
+
+  .notation-copy-label-short {
+    display: inline;
+  }
+}
+
 .app-header h1 {
   font-size: 1.5rem;
   font-weight: 700;

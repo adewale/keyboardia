@@ -130,6 +130,28 @@ export function describeUnsupportedMidiFeatures(
 ): McpMidiUnsupportedFeature[] {
   const unsupported: McpMidiUnsupportedFeature[] = [];
 
+  const envelopeTracks = exportedTracks.filter((track) =>
+    track.envelope !== undefined
+    || track.envelopeV2 !== undefined
+    || track.envelopeTimeUnit === 'steps'
+    || track.samplePlaybackMode !== undefined
+    || track.gate !== undefined
+    || track.parameterLocks.some((lock) => lock?.attack !== undefined
+      || lock?.decay !== undefined
+      || lock?.release !== undefined
+      || lock?.attackDuration !== undefined
+      || lock?.holdDuration !== undefined
+      || lock?.decayDuration !== undefined
+      || lock?.releaseDuration !== undefined),
+  );
+  if (envelopeTracks.length > 0) {
+    unsupported.push({
+      feature: 'amplitude_envelope',
+      detail: 'Track AD/AHD/AR/ADSR, tempo-relative envelope times, sample playback mode, gate percentage, and per-step envelope locks have no portable Standard MIDI File representation.',
+      track_ids: envelopeTracks.map((track) => track.id),
+    });
+  }
+
   const perTrackSwing = exportedTracks.filter((track) => (track.swing ?? 0) > 0);
   if (perTrackSwing.length > 0) {
     unsupported.push({

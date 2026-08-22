@@ -19,7 +19,7 @@ import { audioEngine } from './engine';
 
 /** Instruments whose engine has to be started before anything can be warmed. */
 function requiresTone(sampleId: string): boolean {
-  return sampleId.startsWith('tone:') || sampleId.startsWith('advanced:');
+  return sampleId.startsWith('synth:') || sampleId.startsWith('tone:') || sampleId.startsWith('advanced:');
 }
 
 /**

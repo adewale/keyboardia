@@ -13,7 +13,10 @@ The first Keyboardia MCP server is the smallest useful collaborative music surfa
 
 - one stateless HTTP endpoint, `/mcp`;
 - two rhythm tools, `get_session` and `edit_session`;
-- five edits, `add_track`, `set_track_instrument`, `set_track_pan`, `set_steps`, and `set_tempo`;
+- eleven edits: `add_track`, `set_track_instrument`, `set_track_pan`, `set_steps`,
+  `set_tempo`, `set_track_envelope`, `set_track_envelope_time_unit`,
+  `set_track_gate`, `convert_track_envelope_units`,
+  `set_track_sample_playback_mode`, and `set_envelope_lock`;
 - no resources, prompts, authentication, MCP sessions, presence, journal, revisions, undo, or full-state replacement.
 
 The rhythm slice works only with an existing Keyboardia session. The session
@@ -161,6 +164,8 @@ The compact result deliberately omits internal arrays, parameter locks, volume
 and local mute/solo state, effects, scale, metadata, players, revisions, and storage details.
 It includes normalized track `pan` because agents can read and edit that shared field.
 `active_steps` contains only active steps inside the track's current loop.
+Per-track fields additionally report authored/effective envelopes, source
+capability, inactive stages, and sample playback behavior.
 
 ### `edit_session`
 
@@ -321,6 +326,100 @@ value that actually changed.
 
 Tempo must be within Keyboardia's existing 60–180 BPM range. Repeating the
 current value is a no-op.
+
+#### `set_track_envelope`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "set_track_envelope",
+    "track_id": "pad-agent-1",
+    "envelope": {
+      "model": "adsr", "attack": 0.8, "decay": 0.3,
+      "sustain": 0.85, "release": 3.5, "duration_unit": "seconds"
+    },
+    "gate": 90
+  }
+}
+```
+
+The compact form applies `duration_unit` to every timed stage. The expanded
+form may give each stage `{ "value": N, "unit": "seconds|steps" }` for mixed
+units. Models are `ad`, `ahd`, `ar`, and `adsr`; capability validation rejects
+a model the instrument cannot perform. `null` restores the instrument preset.
+
+#### `set_track_envelope_time_unit`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "set_track_envelope_time_unit",
+    "track_id": "pad-agent-1",
+    "unit": "steps"
+  }
+}
+```
+
+This converts every authored timed stage at the current tempo while preserving
+its audible duration. `seconds` stores literal seconds; `steps` stores fractions
+of a sixteenth-note step. On a preset-only track it records the preferred unit
+for a later legacy ADSR edit without manufacturing an override. New clients
+should prefer `convert_track_envelope_units`, which names this behavior directly.
+
+#### `set_track_gate`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "set_track_gate",
+    "track_id": "pad-agent-1",
+    "gate": 75
+  }
+}
+```
+
+Gate is a percentage from 0 through 100. For a tied note, all preceding tied
+steps remain full length and gate scales only the final step before release.
+An absent gate retains Keyboardia's historical 90%.
+
+#### `convert_track_envelope_units`
+
+```json
+{ "session_id": "...", "edit": {
+  "operation": "convert_track_envelope_units", "track_id": "pad-agent-1",
+  "target_unit": "steps"
+} }
+```
+
+Converts every timed stage atomically at the current tempo. It changes units,
+not the currently heard duration, except where the documented range clamps.
+
+#### `set_track_sample_playback_mode`
+
+```json
+{ "session_id": "...", "edit": {
+  "operation": "set_track_sample_playback_mode", "track_id": "piano-agent-1",
+  "mode": "gate"
+} }
+```
+
+Sets `trigger`, `gate`, or `loop` only when the sample capability permits it.
+`null` restores the manifest default; finite samples cannot claim a loop.
+
+#### `set_envelope_lock`
+
+```json
+{ "session_id": "...", "edit": {
+  "operation": "set_envelope_lock", "track_id": "pad-agent-1", "step": 0,
+  "stage": "release", "duration": { "value": 4, "unit": "steps" }
+} }
+```
+
+Sets one sparse, zero-based onset-step A/H/D/R duration lock. `null` clears the
+stage lock. Locks on tied continuation cells remain stored but inactive.
 
 ### `create_session`
 

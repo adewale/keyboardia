@@ -126,8 +126,73 @@ This is the ideal format because:
 | Effects (reverb, delay, etc.) | MIDI doesn't support audio effects |
 | Filter settings | No GM equivalent for filter cutoff/resonance |
 | LFO modulation | No standard MIDI representation |
-| Envelope shapes | GM instruments have fixed envelopes |
+| Envelope shapes, envelope p-locks, and gate time | Standard MIDI Files do not carry portable synth ADSR or articulation state. MCP export reports these as unsupported; the browser export currently omits the report. |
 | Custom mic recordings | No audio in MIDI; placeholder note only |
+
+---
+
+## MIDI Is an Interchange Export, Not a Session Backup
+
+The MIDI Association describes Standard MIDI Files as time-stamped MIDI
+interchange and explicitly says they are not intended to replace an
+application's normal file format. Keyboardia must preserve that distinction:
+the canonical session/notation is the editable project; `.mid` is a playable,
+lossy rendition of its notes. See the [Standard MIDI Files overview](https://midi.org/standard-midi-files).
+
+The implications grow as Keyboardia adds envelope models, playback behavior,
+sample loops, release triggers, ties, and p-locks:
+
+- Importing the `.mid` into a DAW preserves a useful skeleton but can sound
+  materially different because the target instrument chooses its own envelope,
+  loop, release, polyphony, and voice-stealing behavior.
+- A MIDI round trip MUST NOT overwrite a Keyboardia session. Features absent
+  from MIDI cannot be reconstructed, so “export then import” is destructive.
+- Collaboration and remix links must continue to use canonical Keyboardia
+  state. MIDI cannot be the authoritative handoff between collaborators who
+  expect the same sound.
+- Users may mistake a successful file download for a faithful export. The v2
+  UI remains intentionally simple, so the tooltip/help and this document must
+  call it a MIDI performance export rather than a project backup.
+- Regression tests continue to verify the MIDI events already supported. New
+  expressive fields are deliberately outside that encoder's v2 scope.
+
+### Why controller messages do not solve this portably
+
+MIDI 1.0 defines Sound Controller defaults including CC72 Release Time, CC73
+Attack Time, and CC75 Decay Time. They are device-level 0–127 controls, not a
+portable encoding of Keyboardia's seconds/steps, envelope model, sustain level,
+per-note locks, sample playback mode, or release assets. Receivers can map or
+ignore them differently. Keyboardia therefore MUST NOT emit these controls as
+if they were a fidelity-preserving ADSR export. They may be offered later as an
+explicit “DAW hints” profile with a named target and a warning. See the
+[MIDI Association control-change table](https://midi.org/midi-1-0-control-change-messages).
+
+MIDI 2.0 Property Exchange can carry JSON device state, but it depends on a
+compatible negotiated device/resource and is not a universal Keyboardia
+session representation. It does not make ordinary `.mid` consumers understand
+Keyboardia's schema. See [MIDI-CI Property Exchange](https://midi.org/midi-2-0-property-exchange).
+
+### Current export product
+
+Keyboardia v2 keeps the existing one-click **MIDI Performance (`.mid`)**
+download. It exports the existing notes, timing, duration/ties, velocity,
+tempo, track selection, and General MIDI approximations. There is no new
+project package, loss-report modal, audio renderer, DAWproject output, target
+profile, or MIDI import in this release.
+
+For envelopes specifically:
+
+- existing tie-derived note duration remains as implemented;
+- velocity remains MIDI velocity, not envelope peak automation;
+- A/H/D/S/R values, per-stage units, gate percentage, playback mode, sustain
+  loops, release triggers, and envelope locks are omitted;
+- no export path invents CC automation;
+- Keyboardia share/remix links and v2.4 notation—not MIDI—retain the editable
+  envelope state.
+
+Richer export alternatives remain deferred research in
+[`specs/research/EXPORT-FIDELITY-RESEARCH.md`](../specs/research/EXPORT-FIDELITY-RESEARCH.md)
+and are not part of the ADSR v2 implementation plan.
 
 ---
 

@@ -8,7 +8,6 @@ import {
   makeSampleFetchStub,
 } from './__fakes__/FakeWebAudio';
 import {
-  ATTACK_FADE_SEC,
   RELEASE_FLOOR_GAIN,
   RELEASE_TAIL_GUARD_SEC,
 } from './note-schedule';
@@ -140,11 +139,58 @@ describe('playNote scheduling (P1)', () => {
 
     const gain = ctx.lastGain.gain;
     const zero = gain.eventsOfType('setValueAtTime')[0];
-    expect(zero.value).toBe(0);
+    expect(zero.value).toBe(0.0001);
     expect(zero.time).toBe(5.0);
     const attack = gain.eventsOfType('linearRampToValueAtTime')[0];
     expect(attack.value).toBeCloseTo(0.9, 10);
-    expect(attack.time).toBeCloseTo(5.0 + ATTACK_FADE_SEC, 10);
+    expect(attack.time).toBeCloseTo(5.003, 10);
+  });
+
+  it('uses authored sample attack/release while ignoring decay and sustain', async () => {
+    const { ctx, instrument } = await loadInstrument({
+      manifest: { ...SINGLE_SAMPLE, releaseTime: .8 },
+    });
+    ctx.currentTime = 0;
+
+    instrument.playNote(
+      'n1', 60, 5, .25, .9, 127, undefined, 'default',
+      { attack: .12, decay: 4, sustain: 0, release: .3 },
+    );
+
+    const gain = ctx.lastGain.gain;
+    expect(gain.eventsOfType('linearRampToValueAtTime')[0]?.time).toBeCloseTo(5.12, 10);
+    expect(gain.eventsOfType('exponentialRampToValueAtTime')[0]?.time).toBeCloseTo(5.55, 10);
+  });
+
+  it('releases from the held attack level when the gate closes before attack completes', async () => {
+    const { ctx, instrument } = await loadInstrument({ manifest: SINGLE_SAMPLE });
+
+    instrument.playNote(
+      'n1', 60, 5, .1, .8, 127, undefined, 'default',
+      { attack: .5, decay: 0, sustain: 1, release: .2 },
+    );
+
+    const ramps = ctx.lastGain.gain.eventsOfType('linearRampToValueAtTime');
+    expect(ramps).toHaveLength(2);
+    expect(ramps[0]).toMatchObject({ time: 5.1 });
+    expect(ramps[0]!.value).toBeCloseTo(.0001 + (.8 - .0001) * .2, 10);
+    expect(ramps[1]).toMatchObject({ value: 0, time: 5.1 + .2 + RELEASE_TAIL_GUARD_SEC });
+    expect(ctx.lastGain.gain.eventsOfType('setValueAtTime'))
+      .not.toContainEqual(expect.objectContaining({ value: .8, time: 5.1 }));
+  });
+
+  it('honours a zero release without inserting a hidden 10ms tail', async () => {
+    const { ctx, instrument } = await loadInstrument({ manifest: SINGLE_SAMPLE });
+
+    instrument.playNote(
+      'n1', 60, 5, .25, .8, 127, undefined, 'default',
+      { attack: 0, decay: 0, sustain: 1, release: 0 },
+    );
+
+    expect(ctx.lastGain.gain.eventsOfType('exponentialRampToValueAtTime')).toHaveLength(0);
+    expect(ctx.lastGain.gain.eventsOfType('setValueAtTime'))
+      .toContainEqual(expect.objectContaining({ value: .0001, time: 5.25 }));
+    expect(ctx.lastSource.stopCalls[0]).toBeCloseTo(5.25 + RELEASE_TAIL_GUARD_SEC, 10);
   });
 
   it('plays sprite samples from their offset for their duration', async () => {
