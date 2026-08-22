@@ -610,7 +610,7 @@ function bindControlBaseline(
     '--import', 'tsx', 'scripts/bind-sample-quality-dispositions.ts', unboundJson,
   ], appRoot);
   const status = gitOutput(['status', '--porcelain=v1', '--untracked-files=all'], cloneRoot);
-  if (status !== ' M app/scripts/sample-quality-baseline.json') {
+  if (!isExpectedControlBaselineBindingStatus(status)) {
     throw new Error(`Baseline binding changed unexpected control paths:\n${status || '(none)'}`);
   }
   return commitAll(
@@ -618,6 +618,13 @@ function bindControlBaseline(
     'chore: bind reconstructed control dispositions',
     commitEnvironment(evaluatorCommit, 1),
   );
+}
+
+export function isExpectedControlBaselineBindingStatus(status: string): boolean {
+  // gitOutput() trims the command result, so porcelain's leading worktree
+  // status column is intentionally absent here. The remaining single `M`
+  // still proves the binder changed exactly one unstaged file.
+  return status === 'M app/scripts/sample-quality-baseline.json';
 }
 
 function readJson<T>(filename: string): T {

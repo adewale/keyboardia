@@ -145,7 +145,7 @@ async function main(): Promise<void> {
 
     const adapterPath = resolve(APP_ROOT, 'e2e/dry-pcm-browser-adapter.ts');
     const receipt = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       claim: 'representative-dry-post-track-capture-smoke-not-complete-matrix',
       complete: false,
       generatedAt: new Date().toISOString(),
@@ -169,7 +169,7 @@ async function main(): Promise<void> {
         freshBrowserProcessPerAttempt: true,
         freshBrowserContextPerAttempt: true,
         maxProcessAttemptsPerCase: 3,
-        retryPolicy: 'retry-only-rejected-nonzero-render-frame-drift',
+        retryPolicy: 'retry-only-explicit-render-drift-or-browser-cleanup-failure-in-a-fresh-process',
       },
       browser: {
         name: 'chromium',

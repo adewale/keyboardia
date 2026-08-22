@@ -127,7 +127,7 @@ export interface BrowserCaptureDiagnostics {
   userAgent: string;
 }
 
-export interface BrowserCaptureRejectedAttempt {
+export interface BrowserRenderDriftRejectedAttempt {
   caseId: string;
   captureAttemptId: string;
   processAttempt: number;
@@ -135,6 +135,25 @@ export interface BrowserCaptureRejectedAttempt {
   browserVersion: string;
   reason: 'audio-worklet-render-frame-drift';
 }
+
+export type BrowserCleanupStage =
+  | 'context-close'
+  | 'browser-close'
+  | 'browser-disconnected-before-close';
+
+export interface BrowserCleanupRejectedAttempt {
+  caseId: string;
+  captureAttemptId: string;
+  processAttempt: number;
+  browserVersion: string;
+  reason: 'browser-cleanup-failure';
+  cleanupStage: BrowserCleanupStage;
+  message: string;
+}
+
+export type BrowserCaptureRejectedAttempt =
+  | BrowserRenderDriftRejectedAttempt
+  | BrowserCleanupRejectedAttempt;
 
 export interface ChromiumDryPcmCaptureAdapterOptions {
   browser: Browser;
@@ -166,6 +185,142 @@ class AudioWorkletRenderDriftError extends Error {
     this.maxRenderFrameDrift = maxRenderFrameDrift;
     this.browserVersion = browserVersion;
   }
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Marks a failure at an explicit browser cleanup boundary. Generic Playwright
+ * errors remain non-retryable so a page or production-audio failure can never
+ * be mistaken for infrastructure cleanup noise.
+ */
+export class BrowserLifecycleCleanupError extends Error {
+  readonly caseId: string;
+  readonly captureAttemptId: string;
+  readonly cleanupStage: BrowserCleanupStage;
+  readonly browserVersion: string;
+
+  constructor(
+    caseId: string,
+    captureAttemptId: string,
+    cleanupStage: BrowserCleanupStage,
+    browserVersion: string,
+    cause: unknown,
+  ) {
+    super(`${caseId}: Chromium ${cleanupStage} failed: ${errorMessage(cause)}`, { cause });
+    this.name = 'BrowserLifecycleCleanupError';
+    this.caseId = caseId;
+    this.captureAttemptId = captureAttemptId;
+    this.cleanupStage = cleanupStage;
+    this.browserVersion = browserVersion;
+  }
+}
+
+export interface IsolatedBrowserCaptureAttempt {
+  browserVersion: string;
+  capture: () => Promise<{
+    capture: DryPcmCapture;
+    diagnostics: readonly BrowserCaptureDiagnostics[];
+  }>;
+  isConnected: () => boolean;
+  close: () => Promise<void>;
+}
+
+export interface IsolatedBrowserCaptureAttemptOptions {
+  caseId: string;
+  launchAttempt: (processAttempt: number) => Promise<IsolatedBrowserCaptureAttempt>;
+  maxAttempts?: number;
+  onRejected?: (attempt: BrowserCaptureRejectedAttempt) => void;
+}
+
+/**
+ * Runs one capture per fresh browser process. Only explicit render continuity
+ * rejections and failures at a cleanup boundary are retried. A cleanup failure
+ * rejects the otherwise completed attempt; its PCM is never returned.
+ */
+export async function runIsolatedBrowserCaptureAttempts(
+  options: IsolatedBrowserCaptureAttemptOptions,
+): Promise<{ capture: DryPcmCapture; diagnostics: readonly BrowserCaptureDiagnostics[] }> {
+  const maxAttempts = options.maxAttempts ?? MAX_PROCESS_ATTEMPTS_PER_CASE;
+  if (!Number.isInteger(maxAttempts) || maxAttempts <= 0) {
+    throw new Error(`Invalid Chromium process-attempt limit: ${maxAttempts}`);
+  }
+
+  for (let processAttempt = 1; processAttempt <= maxAttempts; processAttempt++) {
+    const attempt = await options.launchAttempt(processAttempt);
+    let result: Awaited<ReturnType<IsolatedBrowserCaptureAttempt['capture']>> | undefined;
+    let primaryError: unknown;
+
+    try {
+      result = await attempt.capture();
+    } catch (error) {
+      primaryError = error;
+    }
+
+    if (primaryError === undefined) {
+      const captureAttemptId = result?.capture.captureAttemptId ?? 'capture-not-returned';
+      if (!attempt.isConnected()) {
+        primaryError = new BrowserLifecycleCleanupError(
+          options.caseId,
+          captureAttemptId,
+          'browser-disconnected-before-close',
+          attempt.browserVersion,
+          new Error('browser disconnected before explicit close'),
+        );
+      } else {
+        try {
+          await attempt.close();
+        } catch (error) {
+          primaryError = new BrowserLifecycleCleanupError(
+            options.caseId,
+            captureAttemptId,
+            'browser-close',
+            attempt.browserVersion,
+            error,
+          );
+        }
+      }
+    } else if (attempt.isConnected()) {
+      // Teardown is still attempted, but must never replace the capture error.
+      try {
+        await attempt.close();
+      } catch {
+        // The primary error remains authoritative and fail-closed.
+      }
+    }
+
+    if (primaryError === undefined && result) return result;
+
+    let rejected: BrowserCaptureRejectedAttempt | undefined;
+    if (primaryError instanceof AudioWorkletRenderDriftError) {
+      rejected = {
+        caseId: primaryError.caseId,
+        captureAttemptId: primaryError.captureAttemptId,
+        processAttempt,
+        maxRenderFrameDrift: primaryError.maxRenderFrameDrift,
+        browserVersion: primaryError.browserVersion,
+        reason: 'audio-worklet-render-frame-drift',
+      };
+    } else if (primaryError instanceof BrowserLifecycleCleanupError) {
+      rejected = {
+        caseId: primaryError.caseId,
+        captureAttemptId: primaryError.captureAttemptId,
+        processAttempt,
+        browserVersion: primaryError.browserVersion,
+        reason: 'browser-cleanup-failure',
+        cleanupStage: primaryError.cleanupStage,
+        message: primaryError.message,
+      };
+    }
+
+    if (!rejected) throw primaryError;
+    options.onRejected?.(rejected);
+    if (processAttempt === maxAttempts) throw primaryError;
+  }
+
+  throw new Error(`${options.caseId}: exhausted Chromium process attempts`);
 }
 
 function inactiveTrack(trackId: string, instrumentId: string): Record<string, unknown> {
@@ -583,6 +738,8 @@ export class ChromiumDryPcmCaptureAdapter {
     }, { sampleRate: MATRIX_SAMPLE_RATE, seed });
 
     const page = await context.newPage();
+    let result: DryPcmCapture | undefined;
+    let primaryError: unknown;
     try {
       await page.goto(`${this.options.baseUrl}/s/${sessionId}`);
       await waitForSession(page);
@@ -626,7 +783,7 @@ export class ChromiumDryPcmCaptureAdapter {
         browserVersion: this.options.browser.version(),
         userAgent: captured.userAgent,
       });
-      return {
+      result = {
         captureAttemptId,
         sampleRate: captured.sampleRate,
         channels: captured.channels.map(channel => Float32Array.from(channel)),
@@ -634,9 +791,28 @@ export class ChromiumDryPcmCaptureAdapter {
         capturedFrameCount: captured.capturedFrames,
         maxRenderFrameDrift: captured.maxRenderFrameDrift,
       };
-    } finally {
-      await context.close();
+    } catch (error) {
+      primaryError = error;
     }
+    try {
+      await context.close();
+    } catch (error) {
+      // Never replace a production capture failure with teardown noise. When
+      // capture itself succeeded, make the cleanup boundary explicit so the
+      // process-isolated adapter can reject and retry the whole attempt.
+      if (primaryError === undefined) {
+        primaryError = new BrowserLifecycleCleanupError(
+          matrixCase.id,
+          captureAttemptId,
+          'context-close',
+          this.options.browser.version(),
+          error,
+        );
+      }
+    }
+    if (primaryError !== undefined) throw primaryError;
+    if (!result) throw new Error(`${matrixCase.id}: capture completed without a result`);
+    return result;
   }
 }
 
@@ -666,32 +842,29 @@ export class ChromiumIsolatedDryPcmCaptureAdapter {
   }
 
   async capture(matrixCase: DryPcmMatrixCase): Promise<DryPcmCapture> {
-    for (let processAttempt = 1; processAttempt <= MAX_PROCESS_ATTEMPTS_PER_CASE; processAttempt++) {
-      const browser = await chromium.launch({ headless: true });
-      try {
+    const result = await runIsolatedBrowserCaptureAttempts({
+      caseId: matrixCase.id,
+      launchAttempt: async () => {
+        const browser = await chromium.launch({ headless: true });
+        const browserVersion = browser.version();
         const adapter = new ChromiumDryPcmCaptureAdapter({
           browser,
           request: this.options.request,
           baseUrl: this.options.baseUrl,
         });
-        const capture = await adapter.capture(matrixCase);
-        this.diagnostics.push(...adapter.getDiagnostics());
-        return capture;
-      } catch (error) {
-        if (!(error instanceof AudioWorkletRenderDriftError)) throw error;
-        this.rejectedAttempts.push({
-          caseId: error.caseId,
-          captureAttemptId: error.captureAttemptId,
-          processAttempt,
-          maxRenderFrameDrift: error.maxRenderFrameDrift,
-          browserVersion: error.browserVersion,
-          reason: 'audio-worklet-render-frame-drift',
-        });
-        if (processAttempt === MAX_PROCESS_ATTEMPTS_PER_CASE) throw error;
-      } finally {
-        await browser.close();
-      }
-    }
-    throw new Error(`${matrixCase.id}: exhausted Chromium process attempts`);
+        return {
+          browserVersion,
+          capture: async () => ({
+            capture: await adapter.capture(matrixCase),
+            diagnostics: adapter.getDiagnostics(),
+          }),
+          isConnected: () => browser.isConnected(),
+          close: async () => { await browser.close(); },
+        };
+      },
+      onRejected: rejected => { this.rejectedAttempts.push(rejected); },
+    });
+    this.diagnostics.push(...result.diagnostics);
+    return result.capture;
   }
 }
