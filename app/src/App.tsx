@@ -477,12 +477,18 @@ export function SessionControls({ children }: SessionControlsProps) {
               Export MIDI
             </button>
             <button
-              className="session-btn download-btn"
+              className="session-btn download-btn notation-copy-btn"
               onClick={handleCopyNotation}
               disabled={!notationReady}
+              aria-label={notationCopied ? 'Notation Copied!' : 'Copy Notation'}
               title="Copy canonical v2.4 session notation"
             >
-              {notationCopied ? 'Notation Copied!' : 'Copy Notation'}
+              <span className="notation-copy-label-long">
+                {notationCopied ? 'Notation Copied!' : 'Copy Notation'}
+              </span>
+              <span className="notation-copy-label-short" aria-hidden="true">
+                {notationCopied ? 'Copied!' : 'Notation'}
+              </span>
             </button>
             {/* Phase 21: No Invite button on published sessions (spec line 298) */}
             {!isPublished && (
