@@ -198,6 +198,9 @@ describe('live instrument-quality receipt', () => {
     expect(() => validateLiveQualityReport(lateOnset, SUBJECT)).toThrow(/maximum arm-to-onset/);
 
     const earlyOnset = validReceipt();
+    // Each probe includes masterGain, so a release tail leaking from a prior
+    // trial would cross the onset threshold before the scheduled step-four
+    // event and must make the receipt unverifiable.
     earlyOnset.instruments[0].armToOnsetFrames = 1;
     expect(() => validateLiveQualityReport(earlyOnset, SUBJECT)).toThrow(/minimum arm-to-onset/);
 
