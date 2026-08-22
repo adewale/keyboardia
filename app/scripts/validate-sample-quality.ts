@@ -46,6 +46,7 @@ const DEFAULT_JSON_REPORT = 'test-results/sample-quality/metrics.json';
 const DEFAULT_MARKDOWN_REPORT = 'test-results/sample-quality/SAMPLE-QUALITY.md';
 const DEFAULT_BASELINE = 'scripts/sample-quality-baseline.json';
 const MAX_MARKDOWN_ISSUES = 80;
+const FULL_COMMIT_ID = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
 
 const colors = {
   reset: '\x1b[0m',
@@ -144,6 +145,27 @@ interface CliOptions {
   jsonReport: string;
   markdownReport: string;
   baselinePath: string | null;
+}
+
+function cleanSubjectCommit(): string {
+  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  }).trim();
+  const treeStatus = execFileSync(
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=all'],
+    { cwd: process.cwd(), encoding: 'utf8' },
+  ).trim();
+  if (treeStatus.length > 0) {
+    throw new Error(
+      `Sample-quality evidence requires a clean subject tree; found:\n${treeStatus}`,
+    );
+  }
+  if (!FULL_COMMIT_ID.test(subjectCommit)) {
+    throw new Error('Sample-quality evidence requires a full Git subject commit');
+  }
+  return subjectCommit;
 }
 
 function parseArgs(argv: string[]): CliOptions {
@@ -660,6 +682,7 @@ function writeReport(pathname: string, content: string): void {
 
 async function main(): Promise<void> {
   const options = parseArgs(process.argv.slice(2));
+  const startingSubjectCommit = cleanSubjectCommit();
   const manifests = readManifests(options);
   const waivers = readBaseline(options.baselinePath, options.instruments);
   const thresholds = DEFAULT_QUALITY_THRESHOLDS;
@@ -728,24 +751,24 @@ async function main(): Promise<void> {
   const { unwaivedIssues, waivedIssues } = applyWaivers(sortIssues(rawIssues), waivers);
   const sortedUnwaivedIssues = sortIssues(unwaivedIssues);
   const instrumentSummaries = buildInstrumentSummaries(entries, sortedUnwaivedIssues);
-  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd: process.cwd(),
-    encoding: 'utf8',
-  }).trim();
-  const subjectTreeClean = execFileSync(
-    'git',
-    ['status', '--porcelain=v1', '--untracked-files=all'],
-    { cwd: process.cwd(), encoding: 'utf8' },
-  ).trim().length === 0;
+  const evaluatorBundleSha256 = sampleQualityEvaluatorBundleSha256();
+  const baselineSha256 = options.baselinePath === null
+    ? null
+    : sha256File(path.resolve(options.baselinePath));
+  const endingSubjectCommit = cleanSubjectCommit();
+  if (endingSubjectCommit !== startingSubjectCommit) {
+    throw new Error(
+      `Sample-quality evidence subject commit changed during capture: `
+      + `${startingSubjectCommit} -> ${endingSubjectCommit}`,
+    );
+  }
   const report: SampleQualityReport = {
     version: 1,
     generatedAt: new Date().toISOString(),
-    subjectCommit,
-    subjectTreeClean,
-    evaluatorBundleSha256: sampleQualityEvaluatorBundleSha256(),
-    baselineSha256: options.baselinePath === null
-      ? null
-      : sha256File(path.resolve(options.baselinePath)),
+    subjectCommit: startingSubjectCommit,
+    subjectTreeClean: true,
+    evaluatorBundleSha256,
+    baselineSha256,
     thresholds,
     baseline: options.baselinePath ?? undefined,
     totals: {
