@@ -3,9 +3,11 @@
 **Date**: 2026-08-19
 **Driver**: `specs/research/TONE-NETS-COMPARISON-2026-08.md`
 **Predecessor**: `specs/SOUND-QUALITY-PARITY-PLAN.md` (Phase 43, implemented)
-**Status**: Proposed. Baselines in §1 are measured at
-`58264dd5ae274f63b1cd80b72aa823b76b21f28b`; targets are preregistered, not
-achieved.
+**Status**: Implemented 2026-08-22 (see §10) except the graph warm-up and
+the `french-horn` content work in §6. Baselines in §1 are measured at
+`58264dd5ae274f63b1cd80b72aa823b76b21f28b`; the unit- and offline-lane
+targets are verified, the browser-capture and physical-device gates are
+recorded in §10 as still owed.
 
 This plan keeps Phase 43's two claim levels:
 
@@ -342,3 +344,53 @@ What the branch *did* change is the epistemics: the gap is now instrumented.
 `measure:velocity-timbre` and `simulate:velocity-filter` re-derive every number
 in this table from the shipped assets, so after any landing the same commands
 show exactly which rows moved.
+
+## 10. Implementation record (2026-08-22)
+
+What shipped, and in which lane each preregistered target was verified.
+Claim level for everything here: **internal improvement** (§8 unchanged —
+no comparative claim).
+
+- **Change 2 — velocity → cutoff** (`velocity-sample-filter.ts`,
+  `sampled-instrument.ts`). One lowpass per voice, bypassed at
+  `DEFAULT_STEP_MIDI_VELOCITY`; anchors are per-manifest
+  (`velocityFilterAnchorHz`), solved by
+  `npm run simulate:velocity-filter -- --solve` to a 29.5–30.3% centroid
+  drop at v40 for all nine target instruments — the flat-anchor overshoot in
+  §3's table is gone. Verified: byte-identical PCM at v≥90 with and without
+  the anchor on shipped samples (offline render); soft strikes measurably
+  darker; layered instruments carry no anchor. The bypass-caps-payoff and
+  no-motion limits stated under "Reconsidered limits" stand.
+- **Change 3 — default room** (`effects-defaults.ts`). New sessions carry
+  `reverb.wet 0.15`; `LEGACY_MISSING_EFFECTS_STATE` stays 0 and the
+  legacy-normalization guard is asserted in `session-defaults.test.ts`.
+  **Still owed:** the browser-capture acceptance rows in §5 (tail rise,
+  low-band ±0.3 dB, true peak, LU, pumping) — this container has no WebKit
+  and the capture lane runs in CI.
+- **Change 1 — mobile output** (`mobile-media-output.ts`, `engine.ts`).
+  Mobile terminates in MediaStreamDestination → hidden `playsinline`
+  element, started inside the existing unlock gesture; desktop path
+  byte-identical; failure falls back to `destination`. Verified: routing,
+  fallback, gesture retry, dispose (jsdom units). **Still owed:** the
+  physical-iPhone ringer-switch pass and the output-latency measurement —
+  CI cannot provide either.
+- **§4 guard** (`instrument-classification.ts`,
+  `scripts/validate-sustain-ceiling.ts`, in `validate:all`). Eight
+  sustaining instruments pass with the exact §1.2 medians; plucked
+  instruments deliberately unclassified.
+- **§6**: `navigator.mediaSession` transport state wired into both
+  scheduler implementations; clock-liveness gate (bounded 250 ms) after
+  resume. **Deferred:** graph warm-up — its own acceptance requires a cold
+  browser capture that does not exist yet; `french-horn` re-sourcing —
+  unbounded content work.
+- **Demo session**: `scripts/demo-sessions/whisper-to-roar.json`, seeded in
+  the mock API (`/s/b7e0b220-3185-49ef-b9b0-15ab9df76aec` with
+  `USE_MOCK_API=1`) and held to its promises by
+  `src/data/phase44-demo-session.test.ts`: ≥8 filtered soft strikes, ≥4
+  bypass accents, tied string sustains, kit ghost layers, the 0.15 room.
+- **Provenance:** adding `velocityFilterAnchorHz` changed nine manifest
+  hashes; `mapping-calibration.json` and `technical-curation.json` re-pin
+  the amended manifests (sample content untouched — `shipped` hashes
+  unchanged), and `clean-guitar` gains a zero-correction calibration entry
+  as its pinning home. The immutable pre-enrichment baselines were not
+  edited.
