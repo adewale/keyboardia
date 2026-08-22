@@ -74,7 +74,7 @@ for (const name of actualReceipts) {
   assert(receipt.baseRevision === manifest.baseRevision, `${name} has the wrong base revision`);
   assert(receipt.headRevision === manifest.headRevision, `${name} has the wrong head revision`);
   assert(receipt.generator?.name === 'app/identity/stack-b-visual.spec.ts', `${name} has the wrong generator`);
-  assert(receipt.generator?.version === 5, `${name} has the wrong receipt generator version`);
+  assert(receipt.generator?.version === 6, `${name} has the wrong receipt generator version`);
   assert(digestPattern.test(receipt.inputConfigSha256), `${name} has an invalid input/config hash`);
   assert(receipt.checks?.result === 'passed', `${name} does not record a passed check`);
   assert(receipt.checks?.accessibilityTreeIdentity === true, `${name} failed accessibility-tree identity`);

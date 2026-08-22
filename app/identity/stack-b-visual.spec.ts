@@ -21,11 +21,20 @@ const evidenceRoot = resolve(process.cwd(), '..', 'audit', 'css-consistency', 's
 const writeEvidence = process.env.STACK_B_WRITE_EVIDENCE === '1';
 const evidenceGenerator = {
   name: 'app/identity/stack-b-visual.spec.ts',
-  version: 5,
+  version: 6,
 } as const;
-const comparisonPort = process.env.STACK_A_COMPARISON_PORT || '4179';
-const baseProductPort = process.env.STACK_A_BASE_PRODUCT_PORT || '4180';
-const headProductPort = process.env.STACK_A_HEAD_PRODUCT_PORT || '4181';
+
+function configuredPort(name: string, fallback: number): number {
+  const value = Number(process.env[name] || fallback);
+  if (!Number.isInteger(value) || value < 1 || value > 65_535) {
+    throw new Error(`${name} must be an integer between 1 and 65535`);
+  }
+  return value;
+}
+
+const comparisonPort = configuredPort('STACK_A_COMPARISON_PORT', 4179);
+const baseProductPort = configuredPort('STACK_A_BASE_PRODUCT_PORT', 4180);
+const headProductPort = configuredPort('STACK_A_HEAD_PRODUCT_PORT', 4181);
 const approvedDropdownTokens = {
   '--dropdown-control-background': '#2a2a2a',
   '--dropdown-control-border': '#6c6c76',
@@ -66,6 +75,7 @@ const styleProperties = [
   'marginRight', 'marginBottom', 'marginLeft', 'gap', 'cursor', 'overflowX',
   'overflowY', 'transform', 'transitionProperty', 'transitionDuration',
   'transitionTimingFunction', 'animationName', 'animationDuration',
+  'animationTimingFunction', 'animationDelay', 'animationIterationCount',
   'outlineColor', 'outlineOffset', 'outlineStyle', 'outlineWidth',
 ] as const;
 
