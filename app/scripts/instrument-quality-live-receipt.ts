@@ -1,5 +1,6 @@
 import { getInstrumentRange } from '../src/audio/instrument-ranges';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
+import { SCHEDULE_AHEAD_SEC } from '../src/audio/scheduler-types';
 import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
@@ -10,7 +11,14 @@ export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
 export const LIVE_TEMPO = 120;
 export const LIVE_STEP_COUNT = 128;
-export const LIVE_ACTIVE_STEP = 0;
+// Step zero is scheduled at AudioContext.currentTime and reaches production
+// renderers through the scheduler worklet's MessagePort too late to preserve
+// its transient. Step four is 500 ms after transport start at the pinned tempo,
+// comfortably beyond the 150 ms lookahead boundary while remaining below the
+// one-second arm-to-onset ceiling.
+export const LIVE_ACTIVE_STEP = 4;
+export const LIVE_ACTIVE_STEP_OFFSET_SECONDS = 0.5;
+export const LIVE_SCHEDULER_LOOKAHEAD_SECONDS = SCHEDULE_AHEAD_SEC;
 export const LIVE_EXPECTED_EVENTS_PER_TRACK = 1;
 export const LIVE_PATTERN_PERIOD_SECONDS = 16;
 export const LIVE_PREPARATION_METHOD = 'muted-production-play-stop-then-unmute-and-settle';
@@ -26,7 +34,7 @@ export const LIVE_RMS_METRIC = 'root-mean-square-over-all-captured-channel-sampl
 export const LIVE_RANDOM_SEED = 0x4b455942;
 export const LIVE_RANDOM_ALGORITHM = 'mulberry32';
 export const LIVE_GENERATED_FROM =
-  'Chromium live sequencer sessions for every INSTRUMENT_CATEGORIES entry; one onset-aligned production-sequencer event per track with continuous per-track bus + masterGain AudioWorklet accumulation';
+  'Chromium live sequencer sessions for every INSTRUMENT_CATEGORIES entry; one lookahead-scheduled, onset-aligned production-sequencer event per track with continuous per-track bus + masterGain AudioWorklet accumulation';
 
 export type LiveInstrumentType = 'sample' | 'sampled' | 'synth' | 'tone' | 'advanced';
 
@@ -80,6 +88,8 @@ export interface LiveQualityReport {
   schedule: {
     preparation: typeof LIVE_PREPARATION_METHOD;
     activeStep: typeof LIVE_ACTIVE_STEP;
+    activeStepOffsetSeconds: typeof LIVE_ACTIVE_STEP_OFFSET_SECONDS;
+    schedulerLookaheadSeconds: typeof LIVE_SCHEDULER_LOOKAHEAD_SECONDS;
     expectedEventsPerTrack: typeof LIVE_EXPECTED_EVENTS_PER_TRACK;
     patternPeriodSeconds: typeof LIVE_PATTERN_PERIOD_SECONDS;
     unmuteSettleSeconds: typeof LIVE_UNMUTE_SETTLE_SECONDS;
@@ -224,6 +234,8 @@ export function validateLiveQualityReport(
     || !isRecord(value.schedule)
     || value.schedule.preparation !== LIVE_PREPARATION_METHOD
     || value.schedule.activeStep !== LIVE_ACTIVE_STEP
+    || value.schedule.activeStepOffsetSeconds !== LIVE_ACTIVE_STEP_OFFSET_SECONDS
+    || value.schedule.schedulerLookaheadSeconds !== LIVE_SCHEDULER_LOOKAHEAD_SECONDS
     || value.schedule.expectedEventsPerTrack !== LIVE_EXPECTED_EVENTS_PER_TRACK
     || value.schedule.patternPeriodSeconds !== LIVE_PATTERN_PERIOD_SECONDS
     || value.schedule.unmuteSettleSeconds !== LIVE_UNMUTE_SETTLE_SECONDS

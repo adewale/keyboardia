@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { MAX_TRACKS } from '../src/types';
 import {
   LIVE_ACTIVE_STEP,
+  LIVE_ACTIVE_STEP_OFFSET_SECONDS,
   LIVE_CAPTURE_ALIGNMENT,
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
@@ -19,6 +20,7 @@ import {
   LIVE_RECEIPT_CLAIM,
   LIVE_RECEIPT_SCHEMA_VERSION,
   LIVE_RMS_METRIC,
+  LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
   LIVE_SILENCE_PEAK_THRESHOLD,
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
@@ -67,6 +69,8 @@ function validReceipt(): LiveQualityReport {
     schedule: {
       preparation: LIVE_PREPARATION_METHOD,
       activeStep: LIVE_ACTIVE_STEP,
+      activeStepOffsetSeconds: LIVE_ACTIVE_STEP_OFFSET_SECONDS,
+      schedulerLookaheadSeconds: LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
       expectedEventsPerTrack: LIVE_EXPECTED_EVENTS_PER_TRACK,
       patternPeriodSeconds: LIVE_PATTERN_PERIOD_SECONDS,
       unmuteSettleSeconds: LIVE_UNMUTE_SETTLE_SECONDS,
@@ -95,6 +99,15 @@ function validReceipt(): LiveQualityReport {
 }
 
 describe('live instrument-quality receipt', () => {
+  it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
+    const stepDuration = 60 / LIVE_TEMPO / 4;
+    expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
+    expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
+    expect(LIVE_STEP_COUNT * stepDuration).toBe(LIVE_PATTERN_PERIOD_SECONDS);
+    expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
+    expect(LIVE_EXPECTED_EVENTS_PER_TRACK).toBe(1);
+  });
+
   it('validates exact 99-instrument coverage and permits measured silence as a quality result', () => {
     const receipt = validReceipt();
     receipt.instruments[0].peak = 0;
@@ -145,6 +158,10 @@ describe('live instrument-quality receipt', () => {
     const repeatedEvents = validReceipt();
     repeatedEvents.schedule.expectedEventsPerTrack = 5 as typeof LIVE_EXPECTED_EVENTS_PER_TRACK;
     expect(() => validateLiveQualityReport(repeatedEvents, SUBJECT)).toThrow(/capture settings/);
+
+    const lateScheduledStep = validReceipt();
+    lateScheduledStep.schedule.activeStepOffsetSeconds = 0 as typeof LIVE_ACTIVE_STEP_OFFSET_SECONDS;
+    expect(() => validateLiveQualityReport(lateScheduledStep, SUBJECT)).toThrow(/capture settings/);
 
     const unseeded = validReceipt();
     unseeded.random.locked = false as true;
