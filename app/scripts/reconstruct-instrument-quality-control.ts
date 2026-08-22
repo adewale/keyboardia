@@ -13,7 +13,13 @@ import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
+
+import {
+  validateLiveQualityReport,
+  type LiveQualityReport,
+} from './instrument-quality-live-receipt';
 
 export const DEFAULT_CONTROL_BASE_REF =
   '58264dd5ae274f63b1cd80b72aa823b76b21f28b';
@@ -137,12 +143,6 @@ interface SampleReport {
   waivedIssues: Array<{ issue: SampleIssue }>;
 }
 
-interface LiveReport {
-  schemaVersion: number;
-  subjectCommit: string;
-  instruments: Array<{ sampleId: string; peak: number; rms: number }>;
-}
-
 export interface QualitySummary {
   catalogueInstruments: number;
   audibleInstruments: number;
@@ -159,6 +159,7 @@ interface ArtifactSet {
   root: string;
   sample: string;
   live: string;
+  liveConfirmation: string;
   ranking: string;
   rankingMarkdown: string;
   baseline: string;
@@ -171,10 +172,36 @@ interface ArtifactReference {
 
 interface ArtifactHashManifest {
   sampleQuality: ArtifactReference;
-  liveMasterOutput: ArtifactReference;
+  liveMasterOutputCaptures: {
+    primary: ArtifactReference;
+    confirmation: ArtifactReference;
+  };
   instrumentQuality: ArtifactReference;
   instrumentQualityMarkdown: ArtifactReference;
   sampleQualityBaseline: ArtifactReference;
+}
+
+interface LiveRepeatabilityProjection {
+  browser: LiveQualityReport['browser'];
+  audioSampleRates: LiveQualityReport['audioSampleRates'];
+  capture: LiveQualityReport['capture'];
+  schedule: LiveQualityReport['schedule'];
+  random: LiveQualityReport['random'];
+  diagnostics: LiveQualityReport['diagnostics'];
+  sessions: Array<{
+    sampleRate: number;
+    instruments: Array<{ sampleId: string; randomCalls: number }>;
+  }>;
+  instruments: Array<{
+    sampleId: string;
+    peak: number;
+    rms: number;
+    masterPeak: number;
+    masterRms: number;
+    capturedFrames: number;
+    channelSampleCount: number;
+    randomCalls: number;
+  }>;
 }
 
 function parseArgs(argv: readonly string[]): CliOptions {
@@ -319,7 +346,8 @@ export function buildReconstructionPlan(
       'The compatibility control overlays src/audio/sample-onset.ts because the hardened decoded evaluator requires its newer API. Base manifests and runtime call sites retain their original defaults; this is not represented as literal base-commit provenance.',
       'The compatibility control overlays src/test/audio-measures.ts; this is test-only measurement code, not delivered runtime DSP.',
       'The current checkout\'s node_modules and Playwright browser installation are reused. Runtime package/lock/config files remain those committed in each subject clone.',
-      'The live lane is a deterministic technical capture in one Chromium/runtime environment, not a level-matched listening result or complete dry-PCM matrix.',
+      'Each live lane is captured twice in independent Playwright processes and must exactly match on score-consumed energy, browser/runtime identity, geometry, diagnostics, and RNG traces. Arm-to-onset may differ only within the receipt validator bounds.',
+      'The live lane is repeat-confirmed technical evidence in one Chromium/runtime environment, not a level-matched listening result or complete dry-PCM matrix.',
     ],
   };
 }
@@ -328,10 +356,83 @@ function round(value: number, digits = 1): number {
   return Number(value.toFixed(digits));
 }
 
+/**
+ * Select every live-receipt field that can affect a controlled score or prove
+ * that both captures ran under the same runtime conditions. Fresh run/session/
+ * track identifiers and timestamps are deliberately excluded. Arm-to-onset is
+ * also excluded from exact comparison: it is allowed to vary only because the
+ * receipt validator independently enforces its pinned lower and upper bounds.
+ */
+export function liveRepeatabilityProjection(
+  report: LiveQualityReport,
+): LiveRepeatabilityProjection {
+  const instrumentsById = new Map(
+    report.instruments.map(instrument => [instrument.sampleId, instrument]),
+  );
+  return {
+    browser: report.browser,
+    audioSampleRates: report.audioSampleRates,
+    capture: report.capture,
+    schedule: report.schedule,
+    random: report.random,
+    diagnostics: report.diagnostics,
+    sessions: report.sessions.map(session => ({
+      sampleRate: session.sampleRate,
+      instruments: session.instruments.map(sampleId => {
+        const instrument = instrumentsById.get(sampleId);
+        if (!instrument) {
+          throw new Error(`Live repeatability projection cannot find ${sampleId}`);
+        }
+        return { sampleId, randomCalls: instrument.randomCalls };
+      }),
+    })),
+    instruments: report.instruments.map(instrument => ({
+      sampleId: instrument.sampleId,
+      peak: instrument.peak,
+      rms: instrument.rms,
+      masterPeak: instrument.masterPeak,
+      masterRms: instrument.masterRms,
+      capturedFrames: instrument.capturedFrames,
+      channelSampleCount: instrument.channelSampleCount,
+      randomCalls: instrument.randomCalls,
+    })),
+  };
+}
+
+export function assertLiveCaptureRepeatability(
+  primary: LiveQualityReport,
+  confirmation: LiveQualityReport,
+): void {
+  const primaryProjection = liveRepeatabilityProjection(primary);
+  const confirmationProjection = liveRepeatabilityProjection(confirmation);
+  if (!isDeepStrictEqual(primaryProjection, confirmationProjection)) {
+    throw new Error(
+      'Independent live captures are not repeatable; controlled live deltas '
+      + 'are refused instead of selecting or averaging a run',
+    );
+  }
+}
+
+function validateRepeatableLiveCaptures(
+  artifacts: ArtifactSet,
+  expectedSubjectCommit: string,
+): LiveQualityReport {
+  const primary = validateLiveQualityReport(
+    readJson<unknown>(artifacts.live),
+    expectedSubjectCommit,
+  );
+  const confirmation = validateLiveQualityReport(
+    readJson<unknown>(artifacts.liveConfirmation),
+    expectedSubjectCommit,
+  );
+  assertLiveCaptureRepeatability(primary, confirmation);
+  return primary;
+}
+
 export function summarizeQualityArtifacts(
   audit: AuditReport,
   sample: SampleReport,
-  live: LiveReport,
+  live: LiveQualityReport,
 ): QualitySummary {
   const expectedSubject = audit.provenance.subjectCommit;
   if (
@@ -536,10 +637,30 @@ function artifactSet(outputDir: string, lane: 'control' | 'candidate'): Artifact
     root,
     sample: path.join(root, 'sample-quality.json'),
     live: path.join(root, 'live-master-output.json'),
+    liveConfirmation: path.join(root, 'live-confirmation', 'live-master-output.json'),
     ranking: path.join(root, 'instrument-quality.json'),
     rankingMarkdown: path.join(root, 'INSTRUMENT-QUALITY.md'),
     baseline: path.join(root, 'sample-quality-baseline.json'),
   };
+}
+
+function captureLiveReceipt(
+  appRoot: string,
+  reportDir: string,
+  playwrightOutput: string,
+): void {
+  run('npx', [
+    'playwright', 'test', 'e2e/all-instruments-master-output.spec.ts',
+    '--project=chromium', '--workers=1', '--no-deps',
+  ], appRoot, {
+    ...process.env,
+    USE_MOCK_API: '1',
+    E2E_SERIAL: '1',
+    KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR: reportDir,
+    PLAYWRIGHT_OUTPUT_DIR: path.join(playwrightOutput, 'test-results'),
+    PLAYWRIGHT_HTML_REPORT: path.join(playwrightOutput, 'html'),
+    PLAYWRIGHT_JSON_OUTPUT_FILE: path.join(playwrightOutput, 'results.json'),
+  });
 }
 
 function captureLane(
@@ -557,20 +678,20 @@ function captureLane(
   ], appRoot);
   assertClean(cloneRoot, path.basename(artifacts.root));
 
-  const playwrightOutput = path.join(artifacts.root, 'playwright');
-  run('npx', [
-    'playwright', 'test', 'e2e/all-instruments-master-output.spec.ts',
-    '--project=chromium', '--workers=1', '--no-deps',
-  ], appRoot, {
-    ...process.env,
-    USE_MOCK_API: '1',
-    E2E_SERIAL: '1',
-    KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR: artifacts.root,
-    PLAYWRIGHT_OUTPUT_DIR: path.join(playwrightOutput, 'test-results'),
-    PLAYWRIGHT_HTML_REPORT: path.join(playwrightOutput, 'html'),
-    PLAYWRIGHT_JSON_OUTPUT_FILE: path.join(playwrightOutput, 'results.json'),
-  });
+  captureLiveReceipt(
+    appRoot,
+    artifacts.root,
+    path.join(artifacts.root, 'playwright-primary'),
+  );
   assertClean(cloneRoot, path.basename(artifacts.root));
+  const confirmationRoot = path.dirname(artifacts.liveConfirmation);
+  captureLiveReceipt(
+    appRoot,
+    confirmationRoot,
+    path.join(confirmationRoot, 'playwright'),
+  );
+  assertClean(cloneRoot, path.basename(artifacts.root));
+  validateRepeatableLiveCaptures(artifacts, subjectCommit);
 
   run('node', [
     '--import', 'tsx', 'scripts/audit-instrument-quality.ts',
@@ -634,7 +755,10 @@ function readJson<T>(filename: string): T {
 function validateAndSummarize(artifacts: ArtifactSet): QualitySummary {
   const audit = readJson<AuditReport>(artifacts.ranking);
   const sample = readJson<SampleReport>(artifacts.sample);
-  const live = readJson<LiveReport>(artifacts.live);
+  const live = validateRepeatableLiveCaptures(
+    artifacts,
+    audit.provenance.subjectCommit,
+  );
   if (audit.inputs.sampleReport?.sha256 !== sha256File(artifacts.sample)) {
     throw new Error(`${path.basename(artifacts.root)} ranking does not bind its decoded receipt`);
   }
@@ -657,7 +781,10 @@ function artifactReference(outputDir: string, filename: string): ArtifactReferen
 function artifactHashes(outputDir: string, artifacts: ArtifactSet): ArtifactHashManifest {
   return {
     sampleQuality: artifactReference(outputDir, artifacts.sample),
-    liveMasterOutput: artifactReference(outputDir, artifacts.live),
+    liveMasterOutputCaptures: {
+      primary: artifactReference(outputDir, artifacts.live),
+      confirmation: artifactReference(outputDir, artifacts.liveConfirmation),
+    },
     instrumentQuality: artifactReference(outputDir, artifacts.ranking),
     instrumentQualityMarkdown: artifactReference(outputDir, artifacts.rankingMarkdown),
     sampleQualityBaseline: artifactReference(outputDir, artifacts.baseline),
@@ -733,8 +860,8 @@ async function main(): Promise<void> {
     const control = validateAndSummarize(controlArtifacts);
     const candidate = validateAndSummarize(candidateArtifacts);
     const summary = {
-      schemaVersion: 2,
-      claim: 'reconstructed-same-evaluator-technical-comparison-not-listening-or-complete-matrix-evidence',
+      schemaVersion: 3,
+      claim: 'reconstructed-same-evaluator-repeat-confirmed-technical-comparison-not-listening-or-complete-matrix-evidence',
       generatedAt: new Date().toISOString(),
       method: {
         controlBaseCommit,
@@ -744,6 +871,29 @@ async function main(): Promise<void> {
         reconstructionPlan: {
           path: 'reconstruction-plan.json',
           sha256: sha256File(path.join(outputDir, 'reconstruction-plan.json')),
+        },
+        liveRepeatabilityGate: {
+          result: 'passed',
+          capturesPerLane: 2,
+          exactMatch: [
+            'score-consumed-track-and-master-peak-and-rms',
+            'browser-identity-version-and-user-agent',
+            'audio-sample-rates-and-capture-geometry',
+            'browser-and-page-diagnostics',
+            'per-session-instrument-membership-and-rng-call-traces',
+          ],
+          independentlyValidated: [
+            'receipt-schema-and-subject-provenance',
+            'pinned-capture-schedule-and-rng-settings',
+            'arm-to-onset-receipt-bounds',
+          ],
+          excludedAsVolatileAndNonScoring: [
+            'generatedAt',
+            'sessionId',
+            'trackId',
+            'armToOnsetFrames-within-validator-bounds',
+          ],
+          mismatchPolicy: 'fail-comparison-without-averaging-or-selecting-a-capture',
         },
         exceptions: plan.exceptions,
       },

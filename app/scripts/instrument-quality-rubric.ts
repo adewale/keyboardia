@@ -119,7 +119,7 @@ export function scoreInstrument(input: InstrumentScoreInput): InstrumentScore {
   if (input.livePeakDbfs !== null && Number.isFinite(input.livePeakDbfs)) {
     add(
       components,
-      'source-headroom',
+      'post-track-headroom',
       clamp(input.livePeakDbfs * 1.5, 0, 12),
       `Per-track live peak was ${input.livePeakDbfs.toFixed(1)} dBFS`,
     );
@@ -128,9 +128,9 @@ export function scoreInstrument(input: InstrumentScoreInput): InstrumentScore {
   if (input.categoryRmsDeltaDb !== null && Number.isFinite(input.categoryRmsDeltaDb)) {
     add(
       components,
-      'level-outlier',
+      'level-review-priority',
       clamp((Math.abs(input.categoryRmsDeltaDb) - 18) / 2, 0, 6),
-      `Canonical live RMS was ${input.categoryRmsDeltaDb >= 0 ? '+' : ''}${input.categoryRmsDeltaDb.toFixed(1)} dB versus its catalogue category median`,
+      `Canonical live RMS review priority: ${input.categoryRmsDeltaDb >= 0 ? '+' : ''}${input.categoryRmsDeltaDb.toFixed(1)} dB versus its catalogue category median`,
     );
   }
 

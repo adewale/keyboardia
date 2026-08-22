@@ -3,11 +3,58 @@ import { describe, expect, it } from 'vitest';
 import {
   CONTROL_EVALUATOR_OVERLAY_PATHS,
   assertControlOverlayPaths,
+  assertLiveCaptureRepeatability,
   compareQualitySummaries,
   isExpectedControlBaselineBindingStatus,
   summarizeQualityArtifacts,
   type QualitySummary,
 } from '../scripts/reconstruct-instrument-quality-control';
+import {
+  LIVE_RECEIPT_CLAIM,
+  LIVE_RECEIPT_SCHEMA_VERSION,
+  type LiveQualityReport,
+} from '../scripts/instrument-quality-live-receipt';
+
+function liveFixture(): LiveQualityReport {
+  return {
+    schemaVersion: LIVE_RECEIPT_SCHEMA_VERSION,
+    claim: LIVE_RECEIPT_CLAIM,
+    generatedAt: '2026-08-22T12:00:00.000Z',
+    subjectCommit: 'a'.repeat(40),
+    browser: {
+      name: 'chromium',
+      version: '140.0.0',
+      userAgent: 'repeatability-test-agent',
+    },
+    audioSampleRates: [48_000],
+    capture: { method: 'capture-method' },
+    schedule: { preparation: 'preparation-method' },
+    random: { locked: true, seed: 123, algorithm: 'test-prng' },
+    sessions: [{
+      sessionId: 'session-primary',
+      instruments: ['one'],
+      sampleRate: 48_000,
+    }],
+    instruments: [{
+      sampleId: 'one',
+      trackId: 'track-primary',
+      sessionId: 'session-primary',
+      peak: 0.75,
+      rms: 0.25,
+      masterPeak: 0.5,
+      masterRms: 0.125,
+      capturedFrames: 120_000,
+      channelSampleCount: 240_000,
+      armToOnsetFrames: 24_000,
+      randomCalls: 17,
+    }],
+    diagnostics: { pageErrors: [], consoleErrors: [] },
+  } as unknown as LiveQualityReport;
+}
+
+function cloneLiveFixture(value: LiveQualityReport): LiveQualityReport {
+  return JSON.parse(JSON.stringify(value)) as LiveQualityReport;
+}
 
 describe('instrument-quality controlled-comparison reconstruction', () => {
   it('keeps the declared evaluator overlay outside preserved subject paths', () => {
@@ -82,7 +129,7 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
         { sampleId: 'two', peak: 0, rms: 0 },
         { sampleId: 'three', peak: 0.5, rms: 0.2 },
       ],
-    });
+    } as unknown as LiveQualityReport);
 
     expect(summary).toMatchObject({
       catalogueInstruments: 3,
@@ -95,6 +142,37 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
       decodedIssueCodes: { HOT_PEAK: 1, PITCH_DEVIATION: 1 },
       nonzeroInstruments: { one: 12.3, two: 2.2 },
     });
+  });
+
+  it('allows only volatile IDs, timestamps, and validator-bounded arm timing to differ', () => {
+    const primary = liveFixture();
+    const confirmation = cloneLiveFixture(primary);
+    confirmation.generatedAt = '2026-08-22T12:05:00.000Z';
+    confirmation.sessions[0].sessionId = 'session-confirmation';
+    confirmation.instruments[0].sessionId = 'session-confirmation';
+    confirmation.instruments[0].trackId = 'track-confirmation';
+    confirmation.instruments[0].armToOnsetFrames = 31_000;
+
+    expect(() => assertLiveCaptureRepeatability(primary, confirmation)).not.toThrow();
+  });
+
+  it.each([
+    ['track peak', (report: LiveQualityReport) => { report.instruments[0].peak = 0.7; }],
+    ['track RMS', (report: LiveQualityReport) => { report.instruments[0].rms = 0.2; }],
+    ['master peak', (report: LiveQualityReport) => { report.instruments[0].masterPeak = 0.4; }],
+    ['master RMS', (report: LiveQualityReport) => { report.instruments[0].masterRms = 0.1; }],
+    ['browser version', (report: LiveQualityReport) => { report.browser.version = '141.0.0'; }],
+    ['sample rates', (report: LiveQualityReport) => { report.audioSampleRates = [44_100]; }],
+    ['capture geometry', (report: LiveQualityReport) => { report.instruments[0].capturedFrames = 110_250; }],
+    ['diagnostics', (report: LiveQualityReport) => { report.diagnostics.pageErrors.push('boom'); }],
+    ['RNG trace', (report: LiveQualityReport) => { report.instruments[0].randomCalls = 18; }],
+  ])('refuses a repeat whose %s differs', (_label, mutate) => {
+    const primary = liveFixture();
+    const confirmation = cloneLiveFixture(primary);
+    mutate(confirmation);
+
+    expect(() => assertLiveCaptureRepeatability(primary, confirmation))
+      .toThrow(/not repeatable.*refused/);
   });
 
   it('reports candidate-minus-control deltas without fixed historical numbers', () => {
