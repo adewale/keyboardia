@@ -189,13 +189,15 @@ async function prepareProductionAudio(
   seed: number,
 ): Promise<void> {
   await page.evaluate(seed => {
-    const reset = (window as unknown as {
-      __resetQualityMatrixRandom__?: (nextSeed: number) => void;
-    }).__resetQualityMatrixRandom__;
-    if (!reset) throw new Error('Quality-matrix seeded random reset is unavailable');
+    const receipt = (window as unknown as {
+      __qualityMatrixRandom__?: { seed: number; state: number; calls: number };
+    }).__qualityMatrixRandom__;
+    if (!receipt) throw new Error('Quality-matrix seeded random state is unavailable');
     // Module startup may legitimately consume randomness. Reset at the actual
     // evidence boundary so procedural buffers never depend on page-load timing.
-    reset(seed);
+    receipt.seed = seed;
+    receipt.state = seed >>> 0;
+    receipt.calls = 0;
   }, seed);
 
   const playButton = page
@@ -318,7 +320,7 @@ async function captureInPage(
 
     const globals = window as unknown as {
       __audioEngine__?: MatrixEngine;
-      __qualityMatrixRandom__?: { seed: number; calls: number };
+      __qualityMatrixRandom__?: { seed: number; state: number; calls: number };
     };
     const engine = globals.__audioEngine__;
     const context = engine?.getAudioContext();
@@ -527,35 +529,19 @@ export class ChromiumDryPcmCaptureAdapter {
         value: forcedAudioContext,
       });
 
-      let state = seed >>> 0;
-      let calls = 0;
-      const reset = (nextSeed: number) => {
-        state = nextSeed >>> 0;
-        calls = 0;
-        (window as unknown as {
-          __qualityMatrixRandom__?: { seed: number; calls: number };
-        }).__qualityMatrixRandom__ = { seed: nextSeed, calls: 0 };
-      };
+      type RandomReceipt = { seed: number; state: number; calls: number };
+      const globals = window as unknown as { __qualityMatrixRandom__?: RandomReceipt };
+      globals.__qualityMatrixRandom__ = { seed, state: seed >>> 0, calls: 0 };
       Math.random = () => {
-        calls++;
-        state = (state + 0x6d2b79f5) >>> 0;
-        let value = state;
+        const receipt = globals.__qualityMatrixRandom__;
+        if (!receipt) throw new Error('Quality-matrix seeded random state disappeared');
+        receipt.calls++;
+        receipt.state = (receipt.state + 0x6d2b79f5) >>> 0;
+        let value = receipt.state;
         value = Math.imul(value ^ (value >>> 15), value | 1);
         value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
-        const result = ((value ^ (value >>> 14)) >>> 0) / 4294967296;
-        const receipt = (window as unknown as {
-          __qualityMatrixRandom__?: { seed: number; calls: number };
-        }).__qualityMatrixRandom__;
-        if (receipt) receipt.calls = calls;
-        return result;
+        return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
       };
-      (window as unknown as {
-        __qualityMatrixRandom__?: { seed: number; calls: number };
-        __resetQualityMatrixRandom__?: (nextSeed: number) => void;
-      }).__qualityMatrixRandom__ = { seed, calls: 0 };
-      (window as unknown as {
-        __resetQualityMatrixRandom__?: (nextSeed: number) => void;
-      }).__resetQualityMatrixRandom__ = reset;
     }, { sampleRate: MATRIX_SAMPLE_RATE, seed });
 
     const page = await context.newPage();
