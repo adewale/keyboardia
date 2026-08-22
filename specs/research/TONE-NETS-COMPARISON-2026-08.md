@@ -418,7 +418,11 @@ Per this repo's standing convention on claim levels:
 ## 7. Receipt
 
 Retrieved 2026-08-19. Keyboardia read at
-`58264dd5ae274f63b1cd80b72aa823b76b21f28b`.
+`58264dd5ae274f63b1cd80b72aa823b76b21f28b`. Re-checked 2026-08-22: the live
+index page hashes identically to the row below, the bundle fingerprints
+(`index-D6Mm5cJ7.js`, `vendor-tone-CEpHDcb7.js`) are unchanged, the SoundFont
+still reports 7,557,598 bytes, and `origin/main` is still the pinned commit —
+both sides of this comparison are frozen and the analysis stands unmodified.
 
 | Asset | Bytes | SHA-256 |
 |---|---|---|
