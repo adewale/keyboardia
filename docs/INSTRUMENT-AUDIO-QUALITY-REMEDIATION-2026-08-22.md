@@ -5,8 +5,8 @@
 The branch was fetched, pruned, and rebased onto `origin/main` at
 `58264dd5ae274f63b1cd80b72aa823b76b21f28b`; Git reported it was already up to
 date. The objective report grades the clean subject
-`11da582ff02d15c610b1695d92306fb54fbe4bc6` with the separately pinned evaluator
-`412efbef4f585dafcf047ee6db97d2f89ff46c62`.
+`d096b8445356a35d1e58714cba9f97afac3953e0` with the separately pinned evaluator
+`aafae6a51a9710ae4419d1eeddfe2b4a492c49cb`.
 
 The complete 99-row worst-first ranking is
 [`INSTRUMENT-AUDIO-QUALITY-AUDIT.md`](./INSTRUMENT-AUDIO-QUALITY-AUDIT.md).
@@ -23,23 +23,26 @@ This report distinguishes three things that must not be conflated:
 
 ## Outcome
 
-| Measure | Original runtime/assets under final rules | Remediated report | Difference |
+| Measure | Equivalent original scored paths under final math | Remediated report | Difference |
 |---|---:|---:|---:|
 | Instruments audible through the real sequencer path | 99/99 | 99/99 | no regression |
 | Total repair-priority points | 179.9 | 159.1 | **-20.8 (-11.6%)** |
 | Priority bands | 0 high / 7 medium / 9 low / 83 baseline | 0 high / 6 medium / 9 low / 84 baseline | **-1 medium; +1 baseline** |
-| Instruments with nonzero debt | 16 | 15 | **-1** |
+| Instruments with nonzero repair-priority score | 16 | 15 | **-1** |
 | Canonical live peaks above 0 dBFS | 2 | 2 | unchanged |
 | Decoded findings | 256 | 203 | **-53 (-20.7%)** |
 | Unwaived decoded errors/reviews | 0 / 0 | 0 / 0 | unchanged |
 
-The control snapshot combines original `58264dd5` runtime/assets/manifests with
-the final evaluator and receipt producers in a temporary synthetic commit. The
-sample math, score weights, and captured production paths are identical between
-the columns; the Git provenance is necessarily synthetic because the hardened
-auditor rejects a mixed tree labelled as literal `58264dd5`. The previous
-223.2-point/307-finding report is retained only as history, not used as causal
-evidence.
+The compatibility snapshot combines original `58264dd5` runtime, assets,
+manifests, and source calibration with hardened receipt producers and equivalent
+final scoring math. Its Git provenance is necessarily synthetic because the
+auditor rejects a mixed tree labelled as literal `58264dd5`. It imports the
+newer onset helper, whose 30 ms default behaves identically for the old
+manifests, and predates a label-only report wording change. The controlled
+summary, method, exceptions, artifact hashes, issue-code totals, and nonzero
+instrument scores are retained in
+[`instrument-audio-quality-controlled-comparison-2026-08-22.json`](./evidence/instrument-audio-quality-controlled-comparison-2026-08-22.json).
+The previous 223.2-point/307-finding report is history, not causal evidence.
 
 | Controlled score mover | Before | After | Change |
 |---|---:|---:|---:|
@@ -52,6 +55,12 @@ evidence.
 Steel pan loses one finding but remains at 6 points because its normalized,
 capped score component does not cross a band boundary.
 
+Under equivalent scoring semantics, the 53-finding reduction is exactly:
+43 leading-silence findings removed, 3 loop-value discontinuities removed,
+3 adjacent-note level steps removed, 2 tail-truncation findings removed, and
+2 lossy-source hot-peak findings removed. Every other decoded finding class is
+unchanged.
+
 ## What is objectively better
 
 | Area | Before | After | Why this is an improvement |
@@ -60,11 +69,12 @@ capped score component does not cross a band boundary.
 | Hammond real loop boundary | worst seam jump -26.21 dB; worst derivative ratio 2.65 | all 13 jumps -120 dB; worst derivative ratio 0.551 | The 13 lossy MP3s were replaced by exact-byte authoritative CC0 PCM16 WAVs and their SFZ loop coordinates were adapted to Web Audio's exclusive endpoint. A real `OfflineAudioContext` regression renders the boundary. Under identical scoring Hammond moved from 3.5 points/low to 0 points/baseline. |
 | Finger-bass adjacent roots | 3.235 dB and 3.304 dB steps | 2.435 dB and 2.404 dB | Root-local manifest calibration clears the 3 dB discontinuity gate with a deliberate 2.5 dB margin without globally lowering the instrument. |
 | Steel-pan 62→63 boundary | 4.727 dB | 2.427 dB | Every MIDI-63 layer was reduced by 2.3 dB; the same decoded adjacent-note metric now clears with margin. |
-| Acoustic-guitar delivery | 15 AAC/M4A generation files, two tail flags | 15 one-generation PCM16 WAVs, zero tail flags | Official CC0 lossless sources received a source-domain 10 ms tail fade and 6 ms zero pad. Measured pitch change is 0 cents; maximum active-RMS change is 0.026 dB and maximum peak change is 0.140 dB. |
+| Acoustic-guitar delivery | 15 AAC/M4A generation files, two tail flags | 15 one-generation PCM16 WAVs, zero tail flags | Official CC0 lossless sources received a source-domain 10 ms tail fade and 6 ms zero pad. A local source-to-delivery comparison measured 0 cents pitch change, at most 0.026 dB active-RMS change, and at most 0.140 dB peak change; reproducing that comparison requires separately hydrating the source revision and hashes declared by the receipt. |
 | Effective onset findings, final evaluator | 43 | 0 | The runtime and audit now distinguish authored silence from codec priming, use any-channel onset consistently, and cap adaptive compensation per manifest. Chromium and WebKit prove the wind attacks are not over-trimmed; fixed 42 ms trims that would have cut real attacks were explicitly rejected. |
 | Decoded tail findings | 12 | 10 | Two acoustic-guitar EOF truncations were removed by the lossless source-domain tail transform. The other ten remain reported. |
 | Decoded hot-peak findings | 21 | 19 | Two lossy acoustic-guitar crest warnings disappeared when the authoritative lossless delivery replaced AAC. Lossless files are not attenuated merely to game a raw-buffer headroom rule. |
 | Envelope lifecycle | wall-clock cleanup; `release=0` became 0.5 s in advanced voices | audio-clock retirement; authored zero preserved | Tests now advance the audio clock and prove cleanup, tempo-aware duration deadlines, release bounds, voice stealing, and persistence into later engine instances. |
+| Procedural note-edge envelope | a diagnostic accepted zero-drift replay exposed one different onset frame with identical RNG state | the retained final smoke replay is byte-identical | The voice gain now starts at zero before its scheduled fade. The unit regression proves initialization order, and the final receipt proves exact replay; together they remove the observed unity-gain boundary leak and its one-frame click risk without claiming a listening result. |
 | Tone context mismatch | initialization/recovery could report ready while Tone nodes remained on a stale context | initialization and recovery fail closed before constructing or reusing disconnected Tone graphs | A false readiness result is now an exception with regression coverage. |
 
 The acoustic and Hammond deliveries have provenance receipts that bind shipped
@@ -105,14 +115,19 @@ These changes improve the validity of the conclusions rather than the sound:
 The representative adapter smoke passed 6/1,683 cases across sampled,
 procedural, native, Tone, and advanced engines. All accepted captures were
 non-silent, exact-length, zero-drift, and had no fatal finding or evidence gap.
-One piano process attempt skipped 128 render frames; it was rejected and is
-retained in the receipt. This smoke does **not** upgrade the report to complete
-matrix evidence.
+Two replay process attempts skipped 128 render frames; both were rejected and
+retained in the receipt before a zero-drift attempt was accepted. The accepted
+seed-A and fresh-context replay share PCM SHA-256
+`fadd1aa057d69be054bd16d8175b2e8cc2fd4b7f9555085b90d24ddfeb43a8b4`.
+The complete smoke receipt is retained as
+[`instrument-audio-quality-dry-pcm-smoke-2026-08-22.json`](./evidence/instrument-audio-quality-dry-pcm-smoke-2026-08-22.json).
+This smoke does **not** upgrade the report to complete matrix evidence.
 
 ## Remaining measured debt
 
 The current 203 decoded findings remain real review work even though every one
-has an exact, hash-bound disposition:
+has a disposition bound to source bytes, manifest bytes, measured value,
+threshold, and evaluator identity:
 
 | Finding | Count | Dependency before changing sound |
 |---|---:|---|
@@ -136,8 +151,9 @@ Additional current debt:
 - Five packs have one median velocity layer where their role target is two:
   slap bass, acoustic guitar, clean guitar, kalimba, and strings. Duplicating a
   file is not a genuine dynamics repair.
-- The closed acoustic hi-hat is a role-level outlier at -34.3 dBFS peak. It
-  needs level-matched mix-context review, not an automatic boost.
+- The closed acoustic hi-hat is a role-level outlier at -31.9 dBFS peak in the
+  final receipt. It needs level-matched mix-context review, not an automatic
+  boost.
 - The 73 non-sampled instruments have only a canonical live note plus static
   checks in the ranked report. A zero score is “no detected defect,” not equal
   or perfect timbre.
@@ -175,14 +191,29 @@ settle before final level calibration.
 
 ## Branch and issue coverage
 
-GitHub reported seven open PRs and four open issues at the final check. None
-implements a production fix for the remaining decoded findings, roots/layers,
+GitHub reported eight open PRs and four open issues at the final check. None
+implements a validated fix for the remaining decoded findings, roots/layers,
 bass headroom, hi-hat calibration, or full-matrix evidence gap. PR 87 remains an
-ADSR specification only. The no-PR Tone Nets head adds measurement/simulation
-scripts and proposals but no shipped audio implementation or asset. The dormant
-Safari branch contains old recovery work; its relevant behavior was
-reimplemented and tested on current `main` rather than merging its stale
-catalogue wholesale.
+ADSR specification only. PR 98 advanced and opened during final verification;
+it now implements a soft-note low-pass for nine sampled packs, a 15% default
+reverb for new sessions, and adjacent but incomplete mobile-output/clock work.
+Its native route is later bypassed by the Tone effects destination path, its
+unlock can be skipped for an already-running context, and its clock failure only
+logs rather than failing closed. Three packs already have mapped velocity zones
+that its filename-based classifier misses, so the filter rationale and anchors
+need re-audit. That is genuine adjacent work on
+velocity timbre, but it adds neither real velocity layers nor new roots and
+does not clear any current ranked deficit. Its canonical MIDI-90 path is
+deliberately bypassed; strict sample validation is currently blocked by an
+unrebound manifest disposition, and the changed soft-note sound still needs the
+pinned velocity/full matrix and listening before integration; the default
+reverb also needs the preregistered tail, peak, loudness, and pumping gates. Its
+aggregate raw-duration sustain guard is useful telemetry, but does not prove
+every mapped note sustains for two seconds because it ignores playback rate and
+manifest offsets. Its strict instrument validation is currently failing on
+stale bound manifest evidence. The dormant Safari branch contains old recovery
+work; its relevant behavior was reimplemented and tested on current `main`
+rather than merging its stale catalogue wholesale.
 
 ## Costs and claim boundary
 
@@ -199,23 +230,30 @@ catalogue wholesale.
 
 The frozen subject passed:
 
-- 270 unit-test files: **4,708 passed, 1 skipped**;
+- 271 unit-test files: **4,709 passed, 1 skipped**;
+- focused evaluator/receipt suite: **53 passed across 10 files**;
 - production TypeScript/Vite build;
 - repository ESLint;
 - all 26 manifests with zero warnings;
 - strict decoded audit: **26 instruments / 605 mappings / 582 files / 203
-  waived / 0 unwaived**;
+  disposition-accepted / 0 unwaived**;
 - Chromium and WebKit browser decode: **605/605 mappings each**;
 - Chromium real sequencer output: **99/99 instruments audible**;
 - Chromium PCM adapter smoke: **6/1,683 accepted**, exact replay and zero drift;
 - deliberate full-matrix verification failure because the complete receipt is
   absent.
 
-Reproduce the currently supportable report with:
+Reproduce the currently supportable report from a clean worktree at
+`d096b8445356a35d1e58714cba9f97afac3953e0` with:
 
 ```sh
 cd app
-npm run audit:instrument-quality:v1
+npm run audit:instrument-quality:evidence
+npm run audit:instrument-quality:matrix:smoke
+node --import tsx scripts/audit-instrument-quality.ts \
+  --require-evidence \
+  --evaluator-commit aafae6a51a9710ae4419d1eeddfe2b4a492c49cb \
+  --subject-commit d096b8445356a35d1e58714cba9f97afac3953e0
 ```
 
 Use `npm run audit:instrument-quality:full` only after supplying the complete
