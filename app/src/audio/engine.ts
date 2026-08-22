@@ -1004,6 +1004,10 @@ export class AudioEngine {
     // the chain — the worklet buffers one grain before producing output, so
     // the envelope must wait for that audio to arrive.
     const envGain = this.audioContext.createGain();
+    // AudioParam defaults to unity. Make the pre-note state silent before an
+    // attack is scheduled so a source and its zero-valued automation event on
+    // the same render frame cannot leak one full-amplitude boundary sample.
+    envGain.gain.value = 0;
 
     // Apply pitch shift: worklet for large shifts (>6 semitones), native
     // playbackRate otherwise. When we engage the worklet we must
