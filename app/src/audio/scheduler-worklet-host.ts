@@ -10,6 +10,7 @@ import type { GridState } from '../types';
 import type { IScheduler, WorkletSchedulerState, WorkletTrack, WorkletPLock } from './scheduler-types';
 import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../shared/constants';
 import { audioEngine } from './engine';
+import { setMediaSessionPlaybackState } from './media-session';
 import { parseInstrumentId, type InstrumentType } from './instrument-types';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { loadWorkletModule } from './worklet-support';
@@ -129,6 +130,7 @@ export class SchedulerWorkletHost implements IScheduler {
     }
 
     this.isRunning = true;
+    setMediaSessionPlaybackState('playing');
 
     const state = getState();
     const workletState = this.serializeState(state);
@@ -167,6 +169,7 @@ export class SchedulerWorkletHost implements IScheduler {
 
   stop(): void {
     this.isRunning = false;
+    setMediaSessionPlaybackState('paused');
     this.node?.port.postMessage({ type: 'stop' });
 
     // Clear pending UI callback timers.

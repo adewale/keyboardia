@@ -52,12 +52,24 @@ interface LocalExampleSessionFixture {
   state: SessionState;
 }
 
+interface DemoArtifact { name: string; state: SessionState }
+
 // The only in-memory HTTP backend used by offline development and browser CI.
 const mockSessions = new Map<string, MockSession>();
 const localExampleFixtures = JSON.parse(readFileSync(
   new URL('./src/data/__fixtures__/homepage-example-sessions.json', import.meta.url),
   'utf8',
 )) as LocalExampleSessionFixture[]
+const phase44Demo = JSON.parse(readFileSync(
+  new URL('./scripts/demo-sessions/whisper-to-roar.json', import.meta.url),
+  'utf8',
+)) as DemoArtifact
+const phase44DemoFixture: LocalExampleSessionFixture = {
+  id: 'b7e0b220-3185-49ef-b9b0-15ab9df76aec',
+  sourceId: 'b7e0b220-3185-49ef-b9b0-15ab9df76aec',
+  name: phase44Demo.name,
+  state: phase44Demo.state,
+}
 
 /**
  * Mock API plugin - only used when USE_MOCK_API=1
@@ -139,6 +151,9 @@ function createMockApiPlugin(): Plugin {
         // demos and visual contracts that predate dedicated fixture IDs.
         seedFixture(fixture, fixture.sourceId)
       }
+      // Phase 44 dynamics demo: velocity-lane writing on filter-anchored
+      // instruments plus the new default room.
+      seedFixture(phase44DemoFixture, phase44DemoFixture.id)
 
       // Mirrors LiveSessionDurableObject.mergeStateReplacement: REST clients
       // replace state without the WebSocket-only collaborative fields.
