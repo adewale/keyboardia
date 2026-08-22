@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const toneHarness = vi.hoisted(() => ({
   rawContext: null as BaseAudioContext | null,
+  acceptSetContext: true,
 }));
 
 vi.mock('tone', async (importOriginal) => {
@@ -12,7 +13,7 @@ vi.mock('tone', async (importOriginal) => {
     ...actual,
     start: vi.fn().mockResolvedValue(undefined),
     setContext: vi.fn((context: AudioContext) => {
-      toneHarness.rawContext = context;
+      if (toneHarness.acceptSetContext) toneHarness.rawContext = context;
     }),
     getContext: vi.fn(() => ({
       state: toneHarness.rawContext?.state ?? 'suspended',
@@ -31,6 +32,7 @@ import { AudioEngine, waitForLiveAudioClock } from './engine';
 type RecoveryEngine = {
   audioContext: AudioContext | null;
   toneInitialized: boolean;
+  initializeTone(): Promise<void>;
   resumeAllAudioContexts(trigger: string): Promise<boolean>;
   attachUnlockListeners(): void;
   dispose(): void;
@@ -40,6 +42,7 @@ afterEach(() => {
   vi.useRealTimers();
   vi.clearAllMocks();
   toneHarness.rawContext = null;
+  toneHarness.acceptSetContext = true;
 });
 
 describe('audio-context recovery', () => {
@@ -75,6 +78,29 @@ describe('audio-context recovery', () => {
     expect(context.resume).not.toHaveBeenCalled();
     expect(Tone.setContext).not.toHaveBeenCalled();
     expect(Tone.start).not.toHaveBeenCalled();
+    expect(toneHarness.rawContext).toBe(staleToneContext);
+  });
+
+  it('fails initial Tone setup when the context switch retry is refused', async () => {
+    const context = {
+      state: 'running',
+      currentTime: 0,
+      sampleRate: 44_100,
+    } as unknown as AudioContext;
+    const staleToneContext = {
+      state: 'running',
+      sampleRate: 48_000,
+    } as BaseAudioContext;
+    toneHarness.rawContext = staleToneContext;
+    toneHarness.acceptSetContext = false;
+
+    const engine = new AudioEngine() as unknown as RecoveryEngine;
+    engine.audioContext = context;
+
+    await expect(engine.initializeTone()).rejects.toThrow(/context switch failed/);
+    expect(Tone.setContext).toHaveBeenCalledTimes(2);
+    expect(Tone.start).toHaveBeenCalledTimes(2);
+    expect(engine.toneInitialized).toBe(false);
     expect(toneHarness.rawContext).toBe(staleToneContext);
   });
 
