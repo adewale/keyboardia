@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-22T13:30:00.000Z",
+  "claim": "objective-manifest-calibration",
+  "perceptualPreferenceClaimed": false,
+  "instruments": [
+    {
+      "id": "alto-sax",
+      "previousManifestSha256": "abbf902cd1c4f9a60d1a9229ad068362ede317d812c53926f62b134b1b7cc6f7",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "audioBytesChanged": false,
+      "change": "Set maxAdaptiveCodecDelay to 60 ms so runtime onset compensation can remove Node AAC priming without applying a fixed trim in Chromium or WebKit.",
+      "objectiveEvidence": {
+        "finding": "LEADING_SILENCE",
+        "beforeFindingCount": 12,
+        "afterFindingCount": 0,
+        "effectiveOnsetThresholdMs": 10,
+        "crossDecoderNoOvertrimRequired": true
+      }
+    },
+    {
+      "id": "steel-drums",
+      "previousManifestSha256": "75030bd7a06cd8214ce73fcd539579d624ee0179dd73a2b54f1e0dd95694e8d5",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "audioBytesChanged": false,
+      "change": "Reduce every MIDI-63 layer by 2.3 dB to leave a measured margin below the adjacent-note discontinuity threshold.",
+      "objectiveEvidence": {
+        "finding": "NOTE_LEVEL_STEP",
+        "boundary": "62->63",
+        "beforeStepDb": 4.72706,
+        "afterStepDb": 2.42706,
+        "failureThresholdDb": 3,
+        "calibrationTargetDb": 2.5
+      }
+    }
+  ]
+}
