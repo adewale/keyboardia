@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MAX_ADAPTIVE_CODEC_DELAY_SECONDS,
+  MAX_CONFIGURED_ADAPTIVE_CODEC_DELAY_SECONDS,
   MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS,
   compensatedSampleStartOffset,
   measureDecodedLeadingSilenceSeconds,
@@ -45,5 +46,18 @@ describe('decoded sample onset compensation', () => {
     expect(compensatedSampleStartOffset(undefined, 0.013, false)).toBeUndefined();
     expect(compensatedSampleStartOffset(undefined, MAX_ADAPTIVE_CODEC_DELAY_SECONDS + 0.001, true))
       .toBeUndefined();
+  });
+
+  it('supports a bounded, provenance-backed AAC allowance without trimming an immediate browser attack', () => {
+    expect(compensatedSampleStartOffset(undefined, 0.048, true, 0.06))
+      .toBeCloseTo(0.048 - MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS, 8);
+    expect(compensatedSampleStartOffset(undefined, 0.002, true, 0.06))
+      .toBeUndefined();
+    expect(compensatedSampleStartOffset(
+      undefined,
+      MAX_CONFIGURED_ADAPTIVE_CODEC_DELAY_SECONDS + 0.001,
+      true,
+      10,
+    )).toBeUndefined();
   });
 });

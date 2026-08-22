@@ -1,354 +1,125 @@
 {
-  "version": 2,
+  "version": 3,
+  "evaluatorBundleSha256": "a74186a968c3ff41a651995afb5fd576de9ce8f7f40a63dd006e50dc14807866",
   "waivers": [
     {
-      "code": "LEADING_SILENCE",
+      "code": "PITCH_DEVIATION",
       "instrumentId": "acoustic-guitar",
-      "file": "Ab4.m4a",
-      "sha256": "3c5cb8f08ed28d94b963df35fc0353efb4800068df9fa83dbcb827b89f1fe6ce",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
+      "file": "Ab4.wav",
+      "sha256": "67b15b999d681be0215137bc920dd73d8259c8ed91b97629752625e5e670a0d3",
+      "manifestSha256": "0dd0a30b13a862688d391d218c91958687a9b512f80f2de6c92eaccec4375f61",
+      "measuredValue": -13.202797512273946,
+      "threshold": 10,
+      "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "acoustic-guitar",
-      "file": "Ab4.m4a",
-      "sha256": "3c5cb8f08ed28d94b963df35fc0353efb4800068df9fa83dbcb827b89f1fe6ce",
+      "file": "B4.wav",
+      "sha256": "be1a4f91e1c9450ca225bc0d56d3156fadd9939296289ccf081a1d9458a7444b",
+      "manifestSha256": "0dd0a30b13a862688d391d218c91958687a9b512f80f2de6c92eaccec4375f61",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "Ab5.m4a",
-      "sha256": "654436a2bf5dce2ab04a1498028eead499c72add17f7850fe66769a5a0e98e85",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "B4.m4a",
-      "sha256": "2b30272d1febf9b19ccf5fd1370080e497220db0bbd67525bf1a934497c10dbe",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "acoustic-guitar",
-      "file": "B4.m4a",
-      "sha256": "2b30272d1febf9b19ccf5fd1370080e497220db0bbd67525bf1a934497c10dbe",
+      "file": "B5.wav",
+      "sha256": "6c607d6cf30efbe2c6d54182ce75431375795b8b7d0be64eb110eafe61c52ae6",
+      "manifestSha256": "0dd0a30b13a862688d391d218c91958687a9b512f80f2de6c92eaccec4375f61",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "B5.m4a",
-      "sha256": "19d26857511c43ffad27e7323aa332f6b3a3fb4dc362fb377841bb4d51d7a253",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "acoustic-guitar",
-      "file": "B5.m4a",
-      "sha256": "19d26857511c43ffad27e7323aa332f6b3a3fb4dc362fb377841bb4d51d7a253",
+      "file": "Bb3.wav",
+      "sha256": "f544f11d1126c08719bc984c92e52ab521c34d8069493029850a4b9b26eedcf2",
+      "manifestSha256": "0dd0a30b13a862688d391d218c91958687a9b512f80f2de6c92eaccec4375f61",
+      "measuredValue": -16.35700747379542,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "Bb2.m4a",
-      "sha256": "7597576580d7f4f1e912cf4c8230d175a04b5c9618e0cc289a023a74981c69f6",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "Bb3.m4a",
-      "sha256": "e0050d2e6deae7024cdf4c41886dda9b533f3938a8f373a81ff954e9ec77737e",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "acoustic-guitar",
-      "file": "Bb3.m4a",
-      "sha256": "e0050d2e6deae7024cdf4c41886dda9b533f3938a8f373a81ff954e9ec77737e",
+      "file": "D5.wav",
+      "sha256": "0e0540abb85eb1a93f387828cebfab2c77a3994530b3d475fe77ceb6ae9370ca",
+      "manifestSha256": "0dd0a30b13a862688d391d218c91958687a9b512f80f2de6c92eaccec4375f61",
+      "measuredValue": -20.955429963198867,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "D5.m4a",
-      "sha256": "8ab3b720da5c358ce160d7103c359988b30e8e6e7bc276dacf85be63edf18835",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "acoustic-guitar",
-      "file": "D5.m4a",
-      "sha256": "8ab3b720da5c358ce160d7103c359988b30e8e6e7bc276dacf85be63edf18835",
+      "file": "E2.wav",
+      "sha256": "559c89207a07a3045c81a60858f8114ab546f789dcb77fb3675d81e248a37095",
+      "manifestSha256": "0dd0a30b13a862688d391d218c91958687a9b512f80f2de6c92eaccec4375f61",
+      "measuredValue": -12.412169133904172,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "acoustic-guitar",
-      "file": "D5.m4a",
-      "sha256": "8ab3b720da5c358ce160d7103c359988b30e8e6e7bc276dacf85be63edf18835",
-      "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "Db3.m4a",
-      "sha256": "e90470793543006d87c1cbc24dcf89b74156da024ba18c533d14a545e6bb515e",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "Db4.m4a",
-      "sha256": "1f72aa4edb821b6416977bdf5efd4d5fcc5ea1e58b69da1f02d547e44669b464",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "E2.m4a",
-      "sha256": "2807c2bb6c85c2aa88b21d8a005965bd70fecb2600b5bb3929fb8f6aacc02183",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "acoustic-guitar",
-      "file": "E2.m4a",
-      "sha256": "2807c2bb6c85c2aa88b21d8a005965bd70fecb2600b5bb3929fb8f6aacc02183",
+      "file": "E4.wav",
+      "sha256": "2da1c7d01a73dae60780ff39cdb780a99cb4d579f67555c5863979d2e9e22cae",
+      "manifestSha256": "0dd0a30b13a862688d391d218c91958687a9b512f80f2de6c92eaccec4375f61",
+      "measuredValue": -15.62113029189402,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "acoustic-guitar",
-      "file": "E3.m4a",
-      "sha256": "891955287d36c8dcd1d8853f3c4404a37d6afef30ed1f07279f74003e775562e",
-      "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "E3.m4a",
-      "sha256": "891955287d36c8dcd1d8853f3c4404a37d6afef30ed1f07279f74003e775562e",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "E4.m4a",
-      "sha256": "e302986312781976890ebc10a56ff84d006faa54934cc5008e8ee16dead09109",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "acoustic-guitar",
-      "file": "E4.m4a",
-      "sha256": "e302986312781976890ebc10a56ff84d006faa54934cc5008e8ee16dead09109",
+      "file": "F5.wav",
+      "sha256": "e8894b6dc43df4f4d0422bd23b7a0c052c60a9f5affd5f63126531fbb01889a1",
+      "manifestSha256": "0dd0a30b13a862688d391d218c91958687a9b512f80f2de6c92eaccec4375f61",
+      "measuredValue": -23.442413830896612,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "F5.m4a",
-      "sha256": "75989321d4b1aced21486ac7382a69a84fd83f6a66fc41de38d4273fa60030ea",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "PITCH_DEVIATION",
-      "instrumentId": "acoustic-guitar",
-      "file": "F5.m4a",
-      "sha256": "75989321d4b1aced21486ac7382a69a84fd83f6a66fc41de38d4273fa60030ea",
-      "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "acoustic-guitar",
-      "file": "G2.m4a",
-      "sha256": "e78c821e270c002c6db42dcd73cee009b7878bba9f98344b73c8c75a4d629745",
-      "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "G2.m4a",
-      "sha256": "e78c821e270c002c6db42dcd73cee009b7878bba9f98344b73c8c75a4d629745",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "acoustic-guitar",
-      "file": "G2.m4a",
-      "sha256": "e78c821e270c002c6db42dcd73cee009b7878bba9f98344b73c8c75a4d629745",
-      "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-guitar",
-      "file": "G3.m4a",
-      "sha256": "c449beb800239ba40970017324e66a87222f927b652a8671de07289e54405ede",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-hihat-closed",
-      "file": "source-0001.m4a",
-      "sha256": "39edae8e23e1aa6f8cb0d138f5df83bcfe2f93b89c6b2f6b5e8badc54f3195b9",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-hihat-closed",
-      "file": "source-0002.m4a",
-      "sha256": "3b2560e3315f2dbb8d114cf3390db8c2cc76f06367cfcbe24e4fb83f983a8368",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-hihat-closed",
-      "file": "source-0003.m4a",
-      "sha256": "e4ba9a6533befbf337e527369e3fa7c6e3fe8ae200ce5e53246d1543b038cce9",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-hihat-closed",
-      "file": "source-0004.m4a",
-      "sha256": "f4c7363cfaee2978832982193a3d0470e38abe66bd3fd7eaec3c0411a4d8fc2f",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-kick",
-      "file": "source-0009.m4a",
-      "sha256": "876ac2cdbb553be4eb9a75e2f9ba87b72c088261032b775c04e01d274965c9c6",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-kick",
-      "file": "source-0010.m4a",
-      "sha256": "1871852658227db4bc1caa82e608661008c4774f7fd10489ae15bbcae88eb6c6",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-kick",
-      "file": "source-0011.m4a",
-      "sha256": "2fd2c2cfddc6be76afb6f2186c74d0ec36cff24cf3100888ddb3f72642c431c0",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-kick",
-      "file": "source-0012.m4a",
-      "sha256": "48392b97d81c8b99b32c34fea5d0c79e1f55f2a2d7dd2b9f8ee45de84351d968",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-kick",
-      "file": "source-0013.m4a",
-      "sha256": "0a3f3ef4c5b28029582a524d0f9732a98e6240a506e6115cff16f267f3c0c80b",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-snare",
-      "file": "source-0017.m4a",
-      "sha256": "de61615bf83f731055c0bc5e9f287f5434f541cd8b103977f6bb93b9f677fc00",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-snare",
-      "file": "source-0018.m4a",
-      "sha256": "6529642c1504676d2efe379be50ed73047453d88dc27e0f1202c9970e4cda6f3",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-snare",
-      "file": "source-0024.m4a",
-      "sha256": "db6ce15eb334165ac5b03e5be35ffd7527ccb8dd22615e89830df4efc458f34e",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-snare",
-      "file": "source-0026.m4a",
-      "sha256": "d668152691279e770e3a1dfd864689bd83ca59c0f3aa5cc6f535d0e676d39c52",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "acoustic-snare",
-      "file": "source-0029.m4a",
-      "sha256": "a53f9e3e3c3e1cbaffda89e96fd9168675fceb0e7472c978465b494e5d5e7bb4",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "DC_OFFSET",
       "instrumentId": "alto-sax",
       "file": "Ab5-loud.m4a",
       "sha256": "b79f620d378cbbf2b3c434ab07aa5e6c839eb48b8b7e4582d743bbe6515009fc",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -43.878102908492345,
+      "threshold": -60,
       "reason": "Hash-bound source disposition: measurable DC exceeds the review floor but remains below the hard-failure limit and is retained without destructive reprocessing."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "Ab5-loud.m4a",
-      "sha256": "b79f620d378cbbf2b3c434ab07aa5e6c839eb48b8b7e4582d743bbe6515009fc",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "Ab5-soft.m4a",
-      "sha256": "a35f8d21ab60425a061e7aa61b4cb72eb7e0d194354c84abee8d3925dfe50ae3",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "DC_OFFSET",
       "instrumentId": "alto-sax",
       "file": "C4-loud.m4a",
       "sha256": "3b278e64cd9f5a91a0466f64c1a87692a1535488498d2f3c7379de5c94de7e99",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -47.610461879831036,
+      "threshold": -60,
       "reason": "Hash-bound source disposition: measurable DC exceeds the review floor but remains below the hard-failure limit and is retained without destructive reprocessing."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "C4-loud.m4a",
-      "sha256": "3b278e64cd9f5a91a0466f64c1a87692a1535488498d2f3c7379de5c94de7e99",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "TAIL_TRUNCATION",
       "instrumentId": "alto-sax",
       "file": "C4-loud.m4a",
       "sha256": "3b278e64cd9f5a91a0466f64c1a87692a1535488498d2f3c7379de5c94de7e99",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -0.2051275240142658,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "C4-soft.m4a",
-      "sha256": "84886ad91282622bbfce65411423fb1c68fbbf90af2b11a3e3a387c1814345eb",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "C5-loud.m4a",
-      "sha256": "b2bacb6087ea36a8934f85bc42f78a6e408f0fe329ddde47b1dee81cae5a5528",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "TAIL_TRUNCATION",
       "instrumentId": "alto-sax",
       "file": "C5-loud.m4a",
       "sha256": "b2bacb6087ea36a8934f85bc42f78a6e408f0fe329ddde47b1dee81cae5a5528",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -0.9014628300877896,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     },
     {
@@ -356,20 +127,19 @@
       "instrumentId": "alto-sax",
       "file": "C5-soft.m4a",
       "sha256": "788e8bfe2d8473dbf813c3b1d60703575c3f610edaab0387bde9a1901c75036d",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -47.52192451073996,
+      "threshold": -60,
       "reason": "Hash-bound source disposition: measurable DC exceeds the review floor but remains below the hard-failure limit and is retained without destructive reprocessing."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "C5-soft.m4a",
-      "sha256": "788e8bfe2d8473dbf813c3b1d60703575c3f610edaab0387bde9a1901c75036d",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "TAIL_TRUNCATION",
       "instrumentId": "alto-sax",
       "file": "C5-soft.m4a",
       "sha256": "788e8bfe2d8473dbf813c3b1d60703575c3f610edaab0387bde9a1901c75036d",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -1.3078361508324243,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     },
     {
@@ -377,20 +147,19 @@
       "instrumentId": "alto-sax",
       "file": "D3-loud.m4a",
       "sha256": "9eaf51307c7a0220b2e3f84f087f946b6d0e311ea7879bb4390b5d023d040ead",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -48.95173843868933,
+      "threshold": -60,
       "reason": "Hash-bound source disposition: measurable DC exceeds the review floor but remains below the hard-failure limit and is retained without destructive reprocessing."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "D3-loud.m4a",
-      "sha256": "9eaf51307c7a0220b2e3f84f087f946b6d0e311ea7879bb4390b5d023d040ead",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "TAIL_TRUNCATION",
       "instrumentId": "alto-sax",
       "file": "D3-loud.m4a",
       "sha256": "9eaf51307c7a0220b2e3f84f087f946b6d0e311ea7879bb4390b5d023d040ead",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -1.6664635389233273,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     },
     {
@@ -398,20 +167,19 @@
       "instrumentId": "alto-sax",
       "file": "D3-soft.m4a",
       "sha256": "c72951fd26236d4c29b6347d792464a5d6d6edd3dab509e0523da10573b15f3f",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -50.81302156723086,
+      "threshold": -60,
       "reason": "Hash-bound source disposition: measurable DC exceeds the review floor but remains below the hard-failure limit and is retained without destructive reprocessing."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "D3-soft.m4a",
-      "sha256": "c72951fd26236d4c29b6347d792464a5d6d6edd3dab509e0523da10573b15f3f",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "TAIL_TRUNCATION",
       "instrumentId": "alto-sax",
       "file": "D3-soft.m4a",
       "sha256": "c72951fd26236d4c29b6347d792464a5d6d6edd3dab509e0523da10573b15f3f",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -3.459531485846756,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     },
     {
@@ -419,55 +187,39 @@
       "instrumentId": "alto-sax",
       "file": "Gb3-loud.m4a",
       "sha256": "3421009cbbbf2ff2aa96ac091fde8cb4e7113fc93939d3ce3fdc87a76ad98390",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -43.31439300286093,
+      "threshold": -60,
       "reason": "Hash-bound source disposition: measurable DC exceeds the review floor but remains below the hard-failure limit and is retained without destructive reprocessing."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "Gb3-loud.m4a",
-      "sha256": "3421009cbbbf2ff2aa96ac091fde8cb4e7113fc93939d3ce3fdc87a76ad98390",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "DC_OFFSET",
       "instrumentId": "alto-sax",
       "file": "Gb3-soft.m4a",
       "sha256": "216d65d0e7b2e3e99488e26965232669f4aeec4c7dcbea30c490e3ae9fd84324",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -45.6209392861561,
+      "threshold": -60,
       "reason": "Hash-bound source disposition: measurable DC exceeds the review floor but remains below the hard-failure limit and is retained without destructive reprocessing."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "Gb3-soft.m4a",
-      "sha256": "216d65d0e7b2e3e99488e26965232669f4aeec4c7dcbea30c490e3ae9fd84324",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "Gb4-loud.m4a",
-      "sha256": "d60a417b001f8fdcc4118d896e20a370ea79fe8e4e6a3f622ebb2f39277bc86d",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "DC_OFFSET",
       "instrumentId": "alto-sax",
       "file": "Gb4-soft.m4a",
       "sha256": "9c16b560823a40b18e99137c95e4c59632c3392dd521fa06e6d387130c27c028",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -52.42542163072368,
+      "threshold": -60,
       "reason": "Hash-bound source disposition: measurable DC exceeds the review floor but remains below the hard-failure limit and is retained without destructive reprocessing."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "alto-sax",
-      "file": "Gb4-soft.m4a",
-      "sha256": "9c16b560823a40b18e99137c95e4c59632c3392dd521fa06e6d387130c27c028",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "TAIL_TRUNCATION",
       "instrumentId": "alto-sax",
       "file": "Gb4-soft.m4a",
       "sha256": "9c16b560823a40b18e99137c95e4c59632c3392dd521fa06e6d387130c27c028",
+      "manifestSha256": "2a0ae9c350bf4137546d0ae92ab2dbb08e2b7c3b4a5ad496f20b898b70b89bed",
+      "measuredValue": -3.3882479040602953,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     },
     {
@@ -475,6 +227,9 @@
       "instrumentId": "brushes-snare",
       "file": "brush-hard.mp3",
       "sha256": "6285e57da735d633ef332bce9f7f7e95c67bfa3b0aaaf251f5fee7b01e0ea4cb",
+      "manifestSha256": "c1e61ba3123e8eea73139e3c2b99c9ddf0580e10709eca26535b622f7ccbbf44",
+      "measuredValue": -1.8418460182087635,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -482,6 +237,9 @@
       "instrumentId": "brushes-snare",
       "file": "brush-hit.mp3",
       "sha256": "0b0bc418071c387d13072d2cd6f20dd37bbb2efb30e07c73f347ca63dd8056f0",
+      "manifestSha256": "c1e61ba3123e8eea73139e3c2b99c9ddf0580e10709eca26535b622f7ccbbf44",
+      "measuredValue": -2.075459871731682,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -489,6 +247,9 @@
       "instrumentId": "brushes-snare",
       "file": "brush-tap.mp3",
       "sha256": "24b9543a78754fa1e1f7bd84bbfc141cfb106be290cfa85197164b258aac0f7c",
+      "manifestSha256": "c1e61ba3123e8eea73139e3c2b99c9ddf0580e10709eca26535b622f7ccbbf44",
+      "measuredValue": -1.8296387308623532,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -496,6 +257,9 @@
       "instrumentId": "clean-guitar",
       "file": "E2.mp3",
       "sha256": "183c3f5501c838b589ad84edd9b863c2bb6b0193038b701a653c7dfdbe20624e",
+      "manifestSha256": "8d9139d1ab4ba87557e3697a04e5c880fc9a6d5edf8c0d6405a0c7d0d99a264e",
+      "measuredValue": -1.8482817817035657,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -503,6 +267,9 @@
       "instrumentId": "clean-guitar",
       "file": "E3.mp3",
       "sha256": "41edf4dac5a0c8116a34b15bf46028dbf53ee75f073027d64938a833db451966",
+      "manifestSha256": "8d9139d1ab4ba87557e3697a04e5c880fc9a6d5edf8c0d6405a0c7d0d99a264e",
+      "measuredValue": -1.9636061462455934,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -510,6 +277,9 @@
       "instrumentId": "clean-guitar",
       "file": "E3.mp3",
       "sha256": "41edf4dac5a0c8116a34b15bf46028dbf53ee75f073027d64938a833db451966",
+      "manifestSha256": "8d9139d1ab4ba87557e3697a04e5c880fc9a6d5edf8c0d6405a0c7d0d99a264e",
+      "measuredValue": 10.218663567675208,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -517,6 +287,9 @@
       "instrumentId": "clean-guitar",
       "file": "E4.mp3",
       "sha256": "c3de64908f53c00f8ca86393c9b2efe028101fbf8cb79d90ea07145624d36806",
+      "manifestSha256": "8d9139d1ab4ba87557e3697a04e5c880fc9a6d5edf8c0d6405a0c7d0d99a264e",
+      "measuredValue": -1.810943136695855,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -524,6 +297,9 @@
       "instrumentId": "clean-guitar",
       "file": "E4.mp3",
       "sha256": "c3de64908f53c00f8ca86393c9b2efe028101fbf8cb79d90ea07145624d36806",
+      "manifestSha256": "8d9139d1ab4ba87557e3697a04e5c880fc9a6d5edf8c0d6405a0c7d0d99a264e",
+      "measuredValue": 10.21866356767589,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -531,6 +307,9 @@
       "instrumentId": "clean-guitar",
       "file": "E5.mp3",
       "sha256": "9f7cf9e46836ed06c9be607b84eb261cb118adf63758cdf1a8eab4bb4d7a9362",
+      "manifestSha256": "8d9139d1ab4ba87557e3697a04e5c880fc9a6d5edf8c0d6405a0c7d0d99a264e",
+      "measuredValue": -1.8298087360736461,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -538,6 +317,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0027.m4a",
       "sha256": "406b02e56c7c13b5a466f8c37de4c33021e32a72f57ec578bc631521433f1092",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": 10.434489380536206,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -545,6 +327,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0033.m4a",
       "sha256": "110b98e856e3c593abf9cddc6cae75e0651d2519fe352b4189b208973e132e0a",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": 21.329642073571677,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -552,6 +337,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0035.m4a",
       "sha256": "b47e1450aadf3b9025e236bedc9fb6f568a0eaa5da61059b2cfeb9d9080cb435",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": 12.608041516723688,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -559,6 +347,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0042.m4a",
       "sha256": "4cf11e471662c041ab403fc5299651b6163f862b35abb3ea4fbccc446a1b3759",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -17.57613115728202,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -566,6 +357,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0046.m4a",
       "sha256": "7e124c8754f629478586a2ea73eb712ddc40da31c69ff2b5e16b43f9fc3a3d22",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -34.590853360995766,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -573,20 +367,19 @@
       "instrumentId": "finger-bass",
       "file": "source-0047.m4a",
       "sha256": "3d9f890588d02ba7ecb6c16a175cf2d846bf5c4917a7b06258c1f7e9b2a54148",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -38.81853323743269,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "NOTE_LEVEL_STEP",
-      "instrumentId": "finger-bass",
-      "file": "source-0095.m4a",
-      "sha256": "6c07c2dc73f501104e142ca3331493517d3c24ec496f9ddaec94e401f76f8bcb",
-      "reason": "Hash-bound mapping disposition: the remaining adjacent-note step survived static source calibration; further automatic gain would exceed the neutral correction policy."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "finger-bass",
       "file": "source-0114.m4a",
       "sha256": "4539f06f2e08ef0ab455381327061bbad8ebea0d21da56e8b8e539754e2a0db9",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -14.711537196139034,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -594,6 +387,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0115.m4a",
       "sha256": "d6ba0401e40294d035c01b54514a9e38ababb71fb305f3e0eb52a496804d9b7d",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -14.711537196139034,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -601,6 +397,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0121.m4a",
       "sha256": "407855c645bac5d7065f03ed737d874235e3b5690bddf8467de6694ccbf35eb1",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -14.711537196139034,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -608,6 +407,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0126.m4a",
       "sha256": "33600f38bb8c7d368bdbb06d1f00f93b967d3f74a8d3ca1f1d0a462e28e959f2",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": 503.8216779692036,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -615,6 +417,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0158.m4a",
       "sha256": "19c09a5f82adae3df8105ea67c621fa4d7c27568220144aad7f9b8683d1a2373",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": 12.168251672827068,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -622,6 +427,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0161.m4a",
       "sha256": "54973eeb35d798d391b805a7a25e90af959e7b76f9f41ae3f0f1f8a8c966ada3",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -15.288017964964183,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -629,6 +437,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0164.m4a",
       "sha256": "520fd2cf959b4fc315cc114967518e3a2a4ec1876f129f052baa8ac0121b75cc",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -15.288017964964183,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -636,6 +447,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0167.m4a",
       "sha256": "74084d32feaa4d583a23d64a2cc868a0cc9ec3428a7596d7297175a8246bef6c",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -15.288017964964183,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -643,6 +457,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0174.m4a",
       "sha256": "b2dd4bc900a7d266d947ca82d8ea3f8945abc08124d6e738c415380af15d35bb",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -15.288017964964183,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -650,6 +467,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0176.m4a",
       "sha256": "42288bd863c00001ff90219401cc8b9b2010853c0f34529ae7d31adb0d7bb98d",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": -15.288017964964183,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -657,6 +477,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0197.m4a",
       "sha256": "c49c3be2929c54a6ec854d978dd460181b39d0de3cf2ba4e0ba2c8cddb5f07be",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": 13.721938161828007,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -664,6 +487,9 @@
       "instrumentId": "finger-bass",
       "file": "source-0198.m4a",
       "sha256": "e58ab47912b17b864607f68f0245a5b296f7ff5da864220d077360dff257bb04",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": 13.721938161828007,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -671,321 +497,29 @@
       "instrumentId": "finger-bass",
       "file": "source-0204.m4a",
       "sha256": "448dce7a481e1bdfc1c60cb4265c0d5620b0cf2aefaca5e11343ae49ffbbab6f",
+      "manifestSha256": "643ea3f317a0a370fdfe8b6525a4049ab18875c4dbee447d1ffcb63309d9c037",
+      "measuredValue": 10.065687491191966,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "NOTE_LEVEL_STEP",
-      "instrumentId": "finger-bass",
-      "file": "source-0208.m4a",
-      "sha256": "8b00b0528297dd85190b8d8f41c45397e6eea44766fac2e97ce418a2201243ce",
-      "reason": "Hash-bound mapping disposition: the remaining adjacent-note step survived static source calibration; further automatic gain would exceed the neutral correction policy."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "Bb2-loud.m4a",
-      "sha256": "24fea02ce38f8042200f89a16e6955d58702bdfc07415b947e9d564ab7ad565d",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "Bb2-soft.m4a",
-      "sha256": "2bf265767e800dc26b30f5e47242f7bc70ff6d9ba6e5f60de51ac88fcecf5701",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "C2-loud.m4a",
-      "sha256": "ff49e73dd5cf373fb990775c91ae03d129f8bd121a8789e223e06724d56b8896",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "C2-soft.m4a",
-      "sha256": "21d01bb24b76a2e0df7e0617fde920328fee6e3bbf24a4cb5352530474be922a",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "C4-loud.m4a",
-      "sha256": "034d436648b5757cdb99a26dc8d4146890d31c5c068c47bb6b91ab804f4b8cc6",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "C4-soft.m4a",
-      "sha256": "9d4c78f9d167763dcddc9de457befef961aa5d1744996a4b1a54c44bb065ad5f",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "D3-loud.m4a",
-      "sha256": "9c184e1878cd0f6b946296a5c796197c02eb272846751c1635dc3e91a50b80dc",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "D3-soft.m4a",
-      "sha256": "668a5f9a073e2859b6789ddb9f9340f67727c780a989cb4efe944351f7378c9c",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "D5-soft.m4a",
-      "sha256": "08a44741ba3b45eeab4d0c72161d9a0d1ee2c1eb522148be0395b77b688cdec2",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "Eb2-loud.m4a",
-      "sha256": "1e3bfcd72ba71c4a65dc6d8e879afa8a34bccebe6bb5ee8238585ae74b3cf217",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "Eb2-soft.m4a",
-      "sha256": "c23437c466442baf19f7630203240c6e8694002ad8591ef560dbd9f29efa356b",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "F3-loud.m4a",
-      "sha256": "58b884b7c4bf07ceea8b29cb1bece016c7ec52e224d00980cad7ee39eca74e3e",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "F3-soft.m4a",
-      "sha256": "2b9da7f702321aab31216d0e4b3dd86a0022cadad54b36e6fd32128cca2dd4d0",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "F5-soft.m4a",
-      "sha256": "81c2ec71d91b1299e9af4ead4355109c0379c0f9bab62b3cfd6d126a32a7c6a2",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "G2-loud.m4a",
-      "sha256": "c708c9fa96fae02811c1169b3d4f5354b1f9a53bce0870d264bf4e0c84b3fae0",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "french-horn",
       "file": "G2-loud.m4a",
       "sha256": "c708c9fa96fae02811c1169b3d4f5354b1f9a53bce0870d264bf4e0c84b3fae0",
+      "manifestSha256": "fff9406d238dfd8f8912987f33af814075203a229fc7a64449433525d17763e1",
+      "measuredValue": -19.109695934167803,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "french-horn",
-      "file": "G2-soft.m4a",
-      "sha256": "c0c54c713331a385a15a978f761aa9cede0bdce0d6a8b5c0cd20efbc03b77a12",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "C2.mp3",
-      "sha256": "daa5f835a92d589669d101d987dde76fe4e2da9ee90ef7f5cd44eaa3f92b5b61",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "C2.mp3",
-      "sha256": "daa5f835a92d589669d101d987dde76fe4e2da9ee90ef7f5cd44eaa3f92b5b61",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "C3.mp3",
-      "sha256": "de1710e00e6ddd043b059c9bc6d09b2bc50c586ae98f99133e13388b43efda6b",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "C3.mp3",
-      "sha256": "de1710e00e6ddd043b059c9bc6d09b2bc50c586ae98f99133e13388b43efda6b",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "C4.mp3",
-      "sha256": "e075713c3a25c72d7ae778e239eb3b0aa3a26be5536ecee966bf0d6d829730b0",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "C4.mp3",
-      "sha256": "e075713c3a25c72d7ae778e239eb3b0aa3a26be5536ecee966bf0d6d829730b0",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "C5.mp3",
-      "sha256": "58f36fd718763f4334f3b77ea40c60bc7e1b675e13430072435f6d2343fb8123",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "C5.mp3",
-      "sha256": "58f36fd718763f4334f3b77ea40c60bc7e1b675e13430072435f6d2343fb8123",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "C6.mp3",
-      "sha256": "9b2987beb87fd32a2055c475a8f454a9c01a01e4834cd9134c85cd4470a9d2ea",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "C6.mp3",
-      "sha256": "9b2987beb87fd32a2055c475a8f454a9c01a01e4834cd9134c85cd4470a9d2ea",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "E2.mp3",
-      "sha256": "43d1e3898edaea0d18ba393dca1c2b728f9c40444eeb9a5ee714a9683162c684",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "E2.mp3",
-      "sha256": "43d1e3898edaea0d18ba393dca1c2b728f9c40444eeb9a5ee714a9683162c684",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "E3.mp3",
-      "sha256": "30b553d22f402c25567ad39b12dbe5c6d0db77ca6d1983e15daefdfc22dad372",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "E3.mp3",
-      "sha256": "30b553d22f402c25567ad39b12dbe5c6d0db77ca6d1983e15daefdfc22dad372",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "E4.mp3",
-      "sha256": "51fc99af00f98ed77b0c571dd87669defb305e33e48e3461a93938d2cc1ad33e",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "E4.mp3",
-      "sha256": "51fc99af00f98ed77b0c571dd87669defb305e33e48e3461a93938d2cc1ad33e",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "E5.mp3",
-      "sha256": "9f5e96312ca28d95ce2ddaed313ba386f661326c447c90757fc456041eefa667",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "E5.mp3",
-      "sha256": "9f5e96312ca28d95ce2ddaed313ba386f661326c447c90757fc456041eefa667",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "Gs2.mp3",
-      "sha256": "58d4119577a64485774fc2332919896916292e82357972fffce4b85556fec4cc",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "Gs2.mp3",
-      "sha256": "58d4119577a64485774fc2332919896916292e82357972fffce4b85556fec4cc",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "Gs3.mp3",
-      "sha256": "97c30a5f41c1496895d6408b31dc897a44b869b850089c98fe26f4bae5e4527f",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "Gs3.mp3",
-      "sha256": "97c30a5f41c1496895d6408b31dc897a44b869b850089c98fe26f4bae5e4527f",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "Gs4.mp3",
-      "sha256": "8c396fce67981ca30c521d38cf2b09fc0b343cae8db0743c8c9184192c430e8c",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "Gs4.mp3",
-      "sha256": "8c396fce67981ca30c521d38cf2b09fc0b343cae8db0743c8c9184192c430e8c",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_CORRELATION",
-      "instrumentId": "hammond-organ",
-      "file": "Gs5.mp3",
-      "sha256": "e7c7a1f13f0f9d95a8e98be46692a557d4e1d021c097360dafe8a57017754096",
-      "reason": "Hash-bound loop disposition: the declared source loop has low boundary correlation but remains decodable and is retained as authored."
-    },
-    {
-      "code": "LOOP_SEAM_DIFF",
-      "instrumentId": "hammond-organ",
-      "file": "Gs5.mp3",
-      "sha256": "e7c7a1f13f0f9d95a8e98be46692a557d4e1d021c097360dafe8a57017754096",
-      "reason": "Hash-bound loop disposition: the declared source loop has a measurable seam-window difference and is retained as authored."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "kalimba",
       "file": "A5.mp3",
       "sha256": "d5409cd94bc75fd6f80056a7143f3060347a2c03950d5092f133f9ec4dd18486",
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38",
+      "measuredValue": -30.352824196691586,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -993,6 +527,9 @@
       "instrumentId": "kalimba",
       "file": "B3.mp3",
       "sha256": "f62355fac85875db7dc38604c5ed578596f3fd38e7dc2ff34071442c5b2239cf",
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38",
+      "measuredValue": 15.430926069505858,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1000,6 +537,9 @@
       "instrumentId": "kalimba",
       "file": "B4.mp3",
       "sha256": "9f55635b833b1f5c17e3b3371a8ca4e22ba3ad61fe089cc5dceeee58d28ba3d5",
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1007,6 +547,9 @@
       "instrumentId": "kalimba",
       "file": "Cs4.mp3",
       "sha256": "135dcf451988f41268995bb3600a5c8a2ad41dfdd3e08d3bfcfea510fb1df907",
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38",
+      "measuredValue": 12.020688356579285,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1014,6 +557,9 @@
       "instrumentId": "kalimba",
       "file": "Cs5.mp3",
       "sha256": "274e1bc5734623bb81e0ed97d8158a92eaa32b1d607104bb4d525f814871c28b",
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38",
+      "measuredValue": -31.262417292447253,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1021,6 +567,9 @@
       "instrumentId": "kalimba",
       "file": "Ds5.mp3",
       "sha256": "bdbd16feba436673d932f2f75736672dc345bfb1328f7a7df18fbaae63d27abe",
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38",
+      "measuredValue": 46.32823803530073,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1028,6 +577,9 @@
       "instrumentId": "kalimba",
       "file": "Fs4.mp3",
       "sha256": "1721fe16de15ab85e0d0fcf072a7531206572f91ffe3ce4829caa0a42bafe7dd",
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1035,6 +587,9 @@
       "instrumentId": "kalimba",
       "file": "Fs5.mp3",
       "sha256": "c033fb0e1fdcc73d7b7dfc3277b178d525e0a5cce3be663f9cc0482bac7dd558",
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38",
+      "measuredValue": -11.711128561120177,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1042,6 +597,9 @@
       "instrumentId": "marimba",
       "file": "B5-ff.mp3",
       "sha256": "07729fccbc59c6e672b6dfbad4734e5a2923c82077fa5b461bdae9a0f0950ab0",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -7.3736676821602565,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1049,6 +607,9 @@
       "instrumentId": "marimba",
       "file": "B5-ff.mp3",
       "sha256": "07729fccbc59c6e672b6dfbad4734e5a2923c82077fa5b461bdae9a0f0950ab0",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -0.7121356695764585,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1056,6 +617,9 @@
       "instrumentId": "marimba",
       "file": "B5-ff.mp3",
       "sha256": "07729fccbc59c6e672b6dfbad4734e5a2923c82077fa5b461bdae9a0f0950ab0",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1063,6 +627,9 @@
       "instrumentId": "marimba",
       "file": "B5-mf.mp3",
       "sha256": "e546d0480915209f278c9b49394cb4be13647dc53fc77bbc8922ad42e4297066",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -7.492554950309525,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1070,6 +637,9 @@
       "instrumentId": "marimba",
       "file": "B5-mf.mp3",
       "sha256": "e546d0480915209f278c9b49394cb4be13647dc53fc77bbc8922ad42e4297066",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -0.715298881875761,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1077,6 +647,9 @@
       "instrumentId": "marimba",
       "file": "B5-mf.mp3",
       "sha256": "e546d0480915209f278c9b49394cb4be13647dc53fc77bbc8922ad42e4297066",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1084,6 +657,9 @@
       "instrumentId": "marimba",
       "file": "B5-pp.mp3",
       "sha256": "1cfc63ffedb74df808d27f6deb5eca582a0adbcda4b3644c0c87c28f38afe55a",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -7.315592092523189,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1091,6 +667,9 @@
       "instrumentId": "marimba",
       "file": "B5-pp.mp3",
       "sha256": "1cfc63ffedb74df808d27f6deb5eca582a0adbcda4b3644c0c87c28f38afe55a",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -0.7090990954240626,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1098,6 +677,9 @@
       "instrumentId": "marimba",
       "file": "B5-pp.mp3",
       "sha256": "1cfc63ffedb74df808d27f6deb5eca582a0adbcda4b3644c0c87c28f38afe55a",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1105,6 +687,9 @@
       "instrumentId": "marimba",
       "file": "B5-pp.mp3",
       "sha256": "1cfc63ffedb74df808d27f6deb5eca582a0adbcda4b3644c0c87c28f38afe55a",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -26.797487726918803,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     },
     {
@@ -1112,6 +697,9 @@
       "instrumentId": "marimba",
       "file": "C5-ff.mp3",
       "sha256": "c058df1a1f2cb275e4dd85ff882d2b04a8bc8fb7f43a4f424b985197d3af41c4",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -5.013713850428488,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1119,6 +707,9 @@
       "instrumentId": "marimba",
       "file": "C5-ff.mp3",
       "sha256": "c058df1a1f2cb275e4dd85ff882d2b04a8bc8fb7f43a4f424b985197d3af41c4",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -0.42433379642923597,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1126,6 +717,9 @@
       "instrumentId": "marimba",
       "file": "C5-mf.mp3",
       "sha256": "48a07b45adb0b8c79e876a50ddeaf0a72273b80394778d1d3e2a264a2bb652ba",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -5.889001012430261,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1133,6 +727,9 @@
       "instrumentId": "marimba",
       "file": "C5-mf.mp3",
       "sha256": "48a07b45adb0b8c79e876a50ddeaf0a72273b80394778d1d3e2a264a2bb652ba",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -0.5750995055376312,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1140,6 +737,9 @@
       "instrumentId": "marimba",
       "file": "C5-pp.mp3",
       "sha256": "5237b2f415ee82afe789e4524e5aa0d286f9b5461272425c0afda480c3014986",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -5.9319365500151156,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1147,6 +747,9 @@
       "instrumentId": "marimba",
       "file": "C5-pp.mp3",
       "sha256": "5237b2f415ee82afe789e4524e5aa0d286f9b5461272425c0afda480c3014986",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -0.5742625439182282,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1154,6 +757,9 @@
       "instrumentId": "marimba",
       "file": "C7-pp.mp3",
       "sha256": "5ad8dddb61161b1e10e51ae0b0ca00f2cd6fa0885bd358ee78478981827c68e5",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": 588.2888714388798,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1161,6 +767,9 @@
       "instrumentId": "marimba",
       "file": "F6-ff.mp3",
       "sha256": "eb4cfc9e4b341d58d93659040339ec4646431facd560e7bff78be37fa0e2858d",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -23.442413830896612,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1168,6 +777,9 @@
       "instrumentId": "marimba",
       "file": "F6-mf.mp3",
       "sha256": "f3b657e1e182032ace59e32cd5d3f1215a6677f4278e7c2930f20fac7b511af0",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -23.442413830896612,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1175,6 +787,9 @@
       "instrumentId": "marimba",
       "file": "F6-mf.mp3",
       "sha256": "f3b657e1e182032ace59e32cd5d3f1215a6677f4278e7c2930f20fac7b511af0",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -32.11614793379516,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     },
     {
@@ -1182,6 +797,9 @@
       "instrumentId": "marimba",
       "file": "F6-pp.mp3",
       "sha256": "0df70641489ae59c2928c9d58ac7a1239fc00ecfbe7b446b18a68fef24c9393e",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": 270.69258357294075,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1189,6 +807,9 @@
       "instrumentId": "marimba",
       "file": "G5-pp.mp3",
       "sha256": "313ec336bd62abea6124f84b4b889594e3e6dad72f3b49e18efadf54d366de43",
+      "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
+      "measuredValue": -32.40143157804995,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     },
     {
@@ -1196,6 +817,9 @@
       "instrumentId": "piano",
       "file": "C2-ff.mp3",
       "sha256": "ec04445524184ba6fef0d3ed650c6b2287e851191577662cdd26cc0e1c639bed",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -1.936545527836283,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1203,6 +827,9 @@
       "instrumentId": "piano",
       "file": "C3-ff.mp3",
       "sha256": "74b863e57a12a5a4105f3e08e68c7acb9d2165496a01b371a332d41fe735e77f",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -1.7224351387977603,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1210,6 +837,9 @@
       "instrumentId": "piano",
       "file": "C3-ff.mp3",
       "sha256": "74b863e57a12a5a4105f3e08e68c7acb9d2165496a01b371a332d41fe735e77f",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": 10.936843754940583,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1217,6 +847,9 @@
       "instrumentId": "piano",
       "file": "C4-ff.mp3",
       "sha256": "23f5186b6ed472d5eb71ce0823ab9de7f447ca5be3af236323c8b3d901667981",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -1.9240888627071393,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1224,6 +857,9 @@
       "instrumentId": "piano",
       "file": "C4-ff.mp3",
       "sha256": "23f5186b6ed472d5eb71ce0823ab9de7f447ca5be3af236323c8b3d901667981",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -3.500520698943504,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1231,6 +867,9 @@
       "instrumentId": "piano",
       "file": "C4-mf.mp3",
       "sha256": "60494085bfa2f8675933c118ecf40056101e8c0a8e33c6b32d56a2a2e95e10ca",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -3.432612896272209,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1238,6 +877,9 @@
       "instrumentId": "piano",
       "file": "C4-pp.mp3",
       "sha256": "38b245d91ceea0a9bee62bd702b4f99ee3eeecae06ad94a2b9e764ef4650ae39",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -3.3092357842335707,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1245,6 +887,9 @@
       "instrumentId": "piano",
       "file": "C5-ff.mp3",
       "sha256": "558a1169af86c0f9f67a81261748675ac1103c2339570b71530e62d778c5658d",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -1.786064331942101,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1252,6 +897,9 @@
       "instrumentId": "piano",
       "file": "C5-ff.mp3",
       "sha256": "558a1169af86c0f9f67a81261748675ac1103c2339570b71530e62d778c5658d",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -5.430199388464962,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1259,6 +907,9 @@
       "instrumentId": "piano",
       "file": "C5-ff.mp3",
       "sha256": "558a1169af86c0f9f67a81261748675ac1103c2339570b71530e62d778c5658d",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -0.6375646414285355,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1266,6 +917,9 @@
       "instrumentId": "piano",
       "file": "C5-mf.mp3",
       "sha256": "4802622a0463393ae92ac653871795296df83c96a466335f37a90ac412605d80",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -5.7477759499110945,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1273,6 +927,9 @@
       "instrumentId": "piano",
       "file": "C5-mf.mp3",
       "sha256": "4802622a0463393ae92ac653871795296df83c96a466335f37a90ac412605d80",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -0.7277809939558032,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1280,6 +937,9 @@
       "instrumentId": "piano",
       "file": "C5-pp.mp3",
       "sha256": "f5dd57961f5827ea3f0a5699d6ac78b3fa5b0b621b3be788795bf3e1c7e7b3a7",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -5.4805057336255185,
+      "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
     {
@@ -1287,6 +947,9 @@
       "instrumentId": "piano",
       "file": "C5-pp.mp3",
       "sha256": "f5dd57961f5827ea3f0a5699d6ac78b3fa5b0b621b3be788795bf3e1c7e7b3a7",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -0.6863179290022504,
+      "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
     {
@@ -1294,6 +957,9 @@
       "instrumentId": "piano",
       "file": "F2-ff.mp3",
       "sha256": "9456c06863f13619bba1beb65ae2e0f429ac14419369e8c032cab74565466ea9",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -1.7499155164101,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1301,6 +967,9 @@
       "instrumentId": "piano",
       "file": "F2-ff.mp3",
       "sha256": "9456c06863f13619bba1beb65ae2e0f429ac14419369e8c032cab74565466ea9",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": 17.61644457459829,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1308,6 +977,9 @@
       "instrumentId": "piano",
       "file": "F2-mf.mp3",
       "sha256": "59d0d3d6c7daead8e1ba5004cdaba9f0f4a2bc67f457811b152791f1322f8bf4",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": 10.705321428176262,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1315,6 +987,9 @@
       "instrumentId": "piano",
       "file": "F3-ff.mp3",
       "sha256": "06a59cc392a2546c68a9cf2733a2c294cd5d1d50ec79767084da123f3caf5634",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -1.3228683147731388,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1322,6 +997,9 @@
       "instrumentId": "piano",
       "file": "F3-ff.mp3",
       "sha256": "06a59cc392a2546c68a9cf2733a2c294cd5d1d50ec79767084da123f3caf5634",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": 10.705321428176262,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1329,6 +1007,9 @@
       "instrumentId": "piano",
       "file": "F3-mf.mp3",
       "sha256": "8a6231fc17532b84d0b9a3c814b4f6120b6a05bbe53d4bad59d79e68b882cb07",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": 10.705321428176262,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1336,6 +1017,9 @@
       "instrumentId": "piano",
       "file": "F4-ff.mp3",
       "sha256": "b93d70b344fdb81f7300bdf961b2ba6bd1fa28e6da260946f1b84c71124431a0",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": -1.9138051852141005,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1343,6 +1027,9 @@
       "instrumentId": "piano",
       "file": "F4-ff.mp3",
       "sha256": "b93d70b344fdb81f7300bdf961b2ba6bd1fa28e6da260946f1b84c71124431a0",
+      "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
+      "measuredValue": 17.61644457459829,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1350,13 +1037,19 @@
       "instrumentId": "slap-bass",
       "file": "manifest.json",
       "sha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
-      "reason": "Hash-bound manifest disposition: playable range exceeds the nearest-root guideline but remains intentionally reachable with runtime range warnings."
+      "manifestSha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
+      "measuredValue": 12,
+      "threshold": 6,
+      "reason": "Hash-bound manifest disposition: the playable range stretches 12 semitones beyond the outer sampled roots; retaining it preserves 12 currently playable notes, while narrowing it would remove 26.7% of capability without replacement samples or session migration."
     },
     {
       "code": "HOT_PEAK",
       "instrumentId": "slap-bass",
       "file": "slap-a3.mp3",
       "sha256": "423bc2fb4149cb104cd695ddd84421fee017643b55726017663d326b3384a96d",
+      "manifestSha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
+      "measuredValue": -1.4547738820182516,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1364,6 +1057,9 @@
       "instrumentId": "slap-bass",
       "file": "slap-c3.mp3",
       "sha256": "26d5a09378b6e7506c3886c5d9df38cc02db5b7c83209c7f946ee348ef0fc7a1",
+      "manifestSha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
+      "measuredValue": -1.456796545853234,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1371,6 +1067,9 @@
       "instrumentId": "slap-bass",
       "file": "slap-c4.mp3",
       "sha256": "d8f66f9b966c11dd24ea4c793562a8a5e757c2d6cadb29506f4bf8be0d7a5122",
+      "manifestSha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
+      "measuredValue": -1.783673628517831,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1378,6 +1077,9 @@
       "instrumentId": "slap-bass",
       "file": "slap-e2.mp3",
       "sha256": "f1bcbfca5717a2f8925bf985860e14dd214993792ce549bf53e9138ed584ee08",
+      "manifestSha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
+      "measuredValue": -2.3807804880482957,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -1385,6 +1087,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0002.m4a",
       "sha256": "8f747bf329be4dd22670b399c769e26a28ce19c38e532ce07f67bd62db265ed3",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 16.11243520024027,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1392,6 +1097,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0003.m4a",
       "sha256": "58c4ad0054aa180dc7108842d8e525f82631f1269011002b10b0927bd7aacf63",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 16.11243520024027,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1399,6 +1107,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0005.m4a",
       "sha256": "3d5f4b4fe58c7553a3134a46967e56fe41f101f6c1d193b2f4adc308c04fac2c",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 16.11243520024027,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1406,6 +1117,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0006.m4a",
       "sha256": "ca1e678416fc3917f83163267e21c805bf917992894bf0deed81d7bb08ab86ce",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 26.510268552793605,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1413,6 +1127,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0009.m4a",
       "sha256": "6a93aa1eac222b55ae4ce65aefdfd3b4ff27e9610a442fa245d61d67a4ef2fbb",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 16.11243520024027,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1420,20 +1137,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0010.m4a",
       "sha256": "62d1dbc3add133518925a7ce8eefc68a42a1a06d7e7541cc88c353aac7bdb92d",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 16.11243520024027,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0011.m4a",
-      "sha256": "1becc39c7152048e9fb763ecffa1d16bb9a810e1926c9d1f2af74cb530806ae1",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0011.m4a",
       "sha256": "1becc39c7152048e9fb763ecffa1d16bb9a810e1926c9d1f2af74cb530806ae1",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 16.11243520024027,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1441,6 +1157,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0013.m4a",
       "sha256": "556eb48b00df9cedab50934239b7c3fefefa1bca3a9bede121d2383ba3430933",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 16.11243520024027,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1448,6 +1167,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0025.m4a",
       "sha256": "efa2a09139c912d13735fe5b130576ce88c8652502aefe9919d5462856f9a7bd",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 34.07492353440489,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1455,6 +1177,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0033.m4a",
       "sha256": "00d1ea475b40fbba16ef95c504c5a979f95fcf20fd3843bb57fd0ac750e8701d",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -54.79170015998204,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1462,6 +1187,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0034.m4a",
       "sha256": "b0ce4b0808ad9f84cbf983c4d69f8027abacaa0d34daf6268ecded570c727f2f",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -32.30782506207959,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1469,6 +1197,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0038.m4a",
       "sha256": "6e2b2f4510698e0436c84885696f314186a5683fb27f1d9aa99eac75270d77b2",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 13.55536161450891,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1476,6 +1207,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0039.m4a",
       "sha256": "fcbe117ffd86f4d44408c7bb1472b9b9950473c71334d67eeb1b207ba4601c7a",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 25.213547414362893,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1483,20 +1217,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0041.m4a",
       "sha256": "57f3cfbda8b0bb15657f07922d849ce1bb9e1018ecdc2f22db2d807aef00f0e2",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 25.213547414362893,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0051.m4a",
-      "sha256": "62faffc1d2230672b956bd590620c548d5d0529e520a41b08788eef7ff0aba1f",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0056.m4a",
       "sha256": "4acf31aad51ca70962c78d8d7c36b711574d6a418848cbd8ca0826339ec5f7b3",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -15.62113029189402,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1504,20 +1237,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0057.m4a",
       "sha256": "fd920a3e82efea947febab130bdb1f05807acdad065477fd12a24006afb0202c",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -15.62113029189402,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0058.m4a",
-      "sha256": "80b7681988c1f003182cfa005f8cb6bf73f3a72c91d49aabe59341cb60bcc3c0",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0058.m4a",
       "sha256": "80b7681988c1f003182cfa005f8cb6bf73f3a72c91d49aabe59341cb60bcc3c0",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -15.62113029189402,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1525,6 +1257,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0059.m4a",
       "sha256": "ac79b613a41f197b82ff8b1cbd6603a31c9a6b5944725f751f5bbc161fd28fe4",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -15.62113029189402,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1532,6 +1267,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0065.m4a",
       "sha256": "6b89791513291c3f709eb8e3383099b219024754d299ec9d6b831a0294107064",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 23.2846429389582,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1539,6 +1277,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0066.m4a",
       "sha256": "0d70926eabecb34efddb1151ae8834d58cc8487407b862031b8354d3eb364266",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 23.2846429389582,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1546,6 +1287,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0080.m4a",
       "sha256": "f5b930c800abdfaa09fb4e3f53136f73d7753ccdac012d55c08935af31887e7f",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.61644457459829,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1553,6 +1297,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0082.m4a",
       "sha256": "d0017ac02062376e33a8f73d174f653fb20ca6634919447ad6ab7f4821909e28",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.61644457459829,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1560,6 +1307,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0085.m4a",
       "sha256": "76d9bad15388c38377d48a62041b4b2f7644141c2b6ba4ba6f5cf6be3f94a966",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -11.711128561120177,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1567,6 +1317,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0086.m4a",
       "sha256": "ea95605b1979c727b4638890cb194f61017802da8e923662ad00d4e12b541e5f",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -11.711128561120177,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1574,6 +1327,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0087.m4a",
       "sha256": "30d0a65fb8f7d62ed3968ee657f68c57002c1a652caa888d8cde9ef430e94775",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -11.711128561120177,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1581,6 +1337,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0088.m4a",
       "sha256": "8a7262901265a8e1a499e454c2c59e17685b031e63f3ecad9eb97d658281a790",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -11.711128561120177,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1588,27 +1347,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0096.m4a",
       "sha256": "ad4e854c465f0db0345512c0f4b0301dd196bff024a2aea3c2598e8beb208d93",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0108.m4a",
-      "sha256": "d6bb79b3bf1febb1709be6a3a0c8a22a1326dbb0ad0db405fc5d3301aae9f4a8",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0119.m4a",
-      "sha256": "91ff96c32ecbcaba7cae370d0eeb011065f4ab5f2f9708b1b1d6aa5754f3aae6",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0120.m4a",
       "sha256": "5da2d08b3a8d56b4dcedcbf2c9abc084ccc95e07438af8dbf0d6c4e7e3e6caa1",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 19.462964969756058,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1616,6 +1367,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0122.m4a",
       "sha256": "24f0d06e0b5dc070993c89c3dfce37a61880d368f4f1f4560a9b65c8729271b5",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 52.75695354924039,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1623,6 +1377,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0123.m4a",
       "sha256": "2410186f885948a1a4fb4bc19305346d2a904237a32f70a3c944a336c02f6aef",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 52.75695354924039,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1630,6 +1387,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0125.m4a",
       "sha256": "c940883acf45ae80e25705ceade5de411b20984b800259346764a3f305537f16",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -13.296193133051247,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1637,20 +1397,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0126.m4a",
       "sha256": "b456948c100f5c29f77feb767c8d5ba3691baa4406eaaa3a34eb1001908df1b9",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -13.296193133051247,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0129.m4a",
-      "sha256": "4c14cba1cf82186f7c248f16ea86fb850f854ae49fd52194e2c55c43662c001d",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0129.m4a",
       "sha256": "4c14cba1cf82186f7c248f16ea86fb850f854ae49fd52194e2c55c43662c001d",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -13.296193133051247,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1658,6 +1417,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0136.m4a",
       "sha256": "d63414db622b7f03cfa7993095c656a5a6174ee636ca2b14431cad9e6b63a370",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 38.9057732308529,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1665,34 +1427,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0137.m4a",
       "sha256": "3e46f12bc5745fe74abe9691676160498dcb3296941c69572a15b1e35c2f86f2",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -13.296193133051247,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0140.m4a",
-      "sha256": "ec423fada6811581b298d367aefa0f4f6a857c2de2433b2b56efb1bfa9c17669",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0159.m4a",
-      "sha256": "54add7697b0f54b536ead4be00f3dce86948258d7a24ada769fda86d4fdd3a18",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0161.m4a",
-      "sha256": "8015e163f410a61d3f85fb75a24f0cafb375c206d59f8a32a23211572c937b54",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0168.m4a",
       "sha256": "ea8e1edb53cf65fe904e6df4c08169dfe2e169d61fc88ef1a0c4aaa22a3afa3f",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 16.11243520024027,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1700,6 +1447,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0176.m4a",
       "sha256": "7ee67d2a55f3ab60a29a0e66dcf989f0f8e0b7c6b775dd132d7abf42b7c0de9d",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 13.55536161450891,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1707,20 +1457,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0178.m4a",
       "sha256": "99bcece0f19445bbb94ccc67c24fc79e861b91829e326de1fe62abfbb0ba6426",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 21.417965835143377,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "NOTE_LEVEL_STEP",
-      "instrumentId": "steel-drums",
-      "file": "source-0179.m4a",
-      "sha256": "bea113439280a43f2a9b71da2d6158bf511af9a7c650fa12e7b1695883d18c7f",
-      "reason": "Hash-bound mapping disposition: the remaining adjacent-note step survived static source calibration; further automatic gain would exceed the neutral correction policy."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0179.m4a",
       "sha256": "bea113439280a43f2a9b71da2d6158bf511af9a7c650fa12e7b1695883d18c7f",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 21.417965835143377,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1728,6 +1477,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0182.m4a",
       "sha256": "e3c0d1edfd67e8d40a9547dd1d8b2fc6a0b476ef4e9ebab97ca9345dc0f4efde",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 10.21866356767589,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1735,6 +1487,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0184.m4a",
       "sha256": "a2d8a08325bcc628503224b2c0971b9fade8e4323b7185577af50bc4877eb5ea",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 10.21866356767589,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1742,6 +1497,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0191.m4a",
       "sha256": "ee26766d050e9021be7645b719557b5b196a9b2a42754830c41a7cde38020791",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1749,6 +1507,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0192.m4a",
       "sha256": "1d28c6769b9990a01ad7fc80b2b0f3dc74d677d12e1df14a13bf815176508412",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1756,6 +1517,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0198.m4a",
       "sha256": "c3c0380c6e922170bca9e059b051aaa1c095fb7588034649164f54e9c9b8b5fa",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 36.02992439979289,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1763,6 +1527,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0200.m4a",
       "sha256": "e81ec175e031bbe51f1368f9d7046c0df4bbbc8e470a73b64dbbfa9b069bf3cf",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 36.02992439979289,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1770,6 +1537,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0206.m4a",
       "sha256": "40b1d740c0565b0ea51f53fdbdbb4bcb1028e43d3e9ee911802f92c16118f438",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 11.050964155937436,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1777,6 +1547,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0208.m4a",
       "sha256": "6229ccb9ae4ac8ada57265dd27bdce459e801290fc9898223861cc079de2fb41",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 25.2396438043462,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1784,20 +1557,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0214.m4a",
       "sha256": "50f435d330db57afe31e8908cdd87dc1059d068f5d595b5e01922c9a50fddd56",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -14.711537196139034,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0216.m4a",
-      "sha256": "e6a8c4d80ff78b1c439738617bef606b91d6076352c65a9ead868c4fcbe6f484",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0216.m4a",
       "sha256": "e6a8c4d80ff78b1c439738617bef606b91d6076352c65a9ead868c4fcbe6f484",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -14.711537196139034,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1805,6 +1577,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0221.m4a",
       "sha256": "8df812252409a78cee30444aee960c57c92e2c4e70e1d74ae074009f1a119e62",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 26.510268552793605,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1812,6 +1587,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0225.m4a",
       "sha256": "1832afbad7a527c40115ea309951735d3f9711079f4a396673ab7d5f6f285905",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -31.262417292447253,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1819,6 +1597,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0233.m4a",
       "sha256": "da609ee905563f99de9e6cc149c7eaa3dc4aec8283233aced0a70c63840d0729",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 34.07492353440489,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1826,6 +1607,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0236.m4a",
       "sha256": "74b05fec9c378cb2a1d12975e4744cb8aa848b9c4a5c8a3deb35aca840d66cd6",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 34.07492353440489,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1833,6 +1617,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0247.m4a",
       "sha256": "ab9a54d815093705e829a611c806288f6de26b2791bfab0d5dd476dcc641a3fe",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 48.76811551308151,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1840,6 +1627,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0248.m4a",
       "sha256": "39a96e255d12cb161d3a6f140a557cf6a79a316aefa00d42c0d470d6142657fe",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 48.76811551308151,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1847,6 +1637,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0271.m4a",
       "sha256": "9f7673b4b98543eec30f74ddaa4041d591cf45c8dab9ae677faf12e0c7393347",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 23.2846429389582,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1854,6 +1647,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0272.m4a",
       "sha256": "26085c6c14df2889ab1817c3683389c2ec5c1f8f49b6b8746af84a3f7c3d52ab",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 23.2846429389582,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1861,6 +1657,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0275.m4a",
       "sha256": "4970910726c22d0147882a13ad0155b002ae092778db30becc6e4b4ebc9f2396",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 49.71621053495733,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1868,6 +1667,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0276.m4a",
       "sha256": "c8c2f46f5abf6f1194119d51035d88f5bd491a7c89939be8b088e8248cec77e6",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 23.2846429389582,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1875,6 +1677,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0294.m4a",
       "sha256": "6d48487f42beaa392de0c5da17a904f0eb7387236a460dba3e6ff5c3516d3c54",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1882,6 +1687,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0295.m4a",
       "sha256": "7b95a4095e78fdc222a993b242d6a61dfea04cbd6faa8dce5b1648ead76665c9",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1889,6 +1697,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0297.m4a",
       "sha256": "c1c46e2361753b47347c66577217d26b16a96b2ef3509ed907f6b5bc8816c366",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1896,6 +1707,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0299.m4a",
       "sha256": "6fbc8d88d428339fc4b2d3a4421c6e025fe0c4c578e382f26fa7d69d9440c268",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1903,6 +1717,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0301.m4a",
       "sha256": "00417b3a572b1605d1344fb1520a6a0484e6f1fe74d510a0a82c1a46f6a52e06",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1910,27 +1727,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0302.m4a",
       "sha256": "d9d148b1d1587fa92f1d6396073f06f1544a2856cf40e1e83d76ee24d5797dc8",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 17.38592693489386,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0305.m4a",
-      "sha256": "73598e9579f2d789b696dbc34e4b255f6fde334475358c2f7ee89ef55252b086",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0306.m4a",
-      "sha256": "3a40490639085b3ef608e039ba5cd33ebf3cb21ba1b678701e73fb49cb9484e6",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0327.m4a",
       "sha256": "a54a88ec0df75f854f9ca8305253d6df0d8dbf992628cdd1560ecf3a7e12f48d",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 36.02992439979289,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1938,6 +1747,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0328.m4a",
       "sha256": "15d4ca6babdbd27237b08ca624d196c75e8cc4de97cb2c1f9c825c38c7698a8a",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 36.02992439979289,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1945,6 +1757,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0336.m4a",
       "sha256": "989033abe9025271c87c675cca0de9a31cf9a7626dbbb5f666b20fdc68536aa1",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -30.352824196691586,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1952,6 +1767,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0338.m4a",
       "sha256": "a90530dc765c3017134964bc1edffa6d5836cac98a7065065198329873a4440c",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -30.352824196691586,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1959,6 +1777,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0340.m4a",
       "sha256": "cf7ea966a705d8734a991bcaa6de205f00a8d486fe74348a070b24ca604ffec4",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -30.352824196691586,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1966,6 +1787,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0348.m4a",
       "sha256": "884826bb9ebd2a18fff545dd585da2fd834b1f4735fd230a11db01e90af447d6",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 11.050964155937436,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1973,6 +1797,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0352.m4a",
       "sha256": "7ea6d7cb930342606620d117bc6ea025ea73709cef917f276247518bd600f5b6",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 11.050964155937436,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -1980,27 +1807,19 @@
       "instrumentId": "steel-drums",
       "file": "source-0354.m4a",
       "sha256": "7bf0d1a2483907228fadbcbb42543cc39b1ba04d8bbafa37cc94df87803cc11f",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 11.050964155937436,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0355.m4a",
-      "sha256": "3e27a3b4e880867d68c5954563a28cf0a3c62f845db52b14391cbcee7c041946",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
-    },
-    {
-      "code": "LEADING_SILENCE",
-      "instrumentId": "steel-drums",
-      "file": "source-0357.m4a",
-      "sha256": "ee4936a4f31ba93ab6cf04a620c81908f5a560edbd35a1738473dc99d3e91594",
-      "reason": "Hash-bound source disposition: residual onset exceeds the review threshold after safe codec compensation; further automatic trimming could remove an authored attack."
     },
     {
       "code": "PITCH_DEVIATION",
       "instrumentId": "steel-drums",
       "file": "source-0362.m4a",
       "sha256": "593988ccc0bc1b02aef7c6b1389ca2f635cef3d98aad0cc1fe80f8e3e0ff5a3e",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2008,6 +1827,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0363.m4a",
       "sha256": "5d4668012d28825f38953dc02175c87d77be22d375d39aeedc1dc5717a560c85",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": 25.2396438043462,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2015,6 +1837,9 @@
       "instrumentId": "steel-drums",
       "file": "source-0368.m4a",
       "sha256": "6b3911d5b7e7b4182d74eb56675f8bb4c5c0b3d76ea0b453584f0e2f49f89a72",
+      "manifestSha256": "8736f68ced323044c57e5c52e6c10120100e4c0338161074b997a0e8d805914f",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2022,6 +1847,9 @@
       "instrumentId": "string-section",
       "file": "B5.mp3",
       "sha256": "feb7e1890d5344ba93a2c7a19d4beb7e4afe17054e3d99cdf89bca470ac5d158",
+      "manifestSha256": "b67391ad7888c3055298072d3f580bee7717c693ecc191a57cf95c6fb3e85c0d",
+      "measuredValue": -13.666129426506814,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2029,6 +1857,9 @@
       "instrumentId": "string-section",
       "file": "D6.mp3",
       "sha256": "2221de991aec07bb83fa9563ed5d3799917f9861af12022b5af60eeabb480b2c",
+      "manifestSha256": "b67391ad7888c3055298072d3f580bee7717c693ecc191a57cf95c6fb3e85c0d",
+      "measuredValue": 25.213547414362893,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2036,6 +1867,9 @@
       "instrumentId": "string-section",
       "file": "G5.m4a",
       "sha256": "ea07725ee36a14ebf400284fa3cd74de44305cefc6c7c8dd1dd43af7e9eb9f91",
+      "manifestSha256": "b67391ad7888c3055298072d3f580bee7717c693ecc191a57cf95c6fb3e85c0d",
+      "measuredValue": -22.91043082858687,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2043,6 +1877,9 @@
       "instrumentId": "vibraphone",
       "file": "A3-ff.mp3",
       "sha256": "7223c2aa6fca8221914ae6bb23535c330f029c571659bbe411f5a2682e78d0b2",
+      "manifestSha256": "0475f0a638c7aadd6f92de60fa91c506403be1fc7a471e0d3424f34a76a9c831",
+      "measuredValue": -30.352824196691586,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2050,6 +1887,9 @@
       "instrumentId": "vibraphone",
       "file": "E6-ff.mp3",
       "sha256": "c5715376f94900cb6fee830226993e7ca1f0b1d18b2340cb4d60061f66a65f29",
+      "manifestSha256": "0475f0a638c7aadd6f92de60fa91c506403be1fc7a471e0d3424f34a76a9c831",
+      "measuredValue": 23.2846429389582,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2057,6 +1897,9 @@
       "instrumentId": "vibraphone",
       "file": "E6-mf.mp3",
       "sha256": "532ff4d50887814af6477558d6cd3e3f18b772d5409b7172a0664405f2c05874",
+      "manifestSha256": "0475f0a638c7aadd6f92de60fa91c506403be1fc7a471e0d3424f34a76a9c831",
+      "measuredValue": 23.2846429389582,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2064,6 +1907,9 @@
       "instrumentId": "vibraphone",
       "file": "F3-ff.mp3",
       "sha256": "52148696a5acf51790a8bdd825e8df0d6c6255febb687a2fb1996fae869ee9dd",
+      "manifestSha256": "0475f0a638c7aadd6f92de60fa91c506403be1fc7a471e0d3424f34a76a9c831",
+      "measuredValue": 336.0299243997922,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2071,6 +1917,9 @@
       "instrumentId": "vibraphone",
       "file": "F3-mf.mp3",
       "sha256": "a877394142fe83ed204da5a7edf1fb7fe884acd01c77ad1e40c2a14095e9ae3c",
+      "manifestSha256": "0475f0a638c7aadd6f92de60fa91c506403be1fc7a471e0d3424f34a76a9c831",
+      "measuredValue": 344.3732371699127,
+      "threshold": 10,
       "reason": "Hash-bound source disposition: the monophonic estimator reports a deviation, but automatic retuning of this complex or inharmonic source is not perceptually safe."
     },
     {
@@ -2078,6 +1927,9 @@
       "instrumentId": "vinyl-crackle",
       "file": "crackle.mp3",
       "sha256": "8f610746c6fe8245974c43066de6f962ee3ef06393b995dd63b679284aeb7662",
+      "manifestSha256": "4bb9fcade1c89d0f455f600b85d62a2758563c6bc0e5ed71eac23d47d1630db3",
+      "measuredValue": -1.479717239031301,
+      "threshold": -2.5,
       "reason": "Hash-bound delivery disposition: decoded peak exceeds review headroom but remains below clipping; another lossy transcode would be more damaging than retaining it behind source/master calibration."
     },
     {
@@ -2085,6 +1937,9 @@
       "instrumentId": "vinyl-crackle",
       "file": "crackle.mp3",
       "sha256": "8f610746c6fe8245974c43066de6f962ee3ef06393b995dd63b679284aeb7662",
+      "manifestSha256": "4bb9fcade1c89d0f455f600b85d62a2758563c6bc0e5ed71eac23d47d1630db3",
+      "measuredValue": -3.494504082351231,
+      "threshold": -35,
       "reason": "Hash-bound source disposition: EOF energy exceeds the review threshold; the runtime release envelope bounds playback and automatic tail synthesis is not source-faithful."
     }
   ]
