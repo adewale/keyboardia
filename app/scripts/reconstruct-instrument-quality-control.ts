@@ -17,6 +17,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { fileURLToPath } from 'node:url';
 
 import {
+  isLiveRoutingSilent,
   validateLiveQualityReport,
   type LiveQualityReport,
 } from './instrument-quality-live-receipt';
@@ -76,6 +77,13 @@ const SCRIPT_PATH = fileURLToPath(import.meta.url);
 const APP_ROOT = path.resolve(path.dirname(SCRIPT_PATH), '..');
 const REPOSITORY_ROOT = path.resolve(APP_ROOT, '..');
 
+/**
+ * A prospective evaluator-stability alarm for independently captured scalar
+ * energy summaries. This is not a PCM-equality tolerance or a statistical
+ * confidence interval; the derived audit decisions must still match exactly.
+ */
+export const LIVE_ENERGY_SPREAD_ALARM_DB = 0.5;
+
 interface CliOptions {
   baseRef: string;
   evaluatorRef: string;
@@ -99,14 +107,30 @@ export interface ReconstructionPlan {
   exceptions: readonly string[];
 }
 
-interface AuditInstrument {
+interface AuditScoreComponent {
+  id: string;
+  points: number;
+  detail: string;
+}
+
+export interface AuditInstrument {
+  rank: number;
   id: string;
   score: number;
   band: 'critical' | 'high' | 'medium' | 'low' | 'baseline';
-  live: { measured: boolean; silent: boolean; peakDbfs: number | null };
+  evidenceGrade: 'A' | 'B' | 'C' | 'F';
+  scoreComponents: AuditScoreComponent[];
+  improvements: string[];
+  live: {
+    measured: boolean;
+    silent: boolean;
+    peakDbfs: number | null;
+    rmsDbfs?: number | null;
+    categoryRmsDeltaDb?: number | null;
+  };
 }
 
-interface AuditReport {
+export interface AuditReport {
   schemaVersion: number;
   commit: string;
   provenance: {
@@ -161,7 +185,9 @@ interface ArtifactSet {
   live: string;
   liveConfirmation: string;
   ranking: string;
+  rankingConfirmation: string;
   rankingMarkdown: string;
+  rankingConfirmationMarkdown: string;
   baseline: string;
 }
 
@@ -176,32 +202,71 @@ interface ArtifactHashManifest {
     primary: ArtifactReference;
     confirmation: ArtifactReference;
   };
-  instrumentQuality: ArtifactReference;
-  instrumentQualityMarkdown: ArtifactReference;
+  instrumentQualityRankings: {
+    primary: ArtifactReference;
+    confirmation: ArtifactReference;
+  };
+  instrumentQualityMarkdown: {
+    primary: ArtifactReference;
+    confirmation: ArtifactReference;
+  };
   sampleQualityBaseline: ArtifactReference;
 }
 
 interface LiveRepeatabilityProjection {
+  schemaVersion: LiveQualityReport['schemaVersion'];
+  claim: LiveQualityReport['claim'];
+  subjectCommit: LiveQualityReport['subjectCommit'];
   browser: LiveQualityReport['browser'];
   audioSampleRates: LiveQualityReport['audioSampleRates'];
+  generatedFrom: LiveQualityReport['generatedFrom'];
   capture: LiveQualityReport['capture'];
   schedule: LiveQualityReport['schedule'];
   random: LiveQualityReport['random'];
+  silencePeakThreshold: LiveQualityReport['silencePeakThreshold'];
+  silenceRmsThreshold: LiveQualityReport['silenceRmsThreshold'];
+  tempo: LiveQualityReport['tempo'];
+  stepCount: LiveQualityReport['stepCount'];
   diagnostics: LiveQualityReport['diagnostics'];
   sessions: Array<{
     sampleRate: number;
     execution: LiveQualityReport['sessions'][number]['execution'];
-    instruments: Array<{ sampleId: string; randomCalls: number }>;
+    instruments: string[];
   }>;
   instruments: Array<{
     sampleId: string;
-    peak: number;
-    rms: number;
-    masterPeak: number;
-    masterRms: number;
+    name: string;
+    type: string;
+    presetId: string;
+    pitch: number;
     capturedFrames: number;
     channelSampleCount: number;
     randomCalls: number;
+    preArmUiUnmutedSampleIds: string[];
+    preArmCommandedTrackBusOpenSampleIds: string[];
+    observedEngineDispatches: Array<{ method: string; sampleId: string }>;
+  }>;
+}
+
+type LiveEnergyMetric = 'peak' | 'rms' | 'masterPeak' | 'masterRms';
+
+export interface LiveEnergySpreadResult {
+  alarmDb: typeof LIVE_ENERGY_SPREAD_ALARM_DB;
+  maximumDb: number;
+  byMetricDb: Record<LiveEnergyMetric, number>;
+}
+
+export interface AuditDecisionProjection {
+  instruments: Array<{
+    rank: number;
+    id: string;
+    score: number;
+    band: AuditInstrument['band'];
+    evidenceGrade: AuditInstrument['evidenceGrade'];
+    scoreComponents: AuditScoreComponent[];
+    improvements: string[];
+    liveSilent: boolean;
+    liveAboveZeroDbfs: boolean;
   }>;
 }
 
@@ -347,8 +412,8 @@ export function buildReconstructionPlan(
       'The compatibility control overlays src/audio/sample-onset.ts because the hardened decoded evaluator requires its newer API. Base manifests and runtime call sites retain their original defaults; this is not represented as literal base-commit provenance.',
       'The compatibility control overlays src/test/audio-measures.ts; this is test-only measurement code, not delivered runtime DSP.',
       'The current checkout\'s node_modules and Playwright browser installation are reused. Runtime package/lock/config files remain those committed in each subject clone.',
-      'Each live lane is captured twice in independent Playwright processes and must exactly match on score-consumed energy, browser/runtime identity, geometry, diagnostics, and RNG traces. Arm-to-onset may differ only within the receipt validator bounds.',
-      'The live lane is repeat-confirmed technical evidence in one Chromium/runtime environment, not a level-matched listening result or complete dry-PCM matrix.',
+      `Each live lane is captured twice in independent Playwright processes. Structural fields, classifications, and derived audit decisions must match exactly; scalar energy spread must remain at or below the prospective ${LIVE_ENERGY_SPREAD_ALARM_DB.toFixed(1)} dB evaluator-stability alarm. Neither capture is averaged or selected.`,
+      'Two-run decision stability in one Chromium/runtime environment is not PCM identity, a statistical confidence interval, level-matched listening evidence, or a complete dry-PCM matrix.',
     ],
   };
 }
@@ -358,67 +423,147 @@ function round(value: number, digits = 1): number {
 }
 
 /**
- * Select every live-receipt field that can affect a controlled score or prove
- * that both captures ran under the same runtime conditions. Fresh run/session/
- * track identifiers and timestamps are deliberately excluded. Arm-to-onset is
- * also excluded from exact comparison: it is allowed to vary only because the
- * receipt validator independently enforces its pinned lower and upper bounds.
+ * Select the provenance and structural controls that must match exactly.
+ * Fresh timestamps and raw session/track IDs are deliberately excluded; IDs
+ * embedded in dispatch/isolation evidence are normalized back to sample IDs.
+ * Arm-to-onset is independently validator-bounded and is not score-consumed.
  */
 export function liveRepeatabilityProjection(
   report: LiveQualityReport,
 ): LiveRepeatabilityProjection {
-  const instrumentsById = new Map(
-    report.instruments.map(instrument => [instrument.sampleId, instrument]),
+  const sampleIdByTrackId = new Map(
+    report.instruments.map(instrument => [instrument.trackId, instrument.sampleId]),
   );
+  const normalizedTrackId = (trackId: string): string => {
+    const sampleId = sampleIdByTrackId.get(trackId);
+    if (!sampleId) {
+      throw new Error(`Live repeatability projection cannot normalize track ${trackId}`);
+    }
+    return sampleId;
+  };
   return {
+    schemaVersion: report.schemaVersion,
+    claim: report.claim,
+    subjectCommit: report.subjectCommit,
     browser: report.browser,
     audioSampleRates: report.audioSampleRates,
+    generatedFrom: report.generatedFrom,
     capture: report.capture,
     schedule: report.schedule,
     random: report.random,
+    silencePeakThreshold: report.silencePeakThreshold,
+    silenceRmsThreshold: report.silenceRmsThreshold,
+    tempo: report.tempo,
+    stepCount: report.stepCount,
     diagnostics: report.diagnostics,
     sessions: report.sessions.map(session => ({
       sampleRate: session.sampleRate,
       execution: session.execution,
-      instruments: session.instruments.map(sampleId => {
-        const instrument = instrumentsById.get(sampleId);
-        if (!instrument) {
-          throw new Error(`Live repeatability projection cannot find ${sampleId}`);
-        }
-        return { sampleId, randomCalls: instrument.randomCalls };
-      }),
+      instruments: session.instruments,
     })),
     instruments: report.instruments.map(instrument => ({
       sampleId: instrument.sampleId,
-      peak: instrument.peak,
-      rms: instrument.rms,
-      masterPeak: instrument.masterPeak,
-      masterRms: instrument.masterRms,
+      name: instrument.name,
+      type: instrument.type,
+      presetId: instrument.presetId,
+      pitch: instrument.pitch,
       capturedFrames: instrument.capturedFrames,
       channelSampleCount: instrument.channelSampleCount,
       randomCalls: instrument.randomCalls,
+      preArmUiUnmutedSampleIds: instrument.preArmUiUnmutedTrackIds.map(normalizedTrackId),
+      preArmCommandedTrackBusOpenSampleIds:
+        instrument.preArmCommandedTrackBusOpenIds.map(normalizedTrackId),
+      observedEngineDispatches: instrument.observedEngineDispatches.map(dispatch => ({
+        method: dispatch.method,
+        sampleId: normalizedTrackId(dispatch.trackId),
+      })),
     })),
   };
+}
+
+function energySpreadDb(primary: number, confirmation: number): number {
+  if (primary === confirmation) return 0;
+  if (primary <= 0 || confirmation <= 0) return Number.POSITIVE_INFINITY;
+  return Math.abs(20 * Math.log10(confirmation / primary));
 }
 
 export function assertLiveCaptureRepeatability(
   primary: LiveQualityReport,
   confirmation: LiveQualityReport,
-): void {
+): LiveEnergySpreadResult {
   const primaryProjection = liveRepeatabilityProjection(primary);
   const confirmationProjection = liveRepeatabilityProjection(confirmation);
   if (!isDeepStrictEqual(primaryProjection, confirmationProjection)) {
     throw new Error(
-      'Independent live captures are not repeatable; controlled live deltas '
-      + 'are refused instead of selecting or averaging a run',
+      'Independent live captures differ in exact structural evidence; controlled '
+      + 'live deltas are refused instead of selecting or averaging a run',
     );
   }
+
+  const confirmationById = new Map(
+    confirmation.instruments.map(instrument => [instrument.sampleId, instrument]),
+  );
+  const byMetricDb: LiveEnergySpreadResult['byMetricDb'] = {
+    peak: 0,
+    rms: 0,
+    masterPeak: 0,
+    masterRms: 0,
+  };
+  for (const primaryInstrument of primary.instruments) {
+    const confirmationInstrument = confirmationById.get(primaryInstrument.sampleId);
+    if (!confirmationInstrument) {
+      throw new Error(`Confirmation capture omitted ${primaryInstrument.sampleId}`);
+    }
+    const primarySilent = isLiveRoutingSilent(
+      primaryInstrument,
+      primary.silencePeakThreshold,
+      primary.silenceRmsThreshold,
+    );
+    const confirmationSilent = isLiveRoutingSilent(
+      confirmationInstrument,
+      confirmation.silencePeakThreshold,
+      confirmation.silenceRmsThreshold,
+    );
+    if (primarySilent !== confirmationSilent) {
+      throw new Error(
+        `Independent live captures disagree on silence classification for ${primaryInstrument.sampleId}`,
+      );
+    }
+    if ((primaryInstrument.peak > 1) !== (confirmationInstrument.peak > 1)) {
+      throw new Error(
+        `Independent live captures disagree on above-zero-dBFS classification for ${primaryInstrument.sampleId}`,
+      );
+    }
+    for (const metric of Object.keys(byMetricDb) as LiveEnergyMetric[]) {
+      const spread = energySpreadDb(
+        primaryInstrument[metric],
+        confirmationInstrument[metric],
+      );
+      byMetricDb[metric] = Math.max(byMetricDb[metric], spread);
+      if (spread > LIVE_ENERGY_SPREAD_ALARM_DB) {
+        throw new Error(
+          `Independent live captures exceed the ${LIVE_ENERGY_SPREAD_ALARM_DB.toFixed(1)} dB `
+          + `evaluator-stability alarm for ${primaryInstrument.sampleId}.${metric}: `
+          + `${Number.isFinite(spread) ? spread.toFixed(6) : 'infinite'} dB`,
+        );
+      }
+    }
+  }
+  return {
+    alarmDb: LIVE_ENERGY_SPREAD_ALARM_DB,
+    maximumDb: Math.max(...Object.values(byMetricDb)),
+    byMetricDb,
+  };
 }
 
 function validateRepeatableLiveCaptures(
   artifacts: ArtifactSet,
   expectedSubjectCommit: string,
-): LiveQualityReport {
+): {
+  primary: LiveQualityReport;
+  confirmation: LiveQualityReport;
+  energySpread: LiveEnergySpreadResult;
+} {
   const primary = validateLiveQualityReport(
     readJson<unknown>(artifacts.live),
     expectedSubjectCommit,
@@ -427,8 +572,43 @@ function validateRepeatableLiveCaptures(
     readJson<unknown>(artifacts.liveConfirmation),
     expectedSubjectCommit,
   );
-  assertLiveCaptureRepeatability(primary, confirmation);
-  return primary;
+  return {
+    primary,
+    confirmation,
+    energySpread: assertLiveCaptureRepeatability(primary, confirmation),
+  };
+}
+
+export function auditDecisionProjection(report: AuditReport): AuditDecisionProjection {
+  return {
+    instruments: report.instruments.map(instrument => ({
+      rank: instrument.rank,
+      id: instrument.id,
+      score: instrument.score,
+      band: instrument.band,
+      evidenceGrade: instrument.evidenceGrade,
+      scoreComponents: instrument.scoreComponents,
+      improvements: instrument.improvements,
+      liveSilent: instrument.live.silent,
+      liveAboveZeroDbfs:
+        instrument.live.peakDbfs !== null && instrument.live.peakDbfs > 0,
+    })),
+  };
+}
+
+export function assertAuditDecisionRepeatability(
+  primary: AuditReport,
+  confirmation: AuditReport,
+): void {
+  if (!isDeepStrictEqual(
+    auditDecisionProjection(primary),
+    auditDecisionProjection(confirmation),
+  )) {
+    throw new Error(
+      'Independent live captures produce different audit decisions; controlled '
+      + 'deltas are refused instead of selecting a ranking',
+    );
+  }
 }
 
 export function summarizeQualityArtifacts(
@@ -641,7 +821,10 @@ function artifactSet(outputDir: string, lane: 'control' | 'candidate'): Artifact
     live: path.join(root, 'live-master-output.json'),
     liveConfirmation: path.join(root, 'live-confirmation', 'live-master-output.json'),
     ranking: path.join(root, 'instrument-quality.json'),
+    rankingConfirmation: path.join(root, 'live-confirmation', 'instrument-quality.json'),
     rankingMarkdown: path.join(root, 'INSTRUMENT-QUALITY.md'),
+    rankingConfirmationMarkdown:
+      path.join(root, 'live-confirmation', 'INSTRUMENT-QUALITY.md'),
     baseline: path.join(root, 'sample-quality-baseline.json'),
   };
 }
@@ -695,17 +878,28 @@ function captureLane(
   assertClean(cloneRoot, path.basename(artifacts.root));
   validateRepeatableLiveCaptures(artifacts, subjectCommit);
 
-  run('node', [
-    '--import', 'tsx', 'scripts/audit-instrument-quality.ts',
-    '--require-evidence',
-    '--sample-report', artifacts.sample,
-    '--live-report', artifacts.live,
-    '--matrix-report', path.join(artifacts.root, 'complete-matrix-not-supplied.json'),
-    '--json', artifacts.ranking,
-    '--markdown', artifacts.rankingMarkdown,
-    '--subject-commit', subjectCommit,
-    '--evaluator-commit', evaluatorCommit,
-  ], appRoot);
+  const captureRanking = (
+    liveReport: string,
+    jsonReport: string,
+    markdownReport: string,
+  ): void => run('node', [
+      '--import', 'tsx', 'scripts/audit-instrument-quality.ts',
+      '--require-evidence',
+      '--sample-report', artifacts.sample,
+      '--live-report', liveReport,
+      '--matrix-report', path.join(artifacts.root, 'complete-matrix-not-supplied.json'),
+      '--json', jsonReport,
+      '--markdown', markdownReport,
+      '--subject-commit', subjectCommit,
+      '--evaluator-commit', evaluatorCommit,
+    ], appRoot);
+  captureRanking(artifacts.live, artifacts.ranking, artifacts.rankingMarkdown);
+  assertClean(cloneRoot, path.basename(artifacts.root));
+  captureRanking(
+    artifacts.liveConfirmation,
+    artifacts.rankingConfirmation,
+    artifacts.rankingConfirmationMarkdown,
+  );
   assertClean(cloneRoot, path.basename(artifacts.root));
 
   fs.copyFileSync(
@@ -754,10 +948,27 @@ function readJson<T>(filename: string): T {
   return JSON.parse(fs.readFileSync(filename, 'utf8')) as T;
 }
 
-function validateAndSummarize(artifacts: ArtifactSet): QualitySummary {
+interface ValidatedLaneArtifacts {
+  summary: QualitySummary;
+  energySpread: LiveEnergySpreadResult;
+}
+
+function validateAndSummarize(artifacts: ArtifactSet): ValidatedLaneArtifacts {
   const audit = readJson<AuditReport>(artifacts.ranking);
+  const confirmationAudit = readJson<AuditReport>(artifacts.rankingConfirmation);
   const sample = readJson<SampleReport>(artifacts.sample);
-  const live = validateRepeatableLiveCaptures(
+  const auditContext = (report: AuditReport): unknown => ({
+    schemaVersion: report.schemaVersion,
+    commit: report.commit,
+    provenance: report.provenance,
+    sampleReportSha256: report.inputs.sampleReport?.sha256 ?? null,
+  });
+  if (!isDeepStrictEqual(auditContext(audit), auditContext(confirmationAudit))) {
+    throw new Error(
+      `${path.basename(artifacts.root)} rankings differ in evaluator/subject provenance`,
+    );
+  }
+  const liveCaptures = validateRepeatableLiveCaptures(
     artifacts,
     audit.provenance.subjectCommit,
   );
@@ -767,10 +978,35 @@ function validateAndSummarize(artifacts: ArtifactSet): QualitySummary {
   if (audit.inputs.liveReport?.sha256 !== sha256File(artifacts.live)) {
     throw new Error(`${path.basename(artifacts.root)} ranking does not bind its live receipt`);
   }
+  if (confirmationAudit.inputs.sampleReport?.sha256 !== sha256File(artifacts.sample)) {
+    throw new Error(
+      `${path.basename(artifacts.root)} confirmation ranking does not bind its decoded receipt`,
+    );
+  }
+  if (
+    confirmationAudit.inputs.liveReport?.sha256
+    !== sha256File(artifacts.liveConfirmation)
+  ) {
+    throw new Error(
+      `${path.basename(artifacts.root)} confirmation ranking does not bind its live receipt`,
+    );
+  }
   if (sample.baselineSha256 !== sha256File(artifacts.baseline)) {
     throw new Error(`${path.basename(artifacts.root)} decoded receipt does not bind its baseline`);
   }
-  return summarizeQualityArtifacts(audit, sample, live);
+  const primarySummary = summarizeQualityArtifacts(audit, sample, liveCaptures.primary);
+  const confirmationSummary = summarizeQualityArtifacts(
+    confirmationAudit,
+    sample,
+    liveCaptures.confirmation,
+  );
+  assertAuditDecisionRepeatability(audit, confirmationAudit);
+  if (!isDeepStrictEqual(primarySummary, confirmationSummary)) {
+    throw new Error(
+      `${path.basename(artifacts.root)} confirmation ranking changed its derived summary`,
+    );
+  }
+  return { summary: primarySummary, energySpread: liveCaptures.energySpread };
 }
 
 function artifactReference(outputDir: string, filename: string): ArtifactReference {
@@ -787,8 +1023,14 @@ function artifactHashes(outputDir: string, artifacts: ArtifactSet): ArtifactHash
       primary: artifactReference(outputDir, artifacts.live),
       confirmation: artifactReference(outputDir, artifacts.liveConfirmation),
     },
-    instrumentQuality: artifactReference(outputDir, artifacts.ranking),
-    instrumentQualityMarkdown: artifactReference(outputDir, artifacts.rankingMarkdown),
+    instrumentQualityRankings: {
+      primary: artifactReference(outputDir, artifacts.ranking),
+      confirmation: artifactReference(outputDir, artifacts.rankingConfirmation),
+    },
+    instrumentQualityMarkdown: {
+      primary: artifactReference(outputDir, artifacts.rankingMarkdown),
+      confirmation: artifactReference(outputDir, artifacts.rankingConfirmationMarkdown),
+    },
     sampleQualityBaseline: artifactReference(outputDir, artifacts.baseline),
   };
 }
@@ -859,11 +1101,13 @@ async function main(): Promise<void> {
     prepareClone(candidateClone, evaluatorCommit, sourceNodeModules);
     captureLane(candidateClone, evaluatorCommit, evaluatorCommit, candidateArtifacts);
 
-    const control = validateAndSummarize(controlArtifacts);
-    const candidate = validateAndSummarize(candidateArtifacts);
+    const controlLane = validateAndSummarize(controlArtifacts);
+    const candidateLane = validateAndSummarize(candidateArtifacts);
+    const control = controlLane.summary;
+    const candidate = candidateLane.summary;
     const summary = {
-      schemaVersion: 3,
-      claim: 'reconstructed-same-evaluator-repeat-confirmed-technical-comparison-not-listening-or-complete-matrix-evidence',
+      schemaVersion: 4,
+      claim: 'reconstructed-same-evaluator-two-run-decision-stable-technical-comparison-not-statistical-pcm-listening-or-complete-matrix-evidence',
       generatedAt: new Date().toISOString(),
       method: {
         controlBaseCommit,
@@ -877,16 +1121,32 @@ async function main(): Promise<void> {
         liveRepeatabilityGate: {
           result: 'passed',
           capturesPerLane: 2,
+          interpretation:
+            'observed-two-run-decision-stability-not-pcm-determinism-or-statistical-validation',
           exactMatch: [
-            'score-consumed-track-and-master-peak-and-rms',
+            'receipt-schema-claim-and-subject-provenance',
             'browser-identity-version-and-user-agent',
-            'audio-sample-rates-and-capture-geometry',
+            'audio-sample-rates-capture-schedule-and-random-contracts',
             'browser-and-page-diagnostics',
-            'per-session-instrument-membership-and-rng-call-traces',
+            'per-session-execution-and-instrument-membership',
+            'capture-geometry-rng-dispatch-and-isolation-traces',
+            'silence-and-above-zero-dBFS-classifications',
+            'rank-id-score-band-evidence-components-improvements-and-live-decisions',
           ],
-          independentlyValidated: [
-            'receipt-schema-and-subject-provenance',
-            'pinned-capture-schedule-and-rng-settings',
+          scalarEnergyStabilityAlarm: {
+            prospectiveMaximumSpreadDb: LIVE_ENERGY_SPREAD_ALARM_DB,
+            purpose:
+              'conservative-evaluator-stability-alarm-not-pcm-equality-or-confidence-interval',
+            observedMaximumSpreadDb: {
+              control: controlLane.energySpread.maximumDb,
+              candidate: candidateLane.energySpread.maximumDb,
+            },
+            observedByMetricDb: {
+              control: controlLane.energySpread.byMetricDb,
+              candidate: candidateLane.energySpread.byMetricDb,
+            },
+          },
+          independentlyValidatorBounded: [
             'arm-to-onset-receipt-bounds',
           ],
           excludedAsVolatileAndNonScoring: [
@@ -894,8 +1154,12 @@ async function main(): Promise<void> {
             'sessionId',
             'trackId',
             'armToOnsetFrames-within-validator-bounds',
+            'display-only-live-dB-values-and-category-deltas-after-decision-projection',
           ],
-          mismatchPolicy: 'fail-comparison-without-averaging-or-selecting-a-capture',
+          aggregationPolicy:
+            'retain-and-hash-both-receipts-and-both-rankings-without-averaging-or-selection',
+          mismatchPolicy:
+            'fail-on-structural-classification-decision-mismatch-or-energy-spread-alarm',
         },
         exceptions: plan.exceptions,
       },
