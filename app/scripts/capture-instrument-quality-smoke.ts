@@ -156,6 +156,7 @@ async function main(): Promise<void> {
         sha256: sha256File(adapterPath),
         captureCallback: 'ChromiumDryPcmCaptureAdapter.capture(DryPcmMatrixCase)',
         sampleRate: 44_100,
+        latencyHint: 'playback',
         tap: 'track-bus-output-post-pan-pre-master',
         seedAlgorithm: 'mulberry32',
         freshBrowserContextPerAttempt: true,
