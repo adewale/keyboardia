@@ -14,12 +14,12 @@ when an ID is missing; it must never silently drop an instrument.
 
 Two outputs stay separate:
 
-1. **Priority score (0–100, larger is worse):** deterministic repair debt from
-   measurements and role-aware source coverage.
+1. **Priority score (0–100, larger is worse):** deterministic repair and review
+   priority from measurements and role-aware source coverage.
 2. **Evidence grade (A/B/C/F):** how much actual audio was observed. Evidence
    gaps do not become invented quality points.
 
-A zero score means “no technical deficit detected by the available lanes,” not
+A zero score means “no technical deficit or review priority detected by the available lanes,” not
 “perfect sound.” A hash-bound waiver changes CI disposition only. It does not
 erase the underlying finding from the score.
 
@@ -60,11 +60,11 @@ total is capped at 100.
 | Component | Points | Deterministic rule |
 |---|---:|---|
 | Missing source calibration | 20 | fixed if the catalogue ID has no explicit manifest/fixed trim |
-| Silent canonical live note | 40 | fixed when both measured peak and RMS are below the committed silence gates |
+| Silent canonical live note | 40 | fixed when either the isolated track or master tap has both peak and RMS below the committed silence gates |
 | Complete-matrix fatal finding | 40 | fixed if any fatal gate is present in a verified full dry-PCM receipt |
 | Unwaived decoded-source error | up to 40 | 20 per error |
-| Source headroom | up to 12 | `1.5 × max(0, live track peak dBFS)` |
-| Category-level outlier | up to 6 | `max(0, (abs(RMS delta) − 18) / 2)` against the category median; a review prompt, never auto-normalization |
+| Post-track headroom | up to 12 | `1.5 × max(0, live track peak dBFS)` |
+| Category RMS review-priority | up to 6 | `max(0, (abs(RMS delta) − 18) / 2)` against the category median; a review prompt, never auto-normalization or an objective defect claim |
 | Accepted/review source burden | up to 30 | `5 × weighted findings / decoded unique files` |
 | Sample-root distance | up to 8 | `max(0, worst nearest-root distance − 4)` semitones |
 | Velocity-layer shortfall | up to 8 | four points per missing role-target layer |

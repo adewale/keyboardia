@@ -6,7 +6,7 @@ import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
-export const LIVE_RECEIPT_SCHEMA_VERSION = 4;
+export const LIVE_RECEIPT_SCHEMA_VERSION = 5;
 export const LIVE_RECEIPT_CLAIM = 'live-post-track-signal-evidence';
 export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
@@ -21,7 +21,7 @@ export const LIVE_PATTERN_STORAGE_STEP_COUNT = MAX_STEPS;
 export const LIVE_ACTIVE_STEP = 4;
 export const LIVE_ACTIVE_STEP_OFFSET_SECONDS = 0.5;
 export const LIVE_SCHEDULER_LOOKAHEAD_SECONDS = SCHEDULE_AHEAD_SEC;
-export const LIVE_EXPECTED_EVENTS_PER_TRACK = 1;
+export const LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK = 1;
 export const LIVE_PATTERN_PERIOD_SECONDS = 4;
 export const LIVE_PREPARATION_METHOD =
   'muted-production-play-stop-then-ui-mute-plus-track-bus-gated-isolated-trials';
@@ -30,7 +30,8 @@ export const LIVE_TRIAL_MODE = 'single-unmuted-track-plus-master-per-capture';
 export const LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS = 1;
 export const LIVE_ISOLATION_SCOPE = 'audible-routing-only-muted-release-tails-may-remain-allocated';
 export const LIVE_CAPTURE_METHOD = 'onset-aligned-audio-worklet-accumulator-v2';
-export const LIVE_CAPTURE_ALIGNMENT = 'first-isolated-track-output-frame-above-pinned-threshold';
+export const LIVE_CAPTURE_ALIGNMENT =
+  'first-isolated-track-or-master-output-frame-above-pinned-threshold';
 export const LIVE_CAPTURE_DURATION_SECONDS = 2.5;
 export const LIVE_CAPTURE_CHANNEL_COUNT = 2;
 export const LIVE_ONSET_THRESHOLD = 1e-7;
@@ -41,9 +42,28 @@ export const LIVE_RMS_METRIC = 'root-mean-square-over-all-captured-channel-sampl
 export const LIVE_RANDOM_SEED = 0x4b455942;
 export const LIVE_RANDOM_ALGORITHM = 'mulberry32';
 export const LIVE_GENERATED_FROM =
-  'Chromium single-audible-track calibration trials for every INSTRUMENT_CATEGORIES entry; one lookahead-scheduled, onset-aligned production-sequencer event captured concurrently at that track bus and masterGain';
+  'Chromium single-audible-track calibration trials for every INSTRUMENT_CATEGORIES entry; a one-active-step fixture is played through the production sequencer and onset-aligned output is captured concurrently at that track bus and masterGain';
 
 export type LiveInstrumentType = 'sample' | 'sampled' | 'synth' | 'tone' | 'advanced';
+export type LiveDispatchMethod =
+  | 'playSample'
+  | 'playSampledInstrument'
+  | 'playSynthNote'
+  | 'playToneSynth'
+  | 'playAdvancedSynth';
+
+export const LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE = Object.freeze({
+  sample: 'playSample',
+  sampled: 'playSampledInstrument',
+  synth: 'playSynthNote',
+  tone: 'playToneSynth',
+  advanced: 'playAdvancedSynth',
+} satisfies Record<LiveInstrumentType, LiveDispatchMethod>);
+
+export interface LiveEngineDispatch {
+  method: LiveDispatchMethod;
+  trackId: string;
+}
 
 export interface LiveInstrumentSpec {
   sampleId: string;
@@ -64,6 +84,9 @@ export interface LiveInstrumentResult extends LiveInstrumentSpec {
   channelSampleCount: number;
   armToOnsetFrames: number;
   randomCalls: number;
+  preArmUiUnmutedTrackIds: string[];
+  preArmCommandedTrackBusOpenIds: string[];
+  observedEngineDispatches: LiveEngineDispatch[];
 }
 
 export interface LiveSessionResult {
@@ -99,7 +122,7 @@ export interface LiveQualityReport {
     activeStep: typeof LIVE_ACTIVE_STEP;
     activeStepOffsetSeconds: typeof LIVE_ACTIVE_STEP_OFFSET_SECONDS;
     schedulerLookaheadSeconds: typeof LIVE_SCHEDULER_LOOKAHEAD_SECONDS;
-    expectedEventsPerTrack: typeof LIVE_EXPECTED_EVENTS_PER_TRACK;
+    scheduledActiveStepsPerTrack: typeof LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK;
     patternPeriodSeconds: typeof LIVE_PATTERN_PERIOD_SECONDS;
     patternStorageStepCount: typeof LIVE_PATTERN_STORAGE_STEP_COUNT;
     unmuteSettleSeconds: typeof LIVE_UNMUTE_SETTLE_SECONDS;
@@ -116,6 +139,22 @@ export interface LiveQualityReport {
   sessions: LiveSessionResult[];
   instruments: LiveInstrumentResult[];
   diagnostics: { pageErrors: string[]; consoleErrors: string[] };
+}
+
+/**
+ * A live calibration result is routing-silent when either the selected track
+ * tap or its simultaneous isolated master tap lacks measurable output. Keeping
+ * this separate from structural receipt validation lets a genuine routing
+ * defect remain valid evidence while ensuring the ranking scores it fail-closed.
+ */
+export function isLiveRoutingSilent(
+  result: Pick<LiveInstrumentResult, 'peak' | 'rms' | 'masterPeak' | 'masterRms'>,
+  peakThreshold: number = LIVE_SILENCE_PEAK_THRESHOLD,
+  rmsThreshold: number = LIVE_SILENCE_RMS_THRESHOLD,
+): boolean {
+  const trackSilent = result.peak <= peakThreshold && result.rms <= rmsThreshold;
+  const masterSilent = result.masterPeak <= peakThreshold && result.masterRms <= rmsThreshold;
+  return trackSilent || masterSilent;
 }
 
 const FULL_COMMIT_ID = /^(?:[a-f0-9]{40}|[a-f0-9]{64})$/;
@@ -244,7 +283,7 @@ export function validateLiveQualityReport(
     || value.schedule.activeStep !== LIVE_ACTIVE_STEP
     || value.schedule.activeStepOffsetSeconds !== LIVE_ACTIVE_STEP_OFFSET_SECONDS
     || value.schedule.schedulerLookaheadSeconds !== LIVE_SCHEDULER_LOOKAHEAD_SECONDS
-    || value.schedule.expectedEventsPerTrack !== LIVE_EXPECTED_EVENTS_PER_TRACK
+    || value.schedule.scheduledActiveStepsPerTrack !== LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK
     || value.schedule.patternPeriodSeconds !== LIVE_PATTERN_PERIOD_SECONDS
     || value.schedule.patternStorageStepCount !== LIVE_PATTERN_STORAGE_STEP_COUNT
     || value.schedule.unmuteSettleSeconds !== LIVE_UNMUTE_SETTLE_SECONDS
@@ -300,6 +339,24 @@ export function validateLiveQualityReport(
     positiveInteger(item.channelSampleCount, `instrument ${item.sampleId}.channelSampleCount`);
     positiveInteger(item.armToOnsetFrames, `instrument ${item.sampleId}.armToOnsetFrames`);
     positiveInteger(item.randomCalls, `instrument ${item.sampleId}.randomCalls`);
+    const expectedIsolationIds = JSON.stringify([item.trackId]);
+    if (!Array.isArray(item.preArmUiUnmutedTrackIds)
+      || !item.preArmUiUnmutedTrackIds.every(id => typeof id === 'string')
+      || JSON.stringify(item.preArmUiUnmutedTrackIds) !== expectedIsolationIds) {
+      throw new Error(`Live receipt instrument ${item.sampleId} UI-unmuted snapshot is not isolated`);
+    }
+    if (!Array.isArray(item.preArmCommandedTrackBusOpenIds)
+      || !item.preArmCommandedTrackBusOpenIds.every(id => typeof id === 'string')
+      || JSON.stringify(item.preArmCommandedTrackBusOpenIds) !== expectedIsolationIds) {
+      throw new Error(`Live receipt instrument ${item.sampleId} commanded TrackBus snapshot is not isolated`);
+    }
+    if (!Array.isArray(item.observedEngineDispatches)
+      || item.observedEngineDispatches.length !== 1
+      || !isRecord(item.observedEngineDispatches[0])
+      || item.observedEngineDispatches[0].trackId !== item.trackId
+      || item.observedEngineDispatches[0].method !== LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type]) {
+      throw new Error(`Live receipt instrument ${item.sampleId} did not observe exactly one expected engine dispatch`);
+    }
   }
   const missing = expected.filter(spec => !seenIds.has(spec.sampleId));
   if (missing.length > 0) throw new Error(`Live receipt is missing ${missing.map(spec => spec.sampleId).join(', ')}`);

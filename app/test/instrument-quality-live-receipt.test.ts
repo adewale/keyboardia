@@ -8,7 +8,8 @@ import {
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
   LIVE_CAPTURE_METHOD,
-  LIVE_EXPECTED_EVENTS_PER_TRACK,
+  LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE,
+  LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
   LIVE_MAX_ARM_TO_ONSET_SECONDS,
@@ -32,6 +33,7 @@ import {
   LIVE_TRIAL_MODE,
   LIVE_UNMUTE_SETTLE_SECONDS,
   expectedLiveInstrumentSpecs,
+  isLiveRoutingSilent,
   validateLiveQualityReport,
   type LiveQualityReport,
 } from '../scripts/instrument-quality-live-receipt';
@@ -74,7 +76,7 @@ function validReceipt(): LiveQualityReport {
       activeStep: LIVE_ACTIVE_STEP,
       activeStepOffsetSeconds: LIVE_ACTIVE_STEP_OFFSET_SECONDS,
       schedulerLookaheadSeconds: LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
-      expectedEventsPerTrack: LIVE_EXPECTED_EVENTS_PER_TRACK,
+      scheduledActiveStepsPerTrack: LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
       patternPeriodSeconds: LIVE_PATTERN_PERIOD_SECONDS,
       patternStorageStepCount: LIVE_PATTERN_STORAGE_STEP_COUNT,
       unmuteSettleSeconds: LIVE_UNMUTE_SETTLE_SECONDS,
@@ -89,25 +91,52 @@ function validReceipt(): LiveQualityReport {
     tempo: LIVE_TEMPO,
     stepCount: LIVE_STEP_COUNT,
     sessions,
-    instruments: specs.map((spec, index) => ({
-      ...spec,
-      trackId: `track-${index}`,
-      sessionId: sessions[Math.floor(index / MAX_TRACKS)].sessionId,
-      peak: 0.1,
-      rms: 0.02,
-      masterPeak: 0.08,
-      masterRms: 0.016,
-      capturedFrames,
-      channelSampleCount,
-      armToOnsetFrames: 24_000,
-      randomCalls: 10_000,
-    })),
+    instruments: specs.map((spec, index) => {
+      const trackId = `track-${index}`;
+      return {
+        ...spec,
+        trackId,
+        sessionId: sessions[Math.floor(index / MAX_TRACKS)].sessionId,
+        peak: 0.1,
+        rms: 0.02,
+        masterPeak: 0.08,
+        masterRms: 0.016,
+        capturedFrames,
+        channelSampleCount,
+        armToOnsetFrames: 24_000,
+        randomCalls: 10_000,
+        preArmUiUnmutedTrackIds: [trackId],
+        preArmCommandedTrackBusOpenIds: [trackId],
+        observedEngineDispatches: [{
+          method: LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type],
+          trackId,
+        }],
+      };
+    }),
     diagnostics: { pageErrors: [], consoleErrors: [] },
   };
 }
 
 describe('live instrument-quality receipt', () => {
+  it('scores either a silent track tap or a silent isolated master tap as routing silence', () => {
+    const audible = validReceipt().instruments[0];
+    expect(isLiveRoutingSilent(audible)).toBe(false);
+
+    expect(isLiveRoutingSilent({
+      ...audible,
+      peak: LIVE_SILENCE_PEAK_THRESHOLD,
+      rms: LIVE_SILENCE_RMS_THRESHOLD,
+    })).toBe(true);
+
+    expect(isLiveRoutingSilent({
+      ...audible,
+      masterPeak: LIVE_SILENCE_PEAK_THRESHOLD,
+      masterRms: LIVE_SILENCE_RMS_THRESHOLD,
+    })).toBe(true);
+  });
+
   it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
+    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(5);
     const stepDuration = 60 / LIVE_TEMPO / 4;
     expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
     expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
@@ -115,7 +144,7 @@ describe('live instrument-quality receipt', () => {
     expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
     expect(LIVE_PATTERN_STORAGE_STEP_COUNT).toBe(128);
     expect(LIVE_PATTERN_STORAGE_STEP_COUNT).toBeGreaterThan(LIVE_STEP_COUNT);
-    expect(LIVE_EXPECTED_EVENTS_PER_TRACK).toBe(1);
+    expect(LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK).toBe(1);
   });
 
   it('validates exact 99-instrument coverage and permits measured silence as a quality result', () => {
@@ -177,9 +206,10 @@ describe('live instrument-quality receipt', () => {
     impossibleMasterRms.instruments[0].masterRms = 0.2;
     expect(() => validateLiveQualityReport(impossibleMasterRms, SUBJECT)).toThrow(/RMS exceeds peak/);
 
-    const repeatedEvents = validReceipt();
-    repeatedEvents.schedule.expectedEventsPerTrack = 5 as typeof LIVE_EXPECTED_EVENTS_PER_TRACK;
-    expect(() => validateLiveQualityReport(repeatedEvents, SUBJECT)).toThrow(/capture settings/);
+    const forgedActiveStepCount = validReceipt();
+    forgedActiveStepCount.schedule.scheduledActiveStepsPerTrack =
+      5 as typeof LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK;
+    expect(() => validateLiveQualityReport(forgedActiveStepCount, SUBJECT)).toThrow(/capture settings/);
 
     const lateScheduledStep = validReceipt();
     lateScheduledStep.schedule.activeStepOffsetSeconds = 0 as typeof LIVE_ACTIVE_STEP_OFFSET_SECONDS;
@@ -221,5 +251,29 @@ describe('live instrument-quality receipt', () => {
     expect(() => validateLiveQualityReport(diagnostics, SUBJECT)).toThrow(/cannot earn evidence credit/);
 
     expect(() => validateLiveQualityReport(validReceipt(), 'b'.repeat(40))).toThrow(/subject commit/);
+  });
+
+  it('rejects forged isolation snapshots and engine dispatch observations', () => {
+    const extraUiTrack = validReceipt();
+    extraUiTrack.instruments[0].preArmUiUnmutedTrackIds.push('track-1');
+    expect(() => validateLiveQualityReport(extraUiTrack, SUBJECT)).toThrow(/UI-unmuted snapshot/);
+
+    const wrongOpenBus = validReceipt();
+    wrongOpenBus.instruments[0].preArmCommandedTrackBusOpenIds = ['track-1'];
+    expect(() => validateLiveQualityReport(wrongOpenBus, SUBJECT)).toThrow(/commanded TrackBus snapshot/);
+
+    const duplicateDispatch = validReceipt();
+    duplicateDispatch.instruments[0].observedEngineDispatches.push({
+      ...duplicateDispatch.instruments[0].observedEngineDispatches[0],
+    });
+    expect(() => validateLiveQualityReport(duplicateDispatch, SUBJECT)).toThrow(/exactly one expected engine dispatch/);
+
+    const wrongDispatchTrack = validReceipt();
+    wrongDispatchTrack.instruments[0].observedEngineDispatches[0].trackId = 'track-1';
+    expect(() => validateLiveQualityReport(wrongDispatchTrack, SUBJECT)).toThrow(/exactly one expected engine dispatch/);
+
+    const wrongDispatchMethod = validReceipt();
+    wrongDispatchMethod.instruments[0].observedEngineDispatches[0].method = 'playToneSynth';
+    expect(() => validateLiveQualityReport(wrongDispatchMethod, SUBJECT)).toThrow(/exactly one expected engine dispatch/);
   });
 });

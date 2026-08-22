@@ -34,6 +34,7 @@ import {
   type DryPcmMatrixReport,
 } from './instrument-quality-matrix';
 import {
+  isLiveRoutingSilent,
   validateLiveQualityReport,
   type LiveInstrumentResult,
   type LiveQualityReport,
@@ -618,7 +619,7 @@ function improvementsFor(
     improvements.push('add an explicit source-calibration entry');
   }
   if (peakDbfs !== null && peakDbfs > 0) {
-    improvements.push(`lower the source trim by at least ${Math.ceil(peakDbfs)} dB, then repeat the mix-capacity capture`);
+    improvements.push(`lower the bound post-track output by at least ${Math.ceil(peakDbfs)} dB, then repeat the mix-capacity capture`);
   }
   if (rmsDeltaDb !== null && Math.abs(rmsDeltaDb) > 18) {
     improvements.push('review role-relative level calibration in an isolated, level-matched capture');
@@ -694,7 +695,7 @@ function renderMarkdown(
     '',
     `- Catalogue: **${instruments.length} instruments**; live audible: **${liveAudible}/${instruments.length}**.`,
     `- Priority bands: **${byBand.critical} critical**, **${byBand.high} high**, **${byBand.medium} medium**, **${byBand.low} low**, **${byBand.baseline} baseline**.`,
-    `- Canonical per-track peaks above 0 dBFS: **${aboveZero}** (the Web Audio graph floats internally, but this is still source-headroom debt).`,
+    `- Canonical per-track peaks above 0 dBFS: **${aboveZero}** (the Web Audio graph floats internally, but this is still post-track headroom debt).`,
     sampleReport
       ? `- Decoded sample lane: **${sampleReport.totals.files} files / ${sampleReport.totals.waivedIssues} hash-bound review findings / ${sampleReport.totals.errors} unwaived errors / ${sampleReport.totals.reviewFlags} unwaived review flags**.`
       : `- Decoded sample lane: **not run** (expected \`${relativePath(options.sampleReport)}\`).`,
@@ -839,7 +840,14 @@ function main(): void {
   for (const category of Object.keys(INSTRUMENT_GROUPS)) {
     const categoryIds = new Set<string>(catalogue.filter(item => item.category === category).map(item => item.id));
     const values = (liveReport?.instruments ?? [])
-      .filter(result => categoryIds.has(result.sampleId) && result.rms > 0)
+      .filter(result => categoryIds.has(result.sampleId)
+        && result.rms > 0
+        && liveReport !== null
+        && !isLiveRoutingSilent(
+          result,
+          liveReport.silencePeakThreshold,
+          liveReport.silenceRmsThreshold,
+        ))
       .map(result => db(result.rms));
     if (values.length > 0) categoryRmsMedians.set(category, median(values));
   }
@@ -865,7 +873,11 @@ function main(): void {
     const sampleSummary = sampleSummaryById.get(presetId);
     const live = liveById.get(item.id) ?? null;
     const liveSilent = live !== null && liveReport !== null
-      ? live.peak <= liveReport.silencePeakThreshold && live.rms <= liveReport.silenceRmsThreshold
+      ? isLiveRoutingSilent(
+        live,
+        liveReport.silencePeakThreshold,
+        liveReport.silenceRmsThreshold,
+      )
       : false;
     const peakDbfs = live ? db(live.peak) : null;
     const rmsDbfs = live ? db(live.rms) : null;

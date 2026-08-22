@@ -94,8 +94,8 @@ describe('instrument quality rubric', () => {
       targetRoundRobins: 4,
     });
     expect(Object.fromEntries(result.components.map(component => [component.id, component.points]))).toEqual({
-      'source-headroom': 12,
-      'level-outlier': 6,
+      'post-track-headroom': 12,
+      'level-review-priority': 6,
       'root-distance': 8,
       'velocity-coverage': 8,
       'round-robin-coverage': 6,

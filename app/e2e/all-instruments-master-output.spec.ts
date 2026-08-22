@@ -16,7 +16,8 @@ import {
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
   LIVE_CAPTURE_METHOD,
-  LIVE_EXPECTED_EVENTS_PER_TRACK,
+  LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE,
+  LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
   LIVE_MAX_ARM_TO_ONSET_SECONDS,
@@ -40,6 +41,8 @@ import {
   LIVE_TRIAL_MODE,
   LIVE_UNMUTE_SETTLE_SECONDS,
   validateLiveQualityReport,
+  type LiveDispatchMethod,
+  type LiveEngineDispatch,
   type LiveQualityReport,
 } from '../scripts/instrument-quality-live-receipt';
 
@@ -213,6 +216,14 @@ type TrackProbeResult = InstrumentSpec & {
   channelSampleCount: number;
   armToOnsetFrames: number;
   randomCalls: number;
+  preArmUiUnmutedTrackIds: string[];
+  preArmCommandedTrackBusOpenIds: string[];
+  observedEngineDispatches: LiveEngineDispatch[];
+};
+
+type PreArmIsolationSnapshot = {
+  uiUnmutedTrackIds: string[];
+  commandedTrackBusOpenIds: string[];
 };
 
 type EnergyMeasurement = {
@@ -326,8 +337,26 @@ async function prepareAudioForTracks(page: Page, tracks: SessionTrack[]): Promis
   for (let index = 0; index < tracks.length; index++) {
     await expect(muteButtons.nth(index)).toHaveAttribute('aria-pressed', 'true');
   }
-  // Keep a pinned quiet interval between the muted preload and the first
-  // isolated trial.
+  await page.evaluate((trackIds) => {
+    type TrackBusManager = { getOrCreateBus: (trackId: string) => unknown };
+    type Engine = {
+      trackBusManager?: TrackBusManager;
+      setTrackMuted?: (trackId: string, muted: boolean) => void;
+    };
+    type Globals = { __liveQualityCommandedTrackBusOpenIds__?: string[] };
+    const globals = window as unknown as Globals & { __audioEngine__?: Engine };
+    const engine = globals.__audioEngine__;
+    if (!engine?.trackBusManager || !engine.setTrackMuted) {
+      throw new Error('Audio engine TrackBus mute control unavailable during isolation setup');
+    }
+    for (const trackId of trackIds) {
+      engine.trackBusManager.getOrCreateBus(trackId);
+      engine.setTrackMuted(trackId, true);
+    }
+    globals.__liveQualityCommandedTrackBusOpenIds__ = [];
+  }, tracks.map(track => track.id));
+  // Keep every production TrackBus closed for a pinned quiet interval between
+  // the muted preload and the first isolated trial.
   await page.waitForTimeout(LIVE_UNMUTE_SETTLE_SECONDS * 1_000);
 }
 
@@ -353,16 +382,22 @@ async function setTrackMuted(
     type TrackBusManager = {
       getOrCreateBus: (candidateId: string) => unknown;
     };
+    type Globals = { __liveQualityCommandedTrackBusOpenIds__?: string[] };
     type Engine = {
       trackBusManager?: TrackBusManager;
       setTrackMuted?: (candidateId: string, candidateMuted: boolean) => void;
     };
-    const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
+    const globals = window as unknown as Globals & { __audioEngine__?: Engine };
+    const engine = globals.__audioEngine__;
     if (!engine?.trackBusManager || !engine.setTrackMuted) {
       throw new Error('Audio engine TrackBus mute control unavailable');
     }
     engine.trackBusManager.getOrCreateBus(id);
     engine.setTrackMuted(id, shouldMute);
+    const commandedOpenIds = new Set(globals.__liveQualityCommandedTrackBusOpenIds__ ?? []);
+    if (shouldMute) commandedOpenIds.delete(id);
+    else commandedOpenIds.add(id);
+    globals.__liveQualityCommandedTrackBusOpenIds__ = [...commandedOpenIds].sort();
   }, { id: trackId, shouldMute: muted });
 
   // TrackBus mute uses a 10 ms setTargetAtTime ramp. Keep the transition out
@@ -372,6 +407,158 @@ async function setTrackMuted(
   // objective leakage guard: any still-audible tail starts capture before the
   // pinned 450 ms event floor and invalidates the receipt.
   await page.waitForTimeout(LIVE_UNMUTE_SETTLE_SECONDS * 1_000);
+}
+
+async function installEngineDispatchProbe(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    type DispatchMethod =
+      | 'playSample'
+      | 'playSampledInstrument'
+      | 'playSynthNote'
+      | 'playToneSynth'
+      | 'playAdvancedSynth';
+    type Dispatch = { method: DispatchMethod; trackId: string };
+    type PlayMethod = (...args: unknown[]) => unknown;
+    type Engine = Record<DispatchMethod, PlayMethod>;
+    type DispatchProbe = {
+      arm: () => void;
+      disarm: () => void;
+      readAndDisarm: () => Dispatch[];
+      uninstall: () => void;
+    };
+    type Globals = {
+      __audioEngine__?: Engine;
+      __liveQualityDispatchProbe__?: DispatchProbe;
+    };
+
+    const globals = window as unknown as Globals;
+    globals.__liveQualityDispatchProbe__?.uninstall();
+    const engine = globals.__audioEngine__;
+    if (!engine) throw new Error('Audio engine unavailable for dispatch observation');
+
+    const trackIdSlots = {
+      playSample: 1,
+      playSynthNote: 6,
+      playSampledInstrument: 6,
+      playToneSynth: 5,
+      playAdvancedSynth: 5,
+    } as const satisfies Record<DispatchMethod, number>;
+    const methods = Object.keys(trackIdSlots) as DispatchMethod[];
+    const originals = new Map<DispatchMethod, PlayMethod>();
+    const ownDescriptors = new Map<DispatchMethod, PropertyDescriptor | undefined>();
+    let dispatches: Dispatch[] = [];
+    let armed = false;
+
+    for (const method of methods) {
+      const original = engine[method];
+      if (typeof original !== 'function') {
+        throw new Error(`Audio engine dispatch method ${method} is unavailable`);
+      }
+      originals.set(method, original);
+      ownDescriptors.set(method, Object.getOwnPropertyDescriptor(engine, method));
+      Object.defineProperty(engine, method, {
+        configurable: true,
+        writable: true,
+        value: function (this: Engine, ...args: unknown[]): unknown {
+          if (armed) {
+            const candidateTrackId = args[trackIdSlots[method]];
+            dispatches.push({
+              method,
+              trackId: typeof candidateTrackId === 'string'
+                ? candidateTrackId
+                : '<missing-track-id>',
+            });
+          }
+          return Reflect.apply(original, this, args);
+        },
+      });
+    }
+
+    const probe: DispatchProbe = {
+      arm: () => {
+        dispatches = [];
+        armed = true;
+      },
+      disarm: () => {
+        armed = false;
+      },
+      readAndDisarm: () => {
+        armed = false;
+        return dispatches.map(dispatch => ({ ...dispatch }));
+      },
+      uninstall: () => {
+        armed = false;
+        for (const method of methods) {
+          const descriptor = ownDescriptors.get(method);
+          if (descriptor) Object.defineProperty(engine, method, descriptor);
+          else delete engine[method];
+        }
+        if (globals.__liveQualityDispatchProbe__ === probe) {
+          delete globals.__liveQualityDispatchProbe__;
+        }
+      },
+    };
+    globals.__liveQualityDispatchProbe__ = probe;
+  });
+}
+
+async function armTrialObservation(
+  page: Page,
+  orderedTrackIds: string[],
+): Promise<PreArmIsolationSnapshot> {
+  return page.evaluate((trackIds) => {
+    type DispatchProbe = { arm: () => void };
+    type Globals = {
+      __liveQualityCommandedTrackBusOpenIds__?: string[];
+      __liveQualityDispatchProbe__?: DispatchProbe;
+    };
+    const globals = window as unknown as Globals;
+    const muteButtons = [...document.querySelectorAll<HTMLButtonElement>('.track-row .mute-button')];
+    if (muteButtons.length !== trackIds.length) {
+      throw new Error('Track UI count changed before isolated trial arm');
+    }
+    const uiUnmutedTrackIds = muteButtons.flatMap((button, index) =>
+      button.getAttribute('aria-pressed') === 'false' ? [trackIds[index]] : []
+    );
+    const commandedTrackBusOpenIds = [
+      ...(globals.__liveQualityCommandedTrackBusOpenIds__ ?? []),
+    ].sort();
+    if (!globals.__liveQualityDispatchProbe__) {
+      throw new Error('Audio engine dispatch probe unavailable before trial arm');
+    }
+    globals.__liveQualityDispatchProbe__.arm();
+    return { uiUnmutedTrackIds, commandedTrackBusOpenIds };
+  }, orderedTrackIds);
+}
+
+async function readAndDisarmEngineDispatchProbe(page: Page): Promise<LiveEngineDispatch[]> {
+  return page.evaluate(() => {
+    type Dispatch = { method: LiveDispatchMethod; trackId: string };
+    type DispatchProbe = { readAndDisarm: () => Dispatch[] };
+    const probe = (window as unknown as {
+      __liveQualityDispatchProbe__?: DispatchProbe;
+    }).__liveQualityDispatchProbe__;
+    if (!probe) throw new Error('Audio engine dispatch probe unavailable after trial');
+    return probe.readAndDisarm();
+  });
+}
+
+async function disarmEngineDispatchProbe(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const probe = (window as unknown as {
+      __liveQualityDispatchProbe__?: { disarm: () => void };
+    }).__liveQualityDispatchProbe__;
+    probe?.disarm();
+  });
+}
+
+async function uninstallEngineDispatchProbe(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    const probe = (window as unknown as {
+      __liveQualityDispatchProbe__?: { uninstall: () => void };
+    }).__liveQualityDispatchProbe__;
+    probe?.uninstall();
+  });
 }
 
 async function installDeterministicRandom(page: Page): Promise<void> {
@@ -519,10 +706,19 @@ async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
       }
     };
     probe.node.port.postMessage({ type: 'arm', frameCount: probe.frameCount });
+    let timeoutId = 0;
     const timeout = new Promise<never>((_, reject) => {
-      window.setTimeout(() => reject(new Error('Timed out arming continuous energy capture')), 5_000);
+      timeoutId = window.setTimeout(
+        () => reject(new Error('Timed out arming continuous energy capture')),
+        5_000,
+      );
     });
-    const message = await Promise.race([armed, timeout]);
+    let message: ArmedMessage;
+    try {
+      message = await Promise.race([armed, timeout]);
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
     if (message.frameCount !== probe.frameCount) {
       throw new Error('Continuous energy worklet armed with the wrong frame count');
     }
@@ -555,10 +751,19 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
     }).__allInstrumentSequencerProbe__;
     if (!probe?.done) throw new Error('Continuous all-instrument capture was not armed');
 
+    let timeoutId = 0;
     const timeout = new Promise<never>((_, reject) => {
-      window.setTimeout(() => reject(new Error('Timed out reading continuous energy capture')), 10_000);
+      timeoutId = window.setTimeout(
+        () => reject(new Error('Timed out reading continuous energy capture')),
+        10_000,
+      );
     });
-    const result = await Promise.race([probe.done, timeout]);
+    let result: DoneMessage;
+    try {
+      result = await Promise.race([probe.done, timeout]);
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
     if (result.capturedFrames !== probe.frameCount) {
       throw new Error(
         `Continuous energy capture returned ${result.capturedFrames}/${probe.frameCount} frames`,
@@ -599,6 +804,8 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
         // Navigation also tears down the graph; disconnect is best effort.
       }
     });
+    probe.node.port.onmessage = null;
+    probe.node.port.close();
     probe.node.disconnect();
     probe.keepAlive.disconnect();
     delete (window as unknown as { __allInstrumentSequencerProbe__?: unknown })
@@ -631,6 +838,40 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
   });
 }
 
+async function cleanupContinuousEnergyCapture(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    type Probe = {
+      node: AudioWorkletNode;
+      sources: AudioNode[];
+      keepAlive: GainNode;
+    };
+    type Globals = { __allInstrumentSequencerProbe__?: Probe };
+    const globals = window as unknown as Globals;
+    const probe = globals.__allInstrumentSequencerProbe__;
+    if (!probe) return;
+    probe.sources.forEach((source, inputIndex) => {
+      try {
+        source.disconnect(probe.node, 0, inputIndex);
+      } catch {
+        // A completed read or navigation may already have removed this edge.
+      }
+    });
+    probe.node.port.onmessage = null;
+    probe.node.port.close();
+    try {
+      probe.node.disconnect();
+    } catch {
+      // A completed read may already have disconnected the node.
+    }
+    try {
+      probe.keepAlive.disconnect();
+    } catch {
+      // A completed read may already have disconnected the keepalive node.
+    }
+    delete globals.__allInstrumentSequencerProbe__;
+  });
+}
+
 function getPlayButton(page: Page) {
   return page
     .locator('[data-testid="play-button"]')
@@ -638,8 +879,41 @@ function getPlayButton(page: Page) {
     .first();
 }
 
-async function clickPlayButton(page: Page): Promise<void> {
-  await getPlayButton(page).click();
+async function stopPlaybackIfActive(page: Page): Promise<void> {
+  const playButton = getPlayButton(page);
+  const label = await playButton.getAttribute('aria-label');
+  if (label === 'Stop') {
+    await playButton.click();
+    await expect(playButton).toHaveAttribute('aria-label', 'Play', { timeout: 10_000 });
+  } else if (label !== 'Play') {
+    throw new Error(`Play button exposed unexpected aria-label ${String(label)}`);
+  }
+}
+
+async function cleanupIsolatedTrial(
+  page: Page,
+  trackIndex: number,
+  trackId: string,
+): Promise<void> {
+  const failures: Array<{ action: string; error: unknown }> = [];
+  const attempt = async (action: string, operation: () => Promise<void>): Promise<void> => {
+    try {
+      await operation();
+    } catch (error) {
+      failures.push({ action, error });
+    }
+  };
+  await attempt('disarm dispatch probe', () => disarmEngineDispatchProbe(page));
+  await attempt('stop transport', () => stopPlaybackIfActive(page));
+  await attempt('disconnect continuous capture', () => cleanupContinuousEnergyCapture(page));
+  await attempt('re-mute UI and TrackBus', () => setTrackMuted(page, trackIndex, trackId, true));
+  if (failures.length > 0) {
+    const cleanupError = new Error(
+      `Isolated trial cleanup failed: ${failures.map(failure => failure.action).join(', ')}`,
+    );
+    Object.defineProperty(cleanupError, 'failures', { value: failures });
+    throw cleanupError;
+  }
 }
 
 function cleanSubjectCommit(): string {
@@ -732,6 +1006,7 @@ test('every catalog instrument sequencer step produces live master output', asyn
     await expect(page.locator('.track-row')).toHaveCount(tracks.length, { timeout: 20_000 });
 
     await prepareAudioForTracks(page, tracks);
+    await installEngineDispatchProbe(page);
     const expectedSampleRate = await page.evaluate(() => {
       type Engine = { getAudioContext?: () => AudioContext | null };
       const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
@@ -751,13 +1026,46 @@ test('every catalog instrument sequencer step produces live master output', asyn
       // Calibration is deliberately single-audible-track. Muted release tails
       // may remain allocated; polyphonic behaviour has separate matrix coverage
       // and must not move an instrument's level rank.
-      await setTrackMuted(page, i, trackId, false);
-      await attachContinuousEnergyCapture(page, [trackId]);
-      await armAndStartContinuousEnergyCapture(page);
-      const energy = await readContinuousEnergyCapture(page);
-      await clickPlayButton(page);
-      await expect(getPlayButton(page)).toHaveAttribute('aria-label', 'Play', { timeout: 10_000 });
-      await setTrackMuted(page, i, trackId, true);
+      let energy: EnergyCaptureResult | null = null;
+      let isolationSnapshot: PreArmIsolationSnapshot | null = null;
+      let observedEngineDispatches: LiveEngineDispatch[] | null = null;
+      let primaryError: unknown;
+      let cleanupFailure: unknown;
+      try {
+        await setTrackMuted(page, i, trackId, false);
+        await attachContinuousEnergyCapture(page, [trackId]);
+        isolationSnapshot = await armTrialObservation(page, tracks.map(track => track.id));
+        expect(isolationSnapshot.uiUnmutedTrackIds).toEqual([trackId]);
+        expect(isolationSnapshot.commandedTrackBusOpenIds).toEqual([trackId]);
+        await armAndStartContinuousEnergyCapture(page);
+        energy = await readContinuousEnergyCapture(page);
+        await stopPlaybackIfActive(page);
+        observedEngineDispatches = await readAndDisarmEngineDispatchProbe(page);
+        expect(observedEngineDispatches).toEqual([{
+          method: LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type],
+          trackId,
+        }]);
+      } catch (error) {
+        primaryError = error;
+        throw error;
+      } finally {
+        try {
+          await cleanupIsolatedTrial(page, i, trackId);
+        } catch (cleanupError) {
+          cleanupFailure = cleanupError;
+          if (primaryError instanceof Error) {
+            try {
+              Object.defineProperty(primaryError, 'cleanupError', { value: cleanupError });
+            } catch {
+              // Never replace the trial's primary failure with cleanup metadata.
+            }
+          }
+        }
+      }
+      if (cleanupFailure !== undefined) throw cleanupFailure;
+      if (!energy || !isolationSnapshot || !observedEngineDispatches) {
+        throw new Error(`Isolated trial ${trackId} completed without all evidence fields`);
+      }
       expect(energy.sampleRate).toBe(expectedSampleRate);
 
       const trackEnergy = energy.tracks[trackId];
@@ -771,8 +1079,12 @@ test('every catalog instrument sequencer step produces live master output', asyn
         masterRms: energy.master.rms,
         armToOnsetFrames: energy.armToOnsetFrames,
         randomCalls: energy.randomCalls,
+        preArmUiUnmutedTrackIds: isolationSnapshot.uiUnmutedTrackIds,
+        preArmCommandedTrackBusOpenIds: isolationSnapshot.commandedTrackBusOpenIds,
+        observedEngineDispatches,
       });
     }
+    await uninstallEngineDispatchProbe(page);
   }
 
   const receipt: LiveQualityReport = {
@@ -806,7 +1118,7 @@ test('every catalog instrument sequencer step produces live master output', asyn
       activeStep: LIVE_ACTIVE_STEP,
       activeStepOffsetSeconds: LIVE_ACTIVE_STEP_OFFSET_SECONDS,
       schedulerLookaheadSeconds: LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
-      expectedEventsPerTrack: LIVE_EXPECTED_EVENTS_PER_TRACK,
+      scheduledActiveStepsPerTrack: LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
       patternPeriodSeconds: LIVE_PATTERN_PERIOD_SECONDS,
       patternStorageStepCount: LIVE_PATTERN_STORAGE_STEP_COUNT,
       unmuteSettleSeconds: LIVE_UNMUTE_SETTLE_SECONDS,
