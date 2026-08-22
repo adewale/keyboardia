@@ -16,6 +16,10 @@ import {
   stackBFullAppStates,
   stackBStates,
 } from './stack-b-manifest';
+import {
+  isApprovedSiteColorStyleDifference,
+  SITE_COLOR_MIGRATION_BASE_SHA,
+} from './site-color-migration';
 
 const evidenceRoot = resolve(process.cwd(), '..', 'audit', 'css-consistency', 'stack-b-evidence');
 const writeEvidence = process.env.STACK_B_WRITE_EVIDENCE === '1';
@@ -84,6 +88,7 @@ type Side = 'base' | 'head';
 interface ElementContract {
   index: number;
   signature: string;
+  className: string;
   dropdownTarget: boolean;
   rect: { x: number; y: number; width: number; height: number };
   values: Record<string, string>;
@@ -95,7 +100,7 @@ interface TargetRegion {
   width: number;
   height: number;
   halo: number;
-  kind: 'trigger' | 'menu';
+  kind: 'trigger' | 'menu' | 'site-color';
 }
 
 interface CapturedContract {
@@ -174,6 +179,7 @@ async function readPageContract(page: Page): Promise<CapturedContract> {
           element.getAttribute('role') ?? '',
           element.getAttribute('data-testid') ?? '',
         ].join('|'),
+        className,
         dropdownTarget: element.closest('.dropdown-trigger, .dropdown-menu') !== null,
         rect: {
           x: Math.round(rect.x * 1000) / 1000,
@@ -290,7 +296,12 @@ async function captureFullApp(
   return readPageContract(page);
 }
 
-function styleViolations(base: CapturedContract, head: CapturedContract, migration: boolean) {
+function styleViolations(
+  base: CapturedContract,
+  head: CapturedContract,
+  stackBMigration: boolean,
+  siteColorMigration: boolean,
+) {
   const violations: string[] = [];
   if (base.elements.length !== head.elements.length) {
     return [`visible element count changed: ${base.elements.length} → ${head.elements.length}`];
@@ -307,11 +318,13 @@ function styleViolations(base: CapturedContract, head: CapturedContract, migrati
     }
     for (const property of styleProperties) {
       if (after.values[property] === before.values[property]) continue;
-      const approvedMigrationDifference = migration
+      const approvedStackBDifference = stackBMigration
         && before.dropdownTarget
         && after.dropdownTarget
         && stackBDecorativeProperties.has(property);
-      if (!approvedMigrationDifference) {
+      const approvedSiteColorDifference = siteColorMigration
+        && isApprovedSiteColorStyleDifference(before, after, property);
+      if (!approvedStackBDifference && !approvedSiteColorDifference) {
         violations.push(
           `element ${index} changed non-approved ${property}: ${before.values[property]} → ${after.values[property]}`,
         );
@@ -319,6 +332,27 @@ function styleViolations(base: CapturedContract, head: CapturedContract, migrati
     }
   }
   return violations;
+}
+
+function siteColorRegions(
+  base: CapturedContract,
+  head: CapturedContract,
+  migration: boolean,
+): TargetRegion[] {
+  if (!migration || base.elements.length !== head.elements.length) return [];
+  return base.elements.flatMap((before, index) => {
+    const after = head.elements[index];
+    if (
+      before.signature !== after.signature
+      || before.rect.width <= 0
+      || before.rect.height <= 0
+    ) return [];
+    const approved = styleProperties.some((property) => (
+      before.values[property] !== after.values[property]
+      && isApprovedSiteColorStyleDifference(before, after, property)
+    ));
+    return approved ? [{ ...before.rect, halo: 3, kind: 'site-color' as const }] : [];
+  });
 }
 
 function unexpectedChangedPixels(beforeBuffer: Buffer, afterBuffer: Buffer, regions: TargetRegion[]) {
@@ -508,28 +542,41 @@ async function assertApprovedDifference(
   inputConfig: unknown,
 ) {
   const { baseSha: baseRevision, headSha: headRevision } = await comparisonRevisions(page);
-  const migration = baseRevision === STACK_B_MIGRATION_BASE_SHA;
+  const stackBMigration = baseRevision === STACK_B_MIGRATION_BASE_SHA;
+  const siteColorMigration = baseRevision === SITE_COLOR_MIGRATION_BASE_SHA;
   const pixels = comparePngs(base.screenshot, head.screenshot);
-  const violations = styleViolations(base, head, migration);
+  const violations = styleViolations(base, head, stackBMigration, siteColorMigration);
+  const colorRegions = siteColorRegions(base, head, siteColorMigration);
+  const approvedRegions = [
+    ...(stackBMigration ? base.regions : []),
+    ...colorRegions,
+  ];
   const targetGeometryIdentity = JSON.stringify(head.regions) === JSON.stringify(base.regions);
-  const changedOutsideTargets = unexpectedChangedPixels(base.screenshot, head.screenshot, base.regions);
+  const changedOutsideTargets = unexpectedChangedPixels(
+    base.screenshot,
+    head.screenshot,
+    approvedRegions,
+  );
 
   expect(head.aria, 'accessibility-tree identity failed').toBe(base.aria);
   expect(violations, 'geometry or non-decorative style changed').toEqual([]);
   expect(head.regions, 'dropdown target geometry changed').toEqual(base.regions);
   expect(
     changedOutsideTargets,
-    'pixels changed outside dropdown controls and their approved decorative halo',
+    'pixels changed outside approved dropdown or colour-role targets',
   ).toBe(0);
 
-  const pixelExpectation = migration && expectsVisualDifference ? 'changed' : 'identical';
-  if (!migration || !expectsVisualDifference) {
+  const expectsStackBChange = stackBMigration && expectsVisualDifference;
+  const expectsSiteColorChange = siteColorMigration && colorRegions.length > 0;
+  const expectsApprovedChange = expectsStackBChange || expectsSiteColorChange;
+  const pixelExpectation = expectsApprovedChange ? 'changed' : 'identical';
+  if (!expectsApprovedChange) {
     expect(pixels.differentPixels, 'this state must remain pixel-identical').toBe(0);
   } else {
-    expect(pixels.differentPixels, 'the approved Stack B migration produced no visual change').toBeGreaterThan(0);
+    expect(pixels.differentPixels, 'the approved visual migration produced no visual change').toBeGreaterThan(0);
     expect(
-      styleViolations(base, head, false).length,
-      'decorative exceptions must expire after the one-time Stack B migration',
+      styleViolations(base, head, false, false).length,
+      'visual exceptions must expire after their one-time migration base',
     ).toBeGreaterThan(0);
   }
 
@@ -745,7 +792,7 @@ test.describe('Stack B approved dropdown differences', () => {
     expect(step).toEqual(transpose);
     expect(step.backgroundColor).toBe('rgb(68, 68, 68)');
     expect(step.backgroundImage).toBe('none');
-    expect(step.checkColor).toBe('rgb(240, 112, 72)');
+    expect(step.checkColor).toBe('rgb(255, 138, 101)');
   });
 
   test('selection, Escape and outside click preserve expected focus ownership @stack-b-accessibility', async ({ page }) => {
@@ -884,7 +931,7 @@ test.describe('Stack B approved dropdown differences', () => {
       backgroundColor: 'rgb(42, 32, 30)',
       backgroundImage: 'none',
       borderTopColor: 'rgb(240, 112, 72)',
-      color: 'rgb(240, 112, 72)',
+      color: 'rgb(255, 138, 101)',
     });
     const menu = page.locator('.step-count-menu');
     await expect(menu).toBeVisible();

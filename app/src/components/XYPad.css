@@ -142,7 +142,7 @@
 .xy-pad-values-external {
   font-size: 9px;
   font-family: monospace;
-  color: var(--color-text-dimmed);
+  color: var(--color-text-muted);
 }
 
 .xy-pad.dragging ~ .xy-pad-bottom-labels .xy-pad-values-external {

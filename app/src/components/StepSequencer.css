@@ -222,7 +222,7 @@
   gap: 6px;
   padding: 6px 12px;
   background: var(--color-info);
-  color: white;
+  color: var(--color-on-bright);
   border-radius: 20px;
   font-size: 13px;
   font-weight: 500;
@@ -261,7 +261,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: white;
+  color: var(--color-on-bright);
   font-size: 14px;
   line-height: 1;
   margin-left: 4px;
@@ -397,4 +397,3 @@
 .step-sequencer[data-orientation="landscape"] .loop-ruler {
   display: none;
 }
-

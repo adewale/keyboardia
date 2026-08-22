@@ -47,7 +47,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 
 .subtitle {
@@ -58,7 +58,7 @@
 
 /* Published session subtitle - subtle purple tint */
 .subtitle.published {
-  color: var(--color-purple);
+  color: var(--color-purple-text);
 }
 
 /* Header title group - Keyboardia / Session Name */
@@ -111,7 +111,7 @@
 }
 
 .session-name-saving {
-  color: var(--color-text-dimmed);
+  color: var(--color-text-muted);
   font-size: 0.9em;
   margin-left: 4px;
 }
@@ -136,7 +136,7 @@
 }
 
 .session-name-input::placeholder {
-  color: var(--color-text-dimmed);
+  color: var(--color-text-muted);
 }
 
 /* Mobile adjustments for session name */
@@ -187,7 +187,7 @@
 }
 
 .session-controls.session-error {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .session-controls.session-not-found {
@@ -197,7 +197,7 @@
 
 .not-found-text {
   font-size: 0.85rem;
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 /* Orphan banner */
@@ -207,7 +207,7 @@
   gap: 12px;
   background: var(--color-yellow-muted);
   border: 1px solid rgba(255, 193, 7, 0.3);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   padding: 8px 16px;
   border-radius: 6px;
   font-size: 0.85rem;
@@ -223,7 +223,7 @@
   flex: 0 0 44px;
   background: none;
   border: none;
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   cursor: pointer;
   font-size: 1rem;
   padding: 0;
@@ -246,7 +246,7 @@
 }
 
 .lineage-arrow {
-  color: var(--color-text-dimmed);
+  color: var(--color-text-muted);
 }
 
 /* Phase 21: Lineage is text-only, no links (spec lines 472-479) */
@@ -256,7 +256,7 @@
 
 .remix-count,
 .remix-count-standalone {
-  color: var(--color-text-dimmed);
+  color: var(--color-text-muted);
   font-size: 0.75rem;
 }
 
@@ -265,7 +265,7 @@
 }
 
 .player-count {
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-size: 0.75rem;
   font-weight: 500;
   margin-right: 12px;
@@ -299,18 +299,18 @@
 .publish-btn {
   background: var(--color-purple);
   border-color: var(--color-purple);
-  color: var(--color-text);
+  color: var(--color-on-purple);
 }
 
 .publish-btn:hover:not(:disabled) {
-  background: #a569c0;
-  border-color: #a569c0;
-  color: var(--color-text);
+  background: var(--color-purple-dark);
+  border-color: var(--color-purple-dark);
+  color: var(--color-on-purple);
 }
 
 .remix-btn:hover:not(:disabled) {
   border-color: var(--color-orange);
-  color: var(--color-orange);
+  color: var(--color-orange-text);
 }
 
 /* Phase 31: Primary Action Button Pattern (PHASE-31-UI-ENHANCEMENTS.md)
@@ -322,24 +322,24 @@
   box-shadow: 0 2px 8px rgba(232, 90, 48, 0.15);
   transform: scale(1.02);
   font-weight: 500;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .session-btn.remix-btn.primary-action:hover:not(:disabled) {
   border-color: var(--color-accent-light);
   box-shadow: 0 2px 12px rgba(232, 90, 48, 0.25);
-  color: var(--color-accent-light);
+  color: var(--color-accent-text);
 }
 
 .new-btn:hover:not(:disabled) {
   border-color: var(--color-teal);
-  color: var(--color-teal);
+  color: var(--color-teal-text);
 }
 
 /* Phase 27: MIDI download button */
 .download-btn:hover:not(:disabled) {
   border-color: var(--color-info);
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 /* Phase 21: Invite button - outline style (visually distinct) */
@@ -351,7 +351,7 @@
 
 .invite-btn:hover:not(:disabled) {
   border-color: var(--color-brand);
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   background: var(--color-accent-muted);
 }
 
@@ -362,7 +362,7 @@
   gap: 4px;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--color-purple);
+  color: var(--color-purple-text);
   background: var(--color-purple-muted);
   border: 1px solid rgba(155, 89, 182, 0.3);
   padding: 3px 10px;
@@ -480,7 +480,7 @@ main {
   padding: 24px 0 12px;
   text-align: center;
   font-size: 10px;
-  color: var(--color-text-dimmed, #555);
+  color: var(--color-text-muted, #999);
   letter-spacing: 0.3px;
 }
 

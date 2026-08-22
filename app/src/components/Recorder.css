@@ -37,13 +37,13 @@
 .mic-button.recording {
   background: var(--color-error);
   border-color: var(--color-error);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .mic-button.request {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .mic-button.request:hover {
@@ -105,7 +105,7 @@
   border: 2px solid var(--color-yellow);
   border-radius: 6px;
   background: transparent;
-  color: var(--color-yellow);
+  color: var(--color-yellow-text);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -153,7 +153,7 @@
 
 .sensitivity-value {
   font-size: 12px;
-  color: var(--color-yellow);
+  color: var(--color-yellow-text);
   min-width: 24px;
   font-family: monospace;
 }
@@ -184,22 +184,22 @@
 
 .action-button.add {
   border-color: var(--color-success);
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 .action-button.add:hover {
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .action-button.discard {
   border-color: var(--color-error);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .action-button.discard:hover {
   background: var(--color-error);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .action-button:disabled {

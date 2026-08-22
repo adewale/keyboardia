@@ -55,12 +55,13 @@
   /* Use for: headings, body text, labels, hints */
   --color-text: rgba(255, 255, 255, 0.87);   /* Primary text - high emphasis */
   --color-text-muted: rgba(255, 255, 255, 0.6);  /* Secondary - medium emphasis */
-  --color-text-dimmed: rgba(255, 255, 255, 0.38); /* Disabled/hint - low emphasis */
+  --color-text-dimmed: rgba(255, 255, 255, 0.38); /* Disabled/decorative only - never informative copy */
 
   /* ===== 4. ACCENT - Brand & active states ===== */
   /* Use for: CTAs, active steps, brand highlights, primary actions */
   --color-accent: #e85a30;            /* Primary accent - Keyboardia orange */
   --color-accent-hover: #f07048;      /* Accent hover state */
+  --color-accent-text: #ff8a65;       /* Accent used as normal-sized text on neutral surfaces */
   --color-accent-muted: rgba(232, 90, 48, 0.2); /* Subtle accent backgrounds */
   --color-accent-glow: rgba(232, 90, 48, 0.6);  /* Glow effects */
   /* Stack B dropdown pilot. Reuse the site's flat neutral surface grammar
@@ -77,12 +78,13 @@
   --dropdown-option-hover-background: var(--color-surface-hover);
   --dropdown-option-selected-background: var(--color-surface-active);
   --dropdown-option-secondary-text: var(--color-text-muted);
-  --dropdown-transpose-active-color: #5eb3ea;
+  --dropdown-transpose-active-color: var(--color-blue-text);
   /* Exact legacy channel fallback used by selection glow. This deliberately
      does not normalize to --color-accent in Stack A. */
   --color-selection-glow-rgb: 255, 160, 100;
   /* Legacy alias */
   --color-brand: var(--color-accent);
+  --color-brand-text: var(--color-accent-text);
   --color-accent-light: var(--color-accent-hover);
 
   /* ===== 5. SEMANTIC - Feedback colors ===== */
@@ -91,6 +93,10 @@
   --color-warning: #ffc107;           /* Attention, pending, caution */
   --color-error: #e74c3c;             /* Error, disconnected, destructive */
   --color-secondary: #d4a054;         /* Volume locks, secondary indicators */
+  --color-success-text: var(--color-success);
+  --color-warning-text: var(--color-warning);
+  --color-error-text: #ff7b7b;
+  --color-secondary-text: var(--color-secondary);
   /* Exact aliases for the existing FX master backgrounds. */
   --color-fx-active-muted: rgba(78, 205, 196, 0.15);
   --color-fx-active-muted-hover: rgba(78, 205, 196, 0.25);
@@ -104,50 +110,73 @@
 
   /* Blue - Info, links, Keys instruments, transpose */
   --color-blue: #3498db;
+  --color-blue-text: #5eb3ea;
   --color-blue-muted: rgba(52, 152, 219, 0.15);
   --color-info: var(--color-blue);
+  --color-info-text: var(--color-blue-text);
 
   /* Purple - Synth, publish, Bass instruments */
   --color-purple: #9b59b6;
+  --color-purple-text: #c58ad6;
   --color-purple-muted: rgba(155, 89, 182, 0.15);
   --color-purple-dark: #8e44ad;
 
   /* Teal - Share, multiplayer presence */
   --color-teal: #4ecdc4;
+  --color-teal-text: var(--color-teal);
   --color-teal-muted: rgba(78, 205, 196, 0.15);
 
   /* Cyan - FX instruments */
   --color-cyan: #00bcd4;
+  --color-cyan-text: var(--color-cyan);
   --color-cyan-muted: rgba(0, 188, 212, 0.15);
 
   /* Pink - Leads instruments */
   --color-pink: #e91e63;
+  --color-pink-text: #ff6f9f;
   --color-pink-muted: rgba(233, 30, 99, 0.15);
 
   /* Green - Pads instruments (distinct from success) */
   --color-green: #2ecc71;
+  --color-green-text: var(--color-green);
   --color-green-muted: rgba(46, 204, 113, 0.15);
 
   /* Orange - Drums instruments (same family as accent) */
   --color-orange: #e67e22;
+  --color-orange-text: #ffb74d;
   --color-orange-muted: rgba(230, 126, 34, 0.15);
 
   /* Yellow - Solo, attention highlights */
   --color-yellow: #f1c40f;
+  --color-yellow-text: var(--color-yellow);
   --color-yellow-muted: rgba(241, 196, 15, 0.15);
 
   /* Red - Velocity spectrum (loud dynamics), distinct from error state */
   --color-red: #e74c3c;
+  --color-red-text: var(--color-error-text);
   --color-red-muted: rgba(231, 76, 60, 0.15);
+
+  /* ===== FILLED-CONTROL FOREGROUNDS =====
+   * Bright feature fills use the site background as ink. Purple is dark
+   * enough for white; pink needs black to clear 4.5:1. */
+  --color-on-bright: var(--color-bg);
+  --color-on-purple: #ffffff;
+  --color-on-pink: #000000;
 
   /* ===== INSTRUMENT CATEGORY COLORS ===== */
   /* Semantic aliases for instrument picker */
   --color-drums: var(--color-orange);
+  --color-drums-text: var(--color-orange-text);
   --color-bass: var(--color-purple);
+  --color-bass-text: var(--color-purple-text);
   --color-keys: var(--color-blue);
+  --color-keys-text: var(--color-blue-text);
   --color-leads: var(--color-pink);
+  --color-leads-text: var(--color-pink-text);
   --color-pads: var(--color-green);
+  --color-pads-text: var(--color-green-text);
   --color-fx: var(--color-cyan);
+  --color-fx-text: var(--color-cyan-text);
 
   /* ===== 7. PLAYHEAD ===== */
   /* Use for: sequencer position indicator */

@@ -175,7 +175,7 @@
 .track-drag-handle:active {
   cursor: grabbing;
   opacity: 1;
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /* RIGHT STICKY: Action buttons stay fixed on right edge during scroll */
@@ -330,12 +330,12 @@
   }
 
   .track-header-mobile.soloed .track-name-mobile {
-    color: var(--color-yellow);
+    color: var(--color-yellow-text);
   }
 
   .track-type-badge {
     font-size: 12px;
-    color: var(--color-purple);
+    color: var(--color-purple-text);
   }
 
   .track-status-badge {
@@ -348,7 +348,7 @@
 
   .track-status-badge.muted {
     background: var(--color-error);
-    color: white;
+    color: var(--color-on-bright);
   }
 
   .track-status-badge.soloed {
@@ -473,7 +473,7 @@
 .expand-toggle.expanded {
   background: var(--color-cyan-muted);
   border-color: var(--color-cyan);
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
 }
 
 .expand-toggle svg {
@@ -563,7 +563,7 @@
 
 /* Active state - when there's an effective key to show */
 .track-key-badge.active {
-  color: var(--color-blue, #6eb5ff);
+  color: var(--color-blue-text, #5eb3ea);
   background: var(--color-surface-elevated, #2a2a2a);
 }
 
@@ -622,7 +622,7 @@
 .mute-button.active {
   background: var(--color-error);
   border-color: var(--color-error);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 /* Solo button - industry standard yellow when active */
@@ -827,13 +827,13 @@
 .action-btn.delete:hover:not(:disabled) {
   background: var(--color-error);
   border-color: var(--color-error);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .action-btn.paste {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .action-btn.paste:hover {
@@ -881,12 +881,12 @@
 
 .plock-label.pitch {
   background: var(--color-blue);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .plock-label.volume {
   background: var(--color-accent);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .plock-slider-row {
@@ -945,7 +945,7 @@
 .plock-clear:focus-visible {
   border-color: var(--color-error);
   background: rgba(231, 76, 60, 0.2);
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 /* Phase 29B: Tie toggle button */
@@ -963,24 +963,24 @@
 
 .plock-tie:hover {
   border-color: var(--color-blue);
-  color: var(--color-blue);
+  color: var(--color-blue-text);
 }
 
 .plock-tie.active {
   border-color: var(--color-blue);
   background: var(--color-blue);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 /* Out-of-range pitch warning styles */
 .plock-label.out-of-range,
 .plock-value.out-of-range {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .plock-label.pitch.out-of-range {
   background: var(--color-error);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .plock-slider.pitch.out-of-range {
@@ -993,7 +993,7 @@
 
 .plock-warning {
   max-width: 140px;
-  color: var(--color-error);
+  color: var(--color-error-text);
   font-size: 10px;
   line-height: 1.2;
 }
@@ -1153,7 +1153,7 @@
 .pattern-tools-toggle.active {
   background: var(--color-cyan-muted);
   border-color: var(--color-cyan);
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
 }
 
 /* Pattern tools panel - appears below track row */
@@ -1216,7 +1216,7 @@
 .pattern-tool-btn:hover:not(:disabled) {
   background: var(--color-surface-hover);
   border-color: var(--color-purple);
-  color: var(--color-purple);
+  color: var(--color-purple-text);
 }
 
 .pattern-tool-btn:active:not(:disabled) {
@@ -1297,7 +1297,7 @@
 .euclidean-value {
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-teal);
+  color: var(--color-teal-text);
   font-family: monospace;
   min-width: 35px;
 }
@@ -1340,7 +1340,7 @@
 .swing-value {
   font-size: 11px;
   font-weight: 600;
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
   font-family: monospace;
   min-width: 32px; /* Reduced: no longer needs to fit "Global" */
 }
@@ -1372,7 +1372,7 @@
 .drawer-pattern-btn:hover:not(:disabled) {
   background: var(--color-surface-hover);
   border-color: var(--color-purple);
-  color: var(--color-purple);
+  color: var(--color-purple-text);
 }
 
 .drawer-pattern-btn:active:not(:disabled) {
@@ -1720,7 +1720,7 @@
 .instrument-toggle.active {
   background: var(--color-accent-muted);
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 /*
@@ -1756,5 +1756,5 @@
 
 .drawer-instrument-btn.active {
   border-color: var(--color-accent);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }

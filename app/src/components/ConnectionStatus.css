@@ -37,7 +37,7 @@
 }
 
 .connection-status--connected .connection-status__text {
-  color: var(--color-success);
+  color: var(--color-success-text);
 }
 
 /* Connecting state - yellow/amber with pulse */
@@ -47,7 +47,7 @@
 }
 
 .connection-status--connecting .connection-status__text {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 @keyframes pulse {
@@ -68,13 +68,13 @@
 }
 
 .connection-status--disconnected .connection-status__text {
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 /* Queued indicator - slightly red when disconnected with queue */
 .connection-status--disconnected .connection-status__queue,
 .connection-status--connecting .connection-status__queue {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 /* Single player state - gray (graceful degradation) */

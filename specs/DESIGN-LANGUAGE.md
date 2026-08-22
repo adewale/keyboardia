@@ -48,26 +48,38 @@ These are the actual CSS custom properties defined in `:root`:
 /* Accent */
 --color-accent: #e85a30;
 --color-accent-hover: #f07048;
+--color-accent-text: #ff8a65;
 --color-accent-muted: rgba(232, 90, 48, 0.2);
 --color-accent-glow: rgba(232, 90, 48, 0.6);
 --color-brand: var(--color-accent);  /* alias */
+--color-brand-text: var(--color-accent-text);
 
 /* Semantic */
 --color-success: #1db954;  /* Spotify green */
 --color-warning: #ffc107;
 --color-error: #e74c3c;
+--color-error-text: #ff7b7b;
 --color-secondary: #d4a054;
 --color-info: var(--color-blue);  /* alias */
 
 /* Feature Colors */
 --color-blue: #3498db;
+--color-blue-text: #5eb3ea;
 --color-purple: #9b59b6;
+--color-purple-text: #c58ad6;
 --color-teal: #4ecdc4;
 --color-cyan: #00bcd4;
 --color-pink: #e91e63;
+--color-pink-text: #ff6f9f;
 --color-green: #2ecc71;
 --color-orange: #e67e22;
+--color-orange-text: #ffb74d;
 --color-yellow: #f1c40f;
+
+/* Foregrounds for filled feature controls */
+--color-on-bright: var(--color-bg);
+--color-on-purple: #ffffff;
+--color-on-pink: #000000;
 
 /* Playhead */
 --color-playhead: #ffffff;
@@ -108,7 +120,9 @@ The signature color — energy, action, active state.
 |-------|-----|-------|
 | `--color-accent` | `#e85a30` | Active steps, CTA buttons, primary actions |
 | `--color-accent-hover` | `#f07048` | Hover states on accent |
-| `--color-brand` | `var(--color-accent)` | Alias for accent (brand text, headlines) |
+| `--color-brand` | `var(--color-accent)` | Alias for accent fills, borders, and decoration |
+| `--color-accent-text` | `#ff8a65` | Orange normal-sized text on neutral surfaces |
+| `--color-brand-text` | `var(--color-accent-text)` | Brand text and headlines |
 | `--color-accent-glow` | `rgba(232, 90, 48, 0.6)` | Active step glow, shadows |
 | `--color-accent-muted` | `rgba(232, 90, 48, 0.2)` | Subtle accent backgrounds |
 
@@ -142,11 +156,21 @@ The signature color — energy, action, active state.
 |-------|-------|--------------|-------|
 | Primary | `rgba(255, 255, 255, 0.87)` | `--color-text` | Headlines, values, active labels |
 | Muted | `rgba(255, 255, 255, 0.6)` | `--color-text-muted` | Hints, inactive labels, descriptions |
-| Dimmed | `rgba(255, 255, 255, 0.38)` | `--color-text-dimmed` | Disabled controls, placeholders |
+| Dimmed | `rgba(255, 255, 255, 0.38)` | `--color-text-dimmed` | Disabled or decorative content only |
 | Disabled | `#666666` | — | Disabled controls, timestamps |
 | Faint | `#444444` | — | Subtle hints |
 
-Note: Three text colors are defined as CSS variables (text, muted, dimmed). Other opacity levels are used directly in CSS where needed.
+`--color-text-dimmed` is reserved for disabled or purely decorative content.
+Placeholders, status copy, counts, headings, values, and other informative text
+must use at least `--color-text-muted`; normal-sized text must clear 4.5:1 on
+every surface and interaction state where it appears.
+
+Feature hues have two roles. The unsuffixed token owns fills, borders, charts,
+and decoration; its `-text` partner owns normal-sized text on neutral surfaces.
+Do not use an unsuffixed feature token in the `color` property. Feature-filled
+controls use an explicit `--color-on-*` foreground chosen for that fill rather
+than inheriting the site's neutral text colour. These distinctions retain hue
+identity without assuming one RGB value is safe for every job.
 
 ---
 

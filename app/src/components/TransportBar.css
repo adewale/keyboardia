@@ -22,7 +22,7 @@
   border: 2px solid var(--color-success);
   border-radius: 50%;
   background: transparent;
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -39,7 +39,7 @@
 .transport-play.playing {
   background: var(--color-error);
   border-color: var(--color-error);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 /* Draggable value controls */
@@ -64,7 +64,7 @@
 .transport-label {
   font-size: 10px;
   font-weight: 600;
-  color: var(--color-text-dimmed);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }

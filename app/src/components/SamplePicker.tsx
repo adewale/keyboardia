@@ -157,7 +157,11 @@ export function SamplePicker({
             <div
               key={categoryKey}
               className={`picker-category ${isExpanded ? 'expanded' : 'collapsed'}`}
-              style={{ '--category-color': category.color } as React.CSSProperties}
+              style={{
+                '--category-color': category.color,
+                '--category-text-color': `var(${category.cssVar}-text)`,
+                '--category-on-color': category.onColor,
+              } as React.CSSProperties}
             >
               <button
                 className="category-header"

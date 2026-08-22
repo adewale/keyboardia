@@ -63,13 +63,13 @@
 }
 
 .pitch-label.root {
-  color: var(--color-blue);
+  color: var(--color-blue-text);
   font-weight: 600;
 }
 
 /* Fifth emphasis - Phase 29E Key Assistant */
 .pitch-label.fifth {
-  color: var(--color-purple);
+  color: var(--color-purple-text);
   font-weight: 500;
 }
 
@@ -126,7 +126,7 @@
 
 .pitch-label.out-of-range .pitch-note {
   text-decoration: line-through;
-  color: var(--color-error);
+  color: var(--color-error-text);
 }
 
 .chromatic-row.out-of-range {
@@ -294,7 +294,7 @@
 .expand-toggle.expanded {
   background: var(--color-cyan-muted);
   border-color: var(--color-cyan);
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
 }
 
 .expand-toggle.expanded:hover {
@@ -358,13 +358,13 @@
 .chromatic-view-mode-control__button--active {
   background: var(--color-cyan-muted);
   border-color: var(--color-cyan);
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
 }
 
 /* Out-of-scale warning badge */
 .chromatic-out-of-scale-warning {
   font-size: 10px;
-  color: var(--color-yellow);
+  color: var(--color-yellow-text);
   background: var(--color-yellow-muted);
   padding: 2px 8px;
   border-radius: 3px;
@@ -383,7 +383,7 @@
    ========================================================================== */
 
 .pitch-label.fourth {
-  color: var(--color-purple);
+  color: var(--color-purple-text);
   font-weight: 500;
   opacity: 0.85;
 }
@@ -436,9 +436,9 @@
 }
 
 .pitch-label.out-of-scale {
-  color: var(--color-yellow);
+  color: var(--color-yellow-text);
 }
 
 .pitch-label.out-of-scale .pitch-note {
-  color: var(--color-yellow);
+  color: var(--color-yellow-text);
 }

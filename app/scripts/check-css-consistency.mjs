@@ -14,6 +14,17 @@ if (metrics.unscopedGenericSelectors.length) {
 if (metrics.undefinedRequiredTokens.length) {
   failures.push(`undefined required root tokens: ${metrics.undefinedRequiredTokens.join(', ')}`);
 }
+if (metrics.unsafeTextTokenUsages.length) {
+  failures.push(
+    `non-text palette tokens used as text:\n  ${metrics.unsafeTextTokenUsages.join('\n  ')}`,
+  );
+}
+if (metrics.unsafeFilledControlForegrounds.length) {
+  failures.push(
+    'feature-filled controls use an unclassified foreground:\n  '
+    + metrics.unsafeFilledControlForegrounds.join('\n  '),
+  );
+}
 if (metrics.rawColorsOutsideIndex > baseline.maxRawColorsOutsideIndex) {
   failures.push(
     `raw colors outside index.css increased: ${metrics.rawColorsOutsideIndex} > ${baseline.maxRawColorsOutsideIndex}`,
@@ -51,6 +62,8 @@ if (failures.length) {
 console.log(
   `CSS consistency invariant passed: ${metrics.unscopedGenericSelectors.length} unscoped generic selectors, `
   + `${metrics.undefinedRequiredTokens.length} required undefined tokens, `
+  + `${metrics.unsafeTextTokenUsages.length} unsafe text-token uses, `
+  + `${metrics.unsafeFilledControlForegrounds.length} unsafe filled-control foregrounds, `
   + `${metrics.rawColorsOutsideIndex}/${baseline.maxRawColorsOutsideIndex} raw colors, `
   + `${metrics.dropdown.sharedConsumers} shared dropdown consumers.`,
 );

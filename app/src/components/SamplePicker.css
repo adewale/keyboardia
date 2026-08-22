@@ -37,15 +37,6 @@
   font-style: italic;
 }
 
-/* Previews unavailable state */
-.sample-picker.previews-unavailable .instrument-btn {
-  opacity: 0.7;
-}
-
-.sample-picker.previews-unavailable .instrument-btn:hover:not(:disabled) {
-  opacity: 1;
-}
-
 /* Categories container */
 .picker-categories {
   display: flex;
@@ -97,7 +88,7 @@
 .sample-picker .category-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--category-color, var(--color-text-muted));
+  color: var(--category-text-color, var(--color-text-muted));
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex: 1;
@@ -112,7 +103,7 @@
 }
 
 .picker-category.expanded .category-chevron {
-  color: var(--category-color, var(--color-text-muted));
+  color: var(--category-text-color, var(--color-text-muted));
 }
 
 /* Instruments grid */
@@ -153,7 +144,7 @@
   transform: translateY(0);
   background: var(--category-color, var(--color-surface-active));
   border-color: var(--category-color, var(--color-surface-active));
-  color: white;
+  color: var(--category-on-color, var(--color-on-bright));
 }
 
 .instrument-btn:disabled {
