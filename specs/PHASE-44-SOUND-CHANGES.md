@@ -178,6 +178,23 @@ existing `audio-hot-paths.bench.ts` before and after. A wrong anchor makes an
 instrument sound muffled at moderate velocity — hence the per-instrument value
 and the ±2% guard on already-layered instruments.
 
+**Reconsidered limits (2026-08-22).** Two consequences of this design deserve
+stating as plainly as its benefits:
+
+1. **The bypass caps the audible payoff.** Every unlocked step — the default,
+   and most notes in most sessions — renders through the bypassed graph by
+   construction. The change makes the velocity lane expressive; it does not
+   change how a session with no volume locks sounds at all. Tone Nets' filter
+   acts on every note. That trade is deliberate (it is what makes the change
+   shippable without a migration), but it means this change narrows the
+   per-note gap only where users reach for dynamics.
+2. **A static cutoff is one of three per-voice elements, not all of them.**
+   The SF2 bank pairs its velocity-dependent cutoff with a filter *envelope*
+   on 89% of zones and a vibrato LFO on 100% — the attack-opens-filter motion
+   the comparison credited as a large part of why that bank reads as "played".
+   This change supplies the velocity slice only; per-note motion stays out of
+   scope (see §9).
+
 **Effort.** Medium. **Claim level:** internal metric improvement.
 
 ---
@@ -293,3 +310,35 @@ a matched capture of Keyboardia against a reference app, and a first-contact
 listening study with its uncertainty reported. Until that exists, every
 statement in this plan is about Keyboardia's own measurements moving, and
 should be written that way in commits, changelog, and release notes.
+
+## 9. Scorecard: the gap with and without this plan
+
+Added 2026-08-22, after re-verifying both anchors: `origin/main` is still the
+pinned `58264dd`, and the live Tone Nets deploy hashes byte-identical to the
+§7 receipt of the comparison doc (same index page SHA-256, same asset
+fingerprints, same 7,557,598-byte SoundFont). Both sides of the comparison are
+frozen, so the baseline numbers stand.
+
+**The branch that carries this plan ships no engine change.** It adds the
+measurement scripts, this plan, and unit-gate timeout fixes; the shipped sound
+today is byte-identical with or without it. "With" below therefore means "if
+every change in §2–§6 lands as specified".
+
+| Dimension | Without (today) | With §2–§6 landed | Remaining vs Tone Nets |
+|---|---|---|---|
+| Mobile audibility (iOS ringer switch) | silent | audible — gated on a physical-device pass, not CI | none, once the device test passes |
+| Velocity → timbre, sampled path | 0% centroid spread on 20/26 instruments | 26–35% band on locked steps; 4/9 instruments immediately, 5/9 after per-manifest anchor tuning | unlocked steps unchanged by design; no response above v90 |
+| Per-note motion (filter envelope, LFO) | none | none — out of scope | full gap: SF2 has a filter envelope on 89% of zones, LFO on 100% |
+| Default space | `reverb.wet: 0` | 0.15 bass-protected, new sessions only | per-instrument depth — the SF2 balances sends per zone; ours is one global wet (§4.9 of the comparison, not committed here) |
+| Startup (warm-up, clock-liveness) | absent | closed if §6 lands | — |
+| `navigator.mediaSession` | absent | closed if §6 lands | — |
+| Device quality tiers | none | none — not carried into this plan | comparison §4.8 remains open |
+| `french-horn` dynamic layers | 1.9% spread (content defect) | unchanged unless the content work in §6 happens | remains until re-sourced |
+| Source material | Keyboardia ahead | unchanged | our advantage either way |
+| Timing / multiplayer | Keyboardia ahead | unchanged | our advantage either way |
+| Comparative listening evidence | none | none | unchanged — §8 still applies to every row above |
+
+What the branch *did* change is the epistemics: the gap is now instrumented.
+`measure:velocity-timbre` and `simulate:velocity-filter` re-derive every number
+in this table from the shipped assets, so after any landing the same commands
+show exactly which rows moved.
