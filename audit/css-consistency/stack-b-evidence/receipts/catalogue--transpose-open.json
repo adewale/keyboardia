@@ -2,10 +2,10 @@
   "id": "transpose-open",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "24be63398a05c6cc88435b31f4c91b871d26f464",
+  "headRevision": "3a446313ecb35e665405dabbf635b71a9237c965",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 4
+    "version": 5
   },
   "inputConfigSha256": "9f09fd298a40bfd53cfa91c08714d80fffa529144b23d13ed80d4c4407f03d1c",
   "environment": {
@@ -18,12 +18,12 @@
     "width": 1280,
     "height": 800
   },
-  "differentPixels": 30813,
-  "rawDifferentPixels": 68374,
+  "differentPixels": 7539,
+  "rawDifferentPixels": 26299,
   "maxObservedChannelDelta": 240,
   "beforeSha256": "2262a20e556f5fac16a948bc3288a4aba78d2c914ce2476863b363f38db71b25",
-  "afterSha256": "501d669a80cdd302d31f0cc067fc020511d8f6e11968fbbb686cffc079b4a846",
-  "diffSha256": "e7a80a05be706615cabca6a44ff3711ab79469808c87b9675eef7568effa1d76",
+  "afterSha256": "903fb299158cbe5c24a1af0900a04cf76e154d32e318c9667ddfb5c3a811b23e",
+  "diffSha256": "3b38bb988e0f072c6e2ee9be483705dfb9a1255ea910aa807e258c40c28e07de",
   "checks": {
     "accessibilityTreeIdentity": true,
     "geometryAndStyleViolations": 0,

@@ -2,10 +2,10 @@
   "id": "step-count-header-hover-mobile-portrait",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "24be63398a05c6cc88435b31f4c91b871d26f464",
+  "headRevision": "3a446313ecb35e665405dabbf635b71a9237c965",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 4
+    "version": 5
   },
   "inputConfigSha256": "1cb6dd008db7ead541ac760005427f0aca94e5a6da96c036366bac4a9d18289e",
   "environment": {
@@ -18,12 +18,12 @@
     "width": 375,
     "height": 812
   },
-  "differentPixels": 31118,
-  "rawDifferentPixels": 71846,
+  "differentPixels": 8189,
+  "rawDifferentPixels": 27873,
   "maxObservedChannelDelta": 240,
   "beforeSha256": "1999124781688cc7d7f1193de28090e42cfd0083b31620555789389f9703d52d",
-  "afterSha256": "27673785be886a23e408e8b55fba6369db6f1c8dbc780179c6eafdcc4b0b6ac1",
-  "diffSha256": "1bb75967086dcc38750391b8a57dbf21e5a173ad241c7658b34b08115e57392b",
+  "afterSha256": "cc4e7b146e958bd37adb27847bbea0199b2219aa3e2676e0148b69a707424416",
+  "diffSha256": "11c82b1ffc8af16a4385d596d332e7f9a740c205130a914b16a0a69dbcecaac5",
   "checks": {
     "accessibilityTreeIdentity": true,
     "geometryAndStyleViolations": 0,

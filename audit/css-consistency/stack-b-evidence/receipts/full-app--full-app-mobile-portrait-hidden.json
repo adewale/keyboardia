@@ -2,10 +2,10 @@
   "id": "full-app-mobile-portrait-hidden",
   "group": "full-app",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "24be63398a05c6cc88435b31f4c91b871d26f464",
+  "headRevision": "3a446313ecb35e665405dabbf635b71a9237c965",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 4
+    "version": 5
   },
   "inputConfigSha256": "01fa78feb0ffb5427b8f7bf42aa6c791391bbcb6267cea351240d4bb0843ba5e",
   "environment": {

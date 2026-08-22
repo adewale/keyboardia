@@ -21,15 +21,15 @@ crops, and JSON hash receipts are retained beside these contact sheets.
 
 <!-- generated-evidence-summary:start -->
 - Merge base: `58264dd5ae274f63b1cd80b72aa823b76b21f28b`
-- Candidate source revision: `24be63398a05c6cc88435b31f4c91b871d26f464`
-- Receipt generator: `app/identity/stack-b-visual.spec.ts` generator v4
+- Candidate source revision: `3a446313ecb35e665405dabbf635b71a9237c965`
+- Receipt generator: `app/identity/stack-b-visual.spec.ts` generator v5
 - Human-review renderer: Chromium 143.0.7499.4, darwin 25.5.0
 - Canonical machine authority: same-process Chromium comparisons on GitHub Actions Linux; committed review PNGs are provenance-bound evidence, not cross-platform pixel baselines
 - Viewports: 1280×800, 375×812, 480×320, 768×1024, 769×1024, 844×390, 667×375, 1024×768
 - Total named pairs: 29
 - Intentionally changed pairs: 25
 - Exact-identity product pairs: 4
-- Pixels beyond the 6/255 raster allowance: 583,351 across the 25 changed pairs
+- Pixels beyond the 6/255 raster allowance: 141,144 across the 25 changed pairs
 - Accessibility trees: exact base/head identity
 - Visible element and dropdown rectangles: exact base/head identity
 - Non-decorative computed styles: exact base/head identity
@@ -62,6 +62,10 @@ node scripts/finalize-stack-b-evidence.mjs
 npm run validate:stack-b-evidence
 ```
 
+If those local ports are occupied, set `STACK_A_COMPARISON_PORT`,
+`STACK_A_BASE_PRODUCT_PORT`, and `STACK_A_HEAD_PRODUCT_PORT` to three free
+ports on the Playwright command.
+
 The test writes receipts only after ARIA, geometry, style containment, pixel
 containment, and the expected changed/identical result pass. The finalizer binds
 the README, receipts, raw images, review crops, contact sheets, reference, and
@@ -72,18 +76,18 @@ any non-evidence change after the recorded source revision.
 
 | # | State | Before | After | Intent |
 |---:|---|---|---|---|
-| 1 | Closed triggers | [PNG](before/catalogue--dropdowns-default-collision-canary.png) | [PNG](after/catalogue--dropdowns-default-collision-canary.png) | Tactile surface, edge, shadow, orange chevrons |
-| 2 | Selected values | [PNG](before/catalogue--dropdowns-selected.png) | [PNG](after/catalogue--dropdowns-selected.png) | Same treatment with non-default values |
-| 3 | Disabled | [PNG](before/catalogue--dropdowns-disabled.png) | [PNG](after/catalogue--dropdowns-disabled.png) | New decoration under unchanged opacity |
+| 1 | Closed triggers | [PNG](before/catalogue--dropdowns-default-collision-canary.png) | [PNG](after/catalogue--dropdowns-default-collision-canary.png) | Flat shared surface, accessible edge, orange chevrons, no trigger shadow |
+| 2 | Selected values | [PNG](before/catalogue--dropdowns-selected.png) | [PNG](after/catalogue--dropdowns-selected.png) | Same flat treatment with non-default values |
+| 3 | Disabled | [PNG](before/catalogue--dropdowns-disabled.png) | [PNG](after/catalogue--dropdowns-disabled.png) | Shared flat surface under unchanged opacity |
 | 4 | Keyboard focus | [PNG](before/catalogue--step-count-focused.png) | [PNG](after/catalogue--step-count-focused.png) | 2px information-blue focus outline |
-| 5 | Trigger hover | [PNG](before/catalogue--step-count-trigger-hover.png) | [PNG](after/catalogue--step-count-trigger-hover.png) | Brighter gradient and orange edge |
-| 6 | Active transpose hover | [PNG](before/catalogue--transpose-active-trigger-hover.png) | [PNG](after/catalogue--transpose-active-trigger-hover.png) | Lighter feature blue remains legible on the brighter hover surface |
+| 5 | Trigger hover | [PNG](before/catalogue--step-count-trigger-hover.png) | [PNG](after/catalogue--step-count-trigger-hover.png) | Shared flat hover surface and orange edge |
+| 6 | Active transpose hover | [PNG](before/catalogue--transpose-active-trigger-hover.png) | [PNG](after/catalogue--transpose-active-trigger-hover.png) | Lighter feature blue remains legible on the flat hover surface |
 | 7 | Step selection result | [PNG](before/catalogue--step-count-selection.png) | [PNG](after/catalogue--step-count-selection.png) | Event remains exact; focus returns to trigger |
 | 8 | Transpose Escape result | [PNG](before/catalogue--transpose-escape.png) | [PNG](after/catalogue--transpose-escape.png) | Dismissal remains exact; focus returns to trigger |
 | 9 | Transpose selection result | [PNG](before/catalogue--transpose-selection.png) | [PNG](after/catalogue--transpose-selection.png) | Event remains exact; focus returns to trigger |
-| 10 | Step menu open | [PNG](before/catalogue--step-count-open.png) | [PNG](after/catalogue--step-count-open.png) | Layered menu and neutral tonal selected row with orange check |
-| 11 | Transpose menu open | [PNG](before/catalogue--transpose-open.png) | [PNG](after/catalogue--transpose-open.png) | Same shared visual hierarchy |
-| 12 | Transpose option hover | [PNG](before/catalogue--transpose-option-hover.png) | [PNG](after/catalogue--transpose-option-hover.png) | Tactile option gradient |
+| 10 | Step menu open | [PNG](before/catalogue--step-count-open.png) | [PNG](after/catalogue--step-count-open.png) | Flat menu and selected row with the orange semantic check |
+| 11 | Transpose menu open | [PNG](before/catalogue--transpose-open.png) | [PNG](after/catalogue--transpose-open.png) | Same shared flat hierarchy |
+| 12 | Transpose option hover | [PNG](before/catalogue--transpose-option-hover.png) | [PNG](after/catalogue--transpose-option-hover.png) | Shared flat hover surface |
 | 13 | Transpose option focus | [PNG](before/catalogue--transpose-option-focused.png) | [PNG](after/catalogue--transpose-option-focused.png) | Information-blue inset outline; no orange halo |
 | 14 | Reduced-motion menu | [PNG](before/catalogue--step-count-open-reduced-motion.png) | [PNG](after/catalogue--step-count-open-reduced-motion.png) | Same settled pixels; animation remains removed |
 | 15 | Component portrait step | [PNG](before/catalogue--step-count-open-mobile-portrait.png) | [PNG](after/catalogue--step-count-open-mobile-portrait.png) | Responsive step menu |
@@ -104,9 +108,9 @@ any non-evidence change after the recorded source revision.
 
 ## Approval
 
-The maintainer selected Option 1 and approved the earlier visual direction.
-The later focus-ownership and contrast corrections in this candidate require
-renewed review of these images. Once approved, approval applies only to the
-exact merge base and candidate source revision above; the following commit is
-evidence-only. Any merge-base movement or source drift expires the package and
-requires a complete regeneration.
+The maintainer selected Option 1, then requested that Stack B be flattened to
+match the wider product while every focus-ownership, contrast, and behavioural
+repair remains intact. The regenerated images require review. Once approved,
+approval applies only to the exact merge base and candidate source revision
+above; the following commit is evidence-only. Any merge-base movement or source
+drift expires the package and requires a complete regeneration.
