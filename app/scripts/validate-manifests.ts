@@ -31,6 +31,7 @@ import {
   midiToNoteName,
 } from '../src/audio/constants';
 import { nearestSampleNote, selectVelocityGroupBlend } from '../src/audio/sample-selection';
+import { MAX_CONFIGURED_ADAPTIVE_CODEC_DELAY_SECONDS } from '../src/audio/sample-onset';
 import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 
 // ============================================================================
@@ -93,6 +94,7 @@ interface Manifest {
   chokeGroup?: string;
   gainDb?: number;
   startOffset?: number;
+  maxAdaptiveCodecDelay?: number;
   unpitched?: boolean;
   velocityCrossfade?: number;
   priorityNotes?: number[];
@@ -491,6 +493,16 @@ function validateManifest(
       type: 'critical',
       code: 'INVALID_START_OFFSET',
       message: `manifest startOffset must be finite and >= 0, got: ${JSON.stringify(manifest.startOffset)}`,
+    });
+  }
+  if (manifest.maxAdaptiveCodecDelay !== undefined &&
+      (!Number.isFinite(manifest.maxAdaptiveCodecDelay) ||
+       manifest.maxAdaptiveCodecDelay < 0 ||
+       manifest.maxAdaptiveCodecDelay > MAX_CONFIGURED_ADAPTIVE_CODEC_DELAY_SECONDS)) {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_ADAPTIVE_CODEC_DELAY',
+      message: `maxAdaptiveCodecDelay must be finite within 0-${MAX_CONFIGURED_ADAPTIVE_CODEC_DELAY_SECONDS}s, got: ${JSON.stringify(manifest.maxAdaptiveCodecDelay)}`,
     });
   }
 

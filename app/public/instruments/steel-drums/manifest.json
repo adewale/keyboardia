@@ -83,7 +83,7 @@
       "velocityMin": 0,
       "velocityMax": 40,
       "articulation": "sustain",
-      "gainDb": -0.249,
+      "gainDb": -2.549,
       "roundRobinGroup": "sustain-63-0-40",
       "roundRobinIndex": 0
     },
@@ -93,7 +93,7 @@
       "velocityMin": 0,
       "velocityMax": 40,
       "articulation": "sustain",
-      "gainDb": -0.249,
+      "gainDb": -2.549,
       "roundRobinGroup": "sustain-63-0-40",
       "roundRobinIndex": 1
     },
@@ -563,7 +563,7 @@
       "velocityMin": 41,
       "velocityMax": 64,
       "articulation": "sustain",
-      "gainDb": 1.064,
+      "gainDb": -1.236,
       "roundRobinGroup": "sustain-63-41-64",
       "roundRobinIndex": 0
     },
@@ -573,7 +573,7 @@
       "velocityMin": 41,
       "velocityMax": 64,
       "articulation": "sustain",
-      "gainDb": 1.064,
+      "gainDb": -1.236,
       "roundRobinGroup": "sustain-63-41-64",
       "roundRobinIndex": 1
     },
@@ -1043,7 +1043,7 @@
       "velocityMin": 65,
       "velocityMax": 88,
       "articulation": "sustain",
-      "gainDb": 1.693,
+      "gainDb": -0.607,
       "roundRobinGroup": "sustain-63-65-88",
       "roundRobinIndex": 0
     },
@@ -1053,7 +1053,7 @@
       "velocityMin": 65,
       "velocityMax": 88,
       "articulation": "sustain",
-      "gainDb": 1.693,
+      "gainDb": -0.607,
       "roundRobinGroup": "sustain-63-65-88",
       "roundRobinIndex": 1
     },
@@ -1513,7 +1513,7 @@
       "velocityMin": 89,
       "velocityMax": 112,
       "articulation": "sustain",
-      "gainDb": 3.058,
+      "gainDb": 0.758,
       "roundRobinGroup": "sustain-63-89-112",
       "roundRobinIndex": 0
     },
@@ -1523,7 +1523,7 @@
       "velocityMin": 89,
       "velocityMax": 112,
       "articulation": "sustain",
-      "gainDb": 3.058,
+      "gainDb": 0.758,
       "roundRobinGroup": "sustain-63-89-112",
       "roundRobinIndex": 1
     },
@@ -1983,7 +1983,7 @@
       "velocityMin": 113,
       "velocityMax": 127,
       "articulation": "sustain",
-      "gainDb": 5.305,
+      "gainDb": 3.005,
       "roundRobinGroup": "sustain-63-113-127",
       "roundRobinIndex": 0
     },
@@ -1993,7 +1993,7 @@
       "velocityMin": 113,
       "velocityMax": 127,
       "articulation": "sustain",
-      "gainDb": 5.305,
+      "gainDb": 3.005,
       "roundRobinGroup": "sustain-63-113-127",
       "roundRobinIndex": 1
     },
