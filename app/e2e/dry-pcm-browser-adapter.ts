@@ -121,6 +121,7 @@ export interface BrowserCaptureDiagnostics {
   effectsEnabled: false;
   pan: 0;
   audioContextSampleRate: typeof MATRIX_SAMPLE_RATE;
+  latencyHint: 'playback';
   browserVersion: string;
   userAgent: string;
 }
@@ -489,7 +490,15 @@ export class ChromiumDryPcmCaptureAdapter {
       const forcedAudioContext = new Proxy(nativeAudioContext, {
         construct(target, argumentsList) {
           const requested = (argumentsList[0] ?? {}) as AudioContextOptions;
-          return Reflect.construct(target, [{ ...requested, sampleRate }], target);
+          // The production app normally accepts Chromium's low-latency
+          // default. A multi-second evidence recorder instead pins the
+          // browser's playback-quality buffering so an overloaded CI host
+          // cannot turn a scheduling underrun into silently packed PCM.
+          return Reflect.construct(
+            target,
+            [{ ...requested, sampleRate, latencyHint: 'playback' }],
+            target,
+          );
         },
       });
       Object.defineProperty(window, 'AudioContext', {
@@ -555,6 +564,7 @@ export class ChromiumDryPcmCaptureAdapter {
         effectsEnabled: false,
         pan: 0,
         audioContextSampleRate: MATRIX_SAMPLE_RATE,
+        latencyHint: 'playback',
         browserVersion: this.options.browser.version(),
         userAgent: captured.userAgent,
       });
