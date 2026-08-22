@@ -1,5 +1,5 @@
 import { test, expect, getBaseUrl, useMockAPI, waitForAppReady } from './global-setup';
-import { DEFAULT_EFFECTS_STATE } from '../src/shared/effects-defaults';
+import { NEW_SESSION_EFFECTS_STATE } from '../src/shared/effects-defaults';
 
 test.describe('mock publish contract', () => {
   test.skip(!useMockAPI, 'This contract targets the local mock API');
@@ -28,7 +28,7 @@ test.describe('mock publish contract', () => {
       tracks: [],
       tempo: 120,
       swing: 0,
-      effects: DEFAULT_EFFECTS_STATE,
+      effects: NEW_SESSION_EFFECTS_STATE,
       scale: { root: 'C', scaleId: 'minor-pentatonic', locked: true },
       version: 1,
     });
