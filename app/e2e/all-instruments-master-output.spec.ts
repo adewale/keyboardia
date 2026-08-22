@@ -1120,7 +1120,6 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
     let batchPage: Page | null = null;
     let audioInitializationAttempted = false;
     let batchTeardownStarted = false;
-    let primaryError: unknown;
     let cleanupFailure: unknown;
     context.on('close', () => {
       if (!batchTeardownStarted) {
@@ -1240,9 +1239,6 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           observedEngineDispatches,
         });
       }
-    } catch (error) {
-      primaryError = error;
-      throw error;
     } finally {
       batchTeardownStarted = true;
       try {
@@ -1250,15 +1246,8 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
       } catch (error) {
         cleanupFailure = error;
       }
-      if (primaryError instanceof Error && cleanupFailure !== undefined) {
-        try {
-          Object.defineProperty(primaryError, 'cleanupError', { value: cleanupFailure });
-        } catch {
-          // Preserve the primary batch failure if the error is not extensible.
-        }
-      }
-      if (primaryError === undefined && cleanupFailure !== undefined) throw cleanupFailure;
     }
+    if (cleanupFailure !== undefined) throw cleanupFailure;
   }
 
   if (receiptBrowser === null) throw new Error('Live capture produced no browser identity');
