@@ -248,21 +248,42 @@ function findActiveRegion(mono: Float32Array, sampleRate: number, peak: number):
   };
 }
 
-/** Runtime starts on the first audible frame in any channel, not mono fold-down. */
-function findAnyChannelLeadingSilenceMs(
+/** Runtime/stereo analysis starts and ends on audible PCM in any channel. */
+function findAnyChannelActiveRegion(
   decoded: DecodedAudioLike,
   peak: number,
-): number {
-  if (decoded.sampleRate <= 0 || decoded.length <= 0 || peak <= 0) return 0;
+): { start: number | null; end: number | null } {
+  if (decoded.sampleRate <= 0 || decoded.length <= 0 || peak <= 0) {
+    return { start: null, end: null };
+  }
   const threshold = Math.max(10 ** (-70 / 20), peak * 10 ** (-50 / 20));
+  // Some decoder implementations materialize/copy channel views on each call;
+  // resolve them once so a whole-buffer scan remains O(frames × channels).
+  const channels = Array.from(
+    { length: decoded.numberOfChannels },
+    (_, channel) => decoded.getChannelData(channel),
+  );
+  let start: number | null = null;
+  let end: number | null = null;
   for (let frame = 0; frame < decoded.length; frame++) {
-    for (let channel = 0; channel < decoded.numberOfChannels; channel++) {
-      if (Math.abs(decoded.getChannelData(channel)[frame] ?? 0) > threshold) {
-        return (frame / decoded.sampleRate) * 1000;
+    for (const channel of channels) {
+      if (Math.abs(channel[frame] ?? 0) > threshold) {
+        start = frame;
+        break;
       }
     }
+    if (start !== null) break;
   }
-  return 0;
+  for (let frame = decoded.length - 1; frame >= 0; frame--) {
+    for (const channel of channels) {
+      if (Math.abs(channel[frame] ?? 0) > threshold) {
+        end = frame;
+        break;
+      }
+    }
+    if (end !== null) break;
+  }
+  return { start, end };
 }
 
 function countFlatTopRuns(decoded: DecodedAudioLike, peak: number): { clippingSamples: number; flatTopRuns: number } {
@@ -678,7 +699,10 @@ export function analyzeDecodedSampleWithMono(context: SampleContext, decoded: De
     peak = Math.max(peak, calculatePeak(decoded.getChannelData(channel)));
   }
   const active = findActiveRegion(mono, decoded.sampleRate, peak);
-  const anyChannelLeadingSilenceMs = findAnyChannelLeadingSilenceMs(decoded, peak);
+  const anyChannelActive = findAnyChannelActiveRegion(decoded, peak);
+  const anyChannelLeadingSilenceMs = anyChannelActive.start === null
+    ? 0
+    : (anyChannelActive.start / decoded.sampleRate) * 1000;
   const activeStart = active.start;
   const activeEnd = active.end;
   const activeRms = activeStart === null || activeEnd === null
@@ -739,7 +763,10 @@ export function analyzeDecodedSampleWithMono(context: SampleContext, decoded: De
     spectral,
     pitch,
     loop: calculateLoopMetrics(mono, decoded.sampleRate, peak, context),
-    stereo: calculateStereoMetrics(decoded, activeStart, activeEnd),
+    // Never derive the stereo/mono-translation window from the mono sum: exact
+    // polarity inversion would erase that window and make the worst possible
+    // fold-down report `null` instead of a fatal loss.
+    stereo: calculateStereoMetrics(decoded, anyChannelActive.start, anyChannelActive.end),
   };
   return { metrics, mono };
 }

@@ -80,6 +80,7 @@
     "audit:instrument-quality:evidence": "USE_MOCK_API=1 playwright test e2e/sample-browser-decode.spec.ts --project=chromium --project=webkit --workers=1 --no-deps && USE_MOCK_API=1 playwright test e2e/all-instruments-master-output.spec.ts --project=chromium --workers=1 --no-deps && node --import tsx scripts/validate-sample-quality.ts --strict",
     "audit:instrument-quality:v1": "npm run audit:instrument-quality:evidence && node --import tsx scripts/audit-instrument-quality.ts --require-evidence",
     "audit:instrument-quality:matrix:plan": "node --import tsx scripts/instrument-quality-matrix-cli.ts plan",
+    "audit:instrument-quality:matrix:smoke": "node --import tsx scripts/capture-instrument-quality-smoke.ts",
     "audit:instrument-quality:matrix:verify": "node --import tsx scripts/instrument-quality-matrix-cli.ts verify",
     "audit:instrument-quality:full": "npm run audit:instrument-quality:evidence && npm run audit:instrument-quality:matrix:verify && node --import tsx scripts/audit-instrument-quality.ts --require-evidence --require-matrix",
     "generate:instrument-notes": "tsx scripts/generate-instrument-notes.ts",

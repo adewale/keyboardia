@@ -235,16 +235,34 @@ async function clickPlayButton(page: Page): Promise<void> {
   await playButton.click();
 }
 
+function cleanSubjectCommit(): string {
+  const repositoryRoot = resolve(THIS_DIR, '../..');
+  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  }).trim();
+  const trackedChanges = execFileSync(
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=all'],
+    { cwd: repositoryRoot, encoding: 'utf8' },
+  ).trim();
+  if (trackedChanges.length > 0) {
+    throw new Error(
+      `Live audio evidence requires a clean tracked subject tree; found:\n${trackedChanges}`,
+    );
+  }
+  if (!/^[a-f0-9]{40}$/.test(subjectCommit)) {
+    throw new Error('Live audio evidence requires a full Git subject commit');
+  }
+  return subjectCommit;
+}
+
 test('every catalog instrument sequencer step produces live master output', async ({ page, request, browserName }) => {
   test.setTimeout(240_000);
   const specs = allInstrumentSpecs();
   expect(specs).toHaveLength(99);
   expect(new Set(specs.map(spec => spec.sampleId)).size).toBe(specs.length);
-  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd: resolve(THIS_DIR, '../..'),
-    encoding: 'utf8',
-  }).trim();
-  expect(subjectCommit).toMatch(/^[a-f0-9]{40}$/);
+  const subjectCommit = cleanSubjectCommit();
 
   // Codec precondition — see e2e/sample-browser-decode.spec.ts for the same
   // check and the full reasoning.

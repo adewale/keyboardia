@@ -25,6 +25,28 @@ interface BrowserDecodeResult extends BrowserDecodeSample {
   error?: string;
 }
 
+function cleanSubjectCommit(): string {
+  const repositoryRoot = path.resolve(process.cwd(), '..');
+  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  }).trim();
+  const trackedChanges = execFileSync(
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=all'],
+    { cwd: repositoryRoot, encoding: 'utf8' },
+  ).trim();
+  if (trackedChanges.length > 0) {
+    throw new Error(
+      `Browser-decode evidence requires a clean tracked subject tree; found:\n${trackedChanges}`,
+    );
+  }
+  if (!/^[a-f0-9]{40}$/.test(subjectCommit)) {
+    throw new Error('Browser-decode evidence requires a full Git subject commit');
+  }
+  return subjectCommit;
+}
+
 function encodeUrlPath(value: string): string {
   return value.split('/').map(segment => encodeURIComponent(segment)).join('/');
 }
@@ -161,11 +183,7 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
   }, samples);
 
   fs.mkdirSync('reports/instrument-quality', { recursive: true });
-  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
-    cwd: path.resolve(process.cwd(), '..'),
-    encoding: 'utf8',
-  }).trim();
-  expect(subjectCommit).toMatch(/^[a-f0-9]{40}$/);
+  const subjectCommit = cleanSubjectCommit();
   fs.writeFileSync(
     `reports/instrument-quality/browser-decode-${browserName}.json`,
     `${JSON.stringify({

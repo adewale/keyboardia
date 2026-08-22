@@ -41,6 +41,7 @@ import {
   type LiveInstrumentResult,
   type LiveQualityReport,
 } from './instrument-quality-live-receipt';
+import { sampleQualityEvaluatorBundleSha256 } from './sample-quality-baseline-core';
 
 const THIS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const APP_DIR = path.resolve(THIS_DIR, '..');
@@ -56,6 +57,7 @@ const EVALUATOR_SOURCE_PATHS = [
   path.resolve(APP_DIR, 'scripts/instrument-quality-profiles.ts'),
   path.resolve(APP_DIR, 'scripts/instrument-quality-matrix.ts'),
   path.resolve(APP_DIR, 'scripts/instrument-quality-matrix-cli.ts'),
+  path.resolve(APP_DIR, 'scripts/capture-instrument-quality-smoke.ts'),
   path.resolve(APP_DIR, 'scripts/instrument-quality-live-receipt.ts'),
   path.resolve(APP_DIR, 'scripts/sample-quality-core.ts'),
   path.resolve(APP_DIR, 'scripts/sample-quality-baseline-core.ts'),
@@ -71,6 +73,7 @@ const EVALUATOR_SOURCE_PATHS = [
   path.resolve(APP_DIR, 'src/types.ts'),
   path.resolve(APP_DIR, 'src/test/audio-measures.ts'),
   path.resolve(APP_DIR, 'e2e/all-instruments-master-output.spec.ts'),
+  path.resolve(APP_DIR, 'e2e/dry-pcm-browser-adapter.ts'),
   path.resolve(APP_DIR, 'e2e/global-setup.ts'),
   path.resolve(APP_DIR, 'e2e/test-utils.ts'),
   path.resolve(APP_DIR, 'playwright.config.ts'),
@@ -103,11 +106,17 @@ interface QualityIssue extends AuditIssue {
 
 interface SampleInstrumentSummary {
   id: string;
+  sampleCount: number;
   fileCount: number;
 }
 
 interface SampleQualityReport {
+  version: 1;
   generatedAt: string;
+  subjectCommit: string;
+  subjectTreeClean: true;
+  evaluatorBundleSha256: string;
+  baselineSha256: string;
   totals: {
     instruments: number;
     samples: number;
@@ -119,7 +128,14 @@ interface SampleQualityReport {
   issues: QualityIssue[];
   waivedIssues: Array<{ issue: QualityIssue }>;
   instruments: SampleInstrumentSummary[];
-  samples?: Array<{ sampleRate?: number }>;
+  samples: Array<{
+    instrumentId: string;
+    file: string;
+    note: number;
+    velocityMin?: number;
+    velocityMax?: number;
+    sampleRate?: number;
+  }>;
 }
 
 interface ManifestSample {
@@ -332,6 +348,181 @@ function readJson<T>(pathname: string): T | null {
   return JSON.parse(fs.readFileSync(pathname, 'utf8')) as T;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function sampleMappingKey(
+  instrumentId: string,
+  sample: Pick<ManifestSample, 'file' | 'note' | 'velocityMin' | 'velocityMax'>,
+): string {
+  return JSON.stringify([
+    instrumentId,
+    sample.file,
+    sample.note,
+    sample.velocityMin ?? null,
+    sample.velocityMax ?? null,
+  ]);
+}
+
+function validateFullSampleQualityReport(
+  value: unknown,
+  expectedSubjectCommit: string,
+): SampleQualityReport {
+  if (!isRecord(value) || value.version !== 1 || !isRecord(value.totals)) {
+    throw new Error('Sample-quality evidence has an unsupported schema');
+  }
+  if (
+    typeof value.generatedAt !== 'string'
+    || !Number.isFinite(Date.parse(value.generatedAt))
+    || new Date(value.generatedAt).toISOString() !== value.generatedAt
+  ) {
+    throw new Error('Sample-quality evidence generatedAt is not canonical ISO-8601');
+  }
+  if (!isFullCommitId(expectedSubjectCommit) || value.subjectCommit !== expectedSubjectCommit) {
+    throw new Error('Sample-quality evidence subject commit does not match the selected full commit');
+  }
+  if (value.subjectTreeClean !== true) {
+    throw new Error('Sample-quality evidence was captured from a dirty subject tree');
+  }
+  const expectedBaselineSha256 = sha256File(path.resolve(APP_DIR, 'scripts/sample-quality-baseline.json'));
+  if (
+    value.evaluatorBundleSha256 !== sampleQualityEvaluatorBundleSha256(APP_DIR)
+    || value.baselineSha256 !== expectedBaselineSha256
+  ) {
+    throw new Error('Sample-quality evidence evaluator or canonical baseline identity differs');
+  }
+  if (
+    !Array.isArray(value.instruments)
+    || !Array.isArray(value.samples)
+    || !Array.isArray(value.issues)
+    || !Array.isArray(value.waivedIssues)
+  ) {
+    throw new Error('Sample-quality evidence arrays are missing');
+  }
+
+  const catalogueGroups = Object.values(INSTRUMENT_GROUPS) as ReadonlyArray<{
+    instruments: ReadonlyArray<{ id: string; type: string }>;
+  }>;
+  const sampledCatalogueIds = catalogueGroups
+    .flatMap(group => group.instruments)
+    .filter(instrument => instrument.type === 'sampled')
+    .map(instrument => instrument.id.slice('sampled:'.length))
+    .sort();
+  const manifestIds = fs.readdirSync(MANIFEST_ROOT)
+    .filter(id => fs.existsSync(path.join(MANIFEST_ROOT, id, 'manifest.json')))
+    .sort();
+  if (JSON.stringify(manifestIds) !== JSON.stringify(sampledCatalogueIds)) {
+    throw new Error(
+      `Sample-quality manifest/catalogue coverage differs: manifests=${manifestIds.length}, catalogue=${sampledCatalogueIds.length}`,
+    );
+  }
+  const manifests = sampledCatalogueIds.map(id => {
+    const manifest = manifestFor(id);
+    if (!manifest || manifest.id !== id || !Array.isArray(manifest.samples)) {
+      throw new Error(`Sample-quality expected manifest is invalid: ${id}`);
+    }
+    return manifest;
+  });
+  const expectedMappingCounts = new Map<string, number>();
+  const expectedFiles = new Set<string>();
+  const expectedById = new Map<string, { sampleCount: number; fileCount: number }>();
+  for (const manifest of manifests) {
+    const files = new Set<string>();
+    for (const sample of manifest.samples) {
+      const key = sampleMappingKey(manifest.id, sample);
+      expectedMappingCounts.set(key, (expectedMappingCounts.get(key) ?? 0) + 1);
+      files.add(sample.file);
+      expectedFiles.add(`${manifest.id}/${sample.file}`);
+    }
+    expectedById.set(manifest.id, { sampleCount: manifest.samples.length, fileCount: files.size });
+  }
+
+  const summaries = value.instruments as unknown[];
+  const summaryIds = new Set<string>();
+  for (const summary of summaries) {
+    if (
+      !isRecord(summary)
+      || typeof summary.id !== 'string'
+      || !Number.isInteger(summary.sampleCount)
+      || !Number.isInteger(summary.fileCount)
+      || summaryIds.has(summary.id)
+    ) {
+      throw new Error('Sample-quality evidence contains a malformed or duplicate instrument summary');
+    }
+    const expected = expectedById.get(summary.id);
+    if (!expected || summary.sampleCount !== expected.sampleCount || summary.fileCount !== expected.fileCount) {
+      throw new Error(`Sample-quality evidence coverage differs for ${summary.id}`);
+    }
+    summaryIds.add(summary.id);
+  }
+  const missingSummaries = sampledCatalogueIds.filter(id => !summaryIds.has(id));
+  if (missingSummaries.length > 0 || summaries.length !== sampledCatalogueIds.length) {
+    throw new Error(
+      `Sample-quality evidence is filtered/incomplete; missing instrument summaries: ${missingSummaries.join(', ') || 'none'}`,
+    );
+  }
+
+  const actualMappingCounts = new Map<string, number>();
+  for (const sample of value.samples as unknown[]) {
+    if (
+      !isRecord(sample)
+      || typeof sample.instrumentId !== 'string'
+      || typeof sample.file !== 'string'
+      || !Number.isInteger(sample.note)
+      || (sample.velocityMin !== undefined && !Number.isInteger(sample.velocityMin))
+      || (sample.velocityMax !== undefined && !Number.isInteger(sample.velocityMax))
+    ) {
+      throw new Error('Sample-quality evidence contains a malformed decoded mapping');
+    }
+    const key = sampleMappingKey(sample.instrumentId, {
+      file: sample.file,
+      note: sample.note as number,
+      velocityMin: sample.velocityMin as number | undefined,
+      velocityMax: sample.velocityMax as number | undefined,
+    });
+    actualMappingCounts.set(key, (actualMappingCounts.get(key) ?? 0) + 1);
+  }
+  const missingMappings = [...expectedMappingCounts].filter(([key, count]) => actualMappingCounts.get(key) !== count);
+  const unexpectedMappings = [...actualMappingCounts].filter(([key, count]) => expectedMappingCounts.get(key) !== count);
+  if (missingMappings.length > 0 || unexpectedMappings.length > 0) {
+    throw new Error(
+      `Sample-quality decoded mapping coverage differs: missing=${missingMappings.length}, unexpected=${unexpectedMappings.length}`,
+    );
+  }
+
+  const expectedSampleCount = manifests.reduce((total, manifest) => total + manifest.samples.length, 0);
+  const totals = value.totals;
+  const validIssue = (issue: unknown): issue is QualityIssue => isRecord(issue)
+    && ['error', 'review'].includes(String(issue.severity))
+    && typeof issue.code === 'string'
+    && issue.code.length > 0
+    && typeof issue.instrumentId === 'string'
+    && issue.instrumentId.length > 0
+    && (issue.file === undefined || typeof issue.file === 'string');
+  const issues = value.issues as unknown[];
+  if (issues.some(issue => !validIssue(issue))) {
+    throw new Error('Sample-quality evidence contains a malformed issue');
+  }
+  if (value.waivedIssues.some(entry => !isRecord(entry) || !validIssue(entry.issue))) {
+    throw new Error('Sample-quality evidence contains a malformed waived issue');
+  }
+  const errorCount = issues.filter(issue => (issue as Record<string, unknown>).severity === 'error').length;
+  const reviewCount = issues.filter(issue => (issue as Record<string, unknown>).severity === 'review').length;
+  if (
+    totals.instruments !== sampledCatalogueIds.length
+    || totals.samples !== expectedSampleCount
+    || totals.files !== expectedFiles.size
+    || totals.errors !== errorCount
+    || totals.reviewFlags !== reviewCount
+    || totals.waivedIssues !== value.waivedIssues.length
+    || value.samples.length !== expectedSampleCount
+  ) {
+    throw new Error('Sample-quality evidence totals do not match full manifest coverage');
+  }
+  return value as unknown as SampleQualityReport;
+}
+
 function sha256File(pathname: string): string | null {
   if (!fs.existsSync(pathname)) return null;
   return createHash('sha256').update(fs.readFileSync(pathname)).digest('hex');
@@ -382,6 +573,14 @@ function evaluatorDiffersFromCommit(evaluatorCommit: string): boolean {
     if (!fs.readFileSync(pathname).equals(committed)) return true;
   }
   return false;
+}
+
+function subjectTreeStatus(): string {
+  return execFileSync(
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=all'],
+    { cwd: APP_DIR, encoding: 'utf8' },
+  ).trim();
 }
 
 function countCodes(codes: readonly string[]): Record<string, number> {
@@ -464,13 +663,13 @@ function issueCounts(issues: readonly QualityIssue[]): Record<string, number> {
 function evidenceGrade(
   type: InstrumentType,
   live: LiveInstrumentResult | null,
-  sampleReport: SampleQualityReport | null,
+  sampledInstrumentDecoded: boolean,
   liveSilent: boolean,
   matrixMeasured: boolean,
 ): EvidenceGrade {
   if (liveSilent) return 'F';
-  if (live && matrixMeasured && (type !== 'sampled' || sampleReport !== null)) return 'A';
-  if (type === 'sampled' && live && sampleReport) return 'A';
+  if (live && matrixMeasured && (type !== 'sampled' || sampledInstrumentDecoded)) return 'A';
+  if (type === 'sampled' && live && sampledInstrumentDecoded) return 'A';
   if (live) return 'B';
   return 'C';
 }
@@ -626,7 +825,7 @@ function renderMarkdown(
 
 function main(): void {
   const options = parseArgs(process.argv.slice(2));
-  const sampleReport = readJson<SampleQualityReport>(options.sampleReport);
+  const rawSampleReport = readJson<unknown>(options.sampleReport);
   const rawLiveReport = readJson<unknown>(options.liveReport);
   const matrixReport = readJson<DryPcmMatrixReport>(options.matrixReport);
   const receiptSubjectCommit = rawLiveReport !== null
@@ -634,6 +833,12 @@ function main(): void {
     && 'subjectCommit' in rawLiveReport
     && typeof rawLiveReport.subjectCommit === 'string'
     ? rawLiveReport.subjectCommit
+    : null;
+  const sampleReceiptSubjectCommit = rawSampleReport !== null
+    && typeof rawSampleReport === 'object'
+    && 'subjectCommit' in rawSampleReport
+    && typeof rawSampleReport.subjectCommit === 'string'
+    ? rawSampleReport.subjectCommit
     : null;
   const headCommit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: APP_DIR, encoding: 'utf8' }).trim();
   const evaluatorCommit = resolveFullCommitId(
@@ -648,12 +853,25 @@ function main(): void {
       ?? process.env.KEYBOARDIA_SUBJECT_COMMIT
       ?? matrixReport?.provenance?.subjectCommit
       ?? receiptSubjectCommit
+      ?? sampleReceiptSubjectCommit
       ?? headCommit,
     'Subject commit',
   );
+  const sampleReport = rawSampleReport === null
+    ? null
+    : validateFullSampleQualityReport(rawSampleReport, subjectCommit);
   const liveReport = rawLiveReport === null
     ? null
     : validateLiveQualityReport(rawLiveReport, subjectCommit);
+  if (sampleReport || liveReport) {
+    const treeStatus = subjectTreeStatus();
+    if (headCommit !== subjectCommit || treeStatus.length > 0) {
+      throw new Error(
+        `Dynamic audio evidence requires the selected subject commit in a clean tree; `
+        + `HEAD=${headCommit}, subject=${subjectCommit}${treeStatus ? `, changes:\n${treeStatus}` : ''}`,
+      );
+    }
+  }
   const currentEvaluatorTreeSha256 = evaluatorTreeSha256();
   const evaluatorDirty = evaluatorDiffersFromCommit(evaluatorCommit);
   if (options.requireEvidence && (!sampleReport || !liveReport)) {
@@ -753,7 +971,13 @@ function main(): void {
       targetRoundRobins,
       dryPcmFatalCount: matrixFatalCount,
     });
-    const grade = evidenceGrade(item.type, live, sampleReport, liveSilent, matrixResults.length > 0);
+    const grade = evidenceGrade(
+      item.type,
+      live,
+      sampleSummary !== undefined,
+      liveSilent,
+      matrixResults.length > 0,
+    );
     const codeCounts = issueCounts(sampleIssues);
     const evidence = item.type === 'sampled'
       ? `${coverage?.fileCount ?? 0} decoded files, ${sampleIssues.length} accepted+unwaived findings, live peak ${finiteRound(peakDbfs) ?? 'n/a'} dBFS`
@@ -871,7 +1095,7 @@ function main(): void {
       instruments: instruments.length,
       liveMeasured: instruments.filter(instrument => instrument.live.measured).length,
       liveSilent: instruments.filter(instrument => instrument.live.silent).length,
-      sampledDecoded: instruments.filter(instrument => instrument.type === 'sampled' && sampleReport !== null).length,
+      sampledDecoded: sampleReport?.instruments.length ?? 0,
       dryPcmMeasured: instruments.filter(instrument => instrument.dryPcmMatrix.measured).length,
       dryPcmCases: instruments.reduce((total, instrument) => total + instrument.dryPcmMatrix.cases, 0),
       dryPcmFatalFindings: instruments.reduce((total, instrument) => total + instrument.dryPcmMatrix.fatalFindings, 0),
