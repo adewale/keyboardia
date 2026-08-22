@@ -597,7 +597,7 @@ function renderMarkdown(report: SampleQualityReport): string {
   lines.push(`- Unique files: ${report.totals.files}`);
   lines.push(`- Unwaived errors: ${report.totals.errors}`);
   lines.push(`- Unwaived review flags: ${report.totals.reviewFlags}`);
-  lines.push(`- Waived baseline issues: ${report.totals.waivedIssues}`);
+  lines.push(`- Disposition-accepted findings: ${report.totals.waivedIssues}`);
   if (report.baseline) lines.push(`- Baseline: \`${report.baseline}\``);
   lines.push('');
   lines.push('## Instrument overview');
@@ -647,7 +647,7 @@ function renderMarkdown(report: SampleQualityReport): string {
   lines.push('');
   lines.push('- `error` means objective decode/measurement defects that should block CI unless explicitly waived.');
   lines.push('- `review` means measurable risk that needs A/B listening or source-specific judgment.');
-  lines.push('- Baseline dispositions bind the source file, complete manifest, exact measured value/threshold, and evaluator bundle; any change fails closed.');
+  lines.push('- Baseline dispositions bind the source file, complete manifest, six-decimal measured value/threshold, and evaluator bundle; material changes fail closed.');
   lines.push('- Metrics are generated from decoded PCM via Web Audio in Node; Chromium codec support is covered by the blocking browser decode smoke test.');
   lines.push('');
   return `${lines.join('\n')}\n`;
@@ -773,7 +773,7 @@ async function main(): Promise<void> {
   console.log(`  Instruments: ${report.totals.instruments}`);
   console.log(`  Samples: ${report.totals.samples}`);
   console.log(`  Unique files: ${report.totals.files}`);
-  console.log(`  Waived baseline issues: ${report.totals.waivedIssues}`);
+  console.log(`  Disposition-accepted findings: ${report.totals.waivedIssues}`);
   console.log(`  ${errors === 0 ? colors.green : colors.red}Unwaived errors:${colors.reset} ${errors}`);
   console.log(`  ${reviewFlags === 0 ? colors.green : colors.yellow}Unwaived review flags:${colors.reset} ${reviewFlags}`);
   if (options.writeReports) {

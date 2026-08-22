@@ -29,11 +29,13 @@ Evaluator tree SHA-256: `dd306708407933248e36911ddb054057a8396d788f094014137141c
 
 The compatibility snapshot combines original `58264dd5` runtime, assets,
 manifests, and source calibration with hardened receipt producers and equivalent
-final scoring math. Its Git commit is explicitly synthetic because the auditor
-correctly refuses to label a mixed tree as literal `58264dd5`; it also imports
-the newer onset helper, whose default behavior is unchanged for the old
-manifests, and predates a label-only report wording change. The method, hashes,
-issue-code totals, and nonzero instrument scores are preserved in
+final scoring math. Its historical Git commit is explicitly synthetic because
+the auditor correctly refuses to label a mixed tree as literal `58264dd5`.
+Reconstruction does not require that vanished commit: the tracked
+[`same-evaluator reconstruction`](./INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md)
+creates a fresh compatibility commit, baseline, decoded receipt, 99-instrument
+live receipt, and ranking for each side, then binds them by SHA-256. The original
+method, hashes, issue-code totals, and nonzero instrument scores are preserved in
 [`instrument-audio-quality-controlled-comparison-2026-08-22.json`](./evidence/instrument-audio-quality-controlled-comparison-2026-08-22.json).
 The older checked-in report's 223.2-point/307-finding result and +16.9 dBFS
 Growl reading used an earlier evaluator and unpinned live receipt; they are
@@ -170,3 +172,14 @@ node --import tsx scripts/audit-instrument-quality.ts \
 ```
 
 The exact weights, caps, role targets, and claim boundary are documented in `../docs/INSTRUMENT-AUDIO-QUALITY-RUBRIC.md`.
+
+Rebuild the controlled comparison and both sides' raw receipts after freezing
+the evaluator:
+
+```sh
+cd app
+npm run audit:instrument-quality:control -- \
+  --base-ref 58264dd5ae274f63b1cd80b72aa823b76b21f28b \
+  --evaluator-ref HEAD \
+  --output-dir ../instrument-quality-controlled-rebuild
+```

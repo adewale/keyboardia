@@ -70,4 +70,4 @@ fs.writeFileSync(outputPath, `${JSON.stringify({
   evaluatorBundleSha256: sampleQualityEvaluatorBundleSha256(),
   waivers,
 }, null, 2)}\n`);
-console.log(`Bound ${waivers.length} exact sample-quality dispositions to current source hashes`);
+console.log(`Bound ${waivers.length} canonical sample-quality dispositions to current source hashes`);

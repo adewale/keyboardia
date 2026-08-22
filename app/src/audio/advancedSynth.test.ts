@@ -761,6 +761,30 @@ describe('voice release tracking', () => {
     setTimeoutSpy.mockRestore();
   });
 
+  it('reuses a retired voice without restarting its continuous sources', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS['warm-pad']);
+    const osc1Start = voice['osc1']!.start;
+    const osc2Start = voice['osc2']!.start;
+    const noiseStart = voice['noise']!.start;
+    const lfoStart = voice['lfo']!.start;
+    const ampTriggers = voice['ampEnvelope']!.triggerAttackRelease;
+    const filterTriggers = voice['filterEnvelope']!.triggerAttackRelease;
+
+    voice.triggerAttackRelease(440, 0.1);
+    vi.mocked(Tone.now).mockReturnValue(2);
+    expect(voice.isActive()).toBe(false);
+
+    voice.triggerAttackRelease(660, 0.1);
+
+    expect(osc1Start).toHaveBeenCalledTimes(1);
+    expect(osc2Start).toHaveBeenCalledTimes(1);
+    expect(noiseStart).toHaveBeenCalledTimes(1);
+    expect(lfoStart).toHaveBeenCalledTimes(1);
+    expect(ampTriggers).toHaveBeenCalledTimes(2);
+    expect(filterTriggers).toHaveBeenCalledTimes(2);
+    expect(voice.isActive()).toBe(true);
+  });
+
   it('triggerAttack remains active until an explicit audio-time release', () => {
     const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
     voice.applyPreset(preset);

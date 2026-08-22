@@ -20,7 +20,8 @@ import {
   type InstrumentQualityProfile,
 } from './instrument-quality-profiles';
 
-export const MATRIX_SCHEMA_VERSION = 3;
+export const MATRIX_SCHEMA_VERSION = 4;
+export const MATRIX_PCM_ARTIFACT_FORMAT = 'planar-f32le-v1' as const;
 export const MATRIX_VELOCITIES = [32, 64, 90, 127] as const;
 export const MATRIX_REPEAT_COUNT = 16;
 export const MATRIX_RANDOM_SEED = 0x4b_42_44_51;
@@ -106,6 +107,7 @@ export interface MatrixProvenance {
     mode: 'offline' | 'chromium-worklet';
     adapter: string;
     adapterSha256: string;
+    artifactFormat: typeof MATRIX_PCM_ARTIFACT_FORMAT;
   };
   browser: BrowserIdentity | null;
 }
@@ -165,6 +167,8 @@ export interface DryPcmCaseResult {
   variant: string;
   captureAttemptId: string;
   pcmSha256: string;
+  /** Repo-external, content-addressed raw PCM filename under the verifier's artifact root. */
+  pcmArtifact: string;
   sampleRate: number;
   channels: number;
   frameCount: number;
@@ -233,6 +237,8 @@ const FATAL_CODES = new Set<DryPcmFatalCode>([
 const EVIDENCE_GAP_CODES = new Set<DryPcmEvidenceGapCode>(['PITCH_INCONCLUSIVE']);
 const THIS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const APP_ROOT = path.resolve(THIS_DIR, '..');
+const APP_ROOT_REAL = fs.realpathSync(APP_ROOT);
+const CHROMIUM_CAPTURE_ADAPTER = 'e2e/dry-pcm-browser-adapter.ts';
 
 interface MatrixSampleManifest {
   playbackNote?: number;
@@ -293,6 +299,38 @@ export function isFullCommitId(value: string): boolean {
   return FULL_COMMIT_ID.test(value);
 }
 
+function sha256File(filename: string): string {
+  return createHash('sha256').update(fs.readFileSync(filename)).digest('hex');
+}
+
+function resolveVerifiedAdapter(provenance: MatrixProvenance): string {
+  const adapter = provenance.capture.adapter;
+  if (path.isAbsolute(adapter) || adapter.includes('\0')) {
+    throw new Error('Dry PCM matrix capture adapter must be a repo-relative path');
+  }
+  const candidate = path.resolve(APP_ROOT, adapter);
+  if (!fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) {
+    throw new Error(`Dry PCM matrix capture adapter does not exist: ${adapter}`);
+  }
+  const resolved = fs.realpathSync(candidate);
+  const relative = path.relative(APP_ROOT_REAL, resolved);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`Dry PCM matrix capture adapter escapes the repository: ${adapter}`);
+  }
+  const canonical = relative.split(path.sep).join('/');
+  if (adapter !== canonical) {
+    throw new Error(`Dry PCM matrix capture adapter path is not canonical: ${adapter}`);
+  }
+  if (provenance.capture.mode === 'chromium-worklet' && canonical !== CHROMIUM_CAPTURE_ADAPTER) {
+    throw new Error(`Chromium matrix capture must use ${CHROMIUM_CAPTURE_ADAPTER}`);
+  }
+  const actualSha256 = sha256File(resolved);
+  if (actualSha256 !== provenance.capture.adapterSha256) {
+    throw new Error(`Dry PCM matrix capture adapter hash mismatch for ${adapter}`);
+  }
+  return resolved;
+}
+
 export function validateMatrixProvenance(provenance: MatrixProvenance): void {
   if (!provenance || !isFullCommitId(provenance.evaluatorCommit) || !isFullCommitId(provenance.subjectCommit)) {
     throw new Error('Dry PCM matrix requires full evaluator and subject commit IDs');
@@ -321,9 +359,11 @@ export function validateMatrixProvenance(provenance: MatrixProvenance): void {
     || typeof provenance.capture.adapter !== 'string'
     || provenance.capture.adapter.trim().length === 0
     || !SHA256.test(provenance.capture.adapterSha256)
+    || provenance.capture.artifactFormat !== MATRIX_PCM_ARTIFACT_FORMAT
   ) {
     throw new Error('Dry PCM matrix capture-adapter identity is invalid');
   }
+  resolveVerifiedAdapter(provenance);
   if (provenance.capture.mode === 'chromium-worklet' && provenance.browser === null) {
     throw new Error('Chromium worklet capture requires browser identity');
   }
@@ -580,12 +620,101 @@ function validateCapture(capture: DryPcmCapture, matrixCase: DryPcmMatrixCase): 
 export function pcmSha256(capture: DryPcmCapture): string {
   const hash = createHash('sha256');
   hash.update(`${capture.sampleRate}:${capture.channels.length}:${capture.frameCount}:f32le\n`);
-  const bytes = Buffer.allocUnsafe(capture.frameCount * 4);
-  for (const channel of capture.channels) {
-    for (let frame = 0; frame < channel.length; frame++) bytes.writeFloatLE(channel[frame], frame * 4);
-    hash.update(bytes);
-  }
+  hash.update(encodePcmArtifact(capture));
   return hash.digest('hex');
+}
+
+function encodePcmArtifact(capture: Pick<DryPcmCapture, 'channels' | 'frameCount'>): Buffer {
+  const bytes = Buffer.allocUnsafe(capture.channels.length * capture.frameCount * 4);
+  let offset = 0;
+  for (const channel of capture.channels) {
+    for (let frame = 0; frame < channel.length; frame++) {
+      bytes.writeFloatLE(channel[frame], offset);
+      offset += 4;
+    }
+  }
+  return bytes;
+}
+
+function writePcmArtifact(
+  artifactRoot: string,
+  capture: DryPcmCapture,
+  sha256: string,
+): string {
+  const root = path.resolve(artifactRoot);
+  fs.mkdirSync(root, { recursive: true });
+  if (!fs.statSync(root).isDirectory()) throw new Error(`PCM artifact root is not a directory: ${root}`);
+  const filename = `${sha256}.f32le`;
+  const pathname = path.join(root, filename);
+  const bytes = encodePcmArtifact(capture);
+  if (fs.existsSync(pathname)) {
+    const existing = fs.readFileSync(pathname);
+    if (!existing.equals(bytes)) throw new Error(`PCM artifact collision for ${filename}`);
+  } else {
+    fs.writeFileSync(pathname, bytes, { flag: 'wx' });
+  }
+  return filename;
+}
+
+function readPcmArtifact(
+  artifactRoot: string,
+  result: DryPcmCaseResult,
+): DryPcmCapture {
+  const expectedFilename = `${result.pcmSha256}.f32le`;
+  if (result.pcmArtifact !== expectedFilename) {
+    throw new Error(`${result.caseId}: PCM artifact name must be ${expectedFilename}`);
+  }
+  const root = path.resolve(artifactRoot);
+  if (!fs.existsSync(root) || !fs.statSync(root).isDirectory()) {
+    throw new Error(`PCM artifact root is missing or not a directory: ${root}`);
+  }
+  const rootReal = fs.realpathSync(root);
+  const pathname = path.join(rootReal, result.pcmArtifact);
+  if (!fs.existsSync(pathname)) {
+    throw new Error(`${result.caseId}: PCM artifact is missing: ${result.pcmArtifact}`);
+  }
+  if (fs.lstatSync(pathname).isSymbolicLink()) {
+    throw new Error(`${result.caseId}: PCM artifact must not be a symbolic link`);
+  }
+  const resolved = fs.realpathSync(pathname);
+  const relative = path.relative(rootReal, resolved);
+  if (relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
+    throw new Error(`${result.caseId}: PCM artifact escapes the artifact root`);
+  }
+  const bytes = fs.readFileSync(resolved);
+  const expectedBytes = result.channels * result.frameCount * 4;
+  if (bytes.byteLength !== expectedBytes) {
+    throw new Error(
+      `${result.caseId}: PCM artifact byte geometry is ${bytes.byteLength}, expected ${expectedBytes}`,
+    );
+  }
+  const channels: Float32Array[] = [];
+  let offset = 0;
+  for (let channelIndex = 0; channelIndex < result.channels; channelIndex++) {
+    const channel = new Float32Array(result.frameCount);
+    for (let frame = 0; frame < result.frameCount; frame++) {
+      const value = bytes.readFloatLE(offset);
+      if (!Number.isFinite(value)) {
+        throw new Error(`${result.caseId}: non-finite PCM artifact value at channel ${channelIndex}, frame ${frame}`);
+      }
+      channel[frame] = value;
+      offset += 4;
+    }
+    channels.push(channel);
+  }
+  const capture: DryPcmCapture = {
+    captureAttemptId: result.captureAttemptId,
+    sampleRate: result.sampleRate,
+    channels,
+    frameCount: result.frameCount,
+    capturedFrameCount: result.capturedFrameCount,
+    maxRenderFrameDrift: result.maxRenderFrameDrift,
+  };
+  const actualSha256 = pcmSha256(capture);
+  if (actualSha256 !== result.pcmSha256) {
+    throw new Error(`${result.caseId}: PCM artifact hash mismatch`);
+  }
+  return capture;
 }
 
 function releaseResidualDb(samples: Float32Array, sampleRate: number, noteOffSeconds: number): number {
@@ -871,9 +1000,16 @@ function applyAlternateSeedFindings(
 export async function runDryPcmMatrix(options: {
   capture: (matrixCase: DryPcmMatrixCase) => Promise<DryPcmCapture>;
   provenance: MatrixProvenance;
+  /** Destination for content-addressed canonical raw PCM sidecars. */
+  pcmArtifactRoot: string;
   profiles?: readonly InstrumentQualityProfile[];
+  /** Use only for a release gate; ordinary audits should retain and rank failures. */
+  requirePass?: boolean;
 }): Promise<DryPcmMatrixReport> {
   const profiles = options.profiles ?? INSTRUMENT_QUALITY_PROFILES;
+  if (typeof options.pcmArtifactRoot !== 'string' || options.pcmArtifactRoot.trim().length === 0) {
+    throw new Error('Dry PCM matrix requires a raw PCM artifact root');
+  }
   validateMatrixProvenance(options.provenance);
   const plan = buildDryPcmMatrixPlan(profiles);
   const profileById = new Map(profiles.map(profile => [profile.id, profile]));
@@ -883,13 +1019,15 @@ export async function runDryPcmMatrix(options: {
     if (!profile) throw new Error(`Missing profile while running ${matrixCase.id}`);
     const capture = await options.capture(matrixCase);
     const analyzed = analyzeDryPcmCapture(profile, matrixCase, capture);
+    const captureSha256 = pcmSha256(capture);
     results.push({
       caseId: matrixCase.id,
       instrumentId: matrixCase.instrumentId,
       family: matrixCase.family,
       variant: matrixCase.variant,
       captureAttemptId: capture.captureAttemptId,
-      pcmSha256: pcmSha256(capture),
+      pcmSha256: captureSha256,
+      pcmArtifact: writePcmArtifact(options.pcmArtifactRoot, capture, captureSha256),
       sampleRate: capture.sampleRate,
       channels: capture.channels.length,
       frameCount: capture.frameCount,
@@ -920,19 +1058,31 @@ export async function runDryPcmMatrix(options: {
     results,
     comparisons,
   };
-  validateDryPcmMatrixReport(report, profiles);
+  validateDryPcmMatrixReport(report, profiles, {
+    pcmArtifactRoot: options.pcmArtifactRoot,
+    requirePass: options.requirePass ?? false,
+  });
   return report;
 }
 
-export function validateDryPcmMatrixReport(
-  report: DryPcmMatrixReport,
-  profiles: readonly InstrumentQualityProfile[] = INSTRUMENT_QUALITY_PROFILES,
+export interface DryPcmMatrixValidationOptions {
+  /** Directory containing content-addressed planar Float32LE sidecars. */
+  pcmArtifactRoot: string;
+  /** Pinned code/tree identity required by full/release verification. */
   expectedBinding?: {
     evaluatorCommit: string;
     subjectCommit: string;
     evaluatorTreeSha256: string;
     evaluatorDirty: boolean;
-  },
+  };
+  /** Reject every fatal technical finding and every evidence gap. */
+  requirePass?: boolean;
+}
+
+export function validateDryPcmMatrixReport(
+  report: DryPcmMatrixReport,
+  profiles: readonly InstrumentQualityProfile[] = INSTRUMENT_QUALITY_PROFILES,
+  options?: DryPcmMatrixValidationOptions,
 ): void {
   if (!report || typeof report !== 'object') throw new Error('Dry PCM matrix report is not an object');
   if (report.schemaVersion !== MATRIX_SCHEMA_VERSION) {
@@ -943,14 +1093,17 @@ export function validateDryPcmMatrixReport(
   }
   if (!report.complete) throw new Error('Dry PCM matrix report declares incomplete coverage');
   validateMatrixProvenance(report.provenance);
-  if (expectedBinding) {
-    if (expectedBinding.evaluatorDirty) {
+  if (!options || typeof options.pcmArtifactRoot !== 'string' || options.pcmArtifactRoot.trim().length === 0) {
+    throw new Error('Dry PCM matrix verification requires canonical raw PCM sidecars');
+  }
+  if (options.expectedBinding) {
+    if (options.expectedBinding.evaluatorDirty) {
       throw new Error('Pinned matrix verification rejects a dirty evaluator tree');
     }
     if (
-      report.provenance.evaluatorCommit !== expectedBinding.evaluatorCommit
-      || report.provenance.subjectCommit !== expectedBinding.subjectCommit
-      || report.provenance.evaluatorTreeSha256 !== expectedBinding.evaluatorTreeSha256
+      report.provenance.evaluatorCommit !== options.expectedBinding.evaluatorCommit
+      || report.provenance.subjectCommit !== options.expectedBinding.subjectCommit
+      || report.provenance.evaluatorTreeSha256 !== options.expectedBinding.evaluatorTreeSha256
     ) {
       throw new Error('Dry PCM matrix provenance does not match the pinned evaluator/subject binding');
     }
@@ -970,6 +1123,7 @@ export function validateDryPcmMatrixReport(
   const planById = new Map(plan.map(matrixCase => [matrixCase.id, matrixCase]));
   const profilesById = new Map(profiles.map(profile => [profile.id, profile]));
   const attemptIds = new Set<string>();
+  const reconstructedResults: DryPcmCaseResult[] = [];
   const nullableMetricKeys: Array<keyof DryPcmMetrics> = [
     'peakDbfs', 'truePeakDbtp', 'rmsDbfs', 'activeRmsDbfs', 'loudnessKMax',
     'tailLevelDbRelativePeak', 'spectralCentroidHz', 'pitchObservedCents', 'pitchErrorCents',
@@ -1105,8 +1259,35 @@ export function validateDryPcmMatrixReport(
     if (actualGapCodes.sort().join('\0') !== expectedGapCodes.sort().join('\0')) {
       throw new Error(`${result.caseId}: evidence gaps do not match measured pitch evidence`);
     }
+    const capture = readPcmArtifact(options.pcmArtifactRoot, result);
+    const analyzed = analyzeDryPcmCapture(profile, matrixCase, capture);
+    if (stableHash(result.metrics) !== stableHash(analyzed.metrics)) {
+      throw new Error(`${result.caseId}: metrics do not match recomputed PCM analysis`);
+    }
+    const reportedTechnicalFindings = result.fatalFindings.filter(
+      finding => finding.code !== 'ALTERNATE_SEED_VARIATION_MISSING',
+    );
+    if (stableHash(reportedTechnicalFindings) !== stableHash(analyzed.fatalFindings)) {
+      throw new Error(`${result.caseId}: fatal findings do not match recomputed PCM analysis`);
+    }
+    if (stableHash(result.evidenceGaps) !== stableHash(analyzed.evidenceGaps)) {
+      throw new Error(`${result.caseId}: evidence gaps do not match recomputed PCM analysis`);
+    }
+    reconstructedResults.push({
+      ...result,
+      metrics: analyzed.metrics,
+      fatalFindings: analyzed.fatalFindings,
+      evidenceGaps: analyzed.evidenceGaps,
+    });
   }
-  const expectedSampleRates = [...new Set(report.results.map(result => result.sampleRate))]
+  applyAlternateSeedFindings(profiles, reconstructedResults);
+  for (const reconstructed of reconstructedResults) {
+    const reported = report.results.find(result => result.caseId === reconstructed.caseId)!;
+    if (stableHash(reported.fatalFindings) !== stableHash(reconstructed.fatalFindings)) {
+      throw new Error(`${reported.caseId}: fatal findings do not match reconstructed PCM evidence`);
+    }
+  }
+  const expectedSampleRates = [...new Set(reconstructedResults.map(result => result.sampleRate))]
     .sort((left, right) => left - right);
   if (
     !Array.isArray(report.sampleRates)
@@ -1115,11 +1296,11 @@ export function validateDryPcmMatrixReport(
   ) {
     throw new Error('Dry PCM matrix sampleRates do not match result receipts');
   }
-  const expectedComparisons = buildDryPcmInstrumentComparisons(profiles, report.results);
+  const expectedComparisons = buildDryPcmInstrumentComparisons(profiles, reconstructedResults);
   if (!Array.isArray(report.comparisons) || stableHash(report.comparisons) !== stableHash(expectedComparisons)) {
     throw new Error('Dry PCM matrix cross-case comparisons do not match case metrics/hashes');
   }
-  const resultsById = new Map(report.results.map(result => [result.caseId, result]));
+  const resultsById = new Map(reconstructedResults.map(result => [result.caseId, result]));
   for (const profile of profiles) {
     const comparison = expectedComparisons.find(candidate => candidate.instrumentId === profile.id)!;
     const expectedMissing = profile.variationPolicy === 'alternate-seed-must-differ'
@@ -1135,6 +1316,16 @@ export function validateDryPcmMatrixReport(
     );
     if (actualMissing !== expectedMissing || misplaced) {
       throw new Error(`${profile.id}: alternate-seed variation finding does not match A/B PCM hashes`);
+    }
+  }
+  if (options.requirePass) {
+    const fatalCount = reconstructedResults.reduce((total, result) => total + result.fatalFindings.length, 0);
+    const evidenceGapCount = reconstructedResults.reduce((total, result) => total + result.evidenceGaps.length, 0);
+    if (fatalCount > 0 || evidenceGapCount > 0) {
+      throw new Error(
+        `Strict dry PCM matrix verification failed: ${fatalCount} fatal findings, `
+        + `${evidenceGapCount} evidence gaps`,
+      );
     }
   }
 }

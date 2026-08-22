@@ -5,6 +5,13 @@ import { fileURLToPath } from 'node:url';
 
 export type BoundMeasurement = number | string | null;
 
+/**
+ * Decoder reductions can differ by a few floating-point ulps across operating
+ * systems and CPU architectures. Six decimal places are far below every
+ * quality threshold while keeping disposition identity stable across runners.
+ */
+export const BOUND_MEASUREMENT_DECIMAL_PLACES = 6;
+
 export interface SampleQualityWaiver {
   code: string;
   instrumentId: string;
@@ -13,9 +20,9 @@ export interface SampleQualityWaiver {
   sha256: string;
   /** SHA-256 of the complete manifest that supplied mapping semantics. */
   manifestSha256: string;
-  /** Exact value emitted by the evaluator, or null when the finding has none. */
+  /** Six-decimal canonical value emitted by the evaluator, or null. */
   measuredValue: BoundMeasurement;
-  /** Exact threshold emitted by the evaluator, or null when it has none. */
+  /** Six-decimal canonical threshold emitted by the evaluator, or null. */
   threshold: BoundMeasurement;
   reason: string;
 }
@@ -61,6 +68,10 @@ export function sampleQualityEvaluatorBundleSha256(appRoot = DEFAULT_APP_ROOT): 
 }
 
 export function boundMeasurement(value: number | string | null | undefined): BoundMeasurement {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const canonical = Number(value.toFixed(BOUND_MEASUREMENT_DECIMAL_PLACES));
+    return Object.is(canonical, -0) ? 0 : canonical;
+  }
   return value ?? null;
 }
 
@@ -68,5 +79,5 @@ export function measurementsEqual(
   left: number | string | null | undefined,
   right: BoundMeasurement,
 ): boolean {
-  return Object.is(boundMeasurement(left), right);
+  return Object.is(boundMeasurement(left), boundMeasurement(right));
 }
