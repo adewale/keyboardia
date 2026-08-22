@@ -165,6 +165,7 @@ Trigger-Gate: x---x---x---x--- [sampled:brushes-snare] [play:trigger] [amp:ahd,2
     expectedCapabilityDiagnosticCodes: [
       'lock-on-tie-continuation',
       'lock-on-silent-step',
+      'unsupported-lock-stage',
       'inactive-lock-stage',
       'inactive-gate',
     ],

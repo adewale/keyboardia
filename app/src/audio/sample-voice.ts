@@ -180,6 +180,7 @@ export class ManagedSampleVoice implements SampleVoiceHandle, ChokeableVoice {
       const decayEnd = decayStart + nonNegative(decay);
       param.linearRampToValueAtTime(ENVELOPE_EPSILON, decayEnd);
       const stopAt = decayEnd + RELEASE_TAIL_GUARD_SEC;
+      param.linearRampToValueAtTime(0, stopAt);
       component.naturalEndSeconds = stopAt;
       this.recomputeCompletion();
       return stopAt;
@@ -230,6 +231,7 @@ export class ManagedSampleVoice implements SampleVoiceHandle, ChokeableVoice {
       } else {
         component.gain.gain.setValueAtTime(ENVELOPE_EPSILON, releaseAt);
       }
+      component.gain.gain.linearRampToValueAtTime(0, stopAt);
       this.safeStop(component.source, stopAt);
       component.naturalEndSeconds = stopAt;
     }

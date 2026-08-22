@@ -6,7 +6,7 @@ describe('effective envelope v2 capability resolution', () => {
     expect(getPresetTrackEnvelopeV2('synth:pad')).toEqual({
       model: 'adsr',
       attack: { value: 0.05, unit: 'seconds' },
-      decay: { value: 0.3, unit: 'seconds' },
+      decay: { value: 0.15, unit: 'seconds' },
       sustain: 0.85,
       release: { value: 1, unit: 'seconds' },
     });

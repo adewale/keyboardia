@@ -83,6 +83,38 @@ describe('v2.4 envelope notation example corpus', () => {
     expect(parsed.tracks[0]).toMatchObject({ pattern: 'x~--', playbackMode: 'loop', gate: 90 });
   });
 
+  it('keeps pitch, dynamics, FM, and pan semantics in live Copy Notation output', () => {
+    const notation = serializeEnvelopeNotationStateV24({
+      tempo: 120,
+      swing: 0,
+      tracks: [{
+        name: 'Expressive',
+        sampleId: 'tone:fm-bass',
+        steps: [true, true, true, true],
+        parameterLocks: [
+          { pitch: 7, volume: 0.3 },
+          { pitch: -2, volume: 1 },
+          { volume: 0.42 },
+          { tie: true },
+        ],
+        transpose: -12,
+        volume: 0.8,
+        pan: -0.2,
+        swing: 25,
+        fmParams: { harmonicity: 2.5, modulationIndex: 8 },
+        muted: false,
+        stepCount: 4,
+      }],
+    });
+
+    expect(notation).toContain('oXx~');
+    expect(notation).toContain('[pitches:7,-2,-,-]');
+    expect(notation).toContain('[volumes:0.3,1,0.42,-]');
+    expect(notation).toContain('[fm:2.5,8]');
+    expect(notation).toContain('[pan:-20]');
+    expect(notation).toContain('[trackSwing:25]');
+  });
+
   it('names only instruments that the shipped catalogue can load', () => {
     const instrumentToken = /\[((?:sampled|synth|tone|advanced):[^\]]+)\]/g;
     const ids = ENVELOPE_NOTATION_EXAMPLE_SESSIONS.flatMap((session) => (

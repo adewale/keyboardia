@@ -91,7 +91,7 @@ describe('characterization: playSynthNote', () => {
     expect(playAdvanced).not.toHaveBeenCalled();
     expect(synthPlayNote).toHaveBeenCalledWith(
       'note-1', expect.any(Number), expect.objectContaining({ waveform: SYNTH_PRESETS.lead.waveform }),
-      5, .25, .7, expect.objectContaining({ connect: expect.any(Function) }),
+      5, .25, .7, expect.objectContaining({ connect: expect.any(Function) }), 127,
     );
   });
 
@@ -104,7 +104,7 @@ describe('characterization: playSynthNote', () => {
       sustain: 0.5,
       releaseSeconds: 0,
     };
-    engine.playSynthNote('authored', 'lead', 0, 1, 0.1, 1, 'trackA', undefined, envelope, true);
+    engine.playSynthNote('authored', 'lead', 0, 1, 0.1, 1, 'trackA', undefined, undefined, envelope, true);
     expect(synthPlayNote).toHaveBeenLastCalledWith(
       'authored',
       expect.any(Number),
@@ -113,6 +113,7 @@ describe('characterization: playSynthNote', () => {
       0.1,
       1,
       expect.objectContaining({ connect: expect.any(Function) }),
+      127,
       envelope,
     );
   });
@@ -122,7 +123,7 @@ describe('characterization: playSynthNote', () => {
     engine.playSynthNote('note-x', 'lead', 0, 0, undefined, 1);
     expect(synthPlayNote).toHaveBeenCalledWith(
       'note-x', expect.any(Number), expect.objectContaining({ waveform: SYNTH_PRESETS.lead.waveform }),
-      0, undefined, 1, undefined,
+      0, undefined, 1, undefined, 127,
     );
   });
 

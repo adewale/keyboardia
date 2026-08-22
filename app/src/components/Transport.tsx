@@ -199,6 +199,7 @@ export function Transport({
     : xyPos;
 
   const handlePresetChange = useCallback((newPreset: string) => {
+    if (!xyPresetIds.includes(newPreset)) return;
     if (newPreset === 'envelope-shape' && (!envelopeEditingEnabled || !supportsEnvelopeV2)) return;
     setXyPreset(newPreset);
     xyControllerRef.current = new XYPadController(newPreset);
@@ -207,7 +208,7 @@ export function Transport({
       : { x: 0.5, y: 0.5 };
     xyControllerRef.current.setPosition(next.x, next.y);
     setXyPos(next);
-  }, [envelopeEditingEnabled, envelopeTrack, positionForEnvelopeTrack, supportsEnvelopeV2]);
+  }, [envelopeEditingEnabled, envelopeTrack, positionForEnvelopeTrack, supportsEnvelopeV2, xyPresetIds]);
 
   const handleEnvelopeTargetChange = useCallback((trackId: string) => {
     setEnvelopeTrackId(trackId);

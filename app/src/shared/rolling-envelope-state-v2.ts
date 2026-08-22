@@ -16,10 +16,11 @@ function mergeParameterLockV2(
   replacement: ParameterLock | null | undefined,
 ): ParameterLock | null {
   const carried: ParameterLock = {};
+  const carriedRecord = carried as Record<string, unknown>;
   if (previous) {
     for (const field of ENVELOPE_LOCK_FIELDS) {
       if (previous[field] !== undefined && (!replacement || replacement[field] === undefined)) {
-        carried[field] = previous[field];
+        carriedRecord[field] = previous[field];
       }
     }
   }

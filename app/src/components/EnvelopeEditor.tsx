@@ -261,7 +261,7 @@ function EnvelopeCurve({
         <circle
           // A timeline may contain coincident zero-duration landmarks, so index is part of the identity.
           key={`${point.x}-${point.y}-${index}`}
-          className="envelope-editor__curve-handle"
+          className="envelope-editor__curve-landmark"
           cx={point.x}
           cy={point.y}
           r="1.8"

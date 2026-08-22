@@ -122,7 +122,7 @@ describe('MCP rhythm domain', () => {
       { type: 'track_envelope_v2_set', trackId: 'pad-1', envelope: null },
     ]);
     expect(compactMcpSession({ id: 'session', immutable: false, state: reset.state }).tracks[0])
-      .toMatchObject({ envelope: { attack: .05, decay: .3, sustain: .85, release: 1 }, envelope_override: false });
+      .toMatchObject({ envelope: { attack: .05, decay: .15, sustain: .85, release: 1 }, envelope_override: false });
   });
 
   it('sets tempo-relative units and gate with retry-safe assignments', () => {
@@ -222,6 +222,10 @@ describe('MCP rhythm domain', () => {
     expect(locked.state.tracks[0]?.parameterLocks[0]?.releaseDuration)
       .toEqual({ value: 4, unit: 'steps' });
     expect(locked.state.tracks[0]?.parameterLocks[0]?.release).toBeUndefined();
+    expect(compactMcpSession({ id: 'session', immutable: false, state: locked.state }).tracks[0]
+      ?.envelope_locks).toEqual([
+        { step: 0, stage: 'release', duration: { value: 4, unit: 'steps' } },
+      ]);
     expect(applyMcpSessionEdit(locked.state, {
       operation: 'set_envelope_lock', track_id: 'lead-1', step: 0,
       stage: 'release', duration: { value: 4, unit: 'steps' },
@@ -235,6 +239,33 @@ describe('MCP rhythm domain', () => {
       operation: 'set_envelope_lock', track_id: 'lead-1', step: 0,
       stage: 'release', duration: null,
     })).toEqual({ state: cleared.state, events: [], changed: false });
+  });
+
+  it('converts canonical envelope units instead of changing only the legacy label', () => {
+    const track = createDefaultTrack('lead-units', 'synth:lead', 'Lead');
+    track.envelopeV2 = {
+      model: 'adsr',
+      attack: { value: 0.25, unit: 'seconds' },
+      decay: { value: 0.5, unit: 'seconds' },
+      sustain: 0.6,
+      release: { value: 1, unit: 'seconds' },
+    };
+    const initial = createInitialSessionState({ tempo: 120, tracks: [track] });
+    const converted = applyMcpSessionEdit(initial, {
+      operation: 'set_track_envelope_time_unit', track_id: track.id, unit: 'steps',
+    });
+
+    expect(converted.state.tracks[0]?.envelopeV2).toEqual({
+      model: 'adsr',
+      attack: { value: 2, unit: 'steps' },
+      decay: { value: 4, unit: 'steps' },
+      sustain: 0.6,
+      release: { value: 8, unit: 'steps' },
+    });
+    expect(converted.events.map(event => event.type)).toEqual([
+      'track_envelope_time_unit_set',
+      'track_envelope_units_v2_converted',
+    ]);
   });
 
   it('clamps MCP unit conversion before storing the converted envelope', () => {

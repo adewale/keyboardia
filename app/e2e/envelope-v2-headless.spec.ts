@@ -49,6 +49,12 @@ test.describe('Envelope v2 headless correctness profile', () => {
     await page.goto(`${API_BASE}/s/${id}`);
     await expect(page.locator('.track-row')).toHaveCount(1, { timeout: 15_000 });
     await expect(page.getByRole('button', { name: 'Amplitude envelope' })).toHaveCount(0);
+    await expect(page.getByRole('status').filter({ hasText: /Envelope: ADSR.*read only/ })).toBeVisible();
+
+    await page.getByRole('button', { name: 'FX' }).click();
+    const xyPreset = page.locator('.xy-preset-select');
+    await expect(xyPreset).toBeVisible();
+    await expect(xyPreset.locator('option[value="envelope-shape"]')).toHaveCount(0);
 
     await expect.poll(async () => page.evaluate(async () => {
       const modulePath = '/src/audio/engine.ts';

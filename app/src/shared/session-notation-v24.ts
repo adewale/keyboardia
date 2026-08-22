@@ -11,6 +11,7 @@ import {
   type TrackEnvelopeV2,
 } from './envelope-contract-v2';
 import { VALID_STEP_COUNTS_SET } from './sync-types';
+import { isEnvelopeModelCompatibleWithPlayback } from './envelope-capabilities';
 
 export interface NotationAnnotation {
   key: string;
@@ -69,6 +70,9 @@ export interface EnvelopeNotationStateV24 {
     } | null>;
     transpose: number;
     volume: number;
+    pan?: number;
+    swing?: number;
+    fmParams?: { harmonicity: number; modulationIndex: number };
     muted: boolean;
     soloed?: boolean;
     stepCount?: number;
@@ -549,6 +553,16 @@ export function validateEnvelopeNotationCapability(
       'warning',
     ));
   }
+  if (track.envelope && track.playbackMode && capability.playbackModes
+    && !isEnvelopeModelCompatibleWithPlayback(track.envelope.model, track.playbackMode)) {
+    diagnostics.push(diagnostic(
+      'incompatible-envelope-playback',
+      `${track.envelope.model} is incompatible with ${track.playbackMode} playback on ${track.label}`,
+      line,
+      track.label,
+      'warning',
+    ));
+  }
   if (track.gate !== undefined && track.playbackMode === 'trigger') {
     diagnostics.push(diagnostic(
       'inactive-gate',
@@ -562,6 +576,15 @@ export function validateEnvelopeNotationCapability(
     ? new Set(activeEnvelopeStages(track.envelope.model))
     : null;
   for (const lock of track.locks) {
+    if (!capability.lockableStages.includes(lock.stage)) {
+      diagnostics.push(diagnostic(
+        'unsupported-lock-stage',
+        `${lock.stage} lock at step ${lock.step} is unsupported for ${track.label}`,
+        line,
+        track.label,
+        'warning',
+      ));
+    }
     if (activeStages && !activeStages.has(lock.stage)) {
       diagnostics.push(diagnostic(
         'inactive-lock-stage',
@@ -689,7 +712,11 @@ export function serializeEnvelopeNotationStateV24(state: EnvelopeNotationStateV2
       const stepCount = track.stepCount ?? track.steps.length;
       const pattern = Array.from({ length: stepCount }, (_, step) => {
         if (!track.steps[step]) return '-';
-        return track.parameterLocks[step]?.tie ? '~' : 'x';
+        const lock = track.parameterLocks[step];
+        if (lock?.tie) return '~';
+        if (lock?.volume === 0.3) return 'o';
+        if (lock?.volume === 1) return 'X';
+        return 'x';
       }).join('');
       const annotations: NotationAnnotation[] = [instrumentAnnotation(track.sampleId)];
       if (trackIndex === 0) {
@@ -699,6 +726,30 @@ export function serializeEnvelopeNotationStateV24(state: EnvelopeNotationStateV2
       if (stepCount !== 16) annotations.push(metadataAnnotation('stepCount', String(stepCount)));
       if (track.transpose !== 0) annotations.push(metadataAnnotation('transpose', shortestNumber(track.transpose)));
       if (track.volume !== 1) annotations.push(metadataAnnotation('vol', shortestNumber(track.volume)));
+      if (track.pan !== undefined && track.pan !== 0) {
+        annotations.push(metadataAnnotation('pan', shortestNumber(Math.round(track.pan * 100))));
+      }
+      if (track.swing !== undefined && track.swing !== 0) {
+        annotations.push(metadataAnnotation('trackSwing', shortestNumber(track.swing)));
+      }
+      const pitches = track.parameterLocks.slice(0, stepCount).map(lock => (
+        lock?.pitch === undefined ? '-' : shortestNumber(lock.pitch)
+      ));
+      if (pitches.some(value => value !== '-')) {
+        annotations.push(metadataAnnotation('pitches', pitches.join(',')));
+      }
+      const volumes = track.parameterLocks.slice(0, stepCount).map(lock => (
+        lock?.volume === undefined ? '-' : shortestNumber(lock.volume)
+      ));
+      if (volumes.some(value => value !== '-')) {
+        annotations.push(metadataAnnotation('volumes', volumes.join(',')));
+      }
+      if (track.fmParams) {
+        annotations.push(metadataAnnotation(
+          'fm',
+          `${shortestNumber(track.fmParams.harmonicity)},${shortestNumber(track.fmParams.modulationIndex)}`,
+        ));
+      }
       if (track.muted) annotations.push(metadataAnnotation('muted', null));
       if (track.soloed) annotations.push(metadataAnnotation('soloed', null));
 

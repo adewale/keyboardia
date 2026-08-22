@@ -53,7 +53,7 @@ Every candidate MUST provide one committed, reviewable packet containing:
 - immutable commit, release, or archive revision;
 - sample/archive-scoped redistribution and modification rights;
 - pinned licence evidence and required attribution/change notice;
-- exact selected source files and SHA-256 hashes;
+- exact selected source files and SHA-256 cryptographic hashes;
 - disclosure of any resampling, editing, denoising, looping, gain, format, or
   channel transformation;
 - a new stable Keyboardia ID when source or articulation identity changes.

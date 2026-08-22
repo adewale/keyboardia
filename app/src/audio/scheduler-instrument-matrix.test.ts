@@ -228,8 +228,9 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
       PITCH_LOCK,
       STEP_TIME,
       STEP_DURATION * .5,
-      VOLUME_LOCK,
+      resolveNoteDynamics(VOLUME_LOCK).noteGain,
       track.id,
+      resolveNoteDynamics(VOLUME_LOCK).midiVelocity,
       { attack: 0, decay: .25, release: 2 },
       {
         model: 'adsr',
