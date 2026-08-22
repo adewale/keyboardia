@@ -4,14 +4,25 @@ The controlled before/after claim is reproducible without either historical
 synthetic commit named by the 2026-08-22 snapshot. The reconstruction tool
 creates fresh compatibility commits from Git objects that must exist locally,
 captures both sides under one committed evaluator lane, and retains every raw
-receipt used to calculate the difference.
+receipt used to calculate the difference. Each side's live lane is captured
+twice in separate Playwright processes; a mismatch fails the comparison rather
+than averaging the captures or selecting the more favorable one.
 
 ## Claim boundary
 
 This is a same-evaluator technical comparison. It measures the decoded sample
-findings, deterministic priority score, and one continuous post-track Chromium
-capture for every catalogue instrument. It is not listening evidence and does
-not fill the 1,683-case dry-PCM matrix gap.
+findings, deterministic priority score, and repeat-confirmed continuous
+post-track Chromium captures for every catalogue instrument. It is not
+listening evidence and does not fill the 1,683-case dry-PCM matrix gap.
+
+Both receipts in a lane must independently pass the committed live-receipt
+validator. They must then match exactly on every score-consumed track and
+master peak/RMS value, browser identity/version/user agent, audio sample rates,
+capture geometry, browser/page diagnostics, session membership, and
+per-instrument RNG call progression. The only permitted differences are fresh
+timestamps and session/track IDs plus arm-to-onset timing that remains inside
+the validator's pinned bounds. Arm timing is not averaged and does not enter
+the score.
 
 The control keeps the selected base revision's production assets, manifests,
 runtime DSP, source calibration, catalogue, dependency lock, and build
@@ -52,17 +63,21 @@ npm run audit:instrument-quality:control -- \
 For both `control/` and `candidate/`, the output retains:
 
 - the strict decoded-sample JSON and Markdown receipt;
-- the 99-instrument continuous Chromium live receipt and Playwright diagnostics;
+- both independently captured 99-instrument Chromium live receipts and their
+  separate Playwright diagnostics (`live-master-output.json` and
+  `live-confirmation/live-master-output.json`);
 - the machine-readable and Markdown stack-ranked audit;
 - the exact sample-quality baseline used by the decoded receipt.
 
 `controlled-comparison.json` is derived from those files. It records the
 resolved base, candidate/evaluator, and newly created compatibility commits,
-the overlay plan hash, every raw artifact path and SHA-256, aggregate values,
-issue-code totals, nonzero instrument scores, and candidate-minus-control
-deltas. The script verifies that each ranking binds its raw sample/live hashes
-and that each decoded receipt binds the retained baseline before emitting the
-summary.
+the overlay plan hash, both raw live-receipt paths and SHA-256 values, every
+other raw artifact path and hash, aggregate values, issue-code totals, nonzero
+instrument scores, and candidate-minus-control deltas. The schema-v3 claim is
+emitted only after both control captures agree and both candidate captures
+agree under the exact repeatability gate. The script also verifies that each
+ranking binds its primary raw sample/live hashes and that each decoded receipt
+binds the retained baseline before emitting the summary.
 
 The temporary clones are created with `mkdtemp` and removed only after an exact
 path/prefix safety check. Use `--keep-temp` only for diagnosis. Output
