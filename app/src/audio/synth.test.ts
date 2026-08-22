@@ -1,12 +1,46 @@
 import { describe, it, expect } from 'vitest';
 import {
+  boundedFilterLfoRange,
   SYNTH_PRESETS,
   deserializeSynthParams,
+  normalizeSynthAttackSeconds,
+  normalizeSynthReleaseSeconds,
   peakSafeOscillatorMix,
   serializeSynthParams,
   type SynthParams,
   velocityFilterCutoff,
 } from './synth';
+
+describe('shared synth runtime bounds', () => {
+  it('clamps attack to the documented 1ms–4s contract', () => {
+    expect(normalizeSynthAttackSeconds(0)).toBe(0.001);
+    expect(normalizeSynthAttackSeconds(-1)).toBe(0.001);
+    expect(normalizeSynthAttackSeconds(99)).toBe(4);
+    expect(normalizeSynthAttackSeconds(Number.NaN)).toBe(0.01);
+  });
+
+  it('preserves an intentional zero release and clamps unsafe values', () => {
+    expect(normalizeSynthReleaseSeconds(0)).toBe(0);
+    expect(normalizeSynthReleaseSeconds(-1)).toBe(0);
+    expect(normalizeSynthReleaseSeconds(99)).toBe(8);
+    expect(normalizeSynthReleaseSeconds(Number.NaN)).toBe(0.5);
+  });
+
+  it('keeps bipolar filter modulation inside the audible filter domain', () => {
+    const baseCutoff = velocityFilterCutoff(
+      SYNTH_PRESETS.growl.filterCutoff,
+      90,
+    );
+    const range = boundedFilterLfoRange(
+      baseCutoff,
+      SYNTH_PRESETS.growl.lfo!.depth,
+      SYNTH_PRESETS.growl.filterEnv,
+    );
+
+    expect(range).toBeGreaterThan(0);
+    expect(baseCutoff - range).toBeGreaterThanOrEqual(20);
+  });
+});
 
 describe('neutral oscillator structure', () => {
   it('keeps correlated oscillator-layer gain at unity or below', () => {

@@ -118,10 +118,10 @@ interface FilterConfig {
 }
 
 interface FilterEnvelope {
-  attack: number;    // 0.001 to 2s
+  attack: number;    // 0.001 to 4s
   decay: number;     // 0.001 to 2s
   sustain: number;   // 0 to 1
-  release: number;   // 0.001 to 4s
+  release: number;   // 0 to 8s (zero is immediate)
 }
 ```
 
