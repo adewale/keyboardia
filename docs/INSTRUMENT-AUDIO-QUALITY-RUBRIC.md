@@ -30,7 +30,7 @@ erase the underlying finding from the score.
 | Lane | Scope | What it establishes | What it does not establish |
 |---|---|---|---|
 | Catalogue + calibration | all 99 | ID, engine, category, explicit source trim | audible output or timbre |
-| Chromium sequencer probe | all 99, one representative in-range note | real preparation, routing, continuous per-track sample peak, whole-window RMS, non-silence | inter-sample true peak, full range, release, spectral quality, preference |
+| Chromium sequencer probe | all 99, one representative in-range note | real preparation, isolated routing, continuous sample peak and whole-window RMS at the post-track and pre-processing masterGain taps, non-silence at both taps | final processed output, inter-sample true peak, full range, release, spectral quality, preference |
 | Decoded source audit | all 582 files used by 26 sampled instruments | headroom, clipping, DC, onset, tail, pitch estimate, loop seam, stereo/mono, layer/note levels | whether a flagged source sounds objectionable |
 | Manifest coverage | 26 sampled instruments | root distance, velocity-layer count, same-layer alternatives | artistic value of more layers/samples |
 
@@ -43,14 +43,25 @@ its `test-results/` output directory cannot delete a receipt before aggregation.
 The browser test runs before the decoded audit because Playwright clears its
 configured results directory at startup.
 
-The live lane connects every post-track bus and `masterGain` to an
-`AudioWorklet` accumulator for an exact 2.5-second render-frame window. It
-visits every channel sample, reports the maximum absolute PCM sample, and
-computes RMS from the sum of squares over the whole window. The receipt binds
-the sample rate, captured-frame count, and channel-sample count for each track
-and session, so a polled analyser window or maximum-block RMS cannot satisfy
-the schema. “Peak” in this lane means continuous **sample peak**, not an
-oversampled inter-sample true-peak estimate.
+The live lane creates seven server sessions and runs each preloaded batch in a
+fresh Chromium context and page. Every TrackBus starts commanded closed, then
+the evaluator serially opens one UI track and bus. For each trial it connects
+only that post-track bus plus `masterGain` to an `AudioWorklet` accumulator for
+an exact 2.5-second render-frame window. Pre-arm UI/bus snapshots and a
+pass-through production-engine probe must show exactly one routed track and one
+expected scheduler dispatch. The event is fixture step four (0.5 seconds) in a
+four-second loop; onset must occur 0.45–1.0 seconds after arm, and seeded
+`Math.random` call counts are retained. Each session binds its browser identity
+and an immutable zero-call RNG-reset receipt. Completed or failed worklet
+processors retire instead of remaining live. Before the next batch, the
+evaluator awaits `AudioEngine.shutdown`, verifies the old `AudioContext` is
+closed, and closes the browser context; any teardown failure rejects the run.
+The accumulator visits every channel sample, reports the maximum absolute PCM
+sample, and computes RMS from the sum of squares over the whole window. The
+receipt binds the sample rate plus captured-frame and channel-sample counts for
+each trial, so a polled analyser window or maximum-block RMS cannot satisfy the
+schema. “Peak” in this lane means continuous **sample peak**, not an oversampled
+inter-sample true-peak estimate.
 
 ## V1 priority score
 
@@ -129,7 +140,7 @@ broad octave mistakes.
 - **B:** real Chromium sequencer note plus static engine/configuration checks,
   but no complete isolated PCM sweep.
 - **C:** static evidence only because the live receipt is absent.
-- **F:** the canonical live note is silent.
+- **F:** the canonical live route is silent at either measured tap.
 
 This makes the main limitation visible: all 26 sampled instruments can reach A,
 while procedural/native/Tone/advanced instruments currently reach B. Their

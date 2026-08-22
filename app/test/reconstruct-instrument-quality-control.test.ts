@@ -10,8 +10,11 @@ import {
   type QualitySummary,
 } from '../scripts/reconstruct-instrument-quality-control';
 import {
+  LIVE_RANDOM_ALGORITHM,
+  LIVE_RANDOM_SEED,
   LIVE_RECEIPT_CLAIM,
   LIVE_RECEIPT_SCHEMA_VERSION,
+  LIVE_SESSION_LIFECYCLE,
   type LiveQualityReport,
 } from '../scripts/instrument-quality-live-receipt';
 
@@ -34,6 +37,19 @@ function liveFixture(): LiveQualityReport {
       sessionId: 'session-primary',
       instruments: ['one'],
       sampleRate: 48_000,
+      execution: {
+        lifecycle: LIVE_SESSION_LIFECYCLE,
+        browser: {
+          name: 'chromium',
+          version: '140.0.0',
+          userAgent: 'repeatability-test-agent',
+        },
+        randomReset: {
+          seed: LIVE_RANDOM_SEED,
+          algorithm: LIVE_RANDOM_ALGORITHM,
+          calls: 0,
+        },
+      },
     }],
     instruments: [{
       sampleId: 'one',
@@ -166,6 +182,12 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
     ['capture geometry', (report: LiveQualityReport) => { report.instruments[0].capturedFrames = 110_250; }],
     ['diagnostics', (report: LiveQualityReport) => { report.diagnostics.pageErrors.push('boom'); }],
     ['RNG trace', (report: LiveQualityReport) => { report.instruments[0].randomCalls = 18; }],
+    ['session browser identity', (report: LiveQualityReport) => {
+      report.sessions[0].execution.browser.userAgent = 'different-agent';
+    }],
+    ['session RNG reset', (report: LiveQualityReport) => {
+      report.sessions[0].execution.randomReset.calls = 1 as 0;
+    }],
   ])('refuses a repeat whose %s differs', (_label, mutate) => {
     const primary = liveFixture();
     const confirmation = cloneLiveFixture(primary);
