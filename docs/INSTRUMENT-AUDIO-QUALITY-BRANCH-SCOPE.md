@@ -1,6 +1,6 @@
-# Instrument quality branch scope — 2026-08-18
+# Instrument quality branch scope — 2026-08-22
 
-The audit inspected all 47 GitHub branch heads (46 non-main plus `main`) and
+The audit inspected all 48 GitHub branch heads (47 non-main plus `main`) and
 resolved open pull requests independently of branch naming. Exactly seven heads
 are genuinely in flight:
 
@@ -20,20 +20,28 @@ catalogue. All seven open heads have the same 26 sampled-instrument set as
 `main`. Therefore the stack ranking is evaluated once against current `main`;
 there is no honest branch-specific alternate ranking to report.
 
-One dormant, non-PR branch has unique production audio code:
+The additional post-audit head
+`claude/tone-nets-keyboardia-comparison-vwa218` has no pull request. It adds one
+research document comparing Tone Nets with Keyboardia. It correctly notes the
+Hammond loop requirement, sparse root maps, and amplitude-only velocity on
+several engines, but contains no audio bytes, manifests, DSP, capture evidence,
+or implementation. It is useful diagnosis, not an in-progress fix.
+
+One other dormant, non-PR branch has unique production audio code:
 `claude/fix-safari-audio-switching-Vq8zi`. It is 333 commits behind and adds
 visibility/interruption context resume behavior. That can prevent silence after
 Safari tab switching, but it does not change instrument timbre. Its tip still
 contains the retired `rhodes-ep` catalogue and mock-only Safari tests, so it
-should be rebased and verified in real WebKit rather than treated as a current
-instrument branch or merged wholesale.
+was not merged wholesale. The current remediation branch reimplements the
+relevant recovery behavior on current `main`, adds parked-clock and stale Tone
+context gates, and fails closed when existing Tone nodes cannot be migrated.
 
 Old sample-lab work is patch-equivalent to `main` and its quality tooling has
 already been superseded. Thirteen stale, non-open branch tips show old catalogue
 snapshots (usually the retired `rhodes-ep` or missing later instruments); none
 adds or replaces an audio sample as branch-contributed work.
 
-## Open ADSR findings that still reproduce on main
+## Open ADSR findings on `origin/main`
 
 PR 87 is spec-only, but its shared-engine quality findings remain relevant:
 
@@ -46,7 +54,16 @@ PR 87 is spec-only, but its shared-engine quality findings remain relevant:
 - native, Tone, and sampled paths give different meanings to the same release
   value.
 
-These are cross-instrument envelope-semantics debts. They are listed separately
-instead of adding identical points to dozens of instruments without a rendered
-per-preset release measurement.
+These are cross-instrument envelope-semantics debts on the audited base commit.
+The remediation branch now preserves zero release, bounds the documented
+controls, moves native and advanced voice retirement to their audio clocks, and
+persists the global envelope overrides into engines created later. The control
+surface remains deliberately global because the current UI exposes no selected
+track identity. Differences between engine envelope curves remain measurable
+matrix/listening concerns rather than something to erase with one shared
+formula.
 
+No open issue tracks any of the concrete decoded-sample, loop, headroom,
+stereo/mono, map-coverage, or full-PCM evidence deficits. Issues 92, 75, and 97
+and PR 96 are adjacent scheduler/mix/MCP work, not instrument-quality
+remediation.
