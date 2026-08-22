@@ -1,0 +1,179 @@
+# Instrument audio-quality rubric
+
+## Claim boundary
+
+This rubric ranks **measurable technical improvement priority** for every
+selectable Keyboardia instrument. It does not turn audio engineering metrics
+into a claim that one timbre is more realistic, pleasant, or musically useful
+than another. Those claims require a level-matched listening comparison.
+
+The catalogue currently contains 99 IDs: 22 procedural Web Audio buffers, 32
+native Web Audio synth presets, 11 Tone presets, eight advanced Tone voices,
+and 26 sampled instruments. The evaluator must fail or lower its evidence grade
+when an ID is missing; it must never silently drop an instrument.
+
+Two outputs stay separate:
+
+1. **Priority score (0–100, larger is worse):** deterministic repair debt from
+   measurements and role-aware source coverage.
+2. **Evidence grade (A/B/C/F):** how much actual audio was observed. Evidence
+   gaps do not become invented quality points.
+
+A zero score means “no technical deficit detected by the available lanes,” not
+“perfect sound.” A hash-bound waiver changes CI disposition only. It does not
+erase the underlying finding from the score.
+
+## Executable v1 lanes
+
+`npm run audit:instrument-quality:full` runs and joins these sources:
+
+| Lane | Scope | What it establishes | What it does not establish |
+|---|---|---|---|
+| Catalogue + calibration | all 99 | ID, engine, category, explicit source trim | audible output or timbre |
+| Chromium sequencer probe | all 99, one representative in-range note | real preparation, routing, per-track peak/RMS, non-silence | full range, release, spectral quality, preference |
+| Decoded source audit | all 582 files used by 26 sampled instruments | headroom, clipping, DC, onset, tail, pitch estimate, loop seam, stereo/mono, layer/note levels | whether a flagged source sounds objectionable |
+| Manifest coverage | 26 sampled instruments | root distance, velocity-layer count, same-layer alternatives | artistic value of more layers/samples |
+
+The aggregator is `app/scripts/audit-instrument-quality.ts`; pure scoring lives
+in `app/scripts/instrument-quality-rubric.ts`. JSON and Markdown reports are
+written under `app/test-results/instrument-quality/` unless paths are supplied.
+
+The browser test runs before the decoded audit because Playwright clears its
+configured results directory at startup.
+
+## V1 priority score
+
+All point functions are committed, bounded, and tested. Components add and the
+total is capped at 100.
+
+| Component | Points | Deterministic rule |
+|---|---:|---|
+| Missing source calibration | 20 | fixed if the catalogue ID has no explicit manifest/fixed trim |
+| Silent canonical live note | 40 | fixed when both measured peak and RMS are below the committed silence gates |
+| Unwaived decoded-source error | up to 40 | 20 per error |
+| Source headroom | up to 12 | `1.5 × max(0, live track peak dBFS)` |
+| Category-level outlier | up to 6 | `max(0, (abs(RMS delta) − 18) / 2)` against the category median; a review prompt, never auto-normalization |
+| Accepted/review source burden | up to 30 | `5 × weighted findings / decoded unique files` |
+| Sample-root distance | up to 8 | `max(0, worst nearest-root distance − 4)` semitones |
+| Velocity-layer shortfall | up to 8 | four points per missing role-target layer |
+| Same-layer variation shortfall | up to 6 | three points per missing role-target alternate |
+
+Review-finding weights prevent a late onset from counting the same as a mono
+collapse while normalization prevents a 215-file pack from losing merely
+because it exposes more source material:
+
+| Weight | Finding |
+|---:|---|
+| 3 | clipping samples, DC, loop seam, negative phase/mono loss, velocity inversion, note-level step, range overextension |
+| 2 | tail truncation, pitch deviation, unchecked loop |
+| 1 | hot peak, residual leading silence |
+| 2 | unknown future review code (fail-visible default) |
+
+The current role targets are deliberately small and attainable:
+
+- three velocity layers and two same-layer takes for acoustic kick, snare,
+  hats, ride, and crash;
+- two layers for piano, mallets, guitars, basses, sax, horn, and strings;
+- two same-layer takes for finger bass and steel drums;
+- no variation penalty for deliberate fixed 808/electronic one-shots,
+  sustained Hammond, vinyl texture, or synthesized voices.
+
+Adding samples is not automatically an improvement. Targets identify a
+measurable expressive-coverage gap; a candidate still needs blinded A/B review.
+
+Priority bands are: critical `>=40`, high `>=25`, medium `>=12`, low `>0`, and
+baseline `0`. Sorting is score descending, weaker evidence first, then stable
+instrument ID.
+
+## Existing decoded-source thresholds
+
+The v1 evaluator consumes the canonical sample audit rather than duplicating
+it. Its current review/failure boundaries are:
+
+- decoded lossy peak above −2.5 dBFS;
+- DC above −60 dBFS for review and −40 dBFS for failure;
+- effective onset above 10 ms;
+- free tail ending above −35 dB relative to peak;
+- pitch estimate over 10 cents at confidence at least 0.52;
+- stereo correlation below −0.2 or mono loss worse than 3 dB;
+- loop correlation below 0.9 or seam-difference ratio above 0.1;
+- velocity inversion worse than 1 dB;
+- adjacent-note/layer step above 3 dB;
+- range extension more than six semitones beyond an outer root;
+- canonical tonal K-weighted loudness outside ±2.5 dB of piano C4-mf.
+
+Pitch flags for bells, mallets, bass fundamentals, or other inharmonic material
+are review evidence, not permission to auto-retune. The current estimator also
+searches near the expected root and folds cents, so it cannot prove absence of
+broad octave mistakes.
+
+## Evidence grades
+
+- **A:** every shipped source file decoded/analyzed and one real Chromium
+  sequencer note observed.
+- **B:** real Chromium sequencer note plus static engine/configuration checks,
+  but no complete isolated PCM sweep.
+- **C:** static evidence only because the live receipt is absent.
+- **F:** the canonical live note is silent.
+
+This makes the main limitation visible: all 26 sampled instruments can reach A,
+while procedural/native/Tone/advanced instruments currently reach B. Their
+schema tests and one live note are not a full timbre evaluation.
+
+## Full PCM rubric required for stronger claims
+
+The next evaluator version should capture dry post-track PCM in pinned Chromium
+and use the existing offline renderer where it is faithful. Score delivered PCM
+by musical role, never by engine. Each instrument needs a committed profile:
+
+```text
+role, pitch mode, envelope class, loudness class, velocity behaviour,
+variation behaviour, stereo intent, explicit spectral signature, render lengths
+```
+
+Required render matrix:
+
+| Case | Matrix | Purpose |
+|---|---|---|
+| Canonical | dry, centered, effects off, MIDI 90 | common safety/level/envelope anchor |
+| Range | min/Q1/mid/Q3/max plus worst repitch point | silence, pitch and continuity |
+| Velocity | MIDI 32/64/90/127 | amplitude/timbre response and layer cliffs |
+| Release | role-specific gate plus 1.5–3 s tail | clicks, truncation, stuck voices |
+| Repeats | 16 unlocked, 16 locked, seeded replay | variation and determinism |
+| Polyphony | role-appropriate chord or eight-hit overlap | stealing/dropouts/overload |
+| Stereo | centered intrinsic stereo and mono fold | phase/translation |
+
+Recommended technical dimensions total 100: functional coverage 20, signal
+safety/translation 15, timing/envelope 15, level/dynamics 15, pitch or
+transient-role fidelity 15, and behavioral/timbral consistency 20. Across a
+matrix, aggregate each metric as `0.50 × worst + 0.30 × P10 + 0.20 × median` so
+one broken note remains visible without rewarding small sample maps.
+
+Hard gates for the full lane should include missing required capture, decode or
+routing failure, non-finite PCM, frame gaps, any declared note silent, heard
+true peak above 0 dBTP, flat-top clipping, DC above −40 dBFS, high-confidence
+central pitch error above 50 cents, mono loss above 6 dB, or a voice remaining
+above −40 dB two seconds after its declared release.
+
+Use a pinned evaluator commit against candidate branches. A branch must not
+change its own weights or thresholds and then grade itself. Store metric JSON,
+environment identity, evaluator/subject commits, and PCM hashes; keep large WAV
+captures ephemeral unless explicitly approved.
+
+## Listening gate
+
+Automation can establish safety, consistency, and regression. It cannot prove
+realism, naturalness, mix fit, lack of fatigue, or preference. Candidate sound
+changes therefore use the existing A/B page with:
+
+- onset alignment and RMS/loudness matching for comparison mode;
+- unscaled unity gain for null mode;
+- randomized/blind A/B order;
+- low/mid/high range anchors, soft/medium/hard strikes, and repeated notes;
+- separate 1–5 ratings for cleanliness, articulation, sustain/tail,
+  range/dynamics continuity, and role fit.
+
+Report listener-level results and uncertainty. Do not blend a perceptual score
+into the technical score until sample size, weighting, and success criteria are
+preregistered.
+
