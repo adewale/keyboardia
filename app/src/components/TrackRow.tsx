@@ -2,7 +2,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import type { Track, ParameterLock, FMParams, ScaleState, LoopRegion } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
-import { Add, ChevronDown, ChevronUp, Minus } from '../icons';
+import { Add, ChevronDown, ChevronUp, DragHandle, Minus } from '../icons';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { PianoRoll } from './PianoRoll';
 import { VelocityLane } from './VelocityLane';
@@ -541,7 +541,7 @@ export const TrackRow = React.memo(function TrackRow({
             aria-label="Drag to reorder track"
             onPointerDown={handleDragHandlePointerDown}
           >
-            ⠿
+            <DragHandle size={16} aria-hidden="true" />
           </span>
           {/* Track name - click to preview, double-click to rename */}
           <TrackNameEditor
