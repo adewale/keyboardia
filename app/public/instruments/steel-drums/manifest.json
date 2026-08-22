@@ -3,6 +3,7 @@
   "name": "Steel Drums",
   "type": "sampled",
   "releaseTime": 0.8,
+  "velocityFilterAnchorHz": 1634,
   "playableRange": {
     "min": 54,
     "max": 87
