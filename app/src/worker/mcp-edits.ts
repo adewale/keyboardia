@@ -26,9 +26,9 @@ import {
 import {
   clampTrackEnvelope,
   DEFAULT_TRACK_GATE,
-  getEffectiveTrackEnvelope,
   isTrackEnvelope,
   TRACK_GATE_RANGE,
+  getEffectiveTrackEnvelope,
   getEffectiveTrackEnvelopeV2,
 } from '../shared/envelope';
 import { describeEnvelopeCompatibility, getEnvelopeCapability } from '../shared/envelope-capabilities';
@@ -152,7 +152,7 @@ export interface CompactMcpTrack {
   envelope_active?: boolean;
   ignored_envelope_stages?: readonly string[];
   inactive_envelope_reason?: string;
-  envelope_locks: Array<{
+  envelope_locks?: Array<{
     step: number;
     stage: EnvelopeStageName;
     duration: EnvelopeDuration;
@@ -190,10 +190,21 @@ export function compactMcpSession(session: Pick<Session, 'id' | 'immutable' | 's
     tracks: session.state.tracks.map((track) => {
       const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
       const envelopeV2 = getEffectiveTrackEnvelopeV2(track);
-      const effectiveLegacyEnvelope = trackEnvelopeV2ToLegacySeconds(
-        envelopeV2.effective,
-        session.state.tempo,
-      );
+      // Keep the original v1 projection truthful. Legacy-authored values retain
+      // their declared unit; canonical-only values are explicitly projected to
+      // seconds; preset-only tracks keep the preset ADSR view older clients
+      // already understand instead of pretending a finite AHD safety fade is
+      // an eight-second ADSR decay.
+      const effectiveLegacyEnvelope = track.envelope
+        ? clampTrackEnvelope(track.envelope)
+        : envelopeV2.authored
+          ? trackEnvelopeV2ToLegacySeconds(envelopeV2.effective, session.state.tempo)
+          : getEffectiveTrackEnvelope(track);
+      const legacyEnvelopeUnit: EnvelopeTimeUnit = track.envelope
+        ? (track.envelopeTimeUnit ?? 'seconds')
+        : envelopeV2.authored
+          ? 'seconds'
+          : (track.envelopeTimeUnit ?? 'seconds');
       const envelopeLocks = track.parameterLocks.slice(0, stepCount).flatMap((lock, step) => {
         if (!lock) return [];
         return (['attack', 'hold', 'decay', 'release'] as const).flatMap(stage => {
@@ -212,7 +223,7 @@ export function compactMcpSession(session: Pick<Session, 'id' | 'immutable' | 's
         pan: track.pan ?? 0,
         envelope: effectiveLegacyEnvelope,
         envelope_override: envelopeV2.authored !== null,
-        envelope_time_unit: 'seconds',
+        envelope_time_unit: legacyEnvelopeUnit,
         gate: track.gate ?? DEFAULT_TRACK_GATE,
         authored_envelope: envelopeV2.authored,
         effective_envelope: envelopeV2.effective,
@@ -674,11 +685,16 @@ export function applyMcpSessionEdit(
         ? legacyTrackEnvelopeToV2(currentTrack.envelope, currentTrack.envelopeTimeUnit ?? 'seconds')
         : null);
     if (!currentEnvelope) {
-      throw new McpSessionEditError(
-        'Track has no authored envelope to convert.',
-        'ENVELOPE_NOT_AUTHORED',
-        409,
-      );
+      if ((currentTrack.envelopeTimeUnit ?? 'seconds') === edit.unit) {
+        return { state, events: [], changed: false };
+      }
+      const tracks = [...state.tracks];
+      tracks[trackIndex] = { ...currentTrack, envelopeTimeUnit: edit.unit };
+      return {
+        state: { ...state, tracks },
+        events: [{ type: 'track_envelope_time_unit_set', trackId: edit.track_id, unit: edit.unit }],
+        changed: true,
+      };
     }
     const converted = convertTrackEnvelopeUnitsWithReportV2(
       currentEnvelope,

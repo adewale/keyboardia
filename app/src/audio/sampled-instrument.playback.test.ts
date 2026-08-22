@@ -8,7 +8,6 @@ import {
   makeSampleFetchStub,
 } from './__fakes__/FakeWebAudio';
 import {
-  ATTACK_FADE_SEC,
   RELEASE_FLOOR_GAIN,
   RELEASE_TAIL_GUARD_SEC,
 } from './note-schedule';
@@ -172,9 +171,10 @@ describe('playNote scheduling (P1)', () => {
     );
 
     const ramps = ctx.lastGain.gain.eventsOfType('linearRampToValueAtTime');
-    expect(ramps).toHaveLength(1);
+    expect(ramps).toHaveLength(2);
     expect(ramps[0]).toMatchObject({ time: 5.1 });
     expect(ramps[0]!.value).toBeCloseTo(.0001 + (.8 - .0001) * .2, 10);
+    expect(ramps[1]).toMatchObject({ value: 0, time: 5.1 + .2 + RELEASE_TAIL_GUARD_SEC });
     expect(ctx.lastGain.gain.eventsOfType('setValueAtTime'))
       .not.toContainEqual(expect.objectContaining({ value: .8, time: 5.1 }));
   });

@@ -397,18 +397,24 @@ export class SampledInstrument {
     logger.audio.log(`Loaded manifest for ${this.manifest.name}: ${this.manifest.samples.length} samples`);
 
     // Check if using sprite mode or individual files.
+    let primaryReady = false;
     if (this.manifest.sprite) {
       await this.loadSprite(generation);
       if (generation !== this.lifecycleGeneration) return;
-      this.isLoaded = true;
       this.loadState = 'complete';
+      primaryReady = true;
     } else {
-      await this.loadIndividualFiles(generation);
+      primaryReady = await this.loadIndividualFiles(generation);
       if (generation !== this.lifecycleGeneration) return;
     }
 
+    // Do not advertise a playable instrument until optional release regions
+    // have also decoded and passed metadata validation. Primary loading returns
+    // readiness as a local value so no caller can observe a transient true.
+    this.isLoaded = false;
     await this.loadReleaseRegions(generation);
     if (generation !== this.lifecycleGeneration) return;
+    this.isLoaded = primaryReady;
 
     logger.audio.log(`Instrument ${this.manifest?.name} load state: ${this.loadState}`);
   }
@@ -468,7 +474,7 @@ export class SampledInstrument {
    * Load a complete priority set before enabling playback. Every velocity and
    * round-robin variant at each priority note is part of that set.
    */
-  private async loadIndividualFiles(generation: number): Promise<void> {
+  private async loadIndividualFiles(generation: number): Promise<boolean> {
     const manifest = this.manifest!;
     if (manifest.samples.length === 0) throw new Error('Instrument manifest has no samples');
     const availableNotes = [...new Set(manifest.samples.map(mapping => mapping.note))];
@@ -487,16 +493,16 @@ export class SampledInstrument {
       if (result.status === 'fulfilled') this.installLoadedSample(result.value);
       else this.recordLoadFailure(mapping, result.reason, true);
     });
-    if (generation !== this.lifecycleGeneration) return;
+    if (generation !== this.lifecycleGeneration) return false;
 
     const priorityFailed = priorityResults.some(result => result.status === 'rejected');
-    this.isLoaded = !priorityFailed;
     if (priorityFailed) this.loadState = 'degraded';
     else this.loadState = backgroundMappings.length === 0 ? 'complete' : 'priority-ready';
 
     if (backgroundMappings.length > 0) {
       this.backgroundLoadingPromise = this.loadRemainingSamples(backgroundMappings, generation);
     }
+    return !priorityFailed;
   }
 
   private installLoadedSample(sample: LoadedSample): void {

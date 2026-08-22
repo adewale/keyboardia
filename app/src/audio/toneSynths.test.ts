@@ -302,7 +302,10 @@ describe('ToneSynthManager', () => {
       manager.playNote('fm-epiano', 'C4', '8n', 0);
       expect(toneTestState.fmSynths[0].set).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          envelope: { attack: .4, decay: .3, sustain: .6, release: 2 },
+          envelope: {
+            attack: .4, decay: .3, sustain: .6, release: 2,
+            attackCurve: 'linear', decayCurve: 'linear', releaseCurve: 'exponential',
+          },
         }),
       );
 
@@ -311,7 +314,10 @@ describe('ToneSynthManager', () => {
       });
       expect(toneTestState.fmSynths[0].set).toHaveBeenLastCalledWith(
         expect.objectContaining({
-          envelope: { attack: 0, decay: .1, sustain: .2, release: 0 },
+          envelope: {
+            attack: 0, decay: .1, sustain: .2, release: 0,
+            attackCurve: 'linear', decayCurve: 'linear', releaseCurve: 'exponential',
+          },
         }),
       );
     });
@@ -336,6 +342,9 @@ describe('ToneSynthManager', () => {
             decay: 0.25,
             sustain: 0.7,
             release: 0.3,
+            attackCurve: 'linear',
+            decayCurve: 'linear',
+            releaseCurve: 'exponential',
           },
         }),
       );

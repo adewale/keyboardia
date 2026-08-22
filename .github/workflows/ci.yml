@@ -112,19 +112,27 @@ jobs:
       # Stable envelope lanes are named explicitly so a future test-runner or
       # inventory change cannot leave one of the v2 proof surfaces undiscovered.
       - name: Run envelope semantic contract
-        run: npm run test:envelope:semantic
+        run: node scripts/measure-envelope-verification.mjs semantic test-results/envelope-verification-cost/semantic.json npm run test:envelope:semantic
 
       - name: Run envelope rolling-deploy contract
-        run: npm run test:envelope:rolling
+        run: node scripts/measure-envelope-verification.mjs rolling test-results/envelope-verification-cost/rolling.json npm run test:envelope:rolling
 
       - name: Run affected envelope PCM contract
-        run: npm run test:envelope:pcm
+        run: node scripts/measure-envelope-verification.mjs pcm test-results/envelope-verification-cost/pcm.json npm run test:envelope:pcm
 
       - name: Run correctness-only envelope release contract
-        run: npm run test:envelope:correctness
+        run: node scripts/measure-envelope-verification.mjs correctness test-results/envelope-verification-cost/correctness.json npm run test:envelope:correctness
 
       - name: Validate envelope documentation freshness
         run: npm run validate:envelope-docs
+
+      - name: Upload envelope verification cost records
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: envelope-verification-cost
+          path: app/test-results/envelope-verification-cost/
+          retention-days: 30
 
   stack-a-identity:
     name: Stack A Identity
@@ -482,6 +490,8 @@ jobs:
           name: playwright-report
           path: |
             app/playwright-report-blocking/
+            app/playwright-report-envelope/
+            app/playwright-report-envelope-correctness/
             app/playwright-report-offline/
             app/playwright-report-worker/
             app/test-results/

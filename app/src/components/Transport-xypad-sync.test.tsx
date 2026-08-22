@@ -251,6 +251,41 @@ describe('Transport XY Pad — batched effect updates', () => {
     expect(onEnvelopeV2Change).not.toHaveBeenCalled();
   });
 
+  it('removes Envelope Shape entirely when envelope authoring is feature-disabled', () => {
+    const track: Track = {
+      id: 'headless-track', name: 'Headless track', sampleId: 'tone:fm-bass',
+      steps: Array(16).fill(false), parameterLocks: Array(16).fill(null),
+      volume: 1, muted: false, soloed: false, transpose: 0, stepCount: 16,
+      envelopeV2: {
+        model: 'ar', attack: { value: 0.01, unit: 'seconds' },
+        release: { value: 0.2, unit: 'seconds' },
+      },
+    };
+    const onEnvelopeV2Change = vi.fn();
+    const { container } = render(
+      <Transport
+        isPlaying={false}
+        tempo={120}
+        swing={0}
+        onPlayPause={vi.fn()}
+        onTempoChange={vi.fn()}
+        onSwingChange={vi.fn()}
+        tracks={[track]}
+        selectedTrackId={track.id}
+        supportsEnvelopeV2
+        envelopeEditingEnabled={false}
+        onEnvelopeV2Change={onEnvelopeV2Change}
+      />,
+    );
+    expandFxPanel(container);
+    const preset = container.querySelector('.xy-preset-select') as HTMLSelectElement;
+
+    expect(preset.querySelector('option[value="envelope-shape"]')).toBeNull();
+    fireEvent.change(preset, { target: { value: 'envelope-shape' } });
+    expect(preset.value).toBe('space-control');
+    expect(onEnvelopeV2Change).not.toHaveBeenCalled();
+  });
+
   it('disables every Envelope Shape control if a rolling connection loses v2 capability', () => {
     const track: Track = {
       id: 'rolling-track', name: 'Rolling track', sampleId: 'tone:fm-bass',

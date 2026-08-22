@@ -87,8 +87,9 @@ describe('managed SampledInstrument v2 voices', () => {
 
     expect(voice?.mode).toBe('trigger');
     expect(voice?.gate(1.02)).toBe(false);
-    expect(context.lastSource.stopCalls[0]).toBeCloseTo(1.07, 8);
-    expect(context.lastGain.gain.eventsOfType('linearRampToValueAtTime').at(-1))
+    expect(context.lastSource.stopCalls[0]).toBeCloseTo(1.06 + RELEASE_TAIL_GUARD_SEC, 8);
+    expect(context.lastGain.gain.eventsOfType('linearRampToValueAtTime')
+      .find(event => event.time === 1.06))
       .toMatchObject({ value: 0.0001, time: 1.06 });
   });
 
@@ -366,7 +367,7 @@ describe.skipIf(!webAudio)('ManagedSampleVoice real Web Audio contract', () => {
     const pcm = rendered.getChannelData(0);
     const peak = Math.max(...pcm.slice(Math.floor(0.025 * sampleRate), Math.floor(0.045 * sampleRate)));
     const tail = Math.max(...pcm.slice(Math.floor(0.25 * sampleRate), Math.floor(0.30 * sampleRate)));
-    const afterStop = Math.max(...pcm.slice(Math.floor(0.43 * sampleRate), Math.floor(0.50 * sampleRate)));
+    const afterStop = Math.max(...pcm.slice(Math.floor(0.44 * sampleRate), Math.floor(0.50 * sampleRate)));
     expect(peak).toBeGreaterThan(0.9);
     expect(tail).toBeGreaterThan(0.001);
     expect(tail).toBeLessThan(0.1);

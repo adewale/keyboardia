@@ -45,7 +45,7 @@
             "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
           },
           "edit": {
-            "oneOf": [
+            "anyOf": [
               {
                 "type": "object",
                 "properties": {
@@ -306,7 +306,6 @@
               },
               {
                 "type": "object",
-                "description": "Set one existing track's normalized stereo position without changing its notes or level.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -329,11 +328,11 @@
                   "track_id",
                   "pan"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "Set one existing track's normalized stereo position without changing its notes or level."
               },
               {
                 "type": "object",
-                "description": "Change only the listed steps on an existing track. Read get_session first to obtain its track_id and step_count.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -410,7 +409,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
                   },
                   "envelope": {
                     "anyOf": [
@@ -458,48 +457,88 @@
                                     "const": "ad"
                                   },
                                   "attack": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 4
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 48
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   },
                                   "decay": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 8
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 96
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -517,70 +556,130 @@
                                     "const": "ahd"
                                   },
                                   "attack": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 4
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 48
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   },
                                   "hold": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 8
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 96
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   },
                                   "decay": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 8
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 96
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -599,48 +698,88 @@
                                     "const": "ar"
                                   },
                                   "attack": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 4
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 48
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   },
                                   "release": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 8
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 96
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -658,48 +797,88 @@
                                     "const": "adsr"
                                   },
                                   "attack": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 4
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 48
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   },
                                   "decay": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 8
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 96
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   },
                                   "sustain": {
                                     "type": "number",
@@ -707,26 +886,46 @@
                                     "maximum": 1
                                   },
                                   "release": {
-                                    "type": "object",
-                                    "properties": {
-                                      "value": {
-                                        "type": "number",
-                                        "minimum": 0,
-                                        "maximum": 96
+                                    "oneOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 8
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "seconds"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       },
-                                      "unit": {
-                                        "type": "string",
-                                        "enum": [
-                                          "seconds",
-                                          "steps"
-                                        ]
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 96
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "const": "steps"
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
                                       }
-                                    },
-                                    "required": [
-                                      "value",
-                                      "unit"
-                                    ],
-                                    "additionalProperties": false
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -741,7 +940,7 @@
                             ]
                           },
                           {
-                            "oneOf": [
+                            "anyOf": [
                               {
                                 "type": "object",
                                 "properties": {
@@ -752,19 +951,16 @@
                                   "attack": {
                                     "type": "number",
                                     "minimum": 0,
-                                    "maximum": 96
+                                    "maximum": 4
                                   },
                                   "decay": {
                                     "type": "number",
                                     "minimum": 0,
-                                    "maximum": 96
+                                    "maximum": 8
                                   },
                                   "duration_unit": {
                                     "type": "string",
-                                    "enum": [
-                                      "seconds",
-                                      "steps"
-                                    ]
+                                    "const": "seconds"
                                   }
                                 },
                                 "required": [
@@ -785,24 +981,21 @@
                                   "attack": {
                                     "type": "number",
                                     "minimum": 0,
-                                    "maximum": 96
+                                    "maximum": 4
                                   },
                                   "hold": {
                                     "type": "number",
                                     "minimum": 0,
-                                    "maximum": 96
+                                    "maximum": 8
                                   },
                                   "decay": {
                                     "type": "number",
                                     "minimum": 0,
-                                    "maximum": 96
+                                    "maximum": 8
                                   },
                                   "duration_unit": {
                                     "type": "string",
-                                    "enum": [
-                                      "seconds",
-                                      "steps"
-                                    ]
+                                    "const": "seconds"
                                   }
                                 },
                                 "required": [
@@ -824,19 +1017,16 @@
                                   "attack": {
                                     "type": "number",
                                     "minimum": 0,
-                                    "maximum": 96
+                                    "maximum": 4
                                   },
                                   "release": {
                                     "type": "number",
                                     "minimum": 0,
-                                    "maximum": 96
+                                    "maximum": 8
                                   },
                                   "duration_unit": {
                                     "type": "string",
-                                    "enum": [
-                                      "seconds",
-                                      "steps"
-                                    ]
+                                    "const": "seconds"
                                   }
                                 },
                                 "required": [
@@ -857,7 +1047,145 @@
                                   "attack": {
                                     "type": "number",
                                     "minimum": 0,
+                                    "maximum": 4
+                                  },
+                                  "decay": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 8
+                                  },
+                                  "sustain": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1
+                                  },
+                                  "release": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 8
+                                  },
+                                  "duration_unit": {
+                                    "type": "string",
+                                    "const": "seconds"
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "decay",
+                                  "sustain",
+                                  "release",
+                                  "duration_unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ad"
+                                  },
+                                  "attack": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 48
+                                  },
+                                  "decay": {
+                                    "type": "number",
+                                    "minimum": 0,
                                     "maximum": 96
+                                  },
+                                  "duration_unit": {
+                                    "type": "string",
+                                    "const": "steps"
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "decay",
+                                  "duration_unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ahd"
+                                  },
+                                  "attack": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 48
+                                  },
+                                  "hold": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "decay": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "duration_unit": {
+                                    "type": "string",
+                                    "const": "steps"
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "hold",
+                                  "decay",
+                                  "duration_unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ar"
+                                  },
+                                  "attack": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 48
+                                  },
+                                  "release": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "duration_unit": {
+                                    "type": "string",
+                                    "const": "steps"
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "release",
+                                  "duration_unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "adsr"
+                                  },
+                                  "attack": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 48
                                   },
                                   "decay": {
                                     "type": "number",
@@ -876,10 +1204,7 @@
                                   },
                                   "duration_unit": {
                                     "type": "string",
-                                    "enum": [
-                                      "seconds",
-                                      "steps"
-                                    ]
+                                    "const": "steps"
                                   }
                                 },
                                 "required": [
@@ -934,7 +1259,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
                   },
                   "unit": {
                     "type": "string",
@@ -962,7 +1287,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
                   },
                   "gate": {
                     "type": "number",
@@ -988,7 +1313,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
                   },
                   "target_unit": {
                     "type": "string",
@@ -1016,7 +1341,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
                   },
                   "mode": {
                     "anyOf": [
@@ -1052,7 +1377,7 @@
                   "track_id": {
                     "type": "string",
                     "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
-                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
                   },
                   "step": {
                     "type": "integer",
@@ -1061,36 +1386,51 @@
                   },
                   "stage": {
                     "type": "string",
-                    "enum": [
-                      "attack",
-                      "hold",
-                      "decay",
-                      "release"
-                    ]
+                    "const": "attack"
                   },
                   "duration": {
                     "anyOf": [
                       {
-                        "type": "object",
-                        "properties": {
-                          "value": {
-                            "type": "number",
-                            "minimum": 0,
-                            "maximum": 96
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 4
+                              },
+                              "unit": {
+                                "type": "string",
+                                "const": "seconds"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
                           },
-                          "unit": {
-                            "type": "string",
-                            "enum": [
-                              "seconds",
-                              "steps"
-                            ]
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 48
+                              },
+                              "unit": {
+                                "type": "string",
+                                "const": "steps"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
                           }
-                        },
-                        "required": [
-                          "value",
-                          "unit"
-                        ],
-                        "additionalProperties": false
+                        ]
                       },
                       {
                         "type": "null"
@@ -1106,7 +1446,250 @@
                   "duration"
                 ],
                 "additionalProperties": false,
-                "description": "Set or clear one onset-owned sparse envelope-stage lock."
+                "description": "Set or clear one onset-owned sparse attack lock."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_envelope_lock"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
+                  },
+                  "step": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 127
+                  },
+                  "stage": {
+                    "type": "string",
+                    "const": "hold"
+                  },
+                  "duration": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 8
+                              },
+                              "unit": {
+                                "type": "string",
+                                "const": "seconds"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 96
+                              },
+                              "unit": {
+                                "type": "string",
+                                "const": "steps"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "step",
+                  "stage",
+                  "duration"
+                ],
+                "additionalProperties": false,
+                "description": "Set or clear one onset-owned sparse hold lock."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_envelope_lock"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
+                  },
+                  "step": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 127
+                  },
+                  "stage": {
+                    "type": "string",
+                    "const": "decay"
+                  },
+                  "duration": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 8
+                              },
+                              "unit": {
+                                "type": "string",
+                                "const": "seconds"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 96
+                              },
+                              "unit": {
+                                "type": "string",
+                                "const": "steps"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "step",
+                  "stage",
+                  "duration"
+                ],
+                "additionalProperties": false,
+                "description": "Set or clear one onset-owned sparse decay lock."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_envelope_lock"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps, set_track_instrument, or set_track_pan, copy an existing track_id from get_session."
+                  },
+                  "step": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 127
+                  },
+                  "stage": {
+                    "type": "string",
+                    "const": "release"
+                  },
+                  "duration": {
+                    "anyOf": [
+                      {
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 8
+                              },
+                              "unit": {
+                                "type": "string",
+                                "const": "seconds"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 96
+                              },
+                              "unit": {
+                                "type": "string",
+                                "const": "steps"
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "step",
+                  "stage",
+                  "duration"
+                ],
+                "additionalProperties": false,
+                "description": "Set or clear one onset-owned sparse release lock."
               }
             ],
             "description": "Exactly one narrow session edit."

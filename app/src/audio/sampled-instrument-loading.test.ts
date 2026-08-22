@@ -54,6 +54,49 @@ describe('observable progressive readiness (pipeline stage 8)', () => {
     expect(instrument.getVelocityLayerCount(60)).toBe(3);
   });
 
+  it('does not report ready between priority decode and required release-region decode', async () => {
+    const manifest: InstrumentManifest = {
+      id: 'release-readiness',
+      name: 'Release Readiness',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [60],
+      samples: [{ note: 60, file: 'body.mp3', releaseGroup: 'keys' }],
+      releaseRegions: [{
+        file: 'release.mp3', rootMidi: 60, velocityMin: 0, velocityMax: 127,
+        roundRobin: 0, heldDecayDbPerSecond: 0, gainDb: 0, releaseGroup: 'keys',
+      }],
+    };
+    let releaseDecode!: () => void;
+    let announceReleaseRequest!: () => void;
+    const releaseGate = new Promise<void>(resolve => { releaseDecode = resolve; });
+    const releaseRequested = new Promise<void>(resolve => { announceReleaseRequest = resolve; });
+    vi.stubGlobal('fetch', (async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url.endsWith('manifest.json')) return { ok: true, json: async () => manifest } as Response;
+      const filename = url.split('/').at(-1)!;
+      if (filename === 'release.mp3') {
+        announceReleaseRequest();
+        await releaseGate;
+      }
+      const bytes = new TextEncoder().encode(filename);
+      return { ok: true, arrayBuffer: async () => bytes.buffer } as Response;
+    }) as typeof fetch);
+    const context = new FakeAudioContext();
+    const instrument = new SampledInstrument(manifest.id, '/instruments');
+    instrument.initialize(context.asAudioContext(), new FakeGainNode() as unknown as AudioNode);
+
+    const loading = instrument.ensureLoaded();
+    await releaseRequested;
+    expect(instrument.isReady()).toBe(false);
+    const concurrent = instrument.ensureLoaded();
+    releaseDecode();
+
+    await expect(loading).resolves.toBe(true);
+    await expect(concurrent).resolves.toBe(true);
+    expect(instrument.isReady()).toBe(true);
+  });
+
   it('bounds background fetch/decode concurrency for deep production instruments', async () => {
     const backgroundCount = 18;
     const manifest: InstrumentManifest = {

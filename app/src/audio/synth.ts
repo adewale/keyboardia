@@ -1202,6 +1202,7 @@ class SynthVoice {
       if (release === 0) this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
       else this.gainNode.gain.exponentialRampToValueAtTime(MIN_GAIN_VALUE, time + release);
       const stopTime = time + release + RELEASE_TAIL_GUARD_SEC;
+      this.gainNode.gain.linearRampToValueAtTime(0, stopTime);
       this.oscillator1.stop(stopTime);
       this.oscillator2?.stop(stopTime);
       this.lfoOscillator?.stop(stopTime);

@@ -178,7 +178,7 @@ describe('Per-track tone/advanced synth instances', () => {
 
     expect(advancedInstances.length).toBe(2);
     expect(advancedInstances[0]).not.toBe(advancedInstances[1]);
-    expect(advancedInstances[0].playNoteSpy.mock.calls[0].slice(3)).toEqual([0.42, 37]);
+    expect(advancedInstances[0].playNoteSpy.mock.calls[0].slice(3)).toEqual([0.42, 37, undefined]);
   });
 
   it('never disconnects a shared output when a different track plays (the hijack bug)', async () => {

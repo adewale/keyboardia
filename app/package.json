@@ -53,7 +53,7 @@
     "validate:test-antipatterns": "node --import tsx scripts/check-test-antipatterns.ts",
     "validate:test-links": "node --import tsx scripts/check-test-subject-links.ts",
     "validate:sync": "node --import tsx scripts/validate-sync-checklist.ts",
-    "validate:envelope-docs": "node scripts/validate-envelope-docs.mjs",
+    "validate:envelope-docs": "node --import tsx scripts/validate-envelope-docs.mjs",
     "validate:envelope-resources": "node scripts/validate-envelope-resources.mjs",
     "validate:samples": "bash scripts/validate-sample-volume.sh",
     "validate:manifests": "tsx scripts/validate-manifests.ts",

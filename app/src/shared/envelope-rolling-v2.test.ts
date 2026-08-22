@@ -199,8 +199,11 @@ describe('rolling-safe envelope v2 state', () => {
     expect(hashState(baseCanonical)).not.toBe(hashState(authoredCanonical));
   });
 
-  it('projects the exact pre-v2 hash shape for rolling clients', () => {
+  it('projects exact pre-envelope and v1 hash shapes for rolling clients', () => {
     const canonical = canonicalizeForHash(state(track({
+      envelope: { attack: .1, decay: .2, sustain: .5, release: .3 },
+      envelopeTimeUnit: 'steps',
+      gate: 75,
       envelopeV2: ahdEnvelope,
       samplePlaybackMode: 'loop',
       parameterLocks: [
@@ -214,7 +217,21 @@ describe('rolling-safe envelope v2 state', () => {
 
     expect(projected.tracks[0]).not.toHaveProperty('envelopeV2');
     expect(projected.tracks[0]).not.toHaveProperty('samplePlaybackMode');
-    expect((projected.tracks[0].parameterLocks as Array<object>)[0]).toEqual({
+    expect(projected.tracks[0]).not.toHaveProperty('envelope');
+    expect(projected.tracks[0]).not.toHaveProperty('envelopeTimeUnit');
+    expect(projected.tracks[0]).not.toHaveProperty('gate');
+    expect((projected.tracks[0].parameterLocks as Array<object | null>)[0]).toBeNull();
+
+    const v1 = projectCanonicalStateForEnvelopeV2Capability(canonical, 'v1') as {
+      tracks: Array<Record<string, unknown>>;
+    };
+    expect(v1.tracks[0]).toMatchObject({
+      envelope: { attack: .1, decay: .2, sustain: .5, release: .3 },
+      envelopeTimeUnit: 'steps',
+      gate: 75,
+    });
+    expect(v1.tracks[0]).not.toHaveProperty('envelopeV2');
+    expect((v1.tracks[0].parameterLocks as Array<object>)[0]).toEqual({
       attackDuration: { value: 2, unit: 'steps' },
     });
     expect(projectCanonicalStateForEnvelopeV2Capability(canonical, true)).toBe(canonical);

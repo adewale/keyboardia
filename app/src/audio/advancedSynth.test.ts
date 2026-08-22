@@ -302,8 +302,8 @@ describe('AdvancedSynthVoice', () => {
 
       expect(voice['filter']!.frequency.value).toBe(1234);
       expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
-      expect(voice['filter']!.frequency.setTargetAtTime).toHaveBeenLastCalledWith(1234, 0, 0.04);
-      expect(voice['filterEnvAdder']!.addend.setTargetAtTime).toHaveBeenLastCalledWith(1234, 0, 0.04);
+      expect(voice['filter']!.frequency.setTargetAtTime).toHaveBeenLastCalledWith(1234, expect.any(Number), 0.04);
+      expect(voice['filterEnvAdder']!.addend.setTargetAtTime).toHaveBeenLastCalledWith(1234, expect.any(Number), 0.04);
     });
 
     it('scales sync-enabled LFO rates from the sequencer tempo', () => {

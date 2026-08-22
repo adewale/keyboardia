@@ -24,6 +24,7 @@ function candidateAsNativeParams(preset: AdvancedSynthPreset): SynthParams {
   const osc2Mix = osc2Total > 0 ? preset.oscillator2.level / osc2Total : 0;
   return {
     waveform: preset.oscillator1.waveform,
+    outputGainDb: preset.outputGainDb,
     filterCutoff: preset.filter.frequency,
     filterResonance: preset.filter.resonance,
     ...preset.amplitudeEnvelope,
@@ -135,6 +136,7 @@ describe.skipIf(!webAudio)('native synth envelope — offline PCM regression', (
       0.125,
       1,
       undefined,
+      90,
       {
         model: 'adsr',
         attackSeconds: 0,
@@ -147,9 +149,9 @@ describe.skipIf(!webAudio)('native synth envelope — offline PCM regression', (
     const rendered = await context.startRendering();
     const channel = rendered.getChannelData(0);
     expect(rms(channel, 0.051, 0.06)).toBeGreaterThan(0.05);
-    // note-off .175 + R .1 + guard .01 = hard stop .285
+    // note-off .175 + R .1 + the shared guard = hard stop .305
     expect(rms(channel, 0.20, 0.25)).toBeGreaterThan(0.001);
-    expect(rms(channel, 0.30, 0.35)).toBeLessThan(1e-7);
+    expect(rms(channel, 0.32, 0.37)).toBeLessThan(1e-7);
   });
 
   it('releases from the current attack level for exactly 300ms without a wall timer', async () => {
@@ -169,6 +171,7 @@ describe.skipIf(!webAudio)('native synth envelope — offline PCM regression', (
       0.1,
       1,
       undefined,
+      90,
       {
         model: 'adsr',
         attackSeconds: 0.4,
@@ -187,6 +190,6 @@ describe.skipIf(!webAudio)('native synth envelope — offline PCM regression', (
     // that current energy, reach epsilon at .45, and hard-stop at .46.
     expect(rms(channel, 0.16, 0.24)).toBeGreaterThan(0.005);
     expect(rms(channel, 0.34, 0.42)).toBeGreaterThan(0.00005);
-    expect(rms(channel, 0.48, 0.60)).toBeLessThan(1e-7);
+    expect(rms(channel, 0.50, 0.62)).toBeLessThan(1e-7);
   });
 });

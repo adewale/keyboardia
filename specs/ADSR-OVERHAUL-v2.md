@@ -978,11 +978,14 @@ The Shape layer contains:
 The exact layer contains:
 
 - model and `Trigger`/`Gate`/`Loop` choices restricted by capability;
-- a live SVG curve built from the semantic oracle, with large direct handles;
+- a live, read-only SVG curve built from the semantic oracle, with clearly
+  labelled landmarks; stage ranges and exact fields are the deliberately
+  simpler direct-manipulation surface;
 - one exact field per active stage, with reversible nonlinear position mapping,
   editable numeric value, and per-stage `ms`/`s`/`st` unit;
 - source capability, Preset/Override, inactive reason, Reset, and local audition;
-- keyboard, screen-reader, and single-pointer equivalents for every drag.
+- native keyboard, screen-reader, and single-pointer operation for every
+  editable range.
 
 The nonlinear mapping gives millisecond values usable travel while retaining
 long tails; the field, not the graph coordinate, is the canonical value. The
@@ -1394,29 +1397,32 @@ more than a universal cosmetic ADSR.
   more expressive but risks discontinuities and automation churn. v2 snapshots
   tempo for the entire voice at note-on; the new tempo applies to later voices.
 
-The measured 2026-08-03 baseline is 13.12 MiB of encoded production audio
-across 223 files and 914 seconds. Decoding the whole catalogue would be about
-275.8 MiB of `Float32` PCM. These files are copied as static deployment assets
-and fetched per selected instrument, so sample additions do not belong in the
-initial JavaScript bundle—but “not JS” does not mean free: they increase the
-deployed site, offline/cache storage, selected-instrument transfer, background
-decode, and eviction pressure.
+The measured 2026-08-22 release catalogue is 35,577,302 encoded bytes (33.93
+MiB) across 582 files, with a content-addressed catalogue hash. PR 87's
+original head already contains those bytes; the envelope implementation adds
+zero sample files and zero sample bytes. Decoded-memory cost is measured per
+intake packet because channel count, sample rate, duration, and cache residency
+make a catalogue-wide estimate misleading. These files are copied as static
+deployment assets and fetched per selected instrument, so sample additions do
+not belong in the initial JavaScript bundle—but “not JS” does not mean free:
+they increase the deployed site, offline/cache storage, selected-instrument
+transfer, background decode, and eviction pressure.
 
-At the current mean bitrate, another minute is approximately 0.91 MiB encoded.
-At 44.1 kHz it is about 10.1 MiB decoded mono or 20.2 MiB decoded stereo. A
-hundred one-second stereo release recordings are therefore modest on the wire
-but roughly 33.6 MiB if all remain decoded, already larger than the normal iOS
-cache. Candidate decisions use measured values, not these planning estimates.
-
-The 2026-08-03 production build preloads 218.1 KiB of gzipped JavaScript and
-already exceeds the older `< 200KB` target in `specs/STATUS.md`. The complete
-build directory is 14.33 MiB, of which 13.12 MiB is sample audio. The editor is
+The 2026-08-22 production build loads 239,035 bytes (233.4 KiB) of gzipped
+JavaScript initially and contains 315,602 bytes across all JavaScript chunks.
+It already exceeds the older `< 200KB` target in `specs/STATUS.md`. The editor is
 reached through the code-split StepSequencer path, and the UI should have a
 small JavaScript impact: the curve is repository-native SVG/CSS and shared pure
 functions. Slice A records initial and lazy gzipped JS by chunk; Slice D fails
 if sample audio enters the module graph, a new chart/knob dependency appears,
 the editor breaks that lazy boundary, or any chunk grows without a reviewed
 attribution and budget disposition.
+
+The Worker upload is 3,503,037 bytes, 65,966 bytes (1.92%) above PR 87's
+original head. That increase is the versioned envelope collaboration and MCP
+contract plus its published agent skill, not browser audio, UI, or notation
+runtime. The reviewed upload ratchet is 3,525,000 bytes, leaving 21,963 bytes;
+future Worker work must reduce/split code or explicitly re-budget it.
 
 Each promoted instrument therefore needs explicit limits for encoded bytes,
 decoded bytes, preload latency, ordinary and worst-case voices, and release

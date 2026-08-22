@@ -83,6 +83,8 @@ export interface LFOConfig {
  */
 export interface AdvancedSynthPreset {
   name: string;
+  /** Fixed source trim retained when a native preset is structurally migrated. */
+  outputGainDb?: number;
   oscillator1: OscillatorConfig;
   oscillator2: OscillatorConfig;
   amplitudeEnvelope: ADSREnvelope;
@@ -202,6 +204,7 @@ export function migrateNativeSynthPreset(id: string, preset: SynthParams): Advan
   const mix = preset.osc2?.mix ?? 0;
   return {
     name: id,
+    outputGainDb: preset.outputGainDb,
     oscillator1: {
       waveform: preset.waveform,
       level: preset.osc2 ? 1 - mix : 1,
@@ -928,7 +931,12 @@ export class AdvancedSynthEngine {
     const activeVoices = this.voices.filter(v => v.isActive()).length;
     this.currentPreset = preset;
     this.currentPresetId = presetId;
-    if (this.output) this.output.gain.value = dbToGain(ADVANCED_SOURCE_GAIN_DB[presetId as keyof typeof ADVANCED_SOURCE_GAIN_DB]);
+    if (this.output) {
+      const gainDb = preset.outputGainDb
+        ?? ADVANCED_SOURCE_GAIN_DB[presetId as keyof typeof ADVANCED_SOURCE_GAIN_DB]
+        ?? 0;
+      this.output.gain.value = dbToGain(gainDb);
+    }
 
     // Apply the instrument definition, then restore live control overrides.
     for (const voice of this.voices) voice.applyPreset(preset);

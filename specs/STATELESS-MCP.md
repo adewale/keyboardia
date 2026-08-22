@@ -362,8 +362,11 @@ a model the instrument cannot perform. `null` restores the instrument preset.
 }
 ```
 
-`seconds` stores literal seconds. `steps` interprets attack, decay, and release
-as fractions of a sixteenth-note step at the current session tempo.
+This converts every authored timed stage at the current tempo while preserving
+its audible duration. `seconds` stores literal seconds; `steps` stores fractions
+of a sixteenth-note step. On a preset-only track it records the preferred unit
+for a later legacy ADSR edit without manufacturing an override. New clients
+should prefer `convert_track_envelope_units`, which names this behavior directly.
 
 #### `set_track_gate`
 

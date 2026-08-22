@@ -164,7 +164,7 @@
   vector-effect: non-scaling-stroke;
 }
 
-.envelope-editor__curve-handle {
+.envelope-editor__curve-landmark {
   fill: var(--color-surface);
   stroke: var(--color-cyan);
   stroke-width: 1;

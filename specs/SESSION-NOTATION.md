@@ -44,7 +44,7 @@ the syntax does not enter the Worker bundle or the initial sequencer chunk.
 | `-` | Step OFF (silence) | `steps[i] = false` |
 | `o` | Ghost note (soft/quiet) | `steps[i] = true`, `parameterLocks[i].volume = 0.3` |
 | `X` | Accent (loud/emphasized) | `steps[i] = true`, `parameterLocks[i].volume = 1.0` |
-| `~` | Tie continuation owned by the previous cyclic onset | `steps[i] = false`, `parameterLocks[i].tie = true` |
+| `~` | Tie continuation owned by the previous cyclic onset | `steps[i] = true`, `parameterLocks[i].tie = true` |
 
 **Resolution:** 16 characters = 1 bar at 16th-note resolution (default)
 
@@ -81,8 +81,10 @@ contain commas, so a comma-separated list of key/value pairs is ambiguous.
 | `[pan:-20]` | Track stereo position as an integer percentage | -100 (left) to +100 (right) |
 | `[stepCount:32]` | Per-track loop length | See valid step counts |
 | `[pitches:0,7,5,3]` | Per-step pitch sequence | ±24 semitones per step |
+| `[volumes:-,0.42,1,-]` | Exact per-step volume vector (`-` means unset) | 0-1 per step |
 | `[synth:acid]` | Instrument/preset hint | String identifier |
 | `[fm:2.5,8]` | FM synth params (harmonicity, modIndex) | 0.5-10, 0-20 |
+| `[trackSwing:25]` | Per-track swing override | 0-100 |
 | `[play:trigger]` | Sample playback behavior | `trigger`, `gate`, or `loop` when supported |
 | `[amp:ad,2ms,400ms]` | Attack/decay transient envelope | Typed A and D durations |
 | `[amp:ahd,2ms,0.5st,400ms]` | Attack/hold/decay finite-source envelope | Typed A, H, and D durations |
@@ -95,6 +97,16 @@ Durations use `ms`, `s`, or `st`; one `st` is one sixteenth-note sequencer
 step. Sustain is unitless. Duplicate singleton annotations, duplicate
 step/stage locks, mixed v2.4/v2.3 envelope syntax, and mixed sparse/dense lock
 syntax are errors rather than order-dependent guesses.
+
+The executable duration contract is:
+
+| Stage | Seconds | Sixteenth-note steps |
+|---|---:|---:|
+| attack | 0-4s | 0-48st |
+| hold | 0-8s | 0-96st |
+| decay | 0-8s | 0-96st |
+| release | 0-8s | 0-96st |
+| gate | 0-100% | Final tied segment |
 
 ### Legacy v2.3 input
 

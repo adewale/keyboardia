@@ -123,7 +123,7 @@ describe('Preview synth (merged_bug_002)', () => {
 
   it('dispatches Tone AHD as a finite attack-hold-decay schedule', async () => {
     const { engine } = await makePreparedEngine();
-    engine.playToneSynth('membrane-kick', 0, 0, 0.01, 1, undefined, undefined, {
+    engine.playToneSynth('membrane-kick', 0, 0, 0.01, 1, undefined, undefined, undefined, {
       model: 'ahd',
       attackSeconds: 0.1,
       holdSeconds: 0.4,

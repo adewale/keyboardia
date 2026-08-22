@@ -163,8 +163,10 @@ replace placeholders with live values:
   assign a capability-checked AD/AHD/AR/ADSR override. Expanded typed durations
   may mix seconds and steps. Send `"envelope": null` to reset the override.
 - `{ "operation": "set_track_envelope_time_unit", "track_id": "existing-id",
-  "unit": "steps" }`: interpret attack, decay, and release as sixteenth-note
-  step counts. Use `"unit": "seconds"` for wall-clock seconds.
+  "unit": "steps" }`: convert authored timed stages at the current tempo while
+  preserving their audible duration. On a preset-only track this records the
+  preferred unit for a later legacy ADSR edit. Prefer
+  `convert_track_envelope_units` when changing an existing v2 envelope.
 - `{ "operation": "set_track_gate", "track_id": "existing-id", "gate": 90 }`:
   assign the percentage of the final tied segment during which its note remains
   open. Use a number from 0 through 100.
