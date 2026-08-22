@@ -2,11 +2,20 @@ import { describe, expect, it } from 'vitest';
 
 import { MAX_TRACKS } from '../src/types';
 import {
+  LIVE_ACTIVE_STEP,
+  LIVE_CAPTURE_ALIGNMENT,
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
   LIVE_CAPTURE_METHOD,
+  LIVE_EXPECTED_EVENTS_PER_TRACK,
   LIVE_GENERATED_FROM,
+  LIVE_MAX_ARM_TO_ONSET_SECONDS,
+  LIVE_ONSET_THRESHOLD,
+  LIVE_PATTERN_PERIOD_SECONDS,
   LIVE_PEAK_METRIC,
+  LIVE_PREPARATION_METHOD,
+  LIVE_RANDOM_ALGORITHM,
+  LIVE_RANDOM_SEED,
   LIVE_RECEIPT_CLAIM,
   LIVE_RECEIPT_SCHEMA_VERSION,
   LIVE_RMS_METRIC,
@@ -14,6 +23,7 @@ import {
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
   LIVE_TEMPO,
+  LIVE_UNMUTE_SETTLE_SECONDS,
   expectedLiveInstrumentSpecs,
   validateLiveQualityReport,
   type LiveQualityReport,
@@ -33,6 +43,8 @@ function validReceipt(): LiveQualityReport {
     masterRms: 0.04,
     capturedFrames,
     channelSampleCount,
+    armToOnsetFrames: 256,
+    randomCalls: 10_000,
   }));
   return {
     schemaVersion: LIVE_RECEIPT_SCHEMA_VERSION,
@@ -44,10 +56,25 @@ function validReceipt(): LiveQualityReport {
     generatedFrom: LIVE_GENERATED_FROM,
     capture: {
       method: LIVE_CAPTURE_METHOD,
+      alignment: LIVE_CAPTURE_ALIGNMENT,
       durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
       channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
+      onsetThreshold: LIVE_ONSET_THRESHOLD,
+      maxArmToOnsetSeconds: LIVE_MAX_ARM_TO_ONSET_SECONDS,
       peakMetric: LIVE_PEAK_METRIC,
       rmsMetric: LIVE_RMS_METRIC,
+    },
+    schedule: {
+      preparation: LIVE_PREPARATION_METHOD,
+      activeStep: LIVE_ACTIVE_STEP,
+      expectedEventsPerTrack: LIVE_EXPECTED_EVENTS_PER_TRACK,
+      patternPeriodSeconds: LIVE_PATTERN_PERIOD_SECONDS,
+      unmuteSettleSeconds: LIVE_UNMUTE_SETTLE_SECONDS,
+    },
+    random: {
+      locked: true,
+      seed: LIVE_RANDOM_SEED,
+      algorithm: LIVE_RANDOM_ALGORITHM,
     },
     silencePeakThreshold: LIVE_SILENCE_PEAK_THRESHOLD,
     silenceRmsThreshold: LIVE_SILENCE_RMS_THRESHOLD,
@@ -114,6 +141,26 @@ describe('live instrument-quality receipt', () => {
     const maxBlockRms = validReceipt();
     maxBlockRms.capture.rmsMetric = 'maximum-block-rms' as typeof LIVE_RMS_METRIC;
     expect(() => validateLiveQualityReport(maxBlockRms, SUBJECT)).toThrow(/capture settings/);
+
+    const repeatedEvents = validReceipt();
+    repeatedEvents.schedule.expectedEventsPerTrack = 5 as typeof LIVE_EXPECTED_EVENTS_PER_TRACK;
+    expect(() => validateLiveQualityReport(repeatedEvents, SUBJECT)).toThrow(/capture settings/);
+
+    const unseeded = validReceipt();
+    unseeded.random.locked = false as true;
+    expect(() => validateLiveQualityReport(unseeded, SUBJECT)).toThrow(/capture settings/);
+
+    const forgedOnset = validReceipt();
+    forgedOnset.capture.onsetThreshold = 0 as typeof LIVE_ONSET_THRESHOLD;
+    expect(() => validateLiveQualityReport(forgedOnset, SUBJECT)).toThrow(/capture settings/);
+
+    const lateOnset = validReceipt();
+    lateOnset.sessions[0].armToOnsetFrames = 48_001;
+    expect(() => validateLiveQualityReport(lateOnset, SUBJECT)).toThrow(/maximum arm-to-onset/);
+
+    const malformedRandomCalls = validReceipt();
+    malformedRandomCalls.sessions[0].randomCalls = -1;
+    expect(() => validateLiveQualityReport(malformedRandomCalls, SUBJECT)).toThrow(/nonnegative integer/);
 
     const browser = validReceipt();
     browser.browser.name = 'webkit';
