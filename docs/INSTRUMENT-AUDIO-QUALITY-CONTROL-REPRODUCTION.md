@@ -1,14 +1,15 @@
 # Reconstructing the instrument-quality control
 
-The controlled before/after claim is reproducible without either historical
-synthetic commit named by the 2026-08-22 snapshot. The reconstruction tool
+The controlled before/after method is reproducible without relying on a
+historical synthetic commit. The reconstruction tool
 creates fresh compatibility commits from Git objects that must exist locally,
 captures both sides under one committed evaluator lane, and retains every raw
 receipt used to calculate the difference. Each side's live lane is captured
 twice in separate Playwright processes. Both captures are audited, retained,
 and hash-bound; a structural, classification, or derived-decision mismatch
 fails the comparison rather than averaging the captures or selecting the more
-favorable one.
+favorable one. A completed capture is not automatically a valid comparison:
+if either side is unstable, the command exits without publishing a delta.
 
 ## Claim boundary
 
@@ -106,11 +107,24 @@ path/prefix safety check. Use `--keep-temp` only for diagnosis. Output
 directories are never cleared or overwritten: a non-empty directory fails
 closed.
 
-## Historical snapshot
+## Retained 2026-08-22 result
 
 [`instrument-audio-quality-controlled-comparison-2026-08-22.json`](./evidence/instrument-audio-quality-controlled-comparison-2026-08-22.json)
-is the retained summary of the original run. Its vanished compatibility commit
-IDs and summary-only hashes are historical metadata, not prerequisites and not
-the strongest reproducibility evidence. After the evaluator is frozen, publish
-the newly reconstructed directory or its CI artifact and use its hash-bound raw
-receipts for the final numerical claim.
+binds the raw receipts from the frozen candidate and the reconstructed
+original-main control. The candidate passes the two-run decision-stability
+gate: its largest per-instrument energy spread is 0.338 dB, and all 99 derived
+decisions are identical.
+
+The control does not pass. Its two otherwise valid 99-instrument captures
+measure `noise` peaks of 0.344035 and 0.217525, a 3.982 dB difference against
+the prospective 0.5 dB alarm. Identical RNG call counts and one-frame onset
+movement do not justify discarding either result. The command therefore stopped
+before producing an aggregate control-to-candidate score delta.
+
+The decoded lane is independent of that live instability and remains directly
+comparable under the same evaluator: 256 findings on original-main scored paths
+and 203 on the candidate, a reduction of 53 (20.7%). The two control live
+receipts, two candidate live receipts, both candidate rankings, both decoded
+receipts, and reconstruction plan are retained under `docs/evidence/` with
+SHA-256 bindings. An overall repair-priority percentage is deliberately not
+claimed.
