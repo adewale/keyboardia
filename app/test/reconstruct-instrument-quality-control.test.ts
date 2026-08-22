@@ -4,6 +4,7 @@ import {
   CONTROL_EVALUATOR_OVERLAY_PATHS,
   assertControlOverlayPaths,
   compareQualitySummaries,
+  isExpectedControlBaselineBindingStatus,
   summarizeQualityArtifacts,
   type QualitySummary,
 } from '../scripts/reconstruct-instrument-quality-control';
@@ -20,6 +21,18 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
     ])).toThrow(/changes preserved subject path app\/src\/audio\//);
     expect(() => assertControlOverlayPaths(['app/package.json']))
       .toThrow(/changes preserved subject path app\/package\.json/);
+  });
+
+  it('accepts only the binder\'s one expected unstaged baseline edit', () => {
+    expect(isExpectedControlBaselineBindingStatus(
+      'M app/scripts/sample-quality-baseline.json',
+    )).toBe(true);
+    expect(isExpectedControlBaselineBindingStatus(
+      'M  app/scripts/sample-quality-baseline.json',
+    )).toBe(false);
+    expect(isExpectedControlBaselineBindingStatus(
+      'M app/scripts/sample-quality-baseline.json\n?? unexpected.json',
+    )).toBe(false);
   });
 
   it('derives every aggregate from the raw bound receipts', () => {
