@@ -164,6 +164,7 @@ async function main(): Promise<void> {
         latencyHint: 'playback',
         tap: 'track-bus-output-post-pan-pre-master',
         seedAlgorithm: 'mulberry32',
+        seedBoundary: 'immediately-before-audio-engine-initialization',
         freshBrowserProcessPerAttempt: true,
         freshBrowserContextPerAttempt: true,
       },
