@@ -12,9 +12,20 @@
  * - This allows backwards compatibility when adding new track fields
  */
 
-import type { ParameterLock, EffectsState, FMParams, ScaleState } from './sync-types';
+import type {
+  ParameterLock, EffectsState, FMParams, TrackEnvelope, EnvelopeTimeUnit, ScaleState,
+  EnvelopeDuration, EnvelopeDurationUnit, EnvelopeStageName, SamplePlaybackMode, TrackEnvelopeV2,
+} from './sync-types';
 import type { SessionState, SessionTrack } from './state';
 import type { PlayerInfo, CursorPosition } from './player';
+
+/** Negotiated wire capability for the persisted ADSR/time-unit/gate slice. */
+export const TRACK_ENVELOPE_CAPABILITY = 'track-envelope-v1';
+export const TRACK_ENVELOPE_V2_CAPABILITY = 'track-envelope-v2';
+export const TRACK_ENVELOPE_CAPABILITIES = [
+  TRACK_ENVELOPE_CAPABILITY,
+  TRACK_ENVELOPE_V2_CAPABILITY,
+] as const;
 
 // ============================================================================
 // Sequence Number Support (Phase 13B)
@@ -74,6 +85,14 @@ export type ClientMessageBase =
   | { type: 'set_effects'; effects: EffectsState }
   | { type: 'set_scale'; scale: ScaleState }
   | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
+  | { type: 'set_track_envelope'; trackId: string; envelope: TrackEnvelope | null }
+  | { type: 'set_track_envelope_time_unit'; trackId: string; unit: EnvelopeTimeUnit }
+  | { type: 'set_track_gate'; trackId: string; gate: number }
+  | { type: 'set_track_envelope_v2'; trackId: string; envelope: TrackEnvelopeV2 | null; operationId: string }
+  | { type: 'convert_track_envelope_units_v2'; trackId: string; targetUnit: EnvelopeDurationUnit; operationId: string }
+  | { type: 'set_track_sample_playback_mode_v2'; trackId: string; mode: SamplePlaybackMode | null; operationId: string }
+  | { type: 'set_track_gate_v2'; trackId: string; gate: number; operationId: string }
+  | { type: 'set_envelope_lock_v2'; trackId: string; step: number; stage: EnvelopeStageName; duration: EnvelopeDuration | null; operationId: string }
   | { type: 'copy_sequence'; fromTrackId: string; toTrackId: string }
   | { type: 'move_sequence'; fromTrackId: string; toTrackId: string }
   | { type: 'set_session_name'; name: string }
@@ -109,7 +128,7 @@ export type ClientMessage = ClientMessageBase & MessageSequence;
  * Note: `track_added` uses SessionTrack for wire format compatibility.
  */
 export type ServerMessageBase =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; serverSeq?: number; playingPlayerIds?: string[] }
+  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; capabilities?: string[]; immutable?: boolean; snapshotTimestamp?: number; serverSeq?: number; playingPlayerIds?: string[] }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
   | { type: 'tempo_changed'; tempo: number; playerId: string }
   | { type: 'swing_changed'; swing: number; playerId: string }
@@ -132,6 +151,15 @@ export type ServerMessageBase =
   | { type: 'effects_changed'; effects: EffectsState; playerId: string }
   | { type: 'scale_changed'; scale: ScaleState; playerId: string }
   | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }
+  | { type: 'track_envelope_set'; trackId: string; envelope: TrackEnvelope | null; playerId: string }
+  | { type: 'track_envelope_time_unit_set'; trackId: string; unit: EnvelopeTimeUnit; playerId: string }
+  | { type: 'track_gate_set'; trackId: string; gate: number; playerId: string }
+  | { type: 'track_envelope_v2_set'; trackId: string; envelope: TrackEnvelopeV2 | null; operationId: string; playerId: string }
+  | { type: 'track_envelope_units_v2_converted'; trackId: string; envelope: TrackEnvelopeV2; clampedStages?: EnvelopeStageName[]; operationId: string; playerId: string }
+  | { type: 'track_sample_playback_mode_v2_set'; trackId: string; mode: SamplePlaybackMode | null; operationId: string; playerId: string }
+  | { type: 'track_gate_v2_set'; trackId: string; gate: number; operationId: string; playerId: string }
+  | { type: 'envelope_lock_v2_set'; trackId: string; step: number; stage: EnvelopeStageName; duration: EnvelopeDuration | null; operationId: string; playerId: string }
+  | { type: 'mutation_rejected'; operationId: string; code: string; message: string; trackId?: string; authoritativeTrack?: SessionTrack }
   | { type: 'sequence_copied'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
   | { type: 'sequence_moved'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
   | { type: 'session_name_changed'; name: string; playerId: string }

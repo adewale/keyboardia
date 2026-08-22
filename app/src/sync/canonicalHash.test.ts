@@ -99,6 +99,45 @@ describe('canonicalizeForHash: Optional Field Normalization', () => {
     const canonical = canonicalizeForHash(state);
     expect(canonical.tracks[0].stepCount).toBe(32);
   });
+
+  it('normalizes every optional authored sound field', () => {
+    const track = {
+      id: 'track-1', name: 'Lead', sampleId: 'synth:lead',
+      steps: [true], parameterLocks: [null], volume: 1, muted: false,
+      transpose: 0,
+    };
+    const canonical = canonicalizeForHash({ tracks: [track], tempo: 120, swing: 0 });
+
+    expect(canonical.tracks[0]).toMatchObject({
+      fmParams: null,
+      envelope: null,
+      envelopeTimeUnit: 'seconds',
+      gate: 90,
+      swing: 0,
+    });
+  });
+
+  it('makes authored FM and envelope differences visible to state hashes', () => {
+    const track = {
+      id: 'track-1', name: 'Lead', sampleId: 'synth:lead',
+      steps: [true], parameterLocks: [null], volume: 1, muted: false,
+      transpose: 0, stepCount: 16,
+    };
+    const base = canonicalizeForHash({ tracks: [track], tempo: 120, swing: 0 });
+    const authored = canonicalizeForHash({
+      tracks: [{
+        ...track,
+        fmParams: { harmonicity: 2, modulationIndex: 8 },
+        envelope: { attack: .2, decay: .3, sustain: .4, release: .5 },
+        envelopeTimeUnit: 'steps' as const,
+        gate: 75,
+      }],
+      tempo: 120,
+      swing: 0,
+    });
+
+    expect(hashState(base)).not.toBe(hashState(authored));
+  });
 });
 
 describe('canonicalizeForHash: Array Length Normalization', () => {

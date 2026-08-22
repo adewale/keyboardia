@@ -79,6 +79,24 @@ export const features = {
    * Default: false (main-thread scheduler is proven stable)
    */
   workletScheduler: parseEnvBool(import.meta.env.VITE_FEATURE_WORKLET_SCHEDULER, false),
+
+  /**
+   * Editor exposure only. Runtime parsing, preservation, scheduling, audio
+   * rendering, MCP, and notation must continue to honor authored v2 state when
+   * this is false. Multiplayer editing additionally requires the worker's
+   * `track-envelope-v2` capability.
+   */
+  envelopeV2: parseEnvBool(import.meta.env.VITE_FEATURE_ENVELOPE_V2, true),
+
+  /** Asset experiments stay unavailable until their intake/listening packet is approved. */
+  sampleReleaseTriggerExperiment: parseEnvBool(
+    import.meta.env.VITE_FEATURE_SAMPLE_RELEASE_TRIGGER_EXPERIMENT,
+    false,
+  ),
+  sampleLoopExperiment: parseEnvBool(
+    import.meta.env.VITE_FEATURE_SAMPLE_LOOP_EXPERIMENT,
+    false,
+  ),
 } as const;
 
 /**

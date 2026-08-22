@@ -84,6 +84,9 @@ const arbValidParameterLock = fc.record({
     { nil: undefined }
   ),
   tie: fc.option(fc.boolean(), { nil: undefined }),
+  attack: fc.option(fc.float({ min: 0, max: 4, noNaN: true }), { nil: undefined }),
+  decay: fc.option(fc.float({ min: 0, max: 4, noNaN: true }), { nil: undefined }),
+  release: fc.option(fc.float({ min: 0, max: 8, noNaN: true }), { nil: undefined }),
 });
 
 /** Minimal valid track for state testing */

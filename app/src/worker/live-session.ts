@@ -25,9 +25,16 @@ import type {
   EffectsState,
   ScaleState,
   FMParams,
+  TrackEnvelope,
+  EnvelopeTimeUnit,
   ValidStepCount,
 } from './types';
-import { READONLY_MESSAGE_TYPES, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
+import { READONLY_MESSAGE_TYPES, isStateMutatingBroadcast, VALID_STEP_COUNTS_SET } from './types';
+import {
+  TRACK_ENVELOPE_CAPABILITIES,
+  TRACK_ENVELOPE_CAPABILITY,
+  TRACK_ENVELOPE_V2_CAPABILITY,
+} from '../shared/message-types';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { getSession, updateSession, updateSessionName } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
@@ -84,6 +91,22 @@ import {
 import { MAX_TRACK_NAME_LENGTH, isValidNumber, isValidPan } from '../shared/validation';
 import { getIdentityFromId } from '../shared/identity';
 import { setTrackInstrument } from '../shared/track-instrument';
+import { clampTrackEnvelope, isTrackEnvelope, TRACK_GATE_RANGE } from '../shared/envelope';
+import {
+  mergeRollingEnvelopeStateV2,
+  projectCanonicalStateForEnvelopeV2Capability,
+} from '../shared/rolling-envelope-state-v2';
+import { applyEnvelopeLockDurationV2 } from '../shared/envelope-lock-v2';
+import {
+  ENVELOPE_DURATION_RANGES_V2,
+  convertTrackEnvelopeUnitsWithReportV2,
+  isEnvelopeDuration,
+  isSamplePlaybackMode,
+  legacyTrackEnvelopeToV2,
+  validateTrackEnvelopeV2,
+  type EnvelopeDuration,
+  type EnvelopeStageName,
+} from '../shared/envelope-contract-v2';
 import { validateCompleteSessionState } from './validation';
 import {
   MCP_ACTOR_ID,
@@ -123,11 +146,23 @@ interface PlayerObservability {
   snapshotsSentCount: number;
   rejectedMutationCount: number;
   duplicateOpsHandled: number;
+  stateRepairCount: number;
 }
 
 // Phase 26 BUG-02: Threshold for detecting clients falling behind
 // If client's ack is more than this many sequences behind serverSeq, push a snapshot
 const ACK_GAP_THRESHOLD = 50;
+const MAX_REMEMBERED_ENVELOPE_V2_OPERATIONS = 64;
+const ENVELOPE_V2_OPERATION_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/;
+
+type EnvelopeV2ClientMessage = Extract<ClientMessage, {
+  type:
+    | 'set_track_envelope_v2'
+    | 'convert_track_envelope_units_v2'
+    | 'set_track_sample_playback_mode_v2'
+    | 'set_track_gate_v2'
+    | 'set_envelope_lock_v2';
+}>;
 
 export class LiveSessionDurableObject extends DurableObject<Env> {
   private players: Map<WebSocket, PlayerInfo> = new Map();
@@ -152,6 +187,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   // Phase 13B: Server sequence number for message ordering
   // Now persisted to DO storage to survive hibernation/eviction
   private serverSeq: number = 0;
+  private envelopeV2OperationResults: Map<string, ServerMessage> = new Map();
+  /** Repairs performed before a WebSocket observability record exists. */
+  private pendingStateRepairCount: number = 0;
 
   // Ghost Avatar Fix: Track last prune time for rate limiting
   private lastPruneTime: number = 0;
@@ -183,6 +221,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       const storedSeq = await this.ctx.storage.get<number>('serverSeq');
       if (storedSeq !== undefined) {
         this.serverSeq = storedSeq;
+      }
+
+      const storedEnvelopeV2Operations = await this.ctx.storage.get<Array<[string, ServerMessage]>>(
+        'envelopeV2OperationResults'
+      );
+      if (storedEnvelopeV2Operations) {
+        this.envelopeV2OperationResults = new Map(storedEnvelopeV2Operations);
       }
 
       // Load creator identity (may be null if session is new)
@@ -430,6 +475,27 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'tempo_changed':
         this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
         break;
+      case 'track_envelope_set':
+        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
+      case 'track_envelope_time_unit_set':
+        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
+      case 'track_gate_set':
+        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
+      case 'track_envelope_v2_set':
+        this.broadcast({ ...event, operationId: crypto.randomUUID(), playerId: MCP_ACTOR_ID });
+        break;
+      case 'track_envelope_units_v2_converted':
+        this.broadcast({ ...event, operationId: crypto.randomUUID(), playerId: MCP_ACTOR_ID });
+        break;
+      case 'track_sample_playback_mode_v2_set':
+        this.broadcast({ ...event, operationId: crypto.randomUUID(), playerId: MCP_ACTOR_ID });
+        break;
+      case 'envelope_lock_v2_set':
+        this.broadcast({ ...event, operationId: crypto.randomUUID(), playerId: MCP_ACTOR_ID });
+        break;
     }
   }
 
@@ -524,6 +590,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
             state: this.state,
             players: Array.from(this.players.values()),
             playerId: 'rest-api',
+            capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
             immutable: this.immutable,
           });
         }
@@ -645,6 +712,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           state: this.state,
           players: Array.from(this.players.values()),
           playerId: 'rest-api', // Identify as REST API update
+          capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
           immutable: this.immutable,
           snapshotTimestamp: Date.now(),
           serverSeq: this.serverSeq,
@@ -763,6 +831,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     // Ghost Avatar Fix: Parse playerId from query parameter or generate new one
     const requestedPlayerId = url.searchParams.get('playerId') || crypto.randomUUID();
+    const clientCapabilities = (url.searchParams.get('capabilities') ?? '')
+      .split(',')
+      .filter(Boolean);
 
     // Ghost Avatar Fix: Close existing connection with same playerId (zombie replacement)
     // This handles the case where a user reconnects with the same playerId from sessionStorage
@@ -787,6 +858,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       colorIndex: identity.colorIndex,
       animal: identity.animal,
       name: identity.name,
+      capabilities: clientCapabilities,
     };
 
     // Observability 2.0: Create observability context for this connection
@@ -812,6 +884,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       isCreator = identitiesMatch(this.creatorIdentity, connectingIdentity);
     }
 
+    const pendingStateRepairCount = this.pendingStateRepairCount;
+    this.pendingStateRepairCount = 0;
     const observability: PlayerObservability = {
       connectionId: crypto.randomUUID(),
       isCreator,
@@ -823,13 +897,19 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       syncErrorCount: 0,
       peakConcurrentPlayers: this.players.size + 1, // +1 for this player
       playersSeenIds,
-      warnings: [],
+      warnings: pendingStateRepairCount > 0 ? [{
+        type: 'StateRepair',
+        message: `${pendingStateRepairCount} persisted state repair(s) were applied before connection`,
+        occurredAt: new Date().toISOString(),
+        recoveryAction: 'auto_repaired',
+      }] : [],
       infra: getInfraInfo(request),
       // Additional behavioral metrics
       hashMismatchCount: 0,
       snapshotsSentCount: 0,
       rejectedMutationCount: 0,
       duplicateOpsHandled: 0,
+      stateRepairCount: pendingStateRepairCount,
     };
 
     // Accept the WebSocket with hibernation support
@@ -853,6 +933,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           state: this.state!,
           players: Array.from(this.players.values()),
           playerId,
+          capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
           immutable: this.immutable,  // Phase 21: Include immutable flag for frontend
           snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
           serverSeq: this.serverSeq,  // Phase 26: For selective mutation clearing
@@ -954,11 +1035,27 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       if (obs) {
         obs.rejectedMutationCount++;
       }
-      ws.send(JSON.stringify({
-        type: 'error',
-        code: 'SESSION_PUBLISHED',
-        message: 'This session is published and cannot be edited. Remix it to create an editable copy.',
-      }));
+      const candidate = msg as ClientMessage & { operationId?: unknown; trackId?: unknown };
+      if (typeof candidate.operationId === 'string') {
+        const authoritativeTrack = typeof candidate.trackId === 'string'
+          ? this.state?.tracks.find(track => track.id === candidate.trackId)
+          : undefined;
+        ws.send(JSON.stringify({
+          type: 'mutation_rejected',
+          operationId: candidate.operationId,
+          code: 'SESSION_PUBLISHED',
+          message: 'This session is published and cannot be edited. Remix it to create an editable copy.',
+          ...(typeof candidate.trackId === 'string' ? { trackId: candidate.trackId } : {}),
+          ...(authoritativeTrack ? { authoritativeTrack } : {}),
+          clientSeq: msg.seq,
+        } satisfies ServerMessage));
+      } else {
+        ws.send(JSON.stringify({
+          type: 'error',
+          code: 'SESSION_PUBLISHED',
+          message: 'This session is published and cannot be edited. Remix it to create an editable copy.',
+        }));
+      }
       return;
     }
 
@@ -1024,6 +1121,30 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'set_fm_params':
         this.handleSetFMParams(ws, player, msg);
         break;
+      case 'set_track_envelope':
+        this.handleSetTrackEnvelope(ws, player, msg);
+        break;
+      case 'set_track_envelope_time_unit':
+        this.handleSetTrackEnvelopeTimeUnit(ws, player, msg);
+        break;
+      case 'set_track_gate':
+        this.handleSetTrackGate(ws, player, msg);
+        break;
+      case 'set_track_envelope_v2':
+        await this.handleSetTrackEnvelopeV2(ws, player, msg);
+        break;
+      case 'convert_track_envelope_units_v2':
+        await this.handleConvertTrackEnvelopeUnitsV2(ws, player, msg);
+        break;
+      case 'set_track_sample_playback_mode_v2':
+        await this.handleSetTrackSamplePlaybackModeV2(ws, player, msg);
+        break;
+      case 'set_track_gate_v2':
+        await this.handleSetTrackGateV2(ws, player, msg);
+        break;
+      case 'set_envelope_lock_v2':
+        await this.handleSetEnvelopeLockV2(ws, player, msg);
+        break;
       case 'move_sequence':
         this.handleMoveSequence(ws, player, msg);
         break;
@@ -1083,8 +1204,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         this.handleSetTrackName(ws, player, msg);
         break;
       default:
-        // Exhaustive check - if TypeScript complains here, a message type is missing
-        assertNever(msg, `[WS] Unhandled message type: ${(msg as { type: string }).type}`);
+        // Rolling deploys may send a message this worker version does not know.
+        // Reject it without throwing out the Durable Object connection.
+        console.warn(`[WS] Ignoring unsupported client message type: ${(msg as { type?: string }).type ?? 'unknown'}`);
+        ws.send(JSON.stringify({ type: 'error', message: 'Unsupported client message for this server version' } satisfies ServerMessage));
     }
   }
 
@@ -1131,6 +1254,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         snapshotsSentCount: obs.snapshotsSentCount > 0 ? obs.snapshotsSentCount : undefined,
         rejectedMutationCount: obs.rejectedMutationCount > 0 ? obs.rejectedMutationCount : undefined,
         duplicateOpsHandled: obs.duplicateOpsHandled > 0 ? obs.duplicateOpsHandled : undefined,
+        stateRepairCount: obs.stateRepairCount > 0 ? obs.stateRepairCount : undefined,
         outcome: disconnectReason === 'error' ? 'error' : 'ok',
         disconnectReason,
         warnings: obs.warnings.length > 0 ? obs.warnings : undefined,
@@ -2331,6 +2455,355 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
+  private handleSetTrackEnvelope = createTrackMutationHandler<
+    { trackId: string; envelope: TrackEnvelope | null },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    validate: (msg) => {
+      if (msg.envelope === null) return msg;
+      if (!isTrackEnvelope(msg.envelope)) return null;
+      return { ...msg, envelope: clampTrackEnvelope(msg.envelope) };
+    },
+    mutate: (track, msg) => {
+      if (msg.envelope === null) delete track.envelope;
+      else track.envelope = msg.envelope;
+    },
+    toBroadcast: (msg, playerId) => ({
+      type: 'track_envelope_set',
+      trackId: msg.trackId,
+      envelope: msg.envelope,
+      playerId,
+    }),
+  });
+
+  private handleSetTrackEnvelopeTimeUnit = createTrackMutationHandler<
+    { trackId: string; unit: EnvelopeTimeUnit },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    validate: (msg) => msg.unit === 'seconds' || msg.unit === 'steps' ? msg : null,
+    mutate: (track, msg) => { track.envelopeTimeUnit = msg.unit; },
+    toBroadcast: (msg, playerId) => ({
+      type: 'track_envelope_time_unit_set',
+      trackId: msg.trackId,
+      unit: msg.unit,
+      playerId,
+    }),
+  });
+
+  private handleSetTrackGate = createTrackMutationHandler<
+    { trackId: string; gate: number },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    validate: (msg) => isValidNumber(msg.gate)
+      ? { ...msg, gate: clamp(msg.gate, TRACK_GATE_RANGE.min, TRACK_GATE_RANGE.max) }
+      : null,
+    mutate: (track, msg) => { track.gate = msg.gate; },
+    toBroadcast: (msg, playerId) => ({
+      type: 'track_gate_set',
+      trackId: msg.trackId,
+      gate: msg.gate,
+      playerId,
+    }),
+  });
+
+  private envelopeV2OperationKey(player: PlayerInfo, operationId: string): string {
+    // Structural encoding prevents ambiguous pairs such as ("a:b", "c")
+    // and ("a", "b:c") from sharing an idempotency entry.
+    return JSON.stringify([player.id, operationId]);
+  }
+
+  private replayEnvelopeV2Operation(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: EnvelopeV2ClientMessage,
+  ): boolean {
+    if (typeof msg.operationId !== 'string') return false;
+    const result = this.envelopeV2OperationResults.get(
+      this.envelopeV2OperationKey(player, msg.operationId)
+    );
+    if (!result) return false;
+    const obs = this.playerObservability.get(ws);
+    if (obs) obs.duplicateOpsHandled++;
+    ws.send(JSON.stringify({ ...result, clientSeq: msg.seq }));
+    return true;
+  }
+
+  private async rememberEnvelopeV2Operation(
+    player: PlayerInfo,
+    operationId: string,
+    result: ServerMessage,
+  ): Promise<void> {
+    const key = this.envelopeV2OperationKey(player, operationId);
+    this.envelopeV2OperationResults.delete(key);
+    this.envelopeV2OperationResults.set(key, result);
+    while (this.envelopeV2OperationResults.size > MAX_REMEMBERED_ENVELOPE_V2_OPERATIONS) {
+      const oldestKey = this.envelopeV2OperationResults.keys().next().value as string | undefined;
+      if (!oldestKey) break;
+      this.envelopeV2OperationResults.delete(oldestKey);
+    }
+    await this.ctx.storage.put(
+      'envelopeV2OperationResults',
+      Array.from(this.envelopeV2OperationResults.entries())
+    );
+  }
+
+  private async rejectEnvelopeV2Mutation(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: EnvelopeV2ClientMessage,
+    code: string,
+    message: string,
+    track?: SessionTrack,
+  ): Promise<void> {
+    const obs = this.playerObservability.get(ws);
+    if (obs) obs.rejectedMutationCount++;
+    const operationId = typeof msg.operationId === 'string'
+      ? msg.operationId
+      : 'invalid-operation-id';
+    const response = {
+      type: 'mutation_rejected',
+      operationId,
+      code,
+      message,
+      ...('trackId' in msg && typeof msg.trackId === 'string' ? { trackId: msg.trackId } : {}),
+      ...(track ? { authoritativeTrack: structuredClone(track) } : {}),
+    } satisfies ServerMessage;
+    // Rejections are protocol results too. Remember a valid operation ID before
+    // replying so a retry cannot change meaning after surrounding state or
+    // negotiated capabilities change.
+    if (typeof msg.operationId === 'string' && ENVELOPE_V2_OPERATION_ID.test(operationId)) {
+      await this.rememberEnvelopeV2Operation(player, operationId, response);
+    }
+    ws.send(JSON.stringify({ ...response, clientSeq: msg.seq }));
+  }
+
+  private async prepareEnvelopeV2Mutation(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: EnvelopeV2ClientMessage,
+  ): Promise<SessionTrack | null> {
+    if (typeof msg.operationId !== 'string' || !ENVELOPE_V2_OPERATION_ID.test(msg.operationId)) {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'INVALID_OPERATION_ID', 'operationId is invalid');
+      return null;
+    }
+    if (!player.capabilities?.includes(TRACK_ENVELOPE_V2_CAPABILITY)) {
+      await this.rejectEnvelopeV2Mutation(
+        ws,
+        player,
+        msg,
+        'CAPABILITY_REQUIRED',
+        `Client must negotiate ${TRACK_ENVELOPE_V2_CAPABILITY}`,
+      );
+      return null;
+    }
+    if (!this.state) {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'STATE_UNAVAILABLE', 'Session state is unavailable');
+      return null;
+    }
+    const track = this.state.tracks.find(candidate => candidate.id === msg.trackId);
+    if (!track) {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'TRACK_NOT_FOUND', `Track ${msg.trackId} was not found`);
+      return null;
+    }
+    return track;
+  }
+
+  private async acceptEnvelopeV2Mutation(
+    player: PlayerInfo,
+    msg: EnvelopeV2ClientMessage,
+    response: ServerMessage,
+  ): Promise<void> {
+    this.validateAndRepairState(msg.type);
+    await this.persistToDoStorage();
+    await this.rememberEnvelopeV2Operation(player, msg.operationId, response);
+    this.broadcast(response, undefined, msg.seq);
+  }
+
+  private async handleSetTrackEnvelopeV2(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: Extract<ClientMessage, { type: 'set_track_envelope_v2' }>,
+  ): Promise<void> {
+    if (this.replayEnvelopeV2Operation(ws, player, msg)) return;
+    const track = await this.prepareEnvelopeV2Mutation(ws, player, msg);
+    if (!track) return;
+
+    if (msg.envelope === null) {
+      delete track.envelopeV2;
+    } else {
+      const validation = validateTrackEnvelopeV2(msg.envelope);
+      if (!validation.valid || !validation.envelope) {
+        await this.rejectEnvelopeV2Mutation(
+          ws,
+          player,
+          msg,
+          'INVALID_ENVELOPE',
+          validation.errors.join('; '),
+          track,
+        );
+        return;
+      }
+      track.envelopeV2 = validation.envelope;
+    }
+
+    const response: ServerMessage = {
+      type: 'track_envelope_v2_set',
+      trackId: msg.trackId,
+      envelope: track.envelopeV2 ?? null,
+      operationId: msg.operationId,
+      playerId: player.id,
+    };
+    await this.acceptEnvelopeV2Mutation(player, msg, response);
+  }
+
+  private async handleConvertTrackEnvelopeUnitsV2(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: Extract<ClientMessage, { type: 'convert_track_envelope_units_v2' }>,
+  ): Promise<void> {
+    if (this.replayEnvelopeV2Operation(ws, player, msg)) return;
+    const track = await this.prepareEnvelopeV2Mutation(ws, player, msg);
+    if (!track || !this.state) return;
+    if (msg.targetUnit !== 'seconds' && msg.targetUnit !== 'steps') {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'INVALID_UNIT', 'targetUnit must be seconds or steps', track);
+      return;
+    }
+
+    const envelope = track.envelopeV2 ?? (track.envelope
+      ? legacyTrackEnvelopeToV2(track.envelope, track.envelopeTimeUnit ?? 'seconds')
+      : null);
+    if (!envelope) {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'ENVELOPE_NOT_FOUND', 'Track has no envelope to convert', track);
+      return;
+    }
+    const conversion = convertTrackEnvelopeUnitsWithReportV2(
+      envelope,
+      msg.targetUnit,
+      this.state.tempo,
+    );
+    track.envelopeV2 = conversion.envelope;
+
+    const response: ServerMessage = {
+      type: 'track_envelope_units_v2_converted',
+      trackId: msg.trackId,
+      envelope: track.envelopeV2,
+      clampedStages: [...conversion.clampedStages],
+      operationId: msg.operationId,
+      playerId: player.id,
+    };
+    await this.acceptEnvelopeV2Mutation(player, msg, response);
+  }
+
+  private async handleSetTrackSamplePlaybackModeV2(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: Extract<ClientMessage, { type: 'set_track_sample_playback_mode_v2' }>,
+  ): Promise<void> {
+    if (this.replayEnvelopeV2Operation(ws, player, msg)) return;
+    const track = await this.prepareEnvelopeV2Mutation(ws, player, msg);
+    if (!track) return;
+    if (msg.mode === null) delete track.samplePlaybackMode;
+    else if (isSamplePlaybackMode(msg.mode)) track.samplePlaybackMode = msg.mode;
+    else {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'INVALID_PLAYBACK_MODE', 'mode must be trigger, gate, or loop', track);
+      return;
+    }
+
+    const response: ServerMessage = {
+      type: 'track_sample_playback_mode_v2_set',
+      trackId: msg.trackId,
+      mode: track.samplePlaybackMode ?? null,
+      operationId: msg.operationId,
+      playerId: player.id,
+    };
+    await this.acceptEnvelopeV2Mutation(player, msg, response);
+  }
+
+  private async handleSetTrackGateV2(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: Extract<ClientMessage, { type: 'set_track_gate_v2' }>,
+  ): Promise<void> {
+    if (this.replayEnvelopeV2Operation(ws, player, msg)) return;
+    const track = await this.prepareEnvelopeV2Mutation(ws, player, msg);
+    if (!track) return;
+    if (!isValidNumber(msg.gate)) {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'INVALID_GATE', 'gate must be a finite number', track);
+      return;
+    }
+    track.gate = clamp(msg.gate, TRACK_GATE_RANGE.min, TRACK_GATE_RANGE.max);
+
+    const response: ServerMessage = {
+      type: 'track_gate_v2_set',
+      trackId: msg.trackId,
+      gate: track.gate,
+      operationId: msg.operationId,
+      playerId: player.id,
+    };
+    await this.acceptEnvelopeV2Mutation(player, msg, response);
+  }
+
+  private normalizeEnvelopeLockDurationV2(
+    stage: EnvelopeStageName,
+    value: unknown,
+  ): EnvelopeDuration | null {
+    const duration = typeof value === 'number'
+      ? { value, unit: 'seconds' as const }
+      : value;
+    if (!isEnvelopeDuration(duration)) return null;
+    const range = ENVELOPE_DURATION_RANGES_V2[stage][duration.unit];
+    return {
+      value: clamp(duration.value, range.min, range.max),
+      unit: duration.unit,
+    };
+  }
+
+  private async handleSetEnvelopeLockV2(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: Extract<ClientMessage, { type: 'set_envelope_lock_v2' }>,
+  ): Promise<void> {
+    if (this.replayEnvelopeV2Operation(ws, player, msg)) return;
+    const track = await this.prepareEnvelopeV2Mutation(ws, player, msg);
+    if (!track) return;
+    if (!isValidIntegerInRange(msg.step, 0, track.parameterLocks.length - 1)) {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'INVALID_STEP', 'step is outside the track range', track);
+      return;
+    }
+    if (msg.stage !== 'attack' && msg.stage !== 'hold'
+        && msg.stage !== 'decay' && msg.stage !== 'release') {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'INVALID_STAGE', 'stage is invalid', track);
+      return;
+    }
+    const duration = msg.duration === null
+      ? null
+      : this.normalizeEnvelopeLockDurationV2(msg.stage, msg.duration);
+    if (msg.duration !== null && duration === null) {
+      await this.rejectEnvelopeV2Mutation(ws, player, msg, 'INVALID_DURATION', 'duration must be finite and typed', track);
+      return;
+    }
+
+    track.parameterLocks[msg.step] = applyEnvelopeLockDurationV2(
+      track.parameterLocks[msg.step],
+      msg.stage,
+      duration,
+    );
+
+    const response: ServerMessage = {
+      type: 'envelope_lock_v2_set',
+      trackId: msg.trackId,
+      step: msg.step,
+      stage: msg.stage,
+      duration,
+      operationId: msg.operationId,
+      playerId: player.id,
+    };
+    await this.acceptEnvelopeV2Mutation(player, msg, response);
+  }
+
   private handlePlay(ws: WebSocket, player: PlayerInfo): void {
     // Phase 22: Track per-player playback state
     this.playingPlayers.add(player.id);
@@ -2384,7 +2857,16 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       scale: this.state.scale,
     };
     const canonicalState = canonicalizeForHash(comparableState);
-    const serverHash = hashState(canonicalState);
+    const envelopeHashTier = player.capabilities?.includes(TRACK_ENVELOPE_V2_CAPABILITY)
+      ? 'v2'
+      : player.capabilities?.includes(TRACK_ENVELOPE_CAPABILITY)
+        ? 'v1'
+        : 'pre-envelope';
+    const comparableCanonicalState = projectCanonicalStateForEnvelopeV2Capability(
+      canonicalState,
+      envelopeHashTier,
+    );
+    const serverHash = hashState(comparableCanonicalState);
 
     if (msg.hash !== serverHash) {
       // Track hash mismatches for observability
@@ -2444,6 +2926,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       state: this.state,
       players,
       playerId: player.id,
+      capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
       immutable: this.immutable,  // Phase 21: Include immutable flag
       snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
       serverSeq: this.serverSeq,  // Phase 26: For selective mutation clearing
@@ -2573,10 +3056,51 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
 
     const data = JSON.stringify(messageToSend);
-    for (const [ws] of this.players) {
+    const needsEnvelopeCapability = message.type === 'track_envelope_set'
+      || message.type === 'track_envelope_time_unit_set'
+      || message.type === 'track_gate_set';
+    const needsEnvelopeV2Capability = message.type === 'track_envelope_v2_set'
+      || message.type === 'track_envelope_units_v2_converted'
+      || message.type === 'track_sample_playback_mode_v2_set'
+      || message.type === 'track_gate_v2_set'
+      || message.type === 'envelope_lock_v2_set';
+    for (const [ws, player] of this.players) {
       if (ws === exclude) continue;
       try {
-        ws.send(data);
+        if (needsEnvelopeCapability && !player.capabilities?.includes(TRACK_ENVELOPE_CAPABILITY)) {
+          // An old client would throw on the new granular message. A snapshot
+          // uses the long-standing wire type and permissive SessionTrack shape.
+          const fallback: ServerMessage = {
+            type: 'snapshot',
+            state: this.state!,
+            players: Array.from(this.players.values()),
+            playerId: player.id,
+            capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
+            immutable: this.immutable,
+            snapshotTimestamp: Date.now(),
+            serverSeq: this.serverSeq,
+            playingPlayerIds: Array.from(this.playingPlayers),
+          };
+          ws.send(JSON.stringify(fallback));
+        } else if (needsEnvelopeV2Capability
+            && !player.capabilities?.includes(TRACK_ENVELOPE_V2_CAPABILITY)) {
+          // Parallel optional fields make the snapshot safe for older clients;
+          // mergeRollingEnvelopeStateV2 protects them on subsequent old-client writes.
+          const fallback: ServerMessage = {
+            type: 'snapshot',
+            state: this.state!,
+            players: Array.from(this.players.values()),
+            playerId: player.id,
+            capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
+            immutable: this.immutable,
+            snapshotTimestamp: Date.now(),
+            serverSeq: this.serverSeq,
+            playingPlayerIds: Array.from(this.playingPlayers),
+          };
+          ws.send(JSON.stringify(fallback));
+        } else {
+          ws.send(data);
+        }
       } catch (e) {
         console.error(`[WS] session=${this.sessionId} Error sending message:`, e);
       }
@@ -2613,14 +3137,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const previous = this.state;
     if (!previous) return replacement;
 
-    return {
+    return mergeRollingEnvelopeStateV2(previous, {
       ...replacement,
       effects: replacement.effects ?? previous.effects,
       scale: replacement.scale ?? previous.scale,
       loopRegion: replacement.loopRegion !== undefined
         ? replacement.loopRegion
         : previous.loopRegion,
-    };
+    });
   }
 
   /**
@@ -2641,6 +3165,20 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       if (repairs.length > 0) {
         console.warn(`[INVARIANT] Auto-repaired state for session=${this.sessionId}`, { repairs });
         this.state = repairedState;
+        const occurredAt = new Date().toISOString();
+        if (this.playerObservability.size === 0) {
+          this.pendingStateRepairCount += repairs.length;
+        } else {
+          for (const obs of this.playerObservability.values()) {
+            obs.stateRepairCount += repairs.length;
+            obs.warnings.push({
+              type: 'StateRepair',
+              message: `${repairs.length} state repair(s) applied during ${context}`,
+              occurredAt,
+              recoveryAction: 'auto_repaired',
+            });
+          }
+        }
       }
     }
   }

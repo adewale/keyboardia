@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-03",
+  "sampleRate": 48000,
+  "baselineRenderer": "native",
+  "candidateRenderer": "advanced",
+  "publishedPresetCount": 32,
+  "fixedCanaries": ["pad", "acid"],
+  "fullMatrixCadence": "release",
+  "nightlyMatrix": "all presets, all declared axes",
+  "prMatrix": "changed presets plus pad and acid",
+  "status": "t1-native-versus-translated-configuration-canaries-ready-full-renderer-comparisons-pending",
+  "approvalRule": "No preset routes to advanced without its per-preset PCM report, two listening approvals, canary telemetry, and rollback drill.",
+  "fixtureSource": "app/src/test/envelope-pcm-manifest.ts",
+  "migrationSource": "app/src/audio/synth-renderer-migration.ts"
+}

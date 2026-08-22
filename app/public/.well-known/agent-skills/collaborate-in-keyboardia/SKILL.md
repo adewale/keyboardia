@@ -157,9 +157,27 @@ replace placeholders with live values:
   one call; do not duplicate a step or send an empty real `changes` array.
 - `{ "operation": "set_tempo", "tempo": 124 }`: assign 60–180 BPM only when
   explicitly requested.
+- `{ "operation": "set_track_envelope", "track_id": "existing-id",
+  "envelope": { "model": "adsr", "attack": 0.01, "decay": 0.2,
+  "sustain": 0.7, "release": 0.5, "duration_unit": "seconds" } }`:
+  assign a capability-checked AD/AHD/AR/ADSR override. Expanded typed durations
+  may mix seconds and steps. Send `"envelope": null` to reset the override.
+- `{ "operation": "set_track_envelope_time_unit", "track_id": "existing-id",
+  "unit": "steps" }`: interpret attack, decay, and release as sixteenth-note
+  step counts. Use `"unit": "seconds"` for wall-clock seconds.
+- `{ "operation": "set_track_gate", "track_id": "existing-id", "gate": 90 }`:
+  assign the percentage of the final tied segment during which its note remains
+  open. Use a number from 0 through 100.
+- `{ "operation": "convert_track_envelope_units", "track_id": "existing-id",
+  "target_unit": "steps" }`: atomically convert all timed stages at current tempo.
+- `{ "operation": "set_track_sample_playback_mode", "track_id": "existing-id",
+  "mode": "gate" }`: choose trigger/gate/loop only when capability permits it.
+- `{ "operation": "set_envelope_lock", "track_id": "existing-id", "step": 0,
+  "stage": "release", "duration": { "value": 4, "unit": "steps" } }`:
+  set one zero-based onset-owned stage lock; use `null` to clear it.
 
 Do not invent operations. Deletion, existing-track renaming, reordering, pitch,
-volume, mute, solo, swing, effects, and parameter locks are unsupported here.
+volume, mute, solo, swing, and effects are unsupported here.
 
 Convert human step numbers to zero-based indices: human steps 1, 5, 9, and 13
 are indices 0, 4, 8, and 12. Keep assignments below the reported `step_count`.

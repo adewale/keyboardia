@@ -57,6 +57,9 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.trackId,
           event.midiVelocity,
+          event.envelopeLock,
+          event.resolvedEnvelope,
+          event.authoredEnvelope ?? false,
         );
         return SCHEDULED;
       },
@@ -73,6 +76,9 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.trackId,
           event.midiVelocity,
+          event.envelopeLock,
+          event.playbackMode,
+          event.resolvedEnvelope,
         );
         return SCHEDULED;
       },
@@ -88,6 +94,9 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.trackId,
           event.midiVelocity,
+          event.envelopeLock,
+          event.resolvedEnvelope,
+          event.authoredEnvelope ?? false,
         );
         return SCHEDULED;
       },
@@ -103,6 +112,9 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.trackId,
           event.midiVelocity,
+          event.envelopeLock,
+          event.resolvedEnvelope,
+          event.authoredEnvelope ?? false,
         );
         return SCHEDULED;
       },
@@ -118,14 +130,13 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.midiVelocity,
         ] as const;
-        if (event.hasExplicitLock) {
-          engine.playSample(...baseArguments);
-        } else {
-          engine.playSample(
-            ...baseArguments,
-            `${event.noteId}-loop-${event.loopIteration}`,
-          );
-        }
+        engine.playSample(
+          ...baseArguments,
+          event.hasExplicitLock ? undefined : `${event.noteId}-loop-${event.loopIteration}`,
+          event.envelopeLock,
+          event.resolvedEnvelope,
+          event.playbackMode,
+        );
         return SCHEDULED;
       },
     },

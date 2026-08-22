@@ -10,7 +10,6 @@ import { describe, it, expect } from 'vitest';
 import {
   getStepDuration,
   calculateSwingDelay,
-  calculateTiedDuration,
   calculateStepTime,
   advanceStep,
   STEPS_PER_BEAT,

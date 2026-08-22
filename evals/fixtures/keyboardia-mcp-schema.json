@@ -33,11 +33,10 @@
     {
       "name": "edit_session",
       "title": "Edit Keyboardia session",
-      "description": "Make one narrow, retry-safe edit to an existing collaborative session. After every attempt, the next Keyboardia call must be get_session for the same session. A successful call includes a backwards-compatible compact snapshot plus an acknowledgement. That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next. Supported operations: add_track, set_track_instrument, set_track_pan, set_steps, and set_tempo. set_steps changes only the named steps; it never replaces a track or session. set_track_instrument replaces only a track's sound source, keeping its pattern, mix, timing, and custom name.",
+      "description": "Make one narrow, retry-safe edit to an existing collaborative session. After every attempt, the next Keyboardia call must be get_session for the same session. A successful call includes a backwards-compatible compact snapshot plus an acknowledgement. That snapshot is not authoritative verification; do not make another edit or finish from it. Read with get_session next. Supported operations: add_track, set_track_instrument, set_track_pan, set_track_envelope, set_track_envelope_time_unit, set_track_gate, convert_track_envelope_units, set_track_sample_playback_mode, set_envelope_lock, set_steps, and set_tempo. set_steps changes only the named steps; it never replaces a track or session. set_track_instrument replaces only a track's sound source, keeping its pattern, mix, timing, and custom name.",
       "inputSchema": {
         "type": "object",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "description": "The target session and one retry-safe edit to apply.",
         "properties": {
           "session_id": {
             "type": "string",
@@ -46,11 +45,9 @@
             "description": "The UUID after /s/ in a Keyboardia share URL. Pass only the UUID, not the full URL."
           },
           "edit": {
-            "description": "Exactly one narrow session edit.",
             "oneOf": [
               {
                 "type": "object",
-                "description": "Add one track. Retrying the same track_id and definition is a no-op; a conflicting reuse is rejected.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -58,12 +55,11 @@
                   },
                   "track_id": {
                     "type": "string",
-                  "pattern": "^(?=.{10,64}$)[A-Za-z0-9][A-Za-z0-9._-]*-[0-9a-fA-F]{8,32}$",
-                "description": "Generate a fresh collision-resistant ID that ends with at least eight hexadecimal characters, such as agent-kick-a7f3c29d. Generate it once and reuse it on retries."
+                    "pattern": "^(?=.{10,64}$)[A-Za-z0-9][A-Za-z0-9._-]*-[0-9a-fA-F]{8,32}$",
+                    "description": "Generate a fresh collision-resistant ID that ends with at least eight hexadecimal characters, such as agent-kick-a7f3c29d. Generate it once and reuse it on retries."
                   },
                   "sample_id": {
                     "type": "string",
-                    "description": "The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.",
                     "enum": [
                       "advanced:acid-bass",
                       "advanced:sub-bass",
@@ -164,13 +160,14 @@
                       "tone:pluck-string",
                       "woodblock",
                       "zap"
-                    ]
+                    ],
+                    "description": "The canonical Keyboardia instrument ID. Use one of the enumerated values exactly."
                   },
                   "name": {
+                    "description": "Optional display name. The instrument name is used when omitted.",
                     "type": "string",
                     "minLength": 1,
-                    "maxLength": 32,
-                    "description": "Optional display name. The instrument name is used when omitted."
+                    "maxLength": 32
                   }
                 },
                 "required": [
@@ -178,11 +175,11 @@
                   "track_id",
                   "sample_id"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "Add one track. Retrying the same track_id and definition is a no-op; a conflicting reuse is rejected."
               },
               {
                 "type": "object",
-                "description": "Replace only an existing track's sound source while preserving its name, pattern, mix, and timing.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -195,7 +192,6 @@
                   },
                   "sample_id": {
                     "type": "string",
-                    "description": "The canonical Keyboardia instrument ID. Use one of the enumerated values exactly.",
                     "enum": [
                       "advanced:acid-bass",
                       "advanced:sub-bass",
@@ -296,7 +292,8 @@
                       "tone:pluck-string",
                       "woodblock",
                       "zap"
-                    ]
+                    ],
+                    "description": "The canonical Keyboardia instrument ID. Use one of the enumerated values exactly."
                   }
                 },
                 "required": [
@@ -304,7 +301,8 @@
                   "track_id",
                   "sample_id"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "Replace only an existing track's sound source while preserving its name, pattern, mix, and timing."
               },
               {
                 "type": "object",
@@ -350,7 +348,6 @@
                     "minItems": 1,
                     "maxItems": 128,
                     "type": "array",
-                    "description": "Assignments for named steps only. Every unmentioned step is preserved.",
                     "items": {
                       "type": "object",
                       "properties": {
@@ -370,7 +367,8 @@
                         "value"
                       ],
                       "additionalProperties": false
-                    }
+                    },
+                    "description": "Assignments for named steps only. Every unmentioned step is preserved."
                   }
                 },
                 "required": [
@@ -378,11 +376,11 @@
                   "track_id",
                   "changes"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "Change only the listed steps on an existing track. Read get_session first to obtain its track_id and step_count."
               },
               {
                 "type": "object",
-                "description": "Set the session-wide tempo without changing any track.",
                 "properties": {
                   "operation": {
                     "type": "string",
@@ -399,16 +397,727 @@
                   "operation",
                   "tempo"
                 ],
-                "additionalProperties": false
+                "additionalProperties": false,
+                "description": "Set the session-wide tempo without changing any track."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_track_envelope"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                  },
+                  "envelope": {
+                    "anyOf": [
+                      {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "properties": {
+                              "attack": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 4
+                              },
+                              "decay": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 4
+                              },
+                              "sustain": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                              },
+                              "release": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 8
+                              }
+                            },
+                            "required": [
+                              "attack",
+                              "decay",
+                              "sustain",
+                              "release"
+                            ],
+                            "additionalProperties": false
+                          },
+                          {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ad"
+                                  },
+                                  "attack": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "decay": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "decay"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ahd"
+                                  },
+                                  "attack": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "hold": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "decay": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "hold",
+                                  "decay"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ar"
+                                  },
+                                  "attack": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "release": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "release"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "adsr"
+                                  },
+                                  "attack": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "decay": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  "sustain": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1
+                                  },
+                                  "release": {
+                                    "type": "object",
+                                    "properties": {
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": 0,
+                                        "maximum": 96
+                                      },
+                                      "unit": {
+                                        "type": "string",
+                                        "enum": [
+                                          "seconds",
+                                          "steps"
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "value",
+                                      "unit"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "decay",
+                                  "sustain",
+                                  "release"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          },
+                          {
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ad"
+                                  },
+                                  "attack": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "decay": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "duration_unit": {
+                                    "type": "string",
+                                    "enum": [
+                                      "seconds",
+                                      "steps"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "decay",
+                                  "duration_unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ahd"
+                                  },
+                                  "attack": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "hold": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "decay": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "duration_unit": {
+                                    "type": "string",
+                                    "enum": [
+                                      "seconds",
+                                      "steps"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "hold",
+                                  "decay",
+                                  "duration_unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "ar"
+                                  },
+                                  "attack": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "release": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "duration_unit": {
+                                    "type": "string",
+                                    "enum": [
+                                      "seconds",
+                                      "steps"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "release",
+                                  "duration_unit"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "model": {
+                                    "type": "string",
+                                    "const": "adsr"
+                                  },
+                                  "attack": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "decay": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "sustain": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 1
+                                  },
+                                  "release": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 96
+                                  },
+                                  "duration_unit": {
+                                    "type": "string",
+                                    "enum": [
+                                      "seconds",
+                                      "steps"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "model",
+                                  "attack",
+                                  "decay",
+                                  "sustain",
+                                  "release",
+                                  "duration_unit"
+                                ],
+                                "additionalProperties": false
+                              }
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "AD, AHD, AR, or ADSR override. Timed stages may be expanded per value or compact with duration_unit; null resets."
+                  },
+                  "gate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "sample_playback_mode": {
+                    "type": "string",
+                    "enum": [
+                      "trigger",
+                      "gate",
+                      "loop"
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "envelope"
+                ],
+                "additionalProperties": false,
+                "description": "Set one track's amplitude envelope and optional associated gate/playback behavior atomically."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_track_envelope_time_unit"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "seconds",
+                      "steps"
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "unit"
+                ],
+                "additionalProperties": false,
+                "description": "Interpret this track's authored envelope times in seconds or sixteenth-note steps."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_track_gate"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                  },
+                  "gate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "gate"
+                ],
+                "additionalProperties": false,
+                "description": "Set the note gate percentage on the final tied segment."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "convert_track_envelope_units"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                  },
+                  "target_unit": {
+                    "type": "string",
+                    "enum": [
+                      "seconds",
+                      "steps"
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "target_unit"
+                ],
+                "additionalProperties": false,
+                "description": "Convert every timed stage atomically at the current session tempo."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_track_sample_playback_mode"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                  },
+                  "mode": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "trigger",
+                          "gate",
+                          "loop"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "mode"
+                ],
+                "additionalProperties": false,
+                "description": "Set sample note-off behavior, or null to restore the manifest default."
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "operation": {
+                    "type": "string",
+                    "const": "set_envelope_lock"
+                  },
+                  "track_id": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$",
+                    "description": "For add_track, choose a stable unique ID and reuse it on retries. For set_steps or set_track_instrument, copy an existing track_id from get_session."
+                  },
+                  "step": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 127
+                  },
+                  "stage": {
+                    "type": "string",
+                    "enum": [
+                      "attack",
+                      "hold",
+                      "decay",
+                      "release"
+                    ]
+                  },
+                  "duration": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "number",
+                            "minimum": 0,
+                            "maximum": 96
+                          },
+                          "unit": {
+                            "type": "string",
+                            "enum": [
+                              "seconds",
+                              "steps"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "unit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "operation",
+                  "track_id",
+                  "step",
+                  "stage",
+                  "duration"
+                ],
+                "additionalProperties": false,
+                "description": "Set or clear one onset-owned sparse envelope-stage lock."
               }
-            ]
+            ],
+            "description": "Exactly one narrow session edit."
           }
         },
         "required": [
           "session_id",
           "edit"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "The target session and one retry-safe edit to apply."
       },
       "annotations": {
         "readOnlyHint": false,

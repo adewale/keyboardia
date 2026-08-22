@@ -9,6 +9,12 @@
  */
 
 import type { GridState } from '../types';
+import type {
+  EnvelopeDuration,
+  EnvelopeDurationUnit,
+  SamplePlaybackMode,
+  TrackEnvelopeV2,
+} from '../shared/envelope-contract-v2';
 
 export interface IScheduler {
   /**
@@ -83,6 +89,11 @@ export interface WorkletTrack {
   soloed: boolean;
   transpose: number;
   swing: number;
+  gate?: number;
+  envelopeTimeUnit?: EnvelopeDurationUnit;
+  envelopeV2?: TrackEnvelopeV2;
+  samplePlaybackMode?: SamplePlaybackMode;
+  largePitchShiftLatencySeconds?: number;
   parameterLocks: (WorkletPLock | null)[];
 }
 
@@ -90,6 +101,14 @@ export interface WorkletPLock {
   pitch?: number;
   volume?: number;
   tie?: boolean;
+  attack?: number;
+  hold?: number;
+  decay?: number;
+  release?: number;
+  attackDuration?: EnvelopeDuration;
+  holdDuration?: EnvelopeDuration;
+  decayDuration?: EnvelopeDuration;
+  releaseDuration?: EnvelopeDuration;
 }
 
 export const SCHEDULE_AHEAD_SEC = 0.15;

@@ -31,12 +31,6 @@ export const STEPS_PER_BEAT = 4;
 export const SWING_DELAY_FACTOR = 0.5;
 
 /**
- * Gate time ratio - notes are held for this fraction of their full duration.
- * At 0.9, there's a 10% gap between notes for natural release/articulation.
- */
-export const GATE_TIME_RATIO = 0.9;
-
-/**
  * Maximum steps in a pattern (8 bars at 16th note resolution)
  *
  * NOTE: Intentionally duplicated from types.ts and worker/invariants.ts.

@@ -61,3 +61,86 @@ describe('ParameterLockEditor accessibility', () => {
     expect(document.getElementById(descriptionId!)?.textContent).toMatch(/outside.*playable range.*silent/i);
   });
 });
+
+describe('ParameterLockEditor envelope v2 locks', () => {
+  it('shows only the active, capability-approved timed stages including Hold', () => {
+    renderEditor({
+      envelopeStages: ['attack', 'hold', 'decay'],
+      onEnvelopeLockChange: vi.fn(),
+    });
+
+    expect(screen.getByRole('spinbutton', { name: 'Attack envelope lock value' })).toBeDefined();
+    expect(screen.getByRole('spinbutton', { name: 'Hold envelope lock value' })).toBeDefined();
+    expect(screen.getByRole('spinbutton', { name: 'Decay envelope lock value' })).toBeDefined();
+    expect(screen.queryByRole('spinbutton', { name: 'Release envelope lock value' })).toBeNull();
+  });
+
+  it('commits an exact typed duration once when editing finishes', () => {
+    const onEnvelopeLockChange = vi.fn();
+    renderEditor({
+      lock: { holdDuration: { value: 1, unit: 'steps' } },
+      envelopeStages: ['hold'],
+      onEnvelopeLockChange,
+    });
+    const hold = screen.getByRole('spinbutton', { name: 'Hold envelope lock value' });
+
+    fireEvent.change(hold, { target: { value: '2.5' } });
+    expect(onEnvelopeLockChange).not.toHaveBeenCalled();
+    fireEvent.blur(hold);
+
+    expect(onEnvelopeLockChange).toHaveBeenCalledOnce();
+    expect(onEnvelopeLockChange).toHaveBeenCalledWith('hold', { value: 2.5, unit: 'steps' });
+  });
+
+  it('preserves wall-clock time when a lock switches unit', () => {
+    const onEnvelopeLockChange = vi.fn();
+    renderEditor({
+      lock: { attackDuration: { value: 0.5, unit: 'seconds' } },
+      envelopeStages: ['attack'],
+      bpm: 120,
+      onEnvelopeLockChange,
+    });
+
+    fireEvent.change(screen.getByRole('combobox', { name: 'Attack envelope lock unit' }), {
+      target: { value: 'steps' },
+    });
+
+    expect(onEnvelopeLockChange).toHaveBeenCalledOnce();
+    expect(onEnvelopeLockChange).toHaveBeenCalledWith('attack', { value: 4, unit: 'steps' });
+  });
+
+  it('displays legacy numeric locks without rewriting them until edited', () => {
+    const onEnvelopeLockChange = vi.fn();
+    renderEditor({
+      lock: { attack: 0.25 },
+      envelopeStages: ['attack'],
+      envelopeTimeUnit: 'steps',
+      onEnvelopeLockChange,
+    });
+    const attack = screen.getByRole('spinbutton', { name: 'Attack envelope lock value' });
+
+    expect((attack as HTMLInputElement).value).toBe('0.25');
+    expect(screen.getByText('Legacy')).toBeDefined();
+    expect(onEnvelopeLockChange).not.toHaveBeenCalled();
+
+    fireEvent.change(attack, { target: { value: '0.5' } });
+    fireEvent.blur(attack);
+    expect(onEnvelopeLockChange).toHaveBeenCalledWith('attack', { value: 0.5, unit: 'steps' });
+  });
+
+  it('clears a typed lock with one discrete mutation', () => {
+    const onEnvelopeLockChange = vi.fn();
+    renderEditor({
+      lock: { releaseDuration: { value: 1, unit: 'seconds' } },
+      envelopeStages: ['release'],
+      onEnvelopeLockChange,
+    });
+    const release = screen.getByRole('spinbutton', { name: 'Release envelope lock value' });
+
+    fireEvent.change(release, { target: { value: '' } });
+    fireEvent.blur(release);
+
+    expect(onEnvelopeLockChange).toHaveBeenCalledOnce();
+    expect(onEnvelopeLockChange).toHaveBeenCalledWith('release', undefined);
+  });
+});

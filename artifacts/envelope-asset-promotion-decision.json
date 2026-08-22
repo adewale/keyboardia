@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "decidedAt": "2026-08-03",
+  "releaseTriggerExperiment": {
+    "candidates": ["Karoryfer Black & Green guitar", "Greg Sullivan Pianet T"],
+    "decision": "defer",
+    "runtimeFlag": "VITE_FEATURE_SAMPLE_RELEASE_TRIGGER_EXPERIMENT",
+    "reason": "No pinned asset intake packet, duration-aware matching render, blind A/B, two-person listening approval, or mobile decoded-memory result exists in this workspace."
+  },
+  "additionalLoopExperiment": {
+    "candidates": ["Karoryfer Meatbass arco", "FreePats VCSL tenor sax"],
+    "decision": "defer",
+    "runtimeFlag": "VITE_FEATURE_SAMPLE_LOOP_EXPERIMENT",
+    "reason": "Source research is promising, but there is no exact-file/hash intake, decoded-frame loop map, crossfade audition, identity decision, or mobile cache evidence."
+  },
+  "existingHammond": {
+    "decision": "retain-existing-capability",
+    "newPayloadBytes": 0,
+    "note": "The 13 existing timestamp regions now also carry decoded 44.1 kHz frame coordinates and are bounds-validated after decode. Zero-frame crossfades reproduce the already shipped behavior; this is not approval for a new asset promotion."
+  },
+  "bundleImpact": {
+    "newJavaScriptDependency": false,
+    "newAudioBytes": 0,
+    "newDecodedPcmBytes": 0
+  }
+}

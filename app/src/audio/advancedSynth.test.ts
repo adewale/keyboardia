@@ -428,7 +428,7 @@ describe('AdvancedSynthEngine', () => {
     it('does not erase live overrides when the same preset is selected per note', () => {
       engine.setPreset('supersaw');
       engine.setFilterFrequency(1234);
-      engine.setAttack(0.37);
+      engine.setEnvelope({ attack: 0.37, decay: 0.2, sustain: 0.7, release: 0.5 });
       const applyPreset = vi.spyOn(engine['voices'][0], 'applyPreset');
 
       // AudioEngine calls setPreset before each scheduled note. Selecting the
@@ -444,7 +444,7 @@ describe('AdvancedSynthEngine', () => {
 
     it('reapplies live overrides after an actual preset change', () => {
       engine.setFilterFrequency(1234);
-      engine.setAttack(0.37);
+      engine.setEnvelope({ attack: 0.37, decay: 0.2, sustain: 0.7, release: 0.5 });
 
       engine.setPreset('wobble-bass');
 

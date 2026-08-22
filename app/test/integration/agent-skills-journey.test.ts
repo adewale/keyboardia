@@ -249,7 +249,7 @@ describe('Agent Skills host protocol journey', () => {
       arguments: { session_id: sessionId },
     }) as ToolResult;
     expectToolSuccess(final);
-    expect(final.structuredContent).toEqual({
+    expect(final.structuredContent).toMatchObject({
       session_id: sessionId,
       immutable: false,
       tempo: 124,
@@ -262,5 +262,11 @@ describe('Agent Skills host protocol journey', () => {
         active_steps: [0, 4, 8, 12],
       }],
     });
+    expect((final.structuredContent as { tracks: Array<Record<string, unknown>> }).tracks[0])
+      .toMatchObject({
+        effective_envelope: { model: 'ahd' },
+        sample_playback_mode: 'trigger',
+        envelope_active: true,
+      });
   });
 });
