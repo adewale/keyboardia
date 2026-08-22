@@ -6,7 +6,7 @@ import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
-export const LIVE_RECEIPT_SCHEMA_VERSION = 5;
+export const LIVE_RECEIPT_SCHEMA_VERSION = 6;
 export const LIVE_RECEIPT_CLAIM = 'live-post-track-signal-evidence';
 export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
@@ -41,8 +41,10 @@ export const LIVE_PEAK_METRIC = 'maximum-absolute-sample-over-all-captured-chann
 export const LIVE_RMS_METRIC = 'root-mean-square-over-all-captured-channel-samples';
 export const LIVE_RANDOM_SEED = 0x4b455942;
 export const LIVE_RANDOM_ALGORITHM = 'mulberry32';
+export const LIVE_SESSION_LIFECYCLE =
+  'fresh-browser-context-and-page-per-session-with-awaited-audio-engine-shutdown';
 export const LIVE_GENERATED_FROM =
-  'Chromium single-audible-track calibration trials for every INSTRUMENT_CATEGORIES entry; a one-active-step fixture is played through the production sequencer and onset-aligned output is captured concurrently at that track bus and masterGain';
+  'Chromium single-routed-track calibration trials for every INSTRUMENT_CATEGORIES entry; a one-active-step fixture is played through the production sequencer and onset-aligned output is captured concurrently at that post-track bus and pre-processing masterGain';
 
 export type LiveInstrumentType = 'sample' | 'sampled' | 'synth' | 'tone' | 'advanced';
 export type LiveDispatchMethod =
@@ -93,6 +95,15 @@ export interface LiveSessionResult {
   sessionId: string;
   instruments: string[];
   sampleRate: number;
+  execution: {
+    lifecycle: typeof LIVE_SESSION_LIFECYCLE;
+    browser: BrowserIdentity & { userAgent: string };
+    randomReset: {
+      seed: typeof LIVE_RANDOM_SEED;
+      algorithm: typeof LIVE_RANDOM_ALGORITHM;
+      calls: 0;
+    };
+  };
 }
 
 export interface LiveQualityReport {
@@ -379,6 +390,20 @@ export function validateLiveQualityReport(
     sessionIds.add(session.sessionId);
     if (!Number.isInteger(session.sampleRate) || !VALID_SAMPLE_RATES.has(session.sampleRate as number)) {
       throw new Error(`Live receipt session ${session.sessionId} has an unsupported sample rate`);
+    }
+    if (!isRecord(session.execution)
+      || session.execution.lifecycle !== LIVE_SESSION_LIFECYCLE
+      || !isRecord(session.execution.browser)
+      || session.execution.browser.name !== value.browser.name
+      || session.execution.browser.version !== value.browser.version
+      || session.execution.browser.userAgent !== value.browser.userAgent
+      || !isRecord(session.execution.randomReset)
+      || session.execution.randomReset.seed !== LIVE_RANDOM_SEED
+      || session.execution.randomReset.algorithm !== LIVE_RANDOM_ALGORITHM
+      || session.execution.randomReset.calls !== 0) {
+      throw new Error(
+        `Live receipt session ${session.sessionId} execution identity or RNG reset is unbound`,
+      );
     }
     const expectedFrames = Math.round(
       LIVE_CAPTURE_DURATION_SECONDS * (session.sampleRate as number),

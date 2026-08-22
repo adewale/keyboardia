@@ -26,6 +26,7 @@ import {
   LIVE_RECEIPT_SCHEMA_VERSION,
   LIVE_RMS_METRIC,
   LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
+  LIVE_SESSION_LIFECYCLE,
   LIVE_SILENCE_PEAK_THRESHOLD,
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
@@ -48,6 +49,11 @@ function validReceipt(): LiveQualityReport {
     sessionId: `session-${index}`,
     instruments: specs.slice(index * MAX_TRACKS, (index + 1) * MAX_TRACKS).map(spec => spec.sampleId),
     sampleRate: 48_000,
+    execution: {
+      lifecycle: LIVE_SESSION_LIFECYCLE,
+      browser: { name: 'chromium', version: '140.0.0', userAgent: 'fixture chromium' },
+      randomReset: { seed: LIVE_RANDOM_SEED, algorithm: LIVE_RANDOM_ALGORITHM, calls: 0 as const },
+    },
   }));
   return {
     schemaVersion: LIVE_RECEIPT_SCHEMA_VERSION,
@@ -136,7 +142,7 @@ describe('live instrument-quality receipt', () => {
   });
 
   it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
-    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(5);
+    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(6);
     const stepDuration = 60 / LIVE_TEMPO / 4;
     expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
     expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
@@ -245,6 +251,22 @@ describe('live instrument-quality receipt', () => {
     const browser = validReceipt();
     browser.browser.name = 'webkit';
     expect(() => validateLiveQualityReport(browser, SUBJECT)).toThrow(/Chromium browser identity/);
+
+    const reusedSessionPage = validReceipt();
+    reusedSessionPage.sessions[0].execution.lifecycle =
+      'reused-page' as typeof LIVE_SESSION_LIFECYCLE;
+    expect(() => validateLiveQualityReport(reusedSessionPage, SUBJECT))
+      .toThrow(/execution identity or RNG reset/);
+
+    const mismatchedSessionBrowser = validReceipt();
+    mismatchedSessionBrowser.sessions[0].execution.browser.userAgent = 'different browser context';
+    expect(() => validateLiveQualityReport(mismatchedSessionBrowser, SUBJECT))
+      .toThrow(/execution identity or RNG reset/);
+
+    const unprovenRandomReset = validReceipt();
+    unprovenRandomReset.sessions[0].execution.randomReset.calls = 1 as 0;
+    expect(() => validateLiveQualityReport(unprovenRandomReset, SUBJECT))
+      .toThrow(/execution identity or RNG reset/);
 
     const diagnostics = validReceipt();
     diagnostics.diagnostics.consoleErrors.push('sample skipped');
