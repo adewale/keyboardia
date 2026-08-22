@@ -4,7 +4,9 @@
 **Date**: 2026-08-02
 **Related**: `SYNTHESIS-ENGINE.md`, `HELD-NOTES.md`, `SESSION-NOTATION.md`,
 `research/TONEJS-COMPARISON.md`, `research/AUDIO_ENGINEERING_101.md` §7,
-`../docs/AUDIO-ENGINEERING-PATTERNS.md`
+`research/ABLETON-LEARNING-SYNTHS-ENVELOPES-ANALYSIS.md` (independent
+outside-in reference study; its recommendations are folded into the phases
+below), `../docs/AUDIO-ENGINEERING-PATTERNS.md`
 
 ## Overview
 
@@ -214,8 +216,17 @@ Phased; each phase ships independently.
       release is a time constant of `release / 4`; or switch native release
       to a bounded exponential ramp matching Tone. Either way, one documented
       meaning.
-- [ ] Centralize envelope ranges in `SYNTH_CONSTANTS` and make the XY pad and
-      type docs agree.
+- [ ] Centralize envelope ranges as **full parameter descriptors, not bare
+      min/max**: `{min, max, default, taper, unit}` per stage, as data
+      (Learning Synths attaches exactly this to every parameter). Tapers
+      matter practically — on a linear 0.001–4s attack slider the musically
+      useful 5–200ms occupies a few pixels; steal Ableton's curves (time
+      knobs exponential^3, release ^5, sustain ^0.8). Floor decay/release at
+      1ms (attack alone may be 0), and treat the 8s release ceiling as a
+      taper problem rather than a ceiling problem. The Phase 3 sliders, XY
+      pad, MCP validation, and notation docs all consume this one source;
+      XY axes become curated sub-ranges of the descriptor (Ableton's
+      macro-mapping model), which is the deeper fix for bug 4.
 
 ### Phase 2 — Canonical envelope as session state (the core change)
 
@@ -241,6 +252,23 @@ Phased; each phase ships independently.
       `TrackEnvelope` → each engine's dialect (native ramp parameters, Tone
       envelope fields, sample attack/release). Property-test the clamps;
       offline-render-test the audible equivalence claims.
+- [ ] In the same module, a **pure envelope shape function**:
+      `(TrackEnvelope, gateLengthSec) → piecewise curve`, engine-independent
+      and `AudioParam`-free. Three consumers: the Phase 3 editor curve, a
+      playhead position dot, and `analyze_session`'s articulation
+      descriptions. Learning Synths keeps an `ADSRHistory` class for exactly
+      this reason — a note released mid-attack must *draw* its release from
+      the level it actually reached. Because this function has no audio-graph
+      coupling, Phase 4's deletion of the analytical mirror does not touch it.
+- [ ] An **engine-side slew convention** where the translate module hands
+      values to engines: smooth every envelope-parameter change with a
+      30–50ms `setTargetAtTime` (Learning Synths slews every parameter
+      change with a 50ms `global_slew_time`, which is why dragging never
+      zippers). Our case is stronger than theirs: envelope changes also
+      arrive from remote collaborators mid-note, and one rule at the
+      boundary covers local drags and remote mutations alike. Distinct from
+      open question 1, which is about sync-traffic batching, not the audio
+      boundary.
 - [ ] Route XY pad `attack`/`release` writes to the selected track's synced
       envelope instead of ephemeral global engine overrides. This fixes
       local-only, global-across-tracks, and lost-on-reload at once. The
@@ -248,15 +276,36 @@ Phased; each phase ships independently.
 
 ### Phase 3 — Expose it (UI + MCP + notation)
 
-- [ ] Per-track envelope editor (four sliders or a drag-editable A/D/S/R
-      curve) in the track controls, populated from the effective envelope
-      (override ?? preset).
+- [ ] Per-track envelope editor in the track controls, populated from the
+      effective envelope (override ?? preset). Prefer a **drag-editable
+      A/D/S/R curve** over bare sliders (Learning Synths built its whole
+      envelopes chapter on direct manipulation of one SVG grammar): live
+      value readouts next to stage labels, touch handles ≥14px (Ableton's
+      default handle radius is 14.5px), and a swappable y-axis label so the
+      same component can serve a filter envelope later (see Non-Goals).
+- [ ] Render the editor against the **track's actual gate**, not the
+      abstract ADSR shape. At 16ths/120 BPM the gate is ~112ms
+      (`stepDuration × GATE_TIME_RATIO`, `timing-calculations.ts`), so on
+      untied steps a user dragging sustain or decay would otherwise hear
+      nothing — the exact degenerate case Learning Synths turns into an
+      explicit lesson ("with sustain all the way up, decay has no effect").
+      Draw the gate line and the truncated envelope via the Phase 2 shape
+      function.
+- [ ] **Per-track gate time** (% of step before release starts), pulled
+      forward from Phase 5: `GATE_TIME_RATIO = 0.9` becomes per-track. It is
+      a small change, and it is what makes the decay and sustain controls
+      audible on ordinary patterns — shipping the editor without it means
+      shipping controls that don't appear to work. Notation: `[gate:75]`.
+      Note: `REMOVE-GATE-MODE.md` removed *sample gating at step
+      boundaries*; this is the different, synth-oriented articulation
+      control that spec's research cited as the industry-standard model.
 - [ ] MCP: add `set_track_envelope` to `edit_session` operations, validated
       by the same shared clamp; include effective envelope values in
       `get_session` and envelope character in `analyze_session` so agents can
       read and shape the dimension rather than only swapping presets.
-- [ ] Extend `SESSION-NOTATION.md` (v2.3) with a track-level `[env:A,D,S,R]`
-      annotation in the style of `[fm:H,M]`, mapping to `track.envelope`.
+- [ ] Extend `SESSION-NOTATION.md` (v2.3) with track-level `[env:A,D,S,R]`
+      and `[gate:N]` annotations in the style of `[fm:H,M]`, mapping to
+      `track.envelope` and `track.gateTime`.
 - [ ] MIDI export: document envelope as a listed non-carryable feature
       (matching the existing "report rather than approximate" posture).
 
@@ -265,6 +314,9 @@ Phased; each phase ships independently.
 - [ ] Fold `synth:*` presets into the Tone-based advanced engine so there is
       one synth envelope implementation, deleting the
       `holdAtTime`/`amplitudeAt` analytical-mirror machinery (problem 7).
+      The deletion covers the `AudioParam`-coupled mirror only — the pure
+      shape function added in Phase 2 is what the editor, playhead, and
+      `analyze_session` keep using, and it survives this phase untouched.
 - [ ] Migration gate: per-preset offline PCM renders (extend
       `synth-envelope.render.test.ts`) compared before/after; retune presets
       whose renders drift audibly. This is a one-time, bounded retuning cost —
@@ -280,13 +332,11 @@ Phased; each phase ships independently.
       `ParameterLock` — Elektron-style, and the plumbing is already shaped
       for it. Notation: per-step lists mirroring `[pitches:...]`, e.g.
       `[releases:...]` with `-` for unlocked steps.
-- [ ] Per-track gate time (% of step before release starts) so note length is
-      not purely grid-derived and `tie` is not the only lengthener. Notation:
-      `[gate:75]`. Note: `REMOVE-GATE-MODE.md` removed *sample gating at step
-      boundaries*; this is the different, synth-oriented control that spec's
-      research cited as the industry-standard articulation model.
 - [ ] Optional tempo-relative envelope times (release expressed in step
       fractions) so presets tuned at 120 BPM stay musical at other tempi.
+
+(Per-track gate time originally lived here; it moved to Phase 3 because the
+envelope editor's decay/sustain controls are inaudible without it.)
 
 ## Example Sessions
 
@@ -357,10 +407,13 @@ default onset) while its ghosts are brushed soft; the kick is feathered at
 ghost level throughout. Today this session is impossible twice over: sampled
 instruments have a hard-coded 3ms declick attack (`note-schedule.ts`), so no
 sample can swell — and there are no per-step envelope locks. It also
-exercises open question 4: `[env:...]` on a sample track applies
-attack/release and ignores decay/sustain.
+exercises resolved question 4: `[env:...]` on a sample track applies
+attack/release and ignores decay/sustain. Implementation note: the per-step
+attack *replaces* the declick — keep 3ms as the floor (attack locks below it
+still declick) rather than layering a separate fade under the envelope, or
+short attacks double-fade.
 
-### D. Gated stabs against a washed pad (Phase 5: gate time)
+### D. Gated stabs against a washed pad (Phase 3: gate time)
 
 Gate time decouples articulation from the grid: the stab track releases at
 25% of each step regardless of tempo, while the pad holds its gate the full
@@ -418,13 +471,24 @@ slow-attack pad") instead of being blind to the dimension.
 
 1. Should the XY pad write envelope changes at drag-end only (one mutation)
    or throttled during the drag? Effects updates already batch per drag;
-   recommend the same batching with a trailing commit.
-2. Does `TrackEnvelope` apply to `tone:*` preset synths (FM/membrane/metal)
-   in Phase 2, or only `synth:*`/advanced tracks until Phase 4 consolidates?
-   Recommend: wherever the translate module can express it, from day one.
-3. Per-step envelope p-locks and tied steps: does a tie inherit the first
-   step's locked envelope (recommended — one note, one envelope) or re-read
-   locks per step?
-4. Does `[env:...]` on a sample track mean anything beyond attack/release?
-   Recommend: apply attack/release, ignore decay/sustain, and say so in the
-   notation spec rather than approximating silently.
+   recommend the same batching with a trailing commit. This is purely a
+   sync-traffic question — audible smoothness is handled independently by
+   the Phase 2 slew convention, whatever the batching answer.
+
+## Resolved Questions
+
+Originally open; resolved when the independent Learning Synths reference
+study (`research/ABLETON-LEARNING-SYNTHS-ENVELOPES-ANALYSIS.md`) endorsed
+each recommendation.
+
+2. **`TrackEnvelope` applies wherever the translate module can express it,
+   from day one** — including `tone:*` preset synths in Phase 2, not
+   deferred to Phase 4. One parameter surface across engines.
+3. **A tie inherits the first step's locked envelope.** A tie is one gate,
+   so one envelope traversal; re-reading locks mid-note would imply
+   re-triggering, which is what `tie` exists to prevent.
+4. **`[env:...]` on a sample track applies attack/release and ignores
+   decay/sustain, documented as such** in the notation spec — report rather
+   than approximate. The existing 3ms declick becomes the attack floor, not
+   a separate fade layered under the envelope (see the Mr Jangles
+   implementation note).
