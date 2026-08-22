@@ -5,7 +5,7 @@
     "version": 1
   },
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "3a446313ecb35e665405dabbf635b71a9237c965",
+  "headRevision": "26e4d91a30db5bd2537a74c39afb0fc770ab7e77",
   "receiptCount": 29,
   "checks": {
     "receiptsPassed": true,
@@ -14,7 +14,7 @@
   "files": [
     {
       "path": "README.md",
-      "sha256": "faac5ed69b6da6ee72e31feb90107a61c3cccf8553570ba9e1b86c438f6d7a4c"
+      "sha256": "fc13a727e8ba973a834b31daa8856dd507c067b367caa8c74188932dd7179e0e"
     },
     {
       "path": "after/catalogue--dropdowns-default-collision-canary.png",
@@ -70,7 +70,7 @@
     },
     {
       "path": "after/catalogue--transpose-active-trigger-hover.png",
-      "sha256": "e904f4b453411bb5c09325502c621a459e038221043cb1a8b83106064fd418b9"
+      "sha256": "c04f67542feb72aba1f5724a102e1f92ff7cd5eefc0dfefc36a622eb11efc11e"
     },
     {
       "path": "after/catalogue--transpose-escape.png",
@@ -110,7 +110,7 @@
     },
     {
       "path": "after/full-app--full-app-landscape-narrow-unaffected.png",
-      "sha256": "ddcf9d011a5552b7020cd101581bc6e2ba8dac03ad83d2e4339b3b6b5b9dd4e4"
+      "sha256": "2b2de938b40119320321258f1b071009fb96ee39d22f3f5735af7e9fb7ca5889"
     },
     {
       "path": "after/full-app--full-app-landscape-wide-unaffected.png",
@@ -190,7 +190,7 @@
     },
     {
       "path": "before/catalogue--transpose-escape.png",
-      "sha256": "75aecb219a8454c165ca86c17dbcf833f7d65e6f2ad62ed1714eca906475bac6"
+      "sha256": "cac542ecdc97309e8d1094c37de2863041197284e350dd370df9a8f3d8ab003f"
     },
     {
       "path": "before/catalogue--transpose-open-mobile-landscape-wide.png",
@@ -250,23 +250,23 @@
     },
     {
       "path": "contact-sheets/01-trigger-and-interaction-states.png",
-      "sha256": "1e44adbb8b044c727dee5663776c805705e07bcc5c878b9ecb2b4d5686c137d7"
+      "sha256": "5c0e3e6d8fb69f661b8f3f68e799f0309f4a6761213330ca350d5b26610a9b95"
     },
     {
       "path": "contact-sheets/02-menu-states.png",
-      "sha256": "4d7968f70729ed2494129366ff20e415ee6517e32f0606b093b40d7fbfe72f7f"
+      "sha256": "cb37644ddedb351d4feeb30b8cedd0b57ddbc0e9a34501d6ef7d3060e1c84662"
     },
     {
       "path": "contact-sheets/03-responsive-component-states.png",
-      "sha256": "aa27b4ebd6c3aae65a431b8debcbe380a50be7f1284182cce09e65982190bb8e"
+      "sha256": "80b46952ed4423efd652125ac439daa47697b3dd0aa3b724d76f62a4f34aadb8"
     },
     {
       "path": "contact-sheets/04-production-build-canaries.png",
-      "sha256": "9d2ff1a2233b2bfd2d03f1eac599413c9e00a510c1aa716ba94d9c35e090f748"
+      "sha256": "54ddf2a42138f8df51d0f3b05b27178b04c3a04e207d28934b13563738f31bb3"
     },
     {
       "path": "contact-sheets/05-selected-option-approval-focus.png",
-      "sha256": "af6a02eee953040a551e0e5f351d1c9055a788c469d2b751e1d98f7ee63a804e"
+      "sha256": "104f2324b93781c09ee7263e69a116a140260fa6977c7a8a90563708f0973542"
     },
     {
       "path": "diff/catalogue--dropdowns-default-collision-canary.png",
@@ -390,119 +390,119 @@
     },
     {
       "path": "receipts/catalogue--dropdowns-default-collision-canary.json",
-      "sha256": "c7587960c408155c20237da0e1f6745c97816424e2f21aac534818ef7a6988c8"
+      "sha256": "0e863296e911ba2624b38211a10c3d9c12942f54356a21ad5c351b7d7552190c"
     },
     {
       "path": "receipts/catalogue--dropdowns-disabled.json",
-      "sha256": "e30bb4d67da3b55297f42d82fd2f591c9ed2297d82d8892440bad89465b19201"
+      "sha256": "d05de73fa4cddb150392ce5b71381b998f9542d1fbefad39a3f1ac147c233ac0"
     },
     {
       "path": "receipts/catalogue--dropdowns-selected.json",
-      "sha256": "c58e9d75eed5151a0c5a28c1648cd54ff31d2f463d76e883414b61a89da6b89e"
+      "sha256": "b87dc108756a0689c1065bc03e816228ba9ea67a13f15a47a7fd3e5d844f815f"
     },
     {
       "path": "receipts/catalogue--step-count-focused.json",
-      "sha256": "570438b4c822d0a53c544f260f84b80b1263d66538a6b657ad9a2f83b08ad0a0"
+      "sha256": "822a4a029c77ba0b9335e67cab72130c6f258f8f637dd8af8f96554a89427d7a"
     },
     {
       "path": "receipts/catalogue--step-count-header-hover-mobile-portrait.json",
-      "sha256": "58a44c20cb2683de112fa2e808a56ac0a5ab7713da2eaf476a8caed09fb41a24"
+      "sha256": "72e9d4022473b9b79f2613ac8e53103053aa7e487d8e0a1101f120014b9395da"
     },
     {
       "path": "receipts/catalogue--step-count-open-mobile-landscape-compact.json",
-      "sha256": "1f7fa156e8eaa4ab7f3777f15f9672b13cae4a33377edd08c36f83399001e6ca"
+      "sha256": "40732ece3acff0f2207a9f620b3443d0f7c8e9845b84156fd39156f2899da97e"
     },
     {
       "path": "receipts/catalogue--step-count-open-mobile-portrait.json",
-      "sha256": "681ea87cb269c1d53a0c5bf551f58b86845a791aeecbab093ea08632c9a5d2bb"
+      "sha256": "141dbaadd734c2135f4dd4aea39411a895a8d5f81166473ace62882a3c148c63"
     },
     {
       "path": "receipts/catalogue--step-count-open-reduced-motion.json",
-      "sha256": "2d73f03555a78a9974cd663e50bf26f3c4fa62dc53df94a35abf190c4b6f6784"
+      "sha256": "14f4705072a977d9a12ca6296f2f54544a9c59a1667e40cfa5430a3b91b69172"
     },
     {
       "path": "receipts/catalogue--step-count-open-width-768.json",
-      "sha256": "799aaba7d51fba620fc6056d51fdcb978515cf8064a502ef38ae738a5b117704"
+      "sha256": "f229fa00a017102f372336854f7904b3233ba6f37c49755615f962e4019bb722"
     },
     {
       "path": "receipts/catalogue--step-count-open-width-769.json",
-      "sha256": "9a584f1efee8bf3e5a5165060c1ec85bb0c9688e632206e27c3bed9f5064f951"
+      "sha256": "911c733dc24c31a5ffc0c5ef56a07afc03409bda81db41f59dbeb8bb686bd0d5"
     },
     {
       "path": "receipts/catalogue--step-count-open.json",
-      "sha256": "1674a926ad374016a6ed74b85996753a2f1752796e0dc00de8aa3894eaf25707"
+      "sha256": "ba447a4500dcc130aa0fcefe436011cec9b1ac2c9936cca43ccb9371676b7ef1"
     },
     {
       "path": "receipts/catalogue--step-count-selection.json",
-      "sha256": "206ff67d75160d5cf50be3259ae18a37a8f2c5e9b1ddb513e8bbdebc478c767c"
+      "sha256": "2aaaf9a72ae3cb8559062252ac55fa40c963aa0ca4f1110166847fbd3f045cbe"
     },
     {
       "path": "receipts/catalogue--step-count-trigger-hover.json",
-      "sha256": "9c8f93b68dcad49fe0c666662ccf01d280bb6142531b1ca38e4a7e050cf9002e"
+      "sha256": "bfd59d33abfb7d10c8429100f9f65e858fbf9e3c88053d501b5b43a3b4f09660"
     },
     {
       "path": "receipts/catalogue--transpose-active-trigger-hover.json",
-      "sha256": "e3057316232cbf7d40e80f70bf43cc7d3ee4da57ee5ab722dc12690485d987f8"
+      "sha256": "d13a9ef7480a395547c19d8d1d92c8baaf772f0f0caf7fbf31493ad409247c3a"
     },
     {
       "path": "receipts/catalogue--transpose-escape.json",
-      "sha256": "8608c92059d9b29aa342643a1624740c72dd0366ac214ab9d3fdc51d3f308c52"
+      "sha256": "a93d998a31c7dae36b49d1e27dfee8391a43fb443f82c91f6ea01ab024dfe31a"
     },
     {
       "path": "receipts/catalogue--transpose-open-mobile-landscape-wide.json",
-      "sha256": "83c621ef5da2804dab7d415c4578cbc2d0a50136c18eab09f824496b7b629a1f"
+      "sha256": "d5030629785bd0535f4f88f5599e1d3ad64c2640f6e7359361292be1d46d1783"
     },
     {
       "path": "receipts/catalogue--transpose-open-mobile-portrait.json",
-      "sha256": "063468886034bc01c24e393e31f1bbb23ea0e77f50ce61227d32f2f3639b0cf8"
+      "sha256": "0b0fdceee3624d59568663eab21ecd1aa206cdbac72a0743cceeff9f0b16440e"
     },
     {
       "path": "receipts/catalogue--transpose-open.json",
-      "sha256": "61e085c5586ad8ffea626a1d3fcd1458f7f15933291fd598fbbfbf4fac4b9a6d"
+      "sha256": "977bbd20d36e50fc71bec55b7e4bb21a5c5fbd7b2923b25f03a5a0506776b28a"
     },
     {
       "path": "receipts/catalogue--transpose-option-focused.json",
-      "sha256": "6a44b16ea4755d5b7f486c3179095df6caf0910979607a422250dda773185267"
+      "sha256": "da7cece5e059b296d97a44f85491bb781269c0eb2e98d15251f4af2bd1e1705e"
     },
     {
       "path": "receipts/catalogue--transpose-option-hover.json",
-      "sha256": "56598d65be2f4c882d03ffddb1d965a20278ebceacb31bf458b80f053c5f1a4c"
+      "sha256": "a3e15c46d3645c49d23914f5fef17f729f3de55f7c2fc96a86548d46afee7081"
     },
     {
       "path": "receipts/catalogue--transpose-selection.json",
-      "sha256": "2d4824cddad454e487a153bfe0d5469d044d2f6f3397e3e373582d9fe0df6077"
+      "sha256": "626578d8a2fc16db0edbcd58bc193a723d82a02406a9507c2257d1a11e01a272"
     },
     {
       "path": "receipts/full-app--full-app-desktop-step-open.json",
-      "sha256": "3b9e56a4aa5f1a4173efe3512f04b574061525c6ef75ba00297adcfc714d2b1d"
+      "sha256": "4096ff2c49aa4ed48fa9c8cf929b6692124825999d2338e7f7da097f8136f289"
     },
     {
       "path": "receipts/full-app--full-app-landscape-compact-unaffected.json",
-      "sha256": "534fe137272a8a53d113de0aeed3a4dedf18a80f45353cd81d7b6acdbcfaa1d7"
+      "sha256": "c8f0acafde5815d8ca1a8c957956c633ce7e067966a6b45f9f6af97cf71b6525"
     },
     {
       "path": "receipts/full-app--full-app-landscape-narrow-unaffected.json",
-      "sha256": "6a62e57901064678a237e80de095812be648e3abbc8a8bf793c8a930c592d6c4"
+      "sha256": "92a13db4eb50da0242479e128e0b3c951fe4ec58145670c95583f6b40e8472fc"
     },
     {
       "path": "receipts/full-app--full-app-landscape-wide-unaffected.json",
-      "sha256": "348359305bbf8edc4f8ad62891801c2e8c3a5e8f1eb3816aff3de27d490ecf4b"
+      "sha256": "b57dc1d5586dfa7b861a284aad7f71b5b925a82e009ece51d97decc9ae161df5"
     },
     {
       "path": "receipts/full-app--full-app-mobile-portrait-hidden.json",
-      "sha256": "94f516c439bf847c324ecabdbe4e171068a22e8065cb40ef78dc88e691fdd83c"
+      "sha256": "8bfd7153591766c28f91bd0fd7a60a452b349408ff35231a5a4d9377483c5870"
     },
     {
       "path": "receipts/full-app--full-app-tablet-landscape-step-open.json",
-      "sha256": "ad4c814f282a0ba4590ac66a347fa8800f3a8b3c7d3e9bdd64573f6845905d5f"
+      "sha256": "db8435f49c9b85139910e4fbb223c2c961cb97e387b19f8284f062421cdb2e97"
     },
     {
       "path": "receipts/full-app--full-app-width-768-step-open.json",
-      "sha256": "5f3d9dbf32e38f3739066812aa7569eba9afbe25778ed8d72abb464d57e80371"
+      "sha256": "60c640fab02d4f28dcd30c12901fb6399b59424d274551ae2f5623cee0679b8b"
     },
     {
       "path": "receipts/full-app--full-app-width-769-step-open.json",
-      "sha256": "9985fc4bd2c6ac27306aef3a8940255b824d0d606aae71a8aef76272e82592f2"
+      "sha256": "0d921a89b76cde1826d376e0916c90fcc6453913f6fa3add6100055f46411458"
     },
     {
       "path": "reference/option-1-tonal-selection.png",
@@ -562,7 +562,7 @@
     },
     {
       "path": "review/after/catalogue--transpose-active-trigger-hover.png",
-      "sha256": "7c33bb15c814f8225985ffcfa19169b4e2187dc972a9e1ce058f6dda70dceaef"
+      "sha256": "4e61b2e186ca804e27e4a7502eab7fc853eaf6af13d900bee35f93fc65b2a05b"
     },
     {
       "path": "review/after/catalogue--transpose-escape.png",
@@ -602,7 +602,7 @@
     },
     {
       "path": "review/after/full-app--full-app-landscape-narrow-unaffected.png",
-      "sha256": "ddcf9d011a5552b7020cd101581bc6e2ba8dac03ad83d2e4339b3b6b5b9dd4e4"
+      "sha256": "2b2de938b40119320321258f1b071009fb96ee39d22f3f5735af7e9fb7ca5889"
     },
     {
       "path": "review/after/full-app--full-app-landscape-wide-unaffected.png",
@@ -682,7 +682,7 @@
     },
     {
       "path": "review/before/catalogue--transpose-escape.png",
-      "sha256": "8f6168aa7cfff650859fbe2cefa8ea412b333a4c6f7937d5aece4441e2f8933c"
+      "sha256": "a4c3fe27b7e4fb66c2e400ccf04e32329b74280860712c00005f7301fd7e7638"
     },
     {
       "path": "review/before/catalogue--transpose-open-mobile-landscape-wide.png",

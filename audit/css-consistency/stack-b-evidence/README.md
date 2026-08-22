@@ -21,8 +21,8 @@ crops, and JSON hash receipts are retained beside these contact sheets.
 
 <!-- generated-evidence-summary:start -->
 - Merge base: `58264dd5ae274f63b1cd80b72aa823b76b21f28b`
-- Candidate source revision: `3a446313ecb35e665405dabbf635b71a9237c965`
-- Receipt generator: `app/identity/stack-b-visual.spec.ts` generator v5
+- Candidate source revision: `26e4d91a30db5bd2537a74c39afb0fc770ab7e77`
+- Receipt generator: `app/identity/stack-b-visual.spec.ts` generator v6
 - Human-review renderer: Chromium 143.0.7499.4, darwin 25.5.0
 - Canonical machine authority: same-process Chromium comparisons on GitHub Actions Linux; committed review PNGs are provenance-bound evidence, not cross-platform pixel baselines
 - Viewports: 1280×800, 375×812, 480×320, 768×1024, 769×1024, 844×390, 667×375, 1024×768

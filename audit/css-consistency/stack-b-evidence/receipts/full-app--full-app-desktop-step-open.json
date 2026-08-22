@@ -2,10 +2,10 @@
   "id": "full-app-desktop-step-open",
   "group": "full-app",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "3a446313ecb35e665405dabbf635b71a9237c965",
+  "headRevision": "26e4d91a30db5bd2537a74c39afb0fc770ab7e77",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 5
+    "version": 6
   },
   "inputConfigSha256": "f9fb27ec244ec98eb7ee296a399dc76f5b76f9380de9c222669c0fefba843729",
   "environment": {

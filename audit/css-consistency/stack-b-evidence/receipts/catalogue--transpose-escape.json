@@ -2,10 +2,10 @@
   "id": "transpose-escape",
   "group": "catalogue",
   "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "headRevision": "3a446313ecb35e665405dabbf635b71a9237c965",
+  "headRevision": "26e4d91a30db5bd2537a74c39afb0fc770ab7e77",
   "generator": {
     "name": "app/identity/stack-b-visual.spec.ts",
-    "version": 5
+    "version": 6
   },
   "inputConfigSha256": "b9098a22c5177a61d3490c64ae29f3d984f9bf4a99b13a2d9e70fe0b3c4e4427",
   "environment": {
@@ -21,7 +21,7 @@
   "differentPixels": 788,
   "rawDifferentPixels": 798,
   "maxObservedChannelDelta": 189,
-  "beforeSha256": "75aecb219a8454c165ca86c17dbcf833f7d65e6f2ad62ed1714eca906475bac6",
+  "beforeSha256": "cac542ecdc97309e8d1094c37de2863041197284e350dd370df9a8f3d8ab003f",
   "afterSha256": "afeb995738ba31c78e3038ed6178b06b77301319cf4320c55e3dfbaec79f215d",
   "diffSha256": "b3d010b1e3e461ed9463d371628c26d83cca71c9be3aaf1d0526e5171bf7d74c",
   "checks": {
