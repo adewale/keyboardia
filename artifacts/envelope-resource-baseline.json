@@ -37,7 +37,7 @@
       "deltaFiles": 0
     },
     "javascript": {
-      "allChunksGzipBytes": 306851,
+      "allChunksGzipBytes": 315602,
       "deltaBytes": 24651,
       "deltaPercent": 8.74,
       "withinBudget": true,
@@ -56,6 +56,52 @@
         "The scheduler-worklet increase is the shared resolved-event v2 contract, not sample data.",
         "No chart, knob, or other JavaScript dependency was added."
       ]
+    }
+  },
+  "release": {
+    "capturedAt": "2026-08-22",
+    "productionAudio": {
+      "encodedBytes": 35577302,
+      "audioFileCount": 582,
+      "catalogueSha256": "ff26d1ad896bffd33aef599fc60d195315535f43f318fd56ad7bca6c00fe8d2d",
+      "notes": "The PR base already contains the enriched 582-file catalogue. The envelope implementation changes no production audio bytes."
+    },
+    "javascript": {
+      "allChunksGzipBytes": 306851,
+      "chunkBudgets": {
+        "mainEntry": {
+          "prefix": "index",
+          "entry": true,
+          "loading": "initial",
+          "gzipBytes": 168858
+        },
+        "stepSequencer": {
+          "prefix": "StepSequencer",
+          "loading": "lazy",
+          "gzipBytes": 38205
+        },
+        "sessionNotation": {
+          "prefix": "session-notation-v24",
+          "loading": "lazy",
+          "gzipBytes": 4335
+        },
+        "schedulerWorklet": {
+          "prefix": "scheduler.worklet",
+          "loading": "lazy",
+          "gzipBytes": 6471
+        }
+      }
+    },
+    "worker": {
+      "baseJavaScriptBytes": 1963063,
+      "baseUploadBytes": 3437071,
+      "javascriptBytes": 2027601,
+      "uploadBytes": 3503037,
+      "uploadDeltaBytes": 65966,
+      "uploadDeltaPercent": 1.92,
+      "maxUploadBytes": 3525000,
+      "headroomBytes": 21963,
+      "notes": "Measured against PR 87's original head. Growth is the envelope collaboration and MCP contract plus its published skill; browser notation, UI, and audio runtimes remain outside the Worker graph."
     }
   },
   "budgets": {

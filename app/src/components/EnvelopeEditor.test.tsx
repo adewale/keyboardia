@@ -119,6 +119,26 @@ describe('EnvelopeEditor v2', () => {
     expect(onEnvelopeV2Change.mock.calls[0][0].attack.value).toBeCloseTo(1.6875);
   });
 
+  it('does not publish a no-op mutation while keyboard focus moves through ranges', () => {
+    const onEnvelopeV2Change = vi.fn();
+    const onGateChange = vi.fn();
+    renderEditor({ onEnvelopeV2Change, onGateChange });
+    expand();
+
+    const attack = screen.getByRole('slider', { name: 'Attack envelope shape' });
+    fireEvent.keyDown(attack, { key: 'Tab' });
+    fireEvent.blur(attack);
+    fireEvent.keyUp(attack, { key: 'Tab' });
+
+    const gate = screen.getByRole('slider', { name: 'Gate' });
+    fireEvent.keyDown(gate, { key: ' ' });
+    fireEvent.blur(gate);
+    fireEvent.keyUp(gate, { key: ' ' });
+
+    expect(onEnvelopeV2Change).not.toHaveBeenCalled();
+    expect(onGateChange).not.toHaveBeenCalled();
+  });
+
   it('commits pointer cancellation and lost capture exactly once without a duplicate pointer-up', () => {
     const onEnvelopeV2Change = vi.fn();
     const onEnvelopePreview = vi.fn();

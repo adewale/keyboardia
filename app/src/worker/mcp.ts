@@ -282,9 +282,17 @@ const mcpEnvelopeSchema = z.union([
   compactEnvelopeSchema,
 ]);
 
+const envelopeLockEditSchema = (stage: EnvelopeStageName) => z.object({
+  operation: z.literal('set_envelope_lock'),
+  track_id: trackIdSchema,
+  step: z.number().int().min(0).max(MAX_STEPS - 1),
+  stage: z.literal(stage),
+  duration: envelopeDurationSchema(stage).nullable(),
+}).strict().describe(`Set or clear one onset-owned sparse ${stage} lock.`);
+
 const editSchema = z.object({
   session_id: sessionIdSchema,
-  edit: z.discriminatedUnion('operation', [
+  edit: z.union([
     z.object({
       operation: z.literal('add_track'),
       track_id: newTrackIdSchema,
@@ -365,18 +373,10 @@ const editSchema = z.object({
       track_id: trackIdSchema,
       mode: z.enum(['trigger', 'gate', 'loop']).nullable(),
     }).strict().describe('Set sample note-off behavior, or null to restore the manifest default.'),
-    z.object({
-      operation: z.literal('set_envelope_lock'),
-      track_id: trackIdSchema,
-      step: z.number().int().min(0).max(MAX_STEPS - 1),
-      stage: z.enum(['attack', 'hold', 'decay', 'release']),
-      duration: z.union([
-        envelopeDurationSchema('attack'),
-        envelopeDurationSchema('hold'),
-        envelopeDurationSchema('decay'),
-        envelopeDurationSchema('release'),
-      ]).nullable(),
-    }).strict().describe('Set or clear one onset-owned sparse envelope-stage lock.'),
+    envelopeLockEditSchema('attack'),
+    envelopeLockEditSchema('hold'),
+    envelopeLockEditSchema('decay'),
+    envelopeLockEditSchema('release'),
   ]).describe('Exactly one narrow session edit.'),
 }).strict().describe('The target session and one retry-safe edit to apply.');
 
