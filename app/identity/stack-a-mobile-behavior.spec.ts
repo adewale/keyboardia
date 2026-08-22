@@ -37,10 +37,12 @@ test.describe('Stack A mobile WebKit behavior identity', () => {
     const contracts = [];
     for (const side of ['base', 'head'] as const) {
       await openState(page, side, 'dropdowns', { width: 375, height: 812 });
-      await page.locator('.step-count-trigger').tap();
+      const trigger = page.locator('.step-count-trigger');
+      await trigger.tap();
       await page.locator('.step-option').first().tap();
       await expect(page.locator('[data-event-log]')).toContainText('step:4');
       await expect(page.locator('.step-count-menu')).toHaveCount(0);
+      if (side === 'head') await expect(trigger).toBeFocused();
       contracts.push(await eventContract(page));
     }
     expect(contracts[1]).toEqual(contracts[0]);
@@ -50,10 +52,12 @@ test.describe('Stack A mobile WebKit behavior identity', () => {
     const contracts = [];
     for (const side of ['base', 'head'] as const) {
       await openState(page, side, 'dropdowns', { width: 480, height: 320 });
-      await page.locator('.transpose-trigger').tap();
+      const trigger = page.locator('.transpose-trigger');
+      await trigger.tap();
       await page.locator('.transpose-option').first().tap();
       await expect(page.locator('[data-event-log]')).toContainText('transpose:');
       await expect(page.locator('.transpose-menu')).toHaveCount(0);
+      if (side === 'head') await expect(trigger).toBeFocused();
       contracts.push(await eventContract(page));
     }
     expect(contracts[1]).toEqual(contracts[0]);

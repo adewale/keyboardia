@@ -198,15 +198,16 @@ result, not a hidden benefit.
 
 #### Consequences for Stack B
 
-- The dropdown pilot is **verification-unblocked**, not product-unblocked.
-  Issue #93 still needs an approved visual brief, accessibility target, and
-  density/touch decision before any pixel changes.
+- The dropdown pilot became **verification-unblocked** after issue #93 recorded
+  its approved visual brief, accessibility target, and density/touch decision.
 - Stack B must use the merge-base-owned manifest and add approved changed-pixel
   evidence in a separate implementation PR. It may extend coverage only in a
   preceding harness PR.
 - Every intentional change must map to a named state and viewport. Unchanged
-  ARIA, event payloads, focus/dismissal, geometry outside the target, and
-  reduced-motion behavior remain exact.
+  ARIA, event payloads, dismissal, geometry outside the target, and
+  reduced-motion behavior remain exact. The final audit pulled one narrowly
+  scoped behavior repair into this pilot: selection and Escape now restore
+  focus to the owning trigger and are asserted directly.
 - Prefer feature-specific tokens during the pilot. Promote a value to a shared
   semantic token only after two real consumers share meaning as well as value.
 - Keep Stack B surface-sized. Do not start FX or picker visual consolidation
@@ -227,6 +228,119 @@ result, not a hidden benefit.
   canary for the affected surface and responsive modes. If they disagree,
   repair the fixture or the implementation; do not update snapshots until the
   source of the disagreement is understood and approved.
+- Bind approval to an immutable source revision, not merely to image hashes.
+  The final evidence-only commit records base/source SHAs, generator schema,
+  input/config hashes, check results, and every review-file hash; CI rejects
+  source drift after that approved revision.
+- Measure contrast against every opaque gradient stop that can be rendered,
+  including non-text selection indicators and each independently meaningful
+  control/menu boundary. A fallback `background-color` is not the visible
+  surface when an opaque gradient covers it.
+
+#### Lessons learned from the Stack B candidate
+
+The complete dropdown pilot is implemented in one maintainer-requested PR. Its
+candidate evidence and final consistency audit produced seventeen lessons:
+
+1. **A responsive component state is not proof that the product exposes that
+   component in the same mode.** The catalogue can render the shared portalled
+   dropdown at landscape dimensions, but production landscape uses a native
+   step-count select and transpose buttons inside `TrackDrawer`. Full-product
+   portrait and landscape screenshots are therefore identity canaries, not
+   approved-pixel baselines for this dropdown family.
+2. **Expected-difference tests can be stricter than snapshots.** The Stack B
+   contract keeps ARIA, every visible rectangle, all non-decorative computed
+   properties, and pixels outside a target-plus-halo mask exact. An image update
+   alone cannot authorize a layout or behavior regression.
+3. **Stabilize unrelated asynchronous UI by cause.** A static production build
+   has no WebSocket, so connection text can change between geometry capture and
+   screenshot. The canary removes only the live presence/status region from
+   layout; it does not add timing sleeps or broaden pixel tolerances.
+4. **Review crops must ignore zero-area descendants.** CSS descendants of a
+   hidden parent can retain `display:flex` while producing a 0×0 rectangle.
+   Target-region capture now requires positive geometry, preventing invisible
+   controls from turning an identity screenshot into a one-pixel crop.
+5. **Consistent selection does not mean one colour for every `.active`
+   class.** The rejected menu treatment reused orange as row tint, leading rail,
+   check, and open-trigger state. The approved replacement defines cues by
+   meaning: single-choice popup items use a neutral tonal row plus orange check;
+   sequencer-object selection keeps its information-blue outline; modes and
+   binary actions keep their owning feature colours; and the playhead remains
+   white. A focused browser contract now proves the two `aria-selected`
+   dropdown families compute to the same selected surface and indicator.
+6. **A screenshot hash proves integrity, not freshness.** Receipts must name the
+   immutable source revision that produced the pixels, and CI must reject later
+   product, harness, workflow, or documentation changes until evidence is
+   regenerated. Contact sheets and focused approval crops belong in the same
+   bound file inventory as their raw images.
+7. **Machine pixel authority and human review rendering are different jobs.**
+   Same-process Linux Chromium comparisons enforce containment and identity in
+   CI. Committed Chromium screenshots may be rendered on the review machine as
+   long as their source revision and environment are explicit; they are not
+   cross-platform golden screenshots.
+8. **Responsive evidence follows the named product matrix, even for unchanged
+   modes.** The 480×320 and 667×375 landscape canaries prove that the native
+   TrackDrawer path remains exact, while 1024×768 proves the tablet-landscape
+   desktop editor receives the approved dropdown treatment.
+9. **Approval sheets must show the decision at useful scale.** An exhaustive
+   menu sheet is not enough when its most important row is hard to inspect. The
+   package now includes a dedicated full-height selected-option comparison.
+10. **Visual inference must be checked against computed style.** The final audit
+    initially read the earlier neutral trigger shadow as an orange inner focus
+    halo. Chromium disproved that reading, and the flattened recipe now removes
+    the trigger shadow entirely while asserting both the absence of shadow and
+    the blue outline. A genuinely mixed focus treatment fails mechanically.
+11. **One-time migration allowances must expire.** Stack B permits reviewed
+    decorative differences only while the comparison base is the frozen Stack
+    B migration SHA. Later dropdown changes return to exact computed-style
+    identity instead of relying on the 6/255 raster allowance to catch small
+    line or text colour drift.
+12. **A contrast assertion must sample the neutral state it names.** The first
+    control-edge check read the trigger after opening it, so it measured the
+    orange open border and allowed the old 2.06:1 neutral edge to pass. The
+    repaired test captures the closed edge before interaction. Independent
+    independent calculations prove the old control edge (2.06:1), menu edge
+    (2.23:1), and pre-pilot global scrollbar (`#3a3a3a`, 1.22:1 at the
+    lightest menu stop) each fail. The 1.85:1 result seen during development
+    belonged to the stronger intermediate `#54545e` scrollbar.
+13. **Focus recovery needs a discriminating direct assertion.** Escape looked
+    correct while the trigger happened to retain focus. The evidence action now
+    moves focus to an option before Escape, and a head-only contract directly
+    proves focus returns after both dropdown selections and Escape. Removing
+    the hook repair makes that contract fail.
+14. **Focus ownership is a cross-modality contract.** The shared close path is
+    also used by touch selection, while outside dismissal deliberately is not.
+    Emulated-touch tests now assert that selection returns focus to the trigger,
+    and the head-only contract proves clicking a focusable outside target keeps
+    focus there. This prevents a future cleanup from silently stealing focus.
+15. **Text contrast must cover semantic variants and interaction states.** The
+    original text audit missed active transpose blue on hover. A
+    dropdown-specific `#5eb3ea` keeps feature identity while clearing 4.5:1 in
+    both flat closed and hover states, and both are now asserted.
+16. **Focus colour belongs to focus, not to a global button default.** Popup
+    options inherited an orange button halo even though Keyboardia reserves
+    orange for open/hover disclosure. The shared option rule now uses the same
+    information-blue focus grammar as triggers, with an inset outline that is
+    not clipped by menu overflow.
+17. **A component can improve locally and still diverge globally.** The tactile
+    dropdown recipe passed its scoped contrast and consistency checks but added
+    a private `.68` text tier plus gradients and inset highlights absent from
+    neighbouring neutral controls. The
+    [pre-flatten audit](site-wide-audit/2026-08-22/README.md) led to a flat
+    correction, and the
+    [post-flatten audit](site-wide-audit/2026-08-22-flat/README.md) verifies that
+    the stronger boundaries, state colours, selection grammar, and focus
+    ownership remain while the product's existing surfaces and `.60` muted text
+    tier are reused.
+
+Candidate pilot CSS scorecard: product files remain 41;
+product declarations increase from 5,036 to 5,055; product CSS lines increase
+from 10,987 to 11,016; the shared dropdown recipe increases by four declarations
+from 127 to 131; raw colors outside `index.css` fall from 346 to 340; duplicate
+dropdown declarations remain zero; `!important` remains 20. The declaration
+and line increases are the explicit maintenance cost of accessible boundaries,
+focus colour, and feature-specific tokens while shared flat surfaces remain
+linked to the product tokens rather than copied as raw component colours.
 
 #### Consequences for Stack C
 
@@ -351,10 +465,11 @@ independent contracts:
 | Accessibility tree | Role, name, expanded, selected, disabled, and reading-order changes |
 | Computed style/geometry | Subtle targeted differences hidden by broad page noise |
 
-#### Storybook as the state catalogue
+#### Focused state catalogue (Storybook or equivalent)
 
-Add a minimal React/Vite Storybook for only the component families Stack A may
-change. Initially cover:
+Stack A implemented a minimal React/Vite catalogue rather than adding the
+Storybook dependency. That accepted equivalent imports real production
+components and global CSS in production cascade order. It covers:
 
 - Step count and transpose: closed, open, selected, focused, and disabled.
 - Sample picker: add/change variants and collapsed/expanded categories.
@@ -362,20 +477,20 @@ change. Initially cover:
 - Landscape drawer: closed, open, keyboard-focused, and destructive-action
   states.
 
-Use story `play` functions to reach interactive states through the real control
-rather than introducing screenshot-only component props. Screenshot the whole
-Storybook preview for portalled dropdown menus because the menu is attached to
-`document.body`, outside the component root.
+Reach interactive states through the real control rather than introducing
+screenshot-only component props. Screenshot the whole catalogue page for
+portalled dropdown menus because the menu is attached to `document.body`,
+outside the component root.
 
 Use frozen `isPlaying` and `currentStep` story state for playing screenshots;
 never capture a live scheduler tick. Full-app tests should assert scheduler and
 audio progression without pixel capture.
 
-Component isolation can conceal Keyboardia's global CSS collisions. Add a
-composite collision-canary story that loads and renders StepCountDropdown and
-SamplePicker together, and retain full-application Playwright coverage for
-lazy stylesheet load-order behavior. Storybook is a deterministic state
-factory; it is not a replacement for the assembled application.
+Component isolation can conceal Keyboardia's global CSS collisions. The
+catalogue therefore includes a composite collision canary that renders
+StepCountDropdown and SamplePicker together, plus full-application Playwright
+coverage for lazy stylesheet load-order behavior. A focused catalogue is a
+deterministic state factory; it is not a replacement for the assembled app.
 
 #### Strict Playwright identity suite
 
@@ -407,10 +522,10 @@ baselines with canonical Chromium.
 #### Same-job base-versus-head comparison
 
 The strongest Stack A CI gate renders the PR merge-base and PR head in the same
-pinned environment. This gate can only become authoritative after Storybook
-and the identity manifest have merged to `main`:
+pinned environment. It became authoritative after the catalogue and identity
+manifest merged to `main`:
 
-1. Check out and build both revisions, including their static Storybooks.
+1. Check out and build both revisions, including their static catalogues.
 2. Serve them on separate ports.
 3. Use the same browser process and fixed state manifest to capture both.
 4. Compare paired screenshots with the documented raster allowance and no
@@ -500,7 +615,7 @@ visual-consistency pilot](https://github.com/adewale/keyboardia/issues/93).
    keyboard, reduced-motion, zoom/reflow, and touch-target acceptance criteria.
    Automated axe checks are a gate but do not constitute complete accessibility
    approval.
-5. **Deterministic evidence:** The relevant Storybook stories and full-app
+5. **Deterministic evidence:** The relevant component-catalogue and full-app
    Playwright states must exist before implementation. The focused fixture must
    reproduce production stylesheet and bundle order, and at least one
    production-built canary must cover every affected responsive mode. Stack B
@@ -508,9 +623,10 @@ visual-consistency pilot](https://github.com/adewale/keyboardia/issues/93).
    reviewed pixel diff. A focused/full-app disagreement blocks baseline updates.
 6. **Behavior freeze:** DOM and accessible order, role/name, keyboard and touch
    behavior, focus path, hit area, visibility, default disclosure, and product
-   state remain unchanged. Reordering, hiding, progressive disclosure, target
-   enlargement, or changed default expansion is Stack C even when presented as
-   styling.
+   state remain unchanged unless the maintainer explicitly pulls forward a
+   narrowly scoped blocker repair with its own direct test. Reordering, hiding,
+   progressive disclosure, target enlargement, or changed default expansion is
+   Stack C even when presented as styling.
 7. **No imminent structural replacement:** Do not visually normalize a surface
    that a planned behavior PR will soon remove or reorganize. Finish or reject
    that product change first.
@@ -552,8 +668,13 @@ C work is an early contract repair that unblocks A or B; optional redesigns
 come later as independent product slices.
 
 Classify work by its highest impact. Stack A changes neither pixels nor
-behavior. Stack B changes approved pixels while preserving DOM/accessibility
-order, hit areas, visibility, focus paths, and disclosure. Any change to those
+behavior. Stack B changes approved pixels while normally preserving
+DOM/accessibility order, hit areas, visibility, focus paths, and disclosure.
+This pilot includes one explicitly requested Stack C pull-forward—restoring
+trigger focus after selection and Escape—because shipping the visual focus
+treatment without a reliable focus owner would leave a verified accessibility
+gap. It has a direct negative-control-backed test and is not precedent for
+bundling broader behavior work into visual pilots. Any other change to those
 contracts is Stack C. On one surface, planned structural Stack C work
 supersedes Stack B rather than depending on it; unrelated A-lite and B work may
 proceed while that surface waits for its C decision.
@@ -713,9 +834,10 @@ and behavior—not pixel similarity.
      two real shared-rule consumers; no increase in `!important`, maximum
      specificity, or recovery overrides; acceptable identity-job duration and
      flake rate.
-   - Stack B: every changed pixel maps to the approved brief; behavior remains
-     frozen; contrast, focus, target size, and design-language decisions pass;
-     a reviewer records go/no-go before the next surface.
+   - Stack B: every changed pixel maps to the approved brief; the sole approved
+     behavior repair is directly tested; all other behavior remains frozen;
+     contrast, focus, target size, and design-language decisions pass; a
+     reviewer records go/no-go before the next surface.
    - Stack C: one outcome, guardrail, rollback threshold, and feasible
      observation method; test audio, multiplayer, persistence, publication,
      accessibility, and mobile only where the impact manifest selects them.
@@ -734,9 +856,17 @@ and behavior—not pixel similarity.
 2. **Complete — A checkpoint:** the scorecard above shows net CSS deletion and
    zero remaining duplicate component declarations, so the dropdown pilot is a
    go; broader abstraction is not implied.
-3. **Next — Dropdown B eligibility:** close issue #93's dropdown-only brief,
-   accessibility, density, and touch decisions. Run one independent B pilot
-   with reviewed baselines in the same PR, then make a B stop/go decision.
+3. **Implementation complete; renewed review pending — Dropdown B pilot:** the
+   dropdown-only brief, accessibility, density, touch decision, deterministic
+   expected-difference contract, and 29 before/after pairs are implemented in
+   one maintainer-requested PR. The maintainer approved Option 1 for the
+   selected row; the later focus-ownership and non-text-contrast corrections
+   require review of the regenerated source-bound evidence and final CI. The
+   pilot decision remains **stop**: do not begin another Stack B surface
+   without its own surface-specific gate. The package covers desktop, portrait,
+   480×320 and 667×375 landscape, 844×390 wide landscape, 1024×768 tablet
+   landscape, and the 768/769 boundary. Merging PR #95 after renewed approval
+   does not authorize a product-wide Stack B rollout.
 4. **C0 in parallel, per surface:** merge only the viewport, FX, picker-
    characterization, or touch decision needed by that surface; then implement
    it as one vertical slice. Do not make all A/B wait for all C0 decisions.

@@ -98,6 +98,7 @@
     "validate:dead-exports": "tsx scripts/check-dead-exports.ts",
     "validate:unrun-tests": "tsx scripts/check-unrun-tests.ts",
     "validate:css-consistency": "node scripts/check-css-consistency.mjs",
+    "validate:stack-b-evidence": "node scripts/verify-stack-b-evidence.mjs",
     "metrics:css-consistency": "node scripts/report-css-consistency.mjs",
     "typecheck": "tsc -b"
   },

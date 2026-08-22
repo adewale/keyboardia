@@ -8,7 +8,7 @@
 }
 
 .transpose-trigger.active:not(.open) {
-  color: var(--color-blue);
+  color: var(--dropdown-transpose-active-color);
 }
 
 .transpose-menu {

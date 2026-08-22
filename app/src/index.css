@@ -63,6 +63,21 @@
   --color-accent-hover: #f07048;      /* Accent hover state */
   --color-accent-muted: rgba(232, 90, 48, 0.2); /* Subtle accent backgrounds */
   --color-accent-glow: rgba(232, 90, 48, 0.6);  /* Glow effects */
+  /* Stack B dropdown pilot. Reuse the site's flat neutral surface grammar
+     while retaining independently contrasted component boundaries. */
+  --dropdown-control-background: var(--color-surface-elevated);
+  --dropdown-control-border: #6c6c76;
+  --dropdown-control-shadow: none;
+  --dropdown-control-hover-background: var(--color-surface-hover);
+  --dropdown-control-open-background: #2a201e;
+  --dropdown-menu-background: var(--color-surface-elevated);
+  --dropdown-menu-border: #74747f;
+  --dropdown-scrollbar-thumb: #787883;
+  --dropdown-menu-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --dropdown-option-hover-background: var(--color-surface-hover);
+  --dropdown-option-selected-background: var(--color-surface-active);
+  --dropdown-option-secondary-text: var(--color-text-muted);
+  --dropdown-transpose-active-color: #5eb3ea;
   /* Exact legacy channel fallback used by selection glow. This deliberately
      does not normalize to --color-accent in Stack A. */
   --color-selection-glow-rgb: 255, 160, 100;

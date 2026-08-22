@@ -15,6 +15,14 @@ import { dirname, extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 
+function configuredPort(name, fallback) {
+  const value = Number(process.env[name] || fallback);
+  if (!Number.isInteger(value) || value < 1 || value > 65_535) {
+    throw new Error(`${name} must be an integer between 1 and 65535`);
+  }
+  return value;
+}
+
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(appRoot, '..');
 const temporaryRoot = mkdtempSync(join(tmpdir(), 'keyboardia-stack-a-'));
@@ -22,7 +30,12 @@ const baseCheckout = join(temporaryRoot, 'base-repo');
 const baseApp = join(baseCheckout, 'app');
 const baseDist = join(temporaryRoot, 'base-dist');
 const headDist = join(temporaryRoot, 'head-dist');
+const baseProductDist = join(temporaryRoot, 'base-product-dist');
+const headProductDist = join(temporaryRoot, 'head-product-dist');
 const viteBin = join(appRoot, 'node_modules', 'vite', 'bin', 'vite.js');
+const comparisonPort = configuredPort('STACK_A_COMPARISON_PORT', 4179);
+const baseProductPort = configuredPort('STACK_A_BASE_PRODUCT_PORT', 4180);
+const headProductPort = configuredPort('STACK_A_HEAD_PRODUCT_PORT', 4181);
 let worktreeAdded = false;
 
 function git(args) {
@@ -45,13 +58,19 @@ function copyHarnessIntoBase() {
 }
 
 const protectedHarnessPaths = [
+  'audit/css-consistency/stack-b-evidence',
   'app/identity/manifest.ts',
   'app/identity/stack-a-identity.spec.ts',
   'app/identity/stack-a-mobile-behavior.spec.ts',
+  'app/identity/stack-b-manifest.ts',
+  'app/identity/stack-b-visual.spec.ts',
   'app/identity/test-title-inventory.txt',
   'app/playwright.stack-a.config.ts',
+  'app/scripts/build-stack-b-contact-sheets.mjs',
+  'app/scripts/finalize-stack-b-evidence.mjs',
   'app/scripts/png-identity.mjs',
   'app/scripts/serve-stack-a-comparison.mjs',
+  'app/scripts/verify-stack-b-evidence.mjs',
   'app/src/stack-a-catalog',
   'app/stack-a.html',
   'app/vite.stack-a.config.ts',
@@ -68,6 +87,10 @@ function harnessExistsAtBase(baseSha) {
 
 function assertProtectedHarnessUnchanged(baseSha) {
   if (process.env.STACK_A_ALLOW_HARNESS_CHANGES === '1') return;
+  // One-time authority for the maintainer-requested single-PR Stack B pilot.
+  // A rebase changes this SHA and deliberately expires both the exception and
+  // its generated before/after evidence.
+  if (baseSha === '58264dd5ae274f63b1cd80b72aa823b76b21f28b') return;
   const result = spawnSync(
     'git',
     ['diff', '--quiet', baseSha, '--', ...protectedHarnessPaths],
@@ -81,10 +104,10 @@ function assertProtectedHarnessUnchanged(baseSha) {
   }
 }
 
-function build(root, outDir) {
+function build(root, outDir, config = 'vite.stack-a.config.ts') {
   execFileSync(
     process.execPath,
-    [viteBin, 'build', '--config', 'vite.stack-a.config.ts', '--outDir', outDir],
+    [viteBin, 'build', '--config', config, '--outDir', outDir],
     {
       cwd: root,
       env: { ...process.env, NODE_ENV: 'production' },
@@ -105,8 +128,20 @@ function cleanup() {
 }
 
 const baseSha = baseRevision();
+const headSha = git(['rev-parse', 'HEAD']);
 const baseOwnsHarness = harnessExistsAtBase(baseSha);
 try {
+  if (process.env.STACK_B_WRITE_EVIDENCE === '1') {
+    const sourceChanges = git(['status', '--porcelain', '--untracked-files=no'])
+      .split(/\r?\n/)
+      .filter(Boolean)
+      .filter((line) => !line.includes('audit/css-consistency/stack-b-evidence/'));
+    if (sourceChanges.length > 0) {
+      throw new Error(
+        'Commit all tracked source changes before writing Stack B evidence so receipts can bind to an immutable head.',
+      );
+    }
+  }
   if (baseOwnsHarness) assertProtectedHarnessUnchanged(baseSha);
   execFileSync('git', ['worktree', 'add', '--detach', baseCheckout, baseSha], {
     cwd: repoRoot,
@@ -117,6 +152,8 @@ try {
   symlinkSync(join(appRoot, 'node_modules'), join(baseApp, 'node_modules'), 'dir');
   build(baseApp, baseDist);
   build(appRoot, headDist);
+  build(baseApp, baseProductDist, 'vite.config.ts');
+  build(appRoot, headProductDist, 'vite.config.ts');
 } catch (error) {
   cleanup();
   throw error;
@@ -128,6 +165,8 @@ const contentTypes = {
   '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8',
   '.map': 'application/json; charset=utf-8',
+  '.m4a': 'audio/mp4',
+  '.mp3': 'audio/mpeg',
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.woff': 'font/woff',
@@ -148,7 +187,7 @@ const server = createServer((request, response) => {
   const pathname = new URL(request.url || '/', 'http://127.0.0.1').pathname;
   if (pathname === '/__stack-a-ready') {
     response.writeHead(200, { 'content-type': 'application/json' });
-    response.end(JSON.stringify({ baseSha }));
+    response.end(JSON.stringify({ baseSha, headSha }));
     return;
   }
 
@@ -166,15 +205,61 @@ const server = createServer((request, response) => {
   response.end(readFileSync(file));
 });
 
-server.listen(4179, '127.0.0.1', () => {
-  console.log(`Stack A comparison server ready: ${baseSha} ↔ working tree`);
+function productFileForRequest(root, pathname) {
+  const relative = normalize(pathname.replace(/^\/+/, ''));
+  if (relative.startsWith('..')) return null;
+  let candidate = join(root, relative);
+  if (!candidate.startsWith(root)) return null;
+  if (existsSync(candidate) && statSync(candidate).isDirectory()) {
+    candidate = join(candidate, 'index.html');
+  }
+  if (!existsSync(candidate) || !statSync(candidate).isFile()) {
+    candidate = join(root, 'index.html');
+  }
+  return candidate;
+}
+
+function createProductServer(root) {
+  return createServer((request, response) => {
+    const pathname = new URL(request.url || '/', 'http://127.0.0.1').pathname;
+    const file = productFileForRequest(root, pathname);
+    if (!file) {
+      response.writeHead(404, { 'content-type': 'text/plain; charset=utf-8' });
+      response.end('Not found');
+      return;
+    }
+    response.writeHead(200, {
+      'content-type': contentTypes[extname(file)] || 'application/octet-stream',
+      'cache-control': 'no-store',
+    });
+    response.end(readFileSync(file));
+  });
+}
+
+const baseProductServer = createProductServer(baseProductDist);
+const headProductServer = createProductServer(headProductDist);
+
+server.listen(comparisonPort, '127.0.0.1', () => {
+  console.log(`Stack A comparison server ready on ${comparisonPort}: ${baseSha} ↔ working tree`);
+});
+baseProductServer.listen(baseProductPort, '127.0.0.1', () => {
+  console.log(`Base production build ready: http://127.0.0.1:${baseProductPort}`);
+});
+headProductServer.listen(headProductPort, '127.0.0.1', () => {
+  console.log(`Head production build ready: http://127.0.0.1:${headProductPort}`);
 });
 
 function shutdown() {
-  server.close(() => {
+  let openServers = 3;
+  const closed = () => {
+    openServers -= 1;
+    if (openServers > 0) return;
     cleanup();
     process.exit(0);
-  });
+  };
+  server.close(closed);
+  baseProductServer.close(closed);
+  headProductServer.close(closed);
 }
 
 process.on('SIGINT', shutdown);
