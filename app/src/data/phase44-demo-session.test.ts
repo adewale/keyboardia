@@ -6,7 +6,7 @@ import { repairStateInvariants, validateStateInvariants } from '../worker/invari
 import type { SessionState } from '../shared/state';
 import { velocityFromMultiplier } from '../audio/velocity';
 import { VELOCITY_FILTER_BYPASS_VELOCITY } from '../audio/velocity-sample-filter';
-import { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
+import { NEW_SESSION_EFFECTS_STATE } from '../shared/effects-defaults';
 import type { InstrumentManifest } from '../audio/sampled-instrument';
 
 /**
@@ -85,7 +85,7 @@ describe('Whisper to Roar demo session', () => {
   });
 
   it('uses the Phase 44 default room and exercises tied sustains and kit layers', () => {
-    expect(artifact.state.effects?.reverb.wet).toBe(DEFAULT_EFFECTS_STATE.reverb.wet);
+    expect(artifact.state.effects?.reverb.wet).toBe(NEW_SESSION_EFFECTS_STATE.reverb.wet);
     const strings = artifact.state.tracks.find(track => track.sampleId === 'sampled:string-section')!;
     expect(strings.parameterLocks.filter(lock => lock?.tie === true).length).toBeGreaterThanOrEqual(6);
     const snare = artifact.state.tracks.find(track => track.sampleId === 'sampled:acoustic-snare')!;

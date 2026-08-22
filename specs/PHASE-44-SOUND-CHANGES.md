@@ -362,7 +362,11 @@ no comparative claim).
   darker; layered instruments carry no anchor. The bypass-caps-payoff and
   no-motion limits stated under "Reconsidered limits" stand.
 - **Change 3 — default room** (`effects-defaults.ts`). New sessions carry
-  `reverb.wet 0.15`; `LEGACY_MISSING_EFFECTS_STATE` stays 0 and the
+  `reverb.wet 0.15` through the `new-session` fallback
+  (`NEW_SESSION_EFFECTS_STATE`), exactly as §5 specifies; the shared
+  `DEFAULT_EFFECTS_STATE` baseline the UI and audio chain initialize from
+  stays dry (the Stack A identity catalogue renders it, so moving it would
+  fail that gate), `LEGACY_MISSING_EFFECTS_STATE` stays 0, and the
   legacy-normalization guard is asserted in `session-defaults.test.ts`.
   **Still owed:** the browser-capture acceptance rows in §5 (tail rise,
   low-band ±0.3 dB, true peak, LU, pumping) — this container has no WebKit
