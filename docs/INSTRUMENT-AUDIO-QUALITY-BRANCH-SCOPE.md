@@ -4,6 +4,10 @@ The audit inspected all 48 GitHub branch heads (47 non-main plus `main`) and
 resolved open pull requests independently of branch naming. Exactly seven heads
 are genuinely in flight:
 
+The final remote-state check used `main` at `58264dd5`, PR 87 at `b58db2e`,
+and the unsubmitted Tone Nets head at `9c61012` on 2026-08-22. GitHub still
+reported seven open pull requests and four open issues.
+
 | PR | Head | Audio impact |
 |---:|---|---|
 | 96 | `claude/wal-reset-bug-learnings-ojery3` | Adds correctness/onset-related tests and research; no production DSP, manifest, sample, calibration, or catalogue change |
@@ -21,11 +25,14 @@ catalogue. All seven open heads have the same 26 sampled-instrument set as
 there is no honest branch-specific alternate ranking to report.
 
 The additional post-audit head
-`claude/tone-nets-keyboardia-comparison-vwa218` has no pull request. It adds one
-research document comparing Tone Nets with Keyboardia. It correctly notes the
-Hammond loop requirement, sparse root maps, and amplitude-only velocity on
-several engines, but contains no audio bytes, manifests, DSP, capture evidence,
-or implementation. It is useful diagnosis, not an in-progress fix.
+`claude/tone-nets-keyboardia-comparison-vwa218` has no pull request. Its latest
+tip adds two read-only sample-analysis/simulation scripts, a proposed Phase 44
+sound-change plan, comparison research, and test-runner budget changes. It
+measures the amplitude-only velocity limitation and simulates a possible
+velocity filter, while explicitly labelling the proposed sound changes as not
+achieved. It contains no production DSP change, audio byte, manifest change,
+or completed capture/listening evidence. It is useful diagnosis and proposed
+work, not an in-progress repair of the shipped instruments.
 
 One other dormant, non-PR branch has unique production audio code:
 `claude/fix-safari-audio-switching-Vq8zi`. It is 333 commits behind and adds
