@@ -1,5 +1,18 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Track, ParameterLock, FMParams, ScaleState, LoopRegion } from '../types';
+import type {
+  Track,
+  ParameterLock,
+  FMParams,
+  TrackEnvelope,
+  TrackEnvelopeV2,
+  EnvelopeDuration,
+  EnvelopeDurationUnit,
+  EnvelopeStageName,
+  SamplePlaybackMode,
+  EnvelopeTimeUnit,
+  ScaleState,
+  LoopRegion,
+} from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { Add, ChevronDown, ChevronUp, Minus } from '../icons';
@@ -14,6 +27,13 @@ import { ParameterLockEditor } from './ParameterLockEditor';
 import { TrackNameEditor } from './TrackNameEditor';
 import { PatternToolsPanel } from './PatternToolsPanel';
 import { SamplePicker } from './SamplePicker';
+import { EnvelopeEditor } from './EnvelopeEditor';
+import {
+  DEFAULT_TRACK_GATE,
+  getEffectiveTrackEnvelope,
+  getEffectiveTrackEnvelopeV2,
+} from '../shared/envelope';
+import { activeEnvelopeStages, legacyTrackEnvelopeToV2, resolveEnvelopeV2 } from '../shared/envelope-contract-v2';
 import { previewInstrument } from '../audio/audioTriggers';
 import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
@@ -55,6 +75,7 @@ interface TrackRowProps {
   track: Track;
   trackIndex: number; // Phase 31G: Index in tracks array for drag & drop
   currentStep: number;
+  tempo?: number;
   swing: number;
   anySoloed: boolean;
   hasSteps: boolean;
@@ -73,6 +94,21 @@ interface TrackRowProps {
   onSetTranspose?: (transpose: number) => void;
   onSetStepCount?: (stepCount: number) => void;
   onSetFMParams?: (fmParams: FMParams) => void;
+  onSetEnvelope?: (envelope?: TrackEnvelope) => void;
+  onSetEnvelopeV2?: (envelope?: TrackEnvelopeV2) => void;
+  /** Local-only audio preview; never persists or broadcasts a drag draft. */
+  onPreviewEnvelopeV2?: (envelope: TrackEnvelopeV2) => void;
+  onConvertEnvelopeUnitsV2?: (unit: EnvelopeDurationUnit) => void;
+  onSetEnvelopeLockV2?: (
+    step: number,
+    stage: EnvelopeStageName,
+    duration?: EnvelopeDuration,
+  ) => void;
+  onSetSamplePlaybackModeV2?: (mode?: SamplePlaybackMode) => void;
+  onSetEnvelopeTimeUnit?: (unit: EnvelopeTimeUnit) => void;
+  onSetGate?: (gate: number) => void;
+  /** False only while connected to a worker that cannot persist v2 edits. */
+  supportsEnvelopeV2?: boolean;
   onSetVolume?: (volume: number) => void;
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
   // Phase 31B: Pattern manipulation
@@ -107,6 +143,8 @@ interface TrackRowProps {
   orientationMode?: 'portrait' | 'landscape' | 'desktop';
   isLandscapeDrawerOpen?: boolean;
   onToggleLandscapeDrawer?: () => void;
+  /** Marks this as the selected track for track-scoped performance controls. */
+  onFocusTrack?: () => void;
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -116,6 +154,7 @@ export const TrackRow = React.memo(function TrackRow({
   track,
   trackIndex: _trackIndex, // Reserved for future use (currently using track.id for stability)
   currentStep,
+  tempo = 120,
   swing,
   anySoloed,
   hasSteps,
@@ -134,6 +173,15 @@ export const TrackRow = React.memo(function TrackRow({
   onSetTranspose,
   onSetStepCount,
   onSetFMParams,
+  onSetEnvelope,
+  onSetEnvelopeV2,
+  onPreviewEnvelopeV2,
+  onConvertEnvelopeUnitsV2,
+  onSetEnvelopeLockV2,
+  onSetSamplePlaybackModeV2,
+  onSetEnvelopeTimeUnit,
+  onSetGate,
+  supportsEnvelopeV2 = true,
   onSetVolume,
   scale,
   onRotatePattern,
@@ -158,6 +206,7 @@ export const TrackRow = React.memo(function TrackRow({
   orientationMode,
   isLandscapeDrawerOpen,
   onToggleLandscapeDrawer,
+  onFocusTrack,
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -167,6 +216,7 @@ export const TrackRow = React.memo(function TrackRow({
   const [isVelocityExpanded, setIsVelocityExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showPatternTools, setShowPatternTools] = useState(false);
+  const [showEnvelopeEditor, setShowEnvelopeEditor] = useState(false);
   // Change instrument (issue #63): the picker panel below this row.
   const [showInstrumentPicker, setShowInstrumentPicker] = useState(false);
   // NOTE: Track name editing state moved to TrackNameEditor component
@@ -298,6 +348,14 @@ export const TrackRow = React.memo(function TrackRow({
     onSetParameterLock(selectedStep, { ...currentLock, tie: newTie || undefined });
   }, [selectedStep, track.parameterLocks, onSetParameterLock]);
 
+  const handleEnvelopeLockChange = useCallback((
+    stage: EnvelopeStageName,
+    duration: EnvelopeDuration | undefined,
+  ) => {
+    if (selectedStep === null || !onSetEnvelopeLockV2) return;
+    onSetEnvelopeLockV2(selectedStep, stage, duration);
+  }, [selectedStep, onSetEnvelopeLockV2]);
+
   const handleTransposeChange = useCallback(async (transpose: number) => {
     if (!onSetTranspose) return;
 
@@ -330,6 +388,20 @@ export const TrackRow = React.memo(function TrackRow({
 
   // Check if this is an FM synth track
   const showFMControls = isFMSynth(track.sampleId);
+  const effectiveEnvelope = useMemo(() => getEffectiveTrackEnvelope(track), [track]);
+  const envelopeV2Report = useMemo(() => getEffectiveTrackEnvelopeV2(track), [track]);
+  const envelopeEditorValue = useMemo(() => (
+    track.envelopeV2
+    ?? (track.envelope
+      ? legacyTrackEnvelopeToV2(track.envelope, track.envelopeTimeUnit ?? 'seconds')
+      : envelopeV2Report.effective)
+  ), [envelopeV2Report.effective, track.envelope, track.envelopeTimeUnit, track.envelopeV2]);
+  const lockableEnvelopeStages = useMemo(() => (
+    features.envelopeV2 && supportsEnvelopeV2
+      ? activeEnvelopeStages(envelopeV2Report.effective.model)
+        .filter((stage) => envelopeV2Report.capability.lockableStages.includes(stage))
+      : []
+  ), [envelopeV2Report.capability.lockableStages, envelopeV2Report.effective.model, supportsEnvelopeV2]);
 
   // Phase 25: Handle track volume changes
   const handleTrackVolumeChange = useCallback((volume: number) => {
@@ -517,6 +589,8 @@ export const TrackRow = React.memo(function TrackRow({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onDragEnd={handleDragEndEvent}
+      onPointerDownCapture={onFocusTrack}
+      onFocusCapture={onFocusTrack}
     >
       {/* Mobile: Track header row with name only */}
       <div className={`track-header-mobile ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''}`}>
@@ -774,12 +848,17 @@ export const TrackRow = React.memo(function TrackRow({
           isPitchExpanded={isExpanded}
           isVelocityExpanded={isVelocityExpanded}
           arePatternToolsVisible={showPatternTools}
+          isEnvelopeVisible={features.envelopeV2 && supportsEnvelopeV2 && showEnvelopeEditor}
+          envelopeLabel={envelopeV2Report.effective.model.toUpperCase()}
           onTransposeChange={handleTransposeChange}
           onStepCountChange={(stepCount) => onSetStepCount?.(stepCount)}
           onVolumeChange={(volume) => onSetVolume?.(volume)}
           onExpandPitch={isMelodicTrack ? () => setIsExpanded(!isExpanded) : undefined}
           onExpandVelocity={() => setIsVelocityExpanded(!isVelocityExpanded)}
           onShowPatternTools={() => setShowPatternTools(!showPatternTools)}
+          onShowEnvelope={features.envelopeV2 && supportsEnvelopeV2
+            ? () => setShowEnvelopeEditor(!showEnvelopeEditor)
+            : undefined}
           instrumentName={getInstrumentName(track.sampleId)}
           isInstrumentPickerVisible={isInstrumentPickerOpen}
           onChangeInstrument={canChangeInstrument ? handleToggleInstrumentPicker : undefined}
@@ -841,6 +920,12 @@ export const TrackRow = React.memo(function TrackRow({
             onMirror={onMirrorPattern}
             onEuclideanFill={onEuclideanFill}
             onSwingChange={onSetTrackSwing}
+            envelopeLabel={envelopeV2Report.effective.model.toUpperCase()}
+            isEnvelopeExpanded={showEnvelopeEditor}
+            envelopeControlsId={`envelope-panel-${track.id}`}
+            onToggleEnvelope={features.envelopeV2 && supportsEnvelopeV2
+              ? () => setShowEnvelopeEditor(!showEnvelopeEditor)
+              : undefined}
           />
         </div>
       </div>
@@ -1012,6 +1097,18 @@ export const TrackRow = React.memo(function TrackRow({
 
         <div className="drawer-divider" />
 
+        {features.envelopeV2 && supportsEnvelopeV2 && <div className="drawer-row">
+          <span className="drawer-label">Envelope</span>
+          <button
+            className={`drawer-instrument-btn ${showEnvelopeEditor ? 'active' : ''}`}
+            onClick={() => setShowEnvelopeEditor(!showEnvelopeEditor)}
+            aria-expanded={showEnvelopeEditor}
+            aria-controls={showEnvelopeEditor ? `envelope-panel-${track.id}` : undefined}
+          >
+            {`${envelopeV2Report.effective.model.toUpperCase()}${envelopeV2Report.playbackMode ? ` · ${envelopeV2Report.playbackMode}` : ''}`}
+          </button>
+        </div>}
+
         {/* Phase 31B: Pattern Tools in mobile drawer */}
         <div className="drawer-row">
           <span className="drawer-label">Pattern</span>
@@ -1131,6 +1228,52 @@ export const TrackRow = React.memo(function TrackRow({
         </div>
       </InlineDrawer>
 
+      {features.envelopeV2 && supportsEnvelopeV2 && showEnvelopeEditor && (
+        <div id={`envelope-panel-${track.id}`}>
+          <EnvelopeEditor
+            envelope={effectiveEnvelope}
+            envelopeV2={envelopeEditorValue}
+            capability={envelopeV2Report.capability}
+            overridden={track.envelopeV2 !== undefined || track.envelope !== undefined}
+            timeUnit={track.envelopeTimeUnit ?? 'seconds'}
+            playbackMode={envelopeV2Report.playbackMode}
+            gate={track.gate ?? DEFAULT_TRACK_GATE}
+            bpm={tempo}
+            inactiveReason={track.envelopeV2 ? envelopeV2Report.inactiveReason : undefined}
+            disabled={readOnly || !onSetEnvelopeV2 || !onSetGate}
+            initiallyExpanded
+            onChange={(envelope) => onSetEnvelope?.(envelope)}
+            onEnvelopeV2Change={(envelope) => onSetEnvelopeV2?.(envelope)}
+            onEnvelopePreview={onPreviewEnvelopeV2}
+            onConvertAllUnits={track.envelopeV2 ? onConvertEnvelopeUnitsV2 : undefined}
+            onReset={() => {
+              if (track.envelopeV2 !== undefined) onSetEnvelopeV2?.(undefined);
+              if (track.envelope !== undefined) onSetEnvelope?.(undefined);
+            }}
+            onTimeUnitChange={(unit) => onSetEnvelopeTimeUnit?.(unit)}
+            onPlaybackModeChange={(mode) => onSetSamplePlaybackModeV2?.(mode)}
+            onGateChange={(gate) => onSetGate?.(gate)}
+            onAudition={() => {
+              void previewInstrument('preview_pitch', {
+                sampleId: track.sampleId,
+                previewId: `envelope-preview-${track.id}`,
+                duration: 0.35,
+                resolvedEnvelope: resolveEnvelopeV2(envelopeEditorValue, tempo),
+                playbackMode: envelopeV2Report.playbackMode,
+              });
+            }}
+          />
+        </div>
+      )}
+
+      {(!features.envelopeV2 || !supportsEnvelopeV2)
+        && (track.envelopeV2 !== undefined || track.envelope !== undefined || track.gate !== undefined)
+        && (
+          <div className="envelope-readonly-summary" role="status">
+            {`Envelope: ${envelopeV2Report.effective.model.toUpperCase()} · ${envelopeV2Report.playbackMode ?? 'gate'} · gate ${track.gate ?? DEFAULT_TRACK_GATE}% (read only)`}
+          </div>
+        )}
+
       {/* FM Synthesis controls - shown for FM synth tracks */}
       {showFMControls && onSetFMParams && (
         <div className="fm-controls-panel">
@@ -1224,10 +1367,14 @@ export const TrackRow = React.memo(function TrackRow({
           onPitchChange={handlePitchChange}
           onVolumeChange={handleVolumeChange}
           onTieToggle={handleTieToggle}
+          onEnvelopeLockChange={handleEnvelopeLockChange}
+          envelopeStages={lockableEnvelopeStages}
           onClearLock={handleClearLock}
           onDismiss={handleDismissParameterLockEditor}
           sampleId={track.sampleId}
           transpose={track.transpose ?? 0}
+          envelopeTimeUnit={track.envelopeTimeUnit ?? 'seconds'}
+          bpm={tempo}
         />
       )}
     </div>

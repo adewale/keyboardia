@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useMemo } from 'react';
-import type { EffectsState, ScaleState } from '../types';
+import type { EffectsState, ScaleState, Track, TrackEnvelope, TrackEnvelopeV2 } from '../types';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { audioEngine } from '../audio/engine';
@@ -12,6 +12,13 @@ import { FxActive, FxBypass, Play, Stop } from '../icons';
 import { DEFAULT_SCALE_STATE } from '../state/grid';
 import { useSyncExternalState, useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
 import './Transport.css';
+import { getEffectiveTrackEnvelopeV2 } from '../shared/envelope';
+import {
+  clampEnvelopeDurationV2,
+  legacyTrackEnvelopeToV2,
+  trackEnvelopeV2ToLegacySeconds,
+  type EnvelopeDuration,
+} from '../shared/envelope-contract-v2';
 
 interface TransportProps {
   isPlaying: boolean;
@@ -44,6 +51,16 @@ interface TransportProps {
   onTogglePitch?: () => void;
   isPitchOpen?: boolean;
   hasMelodicTracks?: boolean;
+  tracks?: Track[];
+  selectedTrackId?: string;
+  /** False while connected to a worker that cannot persist v2 envelopes. */
+  supportsEnvelopeV2?: boolean;
+  /** False for the headless release profile; removes every envelope authoring surface. */
+  envelopeEditingEnabled?: boolean;
+  onEnvelopeChange?: (trackId: string, envelope: TrackEnvelope) => void;
+  onEnvelopeV2Change?: (trackId: string, envelope: TrackEnvelopeV2) => void;
+  /** Local-only audio preview for a draft; never persists or broadcasts. */
+  onEnvelopePreview?: (trackId: string, envelope: TrackEnvelopeV2) => void;
 }
 
 export function Transport({
@@ -69,6 +86,13 @@ export function Transport({
   onTogglePitch,
   isPitchOpen = false,
   hasMelodicTracks = false,
+  tracks = [],
+  selectedTrackId,
+  supportsEnvelopeV2 = true,
+  envelopeEditingEnabled = true,
+  onEnvelopeChange,
+  onEnvelopeV2Change,
+  onEnvelopePreview,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
 
@@ -128,14 +152,101 @@ export function Transport({
   // XY Pad controller state
   const [xyPreset, setXyPreset] = useState('space-control');
   const [xyPos, setXyPos] = useState({ x: 0.5, y: 0.5 });
-  const xyPresetIds = useMemo(() => Object.keys(XY_PAD_PRESETS), []);
+  const xyPresetIds = useMemo(
+    () => Object.keys(XY_PAD_PRESETS).filter(id => envelopeEditingEnabled || id !== 'envelope-shape'),
+    [envelopeEditingEnabled],
+  );
   const xyControllerRef = useRef(new XYPadController(xyPreset));
+  const [envelopeTrackId, setEnvelopeTrackId] = useState('');
+  const envelopeTrack = tracks.find(track => track.id === envelopeTrackId)
+    ?? tracks.find(track => track.id === selectedTrackId)
+    ?? tracks[0];
+  const xyEffectsBaselineRef = useRef<EffectsState | null>(null);
+  const xyEffectsDraftRef = useRef(effects);
+  const [xyGestureActive, setXyGestureActive] = useState(false);
+
+  const positionForEnvelopeTrack = useCallback((track: Track | undefined) => {
+    if (!track) return { x: 0.5, y: 0.5 };
+    const report = getEffectiveTrackEnvelopeV2(track);
+    const editable = track.envelopeV2
+      ?? (track.envelope
+        ? legacyTrackEnvelopeToV2(track.envelope, track.envelopeTimeUnit ?? 'seconds')
+        : report.effective);
+    const current = trackEnvelopeV2ToLegacySeconds(editable, tempo);
+    const mappings = XY_PAD_PRESETS['envelope-shape'].mappings;
+    const inverse = (parameter: 'attack' | 'release', value: number) => {
+      const mapping = mappings.find(candidate => candidate.parameter === parameter);
+      if (!mapping || mapping.max === mapping.min) return 0;
+      const normalized = Math.min(1, Math.max(0, (value - mapping.min) / (mapping.max - mapping.min)));
+      return mapping.curve === 'exponential' ? Math.sqrt(normalized) : normalized;
+    };
+    return {
+      x: inverse('attack', current.attack),
+      y: inverse('release', current.release),
+    };
+  }, [tempo]);
+
+  const envelopeXYActive = useMemo(() => {
+    if (!envelopeEditingEnabled || !supportsEnvelopeV2 || !envelopeTrack) return false;
+    const report = getEffectiveTrackEnvelopeV2(envelopeTrack);
+    const model = envelopeTrack.envelopeV2?.model
+      ?? (envelopeTrack.envelope ? 'adsr' : report.effective.model);
+    return report.capability.models.includes(model) && (model === 'ar' || model === 'adsr');
+  }, [envelopeEditingEnabled, envelopeTrack, supportsEnvelopeV2]);
+
+  const displayedXYPos = xyPreset === 'envelope-shape' && !xyGestureActive
+    ? positionForEnvelopeTrack(envelopeTrack)
+    : xyPos;
 
   const handlePresetChange = useCallback((newPreset: string) => {
+    if (newPreset === 'envelope-shape' && (!envelopeEditingEnabled || !supportsEnvelopeV2)) return;
     setXyPreset(newPreset);
     xyControllerRef.current = new XYPadController(newPreset);
-    setXyPos({ x: 0.5, y: 0.5 });
-  }, []);
+    const next = newPreset === 'envelope-shape'
+      ? positionForEnvelopeTrack(envelopeTrack)
+      : { x: 0.5, y: 0.5 };
+    xyControllerRef.current.setPosition(next.x, next.y);
+    setXyPos(next);
+  }, [envelopeEditingEnabled, envelopeTrack, positionForEnvelopeTrack, supportsEnvelopeV2]);
+
+  const handleEnvelopeTargetChange = useCallback((trackId: string) => {
+    setEnvelopeTrackId(trackId);
+    const nextTrack = tracks.find(track => track.id === trackId);
+    const next = positionForEnvelopeTrack(nextTrack);
+    xyControllerRef.current.setPosition(next.x, next.y);
+    setXyPos(next);
+  }, [positionForEnvelopeTrack, tracks]);
+
+  const handleXYStart = useCallback((x: number, y: number) => {
+    setXyGestureActive(true);
+    xyControllerRef.current.setPosition(x, y);
+    setXyPos({ x, y });
+    xyEffectsBaselineRef.current = effects;
+    xyEffectsDraftRef.current = effects;
+  }, [effects]);
+
+  const envelopeForXYValues = useCallback((track: Track | undefined) => {
+    if (!track || !envelopeXYActive) return null;
+    const values = xyControllerRef.current.getAllParameterValues();
+    const report = getEffectiveTrackEnvelopeV2(track);
+    const editable = track.envelopeV2
+      ?? (track.envelope
+        ? legacyTrackEnvelopeToV2(track.envelope, track.envelopeTimeUnit ?? 'seconds')
+        : report.effective);
+    if (editable.model !== 'ar' && editable.model !== 'adsr') return null;
+    const inExistingUnit = (
+      stage: 'attack' | 'release',
+      seconds: number,
+      current: EnvelopeDuration,
+    ): EnvelopeDuration => clampEnvelopeDurationV2(stage, current.unit === 'seconds'
+      ? { value: seconds, unit: 'seconds' }
+      : { value: seconds / (60 / tempo / 4), unit: 'steps' });
+    return {
+      ...editable,
+      attack: inExistingUnit('attack', values.attack ?? 0, editable.attack),
+      release: inExistingUnit('release', values.release ?? 0, editable.release),
+    };
+  }, [envelopeXYActive, tempo]);
 
   // Unified XY handler: collects all param values, batches effect state,
   // and routes synth params — replacing both the old per-param switch and
@@ -147,15 +258,23 @@ export function Transport({
     controller.setPosition(x, y);
     const values = controller.getAllParameterValues();
 
+    if (xyPreset === 'envelope-shape') {
+      const next = envelopeForXYValues(envelopeTrack);
+      if (next && envelopeTrack) onEnvelopePreview?.(envelopeTrack.id, next);
+      return;
+    }
+
     // Build batched updates list
     const updates: XYParamUpdate[] = Object.entries(values).map(
       ([parameter, value]) => ({ parameter: parameter as XYParamUpdate['parameter'], value })
     );
 
     // Single state update for all effect params (no stale closure)
-    const newEffects = buildBatchedEffectsUpdate(effects, updates);
-    if (newEffects !== effects) {
+    const currentEffects = xyEffectsBaselineRef.current ? xyEffectsDraftRef.current : effects;
+    const newEffects = buildBatchedEffectsUpdate(currentEffects, updates);
+    if (newEffects !== currentEffects) {
       setEffects(newEffects);
+      xyEffectsDraftRef.current = newEffects;
       // Apply each effect param to audio engine
       for (const { parameter, value } of updates) {
         applyEffectToEngine(
@@ -172,14 +291,42 @@ export function Transport({
           value
         );
       }
-      onEffectsChange?.(newEffects);
     }
 
-    // Route synth params directly to engine
+    // Route synth parameters directly to the shared live engine.
     for (const { parameter, value } of updates) {
       applySynthParam(parameter, value, audioEngine);
     }
-  }, [effects, onEffectsChange, setEffects]);
+  }, [effects, envelopeForXYValues, envelopeTrack, onEnvelopePreview, setEffects, xyPreset]);
+
+  const handleXYCommit = useCallback((_x: number, _y: number) => {
+    setXyGestureActive(false);
+    if (xyPreset === 'envelope-shape') {
+      if (!envelopeTrack || !envelopeXYActive) return;
+      const next = envelopeForXYValues(envelopeTrack);
+      if (next) {
+        if (onEnvelopeV2Change) onEnvelopeV2Change(envelopeTrack.id, next);
+        else if (onEnvelopeChange) {
+          onEnvelopeChange(envelopeTrack.id, trackEnvelopeV2ToLegacySeconds(next, tempo));
+        }
+      }
+      return;
+    }
+    if (xyEffectsDraftRef.current !== xyEffectsBaselineRef.current) {
+      onEffectsChange?.(xyEffectsDraftRef.current);
+    }
+    xyEffectsBaselineRef.current = null;
+  }, [envelopeForXYValues, envelopeTrack, envelopeXYActive, onEffectsChange, onEnvelopeChange, onEnvelopeV2Change, tempo, xyPreset]);
+
+  const handleXYCancel = useCallback(() => {
+    setXyGestureActive(false);
+    const baseline = xyEffectsBaselineRef.current;
+    xyEffectsBaselineRef.current = null;
+    if (!baseline || xyPreset === 'envelope-shape') return;
+    xyEffectsDraftRef.current = baseline;
+    setEffects(baseline);
+    if (audioEngine.isToneInitialized()) audioEngine.applyEffectsState(baseline);
+  }, [setEffects, xyPreset]);
 
   // Toggle effects bypass (mutes all effects without losing settings)
   // Bypass is synced across multiplayer - everyone hears the same music
@@ -351,20 +498,46 @@ export function Transport({
                 disabled={effectsDisabled}
               >
                 {xyPresetIds.map((id) => (
-                  <option key={id} value={id}>{XY_PAD_PRESETS[id].name}</option>
+                  <option
+                    key={id}
+                    value={id}
+                    disabled={id === 'envelope-shape' && !supportsEnvelopeV2}
+                  >
+                    {XY_PAD_PRESETS[id].name}
+                  </option>
                 ))}
               </select>
+              {xyPreset === 'envelope-shape' && tracks.length > 0 && (
+                <select
+                  aria-label="Envelope target track"
+                  value={envelopeTrack?.id ?? ''}
+                  onChange={(event) => handleEnvelopeTargetChange(event.target.value)}
+                  disabled={effectsDisabled || !supportsEnvelopeV2}
+                >
+                  {tracks.map(track => <option key={track.id} value={track.id}>{track.name}</option>)}
+                </select>
+              )}
             </div>
             <XYPad
-              x={xyPos.x}
-              y={xyPos.y}
+              x={displayedXYPos.x}
+              y={displayedXYPos.y}
+              onChangeStart={handleXYStart}
               onChange={handleXYChange}
+              onChangeEnd={handleXYCommit}
+              onChangeCancel={handleXYCancel}
               xLabel={XY_PAD_PRESETS[xyPreset].mappings.find(m => m.axis === 'x')?.parameter ?? 'X'}
               yLabel={XY_PAD_PRESETS[xyPreset].mappings.find(m => m.axis === 'y')?.parameter ?? 'Y'}
               size={120}
-              disabled={effectsDisabled}
+              disabled={effectsDisabled || (xyPreset === 'envelope-shape' && (!supportsEnvelopeV2 || !envelopeXYActive))}
               color="#e91e63"
             />
+            {xyPreset === 'envelope-shape' && !envelopeXYActive && (
+              <span className="xy-envelope-inactive" role="status">
+                {supportsEnvelopeV2
+                  ? 'Select a track with an active Attack/Release envelope.'
+                  : 'Envelope Shape requires the connected session to support envelope v2.'}
+              </span>
+            )}
           </div>
           {/* Reverb */}
           <div className="fx-group" title="Reverb adds space and depth to your sound">
