@@ -167,6 +167,8 @@ async function main(): Promise<void> {
         seedBoundary: 'immediately-before-audio-engine-initialization',
         freshBrowserProcessPerAttempt: true,
         freshBrowserContextPerAttempt: true,
+        maxProcessAttemptsPerCase: 3,
+        retryPolicy: 'retry-only-rejected-nonzero-render-frame-drift',
       },
       browser: {
         name: 'chromium',
@@ -181,6 +183,7 @@ async function main(): Promise<void> {
       },
       captures,
       diagnostics,
+      rejectedAttempts: adapter.getRejectedAttempts(),
     };
     mkdirSync(dirname(OUTPUT), { recursive: true });
     const finalSubjectCommit = cleanSubjectCommit();
