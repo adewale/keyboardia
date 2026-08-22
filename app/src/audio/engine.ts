@@ -471,6 +471,11 @@ export class AudioEngine {
           Tone.setContext(this.audioContext!);
           await Tone.start();
           logger.audio.log('Tone.js context after force switch:', Tone.getContext().state);
+          if (Tone.getContext().rawContext !== this.audioContext) {
+            throw new Error(
+              'Cannot initialize Tone.js: context switch failed; refusing to construct a disconnected Tone graph.',
+            );
+          }
         }
 
         // Initialize effects chain
