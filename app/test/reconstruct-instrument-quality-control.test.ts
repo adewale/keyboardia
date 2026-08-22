@@ -15,6 +15,9 @@ import {
 import {
   LIVE_RANDOM_ALGORITHM,
   LIVE_RANDOM_SEED,
+  LIVE_MIDI_VELOCITY,
+  LIVE_NOTE_GAIN,
+  LIVE_NOTE_DURATION_SECONDS,
   LIVE_RECEIPT_CLAIM,
   LIVE_RECEIPT_SCHEMA_VERSION,
   LIVE_SESSION_LIFECYCLE,
@@ -72,7 +75,19 @@ function liveFixture(): LiveQualityReport {
       randomCalls: 17,
       preArmUiUnmutedTrackIds: ['track-primary'],
       preArmCommandedTrackBusOpenIds: ['track-primary'],
-      observedEngineDispatches: [{ method: 'playSynthNote', trackId: 'track-primary' }],
+      observedEngineDispatches: [{
+        method: 'playSynthNote',
+        trackId: 'track-primary',
+        instrumentOrPresetId: 'one',
+        pitchUnit: 'semitones-from-c4',
+        musicalPitch: 0,
+        midiVelocity: LIVE_MIDI_VELOCITY,
+        noteGain: LIVE_NOTE_GAIN,
+        eventTimeSeconds: 1,
+        durationSeconds: LIVE_NOTE_DURATION_SECONDS,
+        argumentCount: 8,
+        variationKey: null,
+      }],
     }],
     diagnostics: { pageErrors: [], consoleErrors: [] },
   } as unknown as LiveQualityReport;
@@ -217,6 +232,7 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
     confirmation.instruments[0].preArmUiUnmutedTrackIds = ['track-confirmation'];
     confirmation.instruments[0].preArmCommandedTrackBusOpenIds = ['track-confirmation'];
     confirmation.instruments[0].observedEngineDispatches[0].trackId = 'track-confirmation';
+    confirmation.instruments[0].observedEngineDispatches[0].eventTimeSeconds = 2;
     confirmation.instruments[0].armToOnsetFrames = 31_000;
     confirmation.instruments[0].peak *= withinAlarmRatio;
     confirmation.instruments[0].rms *= withinAlarmRatio;
@@ -280,6 +296,27 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
     }],
     ['dispatch method', (report: LiveQualityReport) => {
       report.instruments[0].observedEngineDispatches[0].method = 'playToneSynth';
+    }],
+    ['dispatch preset', (report: LiveQualityReport) => {
+      report.instruments[0].observedEngineDispatches[0].instrumentOrPresetId = 'other';
+    }],
+    ['dispatch pitch', (report: LiveQualityReport) => {
+      report.instruments[0].observedEngineDispatches[0].musicalPitch = 1;
+    }],
+    ['dispatch velocity', (report: LiveQualityReport) => {
+      report.instruments[0].observedEngineDispatches[0].midiVelocity = 90;
+    }],
+    ['dispatch gain', (report: LiveQualityReport) => {
+      report.instruments[0].observedEngineDispatches[0].noteGain = 0.5;
+    }],
+    ['dispatch duration', (report: LiveQualityReport) => {
+      report.instruments[0].observedEngineDispatches[0].durationSeconds = 0.3;
+    }],
+    ['dispatch argument count', (report: LiveQualityReport) => {
+      report.instruments[0].observedEngineDispatches[0].argumentCount = 7;
+    }],
+    ['dispatch variation key', (report: LiveQualityReport) => {
+      report.instruments[0].observedEngineDispatches[0].variationKey = 'other-buffer';
     }],
     ['UI isolation', (report: LiveQualityReport) => {
       report.instruments[0].preArmUiUnmutedTrackIds = [];

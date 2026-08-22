@@ -244,7 +244,18 @@ interface LiveRepeatabilityProjection {
     randomCalls: number;
     preArmUiUnmutedSampleIds: string[];
     preArmCommandedTrackBusOpenSampleIds: string[];
-    observedEngineDispatches: Array<{ method: string; sampleId: string }>;
+    observedEngineDispatches: Array<{
+      method: string;
+      sampleId: string;
+      instrumentOrPresetId: string;
+      pitchUnit: string;
+      musicalPitch: number;
+      midiVelocity: number;
+      noteGain: number;
+      durationSeconds: number;
+      argumentCount: number;
+      variationKey: string | null;
+    }>;
   }>;
 }
 
@@ -424,9 +435,11 @@ function round(value: number, digits = 1): number {
 
 /**
  * Select the provenance and structural controls that must match exactly.
- * Fresh timestamps and raw session/track IDs are deliberately excluded; IDs
- * embedded in dispatch/isolation evidence are normalized back to sample IDs.
- * Arm-to-onset is independently validator-bounded and is not score-consumed.
+ * Fresh timestamps, absolute AudioContext event times, and raw session/track
+ * IDs are deliberately excluded; IDs embedded in dispatch/isolation evidence
+ * are normalized back to sample IDs. The dispatch's stable musical arguments
+ * remain exact. Arm-to-onset is independently validator-bounded and is not
+ * score-consumed.
  */
 export function liveRepeatabilityProjection(
   report: LiveQualityReport,
@@ -476,6 +489,14 @@ export function liveRepeatabilityProjection(
       observedEngineDispatches: instrument.observedEngineDispatches.map(dispatch => ({
         method: dispatch.method,
         sampleId: normalizedTrackId(dispatch.trackId),
+        instrumentOrPresetId: dispatch.instrumentOrPresetId,
+        pitchUnit: dispatch.pitchUnit,
+        musicalPitch: dispatch.musicalPitch,
+        midiVelocity: dispatch.midiVelocity,
+        noteGain: dispatch.noteGain,
+        durationSeconds: dispatch.durationSeconds,
+        argumentCount: dispatch.argumentCount,
+        variationKey: dispatch.variationKey,
       })),
     })),
   };
