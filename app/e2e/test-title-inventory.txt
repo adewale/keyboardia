@@ -10,7 +10,7 @@ accessibility.spec.ts › Accessibility › sequencer steps support native Enter
 accessibility.spec.ts › Accessibility › visible buttons and links have computed accessible names @blocking
 accessibility.spec.ts › Accessibility › visible icon-only controls use explicit aria labels @blocking
 advanced-sub-bass-session.spec.ts › advanced sub-bass preset produces live master output
-all-instruments-master-output.spec.ts › every catalog instrument sequencer step produces live master output
+all-instruments-master-output.spec.ts › every catalog instrument is non-silent at isolated track and masterGain taps
 capture-session.spec.ts › captures synchronized pre-compressor, post-makeup, and heard-output PCM
 capture-session.spec.ts › keeps a user-reachable 16-track mixed-engine session below digital full scale
 change-instrument.spec.ts › Change instrument › keeps the picker inside the viewport after scrolling a long pattern @blocking
