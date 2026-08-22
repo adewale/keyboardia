@@ -1,16 +1,18 @@
 import { getInstrumentRange } from '../src/audio/instrument-ranges';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
 import { SCHEDULE_AHEAD_SEC } from '../src/audio/scheduler-types';
+import { MAX_STEPS } from '../src/shared/constants';
 import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
-export const LIVE_RECEIPT_SCHEMA_VERSION = 3;
+export const LIVE_RECEIPT_SCHEMA_VERSION = 4;
 export const LIVE_RECEIPT_CLAIM = 'live-post-track-signal-evidence';
 export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
 export const LIVE_TEMPO = 120;
-export const LIVE_STEP_COUNT = 128;
+export const LIVE_STEP_COUNT = 32;
+export const LIVE_PATTERN_STORAGE_STEP_COUNT = MAX_STEPS;
 // Step zero is scheduled at AudioContext.currentTime and reaches production
 // renderers through the scheduler worklet's MessagePort too late to preserve
 // its transient. Step four is 500 ms after transport start at the pinned tempo,
@@ -20,21 +22,26 @@ export const LIVE_ACTIVE_STEP = 4;
 export const LIVE_ACTIVE_STEP_OFFSET_SECONDS = 0.5;
 export const LIVE_SCHEDULER_LOOKAHEAD_SECONDS = SCHEDULE_AHEAD_SEC;
 export const LIVE_EXPECTED_EVENTS_PER_TRACK = 1;
-export const LIVE_PATTERN_PERIOD_SECONDS = 16;
-export const LIVE_PREPARATION_METHOD = 'muted-production-play-stop-then-unmute-and-settle';
+export const LIVE_PATTERN_PERIOD_SECONDS = 4;
+export const LIVE_PREPARATION_METHOD =
+  'muted-production-play-stop-then-ui-mute-plus-track-bus-gated-isolated-trials';
 export const LIVE_UNMUTE_SETTLE_SECONDS = 0.25;
+export const LIVE_TRIAL_MODE = 'single-unmuted-track-plus-master-per-capture';
+export const LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS = 1;
+export const LIVE_ISOLATION_SCOPE = 'audible-routing-only-muted-release-tails-may-remain-allocated';
 export const LIVE_CAPTURE_METHOD = 'onset-aligned-audio-worklet-accumulator-v2';
-export const LIVE_CAPTURE_ALIGNMENT = 'first-session-output-frame-above-pinned-threshold';
+export const LIVE_CAPTURE_ALIGNMENT = 'first-isolated-track-output-frame-above-pinned-threshold';
 export const LIVE_CAPTURE_DURATION_SECONDS = 2.5;
 export const LIVE_CAPTURE_CHANNEL_COUNT = 2;
 export const LIVE_ONSET_THRESHOLD = 1e-7;
+export const LIVE_MIN_ARM_TO_ONSET_SECONDS = 0.45;
 export const LIVE_MAX_ARM_TO_ONSET_SECONDS = 1;
 export const LIVE_PEAK_METRIC = 'maximum-absolute-sample-over-all-captured-channel-samples';
 export const LIVE_RMS_METRIC = 'root-mean-square-over-all-captured-channel-samples';
 export const LIVE_RANDOM_SEED = 0x4b455942;
 export const LIVE_RANDOM_ALGORITHM = 'mulberry32';
 export const LIVE_GENERATED_FROM =
-  'Chromium live sequencer sessions for every INSTRUMENT_CATEGORIES entry; one lookahead-scheduled, onset-aligned production-sequencer event per track with continuous per-track bus + masterGain AudioWorklet accumulation';
+  'Chromium single-audible-track calibration trials for every INSTRUMENT_CATEGORIES entry; one lookahead-scheduled, onset-aligned production-sequencer event captured concurrently at that track bus and masterGain';
 
 export type LiveInstrumentType = 'sample' | 'sampled' | 'synth' | 'tone' | 'advanced';
 
@@ -51,20 +58,18 @@ export interface LiveInstrumentResult extends LiveInstrumentSpec {
   sessionId: string;
   peak: number;
   rms: number;
-  capturedFrames: number;
-  channelSampleCount: number;
-}
-
-export interface LiveSessionResult {
-  sessionId: string;
-  instruments: string[];
-  sampleRate: number;
   masterPeak: number;
   masterRms: number;
   capturedFrames: number;
   channelSampleCount: number;
   armToOnsetFrames: number;
   randomCalls: number;
+}
+
+export interface LiveSessionResult {
+  sessionId: string;
+  instruments: string[];
+  sampleRate: number;
 }
 
 export interface LiveQualityReport {
@@ -81,7 +86,11 @@ export interface LiveQualityReport {
     durationSeconds: typeof LIVE_CAPTURE_DURATION_SECONDS;
     channelCount: typeof LIVE_CAPTURE_CHANNEL_COUNT;
     onsetThreshold: typeof LIVE_ONSET_THRESHOLD;
+    minArmToOnsetSeconds: typeof LIVE_MIN_ARM_TO_ONSET_SECONDS;
     maxArmToOnsetSeconds: typeof LIVE_MAX_ARM_TO_ONSET_SECONDS;
+    trialMode: typeof LIVE_TRIAL_MODE;
+    maxConcurrentAudibleTracks: typeof LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS;
+    isolationScope: typeof LIVE_ISOLATION_SCOPE;
     peakMetric: typeof LIVE_PEAK_METRIC;
     rmsMetric: typeof LIVE_RMS_METRIC;
   };
@@ -92,6 +101,7 @@ export interface LiveQualityReport {
     schedulerLookaheadSeconds: typeof LIVE_SCHEDULER_LOOKAHEAD_SECONDS;
     expectedEventsPerTrack: typeof LIVE_EXPECTED_EVENTS_PER_TRACK;
     patternPeriodSeconds: typeof LIVE_PATTERN_PERIOD_SECONDS;
+    patternStorageStepCount: typeof LIVE_PATTERN_STORAGE_STEP_COUNT;
     unmuteSettleSeconds: typeof LIVE_UNMUTE_SETTLE_SECONDS;
   };
   random: {
@@ -170,12 +180,6 @@ function positiveInteger(value: unknown, label: string): asserts value is number
   }
 }
 
-function nonnegativeInteger(value: unknown, label: string): asserts value is number {
-  if (!Number.isInteger(value) || (value as number) < 0) {
-    throw new Error(`Live receipt ${label} must be a nonnegative integer`);
-  }
-}
-
 function validateCaptureGeometry(
   value: Record<string, unknown>,
   label: string,
@@ -228,7 +232,11 @@ export function validateLiveQualityReport(
     || value.capture.durationSeconds !== LIVE_CAPTURE_DURATION_SECONDS
     || value.capture.channelCount !== LIVE_CAPTURE_CHANNEL_COUNT
     || value.capture.onsetThreshold !== LIVE_ONSET_THRESHOLD
+    || value.capture.minArmToOnsetSeconds !== LIVE_MIN_ARM_TO_ONSET_SECONDS
     || value.capture.maxArmToOnsetSeconds !== LIVE_MAX_ARM_TO_ONSET_SECONDS
+    || value.capture.trialMode !== LIVE_TRIAL_MODE
+    || value.capture.maxConcurrentAudibleTracks !== LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS
+    || value.capture.isolationScope !== LIVE_ISOLATION_SCOPE
     || value.capture.peakMetric !== LIVE_PEAK_METRIC
     || value.capture.rmsMetric !== LIVE_RMS_METRIC
     || !isRecord(value.schedule)
@@ -238,6 +246,7 @@ export function validateLiveQualityReport(
     || value.schedule.schedulerLookaheadSeconds !== LIVE_SCHEDULER_LOOKAHEAD_SECONDS
     || value.schedule.expectedEventsPerTrack !== LIVE_EXPECTED_EVENTS_PER_TRACK
     || value.schedule.patternPeriodSeconds !== LIVE_PATTERN_PERIOD_SECONDS
+    || value.schedule.patternStorageStepCount !== LIVE_PATTERN_STORAGE_STEP_COUNT
     || value.schedule.unmuteSettleSeconds !== LIVE_UNMUTE_SETTLE_SECONDS
     || !isRecord(value.random)
     || value.random.locked !== true
@@ -286,8 +295,11 @@ export function validateLiveQualityReport(
       throw new Error(`Live receipt ${item.sampleId} has invalid sessionId`);
     }
     validateEnergy(item.peak, item.rms, `instrument ${item.sampleId}`);
+    validateEnergy(item.masterPeak, item.masterRms, `instrument ${item.sampleId} master`);
     positiveInteger(item.capturedFrames, `instrument ${item.sampleId}.capturedFrames`);
     positiveInteger(item.channelSampleCount, `instrument ${item.sampleId}.channelSampleCount`);
+    positiveInteger(item.armToOnsetFrames, `instrument ${item.sampleId}.armToOnsetFrames`);
+    positiveInteger(item.randomCalls, `instrument ${item.sampleId}.randomCalls`);
   }
   const missing = expected.filter(spec => !seenIds.has(spec.sampleId));
   if (missing.length > 0) throw new Error(`Live receipt is missing ${missing.map(spec => spec.sampleId).join(', ')}`);
@@ -314,19 +326,11 @@ export function validateLiveQualityReport(
     const expectedFrames = Math.round(
       LIVE_CAPTURE_DURATION_SECONDS * (session.sampleRate as number),
     );
-    validateEnergy(session.masterPeak, session.masterRms, `session ${session.sessionId}`);
-    validateCaptureGeometry(session, `session ${session.sessionId}`, expectedFrames);
-    nonnegativeInteger(session.armToOnsetFrames, `session ${session.sessionId}.armToOnsetFrames`);
-    nonnegativeInteger(session.randomCalls, `session ${session.sessionId}.randomCalls`);
-    if ((session.armToOnsetFrames as number) > Math.ceil(
-      LIVE_MAX_ARM_TO_ONSET_SECONDS * (session.sampleRate as number),
-    )) {
-      throw new Error(`Live receipt session ${session.sessionId} exceeded the maximum arm-to-onset interval`);
-    }
     const expectedIds = expected.slice(index * MAX_TRACKS, (index + 1) * MAX_TRACKS).map(spec => spec.sampleId);
     if (JSON.stringify(session.instruments) !== JSON.stringify(expectedIds)) {
       throw new Error(`Live receipt session ${session.sessionId} membership differs from the pinned batch`);
     }
+    let previousRandomCalls = -1;
     for (const id of session.instruments as string[]) {
       if (sessionInstrumentIds.has(id)) throw new Error(`Live receipt session membership duplicates ${id}`);
       sessionInstrumentIds.add(id);
@@ -335,6 +339,20 @@ export function validateLiveQualityReport(
         throw new Error(`Live receipt ${id} disagrees with its declared session`);
       }
       validateCaptureGeometry(result, `instrument ${id}`, expectedFrames);
+      if ((result.armToOnsetFrames as number) < Math.floor(
+        LIVE_MIN_ARM_TO_ONSET_SECONDS * (session.sampleRate as number),
+      )) {
+        throw new Error(`Live receipt instrument ${id} preceded the minimum arm-to-onset interval`);
+      }
+      if ((result.armToOnsetFrames as number) > Math.ceil(
+        LIVE_MAX_ARM_TO_ONSET_SECONDS * (session.sampleRate as number),
+      )) {
+        throw new Error(`Live receipt instrument ${id} exceeded the maximum arm-to-onset interval`);
+      }
+      if ((result.randomCalls as number) < previousRandomCalls) {
+        throw new Error(`Live receipt session ${session.sessionId} random call counts are not nondecreasing`);
+      }
+      previousRandomCalls = result.randomCalls as number;
     }
   }
   if (sessionInstrumentIds.size !== expected.length) throw new Error('Live receipt session union is incomplete');
