@@ -6,7 +6,7 @@ import type { GridState, GridAction, Track, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, DEFAULT_TEMPO, DEFAULT_SWING } from '../types';
 import { detectMirrorDirection } from '../shared/pattern-operations';
 // Serializable defaults must not pull the Tone.js runtime into state.
-import { DEFAULT_EFFECTS_STATE } from '../shared/effects-defaults';
+import { DEFAULT_EFFECTS_STATE, normalizeSessionEffects } from '../shared/effects-defaults';
 // Phase 3 refactoring: Delegate SYNCED actions to applyMutation
 import { delegateToApplyMutation, maybeInvalidateSelection } from './state-adapters';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
@@ -294,7 +294,7 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         tracks: [],
         tempo: DEFAULT_TEMPO,
         swing: DEFAULT_SWING,
-        effects: DEFAULT_EFFECTS_STATE,
+        effects: normalizeSessionEffects(undefined, 'new-session'),
         scale: DEFAULT_SCALE_STATE,
         isPlaying: false,
         currentStep: -1,

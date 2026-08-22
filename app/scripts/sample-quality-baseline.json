@@ -1036,8 +1036,8 @@
       "code": "RANGE_OVEREXTENSION",
       "instrumentId": "slap-bass",
       "file": "manifest.json",
-      "sha256": "f590b85d7e7e2cc1794c68b0ee81c9652ff0cf3da7ee74e3a876757897310f9d",
-      "manifestSha256": "f590b85d7e7e2cc1794c68b0ee81c9652ff0cf3da7ee74e3a876757897310f9d",
+      "sha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
+      "manifestSha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
       "measuredValue": 12,
       "threshold": 6,
       "reason": "Hash-bound manifest disposition: the playable range stretches 12 semitones beyond the outer sampled roots; retaining it preserves 12 currently playable notes, while narrowing it would remove 26.7% of capability without replacement samples or session migration."

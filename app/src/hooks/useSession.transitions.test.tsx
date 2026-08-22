@@ -3,6 +3,7 @@ import { act, renderHook, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { GridState } from '../types';
 import type { Session } from '../shared/state';
+import { NEW_SESSION_EFFECTS_STATE } from '../shared/effects-defaults';
 
 const sessionA = '11111111-1111-4111-8111-111111111111';
 const sessionB = '22222222-2222-4222-8222-222222222222';
@@ -69,9 +70,9 @@ function gridState(tempo: number): GridState {
   };
 }
 
-function loadedSession(state: GridState): Session {
+function loadedSession(state: GridState, id: string = sessionA): Session {
   return {
-    id: sessionA,
+    id,
     name: null,
     createdAt: 1,
     updatedAt: 1,
@@ -213,5 +214,37 @@ describe('useSession transition persistence', () => {
 
     await expect(sharePromise).rejects.toThrow('session kept changing');
     expect(mocks.saveSessionNow).toHaveBeenCalledTimes(3);
+  });
+
+  it('hydrates the server-created session before auto-save can overwrite its defaults', async () => {
+    mocks.flushPendingSessionSave.mockResolvedValue(true);
+    mocks.saveSessionNow.mockResolvedValue(true);
+    const createdState = {
+      ...gridState(120),
+      effects: structuredClone(NEW_SESSION_EFFECTS_STATE),
+    };
+    mocks.createSession.mockImplementation(async () => {
+      mocks.currentSessionId = sessionB;
+      return loadedSession(createdState, sessionB);
+    });
+    const loadState = vi.fn();
+    const resetState = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ state }) => useSession(state, loadState, resetState),
+      { initialProps: { state: gridState(100) } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    loadState.mockClear();
+    mocks.saveSession.mockClear();
+
+    await act(async () => { await result.current.createNew(); });
+
+    expect(resetState).toHaveBeenCalledOnce();
+    expect(loadState).toHaveBeenCalledWith(expect.objectContaining({
+      effects: NEW_SESSION_EFFECTS_STATE,
+    }));
+    rerender({ state: createdState });
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+    expect(mocks.saveSession).not.toHaveBeenCalled();
   });
 });

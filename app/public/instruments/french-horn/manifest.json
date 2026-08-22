@@ -4,7 +4,6 @@
   "type": "sampled",
   "releaseTime": 0.6,
   "maxAdaptiveCodecDelay": 0.06,
-  "velocityFilterAnchorHz": 684,
   "gainDb": 7.25,
   "velocityCrossfade": 8,
   "credits": {

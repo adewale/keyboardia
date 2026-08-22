@@ -3,7 +3,6 @@
   "name": "Finger Bass",
   "type": "sampled",
   "releaseTime": 0.3,
-  "velocityFilterAnchorHz": 1510,
   "playableRange": {
     "min": 18,
     "max": 66
