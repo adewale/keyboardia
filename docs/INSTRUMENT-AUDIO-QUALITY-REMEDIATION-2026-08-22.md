@@ -97,10 +97,12 @@ removing 26.7% of the capability is not an audio repair.
   AudioWorklet accumulation at post-track and pre-processing `masterGain` taps,
   exact geometry, fresh browser contexts, seeded RNG, dispatch/isolation
   receipts, closed-context checks, and two-run decision comparison.
-- Sample dispositions bind source SHA, manifest SHA, six-decimal canonical
-  measured value, threshold, baseline, and evaluator identity. Canonicalization
-  removes sub-micro cross-platform decoder noise without changing raw metrics or
-  pass/fail thresholds.
+- Sample dispositions bind source SHA, manifest SHA, six-decimal stored
+  measured value, exact threshold, baseline, and evaluator identity. An observed
+  issue value may differ from its stored canonical value by at most `0.000001`,
+  including across a rounding boundary, without changing retained raw metrics or
+  pass/fail thresholds. Because the original unrounded reference is not stored,
+  that tolerance does not bound the true decoder-to-decoder difference.
 - Loop checks use the actual continuous Web Audio boundary instead of
   correlating phase-unrelated windows.
 - Stereo activity is derived from either channel, so exact anti-phase audio
