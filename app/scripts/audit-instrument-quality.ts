@@ -10,6 +10,9 @@
  */
 
 import * as fs from 'node:fs';
+import { createHash } from 'node:crypto';
+import { spawnSync } from 'node:child_process';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
@@ -39,7 +42,10 @@ import {
   type LiveInstrumentResult,
   type LiveQualityReport,
 } from './instrument-quality-live-receipt';
-import { sampleQualityEvaluatorBundleSha256 } from './sample-quality-baseline-core';
+import {
+  boundMeasurement,
+  sampleQualityEvaluatorBundleSha256,
+} from './sample-quality-baseline-core';
 import {
   INSTRUMENT_QUALITY_APP_ROOT,
   instrumentQualityEvaluatorDiffersFromCommit,
@@ -506,6 +512,76 @@ function validateFullSampleQualityReport(
   return value as unknown as SampleQualityReport;
 }
 
+function stableSampleQualityReceipt(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(stableSampleQualityReceipt);
+  if (typeof value === 'number') return boundMeasurement(value);
+  if (!isRecord(value)) return value;
+  return Object.fromEntries(
+    Object.keys(value)
+      .filter(key => key !== 'generatedAt')
+      .sort()
+      .map(key => [key, stableSampleQualityReceipt(value[key])]),
+  );
+}
+
+function sha256Text(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function recomputeCanonicalSampleQualityReport(
+  expectedSubjectCommit: string,
+): SampleQualityReport {
+  const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'keyboardia-canonical-sample-quality-'));
+  const jsonReport = path.join(temporaryRoot, 'metrics.json');
+  const markdownReport = path.join(temporaryRoot, 'SAMPLE-QUALITY.md');
+  try {
+    const result = spawnSync(process.execPath, [
+      '--import',
+      'tsx',
+      path.resolve(APP_DIR, 'scripts/validate-sample-quality.ts'),
+      '--strict',
+      '--json',
+      jsonReport,
+      '--markdown',
+      markdownReport,
+    ], {
+      cwd: APP_DIR,
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: 180_000,
+    });
+    if (result.error || result.status !== 0) {
+      const diagnostic = `${result.stdout ?? ''}\n${result.stderr ?? ''}`.trim();
+      throw new Error(
+        `Canonical sample-quality recomputation failed${result.error ? `: ${result.error.message}` : ''}`
+        + `${diagnostic ? `\n${diagnostic.slice(-4_000)}` : ''}`,
+      );
+    }
+    const rawReport = readJson<unknown>(jsonReport);
+    if (rawReport === null) {
+      throw new Error('Canonical sample-quality recomputation did not produce a JSON report');
+    }
+    return validateFullSampleQualityReport(rawReport, expectedSubjectCommit);
+  } finally {
+    fs.rmSync(temporaryRoot, { recursive: true, force: true });
+  }
+}
+
+function assertCanonicalSampleQualityEvidence(
+  supplied: SampleQualityReport,
+  expectedSubjectCommit: string,
+): void {
+  const recomputed = recomputeCanonicalSampleQualityReport(expectedSubjectCommit);
+  const suppliedStable = JSON.stringify(stableSampleQualityReceipt(supplied));
+  const recomputedStable = JSON.stringify(stableSampleQualityReceipt(recomputed));
+  if (suppliedStable !== recomputedStable) {
+    throw new Error(
+      'Sample-quality evidence does not match canonical decoded recomputation; '
+      + `supplied=${sha256Text(suppliedStable)}, recomputed=${sha256Text(recomputedStable)}`,
+    );
+  }
+}
+
 function countCodes(codes: readonly string[]): Record<string, number> {
   const counts: Record<string, number> = {};
   for (const code of codes) counts[code] = (counts[code] ?? 0) + 1;
@@ -797,10 +873,13 @@ function main(): void {
   }
   const currentEvaluatorTreeSha256 = instrumentQualityEvaluatorTreeSha256();
   const evaluatorDirty = instrumentQualityEvaluatorDiffersFromCommit(evaluatorCommit);
-  if (options.requireEvidence && (!sampleReport || !liveReport)) {
-    throw new Error(
-      `Required evidence missing: sample=${sampleReport ? 'present' : options.sampleReport}, live=${liveReport ? 'present' : options.liveReport}`,
-    );
+  if (options.requireEvidence) {
+    if (!sampleReport || !liveReport) {
+      throw new Error(
+        `Required evidence missing: sample=${sampleReport ? 'present' : options.sampleReport}, live=${liveReport ? 'present' : options.liveReport}`,
+      );
+    }
+    assertCanonicalSampleQualityEvidence(sampleReport, subjectCommit);
   }
   if (options.requireMatrix && !matrixReport) {
     throw new Error(`Required dry PCM matrix evidence missing: ${options.matrixReport}`);

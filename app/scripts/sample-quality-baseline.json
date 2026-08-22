@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "evaluatorBundleSha256": "2a715a85e7bc568800fd75df850ed9d8bf3a7597a847ccd13cede5f959fdcdd8",
+  "evaluatorBundleSha256": "37124b9dd3cd90d78a0b8c0960c08e0ad0ff4f6214c5936f0248aad3bd19c48d",
   "waivers": [
     {
       "code": "PITCH_DEVIATION",

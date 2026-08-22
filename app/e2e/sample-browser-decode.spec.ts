@@ -79,6 +79,7 @@ function loadReferencedSamples(): BrowserDecodeSample[] {
 test('browser decodeAudioData decodes every referenced sampled-instrument file', async ({ page, browserName }) => {
   test.setTimeout(120_000);
 
+  const startingSubjectCommit = cleanSubjectCommit();
   const samples = loadReferencedSamples();
   await page.goto('/');
 
@@ -182,24 +183,6 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
     return out;
   }, samples);
 
-  fs.mkdirSync('reports/instrument-quality', { recursive: true });
-  const subjectCommit = cleanSubjectCommit();
-  fs.writeFileSync(
-    `reports/instrument-quality/browser-decode-${browserName}.json`,
-    `${JSON.stringify({
-      schemaVersion: 1,
-      claim: 'cross-decoder-sample-onset-evidence',
-      generatedAt: new Date().toISOString(),
-      subjectCommit,
-      browser: {
-        name: browserName,
-        version: page.context().browser()?.version() ?? 'unknown',
-        userAgent: await page.evaluate(() => navigator.userAgent),
-      },
-      results,
-    }, null, 2)}\n`
-  );
-
   const failures = results.filter(result => !result.ok);
   expect(results).toHaveLength(samples.length);
   expect(failures).toEqual([]);
@@ -300,4 +283,29 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
       `${browser.instrumentId}/${browser.file} fixed startOffset clips the browser attack`,
     ).toBeLessThanOrEqual(browser.leadingSilenceMs! + (1_000 / browser.sampleRate!));
   }
+
+  const browserIdentity = {
+    name: browserName,
+    version: page.context().browser()?.version() ?? 'unknown',
+    userAgent: await page.evaluate(() => navigator.userAgent),
+  };
+  const endingSubjectCommit = cleanSubjectCommit();
+  if (endingSubjectCommit !== startingSubjectCommit) {
+    throw new Error(
+      `Browser-decode evidence subject commit changed during capture: `
+      + `${startingSubjectCommit} -> ${endingSubjectCommit}`,
+    );
+  }
+  fs.mkdirSync('reports/instrument-quality', { recursive: true });
+  fs.writeFileSync(
+    `reports/instrument-quality/browser-decode-${browserName}.json`,
+    `${JSON.stringify({
+      schemaVersion: 1,
+      claim: 'cross-decoder-sample-onset-evidence',
+      generatedAt: new Date().toISOString(),
+      subjectCommit: startingSubjectCommit,
+      browser: browserIdentity,
+      results,
+    }, null, 2)}\n`,
+  );
 });
