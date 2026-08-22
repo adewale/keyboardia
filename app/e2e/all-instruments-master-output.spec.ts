@@ -352,7 +352,6 @@ async function setTrackMuted(
   await page.evaluate(({ id, shouldMute }) => {
     type TrackBusManager = {
       getOrCreateBus: (candidateId: string) => unknown;
-      isTrackMuted: (candidateId: string) => boolean;
     };
     type Engine = {
       trackBusManager?: TrackBusManager;
@@ -367,16 +366,12 @@ async function setTrackMuted(
   }, { id: trackId, shouldMute: muted });
 
   // TrackBus mute uses a 10 ms setTargetAtTime ramp. Keep the transition out
-  // of the measured window, then prove the bus crossed its muted-state guard.
+  // of the measured window. Do not inspect AudioParam.value as a command
+  // receipt here: a short, ended source may leave the disconnected bus without
+  // a render pull. The next trial's master-inclusive onset detector is the
+  // objective leakage guard: any still-audible tail starts capture before the
+  // pinned 450 ms event floor and invalidates the receipt.
   await page.waitForTimeout(LIVE_UNMUTE_SETTLE_SECONDS * 1_000);
-  const trackBusMuted = await page.evaluate((id) => {
-    type Engine = {
-      trackBusManager?: { isTrackMuted: (candidateId: string) => boolean };
-    };
-    return (window as unknown as { __audioEngine__?: Engine })
-      .__audioEngine__?.trackBusManager?.isTrackMuted(id);
-  }, trackId);
-  expect(trackBusMuted).toBe(muted);
 }
 
 async function installDeterministicRandom(page: Page): Promise<void> {
