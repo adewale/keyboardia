@@ -186,7 +186,9 @@ engine initialization, so unrelated page startup cannot consume part of a
 procedural instrument's random sequence. A case may use at most three fresh
 process attempts, and only a typed nonzero-render-drift rejection is retryable;
 every rejected attempt is retained in the smoke receipt. Accepted PCM still
-requires zero missing frames and zero render drift. The quick smoke proves this adapter path
+requires zero missing frames and zero render drift. Relative note and gate times
+are quantized once to 44.1 kHz render frames before absolute scheduling, avoiding
+cross-context floating-point boundary ambiguity. The quick smoke proves this adapter path
 with six captures (five engine families plus a distinct seed-A replay); it is
 explicitly **not** the complete 1,683-case matrix:
 

@@ -439,31 +439,38 @@ async function captureInPage(
       ? captureCase.instrumentId.slice(captureCase.instrumentId.indexOf(':') + 1)
       : captureCase.instrumentId;
     captureCase.notes.forEach((note, index) => {
-      const absoluteTime = startTime + note.startSeconds;
+      // Convert the relative plan to an integer render frame before forming an
+      // absolute AudioContext time. Adding two floating second values made a
+      // handful of exact-boundary onsets land on opposite sides of a frame in
+      // otherwise identical fresh contexts.
+      const noteStartFrame = armedMessage.startFrame
+        + Math.round(note.startSeconds * context.sampleRate);
+      const absoluteTime = noteStartFrame / context.sampleRate;
+      const gateSeconds = Math.round(note.gateSeconds * context.sampleRate) / context.sampleRate;
       const noteId = `${attemptId}-note-${index}`;
       const semitone = note.midi - 60;
       if (captureCase.instrumentId.startsWith('sampled:')) {
         engine.playSampledInstrument(
-          preset, noteId, note.midi, absoluteTime, note.gateSeconds, 1, id, note.velocity,
+          preset, noteId, note.midi, absoluteTime, gateSeconds, 1, id, note.velocity,
         );
       } else if (captureCase.instrumentId.startsWith('synth:')) {
         engine.playSynthNote(
-          noteId, preset, semitone, absoluteTime, note.gateSeconds, 1, id, note.velocity,
+          noteId, preset, semitone, absoluteTime, gateSeconds, 1, id, note.velocity,
         );
       } else if (captureCase.instrumentId.startsWith('tone:')) {
         engine.playToneSynth(
-          preset as never, semitone, absoluteTime, note.gateSeconds, 1, id, note.velocity,
+          preset as never, semitone, absoluteTime, gateSeconds, 1, id, note.velocity,
         );
       } else if (captureCase.instrumentId.startsWith('advanced:')) {
         engine.playAdvancedSynth(
-          preset, semitone, absoluteTime, note.gateSeconds, 1, id, note.velocity,
+          preset, semitone, absoluteTime, gateSeconds, 1, id, note.velocity,
         );
       } else {
         engine.playSample(
           captureCase.instrumentId,
           id,
           absoluteTime,
-          note.gateSeconds,
+          gateSeconds,
           semitone,
           1,
           note.velocity,

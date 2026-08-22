@@ -165,6 +165,7 @@ async function main(): Promise<void> {
         tap: 'track-bus-output-post-pan-pre-master',
         seedAlgorithm: 'mulberry32',
         seedBoundary: 'immediately-before-audio-engine-initialization',
+        eventTimeQuantization: 'nearest-44100hz-render-frame-before-absolute-scheduling',
         freshBrowserProcessPerAttempt: true,
         freshBrowserContextPerAttempt: true,
         maxProcessAttemptsPerCase: 3,
