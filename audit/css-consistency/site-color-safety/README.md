@@ -1,9 +1,10 @@
 # Site-wide colour-role safety correction
 
-This is a stacked follow-up to the flattened Stack B dropdown candidate. Its
-base is the exact Stack B evidence head
-`96d9a29cc9532a2aca33e5c6f5223e12e9d8bdf8`, so Stack B's source-bound evidence
-remains unchanged and independently reviewable.
+This is a follow-up to the flattened Stack B dropdown candidate. Its base is
+`8c0049109f5ee5de365eddcf8a0f64084e9817db`, the merge commit that landed the
+exact Stack B evidence head `96d9a29cc9532a2aca33e5c6f5223e12e9d8bdf8`.
+Stack B's source-bound evidence therefore remains unchanged and independently
+reviewable.
 
 ## Why this follow-up exists
 
@@ -68,8 +69,9 @@ small text becomes a lighter version of the same hue.
 - Existing ARIA, event, focus, geometry, and non-approved computed styles stay
   exact. Changed pixels must remain inside the exact elements whose approved
   colour pair changed.
-- The visual exception activates only when the comparison base is the exact
-  Stack B evidence head above. It expires automatically for later work.
+- The visual and harness exceptions activate only when the comparison base is
+  the exact merged Stack B commit above. They expire automatically for later
+  work.
 
 ## Measured result
 

@@ -1,4 +1,4 @@
-export const SITE_COLOR_MIGRATION_BASE_SHA = '96d9a29cc9532a2aca33e5c6f5223e12e9d8bdf8';
+export const SITE_COLOR_MIGRATION_BASE_SHA = '8c0049109f5ee5de365eddcf8a0f64084e9817db';
 
 const approvedColorPairs = new Set([
   'rgb(230, 126, 34) → rgb(255, 183, 77)',

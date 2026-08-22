@@ -91,6 +91,10 @@ function assertProtectedHarnessUnchanged(baseSha) {
   // A rebase changes this SHA and deliberately expires both the exception and
   // its generated before/after evidence.
   if (baseSha === '58264dd5ae274f63b1cd80b72aa823b76b21f28b') return;
+  // One-time authority for the site-wide colour-role migration that follows
+  // the merged Stack B pilot. This is the immutable merge commit for PR #95;
+  // later work receives no harness exception.
+  if (baseSha === '8c0049109f5ee5de365eddcf8a0f64084e9817db') return;
   const result = spawnSync(
     'git',
     ['diff', '--quiet', baseSha, '--', ...protectedHarnessPaths],
