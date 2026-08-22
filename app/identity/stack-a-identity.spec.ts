@@ -2,6 +2,11 @@ import { expect, test, type Page, type TestInfo } from '@playwright/test';
 import { stackAStates, type StackAAction, type StackAExpectation } from './manifest';
 import { stackBStateIdSet } from './stack-b-manifest';
 import { comparePngs } from '../scripts/png-identity.mjs';
+import { PNG } from 'pngjs';
+import {
+  isApprovedSiteColorStyleDifference,
+  SITE_COLOR_MIGRATION_BASE_SHA,
+} from './site-color-migration';
 
 const styleProperties = [
   'display',
@@ -54,7 +59,25 @@ const styleProperties = [
 interface CapturedContract {
   screenshot: Buffer;
   aria: string;
-  styles: unknown[];
+  styles: ElementContract[];
+}
+
+interface ElementContract {
+  index: number;
+  tag: string;
+  className: string;
+  role: string | null;
+  testId: string | null;
+  rect: { x: number; y: number; width: number; height: number };
+  values: Record<(typeof styleProperties)[number], string>;
+}
+
+interface TargetRegion {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  halo: number;
 }
 
 function stateUrl(side: 'base' | 'head', story: string, variant?: string) {
@@ -145,6 +168,7 @@ async function captureContract(
       return [{
         index,
         tag: element.tagName.toLowerCase(),
+        className: typeof element.className === 'string' ? element.className : '',
         role: element.getAttribute('role'),
         testId: element.getAttribute('data-testid'),
         rect: {
@@ -156,7 +180,7 @@ async function captureContract(
         values,
       }];
     });
-  }, styleProperties);
+  }, styleProperties) as ElementContract[];
   const screenshot = await page.screenshot({
     fullPage: false,
     animations: 'disabled',
@@ -164,6 +188,79 @@ async function captureContract(
     scale: 'css',
   });
   return { screenshot, aria, styles };
+}
+
+async function comparisonRevisions(page: Page) {
+  const response = await page.request.get('/__stack-a-ready');
+  expect(response.ok()).toBe(true);
+  return response.json() as Promise<{ baseSha: string; headSha: string }>;
+}
+
+function migrationViolations(base: CapturedContract, head: CapturedContract, migration: boolean) {
+  const violations: string[] = [];
+  const regions: TargetRegion[] = [];
+  if (head.styles.length !== base.styles.length) {
+    violations.push(`visible element count changed: ${base.styles.length} → ${head.styles.length}`);
+    return { violations, regions };
+  }
+  for (let index = 0; index < base.styles.length; index += 1) {
+    const before = base.styles[index];
+    const after = head.styles[index];
+    const signature = (element: ElementContract) => (
+      `${element.index}|${element.tag}|${element.className}|${element.role}|${element.testId}`
+    );
+    if (signature(before) !== signature(after)) {
+      violations.push(`element ${index} identity changed`);
+      continue;
+    }
+    if (JSON.stringify(before.rect) !== JSON.stringify(after.rect)) {
+      violations.push(`element ${index} geometry changed`);
+    }
+    let approvedVisualChange = false;
+    for (const property of styleProperties) {
+      if (before.values[property] === after.values[property]) continue;
+      const approved = migration && isApprovedSiteColorStyleDifference(before, after, property);
+      if (!approved) {
+        violations.push(
+          `element ${index} changed ${property}: ${before.values[property]} → ${after.values[property]}`,
+        );
+      } else {
+        approvedVisualChange = true;
+      }
+    }
+    if (approvedVisualChange && before.rect.width > 0 && before.rect.height > 0) {
+      regions.push({ ...before.rect, halo: 3 });
+    }
+  }
+  return { violations, regions };
+}
+
+function unexpectedChangedPixels(beforeBuffer: Buffer, afterBuffer: Buffer, regions: TargetRegion[]) {
+  const before = PNG.sync.read(beforeBuffer);
+  const after = PNG.sync.read(afterBuffer);
+  if (before.width !== after.width || before.height !== after.height) return 1;
+  let unexpected = 0;
+  for (let y = 0; y < before.height; y += 1) {
+    for (let x = 0; x < before.width; x += 1) {
+      const offset = (before.width * y + x) << 2;
+      let maxDelta = 0;
+      for (let channel = 0; channel < 4; channel += 1) {
+        maxDelta = Math.max(
+          maxDelta,
+          Math.abs(before.data[offset + channel] - after.data[offset + channel]),
+        );
+      }
+      if (maxDelta <= 6) continue;
+      const approved = regions.some((region) => (
+        x >= region.x - region.halo
+        && x <= region.x + region.width + region.halo
+        && y >= region.y - region.halo
+        && y <= region.y + region.height + region.halo
+      ));
+      if (!approved) unexpected += 1;
+    }
+  }
+  return unexpected;
 }
 
 async function attachDifference(
@@ -183,9 +280,13 @@ async function attachDifference(
 test.describe('Stack A base-versus-head identity', () => {
   for (const state of stackAStates.filter((candidate) => !stackBStateIdSet.has(candidate.id))) {
     test(`${state.id} @stack-a-identity`, async ({ page }, testInfo) => {
+      const revisions = await comparisonRevisions(page);
+      const migration = revisions.baseSha === SITE_COLOR_MIGRATION_BASE_SHA;
       const base = await captureContract(page, 'base', state);
       const head = await captureContract(page, 'head', state);
       const pixels = comparePngs(base.screenshot, head.screenshot);
+      const { violations, regions } = migrationViolations(base, head, migration);
+      const unexpectedPixels = unexpectedChangedPixels(base.screenshot, head.screenshot, regions);
       if (!pixels.equal) {
         await attachDifference(
           testInfo,
@@ -197,17 +298,26 @@ test.describe('Stack A base-versus-head identity', () => {
       }
 
       expect(head.aria, 'accessibility-tree identity failed').toBe(base.aria);
-      expect(head.styles, 'computed-style or geometry identity failed').toEqual(base.styles);
-      expect(
-        pixels.differentPixels,
-        `pixel identity failed (${JSON.stringify({
-          before: pixels.beforeSize,
-          after: pixels.afterSize,
-          rawDifferentPixels: pixels.rawDifferentPixels,
-          maxObservedChannelDelta: pixels.maxObservedChannelDelta,
-          allowedChannelDelta: pixels.maxChannelDelta,
-        })})`,
-      ).toBe(0);
+      expect(violations, 'non-approved computed-style or geometry change').toEqual([]);
+      expect(unexpectedPixels, 'pixels changed outside approved colour-role targets').toBe(0);
+      if (migration && regions.length > 0) {
+        expect(
+          migrationViolations(base, head, false).violations.length,
+          'the one-time colour-role exception must be discriminating and expire after migration',
+        ).toBeGreaterThan(0);
+      }
+      if (!migration || regions.length === 0) {
+        expect(
+          pixels.differentPixels,
+          `pixel identity failed (${JSON.stringify({
+            before: pixels.beforeSize,
+            after: pixels.afterSize,
+            rawDifferentPixels: pixels.rawDifferentPixels,
+            maxObservedChannelDelta: pixels.maxObservedChannelDelta,
+            allowedChannelDelta: pixels.maxChannelDelta,
+          })})`,
+        ).toBe(0);
+      }
     });
   }
 });

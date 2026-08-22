@@ -42,7 +42,7 @@
 .dropdown-trigger.open {
   border-color: var(--color-accent-hover, #f07048);
   background: var(--dropdown-control-open-background);
-  color: var(--color-accent-hover, #f07048);
+  color: var(--color-accent-text, #ff8a65);
 }
 
 .dropdown-trigger:focus-visible {
@@ -58,7 +58,7 @@
 .dropdown-chevron {
   display: inline-flex;
   line-height: 0;
-  color: var(--color-accent-hover, #f07048);
+  color: var(--color-accent-text, #ff8a65);
   opacity: 0.85;
 }
 
@@ -188,7 +188,7 @@
 }
 
 .dropdown-option-check {
-  color: var(--color-accent-hover, #f07048);
+  color: var(--color-accent-text, #ff8a65);
   font-size: 12px;
 }
 

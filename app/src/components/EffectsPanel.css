@@ -50,12 +50,12 @@
 
 .effects-toggle.expanded {
   border-color: var(--color-cyan);
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
   background: var(--color-cyan-muted);
 }
 
 .effects-toggle.active .effects-icon {
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
 }
 
 .effects-indicator {
@@ -127,7 +127,7 @@
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 12px;
@@ -270,7 +270,7 @@
 
 /* Reverb-specific styling */
 .effect-group:nth-child(1) .effect-label {
-  color: var(--color-purple);
+  color: var(--color-purple-text);
 }
 
 .effect-group:nth-child(1) input[type="range"]::-webkit-slider-thumb {
@@ -283,7 +283,7 @@
 
 /* Delay-specific styling */
 .effect-group:nth-child(2) .effect-label {
-  color: var(--color-blue);
+  color: var(--color-blue-text);
 }
 
 .effect-group:nth-child(2) input[type="range"]::-webkit-slider-thumb {
@@ -296,7 +296,7 @@
 
 /* Chorus-specific styling */
 .effect-group:nth-child(3) .effect-label {
-  color: var(--color-green);
+  color: var(--color-green-text);
 }
 
 .effect-group:nth-child(3) input[type="range"]::-webkit-slider-thumb {
@@ -309,7 +309,7 @@
 
 /* Distortion-specific styling */
 .effect-group:nth-child(4) .effect-label {
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .effect-group:nth-child(4) input[type="range"]::-webkit-slider-thumb {
@@ -339,7 +339,7 @@
   border: 2px solid var(--color-success);
   border-radius: 6px;
   background: rgba(74, 222, 128, 0.1);
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -356,7 +356,7 @@
 .effects-bypass-btn.bypassed {
   border-color: var(--color-warning);
   background: rgba(255, 193, 7, 0.15);
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .effects-bypass-btn.bypassed:hover:not(:disabled) {

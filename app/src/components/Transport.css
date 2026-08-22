@@ -72,7 +72,7 @@
   padding: 0 5px;
   border-radius: 9px;
   background: var(--color-error);
-  color: white;
+  color: var(--color-on-bright);
   font-size: 10px;
   font-weight: 700;
 }
@@ -212,7 +212,7 @@
   border: 2px solid var(--color-success);
   border-radius: 6px;
   background: var(--color-fx-active-muted, rgba(78, 205, 196, 0.15));
-  color: var(--color-success);
+  color: var(--color-success-text);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -235,7 +235,7 @@
 .fx-master-toggle.bypassed {
   border-color: var(--color-warning);
   background: var(--color-fx-bypassed-muted, rgba(255, 152, 0, 0.15));
-  color: var(--color-warning);
+  color: var(--color-warning-text);
 }
 
 .fx-master-toggle.bypassed:hover:not(:disabled) {
@@ -296,11 +296,11 @@
 }
 
 /* Color-coded labels - using fx-groups container */
-.fx-groups > .fx-group:nth-child(1) .fx-label { color: #e91e63; } /* XY Pad - pink */
-.fx-groups > .fx-group:nth-child(2) .fx-label { color: var(--color-purple); } /* Reverb - purple */
-.fx-groups > .fx-group:nth-child(3) .fx-label { color: var(--color-blue); } /* Delay - blue */
-.fx-groups > .fx-group:nth-child(4) .fx-label { color: var(--color-green); } /* Chorus - green */
-.fx-groups > .fx-group:nth-child(5) .fx-label { color: var(--color-warning); } /* Distortion - orange */
+.fx-groups > .fx-group:nth-child(1) .fx-label { color: var(--color-pink-text); } /* XY Pad - pink */
+.fx-groups > .fx-group:nth-child(2) .fx-label { color: var(--color-purple-text); } /* Reverb - purple */
+.fx-groups > .fx-group:nth-child(3) .fx-label { color: var(--color-blue-text); } /* Delay - blue */
+.fx-groups > .fx-group:nth-child(4) .fx-label { color: var(--color-green-text); } /* Chorus - green */
+.fx-groups > .fx-group:nth-child(5) .fx-label { color: var(--color-warning-text); } /* Distortion - orange */
 
 /* XY Pad controller section */
 .fx-group--xy-controller {
@@ -419,7 +419,7 @@
   border: none;
   border-radius: 50%;
   background: var(--color-success);
-  color: white;
+  color: var(--color-on-bright);
   font-size: 24px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -555,7 +555,7 @@
 .swing-value {
   font-size: 14px;
   font-weight: bold;
-  color: var(--color-yellow);
+  color: var(--color-yellow-text);
   min-width: 40px;
 }
 

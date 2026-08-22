@@ -19,7 +19,38 @@ const requiredRootTokens = [
   '--color-fx-bypassed-muted',
   '--color-fx-bypassed-muted-hover',
   '--font-mono',
+  '--color-accent-text',
+  '--color-blue-text',
+  '--color-purple-text',
+  '--color-pink-text',
+  '--color-error-text',
+  '--color-on-bright',
+  '--color-on-purple',
+  '--color-on-pink',
 ];
+const nonTextPaletteTokens = new Set([
+  '--color-text-dimmed',
+  '--color-accent',
+  '--color-accent-hover',
+  '--color-accent-light',
+  '--color-brand',
+  '--color-blue',
+  '--color-info',
+  '--color-purple',
+  '--color-teal',
+  '--color-cyan',
+  '--color-pink',
+  '--color-green',
+  '--color-orange',
+  '--color-yellow',
+  '--color-red',
+  '--color-success',
+  '--color-warning',
+  '--color-error',
+  '--color-danger',
+  '--color-secondary',
+]);
+const featureFillPattern = /var\(--color-(?:accent|blue|info|purple|teal|cyan|pink|green|orange|yellow|red|success|warning|error)\b/;
 
 function filesBelow(root) {
   if (!existsSync(root)) return [];
@@ -104,6 +135,36 @@ function rootDefinitions(indexCss) {
   );
 }
 
+function unsafeTextTokenUsages(css, path) {
+  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  return withoutComments.split('\n').flatMap((line, index) => {
+    const token = line.match(/^\s*color\s*:\s*var\((--[a-zA-Z0-9-]+)/)?.[1];
+    return token && nonTextPaletteTokens.has(token)
+      ? [`${path}:${index + 1}: ${line.trim()}`]
+      : [];
+  });
+}
+
+function unsafeFilledControlForegrounds(css, path) {
+  const withoutComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+  const findings = [];
+  for (const match of withoutComments.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    const selector = match[1].trim();
+    const body = match[2];
+    const background = body.match(/(?:^|;)\s*(?:background|background-color)\s*:\s*([^;]+)/)?.[1];
+    const foreground = body.match(/(?:^|;)\s*color\s*:\s*([^;]+)/)?.[1]?.trim();
+    if (
+      background
+      && featureFillPattern.test(background)
+      && foreground
+      && /^(?:white|#fff(?:fff)?|var\(--color-text\))$/i.test(foreground)
+    ) {
+      findings.push(`${path}: ${selector}`);
+    }
+  }
+  return findings;
+}
+
 export function collectCssConsistencyMetrics(ref) {
   const source = sourceReader(ref);
   const productPaths = source.paths.filter((path) => !path.includes('/stack-a-catalog/'));
@@ -119,6 +180,10 @@ export function collectCssConsistencyMetrics(ref) {
   const transposeDeclarations = transposePath ? declarationList(cssByPath.get(transposePath)) : [];
   const sharedDeclarations = sharedPath ? declarationList(cssByPath.get(sharedPath)) : [];
   const unscoped = productPaths.flatMap((path) => unscopedGenericSelectors(cssByPath.get(path), path));
+  const unsafeTextTokens = productPaths.flatMap((path) => unsafeTextTokenUsages(cssByPath.get(path), path));
+  const unsafeFilledForegrounds = productPaths.flatMap((path) => (
+    unsafeFilledControlForegrounds(cssByPath.get(path), path)
+  ));
   const rawColorPattern = /#[0-9a-fA-F]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\([^)]*\)/g;
   const rawColorsOutsideIndex = productPaths
     .filter((path) => path !== indexPath)
@@ -152,6 +217,8 @@ export function collectCssConsistencyMetrics(ref) {
     rawColorsOutsideIndex,
     importantDeclarations: (allCss.match(/!important\b/g) ?? []).length,
     unscopedGenericSelectors: unscoped,
+    unsafeTextTokenUsages: unsafeTextTokens,
+    unsafeFilledControlForegrounds: unsafeFilledForegrounds,
     undefinedRequiredTokens,
     dropdown: {
       files: [stepPath, transposePath, sharedPath].filter(Boolean),

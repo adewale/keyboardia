@@ -14,31 +14,37 @@ export const INSTRUMENT_CATEGORIES = {
     ...INSTRUMENT_GROUPS.drums,
     color: '#e67e22',
     cssVar: '--color-drums',
+    onColor: 'var(--color-on-bright)',
   },
   bass: {
     ...INSTRUMENT_GROUPS.bass,
     color: '#9b59b6',
     cssVar: '--color-bass',
+    onColor: 'var(--color-on-purple)',
   },
   keys: {
     ...INSTRUMENT_GROUPS.keys,
     color: '#3498db',
     cssVar: '--color-keys',
+    onColor: 'var(--color-on-bright)',
   },
   leads: {
     ...INSTRUMENT_GROUPS.leads,
     color: '#e91e63',
     cssVar: '--color-leads',
+    onColor: 'var(--color-on-pink)',
   },
   pads: {
     ...INSTRUMENT_GROUPS.pads,
     color: '#2ecc71',
     cssVar: '--color-pads',
+    onColor: 'var(--color-on-bright)',
   },
   fx: {
     ...INSTRUMENT_GROUPS.fx,
     color: '#00bcd4',
     cssVar: '--color-fx',
+    onColor: 'var(--color-on-bright)',
   },
 } as const;
 
@@ -67,4 +73,3 @@ export function getInstrumentCategory(id: string): InstrumentCategory | null {
  * Used to validate session data before upload
  */
 export const VALID_SAMPLE_IDS: Set<string> = CATALOG_SAMPLE_IDS;
-

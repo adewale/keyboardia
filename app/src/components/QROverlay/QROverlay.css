@@ -17,7 +17,9 @@
   --qr-border: var(--color-surface-elevated); /* #2a2a2a - matches system */
   --qr-code-light: #FFFFFF;                 /* QR code foreground (white) */
   --qr-code-dark: var(--color-surface);     /* QR code background */
-  --qr-accent: #e85a30;                     /* QR-specific orange accent */
+  --qr-accent: var(--color-accent);          /* Keyboardia orange */
+  --qr-accent-text: var(--color-accent-text);
+  --qr-on-accent: var(--color-on-bright);
   --qr-text-primary: var(--color-text);     /* rgba(255,255,255,0.87) - matches system */
   --qr-text-secondary: var(--color-text-muted); /* matches system */
   --qr-player-count: var(--color-success);  /* #4ade80 - matches system */
@@ -128,7 +130,7 @@
 
 .qr-code-error {
   background: var(--qr-surface);
-  color: var(--qr-accent);
+  color: var(--qr-accent-text);
   font-size: 2rem;
   display: flex;
   align-items: center;
@@ -234,12 +236,12 @@
 .qr-btn-copy {
   background: var(--qr-accent);
   border-color: var(--qr-accent);
-  color: white;
+  color: var(--qr-on-accent);
 }
 
 .qr-btn-copy:hover {
-  background: #d14d26;
-  border-color: #d14d26;
+  background: var(--color-accent-hover);
+  border-color: var(--color-accent-hover);
 }
 
 .qr-btn-exit {

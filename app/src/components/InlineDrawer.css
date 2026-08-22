@@ -36,7 +36,7 @@
 .drawer-section-title {
   font-size: 10px;
   font-weight: 600;
-  color: var(--color-text-dimmed);
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
@@ -122,7 +122,7 @@
 }
 
 .drawer-stepper-value.active {
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 /* Segment control (for step count) */
@@ -153,7 +153,7 @@
 
 .drawer-segment-btn.active {
   background: var(--color-purple);
-  color: var(--color-text);
+  color: var(--color-on-purple);
 }
 
 /* Dropdown select for step count */
@@ -218,7 +218,7 @@
 }
 
 .drawer-action-btn.destructive {
-  color: var(--color-error);
+  color: var(--color-error-text);
   border-color: rgba(231, 76, 60, 0.3);
 }
 
@@ -229,7 +229,7 @@
 .drawer-action-btn.primary {
   background: var(--color-accent);
   border-color: var(--color-accent);
-  color: var(--color-text);
+  color: var(--color-on-bright);
 }
 
 /* Divider */
@@ -265,7 +265,7 @@
 .drawer-toggle-btn.active.muted {
   background: var(--color-error);
   border-color: var(--color-error);
-  color: var(--color-text);
+  color: var(--color-on-bright);
 }
 
 .drawer-toggle-btn.active.soloed {
@@ -301,7 +301,7 @@
 .drawer-mode-btn.gate {
   border-color: var(--color-cyan);
   background: var(--color-cyan-muted);
-  color: var(--color-cyan);
+  color: var(--color-cyan-text);
 }
 
 /* Volume slider group */
