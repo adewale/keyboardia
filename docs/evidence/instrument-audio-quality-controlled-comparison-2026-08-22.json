@@ -1,150 +1,82 @@
 {
-  "schemaVersion": 1,
-  "claim": "historical summary-only controlled technical comparison; rebuild raw receipts before relying on it; not listening or complete-matrix evidence",
-  "generatedAt": "2026-08-22T14:50:24.572Z",
+  "schemaVersion": 2,
+  "claim": "curated fail-closed evidence index; decoded lane comparable; aggregate live-score comparison inconclusive because the control exceeded the prospective stability alarm; not listening or complete-matrix evidence",
+  "assembledAt": "2026-08-22T22:55:00.000Z",
+  "baseSourceCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "candidateSubjectCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
+  "candidateEvaluatorCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
   "method": {
-    "originalSourceCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-    "syntheticBaseCommit": "ec426f1510e7b7cd0ac67e0ff811ca25733dd23a",
-    "syntheticEvaluatorCommit": "30165f6c97838a001eb2699424c9fdbd616ecb43",
-    "candidateSubjectCommit": "d096b8445356a35d1e58714cba9f97afac3953e0",
-    "candidateEvaluatorCommit": "aafae6a51a9710ae4419d1eeddfe2b4a492c49cb",
-    "description": "The synthetic control combines origin/main runtime, assets, manifests, and source calibration with the candidate's hardened receipt producers and equivalent final scoring math. This was necessary because the hardened auditor correctly refuses a dirty or mixed tree labelled as origin/main.",
-    "reconstruction": {
-      "script": "app/scripts/reconstruct-instrument-quality-control.ts",
-      "documentation": "docs/INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md",
-      "requiresHistoricalSyntheticCommits": false,
-      "retainsFreshRawReceipts": [
-        "control decoded sample report and bound baseline",
-        "control 99-instrument Chromium live report",
-        "control stack-ranked report",
-        "candidate decoded sample report and bound baseline",
-        "candidate 99-instrument Chromium live report",
-        "candidate stack-ranked report"
-      ]
-    },
-    "exceptions": [
-      "The control imports the newer sample-onset helper with the evaluator; old manifests and call sites use its unchanged 30 ms default behavior.",
-      "The control auditor predates the candidate's label-only measured-finding wording change; thresholds, metrics, scores, and issue counts are unchanged.",
-      "The synthetic commit is not asserted to be literal origin/main provenance. It is an explicitly labelled compatibility fixture for the same scored production paths."
-    ],
-    "rebuildOutline": [
-      "Create an isolated checkout at origin/main 58264dd5ae274f63b1cd80b72aa823b76b21f28b.",
-      "Overlay the evaluator, browser-receipt producers, and their pinned transitive inputs from the candidate while retaining origin/main runtime, assets, manifests, and source-calibration.ts.",
-      "Rebind a baseline version 3 to the old file and manifest hashes; commit the clean compatibility fixture.",
-      "Run the Chromium 99-instrument live receipt, strict 26-instrument decoded audit, and the v1 ranking under the overlaid scoring math.",
-      "Compare aggregate score, bands, decoded issue codes, and per-instrument scores with the candidate report."
-    ]
-  },
-  "artifactHashes": {
-    "controlReportSha256": "dbe9f5acc37370d7decce129040057de6f521de6421b2829f9972cbc05f5cf4b",
-    "controlLiveReceiptSha256": "58afbad81b30b2f83c7558accac2bafc6c902152cb06eb709c404db7ce759568",
-    "controlSampleReceiptSha256": "cc9f2fbbc6c78b417f6809fca5bec7fe0222577400f21049a70d0b10dff18f1c",
-    "candidateReportSha256": "de539dcf86bf4148e50f270b985ac891450470808b1245f9be7d384d70edfdca",
-    "candidateLiveReceiptSha256": "5c31f29a1f38fc2182dcba3189d8f00fd6e12480186eb238b2d39dbe91be2bfa",
-    "candidateSampleReceiptSha256": "6a56a5b4b07fdcb9e385366ac84b4e80f2cd73756edbb6f7576337f7bff258c1",
-    "candidateSmokeReceiptSha256": "7a9fd0b781b0f7fb57a6d5cacf91174c72fd408f6eab9d6ff9fea84a61ebd94f"
-  },
-  "control": {
-    "catalogueInstruments": 99,
-    "audibleInstruments": 99,
-    "repairPriorityPoints": 179.9,
-    "bands": {
-      "critical": 0,
-      "high": 0,
-      "medium": 7,
-      "low": 9,
-      "baseline": 83
-    },
-    "nonzeroRepairPriorityScores": 16,
-    "canonicalLivePeaksAboveZeroDbfs": 2,
-    "decodedFindings": 256,
-    "decodedIssueCodes": {
-      "PITCH_DEVIATION": 144,
-      "LEADING_SILENCE": 43,
-      "HOT_PEAK": 21,
-      "TAIL_TRUNCATION": 12,
-      "MONO_LOSS": 12,
-      "NEGATIVE_PHASE_CORRELATION": 9,
-      "DC_OFFSET": 8,
-      "NOTE_LEVEL_STEP": 3,
-      "LOOP_VALUE_DISCONTINUITY": 3,
-      "RANGE_OVEREXTENSION": 1
-    },
-    "nonzeroInstruments": {
-      "sampled:slap-bass": 24.2,
-      "sampled:alto-sax": 20.0,
-      "sampled:acoustic-guitar": 18.3,
-      "sampled:clean-guitar": 16.0,
-      "sampled:vinyl-crackle": 15.0,
-      "sampled:kalimba": 14.0,
-      "sampled:piano": 13.0,
-      "sampled:marimba": 11.3,
-      "sampled:finger-bass": 8.7,
-      "sampled:french-horn": 8.6,
-      "sampled:acoustic-hihat-closed": 6.0,
-      "sampled:steel-drums": 6.0,
-      "sampled:string-section": 6.0,
-      "sampled:brushes-snare": 5.0,
-      "sampled:vibraphone": 4.3,
-      "sampled:hammond-organ": 3.5
-    }
+    "reconstructionScript": "app/scripts/reconstruct-instrument-quality-control.ts",
+    "reconstructionPlan": "control-reconstruction-plan-553398b.json",
+    "liveRunsPerLane": 2,
+    "prospectiveEnergySpreadAlarmDb": 0.5,
+    "selectionPolicy": "retain both independent runs; never average, discard, or select a favorable run",
+    "decisionPolicy": "require exact structure and exact rank, score, band, component, silence, and above-zero classification decisions",
+    "controlCompatibilityCommit": "2c6f3057d7145089f0bb7969194d57c20417ee45",
+    "controlCompatibilityCaveat": "The clean compatibility commit combines original-main scored runtime/assets/manifests with the current evaluator and receipt producers. It is not represented as literal original-main provenance.",
+    "executionCaveat": "The full reconstruction stopped fail-closed after the unstable control pair. The candidate pair was captured separately at the same frozen evaluator/subject and then checked with the same committed comparator. This index was curated from the retained raw receipts; it was not emitted by a successful controlled-comparison run."
   },
   "candidate": {
+    "decisionStable": true,
+    "maximumEnergySpreadDb": 0.33810308728178357,
+    "energySpreadByMetricDb": {
+      "peak": 0.19096218426226344,
+      "rms": 0.33810308728178357,
+      "masterPeak": 0.19096218426226344,
+      "masterRms": 0.33810308728178357
+    },
     "catalogueInstruments": 99,
     "audibleInstruments": 99,
-    "repairPriorityPoints": 159.1,
-    "bands": {
-      "critical": 0,
-      "high": 0,
-      "medium": 6,
-      "low": 9,
-      "baseline": 84
-    },
-    "nonzeroRepairPriorityScores": 15,
-    "canonicalLivePeaksAboveZeroDbfs": 2,
+    "repairPriorityPoints": 155.2,
+    "bands": { "critical": 0, "high": 0, "medium": 6, "low": 8, "baseline": 85 },
+    "postTrackPeaksAboveZeroDbfs": 3,
     "decodedFindings": 203,
-    "decodedIssueCodes": {
-      "PITCH_DEVIATION": 144,
-      "HOT_PEAK": 19,
-      "TAIL_TRUNCATION": 10,
-      "MONO_LOSS": 12,
-      "NEGATIVE_PHASE_CORRELATION": 9,
-      "DC_OFFSET": 8,
-      "RANGE_OVEREXTENSION": 1
-    },
-    "nonzeroInstruments": {
-      "sampled:slap-bass": 24.2,
-      "sampled:clean-guitar": 16.0,
-      "sampled:alto-sax": 15.0,
-      "sampled:vinyl-crackle": 15.0,
-      "sampled:kalimba": 14.0,
-      "sampled:piano": 13.0,
-      "sampled:acoustic-guitar": 11.3,
-      "sampled:marimba": 11.3,
-      "sampled:finger-bass": 8.4,
-      "sampled:acoustic-hihat-closed": 6.0,
-      "sampled:steel-drums": 6.0,
-      "sampled:string-section": 6.0,
-      "sampled:brushes-snare": 5.0,
-      "sampled:vibraphone": 4.3,
-      "sampled:french-horn": 3.6
-    }
+    "unwaivedDecodedErrors": 0,
+    "unwaivedDecodedReviews": 0
   },
-  "delta": {
-    "repairPriorityPoints": -20.8,
-    "repairPriorityPercent": -11.6,
-    "decodedFindings": -53,
-    "decodedFindingsPercent": -20.7,
-    "nonzeroRepairPriorityScores": -1,
-    "mediumBand": -1,
-    "baselineBand": 1,
-    "canonicalLivePeaksAboveZeroDbfs": 0,
-    "decodedIssueCodes": {
+  "control": {
+    "decisionStable": false,
+    "aggregateScoreComparisonCertified": false,
+    "failure": "Independent live captures exceeded the 0.5 dB stability alarm for noise.peak",
+    "maximumObservedEnergySpreadDb": 3.981854,
+    "noise": {
+      "primaryPeak": 0.34403514862060547,
+      "confirmationPeak": 0.21752546727657318,
+      "primaryRms": 0.0179098003573673,
+      "confirmationRms": 0.01788224297951371,
+      "primaryArmToOnsetFrames": 24000,
+      "confirmationArmToOnsetFrames": 24001,
+      "randomCallsBothRuns": 672845
+    },
+    "decodedFindings": 256,
+    "unwaivedDecodedErrors": 0,
+    "unwaivedDecodedReviews": 0
+  },
+  "comparableDecodedDelta": {
+    "findings": -53,
+    "percent": -20.7,
+    "byCode": {
       "LEADING_SILENCE": -43,
       "LOOP_VALUE_DISCONTINUITY": -3,
       "NOTE_LEVEL_STEP": -3,
       "TAIL_TRUNCATION": -2,
       "HOT_PEAK": -2
-    }
+    },
+    "allOtherCodesUnchanged": true
+  },
+  "artifacts": {
+    "candidateSample": { "path": "candidate-sample-quality-553398b.json", "sha256": "4adbf755080b3f3142f81bef411751b4157c51d9f15f7f1b0fbb4f85522d0826" },
+    "candidateLivePrimary": { "path": "candidate-live-primary-553398b.json", "sha256": "3cc65e55b8d2acb5905d648485e7f3fc06fdda04408317949439ca8552f9b186" },
+    "candidateLiveConfirmation": { "path": "candidate-live-confirmation-553398b.json", "sha256": "20e5abebb839bc35d3434559d43a3763e3d03389f91fa2b768fa720303dd338d" },
+    "candidateRankingPrimary": { "path": "candidate-instrument-quality-primary-553398b.json", "sha256": "9b11e8843be7f1be6403b506cb3b93fd0305985bc350464e56a592edc593f6aa" },
+    "candidateRankingConfirmation": { "path": "candidate-instrument-quality-confirmation-553398b.json", "sha256": "eed8915876f39f0a7be2b7c2e9b64dcc50194e13daf0992b0d3336e04c3bb1ba" },
+    "controlSample": { "path": "control-sample-quality-main-current-evaluator.json", "sha256": "b3bcb8edf8ae40a8a084ab8abe595dea0646d0593585937649c7892bcbb107fc" },
+    "controlBaseline": { "path": "control-sample-quality-baseline-main-current-evaluator.json", "sha256": "d4c7e545840b6977b37ec8fd791fc637fdbd0ba8b167b6a399c5dc1c5d84d25a" },
+    "controlLivePrimary": { "path": "control-live-primary-main-current-evaluator.json", "sha256": "df18b8575d62287e04cedeb3cabe0398e2108a2bf8ecc459f146f35cc6264da9" },
+    "controlLiveConfirmation": { "path": "control-live-confirmation-main-current-evaluator.json", "sha256": "c150a7d4506d4cbe10c9b5b24a87f798c8cba22a2c9417c28721dee4eebbcba1" },
+    "reconstructionPlan": { "path": "control-reconstruction-plan-553398b.json", "sha256": "592fc27a36e4c3236a87633bf02bdec30bd5965fb885d09ac5cd8d67b8616600" },
+    "browserDecodeChromium": { "path": "browser-decode-chromium-553398b.json", "sha256": "d0713af3154669a49fe27d67e8a9cedb4e7e88557b16eb36111846a2fae9409e" },
+    "browserDecodeWebKit": { "path": "browser-decode-webkit-553398b.json", "sha256": "45d63d6291dd33639ac60c3502186efbc5b8c5db9d2d833f9ce08c7976677bc1" },
+    "dryPcmSmoke": { "path": "instrument-audio-quality-dry-pcm-smoke-2026-08-22.json", "sha256": "7dc864249aace99b3f6c22a590f004b74b46481455e6bfc03f0cc812bc211479" }
   }
 }
