@@ -1,7 +1,7 @@
 {
   "id": "picker-1280x800",
-  "baseRevision": "96d9a29cc9532a2aca33e5c6f5223e12e9d8bdf8",
-  "headRevision": "50f69bd035b842c8fe66fccf81bbc0fe08c176ba",
+  "baseRevision": "8c0049109f5ee5de365eddcf8a0f64084e9817db",
+  "headRevision": "feadc0f493e1d19633d48733a7e96f96bd4b729d",
   "generator": {
     "name": "app/identity/site-color-safety.spec.ts",
     "version": 1

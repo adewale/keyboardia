@@ -1,7 +1,7 @@
 # Site colour-role before/after evidence
 
-- Base: `96d9a29cc9532a2aca33e5c6f5223e12e9d8bdf8` (final Stack B evidence head)
-- Candidate source: `50f69bd` (`fix: classify site-wide color roles`)
+- Base: `8c0049109f5ee5de365eddcf8a0f64084e9817db` (the merged Stack B commit on `main`)
+- Candidate source: `feadc0f493e1d19633d48733a7e96f96bd4b729d`
 - Generator: `app/identity/site-color-safety.spec.ts`, version 1
 - Environment: Chromium 143 on macOS, CSS pixel scale 1
 - Inventory: 7 before/after/diff pairs; desktop, portrait, and landscape
@@ -11,6 +11,8 @@ The accompanying identity suite separately proves equal accessibility trees,
 equal visible geometry, exact non-approved computed styles, and zero changed
 pixels outside elements with an approved old→new colour-role pair. The
 exception activates only for the exact base SHA above and expires afterwards.
+For deterministic captures, the landing demo's decorative playhead is pinned
+to its initial column in both revisions; production timing is not changed.
 
 ## Landing, desktop
 
