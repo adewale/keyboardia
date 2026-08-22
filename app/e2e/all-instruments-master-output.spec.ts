@@ -1330,6 +1330,11 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
 
   // Publish only evidence that has passed the producer's runtime assertions
   // and the same pure schema/provenance validator used by the aggregator.
+  const endingSubjectCommit = cleanSubjectCommit();
+  expect(
+    endingSubjectCommit,
+    'Live audio evidence subject changed while the browser capture was running',
+  ).toBe(subjectCommit);
   validateLiveQualityReport(receipt, subjectCommit);
   mkdirSync(REPORT_DIR, { recursive: true });
   writeFileSync(
