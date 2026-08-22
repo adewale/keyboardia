@@ -6,9 +6,9 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { chromium, request } from '@playwright/test';
+import { request } from '@playwright/test';
 
-import { ChromiumDryPcmCaptureAdapter } from '../e2e/dry-pcm-browser-adapter';
+import { ChromiumIsolatedDryPcmCaptureAdapter } from '../e2e/dry-pcm-browser-adapter';
 import {
   analyzeDryPcmCapture,
   buildDryPcmMatrixPlan,
@@ -92,10 +92,9 @@ async function main(): Promise<void> {
     logLevel: 'warn',
   });
   await server.listen();
-  const browser = await chromium.launch({ headless: true });
   const api = await request.newContext();
   try {
-    const adapter = new ChromiumDryPcmCaptureAdapter({ browser, request: api, baseUrl: BASE_URL });
+    const adapter = new ChromiumIsolatedDryPcmCaptureAdapter({ request: api, baseUrl: BASE_URL });
     const captures = [];
     for (const matrixCase of selectCases()) {
       process.stdout.write(`Capturing ${matrixCase.id} ... `);
@@ -137,6 +136,12 @@ async function main(): Promise<void> {
     if (new Set(captures.map(item => item.captureAttemptId)).size !== captures.length) {
       throw new Error('Capture attempts were not distinct');
     }
+    const diagnostics = adapter.getDiagnostics();
+    const browserVersions = new Set(diagnostics.map(item => item.browserVersion));
+    const userAgents = new Set(diagnostics.map(item => item.userAgent));
+    if (browserVersions.size !== 1 || userAgents.size !== 1 || diagnostics.length !== captures.length) {
+      throw new Error('Process-isolated captures did not share one pinned Chromium environment');
+    }
 
     const adapterPath = resolve(APP_ROOT, 'e2e/dry-pcm-browser-adapter.ts');
     const receipt = {
@@ -154,17 +159,18 @@ async function main(): Promise<void> {
       adapter: {
         path: 'e2e/dry-pcm-browser-adapter.ts',
         sha256: sha256File(adapterPath),
-        captureCallback: 'ChromiumDryPcmCaptureAdapter.capture(DryPcmMatrixCase)',
+        captureCallback: 'ChromiumIsolatedDryPcmCaptureAdapter.capture(DryPcmMatrixCase)',
         sampleRate: 44_100,
         latencyHint: 'playback',
         tap: 'track-bus-output-post-pan-pre-master',
         seedAlgorithm: 'mulberry32',
+        freshBrowserProcessPerAttempt: true,
         freshBrowserContextPerAttempt: true,
       },
       browser: {
         name: 'chromium',
-        version: browser.version(),
-        userAgent: adapter.getDiagnostics()[0]?.userAgent,
+        version: diagnostics[0]?.browserVersion,
+        userAgent: diagnostics[0]?.userAgent,
       },
       deterministicReplay: {
         caseId: seedA.caseId,
@@ -173,7 +179,7 @@ async function main(): Promise<void> {
         pcmSha256: seedA.pcmSha256,
       },
       captures,
-      diagnostics: adapter.getDiagnostics(),
+      diagnostics,
     };
     mkdirSync(dirname(OUTPUT), { recursive: true });
     const finalSubjectCommit = cleanSubjectCommit();
@@ -186,7 +192,6 @@ async function main(): Promise<void> {
     console.log(`Wrote honest ${captures.length}/${receipt.expectedMatrixCaseCount} smoke receipt to ${OUTPUT}`);
   } finally {
     await api.dispose();
-    await browser.close();
     await server.close();
   }
 }

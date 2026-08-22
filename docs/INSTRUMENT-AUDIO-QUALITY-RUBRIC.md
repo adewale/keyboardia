@@ -177,9 +177,11 @@ large WAV captures ephemeral unless explicitly approved.
 The repository contains a production-path Chromium adapter that schedules the
 real sampled, procedural-sample, native-synth, Tone.js, and advanced-synth
 renderers and records the centered post-track/pre-master bus at exactly
-44.1 kHz. Each attempt uses a fresh seeded browser context, Chromium's pinned
-`playback` latency mode, and an AudioWorklet
-that fails closed on missing frames or any `currentFrame` discontinuity. The quick smoke proves this adapter path
+44.1 kHz. Each attempt uses a fresh seeded Chromium process and browser context,
+Chromium's pinned `playback` latency mode, and an AudioWorklet that fails closed
+on missing frames or any `currentFrame` discontinuity. Process isolation avoids
+render gaps observed when successive real-time AudioContexts shared one
+headless Chromium process. The quick smoke proves this adapter path
 with six captures (five engine families plus a distinct seed-A replay); it is
 explicitly **not** the complete 1,683-case matrix:
 
