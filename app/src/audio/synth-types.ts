@@ -32,7 +32,7 @@ export type LFODestination = 'filter' | 'pitch' | 'amplitude';
  * @property attack - Time to reach peak (0.001 to 4s)
  * @property decay - Time to fall to sustain level (0.001 to 4s)
  * @property sustain - Level held while note is pressed (0 to 1)
- * @property release - Time to fall to zero after note release (0.001 to 8s)
+ * @property release - Time to fall to zero after note release (0 to 8s; zero is immediate)
  */
 export interface ADSREnvelope {
   attack: number;
