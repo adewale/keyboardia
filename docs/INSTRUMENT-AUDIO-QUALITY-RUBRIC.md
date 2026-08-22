@@ -181,7 +181,9 @@ renderers and records the centered post-track/pre-master bus at exactly
 Chromium's pinned `playback` latency mode, and an AudioWorklet that fails closed
 on missing frames or any `currentFrame` discontinuity. Process isolation avoids
 render gaps observed when successive real-time AudioContexts shared one
-headless Chromium process. The quick smoke proves this adapter path
+headless Chromium process. The seeded generator resets immediately before audio
+engine initialization, so unrelated page startup cannot consume part of a
+procedural instrument's random sequence. The quick smoke proves this adapter path
 with six captures (five engine families plus a distinct seed-A replay); it is
 explicitly **not** the complete 1,683-case matrix:
 

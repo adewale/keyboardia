@@ -182,7 +182,22 @@ async function waitForSession(page: Page): Promise<void> {
   await page.locator('.track-row').waitFor({ state: 'visible', timeout: 20_000 });
 }
 
-async function prepareProductionAudio(page: Page, matrixCase: DryPcmMatrixCase, trackId: string): Promise<void> {
+async function prepareProductionAudio(
+  page: Page,
+  matrixCase: DryPcmMatrixCase,
+  trackId: string,
+  seed: number,
+): Promise<void> {
+  await page.evaluate(seed => {
+    const reset = (window as unknown as {
+      __resetQualityMatrixRandom__?: (nextSeed: number) => void;
+    }).__resetQualityMatrixRandom__;
+    if (!reset) throw new Error('Quality-matrix seeded random reset is unavailable');
+    // Module startup may legitimately consume randomness. Reset at the actual
+    // evidence boundary so procedural buffers never depend on page-load timing.
+    reset(seed);
+  }, seed);
+
   const playButton = page
     .locator('[data-testid="play-button"]')
     .or(page.getByRole('button', { name: /play/i }))
@@ -514,6 +529,13 @@ export class ChromiumDryPcmCaptureAdapter {
 
       let state = seed >>> 0;
       let calls = 0;
+      const reset = (nextSeed: number) => {
+        state = nextSeed >>> 0;
+        calls = 0;
+        (window as unknown as {
+          __qualityMatrixRandom__?: { seed: number; calls: number };
+        }).__qualityMatrixRandom__ = { seed: nextSeed, calls: 0 };
+      };
       Math.random = () => {
         calls++;
         state = (state + 0x6d2b79f5) >>> 0;
@@ -529,14 +551,18 @@ export class ChromiumDryPcmCaptureAdapter {
       };
       (window as unknown as {
         __qualityMatrixRandom__?: { seed: number; calls: number };
+        __resetQualityMatrixRandom__?: (nextSeed: number) => void;
       }).__qualityMatrixRandom__ = { seed, calls: 0 };
+      (window as unknown as {
+        __resetQualityMatrixRandom__?: (nextSeed: number) => void;
+      }).__resetQualityMatrixRandom__ = reset;
     }, { sampleRate: MATRIX_SAMPLE_RATE, seed });
 
     const page = await context.newPage();
     try {
       await page.goto(`${this.options.baseUrl}/s/${sessionId}`);
       await waitForSession(page);
-      await prepareProductionAudio(page, matrixCase, trackId);
+      await prepareProductionAudio(page, matrixCase, trackId, seed);
       const captured = await captureInPage(page, matrixCase, trackId, captureAttemptId);
       if (captured.sampleRate !== MATRIX_SAMPLE_RATE) {
         throw new Error(`${matrixCase.id}: Chromium rendered at ${captured.sampleRate} Hz`);
