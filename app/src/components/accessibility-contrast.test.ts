@@ -131,73 +131,58 @@ describe('Color Contrast Calculation', () => {
 // =============================================================================
 
 describe('App Color Palette Validation', () => {
-  /**
-   * These colors represent the actual color palette used in the app.
-   * Validates that all UI color combinations meet WCAG AA.
-   */
+  const neutralHover = '#333333';
+  const textColors = [
+    '#ff8a65', // accent / brand text
+    '#5eb3ea', // blue / info text
+    '#c58ad6', // purple text
+    '#4ecdc4', // teal text
+    '#00bcd4', // cyan text
+    '#ff6f9f', // pink text
+    '#2ecc71', // green text
+    '#ffb74d', // orange text
+    '#f1c40f', // yellow text
+    '#ff7b7b', // red / error text
+    '#1db954', // success text
+    '#ffc107', // warning text
+    '#d4a054', // secondary text
+  ];
 
-  // App color palette (from CSS variables or design system)
-  const colors = {
-    // Background colors
-    bgPrimary: '#1a1a2e',
-    bgSecondary: '#16213e',
-    bgTertiary: '#0f3460',
-
-    // Text colors
-    textPrimary: '#ffffff',
-    textSecondary: '#b0b0b0',
-    textMuted: '#707070',
-
-    // Accent colors
-    accentPrimary: '#e94560',
-    accentSecondary: '#533483',
-
-    // UI element colors
-    stepActive: '#e94560',
-    stepInactive: '#2d2d44',
-    stepBorder: '#3d3d5c',
-
-    // Transport colors
-    playButton: '#4ade80',
-    stopButton: '#ef4444',
-  };
-
-  it('APV-001: primary text on primary background passes AA', () => {
-    const result = meetsWCAGAA(colors.textPrimary, colors.bgPrimary);
-    expect(result.passes).toBe(true);
-    expect(result.ratio).toBeGreaterThanOrEqual(4.5);
+  it('APV-001: every classified feature text color passes AA on a hovered neutral surface', () => {
+    for (const foreground of textColors) {
+      const result = meetsWCAGAA(foreground, neutralHover);
+      expect(result.ratio, `${foreground} on ${neutralHover}`).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
-  it('APV-002: secondary text on primary background passes AA', () => {
-    const result = meetsWCAGAA(colors.textSecondary, colors.bgPrimary);
-    expect(result.passes).toBe(true);
-    expect(result.ratio).toBeGreaterThanOrEqual(4.5);
+  it('APV-002: the global muted tier remains readable on the lightest neutral surface', () => {
+    const activeSurface: [number, number, number] = [68, 68, 68];
+    const mutedOverActive: [number, number, number] = activeSurface.map(
+      channel => Math.round(255 * 0.6 + channel * 0.4),
+    ) as [number, number, number];
+    expect(contrastRatio(mutedOverActive, activeSurface)).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('APV-003: accent color on dark background is visible (large text)', () => {
-    const result = meetsWCAGAA(colors.accentPrimary, colors.bgPrimary, true);
-    expect(result.passes).toBe(true);
-    expect(result.ratio).toBeGreaterThanOrEqual(3);
+  it('APV-003: the shared dark ink passes on every bright feature fill', () => {
+    const darkInk = '#121212';
+    const brightFills = [
+      '#e85a30', '#f07048', '#3498db', '#4ecdc4', '#00bcd4', '#2ecc71',
+      '#e67e22', '#f1c40f', '#e74c3c', '#1db954', '#ffc107',
+    ];
+    for (const fill of brightFills) {
+      const result = meetsWCAGAA(darkInk, fill);
+      expect(result.ratio, `${darkInk} on ${fill}`).toBeGreaterThanOrEqual(4.5);
+    }
   });
 
-  it('APV-004: play button color has sufficient contrast', () => {
-    const result = meetsWCAGAA(colors.playButton, colors.bgSecondary);
-    expect(result.ratio).toBeGreaterThanOrEqual(3); // UI component requirement
+  it('APV-004: purple and pink filled controls use their hue-specific foregrounds', () => {
+    expect(meetsWCAGAA('#ffffff', '#9b59b6').ratio).toBeGreaterThanOrEqual(4.5);
+    expect(meetsWCAGAA('#000000', '#e91e63').ratio).toBeGreaterThanOrEqual(4.5);
   });
 
-  it('APV-005: active step is distinguishable from inactive', () => {
-    // This tests the contrast between active and inactive step states
-    const activeRatio = contrastRatio(
-      parseColor(colors.stepActive)!,
-      parseColor(colors.bgPrimary)!
-    );
-    const inactiveRatio = contrastRatio(
-      parseColor(colors.stepInactive)!,
-      parseColor(colors.bgPrimary)!
-    );
-
-    // Active should have higher contrast than inactive
-    expect(activeRatio).toBeGreaterThan(inactiveRatio);
+  it('APV-005: the landing primary action passes in its resting and hover states', () => {
+    expect(meetsWCAGAA('#121212', '#e85a30').ratio).toBeGreaterThanOrEqual(4.5);
+    expect(meetsWCAGAA('#121212', '#f07048').ratio).toBeGreaterThanOrEqual(4.5);
   });
 });
 

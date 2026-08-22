@@ -40,7 +40,7 @@
   font-size: 1.5rem;
   font-weight: 700;
   margin: 0;
-  color: var(--color-brand);
+  color: var(--color-brand-text);
   opacity: 0;
   animation: landing-enter 0.4s ease-out 0.1s forwards;
 }
@@ -52,9 +52,9 @@
   animation: landing-enter 0.4s ease-out 0.25s forwards;
 }
 
-.landing-tagline .c { color: var(--color-brand); }
-.landing-tagline .r { color: var(--color-purple); }
-.landing-tagline .s { color: var(--color-teal); }
+.landing-tagline .c { color: var(--color-brand-text); }
+.landing-tagline .r { color: var(--color-purple-text); }
+.landing-tagline .s { color: var(--color-teal-text); }
 
 .landing-btn {
   font-size: 0.85rem;
@@ -76,6 +76,7 @@
 .landing-btn.primary {
   background: var(--color-accent);
   border-color: var(--color-accent);
+  color: var(--color-on-bright);
   opacity: 0;
   animation: landing-enter 0.4s ease-out 0.4s forwards;
 }
@@ -83,6 +84,7 @@
 .landing-btn.primary:hover {
   background: var(--color-accent-light);
   border-color: var(--color-accent-light);
+  color: var(--color-on-bright);
 }
 
 .landing-start-actions {
@@ -210,7 +212,7 @@
 
 .landing-carousel-btn:hover:not(:disabled) {
   border-color: var(--color-brand);
-  color: var(--color-brand);
+  color: var(--color-brand-text);
 }
 
 .landing-carousel-btn:disabled {

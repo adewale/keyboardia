@@ -49,6 +49,11 @@ export default defineConfig({
       testMatch: 'stack-a-mobile-behavior.spec.ts',
       use: { ...devices['iPhone 13'], browserName: 'webkit', hasTouch: true },
     },
+    {
+      name: 'site-color-safety-chromium',
+      testMatch: 'site-color-safety.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
   ],
   webServer: {
     command: 'node scripts/serve-stack-a-comparison.mjs',

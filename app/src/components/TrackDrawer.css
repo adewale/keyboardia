@@ -69,7 +69,7 @@
 }
 
 .drawer-control-value.active {
-  color: var(--color-info);
+  color: var(--color-info-text);
 }
 
 .drawer-control-suffix {
@@ -166,7 +166,7 @@
 .drawer-icon-btn.active {
   border-color: var(--color-accent);
   background: var(--color-accent-muted);
-  color: var(--color-accent);
+  color: var(--color-accent-text);
 }
 
 .drawer-icon-btn:active {
@@ -213,7 +213,7 @@
 .drawer-action-btn-compact.primary {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: white;
+  color: var(--color-on-bright);
 }
 
 .drawer-action-btn-compact.primary:hover {
@@ -230,7 +230,7 @@
 
 .drawer-action-btn-compact.destructive:hover,
 .drawer-action-btn-compact.destructive:focus-visible {
-  color: var(--color-error);
+  color: var(--color-error-text);
   background: rgba(231, 76, 60, 0.2);
   border-color: var(--color-error);
 }

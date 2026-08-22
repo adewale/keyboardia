@@ -54,3 +54,6 @@ stack-a-mobile-behavior.spec.ts › Stack A mobile WebKit behavior identity › 
 stack-a-mobile-behavior.spec.ts › Stack A mobile WebKit behavior identity › touch selects transpose @stack-a-mobile
 stack-a-mobile-behavior.spec.ts › Stack A mobile WebKit behavior identity › touch expands a picker category @stack-a-mobile
 stack-a-mobile-behavior.spec.ts › Stack A mobile WebKit behavior identity › touch invokes the landscape drawer action @stack-a-mobile
+site-color-safety.spec.ts › Site colour-role safety › landing copy and primary action remain readable at rest and hover
+site-color-safety.spec.ts › Site colour-role safety › picker labels and available instrument choices remain readable
+site-color-safety.spec.ts › Site colour-role safety › classified text and filled-control token pairs pass WCAG AA

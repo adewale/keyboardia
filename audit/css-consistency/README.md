@@ -240,7 +240,7 @@ result, not a hidden benefit.
 #### Lessons learned from the Stack B candidate
 
 The complete dropdown pilot is implemented in one maintainer-requested PR. Its
-candidate evidence and final consistency audit produced seventeen lessons:
+candidate evidence and the subsequent site-wide correction produced eighteen lessons:
 
 1. **A responsive component state is not proof that the product exposes that
    component in the same mode.** The catalogue can render the shared portalled
@@ -332,6 +332,21 @@ candidate evidence and final consistency audit produced seventeen lessons:
     the stronger boundaries, state colours, selection grammar, and focus
     ownership remain while the product's existing surfaces and `.60` muted text
     tier are reused.
+18. **Classify colour by role before polishing a component.** The dropdown work
+    initially compared itself mainly with another widget and its own states.
+    That made a locally coherent treatment look like progress while raw feature
+    hues, the `.38` neutral tier, and inherited white-on-fill text still meant
+    different things elsewhere in Keyboardia. The mistake had four causes: the
+    external comparator was weighted above the product's established flat
+    grammar; palette tokens conflated fill, border, decoration, and text;
+    component screenshots did not establish a site-wide baseline; and static
+    token calculations missed composited ancestor opacity. The stacked
+    [site-wide colour-role correction](site-color-safety/README.md) now gives
+    feature hues separate `-text` and `on-*` roles, reserves `.38` for disabled
+    or decorative content, rejects unsafe CSS uses, measures rendered contrast
+    at desktop/portrait/landscape sizes, and allows the visual migration only
+    from the exact Stack B head. The reusable process rule is: audit the host
+    product first, define roles second, then compare outside references.
 
 Candidate pilot CSS scorecard: product files remain 41;
 product declarations increase from 5,036 to 5,055; product CSS lines increase

@@ -113,7 +113,7 @@
 }
 
 .toast-url-header .toast-message {
-  color: var(--color-accent-hover);
+  color: var(--color-accent-text);
   font-weight: 500;
 }
 
@@ -137,7 +137,7 @@
   place-items: center;
   background: none;
   border: none;
-  color: var(--color-accent-hover);
+  color: var(--color-accent-text);
   cursor: pointer;
   padding: 0;
   opacity: 0.7;
