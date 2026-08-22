@@ -1,10 +1,11 @@
-import type { Page } from '@playwright/test';
+import type { BrowserContext, Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { createSessionWithRetry, API_BASE } from './test-utils';
 import { test, expect, waitForAppReady } from './global-setup';
+import { createE2EContext } from './browser-context';
 import { INSTRUMENT_CATEGORIES } from '../src/components/sample-constants';
 import { getInstrumentRange } from '../src/audio/instrument-ranges';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
@@ -34,6 +35,7 @@ import {
   LIVE_RECEIPT_SCHEMA_VERSION,
   LIVE_RMS_METRIC,
   LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
+  LIVE_SESSION_LIFECYCLE,
   LIVE_SILENCE_PEAK_THRESHOLD,
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
@@ -44,6 +46,7 @@ import {
   type LiveDispatchMethod,
   type LiveEngineDispatch,
   type LiveQualityReport,
+  type LiveSessionResult,
 } from '../scripts/instrument-quality-live-receipt';
 
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
@@ -59,6 +62,7 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
     this.inputCount = options.processorOptions.inputCount;
     this.channelCount = options.processorOptions.channelCount;
     this.active = false;
+    this.terminal = false;
     this.started = false;
     this.targetFrames = 0;
     this.capturedFrames = 0;
@@ -88,15 +92,19 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
 
   fail(message) {
     this.active = false;
+    this.terminal = true;
     this.port.postMessage({ type: 'error', message });
   }
 
   process(inputs, outputs) {
+    if (this.terminal) return false;
+    // The node is connected before its asynchronous arm acknowledgement. Keep
+    // it alive while waiting, but retire it permanently after error or done.
     if (!this.active) return true;
     const renderQuantum = outputs[0]?.[0];
     if (!renderQuantum || renderQuantum.length === 0) {
       this.fail('continuous energy capture received no render quantum');
-      return true;
+      return false;
     }
     let frameOffset = 0;
     if (!this.started) {
@@ -141,13 +149,13 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
           'input ' + inputIndex + ' exposed ' + (input ? input.length : 0)
           + ' channels; expected ' + this.channelCount,
         );
-        return true;
+        return false;
       }
       for (let channelIndex = 0; channelIndex < this.channelCount; channelIndex++) {
         const channel = input[channelIndex];
         if (!channel || channel.length < frameOffset + framesToCapture) {
           this.fail('input ' + inputIndex + ' channel ' + channelIndex + ' was incomplete');
-          return true;
+          return false;
         }
         for (let frame = 0; frame < framesToCapture; frame++) {
           const sample = channel[frameOffset + frame];
@@ -168,12 +176,14 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
         channelSampleCount: this.sampleCounts[inputIndex],
       }));
       this.active = false;
+      this.terminal = true;
       this.port.postMessage({
         type: 'done',
         capturedFrames: this.capturedFrames,
         armToOnsetFrames: this.armToOnsetFrames,
         measurements,
       });
+      return false;
     }
     return true;
   }
@@ -444,7 +454,6 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
       playAdvancedSynth: 5,
     } as const satisfies Record<DispatchMethod, number>;
     const methods = Object.keys(trackIdSlots) as DispatchMethod[];
-    const originals = new Map<DispatchMethod, PlayMethod>();
     const ownDescriptors = new Map<DispatchMethod, PropertyDescriptor | undefined>();
     let dispatches: Dispatch[] = [];
     let armed = false;
@@ -454,7 +463,6 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
       if (typeof original !== 'function') {
         throw new Error(`Audio engine dispatch method ${method} is unavailable`);
       }
-      originals.set(method, original);
       ownDescriptors.set(method, Object.getOwnPropertyDescriptor(engine, method));
       Object.defineProperty(engine, method, {
         configurable: true,
@@ -565,7 +573,16 @@ async function installDeterministicRandom(page: Page): Promise<void> {
   await page.addInitScript(({ seed, algorithm }) => {
     if (algorithm !== 'mulberry32') throw new Error(`Unsupported live-quality RNG ${algorithm}`);
     type RandomReceipt = { seed: number; state: number; calls: number; algorithm: string };
-    const globals = window as unknown as { __liveQualityRandom__?: RandomReceipt };
+    type RandomResetReceipt = { seed: number; algorithm: string; calls: 0 };
+    const globals = window as unknown as {
+      __liveQualityRandom__?: RandomReceipt;
+      __liveQualityRandomReset__?: RandomResetReceipt;
+    };
+    Object.defineProperty(globals, '__liveQualityRandomReset__', {
+      configurable: false,
+      writable: false,
+      value: Object.freeze({ seed, algorithm, calls: 0 as const }),
+    });
     globals.__liveQualityRandom__ = { seed, state: seed >>> 0, calls: 0, algorithm };
     Math.random = () => {
       const receipt = globals.__liveQualityRandom__;
@@ -916,6 +933,132 @@ async function cleanupIsolatedTrial(
   }
 }
 
+async function readSessionExecution(
+  page: Page,
+  browserName: string,
+  browserVersion: string,
+): Promise<LiveSessionResult['execution']> {
+  const observed = await page.evaluate(({ seed, algorithm }) => {
+    type RandomResetReceipt = { seed: number; algorithm: string; calls: number };
+    type RandomState = { seed: number; algorithm: string; calls: number };
+    const globals = window as unknown as {
+      __liveQualityRandomReset__?: RandomResetReceipt;
+      __liveQualityRandom__?: RandomState;
+    };
+    const reset = globals.__liveQualityRandomReset__;
+    const state = globals.__liveQualityRandom__;
+    const descriptor = Object.getOwnPropertyDescriptor(globals, '__liveQualityRandomReset__');
+    if (reset?.seed !== seed
+      || reset.algorithm !== algorithm
+      || reset.calls !== 0
+      || descriptor?.writable !== false
+      || descriptor.configurable !== false
+      || !Object.isFrozen(reset)
+      || state?.seed !== seed
+      || state.algorithm !== algorithm
+      || !Number.isInteger(state.calls)
+      || state.calls < 0) {
+      throw new Error('Fresh document did not expose the pinned deterministic-random reset');
+    }
+    return {
+      userAgent: navigator.userAgent,
+      randomReset: { seed: reset.seed, algorithm: reset.algorithm, calls: 0 as const },
+    };
+  }, { seed: LIVE_RANDOM_SEED, algorithm: LIVE_RANDOM_ALGORITHM });
+  if (observed.userAgent.trim().length === 0) {
+    throw new Error('Fresh batch page exposed an empty browser user agent');
+  }
+  return {
+    lifecycle: LIVE_SESSION_LIFECYCLE,
+    browser: { name: browserName, version: browserVersion, userAgent: observed.userAgent },
+    randomReset: observed.randomReset,
+  };
+}
+
+async function assertAacDecodeSupport(page: Page): Promise<void> {
+  const aacSupport = await page.evaluate(() =>
+    document.createElement('audio').canPlayType('audio/mp4; codecs="mp4a.40.2"')
+  );
+  expect(
+    aacSupport,
+    `this browser cannot decode AAC/m4a (canPlayType: "${aacSupport}"), so every `
+      + 'm4a-backed instrument would be reported silent regardless of routing. Run '
+      + 'with Playwright\'s bundled Chromium (npx playwright install chromium).',
+  ).not.toBe('');
+}
+
+async function shutdownAudioEngine(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    const engine = (window as unknown as {
+      __audioEngine__?: {
+        getAudioContext?: () => AudioContext | null;
+        shutdown?: () => Promise<void>;
+      };
+    }).__audioEngine__;
+    if (!engine?.shutdown) {
+      throw new Error('Prepared batch page lost AudioEngine.shutdown before teardown');
+    }
+    const audioContext = engine.getAudioContext?.();
+    if (!audioContext) {
+      throw new Error('Prepared batch page lost its AudioContext before teardown');
+    }
+    let timer = 0;
+    const timeout = new Promise<never>((_, reject) => {
+      timer = window.setTimeout(
+        () => reject(new Error('Timed out awaiting AudioEngine.shutdown for batch teardown')),
+        10_000,
+      );
+    });
+    try {
+      await Promise.race([engine.shutdown(), timeout]);
+    } finally {
+      window.clearTimeout(timer);
+    }
+    // AudioEngine.shutdown deliberately catches close() errors. The evaluator
+    // must independently prove that this session released the scarce browser
+    // media resource before another context is created.
+    if (audioContext.state !== 'closed') {
+      throw new Error(`AudioContext remained ${audioContext.state} after AudioEngine.shutdown`);
+    }
+  });
+}
+
+async function cleanupBatchRuntime(
+  context: BrowserContext,
+  page: Page | null,
+  audioInitializationAttempted: boolean,
+): Promise<void> {
+  const failures: Array<{ action: string; error: unknown }> = [];
+  const attempt = async (action: string, operation: () => Promise<void>): Promise<void> => {
+    try {
+      await operation();
+    } catch (error) {
+      failures.push({ action, error });
+    }
+  };
+
+  if (page && !page.isClosed()) {
+    await attempt('uninstall engine dispatch probe', () => uninstallEngineDispatchProbe(page));
+    if (audioInitializationAttempted) {
+      await attempt('await AudioEngine.shutdown', () => shutdownAudioEngine(page));
+    }
+  } else if (audioInitializationAttempted) {
+    failures.push({
+      action: 'await AudioEngine.shutdown',
+      error: new Error('Prepared batch page closed before AudioEngine.shutdown'),
+    });
+  }
+  await attempt('close fresh browser context', () => context.close());
+
+  if (failures.length > 0) {
+    const cleanupError = new Error(
+      `Batch runtime cleanup failed: ${failures.map(failure => failure.action).join(', ')}`,
+    );
+    Object.defineProperty(cleanupError, 'failures', { value: failures });
+    throw cleanupError;
+  }
+}
+
 function cleanSubjectCommit(): string {
   const repositoryRoot = resolve(THIS_DIR, '../..');
   const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
@@ -938,7 +1081,7 @@ function cleanSubjectCommit(): string {
   return subjectCommit;
 }
 
-test('every catalog instrument sequencer step produces live master output', async ({ page, request, browserName }) => {
+test('every catalog instrument is non-silent at isolated track and masterGain taps', async ({ browser, request, browserName }) => {
   test.setTimeout(900_000);
   const specs = allInstrumentSpecs();
   expect(specs).toHaveLength(99);
@@ -947,50 +1090,22 @@ test('every catalog instrument sequencer step produces live master output', asyn
   expect(LIVE_ACTIVE_STEP * (60 / LIVE_TEMPO / 4)).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
   expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
   expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
+  expect(browserName).toBe('chromium');
   const subjectCommit = cleanSubjectCommit();
-  await installDeterministicRandom(page);
-
-  // Codec precondition — see e2e/sample-browser-decode.spec.ts for the same
-  // check and the full reasoning.
-  //
-  // This test continuously accumulates master/per-track sample peak and
-  // full-window RMS, then reports instruments that come out silent. On a
-  // Chromium without AAC, every .m4a-backed instrument decodes to
-  // nothing and is reported as silent — indistinguishable from a genuine audio
-  // routing regression, which is the failure this test exists to catch. Assert
-  // the browser can actually decode the catalogue before believing its silence.
-  await page.goto('/');
-  const aacSupport = await page.evaluate(() =>
-    document.createElement('audio').canPlayType('audio/mp4; codecs="mp4a.40.2"')
-  );
-  expect(
-    aacSupport,
-    `this browser cannot decode AAC/m4a (canPlayType: "${aacSupport}"), so every ` +
-      'm4a-backed instrument would be reported silent regardless of routing. Run ' +
-      'with Playwright\'s bundled Chromium (npx playwright install chromium).'
-  ).not.toBe('');
 
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
-  page.on('pageerror', err => pageErrors.push(err.message));
-  page.on('console', msg => {
-    const text = msg.text();
-    if (
-      msg.type() === 'error' ||
-      text.includes('Sample not found') ||
-      (text.includes('not ready') && text.includes('skipping'))
-    ) {
-      consoleErrors.push(`[${msg.type()}] ${text}`);
+  let receiptPublished = false;
+  browser.on('disconnected', () => {
+    if (!receiptPublished) {
+      pageErrors.push('[browser] disconnected before live receipt publication');
     }
   });
-
   const results: TrackProbeResult[] = [];
   const audioSampleRates = new Set<number>();
-  const sessionResults: Array<{
-    sessionId: string;
-    instruments: string[];
-    sampleRate: number;
-  }> = [];
+  const sessionResults: LiveSessionResult[] = [];
+  const browserVersion = browser.version();
+  let receiptBrowser: LiveQualityReport['browser'] | null = null;
 
   for (const [batchIndex, batchSpecs] of chunk(specs, MAX_TRACKS).entries()) {
     const tracks = batchSpecs.map((spec, i) => buildSequencerTrack(spec, batchIndex * MAX_TRACKS + i));
@@ -1000,103 +1115,162 @@ test('every catalog instrument sequencer step produces live master output', asyn
       swing: 0,
       version: 1,
     });
-
-    await page.goto(`${API_BASE}/s/${sessionId}`);
-    await waitForAppReady(page);
-    await expect(page.locator('.track-row')).toHaveCount(tracks.length, { timeout: 20_000 });
-
-    await prepareAudioForTracks(page, tracks);
-    await installEngineDispatchProbe(page);
-    const expectedSampleRate = await page.evaluate(() => {
-      type Engine = { getAudioContext?: () => AudioContext | null };
-      const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
-      const sampleRate = engine?.getAudioContext?.()?.sampleRate;
-      if (!sampleRate) throw new Error('AudioContext sample rate unavailable');
-      return sampleRate;
+    const diagnosticPrefix = `[batch ${batchIndex + 1} session ${sessionId}]`;
+    const context = await createE2EContext(browser, browserName);
+    let batchPage: Page | null = null;
+    let audioInitializationAttempted = false;
+    let batchTeardownStarted = false;
+    let primaryError: unknown;
+    let cleanupFailure: unknown;
+    context.on('close', () => {
+      if (!batchTeardownStarted) {
+        pageErrors.push(`${diagnosticPrefix} browser context closed unexpectedly`);
+      }
     });
-    audioSampleRates.add(expectedSampleRate);
-    sessionResults.push({
-      sessionId,
-      instruments: batchSpecs.map(s => s.sampleId),
-      sampleRate: expectedSampleRate,
-    });
+    try {
+      const page = await context.newPage();
+      batchPage = page;
+      await installDeterministicRandom(page);
+      page.on('pageerror', error => pageErrors.push(`${diagnosticPrefix} ${error.message}`));
+      page.on('crash', () => pageErrors.push(`${diagnosticPrefix} page crashed`));
+      page.on('close', () => {
+        if (!batchTeardownStarted) {
+          pageErrors.push(`${diagnosticPrefix} page closed unexpectedly`);
+        }
+      });
+      page.on('console', message => {
+        const text = message.text();
+        if (
+          message.type() === 'error'
+          || text.includes('Sample not found')
+          || (text.includes('not ready') && text.includes('skipping'))
+        ) {
+          consoleErrors.push(`${diagnosticPrefix} [${message.type()}] ${text}`);
+        }
+      });
 
-    for (const [i, spec] of batchSpecs.entries()) {
-      const trackId = tracks[i].id;
-      // Calibration is deliberately single-audible-track. Muted release tails
-      // may remain allocated; polyphonic behaviour has separate matrix coverage
-      // and must not move an instrument's level rank.
-      let energy: EnergyCaptureResult | null = null;
-      let isolationSnapshot: PreArmIsolationSnapshot | null = null;
-      let observedEngineDispatches: LiveEngineDispatch[] | null = null;
-      let primaryError: unknown;
-      let cleanupFailure: unknown;
-      try {
-        await setTrackMuted(page, i, trackId, false);
-        await attachContinuousEnergyCapture(page, [trackId]);
-        isolationSnapshot = await armTrialObservation(page, tracks.map(track => track.id));
-        expect(isolationSnapshot.uiUnmutedTrackIds).toEqual([trackId]);
-        expect(isolationSnapshot.commandedTrackBusOpenIds).toEqual([trackId]);
-        await armAndStartContinuousEnergyCapture(page);
-        energy = await readContinuousEnergyCapture(page);
-        await stopPlaybackIfActive(page);
-        observedEngineDispatches = await readAndDisarmEngineDispatchProbe(page);
-        expect(observedEngineDispatches).toEqual([{
-          method: LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type],
-          trackId,
-        }]);
-      } catch (error) {
-        primaryError = error;
-        throw error;
-      } finally {
+      await page.goto(`${API_BASE}/s/${sessionId}`);
+      await waitForAppReady(page);
+      await expect(page.locator('.track-row')).toHaveCount(tracks.length, { timeout: 20_000 });
+      // Codec support is checked inside every fresh context so no batch can
+      // silently inherit a capability assumption from another document.
+      await assertAacDecodeSupport(page);
+      const execution = await readSessionExecution(page, browserName, browserVersion);
+      if (receiptBrowser === null) receiptBrowser = execution.browser;
+      else expect(execution.browser).toEqual(receiptBrowser);
+
+      audioInitializationAttempted = true;
+      await prepareAudioForTracks(page, tracks);
+      await installEngineDispatchProbe(page);
+      const expectedSampleRate = await page.evaluate(() => {
+        type Engine = { getAudioContext?: () => AudioContext | null };
+        const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
+        const sampleRate = engine?.getAudioContext?.()?.sampleRate;
+        if (!sampleRate) throw new Error('AudioContext sample rate unavailable');
+        return sampleRate;
+      });
+      audioSampleRates.add(expectedSampleRate);
+      sessionResults.push({
+        sessionId,
+        instruments: batchSpecs.map(spec => spec.sampleId),
+        sampleRate: expectedSampleRate,
+        execution,
+      });
+
+      for (const [i, spec] of batchSpecs.entries()) {
+        const trackId = tracks[i].id;
+        // Calibration is deliberately single-audible-track. Muted release tails
+        // may remain allocated; polyphonic behaviour has separate matrix coverage
+        // and must not move an instrument's level rank.
+        let energy: EnergyCaptureResult | null = null;
+        let isolationSnapshot: PreArmIsolationSnapshot | null = null;
+        let observedEngineDispatches: LiveEngineDispatch[] | null = null;
+        let trialPrimaryError: unknown;
+        let trialCleanupFailure: unknown;
         try {
-          await cleanupIsolatedTrial(page, i, trackId);
-        } catch (cleanupError) {
-          cleanupFailure = cleanupError;
-          if (primaryError instanceof Error) {
-            try {
-              Object.defineProperty(primaryError, 'cleanupError', { value: cleanupError });
-            } catch {
-              // Never replace the trial's primary failure with cleanup metadata.
+          await setTrackMuted(page, i, trackId, false);
+          await attachContinuousEnergyCapture(page, [trackId]);
+          isolationSnapshot = await armTrialObservation(page, tracks.map(track => track.id));
+          expect(isolationSnapshot.uiUnmutedTrackIds).toEqual([trackId]);
+          expect(isolationSnapshot.commandedTrackBusOpenIds).toEqual([trackId]);
+          await armAndStartContinuousEnergyCapture(page);
+          energy = await readContinuousEnergyCapture(page);
+          await stopPlaybackIfActive(page);
+          observedEngineDispatches = await readAndDisarmEngineDispatchProbe(page);
+          expect(observedEngineDispatches).toEqual([{
+            method: LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type],
+            trackId,
+          }]);
+        } catch (error) {
+          trialPrimaryError = error;
+          throw error;
+        } finally {
+          try {
+            await cleanupIsolatedTrial(page, i, trackId);
+          } catch (cleanupError) {
+            trialCleanupFailure = cleanupError;
+            if (trialPrimaryError instanceof Error) {
+              try {
+                Object.defineProperty(trialPrimaryError, 'cleanupError', { value: cleanupError });
+              } catch {
+                // Never replace the trial's primary failure with cleanup metadata.
+              }
             }
           }
         }
-      }
-      if (cleanupFailure !== undefined) throw cleanupFailure;
-      if (!energy || !isolationSnapshot || !observedEngineDispatches) {
-        throw new Error(`Isolated trial ${trackId} completed without all evidence fields`);
-      }
-      expect(energy.sampleRate).toBe(expectedSampleRate);
+        if (trialCleanupFailure !== undefined) throw trialCleanupFailure;
+        if (!energy || !isolationSnapshot || !observedEngineDispatches) {
+          throw new Error(`Isolated trial ${trackId} completed without all evidence fields`);
+        }
+        expect(energy.sampleRate).toBe(expectedSampleRate);
 
-      const trackEnergy = energy.tracks[trackId];
-      if (!trackEnergy) throw new Error(`Continuous energy capture omitted ${trackId}`);
-      results.push({
-        ...spec,
-        trackId,
-        sessionId,
-        ...trackEnergy,
-        masterPeak: energy.master.peak,
-        masterRms: energy.master.rms,
-        armToOnsetFrames: energy.armToOnsetFrames,
-        randomCalls: energy.randomCalls,
-        preArmUiUnmutedTrackIds: isolationSnapshot.uiUnmutedTrackIds,
-        preArmCommandedTrackBusOpenIds: isolationSnapshot.commandedTrackBusOpenIds,
-        observedEngineDispatches,
-      });
+        const trackEnergy = energy.tracks[trackId];
+        if (!trackEnergy) throw new Error(`Continuous energy capture omitted ${trackId}`);
+        results.push({
+          ...spec,
+          trackId,
+          sessionId,
+          ...trackEnergy,
+          masterPeak: energy.master.peak,
+          masterRms: energy.master.rms,
+          armToOnsetFrames: energy.armToOnsetFrames,
+          randomCalls: energy.randomCalls,
+          preArmUiUnmutedTrackIds: isolationSnapshot.uiUnmutedTrackIds,
+          preArmCommandedTrackBusOpenIds: isolationSnapshot.commandedTrackBusOpenIds,
+          observedEngineDispatches,
+        });
+      }
+    } catch (error) {
+      primaryError = error;
+    } finally {
+      batchTeardownStarted = true;
+      try {
+        await cleanupBatchRuntime(context, batchPage, audioInitializationAttempted);
+      } catch (error) {
+        cleanupFailure = error;
+      }
     }
-    await uninstallEngineDispatchProbe(page);
+    if (primaryError !== undefined) {
+      if (primaryError instanceof Error && cleanupFailure !== undefined) {
+        try {
+          Object.defineProperty(primaryError, 'cleanupError', { value: cleanupFailure });
+        } catch {
+          // Preserve the primary batch failure if the error is not extensible.
+        }
+      }
+      throw primaryError;
+    }
+    if (cleanupFailure !== undefined) throw cleanupFailure;
   }
+
+  if (receiptBrowser === null) throw new Error('Live capture produced no browser identity');
 
   const receipt: LiveQualityReport = {
     schemaVersion: LIVE_RECEIPT_SCHEMA_VERSION,
     claim: LIVE_RECEIPT_CLAIM,
     generatedAt: new Date().toISOString(),
     subjectCommit,
-    browser: {
-      name: browserName,
-      version: page.context().browser()?.version() ?? 'unknown',
-      userAgent: await page.evaluate(() => navigator.userAgent),
-    },
+    browser: receiptBrowser,
     audioSampleRates: [...audioSampleRates].sort((left, right) => left - right),
     generatedFrom: LIVE_GENERATED_FROM,
     capture: {
@@ -1147,7 +1321,7 @@ test('every catalog instrument sequencer step produces live master output', asyn
   expect(consoleErrors, 'Console errors/skipped notes during all-instrument sequencer output smoke').toEqual([]);
   expect(
     silentMasterTrials.map(r => ({ sampleId: r.sampleId, peak: r.masterPeak, rms: r.masterRms })),
-    'Every isolated instrument trial should produce master output energy',
+    'Every isolated instrument trial should be non-silent at the pre-processing masterGain tap',
   ).toEqual([]);
   expect(
     silentTracks.map(r => ({ sampleId: r.sampleId, type: r.type, pitch: r.pitch, peak: r.peak, rms: r.rms })),
@@ -1162,4 +1336,5 @@ test('every catalog instrument sequencer step produces live master output', asyn
     resolve(REPORT_DIR, 'live-master-output.json'),
     `${JSON.stringify(receipt, null, 2)}\n`,
   );
+  receiptPublished = true;
 });

@@ -190,6 +190,7 @@ interface LiveRepeatabilityProjection {
   diagnostics: LiveQualityReport['diagnostics'];
   sessions: Array<{
     sampleRate: number;
+    execution: LiveQualityReport['sessions'][number]['execution'];
     instruments: Array<{ sampleId: string; randomCalls: number }>;
   }>;
   instruments: Array<{
@@ -378,6 +379,7 @@ export function liveRepeatabilityProjection(
     diagnostics: report.diagnostics,
     sessions: report.sessions.map(session => ({
       sampleRate: session.sampleRate,
+      execution: session.execution,
       instruments: session.instruments.map(sampleId => {
         const instrument = instrumentsById.get(sampleId);
         if (!instrument) {
