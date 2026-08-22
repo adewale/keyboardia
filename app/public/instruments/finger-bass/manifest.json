@@ -393,7 +393,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-36-97-127",
       "roundRobinIndex": 0,
-      "gainDb": -2.597
+      "gainDb": -3.397
     },
     {
       "note": 36,
@@ -403,7 +403,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-36-97-127",
       "roundRobinIndex": 1,
-      "gainDb": -2.597
+      "gainDb": -3.397
     },
     {
       "note": 36,
@@ -413,7 +413,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-36-65-96",
       "roundRobinIndex": 0,
-      "gainDb": -2.597
+      "gainDb": -3.397
     },
     {
       "note": 36,
@@ -423,7 +423,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-36-65-96",
       "roundRobinIndex": 1,
-      "gainDb": -2.597
+      "gainDb": -3.397
     },
     {
       "note": 36,
@@ -433,7 +433,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-36-33-64",
       "roundRobinIndex": 0,
-      "gainDb": -2.597
+      "gainDb": -3.397
     },
     {
       "note": 36,
@@ -443,7 +443,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-36-33-64",
       "roundRobinIndex": 1,
-      "gainDb": -2.597
+      "gainDb": -3.397
     },
     {
       "note": 36,
@@ -453,7 +453,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-36-0-32",
       "roundRobinIndex": 0,
-      "gainDb": -2.597
+      "gainDb": -3.397
     },
     {
       "note": 36,
@@ -463,7 +463,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-36-0-32",
       "roundRobinIndex": 1,
-      "gainDb": -2.597
+      "gainDb": -3.397
     },
     {
       "note": 39,
@@ -545,7 +545,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-42-97-127",
       "roundRobinIndex": 0,
-      "gainDb": 1.721
+      "gainDb": 2.621
     },
     {
       "note": 42,
@@ -555,7 +555,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-42-97-127",
       "roundRobinIndex": 1,
-      "gainDb": 1.721
+      "gainDb": 2.621
     },
     {
       "note": 42,
@@ -565,7 +565,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-42-65-96",
       "roundRobinIndex": 0,
-      "gainDb": 1.721
+      "gainDb": 2.621
     },
     {
       "note": 42,
@@ -575,7 +575,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-42-65-96",
       "roundRobinIndex": 1,
-      "gainDb": 1.721
+      "gainDb": 2.621
     },
     {
       "note": 42,
@@ -585,7 +585,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-42-33-64",
       "roundRobinIndex": 0,
-      "gainDb": 1.721
+      "gainDb": 2.621
     },
     {
       "note": 42,
@@ -595,7 +595,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-42-33-64",
       "roundRobinIndex": 1,
-      "gainDb": 1.721
+      "gainDb": 2.621
     },
     {
       "note": 42,
@@ -605,7 +605,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-42-0-32",
       "roundRobinIndex": 0,
-      "gainDb": 1.721
+      "gainDb": 2.621
     },
     {
       "note": 42,
@@ -615,7 +615,7 @@
       "articulation": "pizz",
       "roundRobinGroup": "pizz-42-0-32",
       "roundRobinIndex": 1,
-      "gainDb": 1.721
+      "gainDb": 2.621
     },
     {
       "note": 45,

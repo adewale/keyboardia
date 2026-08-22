@@ -3,6 +3,7 @@
   "name": "Alto Sax",
   "type": "sampled",
   "releaseTime": 0.4,
+  "maxAdaptiveCodecDelay": 0.06,
   "gainDb": 0.25,
   "velocityCrossfade": 8,
   "credits": {

@@ -1,0 +1,82 @@
+{
+  "schemaVersion": 2,
+  "claim": "curated fail-closed evidence index; decoded lane comparable; aggregate live-score comparison inconclusive because the control exceeded the prospective stability alarm; not listening or complete-matrix evidence",
+  "assembledAt": "2026-08-22T22:55:00.000Z",
+  "baseSourceCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "candidateSubjectCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
+  "candidateEvaluatorCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
+  "method": {
+    "reconstructionScript": "app/scripts/reconstruct-instrument-quality-control.ts",
+    "reconstructionPlan": "control-reconstruction-plan-553398b.json",
+    "liveRunsPerLane": 2,
+    "prospectiveEnergySpreadAlarmDb": 0.5,
+    "selectionPolicy": "retain both independent runs; never average, discard, or select a favorable run",
+    "decisionPolicy": "require exact structure and exact rank, score, band, component, silence, and above-zero classification decisions",
+    "controlCompatibilityCommit": "2c6f3057d7145089f0bb7969194d57c20417ee45",
+    "controlCompatibilityCaveat": "The clean compatibility commit combines original-main scored runtime/assets/manifests with the current evaluator and receipt producers. It is not represented as literal original-main provenance.",
+    "executionCaveat": "The full reconstruction stopped fail-closed after the unstable control pair. The candidate pair was captured separately at the same frozen evaluator/subject and then checked with the same committed comparator. This index was curated from the retained raw receipts; it was not emitted by a successful controlled-comparison run."
+  },
+  "candidate": {
+    "decisionStable": true,
+    "maximumEnergySpreadDb": 0.33810308728178357,
+    "energySpreadByMetricDb": {
+      "peak": 0.19096218426226344,
+      "rms": 0.33810308728178357,
+      "masterPeak": 0.19096218426226344,
+      "masterRms": 0.33810308728178357
+    },
+    "catalogueInstruments": 99,
+    "audibleInstruments": 99,
+    "repairPriorityPoints": 155.2,
+    "bands": { "critical": 0, "high": 0, "medium": 6, "low": 8, "baseline": 85 },
+    "postTrackPeaksAboveZeroDbfs": 3,
+    "decodedFindings": 203,
+    "unwaivedDecodedErrors": 0,
+    "unwaivedDecodedReviews": 0
+  },
+  "control": {
+    "decisionStable": false,
+    "aggregateScoreComparisonCertified": false,
+    "failure": "Independent live captures exceeded the 0.5 dB stability alarm for noise.peak",
+    "maximumObservedEnergySpreadDb": 3.981854,
+    "noise": {
+      "primaryPeak": 0.34403514862060547,
+      "confirmationPeak": 0.21752546727657318,
+      "primaryRms": 0.0179098003573673,
+      "confirmationRms": 0.01788224297951371,
+      "primaryArmToOnsetFrames": 24000,
+      "confirmationArmToOnsetFrames": 24001,
+      "randomCallsBothRuns": 672845
+    },
+    "decodedFindings": 256,
+    "unwaivedDecodedErrors": 0,
+    "unwaivedDecodedReviews": 0
+  },
+  "comparableDecodedDelta": {
+    "findings": -53,
+    "percent": -20.7,
+    "byCode": {
+      "LEADING_SILENCE": -43,
+      "LOOP_VALUE_DISCONTINUITY": -3,
+      "NOTE_LEVEL_STEP": -3,
+      "TAIL_TRUNCATION": -2,
+      "HOT_PEAK": -2
+    },
+    "allOtherCodesUnchanged": true
+  },
+  "artifacts": {
+    "candidateSample": { "path": "candidate-sample-quality-553398b.json", "sha256": "4adbf755080b3f3142f81bef411751b4157c51d9f15f7f1b0fbb4f85522d0826" },
+    "candidateLivePrimary": { "path": "candidate-live-primary-553398b.json", "sha256": "3cc65e55b8d2acb5905d648485e7f3fc06fdda04408317949439ca8552f9b186" },
+    "candidateLiveConfirmation": { "path": "candidate-live-confirmation-553398b.json", "sha256": "20e5abebb839bc35d3434559d43a3763e3d03389f91fa2b768fa720303dd338d" },
+    "candidateRankingPrimary": { "path": "candidate-instrument-quality-primary-553398b.json", "sha256": "9b11e8843be7f1be6403b506cb3b93fd0305985bc350464e56a592edc593f6aa" },
+    "candidateRankingConfirmation": { "path": "candidate-instrument-quality-confirmation-553398b.json", "sha256": "eed8915876f39f0a7be2b7c2e9b64dcc50194e13daf0992b0d3336e04c3bb1ba" },
+    "controlSample": { "path": "control-sample-quality-main-current-evaluator.json", "sha256": "b3bcb8edf8ae40a8a084ab8abe595dea0646d0593585937649c7892bcbb107fc" },
+    "controlBaseline": { "path": "control-sample-quality-baseline-main-current-evaluator.json", "sha256": "d4c7e545840b6977b37ec8fd791fc637fdbd0ba8b167b6a399c5dc1c5d84d25a" },
+    "controlLivePrimary": { "path": "control-live-primary-main-current-evaluator.json", "sha256": "df18b8575d62287e04cedeb3cabe0398e2108a2bf8ecc459f146f35cc6264da9" },
+    "controlLiveConfirmation": { "path": "control-live-confirmation-main-current-evaluator.json", "sha256": "c150a7d4506d4cbe10c9b5b24a87f798c8cba22a2c9417c28721dee4eebbcba1" },
+    "reconstructionPlan": { "path": "control-reconstruction-plan-553398b.json", "sha256": "592fc27a36e4c3236a87633bf02bdec30bd5965fb885d09ac5cd8d67b8616600" },
+    "browserDecodeChromium": { "path": "browser-decode-chromium-553398b.json", "sha256": "d0713af3154669a49fe27d67e8a9cedb4e7e88557b16eb36111846a2fae9409e" },
+    "browserDecodeWebKit": { "path": "browser-decode-webkit-553398b.json", "sha256": "45d63d6291dd33639ac60c3502186efbc5b8c5db9d2d833f9ce08c7976677bc1" },
+    "dryPcmSmoke": { "path": "instrument-audio-quality-dry-pcm-smoke-2026-08-22.json", "sha256": "7dc864249aace99b3f6c22a590f004b74b46481455e6bfc03f0cc812bc211479" }
+  }
+}
