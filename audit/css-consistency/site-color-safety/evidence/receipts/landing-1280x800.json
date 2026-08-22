@@ -1,7 +1,7 @@
 {
   "id": "landing-1280x800",
   "baseRevision": "8c0049109f5ee5de365eddcf8a0f64084e9817db",
-  "headRevision": "feadc0f493e1d19633d48733a7e96f96bd4b729d",
+  "headRevision": "5b45ce9ffeccad23a8a3bb5def2e21326c9e242f",
   "generator": {
     "name": "app/identity/site-color-safety.spec.ts",
     "version": 1
@@ -15,9 +15,9 @@
     "browserVersion": "143.0.7499.4",
     "platform": "darwin"
   },
-  "beforeSha256": "46b38b4aef8ff60d258e22a6017c0da02b12dfbc534d3c49299369a1af5384bf",
-  "afterSha256": "b488de8e1cb7b8fb4ea4d0fcc79e3d673d88ee07f8bfbe2ee7210280d4e2b309",
-  "diffSha256": "e1d1fd69b0564833edfe346d30e2c9253a062be42108edb8211aafbf5f5a61a8",
+  "beforeSha256": "f42dcfc4e66bc11576fadb7d69fe9fb8de6d4adb9f7e559cbaa9e506c89bb78b",
+  "afterSha256": "444b51943d79078b56bd4411aa275bace2a5a747ab3be0645715c051a1666d13",
+  "diffSha256": "dabb1626547759ec439f4323983504d4157badcaf075d6e64f48c34f94888091",
   "differentPixels": 5137,
   "rawDifferentPixels": 5392,
   "maxObservedChannelDelta": 237,

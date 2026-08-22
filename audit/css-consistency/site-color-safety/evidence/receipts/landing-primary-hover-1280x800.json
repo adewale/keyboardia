@@ -1,7 +1,7 @@
 {
   "id": "landing-primary-hover-1280x800",
   "baseRevision": "8c0049109f5ee5de365eddcf8a0f64084e9817db",
-  "headRevision": "feadc0f493e1d19633d48733a7e96f96bd4b729d",
+  "headRevision": "5b45ce9ffeccad23a8a3bb5def2e21326c9e242f",
   "generator": {
     "name": "app/identity/site-color-safety.spec.ts",
     "version": 1
@@ -15,11 +15,11 @@
     "browserVersion": "143.0.7499.4",
     "platform": "darwin"
   },
-  "beforeSha256": "46b38b4aef8ff60d258e22a6017c0da02b12dfbc534d3c49299369a1af5384bf",
-  "afterSha256": "76ae8c65c6b06bb357abd112a8bef294f528694f328d58b8bb54d8586f5c8048",
-  "diffSha256": "8d6f8e0e7db79a98ab17e06b37eb665a80972ad52bfa770fa81c147cd0ba3f9a",
+  "beforeSha256": "f42dcfc4e66bc11576fadb7d69fe9fb8de6d4adb9f7e559cbaa9e506c89bb78b",
+  "afterSha256": "93bb49a0ea4bf6ef43737bf0117b0a261fd17a1456efc9ea5cc27fc7db06c282",
+  "diffSha256": "b16703ac8aa4078204ee025e82f22c134d2cc1a7b5717f3dfcb83be311c39ae7",
   "differentPixels": 2298,
-  "rawDifferentPixels": 2658,
+  "rawDifferentPixels": 2583,
   "maxObservedChannelDelta": 237,
   "result": "passed"
 }
