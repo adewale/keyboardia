@@ -86,8 +86,11 @@ async function settle(page: Page) {
   });
 }
 
-async function stabilizeLandingPlayhead(page: Page) {
+async function neutralizeLandingPlayhead(page: Page) {
   await page.addStyleTag({ content: `
+    .landing-cell {
+      transition: none !important;
+    }
     .landing-cell.playing {
       border-color: var(--color-border) !important;
       border-width: 1px !important;
@@ -95,13 +98,7 @@ async function stabilizeLandingPlayhead(page: Page) {
     }
     .landing-cell.active.playing {
       border-color: var(--color-accent-light) !important;
-    }
-    .landing-cell:first-child {
-      border-color: var(--color-playhead) !important;
-      border-width: 2px !important;
-    }
-    .landing-cell.active:first-child {
-      box-shadow: 0 0 4px rgba(255, 255, 255, 0.3) !important;
+      box-shadow: none !important;
     }
   ` });
 }
@@ -168,7 +165,7 @@ async function captureLanding(page: Page, port: number, hover = false) {
   await page.goto(`http://127.0.0.1:${port}/`);
   const action = page.getByRole('button', { name: 'Start Session' });
   await expect(action).toBeVisible();
-  await stabilizeLandingPlayhead(page);
+  await neutralizeLandingPlayhead(page);
   await settle(page);
   if (hover) await action.hover();
   return page.screenshot({ animations: 'disabled', caret: 'hide', scale: 'css' });
@@ -193,7 +190,7 @@ test.describe('Site colour-role safety', () => {
       await page.setViewportSize(viewport);
       await page.goto(`http://127.0.0.1:${headProductPort}/`);
       await expect(page.getByRole('button', { name: 'Start Session' })).toBeVisible();
-      await stabilizeLandingPlayhead(page);
+      await neutralizeLandingPlayhead(page);
       await settle(page);
 
       await expectReadable(page.locator([

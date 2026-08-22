@@ -98,6 +98,6 @@ their own proportional coverage when changed.
 The source-bound before/after images and their receipt are generated only after
 the source commit is frozen. They cover landing and picker states at desktop,
 portrait, and landscape sizes and are stored beside this file under
-`evidence/`. The evidence harness pins the decorative landing playhead to its
-initial column in both revisions, preventing its 300 ms demo timer from being
-misreported as a colour-role change.
+`evidence/`. The evidence harness neutralizes the decorative landing playhead
+in both revisions, preventing its 300 ms demo timer and cell transition from
+being misreported as a colour-role change.
