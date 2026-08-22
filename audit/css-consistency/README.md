@@ -240,7 +240,7 @@ result, not a hidden benefit.
 #### Lessons learned from the Stack B candidate
 
 The complete dropdown pilot is implemented in one maintainer-requested PR. Its
-candidate evidence and final consistency audit produced sixteen lessons:
+candidate evidence and final consistency audit produced seventeen lessons:
 
 1. **A responsive component state is not proof that the product exposes that
    component in the same mode.** The catalogue can render the shared portalled
@@ -286,10 +286,10 @@ candidate evidence and final consistency audit produced sixteen lessons:
    menu sheet is not enough when its most important row is hard to inspect. The
    package now includes a dedicated full-height selected-option comparison.
 10. **Visual inference must be checked against computed style.** The final audit
-    initially read the quiet neutral trigger edge as an orange inner focus halo,
-    but Chromium reported the normal neutral dropdown shadow. The final recipe
-    now asserts the complete computed shadow as well as the blue outline, so a
-    genuinely mixed focus treatment fails mechanically.
+    initially read the earlier neutral trigger shadow as an orange inner focus
+    halo. Chromium disproved that reading, and the flattened recipe now removes
+    the trigger shadow entirely while asserting both the absence of shadow and
+    the blue outline. A genuinely mixed focus treatment fails mechanically.
 11. **One-time migration allowances must expire.** Stack B permits reviewed
     decorative differences only while the comparison base is the frozen Stack
     B migration SHA. Later dropdown changes return to exact computed-style
@@ -314,14 +314,21 @@ candidate evidence and final consistency audit produced sixteen lessons:
     and the head-only contract proves clicking a focusable outside target keeps
     focus there. This prevents a future cleanup from silently stealing focus.
 15. **Text contrast must cover semantic variants and interaction states.** The
-    original text audit missed active transpose blue on the brighter hover
-    gradient. A dropdown-specific `#5eb3ea` keeps feature identity while
-    clearing 4.5:1 in both closed and hover states, and both are now asserted.
+    original text audit missed active transpose blue on hover. A
+    dropdown-specific `#5eb3ea` keeps feature identity while clearing 4.5:1 in
+    both flat closed and hover states, and both are now asserted.
 16. **Focus colour belongs to focus, not to a global button default.** Popup
     options inherited an orange button halo even though Keyboardia reserves
     orange for open/hover disclosure. The shared option rule now uses the same
     information-blue focus grammar as triggers, with an inset outline that is
     not clipped by menu overflow.
+17. **A component can improve locally and still diverge globally.** The tactile
+    dropdown recipe passed its scoped contrast and consistency checks but added
+    a private `.68` text tier plus gradients and inset highlights absent from
+    neighbouring neutral controls. The site-wide audit led to a flat correction
+    that keeps the stronger boundaries, state colours, selection grammar, and
+    focus ownership while reusing the product's existing surfaces and `.60`
+    muted text tier.
 
 Candidate pilot CSS scorecard: product files remain 41;
 product declarations increase from 5,036 to 5,055; product CSS lines increase

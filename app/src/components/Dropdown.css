@@ -18,7 +18,7 @@
   padding: 0 8px;
   background: var(--dropdown-control-background);
   border: 1px solid var(--dropdown-control-border);
-  border-radius: 7px;
+  border-radius: 6px;
   box-shadow: var(--dropdown-control-shadow);
   color: var(--dropdown-trigger-color, var(--color-text, #fff));
   font-size: 13px;
@@ -78,7 +78,7 @@
 
   background: var(--dropdown-menu-background);
   border: 1px solid var(--dropdown-menu-border);
-  border-radius: 10px;
+  border-radius: 6px;
   box-shadow: var(--dropdown-menu-shadow);
   min-width: var(--dropdown-menu-min-width, 140px);
   max-height: 320px;

@@ -15,6 +15,14 @@ import { dirname, extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync, spawnSync } from 'node:child_process';
 
+function configuredPort(name, fallback) {
+  const value = Number(process.env[name] || fallback);
+  if (!Number.isInteger(value) || value < 1 || value > 65_535) {
+    throw new Error(`${name} must be an integer between 1 and 65535`);
+  }
+  return value;
+}
+
 const appRoot = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const repoRoot = resolve(appRoot, '..');
 const temporaryRoot = mkdtempSync(join(tmpdir(), 'keyboardia-stack-a-'));
@@ -25,6 +33,9 @@ const headDist = join(temporaryRoot, 'head-dist');
 const baseProductDist = join(temporaryRoot, 'base-product-dist');
 const headProductDist = join(temporaryRoot, 'head-product-dist');
 const viteBin = join(appRoot, 'node_modules', 'vite', 'bin', 'vite.js');
+const comparisonPort = configuredPort('STACK_A_COMPARISON_PORT', 4179);
+const baseProductPort = configuredPort('STACK_A_BASE_PRODUCT_PORT', 4180);
+const headProductPort = configuredPort('STACK_A_HEAD_PRODUCT_PORT', 4181);
 let worktreeAdded = false;
 
 function git(args) {
@@ -228,14 +239,14 @@ function createProductServer(root) {
 const baseProductServer = createProductServer(baseProductDist);
 const headProductServer = createProductServer(headProductDist);
 
-server.listen(4179, '127.0.0.1', () => {
-  console.log(`Stack A comparison server ready: ${baseSha} ↔ working tree`);
+server.listen(comparisonPort, '127.0.0.1', () => {
+  console.log(`Stack A comparison server ready on ${comparisonPort}: ${baseSha} ↔ working tree`);
 });
-baseProductServer.listen(4180, '127.0.0.1', () => {
-  console.log('Base production build ready: http://127.0.0.1:4180');
+baseProductServer.listen(baseProductPort, '127.0.0.1', () => {
+  console.log(`Base production build ready: http://127.0.0.1:${baseProductPort}`);
 });
-headProductServer.listen(4181, '127.0.0.1', () => {
-  console.log('Head production build ready: http://127.0.0.1:4181');
+headProductServer.listen(headProductPort, '127.0.0.1', () => {
+  console.log(`Head production build ready: http://127.0.0.1:${headProductPort}`);
 });
 
 function shutdown() {

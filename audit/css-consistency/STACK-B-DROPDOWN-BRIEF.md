@@ -3,29 +3,30 @@
 ## Approval target
 
 Make the step-count and transpose controls read as one deliberate component
-family: compact dark instrument controls with clearer depth, consistent
-disclosure emphasis, stronger focus visibility, and more legible menu states.
-The existing Keyboardia dark palette and orange accent are the product source
-of truth. The Claude artifact is an influence for tactile depth and hierarchy,
-not a pixel target.
+family that belongs to Keyboardia's existing flat interface. Use the product's
+established neutral surfaces and text hierarchy while retaining the stronger
+accessible boundaries, disclosure emphasis, focus visibility, selection cue,
+and focus-ownership repair established during the pilot.
 
 ## Intended changes
 
-1. Give closed triggers a restrained vertical gradient, inset highlight,
-   visible edge, compact shadow, and softer 7px corners.
-2. Use a brighter variant of that treatment on hover.
+1. Give closed triggers the existing flat elevated surface, a visible edge, no
+   inset or drop shadow, and a 6px base radius. Connected group corners remain
+   owned by `TrackRow`.
+2. Use the existing flat hover surface on hover.
 3. Replace the inconsistent cyan open treatment with Keyboardia orange while
    retaining transpose blue when it is active and closed.
-4. Add the documented information-blue `:focus-visible` outline while keeping
-   the trigger's neutral compact shadow; focused-but-closed controls must not
-   inherit the global orange focus halo.
-5. Give portalled menus a layered dark surface, clearer edge, 10px corners,
-   inset highlight, and compact elevation.
-6. Give hovered options a tactile gradient and selected options a quiet neutral
-   tonal fill. Retain the orange check as the semantic selection indicator;
-   do not add a tinted row, leading rail, or other decorative marker.
-7. Increase secondary option-label and selected-check contrast without changing
-   typography or layout.
+4. Keep the documented information-blue `:focus-visible` outline;
+   focused-but-closed controls must not inherit the global orange focus halo.
+5. Give portalled menus the existing flat elevated surface, a clearer edge,
+   6px corners, no inset highlight, and the existing popup shadow.
+6. Give hovered options the existing flat hover surface and selected options
+   the existing flat active surface. Retain the orange check as the semantic
+   selection indicator; do not add a tinted row, leading rail, or other
+   decorative marker.
+7. Use Keyboardia's existing `.87 / .60 / .38` neutral text hierarchy. Option
+   labels use the shared `.60` muted tier; do not introduce a dropdown-only
+   opacity tier. Preserve typography and layout.
 8. Give the neutral control edge, elevated menu edge, and scrollbar thumb a
    deliberate three-step line hierarchy. Each boundary must independently
    meet WCAG 1.4.11's 3:1 non-text contrast requirement against its adjacent
@@ -52,7 +53,7 @@ not a pixel target.
 - Trigger, option, category, menu, and hit-area rectangles must be identical at
   base and head.
 - Animation names, durations, easing, and reduced-motion behavior remain exact.
-- Pixels may change only within dropdown controls and their decorative shadow
+- Pixels may change only within dropdown controls, the menu's popup shadow,
   or focus halo.
 - Decorative computed-style changes are limited to color, background,
   border-color, border-radius, box-shadow, opacity, and focus-outline
@@ -62,14 +63,14 @@ not a pixel target.
 
 - Primary and secondary text retain at least 4.5:1 contrast on their resulting
   dark surfaces. Active transpose blue uses a dropdown-specific lighter blue
-  so it also clears 4.5:1 in both closed and hover gradients.
+  so it also clears 4.5:1 in both closed and hover states.
 - The closed neutral control edge, open menu edge, and menu scrollbar thumb
   each retain at least 3:1 contrast against the surface they identify, measured
-  independently under WCAG 1.4.11 and against every opaque menu-gradient stop.
+  independently under WCAG 1.4.11.
 - Keyboard focus is visible with a 2px information-blue outline: 2px outside
   triggers and inset on menu options so it is not clipped by menu overflow.
-- Focused triggers retain the neutral dropdown shadow; orange remains reserved
-  for hover/open borders and disclosure rather than a second focus ring.
+- Focused triggers remain flat and shadow-free; orange remains reserved for
+  hover/open borders and disclosure rather than a second focus ring.
 - Disabled controls keep their existing semantics and 0.5 opacity.
 - The existing 36px triggers and option heights remain unchanged. They satisfy
   WCAG 2.2 Target Size (Minimum), while the separate 44px Keyboardia mobile
@@ -91,17 +92,15 @@ not a pixel target.
   native selects. This pilot changes and mechanically enforces only the shared
   custom single-choice popup row.
 
-Worst-stop measured contrast for the candidate treatment is 10.88:1 for
-primary menu text, 7.28:1 for secondary option labels, 6.03:1 for category
-labels, 4.56:1 for orange open-trigger text, 5.29:1 for the information-blue
-focus outline against the adjacent dark surface, and 3.82:1 for the orange
-selected check against the lightest selected-row gradient stop. The neutral
-control edge is 3.21:1 against the card; the elevated menu edge is at least
-3.00:1 against its own lightest fill, 3.11:1 against an elevated `#2a2a2a`
-neighbour, and 3.61:1 against the card; and the scrollbar thumb is at least
-3.18:1 against the menu.
-Active transpose text is at least 4.67:1 against its hover gradient and 5.36:1
-when closed.
+Measured contrast for the flat candidate is 11.22:1 for primary menu text,
+6.16:1 for secondary option and category labels, 5.38:1 for orange open-trigger
+text, and 5.29:1 for the information-blue focus outline against the adjacent
+dark surface. The option-focus outline is at least 3.09:1 across menu, hover,
+and selected surfaces; the orange selected check is 3.30:1 against the selected
+surface. The neutral control edge is 3.21:1 against the card; the menu edge is
+3.11:1 against its own surface and an elevated neighbour and 3.61:1 against the
+card; and the scrollbar thumb is 3.29:1 against the menu. Active transpose text
+is 5.48:1 on hover and 6.23:1 when closed.
 
 ## Evidence and approval
 
@@ -117,7 +116,8 @@ Approval is valid only for the exact merge base and candidate source revision
 recorded in every receipt. The following commit may contain only the generated
 evidence package; CI rejects any product, harness, workflow, or documentation
 drift after that candidate source. Moving the merge base expires the images.
-The maintainer approved the earlier Option 1 selection direction; the later
-focus-recovery and contrast corrections require renewed review of the bound
-before/after evidence before merge. The stop decision still applies to any
-additional Stack B surface.
+The maintainer approved the Option 1 selection direction, then requested this
+site-consistent flattening while explicitly retaining every accessibility and
+behavioral repair. The regenerated bound before/after evidence still requires
+review before merge. The stop decision applies to any additional Stack B
+surface.

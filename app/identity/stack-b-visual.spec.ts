@@ -21,22 +21,33 @@ const evidenceRoot = resolve(process.cwd(), '..', 'audit', 'css-consistency', 's
 const writeEvidence = process.env.STACK_B_WRITE_EVIDENCE === '1';
 const evidenceGenerator = {
   name: 'app/identity/stack-b-visual.spec.ts',
-  version: 4,
+  version: 5,
 } as const;
+const comparisonPort = process.env.STACK_A_COMPARISON_PORT || '4179';
+const baseProductPort = process.env.STACK_A_BASE_PRODUCT_PORT || '4180';
+const headProductPort = process.env.STACK_A_HEAD_PRODUCT_PORT || '4181';
 const approvedDropdownTokens = {
-  '--dropdown-control-background': 'linear-gradient(180deg, #34343a 0%, #242429 100%) #242429',
+  '--dropdown-control-background': '#2a2a2a',
   '--dropdown-control-border': '#6c6c76',
-  '--dropdown-control-shadow': 'inset 0 1px 0 rgba(255, 255, 255, .1), 0 2px 4px rgba(0, 0, 0, .32)',
-  '--dropdown-control-hover-background': 'linear-gradient(180deg, #3d3d44 0%, #2c2c31 100%) #2c2c31',
-  '--dropdown-control-open-background': 'linear-gradient(180deg, #402923 0%, #2a201e 100%) #2a201e',
-  '--dropdown-menu-background': 'linear-gradient(180deg, #2c2c32 0%, #1d1d21 100%) #1d1d21',
+  '--dropdown-control-shadow': 'none',
+  '--dropdown-control-hover-background': '#333333',
+  '--dropdown-control-open-background': '#2a201e',
+  '--dropdown-menu-background': '#2a2a2a',
   '--dropdown-menu-border': '#74747f',
   '--dropdown-scrollbar-thumb': '#787883',
-  '--dropdown-menu-shadow': 'inset 0 1px 0 rgba(255, 255, 255, .09), 0 4px 10px rgba(0, 0, 0, .35)',
-  '--dropdown-option-hover-background': 'linear-gradient(180deg, #3b3b42 0%, #303036 100%) #333339',
-  '--dropdown-option-selected-background': 'linear-gradient(180deg, #3a3a41 0%, #323238 100%) #35353b',
-  '--dropdown-option-secondary-text': 'rgba(255, 255, 255, .68)',
+  '--dropdown-menu-shadow': '0 4px 12px rgba(0, 0, 0, .3)',
+  '--dropdown-option-hover-background': '#333333',
+  '--dropdown-option-selected-background': '#444444',
+  '--dropdown-option-secondary-text': 'rgba(255, 255, 255, .6)',
   '--dropdown-transpose-active-color': '#5eb3ea',
+} as const;
+const approvedSharedTokenLinks = {
+  '--dropdown-control-background': 'var(--color-surface-elevated)',
+  '--dropdown-control-hover-background': 'var(--color-surface-hover)',
+  '--dropdown-menu-background': 'var(--color-surface-elevated)',
+  '--dropdown-option-hover-background': 'var(--color-surface-hover)',
+  '--dropdown-option-selected-background': 'var(--color-surface-active)',
+  '--dropdown-option-secondary-text': 'var(--color-text-muted)',
 } as const;
 const holby = JSON.parse(readFileSync(resolve(process.cwd(), 'scripts/demo-sessions/holby.json'), 'utf8')) as {
   name: string;
@@ -243,7 +254,7 @@ async function captureFullApp(
   await page.setViewportSize(state.viewport);
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await installProductFixture(page);
-  const port = side === 'base' ? 4180 : 4181;
+  const port = side === 'base' ? baseProductPort : headProductPort;
   await page.goto(`http://127.0.0.1:${port}/s/${holbyId}`);
   if (state.action === 'hidden-portrait') {
     await expect(page.locator('.portrait-track-row')).toHaveCount(10, { timeout: 15_000 });
@@ -374,6 +385,11 @@ function contrastRatio(foreground: string, background: string) {
     / (Math.min(foregroundLuminance, backgroundLuminance) + 0.05);
 }
 
+function colorAtOpacity(color: string, opacity: number) {
+  const [red, green, blue, alpha] = parseColor(color);
+  return `rgba(${red}, ${green}, ${blue}, ${alpha * opacity})`;
+}
+
 function backgroundSamples(backgroundColor: string, backgroundImage: string) {
   const gradientColors = backgroundImage.match(/rgba?\([^)]+\)|#[\da-f]{3,8}/gi) ?? [];
   return [...new Set([backgroundColor, ...gradientColors])];
@@ -402,7 +418,7 @@ function cropForReview(buffer: Buffer, regions: TargetRegion[]) {
 }
 
 async function comparisonRevisions(page: Page) {
-  const response = await page.request.get('http://127.0.0.1:4179/__stack-a-ready');
+  const response = await page.request.get(`http://127.0.0.1:${comparisonPort}/__stack-a-ready`);
   expect(response.ok()).toBe(true);
   return response.json() as Promise<{ baseSha: string; headSha: string }>;
 }
@@ -564,6 +580,13 @@ test.describe('Stack B approved dropdown differences', () => {
     await trigger.click();
     await expect(page.locator('.step-count-menu')).toBeVisible();
     await settleForScreenshot(page);
+    const hoveredOption = page.locator('.step-count-menu [role="option"][aria-selected="false"]').first();
+    await hoveredOption.hover();
+    await settleForScreenshot(page);
+    const optionHoverBackgrounds = await hoveredOption.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return [style.backgroundColor, style.backgroundImage];
+    });
 
     const colors = await page.evaluate(() => {
       const read = (selector: string) => getComputedStyle(document.querySelector(selector)!);
@@ -571,9 +594,12 @@ test.describe('Stack B approved dropdown differences', () => {
       const menuStyle = read('.step-count-menu');
       const selectedStyle = read('.step-count-menu [role="option"][aria-selected="true"]');
       const selectedCheckStyle = read('.step-count-menu [aria-selected="true"] .dropdown-option-check');
+      const openChevronStyle = read('.step-count-trigger .dropdown-chevron');
       return {
         openText: triggerStyle.color,
         openBackgrounds: [triggerStyle.backgroundColor, triggerStyle.backgroundImage],
+        openChevronColor: openChevronStyle.color,
+        openChevronOpacity: Number(openChevronStyle.opacity),
         focusOutline: (() => {
           const probe = document.createElement('span');
           probe.style.color = 'var(--color-info)';
@@ -612,6 +638,7 @@ test.describe('Stack B approved dropdown differences', () => {
     const openBackgrounds = backgroundSamples(...colors.openBackgrounds as [string, string]);
     const menuBackgrounds = backgroundSamples(...colors.menuBackgrounds as [string, string]);
     const selectedBackgrounds = backgroundSamples(...colors.selectedBackgrounds as [string, string]);
+    const hoveredBackgrounds = backgroundSamples(...optionHoverBackgrounds as [string, string]);
     expect(
       minimumContrast(colors.openText, openBackgrounds),
       `open-trigger contrast samples: ${JSON.stringify({ foreground: colors.openText, openBackgrounds })}`,
@@ -619,7 +646,15 @@ test.describe('Stack B approved dropdown differences', () => {
     expect(minimumContrast(colors.primaryText, menuBackgrounds)).toBeGreaterThanOrEqual(4.5);
     expect(minimumContrast(colors.secondaryText, menuBackgrounds)).toBeGreaterThanOrEqual(4.5);
     expect(minimumContrast(colors.categoryText, menuBackgrounds)).toBeGreaterThanOrEqual(4.5);
+    expect(minimumContrast(
+      colorAtOpacity(colors.openChevronColor, colors.openChevronOpacity),
+      openBackgrounds,
+    )).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(colors.focusOutline, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
+    expect(minimumContrast(
+      colors.focusOutline,
+      [...menuBackgrounds, ...hoveredBackgrounds, ...selectedBackgrounds],
+    )).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(neutralControlBorder, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(colors.menuBorder, colors.adjacentSurface)).toBeGreaterThanOrEqual(3);
     expect(contrastRatio(colors.menuBorder, colors.elevatedSurface)).toBeGreaterThanOrEqual(3);
@@ -646,16 +681,26 @@ test.describe('Stack B approved dropdown differences', () => {
       return {
         color: style.color,
         backgrounds: [style.backgroundColor, style.backgroundImage],
+        chevronColor: getComputedStyle(element.querySelector('.dropdown-chevron')!).color,
+        chevronOpacity: Number(getComputedStyle(element.querySelector('.dropdown-chevron')!).opacity),
       };
     });
     const activeClosed = await readActiveTranspose();
     expect(minimumContrast(activeClosed.color, backgroundSamples(...activeClosed.backgrounds as [string, string])))
       .toBeGreaterThanOrEqual(4.5);
+    expect(minimumContrast(
+      colorAtOpacity(activeClosed.chevronColor, activeClosed.chevronOpacity),
+      backgroundSamples(...activeClosed.backgrounds as [string, string]),
+    )).toBeGreaterThanOrEqual(3);
     await activeTranspose.hover();
     await settleForScreenshot(page);
     const activeHover = await readActiveTranspose();
     expect(minimumContrast(activeHover.color, backgroundSamples(...activeHover.backgrounds as [string, string])))
       .toBeGreaterThanOrEqual(4.5);
+    expect(minimumContrast(
+      colorAtOpacity(activeHover.chevronColor, activeHover.chevronOpacity),
+      backgroundSamples(...activeHover.backgrounds as [string, string]),
+    )).toBeGreaterThanOrEqual(3);
   });
 
   test('single-choice menus share the selected-item grammar @stack-b-accessibility', async ({ page }) => {
@@ -688,9 +733,8 @@ test.describe('Stack B approved dropdown differences', () => {
     const transpose = await readSelectedStyle('.transpose-trigger', '.transpose-menu');
 
     expect(step).toEqual(transpose);
-    expect(step.backgroundColor).toBe('rgb(53, 53, 59)');
-    expect(step.backgroundImage)
-      .toBe('linear-gradient(rgb(58, 58, 65) 0%, rgb(50, 50, 56) 100%)');
+    expect(step.backgroundColor).toBe('rgb(68, 68, 68)');
+    expect(step.backgroundImage).toBe('none');
     expect(step.checkColor).toBe('rgb(240, 112, 72)');
   });
 
@@ -737,21 +781,46 @@ test.describe('Stack B approved dropdown differences', () => {
     }, Object.keys(approvedDropdownTokens));
     expect(tokens).toEqual(approvedDropdownTokens);
 
+    const sharedRecipeSources = await page.evaluate((names) => {
+      const rootRule = [...document.styleSheets]
+        .flatMap((sheet) => [...sheet.cssRules])
+        .find((rule): rule is CSSStyleRule => (
+          rule instanceof CSSStyleRule
+          && rule.selectorText === ':root'
+          && rule.style.getPropertyValue('--dropdown-control-background') !== ''
+        ));
+      const triggerRule = [...document.styleSheets]
+        .flatMap((sheet) => [...sheet.cssRules])
+        .find((rule): rule is CSSStyleRule => (
+          rule instanceof CSSStyleRule && rule.selectorText === '.dropdown-trigger'
+        ));
+      return {
+        tokenLinks: Object.fromEntries(names.map((name) => [name, rootRule?.style.getPropertyValue(name).trim()])),
+        triggerRadius: triggerRule?.style.borderRadius,
+      };
+    }, Object.keys(approvedSharedTokenLinks));
+    expect(sharedRecipeSources).toEqual({
+      tokenLinks: approvedSharedTokenLinks,
+      triggerRadius: '6px',
+    });
+
     const trigger = page.locator('.step-count-trigger');
     const closedStyle = await trigger.evaluate((element) => {
       const style = getComputedStyle(element);
       return {
         backgroundColor: style.backgroundColor,
         backgroundImage: style.backgroundImage,
+        borderRadius: style.borderRadius,
         borderTopColor: style.borderTopColor,
         boxShadow: style.boxShadow,
       };
     });
     expect(closedStyle).toEqual({
-      backgroundColor: 'rgb(36, 36, 41)',
-      backgroundImage: 'linear-gradient(rgb(52, 52, 58) 0%, rgb(36, 36, 41) 100%)',
+      backgroundColor: 'rgb(42, 42, 42)',
+      backgroundImage: 'none',
+      borderRadius: '0px 4px 4px 0px',
       borderTopColor: 'rgb(108, 108, 118)',
-      boxShadow: 'rgba(255, 255, 255, 0.1) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.32) 0px 2px 4px 0px',
+      boxShadow: 'none',
     });
 
     await trigger.hover();
@@ -765,8 +834,8 @@ test.describe('Stack B approved dropdown differences', () => {
       };
     });
     expect(hoverStyle).toEqual({
-      backgroundColor: 'rgb(44, 44, 49)',
-      backgroundImage: 'linear-gradient(rgb(61, 61, 68) 0%, rgb(44, 44, 49) 100%)',
+      backgroundColor: 'rgb(51, 51, 51)',
+      backgroundImage: 'none',
       borderTopColor: 'rgb(232, 90, 48)',
     });
     await page.mouse.move(0, 0);
@@ -787,7 +856,7 @@ test.describe('Stack B approved dropdown differences', () => {
       outlineOffset: '2px',
       outlineStyle: 'solid',
       outlineWidth: '2px',
-      boxShadow: 'rgba(255, 255, 255, 0.1) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.32) 0px 2px 4px 0px',
+      boxShadow: 'none',
     });
 
     await trigger.click();
@@ -803,7 +872,7 @@ test.describe('Stack B approved dropdown differences', () => {
     });
     expect(openStyle).toEqual({
       backgroundColor: 'rgb(42, 32, 30)',
-      backgroundImage: 'linear-gradient(rgb(64, 41, 35) 0%, rgb(42, 32, 30) 100%)',
+      backgroundImage: 'none',
       borderTopColor: 'rgb(240, 112, 72)',
       color: 'rgb(240, 112, 72)',
     });
@@ -827,11 +896,11 @@ test.describe('Stack B approved dropdown differences', () => {
       };
     });
     expect(menuStyle).toEqual({
-      backgroundColor: 'rgb(29, 29, 33)',
-      backgroundImage: 'linear-gradient(rgb(44, 44, 50) 0%, rgb(29, 29, 33) 100%)',
-      borderRadius: '10px',
+      backgroundColor: 'rgb(42, 42, 42)',
+      backgroundImage: 'none',
+      borderRadius: '6px',
       borderTopColor: 'rgb(116, 116, 127)',
-      boxShadow: 'rgba(255, 255, 255, 0.09) 0px 1px 0px 0px inset, rgba(0, 0, 0, 0.35) 0px 4px 10px 0px',
+      boxShadow: 'rgba(0, 0, 0, 0.3) 0px 4px 12px 0px',
       scrollbarThumbBackgroundDeclaration: 'var(--dropdown-scrollbar-thumb)',
     });
 
@@ -865,8 +934,8 @@ test.describe('Stack B approved dropdown differences', () => {
       };
     });
     expect(optionHoverStyle).toEqual({
-      backgroundColor: 'rgb(51, 51, 57)',
-      backgroundImage: 'linear-gradient(rgb(59, 59, 66) 0%, rgb(48, 48, 54) 100%)',
+      backgroundColor: 'rgb(51, 51, 51)',
+      backgroundImage: 'none',
     });
   });
 });
