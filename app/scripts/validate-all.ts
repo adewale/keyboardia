@@ -39,6 +39,12 @@ interface ValidatorResult {
   error?: string;
 }
 
+function diagnosticTail(value: string, maximumCharacters = 4_000): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= maximumCharacters) return trimmed;
+  return `[earlier output omitted]\n${trimmed.slice(-maximumCharacters)}`;
+}
+
 const VALIDATORS = [
   {
     name: 'Manifest Validation',
@@ -118,8 +124,11 @@ function main(): void {
       console.log(`  ${colors.green}✓ Passed${colors.reset} ${colors.dim}(${result.duration}ms)${colors.reset}\n`);
     } else {
       console.log(`  ${colors.red}✗ Failed${colors.reset} ${colors.dim}(${result.duration}ms)${colors.reset}`);
+      if (result.output?.trim()) {
+        console.log(`  ${colors.red}Output:\n${diagnosticTail(result.output)}${colors.reset}`);
+      }
       if (result.error) {
-        console.log(`  ${colors.red}Error: ${result.error.slice(0, 200)}${colors.reset}\n`);
+        console.log(`  ${colors.red}Error:\n${diagnosticTail(result.error)}${colors.reset}\n`);
       }
     }
   }

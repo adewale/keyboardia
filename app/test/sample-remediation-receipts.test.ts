@@ -205,4 +205,66 @@ describe('lossless sample-remediation receipts', () => {
     expect(maximumLocalCurvature(adaptedExclusive))
       .toBeLessThan(maximumLocalCurvature(duplicatedInclusive));
   });
+
+  it('binds every post-curation manifest change without rewriting historical curation', () => {
+    const curation = readJson<{
+      instruments: Array<{ id: string; manifestSha256: string }>;
+    }>('sample-pipeline/enrichment/technical-curation.json');
+    const remediation = readJson<{
+      claim: string;
+      perceptualPreferenceClaimed: boolean;
+      instruments: Array<{
+        id: string;
+        previousManifestSha256: string;
+        manifestSha256: string;
+        audioBytesChanged: boolean;
+      }>;
+    }>('sample-pipeline/remediation-receipts/manifest-calibrations.json');
+
+    expect(remediation.claim).toBe('objective-manifest-calibration');
+    expect(remediation.perceptualPreferenceClaimed).toBe(false);
+    for (const historical of curation.instruments) {
+      const productionPath = path.resolve(
+        'public',
+        'instruments',
+        historical.id,
+        'manifest.json',
+      );
+      const productionSha256 = sha256(readFileSync(productionPath));
+      if (productionSha256 === historical.manifestSha256) continue;
+      const calibration = remediation.instruments.find(entry => entry.id === historical.id);
+      expect(calibration, `${historical.id} remediation receipt`).toBeDefined();
+      expect(calibration).toMatchObject({
+        previousManifestSha256: historical.manifestSha256,
+        manifestSha256: productionSha256,
+        audioBytesChanged: false,
+      });
+    }
+  });
+
+  it('binds the French-horn post-calibration onset change to both manifest hashes', () => {
+    const historical = readJson<{
+      instruments: Array<{ id: string; manifestSha256: string }>;
+    }>('sample-pipeline/enrichment/mapping-calibration.json')
+      .instruments.find(entry => entry.id === 'french-horn');
+    const remediation = readJson<{
+      instruments: Array<{
+        id: string;
+        previousManifestSha256: string;
+        manifestSha256: string;
+        audioBytesChanged: boolean;
+      }>;
+    }>('sample-pipeline/remediation-receipts/manifest-calibrations.json')
+      .instruments.find(entry => entry.id === 'french-horn');
+    const productionSha256 = sha256(readFileSync(path.resolve(
+      'public/instruments/french-horn/manifest.json',
+    )));
+
+    expect(historical).toBeDefined();
+    expect(remediation).toMatchObject({
+      previousManifestSha256: historical!.manifestSha256,
+      manifestSha256: productionSha256,
+      audioBytesChanged: false,
+    });
+  });
 });

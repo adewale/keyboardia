@@ -11,9 +11,6 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { createHash } from 'node:crypto';
-import { execFileSync } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
 
 import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { getSourceCalibration } from '../src/audio/source-calibration';
@@ -42,46 +39,23 @@ import {
   type LiveQualityReport,
 } from './instrument-quality-live-receipt';
 import { sampleQualityEvaluatorBundleSha256 } from './sample-quality-baseline-core';
+import {
+  INSTRUMENT_QUALITY_APP_ROOT,
+  instrumentQualityEvaluatorDiffersFromCommit,
+  instrumentQualityEvaluatorTreeSha256,
+  instrumentQualityHeadCommit,
+  instrumentQualitySha256File,
+  instrumentQualitySubjectTreeStatus,
+  resolveInstrumentQualityCommit,
+} from './instrument-quality-provenance';
 
-const THIS_DIR = path.dirname(fileURLToPath(import.meta.url));
-const APP_DIR = path.resolve(THIS_DIR, '..');
+const APP_DIR = INSTRUMENT_QUALITY_APP_ROOT;
 const DEFAULT_SAMPLE_REPORT = path.resolve(APP_DIR, 'test-results/sample-quality/metrics.json');
 const DEFAULT_LIVE_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/live-master-output.json');
 const DEFAULT_JSON_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/report.json');
 const DEFAULT_MARKDOWN_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/INSTRUMENT-QUALITY.md');
 const DEFAULT_MATRIX_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/dry-pcm-matrix.json');
 const MANIFEST_ROOT = path.resolve(APP_DIR, 'public/instruments');
-const EVALUATOR_SOURCE_PATHS = [
-  path.resolve(APP_DIR, 'scripts/audit-instrument-quality.ts'),
-  path.resolve(APP_DIR, 'scripts/instrument-quality-rubric.ts'),
-  path.resolve(APP_DIR, 'scripts/instrument-quality-profiles.ts'),
-  path.resolve(APP_DIR, 'scripts/instrument-quality-matrix.ts'),
-  path.resolve(APP_DIR, 'scripts/instrument-quality-matrix-cli.ts'),
-  path.resolve(APP_DIR, 'scripts/capture-instrument-quality-smoke.ts'),
-  path.resolve(APP_DIR, 'scripts/instrument-quality-live-receipt.ts'),
-  path.resolve(APP_DIR, 'scripts/sample-quality-core.ts'),
-  path.resolve(APP_DIR, 'scripts/sample-quality-baseline-core.ts'),
-  path.resolve(APP_DIR, 'scripts/sample-velocity-core.ts'),
-  path.resolve(APP_DIR, 'scripts/validate-sample-quality.ts'),
-  path.resolve(APP_DIR, 'scripts/bind-sample-quality-dispositions.ts'),
-  path.resolve(APP_DIR, 'src/audio/instrument-ranges.ts'),
-  path.resolve(APP_DIR, 'src/audio/sample-onset.ts'),
-  path.resolve(APP_DIR, 'src/audio/constants.ts'),
-  path.resolve(APP_DIR, 'src/audio/source-calibration.ts'),
-  path.resolve(APP_DIR, 'src/components/sample-constants.ts'),
-  path.resolve(APP_DIR, 'src/shared/instrument-catalog.ts'),
-  path.resolve(APP_DIR, 'src/types.ts'),
-  path.resolve(APP_DIR, 'src/test/audio-measures.ts'),
-  path.resolve(APP_DIR, 'e2e/all-instruments-master-output.spec.ts'),
-  path.resolve(APP_DIR, 'e2e/dry-pcm-browser-adapter.ts'),
-  path.resolve(APP_DIR, 'e2e/global-setup.ts'),
-  path.resolve(APP_DIR, 'e2e/test-utils.ts'),
-  path.resolve(APP_DIR, 'playwright.config.ts'),
-  path.resolve(APP_DIR, 'package.json'),
-  path.resolve(APP_DIR, 'package-lock.json'),
-  path.resolve(APP_DIR, 'vite.config.ts'),
-  path.resolve(APP_DIR, 'scripts/sample-quality-baseline.json'),
-] as const;
 
 type InstrumentType = 'sample' | 'sampled' | 'synth' | 'tone' | 'advanced';
 type EvidenceGrade = 'A' | 'B' | 'C' | 'F';
@@ -385,7 +359,9 @@ function validateFullSampleQualityReport(
   if (value.subjectTreeClean !== true) {
     throw new Error('Sample-quality evidence was captured from a dirty subject tree');
   }
-  const expectedBaselineSha256 = sha256File(path.resolve(APP_DIR, 'scripts/sample-quality-baseline.json'));
+  const expectedBaselineSha256 = instrumentQualitySha256File(
+    path.resolve(APP_DIR, 'scripts/sample-quality-baseline.json'),
+  );
   if (
     value.evaluatorBundleSha256 !== sampleQualityEvaluatorBundleSha256(APP_DIR)
     || value.baselineSha256 !== expectedBaselineSha256
@@ -521,66 +497,6 @@ function validateFullSampleQualityReport(
     throw new Error('Sample-quality evidence totals do not match full manifest coverage');
   }
   return value as unknown as SampleQualityReport;
-}
-
-function sha256File(pathname: string): string | null {
-  if (!fs.existsSync(pathname)) return null;
-  return createHash('sha256').update(fs.readFileSync(pathname)).digest('hex');
-}
-
-function evaluatorTreeSha256(): string {
-  const hash = createHash('sha256');
-  for (const pathname of EVALUATOR_SOURCE_PATHS) {
-    const relative = relativePath(pathname);
-    hash.update(`${relative}\0`);
-    hash.update(fs.readFileSync(pathname));
-    hash.update('\0');
-  }
-  return hash.digest('hex');
-}
-
-function resolveFullCommitId(value: string, label: string): string {
-  if (!isFullCommitId(value)) throw new Error(`${label} must be a full 40- or 64-character Git commit ID`);
-  let resolved: string;
-  try {
-    resolved = execFileSync('git', ['rev-parse', '--verify', `${value}^{commit}`], {
-      cwd: APP_DIR,
-      encoding: 'utf8',
-    }).trim();
-  } catch {
-    throw new Error(`${label} is not a commit available in this repository: ${value}`);
-  }
-  if (resolved !== value) throw new Error(`${label} must use the repository's full canonical commit ID`);
-  return resolved;
-}
-
-function evaluatorDiffersFromCommit(evaluatorCommit: string): boolean {
-  const gitRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
-    cwd: APP_DIR,
-    encoding: 'utf8',
-  }).trim();
-  for (const pathname of EVALUATOR_SOURCE_PATHS) {
-    const repositoryPath = path.relative(gitRoot, pathname).replaceAll(path.sep, '/');
-    let committed: Buffer;
-    try {
-      committed = execFileSync('git', ['show', `${evaluatorCommit}:${repositoryPath}`], {
-        cwd: APP_DIR,
-        encoding: null,
-      });
-    } catch {
-      return true;
-    }
-    if (!fs.readFileSync(pathname).equals(committed)) return true;
-  }
-  return false;
-}
-
-function subjectTreeStatus(): string {
-  return execFileSync(
-    'git',
-    ['status', '--porcelain=v1', '--untracked-files=all'],
-    { cwd: APP_DIR, encoding: 'utf8' },
-  ).trim();
 }
 
 function countCodes(codes: readonly string[]): Record<string, number> {
@@ -840,15 +756,15 @@ function main(): void {
     && typeof rawSampleReport.subjectCommit === 'string'
     ? rawSampleReport.subjectCommit
     : null;
-  const headCommit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: APP_DIR, encoding: 'utf8' }).trim();
-  const evaluatorCommit = resolveFullCommitId(
+  const headCommit = instrumentQualityHeadCommit();
+  const evaluatorCommit = resolveInstrumentQualityCommit(
     options.evaluatorCommit
       ?? process.env.KEYBOARDIA_EVALUATOR_COMMIT
       ?? matrixReport?.provenance?.evaluatorCommit
       ?? headCommit,
     'Evaluator commit',
   );
-  const subjectCommit = resolveFullCommitId(
+  const subjectCommit = resolveInstrumentQualityCommit(
     options.subjectCommit
       ?? process.env.KEYBOARDIA_SUBJECT_COMMIT
       ?? matrixReport?.provenance?.subjectCommit
@@ -864,7 +780,7 @@ function main(): void {
     ? null
     : validateLiveQualityReport(rawLiveReport, subjectCommit);
   if (sampleReport || liveReport) {
-    const treeStatus = subjectTreeStatus();
+    const treeStatus = instrumentQualitySubjectTreeStatus();
     if (headCommit !== subjectCommit || treeStatus.length > 0) {
       throw new Error(
         `Dynamic audio evidence requires the selected subject commit in a clean tree; `
@@ -872,8 +788,8 @@ function main(): void {
       );
     }
   }
-  const currentEvaluatorTreeSha256 = evaluatorTreeSha256();
-  const evaluatorDirty = evaluatorDiffersFromCommit(evaluatorCommit);
+  const currentEvaluatorTreeSha256 = instrumentQualityEvaluatorTreeSha256();
+  const evaluatorDirty = instrumentQualityEvaluatorDiffersFromCommit(evaluatorCommit);
   if (options.requireEvidence && (!sampleReport || !liveReport)) {
     throw new Error(
       `Required evidence missing: sample=${sampleReport ? 'present' : options.sampleReport}, live=${liveReport ? 'present' : options.liveReport}`,
@@ -1082,15 +998,15 @@ function main(): void {
     inputs: {
       sampleReport: sampleReport ? {
         path: relativePath(options.sampleReport),
-        sha256: sha256File(options.sampleReport),
+        sha256: instrumentQualitySha256File(options.sampleReport),
       } : null,
       liveReport: liveReport ? {
         path: relativePath(options.liveReport),
-        sha256: sha256File(options.liveReport),
+        sha256: instrumentQualitySha256File(options.liveReport),
       } : null,
       matrixReport: matrixReport ? {
         path: relativePath(options.matrixReport),
-        sha256: sha256File(options.matrixReport),
+        sha256: instrumentQualitySha256File(options.matrixReport),
         profileSha256: matrixReport.profileSha256,
         planSha256: matrixReport.planSha256,
       } : null,
