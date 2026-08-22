@@ -17,7 +17,7 @@ export const SYNTH_SOURCE_GAIN_DB = Object.freeze({
   funkbass: -6, clavinet: -8, rhodes: -5, organ: -10, wurlitzer: -5,
   discobass: -5, strings: -8, brass: -8, stab: -8, sub: -3,
   shimmer: -8, jangle: -7, dreampop: -8, bell: -10, supersaw: -12,
-  hypersaw: -12, wobble: -8, growl: -10, evolving: -8, sweep: -8,
+  hypersaw: -12, wobble: -8, growl: -13.5, evolving: -8, sweep: -8,
   warmpad: -7, glass: -8, epiano: -6, vibes: -7, organphase: -9,
   reese: -9, hoover: -10,
 } satisfies Record<string, number>);
