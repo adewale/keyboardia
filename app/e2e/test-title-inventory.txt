@@ -172,6 +172,7 @@ phase3-refactoring.spec.ts › Pattern operations sync in multiplayer › rotate
 phase3-refactoring.spec.ts › Selection invalidation after pattern operations › selection clears after rotate
 phase3-refactoring.spec.ts › Track operations › add track appears and syncs
 phase3-refactoring.spec.ts › Track operations › clear track removes all steps
+phase44-demo.spec.ts › Whisper to Roar is served at its documented session route
 pitch-contour-alignment.spec.ts › PitchContour alignment › CSS dimensions match JavaScript constants (CRITICAL regression test)
 pitch-contour-alignment.spec.ts › PitchContour alignment › SVG contour dots align with step cells for session with pitch variation
 playback.spec.ts › Playback stability › playhead position updates correctly during playback
