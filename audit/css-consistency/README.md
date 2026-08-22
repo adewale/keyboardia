@@ -325,19 +325,22 @@ candidate evidence and final consistency audit produced seventeen lessons:
 17. **A component can improve locally and still diverge globally.** The tactile
     dropdown recipe passed its scoped contrast and consistency checks but added
     a private `.68` text tier plus gradients and inset highlights absent from
-    neighbouring neutral controls. The site-wide audit led to a flat correction
-    that keeps the stronger boundaries, state colours, selection grammar, and
-    focus ownership while reusing the product's existing surfaces and `.60`
-    muted text tier.
+    neighbouring neutral controls. The
+    [pre-flatten audit](site-wide-audit/2026-08-22/README.md) led to a flat
+    correction, and the
+    [post-flatten audit](site-wide-audit/2026-08-22-flat/README.md) verifies that
+    the stronger boundaries, state colours, selection grammar, and focus
+    ownership remain while the product's existing surfaces and `.60` muted text
+    tier are reused.
 
 Candidate pilot CSS scorecard: product files remain 41;
 product declarations increase from 5,036 to 5,055; product CSS lines increase
 from 10,987 to 11,016; the shared dropdown recipe increases by four declarations
 from 127 to 131; raw colors outside `index.css` fall from 346 to 340; duplicate
 dropdown declarations remain zero; `!important` remains 20. The declaration
-and line increases are the explicit maintenance cost of adding visual depth,
-focus color, and feature-specific tokens rather than hiding new values as raw
-component colors.
+and line increases are the explicit maintenance cost of accessible boundaries,
+focus colour, and feature-specific tokens while shared flat surfaces remain
+linked to the product tokens rather than copied as raw component colours.
 
 #### Consequences for Stack C
 

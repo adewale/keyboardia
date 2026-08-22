@@ -1,108 +1,110 @@
-# Stack B Option 1 design QA
+# Stack B flat dropdown design QA
 
 ## Comparison target
 
-- Source visual truth: `audit/css-consistency/stack-b-evidence/reference/option-1-tonal-selection.png`
-- Implementation screenshot: `audit/css-consistency/stack-b-evidence/review/after/catalogue--step-count-open.png`
-- Combined comparison: `audit/css-consistency/stack-b-evidence/qa/option-1-source-vs-implementation.png`
+- Historical selection-cue reference:
+  `audit/css-consistency/stack-b-evidence/reference/option-1-tonal-selection.png`
+- Current implementation screenshot:
+  `audit/css-consistency/stack-b-evidence/review/after/catalogue--step-count-open.png`
+- Combined comparison:
+  `audit/css-consistency/stack-b-evidence/qa/option-1-source-vs-implementation.png`
+- Site-wide pre/post audits:
+  `audit/css-consistency/site-wide-audit/2026-08-22/README.md` and
+  `audit/css-consistency/site-wide-audit/2026-08-22-flat/README.md`
 - State: step-count menu open with `16 / 1 bar` selected
-- Implementation CSS viewport: 1280 x 800 at device scale factor 1
-- Source pixels: 1028 x 1530, normalized to 305 x 454 for comparison
-- Implementation pixels: 305 x 454 focused review crop from the 1280 x 800 capture
+- CSS viewport: 1280 x 800 at device scale factor 1
 
-The source is an approved visual direction rather than a pixel-accurate layout
-specification. Existing Keyboardia typography, content, DOM, geometry, and
-interaction behavior remain authoritative where the mock differs.
+The Option 1 bitmap is historical evidence for the approved selection cue:
+a quiet neutral row plus an orange check, without an orange banner or leading
+marker. It is not the material source of truth. The maintainer subsequently
+requested site-consistent flat surfaces while retaining every accessibility
+and behavioural repair. Keyboardia's production tokens, typography, content,
+DOM, geometry, and interaction contracts remain authoritative.
 
 ## Findings
 
-No actionable P0, P1, or P2 mismatches remain.
+No Stack B P0, P1, or P2 mismatch remains in the candidate implementation.
 
-- Fonts and typography: production system typography, weights, line heights,
-  labels, and numeric alignment are unchanged. Their hierarchy matches the
-  source direction.
-- Spacing and layout rhythm: trigger, row, menu, and hit-area rectangles remain
-  exact relative to the merge base. The selected fill covers the complete row
-  without adding an inset rail or nested container.
-- Colors and visual tokens: the selected row is a neutral graphite gradient
-  (`#3a3a41` to `#323238`, `#35353b` fallback). Orange is confined to the
-  existing check and open-trigger affordance. The menu shadow is compact
-  (`0 4px 10px rgba(0,0,0,.35)`) instead of a wide diffuse halo. Active
-  transpose blue is lifted to `#5eb3ea` so its 13px text remains at least
-  4.67:1 on the brighter hover gradient.
-- Focus and lines: keyboard focus is a single information-blue outline over the
-  trigger's neutral compact shadow and inset on options, never an orange halo.
-  The control edge (`#6c6c76`, 3.21:1), menu edge (`#74747f`, at least 3.00:1
-  against its fill and 3.11:1 against an elevated neighbour), and scrollbar
-  (`#787883`, at least 3.18:1) form a restrained neutral ladder and independently
-  clear WCAG 1.4.11.
-- Image quality and asset fidelity: this surface has no product imagery. The
-  existing Lucide check remains sharp and aligned; no substitute asset or CSS
-  drawing was introduced.
-- Copy and content: production labels and values are unchanged.
-- Behavior and accessibility: the visible accessibility tree, touch event
-  payloads, and target rectangles remain exact. Selection by keyboard, pointer,
-  or touch and Escape now return focus to the owning trigger; outside clicks
-  keep the clicked target focused. Direct Playwright assertions cover those
-  ownership rules. The selected menu item retains
-  both a tonal surface and a non-colour check.
-- Responsiveness: the approval matrix covers 375 x 812, 480 x 320, 667 x 375,
-  844 x 390, 768 x 1024, 769 x 1024, and 1024 x 768. Visible dropdown states
-  retain one selected item and no horizontal overflow. Production portrait and
-  the three landscape-only TrackDrawer states remain pixel-identical because
-  they do not expose this dropdown family.
+- Typography: primary menu values use the global `.87` tier; secondary labels,
+  categories, and inactive values reuse the global `.60` muted tier. The
+  dropdowns no longer introduce a private `.68` neutral tier.
+- Geometry: trigger, row, menu, and hit-area rectangles remain exact relative
+  to the merge base. Base trigger and menu radii are 6px; connected group
+  corners remain owned by `TrackRow`.
+- Materials: closed triggers and menus reuse the flat `#2a2a2a` elevated
+  surface. Hover uses flat `#333`; selection uses flat `#444`. Triggers have no
+  shadow. Menus reuse the Invite popup's single external
+  `0 4px 12px rgba(0,0,0,.3)` shadow and have no gradient or inset highlight.
+- Semantic colour: orange is confined to hover/open disclosure and the selected
+  check. Information blue identifies focus. Active Transpose retains the
+  feature-specific `#5eb3ea` text colour. Step and Transpose selection recipes
+  are identical.
+- Contrast: primary text is at least 7.88:1 and muted text at least 4.70:1
+  across menu, hover, and selected surfaces. Open orange text is 5.38:1. Active
+  Transpose text is 6.23:1 closed and 5.48:1 hovered.
+- Focus and lines: trigger focus is one information-blue outside outline;
+  option focus is an inset blue outline. Neither has an orange halo. Control
+  edge (`#6c6c76`, 3.21:1), menu edge (`#74747f`, 3.11:1 against its fill and
+  3.61:1 against the card), and scrollbar (`#787883`, 3.29:1) independently
+  clear WCAG 1.4.11. Option focus remains at least 3.09:1 and the selected
+  check 3.30:1.
+- Behaviour and accessibility: visible accessibility trees, event payloads,
+  and target rectangles remain exact. Selection by pointer or touch and Escape
+  return focus to the owning trigger; native keyboard activation shares the
+  same selection path. Outside clicks preserve focus on the clicked target.
+  Direct Playwright assertions cover both controls and both touch selections.
+- Motion: names, durations, easing, delay, iteration count, and reduced-motion
+  removal are captured in the computed-style ratchet.
+- Responsiveness: evidence covers 375 x 812, 480 x 320, 667 x 375, 844 x 390,
+  768 x 1024, 769 x 1024, and 1024 x 768. Production portrait and landscape
+  modes that omit this family remain pixel-identical.
 
-## Full-view comparison evidence
+The repeat site-wide audit also found pre-existing small-text contrast failures
+outside Stack B, including unsafe uses of the `.38` dimmed tier and raw feature
+colours. They are global palette-usage debt, not regressions from this PR. The
+forward fix is to classify tokens by permitted role and add text-safe variants,
+not to weaken the dropdown boundaries or reintroduce a private text tier.
 
-`audit/css-consistency/stack-b-evidence/qa/option-1-source-vs-implementation.png`
-places the normalized source on the left and the implementation on the right.
-It confirms the intended neutral selected row, orange check, layered dark menu,
-crisp edge, and restrained depth.
+## Evidence review
 
-## Focused-region comparison evidence
+The five contact sheets cover all 29 named pairs. The dedicated selected-option
+sheet keeps the flat selected row, check alignment, line hierarchy, and popup
+shadow legible when GitHub scales the exhaustive sheets. Every receipt binds
+the merge base to one immutable candidate source, and the following commit is
+evidence-only.
 
-The implementation screenshot is a focused crop around both grouped triggers,
-the open menu, selected row, and surrounding collision-canary content. The
-approval package also includes a dedicated full-height selected-option sheet so
-the neutral row, check alignment, and shadow extent remain legible when GitHub
-scales the exhaustive contact sheet.
-
-## Browser verification
-
-- Local implementation: `http://127.0.0.1:4174/stack-a.html?story=dropdowns`
-- Primary interaction tested: open the step-count popup and inspect the chosen
-  item, menu geometry, overflow, and accessibility state.
-- Selected item count: 1
-- Selected background: `rgb(53, 53, 59)` plus the approved vertical gradient
-- Check color: `rgb(240, 112, 72)`
-- Console errors or warnings: none
+The combined Option 1 comparison remains useful only for the selection grammar.
+Material consistency is established by the fresh site-wide screenshots and
+computed recipes: the Stack B menu and Invite popup now share flat `#2a2a2a`
+fill, 6px radius, primary text, and the same external shadow. Stack B's edge is
+intentionally stronger because the legacy Invite edge does not independently
+meet the new 3:1 boundary requirement.
 
 ## Comparison history
 
 1. The rejected candidate used an orange-tinted row, a 3px leading marker, and
-   a `0 14px 32px` menu shadow.
-2. The implementation replaces that treatment with the selected Option 1
-   neutral tonal row and orange check, and reduces the shadow to `0 4px 10px`.
-3. The post-fix combined comparison and seven responsive in-app checks found no
-   remaining P0/P1/P2 issue.
+   a wide `0 14px 32px` menu shadow.
+2. Option 1 replaced that with a neutral row and orange check.
+3. The first Stack B implementation added tactile gradients, inset highlights,
+   a private `.68` text tier, 7/10px radii, and trigger shadow. It passed scoped
+   contrast but diverged from the site's flat material and text grammar.
+4. The current candidate flattens those surfaces and reuses the global `.60`
+   muted tier while preserving the stronger boundaries, semantic colours,
+   selected check, visible focus, and focus-ownership repair.
 
 ## Implementation checklist
 
-- [x] Match Option 1's selected-row hierarchy.
-- [x] Remove the leading accent marker and orange row tint.
-- [x] Replace the wide diffuse menu shadow with compact depth.
-- [x] Keep step-count and transpose selected states identical.
-- [x] Keep focused-but-closed triggers free of an orange halo.
+- [x] Keep the approved Option 1 selected-row cue without a leading marker.
+- [x] Reuse site-wide flat surface and neutral text tokens.
+- [x] Match the existing popup radius and shadow; remove trigger shadow.
+- [x] Keep Step and Transpose selected states identical.
+- [x] Keep focused controls free of an orange halo.
 - [x] Give every neutral control/menu boundary independent 3:1 contrast.
-- [x] Restore trigger focus after selection and Escape.
-- [x] Preserve geometry, accessibility, event payloads, and reduced motion.
+- [x] Restore trigger focus after selection and Escape; preserve outside focus.
+- [x] Preserve geometry, ARIA, event payloads, motion, and reduced motion.
 - [x] Verify desktop, portrait, compact/narrow/wide landscape, tablet landscape,
       and 768/769 boundaries.
-- [x] Bind the approval images and receipts to an immutable source revision.
+- [x] Bind images and receipts to an immutable source revision.
+- [ ] Obtain renewed maintainer approval of the final flattened evidence.
 
-## Follow-up polish
-
-No implementation polish is required by this QA pass. Renewed maintainer
-approval of the regenerated focus and contrast evidence remains pending.
-
-final result: passed
+Implementation QA result: passed. Visual approval: pending.

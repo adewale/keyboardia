@@ -110,7 +110,7 @@ try {
       .frame { display: grid; place-items: center; width: 100%; height: ${sheet.frameHeight ?? 360}px; padding: 12px; overflow: hidden; background: #101012; border: 1px solid #303038; border-radius: 8px; }
       img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
     </style></head><body>
-      <header><h1>${escapeHtml(sheet.title)}</h1><p>Stack B dropdown pilot — left is merge base, right is candidate head</p></header>
+      <header><h1>${escapeHtml(sheet.title)}</h1><p>Stack B dropdown pilot — left is merge base, right is candidate source</p></header>
       ${rows}
     </body></html>`, { waitUntil: 'load' });
     const output = resolve(evidenceRoot, 'contact-sheets', `${sheet.id}.png`);
