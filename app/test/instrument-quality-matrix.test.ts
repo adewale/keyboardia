@@ -1,13 +1,16 @@
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import path from 'node:path';
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import {
   analyzeDryPcmCapture,
   buildDryPcmMatrixPlan,
   buildInstrumentMatrixCases,
   expectedMatrixFrameCount,
+  MATRIX_PCM_ARTIFACT_FORMAT,
   matrixPlanSha256,
   qualityProfileSha256,
   runDryPcmMatrix,
@@ -18,6 +21,12 @@ import {
   type DryPcmMatrixCase,
 } from '../scripts/instrument-quality-matrix';
 import { INSTRUMENT_QUALITY_PROFILES } from '../scripts/instrument-quality-profiles';
+
+const TEST_ADAPTER = 'test/instrument-quality-matrix.test.ts';
+const TEST_ADAPTER_SHA256 = createHash('sha256')
+  .update(fs.readFileSync(path.resolve(TEST_ADAPTER)))
+  .digest('hex');
+let pcmArtifactRoot: string;
 
 function sineCapture(
   matrixCase: DryPcmMatrixCase,
@@ -45,11 +54,24 @@ const provenance = {
   evaluatorTreeSha256: 'c'.repeat(64),
   generatedAt: '2026-08-22T00:00:00.000Z',
   runtime: { node: process.version, platform: process.platform, arch: process.arch },
-  capture: { mode: 'offline' as const, adapter: 'vitest-sine', adapterSha256: 'd'.repeat(64) },
+  capture: {
+    mode: 'offline' as const,
+    adapter: TEST_ADAPTER,
+    adapterSha256: TEST_ADAPTER_SHA256,
+    artifactFormat: MATRIX_PCM_ARTIFACT_FORMAT,
+  },
   browser: null,
 };
 
 describe('dry PCM instrument matrix', () => {
+  beforeEach(() => {
+    pcmArtifactRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'keyboardia-matrix-pcm-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(pcmArtifactRoot, { recursive: true, force: true });
+  });
+
   it('builds all nine case families for every committed profile', () => {
     const plan = buildDryPcmMatrixPlan();
     expect(plan).toHaveLength(99 * 17);
@@ -91,6 +113,7 @@ describe('dry PCM instrument matrix', () => {
     const report = await runDryPcmMatrix({
       profiles: [profile],
       provenance,
+      pcmArtifactRoot,
       capture: async matrixCase => sineCapture(matrixCase),
     });
     expect(report.complete).toBe(true);
@@ -108,19 +131,21 @@ describe('dry PCM instrument matrix', () => {
     expect(report.comparisons[0].polyphony.policy).toBe('aggregate-safety-only');
     expect(report.comparisons[0].stereo.policy).toBe('mono-fold-only');
     expect(report.comparisons[0].spectral.policy).toBe('descriptive-only');
-    expect(() => validateDryPcmMatrixReport(report, [profile])).not.toThrow();
-  }, 15_000);
+    expect(() => validateDryPcmMatrixReport(report, [profile], { pcmArtifactRoot })).not.toThrow();
+  }, 30_000);
 
   it('rejects frame gaps and non-finite PCM before emitting a receipt', async () => {
     const profile = INSTRUMENT_QUALITY_PROFILES.slice(0, 1);
     await expect(runDryPcmMatrix({
       profiles: profile,
       provenance,
+      pcmArtifactRoot,
       capture: async matrixCase => ({ ...sineCapture(matrixCase), capturedFrameCount: 1 }),
     })).rejects.toThrow(/incomplete capture/);
     await expect(runDryPcmMatrix({
       profiles: profile,
       provenance,
+      pcmArtifactRoot,
       capture: async matrixCase => {
         const capture = sineCapture(matrixCase);
         capture.channels[0][4] = Number.NaN;
@@ -134,6 +159,7 @@ describe('dry PCM instrument matrix', () => {
     await expect(runDryPcmMatrix({
       profiles,
       provenance,
+      pcmArtifactRoot,
       capture: async matrixCase => {
         const capture = sineCapture(matrixCase);
         return {
@@ -147,6 +173,7 @@ describe('dry PCM instrument matrix', () => {
     await expect(runDryPcmMatrix({
       profiles,
       provenance,
+      pcmArtifactRoot,
       capture: async matrixCase => ({ ...sineCapture(matrixCase), maxRenderFrameDrift: 1 }),
     })).rejects.toThrow(/render-frame drift/);
   });
@@ -156,12 +183,13 @@ describe('dry PCM instrument matrix', () => {
     await expect(runDryPcmMatrix({
       profiles: [profile],
       provenance,
+      pcmArtifactRoot,
       capture: async matrixCase => sineCapture(
         matrixCase,
         matrixCase.family === 'repeat-seed-a-replay' ? 441 : 440,
       ),
     })).rejects.toThrow(/seed-A replay is not bit-exact/);
-  }, 15_000);
+  }, 30_000);
 
   it('detects octave-up and octave-down errors with absolute pitch', () => {
     const profile = INSTRUMENT_QUALITY_PROFILES.find(candidate => candidate.id === 'bass')!;
@@ -193,38 +221,119 @@ describe('dry PCM instrument matrix', () => {
     const report = await runDryPcmMatrix({
       profiles: [profile],
       provenance,
+      pcmArtifactRoot,
       capture: async matrixCase => sineCapture(matrixCase),
     });
     const copy = (): typeof report => structuredClone(report);
+    const verify = (candidate: typeof report): void =>
+      validateDryPcmMatrixReport(candidate, [profile], { pcmArtifactRoot });
+    expect(() => validateDryPcmMatrixReport(report, [profile]))
+      .toThrow(/requires canonical raw PCM sidecars/);
 
     const badCommit = copy();
     badCommit.provenance.evaluatorCommit = 'branch-label';
-    expect(() => validateDryPcmMatrixReport(badCommit, [profile])).toThrow(/full evaluator and subject commit/);
+    expect(() => verify(badCommit)).toThrow(/full evaluator and subject commit/);
     const badRate = copy();
     badRate.sampleRates = [48_000];
-    expect(() => validateDryPcmMatrixReport(badRate, [profile])).toThrow(/sampleRates/);
+    expect(() => verify(badRate)).toThrow(/sampleRates/);
     const badFrames = copy();
     badFrames.results[0].frameCount--;
-    expect(() => validateDryPcmMatrixReport(badFrames, [profile])).toThrow(/frame receipt/);
+    expect(() => verify(badFrames)).toThrow(/frame receipt/);
     const badDrift = copy();
     badDrift.results[0].maxRenderFrameDrift = 1;
-    expect(() => validateDryPcmMatrixReport(badDrift, [profile])).toThrow(/render-frame drift/);
+    expect(() => verify(badDrift)).toThrow(/render-frame drift/);
     const badMetric = copy();
     badMetric.results[0].metrics.dcOffsetDbfs = Number.NaN;
-    expect(() => validateDryPcmMatrixReport(badMetric, [profile])).toThrow(/must be finite/);
+    expect(() => verify(badMetric)).toThrow(/must be finite/);
     expect(() => validateDryPcmMatrixReport(report, [profile], {
-      evaluatorCommit: provenance.evaluatorCommit,
-      subjectCommit: provenance.subjectCommit,
-      evaluatorTreeSha256: provenance.evaluatorTreeSha256,
-      evaluatorDirty: true,
+      pcmArtifactRoot,
+      expectedBinding: {
+        evaluatorCommit: provenance.evaluatorCommit,
+        subjectCommit: provenance.subjectCommit,
+        evaluatorTreeSha256: provenance.evaluatorTreeSha256,
+        evaluatorDirty: true,
+      },
     })).toThrow(/dirty evaluator/);
     expect(() => validateDryPcmMatrixReport(report, [profile], {
-      evaluatorCommit: 'e'.repeat(40),
-      subjectCommit: provenance.subjectCommit,
-      evaluatorTreeSha256: provenance.evaluatorTreeSha256,
-      evaluatorDirty: false,
+      pcmArtifactRoot,
+      expectedBinding: {
+        evaluatorCommit: 'e'.repeat(40),
+        subjectCommit: provenance.subjectCommit,
+        evaluatorTreeSha256: provenance.evaluatorTreeSha256,
+        evaluatorDirty: false,
+      },
     })).toThrow(/pinned evaluator\/subject binding/);
+  }, 30_000);
+
+  it('reconstructs claims from raw PCM and rejects forged, absent, or modified evidence', async () => {
+    const profile = INSTRUMENT_QUALITY_PROFILES.find(candidate => candidate.id === 'noise')!;
+    const report = await runDryPcmMatrix({
+      profiles: [profile],
+      provenance,
+      pcmArtifactRoot,
+      capture: async matrixCase => sineCapture(matrixCase),
+    });
+    const verify = (candidate: typeof report): void =>
+      validateDryPcmMatrixReport(candidate, [profile], { pcmArtifactRoot });
+    const result = report.results[0];
+    const artifactPath = path.join(pcmArtifactRoot, result.pcmArtifact);
+    const originalBytes = fs.readFileSync(artifactPath);
+
+    const fabricatedMetrics = structuredClone(report);
+    fabricatedMetrics.results[0].metrics.spectralCentroidHz =
+      (fabricatedMetrics.results[0].metrics.spectralCentroidHz ?? 0) + 1;
+    expect(() => verify(fabricatedMetrics)).toThrow(/metrics do not match recomputed PCM analysis/);
+
+    const fabricatedHash = structuredClone(report);
+    fabricatedHash.results[0].pcmSha256 = 'f'.repeat(64);
+    fabricatedHash.results[0].pcmArtifact = `${'f'.repeat(64)}.f32le`;
+    fs.writeFileSync(path.join(pcmArtifactRoot, fabricatedHash.results[0].pcmArtifact), originalBytes);
+    expect(() => verify(fabricatedHash)).toThrow(/PCM artifact hash mismatch/);
+
+    fs.unlinkSync(artifactPath);
+    expect(() => verify(report)).toThrow(/PCM artifact is missing/);
+    fs.writeFileSync(artifactPath, originalBytes);
+
+    const modifiedBytes = Buffer.from(originalBytes);
+    modifiedBytes[0] ^= 0x01;
+    fs.writeFileSync(artifactPath, modifiedBytes);
+    expect(() => verify(report)).toThrow(/PCM artifact hash mismatch/);
+    fs.writeFileSync(artifactPath, originalBytes);
+
+    fs.writeFileSync(artifactPath, originalBytes.subarray(0, originalBytes.length - 4));
+    expect(() => verify(report)).toThrow(/PCM artifact byte geometry/);
+    fs.writeFileSync(artifactPath, originalBytes);
+
+    const nonFiniteBytes = Buffer.from(originalBytes);
+    nonFiniteBytes.writeFloatLE(Number.NaN, 0);
+    fs.writeFileSync(artifactPath, nonFiniteBytes);
+    expect(() => verify(report)).toThrow(/non-finite PCM artifact value/);
+    fs.writeFileSync(artifactPath, originalBytes);
+
+    const missingAdapter = structuredClone(report);
+    missingAdapter.provenance.capture.adapter = 'test/nonexistent-matrix-adapter.ts';
+    expect(() => verify(missingAdapter)).toThrow(/capture adapter does not exist/);
+
+    const wrongAdapterHash = structuredClone(report);
+    wrongAdapterHash.provenance.capture.adapterSha256 = '0'.repeat(64);
+    expect(() => verify(wrongAdapterHash)).toThrow(/capture adapter hash mismatch/);
   }, 15_000);
+
+  it('makes strict verification fail closed on fatal findings and evidence gaps', async () => {
+    const profile = INSTRUMENT_QUALITY_PROFILES.find(candidate => candidate.id === 'synth:bell')!;
+    const report = await runDryPcmMatrix({
+      profiles: [profile],
+      provenance,
+      pcmArtifactRoot,
+      capture: async matrixCase => sineCapture(matrixCase, 440, 0),
+    });
+    expect(report.results.some(result => result.fatalFindings.length > 0)).toBe(true);
+    expect(report.results.some(result => result.evidenceGaps.length > 0)).toBe(true);
+    expect(() => validateDryPcmMatrixReport(report, [profile], {
+      pcmArtifactRoot,
+      requirePass: true,
+    })).toThrow(/Strict dry PCM matrix verification failed: [1-9]\d* fatal findings, [1-9]\d* evidence gaps/);
+  }, 30_000);
 
   it('applies the residual hard gate only to declared voice lifecycles', async () => {
     const profiles = [

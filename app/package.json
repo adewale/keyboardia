@@ -83,6 +83,7 @@
     "audit:instrument-quality:matrix:smoke": "node --import tsx scripts/capture-instrument-quality-smoke.ts",
     "audit:instrument-quality:matrix:verify": "node --import tsx scripts/instrument-quality-matrix-cli.ts verify",
     "audit:instrument-quality:full": "npm run audit:instrument-quality:evidence && npm run audit:instrument-quality:matrix:verify && node --import tsx scripts/audit-instrument-quality.ts --require-evidence --require-matrix",
+    "audit:instrument-quality:control": "node --import tsx scripts/reconstruct-instrument-quality-control.ts",
     "generate:instrument-notes": "tsx scripts/generate-instrument-notes.ts",
     "generate:license": "tsx scripts/generate-license-md.ts",
     "validate:acoustic-pitch": "python3 scripts/validate-acoustic-pitch.py",

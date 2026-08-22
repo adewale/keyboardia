@@ -30,7 +30,7 @@ erase the underlying finding from the score.
 | Lane | Scope | What it establishes | What it does not establish |
 |---|---|---|---|
 | Catalogue + calibration | all 99 | ID, engine, category, explicit source trim | audible output or timbre |
-| Chromium sequencer probe | all 99, one representative in-range note | real preparation, routing, per-track peak/RMS, non-silence | full range, release, spectral quality, preference |
+| Chromium sequencer probe | all 99, one representative in-range note | real preparation, routing, continuous per-track sample peak, whole-window RMS, non-silence | inter-sample true peak, full range, release, spectral quality, preference |
 | Decoded source audit | all 582 files used by 26 sampled instruments | headroom, clipping, DC, onset, tail, pitch estimate, loop seam, stereo/mono, layer/note levels | whether a flagged source sounds objectionable |
 | Manifest coverage | 26 sampled instruments | root distance, velocity-layer count, same-layer alternatives | artistic value of more layers/samples |
 
@@ -42,6 +42,15 @@ its `test-results/` output directory cannot delete a receipt before aggregation.
 
 The browser test runs before the decoded audit because Playwright clears its
 configured results directory at startup.
+
+The live lane connects every post-track bus and `masterGain` to an
+`AudioWorklet` accumulator for an exact 2.5-second render-frame window. It
+visits every channel sample, reports the maximum absolute PCM sample, and
+computes RMS from the sum of squares over the whole window. The receipt binds
+the sample rate, captured-frame count, and channel-sample count for each track
+and session, so a polled analyser window or maximum-block RMS cannot satisfy
+the schema. “Peak” in this lane means continuous **sample peak**, not an
+oversampled inter-sample true-peak estimate.
 
 ## V1 priority score
 
@@ -171,8 +180,15 @@ Use a pinned evaluator commit against candidate branches. A branch must not
 change its own weights or thresholds and then grade itself. The receipt stores
 Node/platform, browser identity when supplied by the adapter, pinned 44.1 kHz
 sample rate, adapter identity/hash, evaluator/subject commits, evaluator-tree
-hash, plan/profile identity, unique capture attempts, and per-case PCM hashes; keep
-large WAV captures ephemeral unless explicitly approved.
+hash, plan/profile identity, unique capture attempts, and per-case PCM hashes.
+Every complete receipt must be accompanied by its content-addressed
+`planar-f32le-v1` sidecars. Keep those large raw artifacts in durable CI artifact
+storage (not Git) for as long as the receipt is claimed as independently
+verifiable; a JSON hash without the matching bytes is not evidence.
+`planar-f32le-v1` is headerless IEEE-754 Float32 little-endian PCM: every frame
+of channel 0, then every frame of channel 1 when present. The pinned receipt
+supplies sample rate, channel count, and frame count, so the verifier requires
+an exact `channels × frames × 4` byte geometry before decoding.
 
 The repository contains a production-path Chromium adapter that schedules the
 real sampled, procedural-sample, native-synth, Tone.js, and advanced-synth
@@ -196,7 +212,7 @@ explicitly **not** the complete 1,683-case matrix:
 cd app
 npm run audit:instrument-quality:matrix:plan   # emits instructions only
 npm run audit:instrument-quality:matrix:smoke  # real 6/1,683 Chromium captures
-npm run audit:instrument-quality:matrix:verify # validates a supplied receipt
+npm run audit:instrument-quality:matrix:verify # recomputes a supplied receipt from raw PCM
 ```
 
 `AudioWorklet.currentFrame` is treated as the authoritative render clock. A
@@ -214,8 +230,14 @@ silently upgraded to complete-matrix evidence.
 
 Full verification requires canonical full Git commit IDs, exact matrix
 evaluator/subject/tree binding, and evaluator sources byte-identical to the
-pinned evaluator commit. A dirty evaluator is reported as unpinned in v1 and is
-rejected in full mode.
+pinned evaluator commit. It also verifies that the adapter is a real,
+repository-contained file with the recorded byte hash; loads every canonical
+planar Float32LE sidecar; validates byte geometry and finite samples; recomputes
+the PCM hash, metrics, findings, evidence gaps, and cross-case comparisons; and
+rejects any fatal finding or evidence gap. Missing or modified raw artifacts
+therefore fail closed. A dirty evaluator is reported as unpinned in v1 and is
+rejected in full mode. Use `--pcm-root <path>` when the sidecars are restored
+outside the default `reports/instrument-quality/dry-pcm-matrix-pcm/` directory.
 
 Cross-case claims are deliberately limited. The receipt records velocity
 active-RMS/loudness/centroid deltas, aggregate polyphony deltas, mono-fold

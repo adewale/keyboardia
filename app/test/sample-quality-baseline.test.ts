@@ -5,6 +5,8 @@ import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import {
+  boundMeasurement,
+  measurementsEqual,
   SAMPLE_QUALITY_EVALUATOR_PATHS,
   sampleQualityEvaluatorBundleSha256,
   sha256File,
@@ -14,7 +16,21 @@ import {
 const APP_ROOT = path.resolve(import.meta.dirname, '..');
 
 describe('sample-quality baseline identity', () => {
-  it('binds every disposition to evaluator, manifest, source, and exact measurement evidence', () => {
+  it('canonicalizes decoder noise without accepting a meaningful metric change', () => {
+    const macOsMeasurement = -43.878102908492345;
+    const linuxMeasurement = -43.87810292589301;
+    const bound = boundMeasurement(macOsMeasurement);
+
+    expect(bound).toBe(-43.878103);
+    expect(Math.abs(macOsMeasurement - linuxMeasurement)).toBeLessThan(1e-6);
+    expect(measurementsEqual(linuxMeasurement, bound)).toBe(true);
+    expect(measurementsEqual(macOsMeasurement + 1e-4, bound)).toBe(false);
+    expect(boundMeasurement(-0.0000001)).toBe(0);
+    expect(boundMeasurement('mapping-identity')).toBe('mapping-identity');
+    expect(boundMeasurement(undefined)).toBeNull();
+  });
+
+  it('binds every disposition to evaluator, manifest, source, and canonical measurement evidence', () => {
     const baseline = JSON.parse(
       fs.readFileSync(path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'), 'utf8'),
     ) as SampleQualityBaseline;

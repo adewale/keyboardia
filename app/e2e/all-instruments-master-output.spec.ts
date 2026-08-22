@@ -9,17 +9,128 @@ import { INSTRUMENT_CATEGORIES } from '../src/components/sample-constants';
 import { getInstrumentRange } from '../src/audio/instrument-ranges';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
 import { MAX_TRACKS } from '../src/types';
+import {
+  LIVE_CAPTURE_CHANNEL_COUNT,
+  LIVE_CAPTURE_DURATION_SECONDS,
+  LIVE_CAPTURE_METHOD,
+  LIVE_GENERATED_FROM,
+  LIVE_PEAK_METRIC,
+  LIVE_RECEIPT_CLAIM,
+  LIVE_RECEIPT_SCHEMA_VERSION,
+  LIVE_RMS_METRIC,
+  LIVE_SILENCE_PEAK_THRESHOLD,
+  LIVE_SILENCE_RMS_THRESHOLD,
+  LIVE_STEP_COUNT,
+  LIVE_TEMPO,
+  validateLiveQualityReport,
+  type LiveQualityReport,
+} from '../scripts/instrument-quality-live-receipt';
 
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
-const REPORT_DIR = resolve(THIS_DIR, '../reports/instrument-quality');
+const REPORT_DIR = process.env.KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR
+  ? resolve(process.env.KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR)
+  : resolve(THIS_DIR, '../reports/instrument-quality');
 
-const SILENCE_PEAK = 1e-4;
-const SILENCE_RMS = 1e-5;
-const STEP_COUNT = 4;
 const PATTERN_STEPS = 128;
-const SESSION_TEMPO = 120;
-const MEASURE_ITERATIONS = 50;
-const MEASURE_INTERVAL_MS = 50;
+const ENERGY_PROCESSOR_NAME = 'keyboardia-continuous-energy-v1';
+const ENERGY_WORKLET_SOURCE = String.raw`
+class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
+  constructor(options) {
+    super();
+    this.inputCount = options.processorOptions.inputCount;
+    this.channelCount = options.processorOptions.channelCount;
+    this.active = false;
+    this.targetFrames = 0;
+    this.capturedFrames = 0;
+    this.sumSquares = [];
+    this.sampleCounts = [];
+    this.peaks = [];
+    this.port.onmessage = event => {
+      if (event.data.type !== 'arm') return;
+      const frameCount = event.data.frameCount;
+      if (!Number.isInteger(frameCount) || frameCount <= 0) {
+        this.fail('capture frameCount must be a positive integer');
+        return;
+      }
+      this.targetFrames = frameCount;
+      this.capturedFrames = 0;
+      this.sumSquares = new Array(this.inputCount).fill(0);
+      this.sampleCounts = new Array(this.inputCount).fill(0);
+      this.peaks = new Array(this.inputCount).fill(0);
+      this.active = true;
+      this.port.postMessage({ type: 'armed', frameCount });
+    };
+  }
+
+  fail(message) {
+    this.active = false;
+    this.port.postMessage({ type: 'error', message });
+  }
+
+  process(inputs, outputs) {
+    if (!this.active) return true;
+    const renderQuantum = outputs[0]?.[0];
+    if (!renderQuantum || renderQuantum.length === 0) {
+      this.fail('continuous energy capture received no render quantum');
+      return true;
+    }
+    const framesToCapture = Math.min(
+      renderQuantum.length,
+      this.targetFrames - this.capturedFrames,
+    );
+    for (let inputIndex = 0; inputIndex < this.inputCount; inputIndex++) {
+      const input = inputs[inputIndex];
+      if (!input || input.length === 0) {
+        // Web Audio may expose zero channels while an otherwise-connected input
+        // is silent. Those render frames are real zero samples in the pinned
+        // explicit-stereo measurement and must remain in the whole-window RMS.
+        this.sampleCounts[inputIndex] += framesToCapture * this.channelCount;
+        continue;
+      }
+      if (input.length !== this.channelCount) {
+        this.fail(
+          'input ' + inputIndex + ' exposed ' + (input ? input.length : 0)
+          + ' channels; expected ' + this.channelCount,
+        );
+        return true;
+      }
+      for (let channelIndex = 0; channelIndex < this.channelCount; channelIndex++) {
+        const channel = input[channelIndex];
+        if (!channel || channel.length < framesToCapture) {
+          this.fail('input ' + inputIndex + ' channel ' + channelIndex + ' was incomplete');
+          return true;
+        }
+        for (let frame = 0; frame < framesToCapture; frame++) {
+          const sample = channel[frame];
+          const absolute = Math.abs(sample);
+          this.sumSquares[inputIndex] += sample * sample;
+          this.sampleCounts[inputIndex] += 1;
+          if (absolute > this.peaks[inputIndex]) this.peaks[inputIndex] = absolute;
+        }
+      }
+    }
+    this.capturedFrames += framesToCapture;
+    if (this.capturedFrames === this.targetFrames) {
+      const measurements = this.peaks.map((peak, inputIndex) => ({
+        inputIndex,
+        peak,
+        rms: Math.sqrt(this.sumSquares[inputIndex] / this.sampleCounts[inputIndex]),
+        capturedFrames: this.capturedFrames,
+        channelSampleCount: this.sampleCounts[inputIndex],
+      }));
+      this.active = false;
+      this.port.postMessage({
+        type: 'done',
+        capturedFrames: this.capturedFrames,
+        measurements,
+      });
+    }
+    return true;
+  }
+}
+
+registerProcessor('${ENERGY_PROCESSOR_NAME}', KeyboardiaContinuousEnergyProcessor);
+`;
 
 type InstrumentType = 'sample' | 'sampled' | 'synth' | 'tone' | 'advanced';
 
@@ -49,6 +160,21 @@ type TrackProbeResult = InstrumentSpec & {
   sessionId: string;
   peak: number;
   rms: number;
+  capturedFrames: number;
+  channelSampleCount: number;
+};
+
+type EnergyMeasurement = {
+  peak: number;
+  rms: number;
+  capturedFrames: number;
+  channelSampleCount: number;
+};
+
+type EnergyCaptureResult = {
+  sampleRate: number;
+  master: EnergyMeasurement;
+  tracks: Record<string, EnergyMeasurement>;
 };
 
 function representativePitch(sampleId: string): number {
@@ -111,7 +237,7 @@ function buildSequencerTrack(spec: InstrumentSpec, index: number): SessionTrack 
     muted: false,
     soloed: false,
     transpose: 0,
-    stepCount: STEP_COUNT,
+    stepCount: LIVE_STEP_COUNT,
   };
 }
 
@@ -139,8 +265,8 @@ async function prepareAudioForTracks(page: Page, tracks: SessionTrack[]): Promis
   await page.waitForTimeout(100);
 }
 
-async function attachOutputAnalysers(page: Page, trackIds: string[]): Promise<void> {
-  await page.evaluate((ids) => {
+async function attachContinuousEnergyCapture(page: Page, trackIds: string[]): Promise<void> {
+  await page.evaluate(async ({ ids, processorName, workletSource, channelCount, durationSeconds }) => {
     type TrackBus = { getOutputNode: () => AudioNode };
     type TrackBusManager = { getOrCreateBus: (trackId: string) => TrackBus };
     type Engine = {
@@ -156,75 +282,193 @@ async function attachOutputAnalysers(page: Page, trackIds: string[]): Promise<vo
       throw new Error('Audio engine/masterGain/trackBusManager unavailable');
     }
 
-    const trackAnalysers: Record<string, AnalyserNode> = {};
-    for (const id of ids) {
-      const analyser = audioContext.createAnalyser();
-      analyser.fftSize = 2048;
-      trackBusManager.getOrCreateBus(id).getOutputNode().connect(analyser);
-      trackAnalysers[id] = analyser;
+    const blobUrl = URL.createObjectURL(new Blob([workletSource], { type: 'text/javascript' }));
+    try {
+      await audioContext.audioWorklet.addModule(blobUrl);
+    } finally {
+      URL.revokeObjectURL(blobUrl);
     }
 
-    const masterAnalyser = audioContext.createAnalyser();
-    masterAnalyser.fftSize = 2048;
-    masterGain.connect(masterAnalyser);
+    const node = new AudioWorkletNode(audioContext, processorName, {
+      numberOfInputs: ids.length + 1,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      channelCount,
+      channelCountMode: 'explicit',
+      channelInterpretation: 'speakers',
+      processorOptions: { inputCount: ids.length + 1, channelCount },
+    });
+    const sources: AudioNode[] = ids.map(id =>
+      trackBusManager.getOrCreateBus(id).getOutputNode()
+    );
+    sources.push(masterGain);
+    sources.forEach((source, inputIndex) => source.connect(node, 0, inputIndex));
+    const keepAlive = audioContext.createGain();
+    keepAlive.gain.value = 0;
+    node.connect(keepAlive).connect(audioContext.destination);
 
     (window as unknown as {
       __allInstrumentSequencerProbe__?: {
-        trackAnalysers: Record<string, AnalyserNode>;
-        masterAnalyser: AnalyserNode;
+        node: AudioWorkletNode;
+        sources: AudioNode[];
+        keepAlive: GainNode;
+        trackIds: string[];
+        frameCount: number;
+        done?: Promise<{
+          type: 'done';
+          capturedFrames: number;
+          measurements: Array<EnergyMeasurement & { inputIndex: number }>;
+        }>;
       };
-    }).__allInstrumentSequencerProbe__ = { trackAnalysers, masterAnalyser };
-  }, trackIds);
+    }).__allInstrumentSequencerProbe__ = {
+      node,
+      sources,
+      keepAlive,
+      trackIds: ids,
+      frameCount: Math.round(durationSeconds * audioContext.sampleRate),
+    };
+  }, {
+    ids: trackIds,
+    processorName: ENERGY_PROCESSOR_NAME,
+    workletSource: ENERGY_WORKLET_SOURCE,
+    channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
+    durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
+  });
 }
 
-async function sampleOutputEnergy(page: Page): Promise<{
-  master: { peak: number; rms: number };
-  tracks: Record<string, { peak: number; rms: number }>;
-}> {
-  const totals: Record<string, { peak: number; rms: number }> = {};
-  let masterPeak = 0;
-  let masterRms = 0;
-
-  for (let i = 0; i < MEASURE_ITERATIONS; i++) {
-    const frame = await page.evaluate(() => {
-      const probe = (window as unknown as {
-        __allInstrumentSequencerProbe__?: {
-          trackAnalysers: Record<string, AnalyserNode>;
-          masterAnalyser: AnalyserNode;
-        };
-      }).__allInstrumentSequencerProbe__;
-      if (!probe) throw new Error('All-instrument sequencer probe was not attached');
-
-      const readEnergy = (analyser: AnalyserNode): { peak: number; rms: number } => {
-        const data = new Float32Array(analyser.fftSize);
-        analyser.getFloatTimeDomainData(data);
-        let peak = 0;
-        let sumSq = 0;
-        for (const v of data) {
-          peak = Math.max(peak, Math.abs(v));
-          sumSq += v * v;
-        }
-        return { peak, rms: Math.sqrt(sumSq / data.length) };
+async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
+  await page.evaluate(async () => {
+    type DoneMessage = {
+      type: 'done';
+      capturedFrames: number;
+      measurements: Array<EnergyMeasurement & { inputIndex: number }>;
+    };
+    type ErrorMessage = { type: 'error'; message: string };
+    type ArmedMessage = { type: 'armed'; frameCount: number };
+    const probe = (window as unknown as {
+      __allInstrumentSequencerProbe__?: {
+        node: AudioWorkletNode;
+        sources: AudioNode[];
+        keepAlive: GainNode;
+        trackIds: string[];
+        frameCount: number;
+        done?: Promise<DoneMessage>;
       };
+    }).__allInstrumentSequencerProbe__;
+    if (!probe) throw new Error('Continuous all-instrument capture was not attached');
 
-      const tracks: Record<string, { peak: number; rms: number }> = {};
-      for (const [trackId, analyser] of Object.entries(probe.trackAnalysers)) {
-        tracks[trackId] = readEnergy(analyser);
-      }
-      return { master: readEnergy(probe.masterAnalyser), tracks };
+    let armedResolve!: (message: ArmedMessage) => void;
+    let armedReject!: (error: Error) => void;
+    let doneResolve!: (message: DoneMessage) => void;
+    let doneReject!: (error: Error) => void;
+    const armed = new Promise<ArmedMessage>((resolve, reject) => {
+      armedResolve = resolve;
+      armedReject = reject;
     });
-
-    masterPeak = Math.max(masterPeak, frame.master.peak);
-    masterRms = Math.max(masterRms, frame.master.rms);
-    for (const [trackId, energy] of Object.entries(frame.tracks)) {
-      totals[trackId] ??= { peak: 0, rms: 0 };
-      totals[trackId].peak = Math.max(totals[trackId].peak, energy.peak);
-      totals[trackId].rms = Math.max(totals[trackId].rms, energy.rms);
+    probe.done = new Promise<DoneMessage>((resolve, reject) => {
+      doneResolve = resolve;
+      doneReject = reject;
+    });
+    // Attach a rejection observer immediately so a worklet error cannot become
+    // an unhandled page rejection between the arm and result awaits.
+    void probe.done.catch(() => {});
+    probe.node.port.onmessage = (event: MessageEvent<DoneMessage | ErrorMessage | ArmedMessage>) => {
+      if (event.data.type === 'armed') armedResolve(event.data);
+      else if (event.data.type === 'done') doneResolve(event.data);
+      else {
+        const error = new Error(event.data.message);
+        armedReject(error);
+        doneReject(error);
+      }
+    };
+    probe.node.port.postMessage({ type: 'arm', frameCount: probe.frameCount });
+    const timeout = new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error('Timed out arming continuous energy capture')), 5_000);
+    });
+    const message = await Promise.race([armed, timeout]);
+    if (message.frameCount !== probe.frameCount) {
+      throw new Error('Continuous energy worklet armed with the wrong frame count');
     }
-    await page.waitForTimeout(MEASURE_INTERVAL_MS);
-  }
+    const playButton = document.querySelector<HTMLButtonElement>('[data-testid="play-button"]');
+    if (!playButton) throw new Error('Play button unavailable after continuous capture armed');
+    // Audio was already unlocked by prepareAudioForTracks. Dispatching the
+    // measured restart in this same page task minimizes variable leading
+    // silence between the worklet acknowledgement and sequencer step zero.
+    playButton.click();
+  });
+}
 
-  return { master: { peak: masterPeak, rms: masterRms }, tracks: totals };
+async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureResult> {
+  return page.evaluate(async ({ channelCount }) => {
+    type DoneMessage = {
+      type: 'done';
+      capturedFrames: number;
+      measurements: Array<EnergyMeasurement & { inputIndex: number }>;
+    };
+    const probe = (window as unknown as {
+      __allInstrumentSequencerProbe__?: {
+        node: AudioWorkletNode;
+        sources: AudioNode[];
+        keepAlive: GainNode;
+        trackIds: string[];
+        frameCount: number;
+        done?: Promise<DoneMessage>;
+      };
+    }).__allInstrumentSequencerProbe__;
+    if (!probe?.done) throw new Error('Continuous all-instrument capture was not armed');
+
+    const timeout = new Promise<never>((_, reject) => {
+      window.setTimeout(() => reject(new Error('Timed out reading continuous energy capture')), 10_000);
+    });
+    const result = await Promise.race([probe.done, timeout]);
+    if (result.capturedFrames !== probe.frameCount) {
+      throw new Error(
+        `Continuous energy capture returned ${result.capturedFrames}/${probe.frameCount} frames`,
+      );
+    }
+    if (result.measurements.length !== probe.trackIds.length + 1) {
+      throw new Error('Continuous energy capture omitted an input');
+    }
+
+    const byInput = new Map(result.measurements.map(measurement => [measurement.inputIndex, measurement]));
+    const tracks: Record<string, EnergyMeasurement> = {};
+    for (const [inputIndex, trackId] of probe.trackIds.entries()) {
+      const measurement = byInput.get(inputIndex);
+      if (!measurement) throw new Error(`Continuous energy capture omitted ${trackId}`);
+      if (measurement.channelSampleCount !== probe.frameCount * channelCount) {
+        throw new Error(`Continuous energy capture did not cover every sample for ${trackId}`);
+      }
+      tracks[trackId] = {
+        peak: measurement.peak,
+        rms: measurement.rms,
+        capturedFrames: measurement.capturedFrames,
+        channelSampleCount: measurement.channelSampleCount,
+      };
+    }
+    const master = byInput.get(probe.trackIds.length);
+    if (!master) throw new Error('Continuous energy capture omitted masterGain');
+    if (master.channelSampleCount !== probe.frameCount * channelCount) {
+      throw new Error('Continuous energy capture did not cover every masterGain sample');
+    }
+
+    probe.sources.forEach((source, inputIndex) => {
+      try {
+        source.disconnect(probe.node, 0, inputIndex);
+      } catch {
+        // Navigation also tears down the graph; disconnect is best effort.
+      }
+    });
+    probe.node.disconnect();
+    probe.keepAlive.disconnect();
+    delete (window as unknown as { __allInstrumentSequencerProbe__?: unknown })
+      .__allInstrumentSequencerProbe__;
+
+    type Engine = { getAudioContext?: () => AudioContext | null };
+    const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
+    const sampleRate = engine?.getAudioContext?.()?.sampleRate;
+    if (!sampleRate) throw new Error('AudioContext sample rate unavailable after capture');
+    return { sampleRate, master, tracks };
+  }, { channelCount: LIVE_CAPTURE_CHANNEL_COUNT });
 }
 
 async function clickPlayButton(page: Page): Promise<void> {
@@ -267,8 +511,9 @@ test('every catalog instrument sequencer step produces live master output', asyn
   // Codec precondition — see e2e/sample-browser-decode.spec.ts for the same
   // check and the full reasoning.
   //
-  // This test measures master peak/RMS and reports instruments that come out
-  // silent. On a Chromium without AAC, every .m4a-backed instrument decodes to
+  // This test continuously accumulates master/per-track sample peak and
+  // full-window RMS, then reports instruments that come out silent. On a
+  // Chromium without AAC, every .m4a-backed instrument decodes to
   // nothing and is reported as silent — indistinguishable from a genuine audio
   // routing regression, which is the failure this test exists to catch. Assert
   // the browser can actually decode the catalogue before believing its silence.
@@ -302,15 +547,18 @@ test('every catalog instrument sequencer step produces live master output', asyn
   const sessionResults: Array<{
     sessionId: string;
     instruments: string[];
+    sampleRate: number;
     masterPeak: number;
     masterRms: number;
+    capturedFrames: number;
+    channelSampleCount: number;
   }> = [];
 
   for (const [batchIndex, batchSpecs] of chunk(specs, MAX_TRACKS).entries()) {
     const tracks = batchSpecs.map((spec, i) => buildSequencerTrack(spec, batchIndex * MAX_TRACKS + i));
     const { id: sessionId } = await createSessionWithRetry(request, {
       tracks,
-      tempo: SESSION_TEMPO,
+      tempo: LIVE_TEMPO,
       swing: 0,
       version: 1,
     });
@@ -320,63 +568,72 @@ test('every catalog instrument sequencer step produces live master output', asyn
     await expect(page.locator('.track-row')).toHaveCount(tracks.length, { timeout: 20_000 });
 
     await prepareAudioForTracks(page, tracks);
-    audioSampleRates.add(await page.evaluate(() => {
+    const expectedSampleRate = await page.evaluate(() => {
       type Engine = { getAudioContext?: () => AudioContext | null };
       const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
       const sampleRate = engine?.getAudioContext?.()?.sampleRate;
       if (!sampleRate) throw new Error('AudioContext sample rate unavailable');
       return sampleRate;
-    }));
-    await attachOutputAnalysers(page, tracks.map(t => t.id));
-    await clickPlayButton(page);
-    const energy = await sampleOutputEnergy(page);
+    });
+    audioSampleRates.add(expectedSampleRate);
+    await attachContinuousEnergyCapture(page, tracks.map(t => t.id));
+    await armAndStartContinuousEnergyCapture(page);
+    const energy = await readContinuousEnergyCapture(page);
     await clickPlayButton(page).catch(() => {});
+    expect(energy.sampleRate).toBe(expectedSampleRate);
 
     sessionResults.push({
       sessionId,
       instruments: batchSpecs.map(s => s.sampleId),
+      sampleRate: energy.sampleRate,
       masterPeak: energy.master.peak,
       masterRms: energy.master.rms,
+      capturedFrames: energy.master.capturedFrames,
+      channelSampleCount: energy.master.channelSampleCount,
     });
 
     for (const [i, spec] of batchSpecs.entries()) {
       const trackId = tracks[i].id;
-      const trackEnergy = energy.tracks[trackId] ?? { peak: 0, rms: 0 };
-      results.push({ ...spec, trackId, sessionId, peak: trackEnergy.peak, rms: trackEnergy.rms });
+      const trackEnergy = energy.tracks[trackId];
+      if (!trackEnergy) throw new Error(`Continuous energy capture omitted ${trackId}`);
+      results.push({ ...spec, trackId, sessionId, ...trackEnergy });
     }
   }
 
-  mkdirSync(REPORT_DIR, { recursive: true });
-  writeFileSync(
-    resolve(REPORT_DIR, 'live-master-output.json'),
-    JSON.stringify(
-      {
-        schemaVersion: 1,
-        claim: 'live-post-track-signal-evidence',
-        generatedAt: new Date().toISOString(),
-        subjectCommit,
-        browser: {
-          name: browserName,
-          version: page.context().browser()?.version() ?? 'unknown',
-          userAgent: await page.evaluate(() => navigator.userAgent),
-        },
-        audioSampleRates: [...audioSampleRates].sort((left, right) => left - right),
-        generatedFrom: 'Chromium live sequencer sessions for every INSTRUMENT_CATEGORIES entry; per-track bus analysers + masterGain analyser',
-        silencePeakThreshold: SILENCE_PEAK,
-        silenceRmsThreshold: SILENCE_RMS,
-        tempo: SESSION_TEMPO,
-        stepCount: STEP_COUNT,
-        sessions: sessionResults,
-        instruments: results,
-        diagnostics: { pageErrors, consoleErrors },
-      },
-      null,
-      2,
-    ) + '\n',
-  );
+  const receipt: LiveQualityReport = {
+    schemaVersion: LIVE_RECEIPT_SCHEMA_VERSION,
+    claim: LIVE_RECEIPT_CLAIM,
+    generatedAt: new Date().toISOString(),
+    subjectCommit,
+    browser: {
+      name: browserName,
+      version: page.context().browser()?.version() ?? 'unknown',
+      userAgent: await page.evaluate(() => navigator.userAgent),
+    },
+    audioSampleRates: [...audioSampleRates].sort((left, right) => left - right),
+    generatedFrom: LIVE_GENERATED_FROM,
+    capture: {
+      method: LIVE_CAPTURE_METHOD,
+      durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
+      channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
+      peakMetric: LIVE_PEAK_METRIC,
+      rmsMetric: LIVE_RMS_METRIC,
+    },
+    silencePeakThreshold: LIVE_SILENCE_PEAK_THRESHOLD,
+    silenceRmsThreshold: LIVE_SILENCE_RMS_THRESHOLD,
+    tempo: LIVE_TEMPO,
+    stepCount: LIVE_STEP_COUNT,
+    sessions: sessionResults,
+    instruments: results,
+    diagnostics: { pageErrors, consoleErrors },
+  };
 
-  const silentTracks = results.filter(r => r.peak <= SILENCE_PEAK && r.rms <= SILENCE_RMS);
-  const silentSessions = sessionResults.filter(r => r.masterPeak <= SILENCE_PEAK && r.masterRms <= SILENCE_RMS);
+  const silentTracks = results.filter(r =>
+    r.peak <= LIVE_SILENCE_PEAK_THRESHOLD && r.rms <= LIVE_SILENCE_RMS_THRESHOLD
+  );
+  const silentSessions = sessionResults.filter(r =>
+    r.masterPeak <= LIVE_SILENCE_PEAK_THRESHOLD && r.masterRms <= LIVE_SILENCE_RMS_THRESHOLD
+  );
   expect(pageErrors, 'Browser page errors during all-instrument sequencer output smoke').toEqual([]);
   expect(consoleErrors, 'Console errors/skipped notes during all-instrument sequencer output smoke').toEqual([]);
   expect(
@@ -387,4 +644,13 @@ test('every catalog instrument sequencer step produces live master output', asyn
     silentTracks.map(r => ({ sampleId: r.sampleId, type: r.type, pitch: r.pitch, peak: r.peak, rms: r.rms })),
     'Every catalog instrument should produce per-track output from a scheduled sequencer step',
   ).toEqual([]);
+
+  // Publish only evidence that has passed the producer's runtime assertions
+  // and the same pure schema/provenance validator used by the aggregator.
+  validateLiveQualityReport(receipt, subjectCommit);
+  mkdirSync(REPORT_DIR, { recursive: true });
+  writeFileSync(
+    resolve(REPORT_DIR, 'live-master-output.json'),
+    `${JSON.stringify(receipt, null, 2)}\n`,
+  );
 });

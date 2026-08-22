@@ -1,35 +1,39 @@
 # Instrument quality branch scope — 2026-08-22
 
-The audit inspected all 48 GitHub branch heads (47 non-main plus `main`) and
-resolved open pull requests independently of branch naming. Eight heads now
-have open pull requests.
+The audit inspected all 49 GitHub branch heads (48 non-main plus `main`) and
+resolved open pull requests independently of branch naming. The final remote
+check at 2026-08-22T19:35:20+01:00 found ten open pull requests and four open
+issues.
 
-The final remote-state check used `main` at `58264dd5`, PR 87 at `b58db2e`,
-and the Tone Nets PR 98 head at `5b4d82c` on 2026-08-22. GitHub reported eight
-open pull requests and four open issues.
-At those exact tips, PR 87 differs from `main` only by two specification files.
-The Tone Nets head advanced by 14 commits during final verification, opened as
-PR 98, and now contains production audio work, detailed below.
+That check used `main` at `58264dd5`, PR 87 at `8f995a7`, PR 98 at `5d02fe1`,
+and this remediation PR 100 at `ed8ad28`. Both audio-adjacent branches advanced
+materially while this audit was running: PR 87 is now a 210-file production
+envelope implementation, while PR 98 has repaired its previously stale bound
+sample disposition and Stack A contract. Their current overlap and sequencing
+requirements are detailed below.
 
 | PR | Head | Audio impact |
 |---:|---|---|
+| 100 | `codex/audio-quality-remediation` | This objective-audio remediation and evaluator PR; audit findings and remaining work are reported in its description |
+| 99 | `codex/sitewide-text-colour-safety` | CSS/text-colour safety stacked on PR 95; no audio change |
 | 98 | `claude/tone-nets-keyboardia-comparison-vwa218` | Velocity-dependent sampled filtering, new-session reverb, incomplete mobile output/clock wiring, and MediaSession work; validation caveats below |
 | 96 | `claude/wal-reset-bug-learnings-ojery3` | Adds correctness/onset-related tests and research; no production DSP, manifest, sample, calibration, or catalogue change |
 | 95 | `codex/stack-b-dropdown-visual-pilot` | CSS and visual evidence only |
-| 87 | `claude/adsr-handling-1fbpmm` | Envelope overhaul specification only; no implementation |
+| 87 | `claude/adsr-handling-1fbpmm` | Production envelope-v2 runtime, persistence, UI, MCP, MIDI/notation, migration, and tests; conflicts and evidence caveats below |
 | 85 | `claude/icon-grip-gear` | Icon/UI only |
 | 84 | `agent/sonnet-v11-handoff` | Evaluation documentation only |
 | 61 | `claude/keyboardia-evolution-roadmap-oap6n8` | Product/UI specifications and mockups only |
 | 58 | `claude/keyboardia-icon-replacement-4pdqvo` | Icon research/documentation only |
 
-Except for PR 98, no open-PR branch changes production audio code, sample bytes,
-manifests, source gain, filters, effects, tuning, the sampled registry, or the
-99-ID selectable catalogue. All eight open-PR heads retain the same 26 sampled
-instruments as `main`. PR 98 changes velocity-dependent sound and new-session
-effects, but does not yet carry evidence sufficient for an honest alternate
-99-instrument ranking.
+Apart from PRs 87, 98, and 100, no open-PR branch changes production audio code,
+sample bytes, manifests, source gain, filters, effects, tuning, the sampled
+registry, or the 99-ID selectable catalogue. PR 87 changes envelope behavior;
+PR 98 changes velocity-dependent sound and new-session effects. Neither has yet
+been rebased onto PR 100's authoritative sample replacements and hardened
+evidence contracts, so neither carries evidence sufficient for an honest
+alternate 99-instrument ranking on the combined tree.
 
-PR 98, `claude/tone-nets-keyboardia-comparison-vwa218` at `5b4d82c`, is genuine
+PR 98, `claude/tone-nets-keyboardia-comparison-vwa218` at `5d02fe1`, is genuine
 in-progress sound and mobile-runtime work:
 
 - `sampled-instrument.ts` creates a per-voice low-pass for notes below MIDI 90;
@@ -67,16 +71,12 @@ roots, or sample bytes; it bypasses the filter at the canonical MIDI-90 lane
 used by the v1 ranking, and it does not repair any of the 203 decoded findings,
 the two bass headroom failures, or the complete-matrix evidence gap.
 
-The tip's focused/unit/type/manifests tests and aggregate sustain telemetry pass,
-but its strict sample audit fails first because the changed slap-bass manifest
-no longer matches its bound quality disposition; eight changed anchored
-manifests have bound dispositions requiring rebinding. The two newest commits
-reference previously dead mobile/clock code and remove the unused sustain
-helper, so the dead-export check now passes, but they do not cure the
-sample-evidence failure or complete the mobile route. PR 98's CI `Instrument
-Validation`, `Stack A Identity`, and `E2E Visual Regression` checks are failing
-at this frozen tip; two E2E jobs were still pending, and GitHub reported the PR
-as `UNSTABLE`. Its own changelog/spec also overclaims ringer-switch success,
+The tip's focused/unit/type/manifests tests and aggregate sustain telemetry pass.
+Its latest commits rebind the slap-bass disposition and restore the Stack A
+new-session contract, so `Instrument Validation` and `Stack A Identity` now
+pass. `E2E Visual Regression` remains red, and GitHub still reports the PR as
+`UNSTABLE`. The dead-export check also passes, but those corrections do not
+complete the mobile route. Its own changelog/spec still overclaims ringer-switch success,
 per-note sustain, and untouched layered instruments. The filter and
 default-reverb changes alter sound and therefore still need corrected all-map
 measurement, rebound dispositions, the pinned velocity/full-matrix capture,
@@ -97,9 +97,12 @@ already been superseded. Thirteen stale, non-open branch tips show old catalogue
 snapshots (usually the retired `rhodes-ep` or missing later instruments); none
 adds or replaces an audio sample as branch-contributed work.
 
-## Open ADSR findings on `origin/main`
+## PR 87 envelope implementation and overlap
 
-PR 87 is spec-only, but its shared-engine quality findings remain relevant:
+PR 87 is no longer specification-only. At `8f995a7` it implements envelope-v2
+semantics, canonical state and migration, runtime/UI/MCP/MIDI/notation support,
+and a large regression suite. It directly tackles several shared-engine
+findings originally reproduced on `origin/main`:
 
 - `advancedSynth.ts` uses `release || 0.5`, so authored zero is lost;
 - native and advanced engines use wall-clock timers for voice cleanup instead
@@ -110,14 +113,22 @@ PR 87 is spec-only, but its shared-engine quality findings remain relevant:
 - native, Tone, and sampled paths give different meanings to the same release
   value.
 
-These are cross-instrument envelope-semantics debts on the audited base commit.
-The remediation branch now preserves zero release, bounds the documented
-controls, moves native and advanced voice retirement to their audio clocks, and
-persists the global envelope overrides into engines created later. The control
-surface remains deliberately global because the current UI exposes no selected
-track identity. Differences between engine envelope curves remain measurable
-matrix/listening concerns rather than something to erase with one shared
-formula.
+PR 87 and PR 100 now overlap in eleven files, with direct textual conflicts in
+the Hammond manifest and six shared engine/control files. PR 87 was built on the
+old Hammond MP3 catalogue and old loop coordinates; it also lacks PR 100's
+stale-Tone-context fail-closed recovery, bounded growl modulation, and intrinsic
+zero procedural-envelope gain that removes the measured one-frame boundary
+leak. Its resource evidence pins the old 582-file byte total. Taking either
+side wholesale would therefore regress the other.
+
+The safe sequence is: merge PR 100 first, then rebase PR 87 and retain both
+sets of focused regressions, translate sustained-Hammond loop state to the new
+WAV coordinates, and regenerate all resource and evaluator evidence. PR 98
+should follow the same ordering: re-solve its acoustic filter anchor against
+the replacement asset, rebind manifests under the current baseline schema, and
+resolve its French-horn and engine conflicts semantically. Differences between
+engine envelope curves remain measurable matrix/listening concerns rather than
+something to erase with one shared formula.
 
 No open issue tracks any of the concrete decoded-sample, loop, headroom,
 stereo/mono, map-coverage, or full-PCM evidence deficits. Issue 93 and PR 95
