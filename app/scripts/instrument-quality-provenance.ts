@@ -29,6 +29,7 @@ const EVALUATOR_SOURCE_RELATIVE_PATHS = [
   'src/audio/scheduler-types.ts',
   'src/audio/source-calibration.ts',
   'src/components/sample-constants.ts',
+  'src/shared/constants.ts',
   'src/shared/instrument-catalog.ts',
   'src/types.ts',
   'src/test/audio-measures.ts',
