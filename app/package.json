@@ -48,6 +48,7 @@
     "validate:samples": "bash scripts/validate-sample-volume.sh",
     "validate:manifests": "tsx scripts/validate-manifests.ts",
     "validate:release-times": "tsx scripts/validate-release-times.ts",
+    "validate:sustain-ceiling": "tsx scripts/validate-sustain-ceiling.ts",
     "validate:playable-ranges": "tsx scripts/validate-playable-ranges.ts",
     "validate:velocity": "tsx scripts/validate-velocity-layers.ts",
     "validate:sample-quality": "tsx scripts/validate-sample-quality.ts --strict",

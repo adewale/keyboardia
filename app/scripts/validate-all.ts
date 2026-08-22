@@ -61,6 +61,11 @@ const VALIDATORS = [
     description: 'Checks shipped and archived sample hashes, curated mappings, source revisions, and license profile',
   },
   {
+    name: 'Sustain Ceiling Guard',
+    script: 'npx tsx scripts/validate-sustain-ceiling.ts',
+    description: 'Ensures sustaining instruments hold past the longest 16-step tied note',
+  },
+  {
     name: 'Release Time Validation',
     script: 'npx tsx scripts/validate-release-times.ts',
     description: 'Validates release time consistency across instruments',

@@ -252,7 +252,7 @@ describe('ToneEffectsChain', () => {
     it('initializes a fully-wet parallel room with the persisted wet return gain', async () => {
       await vi.waitFor(() => expect(chain['convolutionReverb']).toBe(chain['reverb']));
       expect(chain['reverb']?.wet.value).toBe(1);
-      expect(chain['reverbWetGain']?.gain.value).toBe(0);
+      expect(chain['reverbWetGain']?.gain.value).toBe(DEFAULT_EFFECTS_STATE.reverb.wet);
     });
 
     it('clamps reverb wet to 0-1 range', () => {
@@ -480,7 +480,8 @@ describe('ToneEffectsChain', () => {
 
 describe('DEFAULT_EFFECTS_STATE', () => {
   it('opens a restrained room by default while creative effects remain dry', () => {
-    expect(DEFAULT_EFFECTS_STATE.reverb.wet).toBe(0);
+    // Phase 44 Change 3: new sessions carry the bass-protected 0.15 room.
+    expect(DEFAULT_EFFECTS_STATE.reverb.wet).toBe(0.15);
     expect(DEFAULT_EFFECTS_STATE.delay.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.chorus.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.distortion.wet).toBe(0);

@@ -6,7 +6,13 @@ import type { EffectsState } from './sync-types';
  */
 export const DEFAULT_EFFECTS_STATE: EffectsState = {
   bypass: false,
-  reverb: { decay: 2.0, wet: 0 },
+  // Phase 44 Change 3: new sessions start with a small bass-protected room
+  // (the send is high-passed at REVERB_SEND_HIGHPASS_HZ with a short
+  // predelay — see toneEffects.ts). 0.15 is the value
+  // specs/SOUND-QUALITY-PARITY-PLAN.md:508 specified; legacy sessions that
+  // never stored effects keep the dry LEGACY_MISSING_EFFECTS_STATE below so
+  // saved music is not reinterpreted.
+  reverb: { decay: 2.0, wet: 0.15 },
   delay: { time: '8n', feedback: 0.3, wet: 0 },
   chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
   distortion: { amount: 0.4, wet: 0 },
