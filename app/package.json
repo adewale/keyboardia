@@ -76,6 +76,8 @@
     "audit:range:render": "vitest run src/audio/instrument-range-render.test.ts",
     "audit:range:session": "USE_MOCK_API=1 npx playwright test e2e/instrument-range-session.spec.ts --project=chromium",
     "audit:range:full": "npm run audit:range:session && npm run audit:range",
+    "audit:instrument-quality": "node --import tsx scripts/audit-instrument-quality.ts",
+    "audit:instrument-quality:full": "USE_MOCK_API=1 playwright test e2e/all-instruments-master-output.spec.ts --project=chromium --workers=1 && node --import tsx scripts/validate-sample-quality.ts --strict && node --import tsx scripts/audit-instrument-quality.ts --require-evidence",
     "generate:instrument-notes": "tsx scripts/generate-instrument-notes.ts",
     "generate:license": "tsx scripts/generate-license-md.ts",
     "validate:acoustic-pitch": "python3 scripts/validate-acoustic-pitch.py",
