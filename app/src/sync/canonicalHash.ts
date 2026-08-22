@@ -19,8 +19,9 @@
  */
 
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
-import type { ScaleState } from '../shared/sync-types';
+import type { ScaleState, TrackEnvelope, EnvelopeTimeUnit, FMParams } from '../shared/sync-types';
 import { normalizeSessionScale } from '../shared/scale-defaults';
+import type { SamplePlaybackMode, TrackEnvelopeV2 } from '../shared/envelope-contract-v2';
 
 // Minimal track type for hash input
 interface TrackForHash {
@@ -36,6 +37,12 @@ interface TrackForHash {
   transpose: number;
   stepCount?: number;
   swing?: number;  // Phase 31D: Per-track swing (0-100)
+  fmParams?: FMParams;
+  envelope?: TrackEnvelope;
+  envelopeTimeUnit?: EnvelopeTimeUnit;
+  envelopeV2?: TrackEnvelopeV2;
+  samplePlaybackMode?: SamplePlaybackMode;
+  gate?: number;
 }
 
 export interface StateForHash {
@@ -60,6 +67,12 @@ interface CanonicalTrack {
   transpose: number;
   stepCount: number;
   swing: number;  // Phase 31D: Per-track swing, defaults to 0
+  fmParams: FMParams | null;
+  envelope: TrackEnvelope | null;
+  envelopeTimeUnit: EnvelopeTimeUnit;
+  envelopeV2: TrackEnvelopeV2 | null;
+  samplePlaybackMode: SamplePlaybackMode | null;
+  gate: number;
 }
 
 interface CanonicalState {
@@ -116,6 +129,12 @@ function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
     transpose: track.transpose,
     stepCount,
     swing,  // Phase 31D: Per-track swing
+    fmParams: track.fmParams ?? null,
+    envelope: track.envelope ?? null,
+    envelopeTimeUnit: track.envelopeTimeUnit ?? 'seconds',
+    envelopeV2: track.envelopeV2 ?? null,
+    samplePlaybackMode: track.samplePlaybackMode ?? null,
+    gate: track.gate ?? 90,
   };
 }
 

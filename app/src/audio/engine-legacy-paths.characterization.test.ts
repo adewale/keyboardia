@@ -59,6 +59,7 @@ vi.mock('./sampled-instrument', async () => {
 });
 
 import { AudioEngine } from './engine';
+import { SYNTH_PRESETS } from './synth';
 
 interface FakeBusInput { connect: ReturnType<typeof vi.fn<(...a: unknown[]) => void>>; }
 
@@ -83,51 +84,58 @@ describe('characterization: playSynthNote', () => {
     synthPlayNote.mockClear();
   });
 
-  it('passes (noteId, frequency, preset, time, duration, volume, destination) to synthEngine.playNote', () => {
+  it('keeps published presets on the native renderer until the PCM gate passes', () => {
     const { engine } = setupEngine();
+    const playAdvanced = vi.spyOn(engine, 'playAdvancedSynth').mockImplementation(() => undefined);
     engine.playSynthNote('note-1', 'lead', 12, 5.0, 0.25, 0.7, 'trackA');
-    expect(synthPlayNote).toHaveBeenCalledTimes(1);
-    const args = synthPlayNote.mock.calls[0];
-    // Recorded shape — index by index.
-    expect(args[0]).toBe('note-1');                              // noteId
-    expect(typeof args[1]).toBe('number');                       // frequency from semitoneToFrequency
-    expect(args[2]).toMatchObject({ waveform: expect.any(String) }); // preset (SynthParams shape)
-    expect(args[3]).toBe(5.0);                                   // time
-    expect(args[4]).toBe(0.25);                                  // duration
-    expect(args[5]).toBe(0.7);                                   // volume
-    expect(args[6]).toMatchObject({ connect: expect.any(Function) }); // destination = bus input
+    expect(playAdvanced).not.toHaveBeenCalled();
+    expect(synthPlayNote).toHaveBeenCalledWith(
+      'note-1', expect.any(Number), expect.objectContaining({ waveform: SYNTH_PRESETS.lead.waveform }),
+      5, .25, .7, expect.objectContaining({ connect: expect.any(Function) }),
+    );
   });
 
-  it('passes destination=undefined when no trackId is given', () => {
+  it('uses the canonical gain scheduler for an authored native-synth envelope', () => {
+    const { engine } = setupEngine();
+    const envelope = {
+      model: 'adsr' as const,
+      attackSeconds: 0,
+      decaySeconds: 0.2,
+      sustain: 0.5,
+      releaseSeconds: 0,
+    };
+    engine.playSynthNote('authored', 'lead', 0, 1, 0.1, 1, 'trackA', undefined, envelope, true);
+    expect(synthPlayNote).toHaveBeenLastCalledWith(
+      'authored',
+      expect.any(Number),
+      expect.objectContaining({ attack: 0, decay: 0.2, sustain: 0.5, release: 0 }),
+      1,
+      0.1,
+      1,
+      expect.objectContaining({ connect: expect.any(Function) }),
+      envelope,
+    );
+  });
+
+  it('uses the native preview path when no trackId is given', () => {
     const { engine } = setupEngine();
     engine.playSynthNote('note-x', 'lead', 0, 0, undefined, 1);
-    const args = synthPlayNote.mock.calls[0];
-    expect(args[6]).toBeUndefined();
+    expect(synthPlayNote).toHaveBeenCalledWith(
+      'note-x', expect.any(Number), expect.objectContaining({ waveform: SYNTH_PRESETS.lead.waveform }),
+      0, undefined, 1, undefined,
+    );
   });
 
   it('falls back to the lead preset when an unknown name is passed (recorded behaviour, not validation)', () => {
     const { engine } = setupEngine();
     engine.playSynthNote('note-1', 'definitely-not-a-preset', 0, 0);
-    expect(synthPlayNote).toHaveBeenCalledTimes(1);
-    // Behaviour preserved: a single playNote happens with the lead preset.
-    // A future refactor that changes this to "skip unknown presets" would
-    // fail here — that's the point of characterization.
-    const preset = synthPlayNote.mock.calls[0][2] as { waveform?: string };
-    expect(preset).toBeDefined();
-    expect(typeof preset.waveform).toBe('string');
+    expect(synthPlayNote.mock.calls[0]?.[2]).toMatchObject(SYNTH_PRESETS.lead);
   });
 
-  it('frequency is computed from the semitone (proves arg index 1 is not, e.g., the raw semitone)', () => {
+  it('forwards semitone pitch to the unified engine', () => {
     const { engine } = setupEngine();
-    engine.playSynthNote('a', 'lead', 0, 0); // 0 semitones → C4 frequency
-    const freqAtZero = synthPlayNote.mock.calls[0][1] as number;
-    synthPlayNote.mockClear();
-
-    engine.playSynthNote('b', 'lead', 12, 0); // +12 → one octave up
-    const freqAtTwelve = synthPlayNote.mock.calls[0][1] as number;
-
-    // Octave doubles the frequency (within fp tolerance).
-    expect(freqAtTwelve / freqAtZero).toBeCloseTo(2, 2);
+    engine.playSynthNote('a', 'lead', 12, 0);
+    expect(synthPlayNote.mock.calls[0]?.[1]).toBeCloseTo(523.25, 1);
   });
 });
 

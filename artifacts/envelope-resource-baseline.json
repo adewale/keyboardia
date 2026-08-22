@@ -1,0 +1,66 @@
+{
+  "schemaVersion": 1,
+  "capturedAt": "2026-08-03",
+  "productionAudio": {
+    "encodedBytesApprox": 13761117,
+    "encodedMiB": 13.12,
+    "audioFileCount": 223,
+    "durationSecondsApprox": 914,
+    "decodedFloat32MiBApprox": 275.8,
+    "catalogueSha256": "ac879de4d56bfbe026c89b3658240d07096990c00ff240691454889e1aa9162b"
+  },
+  "javascript": {
+    "allChunksGzipBytes": 282200,
+    "chunks": {
+      "EffectsPanel": 1742,
+      "SamplePicker": 3022,
+      "StepSequencer": 30839,
+      "index-loader": 11205,
+      "index-main": 153476,
+      "metering-worklet": 713,
+      "midi-export-worker": 6914,
+      "pitch-shift-worklet": 873,
+      "scheduler-worklet-host": 1758,
+      "scheduler-worklet": 1361,
+      "tone": 65788,
+      "use-sync-external-store": 763,
+      "vendor-react": 4089
+    },
+    "policy": "Sample audio must remain outside the JavaScript module graph; envelope UI must retain the StepSequencer lazy boundary."
+  },
+  "postImplementation": {
+    "capturedAt": "2026-08-22",
+    "productionAudio": {
+      "encodedBytesApprox": 13761117,
+      "audioFileCount": 223,
+      "deltaBytes": 0,
+      "deltaFiles": 0
+    },
+    "javascript": {
+      "allChunksGzipBytes": 306851,
+      "deltaBytes": 24651,
+      "deltaPercent": 8.74,
+      "withinBudget": true,
+      "attribution": {
+        "sessionNotationLazyChunkGzipBytes": 4071,
+        "stepSequencerGzipBytes": 37622,
+        "stepSequencerDeltaBytes": 6783,
+        "stepSequencerDeltaPercent": 22,
+        "mainGzipBytes": 162779,
+        "mainDeltaBytes": 9303,
+        "schedulerWorkletGzipBytes": 5674,
+        "schedulerWorkletDeltaBytes": 4313
+      },
+      "notes": [
+        "The notation exporter is a lazy browser-only chunk; it is not bundled into the Worker.",
+        "The scheduler-worklet increase is the shared resolved-event v2 contract, not sample data.",
+        "No chart, knob, or other JavaScript dependency was added."
+      ]
+    }
+  },
+  "budgets": {
+    "unexplainedRegressionPercent": 20,
+    "newChartOrKnobDependencyAllowed": false,
+    "sampleAudioInModuleGraphAllowed": false
+  }
+}

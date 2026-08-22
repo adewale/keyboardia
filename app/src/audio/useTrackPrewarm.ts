@@ -27,6 +27,7 @@ function prewarmSignature(state: GridState): string {
   const members = state.tracks
     .filter((t) =>
       getSampledInstrumentId(t.sampleId) !== null
+      || t.sampleId.startsWith('synth:')
       || t.sampleId.startsWith('tone:')
       || t.sampleId.startsWith('advanced:'))
     .map((t) => [t.id, t.sampleId] as const)

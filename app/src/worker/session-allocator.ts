@@ -107,10 +107,16 @@ function publicWriteFailure<T>(result: Extract<SessionResult<T>, { success: fals
 }
 
 export class SessionAllocatorDurableObject {
+  private readonly state: DurableObjectStateLike;
+  private readonly env: Env;
+
   constructor(
-    private readonly state: DurableObjectStateLike,
-    private readonly env: Env
-  ) {}
+    state: DurableObjectStateLike,
+    env: Env
+  ) {
+    this.state = state;
+    this.env = env;
+  }
 
   fetch(request: Request): Promise<Response> {
     return this.state.blockConcurrencyWhile(async () => {

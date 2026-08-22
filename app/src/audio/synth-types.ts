@@ -29,10 +29,10 @@ export type LFODestination = 'filter' | 'pitch' | 'amplitude';
  * Basic ADSR envelope shape.
  * The fundamental building block for amplitude and filter envelopes.
  *
- * @property attack - Time to reach peak (0.001 to 4s)
- * @property decay - Time to fall to sustain level (0.001 to 4s)
+ * @property attack - Time to reach peak (0 to 4s)
+ * @property decay - Time to fall to sustain level (0 to 4s)
  * @property sustain - Level held while note is pressed (0 to 1)
- * @property release - Time to fall to zero after note release (0.001 to 8s)
+ * @property release - Time to fall to zero after note release (0 to 8s)
  */
 export interface ADSREnvelope {
   attack: number;
@@ -75,4 +75,13 @@ export const SYNTH_CONSTANTS = {
   ENVELOPE_PEAK: 0.85,
   /** Maximum simultaneous voices (prevents CPU overload) */
   MAX_VOICES: 16,
+  /** Canonical amplitude-envelope ranges (seconds except sustain level). */
+  MIN_ENVELOPE_ATTACK: 0,
+  MAX_ENVELOPE_ATTACK: 4,
+  MIN_ENVELOPE_DECAY: 0,
+  MAX_ENVELOPE_DECAY: 4,
+  MIN_ENVELOPE_SUSTAIN: 0,
+  MAX_ENVELOPE_SUSTAIN: 1,
+  MIN_ENVELOPE_RELEASE: 0,
+  MAX_ENVELOPE_RELEASE: 8,
 } as const;

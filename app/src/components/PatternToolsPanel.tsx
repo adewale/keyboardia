@@ -37,6 +37,11 @@ export interface PatternToolsPanelProps {
   onEuclideanFill?: (hits: number) => void;
   /** Callback for swing change */
   onSwingChange?: (swing: number) => void;
+  /** Optional envelope editor entry kept inside the existing track-tools menu. */
+  envelopeLabel?: string;
+  isEnvelopeExpanded?: boolean;
+  envelopeControlsId?: string;
+  onToggleEnvelope?: () => void;
 }
 
 /**
@@ -69,6 +74,10 @@ export function PatternToolsPanel({
   onMirror,
   onEuclideanFill,
   onSwingChange,
+  envelopeLabel,
+  isEnvelopeExpanded = false,
+  envelopeControlsId,
+  onToggleEnvelope,
 }: PatternToolsPanelProps) {
   // Handle Euclidean slider change
   const handleEuclideanChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,6 +170,22 @@ export function PatternToolsPanel({
         />
         <span className="swing-value">{`${swing}%`}</span>
       </div>
+
+      {onToggleEnvelope && (
+        <div className="pattern-tools-group envelope-tools-group">
+          <span className="pattern-tools-label">Envelope</span>
+          <button
+            className={`pattern-tool-btn envelope-tool-btn ${isEnvelopeExpanded ? 'active' : ''}`}
+            onClick={onToggleEnvelope}
+            title="Amplitude envelope"
+            aria-label="Amplitude envelope"
+            aria-expanded={isEnvelopeExpanded}
+            aria-controls={isEnvelopeExpanded ? envelopeControlsId : undefined}
+          >
+            {envelopeLabel ?? 'Shape'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

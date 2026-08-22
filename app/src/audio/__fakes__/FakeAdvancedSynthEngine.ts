@@ -28,6 +28,7 @@ type AdvancedSynthEngineSurface = Pick<
   | 'getOutput'
   | 'isReady'
   | 'setPreset'
+  | 'setEnvelope'
   | 'playNote'
   | 'playNoteSemitone'
   | 'getDiagnostics'
@@ -36,8 +37,6 @@ type AdvancedSynthEngineSurface = Pick<
   | 'setFilterResonance'
   | 'setLfoRate'
   | 'setLfoAmount'
-  | 'setAttack'
-  | 'setRelease'
   | 'setOscMix'
   | 'dispose'
 >;
@@ -69,8 +68,6 @@ export class FakeAdvancedSynthEngine implements AdvancedSynthEngineSurface {
   readonly setFilterResonanceCalls: number[] = [];
   readonly setLfoRateCalls: number[] = [];
   readonly setLfoAmountCalls: number[] = [];
-  readonly setAttackCalls: number[] = [];
-  readonly setReleaseCalls: number[] = [];
   readonly setOscMixCalls: number[] = [];
   disposed = false;
 
@@ -90,6 +87,8 @@ export class FakeAdvancedSynthEngine implements AdvancedSynthEngineSurface {
     this.currentPreset = presetId;
     this.setPresetCalls.push(presetId);
   }
+
+  setEnvelope(): void {}
 
   // The real signature: playNote(note, duration, time?) — no volume param.
   playNote(note: string, duration: number | string, time?: number): void {
@@ -132,8 +131,6 @@ export class FakeAdvancedSynthEngine implements AdvancedSynthEngineSurface {
   setFilterResonance(q: number): void { this.setFilterResonanceCalls.push(q); }
   setLfoRate(hz: number): void { this.setLfoRateCalls.push(hz); }
   setLfoAmount(amount: number): void { this.setLfoAmountCalls.push(amount); }
-  setAttack(seconds: number): void { this.setAttackCalls.push(seconds); }
-  setRelease(seconds: number): void { this.setReleaseCalls.push(seconds); }
   setOscMix(mix: number): void { this.setOscMixCalls.push(mix); }
 
   dispose(): void {
@@ -149,8 +146,6 @@ export class FakeAdvancedSynthEngine implements AdvancedSynthEngineSurface {
     this.setFilterResonanceCalls.length = 0;
     this.setLfoRateCalls.length = 0;
     this.setLfoAmountCalls.length = 0;
-    this.setAttackCalls.length = 0;
-    this.setReleaseCalls.length = 0;
     this.setOscMixCalls.length = 0;
     this.disposed = false;
     this.currentPreset = null;

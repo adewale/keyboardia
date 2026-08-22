@@ -34,6 +34,12 @@ import {
 import { MAX_TRACK_NAME_LENGTH } from './validation';
 import { isValidPan } from './validation';
 import { setTrackInstrument } from './track-instrument';
+import { clampTrackEnvelope, TRACK_GATE_RANGE } from './envelope';
+import {
+  convertTrackEnvelopeUnitsWithReportV2,
+  repairTrackEnvelopeV2,
+} from './envelope-contract-v2';
+import { applyEnvelopeLockDurationV2 } from './envelope-lock-v2';
 // Import runtime-neutral pattern operations (Phase 32: Sync fix)
 import {
   rotateLeft,
@@ -262,6 +268,88 @@ export function applyMutation(
           modulationIndex: clamp(message.fmParams.modulationIndex, 0, 20),
         },
       }));
+    }
+
+    case 'set_track_envelope': {
+      return updateTrackById(state, message.trackId, track => {
+        if (message.envelope === null) {
+          const next = { ...track };
+          delete next.envelope;
+          return next;
+        }
+        return { ...track, envelope: clampTrackEnvelope(message.envelope) };
+      });
+    }
+
+    case 'set_track_envelope_time_unit': {
+      return updateTrackField(state, message.trackId, 'envelopeTimeUnit', message.unit);
+    }
+
+    case 'set_track_gate': {
+      return updateTrackField(
+        state,
+        message.trackId,
+        'gate',
+        clamp(message.gate, TRACK_GATE_RANGE.min, TRACK_GATE_RANGE.max),
+      );
+    }
+
+    case 'set_track_envelope_v2': {
+      return updateTrackById(state, message.trackId, track => {
+        if (message.envelope === null) {
+          const next = { ...track };
+          delete next.envelopeV2;
+          return next;
+        }
+        const envelopeV2 = repairTrackEnvelopeV2(message.envelope);
+        return envelopeV2 ? { ...track, envelopeV2 } : track;
+      });
+    }
+
+    case 'convert_track_envelope_units_v2': {
+      return updateTrackById(state, message.trackId, track => track.envelopeV2
+        ? {
+            ...track,
+            envelopeV2: convertTrackEnvelopeUnitsWithReportV2(
+              track.envelopeV2,
+              message.targetUnit,
+              state.tempo,
+            ).envelope,
+          }
+        : track);
+    }
+
+    case 'set_track_sample_playback_mode_v2': {
+      return updateTrackById(state, message.trackId, track => {
+        if (message.mode === null) {
+          const next = { ...track };
+          delete next.samplePlaybackMode;
+          return next;
+        }
+        return { ...track, samplePlaybackMode: message.mode };
+      });
+    }
+
+    case 'set_track_gate_v2': {
+      return updateTrackField(
+        state,
+        message.trackId,
+        'gate',
+        clamp(message.gate, TRACK_GATE_RANGE.min, TRACK_GATE_RANGE.max),
+      );
+    }
+
+    case 'set_envelope_lock_v2': {
+      return updateTrackById(state, message.trackId, track => {
+        if (message.step < 0 || message.step >= track.parameterLocks.length) return track;
+        const parameterLocks = [...track.parameterLocks];
+        parameterLocks[message.step] = applyEnvelopeLockDurationV2(
+          parameterLocks[message.step],
+          message.stage,
+          message.duration,
+        );
+        return { ...track, parameterLocks };
+      });
     }
 
     case 'copy_sequence': {

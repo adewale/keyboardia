@@ -82,6 +82,63 @@ describe('validatedLoop', () => {
     expect(validatedLoop({ loop: true, loopStart: NaN })).toBeNull();
     expect(validatedLoop({ loop: true, loopEnd: Infinity })).toBeNull();
   });
+
+  it('prefers decoded-frame loops and validates them against the actual buffer', () => {
+    const sustainLoop = {
+      startFrame: 44_100,
+      endFrame: 176_400,
+      crossfadeFrames: 256,
+      direction: 'forward' as const,
+    };
+    expect(validatedLoop(
+      { loop: true, loopStart: 9, loopEnd: 10, sustainLoop },
+      { length: 220_500, sampleRate: 44_100 },
+    )).toEqual({ start: 1, end: 4, crossfadeFrames: 256, direction: 'forward' });
+    expect(validatedLoop(
+      { loop: true, sustainLoop: { ...sustainLoop, endFrame: 300_000 } },
+      { length: 220_500, sampleRate: 44_100 },
+    )).toBeNull();
+    expect(validatedLoop({ loop: true, sustainLoop })).toBeNull();
+  });
+
+  it('keeps authored loop time stable when decodeAudioData resamples 44.1k assets to 48k', () => {
+    expect(validatedLoop({
+      loop: true,
+      sustainLoop: {
+        startFrame: 44_100,
+        endFrame: 176_400,
+        crossfadeFrames: 441,
+        direction: 'forward',
+      },
+    }, {
+      length: 240_000,
+      sampleRate: 48_000,
+    }, 44_100)).toEqual({
+      start: 1,
+      end: 4,
+      crossfadeFrames: 480,
+      direction: 'forward',
+    });
+  });
+
+  it('requires explicit matching evidence for a zero-frame crossfade', () => {
+    const mapping = {
+      loop: true,
+      sustainLoop: {
+        startFrame: 1_000,
+        endFrame: 10_000,
+        crossfadeFrames: 0,
+        direction: 'forward' as const,
+      },
+    };
+    const decoded = { length: 20_000, sampleRate: 44_100 };
+    expect(validatedLoop(mapping, decoded, 44_100)).toBeNull();
+    expect(validatedLoop(mapping, decoded, 44_100, {
+      status: 'legacy-click-free-approved',
+      crossfadeFrames: 0,
+      note: 'Audited shipped loop.',
+    })).toEqual(expect.objectContaining({ crossfadeFrames: 0 }));
+  });
 });
 
 describe('dbToGain', () => {

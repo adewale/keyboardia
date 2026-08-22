@@ -45,6 +45,7 @@ const wsEvent: WsSessionEvent = {
   totalPlayTime_ms: 500,
   syncRequestCount: 0,
   syncErrorCount: 0,
+  stateRepairCount: 2,
   outcome: 'ok',
   disconnectReason: 'normal_close',
   ...commonContext,

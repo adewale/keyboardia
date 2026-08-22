@@ -138,6 +138,18 @@ describe('App session transition ownership', () => {
     view.unmount();
   });
 
+  it('copies canonical v2.4 notation through the shipped serializer', async () => {
+    const view = render(<SessionControls><div>content</div></SessionControls>);
+    const button = await screen.findByRole('button', { name: 'Copy Notation' });
+    await waitFor(() => expect(button.hasAttribute('disabled')).toBe(false));
+
+    fireEvent.click(button);
+
+    await waitFor(() => expect(mocks.copyToClipboard).toHaveBeenCalledWith(''));
+    await screen.findByRole('button', { name: 'Notation Copied!' });
+    view.unmount();
+  });
+
   it('invalidates a stale share completion when the session changes', async () => {
     const sharing = deferred<string>();
     mocks.share.mockReturnValueOnce(sharing.promise);

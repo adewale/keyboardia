@@ -31,6 +31,7 @@ import {
   evictAllDurableObjects,
 } from 'cloudflare:test';
 import { it, expect } from 'vitest';
+import { TRACK_ENVELOPE_CAPABILITIES } from '../../src/shared/message-types';
 
 interface Env {
   SESSIONS: KVNamespace;
@@ -74,8 +75,12 @@ async function connect(
   stub: DurableObjectStub,
   sessionId: string,
   playerId?: string,
+  capabilities?: readonly string[],
 ): Promise<WebSocket> {
-  const query = playerId ? `?playerId=${encodeURIComponent(playerId)}` : '';
+  const params = new URLSearchParams();
+  if (playerId) params.set('playerId', playerId);
+  if (capabilities) params.set('capabilities', capabilities.join(','));
+  const query = params.size > 0 ? `?${params.toString()}` : '';
   const res = await stub.fetch(`http://do/api/sessions/${sessionId}${query}`, {
     headers: { Upgrade: 'websocket' },
   });
@@ -85,6 +90,98 @@ async function connect(
   ws!.accept();
   return ws!;
 }
+
+it('replays a rejected v2 operation ID instead of applying it after state changes', async () => {
+  const sessionId = await createSessionWithTrack(60, 'idempotent-envelope-track');
+  const stub = stubFor(sessionId);
+  const ws = await connect(
+    stub,
+    sessionId,
+    'stable-envelope-player',
+    TRACK_ENVELOPE_CAPABILITIES,
+  );
+  const inbox = listen(ws);
+  await inbox.waitFor((message) => message.type === 'snapshot', 'snapshot');
+
+  ws.send(JSON.stringify({
+    type: 'convert_track_envelope_units_v2',
+    trackId: 'idempotent-envelope-track',
+    targetUnit: 'seconds',
+    operationId: 'rejected-conversion-1',
+    seq: 1,
+  }));
+  const first = await inbox.waitFor(
+    (message) => message.type === 'mutation_rejected',
+    'initial conversion rejection',
+  );
+  expect(first).toMatchObject({
+    operationId: 'rejected-conversion-1',
+    code: 'ENVELOPE_NOT_FOUND',
+  });
+
+  ws.send(JSON.stringify({
+    type: 'set_track_envelope_v2',
+    trackId: 'idempotent-envelope-track',
+    envelope: {
+      model: 'ar',
+      attack: { value: 48, unit: 'steps' },
+      release: { value: 96, unit: 'steps' },
+    },
+    operationId: 'set-envelope-1',
+    seq: 2,
+  }));
+  await inbox.waitFor(
+    (message) => message.type === 'track_envelope_v2_set',
+    'envelope acknowledgement',
+  );
+
+  ws.send(JSON.stringify({
+    type: 'convert_track_envelope_units_v2',
+    trackId: 'idempotent-envelope-track',
+    targetUnit: 'seconds',
+    operationId: 'rejected-conversion-1',
+    seq: 3,
+  }));
+  const replay = await inbox.waitFor(
+    (message) => message.type === 'mutation_rejected',
+    'replayed conversion rejection',
+  );
+  expect(replay).toMatchObject({
+    operationId: 'rejected-conversion-1',
+    code: 'ENVELOPE_NOT_FOUND',
+    clientSeq: 3,
+  });
+
+  await runInDurableObject(stub, async (instance: unknown) => {
+    const state = (instance as {
+      state: { tracks: Array<{ id: string; envelopeV2?: { attack: { unit: string } } }> } | null;
+    }).state;
+    expect(state?.tracks.find((track) => track.id === 'idempotent-envelope-track')
+      ?.envelopeV2?.attack.unit).toBe('steps');
+  });
+
+  ws.send(JSON.stringify({
+    type: 'convert_track_envelope_units_v2',
+    trackId: 'idempotent-envelope-track',
+    targetUnit: 'seconds',
+    operationId: 'fresh-conversion-1',
+    seq: 4,
+  }));
+  const converted = await inbox.waitFor(
+    (message) => message.type === 'track_envelope_units_v2_converted',
+    'fresh conversion acknowledgement',
+  );
+  expect(converted).toMatchObject({
+    clampedStages: ['attack', 'release'],
+    envelope: {
+      model: 'ar',
+      attack: { value: 4, unit: 'seconds' },
+      release: { value: 8, unit: 'seconds' },
+    },
+  });
+
+  ws.close(1000, 'test done');
+});
 
 interface ServerMsg {
   type: string;

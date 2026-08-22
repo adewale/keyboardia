@@ -7,6 +7,16 @@
 
 import type { SessionState, SessionTrack } from './types';
 import type { ParameterLock } from '../shared/sync-types';
+import { ENVELOPE_RANGES, TRACK_GATE_RANGE, clampTrackEnvelope, isTrackEnvelope } from '../shared/envelope';
+import {
+  ENVELOPE_DURATION_RANGES_V2,
+  isEnvelopeDuration,
+  isSamplePlaybackMode,
+  repairTrackEnvelopeV2,
+  validateTrackEnvelopeV2,
+  type EnvelopeDuration,
+  type EnvelopeStageName,
+} from '../shared/envelope-contract-v2';
 
 // Re-export all constants from canonical source (shared/constants.ts)
 // This maintains backwards compatibility for existing imports from worker/invariants.ts
@@ -123,8 +133,46 @@ export function validateParameterLock(lock: unknown): ParameterLock | null {
     // Invalid tie is silently dropped, preserving other valid fields
   }
 
+  for (const field of ['attack', 'decay', 'release'] as const) {
+    if (input[field] === undefined) continue;
+    const value = input[field];
+    const range = ENVELOPE_RANGES[field];
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      result[field] = clamp(value, range.min, range.max);
+      hasValidField = true;
+    }
+  }
+
+  const durationFields = [
+    ['attackDuration', 'attack'],
+    ['holdDuration', 'hold'],
+    ['decayDuration', 'decay'],
+    ['releaseDuration', 'release'],
+  ] as const satisfies readonly (readonly [keyof ParameterLock, EnvelopeStageName])[];
+  for (const [field, stage] of durationFields) {
+    if (input[field] === undefined) continue;
+    const value = input[field];
+    if (!isEnvelopeDuration(value)) continue;
+    const range = ENVELOPE_DURATION_RANGES_V2[stage][value.unit];
+    result[field] = {
+      value: clamp(value.value, range.min, range.max),
+      unit: value.unit,
+    } as EnvelopeDuration;
+    hasValidField = true;
+  }
+
   // Return null if no valid fields (empty lock)
   return hasValidField ? result : null;
+}
+
+function parameterLockMatchesNormalized(lock: unknown, normalized: ParameterLock | null): boolean {
+  if (lock === null) return normalized === null;
+  if (!lock || typeof lock !== 'object' || Array.isArray(lock) || !normalized) return false;
+  const input = lock as Record<string, unknown>;
+  const normalizedRecord = normalized as Record<string, unknown>;
+  const keys = Object.keys(input);
+  return keys.length === Object.keys(normalizedRecord).length
+    && keys.every((key) => JSON.stringify(input[key]) === JSON.stringify(normalizedRecord[key]));
 }
 
 /**
@@ -260,6 +308,14 @@ function checkTracksHaveValidArrays(tracks: SessionTrack[]): string[] {
       violations.push(`Track ${track.id}: parameterLocks is not an array`);
     } else if (track.parameterLocks.length !== MAX_STEPS) {
       violations.push(`Track ${track.id}: parameterLocks length ${track.parameterLocks.length} !== ${MAX_STEPS}`);
+    } else {
+      track.parameterLocks.forEach((lock, step) => {
+        if (lock === null) return;
+        const normalized = validateParameterLock(lock);
+        if (!parameterLockMatchesNormalized(lock, normalized)) {
+          violations.push(`Track ${track.id}: parameterLocks[${step}] is malformed or out of range`);
+        }
+      });
     }
   }
 
@@ -313,6 +369,43 @@ function checkPanWithinBounds(tracks: SessionTrack[]): string[] {
   return violations;
 }
 
+function checkEnvelopeWithinBounds(tracks: SessionTrack[]): string[] {
+  const violations: string[] = [];
+  for (const track of tracks) {
+    if (track.envelope !== undefined) {
+      if (!isTrackEnvelope(track.envelope)) {
+        violations.push(`Track ${track.id}: envelope is malformed`);
+      } else {
+        for (const field of ['attack', 'decay', 'sustain', 'release'] as const) {
+          const range = ENVELOPE_RANGES[field];
+          if (!isValidNumberInRange(track.envelope[field], range.min, range.max)) {
+            violations.push(`Track ${track.id}: envelope.${field} is outside valid range [${range.min}, ${range.max}]`);
+          }
+        }
+      }
+    }
+    if (track.envelopeTimeUnit !== undefined
+        && track.envelopeTimeUnit !== 'seconds'
+        && track.envelopeTimeUnit !== 'steps') {
+      violations.push(`Track ${track.id}: envelopeTimeUnit is invalid`);
+    }
+    if (track.envelopeV2 !== undefined) {
+      const validation = validateTrackEnvelopeV2(track.envelopeV2);
+      if (!validation.valid) {
+        violations.push(`Track ${track.id}: envelopeV2 is malformed (${validation.errors.join('; ')})`);
+      }
+    }
+    if (track.samplePlaybackMode !== undefined && !isSamplePlaybackMode(track.samplePlaybackMode)) {
+      violations.push(`Track ${track.id}: samplePlaybackMode is invalid`);
+    }
+    if (track.gate !== undefined
+        && !isValidNumberInRange(track.gate, TRACK_GATE_RANGE.min, TRACK_GATE_RANGE.max)) {
+      violations.push(`Track ${track.id}: gate is outside valid range [${TRACK_GATE_RANGE.min}, ${TRACK_GATE_RANGE.max}]`);
+    }
+  }
+  return violations;
+}
+
 function checkLoopRegionWithinBounds(loopRegion: unknown): string[] {
   if (loopRegion === undefined || loopRegion === null) return [];
   if (!loopRegion || typeof loopRegion !== 'object' || Array.isArray(loopRegion)) {
@@ -351,6 +444,7 @@ export function validateStateInvariants(state: SessionState): InvariantResult {
   violations.push(...checkStepCountWithinBounds(state.tracks));
   violations.push(...checkVolumeWithinBounds(state.tracks));
   violations.push(...checkPanWithinBounds(state.tracks));
+  violations.push(...checkEnvelopeWithinBounds(state.tracks));
   violations.push(...checkLoopRegionWithinBounds((state as { loopRegion?: unknown }).loopRegion));
 
   return {
@@ -475,8 +569,12 @@ export function repairStateInvariants(state: SessionState): {
       repairs.push(`Truncated steps array for track ${track.id}`);
     }
 
-    // Ensure parameterLocks array is correct length
-    if (track.parameterLocks.length < MAX_STEPS) {
+    // Ensure parameterLocks array is correct length before normalizing each
+    // entry. Stored state is untrusted even though SessionTrack is typed.
+    if (!Array.isArray(track.parameterLocks)) {
+      track.parameterLocks = Array(MAX_STEPS).fill(null);
+      repairs.push(`Replaced malformed parameterLocks for track ${track.id}`);
+    } else if (track.parameterLocks.length < MAX_STEPS) {
       const padding = Array(MAX_STEPS - track.parameterLocks.length).fill(null);
       track.parameterLocks = [...track.parameterLocks, ...padding];
       repairs.push(`Padded parameterLocks array for track ${track.id}`);
@@ -484,6 +582,13 @@ export function repairStateInvariants(state: SessionState): {
       track.parameterLocks = track.parameterLocks.slice(0, MAX_STEPS);
       repairs.push(`Truncated parameterLocks array for track ${track.id}`);
     }
+    track.parameterLocks = track.parameterLocks.map((lock, step) => {
+      const normalized = validateParameterLock(lock);
+      if (!parameterLockMatchesNormalized(lock, normalized)) {
+        repairs.push(`Normalized parameter lock ${step} for track ${track.id}`);
+      }
+      return normalized;
+    });
 
     // Clamp step count.
     //
@@ -541,6 +646,51 @@ export function repairStateInvariants(state: SessionState): {
     } else if (track.pan! > MAX_PAN) {
       repairs.push(`Clamped pan from ${track.pan} to ${MAX_PAN} for track ${track.id}`);
       track.pan = MAX_PAN;
+    }
+
+    if (track.envelope !== undefined) {
+      if (isTrackEnvelope(track.envelope)) {
+        const normalized = clampTrackEnvelope(track.envelope);
+        if (JSON.stringify(normalized) !== JSON.stringify(track.envelope)) {
+          track.envelope = normalized;
+          repairs.push(`Clamped envelope for track ${track.id}`);
+        }
+      } else {
+        delete track.envelope;
+        repairs.push(`Cleared malformed envelope for track ${track.id}`);
+      }
+    }
+    if (track.envelopeTimeUnit !== undefined
+        && track.envelopeTimeUnit !== 'seconds'
+        && track.envelopeTimeUnit !== 'steps') {
+      delete track.envelopeTimeUnit;
+      repairs.push(`Reset invalid envelope time unit for track ${track.id}`);
+    }
+    if (track.envelopeV2 !== undefined) {
+      const normalized = repairTrackEnvelopeV2(track.envelopeV2);
+      if (!normalized) {
+        delete track.envelopeV2;
+        repairs.push(`Cleared malformed envelopeV2 for track ${track.id}`);
+      } else if (JSON.stringify(normalized) !== JSON.stringify(track.envelopeV2)) {
+        track.envelopeV2 = normalized;
+        repairs.push(`Normalized envelopeV2 for track ${track.id}`);
+      }
+    }
+    if (track.samplePlaybackMode !== undefined && !isSamplePlaybackMode(track.samplePlaybackMode)) {
+      delete track.samplePlaybackMode;
+      repairs.push(`Cleared malformed sample playback mode for track ${track.id}`);
+    }
+    if (track.gate !== undefined) {
+      if (!Number.isFinite(track.gate)) {
+        delete track.gate;
+        repairs.push(`Cleared malformed gate for track ${track.id}`);
+      } else {
+        const gate = clamp(track.gate, TRACK_GATE_RANGE.min, TRACK_GATE_RANGE.max);
+        if (gate !== track.gate) {
+          track.gate = gate;
+          repairs.push(`Clamped gate for track ${track.id}`);
+        }
+      }
     }
   }
 

@@ -570,7 +570,7 @@ describe('stateless MCP endpoint', () => {
       arguments: { session_id: SESSION_ID },
     });
 
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       session_id: SESSION_ID,
       immutable: false,
       tempo: 124,
@@ -581,7 +581,19 @@ describe('stateless MCP endpoint', () => {
         pan: 0,
         step_count: 16,
         active_steps: [0, 4, 8, 12],
+        envelope: { attack: .003, decay: 0, sustain: 1, release: .1 },
+        envelope_override: false,
+        envelope_time_unit: 'seconds',
+        gate: 90,
       }],
+    });
+    const readTrack = (result.structuredContent as { tracks: Array<Record<string, unknown>> }).tracks[0]!;
+    expect(readTrack).toMatchObject({
+      authored_envelope: null,
+      effective_envelope: { model: 'ahd' },
+      sample_playback_mode: 'trigger',
+      envelope_active: true,
+      ignored_envelope_stages: [],
     });
   });
 

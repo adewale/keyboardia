@@ -10,9 +10,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const playNote = vi.fn();
+const playVoice = vi.fn();
 const fakeInstrument = {
   isReady: () => true,
   playNote: (...args: unknown[]) => playNote(...args),
+};
+const managedInstrument = {
+  isReady: () => true,
+  playNote: vi.fn(),
+  playVoice: (...args: unknown[]) => playVoice(...args),
 };
 
 vi.mock('./sampled-instrument', async (importOriginal) => {
@@ -20,7 +26,11 @@ vi.mock('./sampled-instrument', async (importOriginal) => {
   return {
     ...original,
     sampledInstrumentRegistry: {
-      get: (id: string) => (id === 'piano' ? fakeInstrument : undefined),
+      get: (id: string) => id === 'piano'
+        ? fakeInstrument
+        : id === 'managed'
+          ? managedInstrument
+          : undefined,
       register: vi.fn(),
       initialize: vi.fn(),
       load: vi.fn(),
@@ -28,8 +38,8 @@ vi.mock('./sampled-instrument', async (importOriginal) => {
       onStateChange: vi.fn(),
       acquireInstrumentSamples: vi.fn(),
       releaseInstrumentSamples: vi.fn(),
-      getInstrumentIds: () => ['piano'],
-      has: (id: string) => id === 'piano',
+      getInstrumentIds: () => ['piano', 'managed'],
+      has: (id: string) => id === 'piano' || id === 'managed',
       dispose: vi.fn(),
     },
   };
@@ -39,6 +49,7 @@ import { audioEngine } from './engine';
 
 beforeEach(() => {
   playNote.mockClear();
+  playVoice.mockClear();
 });
 
 describe('playSampledInstrument pass-through', () => {
@@ -60,5 +71,30 @@ describe('playSampledInstrument pass-through', () => {
     audioEngine.playSampledInstrument('piano', 'n1', 60, 0, 0.5, 0.8);
     const velocity = playNote.mock.calls[0][5];
     expect(velocity).toBe(127);
+  });
+
+  it('forwards explicit playback semantics to the production managed-voice API', () => {
+    audioEngine.playSampledInstrument(
+      'managed',
+      'voice-1',
+      60,
+      3.25,
+      0.5,
+      0.8,
+      undefined,
+      90,
+      undefined,
+      'loop',
+    );
+    expect(playVoice).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'voice-1',
+      midiNote: 60,
+      time: 3.25,
+      duration: 0.5,
+      volume: 0.8,
+      velocity: 90,
+      mode: 'loop',
+    }));
+    expect(managedInstrument.playNote).not.toHaveBeenCalled();
   });
 });

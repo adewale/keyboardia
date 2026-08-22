@@ -14,6 +14,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 vi.mock('./engine', () => ({
   audioEngine: {
     isInitialized: () => true,
+    getAudibleOutputLatencySeconds: (sampleId: string, pitch: number) =>
+      !sampleId.includes(':') && Math.abs(pitch) > 6 ? 1024 / 48_000 : 0,
   },
 }));
 
@@ -88,5 +90,55 @@ describe('SchedulerWorkletHost — multiplayer start', () => {
     expect(msg.multiplayer).toBe(true);
     expect(msg.initialStep).toBe(0);
     expect(msg.initialNextStepTime).toBe(100.0);
+  });
+
+  it('serializes canonical v2 mode, envelope, and typed locks without reading deprecated playbackMode', () => {
+    const state = makeBlankState();
+    state.tracks = [{
+      id: 'sample-v2',
+      name: 'sample-v2',
+      sampleId: 'sampled:hammond-organ',
+      steps: [true],
+      parameterLocks: [{
+        attackDuration: { value: 0, unit: 'seconds' },
+        releaseDuration: { value: 2, unit: 'steps' },
+      }],
+      volume: 1,
+      muted: false,
+      soloed: false,
+      transpose: 0,
+      stepCount: 16,
+      samplePlaybackMode: 'loop',
+      envelopeV2: {
+        model: 'adsr',
+        attack: { value: 1, unit: 'steps' },
+        decay: { value: 0.1, unit: 'seconds' },
+        sustain: 0.5,
+        release: { value: 3, unit: 'steps' },
+      },
+    }];
+
+    host.start(() => state);
+    const serialized = postMessage.mock.calls[0][0].state.tracks[0];
+    expect(serialized.samplePlaybackMode).toBe('loop');
+    expect(serialized).not.toHaveProperty('playbackMode');
+    expect(serialized.envelopeV2).toEqual(state.tracks[0].envelopeV2);
+    expect(serialized.parameterLocks[0]).toMatchObject({
+      attackDuration: { value: 0, unit: 'seconds' },
+      releaseDuration: { value: 2, unit: 'steps' },
+    });
+    expect(serialized.largePitchShiftLatencySeconds).toBe(0);
+  });
+
+  it('serializes the simple-sample pitch pipeline latency for worklet parity', () => {
+    const state = makeBlankState();
+    state.tracks = [{
+      id: 'plain-sample', name: 'plain-sample', sampleId: '808-kick',
+      steps: [true], parameterLocks: [{ pitch: 7 }], volume: 1,
+      muted: false, soloed: false, transpose: 0, stepCount: 16,
+    }];
+    host.start(() => state);
+    expect(postMessage.mock.calls[0][0].state.tracks[0].largePitchShiftLatencySeconds)
+      .toBeCloseTo(1024 / 48_000, 10);
   });
 });

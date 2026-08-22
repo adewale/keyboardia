@@ -80,6 +80,28 @@ function createMockAction(type: string): GridAction {
       return { type: 'SET_EFFECTS', effects: mockEffects };
     case 'SET_FM_PARAMS':
       return { type: 'SET_FM_PARAMS', trackId: 'test-track-1', fmParams: mockFMParams };
+    case 'SET_TRACK_ENVELOPE':
+      return { type: 'SET_TRACK_ENVELOPE', trackId: 'test-track-1', envelope: { attack: .1, decay: .2, sustain: .7, release: .4 } };
+    case 'SET_TRACK_ENVELOPE_TIME_UNIT':
+      return { type: 'SET_TRACK_ENVELOPE_TIME_UNIT', trackId: 'test-track-1', unit: 'steps' };
+    case 'SET_TRACK_GATE':
+      return { type: 'SET_TRACK_GATE', trackId: 'test-track-1', gate: 75 };
+    case 'SET_TRACK_ENVELOPE_V2':
+      return {
+        type: 'SET_TRACK_ENVELOPE_V2', trackId: 'test-track-1', operationId: 'operation-1',
+        envelope: { model: 'ad', attack: { value: .1, unit: 'seconds' }, decay: { value: 2, unit: 'steps' } },
+      };
+    case 'CONVERT_TRACK_ENVELOPE_UNITS_V2':
+      return { type: 'CONVERT_TRACK_ENVELOPE_UNITS_V2', trackId: 'test-track-1', targetUnit: 'steps', operationId: 'operation-2' };
+    case 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2':
+      return { type: 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2', trackId: 'test-track-1', mode: 'loop', operationId: 'operation-3' };
+    case 'SET_TRACK_GATE_V2':
+      return { type: 'SET_TRACK_GATE_V2', trackId: 'test-track-1', gate: 60, operationId: 'operation-4' };
+    case 'SET_ENVELOPE_LOCK_V2':
+      return {
+        type: 'SET_ENVELOPE_LOCK_V2', trackId: 'test-track-1', step: 1, stage: 'release',
+        duration: { value: 3, unit: 'steps' }, operationId: 'operation-5',
+      };
     case 'COPY_SEQUENCE':
       return { type: 'COPY_SEQUENCE', fromTrackId: 'test-track-1', toTrackId: 'test-track-2' };
     case 'MOVE_SEQUENCE':
@@ -110,6 +132,8 @@ function createMockAction(type: string): GridAction {
       return { type: 'REMOTE_SOLO_SET', trackId: 'test-track-1', soloed: true };
     case 'SET_TRACK_STEPS':
       return { type: 'SET_TRACK_STEPS', trackId: 'test-track-1', steps: [true, false], parameterLocks: [null, null], stepCount: 16 };
+    case 'REPLACE_TRACK_AUTHORITATIVE':
+      return { type: 'REPLACE_TRACK_AUTHORITATIVE', track: mockTrack };
     case 'SET_TRACK_SWING':
       return { type: 'SET_TRACK_SWING', trackId: 'test-track-1', swing: 25 };
     case 'SET_TRACK_NAME':

@@ -1,6 +1,8 @@
 # MIDI Export Specification
 
-Export Keyboardia sessions as Standard MIDI Files for use in DAWs and other music software.
+Export a portable performance rendition of Keyboardia sessions as Standard
+MIDI Files for use in DAWs and other music software. MIDI is not the canonical
+project or an exact-sound export.
 
 ---
 
@@ -59,13 +61,22 @@ We use 128 ticks per quarter note because it's the default resolution used by th
 
 ---
 
-## Core Principle: What You Hear Is What You Export
+## Core Principle: Preserve the Existing Performance Skeleton
 
-**MIDI export MUST produce the same audible result as session playback.**
+**MIDI export MUST preserve the current encoder's defined performance subset.
+It MUST NOT promise the same sound as session playback.**
 
-This is the fundamental requirement. If a track plays during real-time playback, it appears in the exported MIDI. If a track is silent during playback, it is omitted from the export.
+Track inclusion still matches playback: if a track participates in real-time
+playback, its representable notes appear in the MIDI; if it is silent because
+of mute/solo selection, it is omitted. That is **selection parity**, not audio
+parity. The receiving DAW chooses the instrument, envelope, effects, sample
+loops, release behavior, polyphony, and voice-stealing policy.
 
-This ensures users experience no surprises when opening their exported MIDI in a DAW.
+Existing tie-derived note duration remains. New envelope models/values, mixed
+units, gate percentages, envelope locks, playback modes, loop/release assets,
+and effects are deliberately omitted in v2 and listed in
+`docs/MIDI-MAPPINGS.md`. The exporter does not invent CC72/73/75 as portable
+ADSR.
 
 One explicit exception is stereo pan. Keyboardia stores pan as a continuous
 audio-mix control, but the current SMF export does not emit MIDI CC 10. Exported
@@ -113,7 +124,7 @@ const shouldExport = anySoloed ? track.soloed : !track.muted;
 if (!shouldExport) continue;
 ```
 
-### Behavioral Parity Test Matrix
+### Track-Selection Parity Test Matrix
 
 These test cases verify MIDI export matches real-time playback:
 
@@ -225,10 +236,9 @@ function stepToTicks(step: number, swing: number): number {
 ### Note Duration and Note-Off Timing
 
 ```typescript
-// One-shot mode: note plays for one step minus 1 tick
-const NOTE_DURATION_TICKS = TICKS_PER_STEP - 1;  // 31 ticks
-
-// Gate mode (future): duration = number of consecutive steps
+// Current behavior: one sounding step, extended across existing ties,
+// minus one tick before the following attack boundary.
+const durationTicks = tiedStepCount * TICKS_PER_STEP - 1;
 ```
 
 **Why minus 1 tick?**
@@ -243,6 +253,9 @@ Note-on:  tick 0
 Note-off: tick 31
 Next note-on: tick 32  ✅ No conflict
 ```
+
+Existing ties continue to extend note duration exactly as implemented. The new
+v2 gate percentage and envelope stages do not change MIDI note duration.
 
 ---
 
@@ -285,54 +298,14 @@ const microsecondsPerQuarter = Math.round(60_000_000 / bpm);
 
 ---
 
-## UI Design
+## Export UI
 
-### Principle: No New Clutter
-
-MIDI export should not add buttons, dropdowns, or modals. One click, one outcome.
-
-### MVP: Download Icon
-
-Add a download icon (↓) to the header. One click downloads MIDI.
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  KEYBOARDIA                      [Invite] [Send Copy] [↓]   │
-└─────────────────────────────────────────────────────────────┘
-                                                         ↑
-                                                   Downloads .mid
-```
-
-- **No dropdown menu**
-- **No format selection**
-- **No options modal**
-- Tooltip: "Download MIDI"
-
-### Behavior
-
-| Action | Result |
-|--------|--------|
-| Click ↓ | Downloads `{session-name}.mid` immediately |
-| Empty session | Downloads valid empty MIDI file |
-| All tracks muted | Downloads MIDI with tempo only |
-| Some tracks soloed | Downloads only soloed tracks |
-
-### Future: Multiple Export Formats
-
-When audio export is added, move downloads into the "Send Copy" modal:
-
-```
-┌─────────────────────────┐
-│  Share this session     │
-│                         │
-│  [Copy Link]            │
-│  [Download MIDI]        │
-│  [Download Audio]       │
-│                         │
-└─────────────────────────┘
-```
-
-This keeps the header clean and groups "take this elsewhere" actions together.
+Keep the existing download icon and one-click behavior. Clicking it downloads
+`{session-name}.mid`; there is no format chooser, options modal, preflight, or
+new export product in v2. The tooltip/help calls it “Download MIDI — notes and
+timing; sound may change.” An empty session still produces a valid file,
+all-muted produces tempo only, and solo filtering stays identical to the
+scheduler.
 
 ### What Gets Exported
 
@@ -580,17 +553,11 @@ describe('MIDI Export: Preset Coverage', () => {
 
 ## DAW Compatibility
 
-### Known Issues by DAW
-
-| DAW | Notes |
-|-----|-------|
-| **Ableton Live** | Program changes only apply to whole clips. May need to disable GM drum map for correct note mapping. Does not export tempo changes (import only). |
-| **Logic Pro** | Full compatibility. Uses 960 PPQN internally (converts automatically). |
-| **FL Studio** | Full compatibility. Default 96 PPQN may cause slight quantization on import. |
-| **GarageBand** | Limited MIDI import. Cannot export MIDI with program changes. |
-| **Cubase** | Full compatibility. Known bug in v12 where program changes may be missing from exports. |
-| **Reaper** | Full compatibility. |
-| **BandLab** | Browser-based, limited testing. Basic import works. |
+SMF Type 1 is broadly readable, but opening a file is not evidence of sound
+fidelity. Compatibility evidence MUST name the tested DAW/version/date and
+separately record structure, tempo, note timing, channel/drum mapping, program
+hints, and the user's need to choose a receiver instrument. Avoid timeless
+claims such as “full compatibility.”
 
 ### Channel 10 Drum Quirks
 
@@ -600,20 +567,19 @@ describe('MIDI Export: Preset Coverage', () => {
 
 ### Import Testing Checklist
 
-Before release, import exported MIDI into at least 3 DAWs:
-1. Ableton Live (industry standard)
-2. Logic Pro or FL Studio (popular alternatives)
-3. GarageBand (lowest common denominator)
-
-If all three accept and play the file correctly, structure is sound.
+Before release, import the fixed MIDI fixture in Ableton Live and at least two
+of Logic Pro, FL Studio, Cubase, or GarageBand. This manual matrix is a T3
+release gate, not per-PR CI. Passing means the event structure is usable in the
+recorded versions; it does not mean the target reproduces Keyboardia's sound.
 
 ---
 
 ## Validation
 
-### Behavioral Parity Tests
+### Track-Selection Parity Tests
 
-Tests verify the core principle: "What you hear is what you export."
+Tests verify that the notes selected for export match the scheduler's
+mute/solo track selection. They do not assert audio or timbre parity.
 
 ```typescript
 describe('MIDI Export: Behavioral Parity', () => {
@@ -642,9 +608,10 @@ describe('MIDI Export: Behavioral Parity', () => {
 });
 ```
 
-### Fidelity Tests
+### MIDI Encoding Contract Tests
 
-The behavioral parity tests above verify track selection logic. We also have comprehensive **fidelity tests** that parse the actual MIDI output and verify:
+The selection tests above verify track filtering. Encoding contract tests parse
+the actual MIDI output and verify:
 
 | Category | What's Verified |
 |----------|----------------|
@@ -750,12 +717,12 @@ The midi-writer-js library handles track/header structure correctly. If corrupti
 
 | Criterion | Status | Notes |
 |-----------|--------|-------|
-| Exported MIDI plays correctly in Ableton Live | ⚠️ Untested | Manual testing required |
+| Exported MIDI structure imports correctly in named DAW versions | ⚠️ Untested | T3 manual matrix; not an audio-fidelity claim |
 | Tempo matches Keyboardia session | ✅ Verified | Fidelity tests parse tempo meta event |
-| Note pitches match (including transpose + p-locks) | ✅ Verified | 34 fidelity tests verify all pitch scenarios |
+| Note pitches match (including transpose + p-locks) | ✅ Verified | 34 encoding tests verify all pitch scenarios |
 | Note timing correct (tick positions, swing) | ✅ Verified | Fidelity tests verify absolute tick positions |
 | Velocities reflect volume p-locks | ✅ Verified | Fidelity tests verify MIDI velocity values |
-| Swing timing is audible | ✅ Verified | Fidelity tests verify swing tick offsets |
+| Swing tick offsets are correct | ✅ Verified | Encoding tests verify absolute tick offsets; the receiver chooses its sound |
 | Drums appear on channel 10 | ✅ Verified | Fidelity tests check channel assignment |
 | Synths have correct GM programs | ✅ Verified | Fidelity tests verify 0-indexed program numbers |
 | Polyrhythms expand correctly | ✅ Verified | Fidelity tests verify LCM calculation |
@@ -812,17 +779,15 @@ When effects are enabled, Tone.js nodes (distortion, chorus, delay, reverb, limi
 Effects latency would only matter if Keyboardia supported:
 - Live MIDI output to external hardware (not implemented)
 - Synchronization with external DAWs (not implemented)
-- Audio recording/bounce to WAV (not implemented)
+- Audio recording/bounce to WAV (not in ADSR v2)
 
 For MIDI export, the file correctly represents the musical intent without any latency artifacts.
 
-### Future Consideration: Audio Export
+### Deferred audio-export note
 
-If Keyboardia adds audio export (bounce to WAV), the effects chain latency will need to be accounted for:
-- Either: Start recording slightly before playback and trim the beginning
-- Or: Apply latency compensation offset to align audio with MIDI
-
-This is a known consideration for Phase 25+ features.
+If audio export is separately funded later, it will need declared pre-roll,
+common frame zero, latency compensation, tail policy, and live/offline PCM
+evidence. It is not part of the ADSR v2 plan.
 
 ---
 
@@ -833,6 +798,7 @@ This is a known consideration for Phase 25+ features.
 | Document | Section | Relevance |
 |----------|---------|-----------|
 | This spec | Track Selection Logic | Defines which tracks to export |
+| `docs/MIDI-MAPPINGS.md` | MIDI Is an Interchange Export | User-facing mapping and limitation contract |
 
 ### Informative References (Implementation guidance)
 
@@ -848,19 +814,23 @@ This is a known consideration for Phase 25+ features.
 When modifying track selection behavior (mute, solo), update:
 - Audio scheduler (source of truth)
 - MIDI export (this spec)
-- Future: Audio export
 
 ---
 
 ## Future Enhancements
 
+These are separately scoped future ideas, not ADSR v2 requirements.
+
 | Feature | Description | Considerations |
 |---------|-------------|----------------|
 | **MIDI Import** | Drag MIDI file onto Keyboardia | Quantize to 16th-note grid. Convert PPQN (480→128 divide by 3.75, 960→128 divide by 7.5). Parameter locks lost except velocity→volume. |
-| **CC Export** | Filter cutoff as CC messages | CC#74 (brightness) or CC#1 (mod wheel) |
+| **Target-specific MIDI profile** | Named receiver adapter for tested CC/NRPN mappings | Never the portable default; needs receiver/version compatibility and explicit limitation docs |
 | **Clip Export** | Export individual clips | Useful for loop-based DAW workflows |
 | **Direct DAW Send** | Ableton Link / MIDI over WebSocket | Requires Web MIDI API (not supported in Safari) |
-| **Audio Export** | Bounce to WAV | Requires latency compensation |
+| **Keyboardia project** | Versioned `.keyboardia` package | Deferred; canonical state plus compact/self-contained assets |
+| **Audio Export** | Wet mix and aligned stems | Deferred; requires deterministic offline PCM and latency/tail gates |
+| **DAWproject** | Hybrid notes/audio/common automation | Deferred; would require schema validation and independent DAW imports |
+| **Keyboardia plug-in** | Shared VST3/CLAP/AU renderer | Post-v2 route to exact editable sound; high native toolchain/host QA cost |
 
 ### MIDI Import Considerations (Future)
 
@@ -895,6 +865,7 @@ When importing MIDI files into Keyboardia:
 
 | Date | Change |
 |------|--------|
+| 2026-08-03 | Corrected the false audible-parity promise; retained the existing simple one-click MIDI UI and deferred richer export formats |
 | Phase 27 | Initial implementation |
 | Phase 27.1 | Added Track Selection Logic section, behavioral parity tests, solo mode support |
 | Phase 27.2 | Fixed spec inconsistencies: updated line references to use code markers, completed synth preset table (17 mappings), added DAW compatibility section, added note range validation requirement, marked success criteria verification status, added MIDI import considerations, improved technical explanations for PPQN choice and note-off timing |

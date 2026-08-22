@@ -18,6 +18,8 @@ import { semitoneToFrequency } from './constants';
 import { getSourceCalibration } from './source-calibration';
 import type { WaveformType, LFODestination } from './synth-types';
 import { SYNTH_CONSTANTS } from './synth-types';
+import type { ResolvedEnvelopeV2 } from '../shared/envelope-contract-v2';
+import { RELEASE_TAIL_GUARD_SEC } from './note-schedule';
 
 // Re-export for backwards compatibility
 export { semitoneToFrequency };
@@ -738,7 +740,6 @@ export class SynthEngine {
   private masterGain: GainNode | null = null;
   private activeVoices: Map<string, SynthVoice> = new Map();
   private voiceOrder: string[] = []; // Track order for voice stealing
-  private pendingCleanups: Set<ReturnType<typeof setTimeout>> = new Set();
 
   initialize(audioContext: AudioContext, masterGain: GainNode): void {
     this.audioContext = audioContext;
@@ -766,6 +767,7 @@ export class SynthEngine {
     volume: number = 1,
     destination?: GainNode,
     midiVelocity: number = 90,
+    canonicalEnvelope?: ResolvedEnvelopeV2,
   ): void {
     // DEBUG: Log entry to verify method is being called
     logger.audio.log(`SynthEngine.playNote: noteId=${noteId}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, duration=${duration}, vol=${volume}`);
@@ -797,19 +799,18 @@ export class SynthEngine {
 
     // Phase 25: Use provided destination or fall back to masterGain
     const outputNode = destination ?? this.masterGain;
-    const voice = new SynthVoice(this.audioContext, outputNode, params);
+    const voice = new SynthVoice(this.audioContext, outputNode, params, () => {
+      // A note ID can be reused before an older oscillator ends. Never let the
+      // old onended event evict the replacement voice.
+      if (this.activeVoices.get(noteId) !== voice) return;
+      this.activeVoices.delete(noteId);
+      this.voiceOrder = this.voiceOrder.filter(id => id !== noteId);
+    }, canonicalEnvelope);
     voice.start(frequency, time, volume, midiVelocity);
     logger.audio.log(`SynthEngine voice created and started: noteId=${noteId}, preset=${params.waveform}, vol=${volume}, activeVoices=${this.activeVoices.size + 1}`);
 
     if (duration !== undefined) {
       voice.stop(time + duration);
-      // Clean up after release (tracked for stopAll cleanup)
-      const cleanupTimer = setTimeout(() => {
-        this.pendingCleanups.delete(cleanupTimer);
-        this.activeVoices.delete(noteId);
-        this.voiceOrder = this.voiceOrder.filter(id => id !== noteId);
-      }, (time - this.audioContext.currentTime + duration + params.release) * 1000 + 100);
-      this.pendingCleanups.add(cleanupTimer);
     }
 
     this.activeVoices.set(noteId, voice);
@@ -836,17 +837,10 @@ export class SynthEngine {
     if (!this.audioContext) return;
     const now = this.audioContext.currentTime;
     for (const voice of this.activeVoices.values()) {
-      // Cancel any pending cleanup timer before stopping
-      voice.cancelPendingCleanup();
       voice.stop(now);
     }
     this.activeVoices.clear();
     this.voiceOrder = [];
-    // Clear pending cleanup timers to prevent stale state after stop
-    for (const timer of this.pendingCleanups) {
-      clearTimeout(timer);
-    }
-    this.pendingCleanups.clear();
   }
 }
 
@@ -860,10 +854,13 @@ class SynthVoice {
   private audioContext: AudioContext;
   private params: SynthParams;
   private isCleanedUp: boolean = false;
-  private cleanupTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private noteStartTime = 0;
   private envelopePeak: number = MIN_GAIN_VALUE;
   private activeFilterCutoff: number;
+  private readonly onEnded: () => void;
+  private readonly canonicalEnvelope?: ResolvedEnvelopeV2;
+  private canonicalStartTime = 0;
+  private canonicalPeak: number = MIN_GAIN_VALUE;
 
   // Core nodes (always present)
   private oscillator1: OscillatorNode;
@@ -882,11 +879,15 @@ class SynthVoice {
   constructor(
     audioContext: AudioContext,
     destination: AudioNode,
-    params: SynthParams
+    params: SynthParams,
+    onEnded: () => void,
+    canonicalEnvelope?: ResolvedEnvelopeV2,
   ) {
     this.params = params;
     this.audioContext = audioContext;
     this.activeFilterCutoff = params.filterCutoff;
+    this.onEnded = onEnded;
+    this.canonicalEnvelope = canonicalEnvelope;
 
     // Create main filter (shared by all oscillators)
     this.filter = audioContext.createBiquadFilter();
@@ -901,6 +902,10 @@ class SynthVoice {
     // Create oscillator 1
     this.oscillator1 = audioContext.createOscillator();
     this.oscillator1.type = params.waveform;
+    this.oscillator1.onended = () => {
+      this.cleanup();
+      this.onEnded();
+    };
 
     // Check if we need dual oscillator
     if (params.osc2) {
@@ -1031,20 +1036,38 @@ class SynthVoice {
     // Using exponential ramps for natural sound (human hearing is logarithmic)
     // Volume P-lock scales the envelope peak and sustain levels
 
-    // Attack phase (peak scaled by volume)
+    // Attack phase (peak scaled by volume). Presets retain their characterized
+    // renderer until migration; authored v2 curves use the normative linear
+    // evaluator immediately.
     const scaledPeak = this.envelopePeak;
-    this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
-    this.gainNode.gain.exponentialRampToValueAtTime(
-      scaledPeak,
-      time + Math.max(this.params.attack, 0.001)
-    );
+    if (this.canonicalEnvelope?.model === 'adsr') {
+      const attack = Math.max(0, this.canonicalEnvelope.attackSeconds);
+      const decay = Math.max(0, this.canonicalEnvelope.decaySeconds ?? 0);
+      const sustainLevel = Math.max(
+        scaledPeak * Math.min(1, Math.max(0, this.canonicalEnvelope.sustain ?? 1)),
+        MIN_GAIN_VALUE,
+      );
+      this.canonicalStartTime = time;
+      this.canonicalPeak = scaledPeak;
+      this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
+      if (attack === 0) this.gainNode.gain.setValueAtTime(scaledPeak, time);
+      else this.gainNode.gain.linearRampToValueAtTime(scaledPeak, time + attack);
+      if (decay === 0) this.gainNode.gain.setValueAtTime(sustainLevel, time + attack);
+      else this.gainNode.gain.linearRampToValueAtTime(sustainLevel, time + attack + decay);
+    } else {
+      this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
+      this.gainNode.gain.exponentialRampToValueAtTime(
+        scaledPeak,
+        time + Math.max(this.params.attack, 0.001)
+      );
 
-    // Decay to sustain (sustain also scaled by volume)
-    const sustainLevel = Math.max(scaledPeak * this.params.sustain, MIN_GAIN_VALUE);
-    this.gainNode.gain.exponentialRampToValueAtTime(
-      sustainLevel,
-      time + this.params.attack + this.params.decay
-    );
+      // Decay to sustain (sustain also scaled by volume)
+      const sustainLevel = Math.max(scaledPeak * this.params.sustain, MIN_GAIN_VALUE);
+      this.gainNode.gain.exponentialRampToValueAtTime(
+        sustainLevel,
+        time + this.params.attack + this.params.decay
+      );
+    }
 
     // === Filter Envelope (if configured) ===
     if (this.params.filterEnv) {
@@ -1156,33 +1179,34 @@ class SynthVoice {
     if (typeof hold === 'function') {
       try {
         hold.call(param, time);
-        // Replace the hold marker with an explicit, analytically equivalent
-        // event. This avoids tiny implementation drift and works around Web
-        // Audio implementations whose hold marker does not compose with a
-        // following setTargetAtTime(), while retaining the held prefix.
+        // Make the held future value explicit before scheduling release. This
+        // composes consistently in browsers and lightweight offline contexts.
         param.cancelScheduledValues(time);
         param.setValueAtTime(envelopeValue, time);
         return;
       } catch {
-        // Fall through to the analytical implementation.
+        // Fall through for older/lightweight Web Audio implementations.
       }
     }
-
     param.cancelScheduledValues(time);
-    if (time > this.noteStartTime) {
-      // cancelScheduledValues removes a ramp whose endpoint lies after note-off.
-      // Recreate only the audible prefix, ending at the analytically exact ADSR
-      // value, so attack/decay still evolve before release begins.
-      param.exponentialRampToValueAtTime(envelopeValue, time);
-    } else {
-      param.setValueAtTime(envelopeValue, time);
-    }
+    if (time > this.noteStartTime) param.exponentialRampToValueAtTime(envelopeValue, time);
+    else param.setValueAtTime(envelopeValue, time);
   }
 
   stop(time: number): void {
-    // Hold the value the scheduled ADSR will actually have at note-off. Reading
-    // AudioParam.value here returns its present intrinsic value, not its future
-    // automated value, and previously collapsed every release to near-silence.
+    if (this.canonicalEnvelope?.model === 'adsr') {
+      const release = Math.max(0, this.canonicalEnvelope.releaseSeconds ?? 0);
+      const heldValue = this.canonicalAmplitudeAt(time);
+      this.gainNode.gain.cancelScheduledValues(time);
+      this.gainNode.gain.setValueAtTime(heldValue, time);
+      if (release === 0) this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
+      else this.gainNode.gain.exponentialRampToValueAtTime(MIN_GAIN_VALUE, time + release);
+      const stopTime = time + release + RELEASE_TAIL_GUARD_SEC;
+      this.oscillator1.stop(stopTime);
+      this.oscillator2?.stop(stopTime);
+      this.lfoOscillator?.stop(stopTime);
+      return;
+    }
     this.holdAtTime(this.gainNode.gain, time, this.amplitudeAt(time));
     if (this.params.release > 0) {
       this.gainNode.gain.setTargetAtTime(MIN_GAIN_VALUE, time, this.params.release / 4);
@@ -1204,7 +1228,10 @@ class SynthVoice {
       }
     }
 
-    const stopTime = time + this.params.release + 0.05;
+    // Native release uses setTargetAtTime(release / 4). Stopping after 1.5×
+    // the authored release leaves ~0.25% of the held amplitude and documents a
+    // stable, bounded tail convention instead of the previous +50ms truncation.
+    const stopTime = time + (this.params.release > 0 ? this.params.release * 1.5 : 0.001);
 
     // Stop all oscillators
     this.oscillator1.stop(stopTime);
@@ -1215,23 +1242,26 @@ class SynthVoice {
       this.lfoOscillator.stop(stopTime);
     }
 
-    // Schedule cleanup - track the timer so it can be cancelled
-    const cleanupDelay = (stopTime - this.audioContext.currentTime) * 1000 + 50;
-    this.cleanupTimeoutId = setTimeout(() => {
-      this.cleanupTimeoutId = null;
-      this.cleanup();
-    }, Math.max(cleanupDelay, 0));
   }
 
-  /**
-   * Cancel pending cleanup timer.
-   * Called when stopAll() is invoked to prevent stale timers.
-   */
-  cancelPendingCleanup(): void {
-    if (this.cleanupTimeoutId) {
-      clearTimeout(this.cleanupTimeoutId);
-      this.cleanupTimeoutId = null;
+  private canonicalAmplitudeAt(time: number): number {
+    if (this.canonicalEnvelope?.model !== 'adsr') return MIN_GAIN_VALUE;
+    const elapsed = Math.max(0, time - this.canonicalStartTime);
+    const attack = Math.max(0, this.canonicalEnvelope.attackSeconds);
+    if (attack > 0 && elapsed < attack) {
+      const progress = elapsed / attack;
+      return MIN_GAIN_VALUE + (this.canonicalPeak - MIN_GAIN_VALUE) * progress;
     }
+    const sustain = Math.max(
+      MIN_GAIN_VALUE,
+      this.canonicalPeak * Math.min(1, Math.max(0, this.canonicalEnvelope.sustain ?? 1)),
+    );
+    const decay = Math.max(0, this.canonicalEnvelope.decaySeconds ?? 0);
+    if (decay > 0 && elapsed < attack + decay) {
+      const progress = (elapsed - attack) / decay;
+      return Math.max(MIN_GAIN_VALUE, this.canonicalPeak + (sustain - this.canonicalPeak) * progress);
+    }
+    return sustain;
   }
 
   /**

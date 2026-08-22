@@ -41,6 +41,7 @@ import { downloadMidi } from './audio/midiExport'
 import { createSession, updateUrlWithSession } from './sync/session'
 import { LANDING_SAMPLES } from './data/landing-session-defaults'
 import { createStarterSessionState } from './data/starter-session'
+import { features } from './config/features'
 import './App.css'
 
 // Feature flags - recording is hidden (Shared Sample Recording archived)
@@ -54,6 +55,9 @@ interface SessionControlsProps {
 export function SessionControls({ children }: SessionControlsProps) {
   const { state, dispatch } = useGrid();
   const [copied, setCopied] = useState(false);
+  const [notationCopied, setNotationCopied] = useState(false);
+  const [notationReady, setNotationReady] = useState(false);
+  const notationSerializerRef = useRef<null | ((state: LoadedSessionState) => string)>(null);
   const [activeSessionAction, setActiveSessionAction] = useState<'share' | 'publish' | 'remix' | 'new' | null>(null);
   const sessionActionLatchRef = useRef(new AsyncActionLatch());
   const [orphanDismissed, setOrphanDismissed] = useState(false);
@@ -70,6 +74,24 @@ export function SessionControls({ children }: SessionControlsProps) {
     const timer = setTimeout(() => setCopied(false), 2000);
     return () => clearTimeout(timer);
   }, [copied]);
+
+  useEffect(() => {
+    if (!notationCopied) return;
+    const timer = setTimeout(() => setNotationCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [notationCopied]);
+
+  // Warm the notation chunk outside the click gesture. Safari requires the
+  // clipboard item to be created synchronously from the eventual user action.
+  useEffect(() => {
+    let active = true;
+    void import('./shared/session-notation-v24').then((module) => {
+      if (!active) return;
+      notationSerializerRef.current = module.serializeEnvelopeNotationStateV24;
+      setNotationReady(true);
+    });
+    return () => { active = false; };
+  }, []);
 
   // BUG4-FIX: Listen for custom toast events from anywhere in the app
   useEffect(() => {
@@ -174,6 +196,7 @@ export function SessionControls({ children }: SessionControlsProps) {
   // Multiplayer connection
   const {
     isConnected,
+    supportsEnvelopeV2 = true,
     players,
     playerId,
     playerCount,
@@ -184,7 +207,15 @@ export function SessionControls({ children }: SessionControlsProps) {
     sendCursor,
     retryConnection,
     playingPlayerIds,
-  } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent, getStateForHash, setIsPublished);
+  } = useMultiplayer(
+    features.multiplayer ? sessionId : null,
+    dispatch,
+    status === 'ready',
+    remoteChanges?.recordChange,
+    handlePlayerEvent,
+    getStateForHash,
+    setIsPublished,
+  );
 
   // Wrap dispatch to send actions over WebSocket
   const multiplayerDispatch = useMultiplayerDispatch(dispatch, isConnected);
@@ -208,6 +239,7 @@ export function SessionControls({ children }: SessionControlsProps) {
 
   const multiplayerContextValue: MultiplayerContextValue = {
     isConnected,
+    supportsEnvelopeV2,
     playerCount,
     dispatch: multiplayerDispatch,
     handleMuteChange,
@@ -261,6 +293,34 @@ export function SessionControls({ children }: SessionControlsProps) {
       }
     });
   }, [runSessionAction, share, showUrlFallbackToast]);
+
+  const handleCopyNotation = useCallback(() => {
+    const serialize = notationSerializerRef.current;
+    if (!serialize) return;
+    let notation: string;
+    try {
+      notation = serialize(state);
+    } catch (error) {
+      logger.error('Failed to serialize session notation:', error);
+      setToasts((current) => [...current, {
+        id: `notation-${Date.now()}`,
+        message: 'Could not generate session notation',
+        type: 'warning',
+      }]);
+      return;
+    }
+    void copyToClipboard(notation).then((success) => {
+      if (success) {
+        setNotationCopied(true);
+        return;
+      }
+      setToasts((current) => [...current, {
+        id: `notation-${Date.now()}`,
+        message: 'Could not copy session notation',
+        type: 'warning',
+      }]);
+    });
+  }, [state]);
 
   const handleShowQR = useCallback(async () => {
     await runSessionAction('share', async isCurrent => {
@@ -415,6 +475,14 @@ export function SessionControls({ children }: SessionControlsProps) {
               title="Export session as MIDI file"
             >
               Export MIDI
+            </button>
+            <button
+              className="session-btn download-btn"
+              onClick={handleCopyNotation}
+              disabled={!notationReady}
+              title="Copy canonical v2.4 session notation"
+            >
+              {notationCopied ? 'Notation Copied!' : 'Copy Notation'}
             </button>
             {/* Phase 21: No Invite button on published sessions (spec line 298) */}
             {!isPublished && (

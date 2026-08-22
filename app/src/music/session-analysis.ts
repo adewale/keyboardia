@@ -23,6 +23,14 @@ import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { boundedPatternLength } from '../shared/pattern-expansion';
 import type { SessionState, SessionTrack } from '../shared/state';
 import {
+  DEFAULT_TRACK_GATE,
+  getEffectiveTrackEnvelope,
+  getEffectiveTrackEnvelopeV2,
+} from '../shared/envelope';
+import { resolveEnvelopeV2, type ResolvedEnvelopeV2, type TrackEnvelopeV2 } from '../shared/envelope-contract-v2';
+import type { EnvelopeCapability } from '../shared/envelope-capabilities';
+import type { TrackEnvelope } from '../shared/sync-types';
+import {
   NOTE_NAMES,
   SCALES,
   detectChord,
@@ -121,6 +129,31 @@ export interface SessionAnalysis {
   /** Distinct track loop lengths present, ascending. */
   loop_lengths: number[];
   rhythm: TrackRhythmAnalysis[];
+  articulation: Array<{
+    track_id: string;
+    envelope: TrackEnvelope;
+    envelope_time_unit: 'seconds' | 'steps';
+    envelope_seconds: TrackEnvelope;
+    gate: number;
+    capability: 'adsr' | 'attack_release';
+    locked_steps: { attack: number[]; decay: number[]; release: number[] };
+    character: string;
+    source: 'track' | 'preset';
+    authored_envelope_v2: TrackEnvelopeV2 | null;
+    effective_envelope_v2: TrackEnvelopeV2;
+    envelope_seconds_v2: ResolvedEnvelopeV2;
+    sample_playback_mode?: 'trigger' | 'gate' | 'loop';
+    capability_v2: EnvelopeCapability;
+    envelope_active: boolean;
+    ignored_envelope_stages: readonly string[];
+    inactive_envelope_reason?: string;
+    locked_steps_v2: {
+      attack: number[];
+      hold: number[];
+      decay: number[];
+      release: number[];
+    };
+  }>;
   pitch: TrackPitchAnalysis[];
   /** Pitch classes sounded anywhere in the session, 0-11, ascending. */
   pitch_classes: number[];
@@ -135,6 +168,35 @@ export interface SessionAnalysis {
   chords: ChordMoment[];
   /** Where the analysis is silent or uncertain, in plain language. */
   caveats: string[];
+}
+
+function envelopeCharacter(
+  envelope: TrackEnvelope,
+  capability: 'adsr' | 'attack_release',
+): string {
+  const onset = envelope.attack >= .5 ? 'slow swell'
+    : envelope.attack >= .08 ? 'soft attack'
+      : envelope.attack <= .01 ? 'sharp attack' : 'rounded attack';
+  const tail = envelope.release >= 2 ? 'long tail'
+    : envelope.release <= .1 ? 'tight release' : 'medium release';
+  const body = capability === 'attack_release' ? 'sampled body'
+    : envelope.sustain <= .2 ? 'plucked body'
+      : envelope.sustain >= .8 ? 'sustained body' : 'decaying body';
+  return `${onset}, ${body}, ${tail}`;
+}
+
+function envelopeInSeconds(
+  envelope: TrackEnvelope,
+  tempo: number,
+  unit: 'seconds' | 'steps',
+): TrackEnvelope {
+  const scale = unit === 'steps' ? 60 / Math.max(1, tempo) / STEPS_PER_BEAT : 1;
+  return {
+    attack: envelope.attack * scale,
+    decay: envelope.decay * scale,
+    sustain: envelope.sustain,
+    release: envelope.release * scale,
+  };
 }
 
 /**
@@ -409,6 +471,51 @@ export function analyzeSession(state: SessionState): SessionAnalysis {
     polyrhythm: loopLengths.length > 1,
     loop_lengths: loopLengths,
     rhythm: state.tracks.map(analyzeRhythm),
+    articulation: state.tracks.map(track => {
+      const envelope = getEffectiveTrackEnvelope(track);
+      const reportV2 = getEffectiveTrackEnvelopeV2(track);
+      const envelopeTimeUnit = track.envelopeTimeUnit ?? 'seconds';
+      const envelopeSeconds = envelopeInSeconds(envelope, state.tempo, envelopeTimeUnit);
+      const capability = track.sampleId.startsWith('sampled:') || !track.sampleId.includes(':')
+        ? 'attack_release' as const
+        : 'adsr' as const;
+      const lockedSteps = { attack: [] as number[], decay: [] as number[], release: [] as number[] };
+      const lockedStepsV2 = {
+        attack: [] as number[], hold: [] as number[],
+        decay: [] as number[], release: [] as number[],
+      };
+      track.parameterLocks.forEach((lock, step) => {
+        if (lock?.attack !== undefined) lockedSteps.attack.push(step);
+        if (lock?.decay !== undefined) lockedSteps.decay.push(step);
+        if (lock?.release !== undefined) lockedSteps.release.push(step);
+        if (lock?.attackDuration !== undefined) lockedStepsV2.attack.push(step);
+        if (lock?.holdDuration !== undefined) lockedStepsV2.hold.push(step);
+        if (lock?.decayDuration !== undefined) lockedStepsV2.decay.push(step);
+        if (lock?.releaseDuration !== undefined) lockedStepsV2.release.push(step);
+      });
+      return {
+        track_id: track.id,
+        envelope,
+        envelope_time_unit: envelopeTimeUnit,
+        envelope_seconds: envelopeSeconds,
+        gate: track.gate ?? DEFAULT_TRACK_GATE,
+        capability,
+        locked_steps: lockedSteps,
+        character: envelopeCharacter(envelopeSeconds, capability),
+        source: track.envelope ? 'track' as const : 'preset' as const,
+        authored_envelope_v2: reportV2.authored,
+        effective_envelope_v2: reportV2.effective,
+        envelope_seconds_v2: resolveEnvelopeV2(reportV2.effective, state.tempo),
+        ...(reportV2.playbackMode ? { sample_playback_mode: reportV2.playbackMode } : {}),
+        capability_v2: reportV2.capability,
+        envelope_active: reportV2.active,
+        ignored_envelope_stages: reportV2.ignoredStages,
+        ...(reportV2.inactiveReason
+          ? { inactive_envelope_reason: reportV2.inactiveReason }
+          : {}),
+        locked_steps_v2: lockedStepsV2,
+      };
+    }),
     pitch: pitchedAudible
       .map(analyzePitch)
       .filter((entry): entry is TrackPitchAnalysis => entry !== null),

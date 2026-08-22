@@ -190,7 +190,7 @@ vi.mock('tone', () => {
       state: 'running',
       sampleRate: 44100,
     }),
-    now: vi.fn().mockReturnValue(0),
+    now: vi.fn(() => Date.now() / 1000),
   };
 });
 
@@ -412,7 +412,7 @@ describe('AdvancedSynthEngine', () => {
     it('does not erase live overrides when the same preset is selected per note', () => {
       engine.setPreset('supersaw');
       engine.setFilterFrequency(1234);
-      engine.setAttack(0.37);
+      engine.setEnvelope({ attack: 0.37, decay: 0.2, sustain: 0.7, release: 0.5 });
       const applyPreset = vi.spyOn(engine['voices'][0], 'applyPreset');
 
       // AudioEngine calls setPreset before each scheduled note. Selecting the
@@ -428,7 +428,7 @@ describe('AdvancedSynthEngine', () => {
 
     it('reapplies live overrides after an actual preset change', () => {
       engine.setFilterFrequency(1234);
-      engine.setAttack(0.37);
+      engine.setEnvelope({ attack: 0.37, decay: 0.2, sustain: 0.7, release: 0.5 });
 
       engine.setPreset('wobble-bass');
 
@@ -740,7 +740,42 @@ describe('voice release tracking', () => {
     expect(voice.isActive()).toBe(false);
   });
 
-  it('triggerAttack does not schedule release timeout', () => {
+  it('preserves a zero release instead of falling back to 500ms', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS.supersaw);
+    voice['ampEnvelope']!.release = 0;
+    voice.triggerAttackRelease(440, .5);
+
+    vi.advanceTimersByTime(501);
+    expect(voice.isActive()).toBe(false);
+  });
+
+  it('uses an authored 300ms release as the exact audio-clock activity deadline', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS.supersaw);
+    voice['ampEnvelope']!.release = 0.3;
+    const startSeconds = Date.now() / 1000;
+
+    voice.triggerAttackRelease(440, 0.2);
+
+    expect(voice['activeUntil']).toBeCloseTo(startSeconds + 0.5, 8);
+    vi.advanceTimersByTime(499);
+    expect(voice.isActive()).toBe(true);
+    vi.advanceTimersByTime(2);
+    expect(voice.isActive()).toBe(false);
+  });
+
+  it('does not appoint a wall-clock timer as the voice lifetime authority', () => {
+    const timer = vi.spyOn(globalThis, 'setTimeout');
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS.supersaw);
+    voice['ampEnvelope']!.release = 0.3;
+
+    voice.triggerAttackRelease(440, 0.2);
+    voice.triggerRelease();
+
+    expect(timer).not.toHaveBeenCalled();
+    timer.mockRestore();
+  });
+
+  it('triggerAttack does not schedule a release deadline', () => {
     const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
     voice.applyPreset(preset);
 
@@ -769,17 +804,17 @@ describe('voice release tracking', () => {
     expect(voice.getNoteStartTime()).toBeLessThanOrEqual(timeAfter);
   });
 
-  it('dispose clears pending release timeout', () => {
+  it('dispose clears the pending audio-clock release deadline', () => {
     const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
     voice.applyPreset(preset);
 
     voice.triggerAttackRelease(440, 0.5);
     expect(voice.isActive()).toBe(true);
 
-    // Dispose should clear the release timeout
+    // Dispose should clear the tracked release deadline.
     voice.dispose();
 
-    // Should not throw when timers advance
+    // Advancing the mocked Tone clock after disposal must remain harmless.
     expect(() => vi.advanceTimersByTime(2000)).not.toThrow();
     expect(voice.isActive()).toBe(false);
   });

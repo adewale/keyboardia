@@ -13,26 +13,22 @@ import { SCHEDULE_AHEAD_SEC } from '../scheduler-types';
 import {
   advanceStep,
   calculateStepTime,
-  calculateSwingDelay,
-  calculateTiedDuration,
   getStepDuration,
   STEPS_PER_BEAT,
 } from '../timing-calculations';
 import { resolveHumanizedNoteDynamics } from '../note-dynamics';
+import {
+  resolveNoteEventV2,
+  type ActiveNoteCursorV2,
+  type ResolvedNoteEventV2,
+} from '../resolved-note-event-v2';
 
-interface NoteEvent {
-  type: 'note';
-  trackId: string;
-  noteId: string;
-  sampleId: string;
-  pitchSemitones: number;
-  time: number;
-  duration: number;
+type NoteEvent = ResolvedNoteEventV2 & {
   midiVelocity: number;
   noteGain: number;
   hasExplicitLock: boolean;
   loopIteration: number;
-}
+};
 
 interface StepEvent {
   type: 'step';
@@ -73,7 +69,8 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
   private totalStepsScheduled = 0;
   private audioStartTime = 0;
   private lastTempo = 0;
-  private activeNotes = new Map<string, { globalStep: number; pitch: number }>();
+  private activeNotes = new Map<string, ActiveNoteCursorV2>();
+  private playbackEpoch = 0;
   private lastNotifiedStep = -1;
   private lastNotifiedBeat = -1;
   private loopIteration = 0;
@@ -93,6 +90,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
           msg.startTime,
           typeof msg.initialStep === 'number' ? msg.initialStep : undefined,
           typeof msg.initialNextStepTime === 'number' ? msg.initialNextStepTime : undefined,
+          typeof msg.playbackEpoch === 'number' ? msg.playbackEpoch : undefined,
         );
         break;
       case 'stop':
@@ -110,6 +108,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
     startTime: number,
     initialStep?: number,
     initialNextStepTime?: number,
+    playbackEpoch?: number,
   ): void {
     this.state = state;
     this.isRunning = true;
@@ -125,6 +124,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
     this.lastNotifiedBeat = -1;
     this.loopIteration = 0;
     this.activeNotes.clear();
+    this.playbackEpoch = playbackEpoch ?? this.playbackEpoch + 1;
     this.currentStep = initialStep ?? state.loopRegion?.start ?? 0;
   }
 
@@ -207,43 +207,34 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
     globalStep: number,
     time: number,
     duration: number
-  ): void {
+  ): ResolvedNoteEventV2[] {
     const anySoloed = state.tracks.some(t => t.soloed);
     const globalSwing = state.swing / 100;
+    const resolvedEvents: ResolvedNoteEventV2[] = [];
 
     for (const track of state.tracks) {
-      // Solo/mute filtering
-      if (anySoloed ? !track.soloed : track.muted) continue;
+      const resolution = resolveNoteEventV2({
+        track,
+        globalStep,
+        scheduleOrdinal: this.totalStepsScheduled,
+        playbackEpoch: this.playbackEpoch,
+        stepTimeSeconds: time,
+        stepDurationSeconds: duration,
+        globalSwing,
+        anySoloed,
+        activeNote: this.activeNotes.get(track.id),
+        loopRegion: state.loopRegion,
+        maxSteps: state.maxSteps,
+        defaultStepCount: state.defaultStepCount,
+        defaultPlaybackMode: 'gate',
+        tempoBpm: state.tempo,
+      });
+      if (resolution.kind === 'silent') continue;
+      this.activeNotes.set(track.id, resolution.activeNote);
+      if (resolution.kind === 'tie-continuation') continue;
 
-      // Track-local step
-      const trackStepCount = track.stepCount ?? state.defaultStepCount;
-      const trackStep = globalStep % trackStepCount;
-      if (trackStep >= trackStepCount || !track.steps[trackStep]) continue;
-
-      // Swing
-      const trackSwing = (track.swing ?? 0) / 100;
-      const swungTime = this.calculateSwingTime(trackStep, time, duration, globalSwing, trackSwing);
-
-      // Parameter locks
-      const pLock = track.parameterLocks[trackStep];
-      const pitchSemitones = (track.transpose ?? 0) + (pLock?.pitch ?? 0);
-
-      // Tied note check
-      if (pLock?.tie === true) {
-        const activeNote = this.activeNotes.get(track.id);
-        const prevGlobalStep = (globalStep - 1 + state.maxSteps) % state.maxSteps;
-        if (activeNote && activeNote.globalStep === prevGlobalStep) {
-          this.activeNotes.set(track.id, { globalStep, pitch: activeNote.pitch });
-          continue; // skip — tied from previous step
-        }
-      }
-
-      // Tied duration
-      const tiedDuration = calculateTiedDuration(track, trackStep, trackStepCount, duration);
-
-      // Track active note
-      this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
-
+      const event = resolution.event;
+      const pLock = track.parameterLocks[event.trackStep];
       const dynamics = resolveHumanizedNoteDynamics(
         pLock?.volume,
         track.sampleId,
@@ -251,30 +242,14 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
         globalStep,
         this.loopIteration,
       );
-
-      // Emit note event to main thread
+      resolvedEvents.push(event);
       this.port.postMessage({
-        type: 'note',
-        trackId: track.id,
-        noteId: `${track.id}-step-${globalStep}`,
-        sampleId: track.sampleId,
-        pitchSemitones,
-        time: swungTime,
-        duration: tiedDuration,
+        ...event,
         ...dynamics,
         loopIteration: this.loopIteration,
       } satisfies NoteEvent);
     }
-  }
-
-  private calculateSwingTime(
-    trackStep: number,
-    time: number,
-    duration: number,
-    globalSwing: number,
-    trackSwing: number
-  ): number {
-    return time + calculateSwingDelay(trackStep, globalSwing, trackSwing, duration);
+    return resolvedEvents;
   }
 }
 

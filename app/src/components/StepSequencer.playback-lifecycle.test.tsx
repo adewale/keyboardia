@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   ensureAudioReady: vi.fn(),
   isToneInitialized: vi.fn(),
   initializeTone: vi.fn(),
+  syncGridAudioState: vi.fn(),
   state: {
     tracks: [] as Track[], tempo: 120, swing: 0,
     effects: {
@@ -51,16 +52,62 @@ vi.mock('../audio/audioTriggers', () => ({
   requireAudioEngine: mocks.requireAudioEngine,
 }));
 vi.mock('../audio/engine', () => ({
-  audioEngine: { removeTrackGain: vi.fn(), setFMParams: vi.fn(), setTrackVolume: vi.fn() },
+  audioEngine: {
+    removeTrackGain: vi.fn(),
+    setFMParams: vi.fn(),
+    setTrackVolume: vi.fn(),
+    syncGridAudioState: mocks.syncGridAudioState,
+  },
 }));
-vi.mock('./Transport', () => ({ Transport: ({ onPlayPause }: { onPlayPause: () => void }) => <button onClick={onPlayPause}>Start test playback</button> }));
+vi.mock('./Transport', () => ({ Transport: ({
+  onPlayPause,
+  tracks = [],
+  onEnvelopeV2Change,
+}: {
+  onPlayPause: () => void;
+  tracks?: Track[];
+  onEnvelopeV2Change?: (trackId: string, envelope: Track['envelopeV2']) => void;
+}) => <>
+  <button onClick={onPlayPause}>Start test playback</button>
+  {tracks[0] && <button onClick={() => onEnvelopeV2Change?.(tracks[0].id, {
+    model: 'ar',
+    attack: { value: 0.4, unit: 'seconds' },
+    release: { value: 0.8, unit: 'seconds' },
+  })}>Commit XY envelope</button>}
+</> }));
 vi.mock('./TransportBar', () => ({ TransportBar: () => null }));
 vi.mock('./MixerPanel', () => ({ MixerPanel: () => null }));
 vi.mock('./PitchOverview', () => ({ PitchOverview: () => null }));
 vi.mock('./LoopRuler', () => ({ LoopRuler: () => null }));
 vi.mock('./KeyboardShortcutsPanel/KeyboardShortcutsPanel', () => ({ KeyboardShortcutsPanel: () => null }));
 vi.mock('./CursorOverlay', () => ({ CursorOverlay: () => null }));
-vi.mock('./TrackRow', () => ({ TrackRow: () => null }));
+vi.mock('./TrackRow', () => ({ TrackRow: ({
+  track,
+  onFocusTrack,
+  onPreviewEnvelopeV2,
+  onSetEnvelopeV2,
+  onConvertEnvelopeUnitsV2,
+}: {
+  track: Track;
+  onFocusTrack?: () => void;
+  onPreviewEnvelopeV2?: (envelope: NonNullable<Track['envelopeV2']>) => void;
+  onSetEnvelopeV2?: (envelope: NonNullable<Track['envelopeV2']>) => void;
+  onConvertEnvelopeUnitsV2?: (unit: 'seconds' | 'steps') => void;
+}) => <>
+  <button onClick={onFocusTrack}>Focus test track</button>
+  <button onClick={() => onPreviewEnvelopeV2?.({
+    model: 'ar',
+    attack: { value: 0.2, unit: 'seconds' },
+    release: { value: 0.3, unit: 'seconds' },
+  })}>Preview test envelope</button>
+  <button onClick={() => onSetEnvelopeV2?.({
+    model: 'ar',
+    attack: { value: 0.25, unit: 'seconds' },
+    release: { value: 0.5, unit: 'seconds' },
+  })}>Commit slider envelope</button>
+  <button onClick={() => onConvertEnvelopeUnitsV2?.('steps')}>Convert test envelope</button>
+  <span>{track.name}</span>
+</> }));
 vi.mock('./TrackSkeleton', () => ({ TrackSkeleton: () => null }));
 
 import { StepSequencer } from './StepSequencer';
@@ -152,5 +199,75 @@ describe('StepSequencer playback lifecycle', () => {
 
     expect(start).toHaveBeenCalledOnce();
     expect(dispatch.mock.calls.filter(([action]) => action.type === 'SET_PLAYING' && action.isPlaying)).toHaveLength(1);
+  });
+
+  it('selects a real track interaction, previews audio locally, and records one undo per envelope commit', () => {
+    const baseline = {
+      model: 'ar' as const,
+      attack: { value: 0.01, unit: 'seconds' as const },
+      release: { value: 0.1, unit: 'seconds' as const },
+    };
+    mocks.state.tracks = [{
+      id: 'envelope-track', name: 'Envelope track', sampleId: 'tone:fm-bass',
+      steps: Array(128).fill(false), parameterLocks: Array(128).fill(null),
+      volume: 1, muted: false, soloed: false, transpose: 0, stepCount: 16,
+      envelopeV2: baseline,
+    }];
+    render(<StepSequencer />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Focus test track' }));
+    expect(dispatch).toHaveBeenCalledWith({ type: 'FOCUS_TRACK', trackId: 'envelope-track' });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Preview test envelope' }));
+    expect(mocks.syncGridAudioState).toHaveBeenCalledWith(expect.objectContaining({
+      tracks: [expect.objectContaining({
+        id: 'envelope-track',
+        envelopeV2: expect.objectContaining({ attack: { value: 0.2, unit: 'seconds' } }),
+      })],
+    }));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Commit slider envelope' }));
+    const sliderCommit = dispatch.mock.calls.at(-1)?.[0];
+    expect(sliderCommit).toMatchObject({
+      type: 'SET_TRACK_ENVELOPE_V2',
+      trackId: 'envelope-track',
+      envelope: { attack: { value: 0.25, unit: 'seconds' } },
+    });
+    mocks.state.tracks[0] = { ...mocks.state.tracks[0], envelopeV2: sliderCommit.envelope };
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(dispatch.mock.calls.at(-1)?.[0]).toMatchObject({
+      type: 'SET_TRACK_ENVELOPE_V2',
+      envelope: baseline,
+    });
+
+    mocks.state.tracks[0] = { ...mocks.state.tracks[0], envelopeV2: baseline };
+    fireEvent.click(screen.getByRole('button', { name: 'Commit XY envelope' }));
+    const xyCommit = dispatch.mock.calls.at(-1)?.[0];
+    mocks.state.tracks[0] = { ...mocks.state.tracks[0], envelopeV2: xyCommit.envelope };
+    fireEvent.keyDown(window, { key: 'z', metaKey: true });
+    expect(dispatch.mock.calls.at(-1)?.[0]).toMatchObject({
+      type: 'SET_TRACK_ENVELOPE_V2',
+      envelope: baseline,
+    });
+
+    mocks.state.tracks[0] = { ...mocks.state.tracks[0], envelopeV2: baseline };
+    fireEvent.click(screen.getByRole('button', { name: 'Convert test envelope' }));
+    expect(dispatch.mock.calls.at(-1)?.[0]).toMatchObject({
+      type: 'CONVERT_TRACK_ENVELOPE_UNITS_V2',
+      targetUnit: 'steps',
+    });
+    mocks.state.tracks[0] = {
+      ...mocks.state.tracks[0],
+      envelopeV2: {
+        model: 'ar',
+        attack: { value: 0.08, unit: 'steps' },
+        release: { value: 0.8, unit: 'steps' },
+      },
+    };
+    fireEvent.keyDown(window, { key: 'z', ctrlKey: true });
+    expect(dispatch.mock.calls.at(-1)?.[0]).toMatchObject({
+      type: 'SET_TRACK_ENVELOPE_V2',
+      envelope: baseline,
+    });
   });
 });

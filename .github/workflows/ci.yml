@@ -109,6 +109,23 @@ jobs:
       - name: Run required offline audio renders
         run: npm run test:audio-render
 
+      # Stable envelope lanes are named explicitly so a future test-runner or
+      # inventory change cannot leave one of the v2 proof surfaces undiscovered.
+      - name: Run envelope semantic contract
+        run: npm run test:envelope:semantic
+
+      - name: Run envelope rolling-deploy contract
+        run: npm run test:envelope:rolling
+
+      - name: Run affected envelope PCM contract
+        run: npm run test:envelope:pcm
+
+      - name: Run correctness-only envelope release contract
+        run: npm run test:envelope:correctness
+
+      - name: Validate envelope documentation freshness
+        run: npm run validate:envelope-docs
+
   stack-a-identity:
     name: Stack A Identity
     if: github.event_name == 'pull_request'
@@ -177,6 +194,9 @@ jobs:
 
       - name: Build application
         run: npm run build
+
+      - name: Enforce envelope bundle and audio resource budgets
+        run: npm run validate:envelope-resources
 
       - name: Install integration test dependencies
         run: npm ci
@@ -359,6 +379,28 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/blocking-results.json'
           PLAYWRIGHT_HTML_REPORT: 'playwright-report-blocking'
 
+      - name: Run focused envelope v2 browser contract
+        shell: bash
+        run: |
+          npm run test:e2e:envelope
+          node scripts/assert-playwright-stats.mjs test-results/envelope-results.json 3 0
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/envelope-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/envelope-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-envelope'
+
+      - name: Run editor-disabled and real Tone envelope correctness contract
+        shell: bash
+        run: |
+          npm run test:e2e:envelope:correctness
+          node scripts/assert-playwright-stats.mjs test-results/envelope-correctness-results.json 2 0
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/envelope-correctness-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/envelope-correctness-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-envelope-correctness'
+
       # PR #65 moved real collaboration coverage to the Worker-backed contract
       # below. Every remaining offline Chromium spec is therefore blocking too.
       - name: Run remaining offline E2E tests (Chromium)
@@ -368,7 +410,7 @@ jobs:
           offline_specs=()
           while IFS= read -r spec; do offline_specs+=("$spec"); done < <(
             comm -23 \
-              <(find e2e -type f -name '*.spec.ts' | sort) \
+              <(find e2e -type f -name '*.spec.ts' | grep -Ev '^e2e/(envelope-v2|envelope-v2-headless|tone-envelope-release)\.spec\.ts$' | sort) \
               <(sort e2e/mock-compatible-files.txt)
           )
           # The three real-audio matrix specs are CPU-bound. Serial execution
@@ -537,7 +579,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --workers=2
-          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 209 19
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 209 24
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -549,7 +591,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 53
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 58
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'

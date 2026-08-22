@@ -32,7 +32,20 @@ interface DurableObjectNamespace {
 interface R2Bucket {}
 
 // Re-export shared sync types (canonical definitions)
-export type { ParameterLock, FMParams, EffectsState, ScaleState } from '../shared/sync-types';
+export type {
+  ParameterLock,
+  FMParams,
+  TrackEnvelope,
+  EnvelopeTimeUnit,
+  EffectsState,
+  ScaleState,
+  EnvelopeDuration,
+  EnvelopeDurationUnit,
+  EnvelopeModel,
+  EnvelopeStageName,
+  SamplePlaybackMode,
+  TrackEnvelopeV2,
+} from '../shared/sync-types';
 export { VALID_STEP_COUNTS, VALID_STEP_COUNTS_SET } from '../shared/sync-types';
 export type { ValidStepCount } from '../shared/sync-types';
 
@@ -89,7 +102,6 @@ export interface Env {
 export {
   READONLY_MESSAGE_TYPES,
   isStateMutatingBroadcast,
-  assertNever,
 } from '../shared/messages';
 
 // Import and re-export shared message types (canonical definitions)

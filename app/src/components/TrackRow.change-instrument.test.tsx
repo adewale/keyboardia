@@ -14,6 +14,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Track } from '../types';
 import { TrackRow } from './TrackRow';
+import { features } from '../config/features';
 
 // Only the preload side effect is stubbed. audioTriggers stays real so this
 // test cannot pass against a mock that has drifted from the module it doubles
@@ -62,6 +63,17 @@ function renderRow(overrides: Partial<React.ComponentProps<typeof TrackRow>> = {
 }
 
 describe('TrackRow change instrument', () => {
+  it('reports pointer and keyboard interaction as selected-track focus', () => {
+    const onFocusTrack = vi.fn();
+    const { container } = renderRow({ onFocusTrack });
+
+    fireEvent.pointerDown(container.querySelector('.steps')!);
+    expect(onFocusTrack).toHaveBeenCalledOnce();
+
+    (screen.getByRole('button', { name: 'Mute' }) as HTMLButtonElement).focus();
+    expect(onFocusTrack).toHaveBeenCalledTimes(2);
+  });
+
   it('offers no instrument control without an onSetInstrument handler', () => {
     // This is how a published session hides it: StepSequencer withholds the
     // callback, exactly as it does for Delete.
@@ -159,6 +171,40 @@ describe('TrackRow change instrument', () => {
     expect(document.querySelectorAll('.sample-picker.variant-change')).toHaveLength(1);
   });
 
+  it('does not leak the envelope entry point into landscape when its feature flag is off', () => {
+    const mutableFeatures = features as unknown as { envelopeV2: boolean };
+    const previousValue = mutableFeatures.envelopeV2;
+    mutableFeatures.envelopeV2 = false;
+    try {
+      renderRow({
+        orientationMode: 'landscape',
+        isLandscapeDrawerOpen: true,
+        onToggleLandscapeDrawer: vi.fn(),
+        onSetEnvelopeV2: vi.fn(),
+        onSetGate: vi.fn(),
+      });
+
+      expect(screen.queryByRole('button', { name: 'Amplitude envelope' })).toBeNull();
+      expect(screen.queryByRole('button', { name: 'Envelope' })).toBeNull();
+    } finally {
+      mutableFeatures.envelopeV2 = previousValue;
+    }
+  });
+
+  it('hides v2 editing when a connected worker lacks the negotiated capability', () => {
+    renderRow({
+      orientationMode: 'landscape',
+      isLandscapeDrawerOpen: true,
+      onToggleLandscapeDrawer: vi.fn(),
+      onSetEnvelopeV2: vi.fn(),
+      onSetGate: vi.fn(),
+      supportsEnvelopeV2: false,
+    });
+
+    expect(screen.queryByRole('button', { name: 'Amplitude envelope' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Envelope' })).toBeNull();
+  });
+
   it('closes the landscape picker when Escape dismisses its drawer', () => {
     const onToggleLandscapeDrawer = vi.fn();
     renderRow({
@@ -224,5 +270,27 @@ describe('TrackRow change instrument', () => {
     fireEvent.click(screen.getByTestId('set-instrument-sampled:808-kick'));
 
     expect(onSetName).not.toHaveBeenCalled();
+  });
+});
+
+describe('TrackRow envelope panel', () => {
+  it('opens the detailed second-level editor from the track-tools menu', () => {
+    renderRow({
+      onSetEnvelope: vi.fn(),
+      onSetEnvelopeV2: vi.fn(),
+      onSetEnvelopeTimeUnit: vi.fn(),
+      onSetGate: vi.fn(),
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Pattern tools' }));
+    const toggle = screen.getByRole('button', { name: 'Amplitude envelope' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByRole('slider', { name: 'Attack envelope shape' })).toBeNull();
+
+    fireEvent.click(toggle);
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    const summary = screen.getByRole('button', { name: /ADSR/ });
+    expect(summary.getAttribute('aria-expanded')).toBe('true');
+    expect(screen.getByRole('slider', { name: 'Attack envelope shape' })).toBeTruthy();
   });
 });
