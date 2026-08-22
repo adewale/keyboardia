@@ -15,67 +15,67 @@
   "samples": [
     {
       "note": 40,
-      "file": "E2.m4a"
+      "file": "E2.wav"
     },
     {
       "note": 43,
-      "file": "G2.m4a",
+      "file": "G2.wav",
       "gainDb": -3.75
     },
     {
       "note": 46,
-      "file": "Bb2.m4a"
+      "file": "Bb2.wav"
     },
     {
       "note": 49,
-      "file": "Db3.m4a"
+      "file": "Db3.wav"
     },
     {
       "note": 52,
-      "file": "E3.m4a"
+      "file": "E3.wav"
     },
     {
       "note": 55,
-      "file": "G3.m4a"
+      "file": "G3.wav"
     },
     {
       "note": 58,
-      "file": "Bb3.m4a"
+      "file": "Bb3.wav"
     },
     {
       "note": 61,
-      "file": "Db4.m4a"
+      "file": "Db4.wav"
     },
     {
       "note": 64,
-      "file": "E4.m4a"
+      "file": "E4.wav"
     },
     {
       "note": 68,
-      "file": "Ab4.m4a"
+      "file": "Ab4.wav"
     },
     {
       "note": 71,
-      "file": "B4.m4a"
+      "file": "B4.wav"
     },
     {
       "note": 74,
-      "file": "D5.m4a",
+      "file": "D5.wav",
       "gainDb": 1.421
     },
     {
       "note": 77,
-      "file": "F5.m4a",
+      "file": "F5.wav",
       "gainDb": -2.412
     },
     {
       "note": 80,
-      "file": "Ab5.m4a",
+      "file": "Ab5.wav",
       "gainDb": 1.091
     },
     {
       "note": 83,
-      "file": "B5.m4a",
+      "file": "B5.wav",
       "gainDb": -1.319
     }
   ],

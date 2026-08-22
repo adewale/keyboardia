@@ -16,94 +16,94 @@
   "samples": [
     {
       "note": 36,
-      "file": "C2.mp3",
+      "file": "C2.wav",
       "loop": true,
-      "loopStart": 0.999478,
-      "loopEnd": 4.745283
+      "loopStart": 1.31893424,
+      "loopEnd": 8.002244898
     },
     {
       "note": 40,
-      "file": "E2.mp3",
+      "file": "E2.wav",
       "loop": true,
-      "loopStart": 0.999864,
-      "loopEnd": 4.446168
+      "loopStart": 1.358344671,
+      "loopEnd": 4.696213152
     },
     {
       "note": 44,
-      "file": "Gs2.mp3",
+      "file": "Gs2.wav",
       "loop": true,
-      "loopStart": 0.999841,
-      "loopEnd": 4.746485
+      "loopStart": 2.372290249,
+      "loopEnd": 5.640612245
     },
     {
       "note": 48,
-      "file": "C3.mp3",
+      "file": "C3.wav",
       "loop": true,
-      "loopStart": 0.994195,
-      "loopEnd": 4.747642
+      "loopStart": 1.674829932,
+      "loopEnd": 5.001156463
     },
     {
       "note": 52,
-      "file": "E3.mp3",
+      "file": "E3.wav",
       "loop": true,
-      "loopStart": 0.999932,
-      "loopEnd": 4.749615
+      "loopStart": 1.648503401,
+      "loopEnd": 5.003786848
     },
     {
       "note": 56,
-      "file": "Gs3.mp3",
+      "file": "Gs3.wav",
       "loop": true,
-      "loopStart": 0.99805,
-      "loopEnd": 3.791156
+      "loopStart": 0.798435374,
+      "loopEnd": 4.04170068
     },
     {
       "note": 60,
-      "file": "C4.mp3",
+      "file": "C4.wav",
       "loop": true,
-      "loopStart": 0.999932,
-      "loopEnd": 3.973651
+      "loopStart": 0.879909297,
+      "loopEnd": 4.221587302
     },
     {
       "note": 64,
-      "file": "E4.mp3",
+      "file": "E4.wav",
       "loop": true,
-      "loopStart": 0.998073,
-      "loopEnd": 3.87102
+      "loopStart": 1.09829932,
+      "loopEnd": 4.121519274
     },
     {
       "note": 68,
-      "file": "Gs4.mp3",
+      "file": "Gs4.wav",
       "loop": true,
-      "loopStart": 0.998526,
-      "loopEnd": 4.376735
+      "loopStart": 1.237029478,
+      "loopEnd": 4.628820862
     },
     {
       "note": 72,
-      "file": "C5.mp3",
+      "file": "C5.wav",
       "loop": true,
-      "loopStart": 0.998073,
-      "loopEnd": 4.229773
+      "loopStart": 1.13952381,
+      "loopEnd": 4.481428571
     },
     {
       "note": 76,
-      "file": "E5.mp3",
+      "file": "E5.wav",
       "loop": true,
-      "loopStart": 0.999773,
-      "loopEnd": 4.179093
+      "loopStart": 1.117800454,
+      "loopEnd": 4.428526077
     },
     {
       "note": 80,
-      "file": "Gs5.mp3",
+      "file": "Gs5.wav",
       "loop": true,
-      "loopStart": 0.999705,
-      "loopEnd": 4.190136
+      "loopStart": 1.279319728,
+      "loopEnd": 4.440045351
     },
     {
       "note": 84,
-      "file": "C6.mp3",
+      "file": "C6.wav",
       "loop": true,
-      "loopStart": 0.99839,
-      "loopEnd": 4.056168
+      "loopStart": 1.323514739,
+      "loopEnd": 4.307278912
     }
   ]
 }

@@ -148,6 +148,12 @@ export interface InstrumentManifest {
   gainDb?: number;
   /** Shared non-destructive decode-onset trim (for codec encoder delay). */
   startOffset?: number;
+  /**
+   * Optional decoder-delay ceiling in seconds for sources whose Node and
+   * browser AAC timelines are provenance-tested. Unlike startOffset, this
+   * never trims when the active browser decoder exposes an immediate attack.
+   */
+  maxAdaptiveCodecDelay?: number;
   /** Width in MIDI velocity units for equal-power-free linear layer blending. */
   velocityCrossfade?: number;
   /** Notes whose complete layer/RR sets must decode before playback is ready. */
@@ -503,6 +509,7 @@ export class SampledInstrument {
       configuredStart,
       adaptCodecDelay ? measureDecodedLeadingSilenceSeconds(buffer) : 0,
       adaptCodecDelay,
+      this.manifest?.maxAdaptiveCodecDelay,
     );
     const end = Number.isFinite(mapping.endOffset) && (mapping.endOffset ?? 0) > (start ?? 0) && (mapping.endOffset ?? Infinity) <= buffer.duration
       ? mapping.endOffset
