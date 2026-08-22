@@ -36,7 +36,7 @@ interface UseDropdownMenuReturn<T extends HTMLElement, M extends HTMLElement> {
   setIsOpen: (open: boolean) => void;
   /** Toggle the menu open/closed */
   toggle: () => void;
-  /** Close the menu */
+  /** Close the menu and restore focus to its trigger */
   close: () => void;
   /** Current menu position for fixed positioning */
   menuPosition: MenuPosition;
@@ -77,6 +77,11 @@ export function useDropdownMenu<
   const triggerRef = useRef<T>(null);
   const menuRef = useRef<M>(null);
 
+  const close = useCallback(() => {
+    setIsOpen(false);
+    triggerRef.current?.focus();
+  }, []);
+
   // Close dropdown when clicking outside (trigger or menu)
   useEffect(() => {
     if (!isOpen) return;
@@ -100,13 +105,13 @@ export function useDropdownMenu<
 
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setIsOpen(false);
+        close();
       }
     };
 
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
+  }, [isOpen, close]);
 
   // Scroll to selected item when opening
   useEffect(() => {
@@ -134,10 +139,6 @@ export function useDropdownMenu<
       setIsOpen(prev => !prev);
     }
   }, [disabled]);
-
-  const close = useCallback(() => {
-    setIsOpen(false);
-  }, []);
 
   return {
     isOpen,

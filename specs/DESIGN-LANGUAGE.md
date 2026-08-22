@@ -378,6 +378,75 @@ The landing page step grid animates at 150ms intervals, showing a beat pattern. 
 | Modal | `0 8px 32px rgba(0,0,0,0.5)` | Bottom sheets, modals |
 | CTA | `0 4px 20px rgba(232, 90, 48, 0.4)` | Primary CTA button |
 
+### Dropdown visual pilot (Stack B)
+
+The step-count and transpose dropdowns are the first candidate application of
+the site's flat neutral control grammar with independently accessible
+boundaries. Approval is recorded only when the evidence PR lands. This is a
+surface-specific pilot, not a new product-wide primitive.
+
+| Property | Pilot rule |
+|----------|------------|
+| Control surface | Flat `--color-surface-elevated` (`#2a2a2a`) |
+| Control hover | Flat `--color-surface-hover` (`#333333`) |
+| Open control | Flat muted-orange surface (`#2a201e`) |
+| Menu surface | Flat `--color-surface-elevated` (`#2a2a2a`) |
+| Edge | Three-step neutral line ladder: control `#6c6c76`, elevated menu `#74747f`, scrollbar `#787883`; each boundary independently clears 3:1 against its adjacent surface |
+| Trigger radius | 6px, except connected group corners owned by `TrackRow` |
+| Menu radius | 6px, matching the existing Invite popup |
+| Depth | No trigger shadow; existing popup shadow on the menu only |
+| Disclosure accent | Keyboardia orange; transpose remains blue when active but closed |
+| Active transpose value | Dropdown-specific light blue `#5eb3ea`, preserving feature identity while clearing 4.5:1 on closed and hover surfaces |
+| Focus | 2px information-blue outline, outside triggers and inset on popup options, with no orange halo |
+| Text hierarchy | Global `.87` primary, `.60` secondary/category, `.38` disabled/hint tiers; no dropdown-only neutral tier |
+| Selected option | Flat `--color-surface-active` plus the existing orange check; no tinted row or leading rail |
+| Density | Preserve the existing 36px trigger and existing option/menu geometry |
+| Motion | Preserve the existing 150ms open animation; remove it under reduced motion |
+
+The visual rule is quiet product chrome around expressive musical content:
+flat neutral controls, a legible shared text hierarchy, restrained orange
+emphasis, and depth reserved for actual overlays. Gradients remain available
+for functional or expressive musical states rather than neutral dropdowns.
+
+The same decoration remains responsive in desktop, portrait component
+fixtures, compact landscape, wide landscape, and the 768/769 boundary. Product
+visibility remains mode-specific: portrait consumption does not expose these
+editing controls, and landscape `TrackDrawer` uses a native step-count select
+plus separate transpose buttons instead of this dropdown family. Production
+portrait and landscape therefore remain pixel-identical in this pilot.
+
+Stack B freezes DOM/accessibility order, names and roles, touch event payloads,
+dismissal, portal placement, hit areas, layout geometry, and product-mode
+behavior. It repairs one focus-ownership contract across keyboard, pointer,
+and touch: selection and Escape return focus to the owning trigger; outside
+clicks keep focus on their clicked target. The existing 36px trigger is larger than
+WCAG 2.2's 24px minimum but below Keyboardia's aspirational 44px mobile target;
+changing it is explicitly deferred to a Stack C product decision.
+
+#### Selection grammar
+
+Selection cues follow the meaning of the state instead of treating every
+`.active` class alike:
+
+| State meaning | Visual cue | Examples |
+|---------------|------------|----------|
+| Chosen item in a single-choice popup | Neutral tonal row plus orange check | Step count, transpose |
+| Current item in an in-place chooser | Owning accent inset outline plus `aria-current` | Current instrument in Sample Picker |
+| Selected sequencer object for editing | Information-blue outline/tint | Step and range selection |
+| Chosen view or mode | Filled segment using the owning feature colour | Pitch view, chromatic view |
+| Enabled binary action | Owning semantic/feature colour plus its label or icon | Mute, solo, tie, effects |
+| Current playback position | White playhead treatment | Step grid, portrait grid |
+| Current page within a paged editor | Filled dot using the owning feature treatment | Portrait pattern page |
+| Native single-choice control | Platform-native selected option and focus treatment | Landscape step-count select |
+
+Hover changes surface brightness, focus uses the information-blue outline, and
+an open dropdown trigger uses orange. Those interaction states must not be used
+as substitutes for the selected-item cue. A non-default numeric value, such as
+transpose, may use its feature colour without claiming that the surrounding
+control is a selected object. Stack B mechanically locks the shared custom
+popup row; the other rows classify existing semantics and remain outside this
+surface-specific visual change.
+
 ---
 
 ## Icon Language

@@ -79,6 +79,14 @@ export const stackAStates: StackAState[] = [
     expectations: [{ selector: '.step-count-trigger', visible: true }],
   },
   {
+    id: 'transpose-active-trigger-hover',
+    story: 'dropdowns',
+    variant: 'selected',
+    viewport: { width: 1280, height: 800 },
+    actions: [{ type: 'hover', selector: '.transpose-trigger.active' }],
+    expectations: [{ selector: '.transpose-trigger.active', visible: true }],
+  },
+  {
     id: 'step-count-selection',
     story: 'dropdowns',
     viewport: { width: 1280, height: 800 },
@@ -108,6 +116,7 @@ export const stackAStates: StackAState[] = [
     viewport: { width: 1280, height: 800 },
     actions: [
       { type: 'click', selector: '.transpose-trigger' },
+      { type: 'focus', selector: '.transpose-option', index: 0 },
       { type: 'press', key: 'Escape' },
     ],
     expectations: [
@@ -124,6 +133,17 @@ export const stackAStates: StackAState[] = [
       { type: 'hover', selector: '.transpose-option', index: 0 },
     ],
     expectations: [{ selector: '.transpose-option', visible: true }],
+  },
+  {
+    id: 'transpose-option-focused',
+    story: 'dropdowns',
+    viewport: { width: 1280, height: 800 },
+    actions: [
+      { type: 'click', selector: '.transpose-trigger' },
+      { type: 'focus', selector: '.transpose-option', index: 0 },
+      { type: 'press', key: 'Tab' },
+    ],
+    expectations: [{ selector: '.transpose-option:focus', focused: true }],
   },
   {
     id: 'transpose-selection',

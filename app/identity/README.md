@@ -14,7 +14,9 @@ npm run test:identity
 The comparison server creates a temporary worktree at the merge base, builds
 both revisions, and serves them at `/base` and `/head`. It removes the worktree
 when the run finishes. Set `STACK_A_BASE_REF` to compare against a ref other
-than `origin/main`.
+than `origin/main`. If the default local ports are occupied, set
+`STACK_A_COMPARISON_PORT`, `STACK_A_BASE_PRODUCT_PORT`, and
+`STACK_A_HEAD_PRODUCT_PORT` to three free ports.
 
 ## What is compared
 

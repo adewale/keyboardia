@@ -1,5 +1,15 @@
 import { defineConfig, devices } from '@playwright/test';
 
+function configuredPort(name: string, fallback: number): number {
+  const value = Number(process.env[name] || fallback);
+  if (!Number.isInteger(value) || value < 1 || value > 65_535) {
+    throw new Error(`${name} must be an integer between 1 and 65535`);
+  }
+  return value;
+}
+
+const comparisonPort = configuredPort('STACK_A_COMPARISON_PORT', 4179);
+
 export default defineConfig({
   testDir: './identity',
   timeout: 60_000,
@@ -13,7 +23,7 @@ export default defineConfig({
     ...(process.env.CI ? [['github' as const]] : [['list' as const]]),
   ],
   use: {
-    baseURL: 'http://127.0.0.1:4179',
+    baseURL: `http://127.0.0.1:${comparisonPort}`,
     ...devices['Desktop Chrome'],
     locale: 'en-GB',
     timezoneId: 'Europe/London',
@@ -30,6 +40,11 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] },
     },
     {
+      name: 'stack-b-chromium',
+      testMatch: 'stack-b-visual.spec.ts',
+      use: { ...devices['Desktop Chrome'] },
+    },
+    {
       name: 'stack-a-mobile-webkit',
       testMatch: 'stack-a-mobile-behavior.spec.ts',
       use: { ...devices['iPhone 13'], browserName: 'webkit', hasTouch: true },
@@ -37,7 +52,7 @@ export default defineConfig({
   ],
   webServer: {
     command: 'node scripts/serve-stack-a-comparison.mjs',
-    url: 'http://127.0.0.1:4179/__stack-a-ready',
+    url: `http://127.0.0.1:${comparisonPort}/__stack-a-ready`,
     reuseExistingServer: false,
     timeout: 180_000,
   },
