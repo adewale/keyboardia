@@ -120,7 +120,7 @@ findings originally reproduced on `origin/main`:
 - native, Tone, and sampled paths give different meanings to the same release
   value.
 
-PR 87 and PR 100 now overlap in eleven files. A current three-way simulation
+PR 87 and PR 100 now overlap in twelve files. A current three-way simulation
 has no textual conflict markers, but the Hammond manifest and shared
 engine/control paths require semantic reconciliation. PR 87 was built on the
 old Hammond MP3 catalogue and old loop coordinates; it also lacks PR 100's

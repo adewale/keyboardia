@@ -1242,6 +1242,7 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
       }
     } catch (error) {
       primaryError = error;
+      throw error;
     } finally {
       batchTeardownStarted = true;
       try {
@@ -1249,8 +1250,6 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
       } catch (error) {
         cleanupFailure = error;
       }
-    }
-    if (primaryError !== undefined) {
       if (primaryError instanceof Error && cleanupFailure !== undefined) {
         try {
           Object.defineProperty(primaryError, 'cleanupError', { value: cleanupFailure });
@@ -1258,9 +1257,8 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           // Preserve the primary batch failure if the error is not extensible.
         }
       }
-      throw primaryError;
+      if (primaryError === undefined && cleanupFailure !== undefined) throw cleanupFailure;
     }
-    if (cleanupFailure !== undefined) throw cleanupFailure;
   }
 
   if (receiptBrowser === null) throw new Error('Live capture produced no browser identity');
