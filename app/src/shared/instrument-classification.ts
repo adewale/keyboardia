@@ -126,7 +126,3 @@ export const SUSTAINING_INSTRUMENT_IDS = new Set([
   'sampled:string-section',
   'sampled:vibraphone',
 ]);
-
-export function isSustainingInstrument(sampleId: string): boolean {
-  return SUSTAINING_INSTRUMENT_IDS.has(normalizedInstrumentId(sampleId));
-}
