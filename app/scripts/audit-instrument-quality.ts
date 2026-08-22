@@ -11,6 +11,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { createHash } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 
@@ -18,18 +19,66 @@ import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { getSourceCalibration } from '../src/audio/source-calibration';
 import {
   REVIEW_ISSUE_WEIGHTS,
+  formatIssueActions,
   scoreInstrument,
   type AuditIssue,
   type InstrumentScore,
 } from './instrument-quality-rubric';
+import {
+  INSTRUMENT_QUALITY_PROFILE_BY_ID,
+  assertInstrumentQualityProfileCoverage,
+  type InstrumentQualityProfile,
+} from './instrument-quality-profiles';
+import {
+  isFullCommitId,
+  validateDryPcmMatrixReport,
+  type BrowserIdentity,
+  type DryPcmInstrumentComparison,
+  type DryPcmMatrixReport,
+} from './instrument-quality-matrix';
+import {
+  validateLiveQualityReport,
+  type LiveInstrumentResult,
+  type LiveQualityReport,
+} from './instrument-quality-live-receipt';
 
 const THIS_DIR = path.dirname(fileURLToPath(import.meta.url));
 const APP_DIR = path.resolve(THIS_DIR, '..');
 const DEFAULT_SAMPLE_REPORT = path.resolve(APP_DIR, 'test-results/sample-quality/metrics.json');
-const DEFAULT_LIVE_REPORT = path.resolve(APP_DIR, 'test-results/audio-output/all-instruments-master-output.json');
-const DEFAULT_JSON_REPORT = path.resolve(APP_DIR, 'test-results/instrument-quality/report.json');
-const DEFAULT_MARKDOWN_REPORT = path.resolve(APP_DIR, 'test-results/instrument-quality/INSTRUMENT-QUALITY.md');
+const DEFAULT_LIVE_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/live-master-output.json');
+const DEFAULT_JSON_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/report.json');
+const DEFAULT_MARKDOWN_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/INSTRUMENT-QUALITY.md');
+const DEFAULT_MATRIX_REPORT = path.resolve(APP_DIR, 'reports/instrument-quality/dry-pcm-matrix.json');
 const MANIFEST_ROOT = path.resolve(APP_DIR, 'public/instruments');
+const EVALUATOR_SOURCE_PATHS = [
+  path.resolve(APP_DIR, 'scripts/audit-instrument-quality.ts'),
+  path.resolve(APP_DIR, 'scripts/instrument-quality-rubric.ts'),
+  path.resolve(APP_DIR, 'scripts/instrument-quality-profiles.ts'),
+  path.resolve(APP_DIR, 'scripts/instrument-quality-matrix.ts'),
+  path.resolve(APP_DIR, 'scripts/instrument-quality-matrix-cli.ts'),
+  path.resolve(APP_DIR, 'scripts/instrument-quality-live-receipt.ts'),
+  path.resolve(APP_DIR, 'scripts/sample-quality-core.ts'),
+  path.resolve(APP_DIR, 'scripts/sample-quality-baseline-core.ts'),
+  path.resolve(APP_DIR, 'scripts/sample-velocity-core.ts'),
+  path.resolve(APP_DIR, 'scripts/validate-sample-quality.ts'),
+  path.resolve(APP_DIR, 'scripts/bind-sample-quality-dispositions.ts'),
+  path.resolve(APP_DIR, 'src/audio/instrument-ranges.ts'),
+  path.resolve(APP_DIR, 'src/audio/sample-onset.ts'),
+  path.resolve(APP_DIR, 'src/audio/constants.ts'),
+  path.resolve(APP_DIR, 'src/audio/source-calibration.ts'),
+  path.resolve(APP_DIR, 'src/components/sample-constants.ts'),
+  path.resolve(APP_DIR, 'src/shared/instrument-catalog.ts'),
+  path.resolve(APP_DIR, 'src/types.ts'),
+  path.resolve(APP_DIR, 'src/test/audio-measures.ts'),
+  path.resolve(APP_DIR, 'e2e/all-instruments-master-output.spec.ts'),
+  path.resolve(APP_DIR, 'e2e/global-setup.ts'),
+  path.resolve(APP_DIR, 'e2e/test-utils.ts'),
+  path.resolve(APP_DIR, 'playwright.config.ts'),
+  path.resolve(APP_DIR, 'package.json'),
+  path.resolve(APP_DIR, 'package-lock.json'),
+  path.resolve(APP_DIR, 'vite.config.ts'),
+  path.resolve(APP_DIR, 'scripts/sample-quality-baseline.json'),
+] as const;
 
 type InstrumentType = 'sample' | 'sampled' | 'synth' | 'tone' | 'advanced';
 type EvidenceGrade = 'A' | 'B' | 'C' | 'F';
@@ -39,7 +88,11 @@ interface CliOptions {
   liveReport: string;
   jsonReport: string;
   markdownReport: string;
+  matrixReport: string;
   requireEvidence: boolean;
+  requireMatrix: boolean;
+  evaluatorCommit: string | null;
+  subjectCommit: string | null;
 }
 
 interface QualityIssue extends AuditIssue {
@@ -66,22 +119,7 @@ interface SampleQualityReport {
   issues: QualityIssue[];
   waivedIssues: Array<{ issue: QualityIssue }>;
   instruments: SampleInstrumentSummary[];
-}
-
-interface LiveInstrumentResult {
-  sampleId: string;
-  peak: number;
-  rms: number;
-}
-
-interface LiveQualityReport {
-  silencePeakThreshold: number;
-  silenceRmsThreshold: number;
-  diagnostics: {
-    pageErrors: string[];
-    consoleErrors: string[];
-  };
-  instruments: LiveInstrumentResult[];
+  samples?: Array<{ sampleRate?: number }>;
 }
 
 interface ManifestSample {
@@ -137,6 +175,30 @@ interface RankedInstrument {
   } | null;
   scoreComponents: InstrumentScore['components'];
   improvements: string[];
+  profile: InstrumentQualityProfile;
+  dryPcmMatrix: {
+    measured: boolean;
+    cases: number;
+    fatalFindings: number;
+    fatalCodes: Record<string, number>;
+    evidenceGaps: number;
+    evidenceGapCodes: Record<string, number>;
+    comparisons: DryPcmInstrumentComparison | null;
+  };
+}
+
+interface AuditProvenance {
+  evaluatorCommit: string;
+  subjectCommit: string;
+  evaluatorTreeSha256: string;
+  evaluatorDirty: boolean;
+  runtime: {
+    node: string;
+    platform: string;
+    arch: string;
+  };
+  browser: BrowserIdentity | null;
+  sampleRates: number[];
 }
 
 const VELOCITY_LAYER_TARGETS: Readonly<Record<string, number>> = Object.freeze({
@@ -181,8 +243,8 @@ const ISSUE_ACTIONS: Readonly<Record<string, string>> = Object.freeze({
   TAIL_TRUNCATION: 'capture a natural tail or author a click-free fade/loop',
   PITCH_DEVIATION: 'verify by ear, then correct the root map/tuning or replace the take',
   LOOP_SEAM_UNCHECKED: 'make the loop seam measurable and review it in a held-note render',
-  LOOP_SEAM_DIFF: 'move or crossfade loop points to reduce the seam discontinuity',
-  LOOP_SEAM_CORRELATION: 'move or crossfade loop points to make held notes continuous',
+  LOOP_VALUE_DISCONTINUITY: 'move or crossfade loop points to match the signal value at the boundary',
+  LOOP_DERIVATIVE_DISCONTINUITY: 'move or crossfade loop points to match the signal slope at the boundary',
   NEGATIVE_PHASE_CORRELATION: 'correct stereo polarity/phase or use a more mono-compatible source',
   MONO_LOSS: 'repair stereo phase so mono fold-down does not lose material',
   VELOCITY_RMS_INVERSION: 'recalibrate velocity layers so harder strikes do not get quieter',
@@ -191,39 +253,72 @@ const ISSUE_ACTIONS: Readonly<Record<string, string>> = Object.freeze({
   TONAL_LOUDNESS_MISMATCH: 'recalibrate canonical delivered loudness',
 });
 
+const MATRIX_GATE_ACTIONS: Readonly<Record<string, string>> = Object.freeze({
+  TRUE_PEAK_OVER_0_DBTP: 'lower dry post-track gain until every matrix render stays at or below 0 dBTP',
+  FLAT_TOP_CLIPPING: 'remove the clipping stage or lower the voice before the clipped stage',
+  DC_OFFSET: 'remove delivered-path DC without altering the intended envelope',
+  SILENT_DECLARED_NOTE: 'repair preparation, routing, or playable-range handling for the silent matrix case',
+  PITCH_ERROR: 'correct oscillator/sample tuning at the failing matrix notes',
+  MONO_LOSS: 'repair delivered stereo phase so the centered mono fold remains usable',
+  RELEASE_RESIDUAL: 'for this declared lifecycle voice, stop or release below -40 dBFS in the pinned window beginning two seconds after note-off',
+  ALTERNATE_SEED_VARIATION_MISSING: 'restore the declared seed-controlled variation mechanism; seeds A and B rendered identical PCM',
+});
+
+const MATRIX_EVIDENCE_ACTIONS: Readonly<Record<string, string>> = Object.freeze({
+  PITCH_INCONCLUSIVE: 'collect reference/listening or alternate multi-harmonic pitch evidence; the monophonic estimate was inconclusive and no sound-quality penalty was assigned',
+});
+
 function parseArgs(argv: readonly string[]): CliOptions {
   const options: CliOptions = {
     sampleReport: DEFAULT_SAMPLE_REPORT,
     liveReport: DEFAULT_LIVE_REPORT,
     jsonReport: DEFAULT_JSON_REPORT,
     markdownReport: DEFAULT_MARKDOWN_REPORT,
+    matrixReport: DEFAULT_MATRIX_REPORT,
     requireEvidence: false,
+    requireMatrix: false,
+    evaluatorCommit: null,
+    subjectCommit: null,
   };
-  const value = (argument: string, index: number): string => {
+  const rawValue = (argument: string, index: number): string => {
     const candidate = argv[index + 1];
-    if (!candidate || candidate.startsWith('--')) throw new Error(`${argument} requires a path`);
-    return path.resolve(process.cwd(), candidate);
+    if (!candidate || candidate.startsWith('--')) throw new Error(`${argument} requires a value`);
+    return candidate;
   };
+  const pathname = (argument: string, index: number): string =>
+    path.resolve(process.cwd(), rawValue(argument, index));
 
   for (let index = 0; index < argv.length; index++) {
     const argument = argv[index];
     if (argument === '--sample-report') {
-      options.sampleReport = value(argument, index++);
+      options.sampleReport = pathname(argument, index++);
     } else if (argument === '--live-report') {
-      options.liveReport = value(argument, index++);
+      options.liveReport = pathname(argument, index++);
     } else if (argument === '--json') {
-      options.jsonReport = value(argument, index++);
+      options.jsonReport = pathname(argument, index++);
     } else if (argument === '--markdown') {
-      options.markdownReport = value(argument, index++);
+      options.markdownReport = pathname(argument, index++);
+    } else if (argument === '--matrix-report') {
+      options.matrixReport = pathname(argument, index++);
     } else if (argument === '--require-evidence') {
       options.requireEvidence = true;
+    } else if (argument === '--require-matrix') {
+      options.requireMatrix = true;
+    } else if (argument === '--evaluator-commit') {
+      options.evaluatorCommit = rawValue(argument, index++);
+    } else if (argument === '--subject-commit') {
+      options.subjectCommit = rawValue(argument, index++);
     } else if (argument === '--help' || argument === '-h') {
       console.log('Usage: node --import tsx scripts/audit-instrument-quality.ts [options]');
       console.log('  --sample-report <path>  Decoded sample-quality JSON');
       console.log('  --live-report <path>    99-instrument Chromium output JSON');
       console.log('  --json <path>           Output machine-readable ranking');
       console.log('  --markdown <path>       Output human-readable ranking');
+      console.log('  --matrix-report <path>  Dry post-track PCM matrix JSON');
       console.log('  --require-evidence      Fail if either dynamic receipt is absent');
+      console.log('  --require-matrix        Fail unless the complete pinned PCM matrix is present');
+      console.log('  --evaluator-commit <id> Pinned evaluator commit (defaults to HEAD)');
+      console.log('  --subject-commit <id>   Candidate commit under evaluation (defaults to HEAD)');
       process.exit(0);
     } else {
       throw new Error(`Unknown argument: ${argument}`);
@@ -235,6 +330,64 @@ function parseArgs(argv: readonly string[]): CliOptions {
 function readJson<T>(pathname: string): T | null {
   if (!fs.existsSync(pathname)) return null;
   return JSON.parse(fs.readFileSync(pathname, 'utf8')) as T;
+}
+
+function sha256File(pathname: string): string | null {
+  if (!fs.existsSync(pathname)) return null;
+  return createHash('sha256').update(fs.readFileSync(pathname)).digest('hex');
+}
+
+function evaluatorTreeSha256(): string {
+  const hash = createHash('sha256');
+  for (const pathname of EVALUATOR_SOURCE_PATHS) {
+    const relative = relativePath(pathname);
+    hash.update(`${relative}\0`);
+    hash.update(fs.readFileSync(pathname));
+    hash.update('\0');
+  }
+  return hash.digest('hex');
+}
+
+function resolveFullCommitId(value: string, label: string): string {
+  if (!isFullCommitId(value)) throw new Error(`${label} must be a full 40- or 64-character Git commit ID`);
+  let resolved: string;
+  try {
+    resolved = execFileSync('git', ['rev-parse', '--verify', `${value}^{commit}`], {
+      cwd: APP_DIR,
+      encoding: 'utf8',
+    }).trim();
+  } catch {
+    throw new Error(`${label} is not a commit available in this repository: ${value}`);
+  }
+  if (resolved !== value) throw new Error(`${label} must use the repository's full canonical commit ID`);
+  return resolved;
+}
+
+function evaluatorDiffersFromCommit(evaluatorCommit: string): boolean {
+  const gitRoot = execFileSync('git', ['rev-parse', '--show-toplevel'], {
+    cwd: APP_DIR,
+    encoding: 'utf8',
+  }).trim();
+  for (const pathname of EVALUATOR_SOURCE_PATHS) {
+    const repositoryPath = path.relative(gitRoot, pathname).replaceAll(path.sep, '/');
+    let committed: Buffer;
+    try {
+      committed = execFileSync('git', ['show', `${evaluatorCommit}:${repositoryPath}`], {
+        cwd: APP_DIR,
+        encoding: null,
+      });
+    } catch {
+      return true;
+    }
+    if (!fs.readFileSync(pathname).equals(committed)) return true;
+  }
+  return false;
+}
+
+function countCodes(codes: readonly string[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const code of codes) counts[code] = (counts[code] ?? 0) + 1;
+  return Object.fromEntries(Object.entries(counts).sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0])));
 }
 
 function db(value: number): number {
@@ -308,19 +461,15 @@ function issueCounts(issues: readonly QualityIssue[]): Record<string, number> {
   );
 }
 
-function topIssueActions(counts: Readonly<Record<string, number>>): string[] {
-  return Object.entries(counts)
-    .slice(0, 2)
-    .map(([code, count]) => `${ISSUE_ACTIONS[code] ?? `investigate ${code.toLowerCase()}`} (${count})`);
-}
-
 function evidenceGrade(
   type: InstrumentType,
   live: LiveInstrumentResult | null,
   sampleReport: SampleQualityReport | null,
   liveSilent: boolean,
+  matrixMeasured: boolean,
 ): EvidenceGrade {
   if (liveSilent) return 'F';
+  if (live && matrixMeasured && (type !== 'sampled' || sampleReport !== null)) return 'A';
   if (type === 'sampled' && live && sampleReport) return 'A';
   if (live) return 'B';
   return 'C';
@@ -336,6 +485,9 @@ function improvementsFor(
   targetVelocityLayers: number,
   targetRoundRobins: number,
   grade: EvidenceGrade,
+  matrixGateCounts: Readonly<Record<string, number>>,
+  matrixEvidenceGapCounts: Readonly<Record<string, number>>,
+  matrixComparison: DryPcmInstrumentComparison | null,
 ): string[] {
   const improvements: string[] = [];
   if (score.components.some(component => component.id === 'live-silence')) {
@@ -350,7 +502,16 @@ function improvementsFor(
   if (rmsDeltaDb !== null && Math.abs(rmsDeltaDb) > 18) {
     improvements.push('review role-relative level calibration in an isolated, level-matched capture');
   }
-  improvements.push(...topIssueActions(issueCodeCounts));
+  improvements.push(...formatIssueActions(issueCodeCounts, ISSUE_ACTIONS));
+  improvements.push(...formatIssueActions(matrixGateCounts, MATRIX_GATE_ACTIONS));
+  improvements.push(...formatIssueActions(matrixEvidenceGapCounts, MATRIX_EVIDENCE_ACTIONS));
+  if (
+    matrixComparison?.repeat.policy === 'alternate-seed-must-differ'
+    && !matrixComparison.repeat.alternateSeedDiffers
+    && (matrixGateCounts.ALTERNATE_SEED_VARIATION_MISSING ?? 0) === 0
+  ) {
+    improvements.push('restore the declared seed-controlled variation mechanism; seed A and B rendered identical PCM');
+  }
   if (coverage && coverage.maxRootDistanceSemitones !== null && coverage.maxRootDistanceSemitones > 4) {
     improvements.push(`add roots or narrow the range so repitching stays within 4 semitones (now ${coverage.maxRootDistanceSemitones})`);
   }
@@ -359,15 +520,6 @@ function improvementsFor(
   }
   if (coverage && coverage.medianRoundRobins < targetRoundRobins) {
     improvements.push(`add alternate takes to reach ${targetRoundRobins} round robins per mapped layer (median now ${coverage.medianRoundRobins})`);
-  }
-
-  // PR #87 documents shared envelope defects that still reproduce on main.
-  // They remain recommendations rather than per-preset score points until a
-  // rendered release matrix can attribute their audible effect fairly.
-  if (type === 'advanced') {
-    improvements.push('fix the shared zero-release fallback and move voice cleanup onto the audio clock');
-  } else if (type === 'synth') {
-    improvements.push('move voice cleanup onto the audio clock and unify release semantics across engines');
   }
 
   if (improvements.length === 0) {
@@ -380,7 +532,7 @@ function improvementsFor(
   } else if (grade === 'C') {
     improvements.push('run the Chromium all-instrument receipt before making a quality claim');
   }
-  return improvements.slice(0, 6);
+  return improvements;
 }
 
 function markdownEscape(value: string): string {
@@ -392,11 +544,12 @@ function relativePath(pathname: string): string {
 }
 
 function renderMarkdown(
-  commit: string,
+  provenance: AuditProvenance,
   generatedAt: string,
   instruments: readonly RankedInstrument[],
   sampleReport: SampleQualityReport | null,
   liveReport: LiveQualityReport | null,
+  matrixReport: DryPcmMatrixReport | null,
   options: CliOptions,
 ): string {
   const byBand = Object.fromEntries(
@@ -410,7 +563,9 @@ function renderMarkdown(
   const lines: string[] = [
     '# Instrument audio-quality audit',
     '',
-    `Generated from \`${commit}\` at ${generatedAt}.`,
+    `Generated for subject \`${provenance.subjectCommit}\` with evaluator \`${provenance.evaluatorCommit}\` at ${generatedAt}.`,
+    '',
+    `Evaluator tree SHA-256: \`${provenance.evaluatorTreeSha256}\`${provenance.evaluatorDirty ? ' (working tree differs from evaluator commit)' : ''}.`,
     '',
     '> This is a technical improvement-priority ranking, not a claim about musical taste. A score of 0 means “no defect detected by these lanes,” not “perfect sound.” Hash-bound waivers remain measured debt; they are not erased merely because CI accepts them.',
     '',
@@ -425,6 +580,10 @@ function renderMarkdown(
     liveReport
       ? `- Browser lane: **run**, with ${liveReport.diagnostics.pageErrors.length} page errors and ${liveReport.diagnostics.consoleErrors.length} console/readiness errors.`
       : `- Browser lane: **not run** (expected \`${relativePath(options.liveReport)}\`).`,
+    matrixReport
+      ? `- Dry PCM matrix: **${matrixReport.capturedCaseCount}/${matrixReport.expectedCaseCount} cases**, ${matrixReport.results.reduce((total, result) => total + result.fatalFindings.length, 0)} fatal findings and ${matrixReport.results.reduce((total, result) => total + result.evidenceGaps.length, 0)} non-scoring evidence gaps; PCM hashes retained in the JSON receipt.`
+      : `- Dry PCM matrix: **not run** (expected \`${relativePath(options.matrixReport)}\`; use \`--require-matrix\` for fail-closed CI).`,
+    `- Runtime: **${provenance.runtime.node} / ${provenance.runtime.platform}-${provenance.runtime.arch}**; sample rates: **${provenance.sampleRates.join(', ') || 'not reported'}**; browser: **${provenance.browser ? `${provenance.browser.name} ${provenance.browser.version}` : 'not reported'}**.`,
     '',
     '## Stack-ranked instruments (worst first)',
     '',
@@ -445,7 +604,7 @@ function renderMarkdown(
     '',
     '## Evidence grades',
     '',
-    '- **A** — decoded every shipped source file plus a real Chromium sequencer note.',
+    '- **A** — strongest applicable evidence: decoded shipped sources for sampled instruments and/or a complete dry PCM matrix, plus a real Chromium sequencer note.',
     '- **B** — real Chromium sequencer note plus static engine/configuration coverage; no complete isolated PCM sweep.',
     '- **C** — static evidence only because the live receipt was absent.',
     '- **F** — a fatal live-silence gate failed.',
@@ -456,7 +615,7 @@ function renderMarkdown(
     '',
     '```sh',
     'cd app',
-    'npm run audit:instrument-quality:full',
+    matrixReport ? 'npm run audit:instrument-quality:full' : 'npm run audit:instrument-quality:v1',
     '```',
     '',
     'The exact weights, caps, role targets, and claim boundary are documented in `../docs/INSTRUMENT-AUDIO-QUALITY-RUBRIC.md`.',
@@ -468,11 +627,50 @@ function renderMarkdown(
 function main(): void {
   const options = parseArgs(process.argv.slice(2));
   const sampleReport = readJson<SampleQualityReport>(options.sampleReport);
-  const liveReport = readJson<LiveQualityReport>(options.liveReport);
+  const rawLiveReport = readJson<unknown>(options.liveReport);
+  const matrixReport = readJson<DryPcmMatrixReport>(options.matrixReport);
+  const receiptSubjectCommit = rawLiveReport !== null
+    && typeof rawLiveReport === 'object'
+    && 'subjectCommit' in rawLiveReport
+    && typeof rawLiveReport.subjectCommit === 'string'
+    ? rawLiveReport.subjectCommit
+    : null;
+  const headCommit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: APP_DIR, encoding: 'utf8' }).trim();
+  const evaluatorCommit = resolveFullCommitId(
+    options.evaluatorCommit
+      ?? process.env.KEYBOARDIA_EVALUATOR_COMMIT
+      ?? matrixReport?.provenance?.evaluatorCommit
+      ?? headCommit,
+    'Evaluator commit',
+  );
+  const subjectCommit = resolveFullCommitId(
+    options.subjectCommit
+      ?? process.env.KEYBOARDIA_SUBJECT_COMMIT
+      ?? matrixReport?.provenance?.subjectCommit
+      ?? receiptSubjectCommit
+      ?? headCommit,
+    'Subject commit',
+  );
+  const liveReport = rawLiveReport === null
+    ? null
+    : validateLiveQualityReport(rawLiveReport, subjectCommit);
+  const currentEvaluatorTreeSha256 = evaluatorTreeSha256();
+  const evaluatorDirty = evaluatorDiffersFromCommit(evaluatorCommit);
   if (options.requireEvidence && (!sampleReport || !liveReport)) {
     throw new Error(
       `Required evidence missing: sample=${sampleReport ? 'present' : options.sampleReport}, live=${liveReport ? 'present' : options.liveReport}`,
     );
+  }
+  if (options.requireMatrix && !matrixReport) {
+    throw new Error(`Required dry PCM matrix evidence missing: ${options.matrixReport}`);
+  }
+  if (matrixReport) {
+    validateDryPcmMatrixReport(matrixReport, undefined, {
+      evaluatorCommit,
+      subjectCommit,
+      evaluatorTreeSha256: currentEvaluatorTreeSha256,
+      evaluatorDirty,
+    });
   }
 
   const catalogue = Object.entries(INSTRUMENT_GROUPS).flatMap(([category, group]) =>
@@ -482,6 +680,16 @@ function main(): void {
       name: instrument.name,
       type: instrument.type as InstrumentType,
     })),
+  );
+  assertInstrumentQualityProfileCoverage(catalogue.map(item => item.id));
+  const matrixResultsByInstrument = new Map<string, DryPcmMatrixReport['results']>();
+  for (const result of matrixReport?.results ?? []) {
+    const existing = matrixResultsByInstrument.get(result.instrumentId) ?? [];
+    existing.push(result);
+    matrixResultsByInstrument.set(result.instrumentId, existing);
+  }
+  const matrixComparisonsByInstrument = new Map(
+    (matrixReport?.comparisons ?? []).map(comparison => [comparison.instrumentId, comparison]),
   );
   const categoryRmsMedians = new Map<string, number>();
   for (const category of Object.keys(INSTRUMENT_GROUPS)) {
@@ -500,6 +708,8 @@ function main(): void {
   ];
 
   const unranked: Array<Omit<RankedInstrument, 'rank'>> = catalogue.map(item => {
+    const profile = INSTRUMENT_QUALITY_PROFILE_BY_ID.get(item.id);
+    if (!profile) throw new Error(`Missing instrument quality profile for ${item.id}`);
     const presetId = item.type === 'sampled' ? item.id.slice('sampled:'.length) : item.id;
     const manifest = item.type === 'sampled' ? manifestFor(presetId) : null;
     const coverage = manifest ? manifestCoverage(manifest) : null;
@@ -517,6 +727,17 @@ function main(): void {
       : null;
     const targetVelocityLayers = VELOCITY_LAYER_TARGETS[presetId] ?? 0;
     const targetRoundRobins = ROUND_ROBIN_TARGETS[presetId] ?? 0;
+    const matrixResults = matrixResultsByInstrument.get(item.id) ?? [];
+    const matrixFatalCodes = countCodes(
+      matrixResults.flatMap(result => result.fatalFindings.map(finding => finding.code)),
+    );
+    const matrixFatalCount = Object.values(matrixFatalCodes).reduce((total, count) => total + count, 0);
+    const matrixEvidenceGapCodes = countCodes(
+      matrixResults.flatMap(result => result.evidenceGaps.map(gap => gap.code)),
+    );
+    const matrixEvidenceGapCount = Object.values(matrixEvidenceGapCodes)
+      .reduce((total, count) => total + count, 0);
+    const matrixComparison = matrixComparisonsByInstrument.get(item.id) ?? null;
     const score = scoreInstrument({
       calibrationPresent: getSourceCalibration(item.id) !== null,
       liveMeasured: live !== null,
@@ -530,8 +751,9 @@ function main(): void {
       targetVelocityLayers,
       medianRoundRobins: coverage?.medianRoundRobins ?? null,
       targetRoundRobins,
+      dryPcmFatalCount: matrixFatalCount,
     });
-    const grade = evidenceGrade(item.type, live, sampleReport, liveSilent);
+    const grade = evidenceGrade(item.type, live, sampleReport, liveSilent, matrixResults.length > 0);
     const codeCounts = issueCounts(sampleIssues);
     const evidence = item.type === 'sampled'
       ? `${coverage?.fileCount ?? 0} decoded files, ${sampleIssues.length} accepted+unwaived findings, live peak ${finiteRound(peakDbfs) ?? 'n/a'} dBFS`
@@ -562,6 +784,16 @@ function main(): void {
         issueCodes: codeCounts,
       } : null,
       scoreComponents: score.components,
+      profile,
+      dryPcmMatrix: {
+        measured: matrixResults.length > 0,
+        cases: matrixResults.length,
+        fatalFindings: matrixFatalCount,
+        fatalCodes: matrixFatalCodes,
+        evidenceGaps: matrixEvidenceGapCount,
+        evidenceGapCodes: matrixEvidenceGapCodes,
+        comparisons: matrixComparison,
+      },
       improvements: improvementsFor(
         item.type,
         score,
@@ -572,6 +804,9 @@ function main(): void {
         targetVelocityLayers,
         targetRoundRobins,
         grade,
+        matrixFatalCodes,
+        matrixEvidenceGapCodes,
+        matrixComparison,
       ),
     };
   });
@@ -587,26 +822,64 @@ function main(): void {
     ...instrument,
   }));
 
-  const commit = execFileSync('git', ['rev-parse', 'HEAD'], { cwd: APP_DIR, encoding: 'utf8' }).trim();
+  const reportedSampleRates = [
+    ...(sampleReport?.samples ?? []).map(sample => sample.sampleRate),
+    ...(liveReport?.audioSampleRates ?? []),
+    ...(matrixReport?.sampleRates ?? []),
+  ].filter((value): value is number => value !== undefined && Number.isFinite(value));
+  const provenance: AuditProvenance = {
+    evaluatorCommit,
+    subjectCommit,
+    evaluatorTreeSha256: currentEvaluatorTreeSha256,
+    evaluatorDirty,
+    runtime: {
+      node: process.version,
+      platform: process.platform,
+      arch: process.arch,
+    },
+    browser: matrixReport?.provenance.browser
+      ?? liveReport?.browser
+      ?? null,
+    sampleRates: [...new Set(reportedSampleRates)].sort((left, right) => left - right),
+  };
   const generatedAt = new Date().toISOString();
   const payload = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     generatedAt,
-    commit,
-    claim: 'technical-improvement-priority-not-listener-preference',
+    commit: subjectCommit,
+    provenance,
+    claim: evaluatorDirty
+      ? 'unpinned-technical-improvement-priority-not-listener-preference'
+      : 'pinned-technical-improvement-priority-not-listener-preference',
     inputs: {
-      sampleReport: sampleReport ? relativePath(options.sampleReport) : null,
-      liveReport: liveReport ? relativePath(options.liveReport) : null,
+      sampleReport: sampleReport ? {
+        path: relativePath(options.sampleReport),
+        sha256: sha256File(options.sampleReport),
+      } : null,
+      liveReport: liveReport ? {
+        path: relativePath(options.liveReport),
+        sha256: sha256File(options.liveReport),
+      } : null,
+      matrixReport: matrixReport ? {
+        path: relativePath(options.matrixReport),
+        sha256: sha256File(options.matrixReport),
+        profileSha256: matrixReport.profileSha256,
+        planSha256: matrixReport.planSha256,
+      } : null,
     },
     totals: {
       instruments: instruments.length,
       liveMeasured: instruments.filter(instrument => instrument.live.measured).length,
       liveSilent: instruments.filter(instrument => instrument.live.silent).length,
-      sampledDecoded: instruments.filter(instrument => instrument.evidenceGrade === 'A').length,
+      sampledDecoded: instruments.filter(instrument => instrument.type === 'sampled' && sampleReport !== null).length,
+      dryPcmMeasured: instruments.filter(instrument => instrument.dryPcmMatrix.measured).length,
+      dryPcmCases: instruments.reduce((total, instrument) => total + instrument.dryPcmMatrix.cases, 0),
+      dryPcmFatalFindings: instruments.reduce((total, instrument) => total + instrument.dryPcmMatrix.fatalFindings, 0),
+      dryPcmEvidenceGaps: instruments.reduce((total, instrument) => total + instrument.dryPcmMatrix.evidenceGaps, 0),
     },
     instruments,
   };
-  const markdown = renderMarkdown(commit, generatedAt, instruments, sampleReport, liveReport, options);
+  const markdown = renderMarkdown(provenance, generatedAt, instruments, sampleReport, liveReport, matrixReport, options);
 
   fs.mkdirSync(path.dirname(options.jsonReport), { recursive: true });
   fs.mkdirSync(path.dirname(options.markdownReport), { recursive: true });

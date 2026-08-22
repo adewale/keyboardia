@@ -25,7 +25,7 @@ erase the underlying finding from the score.
 
 ## Executable v1 lanes
 
-`npm run audit:instrument-quality:full` runs and joins these sources:
+`npm run audit:instrument-quality:v1` runs and joins these sources:
 
 | Lane | Scope | What it establishes | What it does not establish |
 |---|---|---|---|
@@ -36,7 +36,9 @@ erase the underlying finding from the score.
 
 The aggregator is `app/scripts/audit-instrument-quality.ts`; pure scoring lives
 in `app/scripts/instrument-quality-rubric.ts`. JSON and Markdown reports are
-written under `app/test-results/instrument-quality/` unless paths are supplied.
+written under ignored `app/reports/instrument-quality/` unless paths are
+supplied. Matrix plans and receipts live there as well, so Playwright clearing
+its `test-results/` output directory cannot delete a receipt before aggregation.
 
 The browser test runs before the decoded audit because Playwright clears its
 configured results directory at startup.
@@ -50,6 +52,7 @@ total is capped at 100.
 |---|---:|---|
 | Missing source calibration | 20 | fixed if the catalogue ID has no explicit manifest/fixed trim |
 | Silent canonical live note | 40 | fixed when both measured peak and RMS are below the committed silence gates |
+| Complete-matrix fatal finding | 40 | fixed if any fatal gate is present in a verified full dry-PCM receipt |
 | Unwaived decoded-source error | up to 40 | 20 per error |
 | Source headroom | up to 12 | `1.5 × max(0, live track peak dBFS)` |
 | Category-level outlier | up to 6 | `max(0, (abs(RMS delta) − 18) / 2)` against the category median; a review prompt, never auto-normalization |
@@ -90,13 +93,16 @@ instrument ID.
 The v1 evaluator consumes the canonical sample audit rather than duplicating
 it. Its current review/failure boundaries are:
 
-- decoded lossy peak above −2.5 dBFS;
+- decoded lossy-source peak above −2.5 dBFS as a codec crest-margin review;
+  exact lossless PCM instead uses clipping/flat-top checks, while true delivered
+  headroom is measured only at the post-track PCM/browser lane;
 - DC above −60 dBFS for review and −40 dBFS for failure;
 - effective onset above 10 ms;
 - free tail ending above −35 dB relative to peak;
 - pitch estimate over 10 cents at confidence at least 0.52;
 - stereo correlation below −0.2 or mono loss worse than 3 dB;
-- loop correlation below 0.9 or seam-difference ratio above 0.1;
+- loop boundary value jump above −35 dB relative to peak or boundary-slope
+  discontinuity above 4× the local derivative RMS;
 - velocity inversion worse than 1 dB;
 - adjacent-note/layer step above 3 dB;
 - range extension more than six semitones beyond an outer root;
@@ -120,15 +126,16 @@ This makes the main limitation visible: all 26 sampled instruments can reach A,
 while procedural/native/Tone/advanced instruments currently reach B. Their
 schema tests and one live note are not a full timbre evaluation.
 
-## Full PCM rubric required for stronger claims
+## Dry PCM matrix evaluator API
 
-The next evaluator version should capture dry post-track PCM in pinned Chromium
-and use the existing offline renderer where it is faithful. Score delivered PCM
-by musical role, never by engine. Each instrument needs a committed profile:
+`app/scripts/instrument-quality-matrix.ts` now commits 99 role profiles, builds
+all 1,683 required cases, validates contiguous finite PCM, calculates metrics
+and gates, hashes canonical float PCM, and fails closed on incomplete receipts.
+It scores delivered PCM by musical role, never by engine. Every profile records:
 
 ```text
-role, pitch mode, envelope class, loudness class, velocity behaviour,
-variation behaviour, stereo intent, explicit spectral signature, render lengths
+role, pitch mode, envelope class, loudness class, descriptive velocity policy,
+release policy, seed-replay policy, mono-fold policy, and render lengths
 ```
 
 Required render matrix:
@@ -139,9 +146,9 @@ Required render matrix:
 | Range | min/Q1/mid/Q3/max plus worst repitch point | silence, pitch and continuity |
 | Velocity | MIDI 32/64/90/127 | amplitude/timbre response and layer cliffs |
 | Release | role-specific gate plus 1.5–3 s tail | clicks, truncation, stuck voices |
-| Repeats | 16 unlocked, 16 locked, seeded replay | variation and determinism |
-| Polyphony | role-appropriate chord or eight-hit overlap | stealing/dropouts/overload |
-| Stereo | centered intrinsic stereo and mono fold | phase/translation |
+| Repeats | 16 hits at seed A, seed B, and a fresh seed-A replay | bit-exact replay; for declared procedural voices, whether the seed mechanism changes any PCM |
+| Polyphony | role-appropriate chord or eight-hit overlap | aggregate safety/level stress only; it does not prove individual-voice survival |
+| Stereo | centered dry capture and mono fold | phase/translation only; it does not grade artistic width |
 
 Recommended technical dimensions total 100: functional coverage 20, signal
 safety/translation 15, timing/envelope 15, level/dynamics 15, pitch or
@@ -149,16 +156,59 @@ transient-role fidelity 15, and behavioral/timbral consistency 20. Across a
 matrix, aggregate each metric as `0.50 × worst + 0.30 × P10 + 0.20 × median` so
 one broken note remains visible without rewarding small sample maps.
 
-Hard gates for the full lane should include missing required capture, decode or
-routing failure, non-finite PCM, frame gaps, any declared note silent, heard
-true peak above 0 dBTP, flat-top clipping, DC above −40 dBFS, high-confidence
-central pitch error above 50 cents, mono loss above 6 dB, or a voice remaining
-above −40 dB two seconds after its declared release.
+Hard gates for the full lane include missing required capture, non-finite PCM,
+frame gaps, any declared note silent, heard true peak above 0 dBTP,
+scale-invariant flat-top shape, DC above −40 dBFS, high-confidence **absolute**
+pitch error above 50 cents, and mono loss above 3 dB. Tonal single-note cases
+with no reliable absolute fundamental fail closed as inconclusive, rather than
+passing; octave errors are not cent-folded. A residual above −40 dBFS in the
+pinned 100 ms window beginning exactly two seconds after note-off is fatal only
+for profiles declaring a voice-lifecycle
+release. Natural-decay one-shots (including rides and cymbals) retain the tail
+metric for truncation/decay review without being forced silent.
 
 Use a pinned evaluator commit against candidate branches. A branch must not
-change its own weights or thresholds and then grade itself. Store metric JSON,
-environment identity, evaluator/subject commits, and PCM hashes; keep large WAV
-captures ephemeral unless explicitly approved.
+change its own weights or thresholds and then grade itself. The receipt stores
+Node/platform, browser identity when supplied by the adapter, pinned 44.1 kHz
+sample rate, adapter identity/hash, evaluator/subject commits, evaluator-tree
+hash, plan/profile identity, unique capture attempts, and per-case PCM hashes; keep
+large WAV captures ephemeral unless explicitly approved.
+
+The repository does **not** yet contain a production Chromium adapter that
+delivers post-track PCM for all 99 instruments. The matrix code and emitted plan
+are therefore an evaluator/capture contract, not completed audio evidence:
+
+```sh
+cd app
+npm run audit:instrument-quality:matrix:plan   # emits instructions only
+npm run audit:instrument-quality:matrix:verify # validates a supplied receipt
+```
+
+`npm run audit:instrument-quality:full` is deliberately fail-closed: it now
+requires that verified receipt in addition to v1 evidence. Use
+`npm run audit:instrument-quality:v1` for the currently executable browser-note
+and decoded-source lanes. Neither command silently upgrades a plan to a
+measurement.
+
+Full verification requires canonical full Git commit IDs, exact matrix
+evaluator/subject/tree binding, and evaluator sources byte-identical to the
+pinned evaluator commit. A dirty evaluator is reported as unpinned in v1 and is
+rejected in full mode.
+
+Cross-case claims are deliberately limited. The receipt records velocity
+active-RMS/loudness/centroid deltas, aggregate polyphony deltas, mono-fold
+metrics, and descriptive spectral centroid. These are measurements, not
+preferred-response thresholds. Seed A must replay bit-exactly or the receipt is
+invalidated as a harness/determinism failure. For the small committed set of
+seed-controlled procedural voices, A/B hash inequality means only that the
+variation mechanism changed PCM; it does not prove audible or desirable
+timbral variety.
+
+Because large PCM buffers are not embedded in JSON, external receipt
+validation can prove schema, geometry, provenance, hashes, gate consistency,
+and cross-case consistency, but cannot independently recompute a metric from
+the audio bytes. Preserve the ephemeral PCM artifacts when forensic
+recomputation is required; a hash by itself is not proof of metric correctness.
 
 ## Listening gate
 
@@ -176,4 +226,3 @@ changes therefore use the existing A/B page with:
 Report listener-level results and uncertainty. Do not blend a perceptual score
 into the technical score until sample size, weighting, and success criteria are
 preregistered.
-
