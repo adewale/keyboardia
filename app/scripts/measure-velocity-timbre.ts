@@ -39,7 +39,7 @@ const MEASURABLE_FLOOR_DB = -70;
 const LAYER_PATTERN = /-(pp|mf|ff|soft|loud|hard|med)\.[a-z0-9]+$/;
 const AUDIO_PATTERN = /\.(mp3|m4a|wav|ogg)$/;
 
-interface InstrumentMeasurement {
+export interface InstrumentMeasurement {
   id: string;
   files: number;
   layers: string[];
@@ -101,7 +101,7 @@ function mean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
-async function measureInstrument(id: string): Promise<InstrumentMeasurement | null> {
+export async function measureInstrument(id: string): Promise<InstrumentMeasurement | null> {
   const dir = path.join(INSTRUMENTS_DIR, id);
   const files = fs.readdirSync(dir).filter((file) => AUDIO_PATTERN.test(file)).sort();
   if (!files.length) return null;
@@ -189,4 +189,9 @@ async function main(): Promise<void> {
   console.log(`\n${gainOnly.length}/${measurements.length} instruments respond to velocity with gain only.`);
 }
 
-await main();
+// Run only when invoked directly; validate-sustain-ceiling.ts imports the
+// measurement core above without triggering a full-library sweep.
+import { pathToFileURL } from 'node:url';
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  await main();
+}

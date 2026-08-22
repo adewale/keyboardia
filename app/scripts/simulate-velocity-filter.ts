@@ -30,6 +30,10 @@ import path from 'node:path';
 import { OfflineAudioContext } from 'node-web-audio-api';
 import { rmsDb, spectralCentroidHz } from '../src/test/audio-measures';
 import { DEFAULT_STEP_MIDI_VELOCITY } from '../src/shared/constants';
+import {
+  velocitySampleCutoffAt,
+  VELOCITY_FILTER_OCTAVES,
+} from '../src/audio/velocity-sample-filter';
 
 const INSTRUMENTS_DIR = 'public/instruments';
 const SAMPLE_RATE = 48_000;
@@ -72,16 +76,9 @@ function toMono(buffer: AudioBuffer): Float32Array {
   return out;
 }
 
-/** Null means "bypass": the proposed no-op at and above the default velocity. */
-export function velocitySampleCutoff(
-  anchorHz: number,
-  midiVelocity: number,
-  octaves: number,
-): number | null {
-  if (midiVelocity >= DEFAULT_STEP_MIDI_VELOCITY) return null;
-  const normalized = Math.max(0, midiVelocity) / DEFAULT_STEP_MIDI_VELOCITY;
-  return anchorHz * 2 ** (-octaves * (1 - normalized));
-}
+// The curve itself ships in src/audio/velocity-sample-filter.ts; this script
+// only explores anchors and sweep depths through the same implementation the
+// engine runs, so the numbers here cannot drift from production.
 
 async function render(buffer: AudioBuffer, cutoffHz: number | null): Promise<Float32Array> {
   const length = Math.min(
@@ -132,7 +129,7 @@ async function simulate(id: string) {
     dryCentroids.push(dry);
     const anchor = ANCHOR_RATIO * dry;
     for (let i = 0; i < OCTAVE_CANDIDATES.length; i++) {
-      const cutoff = velocitySampleCutoff(anchor, PROBE_VELOCITY, OCTAVE_CANDIDATES[i]);
+      const cutoff = velocitySampleCutoffAt(anchor, PROBE_VELOCITY, OCTAVE_CANDIDATES[i]);
       const wet = centroidOf(await render(buffer, cutoff));
       if (wet !== null) wetCentroids[i].push(wet);
     }
@@ -155,7 +152,61 @@ async function simulate(id: string) {
   };
 }
 
+/** Mean dry/wet centroids for one instrument at a given absolute anchor. */
+async function measureDropAtAnchor(id: string, anchorHz: number): Promise<number | null> {
+  const dir = path.join(INSTRUMENTS_DIR, id);
+  const files = fs.readdirSync(dir)
+    .filter((file) => /\.(mp3|m4a|wav|ogg)$/.test(file))
+    .sort()
+    .slice(0, SAMPLES_PER_INSTRUMENT);
+  const dryCentroids: number[] = [];
+  const wetCentroids: number[] = [];
+  for (const file of files) {
+    const buffer = await decode(path.join(dir, file));
+    const dry = centroidOf(await render(buffer, null));
+    if (dry === null) continue;
+    const cutoff = velocitySampleCutoffAt(anchorHz, PROBE_VELOCITY, VELOCITY_FILTER_OCTAVES);
+    const wet = centroidOf(await render(buffer, cutoff));
+    if (wet === null) continue;
+    dryCentroids.push(dry);
+    wetCentroids.push(wet);
+  }
+  if (!dryCentroids.length) return null;
+  return ((mean(dryCentroids) - mean(wetCentroids)) / mean(dryCentroids)) * 100;
+}
+
+/**
+ * Solve the manifest anchor per instrument: bisect until the centroid drop at
+ * the probe velocity sits at SOLVE_TARGET_DROP_PCT (mid-band of the 26-35%
+ * acceptance window in specs/PHASE-44-SOUND-CHANGES.md §3). Drop decreases
+ * monotonically as the anchor rises.
+ */
+const SOLVE_TARGET_DROP_PCT = 30;
+const SOLVE_TOLERANCE_PCT = 0.5;
+
+async function solveAnchors(): Promise<void> {
+  console.log(`instrument,anchorHz,drop@v${PROBE_VELOCITY}_pct`);
+  for (const id of TARGETS) {
+    let low = 120;
+    let high = 19_000;
+    let anchor = 0;
+    let drop: number | null = null;
+    for (let iteration = 0; iteration < 18; iteration++) {
+      anchor = Math.sqrt(low * high);
+      drop = await measureDropAtAnchor(id, anchor);
+      if (drop === null) break;
+      if (Math.abs(drop - SOLVE_TARGET_DROP_PCT) <= SOLVE_TOLERANCE_PCT) break;
+      if (drop > SOLVE_TARGET_DROP_PCT) low = anchor; else high = anchor;
+    }
+    console.log(`${id},${Math.round(anchor)},${drop === null ? 'unmeasurable' : drop.toFixed(1)}`);
+  }
+}
+
 async function main(): Promise<void> {
+  if (process.argv.includes('--solve')) {
+    await solveAnchors();
+    return;
+  }
   const results = [];
   for (const id of TARGETS) {
     const result = await simulate(id);
