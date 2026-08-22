@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "claim": "summary-only controlled technical comparison; not listening or complete-matrix evidence",
+  "generatedAt": "2026-08-22T14:50:24.572Z",
+  "method": {
+    "originalSourceCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+    "syntheticBaseCommit": "ec426f1510e7b7cd0ac67e0ff811ca25733dd23a",
+    "syntheticEvaluatorCommit": "30165f6c97838a001eb2699424c9fdbd616ecb43",
+    "candidateSubjectCommit": "d096b8445356a35d1e58714cba9f97afac3953e0",
+    "candidateEvaluatorCommit": "aafae6a51a9710ae4419d1eeddfe2b4a492c49cb",
+    "description": "The synthetic control combines origin/main runtime, assets, manifests, and source calibration with the candidate's hardened receipt producers and equivalent final scoring math. This was necessary because the hardened auditor correctly refuses a dirty or mixed tree labelled as origin/main.",
+    "exceptions": [
+      "The control imports the newer sample-onset helper with the evaluator; old manifests and call sites use its unchanged 30 ms default behavior.",
+      "The control auditor predates the candidate's label-only measured-finding wording change; thresholds, metrics, scores, and issue counts are unchanged.",
+      "The synthetic commit is not asserted to be literal origin/main provenance. It is an explicitly labelled compatibility fixture for the same scored production paths."
+    ],
+    "rebuildOutline": [
+      "Create an isolated checkout at origin/main 58264dd5ae274f63b1cd80b72aa823b76b21f28b.",
+      "Overlay the evaluator, browser-receipt producers, and their pinned transitive inputs from the candidate while retaining origin/main runtime, assets, manifests, and source-calibration.ts.",
+      "Rebind a baseline version 3 to the old file and manifest hashes; commit the clean compatibility fixture.",
+      "Run the Chromium 99-instrument live receipt, strict 26-instrument decoded audit, and the v1 ranking under the overlaid scoring math.",
+      "Compare aggregate score, bands, decoded issue codes, and per-instrument scores with the candidate report."
+    ]
+  },
+  "artifactHashes": {
+    "controlReportSha256": "dbe9f5acc37370d7decce129040057de6f521de6421b2829f9972cbc05f5cf4b",
+    "controlLiveReceiptSha256": "58afbad81b30b2f83c7558accac2bafc6c902152cb06eb709c404db7ce759568",
+    "controlSampleReceiptSha256": "cc9f2fbbc6c78b417f6809fca5bec7fe0222577400f21049a70d0b10dff18f1c",
+    "candidateReportSha256": "de539dcf86bf4148e50f270b985ac891450470808b1245f9be7d384d70edfdca",
+    "candidateLiveReceiptSha256": "5c31f29a1f38fc2182dcba3189d8f00fd6e12480186eb238b2d39dbe91be2bfa",
+    "candidateSampleReceiptSha256": "6a56a5b4b07fdcb9e385366ac84b4e80f2cd73756edbb6f7576337f7bff258c1",
+    "candidateSmokeReceiptSha256": "7a9fd0b781b0f7fb57a6d5cacf91174c72fd408f6eab9d6ff9fea84a61ebd94f"
+  },
+  "control": {
+    "catalogueInstruments": 99,
+    "audibleInstruments": 99,
+    "repairPriorityPoints": 179.9,
+    "bands": {
+      "critical": 0,
+      "high": 0,
+      "medium": 7,
+      "low": 9,
+      "baseline": 83
+    },
+    "nonzeroRepairPriorityScores": 16,
+    "canonicalLivePeaksAboveZeroDbfs": 2,
+    "decodedFindings": 256,
+    "decodedIssueCodes": {
+      "PITCH_DEVIATION": 144,
+      "LEADING_SILENCE": 43,
+      "HOT_PEAK": 21,
+      "TAIL_TRUNCATION": 12,
+      "MONO_LOSS": 12,
+      "NEGATIVE_PHASE_CORRELATION": 9,
+      "DC_OFFSET": 8,
+      "NOTE_LEVEL_STEP": 3,
+      "LOOP_VALUE_DISCONTINUITY": 3,
+      "RANGE_OVEREXTENSION": 1
+    },
+    "nonzeroInstruments": {
+      "sampled:slap-bass": 24.2,
+      "sampled:alto-sax": 20.0,
+      "sampled:acoustic-guitar": 18.3,
+      "sampled:clean-guitar": 16.0,
+      "sampled:vinyl-crackle": 15.0,
+      "sampled:kalimba": 14.0,
+      "sampled:piano": 13.0,
+      "sampled:marimba": 11.3,
+      "sampled:finger-bass": 8.7,
+      "sampled:french-horn": 8.6,
+      "sampled:acoustic-hihat-closed": 6.0,
+      "sampled:steel-drums": 6.0,
+      "sampled:string-section": 6.0,
+      "sampled:brushes-snare": 5.0,
+      "sampled:vibraphone": 4.3,
+      "sampled:hammond-organ": 3.5
+    }
+  },
+  "candidate": {
+    "catalogueInstruments": 99,
+    "audibleInstruments": 99,
+    "repairPriorityPoints": 159.1,
+    "bands": {
+      "critical": 0,
+      "high": 0,
+      "medium": 6,
+      "low": 9,
+      "baseline": 84
+    },
+    "nonzeroRepairPriorityScores": 15,
+    "canonicalLivePeaksAboveZeroDbfs": 2,
+    "decodedFindings": 203,
+    "decodedIssueCodes": {
+      "PITCH_DEVIATION": 144,
+      "HOT_PEAK": 19,
+      "TAIL_TRUNCATION": 10,
+      "MONO_LOSS": 12,
+      "NEGATIVE_PHASE_CORRELATION": 9,
+      "DC_OFFSET": 8,
+      "RANGE_OVEREXTENSION": 1
+    },
+    "nonzeroInstruments": {
+      "sampled:slap-bass": 24.2,
+      "sampled:clean-guitar": 16.0,
+      "sampled:alto-sax": 15.0,
+      "sampled:vinyl-crackle": 15.0,
+      "sampled:kalimba": 14.0,
+      "sampled:piano": 13.0,
+      "sampled:acoustic-guitar": 11.3,
+      "sampled:marimba": 11.3,
+      "sampled:finger-bass": 8.4,
+      "sampled:acoustic-hihat-closed": 6.0,
+      "sampled:steel-drums": 6.0,
+      "sampled:string-section": 6.0,
+      "sampled:brushes-snare": 5.0,
+      "sampled:vibraphone": 4.3,
+      "sampled:french-horn": 3.6
+    }
+  },
+  "delta": {
+    "repairPriorityPoints": -20.8,
+    "repairPriorityPercent": -11.6,
+    "decodedFindings": -53,
+    "decodedFindingsPercent": -20.7,
+    "nonzeroRepairPriorityScores": -1,
+    "mediumBand": -1,
+    "baselineBand": 1,
+    "canonicalLivePeaksAboveZeroDbfs": 0,
+    "decodedIssueCodes": {
+      "LEADING_SILENCE": -43,
+      "LOOP_VALUE_DISCONTINUITY": -3,
+      "NOTE_LEVEL_STEP": -3,
+      "TAIL_TRUNCATION": -2,
+      "HOT_PEAK": -2
+    }
+  }
+}
