@@ -27,6 +27,7 @@ import {
   STEPS_PER_BEAT,
 } from './timing-calculations';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
+import { setMediaSessionPlaybackState } from './media-session';
 import { resolveHumanizedNoteDynamics } from './note-dynamics';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { getTrackStep, shouldTrackPlay, shouldTrackTrigger } from './track-step';
@@ -189,9 +190,11 @@ export class Scheduler implements IScheduler {
     this.lastTempo = state.tempo;
 
     this.scheduleLoop();
+    setMediaSessionPlaybackState('playing');
   }
 
   stop(): void {
+    setMediaSessionPlaybackState('paused');
     // Debug: Capture state BEFORE stop
     const isRunningBefore = this.isRunning;
     const timerIdBefore = this.timerId;
