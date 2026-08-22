@@ -7,6 +7,9 @@ are genuinely in flight:
 The final remote-state check used `main` at `58264dd5`, PR 87 at `b58db2e`,
 and the unsubmitted Tone Nets head at `9c61012` on 2026-08-22. GitHub still
 reported seven open pull requests and four open issues.
+At those exact tips, PR 87 differs from `main` only by two specification files;
+the Tone Nets head changes scripts, tests, test budgets, and specifications but
+no file under the production audio implementation or shipped instrument assets.
 
 | PR | Head | Audio impact |
 |---:|---|---|
