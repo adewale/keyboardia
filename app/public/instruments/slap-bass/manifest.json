@@ -3,7 +3,6 @@
   "name": "Slap Bass",
   "type": "sampled",
   "releaseTime": 0.15,
-  "velocityFilterAnchorHz": 4309,
   "gainDb": 6.75,
   "playableRange": {
     "min": 28,

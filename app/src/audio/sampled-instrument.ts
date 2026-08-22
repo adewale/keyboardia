@@ -32,6 +32,7 @@ import {
 } from './choke-groups';
 import { DEFAULT_MIDI_VELOCITY } from './velocity';
 import { velocitySampleCutoff, VELOCITY_FILTER_Q } from './velocity-sample-filter';
+import { velocityFilterAnchorHz } from './velocity-filter-calibration';
 import { isDrumInstrument } from '../shared/instrument-classification';
 import {
   compensatedSampleStartOffset,
@@ -151,15 +152,6 @@ export interface InstrumentManifest {
   startOffset?: number;
   /** Width in MIDI velocity units for equal-power-free linear layer blending. */
   velocityCrossfade?: number;
-  /**
-   * Anchor for the per-voice velocity lowpass (Phase 44 Change 2). When set,
-   * notes below DEFAULT_STEP_MIDI_VELOCITY render through a lowpass whose
-   * cutoff sweeps down from this anchor (see velocity-sample-filter.ts);
-   * at and above that velocity no filter node is created, so unlocked steps
-   * are byte-identical to a manifest without this field. Tuned per
-   * instrument by `scripts/simulate-velocity-filter.ts --solve`.
-   */
-  velocityFilterAnchorHz?: number;
   /** Notes whose complete layer/RR sets must decode before playback is ready. */
   priorityNotes?: number[];
 }
@@ -242,15 +234,28 @@ export class SampledInstrument {
   private baseUrl: string;
   private instrumentId: string;  // For cache key generation
   private chokeRegistry: ChokeGroupRegistry;
+  private velocityAnchorForNote: (
+    instrumentId: string,
+    midiNote: number,
+    sampleRate: number,
+  ) => number | undefined;
 
   constructor(
     instrumentId: string,
     baseUrl: string = '/instruments',
-    deps: { chokeRegistry?: ChokeGroupRegistry } = {}
+    deps: {
+      chokeRegistry?: ChokeGroupRegistry;
+      velocityAnchorForNote?: (
+        instrumentId: string,
+        midiNote: number,
+        sampleRate: number,
+      ) => number | undefined;
+    } = {}
   ) {
     this.instrumentId = instrumentId;
     this.baseUrl = `${baseUrl}/${instrumentId}`;
     this.chokeRegistry = deps.chokeRegistry ?? sampledInstrumentChokeRegistry;
+    this.velocityAnchorForNote = deps.velocityAnchorForNote ?? velocityFilterAnchorHz;
   }
 
   /**
@@ -647,8 +652,10 @@ export class SampledInstrument {
     // is below the bypass threshold. Bypass creates no node at all so the
     // default-velocity graph stays byte-identical.
     const velocityCutoffHz = velocitySampleCutoff(
-      this.manifest.velocityFilterAnchorHz,
+      this.velocityAnchorForNote(this.instrumentId, adjustedMidiNote, this.audioContext.sampleRate),
       velocity,
+      adjustedMidiNote,
+      adjustedMidiNote,
     );
     let velocityFilter: BiquadFilterNode | null = null;
     if (velocityCutoffHz !== null) {

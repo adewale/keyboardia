@@ -31,6 +31,7 @@ import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import { detectMirrorDirection } from '../shared/pattern-operations';
 import { AsyncActionLatch } from '../utils/AsyncActionLatch';
+import { installMediaSessionActionHandlers } from '../audio/media-session';
 import { resolveTrackReorder } from './track-reorder';
 import './StepSequencer.css';
 import './TransportBar.css';
@@ -410,6 +411,15 @@ export function StepSequencer() {
   // invoking the latest closure.
   const stablePlayPause = useStableCallback(() => handlePlayPause());
   const stableDeleteSelectedSteps = useStableCallback(() => handleDeleteSelectedSteps());
+
+  useEffect(() => installMediaSessionActionHandlers({
+    play: () => {
+      if (!playbackActiveRef.current) void stablePlayPause();
+    },
+    pause: () => {
+      if (playbackActiveRef.current) void stablePlayPause();
+    },
+  }), [stablePlayPause]);
 
   // Phase 31F: Selection count for badge display
   const selectionCount = useMemo(() => {

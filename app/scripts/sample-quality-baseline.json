@@ -1349,7 +1349,7 @@
       "code": "RANGE_OVEREXTENSION",
       "instrumentId": "slap-bass",
       "file": "manifest.json",
-      "sha256": "f590b85d7e7e2cc1794c68b0ee81c9652ff0cf3da7ee74e3a876757897310f9d",
+      "sha256": "d9691b1ee767fb5fd07ee66209028c96d599cfc65bb48c3ff428dc8cfbdd0612",
       "reason": "Hash-bound manifest disposition: playable range exceeds the nearest-root guideline but remains intentionally reachable with runtime range warnings."
     },
     {

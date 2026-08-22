@@ -51,6 +51,7 @@
     "validate:sustain-ceiling": "tsx scripts/validate-sustain-ceiling.ts",
     "validate:playable-ranges": "tsx scripts/validate-playable-ranges.ts",
     "validate:velocity": "tsx scripts/validate-velocity-layers.ts",
+    "validate:velocity-filter": "tsx scripts/validate-velocity-filter-calibration.ts && tsx scripts/simulate-velocity-filter.ts --sample-rate 44100 && tsx scripts/simulate-velocity-filter.ts --sample-rate 48000",
     "validate:sample-quality": "tsx scripts/validate-sample-quality.ts --strict",
     "samples:lab:check": "tsx scripts/sample-lab.ts check",
     "samples:lab:readiness": "tsx scripts/sample-lab.ts readiness",

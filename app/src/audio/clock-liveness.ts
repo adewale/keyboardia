@@ -7,7 +7,8 @@
  * actually advance before trusting the context. Contexts whose clock already
  * moved return immediately; a clock that never moves within the budget is
  * reported but not treated as fatal — playback proceeds, matching the
- * reference behaviour this is adopted from.
+ * reference behaviour this is adopted from. A non-zero clock is not proof of
+ * current liveness: backgrounding can freeze it at any previous value.
  */
 
 export const CLOCK_LIVENESS_TIMEOUT_MS = 250;
@@ -18,7 +19,6 @@ export async function waitForClockAdvance(
   timeoutMs: number = CLOCK_LIVENESS_TIMEOUT_MS,
 ): Promise<boolean> {
   const start = context.currentTime;
-  if (start > 0) return true;
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (context.currentTime > start) return true;

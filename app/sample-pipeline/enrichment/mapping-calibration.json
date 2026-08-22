@@ -38,13 +38,13 @@
         }
       ],
       "maxAbsoluteCorrectionDb": 3.75,
-      "manifestSha256": "74d87ffdce5edf63f116293ae6b52739f2ea7856b45f25fb1ff9cd91095b07a5"
+      "manifestSha256": "87f8e0cebe2c9f250a09269fa7a59ce4278a7bed3205e5ef9ff09d4754ab3a57"
     },
     {
       "id": "clean-guitar",
       "corrections": [],
       "maxAbsoluteCorrectionDb": 0,
-      "manifestSha256": "99ba311563d1b1d2a63fd0def4f569e31d9661c4329be885490ec0cff4134952"
+      "manifestSha256": "8d9139d1ab4ba87557e3697a04e5c880fc9a6d5edf8c0d6405a0c7d0d99a264e"
     },
     {
       "id": "finger-bass",
@@ -123,7 +123,7 @@
         }
       ],
       "maxAbsoluteCorrectionDb": 3.014,
-      "manifestSha256": "45fc8487a69d5cd1f5898ce023e5d724bdd1e49155adc086647e6778f13944eb"
+      "manifestSha256": "e7ac9d291d4b59e701b746923af70e21493d0c3ad88de87f657bca95c7026f1a"
     },
     {
       "id": "french-horn",
@@ -170,7 +170,7 @@
         }
       ],
       "maxAbsoluteCorrectionDb": 3.307,
-      "manifestSha256": "1461d80607a98a9b6f51c2c0ec72ca727ae7d3b3a2b4b17f7cf52703c94d98b2"
+      "manifestSha256": "5dd1360946b9b1923807768391797840036740b7fc0adf1dab82a8e8f32e806c"
     },
     {
       "id": "kalimba",
@@ -189,7 +189,7 @@
         }
       ],
       "maxAbsoluteCorrectionDb": 0.22,
-      "manifestSha256": "4c114268e400523ab1ddf334e28933b07650acf7ad6df46d901104a3593594f1"
+      "manifestSha256": "30fcf9514117d646342db5f5554ac44400feaf8034e1af4f04641a1f612f5c38"
     },
     {
       "id": "marimba",
@@ -702,7 +702,7 @@
         }
       ],
       "maxAbsoluteCorrectionDb": 3.705,
-      "manifestSha256": "e81191e87330d715d94465f000cae5da9bf4846cb692f8157c17e54a32ddd733"
+      "manifestSha256": "75030bd7a06cd8214ce73fcd539579d624ee0179dd73a2b54f1e0dd95694e8d5"
     },
     {
       "id": "string-section",
@@ -713,7 +713,7 @@
         }
       ],
       "maxAbsoluteCorrectionDb": 0.329,
-      "manifestSha256": "a93660eee2a56d6484f1571f1df68d25f55a021c8eea04765c521bf3f1ffb5df"
+      "manifestSha256": "b67391ad7888c3055298072d3f580bee7717c693ecc191a57cf95c6fb3e85c0d"
     },
     {
       "id": "vibraphone",

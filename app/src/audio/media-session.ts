@@ -10,6 +10,30 @@
 interface MediaSessionLike {
   playbackState: MediaSessionPlaybackState;
   metadata: MediaMetadata | null;
+  setActionHandler?: (
+    action: 'play' | 'pause',
+    handler: MediaSessionActionHandler | null,
+  ) => void;
+}
+
+export function installMediaSessionActionHandlers(
+  handlers: { play: () => void; pause: () => void },
+  nav: Navigator | undefined = typeof navigator === 'undefined' ? undefined : navigator,
+): () => void {
+  const session = mediaSessionOf(nav);
+  if (!session?.setActionHandler) return () => undefined;
+  for (const action of ['play', 'pause'] as const) {
+    try {
+      session.setActionHandler(action, handlers[action]);
+    } catch {
+      // Partial Media Session implementations must not break transport setup.
+    }
+  }
+  return () => {
+    for (const action of ['play', 'pause'] as const) {
+      try { session.setActionHandler?.(action, null); } catch { /* no-op */ }
+    }
+  };
 }
 
 function mediaSessionOf(nav: Navigator | undefined): MediaSessionLike | null {

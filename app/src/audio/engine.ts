@@ -270,14 +270,6 @@ export class AudioEngine {
     // Use webkitAudioContext for older iOS Safari
     this.audioContext = new AudioContextClass();
 
-    // Resume if suspended or interrupted (iOS-specific state)
-    // iOS can put the context in 'interrupted' state
-    if (this.audioContext.state === 'suspended' || (this.audioContext.state as string) === 'interrupted') {
-      logger.audio.log('AudioContext state:', this.audioContext.state, '- attempting resume');
-      await this.audioContext.resume();
-      logger.audio.log('AudioContext state after resume:', this.audioContext.state);
-    }
-
     // Create master gain
     this.masterGain = this.audioContext.createGain();
     this.masterGain.gain.value = MASTER_INPUT_TRIM;
@@ -319,6 +311,21 @@ export class AudioEngine {
       }
     } else {
       this.outputTrim.connect(this.audioContext.destination);
+    }
+
+    // This method is entered from a user gesture. Start the media element
+    // before the first await so mobile autoplay policy cannot reject it after
+    // the gesture activation has expired.
+    this.mediaOutput?.unlock();
+
+    // Resume if suspended or interrupted (iOS-specific state), then prove the
+    // clock moved from the value observed immediately after building the path.
+    if (this.audioContext.state === 'suspended' || (this.audioContext.state as string) === 'interrupted') {
+      logger.audio.log('AudioContext state:', this.audioContext.state, '- attempting resume');
+      await this.audioContext.resume();
+      logger.audio.log('AudioContext state after resume:', this.audioContext.state);
+      const clockLive = await waitForClockAdvance(this.audioContext);
+      if (!clockLive) logger.audio.warn('AudioContext clock did not advance after initial resume');
     }
 
     // Initialize synth engine
@@ -458,7 +465,7 @@ export class AudioEngine {
 
         // Initialize effects chain
         this.toneEffects = new ToneEffectsChain();
-        await this.toneEffects.initialize();
+        await this.toneEffects.initialize(this.mediaOutput?.getInput() ?? undefined);
         this.toneEffects.setTempo(this.tempo);
 
         // Connect master gain to effects chain input
@@ -616,10 +623,16 @@ export class AudioEngine {
 
     // Store handler reference for cleanup
     this.unlockHandler = async () => {
-      // Only unlock if we have a context and it's suspended
-      if (!this.audioContext || this.audioContext.state !== 'suspended') {
+      if (!this.audioContext) {
         return;
       }
+
+      // The media element has an independent playback lifecycle. It must be
+      // retried on every gesture even when the AudioContext already runs.
+      this.mediaOutput?.unlock();
+
+      const state = this.audioContext.state as string;
+      if (state !== 'suspended' && state !== 'interrupted') return;
 
       // Prevent concurrent resume() calls
       if (this.resumeInProgress) {
@@ -632,9 +645,6 @@ export class AudioEngine {
 
       this.resumeInProgress = true;
       logger.audio.log('Unlocking AudioContext via user gesture');
-      // Media elements may only start inside a gesture; idempotent.
-      this.mediaOutput?.unlock();
-
       this.resumePromise = (async () => {
         try {
           await this.audioContext!.resume();
@@ -690,14 +700,16 @@ export class AudioEngine {
       return false;
     }
 
+    // This is called directly by the transport gesture. The media element can
+    // be paused independently while the context remains running.
+    this.mediaOutput?.unlock();
+
     const state = this.audioContext.state as string;
     if (state === 'suspended' || state === 'interrupted') {
       logger.audio.log('Resuming AudioContext before playback, state:', state);
       try {
         await this.audioContext.resume();
         logger.audio.log('AudioContext resumed, state:', this.audioContext.state);
-        this.mediaOutput?.unlock();
-
         // Phase 44 §6: iOS can report 'running' with a parked clock; wait
         // (bounded) for currentTime to actually advance before trusting it.
         const clockLive = await waitForClockAdvance(this.audioContext);

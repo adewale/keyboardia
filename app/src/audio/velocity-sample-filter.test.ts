@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_STEP_MIDI_VELOCITY } from '../shared/constants';
 import {
   velocitySampleCutoff,
-  velocitySampleCutoffAt,
+  velocitySampleCutoffForNoteAt,
   VELOCITY_FILTER_BYPASS_VELOCITY,
   VELOCITY_FILTER_MAX_ANCHOR_HZ,
   VELOCITY_FILTER_MIN_ANCHOR_HZ,
   VELOCITY_FILTER_OCTAVES,
+  VELOCITY_FILTER_TRANSPARENT_HZ,
 } from './velocity-sample-filter';
 
 describe('velocitySampleCutoff', () => {
@@ -37,6 +38,19 @@ describe('velocitySampleCutoff', () => {
     }
   });
 
+  it('is effectively transparent immediately below the byte-identical bypass', () => {
+    expect(velocitySampleCutoff(4000, VELOCITY_FILTER_BYPASS_VELOCITY - 1))
+      .toBeGreaterThan(VELOCITY_FILTER_TRANSPARENT_HZ * 0.9);
+  });
+
+  it('tracks pitch so the same velocity is not over-filtered high or under-filtered low', () => {
+    const low = velocitySampleCutoff(4000, 40, 48, 60)!;
+    const reference = velocitySampleCutoff(4000, 40, 60, 60)!;
+    const high = velocitySampleCutoff(4000, 40, 72, 60)!;
+    expect(reference / low).toBeCloseTo(2, 6);
+    expect(high / reference).toBeCloseTo(2, 6);
+  });
+
   it('treats out-of-range anchors as absent instead of clamping them', () => {
     expect(velocitySampleCutoff(VELOCITY_FILTER_MIN_ANCHOR_HZ - 1, 40)).toBeNull();
     expect(velocitySampleCutoff(VELOCITY_FILTER_MAX_ANCHOR_HZ + 1, 40)).toBeNull();
@@ -46,7 +60,8 @@ describe('velocitySampleCutoff', () => {
   });
 
   it('clamps negative velocity to the deepest sweep instead of extrapolating', () => {
-    expect(velocitySampleCutoffAt(4000, -20, 1.5)).toBe(velocitySampleCutoffAt(4000, 0, 1.5));
+    expect(velocitySampleCutoffForNoteAt(4000, -20, 60, 60, 1.5))
+      .toBe(velocitySampleCutoffForNoteAt(4000, 0, 60, 60, 1.5));
   });
 
   it('rejects non-finite velocity', () => {

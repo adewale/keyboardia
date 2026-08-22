@@ -1,6 +1,6 @@
 {
   "name": "Whisper to Roar",
-  "description": "A dynamics demo for the Phase 44 sound changes. Every melodic line is written on the velocity lane: soft steps (volume locks at or below 0.55) render through the new per-voice lowpass and come out darker as well as quieter, while accents at 1.0 bypass it entirely — strings swell whisper-to-roar across each bar, the steel-drum melody breathes between ghost notes and accents, and the finger bass alternates full and ghosted hits. The acoustic kit shows the other dynamics system: its ghost notes select real soft velocity layers. The tied string chords lean on the sustain guard, and the whole session sits in the new default bass-protected room (reverb wet 0.15). A/B against a pre-Phase-44 build: the soft steps used to be identical samples, only quieter.",
+  "description": "A dynamics demo for the Phase 44 sound changes. Every melodic line is written on the velocity lane: soft string and Hammond steps render through the new per-voice lowpass and come out darker as well as quieter, while their accents bypass it entirely. The steel-drum melody and finger bass instead expose their recorded velocity zones, as does the acoustic kit with its ghost-note layers. The tied string chords lean on the sustain guard, and the whole session sits in the new default bass-protected room (reverb wet 0.15).",
   "state": {
     "tempo": 88,
     "swing": 8,

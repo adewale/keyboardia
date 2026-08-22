@@ -3,7 +3,6 @@
   "name": "String Section",
   "type": "sampled",
   "releaseTime": 0.8,
-  "velocityFilterAnchorHz": 4224,
   "gainDb": 4.5,
   "playableRange": {
     "min": 33,

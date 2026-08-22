@@ -125,7 +125,7 @@ export class ToneEffectsChain {
    * Initialize the effects chain
    * Must be called after Tone.start() has been invoked
    */
-  async initialize(): Promise<void> {
+  async initialize(destination?: AudioNode): Promise<void> {
     if (this.ready) {
       logger.audio.log('ToneEffectsChain already initialized');
       return;
@@ -193,7 +193,11 @@ export class ToneEffectsChain {
     this.reverb.connect(this.reverbWetGain);
     this.reverbWetGain.connect(this.limiter);
     this.limiter.connect(this.outputTrim);
-    this.outputTrim.toDestination();
+    if (destination) {
+      this.outputTrim.connect(destination);
+    } else {
+      this.outputTrim.toDestination();
+    }
 
     this.ready = true;
     void this.initializeConvolutionReverb();
@@ -274,14 +278,13 @@ export class ToneEffectsChain {
     userOutput: AudioNode;
   } | null {
     if (!this.compressor || !this.makeupTrim) return null;
-    const destination = Tone.getDestination();
     return {
       // Tone.Compressor exposes the native DynamicsCompressorNode as both its
       // input and output; tapping it therefore captures post-compression PCM.
       // Fan out from the upstream input gain to obtain a genuine pre tap.
       preCompressor: this.input!.output as unknown as AudioNode,
       postMakeup: this.makeupTrim.output as unknown as AudioNode,
-      userOutput: destination.output as unknown as AudioNode,
+      userOutput: this.outputTrim!.output as unknown as AudioNode,
     };
   }
 

@@ -5,6 +5,7 @@ import { canonicalizeForHash, hashState } from '../sync/canonicalHash';
 import { applyMutation } from '../shared/state-mutations';
 import type { SessionState } from '../shared/state';
 import { MAX_STEPS, STEPS_PER_PAGE, MAX_TRACKS, STEP_COUNT_OPTIONS } from '../types';
+import { NEW_SESSION_EFFECTS_STATE } from '../shared/effects-defaults';
 
 /**
  * Test helper: creates a minimal track for testing
@@ -822,6 +823,15 @@ describe('RESET_STATE action (New button behavior)', () => {
       currentStep: -1,
     };
   }
+
+  it('uses the canonical new-session room in the real reducer', () => {
+    const state = {
+      ...resetState(),
+      effects: { ...NEW_SESSION_EFFECTS_STATE, reverb: { decay: 9, wet: 0.9 } },
+      scale: { root: 'C' as const, scaleId: 'minor-pentatonic', locked: false },
+    };
+    expect(gridReducer(state, { type: 'RESET_STATE' }).effects).toEqual(NEW_SESSION_EFFECTS_STATE);
+  });
 
   it('should return empty tracks array', () => {
     const state = resetState();
