@@ -29,6 +29,13 @@ export default defineConfig({
         // Expose CSS file content as a binding for tests that verify CSS rules
         bindings: {
           STEP_SEQUENCER_CSS: stepSequencerCss,
+          // Soak-mode seed override consumed by BOTH fuzz lanes
+          // (state-machine-fuzz.test.ts AND overlap-fuzz.test.ts): a
+          // comma-separated decimal integer list (e.g. FUZZ_SEEDS="123,456").
+          // Empty = each lane's committed regression seeds. Parsing is
+          // fail-closed (see src/test/seeded-random.ts parseSeedOverride):
+          // a malformed value throws rather than running zero seeds.
+          FUZZ_SEEDS: process.env.FUZZ_SEEDS ?? '',
           // The suite validates request behavior, not Workers Logs transport.
           // Suppress wide-event console traffic before it enters Vitest's RPC;
           // otherwise Linux CI can close the environment with log calls queued.

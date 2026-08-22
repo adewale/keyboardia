@@ -341,6 +341,28 @@ The key insight is treating them as **primary (DO) + cache (KV)**, not as equal 
 
 ---
 
+## Paved-Path Deviation Inventory
+
+Everywhere Keyboardia deviates from the platform's (or Web Audio's) standard
+path is where latent bugs will surface for us and nobody else (see
+`specs/research/WAL-RESET-BUG-LEARNINGS-2026-08.md`). Each deviation is
+listed with the test lane that covers it; a deviation without a lane is a
+gap to close, not a fact to accept.
+
+| Deviation from the paved path | Why we do it | Covering lane |
+|---|---|---|
+| Dual storage: DO primary + debounced KV cache | Read fanout, listing, published sessions | `test/integration/state-machine-fuzz.test.ts` (KV convergence oracle) |
+| `serverSeq` durability split from state durability (persisted every 100 broadcasts / on flush, not per mutation) | Write-cost control | `test/integration/seq-regression.test.ts` (documents the rewind + silent negative ack); client half in `src/sync/seq-regression.test.ts` |
+| WebSocket Hibernation with wake-path state reloads | Idle sessions cost nothing | `test/integration/eviction-recovery.test.ts`; LESSONS-LEARNED Lesson 40 |
+| Auto-repair on invariant violation instead of fail-stop | Availability over strictness | `worker/invariants.ts` + repair counters (no trend metric yet — accepted gap) |
+| Alarm-based expiry bookkeeping in the session allocator | Rate windows, idempotency reservations | `app/src/worker/mcp-adapter.test.ts` ("expires durable rate windows and idempotency reservations by alarm") |
+| Concurrent multi-client WS writes into one DO | The product is multiplayer | `test/integration/overlap-fuzz.test.ts` (seq conservation + convergence) |
+| 25 ms lookahead scheduler re-reading mutable grid state mid-flight | Drift-free audio under live collaboration | `src/audio/scheduler-mutation-race.test.ts` (virtual-time race lane) |
+| 16-voice polyphony with voice stealing | Mobile CPU budget | engine diagnostics; no conservation ledger yet — accepted gap |
+| Tone.js and raw Web Audio mixed in one graph | Breadth of instruments | `src/audio/mock-fidelity.test.ts`; render lanes (`*.render.test.ts`) |
+
+---
+
 **Related Documents:**
 - `specs/research/DURABLE-OBJECTS-TESTING.md` - Lesson 17: Hibernation
 - `docs/BUG-PATTERNS.md` - Pattern #8: DO Hibernation State Loss

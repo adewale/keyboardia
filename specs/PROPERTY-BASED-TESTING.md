@@ -2567,7 +2567,65 @@ grep -r "rotate_pattern\|invert_pattern" app/src/
 
 ---
 
+## 16. Witness-Paired Properties and Demonstrated Kills (Binding Rule)
+
+**Status:** Binding for all new and modified properties (2026-08; issue #97 T4)
+
+The July 2026 test audit proved the failure mode this rule exists to
+prevent: **19 of 24 convergence properties survived a reducer neutered to
+`return state`.** Determinism, commutativity, idempotence, and
+count-preservation are all true of a no-op. A property that a no-op subject
+satisfies measures nothing.
+
+### Rule 1 — Witness pairing
+
+Every algebraic property (determinism, commutativity, idempotence,
+equivalence, order-insensitivity) MUST pair with a **change witness**: an
+assertion that the operation observably did something (state differs from
+input, output reflects the specific mutation, a counter moved). The witness
+makes the no-op implementation fail.
+
+```typescript
+// Not enough: holds for a reducer that ignores every mutation.
+expect(applyMutation(applyMutation(s, a), b))
+  .toEqual(applyMutation(applyMutation(s, b), a));
+// Witness: the mutations actually landed.
+expect(applyMutation(s, a)).not.toEqual(s);
+```
+
+### Rule 2 — Demonstrated kill
+
+Every NEW oracle, and every materially changed one, ships with a
+**demonstrated kill** named in its PR: a specific sabotage of the subject
+that the oracle was verified to catch. A kill against one *fix shape* is
+not a kill against the *property* — validate against at least two distinct
+plausible implementations of the behavior boundary
+(`docs/LESSONS-LEARNED.md` Lesson 67: the ack-sign constant that passed
+under a magnitude-based detector).
+
+### Rule 3 — Shrinkable randomness
+
+Schedule- and value-randomness in property lanes comes from fast-check, not
+hand-seeded PRNGs, so counterexamples minimize (hegel-skill mistake #6; the
+seq-reuse sabotage shrinks to a 5-op schedule, the Phase-22 BPM bug to a
+single tempo change). Hand-seeded `mulberry32` remains appropriate only for
+fixtures where shrinking is meaningless (e.g. deterministic render
+patterns). Failing schedules are promoted into the committed example
+database (`test/integration/known-failures.ts`), which replays first.
+
+### Rule 4 — Fail-closed knobs
+
+Any configuration that can reduce a lane's work below its committed default
+(seed overrides, run counts) must fail closed at parse time
+(`src/test/seeded-random.ts` `parseSeedOverride`; Lesson 69).
+
 ## Changelog
+
+### Version 2.1 (2026-08-14)
+- Added section 16: binding rules for witness-paired properties,
+  demonstrated kills, shrinkable randomness, and fail-closed knobs
+  (issue #97 T4; audit evidence in
+  `specs/research/BOUNDED-PLAN-EXECUTION-2026-08.md`)
 
 ### Version 2.5 (2026-01-04)
 - **Added Section 19: Sync Layer Testing Requirements**
