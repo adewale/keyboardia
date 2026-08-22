@@ -10,11 +10,20 @@ import { getInstrumentRange } from '../src/audio/instrument-ranges';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
 import { MAX_TRACKS } from '../src/types';
 import {
+  LIVE_ACTIVE_STEP,
+  LIVE_CAPTURE_ALIGNMENT,
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
   LIVE_CAPTURE_METHOD,
+  LIVE_EXPECTED_EVENTS_PER_TRACK,
   LIVE_GENERATED_FROM,
+  LIVE_MAX_ARM_TO_ONSET_SECONDS,
+  LIVE_ONSET_THRESHOLD,
+  LIVE_PATTERN_PERIOD_SECONDS,
   LIVE_PEAK_METRIC,
+  LIVE_PREPARATION_METHOD,
+  LIVE_RANDOM_ALGORITHM,
+  LIVE_RANDOM_SEED,
   LIVE_RECEIPT_CLAIM,
   LIVE_RECEIPT_SCHEMA_VERSION,
   LIVE_RMS_METRIC,
@@ -22,6 +31,7 @@ import {
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
   LIVE_TEMPO,
+  LIVE_UNMUTE_SETTLE_SECONDS,
   validateLiveQualityReport,
   type LiveQualityReport,
 } from '../scripts/instrument-quality-live-receipt';
@@ -31,8 +41,7 @@ const REPORT_DIR = process.env.KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR
   ? resolve(process.env.KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR)
   : resolve(THIS_DIR, '../reports/instrument-quality');
 
-const PATTERN_STEPS = 128;
-const ENERGY_PROCESSOR_NAME = 'keyboardia-continuous-energy-v1';
+const ENERGY_PROCESSOR_NAME = 'keyboardia-onset-aligned-energy-v2';
 const ENERGY_WORKLET_SOURCE = String.raw`
 class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
   constructor(options) {
@@ -40,8 +49,11 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
     this.inputCount = options.processorOptions.inputCount;
     this.channelCount = options.processorOptions.channelCount;
     this.active = false;
+    this.started = false;
     this.targetFrames = 0;
     this.capturedFrames = 0;
+    this.armToOnsetFrames = 0;
+    this.onsetThreshold = options.processorOptions.onsetThreshold;
     this.sumSquares = [];
     this.sampleCounts = [];
     this.peaks = [];
@@ -54,6 +66,8 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
       }
       this.targetFrames = frameCount;
       this.capturedFrames = 0;
+      this.armToOnsetFrames = 0;
+      this.started = false;
       this.sumSquares = new Array(this.inputCount).fill(0);
       this.sampleCounts = new Array(this.inputCount).fill(0);
       this.peaks = new Array(this.inputCount).fill(0);
@@ -74,8 +88,33 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
       this.fail('continuous energy capture received no render quantum');
       return true;
     }
+    let frameOffset = 0;
+    if (!this.started) {
+      let onsetFrame = -1;
+      findOnset:
+      for (let frame = 0; frame < renderQuantum.length; frame++) {
+        for (let inputIndex = 0; inputIndex < this.inputCount; inputIndex++) {
+          const input = inputs[inputIndex];
+          if (!input) continue;
+          for (let channelIndex = 0; channelIndex < input.length; channelIndex++) {
+            const channel = input[channelIndex];
+            if (channel && Math.abs(channel[frame] || 0) > this.onsetThreshold) {
+              onsetFrame = frame;
+              break findOnset;
+            }
+          }
+        }
+      }
+      if (onsetFrame < 0) {
+        this.armToOnsetFrames += renderQuantum.length;
+        return true;
+      }
+      this.started = true;
+      frameOffset = onsetFrame;
+      this.armToOnsetFrames += onsetFrame;
+    }
     const framesToCapture = Math.min(
-      renderQuantum.length,
+      renderQuantum.length - frameOffset,
       this.targetFrames - this.capturedFrames,
     );
     for (let inputIndex = 0; inputIndex < this.inputCount; inputIndex++) {
@@ -96,12 +135,12 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
       }
       for (let channelIndex = 0; channelIndex < this.channelCount; channelIndex++) {
         const channel = input[channelIndex];
-        if (!channel || channel.length < framesToCapture) {
+        if (!channel || channel.length < frameOffset + framesToCapture) {
           this.fail('input ' + inputIndex + ' channel ' + channelIndex + ' was incomplete');
           return true;
         }
         for (let frame = 0; frame < framesToCapture; frame++) {
-          const sample = channel[frame];
+          const sample = channel[frameOffset + frame];
           const absolute = Math.abs(sample);
           this.sumSquares[inputIndex] += sample * sample;
           this.sampleCounts[inputIndex] += 1;
@@ -122,6 +161,7 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
       this.port.postMessage({
         type: 'done',
         capturedFrames: this.capturedFrames,
+        armToOnsetFrames: this.armToOnsetFrames,
         measurements,
       });
     }
@@ -175,6 +215,8 @@ type EnergyCaptureResult = {
   sampleRate: number;
   master: EnergyMeasurement;
   tracks: Record<string, EnergyMeasurement>;
+  armToOnsetFrames: number;
+  randomCalls: number;
 };
 
 function representativePitch(sampleId: string): number {
@@ -223,10 +265,10 @@ function trackIdFor(sampleId: string, index: number): string {
 }
 
 function buildSequencerTrack(spec: InstrumentSpec, index: number): SessionTrack {
-  const steps = Array(PATTERN_STEPS).fill(false) as boolean[];
-  const parameterLocks = Array(PATTERN_STEPS).fill(null) as Array<{ pitch: number; volume: number } | null>;
-  steps[0] = true;
-  parameterLocks[0] = { pitch: spec.pitch, volume: 1 };
+  const steps = Array(LIVE_STEP_COUNT).fill(false) as boolean[];
+  const parameterLocks = Array(LIVE_STEP_COUNT).fill(null) as Array<{ pitch: number; volume: number } | null>;
+  steps[LIVE_ACTIVE_STEP] = true;
+  parameterLocks[LIVE_ACTIVE_STEP] = { pitch: spec.pitch, volume: 1 };
   return {
     id: trackIdFor(spec.sampleId, index),
     name: spec.name,
@@ -234,7 +276,7 @@ function buildSequencerTrack(spec: InstrumentSpec, index: number): SessionTrack 
     steps,
     parameterLocks,
     volume: 1,
-    muted: false,
+    muted: true,
     soloed: false,
     transpose: 0,
     stepCount: LIVE_STEP_COUNT,
@@ -243,9 +285,13 @@ function buildSequencerTrack(spec: InstrumentSpec, index: number): SessionTrack 
 
 async function prepareAudioForTracks(page: Page, tracks: SessionTrack[]): Promise<void> {
   // The app initializes/unlocks audio only through a user playback gesture.
-  // First start/stop preloads sampled instruments and prewarms Tone/advanced
-  // tracks; the measured restart below then begins from step 0 with probes attached.
-  await clickPlayButton(page);
+  // Tracks are muted in the persisted fixture so this production Play/Stop
+  // preload cannot advance a round-robin cursor or leave a release tail in the
+  // measured graph. Wait for the async preload to finish and playback to
+  // actually enter its running state before stopping it.
+  const playButton = getPlayButton(page);
+  await playButton.click();
+  await expect(playButton).toHaveAttribute('aria-label', 'Stop', { timeout: 60_000 });
   await page.waitForFunction((tracksToCheck) => {
     type Engine = {
       getAudioContext?: () => AudioContext | null;
@@ -261,12 +307,43 @@ async function prepareAudioForTracks(page: Page, tracks: SessionTrack[]): Promis
       .map(t => t.sampleId.slice('sampled:'.length))
       .every(id => engine.isSampledInstrumentReady?.(id));
   }, tracks, { timeout: 60_000 });
-  await clickPlayButton(page).catch(() => {});
-  await page.waitForTimeout(100);
+  await playButton.click();
+  await expect(playButton).toHaveAttribute('aria-label', 'Play', { timeout: 10_000 });
+
+  const muteButtons = page.locator('.track-row .mute-button');
+  await expect(muteButtons).toHaveCount(tracks.length);
+  for (let index = 0; index < tracks.length; index++) {
+    const muteButton = muteButtons.nth(index);
+    await expect(muteButton).toHaveAttribute('aria-pressed', 'true');
+    await muteButton.click();
+    await expect(muteButton).toHaveAttribute('aria-pressed', 'false');
+  }
+  // TrackBus uses a 10 ms setTargetAtTime ramp for click-free unmute. This
+  // pinned wait lets every bus converge before the canonical event is armed.
+  await page.waitForTimeout(LIVE_UNMUTE_SETTLE_SECONDS * 1_000);
+}
+
+async function installDeterministicRandom(page: Page): Promise<void> {
+  await page.addInitScript(({ seed, algorithm }) => {
+    if (algorithm !== 'mulberry32') throw new Error(`Unsupported live-quality RNG ${algorithm}`);
+    type RandomReceipt = { seed: number; state: number; calls: number; algorithm: string };
+    const globals = window as unknown as { __liveQualityRandom__?: RandomReceipt };
+    globals.__liveQualityRandom__ = { seed, state: seed >>> 0, calls: 0, algorithm };
+    Math.random = () => {
+      const receipt = globals.__liveQualityRandom__;
+      if (!receipt) throw new Error('Live-quality seeded random state disappeared');
+      receipt.calls++;
+      receipt.state = (receipt.state + 0x6d2b79f5) >>> 0;
+      let value = receipt.state;
+      value = Math.imul(value ^ (value >>> 15), value | 1);
+      value ^= value + Math.imul(value ^ (value >>> 7), value | 61);
+      return ((value ^ (value >>> 14)) >>> 0) / 4294967296;
+    };
+  }, { seed: LIVE_RANDOM_SEED, algorithm: LIVE_RANDOM_ALGORITHM });
 }
 
 async function attachContinuousEnergyCapture(page: Page, trackIds: string[]): Promise<void> {
-  await page.evaluate(async ({ ids, processorName, workletSource, channelCount, durationSeconds }) => {
+  await page.evaluate(async ({ ids, processorName, workletSource, channelCount, durationSeconds, onsetThreshold }) => {
     type TrackBus = { getOutputNode: () => AudioNode };
     type TrackBusManager = { getOrCreateBus: (trackId: string) => TrackBus };
     type Engine = {
@@ -296,7 +373,7 @@ async function attachContinuousEnergyCapture(page: Page, trackIds: string[]): Pr
       channelCount,
       channelCountMode: 'explicit',
       channelInterpretation: 'speakers',
-      processorOptions: { inputCount: ids.length + 1, channelCount },
+      processorOptions: { inputCount: ids.length + 1, channelCount, onsetThreshold },
     });
     const sources: AudioNode[] = ids.map(id =>
       trackBusManager.getOrCreateBus(id).getOutputNode()
@@ -317,6 +394,7 @@ async function attachContinuousEnergyCapture(page: Page, trackIds: string[]): Pr
         done?: Promise<{
           type: 'done';
           capturedFrames: number;
+          armToOnsetFrames: number;
           measurements: Array<EnergyMeasurement & { inputIndex: number }>;
         }>;
       };
@@ -333,6 +411,7 @@ async function attachContinuousEnergyCapture(page: Page, trackIds: string[]): Pr
     workletSource: ENERGY_WORKLET_SOURCE,
     channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
     durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
+    onsetThreshold: LIVE_ONSET_THRESHOLD,
   });
 }
 
@@ -341,6 +420,7 @@ async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
     type DoneMessage = {
       type: 'done';
       capturedFrames: number;
+      armToOnsetFrames: number;
       measurements: Array<EnergyMeasurement & { inputIndex: number }>;
     };
     type ErrorMessage = { type: 'error'; message: string };
@@ -399,10 +479,11 @@ async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
 }
 
 async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureResult> {
-  return page.evaluate(async ({ channelCount }) => {
+  return page.evaluate(async ({ channelCount, randomSeed, randomAlgorithm }) => {
     type DoneMessage = {
       type: 'done';
       capturedFrames: number;
+      armToOnsetFrames: number;
       measurements: Array<EnergyMeasurement & { inputIndex: number }>;
     };
     const probe = (window as unknown as {
@@ -428,6 +509,9 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
     }
     if (result.measurements.length !== probe.trackIds.length + 1) {
       throw new Error('Continuous energy capture omitted an input');
+    }
+    if (!Number.isInteger(result.armToOnsetFrames) || result.armToOnsetFrames < 0) {
+      throw new Error('Continuous energy capture returned an invalid arm-to-onset interval');
     }
 
     const byInput = new Map(result.measurements.map(measurement => [measurement.inputIndex, measurement]));
@@ -467,16 +551,38 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
     const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
     const sampleRate = engine?.getAudioContext?.()?.sampleRate;
     if (!sampleRate) throw new Error('AudioContext sample rate unavailable after capture');
-    return { sampleRate, master, tracks };
-  }, { channelCount: LIVE_CAPTURE_CHANNEL_COUNT });
+    const randomState = (window as unknown as {
+      __liveQualityRandom__?: { seed: number; algorithm: string; calls: number };
+    }).__liveQualityRandom__;
+    if (randomState?.seed !== randomSeed
+      || randomState.algorithm !== randomAlgorithm
+      || !Number.isInteger(randomState.calls)
+      || randomState.calls < 0) {
+      throw new Error('Live-quality seeded random receipt is missing or malformed');
+    }
+    return {
+      sampleRate,
+      master,
+      tracks,
+      armToOnsetFrames: result.armToOnsetFrames,
+      randomCalls: randomState.calls,
+    };
+  }, {
+    channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
+    randomSeed: LIVE_RANDOM_SEED,
+    randomAlgorithm: LIVE_RANDOM_ALGORITHM,
+  });
 }
 
-async function clickPlayButton(page: Page): Promise<void> {
-  const playButton = page
+function getPlayButton(page: Page) {
+  return page
     .locator('[data-testid="play-button"]')
     .or(page.getByRole('button', { name: /play/i }))
     .first();
-  await playButton.click();
+}
+
+async function clickPlayButton(page: Page): Promise<void> {
+  await getPlayButton(page).click();
 }
 
 function cleanSubjectCommit(): string {
@@ -506,7 +612,10 @@ test('every catalog instrument sequencer step produces live master output', asyn
   const specs = allInstrumentSpecs();
   expect(specs).toHaveLength(99);
   expect(new Set(specs.map(spec => spec.sampleId)).size).toBe(specs.length);
+  expect(LIVE_STEP_COUNT * (60 / LIVE_TEMPO / 4)).toBe(LIVE_PATTERN_PERIOD_SECONDS);
+  expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
   const subjectCommit = cleanSubjectCommit();
+  await installDeterministicRandom(page);
 
   // Codec precondition — see e2e/sample-browser-decode.spec.ts for the same
   // check and the full reasoning.
@@ -552,6 +661,8 @@ test('every catalog instrument sequencer step produces live master output', asyn
     masterRms: number;
     capturedFrames: number;
     channelSampleCount: number;
+    armToOnsetFrames: number;
+    randomCalls: number;
   }> = [];
 
   for (const [batchIndex, batchSpecs] of chunk(specs, MAX_TRACKS).entries()) {
@@ -590,6 +701,8 @@ test('every catalog instrument sequencer step produces live master output', asyn
       masterRms: energy.master.rms,
       capturedFrames: energy.master.capturedFrames,
       channelSampleCount: energy.master.channelSampleCount,
+      armToOnsetFrames: energy.armToOnsetFrames,
+      randomCalls: energy.randomCalls,
     });
 
     for (const [i, spec] of batchSpecs.entries()) {
@@ -614,10 +727,25 @@ test('every catalog instrument sequencer step produces live master output', asyn
     generatedFrom: LIVE_GENERATED_FROM,
     capture: {
       method: LIVE_CAPTURE_METHOD,
+      alignment: LIVE_CAPTURE_ALIGNMENT,
       durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
       channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
+      onsetThreshold: LIVE_ONSET_THRESHOLD,
+      maxArmToOnsetSeconds: LIVE_MAX_ARM_TO_ONSET_SECONDS,
       peakMetric: LIVE_PEAK_METRIC,
       rmsMetric: LIVE_RMS_METRIC,
+    },
+    schedule: {
+      preparation: LIVE_PREPARATION_METHOD,
+      activeStep: LIVE_ACTIVE_STEP,
+      expectedEventsPerTrack: LIVE_EXPECTED_EVENTS_PER_TRACK,
+      patternPeriodSeconds: LIVE_PATTERN_PERIOD_SECONDS,
+      unmuteSettleSeconds: LIVE_UNMUTE_SETTLE_SECONDS,
+    },
+    random: {
+      locked: true,
+      seed: LIVE_RANDOM_SEED,
+      algorithm: LIVE_RANDOM_ALGORITHM,
     },
     silencePeakThreshold: LIVE_SILENCE_PEAK_THRESHOLD,
     silenceRmsThreshold: LIVE_SILENCE_RMS_THRESHOLD,
