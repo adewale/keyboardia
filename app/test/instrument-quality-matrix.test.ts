@@ -279,6 +279,22 @@ describe('dry PCM instrument matrix', () => {
     expect(analyzed.fatalFindings).toContainEqual(expect.objectContaining({ code: 'RELEASE_RESIDUAL' }));
   });
 
+  it('fails exact anti-phase stereo that disappears in mono', () => {
+    const profile = INSTRUMENT_QUALITY_PROFILES.find(candidate => candidate.id === 'tone:metal-cymbal')!;
+    const stereoCase = buildInstrumentMatrixCases(profile)
+      .find(matrixCase => matrixCase.family === 'stereo')!;
+    const capture = sineCapture(stereoCase, 1_000, 0.2);
+    capture.channels = [capture.channels[0], Float32Array.from(capture.channels[0], value => -value)];
+
+    const analyzed = analyzeDryPcmCapture(profile, stereoCase, capture);
+
+    expect(analyzed.metrics.peakDbfs).toBeGreaterThan(-20);
+    expect(analyzed.metrics.stereoCorrelation).toBeCloseTo(-1, 6);
+    expect(analyzed.metrics.monoLossDb).toBeLessThan(-100);
+    expect(analyzed.fatalFindings)
+      .toContainEqual(expect.objectContaining({ code: 'MONO_LOSS' }));
+  });
+
   it('calibrates harmonic pitch policy against shipped Hammond and slap-bass timbres', async () => {
     const contextModule = await import('node-web-audio-api') as {
       OfflineAudioContext: new (channels: number, length: number, sampleRate: number) => {

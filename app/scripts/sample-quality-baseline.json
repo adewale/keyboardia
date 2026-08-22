@@ -1,6 +1,6 @@
 {
   "version": 3,
-  "evaluatorBundleSha256": "a74186a968c3ff41a651995afb5fd576de9ce8f7f40a63dd006e50dc14807866",
+  "evaluatorBundleSha256": "5640d818566133b7453ed302c0ee9b5a4a392dd1b2b7e17717059847449617d1",
   "waivers": [
     {
       "code": "PITCH_DEVIATION",
@@ -598,7 +598,7 @@
       "file": "B5-ff.mp3",
       "sha256": "07729fccbc59c6e672b6dfbad4734e5a2923c82077fa5b461bdae9a0f0950ab0",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -7.3736676821602565,
+      "measuredValue": -7.373706604250927,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -608,7 +608,7 @@
       "file": "B5-ff.mp3",
       "sha256": "07729fccbc59c6e672b6dfbad4734e5a2923c82077fa5b461bdae9a0f0950ab0",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -0.7121356695764585,
+      "measuredValue": -0.7121378848226585,
       "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
@@ -628,7 +628,7 @@
       "file": "B5-mf.mp3",
       "sha256": "e546d0480915209f278c9b49394cb4be13647dc53fc77bbc8922ad42e4297066",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -7.492554950309525,
+      "measuredValue": -7.492537775119558,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -638,7 +638,7 @@
       "file": "B5-mf.mp3",
       "sha256": "e546d0480915209f278c9b49394cb4be13647dc53fc77bbc8922ad42e4297066",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -0.715298881875761,
+      "measuredValue": -0.7152969751023732,
       "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
@@ -698,7 +698,7 @@
       "file": "C5-ff.mp3",
       "sha256": "c058df1a1f2cb275e4dd85ff882d2b04a8bc8fb7f43a4f424b985197d3af41c4",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -5.013713850428488,
+      "measuredValue": -5.013732653326384,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -708,7 +708,7 @@
       "file": "C5-ff.mp3",
       "sha256": "c058df1a1f2cb275e4dd85ff882d2b04a8bc8fb7f43a4f424b985197d3af41c4",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -0.42433379642923597,
+      "measuredValue": -0.42433767291130603,
       "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
@@ -718,7 +718,7 @@
       "file": "C5-mf.mp3",
       "sha256": "48a07b45adb0b8c79e876a50ddeaf0a72273b80394778d1d3e2a264a2bb652ba",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -5.889001012430261,
+      "measuredValue": -5.88899657448827,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -728,7 +728,7 @@
       "file": "C5-mf.mp3",
       "sha256": "48a07b45adb0b8c79e876a50ddeaf0a72273b80394778d1d3e2a264a2bb652ba",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -0.5750995055376312,
+      "measuredValue": -0.5750991073363041,
       "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
@@ -738,7 +738,7 @@
       "file": "C5-pp.mp3",
       "sha256": "5237b2f415ee82afe789e4524e5aa0d286f9b5461272425c0afda480c3014986",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -5.9319365500151156,
+      "measuredValue": -5.931933864652078,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -748,7 +748,7 @@
       "file": "C5-pp.mp3",
       "sha256": "5237b2f415ee82afe789e4524e5aa0d286f9b5461272425c0afda480c3014986",
       "manifestSha256": "d1623105eb469e64c5d245c5f946c9c70d9487bba2d133695b7556f97c8eee5f",
-      "measuredValue": -0.5742625439182282,
+      "measuredValue": -0.5742622653763115,
       "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
@@ -858,7 +858,7 @@
       "file": "C4-ff.mp3",
       "sha256": "23f5186b6ed472d5eb71ce0823ab9de7f447ca5be3af236323c8b3d901667981",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -3.500520698943504,
+      "measuredValue": -3.5005527715113205,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -868,7 +868,7 @@
       "file": "C4-mf.mp3",
       "sha256": "60494085bfa2f8675933c118ecf40056101e8c0a8e33c6b32d56a2a2e95e10ca",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -3.432612896272209,
+      "measuredValue": -3.4326230920540284,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -878,7 +878,7 @@
       "file": "C4-pp.mp3",
       "sha256": "38b245d91ceea0a9bee62bd702b4f99ee3eeecae06ad94a2b9e764ef4650ae39",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -3.3092357842335707,
+      "measuredValue": -3.3092370764696124,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -898,7 +898,7 @@
       "file": "C5-ff.mp3",
       "sha256": "558a1169af86c0f9f67a81261748675ac1103c2339570b71530e62d778c5658d",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -5.430199388464962,
+      "measuredValue": -5.430439902387127,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -908,7 +908,7 @@
       "file": "C5-ff.mp3",
       "sha256": "558a1169af86c0f9f67a81261748675ac1103c2339570b71530e62d778c5658d",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -0.6375646414285355,
+      "measuredValue": -0.6376065004434932,
       "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
@@ -918,7 +918,7 @@
       "file": "C5-mf.mp3",
       "sha256": "4802622a0463393ae92ac653871795296df83c96a466335f37a90ac412605d80",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -5.7477759499110945,
+      "measuredValue": -5.747789506535273,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -928,7 +928,7 @@
       "file": "C5-mf.mp3",
       "sha256": "4802622a0463393ae92ac653871795296df83c96a466335f37a90ac412605d80",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -0.7277809939558032,
+      "measuredValue": -0.7277814399903039,
       "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },
@@ -938,7 +938,7 @@
       "file": "C5-pp.mp3",
       "sha256": "f5dd57961f5827ea3f0a5699d6ac78b3fa5b0b621b3be788795bf3e1c7e7b3a7",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -5.4805057336255185,
+      "measuredValue": -5.48049964777034,
       "threshold": -3,
       "reason": "Hash-bound stereo disposition: mono fold-down loses measurable level; retaining the authored stereo source avoids irreversible channel processing."
     },
@@ -948,7 +948,7 @@
       "file": "C5-pp.mp3",
       "sha256": "f5dd57961f5827ea3f0a5699d6ac78b3fa5b0b621b3be788795bf3e1c7e7b3a7",
       "manifestSha256": "278cc136e55303b1097b30e68dd029ff7e8c35a0b7ccd1106c13f13c1684ac00",
-      "measuredValue": -0.6863179290022504,
+      "measuredValue": -0.6863162104646744,
       "threshold": -0.2,
       "reason": "Hash-bound stereo disposition: source width can reduce mono correlation; the file remains below the hard defect threshold and is retained as authored."
     },

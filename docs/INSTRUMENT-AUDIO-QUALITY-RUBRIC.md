@@ -174,21 +174,33 @@ sample rate, adapter identity/hash, evaluator/subject commits, evaluator-tree
 hash, plan/profile identity, unique capture attempts, and per-case PCM hashes; keep
 large WAV captures ephemeral unless explicitly approved.
 
-The repository does **not** yet contain a production Chromium adapter that
-delivers post-track PCM for all 99 instruments. The matrix code and emitted plan
-are therefore an evaluator/capture contract, not completed audio evidence:
+The repository contains a production-path Chromium adapter that schedules the
+real sampled, procedural-sample, native-synth, Tone.js, and advanced-synth
+renderers and records the centered post-track/pre-master bus at exactly
+44.1 kHz. Each attempt uses a fresh seeded browser context and an AudioWorklet
+that fails closed on missing frames or any `currentFrame` discontinuity. The quick smoke proves this adapter path
+with six captures (five engine families plus a distinct seed-A replay); it is
+explicitly **not** the complete 1,683-case matrix:
 
 ```sh
 cd app
 npm run audit:instrument-quality:matrix:plan   # emits instructions only
+npm run audit:instrument-quality:matrix:smoke  # real 6/1,683 Chromium captures
 npm run audit:instrument-quality:matrix:verify # validates a supplied receipt
 ```
+
+`AudioWorklet.currentFrame` is treated as the authoritative render clock. A
+repeat or skip fails the attempt rather than being relabelled as harmless
+diagnostic noise. The smoke receipt is durable under ignored
+`app/reports/instrument-quality/`, declares `complete: false`, binds the full
+subject commit, and verifies that the same commit remains clean immediately
+before it writes the receipt.
 
 `npm run audit:instrument-quality:full` is deliberately fail-closed: it now
 requires that verified receipt in addition to v1 evidence. Use
 `npm run audit:instrument-quality:v1` for the currently executable browser-note
-and decoded-source lanes. Neither command silently upgrades a plan to a
-measurement.
+and decoded-source lanes. Neither a plan nor the representative smoke is
+silently upgraded to complete-matrix evidence.
 
 Full verification requires canonical full Git commit IDs, exact matrix
 evaluator/subject/tree binding, and evaluator sources byte-identical to the

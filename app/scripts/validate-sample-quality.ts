@@ -16,6 +16,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { execFileSync } from 'node:child_process';
 
 import {
   DEFAULT_QUALITY_THRESHOLDS,
@@ -116,6 +117,10 @@ interface WaivedQualityIssue {
 interface SampleQualityReport {
   version: 1;
   generatedAt: string;
+  subjectCommit: string;
+  subjectTreeClean: boolean;
+  evaluatorBundleSha256: string;
+  baselineSha256: string | null;
   thresholds: QualityThresholds;
   baseline?: string;
   totals: {
@@ -723,9 +728,24 @@ async function main(): Promise<void> {
   const { unwaivedIssues, waivedIssues } = applyWaivers(sortIssues(rawIssues), waivers);
   const sortedUnwaivedIssues = sortIssues(unwaivedIssues);
   const instrumentSummaries = buildInstrumentSummaries(entries, sortedUnwaivedIssues);
+  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: process.cwd(),
+    encoding: 'utf8',
+  }).trim();
+  const subjectTreeClean = execFileSync(
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=all'],
+    { cwd: process.cwd(), encoding: 'utf8' },
+  ).trim().length === 0;
   const report: SampleQualityReport = {
     version: 1,
     generatedAt: new Date().toISOString(),
+    subjectCommit,
+    subjectTreeClean,
+    evaluatorBundleSha256: sampleQualityEvaluatorBundleSha256(),
+    baselineSha256: options.baselinePath === null
+      ? null
+      : sha256File(path.resolve(options.baselinePath)),
     thresholds,
     baseline: options.baselinePath ?? undefined,
     totals: {
