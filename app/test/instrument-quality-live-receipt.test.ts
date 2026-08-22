@@ -8,7 +8,10 @@ import {
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
   LIVE_CAPTURE_METHOD,
-  LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE,
+  LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD,
+  LIVE_MIDI_VELOCITY,
+  LIVE_NOTE_GAIN,
+  LIVE_NOTE_DURATION_SECONDS,
   LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
@@ -33,6 +36,7 @@ import {
   LIVE_TEMPO,
   LIVE_TRIAL_MODE,
   LIVE_UNMUTE_SETTLE_SECONDS,
+  expectedLiveEngineDispatchIdentity,
   expectedLiveInstrumentSpecs,
   isLiveRoutingSilent,
   validateLiveQualityReport,
@@ -114,8 +118,8 @@ function validReceipt(): LiveQualityReport {
         preArmUiUnmutedTrackIds: [trackId],
         preArmCommandedTrackBusOpenIds: [trackId],
         observedEngineDispatches: [{
-          method: LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type],
-          trackId,
+          ...expectedLiveEngineDispatchIdentity(spec, trackId),
+          eventTimeSeconds: 1 + index * 4,
         }],
       };
     }),
@@ -142,9 +146,12 @@ describe('live instrument-quality receipt', () => {
   });
 
   it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
-    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(6);
+    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(7);
     const stepDuration = 60 / LIVE_TEMPO / 4;
     expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
+    expect(LIVE_NOTE_DURATION_SECONDS).toBe(stepDuration * 0.9);
+    expect(LIVE_MIDI_VELOCITY).toBe(127);
+    expect(LIVE_NOTE_GAIN).toBe(1);
     expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
     expect(LIVE_STEP_COUNT * stepDuration).toBe(LIVE_PATTERN_PERIOD_SECONDS);
     expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
@@ -292,10 +299,145 @@ describe('live instrument-quality receipt', () => {
 
     const wrongDispatchTrack = validReceipt();
     wrongDispatchTrack.instruments[0].observedEngineDispatches[0].trackId = 'track-1';
-    expect(() => validateLiveQualityReport(wrongDispatchTrack, SUBJECT)).toThrow(/exactly one expected engine dispatch/);
+    expect(() => validateLiveQualityReport(wrongDispatchTrack, SUBJECT)).toThrow(/mismatched trackId/);
 
     const wrongDispatchMethod = validReceipt();
     wrongDispatchMethod.instruments[0].observedEngineDispatches[0].method = 'playToneSynth';
-    expect(() => validateLiveQualityReport(wrongDispatchMethod, SUBJECT)).toThrow(/exactly one expected engine dispatch/);
+    expect(() => validateLiveQualityReport(wrongDispatchMethod, SUBJECT)).toThrow(/mismatched method/);
+  });
+
+  it('binds preset, pitch semantics, velocity, and duration for all five dispatch methods', () => {
+    expect(LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD).toEqual({
+      playSample: {
+        trackIdSlot: 1,
+        instrumentOrPresetIdSlot: 0,
+        pitchSlot: 4,
+        pitchUnit: 'semitones-from-c4',
+        eventTimeSlot: 2,
+        durationSlot: 3,
+        midiVelocitySlot: 6,
+        noteGainSlot: 5,
+        variationKeySlot: 7,
+        argumentCount: 7,
+      },
+      playSynthNote: {
+        trackIdSlot: 6,
+        instrumentOrPresetIdSlot: 1,
+        pitchSlot: 2,
+        pitchUnit: 'semitones-from-c4',
+        eventTimeSlot: 3,
+        durationSlot: 4,
+        midiVelocitySlot: 7,
+        noteGainSlot: 5,
+        variationKeySlot: null,
+        argumentCount: 8,
+      },
+      playSampledInstrument: {
+        trackIdSlot: 6,
+        instrumentOrPresetIdSlot: 0,
+        pitchSlot: 2,
+        pitchUnit: 'midi-note',
+        eventTimeSlot: 3,
+        durationSlot: 4,
+        midiVelocitySlot: 7,
+        noteGainSlot: 5,
+        variationKeySlot: null,
+        argumentCount: 8,
+      },
+      playToneSynth: {
+        trackIdSlot: 5,
+        instrumentOrPresetIdSlot: 0,
+        pitchSlot: 1,
+        pitchUnit: 'semitones-from-c4',
+        eventTimeSlot: 2,
+        durationSlot: 3,
+        midiVelocitySlot: 6,
+        noteGainSlot: 4,
+        variationKeySlot: null,
+        argumentCount: 7,
+      },
+      playAdvancedSynth: {
+        trackIdSlot: 5,
+        instrumentOrPresetIdSlot: 0,
+        pitchSlot: 1,
+        pitchUnit: 'semitones-from-c4',
+        eventTimeSlot: 2,
+        durationSlot: 3,
+        midiVelocitySlot: 6,
+        noteGainSlot: 4,
+        variationKeySlot: null,
+        argumentCount: 7,
+      },
+    });
+    const receipt = validReceipt();
+    const expectedByType = {
+      sample: { method: 'playSample', pitchUnit: 'semitones-from-c4' },
+      sampled: { method: 'playSampledInstrument', pitchUnit: 'midi-note' },
+      synth: { method: 'playSynthNote', pitchUnit: 'semitones-from-c4' },
+      tone: { method: 'playToneSynth', pitchUnit: 'semitones-from-c4' },
+      advanced: { method: 'playAdvancedSynth', pitchUnit: 'semitones-from-c4' },
+    } as const;
+
+    for (const [type, expected] of Object.entries(expectedByType)) {
+      const result = receipt.instruments.find(candidate => candidate.type === type);
+      expect(result, `missing ${type} fixture`).toBeDefined();
+      const dispatch = result!.observedEngineDispatches[0];
+      expect(dispatch).toMatchObject({
+        ...expected,
+        instrumentOrPresetId: result!.presetId,
+        musicalPitch: type === 'sampled'
+          ? 60 + result!.pitch
+          : result!.pitch,
+        midiVelocity: 127,
+        noteGain: 1,
+        durationSeconds: LIVE_NOTE_DURATION_SECONDS,
+        argumentCount: type === 'sampled' || type === 'synth' ? 8 : 7,
+        variationKey: null,
+      });
+    }
+
+    expect(validateLiveQualityReport(receipt, SUBJECT)).toBe(receipt);
+  });
+
+  it.each([
+    ['instrument or preset', (receipt: LiveQualityReport) => {
+      receipt.instruments[0].observedEngineDispatches[0].instrumentOrPresetId = 'wrong-preset';
+    }, /mismatched instrumentOrPresetId/],
+    ['pitch unit', (receipt: LiveQualityReport) => {
+      receipt.instruments[0].observedEngineDispatches[0].pitchUnit = 'midi-note';
+    }, /mismatched pitchUnit/],
+    ['musical pitch', (receipt: LiveQualityReport) => {
+      receipt.instruments[0].observedEngineDispatches[0].musicalPitch += 1;
+    }, /mismatched musicalPitch/],
+    ['MIDI velocity', (receipt: LiveQualityReport) => {
+      receipt.instruments[0].observedEngineDispatches[0].midiVelocity = 90;
+    }, /mismatched midiVelocity/],
+    ['note gain', (receipt: LiveQualityReport) => {
+      receipt.instruments[0].observedEngineDispatches[0].noteGain = 0.5;
+    }, /mismatched noteGain/],
+    ['duration', (receipt: LiveQualityReport) => {
+      receipt.instruments[0].observedEngineDispatches[0].durationSeconds = 0.3;
+    }, /mismatched durationSeconds/],
+    ['argument count', (receipt: LiveQualityReport) => {
+      receipt.instruments[0].observedEngineDispatches[0].argumentCount += 1;
+    }, /mismatched argumentCount/],
+    ['sample variation key', (receipt: LiveQualityReport) => {
+      receipt.instruments[0].observedEngineDispatches[0].variationKey = 'other-buffer';
+    }, /mismatched variationKey/],
+  ] as const)('rejects a dispatch with the wrong %s', (_label, mutate, message) => {
+    const receipt = validReceipt();
+    mutate(receipt);
+    expect(() => validateLiveQualityReport(receipt, SUBJECT)).toThrow(message);
+  });
+
+  it('requires finite, session-ordered AudioContext event times', () => {
+    const nonfinite = validReceipt();
+    nonfinite.instruments[0].observedEngineDispatches[0].eventTimeSeconds = Number.NaN;
+    expect(() => validateLiveQualityReport(nonfinite, SUBJECT)).toThrow(/finite nonnegative/);
+
+    const reversed = validReceipt();
+    reversed.instruments[1].observedEngineDispatches[0].eventTimeSeconds =
+      reversed.instruments[0].observedEngineDispatches[0].eventTimeSeconds;
+    expect(() => validateLiveQualityReport(reversed, SUBJECT)).toThrow(/not strictly increasing/);
   });
 });

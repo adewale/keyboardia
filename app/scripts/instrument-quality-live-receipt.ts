@@ -1,12 +1,12 @@
 import { getInstrumentRange } from '../src/audio/instrument-ranges';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
 import { SCHEDULE_AHEAD_SEC } from '../src/audio/scheduler-types';
-import { MAX_STEPS } from '../src/shared/constants';
+import { MAX_STEPS, MIDI_VELOCITY_MAX } from '../src/shared/constants';
 import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
-export const LIVE_RECEIPT_SCHEMA_VERSION = 6;
+export const LIVE_RECEIPT_SCHEMA_VERSION = 7;
 export const LIVE_RECEIPT_CLAIM = 'live-post-track-signal-evidence';
 export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
@@ -20,6 +20,13 @@ export const LIVE_PATTERN_STORAGE_STEP_COUNT = MAX_STEPS;
 // one-second arm-to-onset ceiling.
 export const LIVE_ACTIVE_STEP = 4;
 export const LIVE_ACTIVE_STEP_OFFSET_SECONDS = 0.5;
+// The production scheduler gates an untied 16th note to 90% of its step.
+// Keep this explicit in the receipt so an unrelated note duration cannot earn
+// credit merely because it produced non-silent output.
+export const LIVE_NOTE_DURATION_SECONDS = 0.1125;
+// The fixture's explicit full-volume lock resolves to the top MIDI layer.
+export const LIVE_MIDI_VELOCITY = MIDI_VELOCITY_MAX;
+export const LIVE_NOTE_GAIN = 1;
 export const LIVE_SCHEDULER_LOOKAHEAD_SECONDS = SCHEDULE_AHEAD_SEC;
 export const LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK = 1;
 export const LIVE_PATTERN_PERIOD_SECONDS = 4;
@@ -53,6 +60,7 @@ export type LiveDispatchMethod =
   | 'playSynthNote'
   | 'playToneSynth'
   | 'playAdvancedSynth';
+export type LiveDispatchPitchUnit = 'semitones-from-c4' | 'midi-note';
 
 export const LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE = Object.freeze({
   sample: 'playSample',
@@ -62,9 +70,100 @@ export const LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE = Object.freeze({
   advanced: 'playAdvancedSynth',
 } satisfies Record<LiveInstrumentType, LiveDispatchMethod>);
 
-export interface LiveEngineDispatch {
+export interface LiveEngineDispatchLayout {
+  trackIdSlot: number;
+  instrumentOrPresetIdSlot: number;
+  pitchSlot: number;
+  pitchUnit: LiveDispatchPitchUnit;
+  eventTimeSlot: number;
+  durationSlot: number;
+  midiVelocitySlot: number;
+  noteGainSlot: number;
+  variationKeySlot: number | null;
+  argumentCount: number;
+}
+
+/** Zero-based argument slots for the five production AudioEngine methods. */
+export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
+  playSample: {
+    trackIdSlot: 1,
+    instrumentOrPresetIdSlot: 0,
+    pitchSlot: 4,
+    pitchUnit: 'semitones-from-c4',
+    eventTimeSlot: 2,
+    durationSlot: 3,
+    midiVelocitySlot: 6,
+    noteGainSlot: 5,
+    variationKeySlot: 7,
+    argumentCount: 7,
+  },
+  playSynthNote: {
+    trackIdSlot: 6,
+    instrumentOrPresetIdSlot: 1,
+    pitchSlot: 2,
+    pitchUnit: 'semitones-from-c4',
+    eventTimeSlot: 3,
+    durationSlot: 4,
+    midiVelocitySlot: 7,
+    noteGainSlot: 5,
+    variationKeySlot: null,
+    argumentCount: 8,
+  },
+  playSampledInstrument: {
+    trackIdSlot: 6,
+    instrumentOrPresetIdSlot: 0,
+    pitchSlot: 2,
+    pitchUnit: 'midi-note',
+    eventTimeSlot: 3,
+    durationSlot: 4,
+    midiVelocitySlot: 7,
+    noteGainSlot: 5,
+    variationKeySlot: null,
+    argumentCount: 8,
+  },
+  playToneSynth: {
+    trackIdSlot: 5,
+    instrumentOrPresetIdSlot: 0,
+    pitchSlot: 1,
+    pitchUnit: 'semitones-from-c4',
+    eventTimeSlot: 2,
+    durationSlot: 3,
+    midiVelocitySlot: 6,
+    noteGainSlot: 4,
+    variationKeySlot: null,
+    argumentCount: 7,
+  },
+  playAdvancedSynth: {
+    trackIdSlot: 5,
+    instrumentOrPresetIdSlot: 0,
+    pitchSlot: 1,
+    pitchUnit: 'semitones-from-c4',
+    eventTimeSlot: 2,
+    durationSlot: 3,
+    midiVelocitySlot: 6,
+    noteGainSlot: 4,
+    variationKeySlot: null,
+    argumentCount: 7,
+  },
+} as const satisfies Record<LiveDispatchMethod, LiveEngineDispatchLayout>);
+
+export interface LiveEngineDispatchIdentity {
   method: LiveDispatchMethod;
   trackId: string;
+  instrumentOrPresetId: string;
+  pitchUnit: LiveDispatchPitchUnit;
+  musicalPitch: number;
+  midiVelocity: number;
+  noteGain: number;
+  durationSeconds: number;
+  argumentCount: number;
+  /** Procedural-sample buffer selector; null means the explicit-lock path. */
+  variationKey: string | null;
+}
+
+export interface LiveEngineDispatch extends LiveEngineDispatchIdentity {
+  /** Absolute AudioContext time passed to the production renderer. */
+  eventTimeSeconds: number;
 }
 
 export interface LiveInstrumentSpec {
@@ -73,6 +172,26 @@ export interface LiveInstrumentSpec {
   type: LiveInstrumentType;
   presetId: string;
   pitch: number;
+}
+
+export function expectedLiveEngineDispatchIdentity(
+  spec: LiveInstrumentSpec,
+  trackId: string,
+): LiveEngineDispatchIdentity {
+  const sampled = spec.type === 'sampled';
+  const method = LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type];
+  return {
+    method,
+    trackId,
+    instrumentOrPresetId: spec.presetId,
+    pitchUnit: sampled ? 'midi-note' : 'semitones-from-c4',
+    musicalPitch: sampled ? SCHEDULER_BASE_MIDI_NOTE + spec.pitch : spec.pitch,
+    midiVelocity: LIVE_MIDI_VELOCITY,
+    noteGain: LIVE_NOTE_GAIN,
+    durationSeconds: LIVE_NOTE_DURATION_SECONDS,
+    argumentCount: LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD[method].argumentCount,
+    variationKey: null,
+  };
 }
 
 export interface LiveInstrumentResult extends LiveInstrumentSpec {
@@ -363,11 +482,22 @@ export function validateLiveQualityReport(
     }
     if (!Array.isArray(item.observedEngineDispatches)
       || item.observedEngineDispatches.length !== 1
-      || !isRecord(item.observedEngineDispatches[0])
-      || item.observedEngineDispatches[0].trackId !== item.trackId
-      || item.observedEngineDispatches[0].method !== LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type]) {
+      || !isRecord(item.observedEngineDispatches[0])) {
       throw new Error(`Live receipt instrument ${item.sampleId} did not observe exactly one expected engine dispatch`);
     }
+    const dispatch = item.observedEngineDispatches[0];
+    const expectedDispatch = expectedLiveEngineDispatchIdentity(spec, item.trackId);
+    for (const [key, expectedValue] of Object.entries(expectedDispatch)) {
+      if (dispatch[key] !== expectedValue) {
+        throw new Error(
+          `Live receipt instrument ${item.sampleId} dispatch has mismatched ${key}`,
+        );
+      }
+    }
+    finiteNonnegative(
+      dispatch.eventTimeSeconds,
+      `instrument ${item.sampleId}.dispatch.eventTimeSeconds`,
+    );
   }
   const missing = expected.filter(spec => !seenIds.has(spec.sampleId));
   if (missing.length > 0) throw new Error(`Live receipt is missing ${missing.map(spec => spec.sampleId).join(', ')}`);
@@ -413,6 +543,7 @@ export function validateLiveQualityReport(
       throw new Error(`Live receipt session ${session.sessionId} membership differs from the pinned batch`);
     }
     let previousRandomCalls = -1;
+    let previousDispatchTime = -1;
     for (const id of session.instruments as string[]) {
       if (sessionInstrumentIds.has(id)) throw new Error(`Live receipt session membership duplicates ${id}`);
       sessionInstrumentIds.add(id);
@@ -435,6 +566,13 @@ export function validateLiveQualityReport(
         throw new Error(`Live receipt session ${session.sessionId} random call counts are not nondecreasing`);
       }
       previousRandomCalls = result.randomCalls as number;
+      const dispatch = (result.observedEngineDispatches as LiveEngineDispatch[])[0];
+      if (dispatch.eventTimeSeconds <= previousDispatchTime) {
+        throw new Error(
+          `Live receipt session ${session.sessionId} dispatch times are not strictly increasing`,
+        );
+      }
+      previousDispatchTime = dispatch.eventTimeSeconds;
     }
   }
   if (sessionInstrumentIds.size !== expected.length) throw new Error('Live receipt session union is incomplete');

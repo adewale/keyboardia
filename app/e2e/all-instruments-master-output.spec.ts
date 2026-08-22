@@ -17,7 +17,7 @@ import {
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
   LIVE_CAPTURE_METHOD,
-  LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE,
+  LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD,
   LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
@@ -42,8 +42,8 @@ import {
   LIVE_TEMPO,
   LIVE_TRIAL_MODE,
   LIVE_UNMUTE_SETTLE_SECONDS,
+  expectedLiveEngineDispatchIdentity,
   validateLiveQualityReport,
-  type LiveDispatchMethod,
   type LiveEngineDispatch,
   type LiveQualityReport,
   type LiveSessionResult,
@@ -420,14 +420,27 @@ async function setTrackMuted(
 }
 
 async function installEngineDispatchProbe(page: Page): Promise<void> {
-  await page.evaluate(() => {
+  await page.evaluate((layouts) => {
     type DispatchMethod =
       | 'playSample'
       | 'playSampledInstrument'
       | 'playSynthNote'
       | 'playToneSynth'
       | 'playAdvancedSynth';
-    type Dispatch = { method: DispatchMethod; trackId: string };
+    type PitchUnit = 'semitones-from-c4' | 'midi-note';
+    type Dispatch = {
+      method: DispatchMethod;
+      trackId: string;
+      instrumentOrPresetId: string;
+      pitchUnit: PitchUnit;
+      musicalPitch: number;
+      midiVelocity: number;
+      noteGain: number;
+      eventTimeSeconds: number;
+      durationSeconds: number;
+      argumentCount: number;
+      variationKey: string | null;
+    };
     type PlayMethod = (...args: unknown[]) => unknown;
     type Engine = Record<DispatchMethod, PlayMethod>;
     type DispatchProbe = {
@@ -446,14 +459,7 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
     const engine = globals.__audioEngine__;
     if (!engine) throw new Error('Audio engine unavailable for dispatch observation');
 
-    const trackIdSlots = {
-      playSample: 1,
-      playSynthNote: 6,
-      playSampledInstrument: 6,
-      playToneSynth: 5,
-      playAdvancedSynth: 5,
-    } as const satisfies Record<DispatchMethod, number>;
-    const methods = Object.keys(trackIdSlots) as DispatchMethod[];
+    const methods = Object.keys(layouts) as DispatchMethod[];
     const ownDescriptors = new Map<DispatchMethod, PropertyDescriptor | undefined>();
     let dispatches: Dispatch[] = [];
     let armed = false;
@@ -469,12 +475,36 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
         writable: true,
         value: function (this: Engine, ...args: unknown[]): unknown {
           if (armed) {
-            const candidateTrackId = args[trackIdSlots[method]];
+            const layout = layouts[method];
+            const candidateTrackId = args[layout.trackIdSlot];
+            const candidateInstrumentOrPresetId = args[layout.instrumentOrPresetIdSlot];
+            const candidateVariationKey = layout.variationKeySlot === null
+              ? undefined
+              : args[layout.variationKeySlot];
+            const numericArgument = (slot: number): number => {
+              const candidate = args[slot];
+              return typeof candidate === 'number' ? candidate : Number.NaN;
+            };
             dispatches.push({
               method,
               trackId: typeof candidateTrackId === 'string'
                 ? candidateTrackId
                 : '<missing-track-id>',
+              instrumentOrPresetId: typeof candidateInstrumentOrPresetId === 'string'
+                ? candidateInstrumentOrPresetId
+                : '<missing-instrument-or-preset-id>',
+              pitchUnit: layout.pitchUnit,
+              musicalPitch: numericArgument(layout.pitchSlot),
+              midiVelocity: numericArgument(layout.midiVelocitySlot),
+              noteGain: numericArgument(layout.noteGainSlot),
+              eventTimeSeconds: numericArgument(layout.eventTimeSlot),
+              durationSeconds: numericArgument(layout.durationSlot),
+              argumentCount: args.length,
+              variationKey: candidateVariationKey === undefined
+                ? null
+                : typeof candidateVariationKey === 'string'
+                  ? candidateVariationKey
+                  : '<invalid-variation-key>',
             });
           }
           return Reflect.apply(original, this, args);
@@ -507,7 +537,7 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
       },
     };
     globals.__liveQualityDispatchProbe__ = probe;
-  });
+  }, LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD);
 }
 
 async function armTrialObservation(
@@ -541,8 +571,7 @@ async function armTrialObservation(
 
 async function readAndDisarmEngineDispatchProbe(page: Page): Promise<LiveEngineDispatch[]> {
   return page.evaluate(() => {
-    type Dispatch = { method: LiveDispatchMethod; trackId: string };
-    type DispatchProbe = { readAndDisarm: () => Dispatch[] };
+    type DispatchProbe = { readAndDisarm: () => LiveEngineDispatch[] };
     const probe = (window as unknown as {
       __liveQualityDispatchProbe__?: DispatchProbe;
     }).__liveQualityDispatchProbe__;
@@ -1196,10 +1225,12 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           energy = await readContinuousEnergyCapture(page);
           await stopPlaybackIfActive(page);
           observedEngineDispatches = await readAndDisarmEngineDispatchProbe(page);
-          expect(observedEngineDispatches).toEqual([{
-            method: LIVE_DISPATCH_METHOD_BY_INSTRUMENT_TYPE[spec.type],
-            trackId,
-          }]);
+          expect(observedEngineDispatches).toHaveLength(1);
+          expect(observedEngineDispatches[0]).toMatchObject(
+            expectedLiveEngineDispatchIdentity(spec, trackId),
+          );
+          expect(Number.isFinite(observedEngineDispatches[0].eventTimeSeconds)).toBe(true);
+          expect(observedEngineDispatches[0].eventTimeSeconds).toBeGreaterThanOrEqual(0);
         } catch (error) {
           trialPrimaryError = error;
           throw error;
