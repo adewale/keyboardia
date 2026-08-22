@@ -376,11 +376,11 @@ jobs:
         run: |
           required_specs=()
           while IFS= read -r spec; do required_specs+=("$spec"); done < e2e/mock-compatible-files.txt
-          test "${#required_specs[@]}" -eq 7
+          test "${#required_specs[@]}" -eq 8
           discovered=$(npx playwright test "${required_specs[@]}" --project=chromium --list | sed -n 's/^Total: \([0-9][0-9]*\) tests.*/\1/p')
-          test "$discovered" = "74"
+          test "$discovered" = "75"
           npx playwright test "${required_specs[@]}" --project=chromium --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 74 0
+          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 75 0
         env:
           USE_MOCK_API: '1'
           CI: 'true'
