@@ -77,7 +77,7 @@
     "audit:range:session": "USE_MOCK_API=1 npx playwright test e2e/instrument-range-session.spec.ts --project=chromium",
     "audit:range:full": "npm run audit:range:session && npm run audit:range",
     "audit:instrument-quality": "node --import tsx scripts/audit-instrument-quality.ts",
-    "audit:instrument-quality:evidence": "USE_MOCK_API=1 playwright test e2e/sample-browser-decode.spec.ts --project=chromium --project=webkit --workers=1 --no-deps && USE_MOCK_API=1 playwright test e2e/all-instruments-master-output.spec.ts --project=chromium --workers=1 --no-deps && node --import tsx scripts/validate-sample-quality.ts --strict",
+    "audit:instrument-quality:evidence": "KEYBOARDIA_REQUIRE_CLEAN_AUDIO_EVIDENCE=1 USE_MOCK_API=1 playwright test e2e/sample-browser-decode.spec.ts --project=chromium --project=webkit --workers=1 --no-deps && USE_MOCK_API=1 playwright test e2e/all-instruments-master-output.spec.ts --project=chromium --workers=1 --no-deps && node --import tsx scripts/validate-sample-quality.ts --strict --require-clean-subject",
     "audit:instrument-quality:v1": "npm run audit:instrument-quality:evidence && node --import tsx scripts/audit-instrument-quality.ts --require-evidence",
     "audit:instrument-quality:matrix:plan": "node --import tsx scripts/instrument-quality-matrix-cli.ts plan",
     "audit:instrument-quality:matrix:smoke": "node --import tsx scripts/capture-instrument-quality-smoke.ts",

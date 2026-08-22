@@ -6,11 +6,15 @@ import { fileURLToPath } from 'node:url';
 export type BoundMeasurement = number | string | null;
 
 /**
- * Decoder reductions can differ by a few floating-point ulps across operating
- * systems and CPU architectures. Six decimal places are far below every
- * quality threshold while keeping disposition identity stable across runners.
+ * Store compact canonical measurements while retaining enough precision to
+ * distinguish every quality decision. An observed issue measurement may differ
+ * from that stored value by one unit at this precision because decoder
+ * reductions can straddle a rounding boundary. This bounds deviation from the
+ * stored canonical value; the original unrounded reference is not retained, so
+ * it is not a bound on the true decoder-to-decoder difference.
  */
 export const BOUND_MEASUREMENT_DECIMAL_PLACES = 6;
+export const BOUND_MEASURED_VALUE_ABSOLUTE_TOLERANCE = 1e-6;
 
 export interface SampleQualityWaiver {
   code: string;
@@ -75,9 +79,25 @@ export function boundMeasurement(value: number | string | null | undefined): Bou
   return value ?? null;
 }
 
+/** Exact comparison for thresholds and other non-measurement receipt fields. */
+export function measurementsExactlyEqual(
+  left: number | string | null | undefined,
+  right: BoundMeasurement,
+): boolean {
+  return Object.is(left ?? null, right);
+}
+
+/** Tolerant comparison for decoder-derived values only, never thresholds or metadata. */
 export function measurementsEqual(
   left: number | string | null | undefined,
   right: BoundMeasurement,
 ): boolean {
-  return Object.is(boundMeasurement(left), boundMeasurement(right));
+  if (typeof left === 'number' || typeof right === 'number') {
+    return typeof left === 'number'
+      && Number.isFinite(left)
+      && typeof right === 'number'
+      && Number.isFinite(right)
+      && Math.abs(left - right) <= BOUND_MEASURED_VALUE_ABSOLUTE_TOLERANCE;
+  }
+  return Object.is(left ?? null, right);
 }
