@@ -932,6 +932,10 @@ function main(): void {
     const manifest = item.type === 'sampled' ? manifestFor(presetId) : null;
     const coverage = manifest ? manifestCoverage(manifest) : null;
     const sampleIssues = allSampleIssues.filter(issue => issue.instrumentId === presetId);
+    const unwaivedSampleIssueCount = (sampleReport?.issues ?? [])
+      .filter(issue => issue.instrumentId === presetId).length;
+    const dispositionAcceptedSampleIssueCount = (sampleReport?.waivedIssues ?? [])
+      .filter(entry => entry.issue.instrumentId === presetId).length;
     const sampleSummary = sampleSummaryById.get(presetId);
     const live = liveById.get(item.id) ?? null;
     const liveSilent = live !== null && liveReport !== null
@@ -980,7 +984,7 @@ function main(): void {
     );
     const codeCounts = issueCounts(sampleIssues);
     const evidence = item.type === 'sampled'
-      ? `${coverage?.fileCount ?? 0} decoded files, ${sampleIssues.length} accepted+unwaived findings, live peak ${finiteRound(peakDbfs) ?? 'n/a'} dBFS`
+      ? `${coverage?.fileCount ?? 0} decoded files, ${sampleIssues.length} measured findings (${dispositionAcceptedSampleIssueCount} disposition-accepted, ${unwaivedSampleIssueCount} unwaived), live peak ${finiteRound(peakDbfs) ?? 'n/a'} dBFS`
       : `canonical live peak ${finiteRound(peakDbfs) ?? 'n/a'} dBFS, RMS ${finiteRound(rmsDbfs) ?? 'n/a'} dBFS`;
     return {
       id: item.id,
