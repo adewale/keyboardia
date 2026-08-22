@@ -131,6 +131,20 @@ describe('characterization: playSynthNote', () => {
   });
 });
 
+describe('mobile output readiness', () => {
+  it('unlocks the media element even when the AudioContext already reports running', async () => {
+    const engine = new AudioEngine();
+    const unlock = vi.fn();
+    (engine as unknown as { audioContext: Partial<AudioContext> }).audioContext = {
+      state: 'running',
+    };
+    (engine as unknown as { mediaOutput: { unlock: () => void } }).mediaOutput = { unlock };
+
+    await expect(engine.ensureAudioReady()).resolves.toBe(true);
+    expect(unlock).toHaveBeenCalledOnce();
+  });
+});
+
 describe('characterization: playSampledInstrument', () => {
   beforeEach(() => {
     sampledRegistryGet.mockReset();

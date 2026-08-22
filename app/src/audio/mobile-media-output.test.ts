@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MediaElementOutput, needsMediaElementOutput } from './mobile-media-output';
-import { setMediaSessionPlaybackState } from './media-session';
+import { installMediaSessionActionHandlers, setMediaSessionPlaybackState } from './media-session';
 import { waitForClockAdvance, CLOCK_LIVENESS_TIMEOUT_MS } from './clock-liveness';
 
 const IOS_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15';
@@ -50,6 +50,7 @@ describe('MediaElementOutput', () => {
     const output = new MediaElementOutput();
     expect(output.connect(source, context)).toBe(true);
     expect(output.isActive).toBe(true);
+    expect(output.getInput()).toBe(streamDestination);
     expect((source.connect as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(streamDestination);
     const element = document.querySelector('audio')!;
     expect(element).not.toBeNull();
@@ -94,6 +95,19 @@ describe('MediaElementOutput', () => {
     output.unlock();
     expect(play).toHaveBeenCalledTimes(2);
   });
+
+  it('restarts after the OS pauses the media element', async () => {
+    const { context, source } = fakeContext(true);
+    const output = new MediaElementOutput();
+    output.connect(source, context);
+    const element = document.querySelector('audio')!;
+    const play = vi.spyOn(element, 'play').mockResolvedValue(undefined);
+    output.unlock();
+    await Promise.resolve();
+    element.dispatchEvent(new Event('pause'));
+    output.unlock();
+    expect(play).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('setMediaSessionPlaybackState', () => {
@@ -106,11 +120,38 @@ describe('setMediaSessionPlaybackState', () => {
     setMediaSessionPlaybackState('paused', nav);
     expect(session.playbackState).toBe('paused');
   });
+
+  it('wires lock-screen play/pause actions and removes them on cleanup', () => {
+    const setActionHandler = vi.fn();
+    const session = {
+      playbackState: 'none' as MediaSessionPlaybackState,
+      metadata: null,
+      setActionHandler,
+    };
+    const play = vi.fn();
+    const pause = vi.fn();
+    const cleanup = installMediaSessionActionHandlers(
+      { play, pause },
+      { mediaSession: session } as unknown as Navigator,
+    );
+    expect(setActionHandler).toHaveBeenCalledWith('play', play);
+    expect(setActionHandler).toHaveBeenCalledWith('pause', pause);
+    cleanup();
+    expect(setActionHandler).toHaveBeenCalledWith('play', null);
+    expect(setActionHandler).toHaveBeenCalledWith('pause', null);
+  });
 });
 
 describe('waitForClockAdvance', () => {
-  it('returns immediately for a clock that already moved', async () => {
-    expect(await waitForClockAdvance({ currentTime: 1.5 })).toBe(true);
+  it('rejects a previously advanced clock that is now frozen', async () => {
+    expect(await waitForClockAdvance({ currentTime: 1.5 }, 30)).toBe(false);
+  });
+
+  it('accepts a non-zero clock only after it advances again', async () => {
+    const context = { currentTime: 1.5 };
+    const wait = waitForClockAdvance(context);
+    setTimeout(() => { context.currentTime = 1.51; }, 20);
+    expect(await wait).toBe(true);
   });
 
   it('resolves true once a parked clock starts moving', async () => {

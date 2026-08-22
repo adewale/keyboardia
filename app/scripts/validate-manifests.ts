@@ -96,7 +96,6 @@ interface Manifest {
   unpitched?: boolean;
   velocityCrossfade?: number;
   priorityNotes?: number[];
-  velocityFilterAnchorHz?: number;
 }
 
 /** Loudness trims beyond this are almost certainly data-entry errors. */
@@ -500,17 +499,6 @@ function validateManifest(
       type: 'critical',
       code: 'INVALID_UNPITCHED_FLAG',
       message: `unpitched must be a boolean when present, got: ${JSON.stringify(manifest.unpitched)}`,
-    });
-  }
-
-  if (manifest.velocityFilterAnchorHz !== undefined &&
-      (!Number.isFinite(manifest.velocityFilterAnchorHz) ||
-        manifest.velocityFilterAnchorHz < 100 ||
-        manifest.velocityFilterAnchorHz > 20000)) {
-    errors.push({
-      type: 'critical',
-      code: 'INVALID_VELOCITY_FILTER_ANCHOR',
-      message: `velocityFilterAnchorHz must be finite within 100-20000 Hz, got: ${JSON.stringify(manifest.velocityFilterAnchorHz)}`,
     });
   }
 

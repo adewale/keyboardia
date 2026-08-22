@@ -35,6 +35,11 @@ export class MediaElementOutput {
   private element: HTMLAudioElement | null = null;
   private streamDestination: MediaStreamAudioDestinationNode | null = null;
   private unlocked = false;
+  private readonly handlePause = (): void => {
+    // The OS/media session can pause the element behind our back. Clear the
+    // latch so the next explicit play gesture actually restarts the route.
+    this.unlocked = false;
+  };
 
   /**
    * Route `source` into a hidden media element. Returns true when the media
@@ -58,6 +63,7 @@ export class MediaElementOutput {
       element.muted = false;
       element.setAttribute('playsinline', '');
       element.style.display = 'none';
+      element.addEventListener('pause', this.handlePause);
       document.body.appendChild(element);
       this.element = element;
       logger.audio.log('Mobile media-element output connected');
@@ -90,7 +96,13 @@ export class MediaElementOutput {
     return this.element !== null;
   }
 
+  /** Terminal node shared by native and Tone.js master chains. */
+  getInput(): AudioNode | null {
+    return this.streamDestination;
+  }
+
   dispose(): void {
+    this.element?.removeEventListener('pause', this.handlePause);
     this.element?.pause();
     this.element?.remove();
     this.element = null;

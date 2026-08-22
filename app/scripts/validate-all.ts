@@ -66,6 +66,11 @@ const VALIDATORS = [
     description: 'Ensures sustaining instruments hold past the longest 16-step tied note',
   },
   {
+    name: 'Velocity Filter Calibration',
+    script: 'npx tsx scripts/validate-velocity-filter-calibration.ts && npx tsx scripts/simulate-velocity-filter.ts --sample-rate 44100 && npx tsx scripts/simulate-velocity-filter.ts --sample-rate 48000',
+    description: 'Binds calibration to every playable note and checks the 26-35% timbre target on production mappings',
+  },
+  {
     name: 'Release Time Validation',
     script: 'npx tsx scripts/validate-release-times.ts',
     description: 'Validates release time consistency across instruments',

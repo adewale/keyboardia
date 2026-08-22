@@ -3,7 +3,6 @@
   "name": "French Horn",
   "type": "sampled",
   "releaseTime": 0.6,
-  "velocityFilterAnchorHz": 684,
   "gainDb": 7.25,
   "velocityCrossfade": 8,
   "credits": {

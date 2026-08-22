@@ -233,6 +233,15 @@ describe('ToneEffectsChain', () => {
       expect(limiter?.connect).toHaveBeenCalledWith(outputTrim);
       expect(outputTrim?.toDestination).toHaveBeenCalled();
     });
+
+    it('terminates at an explicit mobile media node instead of Tone destination', async () => {
+      chain.dispose();
+      const destination = {} as AudioNode;
+      await chain.initialize(destination);
+
+      expect(chain['outputTrim']?.connect).toHaveBeenCalledWith(destination);
+      expect(chain['outputTrim']?.toDestination).not.toHaveBeenCalled();
+    });
   });
 
   describe('reverb controls', () => {

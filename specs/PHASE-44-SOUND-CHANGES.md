@@ -3,8 +3,8 @@
 **Date**: 2026-08-19
 **Driver**: `specs/research/TONE-NETS-COMPARISON-2026-08.md`
 **Predecessor**: `specs/SOUND-QUALITY-PARITY-PLAN.md` (Phase 43, implemented)
-**Status**: Implemented 2026-08-22 (see §10) except the graph warm-up and
-the `french-horn` content work in §6. Baselines in §1 are measured at
+**Status**: Implemented 2026-08-22 (see §10) except the graph warm-up.
+Baselines in §1 are measured at
 `58264dd5ae274f63b1cd80b72aa823b76b21f28b`; the unit- and offline-lane
 targets are verified, the browser-capture and physical-device gates are
 recorded in §10 as still owed.
@@ -39,20 +39,29 @@ fixed 250 ms window so attack length and level cannot bias it:
 
 | Instrument | Layers | Centroid spread |
 |---|---|---|
-| `marimba` | ff/mf/pp | **62.1%** |
-| `piano` | ff/mf/pp | **31.5%** |
-| `vibraphone` | ff/mf | **30.5%** |
-| `alto-sax` | loud/soft | **26.2%** |
-| `brushes-snare` | hard/single | 5.3% |
-| `french-horn` | loud/soft | **1.9%** |
-| the other 20 | single | **0% — gain only** |
+| `steel-drums` | 5 manifest zones | **65.1%** |
+| `marimba` | 3 manifest zones | **62.1%** |
+| `finger-bass` | 4 manifest zones | **48.3%** |
+| `acoustic-kick` | 4 manifest zones | **47.5%** |
+| `french-horn` | 2 manifest zones plus fallback | **34.5%** |
+| `piano` | 3 manifest zones | **31.5%** |
+| `acoustic-hihat-closed` | 4 manifest zones | **30.4%** |
+| `vibraphone` | 2 manifest zones | **30.5%** |
+| `alto-sax` | 2 manifest zones | **26.2%** |
+| `acoustic-ride` | 3 manifest zones | 17.9% |
+| `acoustic-snare` | 4 manifest zones | 16.3% |
+| `acoustic-crash` | 3 manifest zones | 13.6% |
+| `brushes-snare` | 3 manifest zones | 11.6% |
+| `acoustic-hihat-open` | 4 manifest zones | 5.6% |
+| the other 12 | one manifest zone | **0% — gain only** |
 
-**20 of 26 sampled instruments respond to velocity with loudness and nothing
+**12 of 26 sampled instruments respond to velocity with loudness and nothing
 else.** A soft hit is a quieter copy of a hard hit, sample-identical.
 
-`french-horn` is a separate finding: it ships two velocity layers that are
-acoustically almost the same file. That is a content defect, not an engine gap,
-and no amount of filtering fixes it — it only hides it.
+The earlier filename-based analysis reported `finger-bass`, `steel-drums`, and
+`french-horn` as single-layer instruments (and the horn at 1.9%). Those were
+measurement defects: the filenames do not encode the manifest's velocity
+zones. The table above is derived from the authoritative mappings.
 
 ### 1.2 Sustain ceiling, measured
 
@@ -122,13 +131,14 @@ a blocker, not a rounding error. Metering taps are upstream and unaffected.
 **What.** One `BiquadFilterNode` per sampled voice:
 
 ```
-cutoff(v) = anchor × 2 ** (−1.5 × (1 − v / 90))    for v < 90
-bypass (no filter node at all)                      for v ≥ 90
+c40 = anchor(note, sampleRate) × 2 ** (−1.5 × (1 − 40 / 90))
+cutoff(v) = anchor × 2 ** (−1.5 × (1 − v / 90))     for v ≤ 40
+cutoff(v) = c40 × (24_000 / c40) ** ((v − 40) / 50) for 40 < v < 90
+bypass (no filter node at all)                        for v ≥ 90
 ```
 
-`anchor` is per-instrument, stored in the manifest, seeded at 2× the
-instrument's measured dry centroid from §1.1. `90` is
-`DEFAULT_STEP_MIDI_VELOCITY`.
+`anchor` is calibrated per playable note and separately for 44.1 and 48 kHz,
+outside the provenance manifest. `90` is `DEFAULT_STEP_MIDI_VELOCITY`.
 
 **Why this shape and not the existing synth curve.** `velocityFilterCutoff`
 (`synth.ts:120`) scales a *preset* cutoff by `0.3 + 0.7·√(v/127)`. Sampled
@@ -137,48 +147,33 @@ transparent at full velocity leaves it transparent at low velocity too — the
 curve does nothing when ported directly. The SF2 gets its result differently:
 per-zone cutoffs that are already partly closed (median 1,267 Hz) plus a
 velocity modulator that sweeps down about two octaves. The curve above is that
-idea with a per-instrument anchor.
+idea with per-note acoustic calibration. Its second branch opens smoothly to a
+transparent corner before the byte-identical bypass.
 
 **The zero-regression property — this is the point of the bypass.** Unlocked
 steps use velocity 90. Bypassing at `v ≥ 90` means every step without an
 explicit volume lock renders through a byte-identical graph. So unlike a
 default change, this ships without reinterpreting anyone's saved music.
 
-**Measured impact.** Centroid drop at velocity 40, simulated over the real
-shipped samples with the real filter:
-
-| Instrument | 1.5 oct | 2.0 oct | 2.5 oct |
-|---|---|---|---|
-| `french-horn` | 17.6% | 21.9% | 26.7% |
-| `string-section` | **29.4%** | 35.3% | 41.4% |
-| `steel-drums` | **31.2%** | 36.0% | 39.9% |
-| `slap-bass` | **31.9%** | 39.3% | 46.3% |
-| `hammond-organ` | **34.3%** | 39.3% | 44.3% |
-| `acoustic-guitar` | 43.7% | 49.6% | 54.7% |
-| `finger-bass` | 44.0% | 46.6% | 49.2% |
-| `clean-guitar` | 44.1% | 47.8% | 51.9% |
-| `kalimba` | 56.6% | 63.1% | 68.6% |
-
-The target band is the 26–32% that the genuinely multi-sampled instruments
-already occupy (`alto-sax` 26.2%, `vibraphone` 30.5%, `piano` 31.5%).
-**1.5 octaves lands four of the nine in that band directly.** The guitars,
-`finger-bass` and `kalimba` overshoot it because a flat 2× anchor is wrong for
-their spectra — those four need their anchor tuned per instrument, which is
-exactly why the anchor belongs in the manifest rather than in a constant.
+**Measured impact.** At velocity 40, all 281 calibrated playable notes across
+the six tonal gain-only instruments land at 29.8–30.2% centroid drop at both
+44.1 and 48 kHz. The target band is 26–35%, covering the central response of
+the genuinely multi-sampled instruments. Recorded-layer instruments are not
+calibrated and remain on their authored velocity zones.
 
 **Preregistered acceptance.**
 
 | Metric | Lane | Baseline | Target |
 |---|---|---|---|
 | `logSpectralDistance`, session with no volume locks, before vs after | offline render | — | **exactly 0** |
-| Centroid spread across v=40…v=90, per gain-only instrument | `npm run measure:velocity-timbre` (extended to sweep velocity) | **0%** | 26–35% |
-| Instruments that already have layers | same | 26.2–62.1% | unchanged within ±2% |
+| v40 centroid drop vs v127, every calibrated playable note | `npm run validate:velocity-filter` | **0%** | 26–35% at 44.1/48 kHz |
+| Instruments that already have layers | calibration structure + shipped-sample render | 5.6–65.1% | no filter calibration; unchanged |
 | `truePeakDbfs`, `loudnessKMax` at `userOutput` | `e2e/capture-session.spec.ts` | current | unchanged (a lowpass must not raise either) |
 
 **Risk.** One extra node per voice on the hot path; check it against the
 existing `audio-hot-paths.bench.ts` before and after. A wrong anchor makes an
-instrument sound muffled at moderate velocity — hence the per-instrument value
-and the ±2% guard on already-layered instruments.
+instrument sound muffled at moderate velocity — hence the exhaustive per-note
+range gate and the structural exclusion of already-layered instruments.
 
 **Reconsidered limits (2026-08-22).** Two consequences of this design deserve
 stating as plainly as its benefits:
@@ -288,7 +283,6 @@ should not be described as one in a changelog.
 | **Graph warm-up** | Fire a silent note through the real instrument path at play-arm, master at 0 | `hitLevelVariationDb` between the first hit and steady state on a cold capture; `leadingSilenceMs`; `audioMetrics` scheduler jitter over the first 500 ms. Baseline unmeasured — needs a cold browser capture, which does not exist yet and is the first task. | Small |
 | **Clock-liveness gate** | Wait for `ctx.currentTime` to actually advance before declaring ready, instead of trusting `state === 'running'` | Unit-testable with a fake context whose clock is frozen; functional, no acoustic metric | Small |
 | **`navigator.mediaSession`** | Lock-screen transport and metadata | E2E presence assertion only; no audio metric. Real value is that it pairs with Change 1 and tells iOS this is a media app | Small |
-| **`french-horn` layers** | Re-cut or re-source the loud/soft pair | `measure:velocity-timbre` spread rises from **1.9%** toward the 26%+ the other layered instruments reach | Content work, unbounded |
 
 ---
 
@@ -329,13 +323,12 @@ every change in §2–§6 lands as specified".
 | Dimension | Without (today) | With §2–§6 landed | Remaining vs Tone Nets |
 |---|---|---|---|
 | Mobile audibility (iOS ringer switch) | silent | audible — gated on a physical-device pass, not CI | none, once the device test passes |
-| Velocity → timbre, sampled path | 0% centroid spread on 20/26 instruments | 26–35% band on locked steps; 4/9 instruments immediately, 5/9 after per-manifest anchor tuning | unlocked steps unchanged by design; no response above v90 |
+| Velocity → timbre, sampled path | 0% centroid spread on 12/26 instruments | 26–35% band on locked steps for six tonal gain-only instruments, verified at every playable note at 44.1/48 kHz | unlocked steps unchanged by design; no response above v90 |
 | Per-note motion (filter envelope, LFO) | none | none — out of scope | full gap: SF2 has a filter envelope on 89% of zones, LFO on 100% |
 | Default space | `reverb.wet: 0` | 0.15 bass-protected, new sessions only | per-instrument depth — the SF2 balances sends per zone; ours is one global wet (§4.9 of the comparison, not committed here) |
 | Startup (warm-up, clock-liveness) | absent | closed if §6 lands | — |
 | `navigator.mediaSession` | absent | closed if §6 lands | — |
 | Device quality tiers | none | none — not carried into this plan | comparison §4.8 remains open |
-| `french-horn` dynamic layers | 1.9% spread (content defect) | unchanged unless the content work in §6 happens | remains until re-sourced |
 | Source material | Keyboardia ahead | unchanged | our advantage either way |
 | Timing / multiplayer | Keyboardia ahead | unchanged | our advantage either way |
 | Comparative listening evidence | none | none | unchanged — §8 still applies to every row above |
@@ -353,14 +346,14 @@ no comparative claim).
 
 - **Change 2 — velocity → cutoff** (`velocity-sample-filter.ts`,
   `sampled-instrument.ts`). One lowpass per voice, bypassed at
-  `DEFAULT_STEP_MIDI_VELOCITY`; anchors are per-manifest
-  (`velocityFilterAnchorHz`), solved by
-  `npm run simulate:velocity-filter -- --solve` to a 29.5–30.3% centroid
-  drop at v40 for all nine target instruments — the flat-anchor overshoot in
-  §3's table is gone. Verified: byte-identical PCM at v≥90 with and without
-  the anchor on shipped samples (offline render); soft strikes measurably
-  darker; layered instruments carry no anchor. The bypass-caps-payoff and
-  no-motion limits stated under "Reconsidered limits" stand.
+  `DEFAULT_STEP_MIDI_VELOCITY`; DSP calibration is held outside provenance
+  manifests in `velocity-filter-anchors*.json`. The solver renders the real
+  manifest mapping and pitch ratio for all 281 playable notes on the six
+  tonal gain-only instruments, at both 44.1 and 48 kHz. `validate:all` blocks
+  any note outside the 26–35% v40 centroid-drop band and rejects calibration
+  on a manifest with recorded velocity zones. The curve opens to a transparent
+  corner before v90, eliminating the old v89→v90 brightness cliff while the
+  v≥90 graph remains byte-identical.
 - **Change 3 — default room** (`effects-defaults.ts`). New sessions carry
   `reverb.wet 0.15` through the `new-session` fallback
   (`NEW_SESSION_EFFECTS_STATE`), exactly as §5 specifies; the shared
@@ -368,33 +361,85 @@ no comparative claim).
   stays dry (the Stack A identity catalogue renders it, so moving it would
   fail that gate), `LEGACY_MISSING_EFFECTS_STATE` stays 0, and the
   legacy-normalization guard is asserted in `session-defaults.test.ts`.
+  `RESET_STATE` now uses the new-session policy, and `createNew()` hydrates
+  the server-created snapshot before autosave is enabled, so a disconnected
+  client cannot overwrite the server's 0.15 room with a stale dry reset.
   **Still owed:** the browser-capture acceptance rows in §5 (tail rise,
   low-band ±0.3 dB, true peak, LU, pumping) — this container has no WebKit
   and the capture lane runs in CI.
 - **Change 1 — mobile output** (`mobile-media-output.ts`, `engine.ts`).
-  Mobile terminates in MediaStreamDestination → hidden `playsinline`
-  element, started inside the existing unlock gesture; desktop path
-  byte-identical; failure falls back to `destination`. Verified: routing,
-  fallback, gesture retry, dispose (jsdom units). **Still owed:** the
+  Both the native and Tone-effects master chains terminate in the same
+  MediaStreamDestination → hidden `playsinline` element. It starts before the
+  first gesture-path `await`, is retried even while AudioContext says
+  `running`, and re-arms after an OS pause; desktop stays on `destination`.
+  Verified: both final routes, fallback, running-context unlock, gesture retry,
+  external pause, and dispose. **Still owed:** the
   physical-iPhone ringer-switch pass and the output-latency measurement —
   CI cannot provide either.
 - **§4 guard** (`instrument-classification.ts`,
   `scripts/validate-sustain-ceiling.ts`, in `validate:all`). Eight
-  sustaining instruments pass with the exact §1.2 medians; plucked
-  instruments deliberately unclassified.
-- **§6**: `navigator.mediaSession` transport state wired into both
-  scheduler implementations; clock-liveness gate (bounded 250 ms) after
-  resume. **Deferred:** graph warm-up — its own acceptance requires a cold
-  browser capture that does not exist yet; `french-horn` re-sourcing —
-  unbounded content work.
+  sustaining instruments pass; measurement visits manifest-referenced
+  mappings and mapped segments only, so stale directory files cannot satisfy
+  the guard. Plucked instruments remain deliberately unclassified.
+- **§6**: `navigator.mediaSession` state and play/pause action handlers are
+  wired into the transport. Clock liveness now requires advancement from the
+  value observed after every resume, including a previously non-zero value.
+  **Deferred:** graph warm-up — its own acceptance requires a cold
+  browser capture that does not exist yet.
 - **Demo session**: `scripts/demo-sessions/whisper-to-roar.json`, seeded in
   the mock API (`/s/b7e0b220-3185-49ef-b9b0-15ab9df76aec` with
   `USE_MOCK_API=1`) and held to its promises by
-  `src/data/phase44-demo-session.test.ts`: ≥8 filtered soft strikes, ≥4
+  `src/data/phase44-demo-session.test.ts`: ≥6 filtered soft strikes, ≥2
   bypass accents, tied string sustains, kit ghost layers, the 0.15 room.
-- **Provenance:** adding `velocityFilterAnchorHz` changed nine manifest
-  hashes; `mapping-calibration.json` and `technical-curation.json` re-pin
-  the amended manifests (sample content untouched — `shipped` hashes
-  unchanged), and `clean-guitar` gains a zero-correction calibration entry
-  as its pinning home. The immutable pre-enrichment baselines were not
-  edited.
+  `e2e/phase44-demo.spec.ts` binds the documented UUID to both the exact mock
+  API response and the browser route.
+- **Provenance:** DSP calibration no longer mutates sample manifests.
+  `mapping-calibration.json` and `technical-curation.json` are bound by tests
+  across every entry, not only the ten historical listening-decision IDs; the
+  audit repaired seven stale manifest receipts at once. Sample-content hashes
+  and immutable pre-enrichment baselines remain unchanged.
+
+## 11. Post-audit failure analysis (2026-08-23)
+
+The audit found failures because the implementation and its tests shared the
+same simplified models:
+
+1. **We verified components, not the terminal behavior.** The media-element
+   helper worked, but Tone initialization later replaced its final route. A
+   `running` AudioContext was also treated as proof that the independent media
+   element was playing. The missing contract was end-to-end graph termination
+   after every optional processor is installed.
+2. **We treated filenames and directory contents as authority.** Velocity
+   layers were inferred from suffixes and sustain inspected every audio file.
+   Playback is manifest-driven, so both analyses answered a different question
+   from production. Manifest mappings, velocity zones, offsets, and playable
+   ranges are now the common source of truth; the solver imports production's
+   higher-root nearest-sample selector instead of reimplementing its tie-break.
+3. **We validated a point instead of the domain.** One slap-bass C4 render and
+   a broad 15–50% threshold could not detect failures at note-range edges,
+   source switches, sample-rate changes, or the v89/v90 discontinuity. The gate
+   now crosses all playable notes, both common sample rates, the bypass edge,
+   and the exact audited regression notes.
+4. **We confused a local reset with a server transition.** The New flow never
+   applied the session returned by the server, so its local dry default could
+   win the next autosave. Server-created state is now hydrated under the same
+   apply-before-save state machine as an ordinary session load.
+5. **We used enumerated examples where universal invariants were required.**
+   Hard-coded “layered” and receipt lists omitted the failing instruments.
+   Sabotage tests now derive those sets, and receipt hashes are checked for
+   every calibration entry. The strict all-validator also fails on every stale
+   hash-bound quality waiver.
+
+The pre-audit suites were green because their oracles were built from the same
+assumptions as the implementation: one note, one route, filename-derived
+layers, hard-coded exclusion lists, and a broad acoustic threshold. They proved
+the code matched that model; they did not prove the model matched playback.
+The audit supplied the missing independent/adversarial verification—terminal
+graph inspection, boundary pairs, range-edge renders, manifest sabotage, and
+universal receipt checks—and therefore found cases outside the old tests'
+support rather than intermittent failures inside it.
+
+The remaining evidence gap is irreducibly physical: CI cannot prove behavior
+with an iPhone ringer switch or measure that device's added output latency.
+That manual Safari/Chrome iOS pass remains a release gate rather than a claim
+inferred from Chromium.

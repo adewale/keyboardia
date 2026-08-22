@@ -36,8 +36,31 @@ const SILENCE_FLOOR_DB = -60;
 /** Below this the window is treated as silence rather than measured. */
 const MEASURABLE_FLOOR_DB = -70;
 
-const LAYER_PATTERN = /-(pp|mf|ff|soft|loud|hard|med)\.[a-z0-9]+$/;
-const AUDIO_PATTERN = /\.(mp3|m4a|wav|ogg)$/;
+interface ManifestSampleMapping {
+  note: number;
+  file?: string;
+  offset?: number;
+  duration?: number;
+  startOffset?: number;
+  endOffset?: number;
+  velocityMin?: number;
+  velocityMax?: number;
+}
+
+interface MeasurementManifest {
+  id: string;
+  sprite?: string;
+  startOffset?: number;
+  samples: ManifestSampleMapping[];
+}
+
+export interface ManifestMeasurementTarget {
+  file: string;
+  note: number;
+  layer: string;
+  startSeconds: number;
+  endSeconds?: number;
+}
 
 export interface InstrumentMeasurement {
   id: string;
@@ -101,23 +124,65 @@ function mean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
+/**
+ * Turn the authoritative playback manifest into acoustic measurement targets.
+ * Filename spelling and unreferenced files are deliberately irrelevant.
+ */
+export function manifestMeasurementTargets(
+  manifest: MeasurementManifest,
+): ManifestMeasurementTarget[] {
+  return manifest.samples.map((mapping) => {
+    const startSeconds = manifest.sprite
+      ? mapping.offset ?? 0
+      : mapping.startOffset ?? manifest.startOffset ?? 0;
+    const endSeconds = manifest.sprite
+      ? (mapping.duration === undefined ? undefined : startSeconds + mapping.duration)
+      : mapping.endOffset;
+    return {
+      file: manifest.sprite ?? (() => {
+        if (!mapping.file) throw new Error(`${manifest.id}: sample at note ${mapping.note} has no file`);
+        return mapping.file;
+      })(),
+      note: mapping.note,
+      layer: `${mapping.velocityMin ?? 0}-${mapping.velocityMax ?? 127}`,
+      startSeconds,
+      endSeconds,
+    };
+  });
+}
+
+function mappedSamples(buffer: AudioBuffer, target: ManifestMeasurementTarget): Float32Array {
+  const full = toMono(buffer);
+  const start = Math.max(0, Math.floor(target.startSeconds * buffer.sampleRate));
+  const end = target.endSeconds === undefined
+    ? full.length
+    : Math.min(full.length, Math.ceil(target.endSeconds * buffer.sampleRate));
+  return full.subarray(start, Math.max(start, end));
+}
+
 export async function measureInstrument(id: string): Promise<InstrumentMeasurement | null> {
   const dir = path.join(INSTRUMENTS_DIR, id);
-  const files = fs.readdirSync(dir).filter((file) => AUDIO_PATTERN.test(file)).sort();
-  if (!files.length) return null;
+  const manifest = JSON.parse(
+    fs.readFileSync(path.join(dir, 'manifest.json'), 'utf8'),
+  ) as MeasurementManifest;
+  const targets = manifestMeasurementTargets(manifest);
+  if (!targets.length) return null;
 
   const usable: number[] = [];
   const centroids = new Map<string, number[]>();
-  for (const file of files) {
-    const buffer = await decode(path.join(dir, file));
-    const samples = toMono(buffer);
+  const decoded = new Map<string, AudioBuffer>();
+  for (const target of targets) {
+    let buffer = decoded.get(target.file);
+    if (!buffer) {
+      buffer = await decode(path.join(dir, target.file));
+      decoded.set(target.file, buffer);
+    }
+    const samples = mappedSamples(buffer, target);
     usable.push(usableSeconds(samples, buffer.sampleRate));
     const centroid = postOnsetCentroid(samples, buffer.sampleRate);
     if (centroid === null) continue;
-    const match = file.match(LAYER_PATTERN);
-    const layer = match ? match[1] : 'single';
-    if (!centroids.has(layer)) centroids.set(layer, []);
-    centroids.get(layer)!.push(centroid);
+    if (!centroids.has(target.layer)) centroids.set(target.layer, []);
+    centroids.get(target.layer)!.push(centroid);
   }
 
   usable.sort((a, b) => a - b);
@@ -130,7 +195,7 @@ export async function measureInstrument(id: string): Promise<InstrumentMeasureme
 
   return {
     id,
-    files: files.length,
+    files: decoded.size,
     layers: [...centroids.keys()].sort(),
     centroidByLayerHz,
     centroidSpreadPct: spread,
