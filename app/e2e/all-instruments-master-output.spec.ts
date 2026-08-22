@@ -18,9 +18,13 @@ import {
   LIVE_CAPTURE_METHOD,
   LIVE_EXPECTED_EVENTS_PER_TRACK,
   LIVE_GENERATED_FROM,
+  LIVE_ISOLATION_SCOPE,
   LIVE_MAX_ARM_TO_ONSET_SECONDS,
+  LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
+  LIVE_MIN_ARM_TO_ONSET_SECONDS,
   LIVE_ONSET_THRESHOLD,
   LIVE_PATTERN_PERIOD_SECONDS,
+  LIVE_PATTERN_STORAGE_STEP_COUNT,
   LIVE_PEAK_METRIC,
   LIVE_PREPARATION_METHOD,
   LIVE_RANDOM_ALGORITHM,
@@ -33,6 +37,7 @@ import {
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
   LIVE_TEMPO,
+  LIVE_TRIAL_MODE,
   LIVE_UNMUTE_SETTLE_SECONDS,
   validateLiveQualityReport,
   type LiveQualityReport,
@@ -202,8 +207,12 @@ type TrackProbeResult = InstrumentSpec & {
   sessionId: string;
   peak: number;
   rms: number;
+  masterPeak: number;
+  masterRms: number;
   capturedFrames: number;
   channelSampleCount: number;
+  armToOnsetFrames: number;
+  randomCalls: number;
 };
 
 type EnergyMeasurement = {
@@ -267,8 +276,8 @@ function trackIdFor(sampleId: string, index: number): string {
 }
 
 function buildSequencerTrack(spec: InstrumentSpec, index: number): SessionTrack {
-  const steps = Array(LIVE_STEP_COUNT).fill(false) as boolean[];
-  const parameterLocks = Array(LIVE_STEP_COUNT).fill(null) as Array<{ pitch: number; volume: number } | null>;
+  const steps = Array(LIVE_PATTERN_STORAGE_STEP_COUNT).fill(false) as boolean[];
+  const parameterLocks = Array(LIVE_PATTERN_STORAGE_STEP_COUNT).fill(null) as Array<{ pitch: number; volume: number } | null>;
   steps[LIVE_ACTIVE_STEP] = true;
   parameterLocks[LIVE_ACTIVE_STEP] = { pitch: spec.pitch, volume: 1 };
   return {
@@ -315,14 +324,59 @@ async function prepareAudioForTracks(page: Page, tracks: SessionTrack[]): Promis
   const muteButtons = page.locator('.track-row .mute-button');
   await expect(muteButtons).toHaveCount(tracks.length);
   for (let index = 0; index < tracks.length; index++) {
-    const muteButton = muteButtons.nth(index);
-    await expect(muteButton).toHaveAttribute('aria-pressed', 'true');
-    await muteButton.click();
-    await expect(muteButton).toHaveAttribute('aria-pressed', 'false');
+    await expect(muteButtons.nth(index)).toHaveAttribute('aria-pressed', 'true');
   }
-  // TrackBus uses a 10 ms setTargetAtTime ramp for click-free unmute. This
-  // pinned wait lets every bus converge before the canonical event is armed.
+  // Keep a pinned quiet interval between the muted preload and the first
+  // isolated trial.
   await page.waitForTimeout(LIVE_UNMUTE_SETTLE_SECONDS * 1_000);
+}
+
+async function setTrackMuted(
+  page: Page,
+  trackIndex: number,
+  trackId: string,
+  muted: boolean,
+): Promise<void> {
+  const muteButton = page.locator('.track-row .mute-button').nth(trackIndex);
+  const expected = String(muted);
+  if (await muteButton.getAttribute('aria-pressed') !== expected) {
+    await muteButton.click();
+  }
+  await expect(muteButton).toHaveAttribute('aria-pressed', expected);
+
+  // The sequencer mute suppresses future events, but it does not silence a
+  // voice that is already in its release tail. Gate the production TrackBus as
+  // well so only the selected track is audible at the master tap. The voice may
+  // remain allocated behind its muted bus; this is an audible-routing claim,
+  // not a voice-disposal claim.
+  await page.evaluate(({ id, shouldMute }) => {
+    type TrackBusManager = {
+      getOrCreateBus: (candidateId: string) => unknown;
+      isTrackMuted: (candidateId: string) => boolean;
+    };
+    type Engine = {
+      trackBusManager?: TrackBusManager;
+      setTrackMuted?: (candidateId: string, candidateMuted: boolean) => void;
+    };
+    const engine = (window as unknown as { __audioEngine__?: Engine }).__audioEngine__;
+    if (!engine?.trackBusManager || !engine.setTrackMuted) {
+      throw new Error('Audio engine TrackBus mute control unavailable');
+    }
+    engine.trackBusManager.getOrCreateBus(id);
+    engine.setTrackMuted(id, shouldMute);
+  }, { id: trackId, shouldMute: muted });
+
+  // TrackBus mute uses a 10 ms setTargetAtTime ramp. Keep the transition out
+  // of the measured window, then prove the bus crossed its muted-state guard.
+  await page.waitForTimeout(LIVE_UNMUTE_SETTLE_SECONDS * 1_000);
+  const trackBusMuted = await page.evaluate((id) => {
+    type Engine = {
+      trackBusManager?: { isTrackMuted: (candidateId: string) => boolean };
+    };
+    return (window as unknown as { __audioEngine__?: Engine })
+      .__audioEngine__?.trackBusManager?.isTrackMuted(id);
+  }, trackId);
+  expect(trackBusMuted).toBe(muted);
 }
 
 async function installDeterministicRandom(page: Page): Promise<void> {
@@ -361,11 +415,17 @@ async function attachContinuousEnergyCapture(page: Page, trackIds: string[]): Pr
       throw new Error('Audio engine/masterGain/trackBusManager unavailable');
     }
 
-    const blobUrl = URL.createObjectURL(new Blob([workletSource], { type: 'text/javascript' }));
-    try {
-      await audioContext.audioWorklet.addModule(blobUrl);
-    } finally {
-      URL.revokeObjectURL(blobUrl);
+    const workletGlobals = window as unknown as {
+      __allInstrumentEnergyWorkletLoaded__?: boolean;
+    };
+    if (!workletGlobals.__allInstrumentEnergyWorkletLoaded__) {
+      const blobUrl = URL.createObjectURL(new Blob([workletSource], { type: 'text/javascript' }));
+      try {
+        await audioContext.audioWorklet.addModule(blobUrl);
+        workletGlobals.__allInstrumentEnergyWorkletLoaded__ = true;
+      } finally {
+        URL.revokeObjectURL(blobUrl);
+      }
     }
 
     const node = new AudioWorkletNode(audioContext, processorName, {
@@ -610,7 +670,7 @@ function cleanSubjectCommit(): string {
 }
 
 test('every catalog instrument sequencer step produces live master output', async ({ page, request, browserName }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(900_000);
   const specs = allInstrumentSpecs();
   expect(specs).toHaveLength(99);
   expect(new Set(specs.map(spec => spec.sampleId)).size).toBe(specs.length);
@@ -661,12 +721,6 @@ test('every catalog instrument sequencer step produces live master output', asyn
     sessionId: string;
     instruments: string[];
     sampleRate: number;
-    masterPeak: number;
-    masterRms: number;
-    capturedFrames: number;
-    channelSampleCount: number;
-    armToOnsetFrames: number;
-    randomCalls: number;
   }> = [];
 
   for (const [batchIndex, batchSpecs] of chunk(specs, MAX_TRACKS).entries()) {
@@ -691,29 +745,38 @@ test('every catalog instrument sequencer step produces live master output', asyn
       return sampleRate;
     });
     audioSampleRates.add(expectedSampleRate);
-    await attachContinuousEnergyCapture(page, tracks.map(t => t.id));
-    await armAndStartContinuousEnergyCapture(page);
-    const energy = await readContinuousEnergyCapture(page);
-    await clickPlayButton(page).catch(() => {});
-    expect(energy.sampleRate).toBe(expectedSampleRate);
-
     sessionResults.push({
       sessionId,
       instruments: batchSpecs.map(s => s.sampleId),
-      sampleRate: energy.sampleRate,
-      masterPeak: energy.master.peak,
-      masterRms: energy.master.rms,
-      capturedFrames: energy.master.capturedFrames,
-      channelSampleCount: energy.master.channelSampleCount,
-      armToOnsetFrames: energy.armToOnsetFrames,
-      randomCalls: energy.randomCalls,
+      sampleRate: expectedSampleRate,
     });
 
     for (const [i, spec] of batchSpecs.entries()) {
       const trackId = tracks[i].id;
+      // Calibration is deliberately single-audible-track. Muted release tails
+      // may remain allocated; polyphonic behaviour has separate matrix coverage
+      // and must not move an instrument's level rank.
+      await setTrackMuted(page, i, trackId, false);
+      await attachContinuousEnergyCapture(page, [trackId]);
+      await armAndStartContinuousEnergyCapture(page);
+      const energy = await readContinuousEnergyCapture(page);
+      await clickPlayButton(page);
+      await expect(getPlayButton(page)).toHaveAttribute('aria-label', 'Play', { timeout: 10_000 });
+      await setTrackMuted(page, i, trackId, true);
+      expect(energy.sampleRate).toBe(expectedSampleRate);
+
       const trackEnergy = energy.tracks[trackId];
       if (!trackEnergy) throw new Error(`Continuous energy capture omitted ${trackId}`);
-      results.push({ ...spec, trackId, sessionId, ...trackEnergy });
+      results.push({
+        ...spec,
+        trackId,
+        sessionId,
+        ...trackEnergy,
+        masterPeak: energy.master.peak,
+        masterRms: energy.master.rms,
+        armToOnsetFrames: energy.armToOnsetFrames,
+        randomCalls: energy.randomCalls,
+      });
     }
   }
 
@@ -735,7 +798,11 @@ test('every catalog instrument sequencer step produces live master output', asyn
       durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
       channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
       onsetThreshold: LIVE_ONSET_THRESHOLD,
+      minArmToOnsetSeconds: LIVE_MIN_ARM_TO_ONSET_SECONDS,
       maxArmToOnsetSeconds: LIVE_MAX_ARM_TO_ONSET_SECONDS,
+      trialMode: LIVE_TRIAL_MODE,
+      maxConcurrentAudibleTracks: LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
+      isolationScope: LIVE_ISOLATION_SCOPE,
       peakMetric: LIVE_PEAK_METRIC,
       rmsMetric: LIVE_RMS_METRIC,
     },
@@ -746,6 +813,7 @@ test('every catalog instrument sequencer step produces live master output', asyn
       schedulerLookaheadSeconds: LIVE_SCHEDULER_LOOKAHEAD_SECONDS,
       expectedEventsPerTrack: LIVE_EXPECTED_EVENTS_PER_TRACK,
       patternPeriodSeconds: LIVE_PATTERN_PERIOD_SECONDS,
+      patternStorageStepCount: LIVE_PATTERN_STORAGE_STEP_COUNT,
       unmuteSettleSeconds: LIVE_UNMUTE_SETTLE_SECONDS,
     },
     random: {
@@ -765,14 +833,14 @@ test('every catalog instrument sequencer step produces live master output', asyn
   const silentTracks = results.filter(r =>
     r.peak <= LIVE_SILENCE_PEAK_THRESHOLD && r.rms <= LIVE_SILENCE_RMS_THRESHOLD
   );
-  const silentSessions = sessionResults.filter(r =>
+  const silentMasterTrials = results.filter(r =>
     r.masterPeak <= LIVE_SILENCE_PEAK_THRESHOLD && r.masterRms <= LIVE_SILENCE_RMS_THRESHOLD
   );
   expect(pageErrors, 'Browser page errors during all-instrument sequencer output smoke').toEqual([]);
   expect(consoleErrors, 'Console errors/skipped notes during all-instrument sequencer output smoke').toEqual([]);
   expect(
-    silentSessions.map(r => ({ sessionId: r.sessionId, instruments: r.instruments, peak: r.masterPeak, rms: r.masterRms })),
-    'Every sequencer session chunk should produce master output energy',
+    silentMasterTrials.map(r => ({ sampleId: r.sampleId, peak: r.masterPeak, rms: r.masterRms })),
+    'Every isolated instrument trial should produce master output energy',
   ).toEqual([]);
   expect(
     silentTracks.map(r => ({ sampleId: r.sampleId, type: r.type, pitch: r.pitch, peak: r.peak, rms: r.rms })),
