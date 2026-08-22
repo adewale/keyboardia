@@ -72,6 +72,9 @@ small text becomes a lighter version of the same hue.
 - The visual and harness exceptions activate only when the comparison base is
   the exact merged Stack B commit above. They expire automatically for later
   work.
+- The style ablation proves each used exception is discriminating. A state may
+  still be pixel-identical when its changed element is clipped or off-canvas;
+  any raster change that does occur must remain inside an approved element.
 
 ## Measured result
 

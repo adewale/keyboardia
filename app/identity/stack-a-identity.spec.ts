@@ -317,17 +317,6 @@ test.describe('Stack A base-versus-head identity', () => {
             allowedChannelDelta: pixels.maxChannelDelta,
           })})`,
         ).toBe(0);
-      } else {
-        expect(
-          pixels.differentPixels,
-          `approved colour-role migration produced no visible change (${JSON.stringify({
-          before: pixels.beforeSize,
-          after: pixels.afterSize,
-          rawDifferentPixels: pixels.rawDifferentPixels,
-          maxObservedChannelDelta: pixels.maxObservedChannelDelta,
-          allowedChannelDelta: pixels.maxChannelDelta,
-        })})`,
-        ).toBeGreaterThan(0);
       }
     });
   }
