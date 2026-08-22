@@ -5,7 +5,9 @@
     "url": "https://github.com/sfzinstruments/Discord-SFZ-GM-Bank",
     "revision": "7a9c478fe331f94f246d33332f0adedb25bbbe27",
     "license": "CC0 1.0 Universal",
-    "mappingPath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/_MartinGM2-loop-sw.sfz"
+    "mappingPath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/_MartinGM2-loop-sw.sfz",
+    "mappingSha256": "4a91af9c47f3c179359b6aee43896cf141438e46c2c7704be4c9534427333d45",
+    "verificationScope": "CI binds shipped delivery bytes and declared external-source identifiers; reproducing the transform requires separately hydrating the pinned source revision."
   },
   "transform": {
     "tool": "ffmpeg 8.1.2",
@@ -16,7 +18,7 @@
     "channels": 1,
     "lossyTranscode": false,
     "ffmpegAudioFilter": "areverse,afade=t=in:st=0:d=0.01,areverse,apad=pad_dur=0.006",
-    "rationale": "Fade the final 10ms to an actual zero boundary, then append 6ms of zero-valued PCM; no pitch, onset, or level transform."
+    "rationale": "Apply a tail-only 10ms amplitude fade to reach an actual zero boundary, then append 6ms of zero-valued PCM; no pitch, onset, or uniform-gain transform."
   },
   "files": [
     {

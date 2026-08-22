@@ -69,7 +69,7 @@ function wavData(bytes: Buffer): { channels: number; sampleRate: number; bits: n
 
 describe('lossless sample-remediation receipts', () => {
   for (const instrumentId of ['acoustic-guitar', 'hammond-organ']) {
-    it(`${instrumentId} binds every mapped delivery byte to provenance`, () => {
+    it(`${instrumentId} binds every mapped delivery byte and records declared provenance`, () => {
       const receipt = readJson<RemediationReceipt>(
         `sample-pipeline/remediation-receipts/${instrumentId}.json`,
       );
@@ -113,6 +113,8 @@ describe('lossless sample-remediation receipts', () => {
       url: 'https://github.com/sfzinstruments/Discord-SFZ-GM-Bank',
       revision: '7a9c478fe331f94f246d33332f0adedb25bbbe27',
       mappingPath: 'Discord GM/Melodic/026-Acoustic Guitar (steel)/_MartinGM2-loop-sw.sfz',
+      mappingSha256: '4a91af9c47f3c179359b6aee43896cf141438e46c2c7704be4c9534427333d45',
+      verificationScope: expect.stringContaining('requires separately hydrating'),
     });
     expect(receipt.transform).toMatchObject({
       tool: 'ffmpeg 8.1.2',
