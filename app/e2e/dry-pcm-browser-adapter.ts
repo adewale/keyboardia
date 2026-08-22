@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 
-import type { APIRequestContext, Browser, Page } from '@playwright/test';
+import { chromium, type APIRequestContext, type Browser, type Page } from '@playwright/test';
 
 import {
   expectedMatrixFrameCount,
@@ -128,6 +128,11 @@ export interface BrowserCaptureDiagnostics {
 
 export interface ChromiumDryPcmCaptureAdapterOptions {
   browser: Browser;
+  request: APIRequestContext;
+  baseUrl: string;
+}
+
+export interface ChromiumIsolatedDryPcmCaptureAdapterOptions {
   request: APIRequestContext;
   baseUrl: string;
 }
@@ -578,6 +583,43 @@ export class ChromiumDryPcmCaptureAdapter {
       };
     } finally {
       await context.close();
+    }
+  }
+}
+
+/**
+ * Process-isolated capture callback suitable for long matrix runs.
+ *
+ * Reusing one headless Chromium process across several real-time AudioContexts
+ * produced observed 128-frame render gaps on later attempts. A fresh process
+ * per case keeps that browser runtime state outside the evidence. The inner
+ * adapter still rejects every missing frame or render-clock discontinuity.
+ */
+export class ChromiumIsolatedDryPcmCaptureAdapter {
+  private readonly diagnostics: BrowserCaptureDiagnostics[] = [];
+  private readonly options: ChromiumIsolatedDryPcmCaptureAdapterOptions;
+
+  constructor(options: ChromiumIsolatedDryPcmCaptureAdapterOptions) {
+    this.options = options;
+  }
+
+  getDiagnostics(): readonly BrowserCaptureDiagnostics[] {
+    return this.diagnostics;
+  }
+
+  async capture(matrixCase: DryPcmMatrixCase): Promise<DryPcmCapture> {
+    const browser = await chromium.launch({ headless: true });
+    try {
+      const adapter = new ChromiumDryPcmCaptureAdapter({
+        browser,
+        request: this.options.request,
+        baseUrl: this.options.baseUrl,
+      });
+      const capture = await adapter.capture(matrixCase);
+      this.diagnostics.push(...adapter.getDiagnostics());
+      return capture;
+    } finally {
+      await browser.close();
     }
   }
 }
