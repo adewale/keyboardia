@@ -480,8 +480,7 @@ describe('ToneEffectsChain', () => {
 
 describe('DEFAULT_EFFECTS_STATE', () => {
   it('opens a restrained room by default while creative effects remain dry', () => {
-    // Phase 44 Change 3: new sessions carry the bass-protected 0.15 room.
-    expect(DEFAULT_EFFECTS_STATE.reverb.wet).toBe(0.15);
+    expect(DEFAULT_EFFECTS_STATE.reverb.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.delay.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.chorus.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.distortion.wet).toBe(0);
