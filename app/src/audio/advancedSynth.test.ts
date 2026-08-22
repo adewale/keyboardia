@@ -831,15 +831,25 @@ describe('voice stealing', () => {
   });
 
   it('steals oldest voice when all voices are active', () => {
-    // Play 8 notes (max voices) with delays between them
-    for (let i = 0; i < 8; i++) {
-      engine.playNoteSemitone(i, 10); // Long duration to keep active
-      vi.advanceTimersByTime(100); // 100ms between notes
-    }
+    const voices = (engine as unknown as { voices: AdvancedSynthVoice[] }).voices;
+    const triggers = voices.map(voice => vi.spyOn(voice, 'triggerAttackRelease'));
 
-    // All voices should be active
-    // Play a 9th note - should steal the oldest (first) voice
-    expect(() => engine.playNoteSemitone(10, 10)).not.toThrow();
+    // Fill all eight allocator slots. Production audio time is mocked at zero,
+    // while the engine's strict scheduling cursor gives each voice a distinct
+    // start time; fake wall-clock advancement is deliberately irrelevant.
+    for (let i = 0; i < 8; i++) {
+      engine.playNoteSemitone(i, 10);
+    }
+    const orderedStartTimes = voices.map(voice => voice.getNoteStartTime());
+    expect(orderedStartTimes).toEqual([...orderedStartTimes].sort((a, b) => a - b));
+    expect(new Set(orderedStartTimes).size).toBe(voices.length);
+    triggers.forEach(trigger => trigger.mockClear());
+
+    engine.playNoteSemitone(10, 10);
+
+    expect(triggers[0]).toHaveBeenCalledTimes(1);
+    triggers.slice(1).forEach(trigger => expect(trigger).not.toHaveBeenCalled());
+    expect(voices[0].getNoteStartTime()).toBeGreaterThan(orderedStartTimes.at(-1)!);
   });
 });
 
