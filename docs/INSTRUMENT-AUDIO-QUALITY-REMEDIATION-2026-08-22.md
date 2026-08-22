@@ -5,8 +5,9 @@
 The production/evaluator subject is
 `553398b93f16b31a258e254dba12257dd0dce2f2`, based on `main` at
 `58264dd5ae274f63b1cd80b72aa823b76b21f28b`. Later commits publish the
-reviewed reports/evidence and synchronize CI inventory metadata; they do not
-change the scored runtime, assets, evaluator, or audio subject.
+reviewed reports/evidence and apply semantics-preserving CI inventory/error-
+propagation maintenance; they do not change scored audio, receipt metrics, or
+ranking decisions.
 
 The complete worst-first table is
 [`INSTRUMENT-AUDIO-QUALITY-AUDIT.md`](./INSTRUMENT-AUDIO-QUALITY-AUDIT.md), the
