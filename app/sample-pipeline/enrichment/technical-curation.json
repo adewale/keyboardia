@@ -563,7 +563,7 @@
         "mappings": 112,
         "payloadBytes": 6187239
       },
-      "manifestSha256": "e7ac9d291d4b59e701b746923af70e21493d0c3ad88de87f657bca95c7026f1a",
+      "manifestSha256": "45fc8487a69d5cd1f5898ce023e5d724bdd1e49155adc086647e6778f13944eb",
       "shipped": [
         {
           "file": "source-0002.m4a",
@@ -1477,7 +1477,7 @@
         "mappings": 238,
         "payloadBytes": 8655732
       },
-      "manifestSha256": "75030bd7a06cd8214ce73fcd539579d624ee0179dd73a2b54f1e0dd95694e8d5",
+      "manifestSha256": "e81191e87330d715d94465f000cae5da9bf4846cb692f8157c17e54a32ddd733",
       "shipped": [
         {
           "file": "source-0002.m4a",
