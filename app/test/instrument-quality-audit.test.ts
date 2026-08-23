@@ -4,6 +4,7 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
+import { stableSampleQualityReceiptsEqual } from '../scripts/audit-instrument-quality';
 import {
   LIVE_RECEIPT_SCHEMA_VERSION,
   expectedLiveEngineDispatchIdentity,
@@ -145,6 +146,70 @@ function runRequiredAudit(
 }
 
 describe('instrument quality audit evidence coverage', () => {
+  it.each([
+    {
+      field: 'spectral centroid Hz',
+      reference: 625.8194832834929,
+      linux: 625.8185860720217,
+      tolerance: 0.001,
+      receipt: (value: number) => ({ samples: [{ spectral: { centroidHz: value } }] }),
+    },
+    {
+      field: 'DC offset dB',
+      reference: -119.93878298377948,
+      linux: -119.93864312458714,
+      tolerance: 0.001,
+      receipt: (value: number) => ({ samples: [{ dcOffsetDb: value }] }),
+    },
+    {
+      field: 'tail level relative to peak dB',
+      reference: -112.68891042503908,
+      linux: -112.68888706718243,
+      tolerance: 0.001,
+      receipt: (value: number) => ({ samples: [{ tailLevelDbRelPeak: value }] }),
+    },
+    {
+      field: 'peak dB',
+      reference: -21.247780306784954,
+      linux: -21.247781801035668,
+      tolerance: 0.00001,
+      receipt: (value: number) => ({ samples: [{ peakDb: value }] }),
+    },
+    {
+      field: 'crest factor dB',
+      reference: 19.600960177019825,
+      linux: 19.600958693254725,
+      tolerance: 0.00001,
+      receipt: (value: number) => ({ samples: [{ crestFactorDb: value }] }),
+    },
+  ])('bounds the $field cross-platform receipt tolerance', ({
+    reference,
+    linux,
+    tolerance,
+    receipt,
+  }) => {
+    expect(stableSampleQualityReceiptsEqual(receipt(reference), receipt(linux))).toBe(true);
+    expect(stableSampleQualityReceiptsEqual(receipt(0), receipt(tolerance))).toBe(true);
+    expect(stableSampleQualityReceiptsEqual(receipt(reference), receipt(reference + 0.01))).toBe(false);
+  });
+
+  it('keeps other decoder-derived values at 0.000001 and thresholds exact', () => {
+    const rawMeasurement = (value: number) => ({ samples: [{ rmsDb: value }] });
+    expect(stableSampleQualityReceiptsEqual(
+      rawMeasurement(0),
+      rawMeasurement(0.000001),
+    )).toBe(true);
+    expect(stableSampleQualityReceiptsEqual(
+      rawMeasurement(0),
+      rawMeasurement(0.00001),
+    )).toBe(false);
+
+    const threshold = (value: number) => ({
+      waivedIssues: [{ issue: { threshold: value } }],
+    });
+    expect(stableSampleQualityReceiptsEqual(threshold(1), threshold(1.0000001))).toBe(false);
+  });
+
   it('rejects a filtered sample report in required-evidence mode', () => {
     const result = runRequiredAudit(filteredSampleReport());
     expect(result.status).not.toBe(0);
