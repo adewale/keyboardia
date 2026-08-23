@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "claim": "path-sanitized fail-closed control-live confirmation result; no receipt, retry, ranking, or aggregate comparison",
+  "assembledAt": "2026-08-22T23:48:38Z",
+  "historicalAudioControlBaseCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "candidateEvaluatorCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+  "controlCompatibilitySubjectCommit": "36ff7047d5790cf3478c38cb1f742b0c89ce832e",
+  "browser": {
+    "name": "chromium",
+    "version": "143.0.7499.4"
+  },
+  "runner": {
+    "test": "e2e/all-instruments-master-output.spec.ts",
+    "project": "chromium",
+    "workers": 1,
+    "playwrightRetries": 0,
+    "startedAt": "2026-08-22T23:35:57.644Z",
+    "durationMs": 363936.881,
+    "expected": 0,
+    "unexpected": 1
+  },
+  "failure": {
+    "stage": "readContinuousEnergyCapture",
+    "message": "page.evaluate: Execution context was destroyed, most likely because of a navigation",
+    "receiptPublished": false,
+    "repeatabilityEvaluated": false,
+    "rankingPublished": false,
+    "aggregateComparisonPublished": false
+  },
+  "rawDiagnosticHashes": {
+    "playwrightResults": "0ce4c8039a33f7cf0e2bf880e5bb7586a227df95e47cc0e5584dd685ef080033",
+    "trace": "4112cd864bae0d6eba2aa5d4c82ef982db075f670d7dfe84d138bce265f266b1",
+    "video": "58234d727a4930ceff621c945c7bd0653c14c79b899db51c8bc399cc074581c7",
+    "screenshots": [
+      "27abb4affaed83ae85739b62b71e5e860d2e6ee7b4fa91c915f5a3c26227b944",
+      "dc468b9e64725d2da8451578f5cc35fb8789fe691bef60ff34ed3641d0da32f9",
+      "e3cb2975d455aee17c2ff25a58f846692ba2ec56cddacba7e84e87daa2348fb7",
+      "310effd84af922b4dfbba1f2ed097e8b6d07878f78af4f2a1db645414daecb17",
+      "e0ac6a8a20c6a65daa0c9d40a10fee6bf27f01f7accef403cccb9b565e1dd8d9",
+      "cce7c9d1fa7b38cf2b416c14ea2151389a19b58d502a434fe5c87d020b0db7e0"
+    ]
+  },
+  "retention": "Only this path-sanitized result is committed. Raw trace/video/screenshots total about 500 MiB, contain ephemeral host paths, and are not used as accepted evidence. Their hashes are retained for local diagnostic correlation."
+}

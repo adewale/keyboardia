@@ -21,8 +21,8 @@ export type XYPadParameter =
   | 'lfoRate'            // LFO frequency (0.1 - 20 Hz)
   | 'lfoAmount'          // LFO depth (0 - 1)
   | 'oscMix'             // Oscillator 1/2 mix (0 - 1)
-  | 'attack'             // Envelope attack (0.001 - 2s)
-  | 'release'            // Envelope release (0.001 - 4s)
+  | 'attack'             // Envelope attack (0.001 - 4s)
+  | 'release'            // Envelope release (0.001 - 8s)
   | 'reverbWet'          // Reverb mix (0 - 1)
   | 'delayWet'           // Delay mix (0 - 1)
   | 'delayFeedback'      // Delay feedback (0 - 0.95)
@@ -76,8 +76,8 @@ export const XY_PAD_PRESETS: Record<string, { name: string; mappings: XYPadMappi
   'envelope-shape': {
     name: 'Envelope Shape',
     mappings: [
-      { parameter: 'attack', axis: 'x', min: 0.001, max: 1, curve: 'exponential' },
-      { parameter: 'release', axis: 'y', min: 0.05, max: 2, curve: 'exponential' },
+      { parameter: 'attack', axis: 'x', min: 0.001, max: 4, curve: 'exponential' },
+      { parameter: 'release', axis: 'y', min: 0.001, max: 8, curve: 'exponential' },
     ],
   },
   'reverb-control': {

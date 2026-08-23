@@ -317,7 +317,7 @@ From `xyPad.ts`:
 |-----------|------|-------------|-------------|
 | `filter-sweep` | Filter Sweep | Filter Frequency (100-8kHz) | Filter Resonance (0.5-15) |
 | `lfo-control` | LFO Control | LFO Rate (0.1-10Hz) | LFO Amount (0-1) |
-| `envelope-shape` | Envelope Shape | Attack (0.001-1s) | Release (0.05-2s) |
+| `envelope-shape` | Envelope Shape | Attack (0.001-4s) | Release (0.001-8s) |
 | `space-control` | Space Control | Reverb Wet (0-80%) | Delay Wet (0-60%) |
 | `delay-modulation` | Delay Modulation | Delay Wet (0-70%) | Delay Feedback (0-85%) |
 | `oscillator-filter` | Oscillator + Filter | Osc Mix (0-1) | Filter Frequency (200-6kHz) |

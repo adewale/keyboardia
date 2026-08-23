@@ -1,0 +1,6271 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-22T23:19:48.333Z",
+  "commit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+  "provenance": {
+    "evaluatorCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+    "subjectCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+    "evaluatorTreeSha256": "b717827dd516a810a8d49db6f975e821f42bb50a37b0dc68a9e0a2b74672515b",
+    "evaluatorDirty": false,
+    "runtime": {
+      "node": "v26.0.0",
+      "platform": "darwin",
+      "arch": "arm64"
+    },
+    "browser": {
+      "name": "chromium",
+      "version": "143.0.7499.4",
+      "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.7499.4 Safari/537.36"
+    },
+    "sampleRates": [
+      44100,
+      48000
+    ]
+  },
+  "claim": "pinned-technical-improvement-priority-not-listener-preference",
+  "inputs": {
+    "sampleReport": {
+      "path": "reports/instrument-quality/final-fb6c341/sample-quality.json",
+      "sha256": "f18390d714fdf2932b4a021e3ca09024dc9c38d74fc001f0ed75018af19be30e"
+    },
+    "liveReport": {
+      "path": "reports/instrument-quality-schema7-primary-fb6c341/live-master-output.json",
+      "sha256": "1ed1e59aa9ca222da5b5bbab1b1211df0830859f8bfaf918dade3e684aa5e8ed"
+    },
+    "matrixReport": null
+  },
+  "totals": {
+    "instruments": 99,
+    "liveMeasured": 99,
+    "liveSilent": 0,
+    "sampledDecoded": 26,
+    "dryPcmMeasured": 0,
+    "dryPcmCases": 0,
+    "dryPcmFatalFindings": 0,
+    "dryPcmEvidenceGaps": 0
+  },
+  "instruments": [
+    {
+      "rank": 1,
+      "id": "sampled:slap-bass",
+      "name": "Slap",
+      "category": "bass",
+      "type": "sampled",
+      "score": 24.2,
+      "band": "medium",
+      "evidenceGrade": "A",
+      "evidence": "4 decoded files, 5 measured findings (5 disposition-accepted, 0 unwaived), live peak 2.3 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": 2.3,
+        "rmsDbfs": -26.4,
+        "categoryRmsDeltaDb": 1.5
+      },
+      "sampled": {
+        "fileCount": 4,
+        "rootCount": 4,
+        "maxRootDistanceSemitones": 12,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 5,
+        "issueCodes": {
+          "HOT_PEAK": 4,
+          "RANGE_OVEREXTENSION": 1
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "post-track-headroom",
+          "points": 3.4,
+          "detail": "Per-track live peak was 2.3 dBFS"
+        },
+        {
+          "id": "sample-review-burden",
+          "points": 8.8,
+          "detail": "7 weighted, hash-bound review findings across 4 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 8,
+          "detail": "Worst playable note is 12 semitones from a sampled root"
+        },
+        {
+          "id": "velocity-coverage",
+          "points": 4,
+          "detail": "Median velocity coverage is 1 layer; role target is 2"
+        }
+      ],
+      "profile": {
+        "id": "sampled:slap-bass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "harmonic-pitch-class",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "lower the bound post-track output by at least 3 dB, then repeat the mix-capacity capture",
+        "restore decoded headroom from the lossless source or lower the bound delivery trim (4)",
+        "add outer roots or narrow the declared playable range (1)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 12)",
+        "record/map genuine dynamics to reach 2 velocity layers (median now 1)"
+      ]
+    },
+    {
+      "rank": 2,
+      "id": "sampled:kalimba",
+      "name": "Kalimba",
+      "category": "keys",
+      "type": "sampled",
+      "score": 17.7,
+      "band": "medium",
+      "evidenceGrade": "A",
+      "evidence": "10 decoded files, 8 measured findings (8 disposition-accepted, 0 unwaived), live peak 2.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": 2.4,
+        "rmsDbfs": -25.8,
+        "categoryRmsDeltaDb": 1.3
+      },
+      "sampled": {
+        "fileCount": 10,
+        "rootCount": 10,
+        "maxRootDistanceSemitones": 6,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 8,
+        "issueCodes": {
+          "PITCH_DEVIATION": 8
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "post-track-headroom",
+          "points": 3.7,
+          "detail": "Per-track live peak was 2.4 dBFS"
+        },
+        {
+          "id": "sample-review-burden",
+          "points": 8,
+          "detail": "16 weighted, hash-bound review findings across 10 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 2,
+          "detail": "Worst playable note is 6 semitones from a sampled root"
+        },
+        {
+          "id": "velocity-coverage",
+          "points": 4,
+          "detail": "Median velocity coverage is 1 layer; role target is 2"
+        }
+      ],
+      "profile": {
+        "id": "sampled:kalimba",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "lower the bound post-track output by at least 3 dB, then repeat the mix-capacity capture",
+        "verify by ear, then correct the root map/tuning or replace the take (8)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 6)",
+        "record/map genuine dynamics to reach 2 velocity layers (median now 1)"
+      ]
+    },
+    {
+      "rank": 3,
+      "id": "sampled:clean-guitar",
+      "name": "Clean Guitar",
+      "category": "leads",
+      "type": "sampled",
+      "score": 16,
+      "band": "medium",
+      "evidenceGrade": "A",
+      "evidence": "4 decoded files, 6 measured findings (6 disposition-accepted, 0 unwaived), live peak -6.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -6.9,
+        "rmsDbfs": -31,
+        "categoryRmsDeltaDb": -0.7
+      },
+      "sampled": {
+        "fileCount": 4,
+        "rootCount": 4,
+        "maxRootDistanceSemitones": 6,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 6,
+        "issueCodes": {
+          "HOT_PEAK": 4,
+          "PITCH_DEVIATION": 2
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 10,
+          "detail": "8 weighted, hash-bound review findings across 4 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 2,
+          "detail": "Worst playable note is 6 semitones from a sampled root"
+        },
+        {
+          "id": "velocity-coverage",
+          "points": 4,
+          "detail": "Median velocity coverage is 1 layer; role target is 2"
+        }
+      ],
+      "profile": {
+        "id": "sampled:clean-guitar",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "restore decoded headroom from the lossless source or lower the bound delivery trim (4)",
+        "verify by ear, then correct the root map/tuning or replace the take (2)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 6)",
+        "record/map genuine dynamics to reach 2 velocity layers (median now 1)"
+      ]
+    },
+    {
+      "rank": 4,
+      "id": "sampled:alto-sax",
+      "name": "Alto Sax",
+      "category": "leads",
+      "type": "sampled",
+      "score": 15,
+      "band": "medium",
+      "evidenceGrade": "A",
+      "evidence": "12 decoded files, 14 measured findings (14 disposition-accepted, 0 unwaived), live peak -8.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -8.7,
+        "rmsDbfs": -30.8,
+        "categoryRmsDeltaDb": -0.5
+      },
+      "sampled": {
+        "fileCount": 12,
+        "rootCount": 6,
+        "maxRootDistanceSemitones": 4,
+        "medianVelocityLayers": 2,
+        "medianRoundRobins": 1,
+        "issueCount": 14,
+        "issueCodes": {
+          "DC_OFFSET": 8,
+          "TAIL_TRUNCATION": 6
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 15,
+          "detail": "36 weighted, hash-bound review findings across 12 decoded source files"
+        }
+      ],
+      "profile": {
+        "id": "sampled:alto-sax",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "remove DC non-destructively or replace the affected takes (8)",
+        "capture a natural tail or author a click-free fade/loop (6)"
+      ]
+    },
+    {
+      "rank": 5,
+      "id": "sampled:vinyl-crackle",
+      "name": "Vinyl",
+      "category": "fx",
+      "type": "sampled",
+      "score": 15,
+      "band": "medium",
+      "evidenceGrade": "A",
+      "evidence": "1 decoded files, 2 measured findings (2 disposition-accepted, 0 unwaived), live peak -9.1 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.1,
+        "rmsDbfs": -31.1,
+        "categoryRmsDeltaDb": 1.9
+      },
+      "sampled": {
+        "fileCount": 1,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 2,
+        "issueCodes": {
+          "TAIL_TRUNCATION": 1,
+          "HOT_PEAK": 1
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 15,
+          "detail": "3 weighted, hash-bound review findings across 1 decoded source file"
+        }
+      ],
+      "profile": {
+        "id": "sampled:vinyl-crackle",
+        "role": "fx",
+        "pitchMode": "noise",
+        "envelopeClass": "texture",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "capture a natural tail or author a click-free fade/loop (1)",
+        "restore decoded headroom from the lossless source or lower the bound delivery trim (1)"
+      ]
+    },
+    {
+      "rank": 6,
+      "id": "sampled:piano",
+      "name": "Piano",
+      "category": "keys",
+      "type": "sampled",
+      "score": 13,
+      "band": "medium",
+      "evidenceGrade": "A",
+      "evidence": "21 decoded files, 22 measured findings (22 disposition-accepted, 0 unwaived), live peak -0.1 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -0.1,
+        "rmsDbfs": -23.3,
+        "categoryRmsDeltaDb": 3.9
+      },
+      "sampled": {
+        "fileCount": 21,
+        "rootCount": 7,
+        "maxRootDistanceSemitones": 6,
+        "medianVelocityLayers": 3,
+        "medianRoundRobins": 1,
+        "issueCount": 22,
+        "issueCodes": {
+          "MONO_LOSS": 6,
+          "PITCH_DEVIATION": 6,
+          "NEGATIVE_PHASE_CORRELATION": 3,
+          "HOT_PEAK": 7
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 11,
+          "detail": "46 weighted, hash-bound review findings across 21 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 2,
+          "detail": "Worst playable note is 6 semitones from a sampled root"
+        }
+      ],
+      "profile": {
+        "id": "sampled:piano",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "repair stereo phase so mono fold-down does not lose material (6)",
+        "verify by ear, then correct the root map/tuning or replace the take (6)",
+        "correct stereo polarity/phase or use a more mono-compatible source (3)",
+        "restore decoded headroom from the lossless source or lower the bound delivery trim (7)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 6)"
+      ]
+    },
+    {
+      "rank": 7,
+      "id": "sampled:acoustic-guitar",
+      "name": "Acoustic",
+      "category": "leads",
+      "type": "sampled",
+      "score": 11.3,
+      "band": "low",
+      "evidenceGrade": "A",
+      "evidence": "15 decoded files, 8 measured findings (8 disposition-accepted, 0 unwaived), live peak -1.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -1.7,
+        "rmsDbfs": -26.2,
+        "categoryRmsDeltaDb": 4.1
+      },
+      "sampled": {
+        "fileCount": 15,
+        "rootCount": 15,
+        "maxRootDistanceSemitones": 6,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 8,
+        "issueCodes": {
+          "PITCH_DEVIATION": 8
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 5.3,
+          "detail": "16 weighted, hash-bound review findings across 15 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 2,
+          "detail": "Worst playable note is 6 semitones from a sampled root"
+        },
+        {
+          "id": "velocity-coverage",
+          "points": 4,
+          "detail": "Median velocity coverage is 1 layer; role target is 2"
+        }
+      ],
+      "profile": {
+        "id": "sampled:acoustic-guitar",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "verify by ear, then correct the root map/tuning or replace the take (8)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 6)",
+        "record/map genuine dynamics to reach 2 velocity layers (median now 1)"
+      ]
+    },
+    {
+      "rank": 8,
+      "id": "sampled:marimba",
+      "name": "Marimba",
+      "category": "keys",
+      "type": "sampled",
+      "score": 11.3,
+      "band": "low",
+      "evidenceGrade": "A",
+      "evidence": "30 decoded files, 22 measured findings (22 disposition-accepted, 0 unwaived), live peak -1.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -1.8,
+        "rmsDbfs": -20.9,
+        "categoryRmsDeltaDb": 6.2
+      },
+      "sampled": {
+        "fileCount": 30,
+        "rootCount": 10,
+        "maxRootDistanceSemitones": 6,
+        "medianVelocityLayers": 3,
+        "medianRoundRobins": 1,
+        "issueCount": 22,
+        "issueCodes": {
+          "MONO_LOSS": 6,
+          "NEGATIVE_PHASE_CORRELATION": 6,
+          "PITCH_DEVIATION": 7,
+          "TAIL_TRUNCATION": 3
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 9.3,
+          "detail": "56 weighted, hash-bound review findings across 30 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 2,
+          "detail": "Worst playable note is 6 semitones from a sampled root"
+        }
+      ],
+      "profile": {
+        "id": "sampled:marimba",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "repair stereo phase so mono fold-down does not lose material (6)",
+        "correct stereo polarity/phase or use a more mono-compatible source (6)",
+        "verify by ear, then correct the root map/tuning or replace the take (7)",
+        "capture a natural tail or author a click-free fade/loop (3)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 6)"
+      ]
+    },
+    {
+      "rank": 9,
+      "id": "sampled:finger-bass",
+      "name": "Finger",
+      "category": "bass",
+      "type": "sampled",
+      "score": 6.8,
+      "band": "low",
+      "evidenceGrade": "A",
+      "evidence": "112 decoded files, 19 measured findings (19 disposition-accepted, 0 unwaived), live peak 2.1 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": 2.1,
+        "rmsDbfs": -23.6,
+        "categoryRmsDeltaDb": 4.3
+      },
+      "sampled": {
+        "fileCount": 112,
+        "rootCount": 14,
+        "maxRootDistanceSemitones": 6,
+        "medianVelocityLayers": 4,
+        "medianRoundRobins": 2,
+        "issueCount": 19,
+        "issueCodes": {
+          "PITCH_DEVIATION": 19
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "post-track-headroom",
+          "points": 3.1,
+          "detail": "Per-track live peak was 2.1 dBFS"
+        },
+        {
+          "id": "sample-review-burden",
+          "points": 1.7,
+          "detail": "38 weighted, hash-bound review findings across 112 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 2,
+          "detail": "Worst playable note is 6 semitones from a sampled root"
+        }
+      ],
+      "profile": {
+        "id": "sampled:finger-bass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "harmonic-pitch-class",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "lower the bound post-track output by at least 3 dB, then repeat the mix-capacity capture",
+        "verify by ear, then correct the root map/tuning or replace the take (19)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 6)"
+      ]
+    },
+    {
+      "rank": 10,
+      "id": "sampled:steel-drums",
+      "name": "Steel Pan",
+      "category": "keys",
+      "type": "sampled",
+      "score": 6,
+      "band": "low",
+      "evidenceGrade": "A",
+      "evidence": "215 decoded files, 85 measured findings (85 disposition-accepted, 0 unwaived), live peak -0.3 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -0.3,
+        "rmsDbfs": -23.5,
+        "categoryRmsDeltaDb": 3.6
+      },
+      "sampled": {
+        "fileCount": 215,
+        "rootCount": 24,
+        "maxRootDistanceSemitones": 6,
+        "medianVelocityLayers": 5,
+        "medianRoundRobins": 2,
+        "issueCount": 85,
+        "issueCodes": {
+          "PITCH_DEVIATION": 85
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 4,
+          "detail": "170 weighted, hash-bound review findings across 215 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 2,
+          "detail": "Worst playable note is 6 semitones from a sampled root"
+        }
+      ],
+      "profile": {
+        "id": "sampled:steel-drums",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "verify by ear, then correct the root map/tuning or replace the take (85)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 6)"
+      ]
+    },
+    {
+      "rank": 11,
+      "id": "sampled:string-section",
+      "name": "Strings",
+      "category": "pads",
+      "type": "sampled",
+      "score": 6,
+      "band": "low",
+      "evidenceGrade": "A",
+      "evidence": "15 decoded files, 3 measured findings (3 disposition-accepted, 0 unwaived), live peak -9.3 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.3,
+        "rmsDbfs": -29,
+        "categoryRmsDeltaDb": 0.7
+      },
+      "sampled": {
+        "fileCount": 15,
+        "rootCount": 15,
+        "maxRootDistanceSemitones": 3,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 3,
+        "issueCodes": {
+          "PITCH_DEVIATION": 3
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 2,
+          "detail": "6 weighted, hash-bound review findings across 15 decoded source files"
+        },
+        {
+          "id": "velocity-coverage",
+          "points": 4,
+          "detail": "Median velocity coverage is 1 layer; role target is 2"
+        }
+      ],
+      "profile": {
+        "id": "sampled:string-section",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "verify by ear, then correct the root map/tuning or replace the take (3)",
+        "record/map genuine dynamics to reach 2 velocity layers (median now 1)"
+      ]
+    },
+    {
+      "rank": 12,
+      "id": "sampled:brushes-snare",
+      "name": "Brush Snare",
+      "category": "drums",
+      "type": "sampled",
+      "score": 5,
+      "band": "low",
+      "evidenceGrade": "A",
+      "evidence": "3 decoded files, 3 measured findings (3 disposition-accepted, 0 unwaived), live peak -8.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -8.9,
+        "rmsDbfs": -36,
+        "categoryRmsDeltaDb": -0.3
+      },
+      "sampled": {
+        "fileCount": 3,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 3,
+        "medianRoundRobins": 1,
+        "issueCount": 3,
+        "issueCodes": {
+          "HOT_PEAK": 3
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 5,
+          "detail": "3 weighted, hash-bound review findings across 3 decoded source files"
+        }
+      ],
+      "profile": {
+        "id": "sampled:brushes-snare",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "restore decoded headroom from the lossless source or lower the bound delivery trim (3)"
+      ]
+    },
+    {
+      "rank": 13,
+      "id": "sampled:vibraphone",
+      "name": "Vibes",
+      "category": "keys",
+      "type": "sampled",
+      "score": 4.3,
+      "band": "low",
+      "evidenceGrade": "A",
+      "evidence": "22 decoded files, 5 measured findings (5 disposition-accepted, 0 unwaived), live peak -5.5 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -5.5,
+        "rmsDbfs": -27.9,
+        "categoryRmsDeltaDb": -0.8
+      },
+      "sampled": {
+        "fileCount": 22,
+        "rootCount": 11,
+        "maxRootDistanceSemitones": 6,
+        "medianVelocityLayers": 2,
+        "medianRoundRobins": 1,
+        "issueCount": 5,
+        "issueCodes": {
+          "PITCH_DEVIATION": 5
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 2.3,
+          "detail": "10 weighted, hash-bound review findings across 22 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 2,
+          "detail": "Worst playable note is 6 semitones from a sampled root"
+        }
+      ],
+      "profile": {
+        "id": "sampled:vibraphone",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "verify by ear, then correct the root map/tuning or replace the take (5)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 6)"
+      ]
+    },
+    {
+      "rank": 14,
+      "id": "sampled:french-horn",
+      "name": "Horn",
+      "category": "pads",
+      "type": "sampled",
+      "score": 3.6,
+      "band": "low",
+      "evidenceGrade": "A",
+      "evidence": "16 decoded files, 1 measured findings (1 disposition-accepted, 0 unwaived), live peak -11.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -11.7,
+        "rmsDbfs": -33.2,
+        "categoryRmsDeltaDb": -3.5
+      },
+      "sampled": {
+        "fileCount": 16,
+        "rootCount": 9,
+        "maxRootDistanceSemitones": 7,
+        "medianVelocityLayers": 2,
+        "medianRoundRobins": 1,
+        "issueCount": 1,
+        "issueCodes": {
+          "PITCH_DEVIATION": 1
+        }
+      },
+      "scoreComponents": [
+        {
+          "id": "sample-review-burden",
+          "points": 0.6,
+          "detail": "2 weighted, hash-bound review findings across 16 decoded source files"
+        },
+        {
+          "id": "root-distance",
+          "points": 3,
+          "detail": "Worst playable note is 7 semitones from a sampled root"
+        }
+      ],
+      "profile": {
+        "id": "sampled:french-horn",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "verify by ear, then correct the root map/tuning or replace the take (1)",
+        "add roots or narrow the range so repitching stays within 4 semitones (now 7)"
+      ]
+    },
+    {
+      "rank": 15,
+      "id": "advanced:acid-bass",
+      "name": "Acid 303",
+      "category": "bass",
+      "type": "advanced",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -5.4 dBFS, RMS -31.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -5.4,
+        "rmsDbfs": -31.6,
+        "categoryRmsDeltaDb": -3.6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "advanced:acid-bass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 16,
+      "id": "advanced:sub-bass",
+      "name": "Sub Bass",
+      "category": "bass",
+      "type": "advanced",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -8.8 dBFS, RMS -27.3 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -8.8,
+        "rmsDbfs": -27.3,
+        "categoryRmsDeltaDb": 0.6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "advanced:sub-bass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 17,
+      "id": "advanced:supersaw",
+      "name": "Fat Saw",
+      "category": "leads",
+      "type": "advanced",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -13.3 dBFS, RMS -36.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -13.3,
+        "rmsDbfs": -36.8,
+        "categoryRmsDeltaDb": -6.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "advanced:supersaw",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 18,
+      "id": "advanced:thick-lead",
+      "name": "Thick",
+      "category": "leads",
+      "type": "advanced",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -10.4 dBFS, RMS -29.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.4,
+        "rmsDbfs": -29.8,
+        "categoryRmsDeltaDb": 0.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "advanced:thick-lead",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 19,
+      "id": "advanced:tremolo-strings",
+      "name": "Trem Str",
+      "category": "pads",
+      "type": "advanced",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -22.2 dBFS, RMS -42.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -22.2,
+        "rmsDbfs": -42.9,
+        "categoryRmsDeltaDb": -13.2
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "advanced:tremolo-strings",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 20,
+      "id": "advanced:vibrato-lead",
+      "name": "Vibrato",
+      "category": "leads",
+      "type": "advanced",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -11.1 dBFS, RMS -31.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -11.1,
+        "rmsDbfs": -31.2,
+        "categoryRmsDeltaDb": -0.9
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "advanced:vibrato-lead",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 21,
+      "id": "advanced:warm-pad",
+      "name": "Lush",
+      "category": "pads",
+      "type": "advanced",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -22.9 dBFS, RMS -43.5 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -22.9,
+        "rmsDbfs": -43.5,
+        "categoryRmsDeltaDb": -13.8
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "advanced:warm-pad",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 22,
+      "id": "advanced:wobble-bass",
+      "name": "Wobble Bass",
+      "category": "bass",
+      "type": "advanced",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -7.7 dBFS, RMS -30.1 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -7.7,
+        "rmsDbfs": -30.1,
+        "categoryRmsDeltaDb": -2.2
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "advanced:wobble-bass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 23,
+      "id": "bass",
+      "name": "Bass",
+      "category": "bass",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -4.6 dBFS, RMS -22.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -4.6,
+        "rmsDbfs": -22.9,
+        "categoryRmsDeltaDb": 5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "bass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 24,
+      "id": "cabasa",
+      "name": "Cabasa",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -16.9 dBFS, RMS -45.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -16.9,
+        "rmsDbfs": -45.4,
+        "categoryRmsDeltaDb": -9.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "cabasa",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 25,
+      "id": "chord",
+      "name": "Chord",
+      "category": "pads",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9 dBFS, RMS -24.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9,
+        "rmsDbfs": -24.9,
+        "categoryRmsDeltaDb": 4.8
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "chord",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 26,
+      "id": "clap",
+      "name": "Clap",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.5 dBFS, RMS -34.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.5,
+        "rmsDbfs": -34.9,
+        "categoryRmsDeltaDb": 0.8
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "clap",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 27,
+      "id": "clave",
+      "name": "Clave",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.7 dBFS, RMS -37.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.7,
+        "rmsDbfs": -37.8,
+        "categoryRmsDeltaDb": -2.1
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "clave",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 28,
+      "id": "conga",
+      "name": "Conga",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.2 dBFS, RMS -29.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.2,
+        "rmsDbfs": -29.7,
+        "categoryRmsDeltaDb": 6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "conga",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 29,
+      "id": "cowbell",
+      "name": "Cowbell",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -10.7 dBFS, RMS -33.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.7,
+        "rmsDbfs": -33.8,
+        "categoryRmsDeltaDb": 1.9
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "cowbell",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 30,
+      "id": "hihat",
+      "name": "Hi-Hat",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -12.3 dBFS, RMS -43.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -12.3,
+        "rmsDbfs": -43.2,
+        "categoryRmsDeltaDb": -7.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "hihat",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 31,
+      "id": "kick",
+      "name": "Kick",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -3.8 dBFS, RMS -23.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -3.8,
+        "rmsDbfs": -23.2,
+        "categoryRmsDeltaDb": 12.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "kick",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 32,
+      "id": "lead",
+      "name": "Lead",
+      "category": "leads",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -14.6 dBFS, RMS -23.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -14.6,
+        "rmsDbfs": -23.8,
+        "categoryRmsDeltaDb": 6.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "lead",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 33,
+      "id": "noise",
+      "name": "Noise",
+      "category": "fx",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -13.2 dBFS, RMS -35 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -13.2,
+        "rmsDbfs": -35,
+        "categoryRmsDeltaDb": -1.9
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "noise",
+        "role": "fx",
+        "pitchMode": "noise",
+        "envelopeClass": "texture",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 34,
+      "id": "openhat",
+      "name": "Open Hat",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -10.6 dBFS, RMS -36 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.6,
+        "rmsDbfs": -36,
+        "categoryRmsDeltaDb": -0.3
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "openhat",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 35,
+      "id": "pad",
+      "name": "Pad",
+      "category": "pads",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -10.4 dBFS, RMS -22.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.4,
+        "rmsDbfs": -22.6,
+        "categoryRmsDeltaDb": 7.1
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "pad",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 36,
+      "id": "pluck",
+      "name": "Pluck",
+      "category": "leads",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -3.5 dBFS, RMS -25.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -3.5,
+        "rmsDbfs": -25.7,
+        "categoryRmsDeltaDb": 4.6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "pluck",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 37,
+      "id": "rim",
+      "name": "Rim",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -11.1 dBFS, RMS -41.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -11.1,
+        "rmsDbfs": -41.4,
+        "categoryRmsDeltaDb": -5.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "rim",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 38,
+      "id": "shaker",
+      "name": "Shaker",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -15.9 dBFS, RMS -42.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -15.9,
+        "rmsDbfs": -42.2,
+        "categoryRmsDeltaDb": -6.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "shaker",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 39,
+      "id": "snare",
+      "name": "Snare",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -4.5 dBFS, RMS -31 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -4.5,
+        "rmsDbfs": -31,
+        "categoryRmsDeltaDb": 4.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "snare",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 40,
+      "id": "subbass",
+      "name": "Sub",
+      "category": "bass",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -5.5 dBFS, RMS -18.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -5.5,
+        "rmsDbfs": -18.6,
+        "categoryRmsDeltaDb": 9.3
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "subbass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 41,
+      "id": "synth:acid",
+      "name": "Acid",
+      "category": "bass",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -3.4 dBFS, RMS -28.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -3.4,
+        "rmsDbfs": -28.8,
+        "categoryRmsDeltaDb": -0.9
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:acid",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 42,
+      "id": "synth:bass",
+      "name": "Synth",
+      "category": "bass",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -4.4 dBFS, RMS -27.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -4.4,
+        "rmsDbfs": -27.9,
+        "categoryRmsDeltaDb": 0
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:bass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 43,
+      "id": "synth:bell",
+      "name": "Bell",
+      "category": "fx",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -14.4 dBFS, RMS -29.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -14.4,
+        "rmsDbfs": -29.9,
+        "categoryRmsDeltaDb": 3.1
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:bell",
+        "role": "fx",
+        "pitchMode": "tonal",
+        "envelopeClass": "texture",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 44,
+      "id": "synth:brass",
+      "name": "Brass",
+      "category": "fx",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -12.7 dBFS, RMS -34.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -12.7,
+        "rmsDbfs": -34.6,
+        "categoryRmsDeltaDb": -1.6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:brass",
+        "role": "fx",
+        "pitchMode": "tonal",
+        "envelopeClass": "texture",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 45,
+      "id": "synth:clavinet",
+      "name": "Clav",
+      "category": "keys",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.2 dBFS, RMS -32.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.2,
+        "rmsDbfs": -32.7,
+        "categoryRmsDeltaDb": -5.6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:clavinet",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 46,
+      "id": "synth:discobass",
+      "name": "Disco",
+      "category": "bass",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -7.7 dBFS, RMS -27.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -7.7,
+        "rmsDbfs": -27.9,
+        "categoryRmsDeltaDb": 0
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:discobass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 47,
+      "id": "synth:dreampop",
+      "name": "Dream",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -12 dBFS, RMS -31.5 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -12,
+        "rmsDbfs": -31.5,
+        "categoryRmsDeltaDb": -1.8
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:dreampop",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 48,
+      "id": "synth:epiano",
+      "name": "E-Piano",
+      "category": "keys",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -10.4 dBFS, RMS -26.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.4,
+        "rmsDbfs": -26.9,
+        "categoryRmsDeltaDb": 0.2
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:epiano",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 49,
+      "id": "synth:evolving",
+      "name": "Evolve",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -10.6 dBFS, RMS -28.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.6,
+        "rmsDbfs": -28.2,
+        "categoryRmsDeltaDb": 1.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:evolving",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 50,
+      "id": "synth:funkbass",
+      "name": "Funk",
+      "category": "bass",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -6.4 dBFS, RMS -28.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -6.4,
+        "rmsDbfs": -28.4,
+        "categoryRmsDeltaDb": -0.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:funkbass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 51,
+      "id": "synth:glass",
+      "name": "Glass",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -13.9 dBFS, RMS -30.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -13.9,
+        "rmsDbfs": -30.4,
+        "categoryRmsDeltaDb": -0.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:glass",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 52,
+      "id": "synth:growl",
+      "name": "Growl",
+      "category": "fx",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -11.8 dBFS, RMS -33.1 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -11.8,
+        "rmsDbfs": -33.1,
+        "categoryRmsDeltaDb": 0
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:growl",
+        "role": "fx",
+        "pitchMode": "tonal",
+        "envelopeClass": "texture",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 53,
+      "id": "synth:hoover",
+      "name": "Hoover",
+      "category": "bass",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -17.3 dBFS, RMS -38.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -17.3,
+        "rmsDbfs": -38.4,
+        "categoryRmsDeltaDb": -10.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:hoover",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 54,
+      "id": "synth:hypersaw",
+      "name": "Hypersaw",
+      "category": "leads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -16.3 dBFS, RMS -38.5 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -16.3,
+        "rmsDbfs": -38.5,
+        "categoryRmsDeltaDb": -8.2
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:hypersaw",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 55,
+      "id": "synth:jangle",
+      "name": "Jangle",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -12.8 dBFS, RMS -30 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -12.8,
+        "rmsDbfs": -30,
+        "categoryRmsDeltaDb": -0.3
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:jangle",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 56,
+      "id": "synth:lead",
+      "name": "Classic",
+      "category": "leads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.2 dBFS, RMS -27.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.2,
+        "rmsDbfs": -27.4,
+        "categoryRmsDeltaDb": 2.8
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:lead",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 57,
+      "id": "synth:organ",
+      "name": "Organ",
+      "category": "keys",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -13.3 dBFS, RMS -30.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -13.3,
+        "rmsDbfs": -30.7,
+        "categoryRmsDeltaDb": -3.6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:organ",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 58,
+      "id": "synth:organphase",
+      "name": "Phaser",
+      "category": "keys",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -13 dBFS, RMS -31.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -13,
+        "rmsDbfs": -31.6,
+        "categoryRmsDeltaDb": -4.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:organphase",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 59,
+      "id": "synth:pad",
+      "name": "Soft",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.3 dBFS, RMS -26.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.3,
+        "rmsDbfs": -26.9,
+        "categoryRmsDeltaDb": 2.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:pad",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 60,
+      "id": "synth:pluck",
+      "name": "Synth Pluck",
+      "category": "leads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -4.8 dBFS, RMS -26.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -4.8,
+        "rmsDbfs": -26.6,
+        "categoryRmsDeltaDb": 3.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:pluck",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 61,
+      "id": "synth:reese",
+      "name": "Reese",
+      "category": "bass",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -11.7 dBFS, RMS -33.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -11.7,
+        "rmsDbfs": -33.6,
+        "categoryRmsDeltaDb": -5.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:reese",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 62,
+      "id": "synth:rhodes",
+      "name": "Synth Rhodes",
+      "category": "keys",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.4 dBFS, RMS -25.1 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.4,
+        "rmsDbfs": -25.1,
+        "categoryRmsDeltaDb": 2
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:rhodes",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 63,
+      "id": "synth:shimmer",
+      "name": "Shimmer",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -13 dBFS, RMS -28.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -13,
+        "rmsDbfs": -28.7,
+        "categoryRmsDeltaDb": 1
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:shimmer",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 64,
+      "id": "synth:stab",
+      "name": "Stab",
+      "category": "fx",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -7.3 dBFS, RMS -29.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -7.3,
+        "rmsDbfs": -29.9,
+        "categoryRmsDeltaDb": 3.1
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:stab",
+        "role": "fx",
+        "pitchMode": "tonal",
+        "envelopeClass": "texture",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 65,
+      "id": "synth:strings",
+      "name": "Synth Str",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -13.3 dBFS, RMS -33.5 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -13.3,
+        "rmsDbfs": -33.5,
+        "categoryRmsDeltaDb": -3.8
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:strings",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 66,
+      "id": "synth:sub",
+      "name": "Deep Sub",
+      "category": "bass",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -10.9 dBFS, RMS -27.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.9,
+        "rmsDbfs": -27.4,
+        "categoryRmsDeltaDb": 0.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:sub",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 67,
+      "id": "synth:supersaw",
+      "name": "Supersaw",
+      "category": "leads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -16.6 dBFS, RMS -38.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -16.6,
+        "rmsDbfs": -38.7,
+        "categoryRmsDeltaDb": -8.4
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:supersaw",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 68,
+      "id": "synth:sweep",
+      "name": "Sweep",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -7.7 dBFS, RMS -25.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -7.7,
+        "rmsDbfs": -25.4,
+        "categoryRmsDeltaDb": 4.3
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:sweep",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 69,
+      "id": "synth:vibes",
+      "name": "Synth Vibes",
+      "category": "keys",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.8 dBFS, RMS -24.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.8,
+        "rmsDbfs": -24.6,
+        "categoryRmsDeltaDb": 2.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:vibes",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 70,
+      "id": "synth:warmpad",
+      "name": "Warm",
+      "category": "pads",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -11.3 dBFS, RMS -29.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -11.3,
+        "rmsDbfs": -29.7,
+        "categoryRmsDeltaDb": 0
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:warmpad",
+        "role": "pads",
+        "pitchMode": "tonal",
+        "envelopeClass": "pad",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1.5,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.55,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 71,
+      "id": "synth:wobble",
+      "name": "Wobble",
+      "category": "fx",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -7.6 dBFS, RMS -29.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -7.6,
+        "rmsDbfs": -29.8,
+        "categoryRmsDeltaDb": 3.3
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:wobble",
+        "role": "fx",
+        "pitchMode": "tonal",
+        "envelopeClass": "texture",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 72,
+      "id": "synth:wurlitzer",
+      "name": "Wurli",
+      "category": "keys",
+      "type": "synth",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.4 dBFS, RMS -27.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.4,
+        "rmsDbfs": -27.4,
+        "categoryRmsDeltaDb": -0.3
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "synth:wurlitzer",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 73,
+      "id": "tambourine",
+      "name": "Tamb",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -16.1 dBFS, RMS -41.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -16.1,
+        "rmsDbfs": -41.4,
+        "categoryRmsDeltaDb": -5.8
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tambourine",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 74,
+      "id": "tom",
+      "name": "Tom",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -5.7 dBFS, RMS -23.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -5.7,
+        "rmsDbfs": -23.4,
+        "categoryRmsDeltaDb": 12.3
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tom",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 75,
+      "id": "tone:am-bell",
+      "name": "AM Bell",
+      "category": "fx",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -27.1 dBFS, RMS -44.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -27.1,
+        "rmsDbfs": -44.6,
+        "categoryRmsDeltaDb": -11.6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:am-bell",
+        "role": "fx",
+        "pitchMode": "tonal",
+        "envelopeClass": "texture",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 76,
+      "id": "tone:am-tremolo",
+      "name": "Tremolo",
+      "category": "fx",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -25.6 dBFS, RMS -44.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -25.6,
+        "rmsDbfs": -44.2,
+        "categoryRmsDeltaDb": -11.1
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:am-tremolo",
+        "role": "fx",
+        "pitchMode": "tonal",
+        "envelopeClass": "texture",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 77,
+      "id": "tone:duo-lead",
+      "name": "Duo",
+      "category": "leads",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -6.5 dBFS, RMS -28.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -6.5,
+        "rmsDbfs": -28.2,
+        "categoryRmsDeltaDb": 2.1
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:duo-lead",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 78,
+      "id": "tone:fm-bass",
+      "name": "FM Bass",
+      "category": "bass",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -17.1 dBFS, RMS -37.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -17.1,
+        "rmsDbfs": -37.4,
+        "categoryRmsDeltaDb": -9.5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:fm-bass",
+        "role": "bass",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "bass",
+        "rangeStress": "low-interior",
+        "render": {
+          "canonicalMidi": 48,
+          "gateSeconds": 0.6,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.35,
+          "polyphonyMidi": [
+            36,
+            43,
+            48
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 79,
+      "id": "tone:fm-bell",
+      "name": "FM Bell",
+      "category": "fx",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -21 dBFS, RMS -37.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -21,
+        "rmsDbfs": -37.8,
+        "categoryRmsDeltaDb": -4.8
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:fm-bell",
+        "role": "fx",
+        "pitchMode": "tonal",
+        "envelopeClass": "texture",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 80,
+      "id": "tone:fm-epiano",
+      "name": "FM Piano",
+      "category": "keys",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -19.1 dBFS, RMS -39.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -19.1,
+        "rmsDbfs": -39.8,
+        "categoryRmsDeltaDb": -12.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:fm-epiano",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 81,
+      "id": "tone:membrane-kick",
+      "name": "Synth Kick",
+      "category": "drums",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -6.1 dBFS, RMS -27.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -6.1,
+        "rmsDbfs": -27.6,
+        "categoryRmsDeltaDb": 8.1
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:membrane-kick",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 82,
+      "id": "tone:membrane-tom",
+      "name": "Synth Tom",
+      "category": "drums",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -8 dBFS, RMS -30.7 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -8,
+        "rmsDbfs": -30.7,
+        "categoryRmsDeltaDb": 5
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:membrane-tom",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 83,
+      "id": "tone:metal-cymbal",
+      "name": "Cymbal",
+      "category": "drums",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -1.7 dBFS, RMS -25.3 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -1.7,
+        "rmsDbfs": -25.3,
+        "categoryRmsDeltaDb": 10.4
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:metal-cymbal",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 84,
+      "id": "tone:metal-hihat",
+      "name": "Metal Hat",
+      "category": "drums",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -2.6 dBFS, RMS -34 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -2.6,
+        "rmsDbfs": -34,
+        "categoryRmsDeltaDb": 1.7
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:metal-hihat",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 85,
+      "id": "tone:pluck-string",
+      "name": "String",
+      "category": "leads",
+      "type": "tone",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -12.7 dBFS, RMS -35.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -12.7,
+        "rmsDbfs": -35.2,
+        "categoryRmsDeltaDb": -4.9
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "tone:pluck-string",
+        "role": "leads",
+        "pitchMode": "tonal",
+        "envelopeClass": "sustained",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.65,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67
+          ]
+        },
+        "pitchReference": "absolute-fundamental",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note"
+      ]
+    },
+    {
+      "rank": 86,
+      "id": "woodblock",
+      "name": "Wood",
+      "category": "drums",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.5 dBFS, RMS -35.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.5,
+        "rmsDbfs": -35.4,
+        "categoryRmsDeltaDb": 0.3
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "woodblock",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "alternate-seed-must-differ",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 87,
+      "id": "zap",
+      "name": "Zap",
+      "category": "fx",
+      "type": "sample",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "B",
+      "evidence": "canonical live peak -9.8 dBFS, RMS -31.5 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -9.8,
+        "rmsDbfs": -31.5,
+        "categoryRmsDeltaDb": 1.6
+      },
+      "sampled": null,
+      "scoreComponents": [],
+      "profile": {
+        "id": "zap",
+        "role": "fx",
+        "pitchMode": "noise",
+        "envelopeClass": "texture",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "texture",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 1,
+          "tailSeconds": 3,
+          "repeatIntervalSeconds": 0.5,
+          "polyphonyMidi": [
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre",
+        "extend the per-instrument PCM baseline beyond the canonical live note"
+      ]
+    },
+    {
+      "rank": 88,
+      "id": "sampled:808-clap",
+      "name": "808 Clap",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "1 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -10.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.9,
+        "rmsDbfs": -40.3,
+        "categoryRmsDeltaDb": -4.6
+      },
+      "sampled": {
+        "fileCount": 1,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:808-clap",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 89,
+      "id": "sampled:808-hihat-closed",
+      "name": "808 Hat",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "1 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -18.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -18.9,
+        "rmsDbfs": -53,
+        "categoryRmsDeltaDb": -17.3
+      },
+      "sampled": {
+        "fileCount": 1,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:808-hihat-closed",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 90,
+      "id": "sampled:808-hihat-open",
+      "name": "808 Open",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "1 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -15.5 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -15.5,
+        "rmsDbfs": -39.4,
+        "categoryRmsDeltaDb": -3.7
+      },
+      "sampled": {
+        "fileCount": 1,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:808-hihat-open",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 91,
+      "id": "sampled:808-kick",
+      "name": "808 Kick",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "1 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -6.2 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -6.2,
+        "rmsDbfs": -25.7,
+        "categoryRmsDeltaDb": 10
+      },
+      "sampled": {
+        "fileCount": 1,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:808-kick",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 92,
+      "id": "sampled:808-snare",
+      "name": "808 Snare",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "1 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -11.6 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -11.6,
+        "rmsDbfs": -42.2,
+        "categoryRmsDeltaDb": -6.6
+      },
+      "sampled": {
+        "fileCount": 1,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:808-snare",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 93,
+      "id": "sampled:acoustic-crash",
+      "name": "Crash",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "12 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -2.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -2.9,
+        "rmsDbfs": -25.4,
+        "categoryRmsDeltaDb": 10.3
+      },
+      "sampled": {
+        "fileCount": 12,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 3,
+        "medianRoundRobins": 4,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:acoustic-crash",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 94,
+      "id": "sampled:acoustic-hihat-closed",
+      "name": "Ac. Hat",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "16 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -13.3 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -13.3,
+        "rmsDbfs": -40.9,
+        "categoryRmsDeltaDb": -5.2
+      },
+      "sampled": {
+        "fileCount": 16,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 4,
+        "medianRoundRobins": 4,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:acoustic-hihat-closed",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 95,
+      "id": "sampled:acoustic-hihat-open",
+      "name": "Ac. Open",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "12 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -10.4 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -10.4,
+        "rmsDbfs": -36.8,
+        "categoryRmsDeltaDb": -1.1
+      },
+      "sampled": {
+        "fileCount": 12,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 4,
+        "medianRoundRobins": 3,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:acoustic-hihat-open",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 96,
+      "id": "sampled:acoustic-kick",
+      "name": "Ac. Kick",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "16 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -3.1 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -3.1,
+        "rmsDbfs": -25,
+        "categoryRmsDeltaDb": 10.7
+      },
+      "sampled": {
+        "fileCount": 16,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 4,
+        "medianRoundRobins": 4,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:acoustic-kick",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 97,
+      "id": "sampled:acoustic-ride",
+      "name": "Ride",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "12 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -20.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -20.8,
+        "rmsDbfs": -49.3,
+        "categoryRmsDeltaDb": -13.6
+      },
+      "sampled": {
+        "fileCount": 12,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 3,
+        "medianRoundRobins": 4,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:acoustic-ride",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 98,
+      "id": "sampled:acoustic-snare",
+      "name": "Ac. Snare",
+      "category": "drums",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "16 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -6.9 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -6.9,
+        "rmsDbfs": -34.5,
+        "categoryRmsDeltaDb": 1.2
+      },
+      "sampled": {
+        "fileCount": 16,
+        "rootCount": 1,
+        "maxRootDistanceSemitones": null,
+        "medianVelocityLayers": 4,
+        "medianRoundRobins": 4,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:acoustic-snare",
+        "role": "drums",
+        "pitchMode": "unpitched",
+        "envelopeClass": "one-shot",
+        "releasePolicy": "natural-decay",
+        "loudnessClass": "transient",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.12,
+          "tailSeconds": 2.2,
+          "repeatIntervalSeconds": 0.18,
+          "polyphonyMidi": [
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60,
+            60
+          ]
+        },
+        "pitchReference": "not-applicable",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    },
+    {
+      "rank": 99,
+      "id": "sampled:hammond-organ",
+      "name": "Hammond",
+      "category": "keys",
+      "type": "sampled",
+      "score": 0,
+      "band": "baseline",
+      "evidenceGrade": "A",
+      "evidence": "13 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -6.8 dBFS",
+      "live": {
+        "measured": true,
+        "silent": false,
+        "peakDbfs": -6.8,
+        "rmsDbfs": -27.3,
+        "categoryRmsDeltaDb": -0.2
+      },
+      "sampled": {
+        "fileCount": 13,
+        "rootCount": 13,
+        "maxRootDistanceSemitones": 2,
+        "medianVelocityLayers": 1,
+        "medianRoundRobins": 1,
+        "issueCount": 0,
+        "issueCodes": {}
+      },
+      "scoreComponents": [],
+      "profile": {
+        "id": "sampled:hammond-organ",
+        "role": "keys",
+        "pitchMode": "tonal",
+        "envelopeClass": "plucked",
+        "releasePolicy": "lifecycle",
+        "loudnessClass": "tonal",
+        "rangeStress": "high-interior",
+        "render": {
+          "canonicalMidi": 60,
+          "gateSeconds": 0.7,
+          "tailSeconds": 2.5,
+          "repeatIntervalSeconds": 0.4,
+          "polyphonyMidi": [
+            60,
+            64,
+            67,
+            72
+          ]
+        },
+        "pitchReference": "fundamental-one-octave-below",
+        "velocityPolicy": "measure-only",
+        "variationPolicy": "replay-only",
+        "stereoPolicy": "mono-fold-only"
+      },
+      "dryPcmMatrix": {
+        "measured": false,
+        "cases": 0,
+        "fatalFindings": 0,
+        "fatalCodes": {},
+        "evidenceGaps": 0,
+        "evidenceGapCodes": {},
+        "comparisons": null
+      },
+      "improvements": [
+        "no automated technical repair identified; require level-matched blind listening before changing the timbre"
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 import { expect, test } from './global-setup';
 import fs from 'fs';
 import path from 'path';
+import { execFileSync } from 'node:child_process';
 import {
   MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS,
   compensatedSampleStartOffset,
@@ -12,6 +13,7 @@ interface BrowserDecodeSample {
   file: string;
   url: string;
   startOffset: number;
+  maxAdaptiveCodecDelay?: number;
 }
 
 interface BrowserDecodeResult extends BrowserDecodeSample {
@@ -21,6 +23,43 @@ interface BrowserDecodeResult extends BrowserDecodeSample {
   channels?: number;
   leadingSilenceMs?: number;
   error?: string;
+}
+
+interface SubjectState {
+  commit: string;
+  treeStatus: string;
+}
+
+function requireCleanEvidenceSubject(): boolean {
+  const value = process.env.KEYBOARDIA_REQUIRE_CLEAN_AUDIO_EVIDENCE;
+  if (value === undefined || value === '0') return false;
+  if (value === '1') return true;
+  throw new Error('KEYBOARDIA_REQUIRE_CLEAN_AUDIO_EVIDENCE must be 0 or 1');
+}
+
+function subjectState(): SubjectState {
+  const repositoryRoot = path.resolve(process.cwd(), '..');
+  const subjectCommit = execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repositoryRoot,
+    encoding: 'utf8',
+  }).trim();
+  const trackedChanges = execFileSync(
+    'git',
+    ['status', '--porcelain=v1', '--untracked-files=all'],
+    { cwd: repositoryRoot, encoding: 'utf8' },
+  ).trim();
+  if (!/^(?:[a-f0-9]{40}|[a-f0-9]{64})$/.test(subjectCommit)) {
+    throw new Error('Browser-decode report requires a full Git subject commit');
+  }
+  return { commit: subjectCommit, treeStatus: trackedChanges };
+}
+
+function assertCleanEvidenceSubject(state: SubjectState, phase: 'start' | 'end'): void {
+  if (state.treeStatus.length > 0) {
+    throw new Error(
+      `Browser-decode evidence requires a clean subject tree at ${phase}; found:\n${state.treeStatus}`,
+    );
+  }
 }
 
 function encodeUrlPath(value: string): string {
@@ -36,6 +75,7 @@ function loadReferencedSamples(): BrowserDecodeSample[] {
       if (!fs.existsSync(manifestPath)) return [];
       const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8')) as {
         startOffset?: number;
+        maxAdaptiveCodecDelay?: number;
         samples?: Array<{ file?: string; startOffset?: number }>;
       };
       return (manifest.samples ?? [])
@@ -45,14 +85,18 @@ function loadReferencedSamples(): BrowserDecodeSample[] {
           file: sample.file,
           url: `/instruments/${encodeURIComponent(instrumentId)}/${encodeUrlPath(sample.file)}`,
           startOffset: sample.startOffset ?? manifest.startOffset ?? 0,
+          maxAdaptiveCodecDelay: manifest.maxAdaptiveCodecDelay,
         }));
     })
     .sort((a, b) => `${a.instrumentId}/${a.file}`.localeCompare(`${b.instrumentId}/${b.file}`));
 }
 
-test('browser decodeAudioData decodes every referenced sampled-instrument file', async ({ page }) => {
+test('browser decodeAudioData decodes every referenced sampled-instrument file', async ({ page, browserName }) => {
   test.setTimeout(120_000);
 
+  const requireCleanSubject = requireCleanEvidenceSubject();
+  const startingSubject = subjectState();
+  if (requireCleanSubject) assertCleanEvidenceSubject(startingSubject, 'start');
   const samples = loadReferencedSamples();
   await page.goto('/');
 
@@ -156,12 +200,6 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
     return out;
   }, samples);
 
-  fs.mkdirSync('test-results/sample-quality', { recursive: true });
-  fs.writeFileSync(
-    'test-results/sample-quality/browser-decode.json',
-    `${JSON.stringify({ generatedAt: new Date().toISOString(), results }, null, 2)}\n`
-  );
-
   const failures = results.filter(result => !result.ok);
   expect(results).toHaveLength(samples.length);
   expect(failures).toEqual([]);
@@ -186,11 +224,13 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
       browser!.startOffset,
       browser!.leadingSilenceMs! / 1000,
       adaptive,
+      browser!.maxAdaptiveCodecDelay,
     ) ?? 0;
     const nodeStart = compensatedSampleStartOffset(
       browser!.startOffset,
       expected.nodeLeadingSilenceMs / 1000,
       adaptive,
+      browser!.maxAdaptiveCodecDelay,
     ) ?? 0;
     const browserEffectiveOnset = Math.max(0, browser!.leadingSilenceMs! - browserStart * 1000);
     const nodeEffectiveOnset = Math.max(0, expected.nodeLeadingSilenceMs - nodeStart * 1000);
@@ -214,6 +254,7 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
       browser.startOffset,
       browser.leadingSilenceMs! / 1000,
       true,
+      browser.maxAdaptiveCodecDelay,
     ) ?? 0;
     const effectiveOnsetMs = Math.max(0, browser.leadingSilenceMs! - start * 1000);
     expect(
@@ -221,4 +262,72 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
       `${browser.instrumentId}/${browser.file} exceeds the runtime percussion-onset budget`,
     ).toBeLessThanOrEqual(MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS * 1000 + 1e-6);
   }
+
+  // A manifest-level codec-delay allowance applies to every mapped file, so
+  // prove the whole scope rather than only the representative calibration
+  // note. This test is intentionally run in both Chromium and WebKit: their
+  // AAC timelines differ, and the adaptive trim must preserve either attack.
+  const configuredAdaptiveSamples = results.filter(result =>
+    result.ok && result.maxAdaptiveCodecDelay !== undefined
+  );
+  expect(configuredAdaptiveSamples.length).toBeGreaterThan(0);
+  for (const browser of configuredAdaptiveSamples) {
+    const adaptive = isDrumInstrument(`sampled:${browser.instrumentId}`)
+      || browser.file.toLowerCase().endsWith('.m4a');
+    const start = compensatedSampleStartOffset(
+      browser.startOffset,
+      browser.leadingSilenceMs! / 1000,
+      adaptive,
+      browser.maxAdaptiveCodecDelay,
+    ) ?? 0;
+    const effectiveOnsetMs = Math.max(0, browser.leadingSilenceMs! - start * 1000);
+    expect(
+      effectiveOnsetMs,
+      `${browser.instrumentId}/${browser.file} exceeds its configured adaptive-onset budget`,
+    ).toBeLessThanOrEqual(MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS * 1000 + 1e-6);
+    expect(
+      start * 1000,
+      `${browser.instrumentId}/${browser.file} adaptive trim crosses its first audible frame`,
+    ).toBeLessThanOrEqual(browser.leadingSilenceMs! + (1_000 / browser.sampleRate!));
+  }
+
+  // A fixed trim beyond the first audible browser frame necessarily removes
+  // real attack PCM. Codec priming must use the adaptive path above instead,
+  // because AAC timelines differ between Node, Chromium, and WebKit.
+  for (const browser of results.filter(result => result.ok && result.startOffset > 0)) {
+    expect(
+      browser.startOffset * 1000,
+      `${browser.instrumentId}/${browser.file} fixed startOffset clips the browser attack`,
+    ).toBeLessThanOrEqual(browser.leadingSilenceMs! + (1_000 / browser.sampleRate!));
+  }
+
+  const browserIdentity = {
+    name: browserName,
+    version: page.context().browser()?.version() ?? 'unknown',
+    userAgent: await page.evaluate(() => navigator.userAgent),
+  };
+  const endingSubject = subjectState();
+  if (requireCleanSubject) assertCleanEvidenceSubject(endingSubject, 'end');
+  if (endingSubject.commit !== startingSubject.commit) {
+    throw new Error(
+      `Browser-decode evidence subject commit changed during capture: `
+      + `${startingSubject.commit} -> ${endingSubject.commit}`,
+    );
+  }
+  const subjectTreeClean = startingSubject.treeStatus.length === 0
+    && endingSubject.treeStatus.length === 0
+    && endingSubject.commit === startingSubject.commit;
+  fs.mkdirSync('reports/instrument-quality', { recursive: true });
+  fs.writeFileSync(
+    `reports/instrument-quality/browser-decode-${browserName}.json`,
+    `${JSON.stringify({
+      schemaVersion: 2,
+      claim: 'cross-decoder-sample-onset-evidence',
+      generatedAt: new Date().toISOString(),
+      subjectCommit: startingSubject.commit,
+      subjectTreeClean,
+      browser: browserIdentity,
+      results,
+    }, null, 2)}\n`,
+  );
 });
