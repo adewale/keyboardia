@@ -1,7 +1,7 @@
 {
-  "schemaVersion": 3,
-  "claim": "curated fail-closed evidence index; retained fb6c341 decoded lane is same-evaluator comparable and its candidate live decisions are repeatable; original-base aggregate live comparison is incomplete because control capture two produced no receipt; post-measurement d360cf8 verifier diagnostics produced no second live receipt and do not supersede or relabel the retained evidence; not listening or complete-matrix evidence",
-  "assembledAt": "2026-08-23T01:12:53Z",
+  "schemaVersion": 4,
+  "claim": "curated fail-closed evidence index; retained fb6c341 decoded lane is same-evaluator comparable and its candidate live decisions are repeatable; original-base aggregate live comparison is incomplete because control capture two produced no receipt; the independent post-measurement d360cf8 live confirmation produced no receipt and does not supersede or relabel the retained evidence; not listening or complete-matrix evidence",
+  "assembledAt": "2026-08-23T02:27:21Z",
   "currentMainBaseCommit": "702ad0c525bd73844858c7ee7eddfb5a646e2c52",
   "historicalAudioControlBaseCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
   "candidateSubjectCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
@@ -11,14 +11,22 @@
   "candidateBaselineSha256": "616c7f485ec9deb52ab4ab058eb41b702c17d6d9b902ddb18547ca421ee1a509",
   "postMeasurementHardening": {
     "matrixTimeoutCommit": "a6bc402b0a17bde64e3e963bc266579deffe494b",
-    "verifierCommit": "d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec",
-    "verifierEvaluatorTreeSha256": "83225ffea8d0ade671573c98f50615ad21277f52ad8c75a02a3fc656ec16adf8",
+    "initialVerifierCommit": "d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec",
+    "initialVerifierEvaluatorTreeSha256": "83225ffea8d0ade671573c98f50615ad21277f52ad8c75a02a3fc656ec16adf8",
+    "firstMismatchDiagnosticCommit": "1b587e3fff921e09e61f689a8cb932523efa5f5e",
+    "maxPeakVerifierCommit": "5ceb4bffa263d6641027d71d478de3639d059f90",
+    "allPathDiagnosticCommit": "390a1bcec6bf5fea8e6d45f9d85e4df32f802168",
+    "liveTrialBoundaryCommit": "9e3a9c9db58d0390037b39920fb4344d2b9c0be9",
+    "verifierCommit": "fb7f297ed4b37991a8e83b6f20d87bb2fc0b1b6e",
+    "verifierEvaluatorTreeSha256": "7f8679943549346dba2a8616f983b0f8865b64a70698a33b448cdb8fa222ddd3",
     "retainedMeasuredSubjectAndEvaluatorCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
-    "retainedArtifactPolicy": "Every artifact below remains bound to fb6c341 and keeps its original bytes and SHA-256. No post-measurement receipt is relabelled or substituted, and no d360cf8 ranking is published.",
+    "retainedArtifactPolicy": "Candidate artifacts remain bound to fb6c341 as subject and evaluator. Control artifacts retain their original or compatibility-subject binding and the fb6c341 evaluator binding. Every artifact keeps its original bytes and SHA-256; no post-measurement receipt is relabelled or substituted, and no post-measurement ranking is published.",
     "productionAudioChanged": false,
     "rankingInputsChanged": false,
     "sampleEvaluatorBundleChanged": false,
     "sampleBaselineChanged": false,
+    "liveReceiptSchemaChanged": false,
+    "retainedReceiptBytesChanged": false,
     "triggeringCi": {
       "headCommit": "f8920eeb5c49499d349661d41a74a88cbc5e6694",
       "matrixIntegrityTimeouts": 2,
@@ -26,14 +34,61 @@
       "matrixTimeoutSecondsAfter": 60,
       "canonicalPositiveReceiptAccepted": false,
       "canonicalDeletionAttackRejected": true,
-      "reason": "Node 24.19 Linux recomputation exceeded the generic 0.000001 absolute comparator bound in five raw aggregate decoder fields while structure, thresholds, findings, decisions, counts, mappings, and hashes remained unchanged."
+      "reason": "Node 24.19 Linux recomputation exceeded the generic 0.000001 absolute comparator bound in five raw aggregate decoder fields while structure, thresholds, findings, decisions, counts, mappings, and source/manifest/evaluator hashes remained unchanged."
+    },
+    "nativeCiFollowup": {
+      "maxPeakAggregate": {
+        "observedAtHeadCommit": "4e33b93ab9f5aca15f33c2ba8e1140ac733bb7e0",
+        "diagnosticCommit": "1b587e3fff921e09e61f689a8cb932523efa5f5e",
+        "verifierCommit": "5ceb4bffa263d6641027d71d478de3639d059f90",
+        "path": "instruments.maxPeakDb",
+        "unit": "dBFS",
+        "supplied": -8.371171668872284,
+        "recomputed": -8.371170311643814,
+        "absoluteDelta": 0.0000013572284700558157,
+        "absoluteToleranceBefore": 0.000001,
+        "absoluteToleranceAfter": 0.00001,
+        "canonicalPositiveReceiptAcceptedBefore": false,
+        "deletionMutationReachedIntendedMismatchBefore": false,
+        "reason": "The producer defines instruments.maxPeakDb as Math.max of samples.peakDb, so the aggregate receives the same bounded dBFS tolerance as its already-bounded constituents."
+      },
+      "allPathDiagnostic": {
+        "commit": "390a1bcec6bf5fea8e6d45f9d85e4df32f802168",
+        "canonicalPathsAboveBound": 1,
+        "path": "samples.spectral.centroidHz",
+        "valuesAboveBound": 3,
+        "maximumAbsoluteDelta": 0.0019524915206829974,
+        "representativeSupplied": 625.8194832834929,
+        "representativeRecomputed": 625.8175307919722,
+        "absoluteToleranceBefore": 0.001,
+        "absoluteToleranceAfter": 0.002,
+        "unit": "Hz",
+        "noOtherNumericPathsAboveBound": true,
+        "deletionMutationReachedIntendedMismatch": true
+      },
+      "liveTrialBoundary": {
+        "observedAtHeadCommit": "5ceb4bffa263d6641027d71d478de3639d059f90",
+        "commit": "9e3a9c9db58d0390037b39920fb4344d2b9c0be9",
+        "instrumentId": "advanced:acid-bass",
+        "observedDispatches": 2,
+        "expectedDispatches": 1,
+        "eventTimeSeconds": [
+          7.590793650793651,
+          11.59079365079365
+        ],
+        "patternLoopDeltaSeconds": 4,
+        "resolution": "Stop through the production transport synchronously when the worklet reports done, before returning control to Playwright; keep the exact-one assertion.",
+        "receiptSchemaChanged": false,
+        "acceptanceRelaxed": false
+      },
+      "finalVerifierCommit": "fb7f297ed4b37991a8e83b6f20d87bb2fc0b1b6e"
     },
     "canonicalReceiptComparator": {
       "defaultDecoderDerivedAbsoluteTolerance": 0.000001,
       "pathOverrides": [
         {
           "path": "samples.spectral.centroidHz",
-          "absoluteTolerance": 0.001,
+          "absoluteTolerance": 0.002,
           "unit": "Hz"
         },
         {
@@ -55,25 +110,82 @@
           "path": "samples.crestFactorDb",
           "absoluteTolerance": 0.00001,
           "unit": "dB"
+        },
+        {
+          "path": "instruments.maxPeakDb",
+          "absoluteTolerance": 0.00001,
+          "unit": "dBFS"
         }
       ],
       "exactBindings": [
         "structure",
-        "provenance",
+        "non-volatile-provenance",
         "source-and-manifest-hashes",
         "thresholds",
         "finding-classifications",
         "counts",
         "mappings",
-        "identity-fields"
+        "non-volatile-identity-fields"
       ],
+      "excludedVolatileField": "root generatedAt timestamp",
       "selectionPolicy": "Never average, rewrite, discard, or select a measurement; reject a decoder-derived value outside its path-specific absolute bound."
     },
     "focusedVerification": {
-      "macosPositiveAndDeletionTestsPassed": 10,
-      "macosPositiveAndDeletionTestsTotal": 10,
-      "linuxX64PositiveAndDeletionTestsPassed": 10,
-      "linuxX64PositiveAndDeletionTestsTotal": 10
+      "initialVerifierCommit": "d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec",
+      "initialMacosPositiveAndDeletionTestsPassed": 10,
+      "initialMacosPositiveAndDeletionTestsTotal": 10,
+      "initialLinuxX64PositiveAndDeletionTestsPassed": 10,
+      "initialLinuxX64PositiveAndDeletionTestsTotal": 10,
+      "initialLinuxX64Environment": "official Linux-x64 Node 24.19 binary under emulation in a Noble arm64 container; not native amd64 Ubuntu userspace",
+      "finalVerifierCommit": "fb7f297ed4b37991a8e83b6f20d87bb2fc0b1b6e",
+      "finalLocalRetainedPositiveReceiptAccepted": true,
+      "finalLocalDeletionAttackRejectedAtIntendedMismatch": true,
+      "maxPeakObservedPairAccepted": true,
+      "maxPeakExactBoundAccepted": true,
+      "maxPeakAboveBoundRejected": true,
+      "centroidMaximumObservedDeltaAccepted": true,
+      "centroidExactBoundAccepted": true,
+      "centroidImmediatelyAboveBoundRejected": true,
+      "allPathDiagnosticFoundNoOtherAboveBoundNumericPath": true,
+      "nativeUnitVerification": {
+        "headCommit": "fb7f297ed4b37991a8e83b6f20d87bb2fc0b1b6e",
+        "githubActionsRunId": 32611693694,
+        "githubActionsJobId": 97125711650,
+        "unitSuitePassed": true,
+        "requiredOfflineAudioRendersPassed": true,
+        "retainedPositiveReceiptAccepted": true,
+        "deletionAttackRejectedAtIntendedMismatch": true
+      },
+      "codeHeadGitHubVerification": {
+        "headCommit": "fb7f297ed4b37991a8e83b6f20d87bb2fc0b1b6e",
+        "githubActionsRunId": 32611693694,
+        "pullRequestMergeState": "CLEAN",
+        "pullRequestMergeable": true,
+        "pullRequestStatusChecksPassed": 13,
+        "pullRequestStatusChecksTotal": 13,
+        "ciJobsPassed": 11,
+        "ciJobsTotal": 11,
+        "ruffChecksPassed": 2,
+        "ruffChecksTotal": 2,
+        "ruffWorkflowRunIds": [32611692362, 32611693673],
+        "mockE2eJobId": 97125711666,
+        "mockOfflineChromiumIncludingAllInstrumentSpecPassed": true,
+        "workerCollaborationContractPassed": true,
+        "realBackendE2eJobId": 97125711651,
+        "realBackendE2ePassed": true,
+        "codeHeadResultDoesNotSubstituteForPublicationHeadMergeGate": true
+      },
+      "nonRetainedTargetedLiveBoundaryVerification": {
+        "headCommit": "9e3a9c9db58d0390037b39920fb4344d2b9c0be9",
+        "browser": "Chromium",
+        "testsPassed": 1,
+        "testsTotal": 1,
+        "instrumentTrials": 99,
+        "receiptValidatorPassed": true,
+        "playwrightRetries": 0,
+        "durationMinutes": 7.9,
+        "evidenceStatus": "code verification only; no receipt is retained or substituted"
+      }
     },
     "nonRetainedDiagnosticRun": {
       "subjectCommit": "d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec",
@@ -119,8 +231,8 @@
     "selectionPolicy": "retain independent runs; never average, discard, retry, or select a favorable control result",
     "decisionPolicy": "candidate receipts must match structurally and produce exact rank, score, band, component, silence, above-zero, and stable-dispatch decisions",
     "controlCompatibilityCommit": "36ff7047d5790cf3478c38cb1f742b0c89ce832e",
-    "controlCompatibilityCaveat": "The clean compatibility commit combines the historical audio base's scored runtime/assets/manifests with the candidate evaluator and receipt producers. It is not represented as literal historical-base provenance.",
-    "executionCaveat": "The reconstructed control decoded lane completed. Control live capture one completed, but independent capture two lost its page execution context before publishing a receipt. The workflow failed closed with Playwright retry count zero. No control live spread, ranking, or aggregate score delta is admissible. The candidate pair was captured separately on the clean candidate subject and passed the same committed receipt and decision comparators."
+    "controlCompatibilityCaveat": "The clean compatibility commit combines the historical audio base's scored runtime/assets/manifests with the candidate evaluator and receipt producers. It is not represented as literal historical-base provenance. The compatibility and unbound-subject commit IDs are ephemeral reconstruction-local identifiers and are not expected to resolve in the upstream repository; reproducibility uses the committed reconstruction script and retained plan rather than those temporary Git objects.",
+    "executionCaveat": "The reconstructed control decoded lane completed. Control live capture one completed, but independent capture two produced no receipt after the target page, context, or browser became unavailable; the trace does not distinguish which one. The workflow failed closed with Playwright retry count zero. No control live spread, ranking, or aggregate score delta is admissible. The candidate pair was captured separately on the clean candidate subject and passed the same committed receipt and decision comparators."
   },
   "candidate": {
     "decisionStable": true,
@@ -186,40 +298,41 @@
     "smokeRejectedAttempts": 1,
     "smokeReplayByteExact": true
   },
+  "artifactPublicationPolicy": "Within artifacts, path plus sha256 identifies the authoritative tracked snapshot. historicalCapturePath records only the ignored producer-output location used at capture time; it is not an immutable locator and may later be overwritten.",
   "artifacts": {
     "candidateSample": {
       "path": "candidate-sample-quality-fb6c341.json",
-      "capturePath": "app/reports/instrument-quality/final-fb6c341/sample-quality.json",
+      "historicalCapturePath": "app/reports/instrument-quality/final-fb6c341/sample-quality.json",
       "sha256": "f18390d714fdf2932b4a021e3ca09024dc9c38d74fc001f0ed75018af19be30e"
     },
     "candidateLivePrimary": {
       "path": "candidate-live-primary-fb6c341.json",
-      "capturePath": "app/reports/instrument-quality-schema7-primary-fb6c341/live-master-output.json",
+      "historicalCapturePath": "app/reports/instrument-quality-schema7-primary-fb6c341/live-master-output.json",
       "sha256": "1ed1e59aa9ca222da5b5bbab1b1211df0830859f8bfaf918dade3e684aa5e8ed"
     },
     "candidateLiveConfirmation": {
       "path": "candidate-live-confirmation-fb6c341.json",
-      "capturePath": "app/reports/instrument-quality-schema7-confirmation-fb6c341/live-master-output.json",
+      "historicalCapturePath": "app/reports/instrument-quality-schema7-confirmation-fb6c341/live-master-output.json",
       "sha256": "d2a8fe1d612ee57b7f2dd88b82d917a108150d6a5e0ee1b6ee8001586b82dc84"
     },
     "candidateRankingPrimary": {
       "path": "candidate-instrument-quality-primary-fb6c341.json",
-      "capturePath": "app/reports/instrument-quality/final-fb6c341/ranking-primary.json",
+      "historicalCapturePath": "app/reports/instrument-quality/final-fb6c341/ranking-primary.json",
       "sha256": "e066ba78dcf9ee4343388c80ed890cf0d41171893b3c45fb3119ce50d298f004"
     },
     "candidateRankingConfirmation": {
       "path": "candidate-instrument-quality-confirmation-fb6c341.json",
-      "capturePath": "app/reports/instrument-quality/final-fb6c341/ranking-confirmation.json",
+      "historicalCapturePath": "app/reports/instrument-quality/final-fb6c341/ranking-confirmation.json",
       "sha256": "2b97723b5aa3a08988a92138deb571e9b69615a2c933b8c82bdb36aaea2e81af"
     },
     "browserDecodeChromium": {
       "path": "browser-decode-chromium-fb6c341.json",
-      "capturePath": "app/reports/instrument-quality/browser-decode-chromium.json",
+      "historicalCapturePath": "app/reports/instrument-quality/browser-decode-chromium.json",
       "sha256": "32869d51258503e76869cc1e18aa6ca384a1440cbe42b947f94cdc112922623b"
     },
     "browserDecodeWebKit": {
       "path": "browser-decode-webkit-fb6c341.json",
-      "capturePath": "app/reports/instrument-quality/browser-decode-webkit.json",
+      "historicalCapturePath": "app/reports/instrument-quality/browser-decode-webkit.json",
       "sha256": "7afc81668a19dddc5897c38db32b12d8fb1887fb1d42ccdeb15e89f233dfdbe3"
     },
     "controlSampleUnbound": {

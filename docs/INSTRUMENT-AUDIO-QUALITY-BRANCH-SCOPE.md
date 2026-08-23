@@ -1,31 +1,39 @@
 # Instrument quality branch scope — 2026-08-22
 
 The audit inspected all available GitHub branch heads and resolved open pull
-requests independently of branch naming. The remote refresh on 2026-08-23
-found eight open pull requests and three open issues.
+requests independently of branch naming. The final remote refresh on
+2026-08-23 found eight open pull requests and three open issues.
 
-That check used `main` at `702ad0c`, PR 87 at `8f995a7`, PR 98 at `6028265f`,
-and the then-remote remediation PR 100 at the stale `a1355fb6`; the retained
-clean measured PR 100 subject/evaluator is `fb6c341`. Later commits `a6bc402`
-and `d360cf8` harden test budgets and cross-platform receipt comparison without
-changing production audio or the retained ranking. Both audio-adjacent PRs are
-production implementations, not research-only branches, and their current
-overlap and sequencing requirements are detailed below.
+That refresh used `main` at `702ad0c`, PR 87 at `8f995a7`, and PR 98 at
+`517b051b`. PR 100's pushed code-verification head was `fb7f297e`; the retained
+clean measured PR 100 subject/evaluator is `fb6c341`. Evidence-publication
+commit `f8920ee` adds only the retained reports/artifacts; subsequent commits
+from `a6bc402` through `fb7f297` harden test budgets, cross-platform receipt
+comparison, mismatch diagnostics, and the live capture boundary without
+changing production audio or the retained ranking. Both audio-adjacent PRs are production
+implementations, not research-only branches, and their overlap and sequencing
+requirements are detailed below.
 
-At the snapshot PR 87 was `CLEAN` with 13/13 checks passing. PR 98 had just
-advanced again and was `UNSTABLE`: ten checks were green, E2E Visual Regression
-was red, and two E2E jobs were still running. PR 100's remote checks were for
-an obsolete head and
-do not validate this report; the final pushed-head Actions run is the merge
-gate. The final canonical receipt comparator keeps an absolute `0.000001`
-tolerance for decoder-derived numbers except five raw aggregates:
-`samples.spectral.centroidHz` allows `0.001` Hz; `samples.dcOffsetDb` and
+At the final branch snapshot PR 87 and PR 98 were both `CLEAN`, mergeable, and
+had **13/13 checks passing**. PR 100's `fb7f297` code-verification head was also
+`CLEAN`, mergeable, and **13/13 status checks green**: **11/11 CI jobs** in
+Actions run `32611693694`, plus two Ruff checks. Its native Unit job included
+the required offline audio renders, and its mock E2E job included the
+all-instrument Chromium spec. The later documentation-publication head's
+Actions result remains the merge gate; no result from an earlier head
+substitutes for it. The final canonical receipt comparator keeps an absolute
+`0.000001` tolerance for decoder-derived numbers except six decoder-output
+paths:
+`samples.spectral.centroidHz` allows `0.002` Hz; `samples.dcOffsetDb` and
 `samples.tailLevelDbRelPeak` allow `0.001` dB; and `samples.peakDb` and
-`samples.crestFactorDb` allow `0.00001` dB. Thresholds, metadata, finding
-decisions, counts, mappings, and hashes remain exact. A Noble arm64 container
-running the official linux-x64 Node 24.19 binary under emulation passed the
-formerly fragile piano/alto subset; this is x64 Node/V8 arithmetic evidence,
-not a full native amd64 Ubuntu result.
+`samples.crestFactorDb` allow `0.00001` dB. `instruments.maxPeakDb`, the
+producer's maximum of the sample peaks, allows `0.00001` dBFS. Thresholds,
+source/manifest/evaluator hashes, non-volatile identity and provenance metadata,
+finding decisions, counts, and mappings remain exact; only the root
+`generatedAt` timestamp is excluded. A Noble
+arm64 container running the official linux-x64 Node 24.19 binary under
+emulation passed the formerly fragile piano/alto subset; this is x64 Node/V8
+arithmetic evidence, not a full native amd64 Ubuntu result.
 
 | PR | Head | Audio impact |
 |---:|---|---|
@@ -46,8 +54,8 @@ been rebased onto PR 100's authoritative sample replacements and hardened
 evidence contracts, so neither carries evidence sufficient for an honest
 alternate 99-instrument ranking on the combined tree.
 
-PR 98, `claude/tone-nets-keyboardia-comparison-vwa218` at `6028265f`, is a
-54-file production sound/mobile branch that advanced repeatedly during this audit.
+PR 98, `claude/tone-nets-keyboardia-comparison-vwa218` at `517b051b`, is a
+55-file production sound/mobile branch that advanced repeatedly during this audit.
 Its latest scope says it now:
 
 - routes native and Tone master chains through one mobile media-element
@@ -80,19 +88,18 @@ three-way simulation produces textual conflicts in `engine.ts`; the other
 shared paths still require semantic review. Its new per-note velocity tables
 and receipt pins were also solved against pre-PR-100 acoustic/Hammond delivery
 bytes, creating a semantic dependency even where Git reports no textual
-overlap; those anchors and hashes must be regenerated. At the snapshot, GitHub reported
-PR 98 as mergeable but `UNSTABLE`: ten checks were green, E2E Visual Regression
-was red, and two E2E jobs were still running. Unit, Stack A, and Instrument
-Validation were green, so the new velocity/calibration gates pass that branch's
-CI. Its prior mock job had failed before executing tests because the checked-in
-inventory count was stale; `9c7614d` updated that contract and triggered the
-replacement run. It must be rebased after PR 100 and PR 87, then rerun decoded, visual,
-mobile, velocity, complete-matrix, and level-matched listening gates on the
-combined graph. It is correctly classified as active adjacent remediation, not
-evidence that the combined sound is already certified.
+overlap; those anchors and hashes must be regenerated. At the final snapshot,
+GitHub reported PR 98 `CLEAN` and mergeable with 13/13 checks passing. Its prior
+mock job had failed before executing tests because the checked-in inventory
+count was stale; `9c7614d` corrected the contract to 7 specs/72 tests,
+`6028265` was an empty follow-up commit, and the current tip only rebinds two browser-visual
+snapshots. It must be rebased after PR 100 and PR 87, then rerun decoded,
+visual, mobile, velocity, complete-matrix, and level-matched listening gates on
+the combined graph. It is correctly classified as active adjacent remediation,
+not evidence that the combined sound is already certified.
 
 One other dormant, non-PR branch has unique production audio code:
-`claude/fix-safari-audio-switching-Vq8zi`. It is 333 commits behind and adds
+`claude/fix-safari-audio-switching-Vq8zi`. It is hundreds of commits behind and adds
 visibility/interruption context resume behavior. That can prevent silence after
 Safari tab switching, but it does not change instrument timbre. Its tip still
 contains the retired `rhodes-ep` catalogue and mock-only Safari tests, so it

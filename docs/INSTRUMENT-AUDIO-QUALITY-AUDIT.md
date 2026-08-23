@@ -7,9 +7,14 @@ Evaluator tree SHA-256: `b717827dd516a810a8d49db6f975e821f42bb50a37b0dc68a9e0a2b
 > This is a technical improvement-priority ranking, not a claim about musical taste. A score of 0 means “no defect detected by these lanes,” not “perfect sound.” Disposition-accepted findings remain measured debt; they are not erased merely because CI accepts them.
 
 This table is intentionally retained as the ranking generated at `fb6c341`.
-Post-measurement commit `d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec`
-only hardens cross-platform comparison of a retained decoded receipt with a
-fresh decode; it does not relabel or regenerate these receipts or rows. A fresh
+Evidence-publication commit `f8920eeb5c49499d349661d41a74a88cbc5e6694`
+added the retained reports and artifacts. Subsequent hardening commits from
+`a6bc402b0a17bde64e3e963bc266579deffe494b` through
+`fb7f297ed4b37991a8e83b6f20d87bb2fc0b1b6e` change test budgets,
+cross-platform comparison, mismatch diagnostics, and the live trial boundary;
+the current verifier tree is
+`7f8679943549346dba2a8616f983b0f8865b64a70698a33b448cdb8fa222ddd3`.
+They do not relabel or regenerate these receipts or rows. A fresh
 `d360cf8` live primary completed, but its independent confirmation produced no
 receipt after the target page, context, or browser became unavailable during
 per-trial stop/cleanup; the trace does not distinguish which one. Retry count
@@ -43,8 +48,9 @@ findings. Every other decoded finding class is unchanged.
 
 The aggregate live-score comparison is deliberately **incomplete**. The first
 reconstructed control capture completed 99/99 instruments and 99 exact
-production dispatches. The independent second process lost its page execution
-context before it could publish a receipt. The fail-closed workflow used zero
+production dispatches. In the independent second process, the target page,
+context, or browser became unavailable before a receipt was published; the
+trace does not distinguish which one. The fail-closed workflow used zero
 Playwright retries, so no second control receipt, repeatability spread, ranking,
 or aggregate base-to-candidate score exists. It did not average or select a
 favorable run. The decoded artifacts, valid first control receipt, failed-run

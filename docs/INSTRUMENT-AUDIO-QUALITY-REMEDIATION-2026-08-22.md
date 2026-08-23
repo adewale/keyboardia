@@ -10,15 +10,30 @@ is not presented as the current PR base. The retained receipts and rankings
 remain bound to `fb6c341`; they are not relabelled as evidence for a later
 commit.
 
-Two post-measurement commits harden CI and receipt verification without changing
-production audio, assets, manifests, the sample-evaluator bundle, its baseline,
-scoring thresholds, or ranking inputs. `a6bc402b0a17bde64e3e963bc266579deffe494b`
+Evidence-publication commit `f8920eeb5c49499d349661d41a74a88cbc5e6694`
+adds the retained reports and artifacts. Subsequent hardening commits from
+`a6bc402b0a17bde64e3e963bc266579deffe494b` through `fb7f297` change CI and
+receipt verification without changing production audio, assets, manifests,
+the sample-evaluator bundle, its baseline, scoring thresholds, or ranking inputs.
+`a6bc402b0a17bde64e3e963bc266579deffe494b`
 raises only two matrix integrity-test time budgets from 30 to 60 seconds.
 `d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec` scopes cross-platform tolerances
 for five raw decoded aggregate fields when a retained receipt is compared with
-a fresh decode. Because that second change is in the instrument evaluator's
-source closure, the final verifier has a different evaluator-tree hash; it does
-not retroactively regenerate or supersede the `fb6c341` ranking.
+a fresh decode. `1b587e3fff921e09e61f689a8cb932523efa5f5e` adds exact
+first-mismatch diagnostics without changing acceptance;
+`5ceb4bffa263d6641027d71d478de3639d059f90` gives the instrument-level
+`maxPeakDb` reduction the same `0.00001` dBFS bound as its constituent sample
+peaks; and `390a1bcec6bf5fea8e6d45f9d85e4df32f802168` reports every
+above-bound numeric path so platform drift cannot mask the deletion regression.
+`9e3a9c9db58d0390037b39920fb4344d2b9c0be9` stops a live trial through the
+production transport at the worklet capture boundary while retaining the
+exact-one-dispatch assertion. Finally,
+`fb7f297ed4b37991a8e83b6f20d87bb2fc0b1b6e` raises only the spectral-centroid
+receipt bound from `0.001` to `0.002` Hz after the native all-path diagnostic
+found three excesses on that path and none elsewhere. These evaluator changes
+put the current evaluator-tree hash at
+`7f8679943549346dba2a8616f983b0f8865b64a70698a33b448cdb8fa222ddd3`;
+they do not retroactively regenerate or supersede the `fb6c341` ranking.
 
 The complete worst-first table is
 [`INSTRUMENT-AUDIO-QUALITY-AUDIT.md`](./INSTRUMENT-AUDIO-QUALITY-AUDIT.md), the
@@ -67,8 +82,9 @@ All other decoded finding classes are unchanged.
 
 An aggregate live-score delta is deliberately not published. The first fresh
 control capture completed 99/99 instruments and 99 exact dispatches. The
-independent second process lost its page execution context before it could
-publish a receipt. The fail-closed workflow used zero Playwright retries, so no
+independent second process produced no receipt after the target page, context,
+or browser became unavailable; the trace does not distinguish which one. The
+fail-closed workflow used zero Playwright retries, so no
 control repeatability spread, ranking, or aggregate live score is admissible.
 It did not average or select a favorable run. The valid decoded/control
 artifacts, failed-run result, and hashes are preserved in
@@ -115,13 +131,17 @@ removing 26.7% of the capability is not an audio repair.
   measured value, exact threshold, baseline, and evaluator identity. Disposition
   matching keeps its `0.000001` absolute tolerance. For whole-receipt canonical
   recomputation, other decoder-derived numbers also keep `0.000001` except for
-  five raw fields: `samples.spectral.centroidHz` allows `0.001` Hz;
-  `samples.dcOffsetDb` and `samples.tailLevelDbRelPeak` allow `0.001` dB; and
-  `samples.peakDb` and `samples.crestFactorDb` allow `0.00001` dB. Thresholds,
-  metadata, finding decisions, counts, mappings, and hashes remain exact. No
-  value is averaged, rewritten, or selected. Because the original unrounded
-  reference is not stored, a receipt tolerance does not itself bound the true
-  decoder-to-decoder difference.
+  six paths: `samples.spectral.centroidHz` allows `0.002` Hz;
+  `samples.dcOffsetDb` and `samples.tailLevelDbRelPeak` allow `0.001` dB;
+  `samples.peakDb` and `samples.crestFactorDb` allow `0.00001` dB; and
+  `instruments.maxPeakDb` allows `0.00001` dBFS. The instrument maximum is the
+  producer's `Math.max` reduction of the already-bounded sample peaks.
+  Thresholds, source/manifest/evaluator hashes, non-volatile identity and
+  provenance metadata, finding decisions, counts, and mappings remain exact;
+  only the root `generatedAt` timestamp is excluded. No value is averaged,
+  rewritten, or selected. Because the original
+  unrounded reference is not stored, a receipt tolerance does not itself bound
+  the true decoder-to-decoder difference.
 - Loop checks use the actual continuous Web Audio boundary instead of
   correlating phase-unrelated windows.
 - Stereo activity is derived from either channel, so exact anti-phase audio
@@ -225,10 +245,61 @@ Two matrix integrity tests completed too slowly for their 30-second budgets;
 recomputation also rejected a macOS receipt on Node 24.19 Linux because five raw
 aggregate decoder fields exceeded the generic `0.000001` bound while all
 threshold, structure, finding, and decision bindings remained unchanged.
-`d360cf8` adds only the path- and unit-scoped tolerances above. Its focused
-cross-platform tests reject values outside each bound, and the full positive
-and 203-finding-deletion suites passed **10/10 on macOS** and **10/10 on Node
-24.19 Linux x64**.
+`d360cf8` adds only the first five path- and unit-scoped tolerances above. Its
+focused cross-platform tests reject values outside each bound, and the full
+positive and 203-finding-deletion suites passed **10/10 on macOS** and **10/10
+with the official Linux-x64 Node 24.19 binary under emulation in a Noble arm64
+container**. The latter proves the x64 Node/V8 arithmetic path, not a native
+amd64 Ubuntu userspace.
+
+A later GitHub-hosted Ubuntu recomputation at `4e33b93` found one additional
+reduction path: `instruments[16].maxPeakDb` differed by
+`0.0000013572284700558157` dBFS (`-8.371171668872284` retained versus
+`-8.371170311643814` recomputed), just beyond the generic `0.000001` bound.
+The deletion mutation was still rejected, but that platform mismatch became
+its first failure instead of the intended `totals.waivedIssues` mismatch.
+`1b587e3` adds diagnostic-only first-mismatch reporting; `5ceb4bf` then scopes
+only `instruments.maxPeakDb` to `0.00001` dBFS because the producer defines it
+as `Math.max` of the already-bounded `samples.peakDb` values. Focused tests
+accept the observed native pair and the exact bound, reject `0.000011` and
+`0.01` dBFS changes, and restore both the retained positive receipt and the
+203-finding-deletion regression locally.
+
+The next diagnostic-only native run traversed the complete shared receipt and
+found exactly one canonical path still above its bound:
+`samples.spectral.centroidHz`, in three samples, with maximum absolute drift
+`0.0019524915206829974` Hz (`625.8194832834929` retained versus
+`625.8175307919722` recomputed). `390a1bc` records that bounded summary and
+keeps the deletion test tied to `totals.waivedIssues`; `fb7f297` raises only
+that path from `0.001` to `0.002` Hz. Its focused tests accept the observed
+maximum and exact bound, reject `0.0020001` and `0.01` Hz changes, and pass the
+retained positive/deletion cases locally. No other numeric path exceeded its
+bound and no other comparator path changed.
+
+The `5ceb4bf` CI run exposed a capture-boundary race: the first advanced-synth
+trial remained armed long enough to observe a second otherwise exact dispatch
+one four-second pattern loop later, consistent with a delayed Playwright
+handoff while production transport remained active. `9e3a9c9` preserves the exact-one assertion and receipt
+schema, but synchronously invokes the production Stop control when the worklet
+reports `done`, before control returns to Playwright. It changes neither
+production audio nor the retained `fb6c341` receipts.
+
+A clean targeted Chromium run at `9e3a9c9` then passed the all-instrument live
+spec on its first attempt: **1/1 test**, all **99 trials** plus receipt
+validation, **zero Playwright retries**, in 7.9 minutes. The pushed `fb7f297`
+native Unit job also passed the complete unit suite and required offline audio
+renders, including retained positive recomputation and the intended
+203-finding-deletion rejection. These are post-measurement code-verification
+results, not replacements for the retained candidate pair or the missing
+prospective control confirmation.
+
+At the final code snapshot, PR 100's `fb7f297` head was `CLEAN` and mergeable
+with **13/13 status checks green**: **11/11 CI jobs** in Actions run
+`32611693694`, plus two Ruff checks. Its mock job passed the remaining offline
+Chromium suite containing the all-instrument spec and then the Worker
+collaboration contract; its real-backend job also passed. The subsequent
+documentation-only publication head's own Actions result is the merge gate;
+this earlier code-head result does not substitute for it.
 
 Fresh clean-`d360cf8` diagnostics reproduced the decoded totals (26 instruments,
 605 mappings, 582 files, 203 accepted findings, 0 errors/reviews), decoded all
@@ -245,7 +316,8 @@ A Noble arm64 container running the official linux-x64 Node 24.19 binary under
 emulation also reproduced the formerly fragile piano/alto decoded subset with
 36 accepted findings and 0 errors/reviews. This exercises the x64 Node/V8
 decoder arithmetic; it is not represented as a full native amd64 Ubuntu run.
-The pushed-head GitHub Actions result remains the merge gate.
+The documentation-publication head's GitHub Actions result remains the merge
+gate.
 
 The following commands reproduce the retained ranking, so they intentionally
 use a clean checkout of `fb6c341941b6d7485d61bf4e63132b80b9128cd1`:
