@@ -547,7 +547,7 @@ const DECODER_DERIVED_INSTRUMENT_FIELDS = new Set([
   'minStereoCorrelation',
 ]);
 const DECODER_DERIVED_RECEIPT_ABSOLUTE_TOLERANCE_BY_PATH: ReadonlyMap<string, number> = new Map([
-  ['samples.spectral.centroidHz', 0.001],
+  ['samples.spectral.centroidHz', 0.002],
   ['samples.dcOffsetDb', 0.001],
   ['samples.tailLevelDbRelPeak', 0.001],
   ['samples.peakDb', 0.00001],

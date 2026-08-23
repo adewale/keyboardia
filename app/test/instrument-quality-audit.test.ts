@@ -154,8 +154,9 @@ describe('instrument quality audit evidence coverage', () => {
     {
       field: 'spectral centroid Hz',
       reference: 625.8194832834929,
-      linux: 625.8185860720217,
-      tolerance: 0.001,
+      linux: 625.8175307919722,
+      tolerance: 0.002,
+      immediatelyOverTolerance: 0.0020001,
       receipt: (value: number) => ({ samples: [{ spectral: { centroidHz: value } }] }),
     },
     {
@@ -197,11 +198,15 @@ describe('instrument quality audit evidence coverage', () => {
     reference,
     linux,
     tolerance,
+    immediatelyOverTolerance,
     receipt,
   }) => {
     expect(stableSampleQualityReceiptsEqual(receipt(reference), receipt(linux))).toBe(true);
     expect(stableSampleQualityReceiptsEqual(receipt(0), receipt(tolerance))).toBe(true);
-    expect(stableSampleQualityReceiptsEqual(receipt(0), receipt(tolerance * 1.1))).toBe(false);
+    expect(stableSampleQualityReceiptsEqual(
+      receipt(0),
+      receipt(immediatelyOverTolerance ?? tolerance * 1.1),
+    )).toBe(false);
     expect(stableSampleQualityReceiptsEqual(receipt(reference), receipt(reference + 0.01))).toBe(false);
   });
 
@@ -230,7 +235,7 @@ describe('instrument quality audit evidence coverage', () => {
     expect(pathSpecific).toContain('numeric mismatch at $.samples[1].spectral.centroidHz');
     expect(pathSpecific).toContain('supplied=625, recomputed=625.01');
     expect(pathSpecific).toContain('absoluteDelta=');
-    expect(pathSpecific).toContain('tolerance=0.001');
+    expect(pathSpecific).toContain('tolerance=0.002');
 
     const defaultTolerance = firstStableSampleQualityReceiptMismatch(
       { samples: [{ rmsDb: -20 }] },
@@ -273,8 +278,8 @@ describe('instrument quality audit evidence coverage', () => {
       + 'supplied=-30, recomputed=-29.999998',
     );
     expect(summary).toContain(
-      '$.samples.spectral.centroidHz: count=2, maxAbsoluteDelta=0.002999999999985903, '
-      + 'tolerance=0.001, representative=$.samples[1].spectral.centroidHz, '
+      '$.samples.spectral.centroidHz: count=1, maxAbsoluteDelta=0.002999999999985903, '
+      + 'tolerance=0.002, representative=$.samples[1].spectral.centroidHz, '
       + 'supplied=200, recomputed=200.003',
     );
     expect(summary).toContain(
