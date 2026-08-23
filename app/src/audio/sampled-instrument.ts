@@ -31,6 +31,8 @@ import {
   type ChokeableVoice,
 } from './choke-groups';
 import { DEFAULT_MIDI_VELOCITY } from './velocity';
+import { velocitySampleCutoff, VELOCITY_FILTER_Q } from './velocity-sample-filter';
+import { velocityFilterAnchorHz } from './velocity-filter-calibration';
 import { isDrumInstrument } from '../shared/instrument-classification';
 import {
   compensatedSampleStartOffset,
@@ -232,15 +234,28 @@ export class SampledInstrument {
   private baseUrl: string;
   private instrumentId: string;  // For cache key generation
   private chokeRegistry: ChokeGroupRegistry;
+  private velocityAnchorForNote: (
+    instrumentId: string,
+    midiNote: number,
+    sampleRate: number,
+  ) => number | undefined;
 
   constructor(
     instrumentId: string,
     baseUrl: string = '/instruments',
-    deps: { chokeRegistry?: ChokeGroupRegistry } = {}
+    deps: {
+      chokeRegistry?: ChokeGroupRegistry;
+      velocityAnchorForNote?: (
+        instrumentId: string,
+        midiNote: number,
+        sampleRate: number,
+      ) => number | undefined;
+    } = {}
   ) {
     this.instrumentId = instrumentId;
     this.baseUrl = `${baseUrl}/${instrumentId}`;
     this.chokeRegistry = deps.chokeRegistry ?? sampledInstrumentChokeRegistry;
+    this.velocityAnchorForNote = deps.velocityAnchorForNote ?? velocityFilterAnchorHz;
   }
 
   /**
@@ -632,6 +647,26 @@ export class SampledInstrument {
       this.manifest.gainDb ?? 0,
     ));
 
+    // Phase 44 Change 2: one lowpass per voice, shared by every layer-blend
+    // component, only when the manifest declares an anchor AND the velocity
+    // is below the bypass threshold. Bypass creates no node at all so the
+    // default-velocity graph stays byte-identical.
+    const velocityCutoffHz = velocitySampleCutoff(
+      this.velocityAnchorForNote(this.instrumentId, adjustedMidiNote, this.audioContext.sampleRate),
+      velocity,
+      adjustedMidiNote,
+      adjustedMidiNote,
+    );
+    let velocityFilter: BiquadFilterNode | null = null;
+    if (velocityCutoffHz !== null) {
+      velocityFilter = this.audioContext.createBiquadFilter();
+      velocityFilter.type = 'lowpass';
+      velocityFilter.frequency.value = velocityCutoffHz;
+      velocityFilter.Q.value = VELOCITY_FILTER_Q;
+      velocityFilter.connect(dest);
+    }
+    const voiceDestination = velocityFilter ?? dest;
+
     for (const sampleInfo of sampleInfos) {
       const source = this.audioContext.createBufferSource();
       source.buffer = sampleInfo.sample.buffer;
@@ -648,7 +683,7 @@ export class SampledInstrument {
         * dbToGain(sampleInfo.sample.gainDb)
         * sampleInfo.weight;
       source.connect(gainNode);
-      gainNode.connect(dest);
+      gainNode.connect(voiceDestination);
       gainNode.gain.setValueAtTime(0, schedule.startTime);
       gainNode.gain.linearRampToValueAtTime(effectiveVolume, schedule.attackEnd);
 
@@ -704,8 +739,11 @@ export class SampledInstrument {
         source.disconnect();
         gains[index].disconnect();
         ended++;
-        if (ended === sources.length && chokeGroup !== undefined && voice) {
-          this.chokeRegistry.remove(chokeGroup, voice);
+        if (ended === sources.length) {
+          velocityFilter?.disconnect();
+          if (chokeGroup !== undefined && voice) {
+            this.chokeRegistry.remove(chokeGroup, voice);
+          }
         }
       };
     });

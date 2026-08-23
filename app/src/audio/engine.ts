@@ -35,6 +35,8 @@ import { registerHmrDispose } from '../utils/hmr';
 import { supportsAudioWorklet, loadWorkletModule } from './worklet-support';
 import pitchShiftWorkletUrl from './worklets/pitch-shift.worklet.ts?worker&url';
 import { MeteringHost, meteringHost } from './metering-host';
+import { MediaElementOutput, needsMediaElementOutput } from './mobile-media-output';
+import { waitForClockAdvance } from './clock-liveness';
 import { upgradeToWorkletScheduler } from './scheduler';
 import { audioMetrics, type AudioMetricsSnapshot } from './metrics/audio-metrics';
 import * as Tone from 'tone';
@@ -94,6 +96,9 @@ export class AudioEngine {
   private toneInitPromise: Promise<void> | null = null;
   private effectsChainConnected = false; // Track if masterGain was rerouted to effects
   private pitchShiftLoaded = false;
+  // Phase 44 Change 1: on mobile the master chain ends in a hidden media
+  // element so the iOS ringer switch cannot silence Web Audio output.
+  private mediaOutput: MediaElementOutput | null = null;
   private tempo = DEFAULT_TEMPO;
 
   // Shared-control overrides applied to every (current and future) advanced
@@ -265,14 +270,6 @@ export class AudioEngine {
     // Use webkitAudioContext for older iOS Safari
     this.audioContext = new AudioContextClass();
 
-    // Resume if suspended or interrupted (iOS-specific state)
-    // iOS can put the context in 'interrupted' state
-    if (this.audioContext.state === 'suspended' || (this.audioContext.state as string) === 'interrupted') {
-      logger.audio.log('AudioContext state:', this.audioContext.state, '- attempting resume');
-      await this.audioContext.resume();
-      logger.audio.log('AudioContext state after resume:', this.audioContext.state);
-    }
-
     // Create master gain
     this.masterGain = this.audioContext.createGain();
     this.masterGain.gain.value = MASTER_INPUT_TRIM;
@@ -303,7 +300,33 @@ export class AudioEngine {
     this.masterGain.connect(this.compressor);
     this.compressor.connect(this.makeupTrim);
     this.makeupTrim.connect(this.outputTrim);
-    this.outputTrim.connect(this.audioContext.destination);
+    // Phase 44 Change 1: desktop connects to destination exactly as before;
+    // mobile terminates in a media element (see mobile-media-output.ts). A
+    // failed media path falls back so the graph is never left dangling.
+    if (needsMediaElementOutput()) {
+      this.mediaOutput = new MediaElementOutput();
+      if (!this.mediaOutput.connect(this.outputTrim, this.audioContext)) {
+        this.mediaOutput = null;
+        this.outputTrim.connect(this.audioContext.destination);
+      }
+    } else {
+      this.outputTrim.connect(this.audioContext.destination);
+    }
+
+    // This method is entered from a user gesture. Start the media element
+    // before the first await so mobile autoplay policy cannot reject it after
+    // the gesture activation has expired.
+    this.mediaOutput?.unlock();
+
+    // Resume if suspended or interrupted (iOS-specific state), then prove the
+    // clock moved from the value observed immediately after building the path.
+    if (this.audioContext.state === 'suspended' || (this.audioContext.state as string) === 'interrupted') {
+      logger.audio.log('AudioContext state:', this.audioContext.state, '- attempting resume');
+      await this.audioContext.resume();
+      logger.audio.log('AudioContext state after resume:', this.audioContext.state);
+      const clockLive = await waitForClockAdvance(this.audioContext);
+      if (!clockLive) logger.audio.warn('AudioContext clock did not advance after initial resume');
+    }
 
     // Initialize synth engine
     synthEngine.initialize(this.audioContext, this.masterGain);
@@ -442,7 +465,7 @@ export class AudioEngine {
 
         // Initialize effects chain
         this.toneEffects = new ToneEffectsChain();
-        await this.toneEffects.initialize();
+        await this.toneEffects.initialize(this.mediaOutput?.getInput() ?? undefined);
         this.toneEffects.setTempo(this.tempo);
 
         // Connect master gain to effects chain input
@@ -600,10 +623,16 @@ export class AudioEngine {
 
     // Store handler reference for cleanup
     this.unlockHandler = async () => {
-      // Only unlock if we have a context and it's suspended
-      if (!this.audioContext || this.audioContext.state !== 'suspended') {
+      if (!this.audioContext) {
         return;
       }
+
+      // The media element has an independent playback lifecycle. It must be
+      // retried on every gesture even when the AudioContext already runs.
+      this.mediaOutput?.unlock();
+
+      const state = this.audioContext.state as string;
+      if (state !== 'suspended' && state !== 'interrupted') return;
 
       // Prevent concurrent resume() calls
       if (this.resumeInProgress) {
@@ -616,7 +645,6 @@ export class AudioEngine {
 
       this.resumeInProgress = true;
       logger.audio.log('Unlocking AudioContext via user gesture');
-
       this.resumePromise = (async () => {
         try {
           await this.audioContext!.resume();
@@ -672,12 +700,22 @@ export class AudioEngine {
       return false;
     }
 
+    // This is called directly by the transport gesture. The media element can
+    // be paused independently while the context remains running.
+    this.mediaOutput?.unlock();
+
     const state = this.audioContext.state as string;
     if (state === 'suspended' || state === 'interrupted') {
       logger.audio.log('Resuming AudioContext before playback, state:', state);
       try {
         await this.audioContext.resume();
         logger.audio.log('AudioContext resumed, state:', this.audioContext.state);
+        // Phase 44 §6: iOS can report 'running' with a parked clock; wait
+        // (bounded) for currentTime to actually advance before trusting it.
+        const clockLive = await waitForClockAdvance(this.audioContext);
+        if (!clockLive) {
+          logger.audio.warn('AudioContext clock did not advance after resume');
+        }
 
         // Phase 29 fix: Also resume Tone.js context if initialized
         // When the Web Audio context is suspended and resumed, Tone.js's internal
@@ -1754,6 +1792,8 @@ export class AudioEngine {
     }
 
     // Disconnect native audio nodes
+    this.mediaOutput?.dispose();
+    this.mediaOutput = null;
     this.masterGain?.disconnect();
     this.compressor?.disconnect();
     this.makeupTrim?.disconnect();

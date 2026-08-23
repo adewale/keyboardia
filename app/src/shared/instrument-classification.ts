@@ -103,3 +103,26 @@ export function isBassInstrument(sampleId: string): boolean {
 export function shouldKeepInstrumentCentered(sampleId: string): boolean {
   return isKickInstrument(sampleId) || isBassInstrument(sampleId);
 }
+
+/**
+ * Sampled instruments a user expects to hold a note for as long as a tied
+ * step lasts. Only mappings with a LoopSpec repeat, so for everything else
+ * recorded length is a hard ceiling on note length;
+ * `scripts/validate-sustain-ceiling.ts` asserts each of these keeps at least
+ * the longest tied note in a 16-step bar at 120 BPM (2 s) above -60 dBFS.
+ *
+ * Deliberately excluded: `sampled:acoustic-guitar` and `sampled:slap-bass`
+ * are plucked — decaying to silence is correct there, and classifying them
+ * as sustaining would be the error
+ * (specs/PHASE-44-SOUND-CHANGES.md §4).
+ */
+export const SUSTAINING_INSTRUMENT_IDS = new Set([
+  'sampled:alto-sax',
+  'sampled:clean-guitar',
+  'sampled:finger-bass',
+  'sampled:french-horn',
+  'sampled:hammond-organ',
+  'sampled:piano',
+  'sampled:string-section',
+  'sampled:vibraphone',
+]);

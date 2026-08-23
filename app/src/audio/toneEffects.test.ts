@@ -233,6 +233,15 @@ describe('ToneEffectsChain', () => {
       expect(limiter?.connect).toHaveBeenCalledWith(outputTrim);
       expect(outputTrim?.toDestination).toHaveBeenCalled();
     });
+
+    it('terminates at an explicit mobile media node instead of Tone destination', async () => {
+      chain.dispose();
+      const destination = {} as AudioNode;
+      await chain.initialize(destination);
+
+      expect(chain['outputTrim']?.connect).toHaveBeenCalledWith(destination);
+      expect(chain['outputTrim']?.toDestination).not.toHaveBeenCalled();
+    });
   });
 
   describe('reverb controls', () => {
@@ -252,7 +261,7 @@ describe('ToneEffectsChain', () => {
     it('initializes a fully-wet parallel room with the persisted wet return gain', async () => {
       await vi.waitFor(() => expect(chain['convolutionReverb']).toBe(chain['reverb']));
       expect(chain['reverb']?.wet.value).toBe(1);
-      expect(chain['reverbWetGain']?.gain.value).toBe(0);
+      expect(chain['reverbWetGain']?.gain.value).toBe(DEFAULT_EFFECTS_STATE.reverb.wet);
     });
 
     it('clamps reverb wet to 0-1 range', () => {
