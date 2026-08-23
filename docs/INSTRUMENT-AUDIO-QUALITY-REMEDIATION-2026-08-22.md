@@ -2,12 +2,13 @@
 
 ## Scope and claim boundary
 
-The production/evaluator subject is
-`553398b93f16b31a258e254dba12257dd0dce2f2`, based on `main` at
-`58264dd5ae274f63b1cd80b72aa823b76b21f28b`. Later commits publish the
-reviewed reports/evidence and apply semantics-preserving CI inventory/error-
-propagation maintenance; they do not change scored audio, receipt metrics, or
-ranking decisions.
+The clean measured production/evaluator subject is
+`fb6c341941b6d7485d61bf4e63132b80b9128cd1`, rebased onto `main` at
+`702ad0c525bd73844858c7ee7eddfb5a646e2c52`. The historical audio control is
+`58264dd5ae274f63b1cd80b72aa823b76b21f28b`; it predates the remediation and
+is not presented as the current PR base. The later publication commit retains
+only these reviewed reports/evidence and does not alter measured audio,
+evaluator policy, receipt metrics, or ranking inputs.
 
 The complete worst-first table is
 [`INSTRUMENT-AUDIO-QUALITY-AUDIT.md`](./INSTRUMENT-AUDIO-QUALITY-AUDIT.md), the
@@ -37,8 +38,9 @@ three categories separate:
 | Level-matched blind listening | **not run** |
 
 Two independent candidate captures produce exactly the same 99 ranks, scores,
-bands, components, silence decisions, and above-zero classifications. Their
-maximum per-instrument raw-energy spread is 0.338 dB, below the prospective
+bands, components, silence decisions, above-zero classifications, and stable
+production-dispatch projection. Their maximum per-instrument raw-energy spread
+is 0.142 dB, below the prospective
 0.5 dB evaluator-stability alarm. This proves repeatability of these technical
 decisions in the captured environment, not bit-identical synth PCM.
 
@@ -53,11 +55,13 @@ scored paths and **203** here: **53 fewer (20.7%)**. The reduction is exactly:
 
 All other decoded finding classes are unchanged.
 
-An aggregate live-score delta is deliberately not published. Both control
-captures completed 99/99, but their `noise` peak differed by 3.982 dB and
-therefore failed the 0.5 dB stability gate. The comparator retained both runs
-and stopped; it did not average them or select the favorable receipt. The raw
-artifacts and hashes are preserved in
+An aggregate live-score delta is deliberately not published. The first fresh
+control capture completed 99/99 instruments and 99 exact dispatches. The
+independent second process lost its page execution context before it could
+publish a receipt. The fail-closed workflow used zero Playwright retries, so no
+control repeatability spread, ranking, or aggregate live score is admissible.
+It did not average or select a favorable run. The valid decoded/control
+artifacts, failed-run result, and hashes are preserved in
 [`instrument-audio-quality-controlled-comparison-2026-08-22.json`](./evidence/instrument-audio-quality-controlled-comparison-2026-08-22.json).
 
 ## What is objectively better
@@ -70,8 +74,8 @@ artifacts and hashes are preserved in
 | Effective onset findings | 43 | 0 | Runtime/audit distinguish codec priming from authored attack; all 605 mappings decode in Chromium and WebKit without fixed 42 ms wind trims. |
 | Finger-bass adjacent steps | 3.235 / 3.304 dB | 2.435 / 2.404 dB | Root-local gain edits clear the 3 dB gate with a deliberate 2.5 dB margin; global level is not lowered. |
 | Steel-pan 62→63 step | 4.727 dB | 2.427 dB | Every MIDI-63 velocity zone receives the same local correction and now clears with margin. |
-| `synth:growl` post-track peak | 0.41455 | 0.25672 | Both control runs and both candidate runs are internally stable for this voice; bounded modulation plus calibration lowers peak 4.16 dB and RMS 3.83 dB without muting or removing spectral motion. |
-| Procedural note-edge gain | default GainNode value could leak at an event boundary | intrinsic value is zero before automation | Regression proves initialization order. Both final candidate receipts produce the lower, stable `noise` peak; original-main's two-run instability is retained as evidence, not hidden. |
+| `synth:growl` topology | unbounded resonant modulation could create extreme output | bounded modulation plus calibrated output | Focused render gates require finite, non-silent output, spectral motion, and peak at or below -3 dBFS. No cross-control live delta is claimed. |
+| Procedural note-edge gain | default GainNode value could leak at an event boundary | intrinsic value is zero before automation | Regression proves initialization happens before scheduled attack automation; the current seeded PCM smoke replay is byte-identical. |
 | Voice lifecycle | wall-clock cleanup; advanced `release=0` became 0.5 s | audio-clock retirement; authored zero preserved | Clock-driven, tempo-aware retirement and inactive-voice reuse regressions cover native and advanced paths. |
 | Tone context mismatch | initialization/recovery could report ready with nodes on a stale context | fail closed before construction/reuse | Tests force a context switch failure and require initialization/recovery to reject. |
 
@@ -97,12 +101,12 @@ removing 26.7% of the capability is not an audio repair.
   AudioWorklet accumulation at post-track and pre-processing `masterGain` taps,
   exact geometry, fresh browser contexts, seeded RNG, dispatch/isolation
   receipts, closed-context checks, and two-run decision comparison.
-- Sample dispositions bind source SHA, manifest SHA, six-decimal stored
-  measured value, exact threshold, baseline, and evaluator identity. An observed
-  issue value may differ from its stored canonical value by at most `0.000001`,
-  including across a rounding boundary, without changing retained raw metrics or
-  pass/fail thresholds. Because the original unrounded reference is not stored,
-  that tolerance does not bound the true decoder-to-decoder difference.
+- Sample dispositions bind source SHA, manifest SHA, a six-decimal stored
+  measured value, exact threshold, baseline, and evaluator identity. Only
+  decoder-derived measurements may differ from their stored values by at most
+  `0.000001`; thresholds, metadata, counts, mappings, and hashes remain exact.
+  Because the original unrounded reference is not stored, that tolerance does
+  not itself bound the true decoder-to-decoder difference.
 - Loop checks use the actual continuous Web Audio boundary instead of
   correlating phase-unrelated windows.
 - Stereo activity is derived from either channel, so exact anti-phase audio
@@ -136,8 +140,9 @@ Additional measurable gaps:
 
 - Slap bass (+2.3 dBFS), kalimba (+2.4), and finger bass (+2.1) exceed 0 dBFS
   at the isolated post-track sample-peak tap. Web Audio floats internally, but
-  these are headroom priorities. Global bass trims were tested and reverted
-  because they caused hard tonal-loudness mismatches.
+  these are headroom priorities. Broad trims are deferred until per-family and
+  final-topology calibration plus level-matched listening can distinguish peak
+  control from a tonal-balance regression.
 - Ten sampled packs exceed the four-semitone nearest-root target: slap 12;
   French horn 7; acoustic guitar, clean guitar, kalimba, piano, marimba, finger
   bass, steel pan, and vibraphone 6.
@@ -167,7 +172,7 @@ precede destructive edits; content and topology must settle before calibration.
    cases and preregister listening; hydrate and authenticate the affected
    lossless masters.
 3. **A0 — adjudicate.** Decide root/pitch truth, stereo intent, tail intent,
-   post-track headroom, the hi-hat role level, and the Tone timing contract.
+   post-track headroom, role balance, and the Tone timing contract.
 4. **S1 — repair source content.** Perform approved pitch, DC, phase, tail,
    root, and genuine velocity-layer work in parallel by pack.
 5. **S2 — encode once.** Produce delivery assets once from lossless sources;
@@ -190,15 +195,22 @@ receipts and rankings, a strict 26-instrument decoded receipt, and real
 Chromium/WebKit decode coverage. The final CI/command ledger is recorded in the
 PR description and must match the pushed head.
 
-The clean detached validation run passed TypeScript, repository ESLint, all six
-aggregate validators, 23 changed evaluator/runtime test files (727 tests), the
-strict 26/605/582 decoded audit, 605/605 mappings in Chromium and WebKit, and
-the representative 6/1,683 PCM smoke. All accepted smoke captures were
+The frozen-code audit passed TypeScript, repository ESLint, all six aggregate
+validators, the canonical/adversarial 605-mapping evidence suite, the strict
+26/605/582 decoded audit, and focused live/runtime tests. Clean schema-v2
+browser receipts decode 605/605 mappings in Chromium and WebKit. All accepted
+captures in the fresh 6/1,683 PCM smoke were
 non-silent, exact length, zero drift, and free of fatal findings/evidence gaps;
-the fresh-context replay was byte-identical. Two earlier process attempts with
-128-frame worklet drift were rejected and retained rather than hidden.
+the fresh-context replay was byte-identical. One 128-frame Tone worklet attempt
+was rejected and retained before its valid retry.
 
-From a clean checkout of `553398b93f16b31a258e254dba12257dd0dce2f2`:
+A Noble arm64 container running the official linux-x64 Node 24.19 binary under
+emulation also reproduced the formerly fragile piano/alto decoded subset with
+36 accepted findings and 0 errors/reviews. This exercises the x64 Node/V8
+decoder arithmetic; it is not represented as a full native amd64 Ubuntu run.
+The pushed-head GitHub Actions result remains the merge gate.
+
+From a clean checkout of `fb6c341941b6d7485d61bf4e63132b80b9128cd1`:
 
 ```sh
 cd app
@@ -206,10 +218,10 @@ npm run audit:instrument-quality:evidence
 npm run audit:instrument-quality:matrix:smoke
 node --import tsx scripts/audit-instrument-quality.ts \
   --require-evidence \
-  --evaluator-commit 553398b93f16b31a258e254dba12257dd0dce2f2 \
-  --subject-commit 553398b93f16b31a258e254dba12257dd0dce2f2
+  --evaluator-commit fb6c341941b6d7485d61bf4e63132b80b9128cd1 \
+  --subject-commit fb6c341941b6d7485d61bf4e63132b80b9128cd1
 ```
 
 `audit:instrument-quality:full` is expected to fail until the complete matrix
 and PCM artifact root are supplied. Reconstruct the control with the command in
-[`INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md`](./INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md). Every rerun must honor the same stability gate: it may fail closed again or emit a newly stable comparison, but it must never average, discard, or select a favorable control run.
+[`INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md`](./INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md). Every rerun must honor the same stability gate: it may fail closed again or emit a newly complete comparison, but it must never average, discard, retry, or select a favorable control result.

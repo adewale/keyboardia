@@ -1,8 +1,8 @@
 {
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "claim": "live-post-track-signal-evidence",
-  "generatedAt": "2026-08-22T21:28:41.229Z",
-  "subjectCommit": "2c6f3057d7145089f0bb7969194d57c20417ee45",
+  "generatedAt": "2026-08-22T23:17:55.814Z",
+  "subjectCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
   "browser": {
     "name": "chromium",
     "version": "143.0.7499.4",
@@ -47,7 +47,7 @@
   "stepCount": 32,
   "sessions": [
     {
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "instruments": [
         "advanced:acid-bass",
         "advanced:sub-bass",
@@ -82,7 +82,7 @@
       }
     },
     {
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "instruments": [
         "kick",
         "lead",
@@ -117,7 +117,7 @@
       }
     },
     {
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "instruments": [
         "sampled:acoustic-kick",
         "sampled:acoustic-ride",
@@ -152,7 +152,7 @@
       }
     },
     {
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "instruments": [
         "sampled:vinyl-crackle",
         "shaker",
@@ -187,7 +187,7 @@
       }
     },
     {
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "instruments": [
         "synth:hoover",
         "synth:hypersaw",
@@ -222,7 +222,7 @@
       }
     },
     {
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "instruments": [
         "synth:vibes",
         "synth:warmpad",
@@ -257,7 +257,7 @@
       }
     },
     {
-      "sessionId": "77f26942-2305-4270-9259-04d065882221",
+      "sessionId": "1e34d73c-89b1-4b79-a948-df499ba949c8",
       "instruments": [
         "tone:pluck-string",
         "woodblock",
@@ -287,14 +287,14 @@
       "presetId": "acid-bass",
       "pitch": 0,
       "trackId": "audio-smoke-0-advanced-acid-bass",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
-      "peak": 0.538769006729126,
-      "rms": 0.02645321728043649,
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
+      "peak": 0.5387668609619141,
+      "rms": 0.0264280359987857,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.538769006729126,
-      "masterRms": 0.02645321728043649,
-      "armToOnsetFrames": 28931,
+      "masterPeak": 0.5387668609619141,
+      "masterRms": 0.0264280359987857,
+      "armToOnsetFrames": 30083,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-0-advanced-acid-bass"
@@ -305,7 +305,16 @@
       "observedEngineDispatches": [
         {
           "method": "playAdvancedSynth",
-          "trackId": "audio-smoke-0-advanced-acid-bass"
+          "trackId": "audio-smoke-0-advanced-acid-bass",
+          "instrumentOrPresetId": "acid-bass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 2.7346666666666666,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -316,14 +325,14 @@
       "presetId": "sub-bass",
       "pitch": -5,
       "trackId": "audio-smoke-1-advanced-sub-bass",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
-      "peak": 0.3646124005317688,
-      "rms": 0.04307272111662949,
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
+      "peak": 0.3635333776473999,
+      "rms": 0.043032402284073804,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.3646124005317688,
-      "masterRms": 0.04307272111662949,
-      "armToOnsetFrames": 28929,
+      "masterPeak": 0.3635333776473999,
+      "masterRms": 0.043032402284073804,
+      "armToOnsetFrames": 29825,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-1-advanced-sub-bass"
@@ -334,7 +343,16 @@
       "observedEngineDispatches": [
         {
           "method": "playAdvancedSynth",
-          "trackId": "audio-smoke-1-advanced-sub-bass"
+          "trackId": "audio-smoke-1-advanced-sub-bass",
+          "instrumentOrPresetId": "sub-bass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": -5,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 7.316,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -345,14 +363,14 @@
       "presetId": "supersaw",
       "pitch": 0,
       "trackId": "audio-smoke-2-advanced-supersaw",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.21689018607139587,
       "rms": 0.014417581293088942,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.21689018607139587,
       "masterRms": 0.014417581293088942,
-      "armToOnsetFrames": 28929,
+      "armToOnsetFrames": 29825,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-2-advanced-supersaw"
@@ -363,7 +381,16 @@
       "observedEngineDispatches": [
         {
           "method": "playAdvancedSynth",
-          "trackId": "audio-smoke-2-advanced-supersaw"
+          "trackId": "audio-smoke-2-advanced-supersaw",
+          "instrumentOrPresetId": "supersaw",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 11.870666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -374,14 +401,14 @@
       "presetId": "thick-lead",
       "pitch": 0,
       "trackId": "audio-smoke-3-advanced-thick-lead",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
-      "peak": 0.3019564151763916,
-      "rms": 0.03235150123979644,
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
+      "peak": 0.30185484886169434,
+      "rms": 0.03235222058898578,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.3019564151763916,
-      "masterRms": 0.03235150123979644,
-      "armToOnsetFrames": 28801,
+      "masterPeak": 0.30185484886169434,
+      "masterRms": 0.03235222058898578,
+      "armToOnsetFrames": 29825,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-3-advanced-thick-lead"
@@ -392,7 +419,16 @@
       "observedEngineDispatches": [
         {
           "method": "playAdvancedSynth",
-          "trackId": "audio-smoke-3-advanced-thick-lead"
+          "trackId": "audio-smoke-3-advanced-thick-lead",
+          "instrumentOrPresetId": "thick-lead",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 16.409333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -403,14 +439,14 @@
       "presetId": "tremolo-strings",
       "pitch": 0,
       "trackId": "audio-smoke-4-advanced-tremolo-strings",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
-      "peak": 0.07733327895402908,
-      "rms": 0.007154675269826016,
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
+      "peak": 0.07734063267707825,
+      "rms": 0.007154665983681039,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.07733327895402908,
-      "masterRms": 0.007154675269826016,
-      "armToOnsetFrames": 28803,
+      "masterPeak": 0.07734063267707825,
+      "masterRms": 0.007154665983681039,
+      "armToOnsetFrames": 29698,
       "randomCalls": 672846,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-4-advanced-tremolo-strings"
@@ -421,7 +457,16 @@
       "observedEngineDispatches": [
         {
           "method": "playAdvancedSynth",
-          "trackId": "audio-smoke-4-advanced-tremolo-strings"
+          "trackId": "audio-smoke-4-advanced-tremolo-strings",
+          "instrumentOrPresetId": "tremolo-strings",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 21.18,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -432,14 +477,14 @@
       "presetId": "vibrato-lead",
       "pitch": 0,
       "trackId": "audio-smoke-5-advanced-vibrato-lead",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
-      "peak": 0.2801070809364319,
-      "rms": 0.027415923900371397,
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
+      "peak": 0.2816983461380005,
+      "rms": 0.027415925474291777,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.2801070809364319,
-      "masterRms": 0.027415923900371397,
-      "armToOnsetFrames": 28802,
+      "masterPeak": 0.2816983461380005,
+      "masterRms": 0.027415925474291777,
+      "armToOnsetFrames": 29697,
       "randomCalls": 672846,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-5-advanced-vibrato-lead"
@@ -450,7 +495,16 @@
       "observedEngineDispatches": [
         {
           "method": "playAdvancedSynth",
-          "trackId": "audio-smoke-5-advanced-vibrato-lead"
+          "trackId": "audio-smoke-5-advanced-vibrato-lead",
+          "instrumentOrPresetId": "vibrato-lead",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 25.734666666666666,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -461,14 +515,14 @@
       "presetId": "warm-pad",
       "pitch": 0,
       "trackId": "audio-smoke-6-advanced-warm-pad",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
-      "peak": 0.07194799184799194,
-      "rms": 0.006663347511154921,
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
+      "peak": 0.07194916158914566,
+      "rms": 0.006663222207808225,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.07194799184799194,
-      "masterRms": 0.006663347511154921,
-      "armToOnsetFrames": 28931,
+      "masterPeak": 0.07194916158914566,
+      "masterRms": 0.006663222207808225,
+      "armToOnsetFrames": 29571,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-6-advanced-warm-pad"
@@ -479,7 +533,16 @@
       "observedEngineDispatches": [
         {
           "method": "playAdvancedSynth",
-          "trackId": "audio-smoke-6-advanced-warm-pad"
+          "trackId": "audio-smoke-6-advanced-warm-pad",
+          "instrumentOrPresetId": "warm-pad",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 30.281333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -490,14 +553,14 @@
       "presetId": "wobble-bass",
       "pitch": 0,
       "trackId": "audio-smoke-7-advanced-wobble-bass",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
-      "peak": 0.40967655181884766,
-      "rms": 0.03142376114621991,
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
+      "peak": 0.4099905490875244,
+      "rms": 0.03140008883968559,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.40967655181884766,
-      "masterRms": 0.03142376114621991,
-      "armToOnsetFrames": 29057,
+      "masterPeak": 0.4099905490875244,
+      "masterRms": 0.03140008883968559,
+      "armToOnsetFrames": 29825,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-7-advanced-wobble-bass"
@@ -508,7 +571,16 @@
       "observedEngineDispatches": [
         {
           "method": "playAdvancedSynth",
-          "trackId": "audio-smoke-7-advanced-wobble-bass"
+          "trackId": "audio-smoke-7-advanced-wobble-bass",
+          "instrumentOrPresetId": "wobble-bass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 34.846666666666664,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -519,14 +591,14 @@
       "presetId": "bass",
       "pitch": 0,
       "trackId": "audio-smoke-8-bass",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.5907872319221497,
       "rms": 0.07194337761766183,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.5907872319221497,
       "masterRms": 0.07194337761766183,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-8-bass"
@@ -537,7 +609,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-8-bass"
+          "trackId": "audio-smoke-8-bass",
+          "instrumentOrPresetId": "bass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 39.444,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -548,14 +629,14 @@
       "presetId": "cabasa",
       "pitch": 0,
       "trackId": "audio-smoke-9-cabasa",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.14265471696853638,
       "rms": 0.00535200466989697,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.14265471696853638,
       "masterRms": 0.00535200466989697,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 24897,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-9-cabasa"
@@ -566,7 +647,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-9-cabasa"
+          "trackId": "audio-smoke-9-cabasa",
+          "instrumentOrPresetId": "cabasa",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 43.910666666666664,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -577,14 +667,14 @@
       "presetId": "chord",
       "pitch": 0,
       "trackId": "audio-smoke-10-chord",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.3543928861618042,
       "rms": 0.057143285172721256,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3543928861618042,
       "masterRms": 0.057143285172721256,
-      "armToOnsetFrames": 24002,
+      "armToOnsetFrames": 24898,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-10-chord"
@@ -595,7 +685,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-10-chord"
+          "trackId": "audio-smoke-10-chord",
+          "instrumentOrPresetId": "chord",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 48.56666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -606,14 +705,14 @@
       "presetId": "clap",
       "pitch": 0,
       "trackId": "audio-smoke-11-clap",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.33409205079078674,
       "rms": 0.01795591560213005,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.33409205079078674,
       "masterRms": 0.01795591560213005,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-11-clap"
@@ -624,7 +723,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-11-clap"
+          "trackId": "audio-smoke-11-clap",
+          "instrumentOrPresetId": "clap",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 52.99066666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -635,14 +743,14 @@
       "presetId": "clave",
       "pitch": 0,
       "trackId": "audio-smoke-12-clave",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.32705965638160706,
       "rms": 0.012862716126870764,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.32705965638160706,
       "masterRms": 0.012862716126870764,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-12-clave"
@@ -653,7 +761,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-12-clave"
+          "trackId": "audio-smoke-12-clave",
+          "instrumentOrPresetId": "clave",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 57.486666666666665,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -664,14 +781,14 @@
       "presetId": "conga",
       "pitch": 0,
       "trackId": "audio-smoke-13-conga",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.34796851873397827,
       "rms": 0.032667954560834385,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.34796851873397827,
       "masterRms": 0.032667954560834385,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-13-conga"
@@ -682,7 +799,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-13-conga"
+          "trackId": "audio-smoke-13-conga",
+          "instrumentOrPresetId": "conga",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 61.956,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -693,14 +819,14 @@
       "presetId": "cowbell",
       "pitch": 0,
       "trackId": "audio-smoke-14-cowbell",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.2931215465068817,
       "rms": 0.020525609857442402,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.2931215465068817,
       "masterRms": 0.020525609857442402,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 24769,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-14-cowbell"
@@ -711,7 +837,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-14-cowbell"
+          "trackId": "audio-smoke-14-cowbell",
+          "instrumentOrPresetId": "cowbell",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 66.50533333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -722,14 +857,14 @@
       "presetId": "hihat",
       "pitch": 0,
       "trackId": "audio-smoke-15-hihat",
-      "sessionId": "28f42659-a378-4a07-8fb1-0c9b82d5ecd5",
+      "sessionId": "2e5419c2-f3a0-41e3-bb06-55c0715f65fc",
       "peak": 0.24402837455272675,
       "rms": 0.006917733977475943,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.24402837455272675,
       "masterRms": 0.006917733977475943,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 24897,
       "randomCalls": 672847,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-15-hihat"
@@ -740,7 +875,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-15-hihat"
+          "trackId": "audio-smoke-15-hihat",
+          "instrumentOrPresetId": "hihat",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 70.99333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -751,14 +895,14 @@
       "presetId": "kick",
       "pitch": 0,
       "trackId": "audio-smoke-16-kick",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.6482537388801575,
       "rms": 0.06888197636160194,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.6482537388801575,
       "masterRms": 0.06888197636160194,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-16-kick"
@@ -769,7 +913,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-16-kick"
+          "trackId": "audio-smoke-16-kick",
+          "instrumentOrPresetId": "kick",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 2.510666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -780,14 +933,14 @@
       "presetId": "lead",
       "pitch": 0,
       "trackId": "audio-smoke-17-lead",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.1871766448020935,
       "rms": 0.06479115292624649,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.1871766448020935,
       "masterRms": 0.06479115292624649,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-17-lead"
@@ -798,7 +951,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-17-lead"
+          "trackId": "audio-smoke-17-lead",
+          "instrumentOrPresetId": "lead",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 6.782666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -809,14 +971,14 @@
       "presetId": "noise",
       "pitch": 0,
       "trackId": "audio-smoke-18-noise",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
-      "peak": 0.34403514862060547,
-      "rms": 0.0179098003573673,
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
+      "peak": 0.21752546727657318,
+      "rms": 0.01788224297951371,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.34403514862060547,
-      "masterRms": 0.0179098003573673,
-      "armToOnsetFrames": 24000,
+      "masterPeak": 0.21752546727657318,
+      "masterRms": 0.01788224297951371,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-18-noise"
@@ -827,7 +989,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-18-noise"
+          "trackId": "audio-smoke-18-noise",
+          "instrumentOrPresetId": "noise",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 11.001333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -838,14 +1009,14 @@
       "presetId": "openhat",
       "pitch": 0,
       "trackId": "audio-smoke-19-openhat",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.2947646379470825,
       "rms": 0.0157950384270215,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.2947646379470825,
       "masterRms": 0.0157950384270215,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-19-openhat"
@@ -856,7 +1027,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-19-openhat"
+          "trackId": "audio-smoke-19-openhat",
+          "instrumentOrPresetId": "openhat",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 15.310666666666666,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -867,14 +1047,14 @@
       "presetId": "pad",
       "pitch": 0,
       "trackId": "audio-smoke-20-pad",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.30030637979507446,
       "rms": 0.07403634385180942,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.30030637979507446,
       "masterRms": 0.07403634385180942,
-      "armToOnsetFrames": 24003,
+      "armToOnsetFrames": 25027,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-20-pad"
@@ -885,7 +1065,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-20-pad"
+          "trackId": "audio-smoke-20-pad",
+          "instrumentOrPresetId": "pad",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 19.556,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -896,14 +1085,14 @@
       "presetId": "pluck",
       "pitch": 0,
       "trackId": "audio-smoke-21-pluck",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.6700550317764282,
       "rms": 0.05193135942057959,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.6700550317764282,
       "masterRms": 0.05193135942057959,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-21-pluck"
@@ -914,7 +1103,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-21-pluck"
+          "trackId": "audio-smoke-21-pluck",
+          "instrumentOrPresetId": "pluck",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 23.796,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -925,14 +1123,14 @@
       "presetId": "rim",
       "pitch": 0,
       "trackId": "audio-smoke-22-rim",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.27820056676864624,
       "rms": 0.008511873439874924,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.27820056676864624,
       "masterRms": 0.008511873439874924,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-22-rim"
@@ -943,7 +1141,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-22-rim"
+          "trackId": "audio-smoke-22-rim",
+          "instrumentOrPresetId": "rim",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 28.041333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -954,14 +1161,14 @@
       "presetId": "808-clap",
       "pitch": 0,
       "trackId": "audio-smoke-23-sampled-808-clap",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.28563594818115234,
-      "rms": 0.009678715685953482,
+      "rms": 0.009678729130997283,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.28563594818115234,
-      "masterRms": 0.009678715685953482,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.009678729130997283,
+      "armToOnsetFrames": 25024,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-23-sampled-808-clap"
@@ -972,7 +1179,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-23-sampled-808-clap"
+          "trackId": "audio-smoke-23-sampled-808-clap",
+          "instrumentOrPresetId": "808-clap",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 32.32933333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -983,14 +1199,14 @@
       "presetId": "808-hihat-closed",
       "pitch": 0,
       "trackId": "audio-smoke-24-sampled-808-hihat-closed",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.11409459263086319,
-      "rms": 0.0022427490512033823,
+      "rms": 0.00224274905120338,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.11409459263086319,
-      "masterRms": 0.0022427490512033823,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.00224274905120338,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-24-sampled-808-hihat-closed"
@@ -1001,7 +1217,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-24-sampled-808-hihat-closed"
+          "trackId": "audio-smoke-24-sampled-808-hihat-closed",
+          "instrumentOrPresetId": "808-hihat-closed",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 36.590666666666664,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1012,14 +1237,14 @@
       "presetId": "808-hihat-open",
       "pitch": 0,
       "trackId": "audio-smoke-25-sampled-808-hihat-open",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.16790516674518585,
       "rms": 0.010692902926430112,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.16790516674518585,
       "masterRms": 0.010692902926430112,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-25-sampled-808-hihat-open"
@@ -1030,7 +1255,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-25-sampled-808-hihat-open"
+          "trackId": "audio-smoke-25-sampled-808-hihat-open",
+          "instrumentOrPresetId": "808-hihat-open",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 40.830666666666666,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1041,14 +1275,14 @@
       "presetId": "808-kick",
       "pitch": 0,
       "trackId": "audio-smoke-26-sampled-808-kick",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.48904481530189514,
       "rms": 0.05211343107135181,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.48904481530189514,
       "masterRms": 0.05211343107135181,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-26-sampled-808-kick"
@@ -1059,7 +1293,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-26-sampled-808-kick"
+          "trackId": "audio-smoke-26-sampled-808-kick",
+          "instrumentOrPresetId": "808-kick",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 45.05466666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1070,14 +1313,14 @@
       "presetId": "808-snare",
       "pitch": 0,
       "trackId": "audio-smoke-27-sampled-808-snare",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.26229211688041687,
       "rms": 0.0077218197776484305,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.26229211688041687,
       "masterRms": 0.0077218197776484305,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-27-sampled-808-snare"
@@ -1088,7 +1331,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-27-sampled-808-snare"
+          "trackId": "audio-smoke-27-sampled-808-snare",
+          "instrumentOrPresetId": "808-snare",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 49.30533333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1099,14 +1351,14 @@
       "presetId": "acoustic-crash",
       "pitch": 0,
       "trackId": "audio-smoke-28-sampled-acoustic-crash",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.71775883436203,
       "rms": 0.053710049902078984,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.71775883436203,
       "masterRms": 0.053710049902078984,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-28-sampled-acoustic-crash"
@@ -1117,7 +1369,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-28-sampled-acoustic-crash"
+          "trackId": "audio-smoke-28-sampled-acoustic-crash",
+          "instrumentOrPresetId": "acoustic-crash",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 53.54533333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1128,14 +1389,14 @@
       "presetId": "acoustic-guitar",
       "pitch": 0,
       "trackId": "audio-smoke-29-sampled-acoustic-guitar",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
-      "peak": 0.8201892375946045,
-      "rms": 0.048763752534808365,
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
+      "peak": 0.8256415724754333,
+      "rms": 0.048902364472395723,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.8201892375946045,
-      "masterRms": 0.048763752534808365,
-      "armToOnsetFrames": 24001,
+      "masterPeak": 0.8256415724754333,
+      "masterRms": 0.048902364472395723,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-29-sampled-acoustic-guitar"
@@ -1146,7 +1407,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-29-sampled-acoustic-guitar"
+          "trackId": "audio-smoke-29-sampled-acoustic-guitar",
+          "instrumentOrPresetId": "acoustic-guitar",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 57.78,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1157,14 +1427,14 @@
       "presetId": "acoustic-hihat-closed",
       "pitch": 0,
       "trackId": "audio-smoke-30-sampled-acoustic-hihat-closed",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.21675212681293488,
       "rms": 0.009016521072456539,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.21675212681293488,
       "masterRms": 0.009016521072456539,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 24897,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-30-sampled-acoustic-hihat-closed"
@@ -1175,7 +1445,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-30-sampled-acoustic-hihat-closed"
+          "trackId": "audio-smoke-30-sampled-acoustic-hihat-closed",
+          "instrumentOrPresetId": "acoustic-hihat-closed",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 62.028,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1186,14 +1465,14 @@
       "presetId": "acoustic-hihat-open",
       "pitch": 0,
       "trackId": "audio-smoke-31-sampled-acoustic-hihat-open",
-      "sessionId": "92470818-6bfe-4477-a869-ac3a1efafe9a",
+      "sessionId": "173a8a12-9295-4960-b489-249b3fd3bada",
       "peak": 0.3016725182533264,
-      "rms": 0.014472031726657363,
+      "rms": 0.014472031726657324,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3016725182533264,
-      "masterRms": 0.014472031726657363,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.014472031726657324,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-31-sampled-acoustic-hihat-open"
@@ -1204,7 +1483,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-31-sampled-acoustic-hihat-open"
+          "trackId": "audio-smoke-31-sampled-acoustic-hihat-open",
+          "instrumentOrPresetId": "acoustic-hihat-open",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 66.23333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1215,14 +1503,14 @@
       "presetId": "acoustic-kick",
       "pitch": 0,
       "trackId": "audio-smoke-32-sampled-acoustic-kick",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.7013254165649414,
       "rms": 0.056245292725047503,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.7013254165649414,
       "masterRms": 0.056245292725047503,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-32-sampled-acoustic-kick"
@@ -1233,7 +1521,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-32-sampled-acoustic-kick"
+          "trackId": "audio-smoke-32-sampled-acoustic-kick",
+          "instrumentOrPresetId": "acoustic-kick",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 3.6733333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1244,14 +1541,14 @@
       "presetId": "acoustic-ride",
       "pitch": 0,
       "trackId": "audio-smoke-33-sampled-acoustic-ride",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.09118130803108215,
       "rms": 0.003443486895037288,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.09118130803108215,
       "masterRms": 0.003443486895037288,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-33-sampled-acoustic-ride"
@@ -1262,7 +1559,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-33-sampled-acoustic-ride"
+          "trackId": "audio-smoke-33-sampled-acoustic-ride",
+          "instrumentOrPresetId": "acoustic-ride",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 8.409333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1273,14 +1579,14 @@
       "presetId": "acoustic-snare",
       "pitch": 0,
       "trackId": "audio-smoke-34-sampled-acoustic-snare",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.4530641436576843,
       "rms": 0.018867084161028176,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.4530641436576843,
       "masterRms": 0.018867084161028176,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-34-sampled-acoustic-snare"
@@ -1291,7 +1597,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-34-sampled-acoustic-snare"
+          "trackId": "audio-smoke-34-sampled-acoustic-snare",
+          "instrumentOrPresetId": "acoustic-snare",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 12.905333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1302,14 +1617,14 @@
       "presetId": "alto-sax",
       "pitch": 0,
       "trackId": "audio-smoke-35-sampled-alto-sax",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.3652735948562622,
-      "rms": 0.028898294252114955,
+      "rms": 0.028898294707949565,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3652735948562622,
-      "masterRms": 0.028898294252114955,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.028898294707949565,
+      "armToOnsetFrames": 25024,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-35-sampled-alto-sax"
@@ -1320,7 +1635,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-35-sampled-alto-sax"
+          "trackId": "audio-smoke-35-sampled-alto-sax",
+          "instrumentOrPresetId": "alto-sax",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 17.454666666666668,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1331,14 +1655,14 @@
       "presetId": "brushes-snare",
       "pitch": 0,
       "trackId": "audio-smoke-36-sampled-brushes-snare",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.35875704884529114,
-      "rms": 0.015883366347514426,
+      "rms": 0.01588336634751443,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.35875704884529114,
-      "masterRms": 0.015883366347514426,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.01588336634751443,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-36-sampled-brushes-snare"
@@ -1349,7 +1673,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-36-sampled-brushes-snare"
+          "trackId": "audio-smoke-36-sampled-brushes-snare",
+          "instrumentOrPresetId": "brushes-snare",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 21.988,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1360,14 +1693,14 @@
       "presetId": "clean-guitar",
       "pitch": 0,
       "trackId": "audio-smoke-37-sampled-clean-guitar",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.45423731207847595,
       "rms": 0.02807906589314953,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.45423731207847595,
       "masterRms": 0.02807906589314953,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-37-sampled-clean-guitar"
@@ -1378,7 +1711,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-37-sampled-clean-guitar"
+          "trackId": "audio-smoke-37-sampled-clean-guitar",
+          "instrumentOrPresetId": "clean-guitar",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 26.510666666666665,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1389,14 +1731,14 @@
       "presetId": "finger-bass",
       "pitch": 0,
       "trackId": "audio-smoke-38-sampled-finger-bass",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 1.271528720855713,
       "rms": 0.0661271779598947,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 1.271528720855713,
       "masterRms": 0.0661271779598947,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-38-sampled-finger-bass"
@@ -1407,7 +1749,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-38-sampled-finger-bass"
+          "trackId": "audio-smoke-38-sampled-finger-bass",
+          "instrumentOrPresetId": "finger-bass",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 31.054666666666666,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1418,14 +1769,14 @@
       "presetId": "french-horn",
       "pitch": 0,
       "trackId": "audio-smoke-39-sampled-french-horn",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.26141491532325745,
-      "rms": 0.021915216563080712,
+      "rms": 0.02191521656373537,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.26141491532325745,
-      "masterRms": 0.021915216563080712,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.02191521656373537,
+      "armToOnsetFrames": 25024,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-39-sampled-french-horn"
@@ -1436,7 +1787,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-39-sampled-french-horn"
+          "trackId": "audio-smoke-39-sampled-french-horn",
+          "instrumentOrPresetId": "french-horn",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 35.63066666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1447,14 +1807,14 @@
       "presetId": "hammond-organ",
       "pitch": 0,
       "trackId": "audio-smoke-40-sampled-hammond-organ",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
-      "peak": 0.35357654094696045,
-      "rms": 0.03340062732473936,
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
+      "peak": 0.45740410685539246,
+      "rms": 0.04320118953491237,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.35357654094696045,
-      "masterRms": 0.03340062732473936,
-      "armToOnsetFrames": 24001,
+      "masterPeak": 0.45740410685539246,
+      "masterRms": 0.04320118953491237,
+      "armToOnsetFrames": 25281,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-40-sampled-hammond-organ"
@@ -1465,7 +1825,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-40-sampled-hammond-organ"
+          "trackId": "audio-smoke-40-sampled-hammond-organ",
+          "instrumentOrPresetId": "hammond-organ",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 40.32933333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1476,14 +1845,14 @@
       "presetId": "kalimba",
       "pitch": 0,
       "trackId": "audio-smoke-41-sampled-kalimba",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 1.3244670629501343,
-      "rms": 0.051423871315797634,
+      "rms": 0.051423820224679215,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 1.3244670629501343,
-      "masterRms": 0.051423871315797634,
-      "armToOnsetFrames": 24000,
+      "masterRms": 0.051423820224679215,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-41-sampled-kalimba"
@@ -1494,7 +1863,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-41-sampled-kalimba"
+          "trackId": "audio-smoke-41-sampled-kalimba",
+          "instrumentOrPresetId": "kalimba",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 44.85733333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1505,14 +1883,14 @@
       "presetId": "marimba",
       "pitch": 0,
       "trackId": "audio-smoke-42-sampled-marimba",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.8141224980354309,
       "rms": 0.08973054565989518,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.8141224980354309,
       "masterRms": 0.08973054565989518,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-42-sampled-marimba"
@@ -1523,7 +1901,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-42-sampled-marimba"
+          "trackId": "audio-smoke-42-sampled-marimba",
+          "instrumentOrPresetId": "marimba",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 49.38,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1534,14 +1921,14 @@
       "presetId": "piano",
       "pitch": 0,
       "trackId": "audio-smoke-43-sampled-piano",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.9937925934791565,
       "rms": 0.06874186820580774,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.9937925934791565,
       "masterRms": 0.06874186820580774,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-43-sampled-piano"
@@ -1552,7 +1939,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-43-sampled-piano"
+          "trackId": "audio-smoke-43-sampled-piano",
+          "instrumentOrPresetId": "piano",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 54.03066666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1563,14 +1959,14 @@
       "presetId": "slap-bass",
       "pitch": 0,
       "trackId": "audio-smoke-44-sampled-slap-bass",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 1.3003945350646973,
       "rms": 0.04785013230914076,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 1.3003945350646973,
       "masterRms": 0.04785013230914076,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-44-sampled-slap-bass"
@@ -1581,7 +1977,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-44-sampled-slap-bass"
+          "trackId": "audio-smoke-44-sampled-slap-bass",
+          "instrumentOrPresetId": "slap-bass",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 58.590666666666664,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1592,14 +1997,14 @@
       "presetId": "steel-drums",
       "pitch": 0,
       "trackId": "audio-smoke-45-sampled-steel-drums",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.9658524394035339,
       "rms": 0.06683722199041604,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.9658524394035339,
       "masterRms": 0.06683722199041604,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-45-sampled-steel-drums"
@@ -1610,7 +2015,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-45-sampled-steel-drums"
+          "trackId": "audio-smoke-45-sampled-steel-drums",
+          "instrumentOrPresetId": "steel-drums",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 63.124,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1621,14 +2035,14 @@
       "presetId": "string-section",
       "pitch": 0,
       "trackId": "audio-smoke-46-sampled-string-section",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.34453701972961426,
       "rms": 0.03543268769060058,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.34453701972961426,
       "masterRms": 0.03543268769060058,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-46-sampled-string-section"
@@ -1639,7 +2053,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-46-sampled-string-section"
+          "trackId": "audio-smoke-46-sampled-string-section",
+          "instrumentOrPresetId": "string-section",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 67.65733333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1650,14 +2073,14 @@
       "presetId": "vibraphone",
       "pitch": 0,
       "trackId": "audio-smoke-47-sampled-vibraphone",
-      "sessionId": "eefa5568-3013-4a0c-8dd3-2524c385096d",
+      "sessionId": "e9bbacd4-9313-4862-984b-c1e2f9a28daf",
       "peak": 0.5307286977767944,
       "rms": 0.04030648023657946,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.5307286977767944,
       "masterRms": 0.04030648023657946,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-47-sampled-vibraphone"
@@ -1668,7 +2091,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-47-sampled-vibraphone"
+          "trackId": "audio-smoke-47-sampled-vibraphone",
+          "instrumentOrPresetId": "vibraphone",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 72.212,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1679,14 +2111,14 @@
       "presetId": "vinyl-crackle",
       "pitch": 0,
       "trackId": "audio-smoke-48-sampled-vinyl-crackle",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.3527422845363617,
-      "rms": 0.027793610795155146,
+      "rms": 0.02779360236595473,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3527422845363617,
-      "masterRms": 0.027793610795155146,
-      "armToOnsetFrames": 24000,
+      "masterRms": 0.02779360236595473,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-48-sampled-vinyl-crackle"
@@ -1697,7 +2129,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSampledInstrument",
-          "trackId": "audio-smoke-48-sampled-vinyl-crackle"
+          "trackId": "audio-smoke-48-sampled-vinyl-crackle",
+          "instrumentOrPresetId": "vinyl-crackle",
+          "pitchUnit": "midi-note",
+          "musicalPitch": 60,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 2.6813333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1708,14 +2149,14 @@
       "presetId": "shaker",
       "pitch": 0,
       "trackId": "audio-smoke-49-shaker",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.15943600237369537,
       "rms": 0.007780020063567171,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.15943600237369537,
       "masterRms": 0.007780020063567171,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-49-shaker"
@@ -1726,7 +2167,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-49-shaker"
+          "trackId": "audio-smoke-49-shaker",
+          "instrumentOrPresetId": "shaker",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 7.481333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -1737,14 +2187,14 @@
       "presetId": "snare",
       "pitch": 0,
       "trackId": "audio-smoke-50-snare",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.5939937829971313,
       "rms": 0.028309817436425126,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.5939937829971313,
       "masterRms": 0.028309817436425126,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-50-snare"
@@ -1755,7 +2205,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-50-snare"
+          "trackId": "audio-smoke-50-snare",
+          "instrumentOrPresetId": "snare",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 12.105333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -1766,14 +2225,14 @@
       "presetId": "subbass",
       "pitch": 0,
       "trackId": "audio-smoke-51-subbass",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.5328395962715149,
       "rms": 0.11752047841963005,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.5328395962715149,
       "masterRms": 0.11752047841963005,
-      "armToOnsetFrames": 24002,
+      "armToOnsetFrames": 25026,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-51-subbass"
@@ -1784,7 +2243,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-51-subbass"
+          "trackId": "audio-smoke-51-subbass",
+          "instrumentOrPresetId": "subbass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 16.852,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -1795,14 +2263,14 @@
       "presetId": "acid",
       "pitch": 0,
       "trackId": "audio-smoke-52-synth-acid",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.6787545680999756,
-      "rms": 0.03620138107634086,
+      "rms": 0.03620138107575599,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.6787545680999756,
-      "masterRms": 0.03620138107634086,
-      "armToOnsetFrames": 24005,
+      "masterRms": 0.03620138107575599,
+      "armToOnsetFrames": 24773,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-52-synth-acid"
@@ -1813,7 +2281,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-52-synth-acid"
+          "trackId": "audio-smoke-52-synth-acid",
+          "instrumentOrPresetId": "acid",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 21.497333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1824,14 +2301,14 @@
       "presetId": "bass",
       "pitch": 0,
       "trackId": "audio-smoke-53-synth-bass",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.6058399677276611,
       "rms": 0.04045992302194012,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.6058399677276611,
       "masterRms": 0.04045992302194012,
-      "armToOnsetFrames": 24132,
+      "armToOnsetFrames": 25028,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-53-synth-bass"
@@ -1842,7 +2319,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-53-synth-bass"
+          "trackId": "audio-smoke-53-synth-bass",
+          "instrumentOrPresetId": "bass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 26.281333333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1853,14 +2339,14 @@
       "presetId": "bell",
       "pitch": 0,
       "trackId": "audio-smoke-54-synth-bell",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.19015547633171082,
       "rms": 0.03190254337480109,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.19015547633171082,
       "masterRms": 0.03190254337480109,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-54-synth-bell"
@@ -1871,7 +2357,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-54-synth-bell"
+          "trackId": "audio-smoke-54-synth-bell",
+          "instrumentOrPresetId": "bell",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 30.942666666666668,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1882,14 +2377,14 @@
       "presetId": "brass",
       "pitch": 0,
       "trackId": "audio-smoke-55-synth-brass",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
-      "peak": 0.23174132406711578,
-      "rms": 0.0185577072765465,
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
+      "peak": 0.23177355527877808,
+      "rms": 0.01855691458692029,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.23174132406711578,
-      "masterRms": 0.0185577072765465,
-      "armToOnsetFrames": 24003,
+      "masterPeak": 0.23177355527877808,
+      "masterRms": 0.01855691458692029,
+      "armToOnsetFrames": 25028,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-55-synth-brass"
@@ -1900,7 +2395,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-55-synth-brass"
+          "trackId": "audio-smoke-55-synth-brass",
+          "instrumentOrPresetId": "brass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 35.7,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1911,14 +2415,14 @@
       "presetId": "clavinet",
       "pitch": 0,
       "trackId": "audio-smoke-56-synth-clavinet",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.3439507782459259,
       "rms": 0.023209542825463714,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3439507782459259,
       "masterRms": 0.023209542825463714,
-      "armToOnsetFrames": 24002,
+      "armToOnsetFrames": 25026,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-56-synth-clavinet"
@@ -1929,7 +2433,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-56-synth-clavinet"
+          "trackId": "audio-smoke-56-synth-clavinet",
+          "instrumentOrPresetId": "clavinet",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 40.28666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1940,14 +2453,14 @@
       "presetId": "discobass",
       "pitch": 0,
       "trackId": "audio-smoke-57-synth-discobass",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.413228303194046,
       "rms": 0.04024612455708297,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.413228303194046,
       "masterRms": 0.04024612455708297,
-      "armToOnsetFrames": 24005,
+      "armToOnsetFrames": 25029,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-57-synth-discobass"
@@ -1958,7 +2471,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-57-synth-discobass"
+          "trackId": "audio-smoke-57-synth-discobass",
+          "instrumentOrPresetId": "discobass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 44.90533333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1969,14 +2491,14 @@
       "presetId": "dreampop",
       "pitch": 0,
       "trackId": "audio-smoke-58-synth-dreampop",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.24981294572353363,
       "rms": 0.02673584953360697,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.24981294572353363,
       "masterRms": 0.02673584953360697,
-      "armToOnsetFrames": 24002,
+      "armToOnsetFrames": 25026,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-58-synth-dreampop"
@@ -1987,7 +2509,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-58-synth-dreampop"
+          "trackId": "audio-smoke-58-synth-dreampop",
+          "instrumentOrPresetId": "dreampop",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 49.534666666666666,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -1998,14 +2529,14 @@
       "presetId": "epiano",
       "pitch": 0,
       "trackId": "audio-smoke-59-synth-epiano",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.3008117973804474,
-      "rms": 0.045049837407335154,
+      "rms": 0.0450498374074221,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3008117973804474,
-      "masterRms": 0.045049837407335154,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.0450498374074221,
+      "armToOnsetFrames": 24897,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-59-synth-epiano"
@@ -2016,7 +2547,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-59-synth-epiano"
+          "trackId": "audio-smoke-59-synth-epiano",
+          "instrumentOrPresetId": "epiano",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 54.38,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2027,14 +2567,14 @@
       "presetId": "evolving",
       "pitch": 0,
       "trackId": "audio-smoke-60-synth-evolving",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.29504358768463135,
-      "rms": 0.03892474105508763,
+      "rms": 0.038924741054957496,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.29504358768463135,
-      "masterRms": 0.03892474105508763,
-      "armToOnsetFrames": 24004,
+      "masterRms": 0.038924741054957496,
+      "armToOnsetFrames": 25028,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-60-synth-evolving"
@@ -2045,7 +2585,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-60-synth-evolving"
+          "trackId": "audio-smoke-60-synth-evolving",
+          "instrumentOrPresetId": "evolving",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 58.99066666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2056,14 +2605,14 @@
       "presetId": "funkbass",
       "pitch": 0,
       "trackId": "audio-smoke-61-synth-funkbass",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
       "peak": 0.47790002822875977,
-      "rms": 0.03808405434783304,
+      "rms": 0.03808405431154218,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.47790002822875977,
-      "masterRms": 0.03808405434783304,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.03808405431154218,
+      "armToOnsetFrames": 24769,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-61-synth-funkbass"
@@ -2074,7 +2623,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-61-synth-funkbass"
+          "trackId": "audio-smoke-61-synth-funkbass",
+          "instrumentOrPresetId": "funkbass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 63.844,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2085,14 +2643,14 @@
       "presetId": "glass",
       "pitch": 0,
       "trackId": "audio-smoke-62-synth-glass",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
-      "peak": 0.20377708971500397,
-      "rms": 0.03010341850486885,
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
+      "peak": 0.20086736977100372,
+      "rms": 0.03010030710668084,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.20377708971500397,
-      "masterRms": 0.03010341850486885,
-      "armToOnsetFrames": 24001,
+      "masterPeak": 0.20086736977100372,
+      "masterRms": 0.03010030710668084,
+      "armToOnsetFrames": 25026,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-62-synth-glass"
@@ -2103,7 +2661,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-62-synth-glass"
+          "trackId": "audio-smoke-62-synth-glass",
+          "instrumentOrPresetId": "glass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 68.44666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2114,14 +2681,14 @@
       "presetId": "growl",
       "pitch": 0,
       "trackId": "audio-smoke-63-synth-growl",
-      "sessionId": "771f88fb-bda6-4c94-8b7f-848af1d408c0",
-      "peak": 0.41455158591270447,
-      "rms": 0.03457201765296298,
+      "sessionId": "e1046cd9-fe5d-4637-9abd-38e98d27a976",
+      "peak": 0.25672322511672974,
+      "rms": 0.02223881881055677,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.41455158591270447,
-      "masterRms": 0.03457201765296298,
-      "armToOnsetFrames": 24001,
+      "masterPeak": 0.25672322511672974,
+      "masterRms": 0.02223881881055677,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-63-synth-growl"
@@ -2132,7 +2699,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-63-synth-growl"
+          "trackId": "audio-smoke-63-synth-growl",
+          "instrumentOrPresetId": "growl",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 73.08133333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2143,14 +2719,14 @@
       "presetId": "hoover",
       "pitch": 0,
       "trackId": "audio-smoke-64-synth-hoover",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.13723552227020264,
-      "rms": 0.011970443246215833,
+      "rms": 0.011970443246215781,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.13723552227020264,
-      "masterRms": 0.011970443246215833,
-      "armToOnsetFrames": 24003,
+      "masterRms": 0.011970443246215781,
+      "armToOnsetFrames": 25027,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-64-synth-hoover"
@@ -2161,7 +2737,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-64-synth-hoover"
+          "trackId": "audio-smoke-64-synth-hoover",
+          "instrumentOrPresetId": "hoover",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 2.868,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2172,14 +2757,14 @@
       "presetId": "hypersaw",
       "pitch": 0,
       "trackId": "audio-smoke-65-synth-hypersaw",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.15254530310630798,
       "rms": 0.011890227658018318,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.15254530310630798,
       "masterRms": 0.011890227658018318,
-      "armToOnsetFrames": 24002,
+      "armToOnsetFrames": 25026,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-65-synth-hypersaw"
@@ -2190,7 +2775,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-65-synth-hypersaw"
+          "trackId": "audio-smoke-65-synth-hypersaw",
+          "instrumentOrPresetId": "hypersaw",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 7.844,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2201,14 +2795,14 @@
       "presetId": "jangle",
       "pitch": 0,
       "trackId": "audio-smoke-66-synth-jangle",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.22864750027656555,
-      "rms": 0.031782246836596535,
+      "rms": 0.03178317278451597,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.22864750027656555,
-      "masterRms": 0.031782246836596535,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.03178317278451597,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-66-synth-jangle"
@@ -2219,7 +2813,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-66-synth-jangle"
+          "trackId": "audio-smoke-66-synth-jangle",
+          "instrumentOrPresetId": "jangle",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 12.622666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2230,14 +2833,14 @@
       "presetId": "lead",
       "pitch": 0,
       "trackId": "audio-smoke-67-synth-lead",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.34080779552459717,
-      "rms": 0.04241798709346548,
+      "rms": 0.04241798708993742,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.34080779552459717,
-      "masterRms": 0.04241798709346548,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.04241798708993742,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-67-synth-lead"
@@ -2248,7 +2851,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-67-synth-lead"
+          "trackId": "audio-smoke-67-synth-lead",
+          "instrumentOrPresetId": "lead",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 17.406666666666666,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2259,14 +2871,14 @@
       "presetId": "organ",
       "pitch": 0,
       "trackId": "audio-smoke-68-synth-organ",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
-      "peak": 0.21560810506343842,
-      "rms": 0.029261437232386334,
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
+      "peak": 0.2165108621120453,
+      "rms": 0.029261404033051597,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.21560810506343842,
-      "masterRms": 0.029261437232386334,
-      "armToOnsetFrames": 24002,
+      "masterPeak": 0.2165108621120453,
+      "masterRms": 0.029261404033051597,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-68-synth-organ"
@@ -2277,7 +2889,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-68-synth-organ"
+          "trackId": "audio-smoke-68-synth-organ",
+          "instrumentOrPresetId": "organ",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 22.105333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2288,14 +2909,14 @@
       "presetId": "organphase",
       "pitch": 0,
       "trackId": "audio-smoke-69-synth-organphase",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.2240227907896042,
       "rms": 0.026203338298882838,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.2240227907896042,
       "masterRms": 0.026203338298882838,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 24769,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-69-synth-organphase"
@@ -2306,7 +2927,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-69-synth-organphase"
+          "trackId": "audio-smoke-69-synth-organphase",
+          "instrumentOrPresetId": "organphase",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 27.092,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2317,14 +2947,14 @@
       "presetId": "pad",
       "pitch": 0,
       "trackId": "audio-smoke-70-synth-pad",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.34382227063179016,
       "rms": 0.04497394202976607,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.34382227063179016,
       "masterRms": 0.04497394202976607,
-      "armToOnsetFrames": 24003,
+      "armToOnsetFrames": 25027,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-70-synth-pad"
@@ -2335,7 +2965,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-70-synth-pad"
+          "trackId": "audio-smoke-70-synth-pad",
+          "instrumentOrPresetId": "pad",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 31.817333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2346,14 +2985,14 @@
       "presetId": "pluck",
       "pitch": 0,
       "trackId": "audio-smoke-71-synth-pluck",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.5773967504501343,
       "rms": 0.04667774796701519,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.5773967504501343,
       "masterRms": 0.04667774796701519,
-      "armToOnsetFrames": 24004,
+      "armToOnsetFrames": 25028,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-71-synth-pluck"
@@ -2364,7 +3003,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-71-synth-pluck"
+          "trackId": "audio-smoke-71-synth-pluck",
+          "instrumentOrPresetId": "pluck",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 36.676,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2375,14 +3023,14 @@
       "presetId": "reese",
       "pitch": 0,
       "trackId": "audio-smoke-72-synth-reese",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
-      "peak": 0.25864705443382263,
-      "rms": 0.020776331134141655,
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
+      "peak": 0.2585914134979248,
+      "rms": 0.020779958443277097,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.25864705443382263,
-      "masterRms": 0.020776331134141655,
-      "armToOnsetFrames": 24005,
+      "masterPeak": 0.2585914134979248,
+      "masterRms": 0.020779958443277097,
+      "armToOnsetFrames": 25030,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-72-synth-reese"
@@ -2393,7 +3041,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-72-synth-reese"
+          "trackId": "audio-smoke-72-synth-reese",
+          "instrumentOrPresetId": "reese",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 41.43866666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2404,14 +3061,14 @@
       "presetId": "rhodes",
       "pitch": 0,
       "trackId": "audio-smoke-73-synth-rhodes",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.33944207429885864,
       "rms": 0.05531469574028941,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.33944207429885864,
       "masterRms": 0.05531469574028941,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-73-synth-rhodes"
@@ -2422,7 +3079,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-73-synth-rhodes"
+          "trackId": "audio-smoke-73-synth-rhodes",
+          "instrumentOrPresetId": "rhodes",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 46.20133333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2433,14 +3099,14 @@
       "presetId": "shimmer",
       "pitch": 0,
       "trackId": "audio-smoke-74-synth-shimmer",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.22297303378582,
       "rms": 0.036753173234569995,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.22297303378582,
       "masterRms": 0.036753173234569995,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-74-synth-shimmer"
@@ -2451,7 +3117,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-74-synth-shimmer"
+          "trackId": "audio-smoke-74-synth-shimmer",
+          "instrumentOrPresetId": "shimmer",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 50.90533333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2462,14 +3137,14 @@
       "presetId": "stab",
       "pitch": 0,
       "trackId": "audio-smoke-75-synth-stab",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.4321657419204712,
-      "rms": 0.03183415919929224,
+      "rms": 0.03183415919908523,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.4321657419204712,
-      "masterRms": 0.03183415919929224,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.03183415919908523,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-75-synth-stab"
@@ -2480,7 +3155,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-75-synth-stab"
+          "trackId": "audio-smoke-75-synth-stab",
+          "instrumentOrPresetId": "stab",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 55.68933333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2491,14 +3175,14 @@
       "presetId": "strings",
       "pitch": 0,
       "trackId": "audio-smoke-76-synth-strings",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.21701034903526306,
       "rms": 0.021085690627148743,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.21701034903526306,
       "masterRms": 0.021085690627148743,
-      "armToOnsetFrames": 24002,
+      "armToOnsetFrames": 24898,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-76-synth-strings"
@@ -2509,7 +3193,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-76-synth-strings"
+          "trackId": "audio-smoke-76-synth-strings",
+          "instrumentOrPresetId": "strings",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 60.32666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2520,14 +3213,14 @@
       "presetId": "sub",
       "pitch": 0,
       "trackId": "audio-smoke-77-synth-sub",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.2857514023780823,
-      "rms": 0.04276857375140842,
+      "rms": 0.04276857324878796,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.2857514023780823,
-      "masterRms": 0.04276857375140842,
-      "armToOnsetFrames": 24006,
+      "masterRms": 0.04276857324878796,
+      "armToOnsetFrames": 24774,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-77-synth-sub"
@@ -2538,7 +3231,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-77-synth-sub"
+          "trackId": "audio-smoke-77-synth-sub",
+          "instrumentOrPresetId": "sub",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 65.29466666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2549,14 +3251,14 @@
       "presetId": "supersaw",
       "pitch": 0,
       "trackId": "audio-smoke-78-synth-supersaw",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
       "peak": 0.14772091805934906,
-      "rms": 0.011637892869061596,
+      "rms": 0.011637892868030637,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.14772091805934906,
-      "masterRms": 0.011637892869061596,
-      "armToOnsetFrames": 24002,
+      "masterRms": 0.011637892868030637,
+      "armToOnsetFrames": 25026,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-78-synth-supersaw"
@@ -2567,7 +3269,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-78-synth-supersaw"
+          "trackId": "audio-smoke-78-synth-supersaw",
+          "instrumentOrPresetId": "supersaw",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 69.94,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2578,14 +3289,14 @@
       "presetId": "sweep",
       "pitch": 0,
       "trackId": "audio-smoke-79-synth-sweep",
-      "sessionId": "71137c1e-3a67-4b4c-97a0-1e099073fed5",
-      "peak": 0.41187816858291626,
-      "rms": 0.053513556183736585,
+      "sessionId": "e1acdaa4-dfdb-4b2c-be26-1f4a35af2d54",
+      "peak": 0.41181710362434387,
+      "rms": 0.05351388249405715,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.41187816858291626,
-      "masterRms": 0.053513556183736585,
-      "armToOnsetFrames": 24003,
+      "masterPeak": 0.41181710362434387,
+      "masterRms": 0.05351388249405715,
+      "armToOnsetFrames": 25028,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-79-synth-sweep"
@@ -2596,7 +3307,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-79-synth-sweep"
+          "trackId": "audio-smoke-79-synth-sweep",
+          "instrumentOrPresetId": "sweep",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 74.88933333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2607,14 +3327,14 @@
       "presetId": "vibes",
       "pitch": 0,
       "trackId": "audio-smoke-80-synth-vibes",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.32197484374046326,
       "rms": 0.05862863841199381,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.32197484374046326,
       "masterRms": 0.05862863841199381,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-80-synth-vibes"
@@ -2625,7 +3345,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-80-synth-vibes"
+          "trackId": "audio-smoke-80-synth-vibes",
+          "instrumentOrPresetId": "vibes",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 2.404,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2636,14 +3365,14 @@
       "presetId": "warmpad",
       "pitch": 0,
       "trackId": "audio-smoke-81-synth-warmpad",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.27340060472488403,
       "rms": 0.03279659854480435,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.27340060472488403,
       "masterRms": 0.03279659854480435,
-      "armToOnsetFrames": 24003,
+      "armToOnsetFrames": 25027,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-81-synth-warmpad"
@@ -2654,7 +3383,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-81-synth-warmpad"
+          "trackId": "audio-smoke-81-synth-warmpad",
+          "instrumentOrPresetId": "warmpad",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 6.782666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2665,14 +3403,14 @@
       "presetId": "wobble",
       "pitch": 0,
       "trackId": "audio-smoke-82-synth-wobble",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
-      "peak": 0.4334889352321625,
-      "rms": 0.030988004544459852,
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
+      "peak": 0.4182969629764557,
+      "rms": 0.03245404997528234,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.4334889352321625,
-      "masterRms": 0.030988004544459852,
-      "armToOnsetFrames": 24006,
+      "masterPeak": 0.4182969629764557,
+      "masterRms": 0.03245404997528234,
+      "armToOnsetFrames": 25030,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-82-synth-wobble"
@@ -2683,7 +3421,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-82-synth-wobble"
+          "trackId": "audio-smoke-82-synth-wobble",
+          "instrumentOrPresetId": "wobble",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 11.294666666666666,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2694,14 +3441,14 @@
       "presetId": "wurlitzer",
       "pitch": 0,
       "trackId": "audio-smoke-83-synth-wurlitzer",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.3398287892341614,
-      "rms": 0.042822195266122375,
+      "rms": 0.04282219525777054,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3398287892341614,
-      "masterRms": 0.042822195266122375,
-      "armToOnsetFrames": 24002,
+      "masterRms": 0.04282219525777054,
+      "armToOnsetFrames": 25026,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-83-synth-wurlitzer"
@@ -2712,7 +3459,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSynthNote",
-          "trackId": "audio-smoke-83-synth-wurlitzer"
+          "trackId": "audio-smoke-83-synth-wurlitzer",
+          "instrumentOrPresetId": "wurlitzer",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 15.689333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 8,
+          "variationKey": null
         }
       ]
     },
@@ -2723,14 +3479,14 @@
       "presetId": "tambourine",
       "pitch": 0,
       "trackId": "audio-smoke-84-tambourine",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.15671180188655853,
-      "rms": 0.00846576682494817,
+      "rms": 0.008465766824948172,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.15671180188655853,
-      "masterRms": 0.00846576682494817,
-      "armToOnsetFrames": 24001,
+      "masterRms": 0.008465766824948172,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-84-tambourine"
@@ -2741,7 +3497,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-84-tambourine"
+          "trackId": "audio-smoke-84-tambourine",
+          "instrumentOrPresetId": "tambourine",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 20.089333333333332,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2752,14 +3517,14 @@
       "presetId": "tom",
       "pitch": 0,
       "trackId": "audio-smoke-85-tom",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.5216522216796875,
       "rms": 0.06777301055692878,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.5216522216796875,
       "masterRms": 0.06777301055692878,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-85-tom"
@@ -2770,7 +3535,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-85-tom"
+          "trackId": "audio-smoke-85-tom",
+          "instrumentOrPresetId": "tom",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 24.489333333333335,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2781,14 +3555,14 @@
       "presetId": "am-bell",
       "pitch": 0,
       "trackId": "audio-smoke-86-tone-am-bell",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.04436668008565903,
-      "rms": 0.005873206113493741,
+      "rms": 0.005873206113525821,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.04436668008565903,
-      "masterRms": 0.005873206113493741,
-      "armToOnsetFrames": 29313,
+      "masterRms": 0.005873206113525821,
+      "armToOnsetFrames": 29953,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-86-tone-am-bell"
@@ -2799,7 +3573,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-86-tone-am-bell"
+          "trackId": "audio-smoke-86-tone-am-bell",
+          "instrumentOrPresetId": "am-bell",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 28.977333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2810,14 +3593,14 @@
       "presetId": "am-tremolo",
       "pitch": 0,
       "trackId": "audio-smoke-87-tone-am-tremolo",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.052461132407188416,
       "rms": 0.0061814855067883045,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.052461132407188416,
       "masterRms": 0.0061814855067883045,
-      "armToOnsetFrames": 28801,
+      "armToOnsetFrames": 30081,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-87-tone-am-tremolo"
@@ -2828,7 +3611,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-87-tone-am-tremolo"
+          "trackId": "audio-smoke-87-tone-am-tremolo",
+          "instrumentOrPresetId": "am-tremolo",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 33.54533333333333,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2839,14 +3631,14 @@
       "presetId": "duo-lead",
       "pitch": 0,
       "trackId": "audio-smoke-88-tone-duo-lead",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
-      "peak": 0.4740145206451416,
-      "rms": 0.03886006065281097,
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
+      "peak": 0.4766303300857544,
+      "rms": 0.03886161088775239,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.4740145206451416,
-      "masterRms": 0.03886006065281097,
-      "armToOnsetFrames": 29058,
+      "masterPeak": 0.4766303300857544,
+      "masterRms": 0.03886161088775239,
+      "armToOnsetFrames": 30211,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-88-tone-duo-lead"
@@ -2857,7 +3649,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-88-tone-duo-lead"
+          "trackId": "audio-smoke-88-tone-duo-lead",
+          "instrumentOrPresetId": "duo-lead",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 38.318666666666665,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2868,14 +3669,14 @@
       "presetId": "fm-bass",
       "pitch": 0,
       "trackId": "audio-smoke-89-tone-fm-bass",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
-      "peak": 0.13976575434207916,
-      "rms": 0.013535344740690096,
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
+      "peak": 0.13986726105213165,
+      "rms": 0.013535333103187499,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.13976575434207916,
-      "masterRms": 0.013535344740690096,
-      "armToOnsetFrames": 28803,
+      "masterPeak": 0.13986726105213165,
+      "masterRms": 0.013535333103187499,
+      "armToOnsetFrames": 29825,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-89-tone-fm-bass"
@@ -2886,7 +3687,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-89-tone-fm-bass"
+          "trackId": "audio-smoke-89-tone-fm-bass",
+          "instrumentOrPresetId": "fm-bass",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 42.81466666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2897,14 +3707,14 @@
       "presetId": "fm-bell",
       "pitch": 0,
       "trackId": "audio-smoke-90-tone-fm-bell",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.08877589553594589,
       "rms": 0.01284996276814537,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.08877589553594589,
       "masterRms": 0.01284996276814537,
-      "armToOnsetFrames": 29057,
+      "armToOnsetFrames": 29825,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-90-tone-fm-bell"
@@ -2915,7 +3725,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-90-tone-fm-bell"
+          "trackId": "audio-smoke-90-tone-fm-bell",
+          "instrumentOrPresetId": "fm-bell",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 47.316,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2926,14 +3745,14 @@
       "presetId": "fm-epiano",
       "pitch": 0,
       "trackId": "audio-smoke-91-tone-fm-epiano",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
-      "peak": 0.11087803542613983,
-      "rms": 0.010247912249422692,
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
+      "peak": 0.11109228432178497,
+      "rms": 0.010262974369360333,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.11087803542613983,
-      "masterRms": 0.010247912249422692,
-      "armToOnsetFrames": 28801,
+      "masterPeak": 0.11109228432178497,
+      "masterRms": 0.010262974369360333,
+      "armToOnsetFrames": 29571,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-91-tone-fm-epiano"
@@ -2944,7 +3763,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-91-tone-fm-epiano"
+          "trackId": "audio-smoke-91-tone-fm-epiano",
+          "instrumentOrPresetId": "fm-epiano",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 51.82266666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2955,14 +3783,14 @@
       "presetId": "membrane-kick",
       "pitch": 0,
       "trackId": "audio-smoke-92-tone-membrane-kick",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.49884432554244995,
       "rms": 0.04168550920900663,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.49884432554244995,
       "masterRms": 0.04168550920900663,
-      "armToOnsetFrames": 28801,
+      "armToOnsetFrames": 29825,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-92-tone-membrane-kick"
@@ -2973,7 +3801,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-92-tone-membrane-kick"
+          "trackId": "audio-smoke-92-tone-membrane-kick",
+          "instrumentOrPresetId": "membrane-kick",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 56.58,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -2984,14 +3821,14 @@
       "presetId": "membrane-tom",
       "pitch": 0,
       "trackId": "audio-smoke-93-tone-membrane-tom",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
       "peak": 0.3959791660308838,
       "rms": 0.029150846111931968,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3959791660308838,
       "masterRms": 0.029150846111931968,
-      "armToOnsetFrames": 28801,
+      "armToOnsetFrames": 29825,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-93-tone-membrane-tom"
@@ -3002,7 +3839,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-93-tone-membrane-tom"
+          "trackId": "audio-smoke-93-tone-membrane-tom",
+          "instrumentOrPresetId": "membrane-tom",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 61.14,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -3013,14 +3859,14 @@
       "presetId": "metal-cymbal",
       "pitch": 0,
       "trackId": "audio-smoke-94-tone-metal-cymbal",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
-      "peak": 0.9381777048110962,
-      "rms": 0.0543001540488937,
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
+      "peak": 0.826160728931427,
+      "rms": 0.054119624218793995,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.9381777048110962,
-      "masterRms": 0.0543001540488937,
-      "armToOnsetFrames": 29058,
+      "masterPeak": 0.826160728931427,
+      "masterRms": 0.054119624218793995,
+      "armToOnsetFrames": 29826,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-94-tone-metal-cymbal"
@@ -3031,7 +3877,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-94-tone-metal-cymbal"
+          "trackId": "audio-smoke-94-tone-metal-cymbal",
+          "instrumentOrPresetId": "metal-cymbal",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 65.67866666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -3042,14 +3897,14 @@
       "presetId": "metal-hihat",
       "pitch": 0,
       "trackId": "audio-smoke-95-tone-metal-hihat",
-      "sessionId": "267a77e0-8f74-45cb-bf5b-1cbd1a542050",
-      "peak": 0.7322089672088623,
-      "rms": 0.019621689409622826,
+      "sessionId": "4a0617e1-0c49-4f7d-91e2-2bd52134ba79",
+      "peak": 0.7400797605514526,
+      "rms": 0.01998111194422135,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
-      "masterPeak": 0.7322089672088623,
-      "masterRms": 0.019621689409622826,
-      "armToOnsetFrames": 29057,
+      "masterPeak": 0.7400797605514526,
+      "masterRms": 0.01998111194422135,
+      "armToOnsetFrames": 30081,
       "randomCalls": 672845,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-95-tone-metal-hihat"
@@ -3060,7 +3915,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-95-tone-metal-hihat"
+          "trackId": "audio-smoke-95-tone-metal-hihat",
+          "instrumentOrPresetId": "metal-hihat",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 70.35066666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -3071,14 +3935,14 @@
       "presetId": "pluck-string",
       "pitch": 0,
       "trackId": "audio-smoke-96-tone-pluck-string",
-      "sessionId": "77f26942-2305-4270-9259-04d065882221",
+      "sessionId": "1e34d73c-89b1-4b79-a948-df499ba949c8",
       "peak": 0.2330152988433838,
-      "rms": 0.01718670934549394,
+      "rms": 0.01718670313425277,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.2330152988433838,
-      "masterRms": 0.01718670934549394,
-      "armToOnsetFrames": 29240,
+      "masterRms": 0.01718670313425277,
+      "armToOnsetFrames": 30264,
       "randomCalls": 1113846,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-96-tone-pluck-string"
@@ -3089,7 +3953,16 @@
       "observedEngineDispatches": [
         {
           "method": "playToneSynth",
-          "trackId": "audio-smoke-96-tone-pluck-string"
+          "trackId": "audio-smoke-96-tone-pluck-string",
+          "instrumentOrPresetId": "pluck-string",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 1.668,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -3100,14 +3973,14 @@
       "presetId": "woodblock",
       "pitch": 0,
       "trackId": "audio-smoke-97-woodblock",
-      "sessionId": "77f26942-2305-4270-9259-04d065882221",
+      "sessionId": "1e34d73c-89b1-4b79-a948-df499ba949c8",
       "peak": 0.3353945314884186,
       "rms": 0.016970397420279643,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.3353945314884186,
       "masterRms": 0.016970397420279643,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 1113846,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-97-woodblock"
@@ -3118,7 +3991,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-97-woodblock"
+          "trackId": "audio-smoke-97-woodblock",
+          "instrumentOrPresetId": "woodblock",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 5.758666666666667,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     },
@@ -3129,14 +4011,14 @@
       "presetId": "zap",
       "pitch": 0,
       "trackId": "audio-smoke-98-zap",
-      "sessionId": "77f26942-2305-4270-9259-04d065882221",
+      "sessionId": "1e34d73c-89b1-4b79-a948-df499ba949c8",
       "peak": 0.32189083099365234,
       "rms": 0.026748842618066385,
       "capturedFrames": 120000,
       "channelSampleCount": 240000,
       "masterPeak": 0.32189083099365234,
       "masterRms": 0.026748842618066385,
-      "armToOnsetFrames": 24001,
+      "armToOnsetFrames": 25025,
       "randomCalls": 1113846,
       "preArmUiUnmutedTrackIds": [
         "audio-smoke-98-zap"
@@ -3147,7 +4029,16 @@
       "observedEngineDispatches": [
         {
           "method": "playSample",
-          "trackId": "audio-smoke-98-zap"
+          "trackId": "audio-smoke-98-zap",
+          "instrumentOrPresetId": "zap",
+          "pitchUnit": "semitones-from-c4",
+          "musicalPitch": 0,
+          "midiVelocity": 127,
+          "noteGain": 1,
+          "eventTimeSeconds": 9.705333333333334,
+          "durationSeconds": 0.1125,
+          "argumentCount": 7,
+          "variationKey": null
         }
       ]
     }

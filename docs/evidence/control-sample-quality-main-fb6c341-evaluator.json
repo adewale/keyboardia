@@ -1,10 +1,10 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-22T21:20:48.337Z",
-  "subjectCommit": "2c6f3057d7145089f0bb7969194d57c20417ee45",
+  "generatedAt": "2026-08-22T23:27:15.951Z",
+  "subjectCommit": "36ff7047d5790cf3478c38cb1f742b0c89ce832e",
   "subjectTreeClean": true,
-  "evaluatorBundleSha256": "2a715a85e7bc568800fd75df850ed9d8bf3a7597a847ccd13cede5f959fdcdd8",
-  "baselineSha256": "d4c7e545840b6977b37ec8fd791fc637fdbd0ba8b167b6a399c5dc1c5d84d25a",
+  "evaluatorBundleSha256": "9a6c4ad0d30ed38529fc0f6984a382e4aa51902b528691341e43e59fc60e761c",
+  "baselineSha256": "d8fef42482f6d93875d5a4e15884c42c4909ae6d2eed77da3ba797de6bcdc088",
   "thresholds": {
     "hotPeakDb": -2.5,
     "dcWarnDb": -60,

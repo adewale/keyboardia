@@ -1,11 +1,11 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-22T21:48:37.246Z",
-  "commit": "553398b93f16b31a258e254dba12257dd0dce2f2",
+  "generatedAt": "2026-08-22T23:19:48.333Z",
+  "commit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
   "provenance": {
-    "evaluatorCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
-    "subjectCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
-    "evaluatorTreeSha256": "c03a122d6ff9bedd81d1eecea7b2a543b47fb7b1cfbe688dbff38f5c16c26699",
+    "evaluatorCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+    "subjectCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+    "evaluatorTreeSha256": "b717827dd516a810a8d49db6f975e821f42bb50a37b0dc68a9e0a2b74672515b",
     "evaluatorDirty": false,
     "runtime": {
       "node": "v26.0.0",
@@ -25,12 +25,12 @@
   "claim": "pinned-technical-improvement-priority-not-listener-preference",
   "inputs": {
     "sampleReport": {
-      "path": "../../../../../../../private/tmp/keyboardia-candidate-553/sample-quality.json",
-      "sha256": "4adbf755080b3f3142f81bef411751b4157c51d9f15f7f1b0fbb4f85522d0826"
+      "path": "reports/instrument-quality/final-fb6c341/sample-quality.json",
+      "sha256": "f18390d714fdf2932b4a021e3ca09024dc9c38d74fc001f0ed75018af19be30e"
     },
     "liveReport": {
-      "path": "../../../../../../../private/tmp/keyboardia-live-v6-final2.lrK00U/reports/live-master-output.json",
-      "sha256": "20e5abebb839bc35d3434559d43a3763e3d03389f91fa2b768fa720303dd338d"
+      "path": "reports/instrument-quality-schema7-primary-fb6c341/live-master-output.json",
+      "sha256": "1ed1e59aa9ca222da5b5bbab1b1211df0830859f8bfaf918dade3e684aa5e8ed"
     },
     "matrixReport": null
   },
@@ -1206,7 +1206,7 @@
         "silent": false,
         "peakDbfs": -5.4,
         "rmsDbfs": -31.6,
-        "categoryRmsDeltaDb": -3.7
+        "categoryRmsDeltaDb": -3.6
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1486,11 +1486,11 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -11 dBFS, RMS -31.2 dBFS",
+      "evidence": "canonical live peak -11.1 dBFS, RMS -31.2 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -11,
+        "peakDbfs": -11.1,
         "rmsDbfs": -31.2,
         "categoryRmsDeltaDb": -0.9
       },
@@ -1601,11 +1601,11 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -7.8 dBFS, RMS -30.1 dBFS",
+      "evidence": "canonical live peak -7.7 dBFS, RMS -30.1 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -7.8,
+        "peakDbfs": -7.7,
         "rmsDbfs": -30.1,
         "categoryRmsDeltaDb": -2.2
       },
@@ -2963,11 +2963,11 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -9.3 dBFS, RMS -32.7 dBFS",
+      "evidence": "canonical live peak -9.2 dBFS, RMS -32.7 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -9.3,
+        "peakDbfs": -9.2,
         "rmsDbfs": -32.7,
         "categoryRmsDeltaDb": -5.6
       },
@@ -3309,11 +3309,11 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -13.8 dBFS, RMS -30.4 dBFS",
+      "evidence": "canonical live peak -13.9 dBFS, RMS -30.4 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -13.8,
+        "peakDbfs": -13.9,
         "rmsDbfs": -30.4,
         "categoryRmsDeltaDb": -0.7
       },
@@ -4693,11 +4693,11 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -27 dBFS, RMS -44.6 dBFS",
+      "evidence": "canonical live peak -27.1 dBFS, RMS -44.6 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -27,
+        "peakDbfs": -27.1,
         "rmsDbfs": -44.6,
         "categoryRmsDeltaDb": -11.6
       },
@@ -5030,11 +5030,11 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -6 dBFS, RMS -27.6 dBFS",
+      "evidence": "canonical live peak -6.1 dBFS, RMS -27.6 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -6,
+        "peakDbfs": -6.1,
         "rmsDbfs": -27.6,
         "categoryRmsDeltaDb": 8.1
       },
@@ -5092,11 +5092,11 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -8.1 dBFS, RMS -30.7 dBFS",
+      "evidence": "canonical live peak -8 dBFS, RMS -30.7 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -8.1,
+        "peakDbfs": -8,
         "rmsDbfs": -30.7,
         "categoryRmsDeltaDb": 5
       },
@@ -5154,13 +5154,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -1.7 dBFS, RMS -25.4 dBFS",
+      "evidence": "canonical live peak -1.7 dBFS, RMS -25.3 dBFS",
       "live": {
         "measured": true,
         "silent": false,
         "peakDbfs": -1.7,
-        "rmsDbfs": -25.4,
-        "categoryRmsDeltaDb": 10.2
+        "rmsDbfs": -25.3,
+        "categoryRmsDeltaDb": 10.4
       },
       "sampled": null,
       "scoreComponents": [],
@@ -5278,13 +5278,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -12.7 dBFS, RMS -34.9 dBFS",
+      "evidence": "canonical live peak -12.7 dBFS, RMS -35.2 dBFS",
       "live": {
         "measured": true,
         "silent": false,
         "peakDbfs": -12.7,
-        "rmsDbfs": -34.9,
-        "categoryRmsDeltaDb": -4.6
+        "rmsDbfs": -35.2,
+        "categoryRmsDeltaDb": -4.9
       },
       "sampled": null,
       "scoreComponents": [],

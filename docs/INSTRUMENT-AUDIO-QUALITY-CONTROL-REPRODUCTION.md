@@ -110,21 +110,27 @@ closed.
 ## Retained 2026-08-22 result
 
 [`instrument-audio-quality-controlled-comparison-2026-08-22.json`](./evidence/instrument-audio-quality-controlled-comparison-2026-08-22.json)
-binds the raw receipts from the frozen candidate and the reconstructed
-original-main control. The candidate passes the two-run decision-stability
-gate: its largest per-instrument energy spread is 0.338 dB, and all 99 derived
-decisions are identical.
+binds the final candidate receipts and the available artifacts from a fresh
+reconstruction of the historical audio base under the same evaluator.
 
-The control does not pass. Its two otherwise valid 99-instrument captures
-measure `noise` peaks of 0.344035 and 0.217525, a 3.982 dB difference against
-the prospective 0.5 dB alarm. Identical RNG call counts and one-frame onset
-movement do not justify discarding either result. The command therefore stopped
-before producing an aggregate control-to-candidate score delta.
+The candidate passes the two-run decision-stability gate. Both schema-v7
+captures contain 99 audible instruments and 99 exact production dispatches;
+their largest per-instrument energy spread is 0.142 dB, and every derived rank,
+score, band, component, silence decision, and above-zero classification is
+identical.
 
-The decoded lane is independent of that live instability and remains directly
-comparable under the same evaluator: 256 findings on original-main scored paths
-and 203 on the candidate, a reduction of 53 (20.7%). The two control live
-receipts, two candidate live receipts, both candidate rankings, both decoded
-receipts, and reconstruction plan are retained under `docs/evidence/` with
-SHA-256 bindings. An overall repair-priority percentage is deliberately not
-claimed.
+The control live lane is incomplete. Its first schema-v7 capture completed and
+validates at 99/99 instruments with 99 exact dispatches. The independent second
+process lost its page execution context after about 364 seconds, before it
+could publish a receipt. Playwright recorded retry count zero, and the workflow
+did not retry, average, discard, or select a favorable result. Consequently,
+there is no control live spread, ranking, or aggregate base-to-candidate score
+delta. The valid first receipt and the failed-run JSON result are both retained.
+
+The decoded lane completed before that browser failure and remains directly
+comparable: 256 findings on the historical audio-base scored paths and 203 on
+the candidate, a reduction of 53 (20.7%). The control unbound/bound receipts,
+exact bound baseline, reconstruction plan, candidate receipts/rankings,
+browser-decode receipts, smoke receipt, and failure result are retained under
+`docs/evidence/` with SHA-256 bindings. An overall repair-priority percentage
+is deliberately not claimed.

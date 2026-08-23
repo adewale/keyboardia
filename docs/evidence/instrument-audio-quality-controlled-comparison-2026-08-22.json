@@ -1,60 +1,70 @@
 {
-  "schemaVersion": 2,
-  "claim": "curated fail-closed evidence index; decoded lane comparable; aggregate live-score comparison inconclusive because the control exceeded the prospective stability alarm; not listening or complete-matrix evidence",
-  "assembledAt": "2026-08-22T22:55:00.000Z",
-  "baseSourceCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
-  "candidateSubjectCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
-  "candidateEvaluatorCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
+  "schemaVersion": 3,
+  "claim": "curated fail-closed evidence index; decoded lane is same-evaluator comparable; candidate live decisions are repeatable; original-base aggregate live comparison is incomplete because control capture two produced no receipt; not listening or complete-matrix evidence",
+  "assembledAt": "2026-08-22T23:48:38Z",
+  "currentMainBaseCommit": "702ad0c525bd73844858c7ee7eddfb5a646e2c52",
+  "historicalAudioControlBaseCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "candidateSubjectCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+  "candidateEvaluatorCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+  "candidateEvaluatorTreeSha256": "b717827dd516a810a8d49db6f975e821f42bb50a37b0dc68a9e0a2b74672515b",
+  "sampleEvaluatorBundleSha256": "9a6c4ad0d30ed38529fc0f6984a382e4aa51902b528691341e43e59fc60e761c",
+  "candidateBaselineSha256": "616c7f485ec9deb52ab4ab058eb41b702c17d6d9b902ddb18547ca421ee1a509",
   "method": {
     "reconstructionScript": "app/scripts/reconstruct-instrument-quality-control.ts",
-    "reconstructionPlan": "control-reconstruction-plan-553398b.json",
-    "liveRunsPerLane": 2,
+    "reconstructionPlan": "control-reconstruction-plan-fb6c341.json",
+    "candidateLiveRuns": 2,
     "prospectiveEnergySpreadAlarmDb": 0.5,
-    "selectionPolicy": "retain both independent runs; never average, discard, or select a favorable run",
-    "decisionPolicy": "require exact structure and exact rank, score, band, component, silence, and above-zero classification decisions",
-    "controlCompatibilityCommit": "2c6f3057d7145089f0bb7969194d57c20417ee45",
-    "controlCompatibilityCaveat": "The clean compatibility commit combines original-main scored runtime/assets/manifests with the current evaluator and receipt producers. It is not represented as literal original-main provenance.",
-    "executionCaveat": "The full reconstruction stopped fail-closed after the unstable control pair. The candidate pair was captured separately at the same frozen evaluator/subject and then checked with the same committed comparator. This index was curated from the retained raw receipts; it was not emitted by a successful controlled-comparison run."
+    "selectionPolicy": "retain independent runs; never average, discard, retry, or select a favorable control result",
+    "decisionPolicy": "candidate receipts must match structurally and produce exact rank, score, band, component, silence, above-zero, and stable-dispatch decisions",
+    "controlCompatibilityCommit": "36ff7047d5790cf3478c38cb1f742b0c89ce832e",
+    "controlCompatibilityCaveat": "The clean compatibility commit combines the historical audio base's scored runtime/assets/manifests with the candidate evaluator and receipt producers. It is not represented as literal historical-base provenance.",
+    "executionCaveat": "The reconstructed control decoded lane completed. Control live capture one completed, but independent capture two lost its page execution context before publishing a receipt. The workflow failed closed with Playwright retry count zero. No control live spread, ranking, or aggregate score delta is admissible. The candidate pair was captured separately on the clean candidate subject and passed the same committed receipt and decision comparators."
   },
   "candidate": {
     "decisionStable": true,
-    "maximumEnergySpreadDb": 0.33810308728178357,
+    "maximumEnergySpreadDb": 0.14173947193299874,
     "energySpreadByMetricDb": {
-      "peak": 0.19096218426226344,
-      "rms": 0.33810308728178357,
-      "masterPeak": 0.19096218426226344,
-      "masterRms": 0.33810308728178357
+      "peak": 0.11752613244606198,
+      "rms": 0.14173947193299874,
+      "masterPeak": 0.11752613244606198,
+      "masterRms": 0.14173947193299874
     },
     "catalogueInstruments": 99,
     "audibleInstruments": 99,
+    "exactExpectedProductionDispatchesPerRun": 99,
     "repairPriorityPoints": 155.2,
-    "bands": { "critical": 0, "high": 0, "medium": 6, "low": 8, "baseline": 85 },
+    "bands": {
+      "critical": 0,
+      "high": 0,
+      "medium": 6,
+      "low": 8,
+      "baseline": 85
+    },
     "postTrackPeaksAboveZeroDbfs": 3,
     "decodedFindings": 203,
     "unwaivedDecodedErrors": 0,
     "unwaivedDecodedReviews": 0
   },
   "control": {
-    "decisionStable": false,
-    "aggregateScoreComparisonCertified": false,
-    "failure": "Independent live captures exceeded the 0.5 dB stability alarm for noise.peak",
-    "maximumObservedEnergySpreadDb": 3.981854,
-    "noise": {
-      "primaryPeak": 0.34403514862060547,
-      "confirmationPeak": 0.21752546727657318,
-      "primaryRms": 0.0179098003573673,
-      "confirmationRms": 0.01788224297951371,
-      "primaryArmToOnsetFrames": 24000,
-      "confirmationArmToOnsetFrames": 24001,
-      "randomCallsBothRuns": 672845
-    },
+    "decodedLaneComplete": true,
     "decodedFindings": 256,
     "unwaivedDecodedErrors": 0,
-    "unwaivedDecodedReviews": 0
+    "unwaivedDecodedReviews": 0,
+    "primaryLiveReceiptValid": true,
+    "primaryLiveInstruments": 99,
+    "primaryExactExpectedProductionDispatches": 99,
+    "primarySilentRoutes": 0,
+    "confirmationLiveReceiptPublished": false,
+    "confirmationFailure": "page.evaluate: Execution context was destroyed, most likely because of a navigation",
+    "confirmationFailureDurationMs": 363936.881,
+    "playwrightRetries": 0,
+    "liveRepeatabilityEvaluated": false,
+    "aggregateScoreComparisonCertified": false,
+    "aggregateScoreComparisonReason": "A second valid control receipt does not exist; no retry, averaging, or favorable-run selection is permitted."
   },
   "comparableDecodedDelta": {
     "findings": -53,
-    "percent": -20.7,
+    "percent": -20.703125,
     "byCode": {
       "LEADING_SILENCE": -43,
       "LOOP_VALUE_DISCONTINUITY": -3,
@@ -64,19 +74,85 @@
     },
     "allOtherCodesUnchanged": true
   },
+  "matrix": {
+    "plannedCases": 1683,
+    "completeCases": 0,
+    "smokeCases": 6,
+    "smokeAcceptedFatalFindings": 0,
+    "smokeAcceptedEvidenceGaps": 0,
+    "smokeAcceptedMaximumRenderFrameDrift": 0,
+    "smokeRejectedAttempts": 1,
+    "smokeReplayByteExact": true
+  },
   "artifacts": {
-    "candidateSample": { "path": "candidate-sample-quality-553398b.json", "sha256": "4adbf755080b3f3142f81bef411751b4157c51d9f15f7f1b0fbb4f85522d0826" },
-    "candidateLivePrimary": { "path": "candidate-live-primary-553398b.json", "sha256": "3cc65e55b8d2acb5905d648485e7f3fc06fdda04408317949439ca8552f9b186" },
-    "candidateLiveConfirmation": { "path": "candidate-live-confirmation-553398b.json", "sha256": "20e5abebb839bc35d3434559d43a3763e3d03389f91fa2b768fa720303dd338d" },
-    "candidateRankingPrimary": { "path": "candidate-instrument-quality-primary-553398b.json", "sha256": "9b11e8843be7f1be6403b506cb3b93fd0305985bc350464e56a592edc593f6aa" },
-    "candidateRankingConfirmation": { "path": "candidate-instrument-quality-confirmation-553398b.json", "sha256": "eed8915876f39f0a7be2b7c2e9b64dcc50194e13daf0992b0d3336e04c3bb1ba" },
-    "controlSample": { "path": "control-sample-quality-main-current-evaluator.json", "sha256": "b3bcb8edf8ae40a8a084ab8abe595dea0646d0593585937649c7892bcbb107fc" },
-    "controlBaseline": { "path": "control-sample-quality-baseline-main-current-evaluator.json", "sha256": "d4c7e545840b6977b37ec8fd791fc637fdbd0ba8b167b6a399c5dc1c5d84d25a" },
-    "controlLivePrimary": { "path": "control-live-primary-main-current-evaluator.json", "sha256": "df18b8575d62287e04cedeb3cabe0398e2108a2bf8ecc459f146f35cc6264da9" },
-    "controlLiveConfirmation": { "path": "control-live-confirmation-main-current-evaluator.json", "sha256": "c150a7d4506d4cbe10c9b5b24a87f798c8cba22a2c9417c28721dee4eebbcba1" },
-    "reconstructionPlan": { "path": "control-reconstruction-plan-553398b.json", "sha256": "592fc27a36e4c3236a87633bf02bdec30bd5965fb885d09ac5cd8d67b8616600" },
-    "browserDecodeChromium": { "path": "browser-decode-chromium-553398b.json", "sha256": "d0713af3154669a49fe27d67e8a9cedb4e7e88557b16eb36111846a2fae9409e" },
-    "browserDecodeWebKit": { "path": "browser-decode-webkit-553398b.json", "sha256": "45d63d6291dd33639ac60c3502186efbc5b8c5db9d2d833f9ce08c7976677bc1" },
-    "dryPcmSmoke": { "path": "instrument-audio-quality-dry-pcm-smoke-2026-08-22.json", "sha256": "7dc864249aace99b3f6c22a590f004b74b46481455e6bfc03f0cc812bc211479" }
-  }
+    "candidateSample": {
+      "path": "candidate-sample-quality-fb6c341.json",
+      "capturePath": "app/reports/instrument-quality/final-fb6c341/sample-quality.json",
+      "sha256": "f18390d714fdf2932b4a021e3ca09024dc9c38d74fc001f0ed75018af19be30e"
+    },
+    "candidateLivePrimary": {
+      "path": "candidate-live-primary-fb6c341.json",
+      "capturePath": "app/reports/instrument-quality-schema7-primary-fb6c341/live-master-output.json",
+      "sha256": "1ed1e59aa9ca222da5b5bbab1b1211df0830859f8bfaf918dade3e684aa5e8ed"
+    },
+    "candidateLiveConfirmation": {
+      "path": "candidate-live-confirmation-fb6c341.json",
+      "capturePath": "app/reports/instrument-quality-schema7-confirmation-fb6c341/live-master-output.json",
+      "sha256": "d2a8fe1d612ee57b7f2dd88b82d917a108150d6a5e0ee1b6ee8001586b82dc84"
+    },
+    "candidateRankingPrimary": {
+      "path": "candidate-instrument-quality-primary-fb6c341.json",
+      "capturePath": "app/reports/instrument-quality/final-fb6c341/ranking-primary.json",
+      "sha256": "e066ba78dcf9ee4343388c80ed890cf0d41171893b3c45fb3119ce50d298f004"
+    },
+    "candidateRankingConfirmation": {
+      "path": "candidate-instrument-quality-confirmation-fb6c341.json",
+      "capturePath": "app/reports/instrument-quality/final-fb6c341/ranking-confirmation.json",
+      "sha256": "2b97723b5aa3a08988a92138deb571e9b69615a2c933b8c82bdb36aaea2e81af"
+    },
+    "browserDecodeChromium": {
+      "path": "browser-decode-chromium-fb6c341.json",
+      "capturePath": "app/reports/instrument-quality/browser-decode-chromium.json",
+      "sha256": "32869d51258503e76869cc1e18aa6ca384a1440cbe42b947f94cdc112922623b"
+    },
+    "browserDecodeWebKit": {
+      "path": "browser-decode-webkit-fb6c341.json",
+      "capturePath": "app/reports/instrument-quality/browser-decode-webkit.json",
+      "sha256": "7afc81668a19dddc5897c38db32b12d8fb1887fb1d42ccdeb15e89f233dfdbe3"
+    },
+    "controlSampleUnbound": {
+      "path": "control-sample-quality-unbound-main-fb6c341-evaluator.json",
+      "sha256": "6a69c775a2cb61a2e59e99ee42577bd2e1732112cec4a3532dc938fbbe6fabd8"
+    },
+    "controlSample": {
+      "path": "control-sample-quality-main-fb6c341-evaluator.json",
+      "sha256": "3e26eb610d306207770251127bc835796024a55bfa322e4fc7ff086b05303668"
+    },
+    "controlBaseline": {
+      "path": "control-sample-quality-baseline-main-fb6c341-evaluator.json",
+      "sha256": "d8fef42482f6d93875d5a4e15884c42c4909ae6d2eed77da3ba797de6bcdc088"
+    },
+    "controlLivePrimary": {
+      "path": "control-live-primary-main-fb6c341-evaluator.json",
+      "sha256": "ada2ae3b4698b88bd12e5febc3d8b2d5ba158d05f9f6de68d34f33509ccef8f4"
+    },
+    "controlLiveConfirmationFailure": {
+      "path": "control-live-confirmation-failure-main-fb6c341-evaluator.json",
+      "sha256": "7bf1d764cc9a7f7af08e5410da49f5f078d02faa2303122dfd7250a7dcd6cb6f"
+    },
+    "reconstructionPlan": {
+      "path": "control-reconstruction-plan-fb6c341.json",
+      "sha256": "77ced94d12cfabeb079fdb9d5f04e781f3666221ec6b6a058541843603dec7f4"
+    },
+    "dryPcmSmoke": {
+      "path": "instrument-audio-quality-dry-pcm-smoke-2026-08-22.json",
+      "sha256": "238cbf5759247c3af97302e984000c9a6161ed16ab37bc2feca4add905168227"
+    }
+  },
+  "limitations": [
+    "The control live lane is incomplete, so no original-base aggregate live score, ranking delta, or live energy spread is claimed.",
+    "The live lane is a single isolated post-track sample-peak/RMS event plus a pre-processing masterGain routing canary; it is not inter-sample true peak or final post-effects output.",
+    "The six-case dry-PCM receipt validates the adapter path, not the complete 1,683-case matrix.",
+    "No level-matched blind listening panel was run."
+  ]
 }

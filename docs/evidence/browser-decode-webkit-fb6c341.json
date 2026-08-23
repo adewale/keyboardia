@@ -1,8 +1,9 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "claim": "cross-decoder-sample-onset-evidence",
-  "generatedAt": "2026-08-22T21:55:17.347Z",
-  "subjectCommit": "553398b93f16b31a258e254dba12257dd0dce2f2",
+  "generatedAt": "2026-08-22T23:00:12.721Z",
+  "subjectCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+  "subjectTreeClean": true,
   "browser": {
     "name": "webkit",
     "version": "26.0",
