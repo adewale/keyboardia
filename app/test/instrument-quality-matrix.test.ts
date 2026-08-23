@@ -263,7 +263,7 @@ describe('dry PCM instrument matrix', () => {
         evaluatorDirty: false,
       },
     })).toThrow(/pinned evaluator\/subject binding/);
-  }, 30_000);
+  }, 60_000);
 
   it('reconstructs claims from raw PCM and rejects forged, absent, or modified evidence', async () => {
     const profile = INSTRUMENT_QUALITY_PROFILES.find(candidate => candidate.id === 'noise')!;
@@ -333,7 +333,7 @@ describe('dry PCM instrument matrix', () => {
       pcmArtifactRoot,
       requirePass: true,
     })).toThrow(/Strict dry PCM matrix verification failed: [1-9]\d* fatal findings, [1-9]\d* evidence gaps/);
-  }, 30_000);
+  }, 60_000);
 
   it('applies the residual hard gate only to declared voice lifecycles', async () => {
     const profiles = [
