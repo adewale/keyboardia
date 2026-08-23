@@ -139,16 +139,17 @@ Required-evidence mode compares the complete retained decoded receipt with a
 fresh decode. Structure, provenance, source/manifest hashes, thresholds,
 finding classifications, counts, mappings, and identity fields are exact.
 Decoder-derived numeric fields use an absolute `0.000001` comparison tolerance
-except for five raw aggregate paths whose reductions exhibit larger bounded
+except for six decoder-output paths whose reductions exhibit larger bounded
 Node/V8 platform drift:
 
 | Receipt path | Absolute tolerance | Unit |
 |---|---:|---|
-| `samples.spectral.centroidHz` | `0.001` | Hz |
+| `samples.spectral.centroidHz` | `0.002` | Hz |
 | `samples.dcOffsetDb` | `0.001` | dB |
 | `samples.tailLevelDbRelPeak` | `0.001` | dB relative to peak |
 | `samples.peakDb` | `0.00001` | dBFS |
 | `samples.crestFactorDb` | `0.00001` | dB |
+| `instruments.maxPeakDb` | `0.00001` | dBFS |
 
 These bounds affect receipt equivalence only. They do not change a scoring or
 review threshold, baseline disposition, finding, or displayed retained value;
