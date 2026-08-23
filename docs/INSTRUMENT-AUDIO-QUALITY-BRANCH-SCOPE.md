@@ -1,30 +1,31 @@
 # Instrument quality branch scope — 2026-08-22
 
 The audit inspected all available GitHub branch heads and resolved open pull
-requests independently of branch naming. The final remote check on 2026-08-22
-found nine open pull requests and three open issues.
+requests independently of branch naming. The remote refresh on 2026-08-23
+found eight open pull requests and three open issues.
 
-That check used `main` at `58264dd5`, PR 87 at `8f995a7`, PR 98 at `5d02fe1`,
-and the then-remote remediation PR 100 at `ed8ad28` (the final local evaluated
-subject is `553398b`). Both audio-adjacent branches advanced
-materially while this audit was running: PR 87 is now a 210-file production
-envelope implementation, while PR 98 has repaired its previously stale bound
-sample disposition and Stack A contract. Their current overlap and sequencing
-requirements are detailed below.
+That check used `main` at `702ad0c`, PR 87 at `8f995a7`, PR 98 at `6028265f`,
+and the then-remote remediation PR 100 at the stale `a1355fb6`; the final clean
+measured PR 100 subject is `fb6c341`. Both audio-adjacent PRs are production
+implementations, not research-only branches, and their current overlap and
+sequencing requirements are detailed below.
 
-At that snapshot PR 87 was `CLEAN` with 13/13 checks passing. PR 98 was
-`UNSTABLE` with only visual regression failing. PR 100's remote head was ten
-local commits behind and its only failing check was the stale Linux sample
-disposition audit; the local fix canonicalizes only disposition identity to six
-decimal places, keeps raw metrics/thresholds unchanged, and passed the same
-strict audit under Linux Node 24. The pushed-head status must be checked again
-before merge.
+At the snapshot PR 87 was `CLEAN` with 13/13 checks passing. PR 98 had just
+advanced again and was `UNSTABLE`: ten checks were green, E2E Visual Regression
+was red, and two E2E jobs were still running. PR 100's remote checks were for
+an obsolete head and
+do not validate this report; the final pushed-head Actions run is the merge
+gate. Locally, only decoder-derived measurements receive an absolute
+`0.000001` comparison tolerance against the stored value. Thresholds, metadata,
+counts, mappings, and hashes remain exact. A Noble arm64 container running the
+official linux-x64 Node 24.19 binary under emulation passed the formerly fragile
+piano/alto subset; this is x64 Node/V8 arithmetic evidence, not a full native
+amd64 Ubuntu result.
 
 | PR | Head | Audio impact |
 |---:|---|---|
 | 100 | `codex/audio-quality-remediation` | This objective-audio remediation and evaluator PR; audit findings and remaining work are reported in its description |
-| 99 | `codex/sitewide-text-colour-safety` | Sample-picker CSS/text-colour safety; explicitly no musical/audio behavior change |
-| 98 | `claude/tone-nets-keyboardia-comparison-vwa218` | Velocity-dependent sampled filtering, new-session reverb, incomplete mobile output/clock wiring, and MediaSession work; validation caveats below |
+| 98 | `claude/tone-nets-keyboardia-comparison-vwa218` | Velocity-dependent sampled filtering, new-session reverb, mobile output/clock and MediaSession work; newly advanced tip and validation caveats below |
 | 96 | `claude/wal-reset-bug-learnings-ojery3` | Adds correctness/onset-related tests and research; no production DSP, manifest, sample, calibration, or catalogue change |
 | 87 | `claude/adsr-handling-1fbpmm` | Production envelope-v2 runtime, persistence, UI, MCP, MIDI/notation, migration, and tests; conflicts and evidence caveats below |
 | 85 | `claude/icon-grip-gear` | Icon/UI only |
@@ -40,55 +41,50 @@ been rebased onto PR 100's authoritative sample replacements and hardened
 evidence contracts, so neither carries evidence sufficient for an honest
 alternate 99-instrument ranking on the combined tree.
 
-PR 98, `claude/tone-nets-keyboardia-comparison-vwa218` at `5d02fe1`, is genuine
-in-progress sound and mobile-runtime work:
+PR 98, `claude/tone-nets-keyboardia-comparison-vwa218` at `6028265f`, is a
+54-file production sound/mobile branch that advanced repeatedly during this audit.
+Its latest scope says it now:
 
-- `sampled-instrument.ts` creates a per-voice low-pass for notes below MIDI 90;
-  nine manifests carry solver-derived cutoff anchors targeting roughly 30%
-  soft-note centroid reduction; the only shipped-sample render covers slap bass
-  and accepts a broader 15–50% reduction;
-- new sessions default to 15% reverb wet while legacy sessions remain dry;
-- scheduler paths update `navigator.mediaSession.playbackState`;
-- an aggregate median raw-file-duration sustain guard supplies regression
-  telemetry, but does not prove every mapped note sustains past two seconds
-  because it ignores playback-rate shortening and manifest offsets (reported
-  minima include 0.80 s for vibraphone and 1.96 s for finger bass);
-- mobile media-output and clock-liveness modules are now referenced by the
-  native engine path, but production graph and readiness behavior remain
-  incomplete.
+- routes native and Tone master chains through one mobile media-element
+  terminal and retries media unlock independently of `AudioContext.state`;
+- derives velocity structure from manifest mappings rather than filename
+  suffixes, excludes recorded-layer instruments, and calibrates six gain-only
+  tonal instruments per playable note at 44.1/48 kHz;
+- applies velocity-dependent filtering below velocity 90, while keeping the
+  high-velocity path transparent;
+- gives new sessions 15% reverb while preserving legacy-session behavior; and
+- adds MediaSession, sustain, mapping-receipt, demo-route, and visual contracts.
 
-The mobile route does not yet establish its claimed end-to-end behavior. Tone
-effects initialization disconnects `masterGain` from the newly routed native
-chain and sends its own output directly to the AudioContext destination, so the
-normal initialized graph bypasses the hidden media element. The gesture handler
-can also return for an already-running context before unlocking that element.
-The clock helper reports success immediately whenever the starting clock is
-nonzero, and a detected failure is logged without blocking playback. Physical
-iPhone ringer-switch and latency tests are still absent.
+Those changes supersede defects reported against its earlier `5d02fe1` tip;
+this report does not repeat those stale findings as if they still applied. Its
+mobile terminal routing and running-context unlock now have production wiring,
+but clock-liveness failure still warns and continues in initialization and
+`ensureAudioReady`, while another unlock path does not check it. Calling that a
+readiness gate remains stronger than the implementation. Its own remaining gate
+also explicitly includes physical iPhone ringer-switch and latency testing. It
+still does not add new sample roots, genuine velocity layers, or replacement
+sample bytes, and its velocity/reverb/mobile changes alter sound or output
+topology. The candidate live ranking here uses one
+velocity-127 event, where PR 98 deliberately bypasses its velocity filter; it
+therefore cannot validate the lower-velocity behavior.
 
-That branch now tackles the independently observed amplitude-only velocity
-limitation, but its pack classification is not yet reliable: the analysis
-infers layers from filename suffixes rather than manifest velocity ranges, so
-finger bass (four mapped layers), steel pan (five zones), and French horn (two
-layers) receive anchors despite the implementation comment saying layered
-instruments are untouched. The render regression exercises only slap bass, and
-the solver samples the first six alphabetically sorted files per pack rather
-than the complete map. The branch does **not** add genuine velocity layers, new
-roots, or sample bytes; it bypasses the filter at the canonical MIDI-90 lane
-used by the v1 ranking, and it does not repair any of the 203 decoded findings,
-the three post-track headroom priorities, or the complete-matrix evidence gap.
-
-The tip's focused/unit/type/manifests tests and aggregate sustain telemetry pass.
-Its latest commits rebind the slap-bass disposition and restore the Stack A
-new-session contract, so `Instrument Validation` and `Stack A Identity` now
-pass. `E2E Visual Regression` remains red, and GitHub still reports the PR as
-`UNSTABLE`. The dead-export check also passes, but those corrections do not
-complete the mobile route. Its own changelog/spec still overclaims ringer-switch success,
-per-note sustain, and untouched layered instruments. The filter and
-default-reverb changes alter sound and therefore still need corrected all-map
-measurement, rebound dispositions, the pinned velocity/full-matrix capture,
-and level-matched listening before integration. It is correctly classified as
-an in-progress adjacent repair, not a completed quality fix.
+Against current `main`, PR 98 overlaps PR 100 in six paths:
+`e2e/test-title-inventory.txt`, `package.json`, `validate-all.ts`, `engine.ts`,
+`sampled-instrument.ts`, and `sample-pipeline-decisions.test.ts`. A current
+three-way simulation produces textual conflicts in `engine.ts`; the other
+shared paths still require semantic review. Its new per-note velocity tables
+and receipt pins were also solved against pre-PR-100 acoustic/Hammond delivery
+bytes, creating a semantic dependency even where Git reports no textual
+overlap; those anchors and hashes must be regenerated. At the snapshot, GitHub reported
+PR 98 as mergeable but `UNSTABLE`: ten checks were green, E2E Visual Regression
+was red, and two E2E jobs were still running. Unit, Stack A, and Instrument
+Validation were green, so the new velocity/calibration gates pass that branch's
+CI. Its prior mock job had failed before executing tests because the checked-in
+inventory count was stale; `9c7614d` updated that contract and triggered the
+replacement run. It must be rebased after PR 100 and PR 87, then rerun decoded, visual,
+mobile, velocity, complete-matrix, and level-matched listening gates on the
+combined graph. It is correctly classified as active adjacent remediation, not
+evidence that the combined sound is already certified.
 
 One other dormant, non-PR branch has unique production audio code:
 `claude/fix-safari-audio-switching-Vq8zi`. It is 333 commits behind and adds
@@ -120,14 +116,15 @@ findings originally reproduced on `origin/main`:
 - native, Tone, and sampled paths give different meanings to the same release
   value.
 
-PR 87 and PR 100 now overlap in twelve files. A current three-way simulation
-has no textual conflict markers, but the Hammond manifest and shared
-engine/control paths require semantic reconciliation. PR 87 was built on the
-old Hammond MP3 catalogue and old loop coordinates; it also lacks PR 100's
-stale-Tone-context fail-closed recovery, bounded growl modulation, and intrinsic
-zero procedural-envelope gain that removes the measured one-frame boundary
-leak. Its resource evidence pins the old 582-file byte total. Taking either
-side wholesale would therefore regress the other.
+PR 87 and PR 100 overlap in twelve files. A current three-way simulation now
+produces textual conflicts across the Hammond manifest and shared advanced,
+engine, synth, synth-type, test, and XY-control paths; auto-merged files still
+require semantic review. PR 87 was built on the old Hammond MP3 catalogue and
+old loop coordinates; it also lacks PR 100's stale-Tone-context fail-closed
+recovery, bounded growl modulation, and intrinsic zero procedural-envelope gain
+that removes the measured one-frame boundary leak. Its resource evidence pins
+the old 582-file byte total. Taking either side wholesale would therefore
+regress the other.
 
 The safe sequence is: merge PR 100 first, then rebase PR 87 and retain both
 sets of focused regressions, translate sustained-Hammond loop state to the new

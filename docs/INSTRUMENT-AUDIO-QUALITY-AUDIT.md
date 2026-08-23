@@ -1,8 +1,8 @@
 # Instrument audio-quality audit
 
-Generated for subject `553398b93f16b31a258e254dba12257dd0dce2f2` with evaluator `553398b93f16b31a258e254dba12257dd0dce2f2` at 2026-08-22T21:48:36.587Z.
+Generated for subject `fb6c341941b6d7485d61bf4e63132b80b9128cd1` with evaluator `fb6c341941b6d7485d61bf4e63132b80b9128cd1` at 2026-08-22T23:19:48.333Z.
 
-Evaluator tree SHA-256: `c03a122d6ff9bedd81d1eecea7b2a543b47fb7b1cfbe688dbff38f5c16c26699`.
+Evaluator tree SHA-256: `b717827dd516a810a8d49db6f975e821f42bb50a37b0dc68a9e0a2b74672515b`.
 
 > This is a technical improvement-priority ranking, not a claim about musical taste. A score of 0 means “no defect detected by these lanes,” not “perfect sound.” Disposition-accepted findings remain measured debt; they are not erased merely because CI accepts them.
 
@@ -11,32 +11,34 @@ Evaluator tree SHA-256: `c03a122d6ff9bedd81d1eecea7b2a543b47fb7b1cfbe688dbff38f5
 - Catalogue: **99 instruments**; live audible: **99/99**.
 - Priority bands: **0 critical**, **0 high**, **6 medium**, **8 low**, **85 baseline**.
 - Canonical per-track peaks above 0 dBFS: **3** (the Web Audio graph floats internally, but this is still post-track headroom debt).
-- Decoded sample lane: **582 files / 203 disposition-accepted review findings / 0 unwaived errors / 0 unwaived review flags**.
-- Browser lane: **run**, with 0 page errors and 0 console/readiness errors.
-- Dry PCM matrix: **not run** (the complete receipt and PCM sidecars do not exist; `--require-matrix` fails closed).
+- Decoded sample lane: **582 files / 203 hash-bound review findings / 0 unwaived errors / 0 unwaived review flags**.
+- Browser lane: **two independent schema-v7 Chromium runs**, each with 99/99 expected production dispatches and 0 page or console/readiness errors; Chromium and WebKit each decoded 605/605 mappings under schema v2.
+- Dry PCM matrix: **not run (0/1,683)**. A representative 6-case adapter smoke passed; use `--require-matrix` for fail-closed certification of the complete receipt plus raw sidecars.
 - Runtime: **v26.0.0 / darwin-arm64**; sample rates: **44100, 48000**; browser: **chromium 143.0.7499.4**.
 
-The score total is **155.2**. Two independent candidate captures produce the
-same 99 ranks, scores, bands, score components, silence decisions, and
-above-zero set. Their largest raw energy spread is 0.338 dB, below the
-prospective 0.5 dB evaluator-stability alarm. This establishes repeatability of
-the technical decisions in this environment, not bit-identical real-time synth
-PCM or listener preference.
+The repair-priority score totals **155.2**. The two candidate live receipts
+produce exactly the same 99 ranks, scores, bands, score components, silence
+decisions, above-zero set, and stable dispatch projection. Their maximum raw
+energy spread is **0.142 dB**, below the prospective 0.5 dB evaluator-stability
+alarm. This establishes repeatability of these technical decisions in this
+environment, not bit-identical real-time synth PCM or listener preference.
 
-## Same-evaluator comparison with original `main`
+## Same-evaluator comparison with the historical audio base
 
-The decoded-sample lane is directly comparable under the same final evaluator:
+The decoded lane is directly comparable under the same final evaluator:
 **256 → 203 findings**, a reduction of **53 (20.7%)**. The exact changes are 43
 leading-silence findings, three loop-value discontinuities, three adjacent-note
 level steps, two tail-truncation findings, and two lossy-source hot-peak
 findings. Every other decoded finding class is unchanged.
 
-The aggregate live-score comparison is intentionally **inconclusive**. Both
-original-main control captures completed 99/99, but `noise` peak differed by
-3.982 dB, exceeding the preregistered 0.5 dB stability alarm. The evaluator
-therefore refused to calculate or publish an overall control-to-candidate score
-delta; it did not average the runs or discard the unfavorable one. The raw
-receipts, hashes, reconstruction plan, and failure are retained in
+The aggregate live-score comparison is deliberately **incomplete**. The first
+reconstructed control capture completed 99/99 instruments and 99 exact
+production dispatches. The independent second process lost its page execution
+context before it could publish a receipt. The fail-closed workflow used zero
+Playwright retries, so no second control receipt, repeatability spread, ranking,
+or aggregate base-to-candidate score exists. It did not average or select a
+favorable run. The decoded artifacts, valid first control receipt, failed-run
+result, hashes, and reconstruction plan are retained in
 [`instrument-audio-quality-controlled-comparison-2026-08-22.json`](./evidence/instrument-audio-quality-controlled-comparison-2026-08-22.json).
 
 ## Stack-ranked instruments (worst first)
@@ -57,12 +59,12 @@ receipts, hashes, reconstruction plan, and failure are retained in
 | 12 | `sampled:brushes-snare` (Brush Snare) | sampled / drums | **5.0** low | A | 3 decoded files, 3 measured findings (3 disposition-accepted, 0 unwaived), live peak -8.9 dBFS; sample-review-burden 5 | restore decoded headroom from the lossless source or lower the bound delivery trim (3) |
 | 13 | `sampled:vibraphone` (Vibes) | sampled / keys | **4.3** low | A | 22 decoded files, 5 measured findings (5 disposition-accepted, 0 unwaived), live peak -5.5 dBFS; sample-review-burden 2.3; root-distance 2 | verify by ear, then correct the root map/tuning or replace the take (5); add roots or narrow the range so repitching stays within 4 semitones (now 6) |
 | 14 | `sampled:french-horn` (Horn) | sampled / pads | **3.6** low | A | 16 decoded files, 1 measured findings (1 disposition-accepted, 0 unwaived), live peak -11.7 dBFS; sample-review-burden 0.6; root-distance 3 | verify by ear, then correct the root map/tuning or replace the take (1); add roots or narrow the range so repitching stays within 4 semitones (now 7) |
-| 15 | `advanced:acid-bass` (Acid 303) | advanced / bass | **0.0** baseline | B | canonical live peak -5.3 dBFS, RMS -31.6 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
-| 16 | `advanced:sub-bass` (Sub Bass) | advanced / bass | **0.0** baseline | B | canonical live peak -9 dBFS, RMS -27.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
+| 15 | `advanced:acid-bass` (Acid 303) | advanced / bass | **0.0** baseline | B | canonical live peak -5.4 dBFS, RMS -31.6 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
+| 16 | `advanced:sub-bass` (Sub Bass) | advanced / bass | **0.0** baseline | B | canonical live peak -8.8 dBFS, RMS -27.3 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 17 | `advanced:supersaw` (Fat Saw) | advanced / leads | **0.0** baseline | B | canonical live peak -13.3 dBFS, RMS -36.8 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
-| 18 | `advanced:thick-lead` (Thick) | advanced / leads | **0.0** baseline | B | canonical live peak -10.5 dBFS, RMS -29.8 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
+| 18 | `advanced:thick-lead` (Thick) | advanced / leads | **0.0** baseline | B | canonical live peak -10.4 dBFS, RMS -29.8 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 19 | `advanced:tremolo-strings` (Trem Str) | advanced / pads | **0.0** baseline | B | canonical live peak -22.2 dBFS, RMS -42.9 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
-| 20 | `advanced:vibrato-lead` (Vibrato) | advanced / leads | **0.0** baseline | B | canonical live peak -11 dBFS, RMS -31.2 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
+| 20 | `advanced:vibrato-lead` (Vibrato) | advanced / leads | **0.0** baseline | B | canonical live peak -11.1 dBFS, RMS -31.2 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 21 | `advanced:warm-pad` (Lush) | advanced / pads | **0.0** baseline | B | canonical live peak -22.9 dBFS, RMS -43.5 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 22 | `advanced:wobble-bass` (Wobble Bass) | advanced / bass | **0.0** baseline | B | canonical live peak -7.7 dBFS, RMS -30.1 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 23 | `bass` (Bass) | sample / bass | **0.0** baseline | B | canonical live peak -4.6 dBFS, RMS -22.9 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
@@ -87,18 +89,18 @@ receipts, hashes, reconstruction plan, and failure are retained in
 | 42 | `synth:bass` (Synth) | synth / bass | **0.0** baseline | B | canonical live peak -4.4 dBFS, RMS -27.9 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 43 | `synth:bell` (Bell) | synth / fx | **0.0** baseline | B | canonical live peak -14.4 dBFS, RMS -29.9 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 44 | `synth:brass` (Brass) | synth / fx | **0.0** baseline | B | canonical live peak -12.7 dBFS, RMS -34.6 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
-| 45 | `synth:clavinet` (Clav) | synth / keys | **0.0** baseline | B | canonical live peak -9.3 dBFS, RMS -32.7 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
+| 45 | `synth:clavinet` (Clav) | synth / keys | **0.0** baseline | B | canonical live peak -9.2 dBFS, RMS -32.7 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 46 | `synth:discobass` (Disco) | synth / bass | **0.0** baseline | B | canonical live peak -7.7 dBFS, RMS -27.9 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 47 | `synth:dreampop` (Dream) | synth / pads | **0.0** baseline | B | canonical live peak -12 dBFS, RMS -31.5 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 48 | `synth:epiano` (E-Piano) | synth / keys | **0.0** baseline | B | canonical live peak -10.4 dBFS, RMS -26.9 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 49 | `synth:evolving` (Evolve) | synth / pads | **0.0** baseline | B | canonical live peak -10.6 dBFS, RMS -28.2 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 50 | `synth:funkbass` (Funk) | synth / bass | **0.0** baseline | B | canonical live peak -6.4 dBFS, RMS -28.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
-| 51 | `synth:glass` (Glass) | synth / pads | **0.0** baseline | B | canonical live peak -13.8 dBFS, RMS -30.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
+| 51 | `synth:glass` (Glass) | synth / pads | **0.0** baseline | B | canonical live peak -13.9 dBFS, RMS -30.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 52 | `synth:growl` (Growl) | synth / fx | **0.0** baseline | B | canonical live peak -11.8 dBFS, RMS -33.1 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 53 | `synth:hoover` (Hoover) | synth / bass | **0.0** baseline | B | canonical live peak -17.3 dBFS, RMS -38.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 54 | `synth:hypersaw` (Hypersaw) | synth / leads | **0.0** baseline | B | canonical live peak -16.3 dBFS, RMS -38.5 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 55 | `synth:jangle` (Jangle) | synth / pads | **0.0** baseline | B | canonical live peak -12.8 dBFS, RMS -30 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
-| 56 | `synth:lead` (Classic) | synth / leads | **0.0** baseline | B | canonical live peak -9.3 dBFS, RMS -27.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
+| 56 | `synth:lead` (Classic) | synth / leads | **0.0** baseline | B | canonical live peak -9.2 dBFS, RMS -27.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 57 | `synth:organ` (Organ) | synth / keys | **0.0** baseline | B | canonical live peak -13.3 dBFS, RMS -30.7 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 58 | `synth:organphase` (Phaser) | synth / keys | **0.0** baseline | B | canonical live peak -13 dBFS, RMS -31.6 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
 | 59 | `synth:pad` (Soft) | synth / pads | **0.0** baseline | B | canonical live peak -9.3 dBFS, RMS -26.9 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
@@ -121,11 +123,11 @@ receipts, hashes, reconstruction plan, and failure are retained in
 | 76 | `tone:am-tremolo` (Tremolo) | tone / fx | **0.0** baseline | B | canonical live peak -25.6 dBFS, RMS -44.2 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 77 | `tone:duo-lead` (Duo) | tone / leads | **0.0** baseline | B | canonical live peak -6.5 dBFS, RMS -28.2 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 78 | `tone:fm-bass` (FM Bass) | tone / bass | **0.0** baseline | B | canonical live peak -17.1 dBFS, RMS -37.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
-| 79 | `tone:fm-bell` (FM Bell) | tone / fx | **0.0** baseline | B | canonical live peak -21.2 dBFS, RMS -37.9 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
+| 79 | `tone:fm-bell` (FM Bell) | tone / fx | **0.0** baseline | B | canonical live peak -21 dBFS, RMS -37.8 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 80 | `tone:fm-epiano` (FM Piano) | tone / keys | **0.0** baseline | B | canonical live peak -19.1 dBFS, RMS -39.8 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
-| 81 | `tone:membrane-kick` (Synth Kick) | tone / drums | **0.0** baseline | B | canonical live peak -6 dBFS, RMS -27.6 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
+| 81 | `tone:membrane-kick` (Synth Kick) | tone / drums | **0.0** baseline | B | canonical live peak -6.1 dBFS, RMS -27.6 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 82 | `tone:membrane-tom` (Synth Tom) | tone / drums | **0.0** baseline | B | canonical live peak -8 dBFS, RMS -30.7 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
-| 83 | `tone:metal-cymbal` (Cymbal) | tone / drums | **0.0** baseline | B | canonical live peak -1.7 dBFS, RMS -25.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
+| 83 | `tone:metal-cymbal` (Cymbal) | tone / drums | **0.0** baseline | B | canonical live peak -1.7 dBFS, RMS -25.3 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 84 | `tone:metal-hihat` (Metal Hat) | tone / drums | **0.0** baseline | B | canonical live peak -2.6 dBFS, RMS -34 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 85 | `tone:pluck-string` (String) | tone / leads | **0.0** baseline | B | canonical live peak -12.7 dBFS, RMS -35.2 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; add isolated browser PCM baselines across pitch and velocity; current evidence is one canonical live note |
 | 86 | `woodblock` (Wood) | sample / drums | **0.0** baseline | B | canonical live peak -9.5 dBFS, RMS -35.4 dBFS; no measured deficit | no automated technical repair identified; require level-matched blind listening before changing the timbre; extend the per-instrument PCM baseline beyond the canonical live note |
@@ -154,8 +156,8 @@ Scores are sorted descending. Ties are resolved by weaker evidence first, then i
 
 ## Reproduce
 
-From a clean worktree at subject
-`553398b93f16b31a258e254dba12257dd0dce2f2`:
+From a clean checkout of
+`fb6c341941b6d7485d61bf4e63132b80b9128cd1`:
 
 ```sh
 cd app
@@ -163,24 +165,18 @@ npm run audit:instrument-quality:evidence
 npm run audit:instrument-quality:matrix:smoke
 node --import tsx scripts/audit-instrument-quality.ts \
   --require-evidence \
-  --evaluator-commit 553398b93f16b31a258e254dba12257dd0dce2f2 \
-  --subject-commit 553398b93f16b31a258e254dba12257dd0dce2f2
+  --evaluator-commit fb6c341941b6d7485d61bf4e63132b80b9128cd1 \
+  --subject-commit fb6c341941b6d7485d61bf4e63132b80b9128cd1
 ```
 
 The exact weights, caps, role targets, and claim boundary are documented in `../docs/INSTRUMENT-AUDIO-QUALITY-RUBRIC.md`.
 
 The six-case smoke is not the full matrix. `audit:instrument-quality:full`
-correctly fails until all 1,683 PCM cases and their raw sidecars are supplied.
+correctly fails until all 1,683 PCM cases and raw sidecars are supplied.
 
-Rebuild the same-evaluator control in a clean checkout with:
-
-```sh
-cd app
-npm run audit:instrument-quality:control -- \
-  --base-ref 58264dd5ae274f63b1cd80b72aa823b76b21f28b \
-  --evaluator-ref 553398b93f16b31a258e254dba12257dd0dce2f2 \
-  --output-dir ../instrument-quality-controlled-rebuild
-```
-
-That command is expected to refuse an aggregate delta if either lane exceeds
-the stability alarm, as the retained original-main control did.
+Reconstruct the decoded control and attempt the independent live comparison
+with the command in
+[`INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md`](./INSTRUMENT-AUDIO-QUALITY-CONTROL-REPRODUCTION.md).
+Every run must honor the same no-selection policy: it may fail closed or emit a
+newly complete comparison, but it must never average, discard, or retry a
+control result to obtain a preferred outcome.
