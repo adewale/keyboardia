@@ -586,6 +586,32 @@ export function stableSampleQualityReceiptsEqual(
   return firstStableSampleQualityReceiptMismatch(left, right) === null;
 }
 
+interface ReceiptNumericComparison {
+  equal: boolean;
+  tolerance: number;
+}
+
+function compareReceiptNumbers(
+  left: number,
+  right: number,
+  policyPathParts: readonly string[],
+): ReceiptNumericComparison {
+  const decoderDerived = isDecoderDerivedMeasurementPath(policyPathParts);
+  const receiptTolerance = DECODER_DERIVED_RECEIPT_ABSOLUTE_TOLERANCE_BY_PATH
+    .get(policyPathParts.join('.'));
+  const tolerance = decoderDerived
+    ? receiptTolerance ?? BOUND_MEASURED_VALUE_ABSOLUTE_TOLERANCE
+    : 0;
+  const equal = decoderDerived
+    ? receiptTolerance === undefined
+      ? measurementsEqual(left, right)
+      : Number.isFinite(left)
+      && Number.isFinite(right)
+      && Math.abs(left - right) <= receiptTolerance
+    : Object.is(left, right);
+  return { equal, tolerance };
+}
+
 function receiptValueType(value: unknown): string {
   if (value === null) return 'null';
   if (Array.isArray(value)) return 'array';
@@ -611,19 +637,7 @@ function findStableSampleQualityReceiptMismatch(
   displayPath: string,
 ): string | null {
   if (typeof left === 'number' && typeof right === 'number') {
-    const decoderDerived = isDecoderDerivedMeasurementPath(policyPathParts);
-    const receiptTolerance = DECODER_DERIVED_RECEIPT_ABSOLUTE_TOLERANCE_BY_PATH
-      .get(policyPathParts.join('.'));
-    const tolerance = decoderDerived
-      ? receiptTolerance ?? BOUND_MEASURED_VALUE_ABSOLUTE_TOLERANCE
-      : 0;
-    const equal = decoderDerived
-      ? receiptTolerance === undefined
-        ? measurementsEqual(left, right)
-        : Number.isFinite(left)
-        && Number.isFinite(right)
-        && Math.abs(left - right) <= receiptTolerance
-      : Object.is(left, right);
+    const { equal, tolerance } = compareReceiptNumbers(left, right, policyPathParts);
     if (equal) return null;
     if (Number.isFinite(left) && Number.isFinite(right)) {
       return `numeric mismatch at ${displayPath}: supplied=${left}, recomputed=${right}, `
@@ -689,6 +703,109 @@ function findStableSampleQualityReceiptMismatch(
       + `recomputed=${receiptDisplayValue(right)}`;
 }
 
+interface ReceiptNumericMismatchGroup {
+  canonicalPath: string;
+  count: number;
+  maxAbsoluteDelta: number;
+  tolerance: number;
+  representativePath: string;
+  supplied: number;
+  recomputed: number;
+}
+
+const MAX_NUMERIC_MISMATCH_SUMMARY_PATHS = 32;
+
+function collectStableSampleQualityReceiptNumericMismatches(
+  left: unknown,
+  right: unknown,
+  policyPathParts: readonly string[],
+  displayPath: string,
+  groups: Map<string, ReceiptNumericMismatchGroup>,
+): void {
+  if (typeof left === 'number' && typeof right === 'number') {
+    const { equal, tolerance } = compareReceiptNumbers(left, right, policyPathParts);
+    if (equal || !Number.isFinite(left) || !Number.isFinite(right)) return;
+    const canonicalPath = policyPathParts.reduce(receiptObjectPath, '$');
+    const absoluteDelta = Math.abs(left - right);
+    const current = groups.get(canonicalPath);
+    if (current === undefined) {
+      groups.set(canonicalPath, {
+        canonicalPath,
+        count: 1,
+        maxAbsoluteDelta: absoluteDelta,
+        tolerance,
+        representativePath: displayPath,
+        supplied: left,
+        recomputed: right,
+      });
+    } else {
+      current.count += 1;
+      if (absoluteDelta > current.maxAbsoluteDelta) {
+        current.maxAbsoluteDelta = absoluteDelta;
+        current.representativePath = displayPath;
+        current.supplied = left;
+        current.recomputed = right;
+      }
+    }
+    return;
+  }
+  if (Array.isArray(left) && Array.isArray(right)) {
+    const sharedLength = Math.min(left.length, right.length);
+    for (let index = 0; index < sharedLength; index++) {
+      collectStableSampleQualityReceiptNumericMismatches(
+        left[index],
+        right[index],
+        policyPathParts,
+        `${displayPath}[${index}]`,
+        groups,
+      );
+    }
+    return;
+  }
+  if (!isRecord(left) || !isRecord(right)) return;
+  const atRoot = policyPathParts.length === 0;
+  const sharedKeys = Object.keys(left)
+    .filter(key => (!atRoot || key !== 'generatedAt')
+      && Object.prototype.hasOwnProperty.call(right, key))
+    .sort();
+  for (const key of sharedKeys) {
+    collectStableSampleQualityReceiptNumericMismatches(
+      left[key],
+      right[key],
+      [...policyPathParts, key],
+      receiptObjectPath(displayPath, key),
+      groups,
+    );
+  }
+}
+
+/**
+ * Traverse the whole shared receipt shape for diagnostics only. Comparison
+ * still fails closed on the first mismatch; this bounded summary exposes the
+ * complete per-path numeric drift distribution without dumping either report.
+ */
+export function summarizeStableSampleQualityReceiptNumericMismatches(
+  supplied: unknown,
+  recomputed: unknown,
+): string | null {
+  const groups = new Map<string, ReceiptNumericMismatchGroup>();
+  collectStableSampleQualityReceiptNumericMismatches(supplied, recomputed, [], '$', groups);
+  if (groups.size === 0) return null;
+  const ordered = [...groups.values()].sort((left, right) => (
+    left.canonicalPath.localeCompare(right.canonicalPath)
+  ));
+  const shown = ordered.slice(0, MAX_NUMERIC_MISMATCH_SUMMARY_PATHS);
+  const entries = shown.map(group => (
+    `${group.canonicalPath}: count=${group.count}, maxAbsoluteDelta=${group.maxAbsoluteDelta}, `
+    + `tolerance=${group.tolerance}, representative=${group.representativePath}, `
+    + `supplied=${group.supplied}, recomputed=${group.recomputed}`
+  ));
+  const omitted = ordered.length - shown.length;
+  return `numeric mismatch summary (${ordered.length} canonical path${ordered.length === 1 ? '' : 's'}; `
+    + `showing ${shown.length}): ${entries.join(' | ')}`
+    + `${omitted > 0 ? ` | omittedCanonicalPaths=${omitted}` : ''}`;
+}
+
 export function firstStableSampleQualityReceiptMismatch(
   supplied: unknown,
   recomputed: unknown,
@@ -747,11 +864,16 @@ function assertCanonicalSampleQualityEvidence(
   const recomputed = recomputeCanonicalSampleQualityReport(expectedSubjectCommit);
   const firstMismatch = firstStableSampleQualityReceiptMismatch(supplied, recomputed);
   if (firstMismatch !== null) {
+    const numericMismatchSummary = summarizeStableSampleQualityReceiptNumericMismatches(
+      supplied,
+      recomputed,
+    );
     const suppliedStable = JSON.stringify(stableSampleQualityReceiptForHash(supplied));
     const recomputedStable = JSON.stringify(stableSampleQualityReceiptForHash(recomputed));
     throw new Error(
       'Sample-quality evidence does not match canonical decoded recomputation; '
       + `first mismatch: ${firstMismatch}; `
+      + `${numericMismatchSummary === null ? '' : `${numericMismatchSummary}; `}`
       + `suppliedHash=${sha256Text(suppliedStable)}, recomputedHash=${sha256Text(recomputedStable)}`,
     );
   }
