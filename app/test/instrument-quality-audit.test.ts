@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest';
 import {
   firstStableSampleQualityReceiptMismatch,
   stableSampleQualityReceiptsEqual,
+  summarizeStableSampleQualityReceiptNumericMismatches,
 } from '../scripts/audit-instrument-quality';
 import {
   LIVE_RECEIPT_SCHEMA_VERSION,
@@ -248,6 +249,54 @@ describe('instrument quality audit evidence coverage', () => {
     )).toBe('structural mismatch at $.samples[0].spectral: missing from supplied receipt');
   });
 
+  it('summarizes all out-of-bound numerics by canonical path and maximum delta', () => {
+    const summary = summarizeStableSampleQualityReceiptNumericMismatches(
+      {
+        samples: [
+          { rmsDb: -20, peakDb: -8, spectral: { centroidHz: 100 } },
+          { rmsDb: -30, peakDb: -9, spectral: { centroidHz: 200 } },
+        ],
+        totals: { waivedIssues: 0 },
+      },
+      {
+        samples: [
+          { rmsDb: -19.9999995, peakDb: -7.999995, spectral: { centroidHz: 100.002 } },
+          { rmsDb: -29.999998, peakDb: -8.999995, spectral: { centroidHz: 200.003 } },
+        ],
+        totals: { waivedIssues: 203 },
+      },
+    );
+    expect(summary).toContain('numeric mismatch summary (3 canonical paths; showing 3)');
+    expect(summary).toContain(
+      '$.samples.rmsDb: count=1, maxAbsoluteDelta=0.000001999999998503199, '
+      + 'tolerance=0.000001, representative=$.samples[1].rmsDb, '
+      + 'supplied=-30, recomputed=-29.999998',
+    );
+    expect(summary).toContain(
+      '$.samples.spectral.centroidHz: count=2, maxAbsoluteDelta=0.002999999999985903, '
+      + 'tolerance=0.001, representative=$.samples[1].spectral.centroidHz, '
+      + 'supplied=200, recomputed=200.003',
+    );
+    expect(summary).toContain(
+      '$.totals.waivedIssues: count=1, maxAbsoluteDelta=203, tolerance=0, '
+      + 'representative=$.totals.waivedIssues, supplied=0, recomputed=203',
+    );
+    expect(summary).not.toContain('$.samples.peakDb');
+  });
+
+  it('caps numeric mismatch diagnostics without skipping traversal counts', () => {
+    const supplied = Object.fromEntries(
+      Array.from({ length: 40 }, (_, index) => [`field${String(index).padStart(2, '0')}`, 0]),
+    );
+    const recomputed = Object.fromEntries(
+      Object.keys(supplied).map(key => [key, 1]),
+    );
+    const summary = summarizeStableSampleQualityReceiptNumericMismatches(supplied, recomputed);
+    expect(summary).toContain('numeric mismatch summary (40 canonical paths; showing 32)');
+    expect(summary).toContain('omittedCanonicalPaths=8');
+    expect(summary?.length).toBeLessThan(8_000);
+  });
+
   it('rejects a filtered sample report in required-evidence mode', () => {
     const result = runRequiredAudit(filteredSampleReport());
     expect(result.status).not.toBe(0);
@@ -282,8 +331,9 @@ describe('instrument quality audit evidence coverage', () => {
     expect(sampleReport.waivedIssues as unknown[]).toHaveLength(203);
 
     const result = runRequiredAudit(sampleReport, liveReport);
-    expect(`${result.stdout}\n${result.stderr}`).toContain('JSON report:');
-    expect(result.status).toBe(0);
+    const diagnostic = `${result.stdout}\n${result.stderr}`;
+    expect(diagnostic).toContain('JSON report:');
+    expect(result.status, diagnostic).toBe(0);
   }, 120_000);
 
   it('rejects deleting all 203 decoded findings and rewriting the dependent totals', () => {
@@ -302,8 +352,8 @@ describe('instrument quality audit evidence coverage', () => {
     const diagnostic = `${result.stdout}\n${result.stderr}`;
     expect(diagnostic).toMatch(/does not match canonical decoded recomputation/);
     expect(diagnostic).toContain(
-      'first mismatch: numeric mismatch at $.totals.waivedIssues: '
-      + 'supplied=0, recomputed=203, absoluteDelta=203, tolerance=0',
+      '$.totals.waivedIssues: count=1, maxAbsoluteDelta=203, tolerance=0, '
+      + 'representative=$.totals.waivedIssues, supplied=0, recomputed=203',
     );
   }, 120_000);
 });
