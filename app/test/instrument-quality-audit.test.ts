@@ -4,7 +4,10 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { describe, expect, it } from 'vitest';
-import { stableSampleQualityReceiptsEqual } from '../scripts/audit-instrument-quality';
+import {
+  firstStableSampleQualityReceiptMismatch,
+  stableSampleQualityReceiptsEqual,
+} from '../scripts/audit-instrument-quality';
 import {
   LIVE_RECEIPT_SCHEMA_VERSION,
   expectedLiveEngineDispatchIdentity,
@@ -210,6 +213,33 @@ describe('instrument quality audit evidence coverage', () => {
     expect(stableSampleQualityReceiptsEqual(threshold(1), threshold(1.0000001))).toBe(false);
   });
 
+  it('reports the first numeric mismatch with its indexed path, delta, and effective tolerance', () => {
+    const pathSpecific = firstStableSampleQualityReceiptMismatch(
+      { samples: [{ rmsDb: -20 }, { spectral: { centroidHz: 625 } }] },
+      { samples: [{ rmsDb: -20 }, { spectral: { centroidHz: 625.01 } }] },
+    );
+    expect(pathSpecific).toContain('numeric mismatch at $.samples[1].spectral.centroidHz');
+    expect(pathSpecific).toContain('supplied=625, recomputed=625.01');
+    expect(pathSpecific).toContain('absoluteDelta=');
+    expect(pathSpecific).toContain('tolerance=0.001');
+
+    const defaultTolerance = firstStableSampleQualityReceiptMismatch(
+      { samples: [{ rmsDb: -20 }] },
+      { samples: [{ rmsDb: -19.99999 }] },
+    );
+    expect(defaultTolerance).toContain('numeric mismatch at $.samples[0].rmsDb');
+    expect(defaultTolerance).toContain('supplied=-20, recomputed=-19.99999');
+    expect(defaultTolerance).toContain('absoluteDelta=');
+    expect(defaultTolerance).toContain('tolerance=0.000001');
+  });
+
+  it('reports one concise structural mismatch without serializing the receipt', () => {
+    expect(firstStableSampleQualityReceiptMismatch(
+      { samples: [{ file: 'C4.mp3' }] },
+      { samples: [{ file: 'C4.mp3', spectral: { centroidHz: 625 } }] },
+    )).toBe('structural mismatch at $.samples[0].spectral: missing from supplied receipt');
+  });
+
   it('rejects a filtered sample report in required-evidence mode', () => {
     const result = runRequiredAudit(filteredSampleReport());
     expect(result.status).not.toBe(0);
@@ -261,6 +291,11 @@ describe('instrument quality audit evidence coverage', () => {
     };
     const result = runRequiredAudit(sampleReport, liveReport);
     expect(result.status).not.toBe(0);
-    expect(`${result.stdout}\n${result.stderr}`).toMatch(/does not match canonical decoded recomputation/);
+    const diagnostic = `${result.stdout}\n${result.stderr}`;
+    expect(diagnostic).toMatch(/does not match canonical decoded recomputation/);
+    expect(diagnostic).toContain(
+      'first mismatch: numeric mismatch at $.totals.waivedIssues: '
+      + 'supplied=0, recomputed=203, absoluteDelta=203, tolerance=0',
+    );
   }, 120_000);
 });
