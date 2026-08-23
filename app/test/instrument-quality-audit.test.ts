@@ -185,6 +185,13 @@ describe('instrument quality audit evidence coverage', () => {
       tolerance: 0.00001,
       receipt: (value: number) => ({ samples: [{ crestFactorDb: value }] }),
     },
+    {
+      field: 'instrument max peak dB',
+      reference: -8.371171668872284,
+      linux: -8.371170311643814,
+      tolerance: 0.00001,
+      receipt: (value: number) => ({ instruments: [{ maxPeakDb: value }] }),
+    },
   ])('bounds the $field cross-platform receipt tolerance', ({
     reference,
     linux,
@@ -193,6 +200,7 @@ describe('instrument quality audit evidence coverage', () => {
   }) => {
     expect(stableSampleQualityReceiptsEqual(receipt(reference), receipt(linux))).toBe(true);
     expect(stableSampleQualityReceiptsEqual(receipt(0), receipt(tolerance))).toBe(true);
+    expect(stableSampleQualityReceiptsEqual(receipt(0), receipt(tolerance * 1.1))).toBe(false);
     expect(stableSampleQualityReceiptsEqual(receipt(reference), receipt(reference + 0.01))).toBe(false);
   });
 
