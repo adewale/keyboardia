@@ -1,7 +1,7 @@
 {
   "schemaVersion": 3,
-  "claim": "curated fail-closed evidence index; decoded lane is same-evaluator comparable; candidate live decisions are repeatable; original-base aggregate live comparison is incomplete because control capture two produced no receipt; not listening or complete-matrix evidence",
-  "assembledAt": "2026-08-22T23:48:38Z",
+  "claim": "curated fail-closed evidence index; retained fb6c341 decoded lane is same-evaluator comparable and its candidate live decisions are repeatable; original-base aggregate live comparison is incomplete because control capture two produced no receipt; post-measurement d360cf8 verifier diagnostics produced no second live receipt and do not supersede or relabel the retained evidence; not listening or complete-matrix evidence",
+  "assembledAt": "2026-08-23T01:12:53Z",
   "currentMainBaseCommit": "702ad0c525bd73844858c7ee7eddfb5a646e2c52",
   "historicalAudioControlBaseCommit": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
   "candidateSubjectCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
@@ -9,6 +9,108 @@
   "candidateEvaluatorTreeSha256": "b717827dd516a810a8d49db6f975e821f42bb50a37b0dc68a9e0a2b74672515b",
   "sampleEvaluatorBundleSha256": "9a6c4ad0d30ed38529fc0f6984a382e4aa51902b528691341e43e59fc60e761c",
   "candidateBaselineSha256": "616c7f485ec9deb52ab4ab058eb41b702c17d6d9b902ddb18547ca421ee1a509",
+  "postMeasurementHardening": {
+    "matrixTimeoutCommit": "a6bc402b0a17bde64e3e963bc266579deffe494b",
+    "verifierCommit": "d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec",
+    "verifierEvaluatorTreeSha256": "83225ffea8d0ade671573c98f50615ad21277f52ad8c75a02a3fc656ec16adf8",
+    "retainedMeasuredSubjectAndEvaluatorCommit": "fb6c341941b6d7485d61bf4e63132b80b9128cd1",
+    "retainedArtifactPolicy": "Every artifact below remains bound to fb6c341 and keeps its original bytes and SHA-256. No post-measurement receipt is relabelled or substituted, and no d360cf8 ranking is published.",
+    "productionAudioChanged": false,
+    "rankingInputsChanged": false,
+    "sampleEvaluatorBundleChanged": false,
+    "sampleBaselineChanged": false,
+    "triggeringCi": {
+      "headCommit": "f8920eeb5c49499d349661d41a74a88cbc5e6694",
+      "matrixIntegrityTimeouts": 2,
+      "matrixTimeoutSecondsBefore": 30,
+      "matrixTimeoutSecondsAfter": 60,
+      "canonicalPositiveReceiptAccepted": false,
+      "canonicalDeletionAttackRejected": true,
+      "reason": "Node 24.19 Linux recomputation exceeded the generic 0.000001 absolute comparator bound in five raw aggregate decoder fields while structure, thresholds, findings, decisions, counts, mappings, and hashes remained unchanged."
+    },
+    "canonicalReceiptComparator": {
+      "defaultDecoderDerivedAbsoluteTolerance": 0.000001,
+      "pathOverrides": [
+        {
+          "path": "samples.spectral.centroidHz",
+          "absoluteTolerance": 0.001,
+          "unit": "Hz"
+        },
+        {
+          "path": "samples.dcOffsetDb",
+          "absoluteTolerance": 0.001,
+          "unit": "dB"
+        },
+        {
+          "path": "samples.tailLevelDbRelPeak",
+          "absoluteTolerance": 0.001,
+          "unit": "dB-relative-to-peak"
+        },
+        {
+          "path": "samples.peakDb",
+          "absoluteTolerance": 0.00001,
+          "unit": "dBFS"
+        },
+        {
+          "path": "samples.crestFactorDb",
+          "absoluteTolerance": 0.00001,
+          "unit": "dB"
+        }
+      ],
+      "exactBindings": [
+        "structure",
+        "provenance",
+        "source-and-manifest-hashes",
+        "thresholds",
+        "finding-classifications",
+        "counts",
+        "mappings",
+        "identity-fields"
+      ],
+      "selectionPolicy": "Never average, rewrite, discard, or select a measurement; reject a decoder-derived value outside its path-specific absolute bound."
+    },
+    "focusedVerification": {
+      "macosPositiveAndDeletionTestsPassed": 10,
+      "macosPositiveAndDeletionTestsTotal": 10,
+      "linuxX64PositiveAndDeletionTestsPassed": 10,
+      "linuxX64PositiveAndDeletionTestsTotal": 10
+    },
+    "nonRetainedDiagnosticRun": {
+      "subjectCommit": "d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec",
+      "evidenceStatus": "diagnostic-only; these results are not listed under artifacts and do not support or supersede the retained ranking",
+      "decoded": {
+        "instruments": 26,
+        "mappings": 605,
+        "files": 582,
+        "acceptedFindings": 203,
+        "unwaivedErrors": 0,
+        "unwaivedReviews": 0
+      },
+      "browserDecode": {
+        "chromiumMappings": 605,
+        "webkitMappings": 605,
+        "expectedMappingsPerBrowser": 605
+      },
+      "livePrimary": {
+        "receiptPublished": true,
+        "audibleInstruments": 99,
+        "exactExpectedProductionDispatches": 99,
+        "pageErrors": 0,
+        "consoleErrors": 0
+      },
+      "liveConfirmation": {
+        "receiptPublished": false,
+        "failureDurationMs": 482448,
+        "failureStage": "per-trial stop/cleanup",
+        "playwrightError": "locator.getAttribute: Target page, context or browser has been closed",
+        "provenInterpretation": "The target page, context, or browser became unavailable; the trace does not distinguish which one.",
+        "playwrightRetries": 0
+      },
+      "liveRepeatabilityEvaluated": false,
+      "rankingPublished": false,
+      "noRetryOrSelection": true
+    }
+  },
   "method": {
     "reconstructionScript": "app/scripts/reconstruct-instrument-quality-control.ts",
     "reconstructionPlan": "control-reconstruction-plan-fb6c341.json",
@@ -151,6 +253,7 @@
   },
   "limitations": [
     "The control live lane is incomplete, so no original-base aggregate live score, ranking delta, or live energy spread is claimed.",
+    "The post-measurement d360cf8 diagnostic live lane is also incomplete. Its primary receipt completed, but confirmation produced no receipt; no d360cf8 repeatability result or ranking is claimed.",
     "The live lane is a single isolated post-track sample-peak/RMS event plus a pre-processing masterGain routing canary; it is not inter-sample true peak or final post-effects output.",
     "The six-case dry-PCM receipt validates the adapter path, not the complete 1,683-case matrix.",
     "No level-matched blind listening panel was run."

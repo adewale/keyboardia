@@ -2,13 +2,23 @@
 
 ## Scope and claim boundary
 
-The clean measured production/evaluator subject is
+The retained measured production/ranking subject and evaluator are
 `fb6c341941b6d7485d61bf4e63132b80b9128cd1`, rebased onto `main` at
 `702ad0c525bd73844858c7ee7eddfb5a646e2c52`. The historical audio control is
 `58264dd5ae274f63b1cd80b72aa823b76b21f28b`; it predates the remediation and
-is not presented as the current PR base. The later publication commit retains
-only these reviewed reports/evidence and does not alter measured audio,
-evaluator policy, receipt metrics, or ranking inputs.
+is not presented as the current PR base. The retained receipts and rankings
+remain bound to `fb6c341`; they are not relabelled as evidence for a later
+commit.
+
+Two post-measurement commits harden CI and receipt verification without changing
+production audio, assets, manifests, the sample-evaluator bundle, its baseline,
+scoring thresholds, or ranking inputs. `a6bc402b0a17bde64e3e963bc266579deffe494b`
+raises only two matrix integrity-test time budgets from 30 to 60 seconds.
+`d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec` scopes cross-platform tolerances
+for five raw decoded aggregate fields when a retained receipt is compared with
+a fresh decode. Because that second change is in the instrument evaluator's
+source closure, the final verifier has a different evaluator-tree hash; it does
+not retroactively regenerate or supersede the `fb6c341` ranking.
 
 The complete worst-first table is
 [`INSTRUMENT-AUDIO-QUALITY-AUDIT.md`](./INSTRUMENT-AUDIO-QUALITY-AUDIT.md), the
@@ -102,11 +112,16 @@ removing 26.7% of the capability is not an audio repair.
   exact geometry, fresh browser contexts, seeded RNG, dispatch/isolation
   receipts, closed-context checks, and two-run decision comparison.
 - Sample dispositions bind source SHA, manifest SHA, a six-decimal stored
-  measured value, exact threshold, baseline, and evaluator identity. Only
-  decoder-derived measurements may differ from their stored values by at most
-  `0.000001`; thresholds, metadata, counts, mappings, and hashes remain exact.
-  Because the original unrounded reference is not stored, that tolerance does
-  not itself bound the true decoder-to-decoder difference.
+  measured value, exact threshold, baseline, and evaluator identity. Disposition
+  matching keeps its `0.000001` absolute tolerance. For whole-receipt canonical
+  recomputation, other decoder-derived numbers also keep `0.000001` except for
+  five raw fields: `samples.spectral.centroidHz` allows `0.001` Hz;
+  `samples.dcOffsetDb` and `samples.tailLevelDbRelPeak` allow `0.001` dB; and
+  `samples.peakDb` and `samples.crestFactorDb` allow `0.00001` dB. Thresholds,
+  metadata, finding decisions, counts, mappings, and hashes remain exact. No
+  value is averaged, rewritten, or selected. Because the original unrounded
+  reference is not stored, a receipt tolerance does not itself bound the true
+  decoder-to-decoder difference.
 - Loop checks use the actual continuous Web Audio boundary instead of
   correlating phase-unrelated windows.
 - Stereo activity is derived from either channel, so exact anti-phase audio
@@ -190,7 +205,7 @@ is intentionally not complete here.
 
 ## Verification and reproduction
 
-The frozen candidate has two independently retained 99-instrument live
+The `fb6c341` candidate has two independently retained 99-instrument live
 receipts and rankings, a strict 26-instrument decoded receipt, and real
 Chromium/WebKit decode coverage. The final CI/command ledger is recorded in the
 PR description and must match the pushed head.
@@ -204,13 +219,36 @@ non-silent, exact length, zero drift, and free of fatal findings/evidence gaps;
 the fresh-context replay was byte-identical. One 128-frame Tone worklet attempt
 was rejected and retained before its valid retry.
 
+The first publication-head Actions run exposed three Ubuntu unit-test failures.
+Two matrix integrity tests completed too slowly for their 30-second budgets;
+`a6bc402` changes only those budgets to 60 seconds. The positive canonical
+recomputation also rejected a macOS receipt on Node 24.19 Linux because five raw
+aggregate decoder fields exceeded the generic `0.000001` bound while all
+threshold, structure, finding, and decision bindings remained unchanged.
+`d360cf8` adds only the path- and unit-scoped tolerances above. Its focused
+cross-platform tests reject values outside each bound, and the full positive
+and 203-finding-deletion suites passed **10/10 on macOS** and **10/10 on Node
+24.19 Linux x64**.
+
+Fresh clean-`d360cf8` diagnostics reproduced the decoded totals (26 instruments,
+605 mappings, 582 files, 203 accepted findings, 0 errors/reviews), decoded all
+605 mappings in both Chromium and WebKit, and completed one schema-v7 live run
+with 99/99 audible instruments, 99 exact dispatches, and no page or console
+errors. The independent live confirmation then failed after about 8.0 minutes,
+before publishing a receipt, when the target page, context, or browser became
+unavailable during the per-trial stop/cleanup phase; the trace does not
+distinguish which one. Playwright retry count was zero and no retry was run.
+Therefore no `d360cf8` two-run repeatability result or ranking is published;
+the retained `fb6c341` pair remains the measured evidence.
+
 A Noble arm64 container running the official linux-x64 Node 24.19 binary under
 emulation also reproduced the formerly fragile piano/alto decoded subset with
 36 accepted findings and 0 errors/reviews. This exercises the x64 Node/V8
 decoder arithmetic; it is not represented as a full native amd64 Ubuntu run.
 The pushed-head GitHub Actions result remains the merge gate.
 
-From a clean checkout of `fb6c341941b6d7485d61bf4e63132b80b9128cd1`:
+The following commands reproduce the retained ranking, so they intentionally
+use a clean checkout of `fb6c341941b6d7485d61bf4e63132b80b9128cd1`:
 
 ```sh
 cd app

@@ -6,6 +6,15 @@ Evaluator tree SHA-256: `b717827dd516a810a8d49db6f975e821f42bb50a37b0dc68a9e0a2b
 
 > This is a technical improvement-priority ranking, not a claim about musical taste. A score of 0 means “no defect detected by these lanes,” not “perfect sound.” Disposition-accepted findings remain measured debt; they are not erased merely because CI accepts them.
 
+This table is intentionally retained as the ranking generated at `fb6c341`.
+Post-measurement commit `d360cf8f093ea3c8a1cfe94224a5c888fe90e2ec`
+only hardens cross-platform comparison of a retained decoded receipt with a
+fresh decode; it does not relabel or regenerate these receipts or rows. A fresh
+`d360cf8` live primary completed, but its independent confirmation produced no
+receipt after the target page, context, or browser became unavailable during
+per-trial stop/cleanup; the trace does not distinguish which one. Retry count
+was zero. Consequently, no later two-run ranking supersedes this one.
+
 ## Outcome
 
 - Catalogue: **99 instruments**; live audible: **99/99**.
@@ -25,7 +34,8 @@ environment, not bit-identical real-time synth PCM or listener preference.
 
 ## Same-evaluator comparison with the historical audio base
 
-The decoded lane is directly comparable under the same final evaluator:
+The decoded lane is directly comparable under the same retained `fb6c341`
+evaluator:
 **256 → 203 findings**, a reduction of **53 (20.7%)**. The exact changes are 43
 leading-silence findings, three loop-value discontinuities, three adjacent-note
 level steps, two tail-truncation findings, and two lossy-source hot-peak

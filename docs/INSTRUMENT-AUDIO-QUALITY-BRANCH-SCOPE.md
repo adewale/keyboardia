@@ -5,22 +5,27 @@ requests independently of branch naming. The remote refresh on 2026-08-23
 found eight open pull requests and three open issues.
 
 That check used `main` at `702ad0c`, PR 87 at `8f995a7`, PR 98 at `6028265f`,
-and the then-remote remediation PR 100 at the stale `a1355fb6`; the final clean
-measured PR 100 subject is `fb6c341`. Both audio-adjacent PRs are production
-implementations, not research-only branches, and their current overlap and
-sequencing requirements are detailed below.
+and the then-remote remediation PR 100 at the stale `a1355fb6`; the retained
+clean measured PR 100 subject/evaluator is `fb6c341`. Later commits `a6bc402`
+and `d360cf8` harden test budgets and cross-platform receipt comparison without
+changing production audio or the retained ranking. Both audio-adjacent PRs are
+production implementations, not research-only branches, and their current
+overlap and sequencing requirements are detailed below.
 
 At the snapshot PR 87 was `CLEAN` with 13/13 checks passing. PR 98 had just
 advanced again and was `UNSTABLE`: ten checks were green, E2E Visual Regression
 was red, and two E2E jobs were still running. PR 100's remote checks were for
 an obsolete head and
 do not validate this report; the final pushed-head Actions run is the merge
-gate. Locally, only decoder-derived measurements receive an absolute
-`0.000001` comparison tolerance against the stored value. Thresholds, metadata,
-counts, mappings, and hashes remain exact. A Noble arm64 container running the
-official linux-x64 Node 24.19 binary under emulation passed the formerly fragile
-piano/alto subset; this is x64 Node/V8 arithmetic evidence, not a full native
-amd64 Ubuntu result.
+gate. The final canonical receipt comparator keeps an absolute `0.000001`
+tolerance for decoder-derived numbers except five raw aggregates:
+`samples.spectral.centroidHz` allows `0.001` Hz; `samples.dcOffsetDb` and
+`samples.tailLevelDbRelPeak` allow `0.001` dB; and `samples.peakDb` and
+`samples.crestFactorDb` allow `0.00001` dB. Thresholds, metadata, finding
+decisions, counts, mappings, and hashes remain exact. A Noble arm64 container
+running the official linux-x64 Node 24.19 binary under emulation passed the
+formerly fragile piano/alto subset; this is x64 Node/V8 arithmetic evidence,
+not a full native amd64 Ubuntu result.
 
 | PR | Head | Audio impact |
 |---:|---|---|
