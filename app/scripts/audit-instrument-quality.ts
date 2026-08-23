@@ -44,6 +44,7 @@ import {
   type LiveQualityReport,
 } from './instrument-quality-live-receipt';
 import {
+  BOUND_MEASURED_VALUE_ABSOLUTE_TOLERANCE,
   measurementsEqual,
   sampleQualityEvaluatorBundleSha256,
 } from './sample-quality-baseline-core';
@@ -580,36 +581,118 @@ function isDecoderDerivedMeasurementPath(pathParts: readonly string[]): boolean 
 export function stableSampleQualityReceiptsEqual(
   left: unknown,
   right: unknown,
-  pathParts: readonly string[] = [],
 ): boolean {
+  return firstStableSampleQualityReceiptMismatch(left, right) === null;
+}
+
+function receiptValueType(value: unknown): string {
+  if (value === null) return 'null';
+  if (Array.isArray(value)) return 'array';
+  return typeof value;
+}
+
+function receiptDisplayValue(value: unknown): string {
+  const rendered = JSON.stringify(value);
+  if (rendered === undefined) return String(value);
+  return rendered.length <= 160 ? rendered : `${rendered.slice(0, 157)}...`;
+}
+
+function receiptObjectPath(parent: string, key: string): string {
+  return /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(key)
+    ? `${parent}.${key}`
+    : `${parent}[${JSON.stringify(key)}]`;
+}
+
+function findStableSampleQualityReceiptMismatch(
+  left: unknown,
+  right: unknown,
+  policyPathParts: readonly string[],
+  displayPath: string,
+): string | null {
   if (typeof left === 'number' && typeof right === 'number') {
-    if (!isDecoderDerivedMeasurementPath(pathParts)) return Object.is(left, right);
+    const decoderDerived = isDecoderDerivedMeasurementPath(policyPathParts);
     const receiptTolerance = DECODER_DERIVED_RECEIPT_ABSOLUTE_TOLERANCE_BY_PATH
-      .get(pathParts.join('.'));
-    return receiptTolerance === undefined
-      ? measurementsEqual(left, right)
-      : Number.isFinite(left)
+      .get(policyPathParts.join('.'));
+    const tolerance = decoderDerived
+      ? receiptTolerance ?? BOUND_MEASURED_VALUE_ABSOLUTE_TOLERANCE
+      : 0;
+    const equal = decoderDerived
+      ? receiptTolerance === undefined
+        ? measurementsEqual(left, right)
+        : Number.isFinite(left)
         && Number.isFinite(right)
-        && Math.abs(left - right) <= receiptTolerance;
+        && Math.abs(left - right) <= receiptTolerance
+      : Object.is(left, right);
+    if (equal) return null;
+    if (Number.isFinite(left) && Number.isFinite(right)) {
+      return `numeric mismatch at ${displayPath}: supplied=${left}, recomputed=${right}, `
+        + `absoluteDelta=${Math.abs(left - right)}, tolerance=${tolerance}`;
+    }
+    return `structural mismatch at ${displayPath}: supplied numeric value is ${left}, `
+      + `recomputed numeric value is ${right}`;
   }
-  if (typeof left === 'number' || typeof right === 'number') return false;
+  if (typeof left === 'number' || typeof right === 'number') {
+    return `structural mismatch at ${displayPath}: supplied type=${receiptValueType(left)}, `
+      + `recomputed type=${receiptValueType(right)}`;
+  }
   if (Array.isArray(left) || Array.isArray(right)) {
-    return Array.isArray(left)
-      && Array.isArray(right)
-      && left.length === right.length
-      && left.every((entry, index) =>
-        stableSampleQualityReceiptsEqual(entry, right[index], pathParts));
+    if (!Array.isArray(left) || !Array.isArray(right)) {
+      return `structural mismatch at ${displayPath}: supplied type=${receiptValueType(left)}, `
+        + `recomputed type=${receiptValueType(right)}`;
+    }
+    if (left.length !== right.length) {
+      return `structural mismatch at ${displayPath}: supplied array length=${left.length}, `
+        + `recomputed array length=${right.length}`;
+    }
+    for (let index = 0; index < left.length; index++) {
+      const mismatch = findStableSampleQualityReceiptMismatch(
+        left[index],
+        right[index],
+        policyPathParts,
+        `${displayPath}[${index}]`,
+      );
+      if (mismatch !== null) return mismatch;
+    }
+    return null;
   }
   if (isRecord(left) || isRecord(right)) {
-    if (!isRecord(left) || !isRecord(right)) return false;
-    const atRoot = pathParts.length === 0;
+    if (!isRecord(left) || !isRecord(right)) {
+      return `structural mismatch at ${displayPath}: supplied type=${receiptValueType(left)}, `
+        + `recomputed type=${receiptValueType(right)}`;
+    }
+    const atRoot = policyPathParts.length === 0;
     const leftKeys = Object.keys(left).filter(key => !atRoot || key !== 'generatedAt').sort();
     const rightKeys = Object.keys(right).filter(key => !atRoot || key !== 'generatedAt').sort();
-    return JSON.stringify(leftKeys) === JSON.stringify(rightKeys)
-      && leftKeys.every(key =>
-        stableSampleQualityReceiptsEqual(left[key], right[key], [...pathParts, key]));
+    const keys = [...new Set([...leftKeys, ...rightKeys])].sort();
+    for (const key of keys) {
+      const childPath = receiptObjectPath(displayPath, key);
+      if (!Object.prototype.hasOwnProperty.call(left, key)) {
+        return `structural mismatch at ${childPath}: missing from supplied receipt`;
+      }
+      if (!Object.prototype.hasOwnProperty.call(right, key)) {
+        return `structural mismatch at ${childPath}: unexpected in supplied receipt`;
+      }
+      const mismatch = findStableSampleQualityReceiptMismatch(
+        left[key],
+        right[key],
+        [...policyPathParts, key],
+        childPath,
+      );
+      if (mismatch !== null) return mismatch;
+    }
+    return null;
   }
-  return Object.is(left, right);
+  return Object.is(left, right)
+    ? null
+    : `value mismatch at ${displayPath}: supplied=${receiptDisplayValue(left)}, `
+      + `recomputed=${receiptDisplayValue(right)}`;
+}
+
+export function firstStableSampleQualityReceiptMismatch(
+  supplied: unknown,
+  recomputed: unknown,
+): string | null {
+  return findStableSampleQualityReceiptMismatch(supplied, recomputed, [], '$');
 }
 
 function sha256Text(value: string): string {
@@ -661,12 +744,14 @@ function assertCanonicalSampleQualityEvidence(
   expectedSubjectCommit: string,
 ): void {
   const recomputed = recomputeCanonicalSampleQualityReport(expectedSubjectCommit);
-  if (!stableSampleQualityReceiptsEqual(supplied, recomputed)) {
+  const firstMismatch = firstStableSampleQualityReceiptMismatch(supplied, recomputed);
+  if (firstMismatch !== null) {
     const suppliedStable = JSON.stringify(stableSampleQualityReceiptForHash(supplied));
     const recomputedStable = JSON.stringify(stableSampleQualityReceiptForHash(recomputed));
     throw new Error(
       'Sample-quality evidence does not match canonical decoded recomputation; '
-      + `supplied=${sha256Text(suppliedStable)}, recomputed=${sha256Text(recomputedStable)}`,
+      + `first mismatch: ${firstMismatch}; `
+      + `suppliedHash=${sha256Text(suppliedStable)}, recomputedHash=${sha256Text(recomputedStable)}`,
     );
   }
 }
