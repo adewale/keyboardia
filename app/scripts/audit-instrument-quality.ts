@@ -14,6 +14,7 @@ import { createHash } from 'node:crypto';
 import { spawnSync } from 'node:child_process';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import { pathToFileURL } from 'node:url';
 
 import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { getSourceCalibration } from '../src/audio/source-calibration';
@@ -544,6 +545,13 @@ const DECODER_DERIVED_INSTRUMENT_FIELDS = new Set([
   'maxLoopDerivativeRatio',
   'minStereoCorrelation',
 ]);
+const DECODER_DERIVED_RECEIPT_ABSOLUTE_TOLERANCE_BY_PATH: ReadonlyMap<string, number> = new Map([
+  ['samples.spectral.centroidHz', 0.001],
+  ['samples.dcOffsetDb', 0.001],
+  ['samples.tailLevelDbRelPeak', 0.001],
+  ['samples.peakDb', 0.00001],
+  ['samples.crestFactorDb', 0.00001],
+] as const);
 
 function isDecoderDerivedMeasurementPath(pathParts: readonly string[]): boolean {
   if ((pathParts.length === 2
@@ -562,15 +570,27 @@ function isDecoderDerivedMeasurementPath(pathParts: readonly string[]): boolean 
     && DECODER_DERIVED_INSTRUMENT_FIELDS.has(pathParts[1]);
 }
 
-function stableSampleQualityReceiptsEqual(
+/**
+ * Compare a supplied receipt with a fresh decode without weakening its
+ * structural, threshold, or decision bindings. Five raw aggregate fields
+ * accumulate enough platform-specific floating-point error to need a
+ * unit-scoped tolerance; every other decoder-derived number keeps the
+ * baseline comparator's 0.000001 limit.
+ */
+export function stableSampleQualityReceiptsEqual(
   left: unknown,
   right: unknown,
   pathParts: readonly string[] = [],
 ): boolean {
   if (typeof left === 'number' && typeof right === 'number') {
-    return isDecoderDerivedMeasurementPath(pathParts)
+    if (!isDecoderDerivedMeasurementPath(pathParts)) return Object.is(left, right);
+    const receiptTolerance = DECODER_DERIVED_RECEIPT_ABSOLUTE_TOLERANCE_BY_PATH
+      .get(pathParts.join('.'));
+    return receiptTolerance === undefined
       ? measurementsEqual(left, right)
-      : Object.is(left, right);
+      : Number.isFinite(left)
+        && Number.isFinite(right)
+        && Math.abs(left - right) <= receiptTolerance;
   }
   if (typeof left === 'number' || typeof right === 'number') return false;
   if (Array.isArray(left) || Array.isArray(right)) {
@@ -1216,4 +1236,9 @@ function main(): void {
   console.log(`Markdown report: ${options.markdownReport}`);
 }
 
-main();
+if (
+  process.argv[1] !== undefined
+  && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href
+) {
+  main();
+}
