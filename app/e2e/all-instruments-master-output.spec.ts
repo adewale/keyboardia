@@ -744,7 +744,21 @@ async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
     void probe.done.catch(() => {});
     probe.node.port.onmessage = (event: MessageEvent<DoneMessage | ErrorMessage | ArmedMessage>) => {
       if (event.data.type === 'armed') armedResolve(event.data);
-      else if (event.data.type === 'done') doneResolve(event.data);
+      else if (event.data.type === 'done') {
+        const playButton = document.querySelector<HTMLButtonElement>('[data-testid="play-button"]');
+        const playbackState = playButton?.getAttribute('aria-label');
+        if (!playButton || playbackState !== 'Stop') {
+          doneReject(new Error(
+            `Continuous energy capture completed while production playback exposed ${String(playbackState)}`,
+          ));
+          return;
+        }
+        // Stop through the production transport before resolving the capture.
+        // Returning to Playwright first can leave the dispatch probe armed long
+        // enough for a CPU-starved CI browser to schedule the next pattern loop.
+        playButton.click();
+        doneResolve(event.data);
+      }
       else {
         const error = new Error(event.data.message);
         armedReject(error);
