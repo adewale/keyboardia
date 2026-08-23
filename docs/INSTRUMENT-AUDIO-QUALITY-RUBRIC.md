@@ -133,6 +133,29 @@ are review evidence, not permission to auto-retune. The current estimator also
 searches near the expected root and folds cents, so it cannot prove absence of
 broad octave mistakes.
 
+### Cross-platform decoded-receipt recomputation
+
+Required-evidence mode compares the complete retained decoded receipt with a
+fresh decode. Structure, provenance, source/manifest hashes, thresholds,
+finding classifications, counts, mappings, and identity fields are exact.
+Decoder-derived numeric fields use an absolute `0.000001` comparison tolerance
+except for five raw aggregate paths whose reductions exhibit larger bounded
+Node/V8 platform drift:
+
+| Receipt path | Absolute tolerance | Unit |
+|---|---:|---|
+| `samples.spectral.centroidHz` | `0.001` | Hz |
+| `samples.dcOffsetDb` | `0.001` | dB |
+| `samples.tailLevelDbRelPeak` | `0.001` | dB relative to peak |
+| `samples.peakDb` | `0.00001` | dBFS |
+| `samples.crestFactorDb` | `0.00001` | dB |
+
+These bounds affect receipt equivalence only. They do not change a scoring or
+review threshold, baseline disposition, finding, or displayed retained value;
+the verifier does not average, rewrite, discard, or select measurements. Values
+outside the path-specific bounds fail closed. Sample-disposition matching keeps
+its separate six-decimal/`0.000001` contract.
+
 ## Evidence grades
 
 - **A:** every shipped source file decoded/analyzed and one real Chromium
