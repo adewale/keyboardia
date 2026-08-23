@@ -552,6 +552,7 @@ const DECODER_DERIVED_RECEIPT_ABSOLUTE_TOLERANCE_BY_PATH: ReadonlyMap<string, nu
   ['samples.tailLevelDbRelPeak', 0.001],
   ['samples.peakDb', 0.00001],
   ['samples.crestFactorDb', 0.00001],
+  ['instruments.maxPeakDb', 0.00001],
 ] as const);
 
 function isDecoderDerivedMeasurementPath(pathParts: readonly string[]): boolean {
@@ -573,7 +574,7 @@ function isDecoderDerivedMeasurementPath(pathParts: readonly string[]): boolean 
 
 /**
  * Compare a supplied receipt with a fresh decode without weakening its
- * structural, threshold, or decision bindings. Five raw aggregate fields
+ * structural, threshold, or decision bindings. Six decoder output paths
  * accumulate enough platform-specific floating-point error to need a
  * unit-scoped tolerance; every other decoder-derived number keeps the
  * baseline comparator's 0.000001 limit.
