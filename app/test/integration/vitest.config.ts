@@ -2,6 +2,9 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
 import { defineConfig } from 'vitest/config';
+import { resolveFastCheckSeed } from '../../src/test/fast-check-seed';
+
+const fastCheckSeed = resolveFastCheckSeed(process.env.FC_SEED);
 
 // Read CSS files at config time (before Workers sandbox starts)
 // so they can be accessed via text bindings in tests
@@ -29,6 +32,9 @@ export default defineConfig({
         // Expose CSS file content as a binding for tests that verify CSS rules
         bindings: {
           STEP_SEQUENCER_CSS: stepSequencerCss,
+          // Worker-pool tests do not load app/vitest.config.ts. Carry the same
+          // fixed-or-FC_SEED policy into the sandbox so command traces replay.
+          FC_SEED: String(fastCheckSeed),
           // The suite validates request behavior, not Workers Logs transport.
           // Suppress wide-event console traffic before it enters Vitest's RPC;
           // otherwise Linux CI can close the environment with log calls queued.

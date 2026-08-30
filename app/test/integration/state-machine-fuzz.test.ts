@@ -29,14 +29,22 @@ import {
   evictDurableObject,
 } from 'cloudflare:test';
 import { it, expect } from 'vitest';
+import fc from 'fast-check';
+import { resolveFastCheckSeed } from '../../src/test/fast-check-seed';
 
 interface Env {
   SESSIONS: KVNamespace;
   LIVE_SESSIONS: DurableObjectNamespace;
+  FC_SEED: string;
 }
 
 const LIVE_SESSIONS = (env as unknown as Env).LIVE_SESSIONS;
 const KV = (env as unknown as Env).SESSIONS;
+const seedBinding = (env as unknown as Env).FC_SEED;
+if (typeof seedBinding !== 'string') {
+  throw new Error('Workers integration config must bind the replayable FC_SEED');
+}
+const FAST_CHECK_SEED = resolveFastCheckSeed(seedBinding);
 
 const stubFor = (id: string) => LIVE_SESSIONS.get(LIVE_SESSIONS.idFromName(id));
 
@@ -143,17 +151,6 @@ async function connect(id: string, playerId: string) {
   return { ws, inbox };
 }
 
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0; a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-const randInt = (r: () => number, lo: number, hi: number) => lo + Math.floor(r() * (hi - lo + 1));
-
 // =============================================================================
 // Targeted transition tests (the edges most likely to desync)
 // =============================================================================
@@ -253,104 +250,179 @@ it('multi-client: KV flushes only when the LAST client disconnects', async () =>
 });
 
 // =============================================================================
-// Fuzz: random interleavings of the whole state machine
+// Model-based interleavings of the whole state machine
 // =============================================================================
 
-it('fuzz: read-your-writes through the DO holds across any interleaving; KV converges at write/disconnect points', async () => {
-  const SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee, 2024, 555, 31337, 4096];
+type Connection = Awaited<ReturnType<typeof connect>>;
 
-  for (const seed of SEEDS) {
-    const rng = mulberry32(seed);
-    const id = await createSession(120, 0);
+interface SessionModel {
+  tempo: number;
+  swing: number;
+  name: string | null;
+  kvTempo: number;
+  kvSwing: number;
+  kvName: string | null;
+  connected: boolean;
+}
 
-    // Oracle of the canonical (DO-authoritative) state.
-    const canonical = { tempo: 120, swing: 0, name: null as string | null };
-    // What KV is expected to hold (only updated at KV-writing events).
-    const kvExpect = { tempo: 120, swing: 0, name: null as string | null };
+interface SessionReal {
+  id: string;
+  playerId: string;
+  connection: Connection | null;
+  sequence: number;
+}
 
-    let conn: { ws: WebSocket; inbox: ReturnType<typeof listen> } | null = null;
-    const playerId = `fuzz-${seed}`;
-    const opCount = randInt(rng, 10, 18);
-    const tag = (op: string, i: number) => `seed=${seed} op#${i}=${op}`;
+type SessionAction =
+  | { kind: 'ws_tempo'; tempo: number }
+  | { kind: 'ws_swing'; swing: number }
+  | { kind: 'rest_put'; tempo: number; swing: number }
+  | { kind: 'rest_patch_state'; tempo: number; swing: number }
+  | { kind: 'rest_patch_name'; name: string }
+  | { kind: 'hibernate' }
+  | { kind: 'hard_evict' }
+  | { kind: 'disconnect' }
+  | { kind: 'connect' };
 
-    for (let i = 0; i < opCount; i++) {
-      const roll = rng();
-
-      if (roll < 0.22 && conn) {
-        // WS mutation (DO storage only; KV lags)
-        if (rng() < 0.5) {
-          const tempo = randInt(rng, 60, 180);
-          conn.ws.send(JSON.stringify({ type: 'set_tempo', tempo, seq: i + 1 }));
-          await conn.inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === tempo, tag('ws_tempo', i));
-          canonical.tempo = tempo;
-        } else {
-          const swing = randInt(rng, 0, 100);
-          conn.ws.send(JSON.stringify({ type: 'set_swing', swing, seq: i + 1 }));
-          await conn.inbox.waitFor((m) => m.type === 'swing_changed' && m.swing === swing, tag('ws_swing', i));
-          canonical.swing = swing;
-        }
-      } else if (roll < 0.4) {
-        // REST PUT (DO + KV)
-        const tempo = randInt(rng, 60, 180), swing = randInt(rng, 0, 100);
-        await restPutState(id, tempo, swing);
-        canonical.tempo = tempo; canonical.swing = swing;
-        kvExpect.tempo = tempo; kvExpect.swing = swing;
-      } else if (roll < 0.52) {
-        // REST PATCH state (DO + KV)
-        const tempo = randInt(rng, 60, 180), swing = randInt(rng, 0, 100);
-        await restPatchState(id, tempo, swing);
-        canonical.tempo = tempo; canonical.swing = swing;
-        kvExpect.tempo = tempo; kvExpect.swing = swing;
-      } else if (roll < 0.6) {
-        // REST PATCH name (KV only)
-        const name = `n${randInt(rng, 0, 9999)}`;
-        await restPatchName(id, name);
-        canonical.name = name; kvExpect.name = name;
-      } else if (roll < 0.72) {
-        // Hibernate (state survives; socket, if any, resumes)
-        await ensureRunning(id);
-        await evictDurableObject(stubFor(id));
-      } else if (roll < 0.8) {
-        // Evict + close sockets
-        await ensureRunning(id);
-        await evictDurableObject(stubFor(id), { webSockets: 'close' });
-        conn = null;
-      } else if (roll < 0.9) {
-        // Graceful disconnect (flushes KV) -> KV must converge to canonical
-        if (conn) {
-          conn.ws.close(1000, 'bye');
-          conn = null;
-          kvExpect.tempo = canonical.tempo; kvExpect.swing = canonical.swing; kvExpect.name = canonical.name;
-          for (let k = 0; k < 100; k++) {
-            const kv = await readKv(id);
-            if (kv && kv.state.tempo === canonical.tempo && kv.state.swing === canonical.swing) break;
-            await new Promise((r) => setTimeout(r, 20));
-          }
-        }
-      } else {
-        // (Re)connect
-        if (!conn) conn = await connect(id, playerId);
-      }
-
-      // ---- INVARIANT 1: read-your-writes through the DO, after every op ----
-      // NOTE: restGet routes through the DO and triggers ensureStateLoaded(), so
-      // it also reloads state on the HTTP path. This fuzz therefore validates the
-      // cross-layer *consistency* contract, not the pure-WS-wake reload bug — that
-      // path is covered deterministically by eviction-recovery.test.ts (Layer 10.5
-      // + the Layer 11 fuzz, which deliberately omits any HTTP call after eviction).
-      const got = await restGet(id);
-      expect(got.state.tempo, `tempo ${tag('-', i)}`).toBe(canonical.tempo);
-      expect(got.state.swing, `swing ${tag('-', i)}`).toBe(canonical.swing);
-      expect(got.name, `name ${tag('-', i)}`).toBe(canonical.name);
-
-      // ---- INVARIANT 2: KV convergence at the points where it must hold ----
-      const kv = await readKv(id);
-      expect(kv, `kv present ${tag('-', i)}`).not.toBeNull();
-      expect(kv!.state.tempo, `kv tempo ${tag('-', i)}`).toBe(kvExpect.tempo);
-      expect(kv!.state.swing, `kv swing ${tag('-', i)}`).toBe(kvExpect.swing);
-      expect(kv!.name, `kv name ${tag('-', i)}`).toBe(kvExpect.name);
-    }
-
-    if (conn) conn.ws.close(1000, 'fuzz done');
+async function waitForKvConvergence(id: string, model: SessionModel): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const kv = await readKv(id);
+    if (kv && kv.state.tempo === model.tempo && kv.state.swing === model.swing) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
   }
+}
+
+async function assertSessionModel(model: SessionModel, real: SessionReal): Promise<void> {
+  // restGet routes through the DO and triggers ensureStateLoaded(), so this
+  // validates cross-layer consistency. Pure WS wake-up remains covered by
+  // eviction-recovery.test.ts, which deliberately omits the HTTP reload path.
+  const got = await restGet(real.id);
+  expect(got.state.tempo).toBe(model.tempo);
+  expect(got.state.swing).toBe(model.swing);
+  expect(got.name).toBe(model.name);
+
+  const kv = await readKv(real.id);
+  expect(kv).not.toBeNull();
+  expect(kv!.state.tempo).toBe(model.kvTempo);
+  expect(kv!.state.swing).toBe(model.kvSwing);
+  expect(kv!.name).toBe(model.kvName);
+  expect(real.connection !== null).toBe(model.connected);
+}
+
+class SessionCommand implements fc.AsyncCommand<SessionModel, SessionReal> {
+  constructor(private readonly action: SessionAction) {}
+
+  check(model: Readonly<SessionModel>): boolean {
+    if (this.action.kind === 'ws_tempo' || this.action.kind === 'ws_swing' || this.action.kind === 'disconnect') {
+      return model.connected;
+    }
+    if (this.action.kind === 'connect') return !model.connected;
+    return true;
+  }
+
+  async run(model: SessionModel, real: SessionReal): Promise<void> {
+    const action = this.action;
+    switch (action.kind) {
+      case 'ws_tempo':
+        real.connection!.ws.send(JSON.stringify({ type: 'set_tempo', tempo: action.tempo, seq: ++real.sequence }));
+        await real.connection!.inbox.waitFor(
+          (message) => message.type === 'tempo_changed' && message.tempo === action.tempo,
+          this.toString(),
+        );
+        model.tempo = action.tempo;
+        break;
+      case 'ws_swing':
+        real.connection!.ws.send(JSON.stringify({ type: 'set_swing', swing: action.swing, seq: ++real.sequence }));
+        await real.connection!.inbox.waitFor(
+          (message) => message.type === 'swing_changed' && message.swing === action.swing,
+          this.toString(),
+        );
+        model.swing = action.swing;
+        break;
+      case 'rest_put':
+        await restPutState(real.id, action.tempo, action.swing);
+        model.tempo = model.kvTempo = action.tempo;
+        model.swing = model.kvSwing = action.swing;
+        break;
+      case 'rest_patch_state':
+        await restPatchState(real.id, action.tempo, action.swing);
+        model.tempo = model.kvTempo = action.tempo;
+        model.swing = model.kvSwing = action.swing;
+        break;
+      case 'rest_patch_name':
+        await restPatchName(real.id, action.name);
+        model.name = model.kvName = action.name;
+        break;
+      case 'hibernate':
+        await ensureRunning(real.id);
+        await evictDurableObject(stubFor(real.id));
+        break;
+      case 'hard_evict':
+        await ensureRunning(real.id);
+        await evictDurableObject(stubFor(real.id), { webSockets: 'close' });
+        real.connection = null;
+        model.connected = false;
+        break;
+      case 'disconnect':
+        real.connection!.ws.close(1000, 'model disconnect');
+        real.connection = null;
+        model.connected = false;
+        model.kvTempo = model.tempo;
+        model.kvSwing = model.swing;
+        model.kvName = model.name;
+        await waitForKvConvergence(real.id, model);
+        break;
+      case 'connect':
+        real.connection = await connect(real.id, real.playerId);
+        model.connected = true;
+        break;
+    }
+    await assertSessionModel(model, real);
+  }
+
+  toString(): string {
+    return JSON.stringify(this.action);
+  }
+}
+
+const tempoArb = fc.integer({ min: 60, max: 180 });
+const swingArb = fc.integer({ min: 0, max: 100 });
+const commandArbs = [
+  tempoArb.map((tempo) => new SessionCommand({ kind: 'ws_tempo', tempo })),
+  swingArb.map((swing) => new SessionCommand({ kind: 'ws_swing', swing })),
+  fc.tuple(tempoArb, swingArb).map(([tempo, swing]) => new SessionCommand({ kind: 'rest_put', tempo, swing })),
+  fc.tuple(tempoArb, swingArb).map(([tempo, swing]) => new SessionCommand({ kind: 'rest_patch_state', tempo, swing })),
+  fc.integer({ min: 0, max: 9999 }).map((n) => new SessionCommand({ kind: 'rest_patch_name', name: `n${n}` })),
+  fc.constant(new SessionCommand({ kind: 'hibernate' })),
+  fc.constant(new SessionCommand({ kind: 'hard_evict' })),
+  fc.constant(new SessionCommand({ kind: 'disconnect' })),
+  fc.constant(new SessionCommand({ kind: 'connect' })),
+];
+
+it('model: read-your-writes through the DO holds across shrunk command sequences; KV converges at write/disconnect points', async () => {
+  await fc.assert(
+    fc.asyncProperty(fc.commands(commandArbs, { maxCommands: 18 }), async (commands) => {
+      const id = await createSession(120, 0);
+      const real: SessionReal = { id, playerId: `model-${id}`, connection: null, sequence: 0 };
+      try {
+        await fc.asyncModelRun(() => ({
+          model: {
+            tempo: 120,
+            swing: 0,
+            name: null,
+            kvTempo: 120,
+            kvSwing: 0,
+            kvName: null,
+            connected: false,
+          },
+          real,
+        }), commands);
+      } finally {
+        real.connection?.ws.close(1000, 'model done');
+      }
+    }),
+    // Keep at least the exploration budget of the former ten 10-18 step
+    // campaigns while gaining command-aware shrinking. `maxCommands` is only
+    // an upper bound, so ten runs would execute materially fewer transitions.
+    { numRuns: 30, seed: FAST_CHECK_SEED },
+  );
 }, 120_000);
