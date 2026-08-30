@@ -27,18 +27,13 @@
  *
  * `.github/workflows/property-seed.yml` is the companion: its weekly run uses
  * the numeric GitHub run id as a rotating, logged, replayable seed while PR
- * runs retain this deterministic default.
+ * runs retain this deterministic default. The Workers integration Vitest
+ * config injects the same resolved seed as an `FC_SEED` binding.
  */
 import fc from 'fast-check';
+import { resolveFastCheckSeed } from './fast-check-seed';
 
-/** Default seed. Arbitrary but fixed — any constant works, this one is legible. */
-const DEFAULT_SEED = 0x5eed;
-
-const seed = process.env.FC_SEED ? Number(process.env.FC_SEED) : DEFAULT_SEED;
-
-if (Number.isNaN(seed)) {
-  throw new Error(`FC_SEED must be a number, got: ${process.env.FC_SEED}`);
-}
+const seed = resolveFastCheckSeed(process.env.FC_SEED);
 
 fc.configureGlobal({
   seed,

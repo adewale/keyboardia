@@ -66,12 +66,12 @@ jobs:
         run: npm ci
         working-directory: ./app/test/integration
 
-      # FUZZ_SEEDS drives both fuzz lanes (state-machine + overlap). The
-      # run id is a plain decimal, so the fail-closed parse accepts it; a
-      # failure prints the fast-check-shrunk schedule + seed for promotion
-      # into test/integration/known-failures.ts (issue #97 T2).
+      # FC_SEED drives the command model; FUZZ_SEEDS drives both integration
+      # fuzz lanes and takes precedence for the command model when present.
+      # Keeping both values identical makes every failure locally replayable.
       - name: Run fuzz lanes with this run's replayable soak seed
         run: npx vitest run state-machine-fuzz.test.ts overlap-fuzz.test.ts
         working-directory: ./app/test/integration
         env:
+          FC_SEED: ${{ github.run_id }}
           FUZZ_SEEDS: ${{ github.run_id }}

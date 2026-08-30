@@ -32,14 +32,22 @@ import { it, expect } from 'vitest';
 import fc from 'fast-check';
 import { parseSeedOverride } from '../../src/test/seeded-random';
 import { STATE_MACHINE_KNOWN_FAILURES, type StateMachineOp } from './known-failures';
+import { resolveFastCheckSeed } from '../../src/test/fast-check-seed';
 
 interface Env {
   SESSIONS: KVNamespace;
   LIVE_SESSIONS: DurableObjectNamespace;
+  FC_SEED: string;
+  FUZZ_SEEDS: string;
 }
 
 const LIVE_SESSIONS = (env as unknown as Env).LIVE_SESSIONS;
 const KV = (env as unknown as Env).SESSIONS;
+const seedBinding = (env as unknown as Env).FC_SEED;
+if (typeof seedBinding !== 'string') {
+  throw new Error('Workers integration config must bind the replayable FC_SEED');
+}
+const FAST_CHECK_SEED = resolveFastCheckSeed(seedBinding);
 
 const stubFor = (id: string) => LIVE_SESSIONS.get(LIVE_SESSIONS.idFromName(id));
 
@@ -146,7 +154,6 @@ async function connect(id: string, playerId: string) {
   return { ws, inbox };
 }
 
-
 // =============================================================================
 // Targeted transition tests (the edges most likely to desync)
 // =============================================================================
@@ -246,161 +253,272 @@ it('multi-client: KV flushes only when the LAST client disconnects', async () =>
 });
 
 // =============================================================================
-// Fuzz: random interleavings of the whole state machine
+// Model-based interleavings of the whole state machine
 // =============================================================================
 
-// Fixed regression seeds by default; a soak run overrides them via the
-// FUZZ_SEEDS binding (see vitest.config.ts). A seed that fails in a soak
-// gets promoted into this list with a comment naming what it caught.
-// The timeout scales with seed count so a soak batch cannot time out and
-// masquerade as an oracle failure (a graceful-disconnect op alone may poll
-// KV for up to 2s, so the per-seed budget is generous).
-const DEFAULT_SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee, 2024, 555, 31337, 4096];
-// Fail-closed parse: a malformed override (e.g. "abc", or "0xc0ffee" which
-// parseInt would silently coerce to 0) throws instead of degrading this lane
-// to a zero-seed vacuous pass. NOTE: the FUZZ_SEEDS binding drives BOTH this
-// lane and overlap-fuzz.test.ts.
-const FUZZ_SEEDS = parseSeedOverride(
-  (env as unknown as { FUZZ_SEEDS?: string }).FUZZ_SEEDS,
-  DEFAULT_SEEDS,
-);
-const FUZZ_TIMEOUT_MS = Math.max(120_000, FUZZ_SEEDS.length * 12_000);
+type Connection = Awaited<ReturnType<typeof connect>>;
 
-// Schedules are generated and shrunk by fast-check (issue #97, T1): on
-// failure the op sequence minimizes to the smallest failing schedule, and
-// known failures in known-failures.ts replay first as a committed example
-// database (T2). Per-op value randomness also comes from fast-check, so
-// individual decisions shrink too (hegel-skill mistake #6 retired).
+interface SessionModel {
+  tempo: number;
+  swing: number;
+  name: string | null;
+  kvTempo: number;
+  kvSwing: number;
+  kvName: string | null;
+  connected: boolean;
+}
 
-const smOpArb: fc.Arbitrary<StateMachineOp> = fc.oneof(
-  { weight: 3, arbitrary: fc.record({ kind: fc.constant<'ws_tempo'>('ws_tempo'), tempo: fc.integer({ min: 60, max: 180 }) }) },
-  { weight: 2, arbitrary: fc.record({ kind: fc.constant<'ws_swing'>('ws_swing'), swing: fc.integer({ min: 0, max: 100 }) }) },
-  { weight: 2, arbitrary: fc.record({ kind: fc.constant<'rest_put'>('rest_put'), tempo: fc.integer({ min: 60, max: 180 }), swing: fc.integer({ min: 0, max: 100 }) }) },
-  { weight: 2, arbitrary: fc.record({ kind: fc.constant<'rest_patch'>('rest_patch'), tempo: fc.integer({ min: 60, max: 180 }), swing: fc.integer({ min: 0, max: 100 }) }) },
-  { weight: 1, arbitrary: fc.record({ kind: fc.constant<'patch_name'>('patch_name'), n: fc.nat(9999) }) },
-  { weight: 1, arbitrary: fc.constant<StateMachineOp>({ kind: 'hibernate' }) },
-  { weight: 1, arbitrary: fc.constant<StateMachineOp>({ kind: 'evict_close' }) },
-  { weight: 1, arbitrary: fc.constant<StateMachineOp>({ kind: 'disconnect' }) },
-  { weight: 2, arbitrary: fc.constant<StateMachineOp>({ kind: 'reconnect' }) },
-);
-const smScheduleArb = fc.array(smOpArb, { minLength: 8, maxLength: 18 });
+interface SessionReal {
+  id: string;
+  playerId: string;
+  connection: Connection | null;
+  sequence: number;
+  coverage: ModelCoverage;
+}
 
-/** Execute one schedule; assert both cross-layer invariants after every op. */
-async function runStateMachineSchedule(ops: StateMachineOp[]): Promise<void> {
-  const id = await createSession(120, 0);
+type SessionAction = StateMachineOp;
+type SessionActionKind = SessionAction['kind'];
 
-  // Oracle of the canonical (DO-authoritative) state.
-  const canonical = { tempo: 120, swing: 0, name: null as string | null };
-  // What KV is expected to hold (only updated at KV-writing events).
-  const kvExpect = { tempo: 120, swing: 0, name: null as string | null };
+interface ModelCoverage {
+  accepted: number;
+  dirtyDisconnects: number;
+  byKind: Record<SessionActionKind, number>;
+}
 
-  let conn: { ws: WebSocket; inbox: ReturnType<typeof listen> } | null = null;
-  const playerId = 'fuzz-fc';
+function createModelCoverage(): ModelCoverage {
+  return {
+    accepted: 0,
+    dirtyDisconnects: 0,
+    byKind: {
+      ws_tempo: 0,
+      ws_swing: 0,
+      rest_put: 0,
+      rest_patch_state: 0,
+      rest_patch_name: 0,
+      hibernate: 0,
+      hard_evict: 0,
+      disconnect: 0,
+      connect: 0,
+    },
+  };
+}
 
-  try {
-    for (const [i, op] of ops.entries()) {
-      const tag = (label: string) => `op#${i}=${op.kind} ${label}`;
-
-      switch (op.kind) {
-        case 'ws_tempo':
-          if (conn) {
-            conn.ws.send(JSON.stringify({ type: 'set_tempo', tempo: op.tempo, seq: i + 1 }));
-            await conn.inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === op.tempo, tag('ws_tempo'));
-            canonical.tempo = op.tempo;
-          }
-          break;
-        case 'ws_swing':
-          if (conn) {
-            conn.ws.send(JSON.stringify({ type: 'set_swing', swing: op.swing, seq: i + 1 }));
-            await conn.inbox.waitFor((m) => m.type === 'swing_changed' && m.swing === op.swing, tag('ws_swing'));
-            canonical.swing = op.swing;
-          }
-          break;
-        case 'rest_put':
-          await restPutState(id, op.tempo, op.swing);
-          canonical.tempo = op.tempo; canonical.swing = op.swing;
-          kvExpect.tempo = op.tempo; kvExpect.swing = op.swing;
-          break;
-        case 'rest_patch':
-          await restPatchState(id, op.tempo, op.swing);
-          canonical.tempo = op.tempo; canonical.swing = op.swing;
-          kvExpect.tempo = op.tempo; kvExpect.swing = op.swing;
-          break;
-        case 'patch_name': {
-          const name = `n${op.n}`;
-          await restPatchName(id, name);
-          canonical.name = name; kvExpect.name = name;
-          break;
-        }
-        case 'hibernate':
-          // State survives; the socket, if any, resumes on the same connection.
-          await ensureRunning(id);
-          await evictDurableObject(stubFor(id));
-          break;
-        case 'evict_close':
-          await ensureRunning(id);
-          await evictDurableObject(stubFor(id), { webSockets: 'close' });
-          conn = null;
-          break;
-        case 'disconnect':
-          // Graceful disconnect flushes KV -> KV must converge to canonical.
-          if (conn) {
-            conn.ws.close(1000, 'bye');
-            conn = null;
-            kvExpect.tempo = canonical.tempo; kvExpect.swing = canonical.swing; kvExpect.name = canonical.name;
-            for (let k = 0; k < 100; k++) {
-              const kv = await readKv(id);
-              if (kv && kv.state.tempo === canonical.tempo && kv.state.swing === canonical.swing) break;
-              await new Promise((r) => setTimeout(r, 20));
-            }
-          }
-          break;
-        case 'reconnect':
-          if (!conn) conn = await connect(id, playerId);
-          break;
-      }
-
-      // ---- INVARIANT 1: read-your-writes through the DO, after every op ----
-      // NOTE: restGet routes through the DO and triggers ensureStateLoaded(), so
-      // it also reloads state on the HTTP path. This fuzz therefore validates the
-      // cross-layer *consistency* contract, not the pure-WS-wake reload bug — that
-      // path is covered deterministically by eviction-recovery.test.ts.
-      const got = await restGet(id);
-      expect(got.state.tempo, tag('tempo')).toBe(canonical.tempo);
-      expect(got.state.swing, tag('swing')).toBe(canonical.swing);
-      expect(got.name, tag('name')).toBe(canonical.name);
-
-      // ---- INVARIANT 2: KV convergence at the points where it must hold ----
-      const kv = await readKv(id);
-      expect(kv, tag('kv present')).not.toBeNull();
-      expect(kv!.state.tempo, tag('kv tempo')).toBe(kvExpect.tempo);
-      expect(kv!.state.swing, tag('kv swing')).toBe(kvExpect.swing);
-      expect(kv!.name, tag('kv name')).toBe(kvExpect.name);
-    }
-  } finally {
-    if (conn) conn.ws.close(1000, 'fuzz done');
+async function waitForKvConvergence(id: string, model: SessionModel): Promise<void> {
+  for (let attempt = 0; attempt < 100; attempt++) {
+    const kv = await readKv(id);
+    if (kv && kv.state.tempo === model.tempo && kv.state.swing === model.swing) return;
+    await new Promise((resolve) => setTimeout(resolve, 20));
   }
 }
 
-it('fuzz: read-your-writes through the DO holds across any interleaving; KV converges at write/disconnect points', async () => {
-  // Known failures replay first (committed example database, issue #97 T2).
-  for (const [i, schedule] of STATE_MACHINE_KNOWN_FAILURES.entries()) {
+async function assertSessionModel(model: SessionModel, real: SessionReal): Promise<void> {
+  // restGet routes through the DO and triggers ensureStateLoaded(), so this
+  // validates cross-layer consistency. Pure WS wake-up remains covered by
+  // eviction-recovery.test.ts, which deliberately omits the HTTP reload path.
+  const got = await restGet(real.id);
+  expect(got.state.tempo).toBe(model.tempo);
+  expect(got.state.swing).toBe(model.swing);
+  expect(got.name).toBe(model.name);
+
+  const kv = await readKv(real.id);
+  expect(kv).not.toBeNull();
+  expect(kv!.state.tempo).toBe(model.kvTempo);
+  expect(kv!.state.swing).toBe(model.kvSwing);
+  expect(kv!.name).toBe(model.kvName);
+  // The socket's readyState is the independent transport observation. A
+  // non-null harness reference alone stays truthy when a socket dies.
+  const transportConnected = real.connection?.ws.readyState === WebSocket.OPEN;
+  expect(transportConnected).toBe(model.connected);
+}
+
+class SessionCommand implements fc.AsyncCommand<SessionModel, SessionReal> {
+  constructor(private readonly action: SessionAction) {}
+
+  check(model: Readonly<SessionModel>): boolean {
+    if (this.action.kind === 'ws_tempo' || this.action.kind === 'ws_swing' || this.action.kind === 'disconnect') {
+      return model.connected;
+    }
+    if (this.action.kind === 'connect') return !model.connected;
+    return true;
+  }
+
+  async run(model: SessionModel, real: SessionReal): Promise<void> {
+    const action = this.action;
+    real.coverage.accepted += 1;
+    real.coverage.byKind[action.kind] += 1;
+    switch (action.kind) {
+      case 'ws_tempo':
+        real.connection!.ws.send(JSON.stringify({ type: 'set_tempo', tempo: action.tempo, seq: ++real.sequence }));
+        await real.connection!.inbox.waitFor(
+          (message) => message.type === 'tempo_changed' && message.tempo === action.tempo,
+          this.toString(),
+        );
+        model.tempo = action.tempo;
+        break;
+      case 'ws_swing':
+        real.connection!.ws.send(JSON.stringify({ type: 'set_swing', swing: action.swing, seq: ++real.sequence }));
+        await real.connection!.inbox.waitFor(
+          (message) => message.type === 'swing_changed' && message.swing === action.swing,
+          this.toString(),
+        );
+        model.swing = action.swing;
+        break;
+      case 'rest_put':
+        await restPutState(real.id, action.tempo, action.swing);
+        model.tempo = model.kvTempo = action.tempo;
+        model.swing = model.kvSwing = action.swing;
+        break;
+      case 'rest_patch_state':
+        await restPatchState(real.id, action.tempo, action.swing);
+        model.tempo = model.kvTempo = action.tempo;
+        model.swing = model.kvSwing = action.swing;
+        break;
+      case 'rest_patch_name':
+        await restPatchName(real.id, action.name);
+        model.name = model.kvName = action.name;
+        break;
+      case 'hibernate':
+        await ensureRunning(real.id);
+        await evictDurableObject(stubFor(real.id));
+        break;
+      case 'hard_evict':
+        await ensureRunning(real.id);
+        await evictDurableObject(stubFor(real.id), { webSockets: 'close' });
+        real.connection = null;
+        model.connected = false;
+        break;
+      case 'disconnect':
+        if (
+          model.tempo !== model.kvTempo ||
+          model.swing !== model.kvSwing ||
+          model.name !== model.kvName
+        ) {
+          real.coverage.dirtyDisconnects += 1;
+        }
+        real.connection!.ws.close(1000, 'model disconnect');
+        real.connection = null;
+        model.connected = false;
+        model.kvTempo = model.tempo;
+        model.kvSwing = model.swing;
+        model.kvName = model.name;
+        await waitForKvConvergence(real.id, model);
+        break;
+      case 'connect':
+        real.connection = await connect(real.id, real.playerId);
+        model.connected = true;
+        break;
+    }
+    await assertSessionModel(model, real);
+  }
+
+  toString(): string {
+    return JSON.stringify(this.action);
+  }
+}
+
+const tempoArb = fc.integer({ min: 60, max: 180 });
+const swingArb = fc.integer({ min: 0, max: 100 });
+const commandArbs = [
+  tempoArb.map((tempo) => new SessionCommand({ kind: 'ws_tempo', tempo })),
+  swingArb.map((swing) => new SessionCommand({ kind: 'ws_swing', swing })),
+  fc.tuple(tempoArb, swingArb).map(([tempo, swing]) => new SessionCommand({ kind: 'rest_put', tempo, swing })),
+  fc.tuple(tempoArb, swingArb).map(([tempo, swing]) => new SessionCommand({ kind: 'rest_patch_state', tempo, swing })),
+  fc.integer({ min: 0, max: 9999 }).map((n) => new SessionCommand({ kind: 'rest_patch_name', name: `n${n}` })),
+  fc.constant(new SessionCommand({ kind: 'hibernate' })),
+  fc.constant(new SessionCommand({ kind: 'hard_evict' })),
+  fc.constant(new SessionCommand({ kind: 'disconnect' })),
+  fc.constant(new SessionCommand({ kind: 'connect' })),
+];
+
+// Preserve main's committed regression seeds while making FC_SEED the shared
+// repository default. A soak can replace the list through FUZZ_SEEDS; the
+// weekly workflow binds both controls to the same logged run id.
+const DEFAULT_REGRESSION_SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee, 2024, 555, 31337, 4096];
+const DEFAULT_MODEL_SEEDS = [...new Set([FAST_CHECK_SEED, ...DEFAULT_REGRESSION_SEEDS])];
+const MODEL_SEEDS = parseSeedOverride(
+  (env as unknown as Env).FUZZ_SEEDS,
+  DEFAULT_MODEL_SEEDS,
+);
+const MIN_MODEL_CAMPAIGNS = 30;
+const RUNS_PER_SEED = Math.ceil(MIN_MODEL_CAMPAIGNS / MODEL_SEEDS.length);
+const MODEL_TIMEOUT_MS = Math.max(120_000, MODEL_SEEDS.length * 15_000);
+
+async function createConnectedModelRun(coverage: ModelCoverage): Promise<{
+  model: SessionModel;
+  real: SessionReal;
+}> {
+  const id = await createSession(120, 0);
+  const playerId = `model-${id}`;
+  const connection = await connect(id, playerId);
+  return {
+    model: {
+      tempo: 120,
+      swing: 0,
+      name: null,
+      kvTempo: 120,
+      kvSwing: 0,
+      kvName: null,
+      connected: true,
+    },
+    real: { id, playerId, connection, sequence: 0, coverage },
+  };
+}
+
+async function replayKnownFailure(schedule: StateMachineOp[]): Promise<void> {
+  const run = await createConnectedModelRun(createModelCoverage());
+  try {
+    for (const action of schedule) {
+      const command = new SessionCommand(action);
+      if (command.check(run.model)) await command.run(run.model, run.real);
+    }
+  } finally {
+    run.real.connection?.ws.close(1000, 'known failure replay done');
+  }
+}
+
+function assertModelCoverage(coverage: ModelCoverage): void {
+  const summary = JSON.stringify(coverage);
+  expect(coverage.accepted, summary).toBeGreaterThanOrEqual(100);
+  expect(coverage.byKind.ws_tempo, summary).toBeGreaterThan(0);
+  expect(coverage.byKind.ws_swing, summary).toBeGreaterThan(0);
+  expect(coverage.dirtyDisconnects, summary).toBeGreaterThan(0);
+}
+
+it('model: read-your-writes through the DO holds across shrunk command sequences; KV converges at write/disconnect points', async () => {
+  // Re-run promoted counterexamples before exploring generated schedules.
+  for (const [index, schedule] of STATE_MACHINE_KNOWN_FAILURES.entries()) {
     try {
-      await runStateMachineSchedule(schedule);
-    } catch (e) {
-      throw new Error(`known-failure #${i} regressed: ${(e as Error).message}`);
+      await replayKnownFailure(schedule);
+    } catch (error) {
+      throw new Error(`known-failure #${index} regressed: ${(error as Error).message}`);
     }
   }
 
-  for (const seed of FUZZ_SEEDS) {
+  const coverage = createModelCoverage();
+  for (const seed of MODEL_SEEDS) {
     await fc.assert(
-      fc.asyncProperty(smScheduleArb, runStateMachineSchedule),
+      fc.asyncProperty(fc.commands(commandArbs, { maxCommands: 18 }), async (commands) => {
+        const run = await createConnectedModelRun(coverage);
+        try {
+          await fc.asyncModelRun(() => run, commands);
+        } finally {
+          run.real.connection?.ws.close(1000, 'model done');
+        }
+      }),
       {
-        seed: seed | 0, // fc seeds are int32; soak values (e.g. a CI run id) fold in
-        numRuns: 1,
-        interruptAfterTimeLimit: Math.max(30_000, Math.floor(FUZZ_TIMEOUT_MS / FUZZ_SEEDS.length) - 5_000),
+        seed: seed | 0,
+        numRuns: RUNS_PER_SEED,
+        interruptAfterTimeLimit: Math.max(
+          30_000,
+          Math.floor(MODEL_TIMEOUT_MS / MODEL_SEEDS.length) - 5_000,
+        ),
         markInterruptAsFailure: true,
       },
     );
   }
-}, FUZZ_TIMEOUT_MS);
+
+  // A total command count can hide a missing transition class. These witnesses
+  // keep the fixed and rotating campaigns honest about the WS/KV lifecycle they
+  // claim to cover.
+  assertModelCoverage(coverage);
+}, MODEL_TIMEOUT_MS);

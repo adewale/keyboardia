@@ -31,12 +31,12 @@ export type StateMachineOp =
   | { kind: 'ws_tempo'; tempo: number }
   | { kind: 'ws_swing'; swing: number }
   | { kind: 'rest_put'; tempo: number; swing: number }
-  | { kind: 'rest_patch'; tempo: number; swing: number }
-  | { kind: 'patch_name'; n: number }
+  | { kind: 'rest_patch_state'; tempo: number; swing: number }
+  | { kind: 'rest_patch_name'; name: string }
   | { kind: 'hibernate' }
-  | { kind: 'evict_close' }
+  | { kind: 'hard_evict' }
   | { kind: 'disconnect' }
-  | { kind: 'reconnect' };
+  | { kind: 'connect' };
 
 export const STATE_MACHINE_KNOWN_FAILURES: StateMachineOp[][] = [
   // (none yet — see promotion flow above)
