@@ -5864,21 +5864,26 @@ The Workers integration test generated deterministic multiplayer interleavings
 with a hand-written PRNG and loop. It exercised useful paths, but a failure was
 reported as an entire script rather than the smallest valid lifecycle. Moving
 the same REST, WebSocket, hibernation, eviction, disconnect, and reconnect
-operations into `fc.commands` made connection preconditions part of generation
-and shrinking, while a shadow model checked Durable Object, KV, and connection
-state after every accepted command.
+operations into `fc.commands` let `fc.asyncModelRun` evaluate connection
+preconditions against the current model and enabled command-aware shrinking,
+while a shadow model checked Durable Object, KV, and connection state after
+every accepted command.
 
 The conversion also exposed a subtler coverage trap: `maxCommands` is an upper
 bound, and preconditions can remove generated commands. Keeping the old ten-run
-count would have reduced the number of executed lifecycle transitions. Thirty
-runs restored the former exploration floor while adding command-aware shrinking.
+count would have reduced the number of executed lifecycle transitions. Under
+the fixed default seed, thirty runs produced 110 accepted transitions, restoring
+the measured baseline budget while adding command-aware shrinking. This is a
+measurement for that seed, not a seed-independent minimum.
 
 ### The rule
 
 For stateful integration properties, model lifecycle preconditions explicitly
 and let fast-check shrink the valid command sequence. Preserve the previous
 *executed-transition* budget when converting from a manual loop; comparing only
-seed count or `maxCommands` can hide a material coverage reduction.
+seed count or `maxCommands` can hide a material coverage reduction. Measure
+accepted transitions for the stable PR seed and monitor the rotating-seed lane
+rather than describing `maxCommands` as a guaranteed floor.
 
 ---
 
