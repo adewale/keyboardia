@@ -6014,9 +6014,10 @@ The Workers integration test generated deterministic multiplayer interleavings
 with a hand-written PRNG and loop. It exercised useful paths, but a failure was
 reported as an entire script rather than the smallest valid lifecycle. Moving
 the same REST, WebSocket, hibernation, eviction, disconnect, and reconnect
-operations into `fc.commands` made connection preconditions part of generation
-and shrinking, while a shadow model checked Durable Object, KV, and connection
-state after every accepted command.
+operations into `fc.commands` let `fc.asyncModelRun` evaluate connection
+preconditions against the current model and enabled command-aware shrinking,
+while a shadow model checked Durable Object, KV, and connection state after
+every accepted command.
 
 The conversion also exposed a subtler coverage trap: `maxCommands` is an upper
 bound, and preconditions can remove generated commands. Counting only accepted
