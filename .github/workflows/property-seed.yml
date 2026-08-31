@@ -13,9 +13,11 @@ env:
 
 jobs:
   randomized-properties:
-    name: Unit tests with a rotating fast-check seed
+    name: Properties with a rotating fast-check seed
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      FC_SEED: ${{ github.run_id }}
     defaults:
       run:
         working-directory: ./app
@@ -35,5 +37,14 @@ jobs:
 
       - name: Run the complete unit suite with this run's replayable seed
         run: npm run test:unit
-        env:
-          FC_SEED: ${{ github.run_id }}
+
+      - name: Build application for Workers integration tests
+        run: npm run build
+
+      - name: Install integration test dependencies
+        run: npm ci
+        working-directory: ./app/test/integration
+
+      - name: Run the multiplayer state model with this run's replayable seed
+        run: npx vitest run state-machine-fuzz.test.ts
+        working-directory: ./app/test/integration

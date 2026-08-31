@@ -74,6 +74,8 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 63: A Component Fixture Must Reproduce Production Asset Order](#lesson-63-a-component-fixture-must-reproduce-production-asset-order)
 - [Lesson 64: Cross-Browser Coverage Needs a Named Authority per Contract](#lesson-64-cross-browser-coverage-needs-a-named-authority-per-contract)
 - [Lesson 65: Evidence Expires When the Merge Base Moves](#lesson-65-evidence-expires-when-the-merge-base-moves)
+- [Lesson 66: Stateful Properties Need Shrinkable Commands, Not Random Scripts](#lesson-66-stateful-properties-need-shrinkable-commands-not-random-scripts)
+- [Lesson 67: A Seed Policy Must Reach Every Vitest Project](#lesson-67-a-seed-policy-must-reach-every-vitest-project)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5848,3 +5850,64 @@ screenshots, changed-pixel masks, accessibility/behavior contracts, and any
 device evidence against that exact base/head pair. A later base movement
 invalidates approval until affected evidence is refreshed. Stacked PRs reduce
 review size; they do not make inherited evidence permanent.
+
+---
+
+## Lesson 66: Stateful Properties Need Shrinkable Commands, Not Random Scripts
+
+**Date:** August 2026
+**Context:** Multiplayer lifecycle model ([#101](https://github.com/adewale/keyboardia/pull/101))
+
+### What happened
+
+The Workers integration test generated deterministic multiplayer interleavings
+with a hand-written PRNG and loop. It exercised useful paths, but a failure was
+reported as an entire script rather than the smallest valid lifecycle. Moving
+the same REST, WebSocket, hibernation, eviction, disconnect, and reconnect
+operations into `fc.commands` let `fc.asyncModelRun` evaluate connection
+preconditions against the current model and enabled command-aware shrinking,
+while a shadow model checked Durable Object, KV, and connection state after
+every accepted command.
+
+The conversion also exposed a subtler coverage trap: `maxCommands` is an upper
+bound, and preconditions can remove generated commands. Keeping the old ten-run
+count would have reduced the number of executed lifecycle transitions. Under
+the fixed default seed, thirty runs produced 110 accepted transitions, restoring
+the measured baseline budget while adding command-aware shrinking. This is a
+measurement for that seed, not a seed-independent minimum.
+
+### The rule
+
+For stateful integration properties, model lifecycle preconditions explicitly
+and let fast-check shrink the valid command sequence. Preserve the previous
+*executed-transition* budget when converting from a manual loop; comparing only
+seed count or `maxCommands` can hide a material coverage reduction. Measure
+accepted transitions for the stable PR seed and monitor the rotating-seed lane
+rather than describing `maxCommands` as a guaranteed floor.
+
+---
+
+## Lesson 67: A Seed Policy Must Reach Every Vitest Project
+
+**Date:** August 2026
+**Context:** Multiplayer lifecycle model ([#101](https://github.com/adewale/keyboardia/pull/101))
+
+### What happened
+
+Keyboardia's application Vitest setup already selected a fixed local seed and a
+weekly `FC_SEED`, but the Workers integration suite is a separate Vitest project
+and never loads that setup. Its state-machine property would therefore have had
+a different replay contract, and the weekly rotating-seed workflow did not run
+it at all.
+
+The fix put seed validation in one shared resolver, injected the resolved value
+into the Workers sandbox as a binding, and ran the integration model in the same
+weekly job. Invalid, fractional, infinite, and lossy seed values now fail before
+a campaign starts.
+
+### The rule
+
+A repository-wide property seed policy is only real if every runner, package,
+and sandbox receives it explicitly. Test the resolver, bind the seed across
+runtime boundaries, log it in rotating discovery jobs, and make the exact failing
+value replayable locally.
