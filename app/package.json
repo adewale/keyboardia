@@ -83,6 +83,7 @@
     "validate:acoustic-pitch": "python3 scripts/validate-acoustic-pitch.py",
     "analyze:velocity": "tsx scripts/report-velocity-coverage.ts",
     "measure:velocity-timbre": "tsx scripts/measure-velocity-timbre.ts",
+    "measure:tone-nets-startup": "node scripts/measure-tone-nets-startup.mjs",
     "simulate:velocity-filter": "tsx scripts/simulate-velocity-filter.ts",
     "samples": "tsx scripts/process-samples.ts",
     "session": "tsx scripts/session-api.ts",

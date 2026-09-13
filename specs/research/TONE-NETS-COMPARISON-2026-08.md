@@ -8,9 +8,10 @@ SoundFont; a from-scratch SF2 chunk parse for the sample/zone statistics;
 Keyboardia facts verified by reading this repository at
 `58264dd5ae274f63b1cd80b72aa823b76b21f28b`. Commands, URLs, and hashes are in
 §7 so a later reader can tell whether the external assets have moved.
-**Status**: Static comparison complete. **No matched listening capture was
-made** — no claim below asserts that one app is preferred by listeners. §5
-separates what is measured from what is inference.
+**Status**: Static comparison plus a frozen-build, same-machine first-contact
+startup comparison are complete; see §8. **No listening test was made** — no
+claim below asserts that one app is preferred by listeners. §5 separates what
+is measured from what is inference.
 **Follow-up**: `specs/PHASE-44-SOUND-CHANGES.md` turns §4 into a plan with
 preregistered metrics, and withdraws §4.7 on measurement.
 
@@ -29,30 +30,37 @@ Tone Nets and Keyboardia do not have the same job:
 |---|---|---|
 | Input | A finished MIDI file (Moonlight Sonata, Funeral March, user upload) | A step grid the user builds live |
 | Musical content | Composed by someone else, already arranged and voiced | Emergent, one loop at a time |
-| Audio job | Play 16 GM channels of existing notes convincingly | Render arbitrary user-authored steps, in sync, for up to 10 players |
+| Audio job | Render 16 GM channels from existing note events | Render arbitrary user-authored steps, in sync, for up to 10 players |
 | Timing job | Replay fixed MIDI timestamps | Polyrhythm, swing, tempo changes, multiplayer sync |
 
-So "sound quality" is not one number. It splits into five things, and the two
-apps do not win the same ones. The summary up front:
+So "sound quality" is not one number, and the objective result is a vector,
+not a winner:
 
-- **Source material** — Keyboardia is materially better. 36 MB of modern
-  multi-sampled recordings with velocity layers and round robins, against
-  83 seconds of 1997 ROM samples with no velocity layers at all.
-- **Per-note rendering** — Tone Nets wins decisively. Every one of its voices
-  gets a lowpass filter, a filter envelope, a vibrato LFO and a full ADSR,
-  computed sample-accurately inside one AudioWorklet. Keyboardia's sampled
-  voices get a gain and a playback rate.
-- **Space** — Tone Nets wins by default. 99% of its zones carry a reverb send
-  that is always on. Keyboardia ships `reverb.wet: 0`.
-- **Reliability of getting sound at all on mobile** — Tone Nets wins. It routes
-  through a media element and plays with the iPhone ringer switch on.
-  Keyboardia does not, and its own docs tell the user to flip the switch.
-- **Timing** — Keyboardia wins, and it isn't close, but Tone Nets never has to
-  solve that problem.
+- **Source assets** — Keyboardia carries 582 files / 36 MB, with real velocity
+  layers and 192 deterministic round-robin groups across the enriched
+  libraries. Tone Nets carries 526 short sample headers / 83.3 seconds of PCM,
+  no velocity layers, and 100% loop coverage.
+- **Per-note sampled rendering** — Tone Nets applies a lowpass to 99% of zones,
+  a filter envelope to 89%, and an LFO to 100%. The audited Keyboardia state
+  applies a calibrated velocity lowpass to six tonal gain-only instruments on
+  v<90 notes; sampled filter-envelope/LFO coverage remains zero. Keyboardia's
+  native and advanced synth engines already implement both.
+- **Space** — Tone Nets carries reverb send on 99% of zones. Keyboardia now
+  defaults new sessions to a measured bass-protected 0.15 global room; it has
+  no per-instrument send.
+- **Mobile route** — both now have media-element output architectures.
+  Keyboardia's physical ringer-off result and added device latency remain an
+  open manual gate, so architecture is not reported as physical proof.
+- **Startup** — §8 measures first master PCM rather than inferring speed from
+  initialization code. The tested Keyboardia medians are 244.5–383.6 ms; the
+  frozen Tone Nets first-MIDI median is 1,215.9 ms under its heavier required
+  first-contact workload.
+- **Timing responsibility** — Keyboardia has a worklet scheduler and live
+  collaborative transport. Tone Nets replays fixed MIDI timestamps. These are
+  product capabilities, not a sound-preference score.
 
-The structural result: Tone Nets does far more to every note than Keyboardia
-does, starting from far weaker raw material. Everything in §4 follows from
-that one asymmetry.
+Everything in §4 follows from gaps in that vector. None follows from the
+author's or user's taste.
 
 ---
 
@@ -136,8 +144,8 @@ applies on top of the sample:
 The filter is not a formality. Excluding zones left at the SF2 default of
 13,500 cents, the shipped cutoffs are **median 1,267 Hz** (p10 411 Hz,
 p90 3,075 Hz) — most zones sit substantially closed at rest, and 89% have a
-mod envelope that opens them on attack. That per-note filter sweep is a large
-part of why a 1997 ROM bank still reads as "played" rather than "triggered".
+mod envelope that opens them on attack. That makes filter cutoff time-varying
+on each note; its listener impact was not measured here.
 
 ### 2.4 Platform handling — the part Keyboardia is missing
 
@@ -195,7 +203,7 @@ throughout, so transport changes never click.
 
 ## 3. Keyboardia baseline (verified file:line)
 
-### 3.1 Source material — the stronger half
+### 3.1 Source-library structure
 
 27 sampled instruments, 582 sample files, 36 MB encoded (mp3/m4a). Measured root-note
 coverage for the melodic instruments:
@@ -218,11 +226,10 @@ enriched libraries: `finger-bass` 14 roots / mean shift 1.08 semitones,
 `steel-drums` 24 roots / mean shift 0.91
 (`app/sample-pipeline/enrichment/impact.json`).
 
-So on keymap density Keyboardia is **at or better than** the SF2's median
-8-semitone melodic span for the top half of that table, and worse at
-`french-horn` (a 14-semitone hole between F3 and D5), `clean-guitar` and
-`kalimba` (octave spacing). Those four are worth filling, but sample density
-is not where the bulk of the gap is.
+On keymap density, the top half of that table has a maximum gap no larger than
+the SF2's median 8-semitone melodic span. `french-horn` has a 14-semitone gap;
+`clean-guitar` and `kalimba` use octave spacing. These are coverage facts, not
+an acoustic ranking.
 
 Beyond density, Keyboardia has structure the SF2 does not: real velocity
 layers (`piano` pp/mf/ff, `alto-sax` soft/loud), deterministic round robins
@@ -265,7 +272,7 @@ a per-voice filter with velocity-scaled cutoff (`synth.ts:116, 870, 892`) — th
 capability exists in the codebase, it just isn't on the 27 sampled instruments,
 which are what most sessions actually use.
 
-### 3.4 What Keyboardia does better
+### 3.4 Other Keyboardia capabilities
 
 - **The clock is in a worklet.** `worklets/scheduler.worklet.ts` owns the timing
   loop and posts note events to the main thread — `process()` every ~2.67 ms at
@@ -280,11 +287,14 @@ which are what most sessions actually use.
 
 ---
 
-## 4. What Keyboardia can learn, ranked
+## 4. Historical baseline proposals, ranked by testable impact
 
-Ranked by audible payoff per unit of work. Each item names the evidence.
+This section records the 2026-08-19 proposals before Phase 44 implementation.
+It is not current status: §8.2 records what shipped and §8.4 records the
+remaining dispositions. The original ranking is retained so later readers can
+compare the proposal with the measured result. Each item names its evidence.
 
-### 4.1 Route mobile output through a media element — highest value
+### 4.1 Route mobile output through a media element — highest functional impact
 
 `grep -rn "createMediaStreamDestination\|mediaSession" app/src` → **no matches**.
 
@@ -309,10 +319,12 @@ This is not a new idea here — `specs/SOUND-QUALITY-PARITY-PLAN.md:508-523`
 already specifies *"Reverb wet 0 → 0.15, with bass protection"*, already
 diagnosed dry playback as *"phone speaker in a closet"* (line 662), and the
 plumbing to do it safely (HPF 275 Hz, 15 ms predelay, parallel wet gain) was
-built and shipped. Only the default was never flipped. Tone Nets is
-independent confirmation that a bank which is *always* slightly wet is what
-reads as produced. The remaining work is the flip plus its migration guard, not
-new machinery.
+built and shipped. Only the default was never flipped. Tone Nets is independent
+evidence that a product can ship non-zero room depth across almost its entire
+bank, which justified testing a non-zero Keyboardia value. The Phase 44
+production-browser tail/body/peak/LU measurements prove that 0.15 complies with
+the preregistered internal acoustic and safety contract; they do not establish
+listener preference.
 
 ### 4.3 Velocity → brightness on the sampled path
 
@@ -377,41 +389,44 @@ would give the mobile path headroom without capping desktop.
 
 The SF2 carries `reverbEffectsSend` **per zone** — the bank arrives
 pre-balanced in depth, with a marimba drier than a string section. If 4.2
-lands, the natural follow-on is a per-instrument send scalar in the manifest
+lands, an architecturally related follow-on is a per-instrument send scalar in the manifest
 so one global wet does not put the 808 kick in the same hall as the strings.
 
 ---
 
-## 5. What this does not establish
+## 5. What this does and does not establish
 
 Per this repo's standing convention on claim levels:
 
-- **Measured**: everything in §2 (bundle and SF2 parse) and §3 (file:line reads
-  of this repository at the pinned commit).
+- **Measured**: everything in §2 (bundle and SF2 parse), §3 (repository and
+  asset reads), and §8 (repeated first-master-PCM startup trials).
 - **Inference, not measurement**: that the per-voice filter and always-on
   reverb are *why* Tone Nets sounds cohesive. That is a reading of the DSP, not
   a listening result.
-- **Not attempted**: any matched capture of the two apps, any listener
-  preference test, any confidence interval. §1's "wins" are architectural
-  comparisons, not preference claims. The cross-app capture gap that
-  `SOUND-QUALITY-PARITY-PLAN.md` records as still-missing is still missing.
+- **Deliberately not scored**: cross-app spectral distance or loudness as
+  “quality”. Different source samples and instrument renderers make those
+  objective measurements of difference, not objective measurements of merit.
+- **Not attempted**: any listener-preference test. That remains necessary if a
+  future claim says users prefer one product's sound.
 - **Not comparable by construction**: Tone Nets plays professionally composed
   MIDI. Some of its perceived quality is the Moonlight Sonata, not the synth.
 
 ## 6. What not to copy
 
-- **Not the SoundFont.** Keyboardia's sample content is the better half of this
-  comparison. The EMU bank's advantage is architecture, not material — adopting
-  a 1997 GM bank would trade the stronger asset for the weaker one.
+- **Not the SoundFont.** Keyboardia's source library has real velocity layers,
+  round robins, and much longer recordings; the EMU bank has GM breadth, compact
+  looping, and richer per-zone DSP. Replacing one with the other would exchange
+  measured dimensions, not produce an evidence-backed global improvement.
 - **Not the fixed global voice cap.** Keyboardia allocates per track by design;
   a single 128-voice pool is the wrong shape for it.
 - **Not `background.mp3` on its own.** The looping media element is a
   background-playback trick with a standing decode cost. For the silent-switch
   problem specifically, the `MediaStreamDestination` route in 4.1 is the part
   that matters; adopt the dummy loop only if background playback is a goal.
-- **Not `interpolationType: 0`.** Tone Nets can drop to linear because it is
-  replaying someone else's arrangement. Keyboardia pitch-shifts user material
-  much further from its roots; degrading interpolation there is more audible.
+- **Not `interpolationType: 0` without measurement.** Keyboardia uses a
+  different grain pitch-shifter over user-selected transpositions. Copying an
+  SF2 interpolation switch would change a different algorithm and has no
+  demonstrated capacity or spectral benefit here.
 
 ---
 
@@ -420,17 +435,23 @@ Per this repo's standing convention on claim levels:
 Retrieved 2026-08-19. Keyboardia read at
 `58264dd5ae274f63b1cd80b72aa823b76b21f28b`. Re-checked 2026-08-22: the live
 index page hashes identically to the row below, the bundle fingerprints
-(`index-D6Mm5cJ7.js`, `vendor-tone-CEpHDcb7.js`) are unchanged, the SoundFont
-still reports 7,557,598 bytes, and `origin/main` is still the pinned commit —
-both sides of this comparison are frozen and the analysis stands unmodified.
+are unchanged, the SoundFont still reports 7,557,598 bytes, and `origin/main`
+is still the pinned commit. On 2026-09-13 the production build from source
+commit `d6e9ba837f2e408971458c5ca6f6b63d0c909d76` reproduced every filename and
+hash below. The static baseline and runtime subject are therefore frozen.
 
 | Asset | Bytes | SHA-256 |
 |---|---|---|
 | `https://tone-nets.web.app/` | 20,769 | `b6d5081148baa2c693caab8d392c14ce1d1d11a3b64f1c79b7aa23a65a4100ac` |
 | `/assets/index-D6Mm5cJ7.js` | 119,027 | `196c447bc8fc6d0e1b7816edf2dd163941d1c15110f2ea15e71d8861d6ba1a3b` |
+| `/assets/index-CAIWfFlo.css` | 9,479 | `065a073175e5ad1bdb2561e9e654f05d06c5f42e546ca1187d055bae400734fd` |
 | `/assets/vendor-tone-CEpHDcb7.js` | 560,475 | `153e720f4b45f878d6feeacfbc215cab0493ee88c50eb153b9e772be00b9beab` |
+| `/assets/vendor-three-DPBQW5Ox.js` | 616,486 | `a10572eb76aaf31c2865edb41c737b9765225b70abf042a3e929ac753e929d61` |
+| `/assets/rolldown-runtime-B0Z9INg1.js` | 901 | `5e9b0d884d2ebb14e241ab38b43e41efb61bce2e74d71507b0b95b264fba4047` |
+| `/assets/parser.worker-BGliF577.js` | 44,123 | `e37866ef524e1a6ad8847d670434c01e6e223afc7ad94cf25ccaa1ab26cc7f11` |
+| `/assets/spessasynth_processor.min-B_uip0PK.js` | 407,436 | `72a9b2cd8f9589bcd80b2663d6d8be69386cf2aa887619d827a32de2e99e4439` |
 | `/creative-emu10k1-8mbgmsfx.sf2` | 7,557,598 | `6c2ff6e9219989e0a2d39e633cbdc7d8f8a575903985160495aeab5d01cc48e6` |
-| `/background.mp3` | 46,080 | not downloaded (size from `HEAD`) |
+| `/background.mp3` | 46,080 | `830b89effd32a7a893486801808792cc1bde8abd076193aaee0c48b3c6f4bb46` |
 
 SF2 statistics come from a purpose-written RIFF/`pdta` parse (`phdr`, `inst`,
 `ibag`, `igen`, `imod`, `shdr`) using only the Python standard library —
@@ -447,5 +468,129 @@ re-derived here.
 **Limitations.** Tone Nets is a live deploy and may change; the hashes above
 are the only guarantee of what was analysed. The SF2 statistics describe the
 bank as shipped, not what SpessaSynth ultimately renders — runtime MIDI CC,
-the synth's own reverb/chorus, and the SF2 default modulators all act on top
-and were not measured. Nothing here was listened to.
+the synth's own reverb/chorus, and the SF2 default modulators all act on top.
+§8 measures first PCM only, not those acoustic transformations. Nothing here
+was listened to.
+
+---
+
+## 8. Runtime follow-up: objective first-contact comparison (2026-09-13)
+
+### 8.1 Method
+
+The live asset hashes in §7 were reproduced from Tone Nets source commit
+`d6e9ba837f2e408971458c5ca6f6b63d0c909d76`; its local production build emitted
+the same index and bundle filenames byte for byte. Five fresh Chromium contexts
+per path ran on macOS 26.5.1 arm64, Chromium 143, Node 26, at 48 kHz. Servers
+and the browser process were warm; contexts and audio engines were cold.
+
+An `AudioWorkletProcessor` scans each render quantum and retains the absolute
+audio frame of the first master-bus sample at or above `1e-4`. After the worklet
+message arrives, `AudioContext.getOutputTimestamp()` maps that retained frame
+to the page clock. This matters under load: the calibration source was scheduled
+at context time 0.1 s, the main thread was blocked for more than 700 ms, and
+both product harnesses still recovered the exact 0.1 s audio frame (0 ms error).
+Connect-overload controls also cover explicit `undefined` and `AudioParam`
+destinations so instrumentation cannot alter legal production graph calls.
+Observer readiness is bound to an application event that precedes emission:
+Keyboardia's awaited preload hook holds the scheduler-release boundary until
+the worklet is ready, and Tone Nets' worklet is ready before the first upstream
+source connects to its master gain. The Keyboardia wait is included in the
+reported latency, making that result conservative by the observer setup wait.
+A 250 ms-late pulsed control retained thousands of silent frames yet observed
+the second pulse 400 ms after the true first pulse. The old silent-prefix rule
+would have accepted it; the application-boundary rule rejected it. The
+zero-gain branch does not replace the audible route. Keyboardia times the first
+transport click on a loaded one-track session. Tone Nets times the DOM `change`
+event for selection of a deterministic 120 BPM MIDI fixture
+(GM String Ensemble 1, repeated C4 at velocities 40/90/127) on its loaded
+landing page.
+
+| Product/path | Min | Median | p95 (= max at n=5) |
+|---|---:|---:|---:|
+| Keyboardia whole engine + native `synth:lead` | 243.0 ms | **244.5 ms** | 270.1 ms |
+| Keyboardia cold Tone `tone:fm-epiano` | 345.9 ms | **354.5 ms** | 375.3 ms |
+| Keyboardia cold advanced `advanced:supersaw` | 370.0 ms | **383.6 ms** | 398.5 ms |
+| Tone Nets first MIDI/SF2 sound | 1,195.2 ms | **1,215.9 ms** | 1,243.8 ms |
+
+The Keyboardia medians are respectively 79.9%, 70.8%, and 68.4% lower than
+the Tone Nets median on this machine. This is a product-boundary first-contact
+measurement, not an equal-work engine microbenchmark: Tone Nets' action includes
+MIDI ingest, a 7.56 MB SoundFont fetch/parse, fixed stabilization waits, worklet
+creation, and silent warm-up notes. Keyboardia's action includes engine/Tone
+construction and instrument preload from an already-loaded session page.
+An immediately preceding valid Keyboardia batch recorded one 755.9 ms advanced
+trial while its engine-exposed and Tone-ready milestones were also delayed; the
+final retained batch's advanced maximum is 398.5 ms. At n=5, p95 equals the
+observed maximum and neither batch is a population tail estimate.
+
+The persistent guards are:
+
+```bash
+cd app
+# Keyboardia: produces browser-cold-startup-matrix.json
+USE_MOCK_API=1 npx playwright test e2e/capture-session.spec.ts \
+  --project=chromium --workers=1 --retries=0 -g "measures cold Tone"
+
+# Tone Nets: run its frozen production preview first; all ten hashes are gated
+npm run measure:tone-nets-startup -- --url http://127.0.0.1:4175/ --trials 5
+```
+
+Both reports retain all trials. The E2E fails if any Keyboardia path emits no
+master PCM, exceeds five seconds, or does not create a real audio context. The
+Tone Nets tool fails before launching Chromium if any frozen asset differs.
+The final paired raw values and oracle controls are preserved in
+[`TONE-NETS-STARTUP-RECEIPT-2026-09-13.md`](./TONE-NETS-STARTUP-RECEIPT-2026-09-13.md).
+
+### 8.2 What objectively improved in Phase 44
+
+| Contract | Before | Audited Phase 44 state | Residual gap |
+|---|---|---|---|
+| Sampled velocity timbre | 12/26 instruments gain-only | six tonal gain-only instruments now show 29.7–30.3% v40-v127 centroid reduction over all 281 audited requested notes at 44.1/48 kHz | unlocked/v≥90 notes bypass; no sampled per-note motion |
+| New-session space | global reverb 0 | 0.15 room; tail +19.7–21.1 dB, bass body within ±0.038 dB, peak/LU/pumping bounded in Chromium | one global depth |
+| Cold startup evidence | sampled first-use fixture only | retained native/Tone/advanced medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced contention outlier | physical-device matrix/generalization |
+| Mobile output | direct Web Audio destination | both final graphs terminate through the mobile media-element route | physical ringer-off and latency pass still open |
+| Sustain safety | loop metadata existed but was mostly absent | eight sustaining manifests have a ≥2 s median native-root regression guard | intentionally no every-note/extreme-tie guarantee |
+
+### 8.3 Why sustain loops were demoted
+
+Tone Nets must loop all 526 sample fragments because the bank's mean fragment
+is only 158 ms. Keyboardia's sustaining recordings are a different dataset:
+the eight classified sustaining instruments have native-root medians from
+3.90 to 9.70 seconds, all above the 2.0-second duration of a fully tied 16-step
+bar at 120 BPM. The genuinely short `slap-bass` and `acoustic-guitar` are
+plucked instruments for which decay is part of the source behavior.
+
+Adding loops anyway would not be a monotonic improvement. It can introduce
+boundary clicks, phase discontinuities, frozen ensemble motion, and audible
+periodicity, while creating loop-point data and review obligations for hundreds
+of mappings. The implemented `validate:sustain-ceiling` guard checks the actual
+manifest mappings/segments and fails `validate:all` if a sustaining library's
+median native-root usable duration falls below 2 seconds. In other words,
+we guarded the user-facing capacity the loops were meant to protect instead of
+copying the other product's implementation. Instrument-specific loops remain
+appropriate if a requested-note render or real session later demonstrates a
+shortfall; 32-second extreme ties and every transposed note are not claimed.
+
+### 8.4 Remaining feature decisions
+
+- **Per-note sampled filter envelopes:** viable as opt-in manifest metadata and
+  automation of the existing lowpass. Global use would break the deliberate
+  v≥90 legacy bypass, so first prototype it on 2–3 sustaining tonal instruments
+  and gate attack/hold/release centroid trajectories plus the legacy null.
+- **Per-note sampled LFOs:** viable but more expensive. A Web Audio oscillator
+  plus gain per voice has clear node/CPU cost; a shared/worklet LFO is cheaper
+  but changes phase/retrigger semantics. Choose only after a 16-track capacity
+  ablation. Native and advanced synths already have this capability.
+- **Per-instrument reverb-send depth:** the strongest next candidate. It needs
+  a post-fader/post-pan send from every `TrackBus` into the shared room because
+  the existing global send happens after tracks mix. Derived instrument defaults
+  avoid a session migration; user overrides would require synced schema/UI.
+- **Device-specific quality tiers:** not safe to automate yet. Keyboardia has
+  an iOS sample-cache tier, but no output-underrun/dropout or voice-steal metric;
+  UA, `hardwareConcurrency`, and `deviceMemory` cannot authoritatively classify
+  Safari hardware. Add observability and an Auto/Eco/High local override, then
+  calibrate on physical low/mid/high devices before selecting thresholds.
+
+The detailed feasibility/impact/proof matrix is in
+`specs/PHASE-44-SOUND-CHANGES.md` §12.

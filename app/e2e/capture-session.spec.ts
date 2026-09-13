@@ -1,5 +1,6 @@
 import { test, expect, waitForAppReady } from './global-setup';
 import { API_BASE, createSessionWithRetry } from './test-utils';
+import { createE2EContext } from './browser-context';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -24,6 +25,220 @@ const REPORT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../test-res
 // contiguous. Exact frame coverage is enforced by assembleCapture; this bound
 // only catches a pathological render-clock jump.
 const MAX_CAPTURE_RENDER_DRIFT_FRAMES = 12 * 128;
+const COLD_START_TRIALS = 5;
+
+const COLD_START_SCENARIOS = [
+  { id: 'whole-engine-native', sampleId: 'synth:lead' },
+  { id: 'tone-instrument', sampleId: 'tone:fm-epiano' },
+  { id: 'advanced-instrument', sampleId: 'advanced:supersaw' },
+] as const;
+
+function installColdStartupProbe(): void {
+  type Candidate = {
+    source: GainNode;
+    attachedAt: number;
+    workletReadyAt: number | null;
+    firstPcmAt: number | null;
+    firstFrameReceivedAt: number | null;
+    firstPcmContextTime: number | null;
+    silentFramesBeforeFirstPcm: number | null;
+    setupError: string | null;
+    peak: number;
+  };
+  type Probe = {
+    clickAt: number | null;
+    engineExposedAt: number | null;
+    toneInitStartedAt: number | null;
+    toneInitFinishedAt: number | null;
+    preloadStartedAt: number | null;
+    preloadFinishedAt: number | null;
+    schedulerBoundaryReleasedAt: number | null;
+    engine: {
+      masterGain: GainNode | null;
+      initializeTone: () => Promise<void>;
+      preloadInstrumentsForTracks: (tracks: unknown[]) => Promise<void>;
+    } | null;
+    candidates: Candidate[];
+    setupDelayMs: number;
+  };
+  type ProbeWindow = Window & typeof globalThis & { __coldStartupProbe__: Probe };
+
+  const probe: Probe = {
+    clickAt: null,
+    engineExposedAt: null,
+    toneInitStartedAt: null,
+    toneInitFinishedAt: null,
+    preloadStartedAt: null,
+    preloadFinishedAt: null,
+    schedulerBoundaryReleasedAt: null,
+    engine: null,
+    candidates: [],
+    setupDelayMs: 0,
+  };
+  (window as ProbeWindow).__coldStartupProbe__ = probe;
+
+  type ConnectArgs = [destination: AudioNode | AudioParam, output?: number, input?: number];
+  type Connect = (this: AudioNode, ...args: ConnectArgs) => AudioNode | void;
+  const originalConnect = AudioNode.prototype.connect as Connect;
+  (AudioNode.prototype as unknown as { connect: Connect }).connect = function (...args) {
+    const destination = args[0];
+    const result = Reflect.apply(originalConnect, this, args) as AudioNode | void;
+    if (this instanceof GainNode && destination instanceof DynamicsCompressorNode) {
+      const candidate: Candidate = {
+        source: this,
+        attachedAt: performance.now(),
+        workletReadyAt: null,
+        firstPcmAt: null,
+        firstFrameReceivedAt: null,
+        firstPcmContextTime: null,
+        silentFramesBeforeFirstPcm: null,
+        setupError: null,
+        peak: 0,
+      };
+      probe.candidates.push(candidate);
+      const context = this.context as AudioContext;
+      const processorName = `cold-first-pcm-probe-${probe.candidates.length}`;
+      const setupDelayMs = probe.setupDelayMs;
+      const moduleSource = `
+        class ColdFirstPcmProbe extends AudioWorkletProcessor {
+          constructor() {
+            super();
+            this.found = false;
+            this.silentFrames = 0;
+          }
+          process(inputs) {
+            if (!this.found) {
+              const input = inputs[0] || [];
+              const frames = input[0]?.length || 0;
+              for (let frame = 0; frame < frames; frame++) {
+                let magnitude = 0;
+                for (const channel of input) {
+                  magnitude = Math.max(magnitude, Math.abs(channel[frame] || 0));
+                }
+                if (magnitude >= 1e-4) {
+                  this.found = true;
+                  this.port.postMessage({
+                    type: 'first-pcm',
+                    absoluteFrame: currentFrame + frame,
+                    magnitude,
+                    silentFramesBeforeFirstPcm: this.silentFrames,
+                  });
+                  break;
+                }
+                this.silentFrames++;
+              }
+            }
+            return true;
+          }
+        }
+        registerProcessor(${JSON.stringify(processorName)}, ColdFirstPcmProbe);
+      `;
+      void (async () => {
+        const moduleUrl = URL.createObjectURL(new Blob([moduleSource], { type: 'text/javascript' }));
+        try {
+          if (setupDelayMs > 0) {
+            await new Promise(resolve => setTimeout(resolve, setupDelayMs));
+          }
+          await context.audioWorklet.addModule(moduleUrl);
+          const processor = new AudioWorkletNode(context, processorName, {
+            numberOfInputs: 1,
+            numberOfOutputs: 1,
+            outputChannelCount: [1],
+          });
+          const sink = context.createGain();
+          sink.gain.value = 0;
+          processor.port.onmessage = (event: MessageEvent<{
+            type: string;
+            absoluteFrame: number;
+            magnitude: number;
+            silentFramesBeforeFirstPcm: number;
+          }>) => {
+            if (event.data.type !== 'first-pcm' || candidate.firstPcmContextTime !== null) return;
+            candidate.firstFrameReceivedAt = performance.now();
+            candidate.firstPcmContextTime = event.data.absoluteFrame / context.sampleRate;
+            candidate.silentFramesBeforeFirstPcm = event.data.silentFramesBeforeFirstPcm;
+            candidate.peak = event.data.magnitude;
+            const mappingStartedAt = performance.now();
+            const mapFirstPcmToPageClock = () => {
+              const timestamp = context.getOutputTimestamp();
+              if (timestamp.performanceTime <= 0) {
+                if (performance.now() - mappingStartedAt >= 2_000) {
+                  candidate.setupError = 'AudioContext.getOutputTimestamp returned no clock mapping';
+                } else {
+                  setTimeout(mapFirstPcmToPageClock, 5);
+                }
+                return;
+              }
+              candidate.firstPcmAt = timestamp.performanceTime
+                + (candidate.firstPcmContextTime! - timestamp.contextTime) * 1_000;
+            };
+            mapFirstPcmToPageClock();
+          };
+          originalConnect.call(this, processor);
+          originalConnect.call(processor, sink);
+          originalConnect.call(sink, context.destination);
+          candidate.workletReadyAt = performance.now();
+        } catch (error) {
+          candidate.setupError = error instanceof Error ? error.message : String(error);
+        } finally {
+          URL.revokeObjectURL(moduleUrl);
+        }
+      })();
+    }
+    return result;
+  };
+
+  let engine: Probe['engine'] = null;
+  Object.defineProperty(window, '__audioEngine__', {
+    configurable: true,
+    get: () => engine,
+    set: (value: NonNullable<Probe['engine']>) => {
+      engine = value;
+      probe.engine = value;
+      probe.engineExposedAt = performance.now();
+
+      const initializeTone = value.initializeTone.bind(value);
+      value.initializeTone = async () => {
+        probe.toneInitStartedAt ??= performance.now();
+        await initializeTone();
+        probe.toneInitFinishedAt ??= performance.now();
+      };
+
+      const preload = value.preloadInstrumentsForTracks.bind(value);
+      value.preloadInstrumentsForTracks = async (tracks: unknown[]) => {
+        probe.preloadStartedAt ??= performance.now();
+        await preload(tracks);
+        probe.preloadFinishedAt ??= performance.now();
+
+        // StepSequencer awaits this method immediately before scheduler.start().
+        // Hold that application boundary until the audio-thread observer is
+        // attached, so a late observer cannot mistake a later note for onset.
+        const deadline = performance.now() + 2_000;
+        let candidate: Candidate | undefined;
+        while (performance.now() < deadline) {
+          candidate = value.masterGain
+            ? probe.candidates.find(entry => entry.source === value.masterGain)
+            : undefined;
+          if (candidate?.setupError !== null && candidate?.setupError !== undefined) {
+            throw new Error(candidate.setupError);
+          }
+          if (candidate?.workletReadyAt !== null && candidate?.workletReadyAt !== undefined) {
+            probe.schedulerBoundaryReleasedAt ??= performance.now();
+            return;
+          }
+          await new Promise(resolve => setTimeout(resolve, 1));
+        }
+        throw new Error('Cold-start worklet was not ready before the scheduler boundary');
+      };
+    },
+  });
+}
+
+function percentile(values: readonly number[], quantile: number): number {
+  if (values.length === 0) return Number.NaN;
+  const sorted = [...values].sort((left, right) => left - right);
+  return sorted[Math.ceil((sorted.length - 1) * quantile)];
+}
 
 const CAPACITY_TRACKS = [
   ['sampled-808-kick', 'sampled:808-kick', [0, 4, 8, 12]],
@@ -505,6 +720,316 @@ test('captures sampled first-use timing before deciding whether to warm a voice'
       fixture: 'first use of one priority-loaded sampled instrument, preinitialized dry master',
       sampleRate: capture.sampleRate,
       ...coldEvidence,
+    }, null, 2) + '\n',
+  );
+});
+
+test('measures cold Tone, advanced, and whole-engine action-to-first-master-PCM startup', async ({
+  browser,
+  request,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'real startup audio is Chromium-only');
+  test.skip(
+    Boolean(process.env.PLAYWRIGHT_BASE_URL),
+    'the production Worker build intentionally omits the development-only startup probe',
+  );
+  test.setTimeout(180_000);
+
+  // Prove the injected observer itself before using it as an oracle. The
+  // explicit-undefined overload catches wrappers that accidentally shift the
+  // destination input argument, while the blocked main thread proves that the
+  // worklet retains the audio-render frame instead of timing a late callback.
+  const controlContext = await createE2EContext(browser, browserName);
+  await controlContext.addInitScript(installColdStartupProbe);
+  const controlPage = await controlContext.newPage();
+  await controlPage.goto(API_BASE);
+  const probeControl = await controlPage.evaluate(async () => {
+    type ControlCandidate = {
+      source: GainNode;
+      workletReadyAt: number | null;
+      firstPcmContextTime: number | null;
+      firstFrameReceivedAt: number | null;
+      silentFramesBeforeFirstPcm: number | null;
+      setupError: string | null;
+    };
+    const probe = (window as unknown as {
+      __coldStartupProbe__: { candidates: ControlCandidate[]; setupDelayMs: number };
+    }).__coldStartupProbe__;
+    const audioContext = new AudioContext();
+    await audioContext.resume();
+
+    const overloadSource = audioContext.createGain();
+    const merger = audioContext.createChannelMerger(2);
+    Reflect.apply(overloadSource.connect, overloadSource, [merger, undefined, 1]);
+    const parameterDestination = audioContext.createGain();
+    overloadSource.connect(parameterDestination.gain, 0);
+    overloadSource.disconnect();
+
+    const master = audioContext.createGain();
+    const compressor = audioContext.createDynamicsCompressor();
+    const outputSink = audioContext.createGain();
+    outputSink.gain.value = 0;
+    master.connect(compressor);
+    compressor.connect(outputSink);
+    outputSink.connect(audioContext.destination);
+    const candidate = probe.candidates.find(entry => entry.source === master);
+    if (!candidate) throw new Error('AudioWorklet startup control was not attached');
+    while (candidate.workletReadyAt === null && candidate.setupError === null) {
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+    if (candidate.setupError !== null) throw new Error(candidate.setupError);
+
+    const source = audioContext.createConstantSource();
+    source.offset.value = 0.25;
+    source.connect(master);
+    const scheduledContextTime = audioContext.currentTime + 0.1;
+    source.start(scheduledContextTime);
+    source.stop(scheduledContextTime + 0.1);
+    const blockedAt = performance.now();
+    while (performance.now() - blockedAt < 700) {
+      // Deliberately occupy the main thread across the scheduled audio onset.
+    }
+    while (candidate.firstPcmContextTime === null && candidate.setupError === null) {
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+    if (candidate.setupError !== null) throw new Error(candidate.setupError);
+    const result = {
+      sampleRate: audioContext.sampleRate,
+      scheduledContextTime,
+      observedContextTime: candidate.firstPcmContextTime,
+      retainedFrameErrorMs:
+        (candidate.firstPcmContextTime - scheduledContextTime) * 1_000,
+      mainThreadBlockedMs: performance.now() - blockedAt,
+      messageReceived: candidate.firstFrameReceivedAt !== null,
+      silentFramesBeforeFirstPcm: candidate.silentFramesBeforeFirstPcm,
+      explicitUndefinedConnectOverload: 'preserved',
+      audioParamConnectOverload: 'preserved',
+      delayedInstallSilentFrames: null as number | null,
+      delayedInstallObservedOnsetErrorMs: null as number | null,
+      delayedInstallBoundaryViolation: false,
+      delayedInstallRejected: false,
+    };
+    await audioContext.close();
+
+    probe.setupDelayMs = 250;
+    const lateContext = new AudioContext();
+    await lateContext.resume();
+    const lateMaster = lateContext.createGain();
+    const lateCompressor = lateContext.createDynamicsCompressor();
+    const lateSink = lateContext.createGain();
+    lateSink.gain.value = 0;
+    lateMaster.connect(lateCompressor);
+    lateCompressor.connect(lateSink);
+    lateSink.connect(lateContext.destination);
+    const lateCandidate = probe.candidates.find(entry => entry.source === lateMaster);
+    if (!lateCandidate) throw new Error('Delayed-installation control was not attached');
+    const lateSource = lateContext.createConstantSource();
+    const lateGate = lateContext.createGain();
+    lateSource.offset.value = 0.25;
+    lateGate.gain.value = 0;
+    lateSource.connect(lateGate);
+    const sourceBoundaryAt = performance.now();
+    lateGate.connect(lateMaster);
+    const firstPulseAt = lateContext.currentTime + 0.02;
+    for (const offset of [0, 0.4, 0.8]) {
+      lateGate.gain.setValueAtTime(1, firstPulseAt + offset);
+      lateGate.gain.setValueAtTime(0, firstPulseAt + offset + 0.02);
+    }
+    lateSource.start(firstPulseAt);
+    lateSource.stop(firstPulseAt + 1);
+    while (lateCandidate.firstPcmContextTime === null && lateCandidate.setupError === null) {
+      await new Promise(resolve => setTimeout(resolve, 5));
+    }
+    if (lateCandidate.setupError !== null) throw new Error(lateCandidate.setupError);
+    result.delayedInstallSilentFrames = lateCandidate.silentFramesBeforeFirstPcm;
+    result.delayedInstallObservedOnsetErrorMs =
+      (lateCandidate.firstPcmContextTime! - firstPulseAt) * 1_000;
+    result.delayedInstallBoundaryViolation = lateCandidate.workletReadyAt! > sourceBoundaryAt;
+    result.delayedInstallRejected =
+      result.delayedInstallBoundaryViolation
+      && result.delayedInstallObservedOnsetErrorMs > 200
+      && lateCandidate.silentFramesBeforeFirstPcm! > 0;
+    probe.setupDelayMs = 0;
+    await lateContext.close();
+    return result;
+  });
+  await controlContext.close();
+  expect(probeControl.messageReceived).toBe(true);
+  expect(probeControl.mainThreadBlockedMs).toBeGreaterThanOrEqual(700);
+  expect(probeControl.silentFramesBeforeFirstPcm).toBeGreaterThan(0);
+  expect(probeControl.delayedInstallSilentFrames).toBeGreaterThan(0);
+  expect(probeControl.delayedInstallObservedOnsetErrorMs).toBeGreaterThan(200);
+  expect(probeControl.delayedInstallBoundaryViolation).toBe(true);
+  expect(probeControl.delayedInstallRejected).toBe(true);
+  expect(Math.abs(probeControl.retainedFrameErrorMs))
+    .toBeLessThanOrEqual(256 / probeControl.sampleRate * 1_000);
+
+  const results: Record<string, Array<Record<string, number | string | null>>> = {};
+  for (const scenario of COLD_START_SCENARIOS) {
+    results[scenario.id] = [];
+    for (let trial = 0; trial < COLD_START_TRIALS; trial++) {
+      const { id } = await createSessionWithRetry(request, {
+        tracks: [probeTrack(`cold-${scenario.id}-${trial}`, scenario.sampleId, [0, 4, 8, 12])],
+        tempo: 120,
+        swing: 0,
+        effects: LEGACY_MISSING_EFFECTS_STATE,
+        version: 1,
+      });
+      const context = await createE2EContext(browser, browserName);
+      await context.addInitScript(installColdStartupProbe);
+      const page = await context.newPage();
+      try {
+        await page.goto(`${API_BASE}/s/${id}`);
+        await waitForAppReady(page);
+        const playButton = page
+          .locator('[data-testid="play-button"]')
+          .or(page.getByRole('button', { name: /play/i }))
+          .first();
+        await playButton.evaluate((element) => {
+          element.addEventListener('click', () => {
+            const probe = (window as unknown as {
+              __coldStartupProbe__: { clickAt: number | null };
+            }).__coldStartupProbe__;
+            probe.clickAt = performance.now();
+          }, { capture: true, once: true });
+        });
+        await playButton.click();
+        await page.waitForFunction(() => {
+          const globals = window as unknown as {
+            __coldStartupProbe__?: {
+              engine: { masterGain: GainNode | null } | null;
+              candidates: Array<{
+                source: GainNode;
+                firstPcmAt: number | null;
+                setupError: string | null;
+              }>;
+            };
+          };
+          const probe = globals.__coldStartupProbe__;
+          const master = probe?.engine?.masterGain;
+          const candidate = master
+            ? probe?.candidates.find(entry => entry.source === master)
+            : undefined;
+          return Boolean(
+            master
+            && (candidate?.firstPcmAt != null || candidate?.setupError != null)
+          );
+        }, undefined, { timeout: 15_000 });
+
+        const observation = await page.evaluate(() => {
+          const probe = (window as unknown as {
+            __coldStartupProbe__: {
+              clickAt: number;
+              engineExposedAt: number;
+              toneInitStartedAt: number | null;
+              toneInitFinishedAt: number | null;
+              preloadStartedAt: number | null;
+              preloadFinishedAt: number | null;
+              schedulerBoundaryReleasedAt: number;
+              engine: { masterGain: GainNode; getAudioContext: () => AudioContext | null };
+              candidates: Array<{
+                source: GainNode;
+                attachedAt: number;
+                workletReadyAt: number;
+                firstPcmAt: number;
+                firstFrameReceivedAt: number;
+                firstPcmContextTime: number;
+                silentFramesBeforeFirstPcm: number;
+                setupError: string | null;
+                peak: number;
+              }>;
+            };
+          }).__coldStartupProbe__;
+          const candidate = probe.candidates.find(entry => entry.source === probe.engine.masterGain);
+          if (!candidate) throw new Error('Master startup tap was not attached');
+          if (candidate.setupError !== null) throw new Error(candidate.setupError);
+          const relative = (value: number | null) => value === null ? null : value - probe.clickAt;
+          return {
+            trial: 0,
+            sampleRate: probe.engine.getAudioContext()?.sampleRate ?? 0,
+            clickToMasterGraphMs: candidate.attachedAt - probe.clickAt,
+            clickToWorkletReadyMs: candidate.workletReadyAt - probe.clickAt,
+            clickToEngineExposedMs: probe.engineExposedAt - probe.clickAt,
+            clickToToneInitStartMs: relative(probe.toneInitStartedAt),
+            clickToToneReadyMs: relative(probe.toneInitFinishedAt),
+            clickToPreloadStartMs: relative(probe.preloadStartedAt),
+            clickToPreloadReadyMs: relative(probe.preloadFinishedAt),
+            clickToSchedulerBoundaryReleaseMs:
+              probe.schedulerBoundaryReleasedAt - probe.clickAt,
+            clickToMasterPcmMs: candidate.firstPcmAt - probe.clickAt,
+            messageLagMs: candidate.firstFrameReceivedAt - candidate.firstPcmAt,
+            firstPcmContextTime: candidate.firstPcmContextTime,
+            silentFramesBeforeFirstPcm: candidate.silentFramesBeforeFirstPcm,
+            clockMapping: 'audio-frame/getOutputTimestamp',
+            peak: candidate.peak,
+          };
+        });
+        observation.trial = trial + 1;
+        expect(observation.clockMapping).toBe('audio-frame/getOutputTimestamp');
+        expect(observation.sampleRate).toBeGreaterThanOrEqual(44_100);
+        expect(observation.clickToMasterPcmMs).toBeGreaterThanOrEqual(0);
+        expect(observation.clickToMasterPcmMs).toBeLessThan(5_000);
+        expect(observation.clickToWorkletReadyMs).toBeLessThan(observation.clickToMasterPcmMs);
+        expect(observation.clickToWorkletReadyMs)
+          .toBeLessThanOrEqual(observation.clickToSchedulerBoundaryReleaseMs);
+        expect(observation.clickToSchedulerBoundaryReleaseMs)
+          .toBeLessThan(observation.clickToMasterPcmMs);
+        expect(observation.peak).toBeGreaterThanOrEqual(1e-4);
+        results[scenario.id].push(observation);
+      } finally {
+        await context.close();
+      }
+    }
+  }
+
+  const summary = Object.fromEntries(Object.entries(results).map(([scenario, trials]) => {
+    const firstPcm = trials.map(trial => trial.clickToMasterPcmMs as number);
+    const engine = trials.map(trial => trial.clickToEngineExposedMs as number);
+    const tone = trials
+      .map(trial => trial.clickToToneReadyMs)
+      .filter((value): value is number => typeof value === 'number');
+    return [scenario, {
+      trials: firstPcm.length,
+      clickToMasterPcmMs: {
+        min: Math.min(...firstPcm),
+        median: percentile(firstPcm, 0.5),
+        p95: percentile(firstPcm, 0.95),
+        max: Math.max(...firstPcm),
+      },
+      clickToEngineExposedMs: {
+        min: Math.min(...engine),
+        median: percentile(engine, 0.5),
+        p95: percentile(engine, 0.95),
+        max: Math.max(...engine),
+      },
+      clickToToneReadyMs: tone.length === 0 ? null : {
+        min: Math.min(...tone),
+        median: percentile(tone, 0.5),
+        p95: percentile(tone, 0.95),
+        max: Math.max(...tone),
+      },
+    }];
+  }));
+  console.log('cold startup matrix', summary);
+
+  mkdirSync(REPORT_DIR, { recursive: true });
+  writeFileSync(
+    resolve(REPORT_DIR, 'browser-cold-startup-matrix.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      measuredAt: new Date().toISOString(),
+      fixture: 'fresh browser context, warm local server, first transport click and first master-bus sample',
+      oracle: 'AudioWorklet-retained absolute render frame mapped through AudioContext.getOutputTimestamp(); readiness precedes the awaited scheduler-release boundary',
+      threshold: 1e-4,
+      probeControl,
+      environment: {
+        node: process.version,
+        platform: `${process.platform}-${process.arch}`,
+        browser: `${browserName} ${browser.version()}`,
+      },
+      summary,
+      observations: results,
     }, null, 2) + '\n',
   );
 });

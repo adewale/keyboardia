@@ -126,3 +126,11 @@ export const SUSTAINING_INSTRUMENT_IDS = new Set([
   'sampled:string-section',
   'sampled:vibraphone',
 ]);
+
+/** One 16-step bar at 120 BPM fully tied: 16 × (60 / 120 / 4) seconds. */
+export const MIN_SUSTAINING_MEDIAN_USABLE_SECONDS = 2;
+
+/** A sustaining library must cover the complete tied bar; equality is valid. */
+export function meetsSustainCeilingFloor(medianUsableSeconds: number): boolean {
+  return medianUsableSeconds >= MIN_SUSTAINING_MEDIAN_USABLE_SECONDS;
+}
