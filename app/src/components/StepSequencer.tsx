@@ -53,6 +53,8 @@ export function StepSequencer() {
   const getState = useStableGetter(state);
   const playbackActiveRef = useRef(state.isPlaying);
   const playbackStartLatchRef = useRef(new AsyncActionLatch());
+  const playbackDesiredRef = useRef(state.isPlaying);
+  const playbackRestartQueuedRef = useRef(false);
   const [copySource, setCopySource] = useState<string | null>(null);
   const getCopySource = useStableGetter(copySource);
 
@@ -141,25 +143,38 @@ export function StepSequencer() {
   }, []);
 
 
-  // Handle play/stop (Tier 1 - requires audio immediately)
-  const handlePlayPause = useCallback(async () => {
-    // A second activation during startup means cancel, not a concurrent start.
-    // The original action keeps the latch until its awaited work settles.
-    if (playbackStartLatchRef.current.active) {
-      playbackStartLatchRef.current.cancel();
-      return;
-    }
+  const stopPlayback = useCallback(() => {
+    // Pause is also cancellation: an OS pause received during asynchronous
+    // startup must prevent that obsolete continuation from starting later.
+    playbackDesiredRef.current = false;
+    playbackRestartQueuedRef.current = false;
+    playbackStartLatchRef.current.cancel();
+    if (!playbackActiveRef.current) return;
+    playbackActiveRef.current = false;
+    scheduler.stop();
+    dispatch({ type: 'SET_PLAYING', isPlaying: false });
+    dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
+  }, [dispatch]);
 
-    // Stop/reset is state-owned and must never wait on audio initialization.
+  const startPlayback = useCallback(async () => {
+    const wasAlreadyDesired = playbackDesiredRef.current;
+    playbackDesiredRef.current = true;
+    // Media Session play is idempotent. If transport is already active, still
+    // refresh readiness so an independently OS-paused media element is
+    // restarted without toggling the sequencer off.
     if (playbackActiveRef.current) {
-      playbackStartLatchRef.current.cancel();
-      playbackActiveRef.current = false;
-      scheduler.stop();
-      dispatch({ type: 'SET_PLAYING', isPlaying: false });
-      dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
+      const audioEngine = await requireAudioEngine('play');
+      await audioEngine.ensureAudioReady();
       return;
     }
-
+    // A repeated play action during startup keeps the original start alive.
+    if (playbackStartLatchRef.current.active) {
+      // play → pause → play can occur before the obsolete startup promise
+      // settles. Remember the new desired state and restart once the latch is
+      // idle; an ordinary repeated play while still desired remains a no-op.
+      if (!wasAlreadyDesired) playbackRestartQueuedRef.current = true;
+      return;
+    }
     await playbackStartLatchRef.current.run(async (isCurrent) => {
       const audioEngine = await requireAudioEngine('play');
       if (!isCurrent()) return;
@@ -194,7 +209,32 @@ export function StepSequencer() {
       playbackActiveRef.current = true;
       dispatch({ type: 'SET_PLAYING', isPlaying: true });
     });
+    if (
+      playbackRestartQueuedRef.current
+      && playbackDesiredRef.current
+      && !playbackActiveRef.current
+    ) {
+      playbackRestartQueuedRef.current = false;
+      await startPlayback();
+    }
   }, [dispatch, getState]);
+
+  // Handle the UI/keyboard toggle (Tier 1 - requires audio immediately).
+  const handlePlayPause = useCallback(async () => {
+    // Toggle the desired state while startup settles. This makes a rapid
+    // play → pause → play sequence converge on the latest UI/keyboard intent
+    // just as the explicit Media Session commands do.
+    if (playbackStartLatchRef.current.active) {
+      if (playbackDesiredRef.current) stopPlayback();
+      else await startPlayback();
+      return;
+    }
+    if (playbackActiveRef.current) {
+      stopPlayback();
+      return;
+    }
+    await startPlayback();
+  }, [startPlayback, stopPlayback]);
 
   const handleTempoChange = useCallback((tempo: number) => {
     dispatch({ type: 'SET_TEMPO', tempo });
@@ -410,16 +450,14 @@ export function StepSequencer() {
   // Phase 31F / Phase 36: stable references for the keyboard listener, always
   // invoking the latest closure.
   const stablePlayPause = useStableCallback(() => handlePlayPause());
+  const stableStartPlayback = useStableCallback(() => startPlayback());
+  const stableStopPlayback = useStableCallback(() => stopPlayback());
   const stableDeleteSelectedSteps = useStableCallback(() => handleDeleteSelectedSteps());
 
   useEffect(() => installMediaSessionActionHandlers({
-    play: () => {
-      if (!playbackActiveRef.current) void stablePlayPause();
-    },
-    pause: () => {
-      if (playbackActiveRef.current) void stablePlayPause();
-    },
-  }), [stablePlayPause]);
+    play: () => { void stableStartPlayback(); },
+    pause: () => { stableStopPlayback(); },
+  }), [stableStartPlayback, stableStopPlayback]);
 
   // Phase 31F: Selection count for badge display
   const selectionCount = useMemo(() => {
@@ -485,6 +523,8 @@ export function StepSequencer() {
   useEffect(() => {
     const playbackStartLatch = playbackStartLatchRef.current;
     return () => {
+      playbackDesiredRef.current = false;
+      playbackRestartQueuedRef.current = false;
       playbackStartLatch.cancel();
       playbackActiveRef.current = false;
       scheduler.stop();

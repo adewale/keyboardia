@@ -197,6 +197,21 @@ function centroidOf(samples: Float32Array): number | null {
   return spectralCentroidHz(window, SAMPLE_RATE);
 }
 
+export function requireMeasuredCentroidDrop(
+  id: string,
+  midiNote: number,
+  sampleRate: number,
+  dryHz: number | null,
+  wetHz: number | null,
+): number {
+  if (dryHz === null || wetHz === null) {
+    throw new Error(
+      `${id}@${midiNote}/${sampleRate}: ${dryHz === null ? 'dry' : 'filtered'} probe is not measurable`,
+    );
+  }
+  return (dryHz - wetHz) / dryHz * 100;
+}
+
 async function dropsAtCurrentAnchors(id: string) {
   const manifest = loadManifest(id);
   const anchors = CALIBRATION[id];
@@ -220,8 +235,8 @@ async function dropsAtCurrentAnchors(id: string) {
     );
     const dry = centroidOf(await render(buffer, probe, null));
     const wet = centroidOf(await render(buffer, probe, cutoff));
-    if (dry === null || wet === null) continue;
-    notes.push({ midiNote: probe.midiNote, dryHz: dry, wetHz: wet, dropPct: (dry - wet) / dry * 100 });
+    const dropPct = requireMeasuredCentroidDrop(id, probe.midiNote, SAMPLE_RATE, dry, wet);
+    notes.push({ midiNote: probe.midiNote, dryHz: dry!, wetHz: wet!, dropPct });
   }
   return { id, meanDropPct: notes.reduce((sum, note) => sum + note.dropPct, 0) / notes.length, notes };
 }
@@ -273,6 +288,11 @@ async function reportCurrent(): Promise<void> {
   for (const id of targetIds()) {
     const anchors = CALIBRATION[id];
     const result = await dropsAtCurrentAnchors(id);
+    if (result.notes.length !== Object.keys(anchors).length) {
+      throw new Error(
+        `${id}@${SAMPLE_RATE}: measured ${result.notes.length}/${Object.keys(anchors).length} calibrated notes`,
+      );
+    }
     const drops = result.notes.map(note => note.dropPct);
     const min = Math.min(...drops);
     const max = Math.max(...drops);

@@ -3,11 +3,14 @@
 **Date**: 2026-08-19
 **Driver**: `specs/research/TONE-NETS-COMPARISON-2026-08.md`
 **Predecessor**: `specs/SOUND-QUALITY-PARITY-PLAN.md` (Phase 43, implemented)
-**Status**: Implemented 2026-08-22 (see §10) except the graph warm-up.
-Baselines in §1 are measured at
-`58264dd5ae274f63b1cd80b72aa823b76b21f28b`; the unit- and offline-lane
-targets are verified, the browser-capture and physical-device gates are
-recorded in §10 as still owed.
+**Status**: Implemented 2026-08-22; independently re-audited and corrected
+2026-09-13 (see §§10–11). Baselines in §1 originate at
+`58264dd5ae274f63b1cd80b72aa823b76b21f28b` and were re-measured after the
+audit. Unit, offline-render, performance, and Chromium browser-capture gates
+pass. Silent-voice warm-up is not indicated by the first-use sampled fixture;
+that result is not generalized to cold Tone/advanced voices or whole-engine
+initialization. The physical-iPhone ringer-switch and device-latency gate
+remains open and is not inferred from CI.
 
 This plan keeps Phase 43's two claim levels:
 
@@ -34,34 +37,40 @@ npm run simulate:velocity-filter    # what the proposed filter would buy
 
 ### 1.1 Velocity response, measured
 
-Post-onset spectral centroid across each instrument's velocity layers, over a
-fixed 250 ms window so attack length and level cannot bias it:
+Spectral centroid over a fixed 250 ms window after the same decoded-buffer
+start compensation used by production. Layers are compared only within the
+same native note and articulation; round robins within a layer are averaged,
+each note has equal weight, and a note with only one layer contributes zero.
+This removes pitch, articulation, and round-robin coverage as confounds. The
+window does not pretend that every instrument has the same attack envelope.
 
 | Instrument | Layers | Centroid spread |
 |---|---|---|
-| `steel-drums` | 5 manifest zones | **65.1%** |
-| `marimba` | 3 manifest zones | **62.1%** |
-| `finger-bass` | 4 manifest zones | **48.3%** |
-| `acoustic-kick` | 4 manifest zones | **47.5%** |
-| `french-horn` | 2 manifest zones plus fallback | **34.5%** |
-| `piano` | 3 manifest zones | **31.5%** |
-| `acoustic-hihat-closed` | 4 manifest zones | **30.4%** |
-| `vibraphone` | 2 manifest zones | **30.5%** |
-| `alto-sax` | 2 manifest zones | **26.2%** |
-| `acoustic-ride` | 3 manifest zones | 17.9% |
-| `acoustic-snare` | 4 manifest zones | 16.3% |
+| `steel-drums` | 5 manifest zones | **68.1%** |
+| `marimba` | 3 manifest zones | **59.7%** |
+| `finger-bass` | 4 manifest zones | **47.7%** |
+| `acoustic-kick` | 4 manifest zones | **46.6%** |
+| `piano` | 3 manifest zones | **35.6%** |
+| `vibraphone` | 2 manifest zones | **31.2%** |
+| `acoustic-hihat-closed` | 4 manifest zones | **31.1%** |
+| `alto-sax` | 2 manifest zones | **24.4%** |
+| `acoustic-ride` | 3 manifest zones | 18.0% |
+| `acoustic-snare` | 4 manifest zones | 15.3% |
 | `acoustic-crash` | 3 manifest zones | 13.6% |
 | `brushes-snare` | 3 manifest zones | 11.6% |
-| `acoustic-hihat-open` | 4 manifest zones | 5.6% |
+| `french-horn` | 2 zones on 7 roots; 2 single-zone roots | **9.5%** |
+| `acoustic-hihat-open` | 4 manifest zones | 5.4% |
 | the other 12 | one manifest zone | **0% — gain only** |
 
 **12 of 26 sampled instruments respond to velocity with loudness and nothing
 else.** A soft hit is a quieter copy of a hard hit, sample-identical.
 
 The earlier filename-based analysis reported `finger-bass`, `steel-drums`, and
-`french-horn` as single-layer instruments (and the horn at 1.9%). Those were
-measurement defects: the filenames do not encode the manifest's velocity
-zones. The table above is derived from the authoritative mappings.
+`french-horn` as single-layer instruments (and the horn at 1.9%). The first
+repair then over-corrected the horn to 34.5% by globally comparing its low-note
+layer labels with brighter single-layer high notes. Both were measurement
+defects. The table above uses authoritative mappings and paired acoustic
+comparisons; a synthetic pitch/articulation confound must measure zero.
 
 ### 1.2 Sustain ceiling, measured
 
@@ -77,7 +86,7 @@ mappings carrying a `LoopSpec` repeat, and exactly one manifest declares one
 | `alto-sax` | 4.58 / 5.86 / 6.84 |
 | `clean-guitar` | 3.96 / 5.10 / 5.92 |
 | `hammond-organ` (looped) | 4.04 / 4.48 / 5.00 |
-| `finger-bass` | 1.96 / 3.90 / 5.02 |
+| `finger-bass` | 1.94 / 3.90 / 5.02 |
 | `acoustic-guitar` | 0.76 / 2.06 / 4.72 |
 | `slap-bass` | 0.38 / 0.42 / 0.50 |
 
@@ -110,10 +119,11 @@ implements the fix in about fifteen lines.
 | Every existing dynamics assertion in the capture lane | `e2e/capture-session.spec.ts` | passing | still passing |
 | Audible with the ringer switch off | **manual, physical iPhone** | fails | passes |
 
-**What is not measurable here, stated plainly.** Playwright's iPhone profile is
-Chromium, not WebKit, and has no ringer switch, so CI cannot prove the fix
-works — only that it did not change the signal. The acceptance gate is a manual
-pass on a physical device, Safari and Chrome iOS, ringer off. And the repo
+**What is not measurable here, stated plainly.** This repository's Playwright
+iPhone project uses WebKit, but neither it nor Chromium exposes a physical
+ringer switch, so CI cannot prove the fix works — only that it did not change
+the signal. The acceptance gate is a manual pass on a physical device, Safari
+and Chrome iOS, ringer off. And the repo
 contains nothing that would let anyone estimate what share of iOS users are
 affected; do not put a number on it.
 
@@ -128,7 +138,10 @@ a blocker, not a rounding error. Metering taps are upstream and unaffected.
 
 ## 3. Change 2 — Velocity drives cutoff on the sampled path
 
-**What.** One `BiquadFilterNode` per sampled voice:
+**What.** One native low-pass `BiquadFilterNode` per sampled voice. Web Audio
+expresses this filter's `Q` AudioParam in decibels, so the non-resonant
+Butterworth value is `20 × log10(1/√2) = −3.0103 dB`. Assigning the familiar
+linear value `0.7071` is wrong in this API and creates a pass-band boost.
 
 ```
 c40 = anchor(note, sampleRate) × 2 ** (−1.5 × (1 − 40 / 90))
@@ -137,8 +150,13 @@ cutoff(v) = c40 × (24_000 / c40) ** ((v − 40) / 50) for 40 < v < 90
 bypass (no filter node at all)                        for v ≥ 90
 ```
 
-`anchor` is calibrated per playable note and separately for 44.1 and 48 kHz,
-outside the provenance manifest. `90` is `DEFAULT_STEP_MIDI_VELOCITY`.
+`anchor` is calibrated per playable note and separately for **exactly** 44.1
+and 48 kHz, outside the provenance manifest. `90` is
+`DEFAULT_STEP_MIDI_VELOCITY`. Any other hardware rate takes a deliberate
+gain-only bypass; it must never alias the nearest table. During progressive
+loading, calibration applies only when the source root selected from the
+currently loaded set matches the root selected from the complete manifest. A
+priority-only fallback root also bypasses until its calibrated root arrives.
 
 **Why this shape and not the existing synth curve.** `velocityFilterCutoff`
 (`synth.ts:120`) scales a *preset* cutoff by `0.3 + 0.7·√(v/127)`. Sampled
@@ -156,7 +174,7 @@ explicit volume lock renders through a byte-identical graph. So unlike a
 default change, this ships without reinterpreting anyone's saved music.
 
 **Measured impact.** At velocity 40, all 281 calibrated playable notes across
-the six tonal gain-only instruments land at 29.8–30.2% centroid drop at both
+the six tonal gain-only instruments land at 29.7–30.3% centroid drop at both
 44.1 and 48 kHz. The target band is 26–35%, covering the central response of
 the genuinely multi-sampled instruments. Recorded-layer instruments are not
 calibrated and remain on their authored velocity zones.
@@ -167,13 +185,22 @@ calibrated and remain on their authored velocity zones.
 |---|---|---|---|
 | `logSpectralDistance`, session with no volume locks, before vs after | offline render | — | **exactly 0** |
 | v40 centroid drop vs v127, every calibrated playable note | `npm run validate:velocity-filter` | **0%** | 26–35% at 44.1/48 kHz |
-| Instruments that already have layers | calibration structure + shipped-sample render | 5.6–65.1% | no filter calibration; unchanged |
-| `truePeakDbfs`, `loudnessKMax` at `userOutput` | `e2e/capture-session.spec.ts` | current | unchanged (a lowpass must not raise either) |
+| Native transfer response | `velocity-sample-filter.test.ts`, independent of solver | wrong Q: +1.74 dB at 3 kHz for a 4 kHz cutoff | magnitude ≤ 1 and −3.0103 dB at cutoff |
+| Progressive source mismatch | held-background-fetch production render | 55.98% (`string-section@88`) | byte-identical safe bypass until calibrated root loads |
+| Unsupported hardware rate | 96 kHz production render | nearest-table alias; up to 39.1% drop | byte-identical safe bypass |
+| Instruments that already have layers | calibration structure + shipped-sample render | 5.4–68.1% | no filter calibration; unchanged |
+| `truePeakDbfs`, `loudnessKMax`, filtered vs bypassed source | shipped-sample render | unmeasured | ≤ 0.1 dB increase; master browser guards still pass |
 
-**Risk.** One extra node per voice on the hot path; check it against the
-existing `audio-hot-paths.bench.ts` before and after. A wrong anchor makes an
+**Risk.** One extra node per voice on the hot path. The production
+`SampledInstrument.playNote` benchmark now exercises both v40 filter allocation
+and the v90 bypass control, with pre-timing assertions that a source and the
+expected filter count were actually created. On the audit machine the fake-node
+JavaScript orchestration measured about 630k operations/s filtered versus 730k
+bypassed (a 1.16× difference). This is a regression baseline for allocation
+code, not a browser-DSP or realtime-capacity claim. A wrong anchor makes an
 instrument sound muffled at moderate velocity — hence the exhaustive per-note
-range gate and the structural exclusion of already-layered instruments.
+range gate, transfer-function test, safe fallback policies, and the structural
+exclusion of already-layered instruments.
 
 **Reconsidered limits (2026-08-22).** Two consequences of this design deserve
 stating as plainly as its benefits:
@@ -213,9 +240,13 @@ not support acting on it**, and this plan drops it:
   `acoustic-guitar` (2.06 s), are plucked. A decay to silence is correct
   behaviour there, not a defect.
 
-**Instead:** add a regression guard so a future sample swap cannot introduce
-the problem silently. Assert that every *sustaining* instrument's median usable
-seconds exceeds the longest tied note in a 16-step bar at 120 BPM (2 s).
+**Instead:** add a library-level regression guard so a future sample swap
+cannot degrade the typical root silently. Assert that every *sustaining*
+instrument's **median native-root** usable seconds exceeds the longest tied
+note in a 16-step bar at 120 BPM (2 s). This is not a claim that every pitched
+note holds for two seconds: `finger-bass` has a measured 1.94 s minimum, and
+pitch shifting changes wall-clock duration. Any broader playback claim needs a
+requested-note/velocity render over a separately stated domain.
 
 That guard needs something the manifests do not currently carry: `type` is
 uniformly `sampled`, and `instrument-classification.ts` distinguishes drums,
@@ -230,8 +261,9 @@ pass today**: `finger-bass` 3.90 s, `hammond-organ` 4.48 s, `vibraphone`
 waiver — they are plucked, and classifying them as sustaining would be the
 error.
 
-Value: the ceiling becomes a checked invariant instead of a property nobody is
-watching, and the classification it needs is independently useful.
+Value: the median library statistic becomes a checked invariant instead of a
+property nobody is watching, and the classification it needs is independently
+useful. Its deliberately narrow scope is part of the contract.
 
 ---
 
@@ -248,22 +280,42 @@ closet"*), and the bass-protected send it needs was built and shipped: HPF at
 `constants.ts`). Only the default was never flipped. Tone Nets is independent
 support for the diagnosis: its bank carries a reverb send on 99% of zones.
 
-**Preregistered acceptance**, all on the existing three-tap browser capture
-lane. Set the tail threshold from the first capture rather than guessing it:
+**Revised acceptance contract**, all on the existing three-tap browser capture
+lane. The audit corrected two mismatches between the original table and what
+the metrics can establish. Low-band protection is measured during the bass
+program, where dry energy exists; a post-hit dry-floor ratio is numerically
+unstable and does not test whether the kick body is protected. Compressor
+pumping is measured on the 16-track capacity fixture, not inferred from the
+quiet tail probe. Set the tail threshold from the first capture rather than
+guessing it:
 
 | Metric | Window | Target |
 |---|---|---|
-| `bandRmsDb`, full band | from 300 ms after the last hit | measurably above the current dry floor |
-| `bandRmsDb`, below 275 Hz | same | **within ±0.3 dB of dry** — proves the HPF protects the kick |
-| `truePeakDbfs` at `userOutput` | whole capture | **no increase** |
+| `bandRmsDb`, full band | from 300 ms after the last authored burst | measurably above the current dry floor |
+| `bandRmsDb`, below 275 Hz | 0.15–0.55 s bass-program body | **within ±0.3 dB of dry** — proves the HPF protects the bass body |
+| `truePeakDbfs` at `userOutput` | whole capture | no increase beyond the explicit-dry live-repeat floor + 0.01 dB numerical margin |
 | `loudnessKMax` | whole capture | **≤ 1 LU** change |
 | `pumpingProfile` on the 16-track capacity fixture | whole capture | no new pumping — reverb energy must not drive the compressor |
 
+The production-browser probes now supply the thresholds and evidence across
+the audit reruns: full-band tail +19.7 to +21.1 dB and high-band tail +24.0 to
++25.1 dB from the corrected 300 ms boundary, bass-body low band within
+±0.038 dB, wet true peak within 0.013 dB of dry, maximum K-weighted loudness
+within 0.055 LU, and 16-track compressor-attenuation delta −0.071 to
++0.095 dB. Exact peak ordering varies below the live repeat floor, so the gate
+allows that measured floor plus 0.01 dB instead of claiming bit-stability. The
+committed assertions retain useful margin around those observations rather
+than comparing against an offline reverb proxy.
+
 **The migration is the hard part, not the DSP.** Changing a default
 reinterprets every session that never stored effects. `normalizeSessionEffects`
-already separates `new-session` from `legacy-session`, so the guard is:
-**a stored legacy session renders bit-identical after the change.** That
-assertion is the gate; without it this change is not shippable.
+separates `new-session` from `legacy-session`, so a stored effects-absent
+session must hydrate to the exact dry state. The production browser then renders
+that hydrated state indistinguishably from explicit dry at the measured
+same-build live-capture null: −53.86 dB residual versus a −54.01 dB repeat null,
+and 0.019 dB versus 0.013 dB log-spectral distance. “Bit-identical” is retained
+for deterministic state/offline lanes; a wall-clock AudioWorklet capture is
+correctly judged against its repeat null rather than promised to be byte-stable.
 
 **Not measured here.** I deliberately did not build an offline reverb proxy.
 Phase 43's v4 audit found proxy fixtures to be its main source of wrong
@@ -280,9 +332,9 @@ should not be described as one in a changelog.
 
 | Change | What | Measurable impact | Effort |
 |---|---|---|---|
-| **Graph warm-up** | Fire a silent note through the real instrument path at play-arm, master at 0 | `hitLevelVariationDb` between the first hit and steady state on a cold capture; `leadingSilenceMs`; `audioMetrics` scheduler jitter over the first 500 ms. Baseline unmeasured — needs a cold browser capture, which does not exist yet and is the first task. | Small |
-| **Clock-liveness gate** | Wait for `ctx.currentTime` to actually advance before declaring ready, instead of trusting `state === 'running'` | Unit-testable with a fake context whose clock is frozen; functional, no acoustic metric | Small |
-| **`navigator.mediaSession`** | Lock-screen transport and metadata | E2E presence assertion only; no audio metric. Real value is that it pairs with Change 1 and tells iOS this is a media app | Small |
+| **Voice warm-up** | Measure before adding silent voices | One first-use priority-loaded `slap-bass` fixture with a preinitialized dry master: 28–44 ms DOM-click-event-to-audible across three isolated runs; onset-aligned first/steady spread ≤0.0089 dB peak and ≤0.0022 dB RMS | **Not indicated for this sampled fixture:** silent playback would perturb round-robin/choke state; this does not establish cold Tone/advanced or whole-engine behavior |
+| **Clock-liveness gate** | Every transport start samples `currentTime` after any resume path, including already-`running`, gesture-resumed, suspended, and interrupted contexts | Helper tests cover frozen/advance/timeout; engine and transport tests fail if the caller omits the check. Timeout is non-fatal but logged; cancellation prevents an obsolete start. | Small |
+| **`navigator.mediaSession`** | Lock-screen transport and metadata | Play and pause are idempotent state commands across pending startup, cancellation, independently paused output, and active transport—not toggles. Lifecycle integration tests exercise each state. | Small |
 
 ---
 
@@ -326,7 +378,7 @@ every change in §2–§6 lands as specified".
 | Velocity → timbre, sampled path | 0% centroid spread on 12/26 instruments | 26–35% band on locked steps for six tonal gain-only instruments, verified at every playable note at 44.1/48 kHz | unlocked steps unchanged by design; no response above v90 |
 | Per-note motion (filter envelope, LFO) | none | none — out of scope | full gap: SF2 has a filter envelope on 89% of zones, LFO on 100% |
 | Default space | `reverb.wet: 0` | 0.15 bass-protected, new sessions only | per-instrument depth — the SF2 balances sends per zone; ours is one global wet (§4.9 of the comparison, not committed here) |
-| Startup (warm-up, clock-liveness) | absent | closed if §6 lands | — |
+| Startup (warm-up, clock-liveness) | clock trusted state; warm-up only a hypothesis | liveness closed; one sampled first-use fixture does not indicate voice warm-up | cold Tone/advanced and physical/browser lifecycle states remain open domains |
 | `navigator.mediaSession` | absent | closed if §6 lands | — |
 | Device quality tiers | none | none — not carried into this plan | comparison §4.8 remains open |
 | Source material | Keyboardia ahead | unchanged | our advantage either way |
@@ -344,6 +396,24 @@ What shipped, and in which lane each preregistered target was verified.
 Claim level for everything here: **internal improvement** (§8 unchanged —
 no comparative claim).
 
+The audit now uses one acceptance ledger so broad completion statements cannot
+outrun their evidence:
+
+| Requirement | Production entry point | Tested domain | Independent assertion / counterexample | Status |
+|---|---|---|---|---|
+| Non-resonant velocity filter | `SampledInstrument.playNote` | native low-pass | response ≤1; −3.0103 dB at cutoff; old `Q=0.7071` is a positive control for failure | passed |
+| Calibrated soft timbre | same | 281 playable notes × 44.1/48 kHz | 29.7–30.3%; exact probe count required | passed |
+| Progressive loading | same | priority-only held fetch, audited range edges | mismatched source root is byte-identical bypass | passed |
+| Hardware sample rate | calibration lookup | 32/88.2/96 kHz controls; 96 kHz render | no nearest-table alias; byte-identical bypass | passed |
+| Velocity baseline | measurement script | note + articulation pairs, RR averaged | synthetic pitch/articulation confound remains 0 | passed |
+| Playback readiness | engine + transport caller | running/frozen, resume/gesture, timeout/cancel | removing the caller check or pending-start latch fails | passed |
+| Media Session | sequencer lifecycle | pending, active, OS-pause, retry, unmount | latest play intent survives cancellation but cannot survive unmount | passed |
+| Default room | Tone effects + real master chain | Chromium deterministic probe + 16-track capacity fixture | corrected tail boundary; bass-body/peak/LU bounds; capacity pumping against dry | passed |
+| Legacy room migration | HTTP hydration + real master chain | effects-absent stored session | exact dry state plus live render at explicit-dry repeat null | passed |
+| Sampled first use | preload + scheduler + sampled voice | priority-loaded `slap-bass`, five hits; master preinitialized | 28–44 ms DOM event to audible; onset-aligned ≤0.0089/0.0022 dB peak/RMS spreads | no voice warm-up indicated in this fixture |
+| Sustaining library statistic | validator | eight classified manifests | median native-root duration >2 s; no every-note claim | passed |
+| Physical mobile output | final media-element route | Safari + Chrome iOS, ringer off | physical audition and latency capture | **open release gate** |
+
 - **Change 2 — velocity → cutoff** (`velocity-sample-filter.ts`,
   `sampled-instrument.ts`). One lowpass per voice, bypassed at
   `DEFAULT_STEP_MIDI_VELOCITY`; DSP calibration is held outside provenance
@@ -353,7 +423,11 @@ no comparative claim).
   any note outside the 26–35% v40 centroid-drop band and rejects calibration
   on a manifest with recorded velocity zones. The curve opens to a transparent
   corner before v90, eliminating the old v89→v90 brightness cliff while the
-  v≥90 graph remains byte-identical.
+  v≥90 graph remains byte-identical. The audit corrected Web Audio Q from an
+  accidental +0.7071 dB to −3.0103 dB and regenerated both tables. Unsupported
+  rates and progressive source mismatches now bypass safely. Independent
+  transfer-response, held-fetch, 96 kHz, peak/loudness, and production hot-path
+  benchmark controls close the shared-oracle gaps.
 - **Change 3 — default room** (`effects-defaults.ts`). New sessions carry
   `reverb.wet 0.15` through the `new-session` fallback
   (`NEW_SESSION_EFFECTS_STATE`), exactly as §5 specifies; the shared
@@ -363,10 +437,11 @@ no comparative claim).
   legacy-normalization guard is asserted in `session-defaults.test.ts`.
   `RESET_STATE` now uses the new-session policy, and `createNew()` hydrates
   the server-created snapshot before autosave is enabled, so a disconnected
-  client cannot overwrite the server's 0.15 room with a stale dry reset.
-  **Still owed:** the browser-capture acceptance rows in §5 (tail rise,
-  low-band ±0.3 dB, true peak, LU, pumping) — this container has no WebKit
-  and the capture lane runs in CI.
+  client cannot overwrite the server's 0.15 room with a stale dry reset. The
+  Chromium production-master captures now pass every revised §5 row: the
+  deterministic room probe uses the promised tail boundary and the separate
+  16-track fixture measures wet-versus-dry pumping. The migration lane loads an
+  actual effects-absent stored session before comparing it with explicit dry.
 - **Change 1 — mobile output** (`mobile-media-output.ts`, `engine.ts`).
   Both the native and Tone-effects master chains terminate in the same
   MediaStreamDestination → hidden `playsinline` element. It starts before the
@@ -378,14 +453,22 @@ no comparative claim).
   CI cannot provide either.
 - **§4 guard** (`instrument-classification.ts`,
   `scripts/validate-sustain-ceiling.ts`, in `validate:all`). Eight
-  sustaining instruments pass; measurement visits manifest-referenced
+  sustaining instruments pass the deliberately median/native-root statistic;
+  measurement visits manifest-referenced
   mappings and mapped segments only, so stale directory files cannot satisfy
-  the guard. Plucked instruments remain deliberately unclassified.
-- **§6**: `navigator.mediaSession` state and play/pause action handlers are
-  wired into the transport. Clock liveness now requires advancement from the
-  value observed after every resume, including a previously non-zero value.
-  **Deferred:** graph warm-up — its own acceptance requires a cold
-  browser capture that does not exist yet.
+  the guard. Plucked instruments remain deliberately unclassified; the 1.94 s
+  finger-bass minimum is reported rather than hidden behind the median.
+- **§6**: `navigator.mediaSession` play/pause handlers are idempotent transport
+  commands across pending and active states. Clock liveness is sampled at every
+  playback boundary as well as after a gesture resume, including when state is
+  already `running`. The browser capture finds no silent-voice warm-up benefit
+  for its first-use sampled fixture. It deliberately makes no broader cold Tone,
+  advanced-instrument, or whole-engine claim.
+- **Measurement correction** (`measure-velocity-timbre.ts`). Velocity layers
+  are paired within note and articulation, round robins are averaged within
+  each pair, single-layer notes contribute zero, and decoded onset treatment
+  matches production. French horn is 9.49%, not the confounded 34.5% previously
+  reported. Missing dry or filtered calibration probes fail closed.
 - **Demo session**: `scripts/demo-sessions/whisper-to-roar.json`, seeded in
   the mock API (`/s/b7e0b220-3185-49ef-b9b0-15ab9df76aec` with
   `USE_MOCK_API=1`) and held to its promises by
@@ -429,17 +512,63 @@ same simplified models:
    Sabotage tests now derive those sets, and receipt hashes are checked for
    every calibration entry. The strict all-validator also fails on every stale
    hash-bound quality waiver.
+6. **We never specified the DSP API's units.** “Butterworth Q” was copied as
+   the familiar linear `0.7071`, but Web Audio's low/high-pass Q parameter is
+   in decibels. Production and the calibration solver shared the same wrong
+   constant, so the solver faithfully calibrated a resonant topology. The
+   missing tool was an independent transfer-response test with an ablation of
+   the old value.
+7. **We mistook two measured rates and a complete library for the playback
+   domain.** Hardware can choose 96 kHz, and first play can render from only the
+   priority root. Nearest-table lookup and requested-note calibration silently
+   invented answers outside their evidence. Explicit supported-rate and loaded-
+   source policies, plus negative controls, now fail safely.
+8. **We aggregated labels instead of estimating a causal effect.** The 34.5%
+   horn result mixed pitch coverage with velocity coverage. The experiment had
+   no pairing rule, so authoritative manifest data still answered the wrong
+   question. Pairing note and articulation, balancing round robins, and adding
+   a synthetic confound fixture turn the metric into the intended comparison.
+9. **We tested registration instead of state-machine semantics.** Media Session
+   handlers existed, but repeated play could toggle an in-flight start and pause
+   could not cancel it. The missing verification was caller-level lifecycle
+   testing over pending, active, cancelled, and independently paused states.
+10. **We treated prose status as evidence.** The implementation record said the
+    only remaining gap was physical while room capture and cold-start work were
+    still marked owed elsewhere. The acceptance ledger in §10 now distinguishes
+    implemented, measured, passed, rejected, and open, and every completion
+    statement points to a production entry point and counterexample.
+11. **The benchmark had no branch precondition.** Vitest's benchmark runner did
+    not execute the nested setup hook, so the apparent 9.5M operations/s result
+    timed an unloaded early return. Unit-runner lifecycle assumptions had leaked
+    into a different runner. Module-scope setup plus pre-timing source/filter
+    assertions now make the benchmark fail if it does not enter both intended
+    production branches; its claim is explicitly limited to fake-node JavaScript
+    allocation.
+12. **The acceptance ledger named metrics but did not bind their exact windows
+    and fixtures.** The room probe started its tail early, checked low-band body
+    energy against a row that said tail, and used a quiet source for a row that
+    required the 16-track fixture. The revised contract explains why bass
+    protection belongs in the body window, moves the tail to the stated boundary,
+    and performs the pumping comparison on the capacity session. The sampled
+    first-use probe now timestamps the DOM event itself and aligns every hit to
+    its observed onset, avoiding both Playwright-dispatch latency and scheduler
+    phase error.
 
 The pre-audit suites were green because their oracles were built from the same
-assumptions as the implementation: one note, one route, filename-derived
-layers, hard-coded exclusion lists, and a broad acoustic threshold. They proved
-the code matched that model; they did not prove the model matched playback.
-The audit supplied the missing independent/adversarial verification—terminal
-graph inspection, boundary pairs, range-edge renders, manifest sabotage, and
-universal receipt checks—and therefore found cases outside the old tests'
-support rather than intermittent failures inside it.
+assumptions as the implementation: one note, one route, filename-derived or
+globally grouped layers, hard-coded exclusion lists, nearest-value fallbacks,
+registration checks, and a solver that shared the production DSP constant.
+They proved the code matched that model; they did not prove the model matched
+playback. The audits supplied the missing independent/adversarial
+verification—terminal graph inspection, transfer probes, boundary pairs,
+held-loading renders, unsupported-domain controls, synthetic confounds,
+lifecycle state tests, cold browser capture, and universal receipt checks—and
+therefore found cases outside the old tests' support rather than intermittent
+failures inside it.
 
-The remaining evidence gap is irreducibly physical: CI cannot prove behavior
-with an iPhone ringer switch or measure that device's added output latency.
-That manual Safari/Chrome iOS pass remains a release gate rather than a claim
-inferred from Chromium.
+The remaining Phase 44 release evidence gap is irreducibly physical: CI cannot
+prove behavior with an iPhone ringer switch or measure that device's added
+output latency. That manual Safari/Chrome iOS pass remains a release gate rather
+than a claim inferred from WebKit or Chromium emulation. The broader comparative
+gap in §8—a matched reference capture and first-contact listening study—also
+remains, so none of these internal results becomes a comparative sound claim.

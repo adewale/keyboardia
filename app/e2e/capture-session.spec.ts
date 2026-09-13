@@ -3,7 +3,19 @@ import { API_BASE, createSessionWithRetry } from './test-utils';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { truePeakDbfs } from '../src/test/audio-measures';
+import {
+  bandRmsDb,
+  estimateLatencyFrames,
+  hitLevelVariationDb,
+  logSpectralDistance,
+  loudnessKMax,
+  pumpingProfile,
+  truePeakDbfs,
+} from '../src/test/audio-measures';
+import {
+  LEGACY_MISSING_EFFECTS_STATE,
+  NEW_SESSION_EFFECTS_STATE,
+} from '../src/shared/effects-defaults';
 
 const TOTAL_STEPS = 128;
 const REPORT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../test-results/audio-capture');
@@ -368,6 +380,366 @@ test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', 
   );
 });
 
+test('captures sampled first-use timing before deciding whether to warm a voice', async ({
+  page,
+  request,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'real master capture is Chromium-only');
+  test.skip(
+    Boolean(process.env.PLAYWRIGHT_BASE_URL),
+    'the production Worker build intentionally omits the development-only PCM capture hook',
+  );
+  test.setTimeout(90_000);
+  const { id } = await createSessionWithRetry(request, {
+    tracks: [probeTrack('cold-sampled-probe', 'sampled:slap-bass', [0, 4, 8, 12])],
+    tempo: 120,
+    swing: 0,
+    effects: LEGACY_MISSING_EFFECTS_STATE,
+    version: 1,
+  });
+
+  await page.goto(`${API_BASE}/s/${id}`);
+  await waitForAppReady(page);
+  // A reversible edit gesture initializes the engine without starting the
+  // transport, so capture can be armed before this instrument's first voice.
+  // This deliberately does not claim that the whole audio graph is cold.
+  const dormantStep = page.locator('.track-row').first().locator('.step-cell').nth(1);
+  await dormantStep.click();
+  await page.waitForFunction(() => {
+    const globals = window as unknown as {
+      __audioEngine__?: { isToneInitialized?: () => boolean; getMasterCaptureTaps?: () => unknown };
+      __captureMaster__?: unknown;
+    };
+    return Boolean(
+      globals.__audioEngine__?.isToneInitialized?.()
+      && globals.__audioEngine__?.getMasterCaptureTaps?.()
+      && globals.__captureMaster__,
+    );
+  }, undefined, { timeout: 30_000 });
+  await dormantStep.click();
+
+  const capturePromise = page.evaluate(async () => {
+    type Capture = {
+      sampleRate: number;
+      startFrame: number;
+      taps: Record<string, { channels: Float32Array[] }>;
+    };
+    const capture = await (window as unknown as {
+      __captureMaster__: (seconds: number) => Promise<Capture>;
+    }).__captureMaster__(3.2);
+    return {
+      sampleRate: capture.sampleRate,
+      startFrame: capture.startFrame,
+      user: Array.from(capture.taps.userOutput.channels[0]),
+    };
+  });
+  await page.waitForTimeout(100);
+  const playButton = page
+    .locator('[data-testid="play-button"]')
+    .or(page.getByRole('button', { name: /play/i }))
+    .first();
+  await playButton.evaluate((element) => {
+    element.addEventListener('click', () => {
+      const globals = window as unknown as {
+        __audioEngine__: { getAudioContext: () => AudioContext | null };
+        __coldPlayClickContextTime__?: number;
+      };
+      globals.__coldPlayClickContextTime__ =
+        globals.__audioEngine__.getAudioContext()?.currentTime ?? 0;
+    }, { capture: true, once: true });
+  });
+  await playButton.click();
+  const capture = await capturePromise;
+  const clickContextTime = await page.evaluate(() => (
+    (window as unknown as { __coldPlayClickContextTime__?: number })
+      .__coldPlayClickContextTime__ ?? 0
+  ));
+
+  const threshold = 1e-4;
+  const firstHitFrame = capture.user.findIndex(value => Math.abs(value) >= threshold);
+  expect(firstHitFrame).toBeGreaterThanOrEqual(0);
+  const hitIntervalFrames = Math.round(capture.sampleRate * 0.5);
+  // Scheduler callbacks can land on adjacent render quanta. Locate each real
+  // onset near its expected half-second boundary before comparing level; using
+  // the first onset plus exact intervals turns timing jitter into false RMS
+  // variation when a fixed analysis window clips a sample's decay.
+  const onsetSearchRadiusFrames = Math.round(capture.sampleRate * 0.02);
+  const hitStarts = Array.from({ length: 5 }, (_, index) => {
+    if (index === 0) return firstHitFrame;
+    const expectedFrame = firstHitFrame + index * hitIntervalFrames;
+    const searchStart = Math.max(0, expectedFrame - onsetSearchRadiusFrames);
+    const searchEnd = Math.min(capture.user.length, expectedFrame + onsetSearchRadiusFrames);
+    const relativeOnset = capture.user
+      .slice(searchStart, searchEnd)
+      .findIndex(value => Math.abs(value) >= threshold);
+    if (relativeOnset < 0) throw new Error(`No onset found for sampled hit ${index + 1}`);
+    return searchStart + relativeOnset;
+  });
+  expect(hitStarts.at(-1)! + Math.round(capture.sampleRate * 0.3))
+    .toBeLessThanOrEqual(capture.user.length);
+  const variation = hitLevelVariationDb(
+    capture.user,
+    hitStarts,
+    Math.round(capture.sampleRate * 0.3),
+  );
+  const clickFrame = Math.round(clickContextTime * capture.sampleRate - capture.startFrame);
+  const leadingSilenceMs = Math.max(0, firstHitFrame - clickFrame) / capture.sampleRate * 1_000;
+  const onsetOffsetsFrames = hitStarts.map((frame, index) =>
+    frame - (firstHitFrame + index * hitIntervalFrames)
+  );
+  const coldEvidence = { leadingSilenceMs, onsetOffsetsFrames, ...variation };
+  console.log('sampled first-use capture', coldEvidence);
+
+  expect(leadingSilenceMs).toBeLessThanOrEqual(500);
+  expect(Math.max(...onsetOffsetsFrames.map(Math.abs)))
+    .toBeLessThanOrEqual(onsetSearchRadiusFrames);
+  expect(variation.peakSpreadDb).toBeLessThanOrEqual(0.2);
+  expect(variation.rmsSpreadDb).toBeLessThanOrEqual(0.3);
+
+  mkdirSync(REPORT_DIR, { recursive: true });
+  writeFileSync(
+    resolve(REPORT_DIR, 'browser-sampled-first-use-capture.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      fixture: 'first use of one priority-loaded sampled instrument, preinitialized dry master',
+      sampleRate: capture.sampleRate,
+      ...coldEvidence,
+    }, null, 2) + '\n',
+  );
+});
+
+test('proves the default-room bounds and a production-path legacy dry render', async ({
+  page,
+  request,
+  browserName,
+}) => {
+  test.skip(browserName !== 'chromium', 'real master capture is Chromium-only');
+  test.skip(
+    Boolean(process.env.PLAYWRIGHT_BASE_URL),
+    'the production Worker build intentionally omits the development-only PCM capture hook',
+  );
+  test.setTimeout(90_000);
+
+  const legacyState = {
+    tracks: [probeTrack('legacy-room-probe', 'synth:lead', [0, 4, 8, 12])],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  };
+  const { id } = await createSessionWithRetry(request, legacyState);
+  const stored = await request.put(`${API_BASE}/api/sessions/${id}`, {
+    data: { state: legacyState },
+  });
+  expect(stored.ok()).toBe(true);
+
+  await page.goto(`${API_BASE}/s/${id}`);
+  await waitForAppReady(page);
+  await page
+    .locator('[data-testid="play-button"]')
+    .or(page.getByRole('button', { name: /play/i }))
+    .first()
+    .click();
+  await page.waitForFunction(() => {
+    const globals = window as unknown as {
+      __audioEngine__?: { isToneInitialized?: () => boolean };
+      __captureMaster__?: unknown;
+    };
+    return Boolean(globals.__audioEngine__?.isToneInitialized?.() && globals.__captureMaster__);
+  }, undefined, { timeout: 30_000 });
+  await page
+    .locator('[data-testid="play-button"]')
+    .or(page.getByRole('button', { name: /pause|stop/i }))
+    .first()
+    .click();
+  await page.waitForTimeout(500);
+
+  const captures = await page.evaluate(async ({ explicitDry, newSession }) => {
+    type Capture = {
+      sampleRate: number;
+      startFrame: number;
+      taps: Record<string, { channels: Float32Array[] }>;
+    };
+    type Effects = typeof explicitDry;
+    type Engine = {
+      getAudioContext: () => AudioContext | null;
+      getEffectsState: () => Effects;
+      applyEffectsState: (effects: Effects) => void;
+      masterGain: GainNode | null;
+    };
+    const globals = window as unknown as {
+      __audioEngine__: Engine;
+      __captureMaster__: (seconds: number) => Promise<Capture>;
+    };
+    const context = globals.__audioEngine__.getAudioContext();
+    const masterInput = globals.__audioEngine__.masterGain;
+    if (!context || !masterInput) throw new Error('Master input unavailable for room capture');
+
+    const hydratedEffects = globals.__audioEngine__.getEffectsState();
+    const runProbe = async (effects: Effects | null) => {
+      if (effects) globals.__audioEngine__.applyEffectsState(effects);
+      // Effects parameters slew and the master compressor has finite recovery.
+      await new Promise(resolve => setTimeout(resolve, 350));
+
+      const startTime = context.currentTime + 0.15;
+      const programFrames = Math.round(context.sampleRate * 0.8);
+      const buffer = context.createBuffer(1, programFrames, context.sampleRate);
+      const pcm = buffer.getChannelData(0);
+      for (let frame = 0; frame < pcm.length; frame++) {
+        const edge = Math.min(1, frame / 128, (pcm.length - 1 - frame) / 128);
+        const bass = 0.025 * Math.max(0, edge)
+          * Math.sin(2 * Math.PI * 110 * frame / context.sampleRate);
+        const burstSeconds = frame / context.sampleRate - 0.65;
+        const burst = burstSeconds >= 0 && burstSeconds < 0.07
+          ? 0.045 * (1 - burstSeconds / 0.07) * (
+            Math.sin(2 * Math.PI * 1_300 * burstSeconds)
+            + 0.7 * Math.sin(2 * Math.PI * 2_900 * burstSeconds + 0.4)
+            + 0.4 * Math.sin(2 * Math.PI * 5_100 * burstSeconds + 1.1)
+          )
+          : 0;
+        pcm[frame] = bass + burst;
+      }
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(masterInput);
+      source.start(startTime);
+
+      const capture = await globals.__captureMaster__(1.35);
+      return {
+        sampleRate: capture.sampleRate,
+        programStartFrame: Math.round(startTime * capture.sampleRate - capture.startFrame),
+        user: Array.from(capture.taps.userOutput.channels[0]),
+        pre: Array.from(capture.taps.preCompressor.channels[0]),
+        post: Array.from(capture.taps.postMakeup.channels[0]),
+      };
+    };
+
+    const legacy = await runProbe(null);
+    const dry = await runProbe(explicitDry);
+    const dryRepeat = await runProbe(explicitDry);
+    const wet = await runProbe(newSession);
+    return { hydratedEffects, legacy, dry, dryRepeat, wet };
+  }, {
+    explicitDry: LEGACY_MISSING_EFFECTS_STATE,
+    newSession: NEW_SESSION_EFFECTS_STATE,
+  });
+
+  expect(captures.hydratedEffects).toEqual(LEGACY_MISSING_EFFECTS_STATE);
+  const sampleRate = captures.dry.sampleRate as 44_100 | 48_000;
+  expect(captures.legacy.sampleRate).toBe(sampleRate);
+  expect(captures.wet.sampleRate).toBe(sampleRate);
+  const relativeWindow = (
+    capture: typeof captures.dry,
+    fromSeconds: number,
+    toSeconds: number,
+    tap: 'user' | 'pre' | 'post' = 'user',
+  ) => capture[tap].slice(
+    capture.programStartFrame + Math.round(fromSeconds * sampleRate),
+    capture.programStartFrame + Math.round(toSeconds * sampleRate),
+  );
+
+  const comparePrograms = (left: number[], right: number[]) => {
+    const length = Math.min(left.length, right.length);
+    let leftEnergy = 0;
+    let residualEnergy = 0;
+    for (let frame = 0; frame < length; frame++) {
+      leftEnergy += left[frame] ** 2;
+      residualEnergy += (left[frame] - right[frame]) ** 2;
+    }
+    return {
+      residualDb: 10 * Math.log10(
+        Math.max(residualEnergy, 1e-24) / Math.max(leftEnergy, 1e-24),
+      ),
+      spectralDistanceDb: logSpectralDistance(left, right),
+    };
+  };
+  const legacyComparison = comparePrograms(
+    relativeWindow(captures.legacy, 0, 0.78),
+    relativeWindow(captures.dry, 0, 0.78),
+  );
+  const repeatNull = comparePrograms(
+    relativeWindow(captures.dry, 0, 0.78),
+    relativeWindow(captures.dryRepeat, 0, 0.78),
+  );
+
+  // The final authored burst ends at 0.72 s, so this starts 300 ms later.
+  const dryTail = relativeWindow(captures.dry, 1.02, 1.30);
+  const wetTail = relativeWindow(captures.wet, 1.02, 1.30);
+  const fullBandTailRiseDb = bandRmsDb(wetTail, sampleRate, 20, 20_000)
+    - bandRmsDb(dryTail, sampleRate, 20, 20_000);
+  const highBandTailRiseDb = bandRmsDb(wetTail, sampleRate, 500, 20_000)
+    - bandRmsDb(dryTail, sampleRate, 500, 20_000);
+  const dryBody = relativeWindow(captures.dry, 0.15, 0.55);
+  const wetBody = relativeWindow(captures.wet, 0.15, 0.55);
+  const lowBandDeltaDb = bandRmsDb(wetBody, sampleRate, 20, 275)
+    - bandRmsDb(dryBody, sampleRate, 20, 275);
+  const dryPeakDbfs = truePeakDbfs(captures.dry.user);
+  const repeatNullPeakDeltaDb = truePeakDbfs(captures.dryRepeat.user) - dryPeakDbfs;
+  const peakDeltaDb = truePeakDbfs(captures.wet.user) - dryPeakDbfs;
+  const loudnessDeltaLu = loudnessKMax(Float32Array.from(captures.wet.user), sampleRate)
+    - loudnessKMax(Float32Array.from(captures.dry.user), sampleRate);
+  const latencyFrames = estimateLatencyFrames(
+    relativeWindow(captures.dry, 0, 0.95, 'pre'),
+    relativeWindow(captures.dry, 0, 0.95, 'post'),
+    Math.round(sampleRate * 0.02),
+  );
+  const dryPumping = pumpingProfile(
+    relativeWindow(captures.dry, 0, 0.95, 'pre'),
+    relativeWindow(captures.dry, 0, 0.95, 'post'),
+    sampleRate,
+    { latencyFrames },
+  );
+  const wetPumping = pumpingProfile(
+    relativeWindow(captures.wet, 0, 0.95, 'pre'),
+    relativeWindow(captures.wet, 0, 0.95, 'post'),
+    sampleRate,
+    { latencyFrames },
+  );
+  const pumpingDeltaDb = wetPumping.maxAttenuationDb - dryPumping.maxAttenuationDb;
+
+  const roomEvidence = {
+    legacyResidualDb: legacyComparison.residualDb,
+    legacySpectralDistanceDb: legacyComparison.spectralDistanceDb,
+    repeatNullResidualDb: repeatNull.residualDb,
+    repeatNullSpectralDistanceDb: repeatNull.spectralDistanceDb,
+    fullBandTailRiseDb,
+    highBandTailRiseDb,
+    lowBandDeltaDb,
+    peakDeltaDb,
+    repeatNullPeakDeltaDb,
+    loudnessDeltaLu,
+    pumpingDeltaDb,
+    latencyFrames,
+  };
+  console.log('default-room and legacy render capture', roomEvidence);
+
+  // A live AudioWorklet capture is not byte-stable across wall-clock runs, so
+  // compare legacy hydration with the same-build explicit-dry repeat floor.
+  expect(legacyComparison.residualDb).toBeLessThanOrEqual(repeatNull.residualDb + 3);
+  expect(legacyComparison.spectralDistanceDb)
+    .toBeLessThanOrEqual(repeatNull.spectralDistanceDb + 0.25);
+  expect(fullBandTailRiseDb).toBeGreaterThan(1);
+  expect(highBandTailRiseDb).toBeGreaterThan(1);
+  expect(Math.abs(lowBandDeltaDb)).toBeLessThanOrEqual(0.3);
+  // Wall-clock AudioWorklet captures are not bit-stable. Treat any apparent
+  // increase inside the explicit-dry repeat floor (plus 0.01 dB numerical
+  // margin) as unchanged, rather than asserting impossible exact equality.
+  expect(peakDeltaDb).toBeLessThanOrEqual(Math.abs(repeatNullPeakDeltaDb) + 0.01);
+  expect(loudnessDeltaLu).toBeLessThanOrEqual(1);
+  expect(pumpingDeltaDb).toBeLessThanOrEqual(0.1);
+
+  mkdirSync(REPORT_DIR, { recursive: true });
+  writeFileSync(
+    resolve(REPORT_DIR, 'browser-room-capture.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      fixture: 'legacy hydration plus deterministic bass-and-room probe',
+      sampleRate,
+      ...roomEvidence,
+    }, null, 2) + '\n',
+  );
+});
+
 test('keeps a user-reachable 16-track mixed-engine session below digital full scale', async ({
   page,
   request,
@@ -403,15 +775,25 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
   // of the render-clock diagnostic.
   await page.waitForTimeout(5_000);
 
-  const captured = await page.evaluate(async () => {
+  const captured = await page.evaluate(async ({ explicitDry, newSession }) => {
     type Capture = {
       sampleRate: number;
       maxRenderFrameDrift: number;
       taps: Record<string, { channels: Float32Array[] }>;
     };
-    const capture = await (window as unknown as {
+    type Effects = typeof explicitDry;
+    const globals = window as unknown as {
       __captureMaster__: (seconds: number) => Promise<Capture>;
-    }).__captureMaster__(2.1);
+      __audioEngine__: { applyEffectsState: (effects: Effects) => void };
+    };
+    const runCapture = async (effects: Effects) => {
+      globals.__audioEngine__.applyEffectsState(effects);
+      await new Promise(resolve => setTimeout(resolve, 350));
+      return globals.__captureMaster__(2.1);
+    };
+    const dryCapture = await runCapture(explicitDry);
+    const wetCapture = await runCapture(newSession);
+    const capture = wetCapture;
     const summaries = Object.fromEntries(Object.entries(capture.taps).map(([name, tap]) => {
       let peak = 0;
       let energy = 0;
@@ -435,15 +817,45 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
       trackCount: document.querySelectorAll('.track-row').length,
       summaries,
       userOutputChannels: capture.taps.userOutput.channels.map(channel => Array.from(channel)),
+      dryPre: Array.from(dryCapture.taps.preCompressor.channels[0]),
+      dryPost: Array.from(dryCapture.taps.postMakeup.channels[0]),
+      wetPre: Array.from(wetCapture.taps.preCompressor.channels[0]),
+      wetPost: Array.from(wetCapture.taps.postMakeup.channels[0]),
     };
+  }, {
+    explicitDry: LEGACY_MISSING_EFFECTS_STATE,
+    newSession: NEW_SESSION_EFFECTS_STATE,
   });
 
   const userOutputTruePeakDbfs = Math.max(...captured.userOutputChannels.map(channel =>
     truePeakDbfs(channel)
   ));
-  const { userOutputChannels: _userOutputChannels, ...result } = captured;
+  const latencyFrames = estimateLatencyFrames(
+    captured.dryPre,
+    captured.dryPost,
+    Math.round(captured.sampleRate * 0.02),
+  );
+  const dryPumping = pumpingProfile(captured.dryPre, captured.dryPost, captured.sampleRate, {
+    latencyFrames,
+  });
+  const wetPumping = pumpingProfile(captured.wetPre, captured.wetPost, captured.sampleRate, {
+    latencyFrames,
+  });
+  const capacityPumpingDeltaDb = wetPumping.maxAttenuationDb - dryPumping.maxAttenuationDb;
+  const {
+    userOutputChannels: _userOutputChannels,
+    dryPre: _dryPre,
+    dryPost: _dryPost,
+    wetPre: _wetPre,
+    wetPost: _wetPost,
+    ...result
+  } = captured;
   void _userOutputChannels;
-  Object.assign(result, { userOutputTruePeakDbfs });
+  void _dryPre;
+  void _dryPost;
+  void _wetPre;
+  void _wetPost;
+  Object.assign(result, { userOutputTruePeakDbfs, capacityPumpingDeltaDb, latencyFrames });
 
   console.log('16-track session capture', result);
   expect(result.trackCount).toBe(16);
@@ -452,6 +864,7 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
   expect(result.summaries.userOutput.rms).toBeGreaterThan(1e-5);
   expect(result.summaries.userOutput.peakDbfs).toBeLessThanOrEqual(0);
   expect(userOutputTruePeakDbfs).toBeLessThanOrEqual(0);
+  expect(capacityPumpingDeltaDb).toBeLessThanOrEqual(0.1);
 
   mkdirSync(REPORT_DIR, { recursive: true });
   writeFileSync(

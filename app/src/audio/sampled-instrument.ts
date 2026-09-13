@@ -651,8 +651,25 @@ export class SampledInstrument {
     // component, only when the manifest declares an anchor AND the velocity
     // is below the bypass threshold. Bypass creates no node at all so the
     // default-velocity graph stays byte-identical.
+    const selectedSourceNote = sampleInfos[0]?.sample.note ?? adjustedMidiNote;
+    const manifestNotes = this.manifest.samples
+      .filter(mapping => (mapping.articulation ?? 'default') === articulation)
+      .map(mapping => mapping.note);
+    const expectedSourceNote = nearestSampleNote(
+      manifestNotes.length > 0 ? manifestNotes : this.manifest.samples.map(mapping => mapping.note),
+      adjustedMidiNote,
+    );
+    // The exhaustive per-requested-note table is valid only when progressive
+    // loading selected the same root as the complete manifest. If the calibrated
+    // root is not loaded yet, bypass instead of applying another sample's
+    // transfer calibration. Background completion restores the normal path.
+    const calibrationNote = selectedSourceNote === expectedSourceNote
+      ? adjustedMidiNote
+      : undefined;
     const velocityCutoffHz = velocitySampleCutoff(
-      this.velocityAnchorForNote(this.instrumentId, adjustedMidiNote, this.audioContext.sampleRate),
+      calibrationNote === undefined
+        ? undefined
+        : this.velocityAnchorForNote(this.instrumentId, calibrationNote, this.audioContext.sampleRate),
       velocity,
       adjustedMidiNote,
       adjustedMidiNote,

@@ -10,10 +10,10 @@
  *
  * Two measurements per instrument:
  *
- * 1. `centroidSpreadPct` — spread of the post-onset spectral centroid across
- *    velocity layers. A single-layer instrument is 0 by construction: velocity
- *    scales gain and nothing else, so soft notes are quieter but never darker.
- *    Layered instruments show what real dynamic recordings buy.
+ * 1. `centroidSpreadPct` — the mean within-note spread of post-onset spectral
+ *    centroid across velocity layers. Comparisons are paired at one sample root;
+ *    a brighter high note can never be mistaken for velocity response at a low
+ *    note. Single-layer notes contribute zero to a partially layered instrument.
  *
  * 2. `usableSeconds` — time until the sample sits below -60 dBFS relative to
  *    its own peak. A note held longer than this goes silent mid-note, because
@@ -25,11 +25,16 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { OfflineAudioContext } from 'node-web-audio-api';
+import {
+  compensatedSampleStartOffset,
+  measureDecodedLeadingSilenceSeconds,
+} from '../src/audio/sample-onset';
 import { rmsDb, spectralCentroidHz } from '../src/test/audio-measures';
+import { isDrumInstrument } from '../src/shared/instrument-classification';
 
 const INSTRUMENTS_DIR = 'public/instruments';
 const SAMPLE_RATE = 48_000;
-/** Post-onset window the centroid is taken over, so attack length cannot bias it. */
+/** Fixed window after the production-equivalent decoded-buffer start offset. */
 const CENTROID_WINDOW_SEC = 0.25;
 const ONSET_SKIP_SEC = 0.02;
 const SILENCE_FLOOR_DB = -60;
@@ -45,6 +50,7 @@ interface ManifestSampleMapping {
   endOffset?: number;
   velocityMin?: number;
   velocityMax?: number;
+  articulation?: string;
 }
 
 interface MeasurementManifest {
@@ -58,6 +64,7 @@ export interface ManifestMeasurementTarget {
   file: string;
   note: number;
   layer: string;
+  articulation: string;
   startSeconds: number;
   endSeconds?: number;
 }
@@ -67,6 +74,7 @@ export interface InstrumentMeasurement {
   files: number;
   layers: string[];
   centroidByLayerHz: Record<string, number>;
+  centroidSpreadByNotePct: Record<string, number>;
   centroidSpreadPct: number | null;
   usableSeconds: { min: number; median: number; max: number };
 }
@@ -124,6 +132,74 @@ function mean(values: number[]): number {
   return values.reduce((a, b) => a + b, 0) / values.length;
 }
 
+export interface VelocityCentroidObservation {
+  note: number;
+  articulation: string;
+  layer: string;
+  centroidHz: number;
+}
+
+/**
+ * Summarize a paired acoustic experiment. Each distinct note root has equal
+ * weight; round-robin observations within one note/layer are averaged before
+ * comparing that note's layers. Notes with only one layer contribute zero.
+ */
+export function summarizeVelocityCentroids(observations: VelocityCentroidObservation[]): {
+  centroidByLayerHz: Record<string, number>;
+  centroidSpreadByNotePct: Record<string, number>;
+  centroidSpreadPct: number | null;
+} {
+  const globalLayers = new Map<string, number[]>();
+  const byNoteAndArticulation = new Map<
+    string,
+    { note: number; articulation: string; layers: Map<string, number[]> }
+  >();
+  for (const observation of observations) {
+    if (!globalLayers.has(observation.layer)) globalLayers.set(observation.layer, []);
+    globalLayers.get(observation.layer)!.push(observation.centroidHz);
+    const key = `${observation.note}\u0000${observation.articulation}`;
+    if (!byNoteAndArticulation.has(key)) {
+      byNoteAndArticulation.set(key, {
+        note: observation.note,
+        articulation: observation.articulation,
+        layers: new Map(),
+      });
+    }
+    const layers = byNoteAndArticulation.get(key)!.layers;
+    if (!layers.has(observation.layer)) layers.set(observation.layer, []);
+    layers.get(observation.layer)!.push(observation.centroidHz);
+  }
+
+  const centroidByLayerHz = Object.fromEntries(
+    [...globalLayers].map(([layer, values]) => [layer, mean(values)]),
+  );
+  const centroidSpreadByNotePct: Record<string, number> = {};
+  const articulationCountByNote = new Map<number, number>();
+  for (const { note } of byNoteAndArticulation.values()) {
+    articulationCountByNote.set(note, (articulationCountByNote.get(note) ?? 0) + 1);
+  }
+  let hasPairedLayer = false;
+  const pairedGroups = [...byNoteAndArticulation.values()].sort((left, right) =>
+    left.note - right.note || left.articulation.localeCompare(right.articulation)
+  );
+  for (const { note, articulation, layers } of pairedGroups) {
+    const centroids = [...layers.values()].map(mean);
+    if (centroids.length > 1) hasPairedLayer = true;
+    const resultKey = articulationCountByNote.get(note) === 1
+      ? String(note)
+      : `${note}/${articulation}`;
+    centroidSpreadByNotePct[resultKey] = centroids.length > 1
+      ? (Math.max(...centroids) - Math.min(...centroids)) / Math.max(...centroids) * 100
+      : 0;
+  }
+  const pairedSpreads = Object.values(centroidSpreadByNotePct);
+  return {
+    centroidByLayerHz,
+    centroidSpreadByNotePct,
+    centroidSpreadPct: hasPairedLayer && pairedSpreads.length > 0 ? mean(pairedSpreads) : null,
+  };
+}
+
 /**
  * Turn the authoritative playback manifest into acoustic measurement targets.
  * Filename spelling and unreferenced files are deliberately irrelevant.
@@ -145,15 +221,25 @@ export function manifestMeasurementTargets(
       })(),
       note: mapping.note,
       layer: `${mapping.velocityMin ?? 0}-${mapping.velocityMax ?? 127}`,
+      articulation: mapping.articulation ?? 'default',
       startSeconds,
       endSeconds,
     };
   });
 }
 
-function mappedSamples(buffer: AudioBuffer, target: ManifestMeasurementTarget): Float32Array {
+function mappedSamples(
+  buffer: AudioBuffer,
+  target: ManifestMeasurementTarget,
+  adaptCodecDelay: boolean,
+): Float32Array {
   const full = toMono(buffer);
-  const start = Math.max(0, Math.floor(target.startSeconds * buffer.sampleRate));
+  const startSeconds = compensatedSampleStartOffset(
+    target.startSeconds,
+    adaptCodecDelay ? measureDecodedLeadingSilenceSeconds(buffer) : 0,
+    adaptCodecDelay,
+  ) ?? 0;
+  const start = Math.max(0, Math.floor(startSeconds * buffer.sampleRate));
   const end = target.endSeconds === undefined
     ? full.length
     : Math.min(full.length, Math.ceil(target.endSeconds * buffer.sampleRate));
@@ -169,7 +255,7 @@ export async function measureInstrument(id: string): Promise<InstrumentMeasureme
   if (!targets.length) return null;
 
   const usable: number[] = [];
-  const centroids = new Map<string, number[]>();
+  const centroidObservations: VelocityCentroidObservation[] = [];
   const decoded = new Map<string, AudioBuffer>();
   for (const target of targets) {
     let buffer = decoded.get(target.file);
@@ -177,28 +263,32 @@ export async function measureInstrument(id: string): Promise<InstrumentMeasureme
       buffer = await decode(path.join(dir, target.file));
       decoded.set(target.file, buffer);
     }
-    const samples = mappedSamples(buffer, target);
+    // Match SampledInstrument's individual-file onset treatment. Audio sprites
+    // use authored segment offsets directly and are intentionally not adapted.
+    const adaptCodecDelay = manifest.sprite === undefined && (
+      isDrumInstrument(`sampled:${manifest.id}`)
+      || target.file.toLowerCase().endsWith('.m4a')
+    );
+    const samples = mappedSamples(buffer, target, adaptCodecDelay);
     usable.push(usableSeconds(samples, buffer.sampleRate));
     const centroid = postOnsetCentroid(samples, buffer.sampleRate);
     if (centroid === null) continue;
-    if (!centroids.has(target.layer)) centroids.set(target.layer, []);
-    centroids.get(target.layer)!.push(centroid);
+    centroidObservations.push({
+      note: target.note,
+      articulation: target.articulation,
+      layer: target.layer,
+      centroidHz: centroid,
+    });
   }
 
   usable.sort((a, b) => a - b);
-  const centroidByLayerHz: Record<string, number> = {};
-  for (const [layer, values] of centroids) centroidByLayerHz[layer] = mean(values);
-  const values = Object.values(centroidByLayerHz);
-  const spread = values.length > 1
-    ? ((Math.max(...values) - Math.min(...values)) / Math.max(...values)) * 100
-    : null;
+  const centroidSummary = summarizeVelocityCentroids(centroidObservations);
 
   return {
     id,
     files: decoded.size,
-    layers: [...centroids.keys()].sort(),
-    centroidByLayerHz,
-    centroidSpreadPct: spread,
+    layers: [...new Set(centroidObservations.map(observation => observation.layer))].sort(),
+    ...centroidSummary,
     usableSeconds: {
       min: usable[0],
       median: usable[Math.floor(usable.length / 2)],

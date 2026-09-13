@@ -650,6 +650,12 @@ export class AudioEngine {
           await this.audioContext!.resume();
           logger.audio.log('AudioContext unlocked, state:', this.audioContext!.state);
 
+          // A resume event can report `running` before the render clock starts.
+          // Prove liveness here as well as at the transport boundary so a
+          // gesture-path resume cannot make the later readiness check a no-op.
+          const clockLive = await waitForClockAdvance(this.audioContext!);
+          if (!clockLive) logger.audio.warn('AudioContext clock did not advance after gesture resume');
+
           // Phase 29 fix: Also resume Tone.js context when Web Audio is unlocked
           // This ensures Tone.js synths (advanced:*, tone:*) resume after browser
           // suspends the AudioContext (e.g., tab goes to background).
@@ -710,13 +716,6 @@ export class AudioEngine {
       try {
         await this.audioContext.resume();
         logger.audio.log('AudioContext resumed, state:', this.audioContext.state);
-        // Phase 44 §6: iOS can report 'running' with a parked clock; wait
-        // (bounded) for currentTime to actually advance before trusting it.
-        const clockLive = await waitForClockAdvance(this.audioContext);
-        if (!clockLive) {
-          logger.audio.warn('AudioContext clock did not advance after resume');
-        }
-
         // Phase 29 fix: Also resume Tone.js context if initialized
         // When the Web Audio context is suspended and resumed, Tone.js's internal
         // transport and nodes may be in an inconsistent state. Calling Tone.start()
@@ -731,6 +730,12 @@ export class AudioEngine {
         return false;
       }
     }
+
+    // Phase 44 §6: `running` is not itself evidence of a live render clock.
+    // Always sample advancement at the playback-readiness boundary, including
+    // when another gesture handler resumed the context before this call.
+    const clockLive = await waitForClockAdvance(this.audioContext);
+    if (!clockLive) logger.audio.warn('AudioContext clock did not advance before playback');
 
     return this.audioContext.state === 'running';
   }
