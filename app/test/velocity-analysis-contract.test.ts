@@ -1,8 +1,14 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { manifestMeasurementTargets } from '../scripts/measure-velocity-timbre';
-import { playbackProbes } from '../scripts/simulate-velocity-filter';
+import {
+  manifestMeasurementTargets,
+  summarizeVelocityCentroids,
+} from '../scripts/measure-velocity-timbre';
+import {
+  playbackProbes,
+  requireMeasuredCentroidDrop,
+} from '../scripts/simulate-velocity-filter';
 
 function manifest(id: string): Parameters<typeof manifestMeasurementTargets>[0] {
   return JSON.parse(
@@ -28,6 +34,7 @@ describe('velocity analysis manifest contract', () => {
       file: 'sprite.m4a',
       note: 60,
       layer: '0-127',
+      articulation: 'default',
       startSeconds: 1.25,
       endSeconds: 1.75,
     }]);
@@ -45,5 +52,34 @@ describe('velocity analysis manifest contract', () => {
     expect(probe.mapping.note).toBe(62);
     expect(probe.file).toBe('higher.wav');
     expect(probe.playbackRate).toBeCloseTo(2 ** (-1 / 12), 12);
+  });
+
+  it('cannot mistake a brighter single-layer high note for velocity response', () => {
+    const summary = summarizeVelocityCentroids([
+      { note: 48, articulation: 'sustain', layer: '0-63', centroidHz: 500 },
+      { note: 48, articulation: 'sustain', layer: '64-127', centroidHz: 500 },
+      { note: 48, articulation: 'staccato', layer: '0-127', centroidHz: 1_500 },
+      { note: 72, articulation: 'sustain', layer: '0-127', centroidHz: 1_500 },
+    ]);
+
+    expect(summary.centroidSpreadByNotePct).toEqual({
+      '48/staccato': 0,
+      '48/sustain': 0,
+      '72': 0,
+    });
+    expect(summary.centroidSpreadPct).toBe(0);
+    // Retain the global diagnostic so the test proves it would have recreated
+    // the old false result if it were still used as the velocity metric.
+    expect(summary.centroidByLayerHz['0-127']).toBeGreaterThan(
+      summary.centroidByLayerHz['0-63'],
+    );
+  });
+
+  it('fails closed when any calibrated dry or filtered probe is unmeasurable', () => {
+    expect(() => requireMeasuredCentroidDrop('kalimba', 60, 48_000, null, 700))
+      .toThrow('kalimba@60/48000: dry probe is not measurable');
+    expect(() => requireMeasuredCentroidDrop('kalimba', 60, 48_000, 1_000, null))
+      .toThrow('kalimba@60/48000: filtered probe is not measurable');
+    expect(requireMeasuredCentroidDrop('kalimba', 60, 48_000, 1_000, 700)).toBe(30);
   });
 });

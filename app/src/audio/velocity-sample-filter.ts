@@ -29,8 +29,15 @@ export const VELOCITY_FILTER_BYPASS_VELOCITY = DEFAULT_STEP_MIDI_VELOCITY;
 /** Sweep depth reaching v=0; chosen from the measured simulation in §3. */
 export const VELOCITY_FILTER_OCTAVES = 1.5;
 
-/** Butterworth: no resonant peak on top of real recordings. */
-export const VELOCITY_FILTER_Q = Math.SQRT1_2;
+/**
+ * Butterworth: no resonant peak on top of real recordings.
+ *
+ * Web Audio's low/high-pass `Q` AudioParam is expressed in decibels, not the
+ * linear-Q convention used by most filter-design APIs.  sqrt(1/2) therefore
+ * has to be converted to dB; assigning 0.707 directly creates a measurable
+ * pass-band boost.
+ */
+export const VELOCITY_FILTER_Q = 20 * Math.log10(Math.SQRT1_2);
 
 /** Manifest anchors outside this range are treated as absent, not clamped. */
 export const VELOCITY_FILTER_MIN_ANCHOR_HZ = 100;
@@ -90,10 +97,11 @@ export function velocitySampleCutoffForNoteAt(
     || !Number.isFinite(midiNote)
     || !Number.isFinite(anchorMidiNote)
   ) return null;
-  const pitchTrackedAnchor = Math.min(
-    VELOCITY_FILTER_TRANSPARENT_HZ,
-    anchorHz * 2 ** ((midiNote - anchorMidiNote) / 12),
-  );
+  // Anchors are allowed above the 24 kHz near-bypass target. At v40 the sweep
+  // still pulls them down by ~0.56×; prematurely capping the anchor made some
+  // bright, high-register samples impossible to calibrate with a non-resonant
+  // filter. The v40→v90 branch independently converges on 24 kHz.
+  const pitchTrackedAnchor = anchorHz * 2 ** ((midiNote - anchorMidiNote) / 12);
   return cutoffForValidatedAnchor(pitchTrackedAnchor, midiVelocity, octaves);
 }
 

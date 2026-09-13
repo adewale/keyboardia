@@ -2,12 +2,18 @@ import { describe, expect, it } from 'vitest';
 import { readFileSync, readdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { rmsDb, spectralCentroidHz } from '../test/audio-measures';
+import {
+  loudnessKMax,
+  rmsDb,
+  spectralCentroidHz,
+  truePeakDbfs,
+} from '../test/audio-measures';
 import { requireOfflineAudio } from '../test/session-render';
 import { SampledInstrument, type InstrumentManifest } from './sampled-instrument';
 import { sampleCache } from './lru-sample-cache';
 import { VELOCITY_FILTER_BYPASS_VELOCITY } from './velocity-sample-filter';
 import { velocityFilterAnchorHz } from './velocity-filter-calibration';
+import { nearestSampleNote } from './sample-selection';
 
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
 const INSTRUMENTS_DIR = resolve(THIS_DIR, '../../public/instruments');
@@ -24,8 +30,28 @@ const INSTRUMENTS_DIR = resolve(THIS_DIR, '../../public/instruments');
 
 const SAMPLE_RATE = 44_100;
 
-function installDiskFetch(): () => void {
+function priorityDeliveryPaths(instrumentId: string): Set<string> {
+  const manifest = JSON.parse(
+    readFileSync(resolve(INSTRUMENTS_DIR, instrumentId, 'manifest.json'), 'utf8'),
+  ) as InstrumentManifest;
+  if (manifest.sprite) return new Set([`${instrumentId}/${manifest.sprite}`]);
+  const availableNotes = [...new Set(manifest.samples.map(mapping => mapping.note))];
+  const defaultPriority = nearestSampleNote(availableNotes, 60);
+  const priorityNotes = new Set(
+    manifest.priorityNotes?.length ? manifest.priorityNotes : [defaultPriority],
+  );
+  return new Set(manifest.samples
+    .filter(mapping => priorityNotes.has(mapping.note))
+    .flatMap(mapping => mapping.file ? [`${instrumentId}/${mapping.file}`] : []));
+}
+
+function installDiskFetch(options: {
+  holdNonPriority?: boolean;
+  priorityPaths?: Set<string>;
+} = {}): { restore: () => void; releaseHeldAsFailures: () => void } {
   const originalFetch = globalThis.fetch;
+  const held: Array<(response: Response) => void> = [];
+  let released = false;
   globalThis.fetch = (async (input: string | URL | Request) => {
     const urlPath = decodeURIComponent(String(input).split('?')[0]);
     const marker = '/instruments/';
@@ -38,6 +64,13 @@ function installDiskFetch(): () => void {
       ) as InstrumentManifest;
       return new Response(JSON.stringify(manifest), { status: 200 });
     }
+    if (
+      options.holdNonPriority
+      && !options.priorityPaths?.has(relativePath)
+    ) {
+      if (released) return new Response('background load held by test', { status: 503 });
+      return new Promise<Response>(resolveResponse => held.push(resolveResponse));
+    }
     try {
       const bytes = readFileSync(resolve(INSTRUMENTS_DIR, relativePath));
       return new Response(bytes, { status: 200 });
@@ -45,8 +78,16 @@ function installDiskFetch(): () => void {
       return new Response('not found', { status: 404 });
     }
   }) as typeof fetch;
-  return () => {
-    globalThis.fetch = originalFetch;
+  return {
+    restore: () => {
+      globalThis.fetch = originalFetch;
+    },
+    releaseHeldAsFailures: () => {
+      released = true;
+      for (const release of held.splice(0)) {
+        release(new Response('background load held by test', { status: 503 }));
+      }
+    },
   };
 }
 
@@ -54,11 +95,19 @@ async function renderNote(
   instrumentId: string,
   midiNote: number,
   velocity: number,
-  options: { disableCalibration?: boolean } = {},
+  options: {
+    disableCalibration?: boolean;
+    priorityOnly?: boolean;
+    sampleRate?: number;
+  } = {},
 ): Promise<Float32Array> {
   const { OfflineAudioContext } = await requireOfflineAudio();
-  const context = new OfflineAudioContext(1, SAMPLE_RATE, SAMPLE_RATE);
-  const restoreFetch = installDiskFetch();
+  const sampleRate = options.sampleRate ?? SAMPLE_RATE;
+  const context = new OfflineAudioContext(1, sampleRate, sampleRate);
+  const fetchControl = installDiskFetch(options.priorityOnly ? {
+    holdNonPriority: true,
+    priorityPaths: priorityDeliveryPaths(instrumentId),
+  } : {});
   // Clear the shared LRU so each render decodes from a known-cold state.
   sampleCache.clear();
   const instrument = new SampledInstrument(
@@ -72,15 +121,17 @@ async function renderNote(
       context.destination as unknown as AudioNode,
     );
     expect(await instrument.ensureLoaded()).toBe(true);
-    await instrument.waitForBackgroundLoad();
+    if (!options.priorityOnly) await instrument.waitForBackgroundLoad();
     instrument.playNote('render-note', midiNote, 0, 0.4, 1, velocity);
     const rendered = await context.startRendering();
     const channel = new Float32Array(rendered.length);
     rendered.copyFromChannel(channel, 0);
     return channel;
   } finally {
+    fetchControl.releaseHeldAsFailures();
+    await instrument.waitForBackgroundLoad();
     instrument.dispose();
-    restoreFetch();
+    fetchControl.restore();
   }
 }
 
@@ -108,11 +159,20 @@ describe('velocity filter on shipped samples', () => {
       ['kalimba', 87],
       ['string-section', 88],
     ] as const) {
-      const softCentroid = postOnsetCentroid(await renderNote(instrumentId, midiNote, 40));
-      const fullCentroid = postOnsetCentroid(await renderNote(instrumentId, midiNote, 127));
+      const soft = await renderNote(instrumentId, midiNote, 40);
+      const full = await renderNote(instrumentId, midiNote, 127);
+      const softCentroid = postOnsetCentroid(soft);
+      const fullCentroid = postOnsetCentroid(full);
       const dropPct = ((fullCentroid - softCentroid) / fullCentroid) * 100;
       expect(dropPct, `${instrumentId}@${midiNote}`).toBeGreaterThanOrEqual(26);
       expect(dropPct, `${instrumentId}@${midiNote}`).toBeLessThanOrEqual(35);
+      // A non-boosting transfer magnitude can still move the waveform peak by
+      // changing phase, so preserve a measured 0.1 dB waveform budget instead
+      // of inferring peak behavior from the frequency-response invariant.
+      expect(truePeakDbfs(soft) - truePeakDbfs(full), `${instrumentId}@${midiNote} true peak`)
+        .toBeLessThanOrEqual(0.1);
+      expect(loudnessKMax(soft, SAMPLE_RATE) - loudnessKMax(full, SAMPLE_RATE), `${instrumentId}@${midiNote} loudness`)
+        .toBeLessThanOrEqual(0.1);
     }
   }, 120_000);
 
@@ -120,6 +180,39 @@ describe('velocity filter on shipped samples', () => {
     const almostBypassed = postOnsetCentroid(await renderNote('string-section', 60, 89));
     const bypassed = postOnsetCentroid(await renderNote('string-section', 60, 90));
     expect(Math.abs(bypassed - almostBypassed) / bypassed * 100).toBeLessThan(2);
+  }, 120_000);
+
+  it('safely bypasses calibration when priority-ready playback uses a different root', async () => {
+    for (const [instrumentId, midiNote] of [
+      ['string-section', 88],
+      ['clean-guitar', 43],
+    ] as const) {
+      const priorityReady = await renderNote(
+        instrumentId,
+        midiNote,
+        40,
+        { priorityOnly: true },
+      );
+      const explicitBypass = await renderNote(
+        instrumentId,
+        midiNote,
+        40,
+        { priorityOnly: true, disableCalibration: true },
+      );
+      expect(
+        new Uint8Array(priorityReady.buffer),
+        `${instrumentId}@${midiNote} priority-ready`,
+      ).toEqual(new Uint8Array(explicitBypass.buffer));
+    }
+  }, 120_000);
+
+  it('uses byte-identical gain-only playback at unsupported hardware sample rates', async () => {
+    const calibrated = await renderNote('string-section', 60, 40, { sampleRate: 96_000 });
+    const explicitBypass = await renderNote('string-section', 60, 40, {
+      sampleRate: 96_000,
+      disableCalibration: true,
+    });
+    expect(new Uint8Array(calibrated.buffer)).toEqual(new Uint8Array(explicitBypass.buffer));
   }, 120_000);
 
   it('keeps velocity-layered instruments out of the filter path entirely', () => {

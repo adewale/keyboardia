@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { OfflineAudioContext } from 'node-web-audio-api';
 import { DEFAULT_STEP_MIDI_VELOCITY } from '../shared/constants';
 import {
   velocitySampleCutoff,
@@ -7,10 +8,43 @@ import {
   VELOCITY_FILTER_MAX_ANCHOR_HZ,
   VELOCITY_FILTER_MIN_ANCHOR_HZ,
   VELOCITY_FILTER_OCTAVES,
+  VELOCITY_FILTER_Q,
   VELOCITY_FILTER_TRANSPARENT_HZ,
 } from './velocity-sample-filter';
 
 describe('velocitySampleCutoff', () => {
+  it('uses a non-resonant Web Audio Butterworth response', () => {
+    const context = new OfflineAudioContext(1, 128, 48_000);
+    const filter = context.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 4_000;
+    filter.Q.value = VELOCITY_FILTER_Q;
+    const frequencies = new Float32Array([100, 1_000, 3_000, 4_000]);
+    const magnitudes = new Float32Array(frequencies.length);
+    const phases = new Float32Array(frequencies.length);
+    filter.getFrequencyResponse(frequencies, magnitudes, phases);
+
+    // This is deliberately an independent transfer-function oracle. Reusing
+    // the calibration solver here would let a wrong Q be absorbed by new
+    // anchors while the claimed no-boost topology stayed false.
+    expect(Math.max(...magnitudes)).toBeLessThanOrEqual(1.000_001);
+    expect(20 * Math.log10(magnitudes.at(-1)!)).toBeCloseTo(-3.0103, 3);
+  });
+
+  it('detects the old linear-Q value as a resonant Web Audio counterexample', () => {
+    const context = new OfflineAudioContext(1, 128, 48_000);
+    const filter = context.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.value = 4_000;
+    filter.Q.value = Math.SQRT1_2;
+    const frequencies = new Float32Array([3_000, 4_000]);
+    const magnitudes = new Float32Array(frequencies.length);
+    filter.getFrequencyResponse(frequencies, magnitudes, new Float32Array(frequencies.length));
+
+    expect(20 * Math.log10(magnitudes[0])).toBeGreaterThan(1.7);
+    expect(20 * Math.log10(magnitudes[1])).toBeCloseTo(Math.SQRT1_2, 3);
+  });
+
   it('bypasses at and above the unlocked-step velocity so default sessions are untouched', () => {
     expect(VELOCITY_FILTER_BYPASS_VELOCITY).toBe(DEFAULT_STEP_MIDI_VELOCITY);
     expect(velocitySampleCutoff(4000, DEFAULT_STEP_MIDI_VELOCITY)).toBeNull();
