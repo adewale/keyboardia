@@ -263,7 +263,7 @@ export const TONE_SYNTH_PRESETS: Record<ToneSynthType, ToneSynthPreset> = {
 export class ToneSynthManager {
   private synths: Map<BaseSynthType, Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.PluckSynth | Tone.DuoSynth> = new Map();
   private output: Tone.Gain | null = null;
-  private dcBlocker: Tone.Filter | null = null;
+  private pluckDcBlocker: Tone.Filter | null = null;
   private amTremolo: Tone.Tremolo | null = null;
   private pluckGain: Tone.Gain | null = null;
   private sourceGains: Map<BaseSynthType, Tone.Gain> = new Map();
@@ -284,12 +284,6 @@ export class ToneSynthManager {
 
     // Create output gain node
     this.output = new Tone.Gain(1);
-    this.dcBlocker = new Tone.Filter({
-      type: 'highpass',
-      frequency: 20,
-      Q: 0.707,
-    });
-    this.dcBlocker.connect(this.output);
 
     this.ready = true;
     logger.audio.log('ToneSynthManager initialized');
@@ -334,9 +328,20 @@ export class ToneSynthManager {
             wet: 0,
           }).start();
           sourceGain.connect(this.amTremolo);
-          this.amTremolo.connect(this.dcBlocker ?? this.output);
+          this.amTremolo.connect(this.output);
+        } else if (type === 'pluck') {
+          // Karplus-Strong excitation can leave a short DC-biased tail. Keep
+          // the blocker local to that physical-model path so the other five
+          // Tone engines do not pay another node per track.
+          this.pluckDcBlocker = new Tone.Filter({
+            type: 'highpass',
+            frequency: 20,
+            Q: 0.707,
+          });
+          sourceGain.connect(this.pluckDcBlocker);
+          this.pluckDcBlocker.connect(this.output);
         } else {
-          sourceGain.connect(this.dcBlocker ?? this.output);
+          sourceGain.connect(this.output);
         }
         this.velocityFilters.set(type, velocityFilter);
         this.sourceGains.set(type, sourceGain);
@@ -595,8 +600,8 @@ export class ToneSynthManager {
     this.amTremolo?.dispose();
     this.amTremolo = null;
 
-    this.dcBlocker?.dispose();
-    this.dcBlocker = null;
+    this.pluckDcBlocker?.dispose();
+    this.pluckDcBlocker = null;
 
     // Dispose output
     this.output?.dispose();

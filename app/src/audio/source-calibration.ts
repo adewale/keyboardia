@@ -24,7 +24,7 @@ export const SYNTH_SOURCE_GAIN_DB = Object.freeze({
 
 export const TONE_SOURCE_GAIN_DB = Object.freeze({
   'fm-epiano': -2, 'fm-bass': -4, 'fm-bell': -4, 'am-bell': -2,
-  'am-tremolo': -3, 'membrane-kick': -3, 'membrane-tom': -5,
+  'am-tremolo': 2, 'membrane-kick': -3, 'membrane-tom': -5,
   'metal-cymbal': -16, 'metal-hihat': -13, 'pluck-string': 0,
   'duo-lead': -9,
 } satisfies Record<string, number>);
