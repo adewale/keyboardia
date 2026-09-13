@@ -6243,6 +6243,22 @@ These were measurement-instrument failures, not product-performance results,
 and the second audit found them only because it attacked the oracle and receipt
 instead of accepting their outputs.
 
+The required CI lane then found one more category error. The sampled-first-use
+test treated a five-hit heard-output RMS spread as a warm-up verdict. Its failure
+was real, but the verdict was wrong. A retained zero-lead negative control failed
+at the pre-compressor source tap in 2/12 fresh contexts. In the selected exact
+first-256-frame window, frames 0–142 differed and frames 143–255 matched; the
+failed attack fit a 16-frame ramp instead of the intended 144-frame ramp, exactly
+one 128-frame render quantum lost. The first event's 3 ms de-click ramp had been
+scheduled at `currentTime` and could reach the audio thread partly in the past.
+This was a late-scheduling transient, not sample loading, voice initialization,
+or random gain. The real-time sampled path now uses
+`max(3 ms, 513 / sampleRate seconds)` lead when an event arrives too near its
+deadline—10.6875 ms at 48 kHz—while sufficiently future events, offline sampled
+renders, and the other three engines retain their timing. All 13 guarded fresh
+contexts passed. The test now gates the causal source tap, retains the stateful
+master result only as a diagnostic, and makes the bounded latency cost explicit.
+
 ### What tooling and verification were missing
 
 - An audio-thread first-PCM tap attached before application code constructs the
@@ -6276,17 +6292,27 @@ instead of accepting their outputs.
   counters exist; output underruns/dropouts and voice steals do not, so an
   automatic tier currently cannot prove it helped rather than merely silenced
   work.
+- Tap-specific causal assertions for audio hypotheses. A heard-output failure
+  can originate in source scheduling, master dynamics, or the recorder. The
+  fixture now retains both pre-compressor and final-output measurements, writes
+  the receipt before asserting, includes the exact first 256 causal source
+  frames, and its stress check spans fresh contexts so a render-quantum race
+  cannot hide behind one green run. The checked-in negative/guarded receipt
+  prevents a later green singleton from replacing the experimental record.
 
 ### The sustain-loop correction
 
 Tone Nets' mean sample fragment is 158 ms, so its 100% loop rate is necessary.
 Keyboardia's eight sustaining instrument libraries have native-root medians of
 3.90–9.70 seconds. Generic loop insertion would add click, phase, periodicity,
-and data-curation risks without a measured failure. The correct deliverable was
-the narrower user contract: `validate:sustain-ceiling` fails if the median
-native-root usable duration of a classified sustaining instrument drops below
-two seconds. Add instrument-specific loops only when a requested-note
-render or real session demonstrates the need.
+and data-curation risks without a measured failure. Sustain loops were therefore
+**deliberately demoted, not forgotten**. The correct deliverable was the narrower
+user contract: `validate:sustain-ceiling` fails if the median native-root usable
+duration of a classified sustaining instrument drops below two seconds. That
+guards the capacity loops were meant to protect using Keyboardia's actual
+manifest-driven library, without claiming every transposed note or extreme tie.
+Add instrument-specific loops only when a requested-note render or real session
+demonstrates the need.
 
 ### The rule
 

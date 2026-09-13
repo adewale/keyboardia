@@ -335,7 +335,7 @@ should not be described as one in a changelog.
 
 | Change | What | Measurable impact | Effort |
 |---|---|---|---|
-| **Voice warm-up** | Measure before adding silent voices | One first-use priority-loaded `slap-bass` fixture with a preinitialized dry master: 28–44 ms DOM-click-event-to-audible across three isolated runs; the separate cold matrix in §8 measures native, Tone, and advanced first sound | **Not indicated for the sampled fixture only:** the cold matrix establishes first-output latency, but does not compare first-note versus steady-state latency in the other three domains; silent playback would perturb round-robin/choke state |
+| **Voice warm-up** | Measure before adding silent voices | One first-use priority-loaded `slap-bass` fixture with a preinitialized dry master: 38.7–54.7 ms DOM-click-event-to-audible across 13 fresh Chromium contexts after the late-note fix; its pre-compressor repeat null was 0 dB peak and ≤0.000002 dB RMS spread, while the retained heard-output diagnostic was ≤0.010/0.005 dB peak/RMS. A zero-lead negative control failed the source RMS gate in 2/12 contexts. | **Not indicated for the sampled fixture only:** the cold matrix establishes first-output latency, but does not compare first-note versus steady-state latency in the other three domains; silent playback would perturb round-robin/choke state |
 | **Clock-liveness gate** | Every transport start samples `currentTime` after any resume path, including already-`running`, gesture-resumed, suspended, and interrupted contexts | Helper tests cover frozen/advance/timeout; engine and transport tests fail if the caller omits the check. Timeout is non-fatal but logged; cancellation prevents an obsolete start. | Small |
 | **`navigator.mediaSession`** | Lock-screen transport and metadata | Play and pause are idempotent state commands across pending startup, cancellation, independently paused output, and active transport—not toggles. Lifecycle integration tests exercise each state. | Small |
 
@@ -432,7 +432,7 @@ original 2026-08-19 baseline.
 | Velocity → timbre, sampled path | 0% centroid spread on 12/26 instruments | 29.7–30.3% v40-v127 centroid drop on 281 requested notes for six tonal gain-only instruments; v≥90 bypass | unlocked steps unchanged by design; no time-varying filter motion |
 | Per-note motion (filter envelope, LFO) | none | none — out of scope | full gap: SF2 has a filter envelope on 89% of zones, LFO on 100% |
 | Default space | `reverb.wet: 0` | 0.15 bass-protected, new sessions only; browser tail/body/peak/LU/pumping gates pass | per-instrument depth — Tone Nets carries sends per zone |
-| Startup (warm-up, clock-liveness) | clock trusted state; warm-up only a hypothesis | liveness gate plus sampled-first-use and three-domain cold matrix; retained medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced outlier | device matrix; no silent warm-up indicated for the sampled fixture only |
+| Startup (warm-up, clock-liveness) | clock trusted state; warm-up only a hypothesis | liveness gate plus sampled-first-use and three-domain cold matrix; late real-time sampled notes use `max(3 ms, 513 / sampleRate)` lead so the de-click ramp reaches the audio thread intact; retained medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced outlier | device matrix; no silent warm-up indicated for the sampled fixture only |
 | `navigator.mediaSession` | absent | idempotent play/pause lifecycle implemented and tested | — |
 | Device quality tiers | none | none — not carried into this plan | comparison §4.8 remains open |
 | Source material | 582 files / 36 MB with real layers and round robins | unchanged | different breadth/structure trade-off; no preference claim |
@@ -466,7 +466,7 @@ outrun their evidence:
 | Media Session | sequencer lifecycle | pending, active, OS-pause, retry, unmount | latest play intent survives cancellation but cannot survive unmount | passed |
 | Default room | Tone effects + real master chain | Chromium deterministic probe + 16-track capacity fixture | corrected tail boundary; bass-body/peak/LU bounds; capacity pumping against dry | passed |
 | Legacy room migration | HTTP hydration + real master chain | effects-absent stored session | exact dry state plus live render at explicit-dry repeat null | passed |
-| Sampled first use | preload + scheduler + sampled voice | priority-loaded `slap-bass`, five hits; master preinitialized | 28–44 ms DOM event to audible; onset-aligned ≤0.0089/0.0022 dB peak/RMS spreads | no voice warm-up indicated in this fixture |
+| Sampled first use | preload + scheduler + sampled voice | priority-loaded `slap-bass`, five hits; master preinitialized; 13 fresh contexts | 38.7–54.7 ms DOM event to audible; source-tap repeat null 0/≤0.000002 dB peak/RMS; heard-output diagnostic ≤0.010/0.005 dB; zero-lead mutation fails source RMS in 2/12 contexts | passed with `max(3 ms, 513 / sampleRate)` real-time sampled lead; 10.6875 ms at 48 kHz; no silent voice warm-up indicated in this fixture |
 | Cold engine startup | transport + engine/preload + master output | five fresh contexts each for native, Tone, advanced | audio-thread-retained first master-PCM frame; scheduler-boundary, pulsed-late-install, overload, and 700 ms main-thread-block controls | passed; retained medians 244.5/354.5/383.6 ms; preceding-batch max 755.9 ms disclosed |
 | Frozen Tone Nets reference | external first-contact path | five fresh contexts; exact ten-asset hash gate | MIDI selection to audio-thread-retained first master-PCM frame; readiness before first master input | measured; median 1,215.9 ms |
 | Sustaining library statistic | validator | eight classified manifests | median native-root duration ≥2 s; no every-note claim | passed |
@@ -519,8 +519,20 @@ outrun their evidence:
 - **§6**: `navigator.mediaSession` play/pause handlers are idempotent transport
   commands across pending and active states. Clock liveness is sampled at every
   playback boundary as well as after a gesture resume, including when state is
-  already `running`. The browser capture finds no silent-voice warm-up benefit
-  for its first-use sampled fixture. A separate five-trial-per-domain browser
+  already `running`. The browser capture found that scheduling the first sampled
+  note at `currentTime` could deliver its 3 ms de-click ramp partly in the past.
+  The real-time sampled path now uses
+  `max(3 ms, 513 / sampleRate seconds)`—four 128-frame render quanta plus one
+  frame—when the requested event has less lead; at 48 kHz that is a disclosed
+  10.6875 ms floor. Sufficiently future-scheduled sampled events keep their
+  requested time, offline sampled renders retain a zero floor, and
+  native/Tone/advanced paths are unchanged. Thirteen fresh browser contexts
+  then held the causal
+  pre-compressor repeat null below 0.000002 dB RMS. This removes a
+  late-scheduling transient; it is not silent voice warm-up. The retained
+  negative/guarded receipt is
+  [`SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md`](./research/SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md).
+  A separate five-trial-per-domain browser
   test now measures cold Tone, advanced-instrument, and whole-engine first PCM;
   retained medians were 244.5/354.5/383.6 ms on the recorded environment. One
   advanced trial in the immediately preceding valid batch reached 755.9 ms
@@ -626,6 +638,22 @@ same simplified models:
     not prove early attachment: a late observer can miss one pulse, collect
     silence, and report the next. The oracle now binds readiness to each app's
     known pre-emission boundary and keeps the pulsed counterexample as a guard.
+14. **The sampled warm-up fixture gated the wrong causal story.** Its original
+    assertion collapsed five heard-output windows into one spread. A CI run
+    exceeded the 0.3 dB RMS bound even though peak level was stable. The retained
+    zero-lead counterexample failed at the source tap in 2/12 contexts: within
+    its first-256-frame window, frames 0–142 differed and 143–255 were equal.
+    The failed attack fits a 16-frame ramp rather than the intended 144-frame
+    ramp, isolating one lost 128-frame render quantum rather than loading or
+    master gain.
+    The first scheduler event had been clamped to `currentTime`, so its 3 ms
+    de-click automation sometimes reached the audio thread one render quantum
+    late. The production fix reserves four quanta plus one frame for late/near-
+    deadline real-time sampled notes. The fixture now aligns and reports
+    pre-compressor and heard-output
+    taps separately, gates the causal source tap at 0.01 dB, writes its evidence
+    before assertions, and leaves the stateful master result as a diagnostic.
+    Its schema-v3 report retains the exact first 256 causal source frames.
 
 The pre-audit suites were green because their oracles were built from the same
 assumptions as the implementation: one note, one route, filename-derived or

@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "fixture": "first use of priority-loaded sampled:slap-bass with a preinitialized dry master",
+  "environment": {
+    "browser": "headless Chromium via Playwright",
+    "sampleRate": 48000,
+    "workers": 2,
+    "freshContexts": 12
+  },
+  "negativeControl": {
+    "mutation": "realtimeNoteLeadTime() returns 0 instead of max(0.003, 513 / sampleRate)",
+    "expectedResult": "the causal 0.01 dB pre-compressor RMS gate fails in at least one fresh context",
+    "result": "2 of 12 contexts failed as expected",
+    "selectedTrial": {
+      "repeatIndex": 4,
+      "leadingSilenceMs": 33.354166666666664,
+      "preCompressorOnsetOffsetsFrames": [0, -256, -256, -257, -256],
+      "preCompressorPeakSpreadDb": 0,
+      "preCompressorRmsSpreadDb": 0.2683134684740729,
+      "userOutputPeakSpreadDb": 0.0029254611846161183,
+      "userOutputRmsSpreadDb": 0.35013715995432193,
+      "attackModel": {
+        "intendedRampFrames": 144,
+        "fittedFirstRampFrames": 16,
+        "lostRenderQuantumFrames": 128,
+        "differentRetainedFrameIndexesInclusive": [0, 142],
+        "equalRetainedFrameIndexesInclusive": [143, 255],
+        "maximumModelResidual": 1.32e-7
+      },
+      "first256PreCompressorFrames": {
+        "encoding": "base64 Float32 little-endian, 256 frames",
+        "first": {
+          "sha256": "9b65b8197079336ee378546e920a385b93adc06d69cc28dd1d02059c4889aad3",
+          "rms": 0.3255376341654064,
+          "peak": 0.7843299508094788,
+          "base64": "QB8cO22a+DuLPH883bTVPDBdID0pTmA9yc2UPd5/vz2ycvM9K0YZPlZWPz6kI20+bk2RPi8Xrz6Ric8+TEjyPkHsAj8dkAs/RtUSP6QIGT8FFB8/5dQlP6laLT97MzU/GLM8P9f1Qj/aNkc/2clIPyZrRz+pZ0M//E89P1B9NT9DMCw/ktchP0gWFz/lyQw/cr0DP5pQ+D4HoOs+cqrgPoOY1j7c4sw+jgTEPjvhvD7M7bc+ZzC1Pirksz7p57I+R7SxPoQqsD7ZK64+4SCsPkSdqj6euak+CwGpPja3qD6V7qg+4/qoPnr4pz4VO6U+zU2gPuPBmD5f940+E3p/PgByXT5Y2zc+elgQPh+10D0n9IQ9b+UDPRy+gjtvHaa8G9gsveTBhL10Tbq9WSf3vVYqHL7ASj6+AtBhvtrbgr64f5S+KnGlvkeLtb5Kr8S+GTfSvpgs3b5TfeW+iyXsvjyQ8r7JD/q+EsoBvx15B7+uZQ2/hLsSv6faFr9JKRm/4mkZv+ImGL8lTRa/kHkUv1vdEr/g1xG/4NcRv3OQEr/yRRO/AZkTv8lnE78UWRK/hg0Qv+R7DL/dvwe/CkICvzKn+b61zO++Vpjmvgw/3b7kINO+UwDIvpBevL4E7rC+5C+mvt+Cnb55j5i+8DaXvo9qmL5sBZy+oJKhvn6zp749Lq2+4ZewvgTusL7+t66+o6qrvgu8qL5d8qW+D2Cjvrsdob6fDJ++KnScvv/MmL7NWpS+eZKPvggkir6KOoS+WjN8vhm0b75fcmO+/7dXvhSKSb4IFTe+UfEivqVID76qTvi9N+nXvQcSwL0nU6299V2dvTLLjb20wGq9nOIhvdpYoLxYNAE7vc3QPHSnOz0R1m098QeDPWyghT1ghn895EF3PW/lgz0ss5c9wXaxPVH1zD0mdOM91l/vPeCV8T15Auw9vJvfPUE1zj0kxbg9AGSfPff4hj1WG2c9BVhIPTyoLD3c0BQ9Pj4APZ6S0Twpbpk8w1dNPLX4CzyV9cc7y0WsOyzlCDzgR4Q8XJLWPNzQFD3rkzg96RxJPRexPz0LASk9wdoTPeBHBD2JkPk8N7QDPXLGHz3o6lc9FQKVPTTsvj1AA90985ruPUpu9T2Z6fA9ub3oPYPR5j3Ts+k92aTtPXhp8z0sM/Y9s9/xPXa97T2qQug9npLRPezFqT1YNIE9IIA6PVXvAj1mL+A85EH3POefDz0ebS09xpxLPbIwRz362SI9Ve8CPWYv4DxVbLw8k0adPCZbjDyADIo8dQuePIxYvjyspso8T+K/PCgKtzw1HrA83NCUPFySVjwV0CM8OvkBPFg0ATtge/G7ZaJ3vHJErLzAQdm8lY75vA=="
+        },
+        "steady": {
+          "sha256": "5ee5196f7d3c789572a374be079bdb2a1590ba6c7465d0fdab34bd8715161dbb",
+          "rms": 0.18386838712074244,
+          "peak": 0.4287537932395935,
+          "base64": "csaKOQ37XDp84OI6GvY9O7iLjjvsYcc7JEUEPMY4Kjz0ZVg8YD6IPNsTqjxaytI8YigBPdSiGz1Jejg9tlxXPXtMdz0dkIs9kf2aPZsJqj1cl7k9367KPRKC3T36mfE9mAoDPv/NDD4jaRU+NiscPoqkID5k1iI+4AQjPvJSIT7o1h0+0NkYPuTjEj7lyQw+RGYHPhkOAz6zQv898aD5PZZm9D2uCO895CHqPWba5j1B6eU994TnPanb6j2Miu49DODxPdSs9D0fvvY9RqH4PaQu+z1tlv49rxkBPio5Az7hvAU+cB8IPoGkCT49sQk+JNAHPoSKAz7lcPg9LRfjPXnqxz0Riag9VlKGPdccRT320/48gjuAPEDtADtvHSa8qj6vvPJxCL2uEEK9NnGCvZsCp71QJs69PMT3vQ9mEb6uDye+jGs8vqpHUb4td2W+tit4vhQXhL5jpoq+1U+Qvuzqlb7eSZy+EAqkvsIarb5Yo7a+QpG/visLx74MN8y+pa7OvnsYz74Uqs6+ETfOvrwEzr5+nM6+DKPQvjS0074Bxta+60vZvpEP276ehdu+eRTavtWg1r7MR9G+np/Kvorow75l172+4Se4vug5sr64iqu+0uOjvpeqm74DcZO+r6SLvm9yhb7iT4K+bDaCvkhOhL6+hIi+in+OvlMRlb4XJJu+rGyfvvn0oL6pKKC+m42evlIEnb43k5u+gEyavrpImb4ZbJi+dwWXvmuOlL6UQ5G+AJSNvnIuib6KOoS+WjN8vhm0b75fcmO+/7dXvhSKSb4IFTe+UfEivqVID76qTvi9N+nXvQcSwL0nU6299V2dvTLLjb20wGq9nOIhvdpYoLxYNAE7vc3QPHSnOz0R1m098QeDPWyghT1ghn895EF3PW/lgz0ss5c9wXaxPVH1zD0mdOM91l/vPeCV8T15Auw9vJvfPUE1zj0kxbg9AGSfPff4hj1WG2c9BVhIPTyoLD3c0BQ9Pj4APZ6S0Twpbpk8w1dNPLX4CzyV9cc7y0WsOyzlCDzgR4Q8XJLWPNzQFD3rkzg96RxJPRexPz0LASk9wdoTPeBHBD2JkPk8N7QDPXLGHz3o6lc9FQKVPTTsvj1AA90985ruPUpu9T2Z6fA9ub3oPYPR5j3Ts+k92aTtPXhp8z0sM/Y9s9/xPXa97T2qQug9npLRPezFqT1YNIE9IIA6PVXvAj1mL+A85EH3POefDz0ebS09xpxLPbIwRz362SI9Ve8CPWYv4DxVbLw8k0adPCZbjDyADIo8dQuePIxYvjyspso8T+K/PCgKtzw1HrA83NCUPFySVjwV0CM8OvkBPFg0ATtge/G7ZaJ3vHJErLzAQdm8lY75vA=="
+        }
+      }
+    }
+  },
+  "guardedControl": {
+    "implementation": "realtimeNoteLeadTime(sampleRate) = max(0.003, 513 / sampleRate) seconds",
+    "leadAt48000HzMs": 10.6875,
+    "result": "13 of 13 fresh contexts passed",
+    "ranges": {
+      "leadingSilenceMs": [38.70833333333333, 54.70833333333333],
+      "maxAbsOnsetOffsetFrames": [513, 769],
+      "preCompressorPeakSpreadDb": [0, 0],
+      "preCompressorRmsSpreadDb": [8.962608433193964e-10, 0.000001143579424933705],
+      "userOutputPeakSpreadDb": [0.00311041752465524, 0.009021082585492834],
+      "userOutputRmsSpreadDb": [0.0028899683532337406, 0.0047050264171311085]
+    },
+    "trials": [
+      [1, 49.375, 513, 0, 8.962608433193964e-10, 0.0076321137847639164, 0.0028899683532337406],
+      [2, 49.375, 642, 0, 0.000001143579424933705, 0.008158666339272314, 0.0030877765810615188],
+      [3, 44.041666666666664, 514, 0, 0.000001143579424933705, 0.007068474416243475, 0.0036225133701925927],
+      [4, 44.041666666666664, 514, 0, 0.000001143579424933705, 0.007068474416243475, 0.0036225133701925927],
+      [5, 44.041666666666664, 769, 0, 8.962608433193964e-10, 0.007007935409161892, 0.003638515290258937],
+      [6, 44.041666666666664, 769, 0, 8.962608433193964e-10, 0.007007935409161892, 0.0036385153016418315],
+      [7, 38.70833333333333, 513, 0, 8.962608433193964e-10, 0.004869321662050119, 0.004041932611748678],
+      [8, 38.70833333333333, 513, 0, 8.962608433193964e-10, 0.004869321662050119, 0.004041932611748678],
+      [9, 44.041666666666664, 769, 0, 8.962608433193964e-10, 0.005608326091971483, 0.0033329556033692143],
+      [10, 44.041666666666664, 769, 0, 8.962608433193964e-10, 0.00311041752465524, 0.004030659881209431],
+      [11, 41.375, 641, 0, 8.962608433193964e-10, 0.00837345150119817, 0.004430818877981579],
+      [12, 38.70833333333333, 513, 0, 8.962608433193964e-10, 0.009021082585492834, 0.0047050264171311085],
+      [13, 54.70833333333333, 513, 0, 9.605223283415398e-10, 0.006121757743331235, 0.0035387426406146005]
+    ],
+    "trialColumns": [
+      "trial",
+      "leadingSilenceMs",
+      "maxAbsOnsetOffsetFrames",
+      "preCompressorPeakSpreadDb",
+      "preCompressorRmsSpreadDb",
+      "userOutputPeakSpreadDb",
+      "userOutputRmsSpreadDb"
+    ],
+    "selectedTrialFirst256PreCompressorFrames": {
+      "encoding": "same base64 Float32 little-endian bytes retained at negativeControl.selectedTrial.first256PreCompressorFrames.steady",
+      "firstSha256": "5ee5196f7d3c789572a374be079bdb2a1590ba6c7465d0fdab34bd8715161dbb",
+      "steadySha256": "5ee5196f7d3c789572a374be079bdb2a1590ba6c7465d0fdab34bd8715161dbb",
+      "exactlyEqualWithinRetainedWindow": true
+    }
+  }
+}
