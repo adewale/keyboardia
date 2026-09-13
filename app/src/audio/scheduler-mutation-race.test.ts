@@ -156,6 +156,10 @@ describe('scheduler under racing mutations (virtual time)', () => {
 
     const sched = new Scheduler();
     scheduler = sched; // afterEach safety net
+    // Step notifications are scheduler progress, independent of whether the
+    // current musical pattern happens to contain a hit at that step.
+    const progressAt: number[] = [];
+    sched.setOnStepChange(() => progressAt.push(clock.t));
     sched.start(() => state);
 
     try {
@@ -170,11 +174,12 @@ describe('scheduler under racing mutations (virtual time)', () => {
         vi.advanceTimersByTime(TICK_SEC * 1000);
       }
 
-      // ORACLE 1 — liveness: the last trigger lands in the final quarter.
-      const lastScheduledAt = Math.max(...triggers.map((t) => t.clockAtSchedule));
+      // ORACLE 1 — liveness: scheduler progress reaches the final quarter.
+      // Using note triggers here rejects healthy sparse patterns at slow BPM.
+      const lastProgressAt = Math.max(...progressAt);
       expect(
-        lastScheduledAt,
-        `scheduler stayed live to the end (${triggers.length} triggers)`,
+        lastProgressAt,
+        `scheduler stayed live to the end (${progressAt.length} step notifications)`,
       ).toBeGreaterThan(TICKS * TICK_SEC * 0.75);
 
       // ORACLE 2 — never into the past (small epsilon for float noise).
@@ -193,10 +198,15 @@ describe('scheduler under racing mutations (virtual time)', () => {
         byTrack.set(trig.trackId, list);
       }
       for (const [trackId, times] of byTrack) {
-        for (let i = 1; i < times.length; i++) {
+        // Tempo rebases can legitimately enqueue an earlier future audio time
+        // after a later one was already inside the lookahead window. Sort by
+        // playback time: this oracle owns duplicate instants, while oracle 2
+        // owns attempts to schedule into the past.
+        const orderedTimes = [...times].sort((a, b) => a - b);
+        for (let i = 1; i < orderedTimes.length; i++) {
           expect(
-            times[i] - times[i - 1],
-            `${trackId} exact double-fire at #${i} (t=${times[i].toFixed(3)})`,
+            orderedTimes[i] - orderedTimes[i - 1],
+            `${trackId} exact double-fire at #${i} (t=${orderedTimes[i].toFixed(3)})`,
           ).toBeGreaterThanOrEqual(0.001);
         }
       }

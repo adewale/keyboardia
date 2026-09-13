@@ -82,9 +82,10 @@ message concurrency.
 
 Virtual-time harness: mocked engine clock + fake timers advance in 25 ms
 lockstep; seeded tempo/stepCount/track-add/track-delete mutations land
-between lookahead ticks through the live `getState`. Oracles: never
-schedule into the past, no near-duplicate triggers, per-track monotone
-times, clean stop (timers drained). **Green, 3 seeds × 2 s virtual.**
+between lookahead ticks through the live `getState`. Oracles: scheduler
+step progress reaches the final quarter, never schedule into the past, no
+exact duplicate trigger instants, clean stop (timers drained). **Green, 3
+seeds × 2 s virtual.**
 Kill-validation doubled as historical validation: disabling the Phase-22
 BPM-change reformula (the documented pre-fix bug) makes the lane fail with
 notes scheduled ~100 ms into the past on 2 of 3 seeds — the lane finds the
@@ -98,7 +99,7 @@ feared escalation (a virtual-clock seam) did not materialize — the existing
 
 | Sabotage (all reverted) | Oracle that caught it |
 |---|---|
-| Toggle write dropped, broadcast still announces the value (the WAL-Reset shape: lost committed write) | overlap-fuzz last-broadcast-wins vs snapshot (`t1:9: expected false to be true`) |
+| Toggle write dropped, broadcast still announces the value (the WAL-Reset shape: lost committed write) | overlap-fuzz input parity vs snapshot (`t1:9: expected false to be true`) |
 | Every 5th broadcast reuses its seq | overlap-fuzz seq conservation (via quiescence: the missing seq never arrives) |
 | Negative-ack resync added (the plausible future fix) | seq-regression silence assertion fails — the pin will flag the fix |
 | Last scheduled hit silenced in the render path | onset conservation, 4/4 seeds |
@@ -138,17 +139,23 @@ harness failure from subject failure:
   onset renders ~0.9 s; race lane ~1.0 s. Total ≈ **+5 s across lanes** —
   within every budget the plan set.
 - Soak: ~22 minutes wall-clock total in this session (bounded batches),
-  242 fresh seeds across the two fuzzes.
+  242 fresh seeds across the two fuzzes. These are historical measurements
+  from the original seeded-schedule implementation; the later fast-check
+  conversion changed generation and shrinking, so they are not a receipt for
+  the final harness.
 
-## Not done / left open
+## Completed after the original execution receipt
 
-- **`fc.scheduler()` was not used.** The plan named it as the exploration
-  mechanism for B2/B3/B7; the delivered lanes hand-roll seeded schedules
-  (`mulberry32`) instead — which explore but do not *shrink*. The receipt's
-  original "Done" labels understated this substitution; the shrinkability
-  upgrade is now tracked as T1 of the PBT program (issue #97).
-- **Nightly CI wiring** for the soak (the mechanism — `FUZZ_SEEDS` — is in
-  place and exercised; adding the workflow file is a deliberate follow-up).
+- **Shrinkable schedules:** B2, B3, and the state-machine fuzz now use
+  fast-check-generated schedules with shrinking. `fc.scheduler()` remains an
+  intentionally declined mechanism: the lanes shrink the operation schedule
+  directly instead of adding a second scheduling abstraction.
+- **Scheduled CI wiring:** `.github/workflows/property-seed.yml` now runs a
+  weekly rotating unit seed and both integration fuzz lanes with a replayable
+  `FUZZ_SEEDS` value. The workflow is also manually dispatchable.
+
+## Still open
+
 - **Historical-commit archaeology** beyond the tempo-reformula re-find
   (checking out pre-fix commits of Lessons 2/5/14/40).
 - **REST-vs-WS overlap and eviction-inside-wave** in the overlap fuzz
@@ -181,7 +188,8 @@ in place:
   removes itself. `absent()` was simplified to pure buffer inspection,
   which is also immune to waiter interference.
 - **Calibration (medium)**: the race lane's `>= 5` trigger floor became a
-  liveness assertion (last trigger in the final quarter of the run); the
+  liveness assertion (scheduler step progress in the final quarter of the
+  run, independent of sparse note placement); the
   tempo generator now respects `MAX_TEMPO`; the render lane asserts the
   refractory's two bounds explicitly and compares onset times against a
   literal grid rather than the subject's own `getStepDuration`. The

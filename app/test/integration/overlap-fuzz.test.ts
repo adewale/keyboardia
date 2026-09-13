@@ -19,10 +19,11 @@
  *      seqs (prev, prev+N], and EVERY client observes EVERY seq exactly
  *      once. A lost, duplicated, or reused seq fails loudly (quiescence
  *      throws fast with the observed set, so shrinking stays cheap).
- *   2. Last-broadcast-wins: the final state equals what the server's own
- *      broadcast stream implies.
+ *   2. Mutation semantics: toggles match input-derived parity, while the
+ *      ordered set operations (tempo/swing) match the broadcast order.
  *   3. Cross-client convergence: at quiescence every client's
- *      request_snapshot returns the same state, equal to the REST read.
+ *      request_snapshot returns the same complete state, equal to the REST
+ *      read including the track grid.
  *   4. Server invariants hold (debug endpoint violations list is empty).
  *
  * Scoped v1 (bounded): WS mutations only — no REST writes or evictions
@@ -91,6 +92,15 @@ const scheduleArb: fc.Arbitrary<OverlapSchedule> = fc.array(
   fc.array(opArb, { minLength: 3, maxLength: 12 }),
   { minLength: 1, maxLength: 3 },
 );
+
+// Calibration witness: an even number of toggles must cancel. Keep this
+// deterministic case so the input-parity oracle is exercised on every run,
+// independent of whether the generated schedules happen to repeat a cell.
+const PARITY_WITNESS: OverlapSchedule = [[
+  { kind: 'toggle', track: 't1', step: 0 },
+  { kind: 'toggle', track: 't1', step: 0 },
+  { kind: 'toggle', track: 't2', step: 1 },
+]];
 
 // ---------------------------------------------------------------------------
 // Harness
@@ -203,11 +213,22 @@ async function runSchedule(schedule: OverlapSchedule): Promise<void> {
 
     let clientSeqCounter = 0;
     let expectedSeqHigh = 0;
+    // Toggle operations commute: their final value depends only on input
+    // parity, not the order in which the DO processes concurrent messages.
+    // Seed every fixture cell so untouched cells are checked too.
+    const expectedSteps = new Map<string, boolean>();
+    for (const trackId of ['t1', 't2']) {
+      for (let step = 0; step < 16; step++) expectedSteps.set(`${trackId}:${step}`, false);
+    }
 
     for (const [waveIndex, wave] of schedule.entries()) {
       // Fire the whole wave with NO awaits between sends — ops round-robin
       // across the three real sockets, genuinely concurrent server-side.
       for (const [i, op] of wave.entries()) {
+        if (op.kind === 'toggle') {
+          const key = `${op.track}:${op.step}`;
+          expectedSteps.set(key, !expectedSteps.get(key));
+        }
         clients[i % CLIENTS].ws.send(opToFrame(op, ++clientSeqCounter));
       }
 
@@ -241,13 +262,12 @@ async function runSchedule(schedule: OverlapSchedule): Promise<void> {
       }
     }
 
-    // ORACLE 2 — last-broadcast-wins over client 0's seq-ordered stream.
+    // ORACLE 2 — input-derived toggle parity plus last-broadcast-wins for
+    // ordered set operations over client 0's seq-ordered stream.
     const reference = clients[0].inbox.seqd().sort((a, b) => a.seq! - b.seq!);
-    const expectedSteps = new Map<string, boolean>();
     let expectedTempo = 120;
     let expectedSwing = 0;
     for (const m of reference) {
-      if (m.type === 'step_toggled') expectedSteps.set(`${m.trackId}:${m.step}`, m.value!);
       if (m.type === 'tempo_changed') expectedTempo = m.tempo!;
       if (m.type === 'swing_changed') expectedSwing = m.swing!;
     }
@@ -273,15 +293,20 @@ async function runSchedule(schedule: OverlapSchedule): Promise<void> {
       expect(final.tempo, `client${i} tempo`).toBe(expectedTempo);
       expect(final.swing, `client${i} swing`).toBe(expectedSwing);
       for (const [key, value] of expectedSteps) {
-        expect(final.steps.get(key), `client${i} ${key}`).toBe(value);
+        expect(final.steps.get(key), `client${i} ${key} input parity`).toBe(value);
       }
       expect(final.steps, `client${i} full grid equals client0`).toEqual(finals[0].steps);
     }
 
     const restRes = await SELF.fetch(`http://localhost/api/sessions/${id}`);
-    const rest = ((await restRes.json()) as { state: { tempo: number; swing: number } }).state;
+    const rest = ((await restRes.json()) as {
+      state: { tracks: { id: string; steps: boolean[] }[]; tempo: number; swing: number };
+    }).state;
+    const restSteps = new Map<string, boolean>();
+    for (const t of rest.tracks) t.steps.forEach((v, i) => restSteps.set(`${t.id}:${i}`, v));
     expect(rest.tempo, 'REST tempo').toBe(expectedTempo);
     expect(rest.swing, 'REST swing').toBe(expectedSwing);
+    expect(restSteps, 'REST full grid equals client snapshots').toEqual(finals[0].steps);
 
     // ORACLE 4 — server structural invariants.
     const dbg = await stub.fetch(`http://do/api/sessions/${id}/debug`);
@@ -293,6 +318,8 @@ async function runSchedule(schedule: OverlapSchedule): Promise<void> {
 }
 
 it('concurrent mutation waves conserve sequence numbers and converge on every client', async () => {
+  await runSchedule(PARITY_WITNESS);
+
   // Known failures replay first (committed example database, issue #97 T2).
   for (const [i, schedule] of OVERLAP_KNOWN_FAILURES.entries()) {
     try {

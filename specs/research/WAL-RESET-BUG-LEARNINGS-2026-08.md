@@ -246,11 +246,14 @@ without grepping logs.
 
 ### G4 (L3): Nothing continuously verifies the DO→KV copy
 
-`docs/STORAGE-ARCHITECTURE.md` names KV as the read-optimized copy and
-backup; Lesson 2 documents that DO and KV state *have* diverged. Publishing,
-remixing, and REST reads all serve from KV (`app/src/worker/sessions.ts`).
-Yet no code path ever compares what landed in KV against DO truth —
-divergence is discovered the Tailscale-before-tooling way, by a user.
+`docs/STORAGE-ARCHITECTURE.md` names KV as a materialized copy and backup;
+Lesson 2 documents that DO and KV state *have* diverged. Normal session GETs,
+publishing, and remixing now ask the DO for authoritative state first
+(`app/src/worker/index.ts`); publishing and remixing fall back to KV only when
+that DO request throws. KV still serves explicit fallback, debug/support, and
+cross-session paths. Yet no code path compares what landed in KV against DO
+truth, so a stale fallback or backup is discovered the
+Tailscale-before-tooling way, by a user.
 Proposal: a sampled convergence check — after a `saveToKV` settles (or on a
 periodic alarm), read the KV copy back, canonical-hash both sides, and emit
 a wide event on mismatch. Sampling keeps KV read costs negligible; even 1%

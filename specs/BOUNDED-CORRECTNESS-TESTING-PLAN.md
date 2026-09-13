@@ -33,7 +33,7 @@ doc encodes the catalogue and framework in enough detail to apply them.
    shipped code, that is a **separate decision escalated explicitly**, not
    part of this plan.
 2. **Every lane has an explicit budget.** Fixed seed count and op count per
-   PR run; hard wall-clock cap for the nightly job. The audit tracks unit
+   PR run; hard wall-clock cap for the scheduled weekly job. The audit tracks unit
    wall clock to the tenth of a second (39.3s → 41.5s); new lanes state
    their budget up front and are accountable to it in review.
 3. **Deterministic and replayable.** All randomness flows through the
@@ -43,7 +43,7 @@ doc encodes the catalogue and framework in enough detail to apply them.
 4. **Recurring cost is $0 by construction.** Nothing in this plan touches
    KV, DO storage, wide events, alarms, or client beacons. The only
    recurring spend is CI minutes (free hosted runners on a public repo) and
-   the review attention the nightly lane's failures demand.
+   the review attention the weekly lane's failures demand.
 
 ## 2. Quality bar for every new lane (from the skill, as applied in-tree)
 
@@ -133,15 +133,15 @@ the render path; shift one onset by a step. **Budget**: bounded pattern
 count, ≤ 90 s in the lane that owns real audio. **Build**: 2.5 d.
 **Impact**: 6.
 
-### B5 — Nightly bounded soak + seed promotion
+### B5 — Weekly bounded soak + seed promotion
 **Half**: both. **What**: the fixed seeds in the fuzz lanes explore nothing
 new after their first run. A scheduled CI job runs the fuzz lanes (today's
 single-client fuzz immediately; B2/B3 as they land) with fresh random seeds
-under a **hard 15-minute wall-clock cap**, never gating PRs. Any failing
+under a **hard 20-minute wall-clock cap**, never gating PRs. Any failing
 seed is reproduced locally by its printed seed and promoted into the fixed
 regression set. Exploration compounds; flake exposure stays zero because
-the nightly lane's only output is "a seed to promote". **Build**: 1 d.
-**Budget**: 15 min/night, capped in the workflow itself. **Impact**: 6.
+the weekly lane's only output is "a seed to promote". **Build**: 1 d.
+**Budget**: 20 min/week, capped in the workflow itself. **Impact**: 6.
 
 ### B6 — Historical-bug kill-rate validation
 **Half**: both. **What**: the skill's sabotage step upgraded from synthetic
@@ -197,7 +197,7 @@ decision against the learnings doc, not this plan.
 | Rank | Task | Half | Impact | Build | CI budget | Ratio |
 |---|---|---|---|---|---|---|
 | 1 | B1 eviction seq-regression consequence test | sync | 8 | 1 d | seconds, PR lane | 8.0 |
-| 2 | B5 nightly bounded soak + seed promotion | both | 6 | 1 d | 15 min/night, hard cap | 6.0 |
+| 2 | B5 weekly bounded soak + seed promotion | both | 6 | 1 d | 20 min/week, hard cap | 6.0 |
 | 3 | B8 deviation inventory | both | 3 | 0.5 d | none | 6.0 |
 | 4 | B7 client reconnect-boundary schedule lane | sync | 5 | 2 d | ≤ 20 s PR | 2.5 |
 | 5 | B6 historical-bug kill-rate validation | both | 6 | 2.5 d | on-demand | 2.4 |
@@ -207,7 +207,7 @@ decision against the learnings doc, not this plan.
 
 Total build ≈ 18.5 dev-days. Total recurring production cost: **$0, by
 construction**. Total CI addition: ≤ ~3.5 minutes across PR lanes plus a
-capped 15-minute nightly.
+capped 20-minute weekly job.
 
 B2 and B3 rank mid-table on ratio but carry the highest absolute impact —
 they are the reason the plan exists. Sequencing resolves the tension:
