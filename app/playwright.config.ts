@@ -58,7 +58,7 @@ export default defineConfig({
   // - Local: 2 workers by default to avoid 429 rate limiting
   // - Serial mode: Use E2E_SERIAL=1 or npm run test:e2e:serial for single worker
   fullyParallel: !process.env.E2E_SERIAL,
-  workers: process.env.CI ? 4 : (process.env.E2E_SERIAL ? 1 : 2),
+  workers: process.env.E2E_SERIAL ? 1 : (process.env.CI ? 4 : 2),
 
   // Reporting
   reporter: [

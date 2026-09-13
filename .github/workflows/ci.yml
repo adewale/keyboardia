@@ -370,10 +370,21 @@ jobs:
           required_specs=()
           while IFS= read -r spec; do required_specs+=("$spec"); done < e2e/mock-compatible-files.txt
           test "${#required_specs[@]}" -eq 7
-          discovered=$(npx playwright test "${required_specs[@]}" --project=chromium --list | sed -n 's/^Total: \([0-9][0-9]*\) tests.*/\1/p')
-          test "$discovered" = "72"
-          npx playwright test "${required_specs[@]}" --project=chromium --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 72 0
+          ui_specs=()
+          for spec in "${required_specs[@]}"; do
+            if [ "$spec" != "e2e/generated-instrument-quality.spec.ts" ]; then
+              ui_specs+=("$spec")
+            fi
+          done
+          test "${#ui_specs[@]}" -eq 6
+          discovered=$(npx playwright test "${ui_specs[@]}" --project=chromium --list | sed -n 's/^Total: \([0-9][0-9]*\) tests.*/\1/p')
+          test "$discovered" = "71"
+          npx playwright test "${ui_specs[@]}" --project=chromium --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 71 0
+          PLAYWRIGHT_OUTPUT_DIR=test-results/generated-quality-artifacts \
+          PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/generated-quality-results.json \
+          PLAYWRIGHT_HTML_REPORT=playwright-report-generated-quality \
+          npm run audit:generated-quality
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -462,6 +473,7 @@ jobs:
           name: playwright-report
           path: |
             app/playwright-report-blocking/
+            app/playwright-report-generated-quality/
             app/playwright-report-offline/
             app/playwright-report-worker/
             app/test-results/
