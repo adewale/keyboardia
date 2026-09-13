@@ -12,7 +12,7 @@ function pageDouble() {
   };
 }
 
-describe('WebKit E2E browser configuration', () => {
+describe('E2E browser configuration', () => {
   it('uses DOMContentLoaded as the default navigation milestone', async () => {
     const { page, goto } = pageDouble();
     await configureE2EPage(page, 'webkit');
@@ -31,16 +31,18 @@ describe('WebKit E2E browser configuration', () => {
     expect(goto).toHaveBeenCalledWith('/s/example', { waitUntil: 'commit' });
   });
 
-  it('leaves Chromium navigation unchanged', async () => {
+  it('configures Chromium navigation without the WebKit audio guard', async () => {
     const { page, goto, addInitScript } = pageDouble();
     await configureE2EPage(page, 'chromium');
 
     await page.goto('/s/example');
-    expect(goto).toHaveBeenCalledWith('/s/example');
+    expect(goto).toHaveBeenCalledWith('/s/example', {
+      waitUntil: 'domcontentloaded',
+    });
     expect(addInitScript).not.toHaveBeenCalled();
   });
 
-  it('configures pages created by custom WebKit contexts', async () => {
+  it('configures pages created by custom browser contexts', async () => {
     let onPage: ((page: Page) => void) | undefined;
     const context = {
       addInitScript: vi.fn().mockResolvedValue(undefined),
@@ -52,7 +54,7 @@ describe('WebKit E2E browser configuration', () => {
       newContext: vi.fn().mockResolvedValue(context),
     } as unknown as Browser;
 
-    await createE2EContext(browser, 'webkit');
+    await createE2EContext(browser, 'chromium');
     const { page, goto } = pageDouble();
     expect(onPage).toBeDefined();
     onPage!(page);
