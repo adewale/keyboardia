@@ -197,7 +197,10 @@ export async function waitForAppReady(page: Page): Promise<void> {
     await startButton.click();
 
     // Wait for URL to change to /s/{sessionId}
-    await page.waitForURL(/\/s\/[a-zA-Z0-9_-]+/, { timeout });
+    await page.waitForURL(/\/s\/[a-zA-Z0-9_-]+/, {
+      timeout,
+      waitUntil: 'domcontentloaded',
+    });
   }
 
   // Wait for app to be ready. Accept multiple indicators of readiness:

@@ -1,5 +1,25 @@
 import type { Browser, BrowserContext, Page } from '@playwright/test';
 
+const navigationConfiguredPages = new WeakSet<Page>();
+
+/**
+ * WebKit occasionally reaches an interactive document without completing its
+ * `load` lifecycle event. The E2E suite already owns readiness through DOM and
+ * application-level assertions, so waiting for `load` adds a flaky, redundant
+ * gate. Preserve any explicit caller choice while making DOMContentLoaded the
+ * default for ordinary WebKit navigations.
+ */
+const configureWebKitNavigation = (page: Page): void => {
+  if (navigationConfiguredPages.has(page)) return;
+  navigationConfiguredPages.add(page);
+
+  const goto = page.goto.bind(page);
+  page.goto = (url, options = {}) => goto(url, {
+    waitUntil: 'domcontentloaded',
+    ...options,
+  });
+};
+
 const installPreloadGuard = async (target: Page | BrowserContext): Promise<void> => {
   await target.addInitScript(() => {
     (window as unknown as { __KEYBOARDIA_DISABLE_AUDIO_PRELOAD__?: boolean })
@@ -9,7 +29,9 @@ const installPreloadGuard = async (target: Page | BrowserContext): Promise<void>
 
 /** Keep non-audio WebKit contracts independent of its unstable headless media process. */
 export async function configureE2EPage(page: Page, browserName: string): Promise<void> {
-  if (browserName === 'webkit') await installPreloadGuard(page);
+  if (browserName !== 'webkit') return;
+  configureWebKitNavigation(page);
+  await installPreloadGuard(page);
 }
 
 /**
@@ -22,6 +44,11 @@ export async function createE2EContext(
   browserName: string,
 ): Promise<BrowserContext> {
   const context = await browser.newContext();
-  if (browserName === 'webkit') await installPreloadGuard(context);
+  if (browserName === 'webkit') {
+    await installPreloadGuard(context);
+    // Custom multiplayer contexts bypass the default `page` fixture. Configure
+    // each page synchronously when Playwright emits it, before callers navigate.
+    context.on('page', configureWebKitNavigation);
+  }
   return context;
 }
