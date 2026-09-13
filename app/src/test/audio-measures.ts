@@ -448,3 +448,243 @@ export function dcOffset(samples: ArrayLike<number>): number {
   for (let index = 0; index < samples.length; index++) sum += samples[index];
   return sum / samples.length;
 }
+
+export interface FundamentalEstimate {
+  frequencyHz: number;
+  centsError: number;
+  confidence: number;
+}
+
+/** Count NaN and infinite samples before they can make aggregate metrics lie. */
+export function nonFiniteSampleCount(samples: ArrayLike<number>): number {
+  let count = 0;
+  for (let index = 0; index < samples.length; index++) {
+    if (!Number.isFinite(samples[index])) count++;
+  }
+  return count;
+}
+
+/**
+ * Expected-pitch autocorrelation estimator.
+ *
+ * Restricting the lag search to one semitone either side of the expected note
+ * avoids octave errors on harmonic-rich presets while retaining enough scope
+ * to expose tuning and note-routing defects. Confidence is the normalized
+ * autocorrelation at the selected lag.
+ */
+export function estimateFundamental(
+  samples: ArrayLike<number>,
+  sampleRate: number,
+  expectedHz: number,
+  window?: SampleWindow,
+): FundamentalEstimate {
+  if (!(sampleRate > 0) || !(expectedHz > 0)) {
+    throw new RangeError('sampleRate and expectedHz must be positive');
+  }
+  const [start, end] = bounds(samples.length, window);
+  const length = end - start;
+  if (length < 4) return { frequencyHz: 0, centsError: -Infinity, confidence: 0 };
+
+  let average = 0;
+  for (let index = start; index < end; index++) average += samples[index];
+  average /= length;
+
+  const semitoneRatio = 2 ** (1 / 12);
+  const minimumLag = Math.max(1, Math.floor(sampleRate / (expectedHz * semitoneRatio)));
+  const maximumLag = Math.min(length - 2, Math.ceil(sampleRate * semitoneRatio / expectedHz));
+  const correlations = new Float64Array(maximumLag - minimumLag + 1);
+
+  let bestIndex = 0;
+  let bestCorrelation = -Infinity;
+  for (let lag = minimumLag; lag <= maximumLag; lag++) {
+    let dot = 0;
+    let leftEnergy = 0;
+    let rightEnergy = 0;
+    for (let offset = 0; offset < length - lag; offset++) {
+      const left = samples[start + offset] - average;
+      const right = samples[start + offset + lag] - average;
+      dot += left * right;
+      leftEnergy += left * left;
+      rightEnergy += right * right;
+    }
+    const denominator = Math.sqrt(leftEnergy * rightEnergy);
+    const correlation = denominator > DEFAULT_FLOOR ? dot / denominator : 0;
+    const correlationIndex = lag - minimumLag;
+    correlations[correlationIndex] = correlation;
+    if (correlation > bestCorrelation) {
+      bestCorrelation = correlation;
+      bestIndex = correlationIndex;
+    }
+  }
+
+  // Parabolic interpolation improves the cents estimate without a longer FFT.
+  let refinedIndex = bestIndex;
+  if (bestIndex > 0 && bestIndex + 1 < correlations.length) {
+    const left = correlations[bestIndex - 1];
+    const centre = correlations[bestIndex];
+    const right = correlations[bestIndex + 1];
+    const denominator = left - 2 * centre + right;
+    if (Math.abs(denominator) > DEFAULT_FLOOR) {
+      refinedIndex += Math.max(-0.5, Math.min(0.5, 0.5 * (left - right) / denominator));
+    }
+  }
+
+  const lag = minimumLag + refinedIndex;
+  const frequencyHz = sampleRate / lag;
+  return {
+    frequencyHz,
+    centsError: 1200 * Math.log2(frequencyHz / expectedHz),
+    confidence: Math.max(0, Math.min(1, bestCorrelation)),
+  };
+}
+
+/** Energy-weighted time position, a standard descriptor of envelope shape. */
+export function temporalCentroidSeconds(samples: ArrayLike<number>, sampleRate: number): number {
+  if (!(sampleRate > 0)) throw new RangeError('sampleRate must be positive');
+  let weighted = 0;
+  let energy = 0;
+  for (let index = 0; index < samples.length; index++) {
+    const sampleEnergy = samples[index] ** 2;
+    weighted += index / sampleRate * sampleEnergy;
+    energy += sampleEnergy;
+  }
+  return energy > DEFAULT_FLOOR ? weighted / energy : 0;
+}
+
+/** Base-10 log of the 10%-to-90% peak-amplitude attack duration. */
+export function logAttackTime(
+  samples: ArrayLike<number>,
+  sampleRate: number,
+  window?: SampleWindow,
+): number {
+  if (!(sampleRate > 0)) throw new RangeError('sampleRate must be positive');
+  const [start, end] = bounds(samples.length, window);
+  let peak = 0;
+  for (let index = start; index < end; index++) peak = Math.max(peak, Math.abs(samples[index]));
+  if (peak <= DEFAULT_FLOOR) return -Infinity;
+  let ten = -1;
+  let ninety = -1;
+  for (let index = start; index < end; index++) {
+    const amplitude = Math.abs(samples[index]);
+    if (ten < 0 && amplitude >= peak * 0.1) ten = index;
+    if (ten >= 0 && amplitude >= peak * 0.9) {
+      ninety = index;
+      break;
+    }
+  }
+  if (ten < 0 || ninety < 0) return -Infinity;
+  return Math.log10(Math.max(1 / sampleRate, (ninety - ten) / sampleRate));
+}
+
+/** Largest instantaneous boundary jump at known note transitions, in dBFS. */
+export function boundaryDiscontinuityDbfs(
+  samples: ArrayLike<number>,
+  boundaryFrames: readonly number[],
+): number {
+  let maximum = 0;
+  for (const boundary of boundaryFrames) {
+    const frame = Math.floor(boundary);
+    if (frame <= 0 || frame >= samples.length) continue;
+    maximum = Math.max(maximum, Math.abs(samples[frame] - samples[frame - 1]));
+  }
+  return linearToDb(maximum);
+}
+
+/**
+ * Boundary jump relative to ordinary local sample-to-sample motion.
+ * This avoids labelling a perfectly continuous high-frequency waveform a
+ * click merely because its normal derivative is large.
+ */
+export function boundaryDiscontinuityExcessDb(
+  samples: ArrayLike<number>,
+  boundaryFrames: readonly number[],
+  radiusFrames = 128,
+): number {
+  let maximumExcess = -Infinity;
+  for (const boundaryValue of boundaryFrames) {
+    const boundary = Math.floor(boundaryValue);
+    if (boundary <= 0 || boundary >= samples.length) continue;
+    const jump = Math.abs(samples[boundary] - samples[boundary - 1]);
+    let localEnergy = 0;
+    let localCount = 0;
+    const start = Math.max(1, boundary - radiusFrames);
+    const end = Math.min(samples.length, boundary + radiusFrames);
+    for (let frame = start; frame < end; frame++) {
+      if (Math.abs(frame - boundary) <= 1) continue;
+      const derivative = samples[frame] - samples[frame - 1];
+      localEnergy += derivative * derivative;
+      localCount++;
+    }
+    const localRms = localCount > 0 ? Math.sqrt(localEnergy / localCount) : 0;
+    const excess = linearToDb(jump) - linearToDb(localRms);
+    maximumExcess = Math.max(maximumExcess, excess);
+  }
+  return maximumExcess;
+}
+
+/** Robust short-time RMS spread between the 10th and 90th percentiles. */
+export function amplitudeModulationDepthDb(
+  samples: ArrayLike<number>,
+  frameSize = 1024,
+  hopSize = 512,
+): number {
+  if (frameSize < 16 || !Number.isInteger(frameSize)) {
+    throw new RangeError('frameSize must be an integer of at least 16');
+  }
+  if (hopSize < 1 || !Number.isInteger(hopSize)) {
+    throw new RangeError('hopSize must be a positive integer');
+  }
+  const levels: number[] = [];
+  for (let start = 0; start + frameSize <= samples.length; start += hopSize) {
+    const level = rmsDb(samples, { start, end: start + frameSize });
+    if (Number.isFinite(level)) levels.push(level);
+  }
+  if (levels.length < 2) return 0;
+  levels.sort((left, right) => left - right);
+  const percentile = (position: number) => levels[Math.round((levels.length - 1) * position)];
+  return percentile(0.9) - percentile(0.1);
+}
+
+/**
+ * Normalized positive spectral change between adjacent Hann-windowed frames.
+ * Zero is stationary; larger values indicate deliberate or accidental motion.
+ */
+export function spectralFlux(
+  samples: ArrayLike<number>,
+  frameSize = 1024,
+  hopSize = 512,
+): number {
+  if (frameSize < 16 || !Number.isInteger(frameSize)) {
+    throw new RangeError('frameSize must be an integer of at least 16');
+  }
+  if (hopSize < 1 || !Number.isInteger(hopSize)) {
+    throw new RangeError('hopSize must be a positive integer');
+  }
+  if (samples.length < frameSize + hopSize) return 0;
+
+  let previous: Float64Array | null = null;
+  let flux = 0;
+  let frames = 0;
+  for (let start = 0; start + frameSize <= samples.length; start += hopSize) {
+    const magnitudes = fftMagnitudes(Array.from(
+      { length: frameSize },
+      (_, offset) => samples[start + offset],
+    )).magnitudes;
+    let norm = 0;
+    for (const magnitude of magnitudes) norm += magnitude * magnitude;
+    norm = Math.sqrt(norm);
+    if (norm > DEFAULT_FLOOR) {
+      for (let bin = 0; bin < magnitudes.length; bin++) magnitudes[bin] /= norm;
+    }
+    if (previous) {
+      let positiveChange = 0;
+      for (let bin = 0; bin < magnitudes.length; bin++) {
+        positiveChange += Math.max(0, magnitudes[bin] - previous[bin]) ** 2;
+      }
+      flux += Math.sqrt(positiveChange);
+      frames++;
+    }
+    previous = magnitudes;
+  }
+  return frames > 0 ? flux / frames : 0;
+}

@@ -46,6 +46,7 @@ import {
   MASTER_OUTPUT_TRIM,
   NOTE_FADE_SECONDS,
 } from './constants';
+import { proceduralVelocityLowpassHz } from './velocity-timbre';
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -885,9 +886,6 @@ export class AudioEngine {
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
     variationKey?: string,
   ): void {
-    // Procedural/user samples currently have no velocity-to-timbre mapping.
-    // Keep the explicit contract so one can be added without coupling gain.
-    void midiVelocity;
     if (!this.audioContext || !this.masterGain) {
       logger.audio.warn('AudioContext not initialized');
       return;
@@ -930,6 +928,19 @@ export class AudioEngine {
     // the chain — the worklet buffers one grain before producing output, so
     // the envelope must wait for that audio to arrive.
     const envGain = this.audioContext.createGain();
+    const velocityCutoffHz = proceduralVelocityLowpassHz(sampleId, midiVelocity);
+    const velocityFilter = velocityCutoffHz === null
+      ? null
+      : this.audioContext.createBiquadFilter();
+    if (velocityFilter && velocityCutoffHz !== null) {
+      velocityFilter.type = 'lowpass';
+      velocityFilter.frequency.value = Math.min(
+        velocityCutoffHz,
+        this.audioContext.sampleRate * 0.5,
+      );
+      velocityFilter.Q.value = 0.2;
+      velocityFilter.connect(envGain);
+    }
 
     // Apply pitch shift: worklet for large shifts (>6 semitones), native
     // playbackRate otherwise. When we engage the worklet we must
@@ -957,14 +968,14 @@ export class AudioEngine {
       }
       (pitchNode.parameters as Map<string, AudioParam>).get('pitchRatio')!.value = pitchRatio;
       source.connect(pitchNode);
-      pitchNode.connect(envGain);
+      pitchNode.connect(velocityFilter ?? envGain);
       pitchLatencySec = PITCH_SHIFT_GRAIN_SIZE / this.audioContext.sampleRate;
     } else {
       // Native playbackRate (good for ±6 semitones)
       if (pitchSemitones !== 0) {
         source.playbackRate.value = Math.pow(2, pitchSemitones / 12);
       }
-      source.connect(envGain);
+      source.connect(velocityFilter ?? envGain);
     }
 
     // bug_009: anchor the envelope to actualStartTime, not eventTime.
@@ -994,6 +1005,7 @@ export class AudioEngine {
       const cleanup = () => {
         source.disconnect();
         pitchNode?.disconnect();
+        velocityFilter?.disconnect();
         envGain.disconnect();
       };
       if (pitchLatencySec > 0) {
@@ -1327,8 +1339,6 @@ export class AudioEngine {
     trackId?: string,
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
   ): void {
-    // Tone presets currently use the canonical note gain only.
-    void midiVelocity;
     if (!this.toneInitialized) {
       logger.audio.warn('Cannot play Tone.js synth: not initialized');
       return;
@@ -1362,7 +1372,7 @@ export class AudioEngine {
 
     const noteName = synth.semitoneToNoteName(semitone);
     const toneTime = this.toToneRelativeTime(time);
-    synth.playNote(presetName, noteName, duration, toneTime, volume);
+    synth.playNote(presetName, noteName, duration, toneTime, volume, midiVelocity);
   }
 
   /**

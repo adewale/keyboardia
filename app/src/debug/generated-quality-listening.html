@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keyboardia Controlled Listening</title>
+    <style>
+      :root{color-scheme:dark;font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;background:#0d1017;color:#f4f6fb}*{box-sizing:border-box}body{margin:0 auto;max-width:780px;padding:32px 18px}main{display:grid;gap:20px}.card{padding:22px;border:1px solid #30394e;border-radius:16px;background:#171c28}.muted{color:#aeb7ca}.progress{height:8px;border-radius:9px;background:#293044;overflow:hidden}.progress span{display:block;height:100%;background:#7390ff}.pair,.votes{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.votes{grid-template-columns:repeat(3,1fr)}button,input{font:inherit}button{min-height:58px;padding:12px;border:1px solid #4b5876;border-radius:10px;background:#283147;color:inherit;font-weight:700;cursor:pointer}button:hover{background:#34405c}button:disabled{opacity:.4;cursor:not-allowed}.primary{background:#536dfe;border-color:#7388ff}.selected{outline:3px solid #91a4ff}label{display:grid;gap:8px}output{min-height:24px;color:#bac5df}pre{white-space:pre-wrap;word-break:break-word;padding:14px;border-radius:10px;background:#0d111a}.hidden{display:none}.ok{color:#8ce6aa}@media(max-width:560px){.pair,.votes{grid-template-columns:1fr}}
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Controlled listening</h1>
+        <p class="muted">Eight randomized, active-RMS-matched trials. A and B change assignment between trials. Use the same headphones and system volume throughout.</p>
+      </header>
+      <div class="progress"><span id="progress" style="width:0%"></span></div>
+      <section id="trial" class="card">
+        <p id="counter" class="muted">Loading captures…</p>
+        <h2 id="section">Please wait</h2>
+        <p>Listen to both as often as needed, then choose the version you prefer for this section.</p>
+        <div class="pair">
+          <button id="play-a" type="button" disabled>▶ Play A</button>
+          <button id="play-b" type="button" disabled>▶ Play B</button>
+        </div>
+        <output id="status" aria-live="polite"></output>
+        <label>Confidence: <span id="confidence-value">3</span>/5
+          <input id="confidence" type="range" min="1" max="5" value="3" />
+        </label>
+        <div class="votes">
+          <button id="vote-a" type="button" disabled>Prefer A</button>
+          <button id="vote-tie" type="button" disabled>No preference</button>
+          <button id="vote-b" type="button" disabled>Prefer B</button>
+        </div>
+      </section>
+      <section id="complete" class="card hidden">
+        <h2 class="ok">Listening complete</h2>
+        <p id="summary"></p>
+        <p class="muted">This is one listener and eight repeated judgments. Treat it as directional evidence, not a population claim.</p>
+        <pre id="result"></pre>
+      </section>
+    </main>
+    <script type="module" src="./generated-quality-listening.ts"></script>
+  </body>
+</html>

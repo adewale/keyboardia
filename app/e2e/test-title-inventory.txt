@@ -57,6 +57,7 @@ feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) �
 feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › selection badge appears when steps are selected
 feature-flags.spec.ts › Feature Flags › Loop Ruler (default: ON) › loop ruler is visible by default
 feature-flags.spec.ts › Feature Flags › Loop Ruler (default: ON) › loop ruler supports drag interaction
+generated-instrument-quality.spec.ts › renders and measures every generated picker voice
 instrument-range-session.spec.ts › plays every sampled instrument across a range of notes in live sessions
 keyboard.spec.ts › Focus Management › focus does not get trapped
 keyboard.spec.ts › Keyboard Navigation › Shift+Tab navigates backwards

@@ -1,0 +1,14 @@
+{
+  "baselineCommit": "0d1834fea373611709cbb0789b1b0374d91f7293",
+  "command": "npm run build",
+  "mainChunk": {
+    "beforeBytes": 525155,
+    "afterBytes": 526274,
+    "deltaBytes": 1119,
+    "deltaPercent": 0.213075,
+    "beforeGzipBytes": 156225,
+    "afterGzipBytes": 156643,
+    "deltaGzipBytes": 418,
+    "deltaGzipPercent": 0.267351
+  }
+}

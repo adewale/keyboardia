@@ -17,15 +17,15 @@ export const SYNTH_SOURCE_GAIN_DB = Object.freeze({
   funkbass: -6, clavinet: -8, rhodes: -5, organ: -10, wurlitzer: -5,
   discobass: -5, strings: -8, brass: -8, stab: -8, sub: -3,
   shimmer: -8, jangle: -7, dreampop: -8, bell: -10, supersaw: -12,
-  hypersaw: -12, wobble: -8, growl: -10, evolving: -8, sweep: -8,
+  hypersaw: -12, wobble: -8, growl: -14, evolving: -8, sweep: -8,
   warmpad: -7, glass: -8, epiano: -6, vibes: -7, organphase: -9,
-  reese: -9, hoover: -10,
+  reese: -9, hoover: -6,
 } satisfies Record<string, number>);
 
 export const TONE_SOURCE_GAIN_DB = Object.freeze({
-  'fm-epiano': -6, 'fm-bass': -4, 'fm-bell': -8, 'am-bell': -8,
-  'am-tremolo': -7, 'membrane-kick': -3, 'membrane-tom': -5,
-  'metal-cymbal': -11, 'metal-hihat': -10, 'pluck-string': -6,
+  'fm-epiano': -2, 'fm-bass': -4, 'fm-bell': -4, 'am-bell': -2,
+  'am-tremolo': -3, 'membrane-kick': -3, 'membrane-tom': -5,
+  'metal-cymbal': -16, 'metal-hihat': -13, 'pluck-string': 0,
   'duo-lead': -9,
 } satisfies Record<string, number>);
 

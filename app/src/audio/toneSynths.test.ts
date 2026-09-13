@@ -30,6 +30,10 @@ const toneTestState = vi.hoisted(() => ({
   gains: [] as Array<{
     gain: { value: number; setValueAtTime: ReturnType<typeof vi.fn> };
   }>,
+  filters: [] as Array<{
+    frequency: { value: number; setValueAtTime: ReturnType<typeof vi.fn> };
+    dispose: ReturnType<typeof vi.fn>;
+  }>,
 }));
 
 // Mock Tone.js synths
@@ -150,6 +154,20 @@ vi.mock('tone', () => {
     }
   }
 
+  class MockFilter {
+    frequency = {
+      value: 20_000,
+      setValueAtTime: vi.fn((value: number) => { this.frequency.value = value; }),
+    };
+    connect = vi.fn().mockReturnThis();
+    toDestination = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+    constructor(options?: { frequency?: number }) {
+      if (options?.frequency !== undefined) this.frequency.value = options.frequency;
+      toneTestState.filters.push(this);
+    }
+  }
+
   return {
     start: vi.fn().mockResolvedValue(undefined),
     now: vi.fn().mockReturnValue(0),
@@ -161,6 +179,7 @@ vi.mock('tone', () => {
     DuoSynth: MockDuoSynth,
     PolySynth: MockPolySynth,
     Gain: MockGain,
+    Filter: MockFilter,
   };
 });
 
@@ -218,6 +237,7 @@ describe('ToneSynthManager', () => {
   beforeEach(async () => {
     toneTestState.fmSynths.length = 0;
     toneTestState.gains.length = 0;
+    toneTestState.filters.length = 0;
     manager = new ToneSynthManager();
     await manager.initialize();
   });
@@ -292,7 +312,16 @@ describe('ToneSynthManager', () => {
       // Gain 0 is the manager output; gain 1 is the pluck-only VCA.
       const pluckGain = toneTestState.gains[1];
       expect(pluckGain).toBeDefined();
-      expect(pluckGain.gain.setValueAtTime).toHaveBeenLastCalledWith(0.35 * (10 ** (-6 / 20)), 0.2);
+      expect(pluckGain.gain.setValueAtTime).toHaveBeenLastCalledWith(0.35, 0.2);
+    });
+
+    it('darkens a soft note without changing the canonical note cutoff', () => {
+      manager.playNote('fm-epiano', 'C4', '8n', 0.2, 1, 40);
+      manager.playNote('fm-epiano', 'E4', '8n', 0.4, 1, 90);
+
+      const filter = toneTestState.filters[0];
+      expect(filter.frequency.setValueAtTime.mock.calls[0][0]).toBeLessThan(10_000);
+      expect(filter.frequency.setValueAtTime).toHaveBeenLastCalledWith(20_000, 0.4);
     });
   });
 
