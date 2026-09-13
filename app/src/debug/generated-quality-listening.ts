@@ -1,18 +1,11 @@
-type SourceId = 'baseline' | 'candidate';
+import {
+  createCounterbalancedTrials,
+  type ListeningManifest as Manifest,
+  type ListeningTrial as Trial,
+  type SourceId,
+} from './generated-quality-listening-protocol';
+
 type BlindChoice = 'A' | 'B' | 'tie';
-
-interface Manifest {
-  seed: string;
-  repeatsPerSection: number;
-  sources: Record<SourceId, { file: string; sha256: string }>;
-  sections: Array<{ id: string; label: string; start: number; duration: number }>;
-}
-
-interface Trial {
-  section: Manifest['sections'][number];
-  a: SourceId;
-  b: SourceId;
-}
 
 interface Vote {
   sectionId: string;
@@ -49,12 +42,11 @@ function prng(seed: number): () => number {
   };
 }
 
-function shuffle<T>(values: T[], random: () => number): T[] {
-  for (let index = values.length - 1; index > 0; index--) {
-    const other = Math.floor(random() * (index + 1));
-    [values[index], values[other]] = [values[other], values[index]];
-  }
-  return values;
+async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)]
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
 }
 
 function activeRms(buffer: AudioBuffer, start: number, duration: number): number {
@@ -167,7 +159,7 @@ function wilson(successes: number, trialsCount: number): [number, number] | null
   return [centre - margin, centre + margin];
 }
 
-function complete(manifest: Manifest): void {
+function complete(manifest: Manifest, manifestSha256: string): void {
   stop();
   element('trial').classList.add('hidden');
   element('complete').classList.remove('hidden');
@@ -178,12 +170,18 @@ function complete(manifest: Manifest): void {
   const interval = wilson(candidate, candidate + baseline);
   element('summary').textContent = `Candidate preferred ${candidate}; baseline preferred ${baseline}; no preference ${ties}.`;
   const result = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     seed: manifest.seed,
+    manifestSha256,
     sourceHashes: {
       baseline: manifest.sources.baseline.sha256,
       candidate: manifest.sources.candidate.sha256,
     },
+    sourceProvenance: {
+      baseline: manifest.sources.baseline.provenance,
+      candidate: manifest.sources.candidate.provenance,
+    },
+    counterbalanced: true,
     votes,
     totals: { candidate, baseline, ties },
     candidatePreferenceRateExcludingTies: candidate + baseline > 0
@@ -195,7 +193,7 @@ function complete(manifest: Manifest): void {
   element('result').textContent = JSON.stringify(result, null, 2);
 }
 
-function vote(choice: BlindChoice, manifest: Manifest): void {
+function vote(choice: BlindChoice, manifest: Manifest, manifestSha256: string): void {
   const trial = trials[trialIndex];
   const preference = choice === 'tie' ? 'tie' : choice === 'A' ? trial.a : trial.b;
   votes.push({
@@ -205,7 +203,7 @@ function vote(choice: BlindChoice, manifest: Manifest): void {
     confidence: Number(element<HTMLInputElement>('confidence').value),
   });
   trialIndex++;
-  if (trialIndex >= trials.length) complete(manifest);
+  if (trialIndex >= trials.length) complete(manifest, manifestSha256);
   else renderTrial();
 }
 
@@ -213,25 +211,28 @@ async function initialize(): Promise<void> {
   const assetRoot = new URL('./__generated-quality-listening/', window.location.href);
   const response = await fetch(new URL('manifest.json', assetRoot), { cache: 'no-store' });
   if (!response.ok) throw new Error(`Listening manifest unavailable (${response.status})`);
-  const manifest = await response.json() as Manifest;
+  const manifestBytes = await response.arrayBuffer();
+  const manifestSha256 = await sha256Hex(manifestBytes);
+  const manifest = JSON.parse(new TextDecoder().decode(manifestBytes)) as Manifest;
+  if (manifest.schemaVersion !== 2) throw new Error('Unsupported listening manifest');
   await Promise.all((['baseline', 'candidate'] as const).map(async source => {
     const audioResponse = await fetch(new URL(manifest.sources[source].file, assetRoot));
     if (!audioResponse.ok) throw new Error(`Capture unavailable (${audioResponse.status})`);
-    buffers.set(source, await audioContext.decodeAudioData(await audioResponse.arrayBuffer()));
+    const bytes = await audioResponse.arrayBuffer();
+    const actualSha256 = await sha256Hex(bytes);
+    if (actualSha256 !== manifest.sources[source].sha256) {
+      throw new Error(`${source} capture digest mismatch`);
+    }
+    buffers.set(source, await audioContext.decodeAudioData(bytes.slice(0)));
   }));
   calculateGains(manifest);
   const random = prng(seedNumber(manifest.seed));
-  trials = shuffle(manifest.sections.flatMap(section =>
-    Array.from({ length: manifest.repeatsPerSection }, () => {
-      const a: SourceId = random() < 0.5 ? 'baseline' : 'candidate';
-      return { section, a, b: a === 'baseline' ? 'candidate' : 'baseline' };
-    })
-  ), random);
+  trials = createCounterbalancedTrials(manifest, random);
   element('play-a').addEventListener('click', () => void play('A'));
   element('play-b').addEventListener('click', () => void play('B'));
-  element('vote-a').addEventListener('click', () => vote('A', manifest));
-  element('vote-b').addEventListener('click', () => vote('B', manifest));
-  element('vote-tie').addEventListener('click', () => vote('tie', manifest));
+  element('vote-a').addEventListener('click', () => vote('A', manifest, manifestSha256));
+  element('vote-b').addEventListener('click', () => vote('B', manifest, manifestSha256));
+  element('vote-tie').addEventListener('click', () => vote('tie', manifest, manifestSha256));
   element<HTMLInputElement>('confidence').addEventListener('input', event => {
     element('confidence-value').textContent = (event.currentTarget as HTMLInputElement).value;
   });

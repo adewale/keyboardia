@@ -18,7 +18,10 @@ import { logger } from '../utils/logger';
 import { parseInstrumentId } from './instrument-types';
 import { NOTE_NAMES } from '../music/music-theory';
 import { TONE_SOURCE_GAIN_DB, dbToGain } from './source-calibration';
-import { toneVelocityLowpassHz } from './velocity-timbre';
+import {
+  toneVelocityLowpassHz,
+  VELOCITY_FILTER_TIME_CONSTANT_SECONDS,
+} from './velocity-timbre';
 
 /**
  * Synth type identifiers used in sample IDs
@@ -260,6 +263,8 @@ export const TONE_SYNTH_PRESETS: Record<ToneSynthType, ToneSynthPreset> = {
 export class ToneSynthManager {
   private synths: Map<BaseSynthType, Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.PluckSynth | Tone.DuoSynth> = new Map();
   private output: Tone.Gain | null = null;
+  private dcBlocker: Tone.Filter | null = null;
+  private amTremolo: Tone.Tremolo | null = null;
   private pluckGain: Tone.Gain | null = null;
   private sourceGains: Map<BaseSynthType, Tone.Gain> = new Map();
   private velocityFilters: Map<BaseSynthType, Tone.Filter> = new Map();
@@ -279,6 +284,12 @@ export class ToneSynthManager {
 
     // Create output gain node
     this.output = new Tone.Gain(1);
+    this.dcBlocker = new Tone.Filter({
+      type: 'highpass',
+      frequency: 20,
+      Q: 0.707,
+    });
+    this.dcBlocker.connect(this.output);
 
     this.ready = true;
     logger.audio.log('ToneSynthManager initialized');
@@ -315,7 +326,18 @@ export class ToneSynthManager {
         const sourceGain = new Tone.Gain(1);
         synth.connect(velocityFilter);
         velocityFilter.connect(sourceGain);
-        sourceGain.connect(this.output);
+        if (type === 'am') {
+          this.amTremolo = new Tone.Tremolo({
+            frequency: 6,
+            depth: 0.45,
+            spread: 0,
+            wet: 0,
+          }).start();
+          sourceGain.connect(this.amTremolo);
+          this.amTremolo.connect(this.dcBlocker ?? this.output);
+        } else {
+          sourceGain.connect(this.dcBlocker ?? this.output);
+        }
         this.velocityFilters.set(type, velocityFilter);
         this.sourceGains.set(type, sourceGain);
         if (type === 'pluck') this.pluckGain = sourceGain;
@@ -404,10 +426,14 @@ export class ToneSynthManager {
     }
     this.lastScheduledTime.set(preset.type, startTime);
     sourceGain?.gain.setValueAtTime(dbToGain(TONE_SOURCE_GAIN_DB[presetName]), startTime);
-    velocityFilter?.frequency.setValueAtTime(
+    velocityFilter?.frequency.setTargetAtTime(
       toneVelocityLowpassHz(presetName, midiVelocity),
       startTime,
+      VELOCITY_FILTER_TIME_CONSTANT_SECONDS,
     );
+    if (preset.type === 'am') {
+      this.amTremolo?.wet.setValueAtTime(presetName === 'am-tremolo' ? 1 : 0, startTime);
+    }
 
     // PluckSynth doesn't have triggerAttackRelease
     // Use try-catch to handle cases where Tone.js internal state rejects the time
@@ -565,6 +591,12 @@ export class ToneSynthManager {
     }
     this.velocityFilters.clear();
     this.pluckGain = null;
+
+    this.amTremolo?.dispose();
+    this.amTremolo = null;
+
+    this.dcBlocker?.dispose();
+    this.dcBlocker = null;
 
     // Dispose output
     this.output?.dispose();

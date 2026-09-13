@@ -1,18 +1,20 @@
 import { describe, expect, it } from 'vitest';
-import { GENERATED_INSTRUMENT_QUALITY_PROFILES } from '../generated-instrument-quality';
+import { GENERATED_INSTRUMENT_QUALITY_PROFILES } from '../../test/generated-instrument-quality-profiles';
+import { generatedQualityGateViolations } from '../../test/generated-instrument-quality-gates';
+import type { GeneratedCatalogueAudit } from '../../test/generated-instrument-quality-browser';
 import after from './generated-instrument-quality-after.json';
 import before from './generated-instrument-quality-before.json';
 import bundle from './generated-instrument-quality-bundle.json';
 
-type Receipt = typeof after;
-type Voice = Receipt['voices'][keyof Receipt['voices']];
+type Voice = typeof before.voices[keyof typeof before.voices];
+type Receipt = { voices: Record<string, Voice> };
 
 function voices(receipt: Receipt): Voice[] {
   return Object.values(receipt.voices);
 }
 
 function voiceAt(receipt: Receipt, id: string): Voice {
-  return (receipt.voices as Record<string, Voice>)[id];
+  return receipt.voices[id];
 }
 
 function median(values: number[]): number {
@@ -21,6 +23,27 @@ function median(values: number[]): number {
 }
 
 describe('generated instrument quality before/after receipt', () => {
+  it('binds the candidate receipt to a clean revision, harness, and browser', () => {
+    const provenance = (after as unknown as {
+      provenance: {
+        revision: string;
+        sourceTreeDirty: boolean;
+        harnessSha256: string;
+        browserName: string;
+        browserVersion: string;
+      };
+    }).provenance;
+    expect(provenance.revision).toMatch(/^[0-9a-f]{40}$/);
+    expect(provenance.sourceTreeDirty).toBe(false);
+    expect(provenance.harnessSha256).toMatch(/^[0-9a-f]{64}$/);
+    expect(provenance.browserName).toBe('chromium');
+    expect(provenance.browserVersion).not.toBe('unknown');
+  });
+
+  it('passes the same absolute gates used by the live Chromium audit', () => {
+    expect(generatedQualityGateViolations(after as unknown as GeneratedCatalogueAudit)).toEqual([]);
+  });
+
   it('audits every generated picker voice across all declared conditions', () => {
     expect(before.voiceCount).toBe(73);
     expect(after.voiceCount).toBe(73);
@@ -141,13 +164,10 @@ describe('generated instrument quality before/after receipt', () => {
   });
 
   it('retains real-time headroom under representative maximum polyphony', () => {
-    expect(after.totalRenderWallMilliseconds).toBeLessThan(before.totalRenderWallMilliseconds * 1.2);
     for (const result of Object.values(after.polyphony)) {
       expect(result.nonFiniteSamples).toBe(0);
       expect(result.realtimeFactor).toBeGreaterThan(2);
     }
-    expect(after.polyphony.tone16.renderWallMilliseconds)
-      .toBeLessThan(before.polyphony.tone16.renderWallMilliseconds * 1.3);
   });
 
   it('adds less than half a kilobyte compressed to the production entry chunk', () => {

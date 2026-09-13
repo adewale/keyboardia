@@ -14,6 +14,9 @@ const HIGH_IDS = new Set([
   'metal-cymbal', 'metal-hihat',
 ]);
 
+/** Reaches about 99% of a new cutoff in 8 ms without blunting the attack. */
+export const VELOCITY_FILTER_TIME_CONSTANT_SECONDS = 0.008 / Math.log(100);
+
 function softVelocityLowpassHz(instrumentId: string, midiVelocity: number): number {
   const normalized = Math.max(0, Math.min(1, midiVelocity / 90));
   const floorHz = LOW_IDS.has(instrumentId) ? 800 : HIGH_IDS.has(instrumentId) ? 4_500 : 1_000;

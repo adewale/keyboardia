@@ -1,5 +1,10 @@
 {
   "capturedAt": "2026-08-13T22:00:37.259Z",
+  "provenance": {
+    "kind": "legacy-emulation",
+    "revision": "0d1834fea373611709cbb0789b1b0374d91f7293",
+    "limitations": "Historical comparison only. This receipt was produced by an incomplete emulation and is not a release gate."
+  },
   "schemaVersion": 1,
   "implementation": "before",
   "sampleRate": 44100,

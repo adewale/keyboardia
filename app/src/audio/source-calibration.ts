@@ -9,15 +9,15 @@ export const PROCEDURAL_SOURCE_GAIN_DB = Object.freeze({
   kick: 0, snare: 1, hihat: -4, clap: -4, tom: -2, rim: -5,
   cowbell: -6, openhat: -4, shaker: -6, conga: -3, tambourine: -6,
   clave: -5, cabasa: -6, woodblock: -4, bass: -1, subbass: -1,
-  lead: -10, pluck: 0, chord: -6, pad: -5.5, zap: -5, noise: -8,
+  lead: -10, pluck: -1, chord: -6, pad: -5.5, zap: -5, noise: -8,
 } satisfies Record<string, number>);
 
 export const SYNTH_SOURCE_GAIN_DB = Object.freeze({
-  bass: -3.5, lead: -7, pad: -4, pluck: -2, acid: -5,
+  bass: -3.5, lead: -7, pad: -4, pluck: -2, acid: -5.5,
   funkbass: -6, clavinet: -8, rhodes: -5, organ: -10, wurlitzer: -5,
   discobass: -5, strings: -8, brass: -8, stab: -8, sub: -3,
   shimmer: -8, jangle: -7, dreampop: -8, bell: -10, supersaw: -12,
-  hypersaw: -12, wobble: -8, growl: -14, evolving: -8, sweep: -8,
+  hypersaw: -12, wobble: -8, growl: -20, evolving: -8, sweep: -8,
   warmpad: -7, glass: -8, epiano: -6, vibes: -7, organphase: -9,
   reese: -9, hoover: -6,
 } satisfies Record<string, number>);

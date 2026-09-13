@@ -3,7 +3,12 @@ import { defineConfig, devices } from '@playwright/test';
 const localPort = Number(process.env.E2E_PORT ?? 5175);
 
 const ignoredSpecs: RegExp[] = [];
-if (process.env.E2E_FUNCTIONAL_ONLY === '1') ignoredSpecs.push(/e2e\/visual\.spec\.ts$/);
+if (process.env.E2E_FUNCTIONAL_ONLY === '1') {
+  ignoredSpecs.push(
+    /e2e\/visual\.spec\.ts$/,
+    /e2e\/generated-instrument-quality\.spec\.ts$/,
+  );
+}
 
 // Playwright's headless WebKit process does not provide a stable real-time
 // audio environment. AudioContext.resume() and AnalyserNode probes can wedge

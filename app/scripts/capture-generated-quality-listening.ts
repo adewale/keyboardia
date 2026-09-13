@@ -18,6 +18,12 @@ interface SerializedCapture {
   sampleRate: number;
   channels: string[];
   maxRenderFrameDrift: number;
+  provenance: {
+    requestedUrl: string;
+    finalUrl: string;
+    userAgent: string;
+    assets: Array<{ url: string; sha256: string }>;
+  };
 }
 
 interface AlignedPcm {
@@ -128,6 +134,33 @@ async function captureSession(page: Page, url: string): Promise<SerializedCaptur
     };
   });
   await page.goto(url, { waitUntil: 'domcontentloaded' });
+  const provenance = await page.evaluate(async requestedUrl => {
+    const candidates = new Set<string>();
+    for (const script of document.scripts) {
+      if (script.src) candidates.add(script.src);
+    }
+    for (const entry of performance.getEntriesByType('resource') as PerformanceResourceTiming[]) {
+      if (entry.initiatorType === 'script') candidates.add(entry.name);
+    }
+    const assets: Array<{ url: string; sha256: string }> = [];
+    for (const assetUrl of [...candidates].sort()) {
+      if (new URL(assetUrl).origin !== location.origin) continue;
+      const response = await fetch(assetUrl, { cache: 'no-store' });
+      if (!response.ok) throw new Error(`Unable to fingerprint ${assetUrl} (${response.status})`);
+      const digest = await crypto.subtle.digest('SHA-256', await response.arrayBuffer());
+      const sha256 = [...new Uint8Array(digest)]
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+      assets.push({ url: assetUrl, sha256 });
+    }
+    if (assets.length === 0) throw new Error('No same-origin runtime assets were fingerprinted');
+    return {
+      requestedUrl,
+      finalUrl: location.href,
+      userAgent: navigator.userAgent,
+      assets,
+    };
+  }, url);
   const play = page.getByTestId('play-button');
   await play.waitFor({ state: 'visible' });
 
@@ -183,7 +216,7 @@ async function captureSession(page: Page, url: string): Promise<SerializedCaptur
     };
   });
   await play.click();
-  return serialized;
+  return { ...serialized, provenance };
 }
 
 function sha256(data: Uint8Array): string {
@@ -223,15 +256,15 @@ try {
     writeFile(resolve(OUTPUT_DIR, candidateFile), candidateWav),
   ]);
   const manifest = {
-    schemaVersion: 1,
+    schemaVersion: 2,
     createdAt: new Date().toISOString(),
     seed: sha256(Buffer.from(`${baselineHash}:${candidateHash}`)),
     tempo: TEMPO,
     loopSeconds: LOOP_SECONDS,
     repeatsPerSection: 2,
     sources: {
-      baseline: { file: baselineFile, sha256: baselineHash },
-      candidate: { file: candidateFile, sha256: candidateHash },
+      baseline: { file: baselineFile, sha256: baselineHash, provenance: baselineRaw.provenance },
+      candidate: { file: candidateFile, sha256: candidateHash, provenance: candidateRaw.provenance },
     },
     sections: [
       { id: 'dynamics', label: 'Dynamics', start: 0, duration: LOOP_SECONDS / 4 },

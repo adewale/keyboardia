@@ -3,11 +3,7 @@ import {
   INSTRUMENT_GROUPS,
   type InstrumentCategory,
 } from '../shared/instrument-catalog';
-import type { InstrumentType } from './instrument-types';
-export {
-  proceduralVelocityLowpassHz,
-  toneVelocityLowpassHz,
-} from './velocity-timbre';
+import type { InstrumentType } from '../audio/instrument-types';
 
 export type GeneratedInstrumentRole =
   | 'drum-low'
@@ -33,7 +29,7 @@ export interface GeneratedInstrumentQualityProfile {
   durationsSeconds: readonly number[];
   velocities: readonly number[];
   motion: TimbralMotionContract;
-  targetLoudnessLkfs: number;
+  minimumLoudnessLkfs: number;
 }
 
 const LOW_DRUMS = new Set([
@@ -120,15 +116,15 @@ const VARYING = new Set([
   'advanced:thick-lead',
 ]);
 
-const TARGET_LOUDNESS_BY_ROLE: Readonly<Record<GeneratedInstrumentRole, number>> = {
-  'drum-low': -15,
-  'drum-mid': -18,
-  'drum-high': -21,
-  bass: -16,
-  keys: -18,
-  lead: -18,
-  pad: -20,
-  fx: -20,
+const MINIMUM_LOUDNESS_BY_ROLE: Readonly<Record<GeneratedInstrumentRole, number>> = {
+  'drum-low': -23,
+  'drum-mid': -33,
+  'drum-high': -34,
+  bass: -27,
+  keys: -27,
+  lead: -28,
+  pad: -24,
+  fx: -31,
 };
 
 function engineAndPreset(id: string, type: string): {
@@ -162,7 +158,7 @@ function motionFor(id: string): TimbralMotionContract {
 }
 
 /**
- * Exhaustive, runtime-neutral contracts for every generated picker voice.
+ * Exhaustive test contracts for every generated picker voice.
  * The array is derived from the picker vocabulary, so catalogue additions are
  * visible to the audit instead of silently escaping a hand-maintained test list.
  */
@@ -188,10 +184,7 @@ export const GENERATED_INSTRUMENT_QUALITY_PROFILES: readonly GeneratedInstrument
         durationsSeconds: transient ? [0.12, 0.35] : [0.18, 0.8],
         velocities: [40, 90, 127],
         motion: motionFor(instrument.id),
-        targetLoudnessLkfs: TARGET_LOUDNESS_BY_ROLE[role],
+        minimumLoudnessLkfs: MINIMUM_LOUDNESS_BY_ROLE[role],
       } satisfies GeneratedInstrumentQualityProfile];
     }),
   );
-
-export const GENERATED_INSTRUMENT_QUALITY_BY_ID: ReadonlyMap<string, GeneratedInstrumentQualityProfile> =
-  new Map(GENERATED_INSTRUMENT_QUALITY_PROFILES.map(profile => [profile.id, profile]));

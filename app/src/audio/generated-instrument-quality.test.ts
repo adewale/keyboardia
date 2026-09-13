@@ -2,9 +2,11 @@ import { describe, expect, it } from 'vitest';
 import { INSTRUMENT_GROUPS } from '../shared/instrument-catalog';
 import {
   GENERATED_INSTRUMENT_QUALITY_PROFILES,
+} from '../test/generated-instrument-quality-profiles';
+import {
   proceduralVelocityLowpassHz,
   toneVelocityLowpassHz,
-} from './generated-instrument-quality';
+} from './velocity-timbre';
 
 describe('generated instrument quality contracts', () => {
   it('covers every generated picker instrument exactly once', () => {
@@ -27,7 +29,7 @@ describe('generated instrument quality contracts', () => {
       expect(profile.noteOffsets.length, profile.id).toBeGreaterThan(0);
       expect(profile.durationsSeconds, profile.id).toHaveLength(2);
       expect(profile.velocities, profile.id).toEqual([40, 90, 127]);
-      expect(Number.isFinite(profile.targetLoudnessLkfs), profile.id).toBe(true);
+      expect(Number.isFinite(profile.minimumLoudnessLkfs), profile.id).toBe(true);
     }
   });
 
