@@ -82,6 +82,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 71: A Seed Policy Must Reach Every Vitest Project](#lesson-71-a-seed-policy-must-reach-every-vitest-project)
 - [Lesson 72: A Resource ID Is Scoped to the Environment That Owns It](#lesson-72-a-resource-id-is-scoped-to-the-environment-that-owns-it)
 - [Lesson 73: A Timestamp Contract Is Incomplete Until Policy and Ownership Move With It](#lesson-73-a-timestamp-contract-is-incomplete-until-policy-and-ownership-move-with-it)
+- [Lesson 74: An Objective Comparison Needs a Shared Observable, Not a Shared Vibe](#lesson-74-an-objective-comparison-needs-a-shared-observable-not-a-shared-vibe)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -6188,3 +6189,115 @@ anchor before zero even though a scheduled event may never occur there.
 When the same test disposition contract exists in CI and local hooks, update
 both from one reviewed result set; a green suite must not fail only because one
 copy of its expected inventory drifted.
+
+---
+
+## Lesson 74: An Objective Comparison Needs a Shared Observable, Not a Shared Vibe
+
+**Date:** September 2026
+**Context:** Phase 44 / Tone Nets comparison ([#98](https://github.com/adewale/keyboardia/pull/98))
+
+### What we misunderstood
+
+The first Tone Nets analysis mixed three different things: measurable
+architecture, inferred acoustic consequences, and preference language. Counts
+such as “99% of zones have reverb send” and “100% of samples loop” were real;
+“wins”, “better”, and “sounds cohesive because” were conclusions the counts did
+not prove. We also treated Tone Nets' universal loops as a feature to copy
+before asking whether Keyboardia had the short-sample problem those loops solve.
+
+The same category error appeared inside Keyboardia. A sampled-first-use fixture
+was allowed to stand near prose about startup generally even though it did not
+execute cold Tone instruments, cold advanced instruments, or whole-engine
+construction. The implementation record eventually acknowledged those domains
+as open, but status text still outran the tested matrix.
+
+### Why the audit found it and the earlier work did not
+
+Our earlier tools were strongest at code-local invariants: graph edges, manifest
+mappings, transfer functions, and one production capture fixture. They had no
+cross-product master-bus clock and no explicit inventory of startup domains.
+That left room for a persuasive static reading to become a comparative verdict,
+and for one green fixture to be remembered as broader evidence than it was.
+
+The audit forced two questions the implementation work had not:
+
+1. What exact observable can both products expose without asking a listener?
+2. Which product paths have never executed under that observable?
+
+The answer was first user action to first master-bus PCM, repeated in fresh
+browser contexts. Once the domain was enumerated, the missing Tone, advanced,
+and whole-engine runs were obvious.
+
+The first implementation of that answer still had a shared-observer flaw. A
+`ScriptProcessorNode` reports on the main thread, so a long task can delay the
+callback until the input buffer containing the true onset has already been
+replaced. Mapping the late callback through `getOutputTimestamp()` cannot
+reconstruct a frame the observer never retained. The wrapper around
+`AudioNode.connect` also rebuilt optional arguments, changing the legal call
+`connect(destination, undefined, 1)` into output index 1. Finally, the frozen
+Tone Nets receipt covered the visible bundles and SoundFont but omitted its
+stylesheet, parser worker, synth worklet, runtime, rendering bundle, and
+background media.
+These were measurement-instrument failures, not product-performance results,
+and the second audit found them only because it attacked the oracle and receipt
+instead of accepting their outputs.
+
+### What tooling and verification were missing
+
+- An audio-thread first-PCM tap attached before application code constructs the
+  graph. The worklet retains the absolute render frame and only then maps it to
+  the page clock; a calibration schedules audio at 0.1 s, blocks the main thread
+  for more than 700 ms, and requires the original frame to survive. Readiness
+  must be proven against a known pre-emission application boundary, not inferred
+  from observed silence: Keyboardia holds its awaited scheduler-release boundary
+  until the tap is ready, and Tone Nets records readiness before its first
+  source-to-master connection. A 250 ms-late pulsed control misses the first
+  pulse, retains thousands of silent frames, and reports the second pulse 400 ms
+  late. That counterexample stays in the suite so a silent-prefix heuristic
+  cannot return unnoticed.
+- Instrumentation-transparency controls for every intercepted API overload,
+  including explicit `undefined` and `AudioParam` destinations.
+- A matrix that names every claimed cold-start domain instead of generalizing
+  from the easiest sampled-instrument fixture.
+- Frozen external inputs. The Tone Nets runner now verifies all ten executed
+  HTML, CSS, JavaScript/worker, SoundFont, and background-media assets before
+  collecting a number.
+- Repeated trials with raw observations, min/median/p95, environment, and
+  workload boundaries. At five trials p95 is the observed maximum, a descriptive
+  tail check rather than a population estimate; a single run is not a
+  comparison and five runs do not establish device-general performance.
+- A claim taxonomy separating internal metric movement, objective
+  cross-product difference, and listener preference.
+- Topology-based feasibility review. A per-instrument reverb scalar sounds like
+  metadata work until the graph reveals that every track has already mixed
+  before the only room send.
+- Failure observability for proposed adaptive quality. Late-note and long-task
+  counters exist; output underruns/dropouts and voice steals do not, so an
+  automatic tier currently cannot prove it helped rather than merely silenced
+  work.
+
+### The sustain-loop correction
+
+Tone Nets' mean sample fragment is 158 ms, so its 100% loop rate is necessary.
+Keyboardia's eight sustaining instrument libraries have native-root medians of
+3.90–9.70 seconds. Generic loop insertion would add click, phase, periodicity,
+and data-curation risks without a measured failure. The correct deliverable was
+the narrower user contract: `validate:sustain-ceiling` fails if the median
+native-root usable duration of a classified sustaining instrument drops below
+two seconds. Add instrument-specific loops only when a requested-note
+render or real session demonstrates the need.
+
+### The rule
+
+**Before comparing products, write the observable, workload, domain, and claim
+level in one sentence.** If the products use different source material, do not
+turn spectral difference into quality. If a result covers one path, name that
+path in the result. If a competitor's mechanism solves a problem your measured
+data does not contain, guard the desired outcome instead of copying the
+mechanism.
+
+For performance comparisons, keep the external subject hash-pinned, retain all
+executed dependencies and all trials, report the environment and asymmetry,
+prove the observer under scheduler/main-thread stress, and make every
+unmeasured domain visible in the same ledger as the passes.

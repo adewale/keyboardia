@@ -6,6 +6,12 @@
 > synth-layer structure are implemented. No user-visible automatic-correction
 > analyser was added. Comparative listener preference remains a separate claim,
 > not an implementation-completeness gate.
+> Phase 44 later split “comparative” into objective shared-observable differences
+> and listener preference; see `PHASE-44-SOUND-CHANGES.md` §8. That clarification
+> does not close this plan's still-unrun Song Maker preference protocol.
+> Phase 44 §12 also records, but does not implement, the follow-on feasibility
+> decisions for sampled-note filter envelopes/LFOs, per-instrument room sends,
+> and device-specific quality tiers.
 > **Phase:** 43
 > **Date:** 2026-08-04
 > **Reassessed:** 2026-08-11
@@ -70,12 +76,15 @@ sample-content work is a re-diagnosis and re-review, not a promotion.
 
 Close the experienced gap between Keyboardia and Chrome Music Lab's Song Maker.
 "Experienced" deliberately includes the path to a coherent first loop, not
-only the waveform after a loop already exists. Keep two claim levels separate:
+only the waveform after a loop already exists. Keep three claim levels separate:
 
 1. **Internal improvement:** a Keyboardia bug is removed or a preregistered
    Keyboardia-only metric improves without breaking its guards.
-2. **Comparative improvement:** a matched Song Maker/Keyboardia capture or
-   first-contact study shows a preregistered benefit with uncertainty reported.
+2. **Objective cross-product difference:** both products expose the same
+   observable under disclosed workloads (for example user action to first PCM).
+   This may establish latency or capability coverage, not preference.
+3. **Listener preference:** a level-matched, randomized Song Maker/Keyboardia
+   study shows a preregistered preference with listener-level uncertainty.
 
 Repository and bundle inspection identified five working hypotheses—mix-bus
 dynamics, first-contact constraints, per-note variation, sample
@@ -115,7 +124,7 @@ proof:
 | Conservative panning would make the shipping mix wider | The procedural mono proxy widened, but the real acoustic/sample fixture began at −0.526 dB S/M and the planned preset moved to −2.951 dB while mono fold changed +1.055 dB | Auto-spread only sources Keyboardia creates as mono; center sampled/user audio unless explicitly placed |
 | More engine capability produces a better beginner result | Keyboardia already has the more capable engine; Song Maker still wins on constraint, coherent content, and immediacy | Shift investment from engine breadth to curation and first contact |
 | The example carousel solves seeded first contact | No test established equivalence; Song Maker opens directly on one constrained instrument/percussion canvas | Reopen the decision; prototype a guided path and measure it |
-| Keyboardia-only metrics can establish preference | They can establish regressions and internal improvement only | Require matched captures and listener-/participant-level intervals for comparative claims |
+| Keyboardia-only metrics can establish preference | They can establish regressions and internal improvement only | Use a shared observable for objective cross-product differences; require randomized listener-/participant-level intervals for preference claims |
 | Denser multisampling is the obvious content fix | July's blind review rejected every staged replacement | Curate and commission/review by ear; mapping density is a diagnostic, not the acceptance criterion |
 
 ## If starting again: revised execution order

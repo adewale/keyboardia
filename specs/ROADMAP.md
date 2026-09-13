@@ -3553,6 +3553,44 @@ The automatically verifiable follow-up has its own before/after receipt in
 Song Maker preference trial remains a release-quality listening task and is not
 represented as completed by automation.
 
+### Phase 44: Measured Sound Changes 🟡 Implemented / Device Gate Open
+
+Implement the highest-value, objectively testable findings from the frozen
+Tone Nets comparison without treating architectural difference as listener
+preference. The acceptance ledger and post-audit corrections live in
+[`PHASE-44-SOUND-CHANGES.md`](./PHASE-44-SOUND-CHANGES.md); the cross-product
+method and frozen asset receipt live in
+[`research/TONE-NETS-COMPARISON-2026-08.md`](./research/TONE-NETS-COMPARISON-2026-08.md).
+
+- Added calibrated velocity-to-brightness behavior to six tonal gain-only
+  sampled instruments across the complete 281-note audited domain, with safe
+  bypasses for default velocity, unsupported sample rates, and partial loading.
+- Made the measured bass-protected 0.15 room the new-session default while
+  keeping effects-absent legacy sessions dry.
+- Routed both final mobile graphs through the media-element output path; added
+  clock-liveness and idempotent Media Session lifecycle handling.
+- Replaced the generic sustain-loop proposal with a strict manifest-driven
+  median native-root duration guard for eight sustaining instruments.
+- Added repeatable first-master-PCM measurements for cold native, Tone, and
+  advanced Keyboardia paths, plus a hash-gated frozen Tone Nets reference.
+
+**Objective desktop outcome:** the whole-engine/native, cold Tone, and cold
+advanced paths measured 244.5/354.5/383.6 ms at the median on the retained
+Chromium/arm64 environment. The frozen Tone Nets first-contact path measured
+1,215.9 ms at the median under its disclosed larger workload. One Keyboardia
+advanced trial in the immediately preceding valid batch reached 755.9 ms; with
+five trials, reported p95 is the observed maximum rather than a population
+estimate. Phase 44's velocity, room, capacity, migration, and sustain gates
+pass. This is not a timbre or listener-preference ranking.
+
+**Open release gate:** physical iPhone Safari and Chrome with the ringer switch
+off, including added output-latency measurement. Candidate follow-ons — sampled
+filter-envelope/LFO motion, per-instrument room sends, and device quality tiers
+— are feasibility-assessed only and deliberately not represented as shipped.
+Per-instrument derived room defaults are the best next engine candidate;
+automatic device tiers remain blocked on dropout/voice-steal observability and
+a physical-device calibration matrix.
+
 ---
 
 ## Quick Start Commands

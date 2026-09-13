@@ -4,24 +4,27 @@
 **Driver**: `specs/research/TONE-NETS-COMPARISON-2026-08.md`
 **Predecessor**: `specs/SOUND-QUALITY-PARITY-PLAN.md` (Phase 43, implemented)
 **Status**: Implemented 2026-08-22; independently re-audited and corrected
-2026-09-13 (see §§10–11). Baselines in §1 originate at
+2026-09-13 (see §§8, 10–12). Baselines in §1 originate at
 `58264dd5ae274f63b1cd80b72aa823b76b21f28b` and were re-measured after the
 audit. Unit, offline-render, performance, and Chromium browser-capture gates
 pass. Silent-voice warm-up is not indicated by the first-use sampled fixture;
-that result is not generalized to cold Tone/advanced voices or whole-engine
-initialization. The physical-iPhone ringer-switch and device-latency gate
+the previously open cold Tone, advanced, and whole-engine domains are now
+measured in §8. The physical-iPhone ringer-switch and device-latency gate
 remains open and is not inferred from CI.
 
-This plan keeps Phase 43's two claim levels:
+This plan now distinguishes three claim levels:
 
 1. **Internal improvement** — a bug is removed, or a preregistered
    Keyboardia-only metric moves without breaking its guards.
-2. **Comparative improvement** — a matched capture or first-contact study
-   shows a preregistered benefit with uncertainty reported.
+2. **Objective cross-product difference** — the same observable is collected
+   repeatedly on both products, with the different workloads disclosed. This
+   can establish latency or capability coverage; it cannot establish taste.
+3. **Listener preference** — a level-matched, randomized first-contact study
+   shows a preregistered preference with uncertainty reported.
 
-**Nothing here claims level 2.** No listening test was run, and none of these
-changes should be described as making Keyboardia sound better than anything
-until one is.
+§8 makes a level-2 startup comparison. **Nothing here claims level 3.** No
+listening test was run, and none of these changes should be described as
+making Keyboardia sound better than another product until one is.
 
 ---
 
@@ -205,7 +208,7 @@ exclusion of already-layered instruments.
 **Reconsidered limits (2026-08-22).** Two consequences of this design deserve
 stating as plainly as its benefits:
 
-1. **The bypass caps the audible payoff.** Every unlocked step — the default,
+1. **The bypass caps the measured scope.** Every unlocked step — the default,
    and most notes in most sessions — renders through the bypassed graph by
    construction. The change makes the velocity lane expressive; it does not
    change how a session with no volume locks sounds at all. Tone Nets' filter
@@ -215,9 +218,8 @@ stating as plainly as its benefits:
 2. **A static cutoff is one of three per-voice elements, not all of them.**
    The SF2 bank pairs its velocity-dependent cutoff with a filter *envelope*
    on 89% of zones and a vibrato LFO on 100% — the attack-opens-filter motion
-   the comparison credited as a large part of why that bank reads as "played".
-   This change supplies the velocity slice only; per-note motion stays out of
-   scope (see §9).
+   that the comparison identified structurally. This change supplies the
+   velocity slice only; per-note motion stays out of scope (see §9).
 
 **Effort.** Medium. **Claim level:** internal metric improvement.
 
@@ -232,8 +234,9 @@ not support acting on it**, and this plan drops it:
 - The sustaining instruments already hold far longer than any realistic tied
   note: `string-section` 9.34 s, `french-horn` 9.70 s, `alto-sax` 5.86 s,
   `clean-guitar` 5.10 s. `hammond-organ` is the one instrument that declares a
-  loop, and it is also the one whose samples are shortest among the sustainers —
-  consistent, not coincidental.
+  loop, but its 4.48 s median is not the shortest sustaining library
+  (`finger-bass` is 3.90 s). Loop presence therefore does not establish that
+  the other libraries need loops.
 - A note *can* exceed those ceilings — 60 BPM with a 128-step track fully tied
   is 32 s — but that is an extreme session, not the common case.
 - The two genuinely short instruments, `slap-bass` (0.42 s) and
@@ -242,7 +245,7 @@ not support acting on it**, and this plan drops it:
 
 **Instead:** add a library-level regression guard so a future sample swap
 cannot degrade the typical root silently. Assert that every *sustaining*
-instrument's **median native-root** usable seconds exceeds the longest tied
+instrument's **median native-root** usable seconds is at least the longest tied
 note in a 16-step bar at 120 BPM (2 s). This is not a claim that every pitched
 note holds for two seconds: `finger-bass` has a measured 1.94 s minimum, and
 pitch shifting changes wall-clock duration. Any broader playback claim needs a
@@ -332,13 +335,13 @@ should not be described as one in a changelog.
 
 | Change | What | Measurable impact | Effort |
 |---|---|---|---|
-| **Voice warm-up** | Measure before adding silent voices | One first-use priority-loaded `slap-bass` fixture with a preinitialized dry master: 28–44 ms DOM-click-event-to-audible across three isolated runs; onset-aligned first/steady spread ≤0.0089 dB peak and ≤0.0022 dB RMS | **Not indicated for this sampled fixture:** silent playback would perturb round-robin/choke state; this does not establish cold Tone/advanced or whole-engine behavior |
+| **Voice warm-up** | Measure before adding silent voices | One first-use priority-loaded `slap-bass` fixture with a preinitialized dry master: 28–44 ms DOM-click-event-to-audible across three isolated runs; the separate cold matrix in §8 measures native, Tone, and advanced first sound | **Not indicated for the sampled fixture only:** the cold matrix establishes first-output latency, but does not compare first-note versus steady-state latency in the other three domains; silent playback would perturb round-robin/choke state |
 | **Clock-liveness gate** | Every transport start samples `currentTime` after any resume path, including already-`running`, gesture-resumed, suspended, and interrupted contexts | Helper tests cover frozen/advance/timeout; engine and transport tests fail if the caller omits the check. Timeout is non-fatal but logged; cancellation prevents an obsolete start. | Small |
 | **`navigator.mediaSession`** | Lock-screen transport and metadata | Play and pause are idempotent state commands across pending startup, cancellation, independently paused output, and active transport—not toggles. Lifecycle integration tests exercise each state. | Small |
 
 ---
 
-## 7. Ordering
+## 7. Implementation order (historical)
 
 1. **Change 1 (mobile output).** Silence versus sound outranks timbre. It is
    also independent of everything else here.
@@ -351,15 +354,68 @@ should not be described as one in a changelog.
    the legacy-session bit-identical guard first.
 5. **§6 items**, as capacity allows.
 
-## 8. What would make any of this a comparative claim
+## 8. Objective Keyboardia-versus-Tone-Nets comparison
 
-None of the above. Phase 43 left one gap open and this plan does not close it:
-a matched capture of Keyboardia against a reference app, and a first-contact
-listening study with its uncertainty reported. Until that exists, every
-statement in this plan is about Keyboardia's own measurements moving, and
-should be written that way in commits, changelog, and release notes.
+The comparison is deliberately about **observable improvements**, not whether
+one timbre is more pleasing. A spectral distance between the two products
+would mostly measure different samples, instruments, note scheduling, and
+arrangements; smaller distance would mean “more similar”, not “better”. The
+valid cross-product measurements are therefore capability coverage and a
+single product-boundary performance observable: user start action to first PCM
+at each product's master bus.
 
-## 9. Scorecard: the gap with and without this plan
+On 2026-09-13, Playwright Chromium 143 on an arm64 Mac at 48 kHz ran five
+fresh-browser-context trials per path against warm local servers. An
+`AudioWorkletProcessor` scans each render quantum, retains the exact absolute
+frame of the first master-bus sample at or above `1e-4`, and maps that frame to
+the page clock with `AudioContext.getOutputTimestamp()`. A control recovered a
+source scheduled at context time 0.1 s with 0 ms frame error while the main
+thread was deliberately blocked for more than 700 ms. Observer readiness is
+also bound to a known pre-emission application event: Keyboardia holds the
+awaited scheduler-release boundary until the worklet is ready, while Tone Nets
+requires readiness before its first source-to-master connection. The
+Keyboardia wait is included in its latency. A deliberately 250 ms-late pulsed
+observer still retained a positive silent prefix but measured the second pulse
+400 ms after the true first pulse; the boundary rule rejected the case that the
+old silent-prefix heuristic would have accepted. The observer is a zero-gain
+side branch and does not replace the audible route.
+Keyboardia starts from a loaded session page and times the first transport
+click. Tone Nets starts from its loaded landing page and times MIDI selection,
+its required first-contact action. Its path includes MIDI ingest, fetch/parse
+of the 7,557,598-byte SF2, deliberate stabilization delays, worklet creation,
+and warm-up notes. That is a meaningful product-boundary comparison, but not
+an equal-work microbenchmark.
+
+| Product/path | Min | Median | p95 (= max at n=5) | Tone Nets / path median |
+|---|---:|---:|---:|---:|
+| Keyboardia whole engine + native `synth:lead` | 243.0 ms | **244.5 ms** | 270.1 ms | 4.97× |
+| Keyboardia cold Tone `tone:fm-epiano` | 345.9 ms | **354.5 ms** | 375.3 ms | 3.43× |
+| Keyboardia cold advanced `advanced:supersaw` | 370.0 ms | **383.6 ms** | 398.5 ms | 3.17× |
+| Tone Nets first MIDI/SF2 sound | 1,195.2 ms | **1,215.9 ms** | 1,243.8 ms | 1.00× |
+
+This establishes that the tested Keyboardia medians are 68.4–79.9% lower than
+Tone Nets' tested first-contact median on this machine. An immediately preceding
+valid five-trial Keyboardia batch recorded one 755.9 ms advanced contention
+outlier (its engine-exposed and Tone-ready milestones were delayed in the same
+trial), although the final retained batch's advanced maximum is 398.5 ms. At
+n=5, reported p95 is the observed maximum, not a population tail estimate. It
+does **not** establish that Keyboardia's engine is universally faster, that a
+different device preserves the ratio, or that listeners prefer its output.
+
+The Keyboardia matrix is a gating E2E test and writes
+`test-results/audio-capture/browser-cold-startup-matrix.json`. Tone Nets is
+measured by `npm run measure:tone-nets-startup`; the script refuses to run if
+any of the ten frozen HTML, CSS, JavaScript, SoundFont, or background-media assets
+differs from the §7 hashes in the comparison document. Both retain every trial
+rather than only the median. The final paired raw values and control results
+are checked in as
+[`TONE-NETS-STARTUP-RECEIPT-2026-09-13.md`](./research/TONE-NETS-STARTUP-RECEIPT-2026-09-13.md).
+
+The remaining comparative gap is now named correctly: **listener preference**,
+not “a matched capture”. A matched timbre capture without a validated perceptual
+endpoint would be objective data attached to an invalid quality inference.
+
+## 9. Scorecard: original baseline versus audited state
 
 Added 2026-08-22, after re-verifying both anchors: `origin/main` is still the
 pinned `58264dd`, and the live Tone Nets deploy hashes byte-identical to the
@@ -367,34 +423,34 @@ pinned `58264dd`, and the live Tone Nets deploy hashes byte-identical to the
 fingerprints, same 7,557,598-byte SoundFont). Both sides of the comparison are
 frozen, so the baseline numbers stand.
 
-**The branch that carries this plan ships no engine change.** It adds the
-measurement scripts, this plan, and unit-gate timeout fixes; the shipped sound
-today is byte-identical with or without it. "With" below therefore means "if
-every change in §2–§6 lands as specified".
+The plan is implemented. “Current” below means the audited PR state, not the
+original 2026-08-19 baseline.
 
-| Dimension | Without (today) | With §2–§6 landed | Remaining vs Tone Nets |
+| Dimension | Original baseline | Current audited state | Remaining vs Tone Nets |
 |---|---|---|---|
-| Mobile audibility (iOS ringer switch) | silent | audible — gated on a physical-device pass, not CI | none, once the device test passes |
-| Velocity → timbre, sampled path | 0% centroid spread on 12/26 instruments | 26–35% band on locked steps for six tonal gain-only instruments, verified at every playable note at 44.1/48 kHz | unlocked steps unchanged by design; no response above v90 |
+| Mobile audibility (iOS ringer switch) | direct Web Audio destination | final media-element route implemented; physical result unclaimed | physical iPhone ringer-off and latency gate |
+| Velocity → timbre, sampled path | 0% centroid spread on 12/26 instruments | 29.7–30.3% v40-v127 centroid drop on 281 requested notes for six tonal gain-only instruments; v≥90 bypass | unlocked steps unchanged by design; no time-varying filter motion |
 | Per-note motion (filter envelope, LFO) | none | none — out of scope | full gap: SF2 has a filter envelope on 89% of zones, LFO on 100% |
-| Default space | `reverb.wet: 0` | 0.15 bass-protected, new sessions only | per-instrument depth — the SF2 balances sends per zone; ours is one global wet (§4.9 of the comparison, not committed here) |
-| Startup (warm-up, clock-liveness) | clock trusted state; warm-up only a hypothesis | liveness closed; one sampled first-use fixture does not indicate voice warm-up | cold Tone/advanced and physical/browser lifecycle states remain open domains |
-| `navigator.mediaSession` | absent | closed if §6 lands | — |
+| Default space | `reverb.wet: 0` | 0.15 bass-protected, new sessions only; browser tail/body/peak/LU/pumping gates pass | per-instrument depth — Tone Nets carries sends per zone |
+| Startup (warm-up, clock-liveness) | clock trusted state; warm-up only a hypothesis | liveness gate plus sampled-first-use and three-domain cold matrix; retained medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced outlier | device matrix; no silent warm-up indicated for the sampled fixture only |
+| `navigator.mediaSession` | absent | idempotent play/pause lifecycle implemented and tested | — |
 | Device quality tiers | none | none — not carried into this plan | comparison §4.8 remains open |
-| Source material | Keyboardia ahead | unchanged | our advantage either way |
-| Timing / multiplayer | Keyboardia ahead | unchanged | our advantage either way |
-| Comparative listening evidence | none | none | unchanged — §8 still applies to every row above |
+| Source material | 582 files / 36 MB with real layers and round robins | unchanged | different breadth/structure trade-off; no preference claim |
+| Timing / multiplayer | worklet scheduler, live collaborative transport | unchanged | Tone Nets has a different fixed-MIDI timing job |
+| Objective cross-product evidence | static architecture only | repeated first-contact PCM measurement with frozen assets | device generalization |
+| Listener preference evidence | none | none | randomized, level-matched study if a preference claim is wanted |
 
-What the branch *did* change is the epistemics: the gap is now instrumented.
+The implementation also changed the epistemics: the gap is now instrumented.
 `measure:velocity-timbre` and `simulate:velocity-filter` re-derive every number
 in this table from the shipped assets, so after any landing the same commands
 show exactly which rows moved.
 
 ## 10. Implementation record (2026-08-22)
 
-What shipped, and in which lane each preregistered target was verified.
-Claim level for everything here: **internal improvement** (§8 unchanged —
-no comparative claim).
+What shipped, and in which lane each preregistered target was verified. Product
+changes are **internal improvements**; the frozen-reference startup row is an
+**objective cross-product difference** under the disclosed asymmetric
+workloads. Neither is a listener-preference claim.
 
 The audit now uses one acceptance ledger so broad completion statements cannot
 outrun their evidence:
@@ -411,7 +467,9 @@ outrun their evidence:
 | Default room | Tone effects + real master chain | Chromium deterministic probe + 16-track capacity fixture | corrected tail boundary; bass-body/peak/LU bounds; capacity pumping against dry | passed |
 | Legacy room migration | HTTP hydration + real master chain | effects-absent stored session | exact dry state plus live render at explicit-dry repeat null | passed |
 | Sampled first use | preload + scheduler + sampled voice | priority-loaded `slap-bass`, five hits; master preinitialized | 28–44 ms DOM event to audible; onset-aligned ≤0.0089/0.0022 dB peak/RMS spreads | no voice warm-up indicated in this fixture |
-| Sustaining library statistic | validator | eight classified manifests | median native-root duration >2 s; no every-note claim | passed |
+| Cold engine startup | transport + engine/preload + master output | five fresh contexts each for native, Tone, advanced | audio-thread-retained first master-PCM frame; scheduler-boundary, pulsed-late-install, overload, and 700 ms main-thread-block controls | passed; retained medians 244.5/354.5/383.6 ms; preceding-batch max 755.9 ms disclosed |
+| Frozen Tone Nets reference | external first-contact path | five fresh contexts; exact ten-asset hash gate | MIDI selection to audio-thread-retained first master-PCM frame; readiness before first master input | measured; median 1,215.9 ms |
+| Sustaining library statistic | validator | eight classified manifests | median native-root duration ≥2 s; no every-note claim | passed |
 | Physical mobile output | final media-element route | Safari + Chrome iOS, ringer off | physical audition and latency capture | **open release gate** |
 
 - **Change 2 — velocity → cutoff** (`velocity-sample-filter.ts`,
@@ -462,8 +520,11 @@ outrun their evidence:
   commands across pending and active states. Clock liveness is sampled at every
   playback boundary as well as after a gesture resume, including when state is
   already `running`. The browser capture finds no silent-voice warm-up benefit
-  for its first-use sampled fixture. It deliberately makes no broader cold Tone,
-  advanced-instrument, or whole-engine claim.
+  for its first-use sampled fixture. A separate five-trial-per-domain browser
+  test now measures cold Tone, advanced-instrument, and whole-engine first PCM;
+  retained medians were 244.5/354.5/383.6 ms on the recorded environment. One
+  advanced trial in the immediately preceding valid batch reached 755.9 ms
+  under same-trial initialization contention.
 - **Measurement correction** (`measure-velocity-timbre.ts`). Velocity layers
   are paired within note and articulation, round robins are averaged within
   each pair, single-layer notes contribute zero, and decoded onset treatment
@@ -553,6 +614,18 @@ same simplified models:
     first-use probe now timestamps the DOM event itself and aligns every hit to
     its observed onset, avoiding both Playwright-dispatch latency and scheduler
     phase error.
+13. **The comparison initially trusted a main-thread audio observer and a
+    partial external receipt.** `ScriptProcessorNode` can lose the actual onset
+    buffer during a long main-thread stall, and `getOutputTimestamp()` cannot
+    reconstruct samples the callback never saw. The connect shim also rebuilt
+    optional arguments, changing an explicit-`undefined` overload. The final
+    oracle retains the exact first-PCM frame in an AudioWorklet, proves it under
+    a 700 ms main-thread block, preserves and tests connect overloads, and hash-
+    gates all ten executed Tone Nets startup assets rather than four visible
+    entry assets. A later audit showed that a positive silent prefix still does
+    not prove early attachment: a late observer can miss one pulse, collect
+    silence, and report the next. The oracle now binds readiness to each app's
+    known pre-emission boundary and keeps the pulsed counterexample as a guard.
 
 The pre-audit suites were green because their oracles were built from the same
 assumptions as the implementation: one note, one route, filename-derived or
@@ -569,6 +642,38 @@ failures inside it.
 The remaining Phase 44 release evidence gap is irreducibly physical: CI cannot
 prove behavior with an iPhone ringer switch or measure that device's added
 output latency. That manual Safari/Chrome iOS pass remains a release gate rather
-than a claim inferred from WebKit or Chromium emulation. The broader comparative
-gap in §8—a matched reference capture and first-contact listening study—also
-remains, so none of these internal results becomes a comparative sound claim.
+than a claim inferred from WebKit or Chromium emulation. §8 closes the objective
+desktop first-contact comparison; a randomized, level-matched listening study
+remains necessary only if release language asserts listener preference.
+
+## 12. Feasibility of the three remaining Tone Nets-inspired features
+
+These are implementation decisions derived from the current production graph,
+not from a belief that copying Tone Nets must sound better.
+
+| Candidate | Viability | Likely objective impact | Required proof | Decision |
+|---|---|---|---|---|
+| Sampled-note filter envelopes and LFOs | **Medium.** Native and advanced synths already have both; only the sampled path is missing them. An envelope can automate the existing `BiquadFilterNode`, but motion on default-velocity notes would remove the deliberate v≥90 byte-identical bypass. A per-note Web Audio LFO adds an oscillator and gain node per active sampled voice; a shared/worklet design is cheaper but changes retrigger/phase semantics. | Moves sampled per-note motion from 0 configured instruments toward an explicit subset; creates measurable time-varying centroid/pitch/amplitude instead of a static velocity cutoff. CPU/node count and legacy-session timbre also rise. | Opt-in manifest schema; attack/hold/release centroid trajectories; v90 legacy null for instruments without the option; 16-track capacity, late-note, long-task, and voice-cleanup gates; ablation with motion disabled. | **Prototype after Phase 44, do not roll out globally.** Start with filter envelopes on 2–3 sustaining tonal instruments. Add LFO only after capacity data chooses per-voice versus shared/worklet architecture. |
+| Per-instrument reverb-send depth | **Medium-high.** The current room send is after all track buses have already mixed, so a scalar cannot simply be added to the manifest. `TrackBus` needs a post-fader/post-pan send feeding a shared reverb input while its dry output continues to master. Defaults can be derived from instrument ID without changing session schema; user-authored overrides would require synced state. | Allows the existing measured 0.15 room to keep drums/bass drier while lengthening tonal tails. It narrows the structural gap from one global send toward Tone Nets' per-zone sends, but does not prove a preferred mix. | Graph-termination and no-double-dry tests; send=0 dry null; send ordering across preregistered instrument classes; existing bass-body, peak, LU, tail, and 16-track pumping gates; instrument-change lifecycle test. | **Best next engine candidate.** Implement class/instrument defaults first, with no UI or session field, then decide whether authored overrides justify schema work. |
+| Device-specific quality tiers | **Conditional.** Keyboardia already has an iOS cache tier, but its allocation models differ: native has one global 16-voice pool, advanced has eight voices per track, and the Tone path reuses one monophonic instance per base synth type rather than an eight-voice pool; pitch-shift grain size is 1024. UA-only mobile classification is too coarse; `deviceMemory` is absent on Safari and `hardwareConcurrency` may be clamped. | Can trade polyphony where a pool exists, graph cost, and pitch-shift latency/quality to reduce late notes and long tasks on constrained devices, or increase headroom on proven desktop hardware. A wrong tier silently lowers quality or steals notes. | Physical low/mid/high device matrix; dropped/late-note and voice-steal counters (current metrics have late notes and long tasks but no audio-underrun/dropout counter); spectral/latency tests for each grain size; deterministic override and safe fallback. | **Not viable as an automatic default yet.** First add dropout/voice-steal observability and a local Auto/Eco/High override, then calibrate thresholds on physical devices. Do not copy Tone Nets' `isMobile()` switch. |
+
+The priority follows expected information gain: per-instrument sends reuse the
+room whose safety is already measured; sampled motion needs a constrained
+prototype to discover its CPU and migration cost; quality tiers cannot be
+trusted until the engine can observe the failures they are meant to prevent.
+
+## 13. Completion boundary and open work
+
+Phase 44's code and desktop automated gates are implemented. The following
+items must not be collapsed into that statement:
+
+| Item | Phase 44 status | What closes it |
+|---|---|---|
+| Physical mobile output | **Open release gate** | Safari and Chrome on a physical iPhone with ringer off, plus added output-latency measurement |
+| Startup generalization | **Measured on one desktop environment only** | preregistered physical/device/browser matrix; five-trial p95 here is the observed maximum, not a population tail estimate |
+| Silent voice warm-up | **Rejected only for the sampled `slap-bass` fixture** | first-note-versus-steady ablations for native, Tone, and advanced paths before making a broader claim |
+| Sustain loops | **Deliberately demoted, not missing** | no action while the manifest-driven duration guard passes; add instrument-specific loops only after a requested-note/session failure |
+| Sampled filter envelopes/LFOs | **Feasibility assessed; not implemented** | the constrained prototype and gates in §12 |
+| Per-instrument reverb sends | **Feasibility assessed; not implemented** | derived-default graph prototype and gates in §12; schema/UI only if authored overrides are justified |
+| Device quality tiers | **Not viable for automatic rollout yet** | dropout/underrun and voice-steal observability, local override, then physical calibration |
+| Listener preference | **Unmeasured and outside the objective comparison** | randomized, level-matched listener study with confidence intervals, only if preference language is desired |

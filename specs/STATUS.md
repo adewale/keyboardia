@@ -2,7 +2,7 @@
 
 > Current version: **0.2.1**
 
-## Current Phase: Phase 43 — Sound Quality Parity
+## Current Phase: Phase 44 — Measured Sound Changes
 
 ### Overview
 
@@ -53,6 +53,7 @@
 | 41 | Not Started | Public API |
 | 42 | Not Started | Admin Dashboard & Operations |
 | 43 | ✅ Implemented | Sound Quality Parity (automated gates complete; human Song Maker preference trial pending) |
+| 44 | 🟡 Implemented / device gate open | Velocity timbre, new-session room, mobile media route, startup/sustain evidence complete; physical iPhone ringer-off/latency gate pending; sampled motion, per-instrument sends, and quality tiers assessed but not implemented |
 
 ---
 
@@ -1088,6 +1089,7 @@ VelocityOverview was removed from scope because it provided information without 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 ### Recently Completed
+- **Phase 44:** Measured Sound Changes — audited velocity filter, room default, mobile/media lifecycle, sustain guard, and cold-start comparison; physical iPhone evidence remains, while the three Tone Nets-inspired candidates are documented follow-ons rather than Phase 44 deliverables 🟡
 - **Phase 43:** Sound Quality Parity — measured master bus, dynamics/defaults, calibrated samples, pan, reverb, deeper synths, and procedural drums ✅
 - **Phase 34:** Performance & Reliability — 41% bundle reduction (934KB → 547KB), Suspense skeletons, CLS elimination ✅
 - **Phase 33:** Playwright E2E Testing — 1048 tests across 27 files, WebSocket tests local-only ✅

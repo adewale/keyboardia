@@ -18,11 +18,12 @@
  * Run: npx tsx scripts/validate-sustain-ceiling.ts
  */
 
-import { SUSTAINING_INSTRUMENT_IDS } from '../src/shared/instrument-classification';
+import {
+  meetsSustainCeilingFloor,
+  MIN_SUSTAINING_MEDIAN_USABLE_SECONDS,
+  SUSTAINING_INSTRUMENT_IDS,
+} from '../src/shared/instrument-classification';
 import { measureInstrument } from './measure-velocity-timbre';
-
-/** One 16-step bar at 120 BPM fully tied: 16 × (60/120/4) s. */
-const MIN_MEDIAN_USABLE_SECONDS = 2;
 
 async function main(): Promise<void> {
   const failures: string[] = [];
@@ -35,10 +36,10 @@ async function main(): Promise<void> {
       continue;
     }
     const median = measurement.usableSeconds.median;
-    const ok = median >= MIN_MEDIAN_USABLE_SECONDS;
-    rows.push(`  ${ok ? '✅' : '❌'} ${instrumentId.padEnd(18)} median ${median.toFixed(2)}s (floor ${MIN_MEDIAN_USABLE_SECONDS}s)`);
+    const ok = meetsSustainCeilingFloor(median);
+    rows.push(`  ${ok ? '✅' : '❌'} ${instrumentId.padEnd(18)} median ${median.toFixed(2)}s (floor ${MIN_SUSTAINING_MEDIAN_USABLE_SECONDS}s)`);
     if (!ok) {
-      failures.push(`${instrumentId}: median usable ${median.toFixed(2)}s < ${MIN_MEDIAN_USABLE_SECONDS}s`);
+      failures.push(`${instrumentId}: median usable ${median.toFixed(2)}s < ${MIN_SUSTAINING_MEDIAN_USABLE_SECONDS}s`);
     }
   }
 
@@ -50,7 +51,7 @@ async function main(): Promise<void> {
     process.exitCode = 1;
     return;
   }
-  console.log('\n✅ All sustaining instruments hold past the longest 16-step tied note.');
+  console.log('\n✅ All sustaining instruments cover the longest 16-step tied note.');
 }
 
 await main();
