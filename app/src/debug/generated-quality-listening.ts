@@ -210,7 +210,7 @@ function vote(choice: BlindChoice, manifest: Manifest): void {
 }
 
 async function initialize(): Promise<void> {
-  const assetRoot = new URL('./__generated-quality-listening/', import.meta.url);
+  const assetRoot = new URL('./__generated-quality-listening/', window.location.href);
   const response = await fetch(new URL('manifest.json', assetRoot), { cache: 'no-store' });
   if (!response.ok) throw new Error(`Listening manifest unavailable (${response.status})`);
   const manifest = await response.json() as Manifest;
