@@ -1,14 +1,37 @@
 {
-  "baselineCommit": "0d1834fea373611709cbb0789b1b0374d91f7293",
-  "command": "npm run build",
+  "capturedAt": "2026-09-13T21:51:23Z",
+  "baselineCommit": "45522181ffa8d21c0a814194d10b3bae6afecaea",
+  "baselineTree": "191f62a33e7dd56566d49cce7a380293712fbcc1",
+  "candidateCommit": "4f45de1926a05343b33ca36390d42366d46c5a3f",
+  "command": "npm run build (Vite 7.3.6), gzipSync default compression",
   "mainChunk": {
-    "beforeBytes": 525155,
-    "afterBytes": 526274,
-    "deltaBytes": 1119,
-    "deltaPercent": 0.213075,
-    "beforeGzipBytes": 156225,
-    "afterGzipBytes": 156643,
-    "deltaGzipBytes": 418,
-    "deltaGzipPercent": 0.267351
+    "beforeBytes": 525005,
+    "afterBytes": 527457,
+    "deltaBytes": 2452,
+    "deltaPercent": 0.467043,
+    "beforeGzipBytes": 156187,
+    "afterGzipBytes": 156911,
+    "deltaGzipBytes": 724,
+    "deltaGzipPercent": 0.463547
+  },
+  "toneChunk": {
+    "beforeBytes": 268121,
+    "afterBytes": 269800,
+    "deltaBytes": 1679,
+    "deltaPercent": 0.62621,
+    "beforeGzipBytes": 66111,
+    "afterGzipBytes": 66307,
+    "deltaGzipBytes": 196,
+    "deltaGzipPercent": 0.296471
+  },
+  "combinedJavaScript": {
+    "beforeBytes": 793126,
+    "afterBytes": 797257,
+    "deltaBytes": 4131,
+    "deltaPercent": 0.52085,
+    "beforeGzipBytes": 222298,
+    "afterGzipBytes": 223218,
+    "deltaGzipBytes": 920,
+    "deltaGzipPercent": 0.413859
   }
 }

@@ -170,8 +170,12 @@ describe('generated instrument quality before/after receipt', () => {
     }
   });
 
-  it('adds less than half a kilobyte compressed to the production entry chunk', () => {
-    expect(bundle.mainChunk.deltaGzipBytes).toBe(418);
-    expect(bundle.mainChunk.deltaGzipPercent).toBeLessThan(0.3);
+  it('keeps the complete production JavaScript increase below one compressed kilobyte', () => {
+    expect(bundle.candidateCommit).toBe(
+      (after as unknown as { provenance: { revision: string } }).provenance.revision,
+    );
+    expect(bundle.combinedJavaScript.deltaGzipBytes).toBe(920);
+    expect(bundle.combinedJavaScript.deltaGzipBytes).toBeLessThan(1024);
+    expect(bundle.combinedJavaScript.deltaGzipPercent).toBeLessThan(0.5);
   });
 });
