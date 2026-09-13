@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
 import { defineConfig } from 'vitest/config';
-import { resolveFastCheckSeed } from '../../src/test/fast-check-seed';
+import { resolveFastCheckSeed } from '../../src/test/fast-check-seed.ts';
 
 const fastCheckSeed = resolveFastCheckSeed(process.env.FC_SEED);
 
