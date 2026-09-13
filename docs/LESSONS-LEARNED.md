@@ -5973,14 +5973,26 @@ The subject was innocent all four times. Anti-pattern #14 (asserting
 through fault-masking layers) is usually written about production code; the
 test rig earns the same suspicion.
 
+PR #98 added a fifth form after merging the current base. On Linux, every one
+of 4,735 unit assertions passed, then Vitest 4 failed teardown because ten
+`onUserConsoleLog` RPCs from the long native-audio range render were still
+pending. The per-instrument messages duplicated a JSON receipt the test had
+already written. Removing that redundant worker console stream made the
+durable receipt the evidence and removed an asynchronous teardown dependency
+from the gate. The same run warned that Vitest 4 had removed the repository's
+`poolOptions` block; because its min/max values were `undefined`, deleting the
+dead configuration preserved behavior and restored a warning-free lane.
+
 ### The rule
 
 Before attributing a failure to the subject, rule out the harness: make
 reporters distinguish timeout from assertion, drain setup traffic before
 absence checks, keep sabotage and observation in separate working trees,
 and construct test states only through paths the production reducer could
-take. Green runs carry the mirror risk — a lane that can quietly do less
-work than it claims (Lesson 69).
+take. Long worker tests should write evidence to a receipt, not depend on
+console transport completing during environment teardown. Green runs carry
+the mirror risk — a lane that can quietly do less work than it claims
+(Lesson 69).
 
 ---
 

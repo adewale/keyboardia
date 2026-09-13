@@ -33,14 +33,9 @@ export default defineConfig({
     // tests touch the audioEngine singleton, threads + isolate is the
     // right tradeoff.
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        // Use available cores; default is half-cpu-count which leaves
-        // headroom on the table.
-        maxThreads: undefined,
-        minThreads: undefined,
-      },
-    },
+    // Vitest 4 owns the adaptive worker count when maxWorkers is omitted.
+    // The former poolOptions.threads block was removed in Vitest 4 and its
+    // undefined min/max values never constrained the pool.
     // Default to node — fast (~1ms boot per file vs ~450ms for jsdom).
     // Tests that actually need a DOM opt in via the file-level directive:
     //   // @vitest-environment jsdom

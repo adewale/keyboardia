@@ -156,7 +156,6 @@ describe.skipIf(!webAudio)('instrument range — headless offline render (layer 
       }
 
       const silentRendered = notes.filter(x => x.sourceCreated && x.peak < SILENCE_PEAK);
-      const audible = notes.filter(x => x.peak >= SILENCE_PEAK).length;
 
       expect(
         silentRendered,
@@ -166,13 +165,6 @@ describe.skipIf(!webAudio)('instrument range — headless offline render (layer 
         notes.some(x => x.pitch === 0 && x.sourceCreated && x.peak >= SILENCE_PEAK),
         `${manifest.id} default dropped-step pitch should render audible audio`,
       ).toBe(true);
-
-      console.log(
-        `${manifest.id.padEnd(22)} ${audible}/${count} audible  (${notes.filter(x => !x.sourceCreated).length} range-skipped)` +
-          (silentRendered.length
-            ? `  ⚠ ${silentRendered.length} source-but-inaudible @ ${silentRendered.map(x => x.pitch).join(',')}`
-            : '')
-      );
 
       summary.push({
         id: manifest.id,
@@ -201,6 +193,11 @@ describe.skipIf(!webAudio)('instrument range — headless offline render (layer 
         2
       ) + '\n'
     );
+
+    // Keep the evidence in the receipt above, not in per-instrument console
+    // messages. Vitest 4 transports worker console calls over RPC; on slower
+    // Linux runners this long native-audio test could finish with those calls
+    // still pending and fail teardown even though every assertion passed.
 
     // Not a sanity check: this suite builds its cases from readdirSync, so an
     // empty or renamed public/instruments produced zero notes, zero comparisons
