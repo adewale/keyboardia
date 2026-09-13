@@ -9,7 +9,7 @@ export const PROCEDURAL_SOURCE_GAIN_DB = Object.freeze({
   kick: 0, snare: 1, hihat: -4, clap: -4, tom: -2, rim: -5,
   cowbell: -6, openhat: -4, shaker: -6, conga: -3, tambourine: -6,
   clave: -5, cabasa: -6, woodblock: -4, bass: -1, subbass: -1,
-  lead: -10, pluck: -1, chord: -6, pad: -5.5, zap: -5, noise: -8,
+  lead: -10, pluck: -0.25, chord: -6, pad: -5.7, zap: -5, noise: -8,
 } satisfies Record<string, number>);
 
 export const SYNTH_SOURCE_GAIN_DB = Object.freeze({
