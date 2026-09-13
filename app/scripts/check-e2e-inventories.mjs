@@ -4,7 +4,20 @@ import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
+const repoRoot = resolve(appRoot, '..');
 const e2eRoot = resolve(appRoot, 'e2e');
+
+function readDispositionContract(path, resultFile) {
+  const source = readFileSync(path, 'utf8');
+  const escapedResultFile = resultFile.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = source.match(new RegExp(
+    `assert-playwright-stats\\.mjs\\s+\\S*${escapedResultFile}\\s+(\\d+)\\s+(\\d+)`,
+  ));
+  if (!match) {
+    throw new Error(`Unable to find ${resultFile} disposition contract in ${path}`);
+  }
+  return { expected: Number(match[1]), skipped: Number(match[2]) };
+}
 
 function readManifest(name) {
   const path = resolve(e2eRoot, name);
@@ -61,6 +74,20 @@ const mandatoryWorkerSpecs = [
 const missingWorkerCoverage = [...new Set([...realBackendGuards, ...mandatoryWorkerSpecs])]
   .filter(path => !workerSpecs.includes(path));
 const overlappingBackends = mockSpecs.filter(path => workerSpecs.includes(path));
+const workflowPath = resolve(repoRoot, '.github/workflows/ci.yml');
+const prePushPath = resolve(appRoot, '.husky/pre-push');
+const dispositionContracts = [
+  {
+    label: 'Chromium real-backend',
+    ci: readDispositionContract(workflowPath, 'real-backend-results.json'),
+    local: readDispositionContract(prePushPath, 'prepush-chromium.json'),
+  },
+  {
+    label: 'WebKit real-backend',
+    ci: readDispositionContract(workflowPath, 'webkit-results.json'),
+    local: readDispositionContract(prePushPath, 'prepush-webkit.json'),
+  },
+];
 
 const playwright = process.platform === 'win32'
   ? resolve(appRoot, 'node_modules/.bin/playwright.cmd')
@@ -98,5 +125,11 @@ if (overlappingBackends.length > 0) {
 if (unguardedContexts.length > 0) {
   throw new Error(`Custom browser contexts must use createE2EContext so WebKit setup is not bypassed:\n${unguardedContexts.join('\n')}`);
 }
+for (const contract of dispositionContracts) {
+  if (JSON.stringify(contract.ci) !== JSON.stringify(contract.local)) {
+    throw new Error(`${contract.label} disposition contract differs between CI and pre-push: `
+      + `${JSON.stringify({ ci: contract.ci, prePush: contract.local })}`);
+  }
+}
 
-console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests`);
+console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests, ${dispositionContracts.length} local/CI disposition contracts`);

@@ -53,22 +53,22 @@ echo "  PRE-PUSH: Test Suite"
 echo "========================================"
 echo ""
 
-# Phase 0: Manifest Validation (instant, catches silent failure bugs)
+# Phase 0: Manifest and inventory validation (catches silent and vacuous lanes)
 echo "----------------------------------------"
-echo "Phase 0: Manifest Validation"
+echo "Phase 0: Manifest and E2E Inventory Validation"
 echo "----------------------------------------"
 echo ""
 
-if npx tsx scripts/validate-manifests.ts; then
+if npx tsx scripts/validate-manifests.ts && node scripts/check-e2e-inventories.mjs; then
     echo ""
-    echo "✅ All manifests valid!"
+    echo "✅ All manifests and E2E inventories valid!"
     echo ""
 else
     echo ""
-    echo "❌ Manifest validation FAILED"
+    echo "❌ Manifest or E2E inventory validation FAILED"
     echo ""
     echo "Fix the issues above before pushing."
-    echo "Instruments with invalid manifests will be SILENT."
+    echo "Invalid manifests can be silent; stale inventories can make a lane vacuous."
     echo "To skip: git push --no-verify"
     echo ""
     exit 1
@@ -108,7 +108,7 @@ FULL_START=$(date +%s)
 
 # Screenshot contracts have runner-specific baselines and a dedicated CI lane;
 # the functional gate must not generate or bless developer-machine snapshots.
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 209 19; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 209 23; then
     FULL_END=$(date +%s)
     FULL_DURATION=$((FULL_END - FULL_START))
     echo ""
@@ -134,7 +134,7 @@ echo ""
 
 WEBKIT_START=$(date +%s)
 
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 162 53; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 162 54; then
     WEBKIT_END=$(date +%s)
     WEBKIT_DURATION=$((WEBKIT_END - WEBKIT_START))
     echo ""

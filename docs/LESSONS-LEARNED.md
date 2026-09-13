@@ -5849,13 +5849,23 @@ The relative CSS reductions survived, but the absolute metrics, comparison
 commit, workflow inventory, and browser obligations changed. Evidence against
 the old merge base no longer described the PR GitHub would actually merge.
 
+PR #98 reproduced the same failure in executable metadata. After merging the
+current `main`, all 209 real-Worker Chromium tests passed, but the local
+pre-push contract still expected 19 skips while CI correctly expected 23. The
+duplicated counts had no consistency check, so the hook rejected a completely
+green lane only after spending 3.6 minutes running it. The E2E inventory
+validator now compares the local Chromium/WebKit disposition contracts with
+CI, and pre-push runs that check before launching either browser suite.
+
 ### The rule
 
 Rebase immediately before final visual approval and regenerate metrics,
 screenshots, changed-pixel masks, accessibility/behavior contracts, and any
 device evidence against that exact base/head pair. A later base movement
 invalidates approval until affected evidence is refreshed. Stacked PRs reduce
-review size; they do not make inherited evidence permanent.
+review size; they do not make inherited evidence permanent. When local and CI
+gates repeat an exact inventory, mechanically cross-check the copies before the
+expensive lane starts; a prose promise that they match is not a contract.
 
 ---
 
