@@ -45,3 +45,38 @@ export function pick<T>(rng: () => number, items: readonly T[]): T {
   }
   return items[randInt(rng, 0, items.length - 1)];
 }
+
+/**
+ * Parse a soak-mode seed override (comma-separated decimal integers) with a
+ * fail-closed contract, for the fuzz lanes that accept a FUZZ_SEEDS binding.
+ *
+ * Why strict: `Number.parseInt(x, 10)` silently coerces plausible-looking
+ * input — `'0xc0ffee'` → 0 (and 0xc0ffee is literally one of the committed
+ * regression seeds), `'1e6'` → 1, `'12abc'` → 12 — and a filter that drops
+ * unparseable entries can reduce the list to [], turning the whole fuzz into
+ * a 3 ms vacuous pass. A soak that silently runs zero (or different) seeds
+ * reports green while testing nothing, which is the exact always-green class
+ * the anti-pattern gate exists to prevent. So: an override is either fully
+ * valid decimal integers, or the run fails loudly.
+ */
+export function parseSeedOverride(
+  override: string | undefined,
+  defaults: readonly number[],
+): number[] {
+  if (!override) return [...defaults];
+  const seeds = override.split(',').map((raw) => {
+    const s = raw.trim();
+    const parsed = Number.parseInt(s, 10);
+    if (!Number.isFinite(parsed) || String(parsed) !== s) {
+      throw new Error(
+        `FUZZ_SEEDS entry ${JSON.stringify(raw)} is not a plain decimal integer ` +
+        `(got ${JSON.stringify(override)}). Use e.g. FUZZ_SEEDS="123,456".`,
+      );
+    }
+    return parsed;
+  });
+  if (seeds.length === 0) {
+    throw new Error(`FUZZ_SEEDS=${JSON.stringify(override)} parsed to no seeds`);
+  }
+  return seeds;
+}

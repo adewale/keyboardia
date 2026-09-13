@@ -37,6 +37,7 @@ import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import {
   validateSessionState,
+  validateCompleteSessionState,
   validateSessionName,
   isValidUUID,
   isBodySizeValid,
@@ -710,5 +711,85 @@ describe('BS-001: Body Size Validation', () => {
   it('non-numeric Content-Length passes (let server handle it)', () => {
     expect(isBodySizeValid('abc')).toBe(true);
     expect(isBodySizeValid('NaN')).toBe(true);
+  });
+});
+
+// =============================================================================
+// Parse robustness (issue #97 T5 + T6): generalizes the enumerated
+// garbage-input examples in validation.test.ts into properties over the
+// actual request domain — anything JSON.parse can produce (HTTP bodies
+// reach these validators as parsed JSON, so undefined/functions/symbols
+// are outside the domain).
+// =============================================================================
+
+describe('session-state validators: parse robustness', () => {
+  it('PR-001: never throw and always return a structured verdict for any JSON value', () => {
+    fc.assert(
+      fc.property(fc.jsonValue(), (input) => {
+        const partial = validateSessionState(input);
+        expect(typeof partial.valid).toBe('boolean');
+        const complete = validateCompleteSessionState(input);
+        expect(typeof complete.valid).toBe('boolean');
+      }),
+      { numRuns: 300 }
+    );
+  });
+
+  it('PR-002: rejects every primitive JSON value with valid=false', () => {
+    fc.assert(
+      fc.property(
+        fc.oneof(
+          fc.string(),
+          fc.double({ noNaN: true }),
+          fc.integer(),
+          fc.boolean(),
+          fc.constant(null)
+        ),
+        (input) => {
+          expect(validateSessionState(input).valid).toBe(false);
+          expect(validateCompleteSessionState(input).valid).toBe(false);
+        }
+      ),
+      { numRuns: 200 }
+    );
+  });
+
+  it('PR-002b: DOCUMENTED GAP — arrays pass the partial validator', () => {
+    // Found by PR-002's first run (shrunk counterexample: []). An array is
+    // typeof 'object', and every field check in validateSessionState is
+    // "if present", so [] sails through with zero errors. The complete
+    // validator rejects it (required fields missing), which limits the
+    // exposure to the partial/PATCH path. Pinned here as current behavior;
+    // the one-line fix is an Array.isArray rejection in the type guard
+    // (issue #97 discussion). When someone applies it, this test fails and
+    // gets flipped — that is its job.
+    fc.assert(
+      fc.property(fc.array(fc.jsonValue(), { maxLength: 4 }), (arr) => {
+        expect(validateSessionState(arr).valid).toBe(true);
+        expect(validateCompleteSessionState(arr).valid).toBe(false);
+      }),
+      { numRuns: 50 }
+    );
+  });
+
+  it('PR-003: accepts a maximum-size state (16 tracks x 128 steps) — large-input boundary', () => {
+    const state = {
+      tracks: Array.from({ length: 16 }, (_, i) => ({
+        id: `t${i}`,
+        name: `Track ${i}`,
+        sampleId: 'kick',
+        steps: Array(128).fill(true),
+        parameterLocks: Array(128).fill(null),
+        volume: 1,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        stepCount: 128,
+      })),
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    };
+    expect(validateCompleteSessionState(state).valid).toBe(true);
   });
 });

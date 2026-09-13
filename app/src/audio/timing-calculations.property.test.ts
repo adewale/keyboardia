@@ -26,6 +26,8 @@ describe('getStepDuration properties', () => {
   it('duration decreases as tempo increases', () => {
     fc.assert(
       fc.property(arbTempo, arbTempo, (tempo1, tempo2) => {
+        // Distinctness is the property's domain (strict monotonicity needs two
+        // tempos), not a perf constraint: rejection is 1/121 pairs (~0.8%).
         fc.pre(tempo1 !== tempo2);
         const d1 = getStepDuration(tempo1);
         const d2 = getStepDuration(tempo2);
@@ -121,13 +123,15 @@ describe('calculateSwingDelay properties', () => {
   it('swing blending formula is monotonic', () => {
     fc.assert(
       fc.property(
-        arbSwing.map((s) => s / 100),
-        arbSwing.map((s) => s / 100),
+        // Ordered pair built constructively (issue #97 T3): lo in [0,99],
+        // hi in (lo,100]. The old form drew two swings and rejected half of
+        // all runs with fc.pre(swing1 < swing2).
+        fc.tuple(fc.integer({ min: 0, max: 99 }), fc.integer({ min: 1, max: 100 }))
+          .map(([lo, gap]) => [lo / 100, Math.min(100, lo + gap) / 100] as const),
         // Exclude trackSwing=1.0 where formula becomes constant (1.0 regardless of globalSwing)
         fc.integer({ min: 0, max: 99 }).map((s) => s / 100),
         arbTempo,
-        (swing1, swing2, trackSwing, tempo) => {
-          fc.pre(swing1 < swing2);
+        ([swing1, swing2], trackSwing, tempo) => {
           const stepDuration = getStepDuration(tempo);
           const delay1 = calculateSwingDelay(1, swing1, trackSwing, stepDuration);
           const delay2 = calculateSwingDelay(1, swing2, trackSwing, stepDuration);
@@ -170,7 +174,8 @@ describe('calculateTiedDuration properties', () => {
         fc.integer({ min: 2, max: 6 }),
         arbTempo,
         (stepCount, tieLength, tempo) => {
-          fc.pre(tieLength < stepCount);
+          // tieLength <= 6 < 8 <= stepCount by construction; the old
+          // fc.pre(tieLength < stepCount) here could never reject (dead guard).
           const stepDuration = getStepDuration(tempo);
           const { steps, parameterLocks } = createTrackWithTies(0, tieLength, stepCount);
           const track = { steps, parameterLocks };
@@ -250,11 +255,12 @@ describe('advanceStep properties', () => {
   it('with loop region, step stays within bounds', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 0, max: 126 }),
-        fc.integer({ min: 1, max: 127 }),
+        // Ordered loop region built constructively (issue #97 T3): start in
+        // [0,126], end in (start,127]. The old form rejected half of all runs.
+        fc.tuple(fc.integer({ min: 0, max: 126 }), fc.integer({ min: 1, max: 127 }))
+          .map(([s, gap]) => [s, Math.min(127, s + gap)] as const),
         fc.integer({ min: 0, max: 127 }),
-        (start, end, current) => {
-          fc.pre(start < end);
+        ([start, end], current) => {
           const loopRegion = { start, end };
           const next = advanceStep(current, loopRegion);
           if (current >= end) {

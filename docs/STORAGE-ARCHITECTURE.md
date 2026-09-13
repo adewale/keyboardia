@@ -1,6 +1,7 @@
 # Storage Architecture: DO Storage vs KV
 
 **Created:** 2025-12-20
+**Updated:** 2026-09-13 (current DO-first read paths)
 **Status:** Active Architecture Decision
 
 ## Overview
@@ -8,7 +9,7 @@
 Keyboardia uses a dual-storage architecture for session data:
 
 1. **Durable Object (DO) Storage** - Source of truth, survives hibernation
-2. **Workers KV** - Read-optimized copy, eventually consistent
+2. **Workers KV** - Materialized copy for fallback, support, and cross-session operations
 
 This document explains why both exist, their tradeoffs, and the mental model for working with them.
 
@@ -45,8 +46,8 @@ This is a valid question. DO storage alone could work, but the dual-storage arch
                                              │
                                              ▼
                                     ┌─────────────────┐
-                                    │   REST API      │
-                                    │   (reads KV)    │
+                                    │ Fallback/debug  │
+                                    │ /index readers  │
                                     └─────────────────┘
 ```
 
@@ -54,28 +55,29 @@ This is a valid question. DO storage alone could work, but the dual-storage arch
 
 ## Why KV Exists
 
-### 1. Direct API Access Without DO Instantiation
+### 1. Fallback and Non-Authoritative Read Paths
 
-The REST API needs to read sessions for display, preview, and embedding:
+The primary session page and `GET /api/sessions/:id` route through the DO so
+they see pending changes. Publish and remix also read from the DO first, then
+fall back to KV if that request throws. Debug/support endpoints and helper
+modules still read the materialized KV copy directly:
 
 ```typescript
-// GET /api/sessions/:id
+// Direct-KV helper used by fallback and support paths
 export async function getSession(env: Env, sessionId: string): Promise<Session | null> {
   return await env.SESSIONS.get(sessionId, 'json');  // Reads directly from KV
 }
 ```
 
 **Without KV:**
-- Every API read requires instantiating the DO
-- DO billing: per-request + duration charges
-- Potential cold start latency (~50-200ms)
-- Single point of access (all requests route to one DO instance)
+- DO failures would have no independent fallback copy
+- Debug/support and migration tooling would need to instantiate each DO
+- Cross-session lookup would require a separate index
 
 **With KV:**
-- Direct read from globally-replicated store
-- ~10ms latency from nearest edge
-- Cheaper for read-heavy patterns
-- No DO instantiation needed
+- Explicit fallback reads can use an independent copy
+- Support and migration tooling can inspect sessions without a DO request
+- Cross-session indexes can live outside individual DOs
 
 ### 2. Session Listing and Discovery
 
@@ -90,7 +92,9 @@ KV supports `list()` operations that return keys matching a prefix. DO storage h
 
 ### 3. Published Sessions Are Read-Heavy
 
-When a user publishes a beat and shares the link:
+When a user publishes a beat and shares the link, the primary view currently
+routes through the DO for freshness. If read fanout later requires a cache or
+CDN path, the KV copy is available as a regenerable source:
 - Hundreds/thousands of people may load the same session
 - Each load is a read, not a collaborative edit
 - No WebSocket needed, just fetch the state
@@ -215,8 +219,10 @@ await this.saveToKV();
 | Use Case | Storage | Reason |
 |----------|---------|--------|
 | Real-time collaboration | DO Storage | Already connected via WebSocket |
-| REST API read (session preview) | KV | Avoid DO instantiation |
-| Published session view | KV | Read-heavy, global distribution |
+| Primary session page/API GET | DO Storage | Return authoritative state, including pending changes |
+| Publish/remix source read | DO Storage, KV fallback | Prefer freshness; retain an independent fallback |
+| Debug/support read | KV | Inspect the materialized copy without changing live state |
+| Published session view | DO Storage today | KV/CDN fanout remains a future option |
 | Session mutation | DO Storage → KV | Source of truth, then sync |
 | Session listing | KV | Cross-session query capability |
 | Disaster recovery | KV | Independent of DO lifecycle |
@@ -305,7 +311,8 @@ await this.saveToKV();
 
 ### E2E Tests
 - Real-time collaboration uses DO storage
-- Published session sharing uses KV
+- Published session sharing uses DO-authoritative reads
+- Exercise KV fallbacks separately from the normal read path
 - Verify consistency after hibernation cycle
 
 ---
@@ -334,10 +341,33 @@ await this.saveToKV();
 The dual-storage architecture exists because:
 
 1. **Real-time collaboration** needs DO's WebSocket and transactional guarantees
-2. **Read-heavy access patterns** (API, published sessions) benefit from KV's global distribution
+2. **Fallback and support paths** use KV without treating it as authoritative;
+   future read-fanout paths can use its global distribution
 3. **Session listing/search** requires cross-session query capability that DO storage lacks
 
 The key insight is treating them as **primary (DO) + cache (KV)**, not as equal peers. With this mental model and the hibernation fix in place, the architecture is sound.
+
+---
+
+## Paved-Path Deviation Inventory
+
+Everywhere Keyboardia deviates from the platform's (or Web Audio's) standard
+path is where latent bugs will surface for us and nobody else (see
+`specs/research/WAL-RESET-BUG-LEARNINGS-2026-08.md`). Each deviation is
+listed with the test lane that covers it; a deviation without a lane is a
+gap to close, not a fact to accept.
+
+| Deviation from the paved path | Why we do it | Covering lane |
+|---|---|---|
+| Dual storage: DO primary + debounced KV copy | Fallback/support reads, listing, possible future read fanout | `test/integration/state-machine-fuzz.test.ts` (KV convergence oracle) |
+| `serverSeq` durability split from state durability (persisted every 100 broadcasts / on flush, not per mutation) | Write-cost control | `test/integration/seq-regression.test.ts` (documents the rewind + silent negative ack); client half in `src/sync/seq-regression.test.ts` |
+| WebSocket Hibernation with wake-path state reloads | Idle sessions cost nothing | `test/integration/eviction-recovery.test.ts`; LESSONS-LEARNED Lesson 40 |
+| Auto-repair on invariant violation instead of fail-stop | Availability over strictness | `worker/invariants.ts` + repair counters (no trend metric yet — accepted gap) |
+| Alarm-based expiry bookkeeping in the session allocator | Rate windows, idempotency reservations | `app/src/worker/mcp-adapter.test.ts` ("expires durable rate windows and idempotency reservations by alarm") |
+| Concurrent multi-client WS writes into one DO | The product is multiplayer | `test/integration/overlap-fuzz.test.ts` (seq conservation + convergence) |
+| 25 ms lookahead scheduler re-reading mutable grid state mid-flight | Drift-free audio under live collaboration | `src/audio/scheduler-mutation-race.test.ts` (virtual-time race lane) |
+| 16-voice polyphony with voice stealing | Mobile CPU budget | engine diagnostics; no conservation ledger yet — accepted gap |
+| Tone.js and raw Web Audio mixed in one graph | Breadth of instruments | `src/audio/mock-fidelity.test.ts`; render lanes (`*.render.test.ts`) |
 
 ---
 

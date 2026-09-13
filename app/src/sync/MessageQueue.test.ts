@@ -12,6 +12,7 @@
  * the least interesting thing here.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import fc from 'fast-check';
 import { MessageQueue, getMessagePriority } from './MessageQueue';
 import { MAX_MESSAGE_SIZE } from '../shared/constants';
 import type { ClientMessage } from '../shared/message-types';
@@ -315,5 +316,82 @@ describe('MessageQueue', () => {
       q.replay(r.send);
       expect(r.sent).toEqual([]);
     });
+  });
+});
+
+// =============================================================================
+// Model-based property (issue #97 T5): the queue against an obviously-correct
+// reference implementing the documented policy — never evict high to make
+// room; evict oldest low first, else oldest normal; drop the incoming message
+// when everything queued is high priority. Replay is PRIORITY-ordered (high,
+// normal, low; oldest first within a priority — replay() sorts, stably).
+// The first draft modeled replay as FIFO; this property's own first run
+// refuted that with the 2-op counterexample [low, high] -> replayed [high,
+// low], which the example test at "maxSize eviction" had shown all along.
+// =============================================================================
+
+describe('MessageQueue model-based property', () => {
+  type ModelEntry = { pri: 'high' | 'normal' | 'low'; id: number };
+
+  function modelEnqueue(model: ModelEntry[], entry: ModelEntry, maxSize: number): void {
+    if (model.length >= maxSize) {
+      const lowIdx = model.findIndex((m) => m.pri === 'low');
+      const evictIdx = lowIdx !== -1 ? lowIdx : model.findIndex((m) => m.pri === 'normal');
+      if (evictIdx === -1) return; // all high: drop the incoming message
+      model.splice(evictIdx, 1);
+    }
+    model.push(entry);
+  }
+
+  const opArb = fc.oneof(
+    { weight: 8, arbitrary: fc.record({ kind: fc.constantFrom<'high' | 'normal' | 'low'>('high', 'normal', 'low') }) },
+    { weight: 1, arbitrary: fc.constant({ kind: 'clear' as const }) }
+  );
+
+  it('MB-002: any op sequence matches the reference model in size and replay order', () => {
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 1, max: 5 }),
+        fc.array(opArb, { minLength: 1, maxLength: 30 }),
+        (maxSize, ops) => {
+          const q = new MessageQueue({ maxSize });
+          const model: ModelEntry[] = [];
+          let nextId = 0;
+
+          for (const op of ops) {
+            if (op.kind === 'clear') {
+              q.clear();
+              model.length = 0;
+              continue;
+            }
+            const id = nextId++;
+            // Identity rides in the message payload so replay order is checkable.
+            if (op.kind === 'high') q.enqueue(highMsg(`track-${id}`));
+            else if (op.kind === 'normal') q.enqueue(normalMsg(id));
+            else q.enqueue(lowMsg(id));
+            modelEnqueue(model, { pri: op.kind, id }, maxSize);
+
+            // WITNESS (spec §16 rule 1): sizes agree after every op, so a
+            // no-op enqueue cannot satisfy the final comparison vacuously.
+            expect(q.size).toBe(model.length);
+          }
+
+          const r = recorder();
+          q.replay(r.send);
+          const replayedIds = r.sent.map((raw) => {
+            const msg = JSON.parse(raw) as { type: string; track?: { id: string }; step?: number; x?: number };
+            if (msg.type === 'add_track') return Number(msg.track!.id.replace('track-', ''));
+            if (msg.type === 'toggle_step') return msg.step!;
+            return msg.x!;
+          });
+          const priorityRank = { high: 0, normal: 1, low: 2 } as const;
+          const expected = [...model]
+            .sort((a, b) => priorityRank[a.pri] - priorityRank[b.pri])
+            .map((m) => m.id);
+          expect(replayedIds).toEqual(expected);
+        }
+      ),
+      { numRuns: 150 }
+    );
   });
 });

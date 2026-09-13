@@ -657,7 +657,7 @@ describe('offline eval CI contract', () => {
       integrity: expect.stringMatching(/^sha512-/),
     });
     expect(lock.packages['node_modules/fast-uri']).toMatchObject({
-      version: '3.1.5',
+      version: '3.1.7',
       integrity: expect.stringMatching(/^sha512-/),
     });
   });

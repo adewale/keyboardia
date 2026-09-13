@@ -130,7 +130,8 @@ describe('VA-001: Clamp Within Bounds', () => {
         (value, bound1, bound2) => {
           const min = Math.min(bound1, bound2);
           const max = Math.max(bound1, bound2);
-          fc.pre(min <= max); // Ensure valid range
+          // (min <= max holds by construction after Math.min/Math.max with
+          // NaN excluded — the fc.pre guard that sat here was dead code.)
 
           const result = clamp(value, min, max);
           expect(result).toBeGreaterThanOrEqual(min);

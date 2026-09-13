@@ -62,7 +62,7 @@ export function arbFloat32(min: number, max: number): fc.Arbitrary<number> {
 /** Valid step count from the allowed set */
 export const arbStepCount = fc.constantFrom(...VALID_STEP_COUNTS);
 
-/** Step index (0-127) */
+/** Step index — the MAX_STEPS (128) storage contract. */
 export const arbStepIndex = fc.integer({ min: 0, max: MAX_STEPS - 1 });
 
 /** Note name (C, C#, D, etc.) */
@@ -71,25 +71,33 @@ export const arbNoteName = fc.constantFrom(...NOTE_NAMES) as fc.Arbitrary<NoteNa
 /** Scale ID (minor-pentatonic, major, etc.) */
 export const arbScaleId = fc.constantFrom(...Object.keys(SCALES)) as fc.Arbitrary<ScaleId>;
 
-/** Pitch in semitones (wide range including negatives for octave testing) */
+/**
+ * Pitch in semitones, deliberately wider than the +/-24 playable contract so
+ * out-of-range handling and octave math get exercised at the boundaries.
+ */
 export const arbPitch = fc.integer({ min: -60, max: 72 });
 
-/** Pitch in the typical playable range */
+/** Pitch in the chromatic grid's +/-24 playable contract (playable-range-pbt.test.ts). */
 export const arbPlayablePitch = fc.integer({ min: -24, max: 24 });
 
-/** Tempo in BPM */
+/**
+ * Tempo in BPM — the POST-validation domain (the server clamps to
+ * [MIN_TEMPO, MAX_TEMPO], shared/constants.ts). Properties that test the
+ * clamping/validation path itself must generate unbounded numbers instead
+ * (hegel-skill: bounds only where the contract excludes inputs).
+ */
 export const arbTempo = fc.integer({ min: 60, max: 180 });
 
-/** Swing amount (0-100) */
+/** Swing amount — the post-validation 0-100 contract (server clamps). */
 export const arbSwing = fc.integer({ min: 0, max: 100 });
 
-/** Volume (0-2, where 1 is default) */
+/** Volume — the 0-2 contract (1 = unity gain; validation clamps above 2). */
 export const arbVolume = fc.float({ min: 0, max: 2, noNaN: true });
 
 /** Canonical stereo pan (-1 hard left, 0 center, 1 hard right). */
 export const arbPan = fc.float({ min: -1, max: 1, noNaN: true });
 
-/** Transpose in semitones */
+/** Transpose — the +/-24 UI contract mirrored by validation. */
 export const arbTranspose = fc.integer({ min: -24, max: 24 });
 
 // =============================================================================
