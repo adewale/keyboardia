@@ -3573,6 +3573,11 @@ method and frozen asset receipt live in
   median native-root duration guard for eight sustaining instruments.
 - Added repeatable first-master-PCM measurements for cold native, Tone, and
   advanced Keyboardia paths, plus a hash-gated frozen Tone Nets reference.
+- Corrected near-deadline real-time sampled-note scheduling with a disclosed
+  `max(3 ms, 513 / sampleRate)` lead. The retained
+  [negative/guarded browser receipt](./research/SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md)
+  records 2/12 expected zero-lead failures and 13/13 guarded passes; offline
+  sampled rendering and the native/Tone/advanced timing paths are unchanged.
 
 **Objective desktop outcome:** the whole-engine/native, cold Tone, and cold
 advanced paths measured 244.5/354.5/383.6 ms at the median on the retained

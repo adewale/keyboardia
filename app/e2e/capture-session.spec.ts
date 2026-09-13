@@ -599,7 +599,7 @@ test('captures sampled first-use timing before deciding whether to warm a voice'
   page,
   request,
   browserName,
-}) => {
+}, testInfo) => {
   test.skip(browserName !== 'chromium', 'real master capture is Chromium-only');
   test.skip(
     Boolean(process.env.PLAYWRIGHT_BASE_URL),
@@ -646,6 +646,7 @@ test('captures sampled first-use timing before deciding whether to warm a voice'
     return {
       sampleRate: capture.sampleRate,
       startFrame: capture.startFrame,
+      preCompressor: Array.from(capture.taps.preCompressor.channels[0]),
       user: Array.from(capture.taps.userOutput.channels[0]),
     };
   });
@@ -672,56 +673,116 @@ test('captures sampled first-use timing before deciding whether to warm a voice'
   ));
 
   const threshold = 1e-4;
-  const firstHitFrame = capture.user.findIndex(value => Math.abs(value) >= threshold);
-  expect(firstHitFrame).toBeGreaterThanOrEqual(0);
   const hitIntervalFrames = Math.round(capture.sampleRate * 0.5);
   // Scheduler callbacks can land on adjacent render quanta. Locate each real
   // onset near its expected half-second boundary before comparing level; using
   // the first onset plus exact intervals turns timing jitter into false RMS
   // variation when a fixed analysis window clips a sample's decay.
   const onsetSearchRadiusFrames = Math.round(capture.sampleRate * 0.02);
-  const hitStarts = Array.from({ length: 5 }, (_, index) => {
-    if (index === 0) return firstHitFrame;
-    const expectedFrame = firstHitFrame + index * hitIntervalFrames;
-    const searchStart = Math.max(0, expectedFrame - onsetSearchRadiusFrames);
-    const searchEnd = Math.min(capture.user.length, expectedFrame + onsetSearchRadiusFrames);
-    const relativeOnset = capture.user
-      .slice(searchStart, searchEnd)
-      .findIndex(value => Math.abs(value) >= threshold);
-    if (relativeOnset < 0) throw new Error(`No onset found for sampled hit ${index + 1}`);
-    return searchStart + relativeOnset;
-  });
-  expect(hitStarts.at(-1)! + Math.round(capture.sampleRate * 0.3))
+  const findHitStarts = (samples: readonly number[], tapName: string) => {
+    const firstHitFrame = samples.findIndex(value => Math.abs(value) >= threshold);
+    if (firstHitFrame < 0) throw new Error(`No onset found in ${tapName}`);
+    return Array.from({ length: 5 }, (_, index) => {
+      if (index === 0) return firstHitFrame;
+      const expectedFrame = firstHitFrame + index * hitIntervalFrames;
+      const searchStart = Math.max(0, expectedFrame - onsetSearchRadiusFrames);
+      const searchEnd = Math.min(samples.length, expectedFrame + onsetSearchRadiusFrames);
+      const relativeOnset = samples
+        .slice(searchStart, searchEnd)
+        .findIndex(value => Math.abs(value) >= threshold);
+      if (relativeOnset < 0) {
+        throw new Error(`No onset found for ${tapName} sampled hit ${index + 1}`);
+      }
+      return searchStart + relativeOnset;
+    });
+  };
+  const preCompressorHitStarts = findHitStarts(capture.preCompressor, 'pre-compressor');
+  const userOutputHitStarts = findHitStarts(capture.user, 'user-output');
+  const analysisWindowFrames = Math.round(capture.sampleRate * 0.3);
+  expect(preCompressorHitStarts.at(-1)! + analysisWindowFrames)
+    .toBeLessThanOrEqual(capture.preCompressor.length);
+  expect(userOutputHitStarts.at(-1)! + analysisWindowFrames)
     .toBeLessThanOrEqual(capture.user.length);
-  const variation = hitLevelVariationDb(
-    capture.user,
-    hitStarts,
-    Math.round(capture.sampleRate * 0.3),
+  const preCompressorLevelVariation = hitLevelVariationDb(
+    capture.preCompressor,
+    preCompressorHitStarts,
+    analysisWindowFrames,
   );
+  const userOutputLevelVariation = hitLevelVariationDb(
+    capture.user,
+    userOutputHitStarts,
+    analysisWindowFrames,
+  );
+  const firstHitFrame = userOutputHitStarts[0];
   const clickFrame = Math.round(clickContextTime * capture.sampleRate - capture.startFrame);
   const leadingSilenceMs = Math.max(0, firstHitFrame - clickFrame) / capture.sampleRate * 1_000;
-  const onsetOffsetsFrames = hitStarts.map((frame, index) =>
-    frame - (firstHitFrame + index * hitIntervalFrames)
+  const preCompressorOnsetOffsetsFrames = preCompressorHitStarts.map((frame, index) =>
+    frame - (preCompressorHitStarts[0] + index * hitIntervalFrames)
   );
-  const coldEvidence = { leadingSilenceMs, onsetOffsetsFrames, ...variation };
-  console.log('sampled first-use capture', coldEvidence);
-
-  expect(leadingSilenceMs).toBeLessThanOrEqual(500);
-  expect(Math.max(...onsetOffsetsFrames.map(Math.abs)))
-    .toBeLessThanOrEqual(onsetSearchRadiusFrames);
-  expect(variation.peakSpreadDb).toBeLessThanOrEqual(0.2);
-  expect(variation.rmsSpreadDb).toBeLessThanOrEqual(0.3);
+  const userOutputOnsetOffsetsFrames = userOutputHitStarts.map((frame, index) =>
+    frame - (userOutputHitStarts[0] + index * hitIntervalFrames)
+  );
+  const prefixFrames = 256;
+  const first256PreCompressorFrames = {
+    encoding: 'JSON array of exact Float32 samples',
+    frames: prefixFrames,
+    first: capture.preCompressor.slice(
+      preCompressorHitStarts[0],
+      preCompressorHitStarts[0] + prefixFrames,
+    ),
+    steady: capture.preCompressor.slice(
+      preCompressorHitStarts[1],
+      preCompressorHitStarts[1] + prefixFrames,
+    ),
+  };
+  const coldEvidence = {
+    leadingSilenceMs,
+    preCompressorOnsetOffsetsFrames,
+    userOutputOnsetOffsetsFrames,
+    preCompressorLevelVariation,
+    userOutputLevelVariation,
+    first256PreCompressorFrames,
+  };
+  console.log('sampled first-use capture', {
+    leadingSilenceMs,
+    preCompressorOnsetOffsetsFrames,
+    userOutputOnsetOffsetsFrames,
+    preCompressorLevelVariation,
+    userOutputLevelVariation,
+  });
 
   mkdirSync(REPORT_DIR, { recursive: true });
-  writeFileSync(
-    resolve(REPORT_DIR, 'browser-sampled-first-use-capture.json'),
-    JSON.stringify({
-      schemaVersion: 1,
-      fixture: 'first use of one priority-loaded sampled instrument, preinitialized dry master',
-      sampleRate: capture.sampleRate,
-      ...coldEvidence,
-    }, null, 2) + '\n',
-  );
+  const report = JSON.stringify({
+    schemaVersion: 3,
+    fixture: 'first use of one priority-loaded sampled instrument, preinitialized dry master',
+    sampleRate: capture.sampleRate,
+    ...coldEvidence,
+  }, null, 2) + '\n';
+  writeFileSync(resolve(REPORT_DIR, 'browser-sampled-first-use-capture.json'), report);
+  const receiptTag = process.env.SAMPLED_FIRST_USE_RECEIPT_TAG;
+  if (receiptTag) {
+    if (!/^[a-z0-9-]+$/.test(receiptTag)) {
+      throw new Error('SAMPLED_FIRST_USE_RECEIPT_TAG must contain only lowercase letters, digits, and hyphens');
+    }
+    writeFileSync(
+      resolve(
+        REPORT_DIR,
+        `browser-sampled-first-use-capture-${receiptTag}-${String(testInfo.repeatEachIndex + 1).padStart(2, '0')}.json`,
+      ),
+      report,
+    );
+  }
+
+  expect(leadingSilenceMs).toBeLessThanOrEqual(500);
+  expect(Math.max(...preCompressorOnsetOffsetsFrames.map(Math.abs)))
+    .toBeLessThanOrEqual(onsetSearchRadiusFrames);
+  expect(Math.max(...userOutputOnsetOffsetsFrames.map(Math.abs)))
+    .toBeLessThanOrEqual(onsetSearchRadiusFrames);
+  // Voice warm-up and late scheduling affect the sampled source path, while
+  // the stateful master compressor/limiter can add its own variation. Gate the
+  // causal pre-compressor tap and retain user-output spread as a diagnostic.
+  expect(preCompressorLevelVariation.peakSpreadDb).toBeLessThanOrEqual(0.01);
+  expect(preCompressorLevelVariation.rmsSpreadDb).toBeLessThanOrEqual(0.01);
 });
 
 test('measures cold Tone, advanced, and whole-engine action-to-first-master-PCM startup', async ({

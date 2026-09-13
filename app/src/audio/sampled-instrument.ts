@@ -24,7 +24,7 @@ import {
   dbToGain,
   type LoopSpec,
 } from './sample-selection';
-import { computeNoteSchedule, RELEASE_FLOOR_GAIN } from './note-schedule';
+import { computeNoteSchedule, realtimeNoteLeadTime, RELEASE_FLOOR_GAIN } from './note-schedule';
 import {
   sampledInstrumentChokeRegistry,
   type ChokeGroupRegistry,
@@ -637,6 +637,15 @@ export class SampledInstrument {
     const schedule = computeNoteSchedule({
       eventTime: time,
       currentTime: this.audioContext.currentTime,
+      // AudioParam events scheduled at currentTime may cross multiple
+      // render-thread boundaries, collapsing the 3 ms de-click ramp on the
+      // first hit. Four 128-frame quanta plus one frame is still below the
+      // browser fixture's 20 ms onset bound at supported sample rates.
+      // Offline rendering has no live control-message boundary and keeps the
+      // exact requested schedule used by deterministic render tests.
+      minimumLeadTime: isOfflineContext
+        ? 0
+        : realtimeNoteLeadTime(this.audioContext.sampleRate),
       duration,
       releaseTime: this.manifest.releaseTime,
     });

@@ -549,6 +549,7 @@ The final paired raw values and oracle controls are preserved in
 | Sampled velocity timbre | 12/26 instruments gain-only | six tonal gain-only instruments now show 29.7–30.3% v40-v127 centroid reduction over all 281 audited requested notes at 44.1/48 kHz | unlocked/v≥90 notes bypass; no sampled per-note motion |
 | New-session space | global reverb 0 | 0.15 room; tail +19.7–21.1 dB, bass body within ±0.038 dB, peak/LU/pumping bounded in Chromium | one global depth |
 | Cold startup evidence | sampled first-use fixture only | retained native/Tone/advanced medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced contention outlier | physical-device matrix/generalization |
+| First sampled onset consistency | first note could schedule its de-click ramp at `currentTime`, allowing the render thread to enter mid-ramp | real-time sampled lead `max(3 ms, 513 / sampleRate)`; a zero-lead mutation failed source RMS in 2/12 contexts, while 13/13 guarded contexts measured 38.7–54.7 ms click-to-audible and a 0/≤0.000002 dB source peak/RMS repeat null | the floor costs 10.6875 ms at 48 kHz for an event with insufficient lead; other sampled instruments and physical devices remain unmeasured |
 | Mobile output | direct Web Audio destination | both final graphs terminate through the mobile media-element route | physical ringer-off and latency pass still open |
 | Sustain safety | loop metadata existed but was mostly absent | eight sustaining manifests have a ≥2 s median native-root regression guard | intentionally no every-note/extreme-tie guarantee |
 
@@ -573,6 +574,19 @@ appropriate if a requested-note render or real session later demonstrates a
 shortfall; 32-second extreme ties and every transposed note are not claimed.
 
 ### 8.4 Remaining feature decisions
+
+The sampled first-use investigation also separated warm-up from late
+scheduling. A silent priming note cannot repair automation placed partly in the
+past. Keyboardia now reserves `max(3 ms, 513 / sampleRate seconds)`—four
+128-frame render quanta plus one frame—for a real-time sampled note requested
+with insufficient lead. That floor is 10.6875 ms at 48 kHz and 11.6327 ms at
+44.1 kHz. Sufficiently future-scheduled sampled notes keep their requested
+time, offline sampled renders pass a zero floor, and the native, Tone, and
+advanced paths are untouched. This is a bounded scheduling correction with a
+disclosed latency cost, not evidence for pre-playing voices. The 12-context
+negative control, 13-context guarded control, and exact source-prefix frames
+are retained in
+[`SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md`](./SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md).
 
 - **Per-note sampled filter envelopes:** viable as opt-in manifest metadata and
   automation of the existing lowpass. Global use would break the deliberate
