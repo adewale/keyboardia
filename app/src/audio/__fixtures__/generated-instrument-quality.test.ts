@@ -174,7 +174,7 @@ describe('generated instrument quality before/after receipt', () => {
     expect(bundle.candidateCommit).toBe(
       (after as unknown as { provenance: { revision: string } }).provenance.revision,
     );
-    expect(bundle.combinedJavaScript.deltaGzipBytes).toBe(920);
+    expect(bundle.combinedJavaScript.deltaGzipBytes).toBe(923);
     expect(bundle.combinedJavaScript.deltaGzipBytes).toBeLessThan(1024);
     expect(bundle.combinedJavaScript.deltaGzipPercent).toBeLessThan(0.5);
   });

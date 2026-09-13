@@ -1,7 +1,7 @@
 {
-  "capturedAt": "2026-09-13T21:50:41.749Z",
+  "capturedAt": "2026-09-13T21:56:40.564Z",
   "provenance": {
-    "revision": "4f45de1926a05343b33ca36390d42366d46c5a3f",
+    "revision": "7e001364edcc1af3f8c41bd6ab58b4c7d3a756ad",
     "sourceTreeDirty": false,
     "harnessSha256": "e8142b2540c4877b02c4302372df9c2c4922b42e460f932bb3ab6c68b6c8ad79",
     "browserName": "chromium",
@@ -13,34 +13,34 @@
   "sampleRate": 44100,
   "voiceCount": 73,
   "conditionRenderCount": 438,
-  "totalRenderWallMilliseconds": 89146.6,
+  "totalRenderWallMilliseconds": 89361.5,
   "polyphony": {
     "procedural32": {
       "voices": 32,
-      "renderWallMilliseconds": 95.200001,
-      "realtimeFactor": 10.504202,
-      "peakDbfs": -10.63842,
+      "renderWallMilliseconds": 94.200001,
+      "realtimeFactor": 10.615711,
+      "peakDbfs": -10.51264,
       "nonFiniteSamples": 0
     },
     "native16": {
       "voices": 16,
-      "renderWallMilliseconds": 34.900002,
-      "realtimeFactor": 28.653294,
+      "renderWallMilliseconds": 31.099998,
+      "realtimeFactor": 32.154342,
       "peakDbfs": -13.495505,
       "nonFiniteSamples": 0
     },
     "tone16": {
       "voices": 16,
-      "renderWallMilliseconds": 343.200001,
-      "realtimeFactor": 2.913753,
-      "peakDbfs": -15.655232,
+      "renderWallMilliseconds": 314.1,
+      "realtimeFactor": 3.183699,
+      "peakDbfs": -15.655231,
       "nonFiniteSamples": 0
     },
     "advanced8": {
       "voices": 8,
-      "renderWallMilliseconds": 125.5,
-      "realtimeFactor": 7.968127,
-      "peakDbfs": -10.036013,
+      "renderWallMilliseconds": 119.299999,
+      "realtimeFactor": 8.38223,
+      "peakDbfs": -10.036014,
       "nonFiniteSamples": 0
     }
   },
@@ -119,7 +119,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1201.4
+      "renderWallMilliseconds": 1230.700001
     },
     "snare": {
       "id": "snare",
@@ -195,7 +195,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1218.699999
+      "renderWallMilliseconds": 1244.299999
     },
     "hihat": {
       "id": "hihat",
@@ -271,7 +271,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1204.900002
+      "renderWallMilliseconds": 1242.1
     },
     "clap": {
       "id": "clap",
@@ -347,7 +347,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1179.599998
+      "renderWallMilliseconds": 1227.200001
     },
     "tom": {
       "id": "tom",
@@ -423,7 +423,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1187.5
+      "renderWallMilliseconds": 1201.799999
     },
     "rim": {
       "id": "rim",
@@ -499,7 +499,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1246
+      "renderWallMilliseconds": 1264.1
     },
     "cowbell": {
       "id": "cowbell",
@@ -575,7 +575,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1191.5
+      "renderWallMilliseconds": 1220.299999
     },
     "openhat": {
       "id": "openhat",
@@ -651,7 +651,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1196.199999
+      "renderWallMilliseconds": 1212.200001
     },
     "shaker": {
       "id": "shaker",
@@ -727,7 +727,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1207
+      "renderWallMilliseconds": 1228.5
     },
     "conga": {
       "id": "conga",
@@ -803,7 +803,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1186.6
+      "renderWallMilliseconds": 1218.1
     },
     "tambourine": {
       "id": "tambourine",
@@ -879,7 +879,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1177.6
+      "renderWallMilliseconds": 1197.4
     },
     "clave": {
       "id": "clave",
@@ -955,7 +955,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1205.199999
+      "renderWallMilliseconds": 1186.700001
     },
     "cabasa": {
       "id": "cabasa",
@@ -1031,7 +1031,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1192.6
+      "renderWallMilliseconds": 1211.200001
     },
     "woodblock": {
       "id": "woodblock",
@@ -1107,7 +1107,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1199.800001
+      "renderWallMilliseconds": 1205.199999
     },
     "tone:membrane-kick": {
       "id": "tone:membrane-kick",
@@ -1183,7 +1183,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1200.099998
+      "renderWallMilliseconds": 1233.9
     },
     "tone:membrane-tom": {
       "id": "tone:membrane-tom",
@@ -1259,7 +1259,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1122.6
+      "renderWallMilliseconds": 1084.400002
     },
     "tone:metal-cymbal": {
       "id": "tone:metal-cymbal",
@@ -1274,19 +1274,19 @@
         "nonFiniteSamples": 0,
         "logAttackTime": -3.565257,
         "temporalCentroidSeconds": 0.07932,
-        "spectralCentroidHz": 12183.236869,
+        "spectralCentroidHz": 12183.236871,
         "spectralFlux": 0.17732,
         "amplitudeModulationDepthDb": 7.606844,
         "earlyToLateCentroidRatio": 1.107349,
-        "boundaryDiscontinuityDbfs": -42.618752,
-        "boundaryDiscontinuityExcessDb": -13.766612,
+        "boundaryDiscontinuityDbfs": -42.618757,
+        "boundaryDiscontinuityExcessDb": -13.766616,
         "releaseTailRmsDb": null
       },
       "pitch": null,
       "velocity": {
-        "softCentroidHz": 7304.81756,
-        "canonicalCentroidHz": 12183.236869,
-        "hardCentroidHz": 12183.236867,
+        "softCentroidHz": 7304.81753,
+        "canonicalCentroidHz": 12183.236871,
+        "hardCentroidHz": 12183.236852,
         "softToCanonicalRatio": 0.599579,
         "hardToCanonicalRatio": 1
       },
@@ -1301,41 +1301,41 @@
           "truePeakDbfs": -3.168602,
           "dcOffset": 0,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -13.766612
+          "boundaryDiscontinuityExcessDb": -13.766616
         },
         "soft": {
           "truePeakDbfs": -5.744336,
           "dcOffset": 0,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": 1.733478
+          "boundaryDiscontinuityExcessDb": 1.733477
         },
         "hard": {
-          "truePeakDbfs": -3.168602,
+          "truePeakDbfs": -3.168601,
           "dcOffset": 0,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": -13.766612
         },
         "low": {
-          "truePeakDbfs": -4.829315,
+          "truePeakDbfs": -4.829316,
           "dcOffset": 0,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -8.333453
+          "boundaryDiscontinuityExcessDb": -8.333452
         },
         "high": {
-          "truePeakDbfs": -6.972612,
+          "truePeakDbfs": -6.972613,
           "dcOffset": 0,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": 0.429976
+          "boundaryDiscontinuityExcessDb": 0.429977
         },
         "short": {
-          "truePeakDbfs": -3.168601,
+          "truePeakDbfs": -3.168602,
           "dcOffset": 0,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -6.883947
+          "boundaryDiscontinuityExcessDb": -6.883949
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1357.200001
+      "renderWallMilliseconds": 1395.299999
     },
     "tone:metal-hihat": {
       "id": "tone:metal-hihat",
@@ -1350,9 +1350,9 @@
         "nonFiniteSamples": 0,
         "logAttackTime": -3.644439,
         "temporalCentroidSeconds": 0.009929,
-        "spectralCentroidHz": 12264.903909,
+        "spectralCentroidHz": 12264.903875,
         "spectralFlux": 0.060902,
-        "amplitudeModulationDepthDb": 25.701607,
+        "amplitudeModulationDepthDb": 25.701606,
         "earlyToLateCentroidRatio": 0,
         "boundaryDiscontinuityDbfs": -290.65423,
         "boundaryDiscontinuityExcessDb": null,
@@ -1360,9 +1360,9 @@
       },
       "pitch": null,
       "velocity": {
-        "softCentroidHz": 7079.400954,
-        "canonicalCentroidHz": 12264.903909,
-        "hardCentroidHz": 12264.903917,
+        "softCentroidHz": 7079.400995,
+        "canonicalCentroidHz": 12264.903875,
+        "hardCentroidHz": 12264.903912,
         "softToCanonicalRatio": 0.577208,
         "hardToCanonicalRatio": 1
       },
@@ -1411,7 +1411,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1311.099998
+      "renderWallMilliseconds": 1351.200001
     },
     "bass": {
       "id": "bass",
@@ -1492,7 +1492,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 7.421409,
-      "renderWallMilliseconds": 1446
+      "renderWallMilliseconds": 1455.199999
     },
     "subbass": {
       "id": "subbass",
@@ -1573,7 +1573,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 6.759567,
-      "renderWallMilliseconds": 1436.200001
+      "renderWallMilliseconds": 1488.200001
     },
     "synth:bass": {
       "id": "synth:bass",
@@ -1654,7 +1654,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 13.574137,
-      "renderWallMilliseconds": 1089.700001
+      "renderWallMilliseconds": 1102.699999
     },
     "synth:acid": {
       "id": "synth:acid",
@@ -1735,7 +1735,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 10.169655,
-      "renderWallMilliseconds": 1087.9
+      "renderWallMilliseconds": 1094
     },
     "synth:sub": {
       "id": "synth:sub",
@@ -1816,7 +1816,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 6.883044,
-      "renderWallMilliseconds": 1081.299999
+      "renderWallMilliseconds": 1092.800001
     },
     "synth:funkbass": {
       "id": "synth:funkbass",
@@ -1897,7 +1897,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 10.384126,
-      "renderWallMilliseconds": 1064
+      "renderWallMilliseconds": 1091.799999
     },
     "synth:discobass": {
       "id": "synth:discobass",
@@ -1978,7 +1978,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 9.252007,
-      "renderWallMilliseconds": 1095.6
+      "renderWallMilliseconds": 1091.4
     },
     "synth:reese": {
       "id": "synth:reese",
@@ -2059,7 +2059,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 9.69204,
-      "renderWallMilliseconds": 1110.4
+      "renderWallMilliseconds": 1144.1
     },
     "synth:hoover": {
       "id": "synth:hoover",
@@ -2140,7 +2140,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 7.476536,
-      "renderWallMilliseconds": 1082.199999
+      "renderWallMilliseconds": 1104.4
     },
     "tone:fm-bass": {
       "id": "tone:fm-bass",
@@ -2221,7 +2221,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 6.944734,
-      "renderWallMilliseconds": 1276.300001
+      "renderWallMilliseconds": 1282
     },
     "advanced:sub-bass": {
       "id": "advanced:sub-bass",
@@ -2302,41 +2302,41 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 8.944272,
-      "renderWallMilliseconds": 1301.9
+      "renderWallMilliseconds": 1325.700001
     },
     "advanced:wobble-bass": {
       "id": "advanced:wobble-bass",
       "engine": "advanced",
       "role": "bass",
       "canonical": {
-        "peakDbfs": -4.740671,
-        "truePeakDbfs": -4.740671,
+        "peakDbfs": -4.74067,
+        "truePeakDbfs": -4.74067,
         "rmsDb": -21.652466,
         "loudnessKMax": -15.71752,
         "dcOffset": -0.00002,
         "nonFiniteSamples": 0,
         "logAttackTime": -2.125925,
         "temporalCentroidSeconds": 0.281826,
-        "spectralCentroidHz": 1148.530349,
-        "spectralFlux": 0.139106,
+        "spectralCentroidHz": 1148.531838,
+        "spectralFlux": 0.139107,
         "amplitudeModulationDepthDb": 6.22812,
         "earlyToLateCentroidRatio": 0.810425,
-        "boundaryDiscontinuityDbfs": -44.497906,
-        "boundaryDiscontinuityExcessDb": 2.389922,
+        "boundaryDiscontinuityDbfs": -44.497911,
+        "boundaryDiscontinuityExcessDb": 2.389913,
         "releaseTailRmsDb": null
       },
       "pitch": {
         "lowCents": -1.54031,
-        "middleCents": -2.130683,
+        "middleCents": -2.130681,
         "highCents": 0.232962,
         "minimumConfidence": 0.822931
       },
       "velocity": {
-        "softCentroidHz": 1120.208616,
-        "canonicalCentroidHz": 1148.530349,
-        "hardCentroidHz": 1354.740946,
-        "softToCanonicalRatio": 0.975341,
-        "hardToCanonicalRatio": 1.179543
+        "softCentroidHz": 1120.20807,
+        "canonicalCentroidHz": 1148.531838,
+        "hardCentroidHz": 1354.74641,
+        "softToCanonicalRatio": 0.975339,
+        "hardToCanonicalRatio": 1.179546
       },
       "articulation": {
         "shortTemporalCentroidSeconds": 0.085948,
@@ -2346,19 +2346,19 @@
       },
       "conditions": {
         "canonical": {
-          "truePeakDbfs": -4.740671,
+          "truePeakDbfs": -4.74067,
           "dcOffset": -0.00002,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": 2.389922
+          "boundaryDiscontinuityExcessDb": 2.389913
         },
         "soft": {
           "truePeakDbfs": -4.79076,
           "dcOffset": 0.000298,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -0.324423
+          "boundaryDiscontinuityExcessDb": -0.324422
         },
         "hard": {
-          "truePeakDbfs": -4.726382,
+          "truePeakDbfs": -4.726383,
           "dcOffset": -0.000035,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": 0.617492
@@ -2373,7 +2373,7 @@
           "truePeakDbfs": -4.721951,
           "dcOffset": 0,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -3.808148
+          "boundaryDiscontinuityExcessDb": -3.808097
         },
         "short": {
           "truePeakDbfs": -4.74067,
@@ -2382,8 +2382,8 @@
           "boundaryDiscontinuityExcessDb": -17.8503
         }
       },
-      "aliasingLogSpectralDistanceDb": 2.311905,
-      "renderWallMilliseconds": 1335
+      "aliasingLogSpectralDistanceDb": 2.311944,
+      "renderWallMilliseconds": 1343.6
     },
     "advanced:acid-bass": {
       "id": "advanced:acid-bass",
@@ -2464,7 +2464,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 12.150538,
-      "renderWallMilliseconds": 1333.4
+      "renderWallMilliseconds": 1335.299999
     },
     "synth:rhodes": {
       "id": "synth:rhodes",
@@ -2545,7 +2545,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 8.188194,
-      "renderWallMilliseconds": 1108.4
+      "renderWallMilliseconds": 1136
     },
     "synth:wurlitzer": {
       "id": "synth:wurlitzer",
@@ -2626,7 +2626,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 8.153976,
-      "renderWallMilliseconds": 1093.800001
+      "renderWallMilliseconds": 1107.200001
     },
     "synth:epiano": {
       "id": "synth:epiano",
@@ -2707,7 +2707,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 8.486639,
-      "renderWallMilliseconds": 1113.9
+      "renderWallMilliseconds": 1106.4
     },
     "synth:vibes": {
       "id": "synth:vibes",
@@ -2788,7 +2788,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 6.57203,
-      "renderWallMilliseconds": 1095.4
+      "renderWallMilliseconds": 1094.199999
     },
     "tone:fm-epiano": {
       "id": "tone:fm-epiano",
@@ -2869,7 +2869,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 7.150715,
-      "renderWallMilliseconds": 1294.700001
+      "renderWallMilliseconds": 1303
     },
     "synth:organ": {
       "id": "synth:organ",
@@ -2950,7 +2950,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 16.354508,
-      "renderWallMilliseconds": 1091.699999
+      "renderWallMilliseconds": 1094.700001
     },
     "synth:organphase": {
       "id": "synth:organphase",
@@ -3031,7 +3031,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 22.892402,
-      "renderWallMilliseconds": 1120.5
+      "renderWallMilliseconds": 1098.9
     },
     "synth:clavinet": {
       "id": "synth:clavinet",
@@ -3112,7 +3112,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 15.462091,
-      "renderWallMilliseconds": 1098.5
+      "renderWallMilliseconds": 1106.800001
     },
     "lead": {
       "id": "lead",
@@ -3193,25 +3193,25 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 9.11435,
-      "renderWallMilliseconds": 1413.1
+      "renderWallMilliseconds": 1431.599998
     },
     "pluck": {
       "id": "pluck",
       "engine": "sample",
       "role": "lead",
       "canonical": {
-        "peakDbfs": -1.499997,
-        "truePeakDbfs": -1.499997,
-        "rmsDb": -23.538246,
-        "loudnessKMax": -16.256238,
-        "dcOffset": -0.000006,
+        "peakDbfs": -0.749997,
+        "truePeakDbfs": -0.749997,
+        "rmsDb": -22.788245,
+        "loudnessKMax": -15.506238,
+        "dcOffset": -0.000007,
         "nonFiniteSamples": 0,
         "logAttackTime": -2.627405,
         "temporalCentroidSeconds": 0.057606,
-        "spectralCentroidHz": 720.543811,
+        "spectralCentroidHz": 720.543832,
         "spectralFlux": 0.005955,
         "amplitudeModulationDepthDb": 10.125671,
-        "earlyToLateCentroidRatio": 1.923485,
+        "earlyToLateCentroidRatio": 1.923484,
         "boundaryDiscontinuityDbfs": null,
         "boundaryDiscontinuityExcessDb": null,
         "releaseTailRmsDb": null
@@ -3223,9 +3223,9 @@
         "minimumConfidence": 0.999582
       },
       "velocity": {
-        "softCentroidHz": 661.247489,
-        "canonicalCentroidHz": 720.543811,
-        "hardCentroidHz": 720.543811,
+        "softCentroidHz": 661.247619,
+        "canonicalCentroidHz": 720.543832,
+        "hardCentroidHz": 720.543832,
         "softToCanonicalRatio": 0.917706,
         "hardToCanonicalRatio": 1
       },
@@ -3237,44 +3237,44 @@
       },
       "conditions": {
         "canonical": {
-          "truePeakDbfs": -1.499997,
-          "dcOffset": -0.000006,
+          "truePeakDbfs": -0.749997,
+          "dcOffset": -0.000007,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "soft": {
-          "truePeakDbfs": -0.702841,
-          "dcOffset": -0.000006,
+          "truePeakDbfs": 0.047159,
+          "dcOffset": -0.000007,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "hard": {
-          "truePeakDbfs": -1.499997,
-          "dcOffset": -0.000006,
+          "truePeakDbfs": -0.749997,
+          "dcOffset": -0.000007,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "low": {
-          "truePeakDbfs": -1.49786,
-          "dcOffset": -0.000006,
+          "truePeakDbfs": -0.74786,
+          "dcOffset": -0.000007,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "high": {
-          "truePeakDbfs": -1.990319,
+          "truePeakDbfs": -1.240318,
           "dcOffset": -0.000003,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "short": {
-          "truePeakDbfs": -1.499997,
-          "dcOffset": -0.000006,
+          "truePeakDbfs": -0.749997,
+          "dcOffset": -0.000007,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         }
       },
-      "aliasingLogSpectralDistanceDb": 6.282513,
-      "renderWallMilliseconds": 1463.4
+      "aliasingLogSpectralDistanceDb": 6.32402,
+      "renderWallMilliseconds": 1447.200001
     },
     "synth:lead": {
       "id": "synth:lead",
@@ -3355,7 +3355,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 17.518231,
-      "renderWallMilliseconds": 1125.299999
+      "renderWallMilliseconds": 1146.5
     },
     "synth:pluck": {
       "id": "synth:pluck",
@@ -3436,7 +3436,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 14.486766,
-      "renderWallMilliseconds": 1062.800001
+      "renderWallMilliseconds": 1075.799999
     },
     "synth:supersaw": {
       "id": "synth:supersaw",
@@ -3517,7 +3517,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 18.84455,
-      "renderWallMilliseconds": 1121.199999
+      "renderWallMilliseconds": 1106.9
     },
     "synth:hypersaw": {
       "id": "synth:hypersaw",
@@ -3598,7 +3598,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 19.59721,
-      "renderWallMilliseconds": 1125.6
+      "renderWallMilliseconds": 1148.1
     },
     "tone:pluck-string": {
       "id": "tone:pluck-string",
@@ -3679,7 +3679,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1271.800001
+      "renderWallMilliseconds": 1267.300001
     },
     "tone:duo-lead": {
       "id": "tone:duo-lead",
@@ -3760,7 +3760,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 18.410732,
-      "renderWallMilliseconds": 1501.5
+      "renderWallMilliseconds": 1507.5
     },
     "advanced:supersaw": {
       "id": "advanced:supersaw",
@@ -3831,7 +3831,7 @@
           "truePeakDbfs": -11.144642,
           "dcOffset": 0.000001,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -11.737122
+          "boundaryDiscontinuityExcessDb": -11.737118
         },
         "short": {
           "truePeakDbfs": -10.316424,
@@ -3840,8 +3840,8 @@
           "boundaryDiscontinuityExcessDb": -13.717379
         }
       },
-      "aliasingLogSpectralDistanceDb": 18.749591,
-      "renderWallMilliseconds": 1380.5
+      "aliasingLogSpectralDistanceDb": 18.747482,
+      "renderWallMilliseconds": 1371.199999
     },
     "advanced:thick-lead": {
       "id": "advanced:thick-lead",
@@ -3922,7 +3922,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 25.067752,
-      "renderWallMilliseconds": 1374.199999
+      "renderWallMilliseconds": 1357.6
     },
     "advanced:vibrato-lead": {
       "id": "advanced:vibrato-lead",
@@ -4003,25 +4003,25 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 22.909077,
-      "renderWallMilliseconds": 1369.300001
+      "renderWallMilliseconds": 1384.6
     },
     "pad": {
       "id": "pad",
       "engine": "sample",
       "role": "pad",
       "canonical": {
-        "peakDbfs": -7.438381,
-        "truePeakDbfs": -7.438381,
-        "rmsDb": -19.423513,
-        "loudnessKMax": -13.333255,
+        "peakDbfs": -7.638381,
+        "truePeakDbfs": -7.638381,
+        "rmsDb": -19.623513,
+        "loudnessKMax": -13.533255,
         "dcOffset": 0.000001,
         "nonFiniteSamples": 0,
         "logAttackTime": -0.126201,
         "temporalCentroidSeconds": 0.576492,
-        "spectralCentroidHz": 220.174241,
+        "spectralCentroidHz": 220.174169,
         "spectralFlux": 0.024766,
         "amplitudeModulationDepthDb": 15.758987,
-        "earlyToLateCentroidRatio": 0.999442,
+        "earlyToLateCentroidRatio": 0.999443,
         "boundaryDiscontinuityDbfs": null,
         "boundaryDiscontinuityExcessDb": null,
         "releaseTailRmsDb": null
@@ -4033,10 +4033,10 @@
         "minimumConfidence": 0.992799
       },
       "velocity": {
-        "softCentroidHz": 220.090861,
-        "canonicalCentroidHz": 220.174241,
-        "hardCentroidHz": 220.174241,
-        "softToCanonicalRatio": 0.999621,
+        "softCentroidHz": 220.091111,
+        "canonicalCentroidHz": 220.174169,
+        "hardCentroidHz": 220.174169,
+        "softToCanonicalRatio": 0.999623,
         "hardToCanonicalRatio": 1
       },
       "articulation": {
@@ -4047,44 +4047,44 @@
       },
       "conditions": {
         "canonical": {
-          "truePeakDbfs": -7.438381,
+          "truePeakDbfs": -7.638381,
           "dcOffset": 0.000001,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "soft": {
-          "truePeakDbfs": -7.367172,
+          "truePeakDbfs": -7.567173,
           "dcOffset": 0.000001,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "hard": {
-          "truePeakDbfs": -7.438381,
+          "truePeakDbfs": -7.638381,
           "dcOffset": 0.000001,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "low": {
-          "truePeakDbfs": -7.438381,
+          "truePeakDbfs": -7.638381,
           "dcOffset": 0.000023,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "high": {
-          "truePeakDbfs": -7.438649,
+          "truePeakDbfs": -7.638649,
           "dcOffset": 0.000001,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         },
         "short": {
-          "truePeakDbfs": -7.438381,
+          "truePeakDbfs": -7.638381,
           "dcOffset": 0.000001,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": null
         }
       },
-      "aliasingLogSpectralDistanceDb": 4.097432,
-      "renderWallMilliseconds": 1424.099998
+      "aliasingLogSpectralDistanceDb": 4.129467,
+      "renderWallMilliseconds": 1431.699999
     },
     "chord": {
       "id": "chord",
@@ -4165,7 +4165,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1264.6
+      "renderWallMilliseconds": 1241.9
     },
     "synth:pad": {
       "id": "synth:pad",
@@ -4246,7 +4246,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 7.246777,
-      "renderWallMilliseconds": 1184.299999
+      "renderWallMilliseconds": 1156
     },
     "synth:warmpad": {
       "id": "synth:warmpad",
@@ -4327,7 +4327,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 13.385239,
-      "renderWallMilliseconds": 1135.700001
+      "renderWallMilliseconds": 1119.900002
     },
     "synth:strings": {
       "id": "synth:strings",
@@ -4408,7 +4408,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 16.558375,
-      "renderWallMilliseconds": 1116.300001
+      "renderWallMilliseconds": 1106.199999
     },
     "synth:shimmer": {
       "id": "synth:shimmer",
@@ -4489,7 +4489,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 7.646795,
-      "renderWallMilliseconds": 1174
+      "renderWallMilliseconds": 1108.1
     },
     "synth:dreampop": {
       "id": "synth:dreampop",
@@ -4570,7 +4570,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 14.425841,
-      "renderWallMilliseconds": 1124.799999
+      "renderWallMilliseconds": 1108.9
     },
     "synth:glass": {
       "id": "synth:glass",
@@ -4651,7 +4651,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 11.647361,
-      "renderWallMilliseconds": 1131.700001
+      "renderWallMilliseconds": 1101.9
     },
     "synth:jangle": {
       "id": "synth:jangle",
@@ -4732,7 +4732,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 17.360753,
-      "renderWallMilliseconds": 1105.5
+      "renderWallMilliseconds": 1105.4
     },
     "synth:evolving": {
       "id": "synth:evolving",
@@ -4813,7 +4813,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 11.651048,
-      "renderWallMilliseconds": 1155.1
+      "renderWallMilliseconds": 1125.800001
     },
     "synth:sweep": {
       "id": "synth:sweep",
@@ -4894,22 +4894,22 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 7.232259,
-      "renderWallMilliseconds": 1117.5
+      "renderWallMilliseconds": 1119.299999
     },
     "advanced:warm-pad": {
       "id": "advanced:warm-pad",
       "engine": "advanced",
       "role": "pad",
       "canonical": {
-        "peakDbfs": -10.625163,
-        "truePeakDbfs": -10.625163,
+        "peakDbfs": -10.625164,
+        "truePeakDbfs": -10.625164,
         "rmsDb": -25.393993,
         "loudnessKMax": -19.885557,
         "dcOffset": 0.000002,
         "nonFiniteSamples": 0,
         "logAttackTime": -0.419207,
         "temporalCentroidSeconds": 0.523252,
-        "spectralCentroidHz": 1329.893242,
+        "spectralCentroidHz": 1329.893287,
         "spectralFlux": 0.04762,
         "amplitudeModulationDepthDb": 4.677515,
         "earlyToLateCentroidRatio": 0.681679,
@@ -4924,8 +4924,8 @@
         "minimumConfidence": 0.993562
       },
       "velocity": {
-        "softCentroidHz": 1232.711074,
-        "canonicalCentroidHz": 1329.893242,
+        "softCentroidHz": 1232.710884,
+        "canonicalCentroidHz": 1329.893287,
         "hardCentroidHz": 1389.656482,
         "softToCanonicalRatio": 0.926925,
         "hardToCanonicalRatio": 1.044938
@@ -4938,7 +4938,7 @@
       },
       "conditions": {
         "canonical": {
-          "truePeakDbfs": -10.625163,
+          "truePeakDbfs": -10.625164,
           "dcOffset": 0.000002,
           "nonFiniteSamples": 0,
           "boundaryDiscontinuityExcessDb": -2.683878
@@ -4947,7 +4947,7 @@
           "truePeakDbfs": -10.735963,
           "dcOffset": -0.000003,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -1.509098
+          "boundaryDiscontinuityExcessDb": -1.509132
         },
         "hard": {
           "truePeakDbfs": -10.67292,
@@ -4975,7 +4975,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1318.299999
+      "renderWallMilliseconds": 1260.200001
     },
     "advanced:tremolo-strings": {
       "id": "advanced:tremolo-strings",
@@ -4990,7 +4990,7 @@
         "nonFiniteSamples": 0,
         "logAttackTime": -0.212255,
         "temporalCentroidSeconds": 0.529737,
-        "spectralCentroidHz": 1766.458376,
+        "spectralCentroidHz": 1766.45843,
         "spectralFlux": 0.105142,
         "amplitudeModulationDepthDb": 4.059226,
         "earlyToLateCentroidRatio": 0.901818,
@@ -5005,9 +5005,9 @@
         "minimumConfidence": 0.992739
       },
       "velocity": {
-        "softCentroidHz": 1575.098758,
-        "canonicalCentroidHz": 1766.458376,
-        "hardCentroidHz": 1869.23117,
+        "softCentroidHz": 1575.098815,
+        "canonicalCentroidHz": 1766.45843,
+        "hardCentroidHz": 1869.231157,
         "softToCanonicalRatio": 0.89167,
         "hardToCanonicalRatio": 1.05818
       },
@@ -5028,7 +5028,7 @@
           "truePeakDbfs": -11.23326,
           "dcOffset": -0.000003,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -12.656311
+          "boundaryDiscontinuityExcessDb": -12.656296
         },
         "hard": {
           "truePeakDbfs": -11.076638,
@@ -5049,14 +5049,14 @@
           "boundaryDiscontinuityExcessDb": -12.224506
         },
         "short": {
-          "truePeakDbfs": -19.460764,
+          "truePeakDbfs": -19.460763,
           "dcOffset": 0,
           "nonFiniteSamples": 0,
-          "boundaryDiscontinuityExcessDb": -12.749735
+          "boundaryDiscontinuityExcessDb": -12.749782
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1308.6
+      "renderWallMilliseconds": 1283.9
     },
     "zap": {
       "id": "zap",
@@ -5132,7 +5132,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1246.599998
+      "renderWallMilliseconds": 1213.799999
     },
     "noise": {
       "id": "noise",
@@ -5208,7 +5208,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": null,
-      "renderWallMilliseconds": 1282.700001
+      "renderWallMilliseconds": 1252.5
     },
     "synth:bell": {
       "id": "synth:bell",
@@ -5289,7 +5289,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 8.477902,
-      "renderWallMilliseconds": 1115.700001
+      "renderWallMilliseconds": 1118.300001
     },
     "synth:stab": {
       "id": "synth:stab",
@@ -5370,7 +5370,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 13.251477,
-      "renderWallMilliseconds": 1079.5
+      "renderWallMilliseconds": 1087.9
     },
     "synth:brass": {
       "id": "synth:brass",
@@ -5451,7 +5451,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 16.9499,
-      "renderWallMilliseconds": 1102.299999
+      "renderWallMilliseconds": 1107.700001
     },
     "synth:wobble": {
       "id": "synth:wobble",
@@ -5532,7 +5532,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 1.730149,
-      "renderWallMilliseconds": 1103.200001
+      "renderWallMilliseconds": 1104.699999
     },
     "synth:growl": {
       "id": "synth:growl",
@@ -5613,7 +5613,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 5.42821,
-      "renderWallMilliseconds": 1122
+      "renderWallMilliseconds": 1105.5
     },
     "tone:fm-bell": {
       "id": "tone:fm-bell",
@@ -5694,7 +5694,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 8.38091,
-      "renderWallMilliseconds": 1258.099998
+      "renderWallMilliseconds": 1235.1
     },
     "tone:am-bell": {
       "id": "tone:am-bell",
@@ -5775,7 +5775,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 11.991205,
-      "renderWallMilliseconds": 1451.400002
+      "renderWallMilliseconds": 1431.4
     },
     "tone:am-tremolo": {
       "id": "tone:am-tremolo",
@@ -5856,7 +5856,7 @@
         }
       },
       "aliasingLogSpectralDistanceDb": 11.428196,
-      "renderWallMilliseconds": 1472.599998
+      "renderWallMilliseconds": 1477.1
     }
   }
 }
