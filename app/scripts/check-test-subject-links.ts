@@ -104,7 +104,12 @@ for (const module of srcModules) {
     `grep -rlE '${importRe('"')}' src --include="*.ts" --include="*.tsx"; } ` +
     `| sort -u | grep -v "\\.test\\." | grep -v "${module}" || true`
   );
-  if (!prodImporters) {
+  // A standalone Vite page is rooted by a module script in HTML rather than
+  // another TypeScript import. Count that explicit entry as a real caller.
+  const htmlImporters = sh(
+    `grep -rl "${basename(module)}" src --include="*.html" || true`,
+  );
+  if (!prodImporters && !htmlImporters) {
     findings.push({ kind: 'DEAD', file: module, detail: 'imported only by tests — confirm before deleting' });
   }
 }
