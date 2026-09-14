@@ -6246,6 +6246,46 @@ master result only as a diagnostic, and makes the bounded latency cost explicit.
   frames, and its stress check spans fresh contexts so a render-quantum race
   cannot hide behind one green run. The checked-in negative/guarded receipt
   prevents a later green singleton from replacing the experimental record.
+- A mechanically checked requirement ledger. Each acceptance claim needs the
+  production path, fixture, precondition, measurement window, observable,
+  negative control, environment, and remaining limitation beside it. Test names
+  and prose headings are navigation; they are not evidence that those fields
+  match.
+- Cheap consistency checks before expensive lanes. Local pre-push and CI had
+  copied the same Chromium/WebKit pass/skip inventories, then drifted apart.
+  `validate:e2e-inventories` now compares those executable contracts before a
+  browser is launched (Lesson 65).
+- Exact CI-runtime replay for long worker tests, including clean process exit.
+  Passing all assertions was insufficient when Vitest 4 still had pending
+  console RPCs during teardown. Durable JSON receipts now carry the evidence;
+  best-effort worker console output no longer sits on the critical path
+  (Lesson 68).
+
+### Where the completion boundary was wrong
+
+We treated “the audited defects are fixed” as the end of the work. It was only
+the end of the first loop. Merging the current `main` changed the executable
+candidate and revealed that local pre-push expected 209 Chromium passes and 19
+skips while CI expected 209 and 23. The browser lane did all of its intended
+work, but the stale local copy rejected it only after the expensive run. Once
+the contracts were unified and checked up front, the exact Linux/Node 24 CI
+environment exposed a second problem: all 4,735 unit assertions passed, but the
+test process failed because ten worker-to-parent console messages were still in
+flight during teardown.
+
+Neither was a Phase 44 sound defect, but both invalidated “ready to merge.” The
+mistake was to define completion at the feature boundary instead of at the
+repository boundary. A change is complete only when the exact merge candidate
+executes the claimed work, preserves its evidence, exits cleanly in the required
+environments, and leaves local and CI gates enforcing the same contract.
+
+This also explains why the audit found problems the implementation pass did
+not. The implementation pass followed the feature narrative and asked whether
+the new code and named tests agreed. The audit changed the question: can an
+independent observer falsify the claim by attacking the domain inventory, the
+measurement instrument, the negative control, the merge base, or the test
+process itself? That adversarial review was not extra polish; it supplied the
+independent model that the implementation and its tests lacked.
 
 ### The sustain-loop correction
 
@@ -6273,4 +6313,7 @@ mechanism.
 For performance comparisons, keep the external subject hash-pinned, retain all
 executed dependencies and all trials, report the environment and asymmetry,
 prove the observer under scheduler/main-thread stress, and make every
-unmeasured domain visible in the same ledger as the passes.
+unmeasured domain visible in the same ledger as the passes. Re-run that ledger
+against the exact merge candidate and required CI runtime. A green assertion
+count is necessary but not sufficient: the lane must execute the promised
+inventory, preserve its evidence, and exit cleanly.
