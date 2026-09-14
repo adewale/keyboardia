@@ -7,7 +7,7 @@
  * Environment-specific UUIDs:
  * - Production (keyboardia.dev): Original published sessions
  * - Staging (staging.keyboardia.dev): Synced copies with different UUIDs
- * - Local (localhost): Uses staging UUIDs, except replayable seeded demos
+ * - Local mock API: Dedicated, deterministic fixture sessions
  *
  * @see /specs/LANDING-PAGE.md for full specification
  */
@@ -19,16 +19,33 @@ export interface ExampleTrack {
 
 export interface ExampleSession {
   uuid: string;
-  localUuid?: string;
+  localUuid: string;
   name: string;
   tempo: number;
   tracks: ExampleTrack[];
 }
 
+export type ExampleEnvironment = 'production' | 'staging' | 'local';
+
+export interface ExampleRuntime {
+  environment: ExampleEnvironment;
+  origin: string;
+  useMockApi: boolean;
+}
+
+export interface ExampleRemixTarget {
+  sourceId: string;
+  apiBase?: string;
+  destinationOrigin?: string;
+}
+
+const PRODUCTION_ORIGIN = 'https://keyboardia.dev';
+const STAGING_ORIGIN = 'https://staging.keyboardia.dev';
+
 /**
  * Detect current environment based on hostname
  */
-function getEnvironment(): 'production' | 'staging' | 'local' {
+function getEnvironment(): ExampleEnvironment {
   if (typeof window === 'undefined') return 'production';
   const hostname = window.location.hostname;
   if (hostname === 'keyboardia.dev' || hostname === 'www.keyboardia.dev') {
@@ -39,6 +56,14 @@ function getEnvironment(): 'production' | 'staging' | 'local' {
   }
   // Local dev, preview, or other environments use staging sessions
   return 'local';
+}
+
+function getRuntime(): ExampleRuntime {
+  return {
+    environment: getEnvironment(),
+    origin: typeof window === 'undefined' ? PRODUCTION_ORIGIN : window.location.origin,
+    useMockApi: import.meta.env.VITE_USE_MOCK_API === '1',
+  };
 }
 
 /**
@@ -72,6 +97,50 @@ const STAGING_UUIDS: Record<string, string> = {
   "8444f694-0a9a-41f3-815d-b9c6eb518c50": "51d6fb69-afb9-4ac2-bf38-d57bca011ac6", // Holby
 };
 
+const PRODUCTION_ONLY_UUIDS = new Set([
+  "5c38321b-0099-4a9f-9635-4bc7340a0b3c", // Mellow Goodness
+  "83015acd-c53d-4c53-94ae-3df62e7acef1", // Pentatonic Flow
+]);
+
+/**
+ * Stable IDs owned exclusively by the local mock API. Keeping these separate
+ * from staging prevents local development from depending on remote data and
+ * makes homepage remix tests deterministic.
+ */
+const LOCAL_FIXTURE_UUIDS: Record<string, string> = {
+  "568f178d-87b2-4113-a157-4b663de664c5": "10000000-0000-4000-8000-000000000001", // Shaker Groove
+  "5c38321b-0099-4a9f-9635-4bc7340a0b3c": "10000000-0000-4000-8000-000000000002", // Mellow Goodness
+  "dbccf0ef-2b44-4e3f-b4b0-b68000b49e92": "10000000-0000-4000-8000-000000000003", // Happy House Drone
+  "44252151-1e6b-487f-8204-d2ce095b0e4b": "10000000-0000-4000-8000-000000000004", // Afrobeat
+  "ef7e16e3-ccbf-4614-917f-789bedcb5ab1": "10000000-0000-4000-8000-000000000005", // Polyrhythm Demo
+  "6500c5e5-8a0e-4770-ace0-6f3579e5ef16": "10000000-0000-4000-8000-000000000006", // Newscast
+  "e508d514-a128-4243-b30b-92dfcd6c0049": "10000000-0000-4000-8000-000000000007", // Dreamjangler
+  "c888f863-788b-49e3-a718-dec97ec5a59c": "10000000-0000-4000-8000-000000000008", // Kristian remix
+  "a269324b-dc0a-4bcd-8cd8-e98c9030767b": "10000000-0000-4000-8000-000000000009", // Hi-Hat as Shaker
+  "60d91fff-18e2-4389-87f3-7ce65c1ad67d": "10000000-0000-4000-8000-000000000010", // Garden State
+  "2564c14a-b33a-471a-812d-e734d2299712": "10000000-0000-4000-8000-000000000011", // 808 Trap Beat
+  "b94ca868-5d89-4a29-9055-397a7a267ded": "10000000-0000-4000-8000-000000000012", // Acoustic Groove
+  "8e66f0fc-f175-4d7a-b8a8-30a1519163ed": "10000000-0000-4000-8000-000000000013", // Finger Bass Funk
+  "2d67db66-81bc-4876-b28a-49b372ccc658": "10000000-0000-4000-8000-000000000014", // Legato Dreams
+  "559d2476-2fa7-49c6-8aab-7e769a0f95cf": "10000000-0000-4000-8000-000000000015", // 303 Slide
+  "f77c71a7-53ad-4a8d-aaec-f00e1ad6eca0": "10000000-0000-4000-8000-000000000016", // Smooth Rhodes
+  "6fcf648c-a96c-4313-b2e4-289336647ed8": "10000000-0000-4000-8000-000000000017", // Vibes & Strings
+  "c75ae807-00b5-4874-9d24-b968bf6c0abc": "10000000-0000-4000-8000-000000000018", // Orchestral Groove
+  "83015acd-c53d-4c53-94ae-3df62e7acef1": "10000000-0000-4000-8000-000000000019", // Pentatonic Flow
+  "dcc33ea4-f42b-4379-9c8e-9eb4d669eb30": "10000000-0000-4000-8000-000000000020", // Jazz Exploration
+  "ddfa76ad-128f-4d13-ac90-36e2d3e365ff": "10000000-0000-4000-8000-000000000021", // Minor Key Feels
+  "8444f694-0a9a-41f3-815d-b9c6eb518c50": "10000000-0000-4000-8000-000000000022", // Holby
+};
+
+function getLocalFixtureUuid(remoteUuid: string): string {
+  for (const [productionUuid, stagingUuid] of Object.entries(STAGING_UUIDS)) {
+    if (remoteUuid === productionUuid || remoteUuid === stagingUuid) {
+      return LOCAL_FIXTURE_UUIDS[productionUuid];
+    }
+  }
+  throw new Error(`Missing local example fixture ID for ${remoteUuid}`);
+}
+
 /**
  * Get UUID for current environment
  */
@@ -88,13 +157,14 @@ function getUuidForEnvironment(productionUuid: string): string {
  * Curated example sessions with environment-aware UUIDs.
  * Production uses original UUIDs, staging/local use synced copies.
  */
-type ExampleSessionSeed = Omit<ExampleSession, 'tracks'> & {
+type ExampleSessionSeed = Omit<ExampleSession, 'tracks' | 'localUuid'> & {
   tracks: Array<Omit<ExampleTrack, 'pan'>>;
 };
 
 function withCenteredExamplePans(sessions: ExampleSessionSeed[]): ExampleSession[] {
   return sessions.map(session => ({
     ...session,
+    localUuid: getLocalFixtureUuid(session.uuid),
     tracks: session.tracks.map(track => ({ ...track, pan: 0 })),
   }));
 }
@@ -1097,7 +1167,6 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = withCenteredExamplePans([
   },
   {
     uuid: getUuidForEnvironment("8444f694-0a9a-41f3-815d-b9c6eb518c50"),
-    localUuid: "8444f694-0a9a-41f3-815d-b9c6eb518c50",
     name: "Holby",
     tempo: 120,
     tracks: [
@@ -1110,9 +1179,38 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = withCenteredExamplePans([
 ]);
 
 /**
- * Resolve an example link for the active deployment. Replayable local demos
- * are seeded by the mock API; other examples link to staging explicitly
- * because local/preview builds do not share its KV or Durable Objects.
+ * Resolve the source session for a remix. The local mock API exposes dedicated
+ * fixtures, while deployed environments use their own curated session IDs.
+ */
+export function getExampleRemixTarget(
+  example: ExampleSession,
+  runtime: ExampleRuntime = getRuntime(),
+): ExampleRemixTarget {
+  if (runtime.environment === 'local' && runtime.useMockApi) {
+    return { sourceId: example.localUuid };
+  }
+
+  const destinationOrigin = runtime.environment === 'production'
+    ? runtime.origin
+    : PRODUCTION_ONLY_UUIDS.has(example.uuid)
+      ? PRODUCTION_ORIGIN
+      : runtime.environment === 'local'
+        ? STAGING_ORIGIN
+        : runtime.origin;
+
+  return destinationOrigin === runtime.origin
+    ? { sourceId: example.uuid }
+    : {
+        sourceId: example.uuid,
+        apiBase: `${destinationOrigin}/api/sessions`,
+        destinationOrigin,
+      };
+}
+
+/**
+ * Resolve an example link for the active deployment. Local mock builds open
+ * their dedicated fixtures; other local/preview builds link to staging
+ * because they do not share its KV or Durable Objects.
  *
  * NOTE: `getEnvironment()` returns 'local' for every host that is not
  * keyboardia.dev or staging.keyboardia.dev — that includes preview deployments
@@ -1121,10 +1219,9 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = withCenteredExamplePans([
  * a same-origin link would 404.
  */
 export function getExampleHref(example: ExampleSession): string {
-  if (getEnvironment() === 'local') {
-    return example.localUuid && import.meta.env.VITE_USE_MOCK_API === '1'
-      ? `/s/${example.localUuid}`
-      : `https://staging.keyboardia.dev/s/${example.uuid}`;
-  }
-  return `/s/${example.uuid}`;
+  const runtime = getRuntime();
+  const target = getExampleRemixTarget(example, runtime);
+  return target.destinationOrigin
+    ? `${target.destinationOrigin}/s/${target.sourceId}`
+    : `/s/${target.sourceId}`;
 }

@@ -1,5 +1,6 @@
 e2e/accessibility.spec.ts
 e2e/change-instrument.spec.ts
+e2e/homepage-remix.spec.ts
 e2e/mobile-orientation.spec.ts
 e2e/mock-publish-contract.spec.ts
 e2e/motion-accessibility.spec.ts
