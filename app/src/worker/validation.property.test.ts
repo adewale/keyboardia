@@ -754,42 +754,54 @@ describe('session-state validators: parse robustness', () => {
     );
   });
 
-  it('PR-002b: DOCUMENTED GAP — arrays pass the partial validator', () => {
-    // Found by PR-002's first run (shrunk counterexample: []). An array is
-    // typeof 'object', and every field check in validateSessionState is
-    // "if present", so [] sails through with zero errors. The complete
-    // validator rejects it (required fields missing), which limits the
-    // exposure to the partial/PATCH path. Pinned here as current behavior;
-    // the one-line fix is an Array.isArray rejection in the type guard
-    // (issue #97 discussion). When someone applies it, this test fails and
-    // gets flipped — that is its job.
+  it('PR-002b: rejects arrays as non-object session states', () => {
+    // The original robustness property shrank the validator gap to `[]`:
+    // arrays passed because every field check was optional. Keep the whole
+    // array domain here so removing the Array.isArray guard revives the bug.
+    expect(validateSessionState([])).toEqual({
+      valid: false,
+      errors: ['State must be an object'],
+    });
+    expect(validateCompleteSessionState([])).toEqual({
+      valid: false,
+      errors: ['State must be an object'],
+    });
+
     fc.assert(
       fc.property(fc.array(fc.jsonValue(), { maxLength: 4 }), (arr) => {
-        expect(validateSessionState(arr).valid).toBe(true);
+        expect(validateSessionState(arr).valid).toBe(false);
         expect(validateCompleteSessionState(arr).valid).toBe(false);
       }),
       { numRuns: 50 }
     );
   });
 
-  it('PR-003: accepts a maximum-size state (16 tracks x 128 steps) — large-input boundary', () => {
-    const state = {
-      tracks: Array.from({ length: 16 }, (_, i) => ({
-        id: `t${i}`,
-        name: `Track ${i}`,
-        sampleId: 'kick',
-        steps: Array(128).fill(true),
-        parameterLocks: Array(128).fill(null),
-        volume: 1,
-        muted: false,
-        soloed: false,
-        transpose: 0,
-        stepCount: 128,
-      })),
-      tempo: 120,
-      swing: 0,
-      version: 1,
-    };
-    expect(validateCompleteSessionState(state).valid).toBe(true);
+  it('PR-003: accepts generated maximum-size states (16 tracks x 128 steps)', () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.boolean(), { minLength: 16 * 128, maxLength: 16 * 128 }),
+        (generatedSteps) => {
+          const state = {
+            tracks: Array.from({ length: 16 }, (_, index) => ({
+              id: `t${index}`,
+              name: `Track ${index}`,
+              sampleId: 'kick',
+              steps: generatedSteps.slice(index * 128, (index + 1) * 128),
+              parameterLocks: Array(128).fill(null),
+              volume: 1,
+              muted: false,
+              soloed: false,
+              transpose: 0,
+              stepCount: index % 2 === 0 ? 3 : 128,
+            })),
+            tempo: 120,
+            swing: 0,
+            version: 1,
+          };
+          expect(validateCompleteSessionState(state).valid).toBe(true);
+        },
+      ),
+      { numRuns: 10 },
+    );
   });
 });

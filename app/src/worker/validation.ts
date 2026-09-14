@@ -62,7 +62,7 @@ export interface ValidationResult {
 export function validateSessionState(state: unknown): ValidationResult {
   const errors: string[] = [];
 
-  if (!state || typeof state !== 'object') {
+  if (!state || typeof state !== 'object' || Array.isArray(state)) {
     return { valid: false, errors: ['State must be an object'] };
   }
 
@@ -130,7 +130,7 @@ export function validateSessionState(state: unknown): ValidationResult {
  */
 export function validateCompleteSessionState(state: unknown): ValidationResult {
   const validation = validateSessionState(state);
-  if (!state || typeof state !== 'object') return validation;
+  if (!state || typeof state !== 'object' || Array.isArray(state)) return validation;
 
   const s = state as Record<string, unknown>;
   const errors = [...validation.errors];
