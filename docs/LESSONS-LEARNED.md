@@ -80,6 +80,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 69: A Malformed Test Knob Must Kill the Run, Not Shrink It](#lesson-69-a-malformed-test-knob-must-kill-the-run-not-shrink-it)
 - [Lesson 70: Stateful Properties Need Shrinkable Commands, Not Random Scripts](#lesson-70-stateful-properties-need-shrinkable-commands-not-random-scripts)
 - [Lesson 71: A Seed Policy Must Reach Every Vitest Project](#lesson-71-a-seed-policy-must-reach-every-vitest-project)
+- [Lesson 72: A Resource ID Is Scoped to the Environment That Owns It](#lesson-72-a-resource-id-is-scoped-to-the-environment-that-owns-it)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -6060,3 +6061,55 @@ A repository-wide property seed policy is only real if every runner, package,
 and sandbox receives it explicitly. Test the resolver, bind the seed across
 runtime boundaries, log it in rotating discovery jobs, and make the exact failing
 value replayable locally.
+
+---
+
+## Lesson 72: A Resource ID Is Scoped to the Environment That Owns It
+
+**Date:** September 2026
+**Context:** Homepage example remix flow ([#104](https://github.com/adewale/keyboardia/pull/104))
+
+### What happened
+
+The homepage catalogue contained different session UUIDs for production and
+staging, and example links already selected an ID from the current hostname.
+When each card gained a Remix button, the new handler passed that ID to the
+existing remix client, which posted to the current origin. The ID and the API
+that owned it had been resolved separately.
+
+That failed in three distinct ways hidden behind the same 404:
+
+- the local mock API did not own staging or production session IDs;
+- preview and non-mock local builds displayed staging-owned examples but sent
+  same-origin requests to an empty deployment; and
+- two examples listed on staging existed only in production.
+
+The old local setup made the problem harder to see because one implicit starter
+session happened to exist. It proved that one magic ID worked, not that the
+homepage catalogue was locally remixable.
+
+### The fix
+
+Environment resolution now returns one `ExampleRemixTarget` containing the
+`sourceId`, optional source `apiBase`, and navigation origin. The caller cannot
+select an environment-specific ID without also receiving the endpoint that
+owns it. Local mock mode instead maps every homepage example to one of 22 stable
+local IDs and seeds those complete sessions from a dedicated fixture. A
+catalogue contract rejects missing, duplicate, malformed, or drifted fixtures.
+
+The browser regression test crosses the whole boundary rather than stopping at
+a mocked click handler. It verifies that the source fixture is readable, clicks
+the card action, observes the exact remix POST, checks the 201 lineage, follows
+the resulting navigation, and confirms that the copied session loads editable
+with focus moved into the new view. Separate cases cover loading exclusion,
+recoverable failure, and clipped carousel actions that must be inert.
+
+### The rule
+
+Treat an opaque resource ID as namespaced by its owning environment. Resolve
+the ID, source endpoint, and post-action destination as one value; never let a
+caller recombine them from separate assumptions. Local development data must
+be an explicit, complete fixture owned by the feature that consumes it, not a
+production UUID or a lucky seed. For cross-environment actions, the strongest
+test starts with a real source record and proves the complete
+UI → request → creation → navigation → reload path.
