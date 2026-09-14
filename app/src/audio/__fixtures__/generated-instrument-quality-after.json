@@ -1,0 +1,5862 @@
+{
+  "capturedAt": "2026-09-13T21:56:40.564Z",
+  "provenance": {
+    "revision": "7e001364edcc1af3f8c41bd6ab58b4c7d3a756ad",
+    "sourceTreeDirty": false,
+    "harnessSha256": "e8142b2540c4877b02c4302372df9c2c4922b42e460f932bb3ab6c68b6c8ad79",
+    "browserName": "chromium",
+    "browserVersion": "143.0.7499.4",
+    "command": "npm run audit:generated-quality:receipt"
+  },
+  "schemaVersion": 2,
+  "implementation": "current",
+  "sampleRate": 44100,
+  "voiceCount": 73,
+  "conditionRenderCount": 438,
+  "totalRenderWallMilliseconds": 89361.5,
+  "polyphony": {
+    "procedural32": {
+      "voices": 32,
+      "renderWallMilliseconds": 94.200001,
+      "realtimeFactor": 10.615711,
+      "peakDbfs": -10.51264,
+      "nonFiniteSamples": 0
+    },
+    "native16": {
+      "voices": 16,
+      "renderWallMilliseconds": 31.099998,
+      "realtimeFactor": 32.154342,
+      "peakDbfs": -13.495505,
+      "nonFiniteSamples": 0
+    },
+    "tone16": {
+      "voices": 16,
+      "renderWallMilliseconds": 314.1,
+      "realtimeFactor": 3.183699,
+      "peakDbfs": -15.655231,
+      "nonFiniteSamples": 0
+    },
+    "advanced8": {
+      "voices": 8,
+      "renderWallMilliseconds": 119.299999,
+      "realtimeFactor": 8.38223,
+      "peakDbfs": -10.036014,
+      "nonFiniteSamples": 0
+    }
+  },
+  "voices": {
+    "kick": {
+      "id": "kick",
+      "engine": "sample",
+      "role": "drum-low",
+      "canonical": {
+        "peakDbfs": -0.75074,
+        "truePeakDbfs": -0.75074,
+        "rmsDb": -20.04952,
+        "loudnessKMax": -14.15273,
+        "dcOffset": 0.000017,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.40891,
+        "temporalCentroidSeconds": 0.063244,
+        "spectralCentroidHz": 77.519637,
+        "spectralFlux": 0.104986,
+        "amplitudeModulationDepthDb": 9.413884,
+        "earlyToLateCentroidRatio": 2.128127,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 76.770616,
+        "canonicalCentroidHz": 77.519637,
+        "hardCentroidHz": 77.519637,
+        "softToCanonicalRatio": 0.990338,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.043564,
+        "sustainedTemporalCentroidSeconds": 0.063244,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -0.75074,
+          "dcOffset": 0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -1.187075,
+          "dcOffset": 0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -0.75074,
+          "dcOffset": 0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": 0,
+          "dcOffset": 0.000493,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -1.310915,
+          "dcOffset": -0.000036,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -0.75074,
+          "dcOffset": 0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1230.700001
+    },
+    "snare": {
+      "id": "snare",
+      "engine": "sample",
+      "role": "drum-mid",
+      "canonical": {
+        "peakDbfs": -1.232635,
+        "truePeakDbfs": -0.892979,
+        "rmsDb": -27.686991,
+        "loudnessKMax": -18.217293,
+        "dcOffset": 0.000003,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.480086,
+        "temporalCentroidSeconds": 0.030636,
+        "spectralCentroidHz": 9385.81906,
+        "spectralFlux": 0.375784,
+        "amplitudeModulationDepthDb": 19.172314,
+        "earlyToLateCentroidRatio": 0.95464,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 2280.371334,
+        "canonicalCentroidHz": 9385.81906,
+        "hardCentroidHz": 9385.81906,
+        "softToCanonicalRatio": 0.242959,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.028349,
+        "sustainedTemporalCentroidSeconds": 0.030636,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -0.892979,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -3.481798,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -0.892979,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -1.232635,
+          "dcOffset": 0.000012,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -1.259122,
+          "dcOffset": 0.000027,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -0.892979,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1244.299999
+    },
+    "hihat": {
+      "id": "hihat",
+      "engine": "sample",
+      "role": "drum-high",
+      "canonical": {
+        "peakDbfs": -9.711929,
+        "truePeakDbfs": -9.711929,
+        "rmsDb": -40.226837,
+        "loudnessKMax": -29.095862,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.699956,
+        "temporalCentroidSeconds": 0.014489,
+        "spectralCentroidHz": 12210.959481,
+        "spectralFlux": 0.048371,
+        "amplitudeModulationDepthDb": 13.350591,
+        "earlyToLateCentroidRatio": 0,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 6502.635499,
+        "canonicalCentroidHz": 12210.959481,
+        "hardCentroidHz": 12210.959481,
+        "softToCanonicalRatio": 0.532525,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.014489,
+        "sustainedTemporalCentroidSeconds": 0.014489,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -9.711929,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -19.812763,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -9.711929,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -7.650597,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -11.323156,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -9.711929,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1242.1
+    },
+    "clap": {
+      "id": "clap",
+      "engine": "sample",
+      "role": "drum-mid",
+      "canonical": {
+        "peakDbfs": -6.753997,
+        "truePeakDbfs": -4.01959,
+        "rmsDb": -31.710019,
+        "loudnessKMax": -20.801275,
+        "dcOffset": 0.000047,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.635838,
+        "temporalCentroidSeconds": 0.042222,
+        "spectralCentroidHz": 11062.008225,
+        "spectralFlux": 0.408998,
+        "amplitudeModulationDepthDb": 23.890534,
+        "earlyToLateCentroidRatio": 0.987482,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 2313.613161,
+        "canonicalCentroidHz": 11062.008225,
+        "hardCentroidHz": 11062.008225,
+        "softToCanonicalRatio": 0.209149,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.039056,
+        "sustainedTemporalCentroidSeconds": 0.042222,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -4.01959,
+          "dcOffset": 0.000047,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -13.692442,
+          "dcOffset": 0.000047,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -4.01959,
+          "dcOffset": 0.000047,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -5.548961,
+          "dcOffset": 0.000102,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -5.061223,
+          "dcOffset": 0.000062,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -4.01959,
+          "dcOffset": 0.000047,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1227.200001
+    },
+    "tom": {
+      "id": "tom",
+      "engine": "sample",
+      "role": "drum-low",
+      "canonical": {
+        "peakDbfs": -2.64176,
+        "truePeakDbfs": -2.641479,
+        "rmsDb": -20.191256,
+        "loudnessKMax": -13.680361,
+        "dcOffset": -0.000001,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.537229,
+        "temporalCentroidSeconds": 0.079877,
+        "spectralCentroidHz": 124.919055,
+        "spectralFlux": 0.053148,
+        "amplitudeModulationDepthDb": 7.581123,
+        "earlyToLateCentroidRatio": 1.625385,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 124.972638,
+        "canonicalCentroidHz": 124.919055,
+        "hardCentroidHz": 124.919055,
+        "softToCanonicalRatio": 1.000429,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.047699,
+        "sustainedTemporalCentroidSeconds": 0.079877,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -2.641479,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -2.570464,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -2.641479,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -2.641684,
+          "dcOffset": 0.000326,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -2.775095,
+          "dcOffset": 0.000036,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -2.641479,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1201.799999
+    },
+    "rim": {
+      "id": "rim",
+      "engine": "sample",
+      "role": "drum-mid",
+      "canonical": {
+        "peakDbfs": -8.102773,
+        "truePeakDbfs": -8.102581,
+        "rmsDb": -38.211909,
+        "loudnessKMax": -30.328832,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.607012,
+        "temporalCentroidSeconds": 0.008146,
+        "spectralCentroidHz": 1018.771981,
+        "spectralFlux": 0.023372,
+        "amplitudeModulationDepthDb": 14.849654,
+        "earlyToLateCentroidRatio": 0,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 1007.052334,
+        "canonicalCentroidHz": 1018.771981,
+        "hardCentroidHz": 1018.771981,
+        "softToCanonicalRatio": 0.988496,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.008146,
+        "sustainedTemporalCentroidSeconds": 0.008146,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -8.102581,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -6.977805,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -8.102581,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -6.999737,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -10.240132,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -8.102581,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1264.1
+    },
+    "cowbell": {
+      "id": "cowbell",
+      "engine": "sample",
+      "role": "drum-mid",
+      "canonical": {
+        "peakDbfs": -7.640242,
+        "truePeakDbfs": -7.640242,
+        "rmsDb": -30.566496,
+        "loudnessKMax": -23.290871,
+        "dcOffset": -0.000002,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.554533,
+        "temporalCentroidSeconds": 0.04329,
+        "spectralCentroidHz": 729.79544,
+        "spectralFlux": 0.022575,
+        "amplitudeModulationDepthDb": 14.480071,
+        "earlyToLateCentroidRatio": 0.622266,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 682.433507,
+        "canonicalCentroidHz": 729.79544,
+        "hardCentroidHz": 729.79544,
+        "softToCanonicalRatio": 0.935102,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.036164,
+        "sustainedTemporalCentroidSeconds": 0.04329,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.640242,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -7.03067,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -7.640242,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -7.640242,
+          "dcOffset": -0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -7.96738,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -7.640242,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1220.299999
+    },
+    "openhat": {
+      "id": "openhat",
+      "engine": "sample",
+      "role": "drum-high",
+      "canonical": {
+        "peakDbfs": -8.044252,
+        "truePeakDbfs": -7.136207,
+        "rmsDb": -33.004424,
+        "loudnessKMax": -21.879225,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.992192,
+        "temporalCentroidSeconds": 0.056788,
+        "spectralCentroidHz": 12114.466454,
+        "spectralFlux": 0.131322,
+        "amplitudeModulationDepthDb": 10.898719,
+        "earlyToLateCentroidRatio": 0.997105,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 6186.899216,
+        "canonicalCentroidHz": 12114.466454,
+        "hardCentroidHz": 12114.466454,
+        "softToCanonicalRatio": 0.510703,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.041503,
+        "sustainedTemporalCentroidSeconds": 0.056788,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.136207,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -16.220912,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -7.136207,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -6.791114,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -8.607967,
+          "dcOffset": -0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -7.136207,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1212.200001
+    },
+    "shaker": {
+      "id": "shaker",
+      "engine": "sample",
+      "role": "drum-high",
+      "canonical": {
+        "peakDbfs": -12.589323,
+        "truePeakDbfs": -12.089992,
+        "rmsDb": -39.062928,
+        "loudnessKMax": -28.168165,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.561653,
+        "temporalCentroidSeconds": 0.022896,
+        "spectralCentroidHz": 10934.912287,
+        "spectralFlux": 0.196192,
+        "amplitudeModulationDepthDb": 11.097785,
+        "earlyToLateCentroidRatio": 0,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 4578.85951,
+        "canonicalCentroidHz": 10934.912287,
+        "hardCentroidHz": 10934.912287,
+        "softToCanonicalRatio": 0.418738,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.022645,
+        "sustainedTemporalCentroidSeconds": 0.022896,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -12.089992,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -13.838688,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -12.089992,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -12.589323,
+          "dcOffset": 0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -11.560043,
+          "dcOffset": -0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -12.089992,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1228.5
+    },
+    "conga": {
+      "id": "conga",
+      "engine": "sample",
+      "role": "drum-low",
+      "canonical": {
+        "peakDbfs": -6.114336,
+        "truePeakDbfs": -5.749352,
+        "rmsDb": -26.522339,
+        "loudnessKMax": -19.717957,
+        "dcOffset": -0.000009,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.530495,
+        "temporalCentroidSeconds": 0.079595,
+        "spectralCentroidHz": 448.611076,
+        "spectralFlux": 0.046612,
+        "amplitudeModulationDepthDb": 7.165739,
+        "earlyToLateCentroidRatio": 3.679387,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 286.496242,
+        "canonicalCentroidHz": 448.611076,
+        "hardCentroidHz": 448.611076,
+        "softToCanonicalRatio": 0.638629,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.04732,
+        "sustainedTemporalCentroidSeconds": 0.079595,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -5.749352,
+          "dcOffset": -0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -6.970172,
+          "dcOffset": -0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -5.749352,
+          "dcOffset": -0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -6.114336,
+          "dcOffset": 0.000104,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -6.779796,
+          "dcOffset": 0.000014,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -5.749352,
+          "dcOffset": -0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1218.1
+    },
+    "tambourine": {
+      "id": "tambourine",
+      "engine": "sample",
+      "role": "drum-high",
+      "canonical": {
+        "peakDbfs": -13.484436,
+        "truePeakDbfs": -12.447028,
+        "rmsDb": -38.28745,
+        "loudnessKMax": -27.598592,
+        "dcOffset": -0.000002,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.72536,
+        "temporalCentroidSeconds": 0.052971,
+        "spectralCentroidHz": 6121.301169,
+        "spectralFlux": 0.03937,
+        "amplitudeModulationDepthDb": 8.922454,
+        "earlyToLateCentroidRatio": 1.930285,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 3552.528115,
+        "canonicalCentroidHz": 6121.301169,
+        "hardCentroidHz": 6121.301169,
+        "softToCanonicalRatio": 0.580355,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.038343,
+        "sustainedTemporalCentroidSeconds": 0.052971,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -12.447028,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -13.573703,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -12.447028,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -11.206296,
+          "dcOffset": -0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -13.267752,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -12.447028,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1197.4
+    },
+    "clave": {
+      "id": "clave",
+      "engine": "sample",
+      "role": "drum-mid",
+      "canonical": {
+        "peakDbfs": -6.747022,
+        "truePeakDbfs": -6.697616,
+        "rmsDb": -34.625761,
+        "loudnessKMax": -23.874452,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.644439,
+        "temporalCentroidSeconds": 0.01443,
+        "spectralCentroidHz": 2940.682846,
+        "spectralFlux": 0.030327,
+        "amplitudeModulationDepthDb": 10.048128,
+        "earlyToLateCentroidRatio": 0,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 2523.060544,
+        "canonicalCentroidHz": 2940.682846,
+        "hardCentroidHz": 2940.682846,
+        "softToCanonicalRatio": 0.857985,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.01443,
+        "sustainedTemporalCentroidSeconds": 0.01443,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.697616,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -13.190278,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -6.697616,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -6.000538,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -7.783648,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -6.697616,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1186.700001
+    },
+    "cabasa": {
+      "id": "cabasa",
+      "engine": "sample",
+      "role": "drum-high",
+      "canonical": {
+        "peakDbfs": -14.059944,
+        "truePeakDbfs": -10.89072,
+        "rmsDb": -42.59965,
+        "loudnessKMax": -31.677326,
+        "dcOffset": -0.000015,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.662167,
+        "temporalCentroidSeconds": 0.010449,
+        "spectralCentroidHz": 11105.668812,
+        "spectralFlux": 0.098623,
+        "amplitudeModulationDepthDb": 0,
+        "earlyToLateCentroidRatio": 0,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 4764.181216,
+        "canonicalCentroidHz": 11105.668812,
+        "hardCentroidHz": 11105.668812,
+        "softToCanonicalRatio": 0.428986,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.010449,
+        "sustainedTemporalCentroidSeconds": 0.010449,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -10.89072,
+          "dcOffset": -0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -16.787719,
+          "dcOffset": -0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -10.89072,
+          "dcOffset": -0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -13.270305,
+          "dcOffset": -0.000032,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -13.656283,
+          "dcOffset": -0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -10.89072,
+          "dcOffset": -0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1211.200001
+    },
+    "woodblock": {
+      "id": "woodblock",
+      "engine": "sample",
+      "role": "drum-mid",
+      "canonical": {
+        "peakDbfs": -6.477219,
+        "truePeakDbfs": -6.477219,
+        "rmsDb": -32.218577,
+        "loudnessKMax": -24.184945,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.627405,
+        "temporalCentroidSeconds": 0.024607,
+        "spectralCentroidHz": 1430.428056,
+        "spectralFlux": 0.018106,
+        "amplitudeModulationDepthDb": 9.108411,
+        "earlyToLateCentroidRatio": 0,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 1090.211024,
+        "canonicalCentroidHz": 1430.428056,
+        "hardCentroidHz": 1430.428056,
+        "softToCanonicalRatio": 0.762157,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.023997,
+        "sustainedTemporalCentroidSeconds": 0.024607,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.477219,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -7.010235,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -6.477219,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -5.171509,
+          "dcOffset": 0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -7.263709,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -6.477219,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1205.199999
+    },
+    "tone:membrane-kick": {
+      "id": "tone:membrane-kick",
+      "engine": "tone",
+      "role": "drum-low",
+      "canonical": {
+        "peakDbfs": -3.078859,
+        "truePeakDbfs": -3.015833,
+        "rmsDb": -24.586428,
+        "loudnessKMax": -16.523702,
+        "dcOffset": 0.000106,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -3.41399,
+        "temporalCentroidSeconds": 0.033169,
+        "spectralCentroidHz": 460.0563,
+        "spectralFlux": 0.107382,
+        "amplitudeModulationDepthDb": 15.971017,
+        "earlyToLateCentroidRatio": 1.633877,
+        "boundaryDiscontinuityDbfs": -69.208376,
+        "boundaryDiscontinuityExcessDb": 2.490917,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 473.343409,
+        "canonicalCentroidHz": 460.0563,
+        "hardCentroidHz": 460.0563,
+        "softToCanonicalRatio": 1.028881,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.029529,
+        "sustainedTemporalCentroidSeconds": 0.033169,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -3.015833,
+          "dcOffset": 0.000106,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.490917
+        },
+        "soft": {
+          "truePeakDbfs": -2.221532,
+          "dcOffset": 0.000107,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.930189
+        },
+        "hard": {
+          "truePeakDbfs": -3.015833,
+          "dcOffset": 0.000106,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.490917
+        },
+        "low": {
+          "truePeakDbfs": -3.015989,
+          "dcOffset": 0.000092,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.580137
+        },
+        "high": {
+          "truePeakDbfs": -2.992097,
+          "dcOffset": 0.000108,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.616694
+        },
+        "short": {
+          "truePeakDbfs": -3.015833,
+          "dcOffset": 0.000106,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.226676
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1233.9
+    },
+    "tone:membrane-tom": {
+      "id": "tone:membrane-tom",
+      "engine": "tone",
+      "role": "drum-low",
+      "canonical": {
+        "peakDbfs": -5.038393,
+        "truePeakDbfs": -5.018849,
+        "rmsDb": -27.539843,
+        "loudnessKMax": -20.160532,
+        "dcOffset": 0.000079,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -3.41399,
+        "temporalCentroidSeconds": 0.027442,
+        "spectralCentroidHz": 410.367515,
+        "spectralFlux": 0.155671,
+        "amplitudeModulationDepthDb": 13.696496,
+        "earlyToLateCentroidRatio": 1.677377,
+        "boundaryDiscontinuityDbfs": -68.215224,
+        "boundaryDiscontinuityExcessDb": 2.473591,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 414.913358,
+        "canonicalCentroidHz": 410.367515,
+        "hardCentroidHz": 410.367515,
+        "softToCanonicalRatio": 1.011077,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.024982,
+        "sustainedTemporalCentroidSeconds": 0.027442,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -5.018849,
+          "dcOffset": 0.000079,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.473591
+        },
+        "soft": {
+          "truePeakDbfs": -4.996295,
+          "dcOffset": 0.00008,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.942661
+        },
+        "hard": {
+          "truePeakDbfs": -5.018849,
+          "dcOffset": 0.000079,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.473591
+        },
+        "low": {
+          "truePeakDbfs": -5.095221,
+          "dcOffset": 0.00007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.674222
+        },
+        "high": {
+          "truePeakDbfs": -5.024729,
+          "dcOffset": 0.000084,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.938008
+        },
+        "short": {
+          "truePeakDbfs": -5.018849,
+          "dcOffset": 0.000079,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.415237
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1084.400002
+    },
+    "tone:metal-cymbal": {
+      "id": "tone:metal-cymbal",
+      "engine": "tone",
+      "role": "drum-high",
+      "canonical": {
+        "peakDbfs": -3.168602,
+        "truePeakDbfs": -3.168602,
+        "rmsDb": -27.452133,
+        "loudnessKMax": -16.352624,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -3.565257,
+        "temporalCentroidSeconds": 0.07932,
+        "spectralCentroidHz": 12183.236871,
+        "spectralFlux": 0.17732,
+        "amplitudeModulationDepthDb": 7.606844,
+        "earlyToLateCentroidRatio": 1.107349,
+        "boundaryDiscontinuityDbfs": -42.618757,
+        "boundaryDiscontinuityExcessDb": -13.766616,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 7304.81753,
+        "canonicalCentroidHz": 12183.236871,
+        "hardCentroidHz": 12183.236852,
+        "softToCanonicalRatio": 0.599579,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.04797,
+        "sustainedTemporalCentroidSeconds": 0.07932,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -3.168602,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.766616
+        },
+        "soft": {
+          "truePeakDbfs": -5.744336,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.733477
+        },
+        "hard": {
+          "truePeakDbfs": -3.168601,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.766612
+        },
+        "low": {
+          "truePeakDbfs": -4.829316,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -8.333452
+        },
+        "high": {
+          "truePeakDbfs": -6.972613,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.429977
+        },
+        "short": {
+          "truePeakDbfs": -3.168602,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.883949
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1395.299999
+    },
+    "tone:metal-hihat": {
+      "id": "tone:metal-hihat",
+      "engine": "tone",
+      "role": "drum-high",
+      "canonical": {
+        "peakDbfs": -1.56533,
+        "truePeakDbfs": -1.345775,
+        "rmsDb": -33.834749,
+        "loudnessKMax": -22.698438,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -3.644439,
+        "temporalCentroidSeconds": 0.009929,
+        "spectralCentroidHz": 12264.903875,
+        "spectralFlux": 0.060902,
+        "amplitudeModulationDepthDb": 25.701606,
+        "earlyToLateCentroidRatio": 0,
+        "boundaryDiscontinuityDbfs": -290.65423,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 7079.400995,
+        "canonicalCentroidHz": 12264.903875,
+        "hardCentroidHz": 12264.903912,
+        "softToCanonicalRatio": 0.577208,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.009929,
+        "sustainedTemporalCentroidSeconds": 0.009929,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -1.345775,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -2.607542,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -1.345774,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -0.785961,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -5.727799,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -1.345775,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1351.200001
+    },
+    "bass": {
+      "id": "bass",
+      "engine": "sample",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -1.560813,
+        "truePeakDbfs": -1.560746,
+        "rmsDb": -19.672271,
+        "loudnessKMax": -15.019276,
+        "dcOffset": 0.000666,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.786503,
+        "temporalCentroidSeconds": 0.119568,
+        "spectralCentroidHz": 160.679333,
+        "spectralFlux": 0.173885,
+        "amplitudeModulationDepthDb": 8.439539,
+        "earlyToLateCentroidRatio": 0.741468,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -0.001656,
+        "middleCents": 0.000351,
+        "highCents": -0.000198,
+        "minimumConfidence": 0.996662
+      },
+      "velocity": {
+        "softCentroidHz": 161.985898,
+        "canonicalCentroidHz": 160.679333,
+        "hardCentroidHz": 160.679333,
+        "softToCanonicalRatio": 1.008132,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.071389,
+        "sustainedTemporalCentroidSeconds": 0.119568,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -1.560746,
+          "dcOffset": 0.000666,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -1.492361,
+          "dcOffset": 0.000666,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -1.560746,
+          "dcOffset": 0.000666,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -1.560813,
+          "dcOffset": 0.001772,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -1.561055,
+          "dcOffset": 0.000159,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -1.560746,
+          "dcOffset": 0.000666,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 7.421409,
+      "renderWallMilliseconds": 1455.199999
+    },
+    "subbass": {
+      "id": "subbass",
+      "engine": "sample",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -2.457754,
+        "truePeakDbfs": -2.457745,
+        "rmsDb": -15.410141,
+        "loudnessKMax": -14.776747,
+        "dcOffset": -0.000648,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.823581,
+        "temporalCentroidSeconds": 0.200933,
+        "spectralCentroidHz": 55.821074,
+        "spectralFlux": 0.05857,
+        "amplitudeModulationDepthDb": 5.634622,
+        "earlyToLateCentroidRatio": 0.544188,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -0.000065,
+        "middleCents": -0.000037,
+        "highCents": -0.000272,
+        "minimumConfidence": 0.99173
+      },
+      "velocity": {
+        "softCentroidHz": 48.61375,
+        "canonicalCentroidHz": 55.821074,
+        "hardCentroidHz": 55.821074,
+        "softToCanonicalRatio": 0.870885,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.086727,
+        "sustainedTemporalCentroidSeconds": 0.200933,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -2.457745,
+          "dcOffset": -0.000648,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -2.454744,
+          "dcOffset": -0.000648,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -2.457745,
+          "dcOffset": -0.000648,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -2.457752,
+          "dcOffset": -0.001281,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -2.457756,
+          "dcOffset": -0.000352,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -2.457745,
+          "dcOffset": -0.000648,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 6.759567,
+      "renderWallMilliseconds": 1488.200001
+    },
+    "synth:bass": {
+      "id": "synth:bass",
+      "engine": "synth",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -1.535925,
+        "truePeakDbfs": -1.490629,
+        "rmsDb": -22.156367,
+        "loudnessKMax": -16.446027,
+        "dcOffset": -0.000033,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.334808,
+        "temporalCentroidSeconds": 0.252289,
+        "spectralCentroidHz": 862.910159,
+        "spectralFlux": 0.031552,
+        "amplitudeModulationDepthDb": 1.055604,
+        "earlyToLateCentroidRatio": 1.288945,
+        "boundaryDiscontinuityDbfs": -68.774995,
+        "boundaryDiscontinuityExcessDb": -27.304191,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.50335,
+        "middleCents": 0.44439,
+        "highCents": 0.424291,
+        "minimumConfidence": 0.999084
+      },
+      "velocity": {
+        "softCentroidHz": 716.517736,
+        "canonicalCentroidHz": 862.910159,
+        "hardCentroidHz": 943.716622,
+        "softToCanonicalRatio": 0.83035,
+        "hardToCanonicalRatio": 1.093644
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.073144,
+        "sustainedTemporalCentroidSeconds": 0.252289,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -1.490629,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -27.304191
+        },
+        "soft": {
+          "truePeakDbfs": -1.586641,
+          "dcOffset": -0.000034,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.78609
+        },
+        "hard": {
+          "truePeakDbfs": -1.468015,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -8.77048
+        },
+        "low": {
+          "truePeakDbfs": -1.121884,
+          "dcOffset": -0.000102,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.836579
+        },
+        "high": {
+          "truePeakDbfs": -1.874164,
+          "dcOffset": 0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -7.656692
+        },
+        "short": {
+          "truePeakDbfs": -1.490629,
+          "dcOffset": -0.000032,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -9.484241
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 13.574137,
+      "renderWallMilliseconds": 1102.699999
+    },
+    "synth:acid": {
+      "id": "synth:acid",
+      "engine": "synth",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -0.901874,
+        "truePeakDbfs": -0.890377,
+        "rmsDb": -24.223017,
+        "loudnessKMax": -18.376945,
+        "dcOffset": -0.000025,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.343409,
+        "temporalCentroidSeconds": 0.27566,
+        "spectralCentroidHz": 703.155684,
+        "spectralFlux": 0.047611,
+        "amplitudeModulationDepthDb": 3.994166,
+        "earlyToLateCentroidRatio": 1.634794,
+        "boundaryDiscontinuityDbfs": -43.727182,
+        "boundaryDiscontinuityExcessDb": 0.178083,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -6.167688,
+        "middleCents": -6.542471,
+        "highCents": -6.979704,
+        "minimumConfidence": 0.989437
+      },
+      "velocity": {
+        "softCentroidHz": 579.366519,
+        "canonicalCentroidHz": 703.155684,
+        "hardCentroidHz": 774.96047,
+        "softToCanonicalRatio": 0.823952,
+        "hardToCanonicalRatio": 1.102118
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.060914,
+        "sustainedTemporalCentroidSeconds": 0.27566,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -0.890377,
+          "dcOffset": -0.000025,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.178083
+        },
+        "soft": {
+          "truePeakDbfs": -0.912837,
+          "dcOffset": -0.000027,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.590952
+        },
+        "hard": {
+          "truePeakDbfs": -0.935211,
+          "dcOffset": -0.000025,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.389815
+        },
+        "low": {
+          "truePeakDbfs": -0.537606,
+          "dcOffset": -0.000082,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.139028
+        },
+        "high": {
+          "truePeakDbfs": -0.355675,
+          "dcOffset": 0.000007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.181446
+        },
+        "short": {
+          "truePeakDbfs": -0.890377,
+          "dcOffset": -0.000024,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.010486
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 10.169655,
+      "renderWallMilliseconds": 1094
+    },
+    "synth:sub": {
+      "id": "synth:sub",
+      "engine": "synth",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -9.891083,
+        "truePeakDbfs": -9.890765,
+        "rmsDb": -20.997152,
+        "loudnessKMax": -16.59149,
+        "dcOffset": 0.000004,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.239605,
+        "temporalCentroidSeconds": 0.342679,
+        "spectralCentroidHz": 261.840832,
+        "spectralFlux": 0.002864,
+        "amplitudeModulationDepthDb": 1.180055,
+        "earlyToLateCentroidRatio": 1.003056,
+        "boundaryDiscontinuityDbfs": -43.480463,
+        "boundaryDiscontinuityExcessDb": 2.604747,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.000507,
+        "middleCents": 0.000046,
+        "highCents": 0.0028,
+        "minimumConfidence": 0.999781
+      },
+      "velocity": {
+        "softCentroidHz": 262.001702,
+        "canonicalCentroidHz": 261.840832,
+        "hardCentroidHz": 261.857803,
+        "softToCanonicalRatio": 1.000614,
+        "hardToCanonicalRatio": 1.000065
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.092247,
+        "sustainedTemporalCentroidSeconds": 0.342679,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -9.890765,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.604747
+        },
+        "soft": {
+          "truePeakDbfs": -14.492619,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 3.195874
+        },
+        "hard": {
+          "truePeakDbfs": -7.883153,
+          "dcOffset": 0.00001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.844886
+        },
+        "low": {
+          "truePeakDbfs": -3.18219,
+          "dcOffset": -0.000168,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.318871
+        },
+        "high": {
+          "truePeakDbfs": -22.704567,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.354366
+        },
+        "short": {
+          "truePeakDbfs": -9.890765,
+          "dcOffset": 0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.461033
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 6.883044,
+      "renderWallMilliseconds": 1092.800001
+    },
+    "synth:funkbass": {
+      "id": "synth:funkbass",
+      "engine": "synth",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -3.546773,
+        "truePeakDbfs": -3.546378,
+        "rmsDb": -21.969311,
+        "loudnessKMax": -16.16381,
+        "dcOffset": -0.000011,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.71502,
+        "temporalCentroidSeconds": 0.211809,
+        "spectralCentroidHz": 757.184941,
+        "spectralFlux": 0.023414,
+        "amplitudeModulationDepthDb": 1.812374,
+        "earlyToLateCentroidRatio": 0.796292,
+        "boundaryDiscontinuityDbfs": -63.438981,
+        "boundaryDiscontinuityExcessDb": -11.679533,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 1.498866,
+        "middleCents": 1.499099,
+        "highCents": 1.495317,
+        "minimumConfidence": 0.999367
+      },
+      "velocity": {
+        "softCentroidHz": 638.322362,
+        "canonicalCentroidHz": 757.184941,
+        "hardCentroidHz": 834.935139,
+        "softToCanonicalRatio": 0.84302,
+        "hardToCanonicalRatio": 1.102683
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.057391,
+        "sustainedTemporalCentroidSeconds": 0.211809,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -3.546378,
+          "dcOffset": -0.000011,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.679533
+        },
+        "soft": {
+          "truePeakDbfs": -3.033393,
+          "dcOffset": -0.000008,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.040627
+        },
+        "hard": {
+          "truePeakDbfs": -3.442003,
+          "dcOffset": -0.000013,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -38.869906
+        },
+        "low": {
+          "truePeakDbfs": -3.464812,
+          "dcOffset": 0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.710411
+        },
+        "high": {
+          "truePeakDbfs": -4.060878,
+          "dcOffset": -0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.658026
+        },
+        "short": {
+          "truePeakDbfs": -3.546378,
+          "dcOffset": -0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.033975
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 10.384126,
+      "renderWallMilliseconds": 1091.799999
+    },
+    "synth:discobass": {
+      "id": "synth:discobass",
+      "engine": "synth",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -4.883328,
+        "truePeakDbfs": -4.87263,
+        "rmsDb": -23.14481,
+        "loudnessKMax": -17.399731,
+        "dcOffset": -0.000045,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.845098,
+        "temporalCentroidSeconds": 0.228654,
+        "spectralCentroidHz": 530.297223,
+        "spectralFlux": 0.020053,
+        "amplitudeModulationDepthDb": 3.59857,
+        "earlyToLateCentroidRatio": 0.849075,
+        "boundaryDiscontinuityDbfs": -43.781941,
+        "boundaryDiscontinuityExcessDb": 0.591554,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 1.606572,
+        "middleCents": 1.587858,
+        "highCents": 1.532797,
+        "minimumConfidence": 0.999737
+      },
+      "velocity": {
+        "softCentroidHz": 435.794211,
+        "canonicalCentroidHz": 530.297223,
+        "hardCentroidHz": 579.69191,
+        "softToCanonicalRatio": 0.821792,
+        "hardToCanonicalRatio": 1.093145
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.07049,
+        "sustainedTemporalCentroidSeconds": 0.228654,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -4.87263,
+          "dcOffset": -0.000045,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.591554
+        },
+        "soft": {
+          "truePeakDbfs": -6.051525,
+          "dcOffset": -0.000046,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.215361
+        },
+        "hard": {
+          "truePeakDbfs": -4.815822,
+          "dcOffset": -0.000043,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.631662
+        },
+        "low": {
+          "truePeakDbfs": -3.853503,
+          "dcOffset": -0.000066,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -42.048806
+        },
+        "high": {
+          "truePeakDbfs": -6.115439,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -42.731235
+        },
+        "short": {
+          "truePeakDbfs": -4.87263,
+          "dcOffset": -0.000044,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.648124
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 9.252007,
+      "renderWallMilliseconds": 1091.4
+    },
+    "synth:reese": {
+      "id": "synth:reese",
+      "engine": "synth",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -8.904125,
+        "truePeakDbfs": -8.898168,
+        "rmsDb": -26.652397,
+        "loudnessKMax": -22.392962,
+        "dcOffset": -0.000026,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.831525,
+        "temporalCentroidSeconds": 0.30536,
+        "spectralCentroidHz": 642.104158,
+        "spectralFlux": 0.09711,
+        "amplitudeModulationDepthDb": 4.390202,
+        "earlyToLateCentroidRatio": 0.758662,
+        "boundaryDiscontinuityDbfs": -53.49543,
+        "boundaryDiscontinuityExcessDb": -3.661734,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 8.253241,
+        "middleCents": 8.282389,
+        "highCents": 8.52517,
+        "minimumConfidence": 0.996928
+      },
+      "velocity": {
+        "softCentroidHz": 570.034977,
+        "canonicalCentroidHz": 642.104158,
+        "hardCentroidHz": 680.543815,
+        "softToCanonicalRatio": 0.887761,
+        "hardToCanonicalRatio": 1.059865
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.061285,
+        "sustainedTemporalCentroidSeconds": 0.30536,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -8.898168,
+          "dcOffset": -0.000026,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.661734
+        },
+        "soft": {
+          "truePeakDbfs": -10.031915,
+          "dcOffset": -0.000028,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -4.420328
+        },
+        "hard": {
+          "truePeakDbfs": -8.83651,
+          "dcOffset": -0.000025,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -4.895706
+        },
+        "low": {
+          "truePeakDbfs": -7.867402,
+          "dcOffset": -0.000042,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -26.911666
+        },
+        "high": {
+          "truePeakDbfs": -10.239111,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.641852
+        },
+        "short": {
+          "truePeakDbfs": -8.898168,
+          "dcOffset": -0.000026,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.529911
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 9.69204,
+      "renderWallMilliseconds": 1144.1
+    },
+    "synth:hoover": {
+      "id": "synth:hoover",
+      "engine": "synth",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -9.068188,
+        "truePeakDbfs": -9.068185,
+        "rmsDb": -27.033826,
+        "loudnessKMax": -23.959095,
+        "dcOffset": -0.001645,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.266041,
+        "temporalCentroidSeconds": 0.31823,
+        "spectralCentroidHz": 492.615264,
+        "spectralFlux": 0.119842,
+        "amplitudeModulationDepthDb": 2.581298,
+        "earlyToLateCentroidRatio": 0.12078,
+        "boundaryDiscontinuityDbfs": -59.013378,
+        "boundaryDiscontinuityExcessDb": -11.678259,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -23.225696,
+        "middleCents": 3.139211,
+        "highCents": -45.798286,
+        "minimumConfidence": 0
+      },
+      "velocity": {
+        "softCentroidHz": 408.398211,
+        "canonicalCentroidHz": 492.615264,
+        "hardCentroidHz": 539.963752,
+        "softToCanonicalRatio": 0.829041,
+        "hardToCanonicalRatio": 1.096117
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.023502,
+        "sustainedTemporalCentroidSeconds": 0.31823,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -9.068185,
+          "dcOffset": -0.001645,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.678259
+        },
+        "soft": {
+          "truePeakDbfs": -12.406525,
+          "dcOffset": -0.001115,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.118695
+        },
+        "hard": {
+          "truePeakDbfs": -8.003578,
+          "dcOffset": -0.001798,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.059502
+        },
+        "low": {
+          "truePeakDbfs": -10.069705,
+          "dcOffset": 0.001067,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -8.238721
+        },
+        "high": {
+          "truePeakDbfs": -8.739751,
+          "dcOffset": -0.001679,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.749699
+        },
+        "short": {
+          "truePeakDbfs": -9.068185,
+          "dcOffset": -0.001674,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -8.298441
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 7.476536,
+      "renderWallMilliseconds": 1104.4
+    },
+    "tone:fm-bass": {
+      "id": "tone:fm-bass",
+      "engine": "tone",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -14.172671,
+        "truePeakDbfs": -14.172046,
+        "rmsDb": -28.967292,
+        "loudnessKMax": -24.845702,
+        "dcOffset": 0.000004,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.104109,
+        "temporalCentroidSeconds": 0.33986,
+        "spectralCentroidHz": 567.013306,
+        "spectralFlux": 0.009425,
+        "amplitudeModulationDepthDb": 0.087218,
+        "earlyToLateCentroidRatio": 0.526923,
+        "boundaryDiscontinuityDbfs": -42.286565,
+        "boundaryDiscontinuityExcessDb": 5.298687,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -1.320823,
+        "middleCents": -0.657361,
+        "highCents": -0.315352,
+        "minimumConfidence": 0.999557
+      },
+      "velocity": {
+        "softCentroidHz": 573.869935,
+        "canonicalCentroidHz": 567.013306,
+        "hardCentroidHz": 567.013306,
+        "softToCanonicalRatio": 1.012093,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.065348,
+        "sustainedTemporalCentroidSeconds": 0.33986,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -14.172046,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 5.298687
+        },
+        "soft": {
+          "truePeakDbfs": -14.037585,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 6.598868
+        },
+        "hard": {
+          "truePeakDbfs": -14.172046,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 5.298687
+        },
+        "low": {
+          "truePeakDbfs": -14.025594,
+          "dcOffset": 0.000022,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 5.416339
+        },
+        "high": {
+          "truePeakDbfs": -14.10326,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.01467
+        },
+        "short": {
+          "truePeakDbfs": -14.172046,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.8672
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 6.944734,
+      "renderWallMilliseconds": 1282
+    },
+    "advanced:sub-bass": {
+      "id": "advanced:sub-bass",
+      "engine": "advanced",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -6.68145,
+        "truePeakDbfs": -6.68145,
+        "rmsDb": -16.750608,
+        "loudnessKMax": -12.907674,
+        "dcOffset": 0.000014,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.516039,
+        "temporalCentroidSeconds": 0.40966,
+        "spectralCentroidHz": 242.301861,
+        "spectralFlux": 0.013872,
+        "amplitudeModulationDepthDb": 0.154114,
+        "earlyToLateCentroidRatio": 0.992305,
+        "boundaryDiscontinuityDbfs": -48.039598,
+        "boundaryDiscontinuityExcessDb": -6.01271,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -0.332109,
+        "middleCents": 0.140587,
+        "highCents": -3.833906,
+        "minimumConfidence": 0
+      },
+      "velocity": {
+        "softCentroidHz": 224.267034,
+        "canonicalCentroidHz": 242.301861,
+        "hardCentroidHz": 249.337115,
+        "softToCanonicalRatio": 0.925569,
+        "hardToCanonicalRatio": 1.029035
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.097703,
+        "sustainedTemporalCentroidSeconds": 0.40966,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.68145,
+          "dcOffset": 0.000014,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.01271
+        },
+        "soft": {
+          "truePeakDbfs": -8.755362,
+          "dcOffset": 0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.37421
+        },
+        "hard": {
+          "truePeakDbfs": -6.229173,
+          "dcOffset": 0.000012,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.158393
+        },
+        "low": {
+          "truePeakDbfs": -5.660889,
+          "dcOffset": -0.000052,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.78315
+        },
+        "high": {
+          "truePeakDbfs": -13.004495,
+          "dcOffset": 0.00001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 4.921726
+        },
+        "short": {
+          "truePeakDbfs": -6.701372,
+          "dcOffset": 0.000014,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.125482
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 8.944272,
+      "renderWallMilliseconds": 1325.700001
+    },
+    "advanced:wobble-bass": {
+      "id": "advanced:wobble-bass",
+      "engine": "advanced",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -4.74067,
+        "truePeakDbfs": -4.74067,
+        "rmsDb": -21.652466,
+        "loudnessKMax": -15.71752,
+        "dcOffset": -0.00002,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.125925,
+        "temporalCentroidSeconds": 0.281826,
+        "spectralCentroidHz": 1148.531838,
+        "spectralFlux": 0.139107,
+        "amplitudeModulationDepthDb": 6.22812,
+        "earlyToLateCentroidRatio": 0.810425,
+        "boundaryDiscontinuityDbfs": -44.497911,
+        "boundaryDiscontinuityExcessDb": 2.389913,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -1.54031,
+        "middleCents": -2.130681,
+        "highCents": 0.232962,
+        "minimumConfidence": 0.822931
+      },
+      "velocity": {
+        "softCentroidHz": 1120.20807,
+        "canonicalCentroidHz": 1148.531838,
+        "hardCentroidHz": 1354.74641,
+        "softToCanonicalRatio": 0.975339,
+        "hardToCanonicalRatio": 1.179546
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.085948,
+        "sustainedTemporalCentroidSeconds": 0.281826,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -4.74067,
+          "dcOffset": -0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.389913
+        },
+        "soft": {
+          "truePeakDbfs": -4.79076,
+          "dcOffset": 0.000298,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.324422
+        },
+        "hard": {
+          "truePeakDbfs": -4.726383,
+          "dcOffset": -0.000035,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.617492
+        },
+        "low": {
+          "truePeakDbfs": -1.810374,
+          "dcOffset": 0.000154,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 4.976071
+        },
+        "high": {
+          "truePeakDbfs": -4.721951,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.808097
+        },
+        "short": {
+          "truePeakDbfs": -4.74067,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -17.8503
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 2.311944,
+      "renderWallMilliseconds": 1343.6
+    },
+    "advanced:acid-bass": {
+      "id": "advanced:acid-bass",
+      "engine": "advanced",
+      "role": "bass",
+      "canonical": {
+        "peakDbfs": -2.240042,
+        "truePeakDbfs": -2.196874,
+        "rmsDb": -22.729489,
+        "loudnessKMax": -17.856056,
+        "dcOffset": -0.000005,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.128565,
+        "temporalCentroidSeconds": 0.347382,
+        "spectralCentroidHz": 843.949952,
+        "spectralFlux": 0.030283,
+        "amplitudeModulationDepthDb": 0.262397,
+        "earlyToLateCentroidRatio": 1.679902,
+        "boundaryDiscontinuityDbfs": -52.992663,
+        "boundaryDiscontinuityExcessDb": -13.682437,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -3.692553,
+        "middleCents": -5.209778,
+        "highCents": -7.277241,
+        "minimumConfidence": 0.988757
+      },
+      "velocity": {
+        "softCentroidHz": 787.008095,
+        "canonicalCentroidHz": 843.949952,
+        "hardCentroidHz": 883.339097,
+        "softToCanonicalRatio": 0.932529,
+        "hardToCanonicalRatio": 1.046672
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.075018,
+        "sustainedTemporalCentroidSeconds": 0.347382,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -2.196874,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.682437
+        },
+        "soft": {
+          "truePeakDbfs": -2.191208,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.355973
+        },
+        "hard": {
+          "truePeakDbfs": -2.206799,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.40817
+        },
+        "low": {
+          "truePeakDbfs": -1.84283,
+          "dcOffset": -0.000014,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.535696
+        },
+        "high": {
+          "truePeakDbfs": -2.160315,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -40.04081
+        },
+        "short": {
+          "truePeakDbfs": -2.196874,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.733718
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 12.150538,
+      "renderWallMilliseconds": 1335.299999
+    },
+    "synth:rhodes": {
+      "id": "synth:rhodes",
+      "engine": "synth",
+      "role": "keys",
+      "canonical": {
+        "peakDbfs": -6.361908,
+        "truePeakDbfs": -6.360873,
+        "rmsDb": -18.952483,
+        "loudnessKMax": -14.267084,
+        "dcOffset": -0.000052,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.653213,
+        "temporalCentroidSeconds": 0.304414,
+        "spectralCentroidHz": 262.715347,
+        "spectralFlux": 0.003945,
+        "amplitudeModulationDepthDb": 12.532583,
+        "earlyToLateCentroidRatio": 1.000269,
+        "boundaryDiscontinuityDbfs": -41.018105,
+        "boundaryDiscontinuityExcessDb": 0.753112,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 3.397583,
+        "middleCents": 3.042617,
+        "highCents": 2.787644,
+        "minimumConfidence": 0.999797
+      },
+      "velocity": {
+        "softCentroidHz": 262.71163,
+        "canonicalCentroidHz": 262.715347,
+        "hardCentroidHz": 262.716719,
+        "softToCanonicalRatio": 0.999986,
+        "hardToCanonicalRatio": 1.000005
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.08302,
+        "sustainedTemporalCentroidSeconds": 0.304414,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.360873,
+          "dcOffset": -0.000052,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.753112
+        },
+        "soft": {
+          "truePeakDbfs": -6.323213,
+          "dcOffset": -0.000053,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.575745
+        },
+        "hard": {
+          "truePeakDbfs": -6.373907,
+          "dcOffset": -0.000052,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.819899
+        },
+        "low": {
+          "truePeakDbfs": -6.416851,
+          "dcOffset": -0.000131,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.418641
+        },
+        "high": {
+          "truePeakDbfs": -6.212424,
+          "dcOffset": 0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 3.016502
+        },
+        "short": {
+          "truePeakDbfs": -6.360873,
+          "dcOffset": -0.000052,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -9.725102
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 8.188194,
+      "renderWallMilliseconds": 1136
+    },
+    "synth:wurlitzer": {
+      "id": "synth:wurlitzer",
+      "engine": "synth",
+      "role": "keys",
+      "canonical": {
+        "peakDbfs": -6.386162,
+        "truePeakDbfs": -6.378151,
+        "rmsDb": -21.880843,
+        "loudnessKMax": -16.704103,
+        "dcOffset": -0.00002,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.653213,
+        "temporalCentroidSeconds": 0.275247,
+        "spectralCentroidHz": 602.560234,
+        "spectralFlux": 0.018426,
+        "amplitudeModulationDepthDb": 12.266922,
+        "earlyToLateCentroidRatio": 0.823176,
+        "boundaryDiscontinuityDbfs": -44.849426,
+        "boundaryDiscontinuityExcessDb": -0.693757,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 3.339713,
+        "middleCents": 3.069144,
+        "highCents": 2.849784,
+        "minimumConfidence": 0.999749
+      },
+      "velocity": {
+        "softCentroidHz": 558.750021,
+        "canonicalCentroidHz": 602.560234,
+        "hardCentroidHz": 622.811306,
+        "softToCanonicalRatio": 0.927293,
+        "hardToCanonicalRatio": 1.033608
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.075907,
+        "sustainedTemporalCentroidSeconds": 0.275247,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.378151,
+          "dcOffset": -0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.693757
+        },
+        "soft": {
+          "truePeakDbfs": -6.353433,
+          "dcOffset": -0.000019,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.687814
+        },
+        "hard": {
+          "truePeakDbfs": -6.388703,
+          "dcOffset": -0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.2135
+        },
+        "low": {
+          "truePeakDbfs": -6.440466,
+          "dcOffset": 0.000038,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.663437
+        },
+        "high": {
+          "truePeakDbfs": -6.31666,
+          "dcOffset": -0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.475543
+        },
+        "short": {
+          "truePeakDbfs": -6.378151,
+          "dcOffset": -0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -18.44205
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 8.153976,
+      "renderWallMilliseconds": 1107.200001
+    },
+    "synth:epiano": {
+      "id": "synth:epiano",
+      "engine": "synth",
+      "role": "keys",
+      "canonical": {
+        "peakDbfs": -7.449662,
+        "truePeakDbfs": -7.444537,
+        "rmsDb": -22.588543,
+        "loudnessKMax": -15.990434,
+        "dcOffset": -0.00002,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.657667,
+        "temporalCentroidSeconds": 0.148031,
+        "spectralCentroidHz": 449.202229,
+        "spectralFlux": 0.016526,
+        "amplitudeModulationDepthDb": 15.39452,
+        "earlyToLateCentroidRatio": 0.600556,
+        "boundaryDiscontinuityDbfs": -68.718573,
+        "boundaryDiscontinuityExcessDb": -13.32567,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 2.119269,
+        "middleCents": 2.056914,
+        "highCents": 1.828533,
+        "minimumConfidence": 0.999849
+      },
+      "velocity": {
+        "softCentroidHz": 430.644762,
+        "canonicalCentroidHz": 449.202229,
+        "hardCentroidHz": 457.65135,
+        "softToCanonicalRatio": 0.958688,
+        "hardToCanonicalRatio": 1.018809
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.080712,
+        "sustainedTemporalCentroidSeconds": 0.148031,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.444537,
+          "dcOffset": -0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.32567
+        },
+        "soft": {
+          "truePeakDbfs": -7.440895,
+          "dcOffset": -0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -16.026983
+        },
+        "hard": {
+          "truePeakDbfs": -7.446111,
+          "dcOffset": -0.000021,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.718617
+        },
+        "low": {
+          "truePeakDbfs": -7.466609,
+          "dcOffset": 0.000036,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 5.451316
+        },
+        "high": {
+          "truePeakDbfs": -7.43926,
+          "dcOffset": -0.000016,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.892912
+        },
+        "short": {
+          "truePeakDbfs": -7.444537,
+          "dcOffset": -0.000021,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.904807
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 8.486639,
+      "renderWallMilliseconds": 1106.4
+    },
+    "synth:vibes": {
+      "id": "synth:vibes",
+      "engine": "synth",
+      "role": "keys",
+      "canonical": {
+        "peakDbfs": -7.321411,
+        "truePeakDbfs": -7.321411,
+        "rmsDb": -20.45432,
+        "loudnessKMax": -14.528315,
+        "dcOffset": -0.00005,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.445782,
+        "temporalCentroidSeconds": 0.138214,
+        "spectralCentroidHz": 261.592402,
+        "spectralFlux": 0.000391,
+        "amplitudeModulationDepthDb": 3.043564,
+        "earlyToLateCentroidRatio": 0.999881,
+        "boundaryDiscontinuityDbfs": -51.963177,
+        "boundaryDiscontinuityExcessDb": -3.946675,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.059098,
+        "middleCents": 0.023858,
+        "highCents": 0.008145,
+        "minimumConfidence": 0.999052
+      },
+      "velocity": {
+        "softCentroidHz": 261.593323,
+        "canonicalCentroidHz": 261.592402,
+        "hardCentroidHz": 261.592493,
+        "softToCanonicalRatio": 1.000004,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.054611,
+        "sustainedTemporalCentroidSeconds": 0.138214,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.321411,
+          "dcOffset": -0.00005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.946675
+        },
+        "soft": {
+          "truePeakDbfs": -7.30973,
+          "dcOffset": -0.000049,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.684809
+        },
+        "hard": {
+          "truePeakDbfs": -7.325197,
+          "dcOffset": -0.00005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -4.05253
+        },
+        "low": {
+          "truePeakDbfs": -7.334101,
+          "dcOffset": -0.000074,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 4.040433
+        },
+        "high": {
+          "truePeakDbfs": -7.270905,
+          "dcOffset": -0.000034,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.371053
+        },
+        "short": {
+          "truePeakDbfs": -7.321411,
+          "dcOffset": -0.000047,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 3.131255
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 6.57203,
+      "renderWallMilliseconds": 1094.199999
+    },
+    "tone:fm-epiano": {
+      "id": "tone:fm-epiano",
+      "engine": "tone",
+      "role": "keys",
+      "canonical": {
+        "peakDbfs": -12.02604,
+        "truePeakDbfs": -12.022474,
+        "rmsDb": -30.437027,
+        "loudnessKMax": -24.5402,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.099131,
+        "temporalCentroidSeconds": 0.214683,
+        "spectralCentroidHz": 885.363461,
+        "spectralFlux": 0.006637,
+        "amplitudeModulationDepthDb": 0.30065,
+        "earlyToLateCentroidRatio": 1.378554,
+        "boundaryDiscontinuityDbfs": -64.09054,
+        "boundaryDiscontinuityExcessDb": -10.159011,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 4.27075,
+        "middleCents": 4.226717,
+        "highCents": 4.22445,
+        "minimumConfidence": 0.998896
+      },
+      "velocity": {
+        "softCentroidHz": 583.68705,
+        "canonicalCentroidHz": 885.363461,
+        "hardCentroidHz": 885.363461,
+        "softToCanonicalRatio": 0.659263,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.049562,
+        "sustainedTemporalCentroidSeconds": 0.214683,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -12.022474,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.159011
+        },
+        "soft": {
+          "truePeakDbfs": -10.52291,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.63422
+        },
+        "hard": {
+          "truePeakDbfs": -12.022474,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.159011
+        },
+        "low": {
+          "truePeakDbfs": -12.030055,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -19.139177
+        },
+        "high": {
+          "truePeakDbfs": -12.010776,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -32.578341
+        },
+        "short": {
+          "truePeakDbfs": -12.022474,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 4.914286
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 7.150715,
+      "renderWallMilliseconds": 1303
+    },
+    "synth:organ": {
+      "id": "synth:organ",
+      "engine": "synth",
+      "role": "keys",
+      "canonical": {
+        "peakDbfs": -10.326102,
+        "truePeakDbfs": -10.29584,
+        "rmsDb": -22.696372,
+        "loudnessKMax": -17.526852,
+        "dcOffset": -0.000029,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.416552,
+        "temporalCentroidSeconds": 0.322314,
+        "spectralCentroidHz": 1796.00767,
+        "spectralFlux": 0.078035,
+        "amplitudeModulationDepthDb": 8.463612,
+        "earlyToLateCentroidRatio": 0.779695,
+        "boundaryDiscontinuityDbfs": -89.82644,
+        "boundaryDiscontinuityExcessDb": -53.131859,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 2.592341,
+        "middleCents": 2.65892,
+        "highCents": 2.630284,
+        "minimumConfidence": 0.998824
+      },
+      "velocity": {
+        "softCentroidHz": 1533.144567,
+        "canonicalCentroidHz": 1796.00767,
+        "hardCentroidHz": 1931.993663,
+        "softToCanonicalRatio": 0.85364,
+        "hardToCanonicalRatio": 1.075716
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.08112,
+        "sustainedTemporalCentroidSeconds": 0.322314,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -10.29584,
+          "dcOffset": -0.000029,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -53.131859
+        },
+        "soft": {
+          "truePeakDbfs": -10.226227,
+          "dcOffset": -0.000029,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -55.067951
+        },
+        "hard": {
+          "truePeakDbfs": -10.339598,
+          "dcOffset": -0.000029,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -52.343945
+        },
+        "low": {
+          "truePeakDbfs": -10.22665,
+          "dcOffset": -0.000078,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -86.550387
+        },
+        "high": {
+          "truePeakDbfs": -10.271566,
+          "dcOffset": 0.000008,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 8.355068
+        },
+        "short": {
+          "truePeakDbfs": -10.29584,
+          "dcOffset": -0.000029,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -54.485558
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 16.354508,
+      "renderWallMilliseconds": 1094.700001
+    },
+    "synth:organphase": {
+      "id": "synth:organphase",
+      "engine": "synth",
+      "role": "keys",
+      "canonical": {
+        "peakDbfs": -9.950461,
+        "truePeakDbfs": -9.950461,
+        "rmsDb": -20.91714,
+        "loudnessKMax": -16.789686,
+        "dcOffset": -0.00005,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.558079,
+        "temporalCentroidSeconds": 0.392894,
+        "spectralCentroidHz": 1940.290704,
+        "spectralFlux": 0.026913,
+        "amplitudeModulationDepthDb": 0.140204,
+        "earlyToLateCentroidRatio": 0.992776,
+        "boundaryDiscontinuityDbfs": -65.971409,
+        "boundaryDiscontinuityExcessDb": -29.490226,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 11.77347,
+        "middleCents": 11.495644,
+        "highCents": 11.965967,
+        "minimumConfidence": 0.587357
+      },
+      "velocity": {
+        "softCentroidHz": 1601.71206,
+        "canonicalCentroidHz": 1940.290704,
+        "hardCentroidHz": 2119.681502,
+        "softToCanonicalRatio": 0.825501,
+        "hardToCanonicalRatio": 1.092456
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.087595,
+        "sustainedTemporalCentroidSeconds": 0.392894,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -9.950461,
+          "dcOffset": -0.00005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -29.490226
+        },
+        "soft": {
+          "truePeakDbfs": -9.967661,
+          "dcOffset": -0.00005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -19.661139
+        },
+        "hard": {
+          "truePeakDbfs": -9.942664,
+          "dcOffset": -0.00005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -36.961618
+        },
+        "low": {
+          "truePeakDbfs": -9.892333,
+          "dcOffset": -0.000024,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -75.964266
+        },
+        "high": {
+          "truePeakDbfs": -9.905714,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 9.498772
+        },
+        "short": {
+          "truePeakDbfs": -9.950461,
+          "dcOffset": -0.000052,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -55.637394
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 22.892402,
+      "renderWallMilliseconds": 1098.9
+    },
+    "synth:clavinet": {
+      "id": "synth:clavinet",
+      "engine": "synth",
+      "role": "keys",
+      "canonical": {
+        "peakDbfs": -6.13114,
+        "truePeakDbfs": -6.129139,
+        "rmsDb": -29.633275,
+        "loudnessKMax": -23.515586,
+        "dcOffset": -0.000015,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -3.125925,
+        "temporalCentroidSeconds": 0.232413,
+        "spectralCentroidHz": 2082.202848,
+        "spectralFlux": 0.115,
+        "amplitudeModulationDepthDb": 1.809871,
+        "earlyToLateCentroidRatio": 0.903133,
+        "boundaryDiscontinuityDbfs": -58.413748,
+        "boundaryDiscontinuityExcessDb": -12.058509,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 2.974486,
+        "middleCents": 3.036803,
+        "highCents": 3.039192,
+        "minimumConfidence": 0.995653
+      },
+      "velocity": {
+        "softCentroidHz": 1762.847463,
+        "canonicalCentroidHz": 2082.202848,
+        "hardCentroidHz": 2248.651966,
+        "softToCanonicalRatio": 0.846626,
+        "hardToCanonicalRatio": 1.079939
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.049245,
+        "sustainedTemporalCentroidSeconds": 0.232413,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.129139,
+          "dcOffset": -0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.058509
+        },
+        "soft": {
+          "truePeakDbfs": -6.205938,
+          "dcOffset": -0.000014,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.361886
+        },
+        "hard": {
+          "truePeakDbfs": -6.094828,
+          "dcOffset": -0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.016948
+        },
+        "low": {
+          "truePeakDbfs": -6.026159,
+          "dcOffset": -0.000014,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -19.591655
+        },
+        "high": {
+          "truePeakDbfs": -6.423861,
+          "dcOffset": -0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 13.355055
+        },
+        "short": {
+          "truePeakDbfs": -6.129139,
+          "dcOffset": -0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.765809
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 15.462091,
+      "renderWallMilliseconds": 1106.800001
+    },
+    "lead": {
+      "id": "lead",
+      "engine": "sample",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -11.544681,
+        "truePeakDbfs": -11.544681,
+        "rmsDb": -20.582098,
+        "loudnessKMax": -13.691476,
+        "dcOffset": -0.000005,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.131221,
+        "temporalCentroidSeconds": 0.230298,
+        "spectralCentroidHz": 1090.515991,
+        "spectralFlux": 0.010449,
+        "amplitudeModulationDepthDb": 14.872078,
+        "earlyToLateCentroidRatio": 0.819597,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.02053,
+        "middleCents": 0.01768,
+        "highCents": 0.094729,
+        "minimumConfidence": 0.999562
+      },
+      "velocity": {
+        "softCentroidHz": 890.956997,
+        "canonicalCentroidHz": 1090.515991,
+        "hardCentroidHz": 1090.515991,
+        "softToCanonicalRatio": 0.817005,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.093328,
+        "sustainedTemporalCentroidSeconds": 0.230298,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -11.544681,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -10.34688,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -11.544681,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -11.543482,
+          "dcOffset": -0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -11.544681,
+          "dcOffset": -0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -11.544681,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 9.11435,
+      "renderWallMilliseconds": 1431.599998
+    },
+    "pluck": {
+      "id": "pluck",
+      "engine": "sample",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -0.749997,
+        "truePeakDbfs": -0.749997,
+        "rmsDb": -22.788245,
+        "loudnessKMax": -15.506238,
+        "dcOffset": -0.000007,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.627405,
+        "temporalCentroidSeconds": 0.057606,
+        "spectralCentroidHz": 720.543832,
+        "spectralFlux": 0.005955,
+        "amplitudeModulationDepthDb": 10.125671,
+        "earlyToLateCentroidRatio": 1.923484,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -0.000215,
+        "middleCents": 0.001404,
+        "highCents": -0.09985,
+        "minimumConfidence": 0.999582
+      },
+      "velocity": {
+        "softCentroidHz": 661.247619,
+        "canonicalCentroidHz": 720.543832,
+        "hardCentroidHz": 720.543832,
+        "softToCanonicalRatio": 0.917706,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.040789,
+        "sustainedTemporalCentroidSeconds": 0.057606,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -0.749997,
+          "dcOffset": -0.000007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": 0.047159,
+          "dcOffset": -0.000007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -0.749997,
+          "dcOffset": -0.000007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -0.74786,
+          "dcOffset": -0.000007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -1.240318,
+          "dcOffset": -0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -0.749997,
+          "dcOffset": -0.000007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 6.32402,
+      "renderWallMilliseconds": 1447.200001
+    },
+    "synth:lead": {
+      "id": "synth:lead",
+      "engine": "synth",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -6.293899,
+        "truePeakDbfs": -6.20397,
+        "rmsDb": -18.57977,
+        "loudnessKMax": -13.83578,
+        "dcOffset": -0.000042,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.419129,
+        "temporalCentroidSeconds": 0.412523,
+        "spectralCentroidHz": 1759.403155,
+        "spectralFlux": 0.097647,
+        "amplitudeModulationDepthDb": 6.933651,
+        "earlyToLateCentroidRatio": 1.324099,
+        "boundaryDiscontinuityDbfs": -31.961961,
+        "boundaryDiscontinuityExcessDb": 0.180565,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 3.057996,
+        "middleCents": 3.0902,
+        "highCents": 3.19206,
+        "minimumConfidence": 0.996736
+      },
+      "velocity": {
+        "softCentroidHz": 1473.632386,
+        "canonicalCentroidHz": 1759.403155,
+        "hardCentroidHz": 1910.129305,
+        "softToCanonicalRatio": 0.837575,
+        "hardToCanonicalRatio": 1.085669
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.079361,
+        "sustainedTemporalCentroidSeconds": 0.412523,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.20397,
+          "dcOffset": -0.000042,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.180565
+        },
+        "soft": {
+          "truePeakDbfs": -5.660923,
+          "dcOffset": -0.000042,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.744788
+        },
+        "hard": {
+          "truePeakDbfs": -6.523123,
+          "dcOffset": -0.000042,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.512158
+        },
+        "low": {
+          "truePeakDbfs": -5.934377,
+          "dcOffset": -0.000116,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -62.85504
+        },
+        "high": {
+          "truePeakDbfs": -6.103498,
+          "dcOffset": 0.000012,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 7.824653
+        },
+        "short": {
+          "truePeakDbfs": -6.20397,
+          "dcOffset": -0.000041,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -26.947182
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 17.518231,
+      "renderWallMilliseconds": 1146.5
+    },
+    "synth:pluck": {
+      "id": "synth:pluck",
+      "engine": "synth",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -1.722253,
+        "truePeakDbfs": -1.687517,
+        "rmsDb": -24.395972,
+        "loudnessKMax": -17.123573,
+        "dcOffset": -0.000009,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.963197,
+        "temporalCentroidSeconds": 0.077304,
+        "spectralCentroidHz": 1112.370039,
+        "spectralFlux": 0.052557,
+        "amplitudeModulationDepthDb": 7.786467,
+        "earlyToLateCentroidRatio": 1.590567,
+        "boundaryDiscontinuityDbfs": -50.930884,
+        "boundaryDiscontinuityExcessDb": -0.665274,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 1.196984,
+        "middleCents": 1.165313,
+        "highCents": 0.967948,
+        "minimumConfidence": 0.998951
+      },
+      "velocity": {
+        "softCentroidHz": 910.39392,
+        "canonicalCentroidHz": 1112.370039,
+        "hardCentroidHz": 1214.754818,
+        "softToCanonicalRatio": 0.818427,
+        "hardToCanonicalRatio": 1.092042
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.047688,
+        "sustainedTemporalCentroidSeconds": 0.077304,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -1.687517,
+          "dcOffset": -0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.665274
+        },
+        "soft": {
+          "truePeakDbfs": -1.798724,
+          "dcOffset": -0.000007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.422764
+        },
+        "hard": {
+          "truePeakDbfs": -1.64565,
+          "dcOffset": -0.00001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.687574
+        },
+        "low": {
+          "truePeakDbfs": -1.816527,
+          "dcOffset": 0.000055,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -7.620969
+        },
+        "high": {
+          "truePeakDbfs": -2.08781,
+          "dcOffset": -0.00002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.590949
+        },
+        "short": {
+          "truePeakDbfs": -1.687517,
+          "dcOffset": -0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.919327
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 14.486766,
+      "renderWallMilliseconds": 1075.799999
+    },
+    "synth:supersaw": {
+      "id": "synth:supersaw",
+      "engine": "synth",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -13.513077,
+        "truePeakDbfs": -13.49592,
+        "rmsDb": -28.830864,
+        "loudnessKMax": -24.358542,
+        "dcOffset": -0.000012,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.302016,
+        "temporalCentroidSeconds": 0.395118,
+        "spectralCentroidHz": 1757.948547,
+        "spectralFlux": 0.21116,
+        "amplitudeModulationDepthDb": 5.095764,
+        "earlyToLateCentroidRatio": 1.05225,
+        "boundaryDiscontinuityDbfs": -55.31477,
+        "boundaryDiscontinuityExcessDb": -16.01221,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.182819,
+        "middleCents": 0.052564,
+        "highCents": 0.124692,
+        "minimumConfidence": 0.961668
+      },
+      "velocity": {
+        "softCentroidHz": 1495.069051,
+        "canonicalCentroidHz": 1757.948547,
+        "hardCentroidHz": 1894.493165,
+        "softToCanonicalRatio": 0.850462,
+        "hardToCanonicalRatio": 1.077673
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.068806,
+        "sustainedTemporalCentroidSeconds": 0.395118,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -13.49592,
+          "dcOffset": -0.000012,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -16.01221
+        },
+        "soft": {
+          "truePeakDbfs": -13.615268,
+          "dcOffset": -0.000012,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.579636
+        },
+        "hard": {
+          "truePeakDbfs": -13.443507,
+          "dcOffset": -0.000012,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -16.176525
+        },
+        "low": {
+          "truePeakDbfs": -13.40631,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.639564
+        },
+        "high": {
+          "truePeakDbfs": -13.867089,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 11.872075
+        },
+        "short": {
+          "truePeakDbfs": -13.86988,
+          "dcOffset": -0.000012,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.363499
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 18.84455,
+      "renderWallMilliseconds": 1106.9
+    },
+    "synth:hypersaw": {
+      "id": "synth:hypersaw",
+      "engine": "synth",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -13.110634,
+        "truePeakDbfs": -13.000747,
+        "rmsDb": -29.28621,
+        "loudnessKMax": -24.794379,
+        "dcOffset": -0.000011,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.302016,
+        "temporalCentroidSeconds": 0.391024,
+        "spectralCentroidHz": 1997.019646,
+        "spectralFlux": 0.248788,
+        "amplitudeModulationDepthDb": 4.774605,
+        "earlyToLateCentroidRatio": 1.302532,
+        "boundaryDiscontinuityDbfs": -55.960554,
+        "boundaryDiscontinuityExcessDb": -11.65335,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 19.93892,
+        "middleCents": 1.047758,
+        "highCents": 0.276426,
+        "minimumConfidence": 0.905221
+      },
+      "velocity": {
+        "softCentroidHz": 1691.929016,
+        "canonicalCentroidHz": 1997.019646,
+        "hardCentroidHz": 2155.766832,
+        "softToCanonicalRatio": 0.847227,
+        "hardToCanonicalRatio": 1.079492
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.090569,
+        "sustainedTemporalCentroidSeconds": 0.391024,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -13.000747,
+          "dcOffset": -0.000011,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.65335
+        },
+        "soft": {
+          "truePeakDbfs": -13.050284,
+          "dcOffset": -0.000011,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.56507
+        },
+        "hard": {
+          "truePeakDbfs": -12.978236,
+          "dcOffset": -0.000011,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.58508
+        },
+        "low": {
+          "truePeakDbfs": -12.862723,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -17.994562
+        },
+        "high": {
+          "truePeakDbfs": -12.026615,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 6.678426
+        },
+        "short": {
+          "truePeakDbfs": -13.000747,
+          "dcOffset": -0.000011,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 5.132966
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 19.59721,
+      "renderWallMilliseconds": 1148.1
+    },
+    "tone:pluck-string": {
+      "id": "tone:pluck-string",
+      "engine": "tone",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -10.610787,
+        "truePeakDbfs": -10.610787,
+        "rmsDb": -36.057149,
+        "loudnessKMax": -27.266507,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.972341,
+        "temporalCentroidSeconds": 0.075245,
+        "spectralCentroidHz": 6774.090077,
+        "spectralFlux": 0.020753,
+        "amplitudeModulationDepthDb": 6.408133,
+        "earlyToLateCentroidRatio": 0.97286,
+        "boundaryDiscontinuityDbfs": -72.607687,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": -127.800294
+      },
+      "pitch": {
+        "lowCents": -4.497653,
+        "middleCents": -4.497634,
+        "highCents": -14.710915,
+        "minimumConfidence": 0.999824
+      },
+      "velocity": {
+        "softCentroidHz": 1745.555311,
+        "canonicalCentroidHz": 6774.090077,
+        "hardCentroidHz": 6393.849374,
+        "softToCanonicalRatio": 0.257681,
+        "hardToCanonicalRatio": 0.943868
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.050069,
+        "sustainedTemporalCentroidSeconds": 0.075245,
+        "shortReleaseTailRmsDb": -125.32372,
+        "sustainedReleaseTailRmsDb": -127.800294
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -10.610787,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -12.833428,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -14.244954,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -9.739202,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -13.392603,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -4.222255
+        },
+        "short": {
+          "truePeakDbfs": -10.066531,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1267.300001
+    },
+    "tone:duo-lead": {
+      "id": "tone:duo-lead",
+      "engine": "tone",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -3.727993,
+        "truePeakDbfs": -3.723658,
+        "rmsDb": -18.927204,
+        "loudnessKMax": -15.006894,
+        "dcOffset": 0.000002,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.298086,
+        "temporalCentroidSeconds": 0.364556,
+        "spectralCentroidHz": 512.733495,
+        "spectralFlux": 0.029585,
+        "amplitudeModulationDepthDb": 0.184805,
+        "earlyToLateCentroidRatio": 1.172607,
+        "boundaryDiscontinuityDbfs": -37.183613,
+        "boundaryDiscontinuityExcessDb": 3.211949,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 101.098042,
+        "middleCents": 101.098042,
+        "highCents": -113.666127,
+        "minimumConfidence": 0
+      },
+      "velocity": {
+        "softCentroidHz": 472.796794,
+        "canonicalCentroidHz": 512.733495,
+        "hardCentroidHz": 512.733495,
+        "softToCanonicalRatio": 0.92211,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.075548,
+        "sustainedTemporalCentroidSeconds": 0.364556,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -3.723658,
+          "dcOffset": 0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 3.211949
+        },
+        "soft": {
+          "truePeakDbfs": -2.773881,
+          "dcOffset": 0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.864633
+        },
+        "hard": {
+          "truePeakDbfs": -3.723658,
+          "dcOffset": 0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 3.211949
+        },
+        "low": {
+          "truePeakDbfs": -3.983467,
+          "dcOffset": -0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -22.587967
+        },
+        "high": {
+          "truePeakDbfs": -3.284775,
+          "dcOffset": 0.000008,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.51474
+        },
+        "short": {
+          "truePeakDbfs": -3.723658,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.829021
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 18.410732,
+      "renderWallMilliseconds": 1507.5
+    },
+    "advanced:supersaw": {
+      "id": "advanced:supersaw",
+      "engine": "advanced",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -10.316424,
+        "truePeakDbfs": -10.316424,
+        "rmsDb": -26.695486,
+        "loudnessKMax": -22.136198,
+        "dcOffset": -0.000004,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.095435,
+        "temporalCentroidSeconds": 0.37809,
+        "spectralCentroidHz": 2120.797146,
+        "spectralFlux": 0.207755,
+        "amplitudeModulationDepthDb": 5.147168,
+        "earlyToLateCentroidRatio": 0.969958,
+        "boundaryDiscontinuityDbfs": -49.486173,
+        "boundaryDiscontinuityExcessDb": -11.418753,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.835896,
+        "middleCents": 0.161753,
+        "highCents": 0.230796,
+        "minimumConfidence": 0.940053
+      },
+      "velocity": {
+        "softCentroidHz": 1897.959077,
+        "canonicalCentroidHz": 2120.797146,
+        "hardCentroidHz": 2237.978667,
+        "softToCanonicalRatio": 0.894927,
+        "hardToCanonicalRatio": 1.055254
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.069563,
+        "sustainedTemporalCentroidSeconds": 0.37809,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -10.316424,
+          "dcOffset": -0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.418753
+        },
+        "soft": {
+          "truePeakDbfs": -10.558699,
+          "dcOffset": -0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.829285
+        },
+        "hard": {
+          "truePeakDbfs": -10.253928,
+          "dcOffset": -0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.390282
+        },
+        "low": {
+          "truePeakDbfs": -9.807463,
+          "dcOffset": -0.000011,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -16.375583
+        },
+        "high": {
+          "truePeakDbfs": -11.144642,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.737118
+        },
+        "short": {
+          "truePeakDbfs": -10.316424,
+          "dcOffset": -0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.717379
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 18.747482,
+      "renderWallMilliseconds": 1371.199999
+    },
+    "advanced:thick-lead": {
+      "id": "advanced:thick-lead",
+      "engine": "advanced",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -7.348392,
+        "truePeakDbfs": -7.348392,
+        "rmsDb": -20.050776,
+        "loudnessKMax": -15.828346,
+        "dcOffset": 0.000001,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.808114,
+        "temporalCentroidSeconds": 0.379164,
+        "spectralCentroidHz": 2035.580863,
+        "spectralFlux": 0.012149,
+        "amplitudeModulationDepthDb": 0.015661,
+        "earlyToLateCentroidRatio": 1.059529,
+        "boundaryDiscontinuityDbfs": -89.511271,
+        "boundaryDiscontinuityExcessDb": -54.94534,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 1.31731,
+        "middleCents": 1.366651,
+        "highCents": 1.401245,
+        "minimumConfidence": 0.995765
+      },
+      "velocity": {
+        "softCentroidHz": 1774.443092,
+        "canonicalCentroidHz": 2035.580863,
+        "hardCentroidHz": 2176.906655,
+        "softToCanonicalRatio": 0.871713,
+        "hardToCanonicalRatio": 1.069428
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.081972,
+        "sustainedTemporalCentroidSeconds": 0.379164,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.348392,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -54.94534
+        },
+        "soft": {
+          "truePeakDbfs": -7.352604,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -56.232555
+        },
+        "hard": {
+          "truePeakDbfs": -7.345054,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -53.031642
+        },
+        "low": {
+          "truePeakDbfs": -7.427434,
+          "dcOffset": -0.000023,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -67.682744
+        },
+        "high": {
+          "truePeakDbfs": -7.31099,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.200866
+        },
+        "short": {
+          "truePeakDbfs": -7.348392,
+          "dcOffset": 0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -46.563767
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 25.067752,
+      "renderWallMilliseconds": 1357.6
+    },
+    "advanced:vibrato-lead": {
+      "id": "advanced:vibrato-lead",
+      "engine": "advanced",
+      "role": "lead",
+      "canonical": {
+        "peakDbfs": -7.957895,
+        "truePeakDbfs": -7.93059,
+        "rmsDb": -20.813814,
+        "loudnessKMax": -16.278212,
+        "dcOffset": 0,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.3827,
+        "temporalCentroidSeconds": 0.395254,
+        "spectralCentroidHz": 2519.850847,
+        "spectralFlux": 0.05881,
+        "amplitudeModulationDepthDb": 0.054316,
+        "earlyToLateCentroidRatio": 1.038079,
+        "boundaryDiscontinuityDbfs": -18.329001,
+        "boundaryDiscontinuityExcessDb": 19.220326,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 4.257116,
+        "middleCents": 2.130791,
+        "highCents": 1.906365,
+        "minimumConfidence": 0.953323
+      },
+      "velocity": {
+        "softCentroidHz": 2236.742531,
+        "canonicalCentroidHz": 2519.850847,
+        "hardCentroidHz": 2671.825425,
+        "softToCanonicalRatio": 0.887649,
+        "hardToCanonicalRatio": 1.060311
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.095757,
+        "sustainedTemporalCentroidSeconds": 0.395254,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.93059,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 19.220326
+        },
+        "soft": {
+          "truePeakDbfs": -7.965495,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 17.869684
+        },
+        "hard": {
+          "truePeakDbfs": -7.922662,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 19.722585
+        },
+        "low": {
+          "truePeakDbfs": -8.204383,
+          "dcOffset": -0.000008,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -25.519355
+        },
+        "high": {
+          "truePeakDbfs": -8.018955,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -16.100674
+        },
+        "short": {
+          "truePeakDbfs": -7.93059,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -27.19361
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 22.909077,
+      "renderWallMilliseconds": 1384.6
+    },
+    "pad": {
+      "id": "pad",
+      "engine": "sample",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -7.638381,
+        "truePeakDbfs": -7.638381,
+        "rmsDb": -19.623513,
+        "loudnessKMax": -13.533255,
+        "dcOffset": 0.000001,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -0.126201,
+        "temporalCentroidSeconds": 0.576492,
+        "spectralCentroidHz": 220.174169,
+        "spectralFlux": 0.024766,
+        "amplitudeModulationDepthDb": 15.758987,
+        "earlyToLateCentroidRatio": 0.999443,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.891037,
+        "middleCents": 0.129844,
+        "highCents": 0.005899,
+        "minimumConfidence": 0.992799
+      },
+      "velocity": {
+        "softCentroidHz": 220.091111,
+        "canonicalCentroidHz": 220.174169,
+        "hardCentroidHz": 220.174169,
+        "softToCanonicalRatio": 0.999623,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.123368,
+        "sustainedTemporalCentroidSeconds": 0.576492,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.638381,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -7.567173,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -7.638381,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -7.638381,
+          "dcOffset": 0.000023,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -7.638649,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -7.638381,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 4.129467,
+      "renderWallMilliseconds": 1431.699999
+    },
+    "chord": {
+      "id": "chord",
+      "engine": "sample",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -6,
+        "truePeakDbfs": -5.995387,
+        "rmsDb": -21.668729,
+        "loudnessKMax": -16.072754,
+        "dcOffset": -0.000016,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.201332,
+        "temporalCentroidSeconds": 0.32024,
+        "spectralCentroidHz": 519.654675,
+        "spectralFlux": 0.261352,
+        "amplitudeModulationDepthDb": 3.65821,
+        "earlyToLateCentroidRatio": 1.002766,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 70.633656,
+        "middleCents": 80.188671,
+        "highCents": 111.050964,
+        "minimumConfidence": 0
+      },
+      "velocity": {
+        "softCentroidHz": 533.861918,
+        "canonicalCentroidHz": 519.654675,
+        "hardCentroidHz": 519.654675,
+        "softToCanonicalRatio": 1.02734,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.106145,
+        "sustainedTemporalCentroidSeconds": 0.32024,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -5.995387,
+          "dcOffset": -0.000016,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -5.267047,
+          "dcOffset": -0.000016,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -5.995387,
+          "dcOffset": -0.000016,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -5.998959,
+          "dcOffset": -0.000032,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -5.995543,
+          "dcOffset": -0.000008,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -5.995387,
+          "dcOffset": -0.000016,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1241.9
+    },
+    "synth:pad": {
+      "id": "synth:pad",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -6.24553,
+        "truePeakDbfs": -6.24553,
+        "rmsDb": -18.514401,
+        "loudnessKMax": -13.645935,
+        "dcOffset": 0.00001,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.877283,
+        "temporalCentroidSeconds": 0.456657,
+        "spectralCentroidHz": 558.71594,
+        "spectralFlux": 0.019409,
+        "amplitudeModulationDepthDb": 13.843349,
+        "earlyToLateCentroidRatio": 0.856205,
+        "boundaryDiscontinuityDbfs": -39.510402,
+        "boundaryDiscontinuityExcessDb": 2.114909,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.277738,
+        "middleCents": 4.137475,
+        "highCents": 3.799247,
+        "minimumConfidence": 0.9984
+      },
+      "velocity": {
+        "softCentroidHz": 521.473891,
+        "canonicalCentroidHz": 558.71594,
+        "hardCentroidHz": 575.743268,
+        "softToCanonicalRatio": 0.933344,
+        "hardToCanonicalRatio": 1.030476
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.102269,
+        "sustainedTemporalCentroidSeconds": 0.456657,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.24553,
+          "dcOffset": 0.00001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.114909
+        },
+        "soft": {
+          "truePeakDbfs": -6.07821,
+          "dcOffset": 0.00001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.601338
+        },
+        "hard": {
+          "truePeakDbfs": -6.320007,
+          "dcOffset": 0.00001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.448932
+        },
+        "low": {
+          "truePeakDbfs": -5.814755,
+          "dcOffset": -0.000045,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.056274
+        },
+        "high": {
+          "truePeakDbfs": -6.869959,
+          "dcOffset": 0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -20.753255
+        },
+        "short": {
+          "truePeakDbfs": -6.24553,
+          "dcOffset": 0.000011,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.367232
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 7.246777,
+      "renderWallMilliseconds": 1156
+    },
+    "synth:warmpad": {
+      "id": "synth:warmpad",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -8.601139,
+        "truePeakDbfs": -8.599999,
+        "rmsDb": -22.012581,
+        "loudnessKMax": -17.931173,
+        "dcOffset": 0.000006,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.89239,
+        "temporalCentroidSeconds": 0.40976,
+        "spectralCentroidHz": 1089.576809,
+        "spectralFlux": 0.029233,
+        "amplitudeModulationDepthDb": 4.990283,
+        "earlyToLateCentroidRatio": 0.715628,
+        "boundaryDiscontinuityDbfs": -59.723315,
+        "boundaryDiscontinuityExcessDb": -19.167357,
+        "releaseTailRmsDb": -51.739169
+      },
+      "pitch": {
+        "lowCents": 0.258982,
+        "middleCents": 0.828349,
+        "highCents": 1.279799,
+        "minimumConfidence": 0.998951
+      },
+      "velocity": {
+        "softCentroidHz": 967.088469,
+        "canonicalCentroidHz": 1089.576809,
+        "hardCentroidHz": 1155.457538,
+        "softToCanonicalRatio": 0.887582,
+        "hardToCanonicalRatio": 1.060465
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.106594,
+        "sustainedTemporalCentroidSeconds": 0.40976,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": -51.739169
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -8.599999,
+          "dcOffset": 0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -19.167357
+        },
+        "soft": {
+          "truePeakDbfs": -8.619897,
+          "dcOffset": 0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.657613
+        },
+        "hard": {
+          "truePeakDbfs": -8.592467,
+          "dcOffset": 0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -20.428595
+        },
+        "low": {
+          "truePeakDbfs": -8.732368,
+          "dcOffset": -0.000025,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -23.184197
+        },
+        "high": {
+          "truePeakDbfs": -8.359508,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 10.300482
+        },
+        "short": {
+          "truePeakDbfs": -8.599999,
+          "dcOffset": 0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -21.554128
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 13.385239,
+      "renderWallMilliseconds": 1119.900002
+    },
+    "synth:strings": {
+      "id": "synth:strings",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -10.434883,
+        "truePeakDbfs": -10.434883,
+        "rmsDb": -24.699968,
+        "loudnessKMax": -19.918899,
+        "dcOffset": 0.000004,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.815779,
+        "temporalCentroidSeconds": 0.441252,
+        "spectralCentroidHz": 1521.729382,
+        "spectralFlux": 0.095705,
+        "amplitudeModulationDepthDb": 4.294346,
+        "earlyToLateCentroidRatio": 0.96771,
+        "boundaryDiscontinuityDbfs": -58.193933,
+        "boundaryDiscontinuityExcessDb": -17.246657,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 3.693165,
+        "middleCents": 3.810839,
+        "highCents": 3.801066,
+        "minimumConfidence": 0.993424
+      },
+      "velocity": {
+        "softCentroidHz": 1297.67485,
+        "canonicalCentroidHz": 1521.729382,
+        "hardCentroidHz": 1638.925607,
+        "softToCanonicalRatio": 0.852763,
+        "hardToCanonicalRatio": 1.077015
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.101902,
+        "sustainedTemporalCentroidSeconds": 0.441252,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -10.434883,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -17.246657
+        },
+        "soft": {
+          "truePeakDbfs": -10.68989,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -3.666615
+        },
+        "hard": {
+          "truePeakDbfs": -10.267644,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -17.074394
+        },
+        "low": {
+          "truePeakDbfs": -9.86677,
+          "dcOffset": -0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -16.214739
+        },
+        "high": {
+          "truePeakDbfs": -11.063187,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 10.908563
+        },
+        "short": {
+          "truePeakDbfs": -10.434883,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.137814
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 16.558375,
+      "renderWallMilliseconds": 1106.199999
+    },
+    "synth:shimmer": {
+      "id": "synth:shimmer",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -10.05909,
+        "truePeakDbfs": -10.058255,
+        "rmsDb": -21.597808,
+        "loudnessKMax": -17.482672,
+        "dcOffset": 0.000005,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.874323,
+        "temporalCentroidSeconds": 0.437321,
+        "spectralCentroidHz": 407.57154,
+        "spectralFlux": 0.0055,
+        "amplitudeModulationDepthDb": 11.205571,
+        "earlyToLateCentroidRatio": 1.041825,
+        "boundaryDiscontinuityDbfs": -42.491273,
+        "boundaryDiscontinuityExcessDb": 6.273327,
+        "releaseTailRmsDb": -42.332972
+      },
+      "pitch": {
+        "lowCents": -3.411458,
+        "middleCents": 4.333479,
+        "highCents": 3.826789,
+        "minimumConfidence": 0.998409
+      },
+      "velocity": {
+        "softCentroidHz": 395.521627,
+        "canonicalCentroidHz": 407.57154,
+        "hardCentroidHz": 412.984048,
+        "softToCanonicalRatio": 0.970435,
+        "hardToCanonicalRatio": 1.01328
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.100121,
+        "sustainedTemporalCentroidSeconds": 0.437321,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": -42.332972
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -10.058255,
+          "dcOffset": 0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 6.273327
+        },
+        "soft": {
+          "truePeakDbfs": -10.007949,
+          "dcOffset": 0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 6.256313
+        },
+        "hard": {
+          "truePeakDbfs": -10.071896,
+          "dcOffset": 0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 6.271186
+        },
+        "low": {
+          "truePeakDbfs": -9.636368,
+          "dcOffset": -0.000025,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -18.826314
+        },
+        "high": {
+          "truePeakDbfs": -11.374344,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.406294
+        },
+        "short": {
+          "truePeakDbfs": -10.058255,
+          "dcOffset": 0.000008,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.111833
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 7.646795,
+      "renderWallMilliseconds": 1108.1
+    },
+    "synth:dreampop": {
+      "id": "synth:dreampop",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -9.937418,
+        "truePeakDbfs": -9.93464,
+        "rmsDb": -25.447059,
+        "loudnessKMax": -21.580341,
+        "dcOffset": 0.000005,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.89009,
+        "temporalCentroidSeconds": 0.372816,
+        "spectralCentroidHz": 967.174968,
+        "spectralFlux": 0.033461,
+        "amplitudeModulationDepthDb": 7.439848,
+        "earlyToLateCentroidRatio": 1.009166,
+        "boundaryDiscontinuityDbfs": -60.380271,
+        "boundaryDiscontinuityExcessDb": -13.628846,
+        "releaseTailRmsDb": -55.386998
+      },
+      "pitch": {
+        "lowCents": 0.380158,
+        "middleCents": 1.991125,
+        "highCents": 2.821165,
+        "minimumConfidence": 0.998538
+      },
+      "velocity": {
+        "softCentroidHz": 823.924795,
+        "canonicalCentroidHz": 967.174968,
+        "hardCentroidHz": 1043.028986,
+        "softToCanonicalRatio": 0.851888,
+        "hardToCanonicalRatio": 1.078428
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.10041,
+        "sustainedTemporalCentroidSeconds": 0.372816,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": -55.386998
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -9.93464,
+          "dcOffset": 0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.628846
+        },
+        "soft": {
+          "truePeakDbfs": -9.938811,
+          "dcOffset": 0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.619828
+        },
+        "hard": {
+          "truePeakDbfs": -9.930853,
+          "dcOffset": 0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.187194
+        },
+        "low": {
+          "truePeakDbfs": -11.580389,
+          "dcOffset": -0.000021,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -19.228553
+        },
+        "high": {
+          "truePeakDbfs": -9.501028,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 9.053795
+        },
+        "short": {
+          "truePeakDbfs": -9.93464,
+          "dcOffset": 0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.56804
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 14.425841,
+      "renderWallMilliseconds": 1108.9
+    },
+    "synth:glass": {
+      "id": "synth:glass",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -9.56735,
+        "truePeakDbfs": -9.555242,
+        "rmsDb": -27.281798,
+        "loudnessKMax": -21.144159,
+        "dcOffset": -0.000038,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.454107,
+        "temporalCentroidSeconds": 0.186247,
+        "spectralCentroidHz": 588.217278,
+        "spectralFlux": 0.000437,
+        "amplitudeModulationDepthDb": 7.491827,
+        "earlyToLateCentroidRatio": 1.039383,
+        "boundaryDiscontinuityDbfs": -58.656841,
+        "boundaryDiscontinuityExcessDb": -2.453199,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 1.673626,
+        "middleCents": 1.675213,
+        "highCents": 1.687512,
+        "minimumConfidence": 0.999734
+      },
+      "velocity": {
+        "softCentroidHz": 574.983696,
+        "canonicalCentroidHz": 588.217278,
+        "hardCentroidHz": 593.747428,
+        "softToCanonicalRatio": 0.977502,
+        "hardToCanonicalRatio": 1.009402
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.076849,
+        "sustainedTemporalCentroidSeconds": 0.186247,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -9.555242,
+          "dcOffset": -0.000038,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.453199
+        },
+        "soft": {
+          "truePeakDbfs": -9.534919,
+          "dcOffset": -0.000038,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.803425
+        },
+        "hard": {
+          "truePeakDbfs": -9.563081,
+          "dcOffset": -0.000038,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.446024
+        },
+        "low": {
+          "truePeakDbfs": -9.645443,
+          "dcOffset": -0.000057,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.197476
+        },
+        "high": {
+          "truePeakDbfs": -9.502811,
+          "dcOffset": -0.000023,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.058689
+        },
+        "short": {
+          "truePeakDbfs": -9.555242,
+          "dcOffset": -0.000038,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -5.949209
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 11.647361,
+      "renderWallMilliseconds": 1101.9
+    },
+    "synth:jangle": {
+      "id": "synth:jangle",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -10.883223,
+        "truePeakDbfs": -10.883223,
+        "rmsDb": -24.994971,
+        "loudnessKMax": -19.3118,
+        "dcOffset": -0.000033,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.818364,
+        "temporalCentroidSeconds": 0.239489,
+        "spectralCentroidHz": 1951.313114,
+        "spectralFlux": 0.022738,
+        "amplitudeModulationDepthDb": 6.191698,
+        "earlyToLateCentroidRatio": 0.858738,
+        "boundaryDiscontinuityDbfs": -56.403026,
+        "boundaryDiscontinuityExcessDb": -12.409102,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 7.680027,
+        "middleCents": 7.162228,
+        "highCents": 6.63175,
+        "minimumConfidence": 0.998711
+      },
+      "velocity": {
+        "softCentroidHz": 1667.409932,
+        "canonicalCentroidHz": 1951.313114,
+        "hardCentroidHz": 2096.888923,
+        "softToCanonicalRatio": 0.854507,
+        "hardToCanonicalRatio": 1.074604
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.075258,
+        "sustainedTemporalCentroidSeconds": 0.239489,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -10.883223,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.409102
+        },
+        "soft": {
+          "truePeakDbfs": -10.859885,
+          "dcOffset": -0.000032,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.609072
+        },
+        "hard": {
+          "truePeakDbfs": -10.893512,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.669227
+        },
+        "low": {
+          "truePeakDbfs": -10.979139,
+          "dcOffset": -0.000046,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.334406
+        },
+        "high": {
+          "truePeakDbfs": -10.66517,
+          "dcOffset": -0.000025,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.493662
+        },
+        "short": {
+          "truePeakDbfs": -10.883223,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.387903
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 17.360753,
+      "renderWallMilliseconds": 1105.4
+    },
+    "synth:evolving": {
+      "id": "synth:evolving",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -7.817692,
+        "truePeakDbfs": -7.817523,
+        "rmsDb": -21.436969,
+        "loudnessKMax": -17.170761,
+        "dcOffset": 0.000004,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.816424,
+        "temporalCentroidSeconds": 0.372074,
+        "spectralCentroidHz": 842.086715,
+        "spectralFlux": 0.00755,
+        "amplitudeModulationDepthDb": 1.304297,
+        "earlyToLateCentroidRatio": 0.702311,
+        "boundaryDiscontinuityDbfs": -52.447174,
+        "boundaryDiscontinuityExcessDb": -12.915962,
+        "releaseTailRmsDb": -52.390236
+      },
+      "pitch": {
+        "lowCents": 0.311775,
+        "middleCents": 0.314207,
+        "highCents": 0.328993,
+        "minimumConfidence": 0.999008
+      },
+      "velocity": {
+        "softCentroidHz": 737.889535,
+        "canonicalCentroidHz": 842.086715,
+        "hardCentroidHz": 898.520226,
+        "softToCanonicalRatio": 0.876263,
+        "hardToCanonicalRatio": 1.067016
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.109493,
+        "sustainedTemporalCentroidSeconds": 0.372074,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": -52.390236
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.817523,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.915962
+        },
+        "soft": {
+          "truePeakDbfs": -8.23345,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.407065
+        },
+        "hard": {
+          "truePeakDbfs": -7.62583,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.248488
+        },
+        "low": {
+          "truePeakDbfs": -7.039814,
+          "dcOffset": -0.000018,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -18.838264
+        },
+        "high": {
+          "truePeakDbfs": -9.716883,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 8.129178
+        },
+        "short": {
+          "truePeakDbfs": -7.817523,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.871279
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 11.651048,
+      "renderWallMilliseconds": 1125.800001
+    },
+    "synth:sweep": {
+      "id": "synth:sweep",
+      "engine": "synth",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -4.324783,
+        "truePeakDbfs": -4.324605,
+        "rmsDb": -19.385629,
+        "loudnessKMax": -15.081172,
+        "dcOffset": 0.000006,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.868464,
+        "temporalCentroidSeconds": 0.325039,
+        "spectralCentroidHz": 498.863958,
+        "spectralFlux": 0.03813,
+        "amplitudeModulationDepthDb": 9.585487,
+        "earlyToLateCentroidRatio": 0.600505,
+        "boundaryDiscontinuityDbfs": -46.226298,
+        "boundaryDiscontinuityExcessDb": -5.209365,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 4.867898,
+        "middleCents": 4.913078,
+        "highCents": 6.625449,
+        "minimumConfidence": 0.996888
+      },
+      "velocity": {
+        "softCentroidHz": 407.596949,
+        "canonicalCentroidHz": 498.863958,
+        "hardCentroidHz": 548.181475,
+        "softToCanonicalRatio": 0.81705,
+        "hardToCanonicalRatio": 1.09886
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.095142,
+        "sustainedTemporalCentroidSeconds": 0.325039,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -4.324605,
+          "dcOffset": 0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -5.209365
+        },
+        "soft": {
+          "truePeakDbfs": -7.561769,
+          "dcOffset": -0.000007,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.782608
+        },
+        "hard": {
+          "truePeakDbfs": -5.524368,
+          "dcOffset": 0.000009,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -14.699092
+        },
+        "low": {
+          "truePeakDbfs": -6.091624,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.098708
+        },
+        "high": {
+          "truePeakDbfs": -7.709304,
+          "dcOffset": -0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -36.99503
+        },
+        "short": {
+          "truePeakDbfs": -4.324605,
+          "dcOffset": 0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -20.218533
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 7.232259,
+      "renderWallMilliseconds": 1119.299999
+    },
+    "advanced:warm-pad": {
+      "id": "advanced:warm-pad",
+      "engine": "advanced",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -10.625164,
+        "truePeakDbfs": -10.625164,
+        "rmsDb": -25.393993,
+        "loudnessKMax": -19.885557,
+        "dcOffset": 0.000002,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -0.419207,
+        "temporalCentroidSeconds": 0.523252,
+        "spectralCentroidHz": 1329.893287,
+        "spectralFlux": 0.04762,
+        "amplitudeModulationDepthDb": 4.677515,
+        "earlyToLateCentroidRatio": 0.681679,
+        "boundaryDiscontinuityDbfs": -43.051717,
+        "boundaryDiscontinuityExcessDb": -2.683878,
+        "releaseTailRmsDb": -103.573168
+      },
+      "pitch": {
+        "lowCents": -1.748232,
+        "middleCents": 1.793387,
+        "highCents": 4.969358,
+        "minimumConfidence": 0.993562
+      },
+      "velocity": {
+        "softCentroidHz": 1232.710884,
+        "canonicalCentroidHz": 1329.893287,
+        "hardCentroidHz": 1389.656482,
+        "softToCanonicalRatio": 0.926925,
+        "hardToCanonicalRatio": 1.044938
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.126706,
+        "sustainedTemporalCentroidSeconds": 0.523252,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": -103.573168
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -10.625164,
+          "dcOffset": 0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.683878
+        },
+        "soft": {
+          "truePeakDbfs": -10.735963,
+          "dcOffset": -0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.509132
+        },
+        "hard": {
+          "truePeakDbfs": -10.67292,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.46639
+        },
+        "low": {
+          "truePeakDbfs": -11.258418,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.482843
+        },
+        "high": {
+          "truePeakDbfs": -10.579473,
+          "dcOffset": -0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.886808
+        },
+        "short": {
+          "truePeakDbfs": -21.4496,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.011156
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1260.200001
+    },
+    "advanced:tremolo-strings": {
+      "id": "advanced:tremolo-strings",
+      "engine": "advanced",
+      "role": "pad",
+      "canonical": {
+        "peakDbfs": -11.144524,
+        "truePeakDbfs": -11.121194,
+        "rmsDb": -27.519243,
+        "loudnessKMax": -21.688477,
+        "dcOffset": -0.000002,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -0.212255,
+        "temporalCentroidSeconds": 0.529737,
+        "spectralCentroidHz": 1766.45843,
+        "spectralFlux": 0.105142,
+        "amplitudeModulationDepthDb": 4.059226,
+        "earlyToLateCentroidRatio": 0.901818,
+        "boundaryDiscontinuityDbfs": -52.53615,
+        "boundaryDiscontinuityExcessDb": -12.861854,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -0.038469,
+        "middleCents": 0.01093,
+        "highCents": 0.02488,
+        "minimumConfidence": 0.992739
+      },
+      "velocity": {
+        "softCentroidHz": 1575.098815,
+        "canonicalCentroidHz": 1766.45843,
+        "hardCentroidHz": 1869.231157,
+        "softToCanonicalRatio": 0.89167,
+        "hardToCanonicalRatio": 1.05818
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.121231,
+        "sustainedTemporalCentroidSeconds": 0.529737,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -11.121194,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.861854
+        },
+        "soft": {
+          "truePeakDbfs": -11.23326,
+          "dcOffset": -0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.656296
+        },
+        "hard": {
+          "truePeakDbfs": -11.076638,
+          "dcOffset": -0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.050375
+        },
+        "low": {
+          "truePeakDbfs": -13.018469,
+          "dcOffset": 0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.419643
+        },
+        "high": {
+          "truePeakDbfs": -11.612484,
+          "dcOffset": 0.000002,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.224506
+        },
+        "short": {
+          "truePeakDbfs": -19.460763,
+          "dcOffset": 0,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -12.749782
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1283.9
+    },
+    "zap": {
+      "id": "zap",
+      "engine": "sample",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -6.857057,
+        "truePeakDbfs": -6.83617,
+        "rmsDb": -28.266319,
+        "loudnessKMax": -20.081765,
+        "dcOffset": -0.000006,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.627405,
+        "temporalCentroidSeconds": 0.034789,
+        "spectralCentroidHz": 690.302736,
+        "spectralFlux": 0.276321,
+        "amplitudeModulationDepthDb": 11.036702,
+        "earlyToLateCentroidRatio": 0,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 423.843002,
+        "canonicalCentroidHz": 690.302736,
+        "hardCentroidHz": 690.302736,
+        "softToCanonicalRatio": 0.613996,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.03175,
+        "sustainedTemporalCentroidSeconds": 0.034789,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.83617,
+          "dcOffset": -0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -6.6148,
+          "dcOffset": -0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -6.83617,
+          "dcOffset": -0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -6.653893,
+          "dcOffset": -0.000011,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -7.215751,
+          "dcOffset": -0.000003,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -6.83617,
+          "dcOffset": -0.000006,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1213.799999
+    },
+    "noise": {
+      "id": "noise",
+      "engine": "sample",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -10.314751,
+        "truePeakDbfs": -6.515586,
+        "rmsDb": -31.666682,
+        "loudnessKMax": -20.750647,
+        "dcOffset": 0.000128,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.520587,
+        "temporalCentroidSeconds": 0.051099,
+        "spectralCentroidHz": 10976.553896,
+        "spectralFlux": 0.411069,
+        "amplitudeModulationDepthDb": 12.075648,
+        "earlyToLateCentroidRatio": 1.016003,
+        "boundaryDiscontinuityDbfs": null,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": null,
+      "velocity": {
+        "softCentroidHz": 2257.292652,
+        "canonicalCentroidHz": 10976.553896,
+        "hardCentroidHz": 10976.553896,
+        "softToCanonicalRatio": 0.205647,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.039631,
+        "sustainedTemporalCentroidSeconds": 0.051099,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -6.515586,
+          "dcOffset": 0.000128,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -15.780914,
+          "dcOffset": 0.000128,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -6.515586,
+          "dcOffset": 0.000128,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "low": {
+          "truePeakDbfs": -10.066908,
+          "dcOffset": 0.000253,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -7.427617,
+          "dcOffset": 0.000069,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -6.515586,
+          "dcOffset": 0.000128,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        }
+      },
+      "aliasingLogSpectralDistanceDb": null,
+      "renderWallMilliseconds": 1252.5
+    },
+    "synth:bell": {
+      "id": "synth:bell",
+      "engine": "synth",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -11.446326,
+        "truePeakDbfs": -11.445961,
+        "rmsDb": -27.628172,
+        "loudnessKMax": -20.736449,
+        "dcOffset": -0.000036,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -2.838259,
+        "temporalCentroidSeconds": 0.091701,
+        "spectralCentroidHz": 262.238095,
+        "spectralFlux": 0.000191,
+        "amplitudeModulationDepthDb": 6.626228,
+        "earlyToLateCentroidRatio": 1.000208,
+        "boundaryDiscontinuityDbfs": -64.905308,
+        "boundaryDiscontinuityExcessDb": -4.532223,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 3.014866,
+        "middleCents": 2.876937,
+        "highCents": 2.483447,
+        "minimumConfidence": 0.999851
+      },
+      "velocity": {
+        "softCentroidHz": 262.23804,
+        "canonicalCentroidHz": 262.238095,
+        "hardCentroidHz": 262.238636,
+        "softToCanonicalRatio": 1,
+        "hardToCanonicalRatio": 1.000002
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.051623,
+        "sustainedTemporalCentroidSeconds": 0.091701,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -11.445961,
+          "dcOffset": -0.000036,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -4.532223
+        },
+        "soft": {
+          "truePeakDbfs": -11.441596,
+          "dcOffset": -0.000036,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -4.722796
+        },
+        "hard": {
+          "truePeakDbfs": -11.447424,
+          "dcOffset": -0.000036,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -4.456917
+        },
+        "low": {
+          "truePeakDbfs": -11.49948,
+          "dcOffset": -0.000054,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 3.036947
+        },
+        "high": {
+          "truePeakDbfs": -11.404018,
+          "dcOffset": -0.000025,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.721465
+        },
+        "short": {
+          "truePeakDbfs": -11.445961,
+          "dcOffset": -0.000036,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.58804
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 8.477902,
+      "renderWallMilliseconds": 1118.300001
+    },
+    "synth:stab": {
+      "id": "synth:stab",
+      "engine": "synth",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -4.276438,
+        "truePeakDbfs": -4.259547,
+        "rmsDb": -28.685206,
+        "loudnessKMax": -20.963936,
+        "dcOffset": -0.000027,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -3.11296,
+        "temporalCentroidSeconds": 0.067268,
+        "spectralCentroidHz": 1642.036316,
+        "spectralFlux": 0.086643,
+        "amplitudeModulationDepthDb": 7.233196,
+        "earlyToLateCentroidRatio": 0.899429,
+        "boundaryDiscontinuityDbfs": -42.052541,
+        "boundaryDiscontinuityExcessDb": 1.921615,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 4.443853,
+        "middleCents": 4.361712,
+        "highCents": 4.71912,
+        "minimumConfidence": 0.996363
+      },
+      "velocity": {
+        "softCentroidHz": 1361.344217,
+        "canonicalCentroidHz": 1642.036316,
+        "hardCentroidHz": 1791.817237,
+        "softToCanonicalRatio": 0.829059,
+        "hardToCanonicalRatio": 1.091217
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.041536,
+        "sustainedTemporalCentroidSeconds": 0.067268,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -4.259547,
+          "dcOffset": -0.000027,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.921615
+        },
+        "soft": {
+          "truePeakDbfs": -4.349631,
+          "dcOffset": -0.000027,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 2.747512
+        },
+        "hard": {
+          "truePeakDbfs": -4.24835,
+          "dcOffset": -0.000027,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.098259
+        },
+        "low": {
+          "truePeakDbfs": -4.209966,
+          "dcOffset": -0.000033,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -28.515198
+        },
+        "high": {
+          "truePeakDbfs": -4.34566,
+          "dcOffset": -0.000024,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -29.84277
+        },
+        "short": {
+          "truePeakDbfs": -4.259547,
+          "dcOffset": -0.000027,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.138019
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 13.251477,
+      "renderWallMilliseconds": 1087.9
+    },
+    "synth:brass": {
+      "id": "synth:brass",
+      "engine": "synth",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -9.586391,
+        "truePeakDbfs": -9.579326,
+        "rmsDb": -26.689811,
+        "loudnessKMax": -21.752596,
+        "dcOffset": 0.000004,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.815779,
+        "temporalCentroidSeconds": 0.358649,
+        "spectralCentroidHz": 1175.557142,
+        "spectralFlux": 0.075169,
+        "amplitudeModulationDepthDb": 2.000274,
+        "earlyToLateCentroidRatio": 0.834122,
+        "boundaryDiscontinuityDbfs": -53.766702,
+        "boundaryDiscontinuityExcessDb": -11.27788,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 2.928527,
+        "middleCents": 2.911053,
+        "highCents": 2.874608,
+        "minimumConfidence": 0.998456
+      },
+      "velocity": {
+        "softCentroidHz": 995.681891,
+        "canonicalCentroidHz": 1175.557142,
+        "hardCentroidHz": 1271.140422,
+        "softToCanonicalRatio": 0.846987,
+        "hardToCanonicalRatio": 1.081309
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.100625,
+        "sustainedTemporalCentroidSeconds": 0.358649,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -9.579326,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.27788
+        },
+        "soft": {
+          "truePeakDbfs": -9.191085,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.903795
+        },
+        "hard": {
+          "truePeakDbfs": -9.775535,
+          "dcOffset": 0.000004,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.414352
+        },
+        "low": {
+          "truePeakDbfs": -9.291192,
+          "dcOffset": -0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.288914
+        },
+        "high": {
+          "truePeakDbfs": -10.842069,
+          "dcOffset": 0.000001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 4.098122
+        },
+        "short": {
+          "truePeakDbfs": -9.579326,
+          "dcOffset": 0.000005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.451025
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 16.9499,
+      "renderWallMilliseconds": 1107.700001
+    },
+    "synth:wobble": {
+      "id": "synth:wobble",
+      "engine": "synth",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -4.43447,
+        "truePeakDbfs": -4.43447,
+        "rmsDb": -20.66314,
+        "loudnessKMax": -16.543205,
+        "dcOffset": -0.000431,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.904866,
+        "temporalCentroidSeconds": 0.388918,
+        "spectralCentroidHz": 475.456139,
+        "spectralFlux": 0.15258,
+        "amplitudeModulationDepthDb": 26.549561,
+        "earlyToLateCentroidRatio": 1.034898,
+        "boundaryDiscontinuityDbfs": -298.603291,
+        "boundaryDiscontinuityExcessDb": null,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -8.161321,
+        "middleCents": -9.405892,
+        "highCents": -7.49181,
+        "minimumConfidence": 0.486969
+      },
+      "velocity": {
+        "softCentroidHz": 886.911609,
+        "canonicalCentroidHz": 475.456139,
+        "hardCentroidHz": 708.161317,
+        "softToCanonicalRatio": 1.865391,
+        "hardToCanonicalRatio": 1.489436
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.077199,
+        "sustainedTemporalCentroidSeconds": 0.388918,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -4.43447,
+          "dcOffset": -0.000431,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "soft": {
+          "truePeakDbfs": -4.734144,
+          "dcOffset": 0.000166,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "hard": {
+          "truePeakDbfs": -4.270342,
+          "dcOffset": 0.000243,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -7.588288
+        },
+        "low": {
+          "truePeakDbfs": -1.630449,
+          "dcOffset": -0.000774,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "high": {
+          "truePeakDbfs": -3.233131,
+          "dcOffset": -0.000008,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": null
+        },
+        "short": {
+          "truePeakDbfs": -4.43447,
+          "dcOffset": -0.000036,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.306756
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 1.730149,
+      "renderWallMilliseconds": 1104.699999
+    },
+    "synth:growl": {
+      "id": "synth:growl",
+      "engine": "synth",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -7.569103,
+        "truePeakDbfs": -7.569103,
+        "rmsDb": -28.776502,
+        "loudnessKMax": -24.859759,
+        "dcOffset": 0.000591,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -0.208021,
+        "temporalCentroidSeconds": 0.465662,
+        "spectralCentroidHz": 622.907767,
+        "spectralFlux": 0.179259,
+        "amplitudeModulationDepthDb": 24.864464,
+        "earlyToLateCentroidRatio": 1.2217,
+        "boundaryDiscontinuityDbfs": -55.101869,
+        "boundaryDiscontinuityExcessDb": -11.89521,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -5.277323,
+        "middleCents": -1.081893,
+        "highCents": 45.057395,
+        "minimumConfidence": 0.320444
+      },
+      "velocity": {
+        "softCentroidHz": 1514.53231,
+        "canonicalCentroidHz": 622.907767,
+        "hardCentroidHz": 584.28022,
+        "softToCanonicalRatio": 2.431391,
+        "hardToCanonicalRatio": 0.937988
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.078314,
+        "sustainedTemporalCentroidSeconds": 0.465662,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -7.569103,
+          "dcOffset": 0.000591,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -11.89521
+        },
+        "soft": {
+          "truePeakDbfs": -15.334259,
+          "dcOffset": -0.000017,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -1.670968
+        },
+        "hard": {
+          "truePeakDbfs": -8.445534,
+          "dcOffset": 0.00037,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.711729
+        },
+        "low": {
+          "truePeakDbfs": -13.883428,
+          "dcOffset": 0.000078,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -10.572082
+        },
+        "high": {
+          "truePeakDbfs": -1.081548,
+          "dcOffset": 0.000729,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.292052
+        },
+        "short": {
+          "truePeakDbfs": -14.773787,
+          "dcOffset": 0.000104,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -2.297649
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 5.42821,
+      "renderWallMilliseconds": 1105.5
+    },
+    "tone:fm-bell": {
+      "id": "tone:fm-bell",
+      "engine": "tone",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -14.045097,
+        "truePeakDbfs": -14.045097,
+        "rmsDb": -30.660684,
+        "loudnessKMax": -23.743336,
+        "dcOffset": 0.000049,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -3.213075,
+        "temporalCentroidSeconds": 0.091895,
+        "spectralCentroidHz": 1102.587078,
+        "spectralFlux": 0.021037,
+        "amplitudeModulationDepthDb": 5.825582,
+        "earlyToLateCentroidRatio": 0.453086,
+        "boundaryDiscontinuityDbfs": -56.326524,
+        "boundaryDiscontinuityExcessDb": -7.737184,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 2.567388,
+        "middleCents": 2.565702,
+        "highCents": 2.584045,
+        "minimumConfidence": 0.999645
+      },
+      "velocity": {
+        "softCentroidHz": 681.52969,
+        "canonicalCentroidHz": 1102.587078,
+        "hardCentroidHz": 1102.587078,
+        "softToCanonicalRatio": 0.618119,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.049089,
+        "sustainedTemporalCentroidSeconds": 0.091895,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -14.045097,
+          "dcOffset": 0.000049,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -7.737184
+        },
+        "soft": {
+          "truePeakDbfs": -14.042526,
+          "dcOffset": 0.00005,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.490473
+        },
+        "hard": {
+          "truePeakDbfs": -14.045097,
+          "dcOffset": 0.000049,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -7.737184
+        },
+        "low": {
+          "truePeakDbfs": -14.084736,
+          "dcOffset": 0.0001,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -0.867016
+        },
+        "high": {
+          "truePeakDbfs": -14.029343,
+          "dcOffset": 0.000024,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -8.061324
+        },
+        "short": {
+          "truePeakDbfs": -14.045097,
+          "dcOffset": 0.000049,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -21.83422
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 8.38091,
+      "renderWallMilliseconds": 1235.1
+    },
+    "tone:am-bell": {
+      "id": "tone:am-bell",
+      "engine": "tone",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -18.072961,
+        "truePeakDbfs": -18.072961,
+        "rmsDb": -35.446366,
+        "loudnessKMax": -28.565229,
+        "dcOffset": 0.000031,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -3.213075,
+        "temporalCentroidSeconds": 0.081293,
+        "spectralCentroidHz": 970.325457,
+        "spectralFlux": 0.006075,
+        "amplitudeModulationDepthDb": 6.959862,
+        "earlyToLateCentroidRatio": 0.447252,
+        "boundaryDiscontinuityDbfs": -67.980826,
+        "boundaryDiscontinuityExcessDb": -6.777072,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": -2.276762,
+        "middleCents": 0.196085,
+        "highCents": -0.206535,
+        "minimumConfidence": 0.987438
+      },
+      "velocity": {
+        "softCentroidHz": 386.591374,
+        "canonicalCentroidHz": 970.325457,
+        "hardCentroidHz": 970.325457,
+        "softToCanonicalRatio": 0.398414,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.047045,
+        "sustainedTemporalCentroidSeconds": 0.081293,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -18.072961,
+          "dcOffset": 0.000031,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.777072
+        },
+        "soft": {
+          "truePeakDbfs": -18.070241,
+          "dcOffset": 0.000031,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -8.715559
+        },
+        "hard": {
+          "truePeakDbfs": -18.072961,
+          "dcOffset": 0.000031,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -6.777072
+        },
+        "low": {
+          "truePeakDbfs": -18.12527,
+          "dcOffset": 0.000063,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.575365
+        },
+        "high": {
+          "truePeakDbfs": -18.050784,
+          "dcOffset": 0.000015,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -15.416405
+        },
+        "short": {
+          "truePeakDbfs": -18.072961,
+          "dcOffset": 0.000031,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -13.486195
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 11.991205,
+      "renderWallMilliseconds": 1431.4
+    },
+    "tone:am-tremolo": {
+      "id": "tone:am-tremolo",
+      "engine": "tone",
+      "role": "fx",
+      "canonical": {
+        "peakDbfs": -16.683948,
+        "truePeakDbfs": -16.681081,
+        "rmsDb": -28.964978,
+        "loudnessKMax": -24.907666,
+        "dcOffset": 0.003376,
+        "nonFiniteSamples": 0,
+        "logAttackTime": -1.15112,
+        "temporalCentroidSeconds": 0.423237,
+        "spectralCentroidHz": 355.983353,
+        "spectralFlux": 0.005606,
+        "amplitudeModulationDepthDb": 7.440058,
+        "earlyToLateCentroidRatio": 0.804416,
+        "boundaryDiscontinuityDbfs": -49.152914,
+        "boundaryDiscontinuityExcessDb": 1.537459,
+        "releaseTailRmsDb": null
+      },
+      "pitch": {
+        "lowCents": 0.568835,
+        "middleCents": 0.114177,
+        "highCents": 0.036201,
+        "minimumConfidence": 0.994418
+      },
+      "velocity": {
+        "softCentroidHz": 283.557292,
+        "canonicalCentroidHz": 355.983353,
+        "hardCentroidHz": 355.983353,
+        "softToCanonicalRatio": 0.796546,
+        "hardToCanonicalRatio": 1
+      },
+      "articulation": {
+        "shortTemporalCentroidSeconds": 0.115979,
+        "sustainedTemporalCentroidSeconds": 0.423237,
+        "shortReleaseTailRmsDb": null,
+        "sustainedReleaseTailRmsDb": null
+      },
+      "conditions": {
+        "canonical": {
+          "truePeakDbfs": -16.681081,
+          "dcOffset": 0.003376,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.537459
+        },
+        "soft": {
+          "truePeakDbfs": -16.589247,
+          "dcOffset": 0.003376,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 3.237511
+        },
+        "hard": {
+          "truePeakDbfs": -16.681081,
+          "dcOffset": 0.003376,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 1.537459
+        },
+        "low": {
+          "truePeakDbfs": -16.684362,
+          "dcOffset": 0.003376,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.73167
+        },
+        "high": {
+          "truePeakDbfs": -16.686115,
+          "dcOffset": 0.003376,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": -26.868098
+        },
+        "short": {
+          "truePeakDbfs": -16.905671,
+          "dcOffset": 0.000263,
+          "nonFiniteSamples": 0,
+          "boundaryDiscontinuityExcessDb": 0.632032
+        }
+      },
+      "aliasingLogSpectralDistanceDb": 11.428196,
+      "renderWallMilliseconds": 1477.1
+    }
+  }
+}

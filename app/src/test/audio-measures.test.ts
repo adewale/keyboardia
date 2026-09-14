@@ -1,18 +1,26 @@
 import { describe, expect, it } from 'vitest';
 import {
+  amplitudeModulationDepthDb,
   bandRmsDb,
+  boundaryDiscontinuityDbfs,
+  boundaryDiscontinuityExcessDb,
   dcOffset,
+  estimateFundamental,
   estimateLatencyFrames,
   hitCorrelation,
   hitLevelVariationDb,
   leadingSilenceMs,
+  logAttackTime,
   logSpectralDistance,
   loudnessKMax,
   midSideRatioDb,
+  nonFiniteSampleCount,
   peakDbfs,
   pumpingProfile,
   rmsDb,
+  spectralFlux,
   spectralCentroidHz,
+  temporalCentroidSeconds,
   truePeakDbfs,
 } from './audio-measures';
 
@@ -112,5 +120,51 @@ describe('audio measures', () => {
     expect(leadingSilenceMs(signal, SAMPLE_RATE)).toBeCloseTo(10, 8);
     expect(dcOffset(Float32Array.of(-1, 1, -0.5, 0.5))).toBe(0);
     expect(dcOffset(signal)).toBeCloseTo(0.26, 8);
+  });
+
+  it('estimates expected fundamental frequency without octave mistakes', () => {
+    const fundamental = 440;
+    const harmonicSignal = Float32Array.from(
+      { length: Math.round(SAMPLE_RATE * 0.25) },
+      (_, index) => 0.25 * Math.sin(2 * Math.PI * fundamental * index / SAMPLE_RATE)
+        + 0.75 * Math.sin(4 * Math.PI * fundamental * index / SAMPLE_RATE),
+    );
+    const estimate = estimateFundamental(harmonicSignal, SAMPLE_RATE, fundamental);
+    expect(estimate.frequencyHz).toBeCloseTo(fundamental, 0);
+    expect(Math.abs(estimate.centsError)).toBeLessThan(2);
+    expect(estimate.confidence).toBeGreaterThan(0.8);
+  });
+
+  it('measures attack, temporal shape, boundaries, flux, and invalid PCM', () => {
+    const fast = new Float32Array(SAMPLE_RATE / 2);
+    const slow = new Float32Array(SAMPLE_RATE / 2);
+    for (let index = 0; index < fast.length; index++) {
+      fast[index] = index < 48 ? index / 48 : 1;
+      slow[index] = index < 4_800 ? index / 4_800 : 1;
+    }
+    expect(logAttackTime(fast, SAMPLE_RATE)).toBeLessThan(logAttackTime(slow, SAMPLE_RATE));
+    expect(temporalCentroidSeconds(fast, SAMPLE_RATE)).toBeLessThan(
+      temporalCentroidSeconds(slow, SAMPLE_RATE),
+    );
+    expect(boundaryDiscontinuityDbfs(Float32Array.of(0, 0, 0.5, 0.5), [2]))
+      .toBeCloseTo(-6.0206, 3);
+    const continuous = sine(4_000, 0.05);
+    expect(boundaryDiscontinuityExcessDb(continuous, [1_100])).toBeLessThan(6);
+    const clicked = new Float32Array(continuous);
+    for (let index = 1_100; index < clicked.length; index++) clicked[index] += 4;
+    expect(boundaryDiscontinuityExcessDb(clicked, [1_100])).toBeGreaterThan(10);
+    expect(amplitudeModulationDepthDb(sine(440, 0.1))).toBeLessThan(0.1);
+    const tremolo = Float32Array.from(
+      sine(440, 0.5),
+      (value, index) => value * (0.55 + 0.45 * Math.sin(2 * Math.PI * 8 * index / SAMPLE_RATE)),
+    );
+    expect(amplitudeModulationDepthDb(tremolo)).toBeGreaterThan(8);
+    const changing = Float32Array.from(
+      { length: 4_800 },
+      (_, index) => Math.sin(2 * Math.PI * (index < 2_400 ? 220 : 4_000) * index / SAMPLE_RATE),
+    );
+    expect(spectralFlux(sine(440, 0.1))).toBeLessThan(spectralFlux(changing));
+    expect(nonFiniteSampleCount(Float32Array.of(0, Number.NaN, Number.POSITIVE_INFINITY)))
+      .toBe(2);
   });
 });

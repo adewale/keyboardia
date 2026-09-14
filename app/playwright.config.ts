@@ -3,7 +3,12 @@ import { defineConfig, devices } from '@playwright/test';
 const localPort = Number(process.env.E2E_PORT ?? 5175);
 
 const ignoredSpecs: RegExp[] = [];
-if (process.env.E2E_FUNCTIONAL_ONLY === '1') ignoredSpecs.push(/e2e\/visual\.spec\.ts$/);
+if (process.env.E2E_FUNCTIONAL_ONLY === '1') {
+  ignoredSpecs.push(
+    /e2e\/visual\.spec\.ts$/,
+    /e2e\/generated-instrument-quality\.spec\.ts$/,
+  );
+}
 
 // Playwright's headless WebKit process does not provide a stable real-time
 // audio environment. AudioContext.resume() and AnalyserNode probes can wedge
@@ -53,7 +58,7 @@ export default defineConfig({
   // - Local: 2 workers by default to avoid 429 rate limiting
   // - Serial mode: Use E2E_SERIAL=1 or npm run test:e2e:serial for single worker
   fullyParallel: !process.env.E2E_SERIAL,
-  workers: process.env.CI ? 4 : (process.env.E2E_SERIAL ? 1 : 2),
+  workers: process.env.E2E_SERIAL ? 1 : (process.env.CI ? 4 : 2),
 
   // Reporting
   reporter: [

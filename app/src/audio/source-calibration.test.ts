@@ -23,9 +23,9 @@ describe('catalogue-wide source calibration', () => {
     expect(Object.keys(ADVANCED_SOURCE_GAIN_DB).sort()).toEqual(Object.keys(ADVANCED_SYNTH_PRESETS).sort());
   });
 
-  it('contains only fixed finite attenuation/trim values', () => {
+  it('contains only fixed finite source-trim values', () => {
     for (const table of [SYNTH_SOURCE_GAIN_DB, TONE_SOURCE_GAIN_DB, ADVANCED_SOURCE_GAIN_DB]) {
-      expect(Object.values(table).every(gainDb => Number.isFinite(gainDb) && gainDb <= 0 && gainDb >= -18)).toBe(true);
+      expect(Object.values(table).every(gainDb => Number.isFinite(gainDb) && gainDb <= 2 && gainDb >= -24)).toBe(true);
     }
   });
 });

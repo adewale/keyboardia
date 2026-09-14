@@ -71,6 +71,8 @@ export interface SynthParams {
   release: number;         // 0-2 seconds
   /** Source-side loudness calibration; independent of track and note gain. */
   outputGainDb?: number;
+  /** Fine detune for oscillator one, used to centre symmetric ensemble pairs. */
+  osc1Detune?: number;
 
   // === ENHANCED (optional) ===
   osc2?: Osc2Config;       // Second oscillator for layering/detuning
@@ -371,9 +373,10 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     decay: 0.12,
     sustain: 0.8,
     release: 0.3,
+    osc1Detune: -12.5,
     osc2: {
       waveform: 'sawtooth',
-      detune: 25,      // +25 cents for beating effect
+      detune: 12.5,    // Symmetric ±12.5 cents preserves pitch centre
       coarse: 0,
       mix: 0.5,        // Equal mix of both oscillators
     },
@@ -391,9 +394,10 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     decay: 0.15,
     sustain: 0.75,
     release: 0.4,
+    osc1Detune: -25,
     osc2: {
       waveform: 'sawtooth',
-      detune: 50,      // Heavy detune for massive sound
+      detune: 25,      // Symmetric ±25 cents preserves pitch centre
       coarse: 0,
       mix: 0.5,
     },
@@ -1005,6 +1009,11 @@ class SynthVoice {
 
     // Set oscillator 1 frequency
     this.oscillator1.frequency.setValueAtTime(frequency, time);
+    // Lightweight test and legacy Web Audio shims may omit the standard
+    // detune AudioParam; real OscillatorNodes always take this branch.
+    if (this.oscillator1.detune) {
+      this.oscillator1.detune.setValueAtTime(this.params.osc1Detune ?? 0, time);
+    }
 
     // Set oscillator 2 frequency with detuning if present
     if (this.oscillator2 && this.params.osc2) {
@@ -1153,15 +1162,12 @@ class SynthVoice {
     const hold = (param as AudioParam & {
       cancelAndHoldAtTime?: (cancelTime: number) => AudioParam;
     }).cancelAndHoldAtTime;
-    if (typeof hold === 'function') {
+    if (typeof window !== 'undefined' && typeof hold === 'function') {
       try {
         hold.call(param, time);
-        // Replace the hold marker with an explicit, analytically equivalent
-        // event. This avoids tiny implementation drift and works around Web
-        // Audio implementations whose hold marker does not compose with a
-        // following setTargetAtTime(), while retaining the held prefix.
-        param.cancelScheduledValues(time);
-        param.setValueAtTime(envelopeValue, time);
+        // Retain the engine's rendered value. Replacing this marker with an
+        // analytical estimate can be audibly discontinuous when modulation or
+        // implementation interpolation makes the rendered value differ.
         return;
       } catch {
         // Fall through to the analytical implementation.
@@ -1179,29 +1185,39 @@ class SynthVoice {
     }
   }
 
+  private releaseParam(
+    param: AudioParam,
+    time: number,
+    startValue: number,
+    targetValue: number,
+  ): void {
+    this.holdAtTime(param, time, startValue);
+    if (this.params.release <= 0) {
+      param.setValueAtTime(targetValue, time);
+      return;
+    }
+    param.setTargetAtTime(targetValue, time, this.params.release / 4);
+  }
+
   stop(time: number): void {
     // Hold the value the scheduled ADSR will actually have at note-off. Reading
     // AudioParam.value here returns its present intrinsic value, not its future
     // automated value, and previously collapsed every release to near-silence.
-    this.holdAtTime(this.gainNode.gain, time, this.amplitudeAt(time));
-    if (this.params.release > 0) {
-      this.gainNode.gain.setTargetAtTime(MIN_GAIN_VALUE, time, this.params.release / 4);
-    } else {
-      this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
-    }
+    this.releaseParam(
+      this.gainNode.gain,
+      time,
+      this.amplitudeAt(time),
+      MIN_GAIN_VALUE,
+    );
 
     // Release phase for filter envelope (return to base cutoff)
     if (this.params.filterEnv) {
-      this.holdAtTime(this.filter.frequency, time, this.filterFrequencyAt(time));
-      if (this.params.release > 0) {
-        this.filter.frequency.setTargetAtTime(
-          this.params.filterCutoff,
-          time,
-          this.params.release / 4
-        );
-      } else {
-        this.filter.frequency.setValueAtTime(this.params.filterCutoff, time);
-      }
+      this.releaseParam(
+        this.filter.frequency,
+        time,
+        this.filterFrequencyAt(time),
+        this.params.filterCutoff,
+      );
     }
 
     const stopTime = time + this.params.release + 0.05;

@@ -30,6 +30,21 @@ const toneTestState = vi.hoisted(() => ({
   gains: [] as Array<{
     gain: { value: number; setValueAtTime: ReturnType<typeof vi.fn> };
   }>,
+  filters: [] as Array<{
+    type: string;
+    frequency: {
+      value: number;
+      setValueAtTime: ReturnType<typeof vi.fn>;
+      setTargetAtTime: ReturnType<typeof vi.fn>;
+    };
+    dispose: ReturnType<typeof vi.fn>;
+  }>,
+  tremolos: [] as Array<{
+    wet: { value: number; setValueAtTime: ReturnType<typeof vi.fn> };
+    frequency: { value: number };
+    depth: { value: number };
+    dispose: ReturnType<typeof vi.fn>;
+  }>,
 }));
 
 // Mock Tone.js synths
@@ -150,6 +165,41 @@ vi.mock('tone', () => {
     }
   }
 
+  class MockFilter {
+    type = 'lowpass';
+    frequency = {
+      value: 20_000,
+      setValueAtTime: vi.fn((value: number) => { this.frequency.value = value; }),
+      setTargetAtTime: vi.fn((value: number) => { this.frequency.value = value; }),
+    };
+    connect = vi.fn().mockReturnThis();
+    toDestination = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+    constructor(options?: { frequency?: number; type?: string }) {
+      if (options?.frequency !== undefined) this.frequency.value = options.frequency;
+      if (options?.type !== undefined) this.type = options.type;
+      toneTestState.filters.push(this);
+    }
+  }
+
+  class MockTremolo {
+    wet = {
+      value: 0,
+      setValueAtTime: vi.fn((value: number) => { this.wet.value = value; }),
+    };
+    frequency = { value: 6 };
+    depth = { value: 0.45 };
+    connect = vi.fn().mockReturnThis();
+    start = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+    constructor(options?: { frequency?: number; depth?: number; wet?: number }) {
+      if (options?.frequency !== undefined) this.frequency.value = options.frequency;
+      if (options?.depth !== undefined) this.depth.value = options.depth;
+      if (options?.wet !== undefined) this.wet.value = options.wet;
+      toneTestState.tremolos.push(this);
+    }
+  }
+
   return {
     start: vi.fn().mockResolvedValue(undefined),
     now: vi.fn().mockReturnValue(0),
@@ -161,6 +211,8 @@ vi.mock('tone', () => {
     DuoSynth: MockDuoSynth,
     PolySynth: MockPolySynth,
     Gain: MockGain,
+    Filter: MockFilter,
+    Tremolo: MockTremolo,
   };
 });
 
@@ -218,6 +270,8 @@ describe('ToneSynthManager', () => {
   beforeEach(async () => {
     toneTestState.fmSynths.length = 0;
     toneTestState.gains.length = 0;
+    toneTestState.filters.length = 0;
+    toneTestState.tremolos.length = 0;
     manager = new ToneSynthManager();
     await manager.initialize();
   });
@@ -292,7 +346,39 @@ describe('ToneSynthManager', () => {
       // Gain 0 is the manager output; gain 1 is the pluck-only VCA.
       const pluckGain = toneTestState.gains[1];
       expect(pluckGain).toBeDefined();
-      expect(pluckGain.gain.setValueAtTime).toHaveBeenLastCalledWith(0.35 * (10 ** (-6 / 20)), 0.2);
+      expect(pluckGain.gain.setValueAtTime).toHaveBeenLastCalledWith(0.35, 0.2);
+    });
+
+    it('darkens a soft note without changing the canonical note cutoff', () => {
+      manager.playNote('fm-epiano', 'C4', '8n', 0.2, 1, 40);
+      manager.playNote('fm-epiano', 'E4', '8n', 0.4, 1, 90);
+
+      const filter = toneTestState.filters.find(candidate => candidate.type === 'lowpass')!;
+      expect(filter.frequency.setTargetAtTime.mock.calls[0][0]).toBeLessThan(10_000);
+      expect(filter.frequency.setTargetAtTime).toHaveBeenLastCalledWith(
+        20_000,
+        0.4,
+        expect.any(Number),
+      );
+    });
+
+    it('routes Tone voices through a 20 Hz DC blocker', () => {
+      manager.playNote('pluck-string', 'C3', '8n', 0.2);
+
+      const blocker = toneTestState.filters.find(candidate => candidate.type === 'highpass');
+      expect(blocker).toBeDefined();
+      expect(blocker?.frequency.value).toBe(20);
+    });
+
+    it('applies real low-frequency tremolo only to the tremolo preset', () => {
+      manager.playNote('am-tremolo', 'C4', '8n', 0.2);
+      manager.playNote('am-bell', 'C5', '8n', 0.4);
+
+      const tremolo = toneTestState.tremolos[0];
+      expect(tremolo.frequency.value).toBe(6);
+      expect(tremolo.depth.value).toBe(0.45);
+      expect(tremolo.wet.setValueAtTime).toHaveBeenNthCalledWith(1, 1, 0.2);
+      expect(tremolo.wet.setValueAtTime).toHaveBeenNthCalledWith(2, 0, 0.4);
     });
   });
 

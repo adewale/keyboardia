@@ -38,4 +38,5 @@ public/sample-lab.html
 public/__candidate-samples/
 public/__sample-pipeline/
 public/__sample-pipeline-fixtures*/
+src/debug/__generated-quality-listening/
 sample-lab/*.local.json

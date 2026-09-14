@@ -53,6 +53,7 @@ const units: SourceUnit[] = sourceFiles
       isEntry: test || build || [
         'src/main.tsx',
         'src/stack-a-catalog/main.tsx',
+        'src/debug/generated-quality-listening.ts',
         'src/worker/index.ts',
       ].includes(file.replaceAll('\\', '/')),
     } satisfies SourceUnit;

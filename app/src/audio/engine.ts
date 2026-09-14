@@ -46,6 +46,7 @@ import {
   MASTER_OUTPUT_TRIM,
   NOTE_FADE_SECONDS,
 } from './constants';
+import { ProceduralVelocityFilterBank } from './procedural-velocity-filter-bank';
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -66,6 +67,7 @@ export class AudioEngine {
   private outputTrim: GainNode | null = null;
   private samples: Map<string, Sample> = new Map();
   private trackBusManager: TrackBusManager | null = null; // Phase 25: Unified audio bus
+  private proceduralVelocityFilters: ProceduralVelocityFilterBank | null = null;
   /** Base faders may arrive from session state before AudioContext/buses exist. */
   private pendingTrackVolumes = new Map<string, number>();
   /** Pan can arrive from a load or collaborator before AudioContext exists. */
@@ -279,6 +281,7 @@ export class AudioEngine {
 
     // Phase 25: Initialize track bus manager for unified audio routing
     this.trackBusManager = new TrackBusManager(this.audioContext, this.masterGain);
+    this.proceduralVelocityFilters = new ProceduralVelocityFilterBank(this.audioContext);
     for (const [trackId, volume] of this.pendingTrackVolumes) {
       this.trackBusManager.setTrackVolume(trackId, volume);
     }
@@ -885,9 +888,6 @@ export class AudioEngine {
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
     variationKey?: string,
   ): void {
-    // Procedural/user samples currently have no velocity-to-timbre mapping.
-    // Keep the explicit contract so one can be added without coupling gain.
-    void midiVelocity;
     if (!this.audioContext || !this.masterGain) {
       logger.audio.warn('AudioContext not initialized');
       return;
@@ -930,6 +930,8 @@ export class AudioEngine {
     // the chain — the worklet buffers one grain before producing output, so
     // the envelope must wait for that audio to arrive.
     const envGain = this.audioContext.createGain();
+    const currentTime = this.audioContext.currentTime;
+    const actualStartTime = Math.max(time, currentTime);
 
     // Apply pitch shift: worklet for large shifts (>6 semitones), native
     // playbackRate otherwise. When we engage the worklet we must
@@ -971,13 +973,22 @@ export class AudioEngine {
     // For late-arriving notes (currentTime > time) the source's start
     // gets clamped forward; the envelope must move with it or the ramp
     // resolves in the past and the click-prevention fade is bypassed.
-    const currentTime = this.audioContext.currentTime;
-    const actualStartTime = Math.max(time, currentTime);
     const envStart = computeEnvelopeStart({ eventTime: time, currentTime, pitchLatencySec });
     envGain.gain.setValueAtTime(0, envStart);
     const calibratedVolume = volume * (sample.playbackGain ?? 1);
     envGain.gain.linearRampToValueAtTime(calibratedVolume, envStart + FADE_TIME);
-    envGain.connect(trackInput);
+    if (this.proceduralVelocityFilters) {
+      this.proceduralVelocityFilters.connect(
+        envGain,
+        trackInput,
+        trackId,
+        sampleId,
+        midiVelocity,
+        actualStartTime,
+      );
+    } else {
+      envGain.connect(trackInput);
+    }
 
     // For recordings, try playing immediately to test
     if (sampleId.startsWith('recording')) {
@@ -1038,6 +1049,7 @@ export class AudioEngine {
     this.trackFMOverrides.delete(trackId);
     this.toneSynthRegistry.remove(trackId);
     this.advancedSynthRegistry.remove(trackId);
+    this.proceduralVelocityFilters?.remove(trackId);
     if (this.trackBusManager) {
       this.trackBusManager.removeBus(trackId);
       logger.audio.log(`Removed TrackBus for ${trackId}`);
@@ -1327,8 +1339,6 @@ export class AudioEngine {
     trackId?: string,
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
   ): void {
-    // Tone presets currently use the canonical note gain only.
-    void midiVelocity;
     if (!this.toneInitialized) {
       logger.audio.warn('Cannot play Tone.js synth: not initialized');
       return;
@@ -1362,7 +1372,7 @@ export class AudioEngine {
 
     const noteName = synth.semitoneToNoteName(semitone);
     const toneTime = this.toToneRelativeTime(time);
-    synth.playNote(presetName, noteName, duration, toneTime, volume);
+    synth.playNote(presetName, noteName, duration, toneTime, volume, midiVelocity);
   }
 
   /**
@@ -1734,6 +1744,9 @@ export class AudioEngine {
     this.previewToneSynth = null;
     this.previewAdvancedSynth = null;
 
+    // Clear retained track-local filters before their bus destinations.
+    this.proceduralVelocityFilters?.clear();
+
     // Clear track buses
     this.trackBusManager?.dispose();
 
@@ -1769,6 +1782,7 @@ export class AudioEngine {
     this.pendingTrackVolumes.clear();
     this.pendingTrackPans.clear();
     this.syncedTrackIds.clear();
+    this.proceduralVelocityFilters = null;
     this.trackBusManager = null;
     this.masterGain = null;
     this.compressor = null;
