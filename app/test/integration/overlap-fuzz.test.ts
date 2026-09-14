@@ -10,9 +10,10 @@
  *
  * Schedules are GENERATED AND SHRUNK BY FAST-CHECK (issue #97, T1): on
  * failure, fast-check minimizes the wave schedule to the smallest failing
- * counterexample and prints it with the seed. Promote that value into
- * known-failures.ts — those replay first on every run. (The previous
- * mulberry32 form explored but could not shrink; hegel-skill mistake #6.)
+ * counterexample and emits a machine-readable marker. The weekly workflow
+ * promotes that value into known-failures.json and uploads the PR-able diff;
+ * promoted values replay first on every run. (The previous mulberry32 form
+ * explored but could not shrink; hegel-skill mistake #6.)
  *
  * Oracles — all generic, none reimplement server logic:
  *   1. Sequence conservation: N mutations in a wave produce exactly the
@@ -36,6 +37,7 @@ import { it, expect, afterEach } from 'vitest';
 // dependency of its own; fast-check is already a repo dev dependency).
 import fc from 'fast-check';
 import { parseSeedOverride } from '../../src/test/seeded-random';
+import { failWithPbtCounterexample } from '../../src/test/pbt-failure';
 import { OVERLAP_KNOWN_FAILURES, type OverlapOp, type OverlapSchedule } from './known-failures';
 
 interface Env {
@@ -330,7 +332,7 @@ it('concurrent mutation waves conserve sequence numbers and converge on every cl
   }
 
   for (const seed of SEEDS) {
-    await fc.assert(
+    const details = await fc.check(
       fc.asyncProperty(scheduleArb, runSchedule),
       {
         seed: seed | 0, // fc seeds are int32; soak values (e.g. a CI run id) fold in
@@ -339,5 +341,11 @@ it('concurrent mutation waves conserve sequence numbers and converge on every cl
         markInterruptAsFailure: true,
       },
     );
+    if (details.failed) {
+      if (details.counterexample) {
+        failWithPbtCounterexample('overlap', details.counterexample[0], details);
+      }
+      throw new Error(`overlap property interrupted before producing a counterexample (seed=${details.seed})`);
+    }
   }
 }, TIMEOUT_MS);

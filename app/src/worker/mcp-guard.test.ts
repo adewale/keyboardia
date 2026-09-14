@@ -1,4 +1,5 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import fc from 'fast-check';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialSessionState } from '../shared/session-defaults';
 import type { Session } from '../shared/state';
@@ -214,6 +215,39 @@ describe('guardMcpRequest', () => {
       error: 'The Keyboardia MCP endpoint only accepts POST.',
       code: 'METHOD_NOT_ALLOWED',
     });
+  });
+
+  it('PR-004: every JSON value reaches a described MCP response without throwing', async () => {
+    const unavailable = async (): Promise<never> => {
+      throw new Error('adapter should not be reached by malformed requests');
+    };
+    const handler = createKeyboardiaMcpHandler({
+      getSession: unavailable,
+      editSession: unavailable,
+      createSession: unavailable,
+      remixSession: unavailable,
+      publishSession: unavailable,
+    });
+
+    await fc.assert(
+      fc.asyncProperty(fc.jsonValue(), async (payload) => {
+        const guarded = await guardMcpRequest(mcpRequest({
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json, text/event-stream',
+          },
+          body: JSON.stringify(payload),
+        }));
+        expect(guarded).toBeInstanceOf(Request);
+
+        const response = await handler.fetch(guarded as Request);
+        expect(response).toBeInstanceOf(Response);
+        expect(response.status).toBeGreaterThanOrEqual(200);
+        expect(response.status).toBeLessThan(600);
+        expect(typeof await response.text()).toBe('string');
+      }),
+      { numRuns: 100 },
+    );
   });
 });
 

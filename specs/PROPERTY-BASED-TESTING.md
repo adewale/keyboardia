@@ -2610,8 +2610,8 @@ hand-seeded PRNGs, so counterexamples minimize (hegel-skill mistake #6; the
 seq-reuse sabotage shrinks to a 5-op schedule, the Phase-22 BPM bug to a
 single tempo change). Hand-seeded `mulberry32` remains appropriate only for
 fixtures where shrinking is meaningless (e.g. deterministic render
-patterns). Failing schedules are promoted into the committed example
-database (`test/integration/known-failures.ts`), which replays first.
+patterns). Failing schedules are promoted into the committed data-only
+database (`test/integration/known-failures.json`), which replays first.
 
 ### Rule 4 — Fail-closed knobs
 
@@ -2619,7 +2619,53 @@ Any configuration that can reduce a lane's work below its committed default
 (seed overrides, run counts) must fail closed at parse time
 (`src/test/seeded-random.ts` `parseSeedOverride`; Lesson 69).
 
+## 17. Issue #97 Catalogue and Evolution Dispositions
+
+**Status:** Complete (2026-09). Execution and sabotage evidence is recorded in
+`specs/research/PBT-PROGRAM-COMPLETION-2026-09.md`.
+
+### 17.1 Tier-1 catalogue sweep
+
+| Candidate | Decision | Evidence or reason |
+|---|---|---|
+| MCP request parse robustness | Adopt | `src/worker/mcp-guard.test.ts` PR-004 sends arbitrary JSON through the real guard and MCP handler and requires a described response rather than a throw. |
+| Session-state JSON robustness | Adopt | `src/worker/validation.property.test.ts` PR-001..003 cover arbitrary JSON, reject primitives and arrays, and validate generated 16-track × 128-step states. |
+| MIDI import robustness | Reject for now | Keyboardia exports MIDI but has no production MIDI-import surface. `midi-file` parsing in fidelity tests is an oracle for exported bytes, not user-input ingestion. Add the robustness property when import exists. |
+| `MessageQueue` model | Adopt | `src/sync/MessageQueue.test.ts` MB-002 checks size, eviction, clear, and priority replay against an independent array model. |
+| `SyncHealth` model | Adopt | `src/sync/sync-health.property.test.ts` MB-003 checks sequence, reset, and recovery decisions after every operation. |
+| Grid reducer model | Reject | 27 of 28 synchronized actions delegate to the shared reducer. A second full reducer would duplicate production logic; comparing the two routes was already proven tautological. `test/unit/reducer-mutation-equivalence.test.ts` and `test/unit/sync-layer-coverage.test.ts` instead witness the independent action-mapping and state-adapter seams (`docs/TEST-AUDIT-2026-07.md` §22). |
+| Step-count boundaries 3/128 | Adopt | Both values are in `src/test/arbitraries.ts` `arbStepCount`; PR-003 forces both into every maximum-size generated session. |
+| Pitch boundaries -24/0/+24 | Adopt | `src/shared/playable-range-pbt.test.ts`, `src/music/scale-entry.property.test.ts`, and the explicit boundary triples in `src/audio/pitch-shift-range.test.ts`. |
+| Tempo MIN/MAX and out-of-range values | Adopt | `src/sync/tempo-sync.test.ts` PB-001 generates 20..300 against the 60..180 clamp and SV-004 pins both exact boundaries. |
+| Large collections | Adopt | PR-003 generates 2,048 step values per case in a 16-track × 128-step state. Larger collections would exceed the public session contract rather than exercise a supported input. |
+
+### 17.2 Bounded top-ten unit-to-property evolution pass
+
+The ranking is the `it.each` count at the start of the pass. Evolution stays in
+the existing subject-linked test file; fixed catalogues remain example tables
+when generation would reduce coverage or invent invalid domain members.
+
+| Candidate | Decision |
+|---|---|
+| `audio/synth.test.ts` | Keep examples: it exhaustively checks every shipped preset; a generator would no longer prove catalogue completeness. |
+| `worker/validation.test.ts` | Evolve: generalized JSON and maximum-state properties live in the existing `validation.property.test.ts` companion. |
+| `worker/invariants.property.test.ts` | Keep boundary examples beside existing properties: `NaN`/infinities are not JSON-generatable and each named field needs an explicit repair witness. |
+| `test/unit/test-quality-analyzers.test.ts` | Keep examples: the inputs are deliberately distinct TypeScript syntax fixtures for the analyzer. |
+| `worker/mcp-guard.test.ts` | Evolve: PR-004 covers arbitrary JSON through the real request surface in the existing file. |
+| `audio/midiExport.test.ts` | Keep examples: mappings enumerate the complete shipped instrument tables; round-trip properties already cover generated musical states. |
+| `audio/volume-verification.test.ts` | Keep examples: every shipped preset must be checked, so sampling generated members would be weaker. |
+| `worker/mcp-evals.test.ts` | Keep examples: the finite eval catalogue defines the scoring contract and both score endpoints are required per case. |
+| `sync/multiplayer.test.ts` | Keep examples: the synchronized/local-only tables are exhaustive translation catalogues; arbitrary actions would lose the completeness witness. |
+| `icons/index.test.tsx` | Keep examples: the test enumerates every exported icon plus fixed proxy exceptions. |
+
+No unit-to-property evolution created a new test file. The promotion utility's
+own unit test is new automation coverage, not an evolved product-unit test.
+
 ## Changelog
+
+### Version 2.2 (2026-09-14)
+- Completed issue #97's remaining schedule, promotion, catalogue, boundary,
+  large-input, and unit-evolution work; linked the execution receipt.
 
 ### Version 2.1 (2026-08-14)
 - Added section 16: binding rules for witness-paired properties,

@@ -34,9 +34,36 @@ jobs:
         run: npm ci
 
       - name: Run the complete unit suite with this run's replayable seed
-        run: npm run test:unit
+        id: unit_properties
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run test:unit 2>&1 | tee "$RUNNER_TEMP/pbt-unit.log"
         env:
           FC_SEED: ${{ github.run_id }}
+          NO_COLOR: '1'
+
+      - name: Promote shrunk unit counterexamples into the committed database
+        if: steps.unit_properties.outcome == 'failure'
+        run: |
+          npx tsx scripts/promote-pbt-counterexamples.ts \
+            "$RUNNER_TEMP/pbt-unit.log" \
+            test/integration/known-failures.json
+          git diff -- test/integration/known-failures.json \
+            > "$RUNNER_TEMP/pbt-known-failures.patch"
+
+      - name: Upload PR-able unit counterexample promotion
+        if: steps.unit_properties.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pbt-unit-counterexample-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/pbt-known-failures.patch
+            app/test/integration/known-failures.json
+
+      - name: Preserve the unit-suite failure
+        if: steps.unit_properties.outcome == 'failure'
+        run: exit 1
 
   integration-fuzz-rotating-seed:
     name: Integration fuzz lanes with a rotating soak seed
@@ -66,12 +93,43 @@ jobs:
         run: npm ci
         working-directory: ./app/test/integration
 
-      # FUZZ_SEEDS drives both fuzz lanes (state-machine + overlap). The
-      # run id is a plain decimal, so the fail-closed parse accepts it; a
-      # failure prints the fast-check-shrunk schedule + seed for promotion
-      # into test/integration/known-failures.ts (issue #97 T2).
+      # FC_SEED drives the command model; FUZZ_SEEDS drives all three integration
+      # property lanes and takes precedence for the command model when present.
+      # Keeping both values identical makes every failure locally replayable.
       - name: Run fuzz lanes with this run's replayable soak seed
-        run: npx vitest run state-machine-fuzz.test.ts overlap-fuzz.test.ts
+        id: integration_properties
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npx vitest run \
+            state-machine-fuzz.test.ts \
+            overlap-fuzz.test.ts \
+            eviction-recovery.test.ts \
+            2>&1 | tee "$RUNNER_TEMP/pbt-integration.log"
         working-directory: ./app/test/integration
         env:
+          FC_SEED: ${{ github.run_id }}
           FUZZ_SEEDS: ${{ github.run_id }}
+          NO_COLOR: '1'
+
+      - name: Promote shrunk integration counterexamples into the committed database
+        if: steps.integration_properties.outcome == 'failure'
+        run: |
+          npx tsx scripts/promote-pbt-counterexamples.ts \
+            "$RUNNER_TEMP/pbt-integration.log" \
+            test/integration/known-failures.json
+          git diff -- test/integration/known-failures.json \
+            > "$RUNNER_TEMP/pbt-known-failures.patch"
+
+      - name: Upload PR-able integration counterexample promotion
+        if: steps.integration_properties.outcome == 'failure'
+        uses: actions/upload-artifact@v7
+        with:
+          name: pbt-integration-counterexample-${{ github.run_id }}
+          path: |
+            ${{ runner.temp }}/pbt-known-failures.patch
+            app/test/integration/known-failures.json
+
+      - name: Preserve the integration-suite failure
+        if: steps.integration_properties.outcome == 'failure'
+        run: exit 1

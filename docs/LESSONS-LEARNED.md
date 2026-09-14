@@ -78,6 +78,8 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 67: Validate a Kill Against Two Shapes of the Fix](#lesson-67-validate-a-kill-against-two-shapes-of-the-fix)
 - [Lesson 68: Rule Out the Harness Before Blaming the Subject](#lesson-68-rule-out-the-harness-before-blaming-the-subject)
 - [Lesson 69: A Malformed Test Knob Must Kill the Run, Not Shrink It](#lesson-69-a-malformed-test-knob-must-kill-the-run-not-shrink-it)
+- [Lesson 70: Stateful Properties Need Shrinkable Commands, Not Random Scripts](#lesson-70-stateful-properties-need-shrinkable-commands-not-random-scripts)
+- [Lesson 71: A Seed Policy Must Reach Every Vitest Project](#lesson-71-a-seed-policy-must-reach-every-vitest-project)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5998,3 +6000,63 @@ round-trip check (`String(parsed) !== trimmed`) and throws when the result
 is empty. The general form: any knob that can reduce a lane's work below
 its committed default can convert that lane into a green no-op — so guard
 it where it parses, not in a doc.
+
+---
+
+## Lesson 70: Stateful Properties Need Shrinkable Commands, Not Random Scripts
+
+**Date:** August 2026
+**Context:** Multiplayer lifecycle model ([#101](https://github.com/adewale/keyboardia/pull/101))
+
+### What happened
+
+The Workers integration test generated deterministic multiplayer interleavings
+with a hand-written PRNG and loop. It exercised useful paths, but a failure was
+reported as an entire script rather than the smallest valid lifecycle. Moving
+the same REST, WebSocket, hibernation, eviction, disconnect, and reconnect
+operations into `fc.commands` let `fc.asyncModelRun` evaluate connection
+preconditions against the current model and enabled command-aware shrinking,
+while a shadow model checked Durable Object, KV, and connection state after
+every accepted command.
+
+The conversion also exposed a subtler coverage trap: `maxCommands` is an upper
+bound, and preconditions can remove generated commands. Counting only accepted
+commands initially hid a worse regression: the fixed campaign executed no
+WebSocket mutations at all. The corrected model starts each campaign connected
+and asserts independent witnesses for tempo writes, swing writes, and a dirty
+disconnect, alongside the total transition budget.
+
+### The rule
+
+For stateful integration properties, model lifecycle preconditions explicitly
+and let fast-check shrink the valid command sequence. Preserve the previous
+*executed-transition* budget when converting from a manual loop; comparing only
+seed count or `maxCommands` can hide a material coverage reduction. Assert the
+transition classes that make the property meaningful, not only their sum.
+
+---
+
+## Lesson 71: A Seed Policy Must Reach Every Vitest Project
+
+**Date:** August 2026
+**Context:** Multiplayer lifecycle model ([#101](https://github.com/adewale/keyboardia/pull/101))
+
+### What happened
+
+Keyboardia's application Vitest setup selected a fixed local seed and a weekly
+`FC_SEED`, while the Workers integration suite used a separate `FUZZ_SEEDS`
+contract. The two projects therefore needed an explicit bridge rather than an
+assumption that application-level setup crossed the Workers sandbox boundary.
+
+The fix put `FC_SEED` validation in one shared resolver, retained the existing
+fail-closed `FUZZ_SEEDS` list for both integration fuzz lanes, and injected both
+bindings into the Workers sandbox. The weekly job gives both controls the same
+logged run id, so the model and overlap lane remain locally replayable without
+discarding either seed policy.
+
+### The rule
+
+A repository-wide property seed policy is only real if every runner, package,
+and sandbox receives it explicitly. Test the resolver, bind the seed across
+runtime boundaries, log it in rotating discovery jobs, and make the exact failing
+value replayable locally.
