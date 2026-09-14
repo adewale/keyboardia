@@ -31,6 +31,7 @@ import {
 import { it, expect } from 'vitest';
 import fc from 'fast-check';
 import { parseSeedOverride } from '../../src/test/seeded-random';
+import { failWithPbtCounterexample } from '../../src/test/pbt-failure';
 import { STATE_MACHINE_KNOWN_FAILURES, type StateMachineOp } from './known-failures';
 import { resolveFastCheckSeed } from '../../src/test/fast-check-seed';
 
@@ -332,7 +333,7 @@ async function assertSessionModel(model: SessionModel, real: SessionReal): Promi
 }
 
 class SessionCommand implements fc.AsyncCommand<SessionModel, SessionReal> {
-  constructor(private readonly action: SessionAction) {}
+  constructor(readonly action: SessionAction) {}
 
   check(model: Readonly<SessionModel>): boolean {
     if (this.action.kind === 'ws_tempo' || this.action.kind === 'ws_swing' || this.action.kind === 'disconnect') {
@@ -416,6 +417,18 @@ class SessionCommand implements fc.AsyncCommand<SessionModel, SessionReal> {
   }
 }
 
+function replayableActions(commands: { toString(): string }): StateMachineOp[] {
+  // CommandsIterable.toString() is fast-check's public replay rendering: it
+  // includes only commands that actually ran, followed by optional /*...*/
+  // replay metadata. SessionCommand renders each command as JSON, so stripping
+  // the metadata and wrapping the comma-separated sequence gives us stable,
+  // data-only regression input without reaching into fast-check internals.
+  const rendered = commands.toString();
+  const metadataStart = rendered.lastIndexOf(' /*');
+  const actions = metadataStart === -1 ? rendered : rendered.slice(0, metadataStart);
+  return actions.length === 0 ? [] : JSON.parse(`[${actions}]`) as StateMachineOp[];
+}
+
 const tempoArb = fc.integer({ min: 60, max: 180 });
 const swingArb = fc.integer({ min: 0, max: 100 });
 const commandArbs = [
@@ -496,7 +509,7 @@ it('model: read-your-writes through the DO holds across shrunk command sequences
 
   const coverage = createModelCoverage();
   for (const seed of MODEL_SEEDS) {
-    await fc.assert(
+    const details = await fc.check(
       fc.asyncProperty(fc.commands(commandArbs, { maxCommands: 18 }), async (commands) => {
         const run = await createConnectedModelRun(coverage);
         try {
@@ -515,6 +528,16 @@ it('model: read-your-writes through the DO holds across shrunk command sequences
         markInterruptAsFailure: true,
       },
     );
+    if (details.failed) {
+      if (details.counterexample) {
+        failWithPbtCounterexample(
+          'stateMachine',
+          replayableActions(details.counterexample[0]),
+          details,
+        );
+      }
+      throw new Error(`stateMachine property interrupted before producing a counterexample (seed=${details.seed})`);
+    }
   }
 
   // A total command count can hide a missing transition class. These witnesses

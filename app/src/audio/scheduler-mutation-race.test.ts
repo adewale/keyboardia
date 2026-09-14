@@ -28,6 +28,8 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import fc from 'fast-check';
 import type { GridState, Track } from '../types';
 import { MAX_TEMPO, MIN_TEMPO } from '../shared/constants';
+import { failWithPbtCounterexample } from '../test/pbt-failure';
+import knownFailures from '../../test/integration/known-failures.json';
 
 interface TriggerRecord {
   trackId: string;
@@ -68,6 +70,8 @@ type RaceAction =
   | { kind: 'stepCount'; trackPick: number; count: 8 | 12 | 16 | 24 }
   | { kind: 'deleteLast' }
   | { kind: 'addTrack'; step: number };
+
+const RACE_KNOWN_FAILURES = knownFailures.schedulerMutationRace as RaceAction[][];
 
 const actionArb: fc.Arbitrary<RaceAction> = fc.oneof(
   { weight: 4, arbitrary: fc.record({ kind: fc.constant<'tempo'>('tempo'), tempo: fc.integer({ min: MIN_TEMPO, max: MAX_TEMPO }) }) },
@@ -226,6 +230,20 @@ describe('scheduler under racing mutations (virtual time)', () => {
   }
 
   it('generated tempo/stepCount/track mutations mid-flight never double-fire or schedule into the past', () => {
-    fc.assert(fc.property(raceScheduleArb, runRace), { numRuns: NUM_RUNS });
+    for (const [index, schedule] of RACE_KNOWN_FAILURES.entries()) {
+      try {
+        runRace(schedule);
+      } catch (error) {
+        throw new Error(`known-failure #${index} regressed: ${(error as Error).message}`);
+      }
+    }
+
+    const details = fc.check(fc.property(raceScheduleArb, runRace), { numRuns: NUM_RUNS });
+    if (details.failed) {
+      if (details.counterexample) {
+        failWithPbtCounterexample('schedulerMutationRace', details.counterexample[0], details);
+      }
+      throw new Error(`schedulerMutationRace property interrupted before producing a counterexample (seed=${details.seed})`);
+    }
   });
 });

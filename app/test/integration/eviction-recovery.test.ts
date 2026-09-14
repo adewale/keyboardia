@@ -31,11 +31,20 @@ import {
   evictAllDurableObjects,
 } from 'cloudflare:test';
 import { it, expect } from 'vitest';
+import fc from 'fast-check';
+import { parseSeedOverride } from '../../src/test/seeded-random';
+import { failWithPbtCounterexample } from '../../src/test/pbt-failure';
+import {
+  EVICTION_RECOVERY_KNOWN_FAILURES,
+  type EvictionRecoveryOp,
+  type EvictionRecoverySchedule,
+} from './known-failures';
 
 interface Env {
   SESSIONS: KVNamespace;
   LIVE_SESSIONS: DurableObjectNamespace;
   SAMPLES: R2Bucket;
+  FUZZ_SEEDS?: string;
 }
 
 const LIVE_SESSIONS = (env as unknown as Env).LIVE_SESSIONS;
@@ -176,22 +185,6 @@ async function expectKvTempo(
   }
   throw new Error(`KV tempo never satisfied: ${label}`);
 }
-
-// Deterministic PRNG (mulberry32) so fuzz failures are reproducible from the
-// logged seed. We avoid Math.random() precisely so a red run can be replayed.
-function mulberry32(seed: number) {
-  let a = seed >>> 0;
-  return () => {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-const randInt = (rng: () => number, lo: number, hi: number) =>
-  lo + Math.floor(rng() * (hi - lo + 1));
 
 async function connectWithSnapshot(stub: DurableObjectStub, sessionId: string, playerId?: string) {
   const ws = await connect(stub, sessionId, playerId);
@@ -834,27 +827,56 @@ it('a non-last client close after hibernation does not prematurely flush KV', as
 });
 
 // ===========================================================================
-// Layer 11 — FUZZ: for randomized mutation sequences with a mid-sequence
-// hibernation, the recovered state always reflects every acked mutation.
-// Seeded so any failure is reproducible from the printed seed.
+// Layer 11 — PROPERTY: generated mutation schedules with a mid-sequence
+// hibernation shrink by operation and value. The old mulberry32 loop could
+// reproduce a seed but left humans to bisect its 4-10 decisions by hand.
 // ===========================================================================
 
-it('fuzz: recovered state reflects all acked mutations (global + track ops) across a mid-sequence eviction', { timeout: 20_000 }, async () => {
-  const SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee];
+const evictionOpArb: fc.Arbitrary<EvictionRecoveryOp> = fc.oneof(
+  {
+    weight: 4,
+    arbitrary: fc.record({
+      kind: fc.constant<'tempo'>('tempo'),
+      tempo: fc.integer({ min: 60, max: 180 }),
+    }),
+  },
+  {
+    weight: 3,
+    arbitrary: fc.record({
+      kind: fc.constant<'swing'>('swing'),
+      swing: fc.integer({ min: 0, max: 100 }),
+    }),
+  },
+  {
+    weight: 3,
+    arbitrary: fc.record({
+      kind: fc.constant<'toggle'>('toggle'),
+      step: fc.integer({ min: 0, max: 15 }),
+    }),
+  },
+);
+
+const evictionScheduleArb: fc.Arbitrary<EvictionRecoverySchedule> = fc
+  .array(evictionOpArb, { minLength: 2, maxLength: 10 })
+  .chain((ops) => fc.integer({ min: 1, max: ops.length - 1 })
+    .map((evictAfter) => ({ ops, evictAfter })));
+
+const EVICTION_SEEDS = parseSeedOverride(
+  (env as unknown as Env).FUZZ_SEEDS,
+  [1, 7, 42, 1337, 90210, 0xc0ffee],
+);
+const EVICTION_TIMEOUT_MS = Math.max(30_000, EVICTION_SEEDS.length * 8_000);
+
+async function runEvictionSchedule(schedule: EvictionRecoverySchedule): Promise<void> {
   const TRACK_ID = 'fuzz-track';
+  const id = await createSessionWithTrack(120, TRACK_ID);
+  const stub = stubFor(id);
+  const { ws, inbox } = await connectWithSnapshot(stub, id);
+  const expected = { tempo: 120, swing: 0, steps: new Map<number, boolean>() };
 
-  for (const seed of SEEDS) {
-    const rng = mulberry32(seed);
-    const id = await createSessionWithTrack(120, TRACK_ID);
-    const stub = stubFor(id);
-    const { ws, inbox } = await connectWithSnapshot(stub, id);
-
-    const opCount = randInt(rng, 4, 10);
-    const evictAt = randInt(rng, 1, opCount - 1); // hibernate partway through
-    const expected = { tempo: 120, swing: 0, steps: new Map<number, boolean>() };
-
-    for (let i = 0; i < opCount; i++) {
-      if (i === evictAt) {
+  try {
+    for (const [index, op] of schedule.ops.entries()) {
+      if (index === schedule.evictAfter) {
         // Hibernate mid-stream. Deliberately NO http call here: the next WS op
         // must wake the DO and lazily reload state on its own. (An earlier
         // version called debugInfo() here, which masked the hibernation-wake
@@ -863,44 +885,86 @@ it('fuzz: recovered state reflects all acked mutations (global + track ops) acro
         await evictDurableObject(stub);
       }
 
-      const roll = rng();
-      const tag = `seed=${seed} op=${i} evictAt=${evictAt}/${opCount}`;
-      if (roll < 0.4) {
-        const tempo = randInt(rng, 60, 180);
-        ws.send(JSON.stringify({ type: 'set_tempo', tempo, seq: i + 1 }));
-        await inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === tempo, `tempo=${tempo} ${tag}`);
-        expected.tempo = tempo;
-      } else if (roll < 0.7) {
-        const swing = randInt(rng, 0, 100);
-        ws.send(JSON.stringify({ type: 'set_swing', swing, seq: i + 1 }));
-        await inbox.waitFor((m) => m.type === 'swing_changed' && m.swing === swing, `swing=${swing} ${tag}`);
-        expected.swing = swing;
-      } else {
-        // Track-level op: toggle a random step and trust the broadcast's
-        // resulting value (handles repeat-toggles on the same index).
-        const step = randInt(rng, 0, 15);
-        ws.send(JSON.stringify({ type: 'toggle_step', trackId: TRACK_ID, step, seq: i + 1 }));
-        const ack = await inbox.waitFor(
-          (m) => m.type === 'step_toggled' && (m as { step?: number }).step === step,
-          `toggle step=${step} ${tag}`,
-        );
-        expected.steps.set(step, (ack as { value?: boolean }).value === true);
+      const tag = `op=${index} evictAfter=${schedule.evictAfter}/${schedule.ops.length}`;
+      switch (op.kind) {
+        case 'tempo':
+          ws.send(JSON.stringify({ type: 'set_tempo', tempo: op.tempo, seq: index + 1 }));
+          await inbox.waitFor(
+            (message) => message.type === 'tempo_changed' && message.tempo === op.tempo,
+            `tempo=${op.tempo} ${tag}`,
+          );
+          expected.tempo = op.tempo;
+          break;
+        case 'swing':
+          ws.send(JSON.stringify({ type: 'set_swing', swing: op.swing, seq: index + 1 }));
+          await inbox.waitFor(
+            (message) => message.type === 'swing_changed' && message.swing === op.swing,
+            `swing=${op.swing} ${tag}`,
+          );
+          expected.swing = op.swing;
+          break;
+        case 'toggle': {
+          ws.send(JSON.stringify({
+            type: 'toggle_step',
+            trackId: TRACK_ID,
+            step: op.step,
+            seq: index + 1,
+          }));
+          const ack = await inbox.waitFor(
+            (message) => message.type === 'step_toggled'
+              && (message as { step?: number }).step === op.step,
+            `toggle step=${op.step} ${tag}`,
+          );
+          expected.steps.set(op.step, (ack as { value?: boolean }).value === true);
+          break;
+        }
       }
     }
 
     // Final ungraceful eviction, then assert full recovery of every acked op.
     await evictDurableObject(stub);
     const recovered = await readLoadedState(stub, id);
-    expect(recovered, `recovered seed=${seed}`).not.toBeNull();
-    expect(recovered!.tempo, `tempo seed=${seed} evictAt=${evictAt}/${opCount}`).toBe(expected.tempo);
-    expect(recovered!.swing, `swing seed=${seed} evictAt=${evictAt}/${opCount}`).toBe(expected.swing);
+    expect(recovered, 'recovered state').not.toBeNull();
+    expect(recovered!.tempo, 'recovered tempo').toBe(expected.tempo);
+    expect(recovered!.swing, 'recovered swing').toBe(expected.swing);
 
     const recoveredTrack = recovered!.tracks.find((t) => t.id === TRACK_ID);
-    expect(recoveredTrack, `track present seed=${seed}`).toBeDefined();
+    expect(recoveredTrack, 'recovered track').toBeDefined();
     for (const [step, value] of expected.steps) {
-      expect(recoveredTrack!.steps[step], `step ${step} seed=${seed} evictAt=${evictAt}/${opCount}`).toBe(value);
+      expect(recoveredTrack!.steps[step], `recovered step ${step}`).toBe(value);
     }
-
+  } finally {
     ws.close(1000, 'fuzz done');
+  }
+}
+
+it('property: recovered state reflects all acked mutations across a mid-sequence eviction', { timeout: EVICTION_TIMEOUT_MS }, async () => {
+  for (const [index, schedule] of EVICTION_RECOVERY_KNOWN_FAILURES.entries()) {
+    try {
+      await runEvictionSchedule(schedule);
+    } catch (error) {
+      throw new Error(`known-failure #${index} regressed: ${(error as Error).message}`);
+    }
+  }
+
+  for (const seed of EVICTION_SEEDS) {
+    const details = await fc.check(
+      fc.asyncProperty(evictionScheduleArb, runEvictionSchedule),
+      {
+        seed: seed | 0,
+        numRuns: 1,
+        interruptAfterTimeLimit: Math.max(
+          20_000,
+          Math.floor(EVICTION_TIMEOUT_MS / EVICTION_SEEDS.length) - 2_000,
+        ),
+        markInterruptAsFailure: true,
+      },
+    );
+    if (details.failed) {
+      if (details.counterexample) {
+        failWithPbtCounterexample('evictionRecovery', details.counterexample[0], details);
+      }
+      throw new Error(`evictionRecovery property interrupted before producing a counterexample (seed=${details.seed})`);
+    }
   }
 });
