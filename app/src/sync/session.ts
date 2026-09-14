@@ -289,8 +289,11 @@ export async function createSession(initialState?: Partial<SessionState>): Promi
  * Load an existing session
  * Phase 14: Uses retry with exponential backoff
  */
-export async function loadSession(sessionId: string): Promise<Session | null> {
-  const response = await fetchWithRetry(`${API_BASE}/${sessionId}`);
+export async function loadSession(
+  sessionId: string,
+  apiBase: string = API_BASE,
+): Promise<Session | null> {
+  const response = await fetchWithRetry(`${apiBase}/${sessionId}`);
 
   if (response.status === 404) {
     return null;
@@ -425,8 +428,11 @@ export async function saveSessionNow(sessionId: string, state: GridState): Promi
  * Remix a session (create a copy and switch to it)
  * Phase 14: Uses retry with exponential backoff
  */
-export async function remixSession(sourceId: string): Promise<Session> {
-  const response = await fetchWithRetry(`${API_BASE}/${sourceId}/remix`, {
+export async function remixSession(
+  sourceId: string,
+  apiBase: string = API_BASE,
+): Promise<Session> {
+  const response = await fetchWithRetry(`${apiBase}/${sourceId}/remix`, {
     method: 'POST',
   });
 
@@ -438,7 +444,7 @@ export async function remixSession(sourceId: string): Promise<Session> {
   currentSessionId = data.id;
 
   // Load the full session
-  const session = await loadSession(data.id);
+  const session = await loadSession(data.id, apiBase);
   if (!session) throw new Error('Remixed session not found');
 
   return session;

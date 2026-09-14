@@ -8,6 +8,8 @@ import { Recorder } from './components/Recorder'
 // Phase 34: Lazy load EffectsPanel - mobile-only, not critical for initial load
 const EffectsPanel = lazy(() => import('./components/EffectsPanel').then(m => ({ default: m.EffectsPanel })))
 import { LandingPage } from './components/LandingPage'
+import { RemixButton } from './components/RemixButton'
+import type { ExampleRemixTarget } from './data/example-sessions'
 import type { EffectsState } from './types'
 import { Close, CopyLink, Qr } from './icons'
 import { AvatarStack } from './components/AvatarStack'
@@ -38,9 +40,7 @@ import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
 import { AsyncActionLatch } from './utils/AsyncActionLatch'
 import { downloadMidi } from './audio/midiExport'
-import { createSession, updateUrlWithSession } from './sync/session'
-import { LANDING_SAMPLES } from './data/landing-session-defaults'
-import { createStarterSessionState } from './data/starter-session'
+import { createSession, remixSession, updateUrlWithSession } from './sync/session'
 import './App.css'
 
 // Feature flags - recording is hidden (Shared Sample Recording archived)
@@ -49,9 +49,10 @@ const ENABLE_RECORDING = new URLSearchParams(window.location.search).get('record
 
 interface SessionControlsProps {
   children: React.ReactNode;
+  focusHeadingOnMount?: boolean;
 }
 
-export function SessionControls({ children }: SessionControlsProps) {
+export function SessionControls({ children, focusHeadingOnMount = false }: SessionControlsProps) {
   const { state, dispatch } = useGrid();
   const [copied, setCopied] = useState(false);
   const [activeSessionAction, setActiveSessionAction] = useState<'share' | 'publish' | 'remix' | 'new' | null>(null);
@@ -59,6 +60,13 @@ export function SessionControls({ children }: SessionControlsProps) {
   const [orphanDismissed, setOrphanDismissed] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [shareDropdownOpen, setShareDropdownOpen] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Give keyboard and assistive-technology users a stable destination after
+  // the landing page is replaced by a newly created or remixed session.
+  useEffect(() => {
+    if (focusHeadingOnMount) headingRef.current?.focus();
+  }, [focusHeadingOnMount]);
 
   // QR Mode
   const { isActive: qrModeActive, targetURL: qrTargetURL, activate: activateQR, deactivate: deactivateQR } = useQRMode();
@@ -393,14 +401,13 @@ export function SessionControls({ children }: SessionControlsProps) {
                 {activeSessionAction === 'publish' ? 'Publishing...' : 'Publish'}
               </button>
             )}
-            <button
-              className={`session-btn remix-btn${isPublished ? ' primary-action' : ''}`}
+            <RemixButton
               onClick={handleRemix}
               disabled={activeSessionAction !== null}
+              isRemixing={activeSessionAction === 'remix'}
+              primary={isPublished}
               title={isPublished ? 'Create your own editable copy' : 'Create a copy for yourself'}
-            >
-              {activeSessionAction === 'remix' ? 'Remixing...' : 'Remix'}
-            </button>
+            />
             <button
               className="session-btn new-btn"
               onClick={handleNew}
@@ -496,7 +503,12 @@ export function SessionControls({ children }: SessionControlsProps) {
           )}
           <div className="header-top">
             <div className="header-title-group">
-              <h1>Keyboardia</h1>
+              <h1
+                ref={headingRef}
+                tabIndex={focusHeadingOnMount ? -1 : undefined}
+              >
+                Keyboardia
+              </h1>
               {status === 'ready' && (
                 <>
                   <span className="title-separator">/</span>
@@ -646,9 +658,9 @@ function MainContent() {
   );
 }
 
-function AppContent() {
+function AppContent({ focusHeadingOnMount }: { focusHeadingOnMount: boolean }) {
   return (
-    <SessionControls>
+    <SessionControls focusHeadingOnMount={focusHeadingOnMount}>
       <MainContent />
     </SessionControls>
   );
@@ -660,10 +672,9 @@ function hasSessionInUrl(): boolean {
   return /^\/s\/[a-zA-Z0-9_-]+/.test(path);
 }
 
-// Default drum samples for landing page example patterns
-// Must match valid sample IDs from sample-constants.ts
 function App() {
   const [showLanding, setShowLanding] = useState(() => !hasSessionInUrl());
+  const [focusSessionHeading, setFocusSessionHeading] = useState(false);
 
   // Warm the lazily-loaded session chunks while the landing page idles, so
   // starting a session mounts the real UI directly instead of flashing
@@ -683,39 +694,18 @@ function App() {
       version: 1,
     });
     updateUrlWithSession(session.id);
+    setFocusSessionHeading(true);
     setShowLanding(false);
   }, []);
 
-  const handleStartStarter = useCallback(async () => {
-    const session = await createSession(createStarterSessionState());
+  const handleRemixExample = useCallback(async (target: ExampleRemixTarget) => {
+    const session = await remixSession(target.sourceId, target.apiBase);
+    if (target.destinationOrigin) {
+      window.location.assign(`${target.destinationOrigin}/s/${session.id}`);
+      return;
+    }
     updateUrlWithSession(session.id);
-    setShowLanding(false);
-  }, []);
-
-  const handleSelectExample = useCallback(async (pattern: number[][], bpm: number) => {
-    // Create session with pre-populated tracks from example pattern
-    // Convert number steps (0/1) to booleans
-    const tracks = pattern.map((steps, i) => ({
-      id: `track-${Date.now()}-${i}`,
-      name: LANDING_SAMPLES[i] || `Track ${i + 1}`,
-      sampleId: LANDING_SAMPLES[i] || 'kick',
-      steps: steps.map(s => s === 1),
-      stepCount: 16,
-      muted: false,
-      soloed: false,
-      volume: 1,
-      pan: 0,
-      transpose: 0,
-      parameterLocks: Array(16).fill(null),
-    }));
-
-    const session = await createSession({
-      tracks,
-      tempo: bpm,
-      swing: 0,
-      version: 1,
-    });
-    updateUrlWithSession(session.id);
+    setFocusSessionHeading(true);
     setShowLanding(false);
   }, []);
 
@@ -723,8 +713,7 @@ function App() {
     return (
       <LandingPage
         onStartSession={handleStartSession}
-        onStartStarter={handleStartStarter}
-        onSelectExample={handleSelectExample}
+        onRemixExample={handleRemixExample}
       />
     );
   }
@@ -734,7 +723,7 @@ function App() {
       <DebugProvider>
         <GridProvider>
           <RemoteChangeProvider>
-            <AppContent />
+            <AppContent focusHeadingOnMount={focusSessionHeading} />
           </RemoteChangeProvider>
           <DebugOverlay />
         </GridProvider>

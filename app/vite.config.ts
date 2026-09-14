@@ -45,25 +45,19 @@ interface MockSession {
   state: SessionState;
 }
 
+interface LocalExampleSessionFixture {
+  id: string;
+  sourceId: string;
+  name: string;
+  state: SessionState;
+}
+
 // The only in-memory HTTP backend used by offline development and browser CI.
-const holbyArtifact = JSON.parse(
-  readFileSync(new URL('./scripts/demo-sessions/holby.json', import.meta.url), 'utf8'),
-) as { name: string; state: SessionState }
-const holbyTimestamp = Date.parse('2026-07-10T00:00:00.000Z')
-const mockSessions = new Map<string, MockSession>([
-  ['8444f694-0a9a-41f3-815d-b9c6eb518c50', {
-    id: '8444f694-0a9a-41f3-815d-b9c6eb518c50',
-    name: holbyArtifact.name,
-    state: structuredClone(holbyArtifact.state),
-    createdAt: holbyTimestamp,
-    updatedAt: holbyTimestamp,
-    lastAccessedAt: holbyTimestamp,
-    remixedFrom: null,
-    remixedFromName: null,
-    remixCount: 0,
-    immutable: true,
-  }],
-]);
+const mockSessions = new Map<string, MockSession>();
+const localExampleFixtures = JSON.parse(readFileSync(
+  new URL('./src/data/__fixtures__/homepage-example-sessions.json', import.meta.url),
+  'utf8',
+)) as LocalExampleSessionFixture[]
 
 /**
  * Mock API plugin - only used when USE_MOCK_API=1
@@ -122,6 +116,29 @@ function createMockApiPlugin(): Plugin {
 
       const cloneState = (state: SessionState): SessionState =>
         repaired(structuredClone(state))
+
+      const fixtureTimestamp = Date.parse('2026-09-14T00:00:00.000Z')
+      const seedFixture = (fixture: LocalExampleSessionFixture, id: string) => {
+        mockSessions.set(id, {
+          id,
+          name: fixture.name,
+          state: cloneState(fixture.state),
+          createdAt: fixtureTimestamp,
+          updatedAt: fixtureTimestamp,
+          lastAccessedAt: fixtureTimestamp,
+          remixedFrom: null,
+          remixedFromName: null,
+          remixCount: 0,
+          immutable: true,
+        })
+      }
+      mockSessions.clear()
+      for (const fixture of localExampleFixtures) {
+        seedFixture(fixture, fixture.id)
+        // Production IDs remain available as compatibility aliases for local
+        // demos and visual contracts that predate dedicated fixture IDs.
+        seedFixture(fixture, fixture.sourceId)
+      }
 
       // Mirrors LiveSessionDurableObject.mergeStateReplacement: REST clients
       // replace state without the WebSocket-only collaborative fields.
@@ -495,6 +512,11 @@ function createMockApiPlugin(): Plugin {
 
 // https://vite.dev/config/
 export default defineConfig({
+  define: {
+    // USE_MOCK_API controls the Vite middleware. Expose that same decision to
+    // browser code so it resolves the matching local fixture IDs.
+    'import.meta.env.VITE_USE_MOCK_API': JSON.stringify(USE_MOCK_API ? '1' : '0'),
+  },
   plugins: [
     react(),
     // Only use mock API if explicitly requested

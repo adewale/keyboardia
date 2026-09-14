@@ -188,10 +188,8 @@ export async function waitForAppReady(page: Page): Promise<void> {
   const isLanding = await landingPage.isVisible().catch(() => false);
 
   if (isLanding) {
-    // Enter the ordinary blank-session path explicitly. The landing page also
-    // offers "Start with Groove"; broad `:has-text("Start")` matching would
-    // select that earlier button and silently contaminate tests that rely on a
-    // fresh, empty session.
+    // Enter the ordinary blank-session path explicitly. Exact matching keeps
+    // this helper resilient if another landing-page action later uses "Start".
     const startButton = page.getByRole('button', { name: 'Start Session', exact: true });
     await startButton.waitFor({ state: 'visible', timeout: 5000 });
     await startButton.click();
