@@ -14,6 +14,7 @@ vi.mock('./engine', () => ({
 }));
 
 import { SchedulerWorkletHost } from './scheduler-worklet-host';
+import { audioContextClock, type AudioClock } from './audio-time';
 
 interface MockNode {
   port: { onmessage: ((e: MessageEvent) => void) | null; postMessage: ReturnType<typeof vi.fn<(...a: unknown[]) => void>> };
@@ -31,6 +32,7 @@ function setupHost(): { host: SchedulerWorkletHost; mockCtx: { currentTime: numb
   };
   (host as unknown as { node: unknown }).node = mockNode;
   (host as unknown as { audioContext: unknown }).audioContext = mockCtx;
+  (host as unknown as { audioClock: AudioClock }).audioClock = audioContextClock(mockCtx);
   (host as unknown as { isRunning: boolean }).isRunning = true;
   return { host, mockCtx };
 }

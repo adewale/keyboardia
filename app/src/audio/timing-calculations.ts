@@ -5,8 +5,21 @@
  * These functions have no side effects and can be tested independently of the
  * Web Audio API.
  *
- * All timing values are in seconds unless otherwise noted.
+ * Timing values use nominal units so seconds cannot be confused with absolute
+ * AudioContext time at compile time.
  */
+
+import {
+  audioTime,
+  beats,
+  beatsToSeconds,
+  seconds,
+  stepIndex as checkedStepIndex,
+  steps,
+  stepsToSeconds,
+  type AudioTime,
+  type Seconds,
+} from './audio-time';
 
 /** Steps per beat (16th notes) */
 export const STEPS_PER_BEAT = 4;
@@ -42,9 +55,8 @@ export const MAX_STEPS = 128;
  * Property: duration decreases as tempo increases (AU-001a)
  * Property: duration is always positive (AU-001b)
  */
-export function getStepDuration(tempo: number): number {
-  const beatsPerSecond = tempo / 60;
-  return 1 / (beatsPerSecond * STEPS_PER_BEAT);
+export function getStepDuration(tempo: number): Seconds {
+  return stepsToSeconds(steps(1), tempo, STEPS_PER_BEAT);
 }
 
 /**
@@ -66,12 +78,12 @@ export function calculateSwingDelay(
   step: number,
   globalSwing: number,
   trackSwing: number,
-  stepDuration: number
-): number {
+  stepDuration: Seconds
+): Seconds {
   // Swing blending formula - combines global and track swing
   const swingAmount = globalSwing + trackSwing - globalSwing * trackSwing;
   const isSwungStep = step % 2 === 1;
-  return isSwungStep ? stepDuration * swingAmount * SWING_DELAY_FACTOR : 0;
+  return seconds(isSwungStep ? stepDuration * swingAmount * SWING_DELAY_FACTOR : 0);
 }
 
 /**
@@ -94,8 +106,8 @@ export function calculateTiedDuration(
   track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
   startStep: number,
   trackStepCount: number,
-  stepDuration: number
-): number {
+  stepDuration: Seconds
+): Seconds {
   let tieCount = 1; // Start with 1 for the current step
   let stepsChecked = 0;
 
@@ -113,7 +125,7 @@ export function calculateTiedDuration(
   }
 
   // Return extended duration (with gate time for natural release)
-  return stepDuration * tieCount * GATE_TIME_RATIO;
+  return seconds(stepDuration * tieCount * GATE_TIME_RATIO);
 }
 
 /**
@@ -130,12 +142,13 @@ export function calculateTiedDuration(
  * Property: later steps have later times (AU-001c)
  */
 export function calculateStepTime(
-  audioStartTime: number,
+  audioStartTime: Seconds,
   stepIndex: number,
   tempo: number
-): number {
-  const stepDuration = getStepDuration(tempo);
-  return audioStartTime + stepIndex * stepDuration;
+): AudioTime {
+  const resolvedStepIndex = checkedStepIndex(stepIndex);
+  const offset = beatsToSeconds(beats(resolvedStepIndex / STEPS_PER_BEAT), tempo);
+  return audioTime(audioStartTime + offset);
 }
 
 /**

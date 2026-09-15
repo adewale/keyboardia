@@ -17,6 +17,7 @@ import {
   MAX_STEPS,
 } from './timing-calculations';
 import { arbTempo, arbSwing, createTrackWithTies, VALID_STEP_COUNTS } from '../test/arbitraries';
+import { seconds } from './audio-time';
 
 // =============================================================================
 // Step Duration Properties
@@ -189,7 +190,7 @@ describe('calculateTiedDuration properties', () => {
 
   it('wrap-around ties are counted correctly', () => {
     const stepCount = 16;
-    const stepDuration = 0.125;
+    const stepDuration = seconds(0.125);
 
     // Create a track with step 15 tied to step 0
     const track = {
@@ -220,8 +221,8 @@ describe('calculateStepTime properties', () => {
         (startTime, tempo, stepIndices) => {
           const sorted = [...stepIndices].sort((a, b) => a - b);
           for (let i = 1; i < sorted.length; i++) {
-            const t1 = calculateStepTime(startTime, sorted[i - 1], tempo);
-            const t2 = calculateStepTime(startTime, sorted[i], tempo);
+            const t1 = calculateStepTime(seconds(startTime), sorted[i - 1], tempo);
+            const t2 = calculateStepTime(seconds(startTime), sorted[i], tempo);
             expect(t2).toBeGreaterThanOrEqual(t1);
           }
         }
@@ -237,8 +238,8 @@ describe('calculateStepTime properties', () => {
         arbTempo,
         fc.integer({ min: 0, max: 100 }),
         (startTime, tempo, step) => {
-          const t1 = calculateStepTime(startTime, step, tempo);
-          const t2 = calculateStepTime(startTime, step + 1, tempo);
+          const t1 = calculateStepTime(seconds(startTime), step, tempo);
+          const t2 = calculateStepTime(seconds(startTime), step + 1, tempo);
           expect(t2).toBeGreaterThan(t1);
         }
       ),

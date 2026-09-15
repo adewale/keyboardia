@@ -17,12 +17,13 @@ import { computeReceiveLateness, measureAndReportLateness } from './scheduler-wo
 import { AudioMetricsCollector } from './metrics/audio-metrics';
 import { GrainPitchShifter } from './worklets/pitch-shift-engine';
 import { RingBuffer } from './metrics/ring-buffer';
+import { audioTime, serverTimeMs } from './audio-time';
 
 describe('scheduler hot paths', () => {
   const baseInput = {
-    audioStartTime: 10,
-    serverStartTime: 1_000_000,
-    currentServerTime: 1_000_500,
+    audioStartTime: audioTime(10),
+    serverStartTime: serverTimeMs(1_000_000),
+    currentServerTime: serverTimeMs(1_000_500),
     tempo: 120,
     maxSteps: 64,
     loopStart: 0,
@@ -33,7 +34,7 @@ describe('scheduler hot paths', () => {
   });
 
   bench('computeJoinOffset (exact-boundary branch)', () => {
-    computeJoinOffset({ ...baseInput, currentServerTime: 1_000_500 + 0 }); // remainder 0
+    computeJoinOffset({ ...baseInput, currentServerTime: serverTimeMs(1_000_500) });
   });
 
   bench('computeEnvelopeStart', () => {

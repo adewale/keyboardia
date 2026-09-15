@@ -19,6 +19,12 @@ import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { resolveNoteDynamics } from './note-dynamics';
 import { logger } from '../utils/logger';
 import schedulerWorkletUrl from './worklets/scheduler.worklet.ts?worker&url';
+import {
+  audioContextClock,
+  audioTime,
+  serverTimeMs,
+  type AudioClock,
+} from './audio-time';
 
 // ─── Event types from the worklet ────────────────────────────────────────
 
@@ -57,6 +63,7 @@ type WorkletEvent = NoteEvent | StepEvent | BeatEvent;
 export class SchedulerWorkletHost implements IScheduler {
   private node: AudioWorkletNode | null = null;
   private audioContext: AudioContext | null = null;
+  private audioClock: AudioClock | null = null;
   private isRunning = false;
   private currentStep = 0;
   private moduleLoaded = false;
@@ -75,6 +82,7 @@ export class SchedulerWorkletHost implements IScheduler {
    */
   async initialize(audioContext: AudioContext): Promise<boolean> {
     this.audioContext = audioContext;
+    this.audioClock = audioContextClock(audioContext);
 
     this.moduleLoaded = await loadWorkletModule(audioContext, schedulerWorkletUrl, 'scheduler-worklet');
 
@@ -141,9 +149,9 @@ export class SchedulerWorkletHost implements IScheduler {
     let initialNextStepTime = startTime;
     if (this.multiplayerConfig.enabled && serverStartTime && this.multiplayerConfig.getServerTime) {
       const offset = computeJoinOffset({
-        audioStartTime: startTime,
-        serverStartTime,
-        currentServerTime: this.multiplayerConfig.getServerTime(),
+        audioStartTime: audioTime(startTime),
+        serverStartTime: serverTimeMs(serverStartTime),
+        currentServerTime: serverTimeMs(this.multiplayerConfig.getServerTime()),
         tempo: state.tempo,
         maxSteps: MAX_STEPS,
         loopStart: state.loopRegion?.start ?? 0,
@@ -229,7 +237,7 @@ export class SchedulerWorkletHost implements IScheduler {
    * of audio (review finding #1). Cancelled by stop() via pendingTimers.
    */
   private scheduleUiCallback(eventTime: number, fn: () => void): void {
-    const now = this.audioContext?.currentTime ?? 0;
+    const now = this.audioClock?.now() ?? audioTime(0);
     const delayMs = Math.max(0, (eventTime - now) * 1000);
     const timer = setTimeout(() => {
       this.pendingTimers.delete(timer);
@@ -243,8 +251,8 @@ export class SchedulerWorkletHost implements IScheduler {
     // determines whether Math.max(time, currentTime) will clamp in the audio
     // engine — the worklet's internal scheduling precision is ~0 by
     // construction and not worth recording.
-    if (this.audioContext) {
-      measureAndReportLateness(event.time, this.audioContext.currentTime, audioMetrics);
+    if (this.audioClock) {
+      measureAndReportLateness(event.time, this.audioClock.now(), audioMetrics);
     }
 
     const { type: instrumentType, presetId } = parseInstrumentId(event.sampleId);

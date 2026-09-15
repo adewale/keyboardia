@@ -14,6 +14,12 @@
  *   graph can schedule it precisely.
  */
 
+import {
+  audioTime,
+  differenceInSeconds,
+  secondsToMilliseconds,
+} from './audio-time';
+
 export interface ReceiveLatenessInput {
   /** The scheduled note start time (audioContext time, seconds). */
   eventTime: number;
@@ -29,7 +35,9 @@ export interface ReceiveLatenessResult {
 }
 
 export function computeReceiveLateness(input: ReceiveLatenessInput): ReceiveLatenessResult {
-  const latenessMs = (input.currentTime - input.eventTime) * 1000;
+  const latenessMs = secondsToMilliseconds(
+    differenceInSeconds(audioTime(input.currentTime), audioTime(input.eventTime)),
+  );
   return {
     latenessMs,
     isLate: latenessMs > 0,
