@@ -104,7 +104,7 @@ export const MASTER_COMPRESSOR_SETTINGS = Object.freeze({
 
 /** Transparent per-track transient ceiling before tracks reach the master sum. */
 export const TRACK_PEAK_LIMITER_SETTINGS = Object.freeze({
-  threshold: -1,
+  threshold: -2,
   knee: 0,
   ratio: 20,
   attack: 0,
