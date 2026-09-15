@@ -20,7 +20,11 @@ class FakeAudioWorkletProcessor {
 }
 
 type CapturingProcessor = FakeAudioWorkletProcessor & {
-  process: (inputs: Float32Array[][], outputs: Float32Array[][]) => boolean;
+  process: (
+    inputs: Float32Array[][],
+    outputs: Float32Array[][],
+    parameters?: { productionDispatchMarker: Float32Array },
+  ) => boolean;
 };
 
 type CapturingProcessorConstructor = new (options: {
@@ -69,6 +73,10 @@ function arm(processor: CapturingProcessor, frameCount: number): void {
   processor.port.onmessage?.({ data: { type: 'arm', frameCount } });
 }
 
+function marker(...values: number[]): { productionDispatchMarker: Float32Array } {
+  return { productionDispatchMarker: Float32Array.from(values) };
+}
+
 describe('live energy worklet lifecycle', () => {
   it('stays alive before asynchronous arm, then retires on the exact done quantum', () => {
     const processor = createProcessor();
@@ -80,11 +88,13 @@ describe('live energy worklet lifecycle', () => {
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(1)]],
+      marker(1),
     )).toBe(false);
     expect(processor.port.messages.at(-1)).toMatchObject({
       type: 'done',
       capturedFrames: 1,
       outputOnsetFrame: 2_048,
+      dispatchAudioFrame: 2_048,
     });
     expect(processor.process([], [[new Float32Array(1)]])).toBe(false);
   });
@@ -92,15 +102,52 @@ describe('live energy worklet lifecycle', () => {
   it('reports the absolute audio-thread frame of the first output onset', () => {
     const processor = createProcessor();
     arm(processor, 1);
-    expect(processor.process([], [[new Float32Array(128)]])).toBe(true);
+    expect(processor.process([], [[new Float32Array(128)]], marker(0))).toBe(true);
     simulatedCurrentFrame = 128;
     expect(processor.process(
       [[Float32Array.from([0, 0.5])]],
       [[new Float32Array(2)]],
+      marker(0, 1),
     )).toBe(false);
     expect(processor.port.messages.at(-1)).toMatchObject({
       type: 'done',
       outputOnsetFrame: 129,
+      dispatchAudioFrame: 129,
+    });
+  });
+
+  it('retains an onset that precedes the first production-dispatch marker', () => {
+    const processor = createProcessor();
+    arm(processor, 2);
+    expect(processor.process(
+      [[Float32Array.from([0.5])]],
+      [[new Float32Array(1)]],
+      marker(0),
+    )).toBe(true);
+    simulatedCurrentFrame = 1;
+    expect(processor.process(
+      [[Float32Array.from([0.25])]],
+      [[new Float32Array(1)]],
+      marker(1),
+    )).toBe(false);
+    expect(processor.port.messages.at(-1)).toMatchObject({
+      type: 'done',
+      outputOnsetFrame: 0,
+      dispatchAudioFrame: 1,
+    });
+  });
+
+  it('fails closed when capture completes without a production-dispatch marker', () => {
+    const processor = createProcessor();
+    arm(processor, 1);
+    expect(processor.process(
+      [[Float32Array.from([0.5])]],
+      [[new Float32Array(1)]],
+      marker(0),
+    )).toBe(false);
+    expect(processor.port.messages.at(-1)).toMatchObject({
+      type: 'error',
+      message: 'continuous energy capture observed no production dispatch marker',
     });
   });
 
@@ -125,6 +172,7 @@ describe('live energy worklet lifecycle', () => {
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(1)]],
+      marker(1),
     )).toBe(false);
     expect(processor.port.messages.at(-1)).toMatchObject({ type: 'error' });
     expect(processor.process([], [[new Float32Array(1)]])).toBe(false);
@@ -136,6 +184,7 @@ describe('live energy worklet lifecycle', () => {
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(2)]],
+      marker(1),
     )).toBe(false);
     expect(processor.port.messages.at(-1)).toMatchObject({ type: 'error' });
     expect(processor.process([], [[new Float32Array(1)]])).toBe(false);
