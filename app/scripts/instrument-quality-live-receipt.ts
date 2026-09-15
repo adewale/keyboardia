@@ -6,7 +6,7 @@ import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
-export const LIVE_RECEIPT_SCHEMA_VERSION = 10;
+export const LIVE_RECEIPT_SCHEMA_VERSION = 11;
 export const LIVE_RECEIPT_CLAIM = 'live-post-track-signal-evidence';
 export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
@@ -40,17 +40,18 @@ export const LIVE_CAPTURE_METHOD = 'onset-aligned-audio-worklet-accumulator-v4';
 export const LIVE_CAPTURE_ALIGNMENT =
   'first-isolated-track-or-master-output-frame-above-pinned-threshold';
 export const LIVE_CAPTURE_TIMING_ORIGIN =
-  'absolute-audio-worklet-output-onset-frame-minus-observed-production-dispatch-frame';
+  'absolute-audio-worklet-output-onset-frame-minus-later-of-scheduled-event-and-observed-production-dispatch-frame';
 export const LIVE_CAPTURE_DURATION_SECONDS = 2.5;
 export const LIVE_CAPTURE_CHANNEL_COUNT = 2;
 export const LIVE_ONSET_THRESHOLD = 1e-7;
 // A stale release tail precedes its trial's scheduled event. Allow only a small
-// render-quantum/rounding tolerance, not an earlier audible event.
-export const LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS = -0.01;
-// Allow 80 ms for source onset and graph latency, but not Tone's historical
-// extra 100 ms lookahead. Absolute frames remove both MessagePort directions
-// from this comparison.
-export const LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS = 0.08;
+// render-quantum/rounding tolerance before the later of the scheduled event
+// and actual renderer dispatch, not an earlier audible event.
+export const LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS = -0.01;
+// Allow 80 ms for renderer-added source onset and graph latency, but not Tone's
+// historical extra 100 ms lookahead. Scheduler lateness remains visible in the
+// separate signed schedule-to-dispatch and raw schedule-to-onset diagnostics.
+export const LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS = 0.08;
 export const LIVE_PEAK_METRIC = 'maximum-absolute-sample-over-all-captured-channel-samples';
 export const LIVE_RMS_METRIC = 'root-mean-square-over-all-captured-channel-samples';
 export const LIVE_RANDOM_SEED = 0x4b455942;
@@ -171,6 +172,8 @@ export interface LiveEngineDispatchIdentity {
 export interface LiveEngineDispatch extends LiveEngineDispatchIdentity {
   /** Absolute AudioContext time passed to the production renderer. */
   eventTimeSeconds: number;
+  /** Same-context AudioContext frame observed immediately before renderer dispatch. */
+  dispatchAudioFrame: number;
 }
 
 export interface LiveInstrumentSpec {
@@ -211,7 +214,12 @@ export interface LiveInstrumentResult extends LiveInstrumentSpec {
   capturedFrames: number;
   channelSampleCount: number;
   outputOnsetFrame: number;
+  /** Raw sequencer diagnostic; signed because lookahead dispatches are early. */
+  scheduledEventToDispatchFrames: number;
+  /** Raw end-to-end diagnostic from the scheduled target to output onset. */
   scheduledEventToOnsetFrames: number;
+  /** Renderer-added onset interval from max(scheduled event, actual dispatch). */
+  renderReferenceToOnsetFrames: number;
   randomCalls: number;
   preArmUiUnmutedTrackIds: string[];
   preArmCommandedTrackBusOpenIds: string[];
@@ -248,8 +256,8 @@ export interface LiveQualityReport {
     durationSeconds: typeof LIVE_CAPTURE_DURATION_SECONDS;
     channelCount: typeof LIVE_CAPTURE_CHANNEL_COUNT;
     onsetThreshold: typeof LIVE_ONSET_THRESHOLD;
-    minScheduledEventToOnsetSeconds: typeof LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS;
-    maxScheduledEventToOnsetSeconds: typeof LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS;
+    minRenderReferenceToOnsetSeconds: typeof LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS;
+    maxRenderReferenceToOnsetSeconds: typeof LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS;
     trialMode: typeof LIVE_TRIAL_MODE;
     maxConcurrentAudibleTracks: typeof LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS;
     isolationScope: typeof LIVE_ISOLATION_SCOPE;
@@ -358,6 +366,12 @@ function positiveInteger(value: unknown, label: string): asserts value is number
   }
 }
 
+function nonnegativeInteger(value: unknown, label: string): asserts value is number {
+  if (!Number.isInteger(value) || (value as number) < 0) {
+    throw new Error(`Live receipt ${label} must be a nonnegative integer`);
+  }
+}
+
 function validateCaptureGeometry(
   value: Record<string, unknown>,
   label: string,
@@ -411,10 +425,10 @@ export function validateLiveQualityReport(
     || value.capture.durationSeconds !== LIVE_CAPTURE_DURATION_SECONDS
     || value.capture.channelCount !== LIVE_CAPTURE_CHANNEL_COUNT
     || value.capture.onsetThreshold !== LIVE_ONSET_THRESHOLD
-    || value.capture.minScheduledEventToOnsetSeconds
-      !== LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS
-    || value.capture.maxScheduledEventToOnsetSeconds
-      !== LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS
+    || value.capture.minRenderReferenceToOnsetSeconds
+      !== LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS
+    || value.capture.maxRenderReferenceToOnsetSeconds
+      !== LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS
     || value.capture.trialMode !== LIVE_TRIAL_MODE
     || value.capture.maxConcurrentAudibleTracks !== LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS
     || value.capture.isolationScope !== LIVE_ISOLATION_SCOPE
@@ -480,10 +494,14 @@ export function validateLiveQualityReport(
     positiveInteger(item.capturedFrames, `instrument ${item.sampleId}.capturedFrames`);
     positiveInteger(item.channelSampleCount, `instrument ${item.sampleId}.channelSampleCount`);
     positiveInteger(item.outputOnsetFrame, `instrument ${item.sampleId}.outputOnsetFrame`);
-    if (!Number.isInteger(item.scheduledEventToOnsetFrames)) {
-      throw new Error(
-        `instrument ${item.sampleId}.scheduledEventToOnsetFrames must be an integer`,
-      );
+    for (const key of [
+      'scheduledEventToDispatchFrames',
+      'scheduledEventToOnsetFrames',
+      'renderReferenceToOnsetFrames',
+    ] as const) {
+      if (!Number.isInteger(item[key])) {
+        throw new Error(`instrument ${item.sampleId}.${key} must be an integer`);
+      }
     }
     positiveInteger(item.randomCalls, `instrument ${item.sampleId}.randomCalls`);
     const expectedIsolationIds = JSON.stringify([item.trackId]);
@@ -514,6 +532,10 @@ export function validateLiveQualityReport(
     finiteNonnegative(
       dispatch.eventTimeSeconds,
       `instrument ${item.sampleId}.dispatch.eventTimeSeconds`,
+    );
+    nonnegativeInteger(
+      dispatch.dispatchAudioFrame,
+      `instrument ${item.sampleId}.dispatch.dispatchAudioFrame`,
     );
   }
   const missing = expected.filter(spec => !seenIds.has(spec.sampleId));
@@ -577,31 +599,52 @@ export function validateLiveQualityReport(
       const scheduledEventFrame = Math.round(
         dispatch.eventTimeSeconds * (session.sampleRate as number),
       );
+      const dispatchAudioFrame = dispatch.dispatchAudioFrame;
+      const scheduledEventToDispatchFrames = result.scheduledEventToDispatchFrames as number;
       const scheduledEventToOnsetFrames = result.scheduledEventToOnsetFrames as number;
+      const renderReferenceToOnsetFrames = result.renderReferenceToOnsetFrames as number;
+      const derivedScheduledEventToDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
       const derivedScheduledEventToOnsetFrames = (result.outputOnsetFrame as number)
         - scheduledEventFrame;
+      const renderReferenceFrame = Math.max(scheduledEventFrame, dispatchAudioFrame);
+      const derivedRenderReferenceToOnsetFrames = (result.outputOnsetFrame as number)
+        - renderReferenceFrame;
+      if (scheduledEventToDispatchFrames !== derivedScheduledEventToDispatchFrames) {
+        throw new Error(
+          `Live receipt instrument ${id} dispatch delta is not bound to its absolute frames: `
+          + `${scheduledEventToDispatchFrames} reported != `
+          + `${derivedScheduledEventToDispatchFrames} derived`,
+        );
+      }
       if (scheduledEventToOnsetFrames !== derivedScheduledEventToOnsetFrames) {
         throw new Error(
           `Live receipt instrument ${id} onset delta is not bound to its absolute frames: `
           + `${scheduledEventToOnsetFrames} reported != ${derivedScheduledEventToOnsetFrames} derived`,
         );
       }
-      const minimumScheduledEventToOnsetFrames = Math.floor(
-        LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS * (session.sampleRate as number),
-      );
-      const maximumScheduledEventToOnsetFrames = Math.ceil(
-        LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS * (session.sampleRate as number),
-      );
-      if (scheduledEventToOnsetFrames < minimumScheduledEventToOnsetFrames) {
+      if (renderReferenceToOnsetFrames !== derivedRenderReferenceToOnsetFrames) {
         throw new Error(
-          `Live receipt instrument ${id} preceded the minimum scheduled-event-to-onset interval: `
-          + `${scheduledEventToOnsetFrames} frames < ${minimumScheduledEventToOnsetFrames}`,
+          `Live receipt instrument ${id} renderer onset delta is not bound to its absolute frames: `
+          + `${renderReferenceToOnsetFrames} reported != `
+          + `${derivedRenderReferenceToOnsetFrames} derived`,
         );
       }
-      if (scheduledEventToOnsetFrames > maximumScheduledEventToOnsetFrames) {
+      const minimumRenderReferenceToOnsetFrames = Math.floor(
+        LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS * (session.sampleRate as number),
+      );
+      const maximumRenderReferenceToOnsetFrames = Math.ceil(
+        LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS * (session.sampleRate as number),
+      );
+      if (renderReferenceToOnsetFrames < minimumRenderReferenceToOnsetFrames) {
         throw new Error(
-          `Live receipt instrument ${id} exceeded the maximum scheduled-event-to-onset interval: `
-          + `${scheduledEventToOnsetFrames} frames > ${maximumScheduledEventToOnsetFrames}`,
+          `Live receipt instrument ${id} preceded the minimum renderer-reference-to-onset interval: `
+          + `${renderReferenceToOnsetFrames} frames < ${minimumRenderReferenceToOnsetFrames}`,
+        );
+      }
+      if (renderReferenceToOnsetFrames > maximumRenderReferenceToOnsetFrames) {
+        throw new Error(
+          `Live receipt instrument ${id} exceeded the maximum renderer-reference-to-onset interval: `
+          + `${renderReferenceToOnsetFrames} frames > ${maximumRenderReferenceToOnsetFrames}`,
         );
       }
       if (dispatch.eventTimeSeconds <= previousDispatchTime) {

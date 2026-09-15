@@ -16,9 +16,9 @@ import {
   LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
-  LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+  LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS,
   LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
-  LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+  LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS,
   LIVE_ONSET_THRESHOLD,
   LIVE_PATTERN_PERIOD_SECONDS,
   LIVE_PATTERN_STORAGE_STEP_COUNT,
@@ -75,8 +75,8 @@ function validReceipt(): LiveQualityReport {
       durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
       channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
       onsetThreshold: LIVE_ONSET_THRESHOLD,
-      minScheduledEventToOnsetSeconds: LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS,
-      maxScheduledEventToOnsetSeconds: LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+      minRenderReferenceToOnsetSeconds: LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS,
+      maxRenderReferenceToOnsetSeconds: LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS,
       trialMode: LIVE_TRIAL_MODE,
       maxConcurrentAudibleTracks: LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
       isolationScope: LIVE_ISOLATION_SCOPE,
@@ -106,7 +106,13 @@ function validReceipt(): LiveQualityReport {
     instruments: specs.map((spec, index) => {
       const trackId = `track-${index}`;
       const eventTimeSeconds = 1 + index * 4;
+      const scheduledEventFrame = Math.round(eventTimeSeconds * 48_000);
+      const dispatchAudioFrame = scheduledEventFrame - 7_200;
+      const scheduledEventToDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
       const scheduledEventToOnsetFrames = 240;
+      const outputOnsetFrame = scheduledEventFrame + scheduledEventToOnsetFrames;
+      const renderReferenceToOnsetFrames = outputOnsetFrame
+        - Math.max(scheduledEventFrame, dispatchAudioFrame);
       return {
         ...spec,
         trackId,
@@ -117,20 +123,38 @@ function validReceipt(): LiveQualityReport {
         masterRms: 0.016,
         capturedFrames,
         channelSampleCount,
-        outputOnsetFrame: Math.round(eventTimeSeconds * 48_000)
-          + scheduledEventToOnsetFrames,
+        outputOnsetFrame,
+        scheduledEventToDispatchFrames,
         scheduledEventToOnsetFrames,
+        renderReferenceToOnsetFrames,
         randomCalls: 10_000,
         preArmUiUnmutedTrackIds: [trackId],
         preArmCommandedTrackBusOpenIds: [trackId],
         observedEngineDispatches: [{
           ...expectedLiveEngineDispatchIdentity(spec, trackId),
           eventTimeSeconds,
+          dispatchAudioFrame,
         }],
       };
     }),
     diagnostics: { pageErrors: [], consoleErrors: [] },
   };
+}
+
+function bindTiming(
+  result: LiveQualityReport['instruments'][number],
+  sampleRate: number,
+  dispatchAudioFrame: number,
+  outputOnsetFrame: number,
+): void {
+  const dispatch = result.observedEngineDispatches[0];
+  const scheduledEventFrame = Math.round(dispatch.eventTimeSeconds * sampleRate);
+  dispatch.dispatchAudioFrame = dispatchAudioFrame;
+  result.outputOnsetFrame = outputOnsetFrame;
+  result.scheduledEventToDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
+  result.scheduledEventToOnsetFrames = outputOnsetFrame - scheduledEventFrame;
+  result.renderReferenceToOnsetFrames = outputOnsetFrame
+    - Math.max(scheduledEventFrame, dispatchAudioFrame);
 }
 
 describe('live instrument-quality receipt', () => {
@@ -152,16 +176,16 @@ describe('live instrument-quality receipt', () => {
   });
 
   it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
-    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(10);
+    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(11);
     const stepDuration = 60 / LIVE_TEMPO / 4;
     expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
     expect(LIVE_NOTE_DURATION_SECONDS).toBe(stepDuration * 0.9);
     expect(LIVE_MIDI_VELOCITY).toBe(127);
     expect(LIVE_NOTE_GAIN).toBe(1);
     expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
-    expect(LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS).toBe(-0.01);
-    expect(LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS).toBe(0.08);
-    expect(LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS).toBeLessThan(0.1);
+    expect(LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS).toBe(-0.01);
+    expect(LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS).toBe(0.08);
+    expect(LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS).toBeLessThan(0.1);
     expect(LIVE_STEP_COUNT * stepDuration).toBe(LIVE_PATTERN_PERIOD_SECONDS);
     expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
     expect(LIVE_PATTERN_STORAGE_STEP_COUNT).toBe(128);
@@ -245,27 +269,67 @@ describe('live instrument-quality receipt', () => {
     forgedOnset.capture.onsetThreshold = 0 as typeof LIVE_ONSET_THRESHOLD;
     expect(() => validateLiveQualityReport(forgedOnset, SUBJECT)).toThrow(/capture settings/);
 
+    const forgedRendererBound = validReceipt();
+    forgedRendererBound.capture.maxRenderReferenceToOnsetSeconds =
+      0.1 as typeof LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS;
+    expect(() => validateLiveQualityReport(forgedRendererBound, SUBJECT))
+      .toThrow(/capture settings/);
+
     const lateOnset = validReceipt();
-    lateOnset.instruments[0].scheduledEventToOnsetFrames = 4_801;
-    lateOnset.instruments[0].outputOnsetFrame = 48_000 + 4_801;
+    bindTiming(lateOnset.instruments[0], 48_000, 48_000 - 7_200, 48_000 + 4_801);
     expect(() => validateLiveQualityReport(lateOnset, SUBJECT)).toThrow(
-      /maximum scheduled-event-to-onset/,
+      /maximum renderer-reference-to-onset/,
     );
 
     const earlyOnset = validReceipt();
     // Each probe includes masterGain, so a release tail leaking from a prior
     // trial would cross the onset threshold before the scheduled step-four
     // event and must make the receipt unverifiable.
-    earlyOnset.instruments[0].scheduledEventToOnsetFrames = -481;
-    earlyOnset.instruments[0].outputOnsetFrame = 48_000 - 481;
+    bindTiming(earlyOnset.instruments[0], 48_000, 48_000 - 7_200, 48_000 - 481);
     expect(() => validateLiveQualityReport(earlyOnset, SUBJECT)).toThrow(
-      /minimum scheduled-event-to-onset/,
+      /minimum renderer-reference-to-onset/,
+    );
+
+    const onTimeDispatch = validReceipt();
+    bindTiming(onTimeDispatch.instruments[0], 48_000, 48_000, 48_240);
+    expect(validateLiveQualityReport(onTimeDispatch, SUBJECT)).toBe(onTimeDispatch);
+
+    const lateCommonDispatch = validReceipt();
+    bindTiming(lateCommonDispatch.instruments[0], 48_000, 48_000 + 4_800, 48_000 + 5_040);
+    expect(lateCommonDispatch.instruments[0]).toMatchObject({
+      scheduledEventToDispatchFrames: 4_800,
+      scheduledEventToOnsetFrames: 5_040,
+      renderReferenceToOnsetFrames: 240,
+    });
+    expect(validateLiveQualityReport(lateCommonDispatch, SUBJECT)).toBe(lateCommonDispatch);
+
+    const lateDispatchWithToneLookahead = validReceipt();
+    bindTiming(
+      lateDispatchWithToneLookahead.instruments[0],
+      48_000,
+      48_000 + 4_800,
+      48_000 + 4_800 + 4_801,
+    );
+    expect(() => validateLiveQualityReport(lateDispatchWithToneLookahead, SUBJECT)).toThrow(
+      /maximum renderer-reference-to-onset/,
     );
 
     const unboundOnset = validReceipt();
     unboundOnset.instruments[0].outputOnsetFrame += 2_400;
     expect(() => validateLiveQualityReport(unboundOnset, SUBJECT)).toThrow(
       /onset delta is not bound to its absolute frames/,
+    );
+
+    const unboundDispatch = validReceipt();
+    unboundDispatch.instruments[0].scheduledEventToDispatchFrames += 1;
+    expect(() => validateLiveQualityReport(unboundDispatch, SUBJECT)).toThrow(
+      /dispatch delta is not bound to its absolute frames/,
+    );
+
+    const unboundRendererOnset = validReceipt();
+    unboundRendererOnset.instruments[0].renderReferenceToOnsetFrames += 1;
+    expect(() => validateLiveQualityReport(unboundRendererOnset, SUBJECT)).toThrow(
+      /renderer onset delta is not bound to its absolute frames/,
     );
 
     const malformedRandomCalls = validReceipt();
@@ -459,9 +523,17 @@ describe('live instrument-quality receipt', () => {
     const reversed = validReceipt();
     reversed.instruments[1].observedEngineDispatches[0].eventTimeSeconds =
       reversed.instruments[0].observedEngineDispatches[0].eventTimeSeconds;
-    reversed.instruments[1].outputOnsetFrame = Math.round(
-      reversed.instruments[1].observedEngineDispatches[0].eventTimeSeconds * 48_000,
-    ) + reversed.instruments[1].scheduledEventToOnsetFrames;
+    bindTiming(reversed.instruments[1], 48_000, 48_000 - 7_200, 48_000 + 240);
     expect(() => validateLiveQualityReport(reversed, SUBJECT)).toThrow(/not strictly increasing/);
+
+    const negativeDispatchFrame = validReceipt();
+    negativeDispatchFrame.instruments[0].observedEngineDispatches[0].dispatchAudioFrame = -1;
+    expect(() => validateLiveQualityReport(negativeDispatchFrame, SUBJECT))
+      .toThrow(/dispatchAudioFrame must be a nonnegative integer/);
+
+    const fractionalDispatchFrame = validReceipt();
+    fractionalDispatchFrame.instruments[0].observedEngineDispatches[0].dispatchAudioFrame += 0.5;
+    expect(() => validateLiveQualityReport(fractionalDispatchFrame, SUBJECT))
+      .toThrow(/dispatchAudioFrame must be a nonnegative integer/);
   });
 });

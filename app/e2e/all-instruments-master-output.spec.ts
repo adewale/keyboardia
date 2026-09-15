@@ -22,9 +22,9 @@ import {
   LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
-  LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+  LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS,
   LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
-  LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+  LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS,
   LIVE_ONSET_THRESHOLD,
   LIVE_PATTERN_PERIOD_SECONDS,
   LIVE_PATTERN_STORAGE_STEP_COUNT,
@@ -226,7 +226,9 @@ type TrackProbeResult = InstrumentSpec & {
   capturedFrames: number;
   channelSampleCount: number;
   outputOnsetFrame: number;
+  scheduledEventToDispatchFrames: number;
   scheduledEventToOnsetFrames: number;
+  renderReferenceToOnsetFrames: number;
   randomCalls: number;
   preArmUiUnmutedTrackIds: string[];
   preArmCommandedTrackBusOpenIds: string[];
@@ -439,12 +441,15 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
       midiVelocity: number;
       noteGain: number;
       eventTimeSeconds: number;
+      dispatchAudioFrame: number;
       durationSeconds: number;
       argumentCount: number;
       variationKey: string | null;
     };
     type PlayMethod = (...args: unknown[]) => unknown;
-    type Engine = Record<DispatchMethod, PlayMethod>;
+    type Engine = Record<DispatchMethod, PlayMethod> & {
+      getAudioContext: () => AudioContext | null;
+    };
     type DispatchProbe = {
       arm: () => void;
       disarm: () => void;
@@ -487,7 +492,7 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
               const candidate = args[slot];
               return typeof candidate === 'number' ? candidate : Number.NaN;
             };
-            dispatches.push({
+            const observedDispatch = {
               method,
               trackId: typeof candidateTrackId === 'string'
                 ? candidateTrackId
@@ -507,7 +512,15 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
                 : typeof candidateVariationKey === 'string'
                   ? candidateVariationKey
                   : '<invalid-variation-key>',
-            });
+            };
+            const audioContext = this.getAudioContext();
+            if (!audioContext) {
+              throw new Error('AudioContext unavailable at production renderer dispatch');
+            }
+            const dispatchAudioFrame = Math.round(
+              audioContext.currentTime * audioContext.sampleRate,
+            );
+            dispatches.push({ ...observedDispatch, dispatchAudioFrame });
           }
           return Reflect.apply(original, this, args);
         },
@@ -1247,6 +1260,8 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           );
           expect(Number.isFinite(observedEngineDispatches[0].eventTimeSeconds)).toBe(true);
           expect(observedEngineDispatches[0].eventTimeSeconds).toBeGreaterThanOrEqual(0);
+          expect(Number.isInteger(observedEngineDispatches[0].dispatchAudioFrame)).toBe(true);
+          expect(observedEngineDispatches[0].dispatchAudioFrame).toBeGreaterThanOrEqual(0);
         } catch (error) {
           trialPrimaryError = error;
           throw error;
@@ -1275,6 +1290,8 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
         const scheduledEventFrame = Math.round(
           observedEngineDispatches[0].eventTimeSeconds * energy.sampleRate,
         );
+        const dispatchAudioFrame = observedEngineDispatches[0].dispatchAudioFrame;
+        const renderReferenceFrame = Math.max(scheduledEventFrame, dispatchAudioFrame);
         results.push({
           ...spec,
           trackId,
@@ -1283,7 +1300,9 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           masterPeak: energy.master.peak,
           masterRms: energy.master.rms,
           outputOnsetFrame: energy.outputOnsetFrame,
+          scheduledEventToDispatchFrames: dispatchAudioFrame - scheduledEventFrame,
           scheduledEventToOnsetFrames: energy.outputOnsetFrame - scheduledEventFrame,
+          renderReferenceToOnsetFrames: energy.outputOnsetFrame - renderReferenceFrame,
           randomCalls: energy.randomCalls,
           preArmUiUnmutedTrackIds: isolationSnapshot.uiUnmutedTrackIds,
           preArmCommandedTrackBusOpenIds: isolationSnapshot.commandedTrackBusOpenIds,
@@ -1318,8 +1337,8 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
       durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
       channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
       onsetThreshold: LIVE_ONSET_THRESHOLD,
-      minScheduledEventToOnsetSeconds: LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS,
-      maxScheduledEventToOnsetSeconds: LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+      minRenderReferenceToOnsetSeconds: LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS,
+      maxRenderReferenceToOnsetSeconds: LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS,
       trialMode: LIVE_TRIAL_MODE,
       maxConcurrentAudibleTracks: LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
       isolationScope: LIVE_ISOLATION_SCOPE,

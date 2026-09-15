@@ -13,8 +13,8 @@ import {
   LIVE_CAPTURE_ALIGNMENT,
   LIVE_CAPTURE_METHOD,
   LIVE_CAPTURE_TIMING_ORIGIN,
-  LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS,
-  LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+  LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS,
+  LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS,
   LIVE_RECEIPT_SCHEMA_VERSION,
   expectedLiveEngineDispatchIdentity,
   type LiveInstrumentSpec,
@@ -99,8 +99,10 @@ function currentLiveReportFixture(): Record<string, unknown> {
   capture.method = LIVE_CAPTURE_METHOD;
   capture.alignment = LIVE_CAPTURE_ALIGNMENT;
   capture.timingOrigin = LIVE_CAPTURE_TIMING_ORIGIN;
-  capture.minScheduledEventToOnsetSeconds = LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS;
-  capture.maxScheduledEventToOnsetSeconds = LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS;
+  capture.minRenderReferenceToOnsetSeconds = LIVE_MIN_RENDER_REFERENCE_TO_ONSET_SECONDS;
+  capture.maxRenderReferenceToOnsetSeconds = LIVE_MAX_RENDER_REFERENCE_TO_ONSET_SECONDS;
+  delete capture.minScheduledEventToOnsetSeconds;
+  delete capture.maxScheduledEventToOnsetSeconds;
 
   const fixtureByInstrument = new Map<string, { position: number; sampleRate: number }>();
   for (const session of report.sessions as Array<{ instruments: string[]; sampleRate: number }>) {
@@ -111,18 +113,26 @@ function currentLiveReportFixture(): Record<string, unknown> {
   for (const item of report.instruments as Array<LiveInstrumentSpec & {
     trackId: string;
     outputOnsetFrame: number;
+    scheduledEventToDispatchFrames: number;
     scheduledEventToOnsetFrames: number;
+    renderReferenceToOnsetFrames: number;
     observedEngineDispatches: unknown[];
   }>) {
     const fixture = fixtureByInstrument.get(item.sampleId);
     if (fixture === undefined) throw new Error(`Live fixture session omits ${item.sampleId}`);
     const eventTimeSeconds = fixture.position + 1;
+    const scheduledEventFrame = Math.round(eventTimeSeconds * fixture.sampleRate);
+    const dispatchAudioFrame = Math.max(0, scheduledEventFrame - 7_200);
+    item.scheduledEventToDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
     item.scheduledEventToOnsetFrames = Math.round(0.01 * fixture.sampleRate);
-    item.outputOnsetFrame = Math.round(eventTimeSeconds * fixture.sampleRate)
+    item.outputOnsetFrame = scheduledEventFrame
       + item.scheduledEventToOnsetFrames;
+    item.renderReferenceToOnsetFrames = item.outputOnsetFrame
+      - Math.max(scheduledEventFrame, dispatchAudioFrame);
     item.observedEngineDispatches = [{
       ...expectedLiveEngineDispatchIdentity(item, item.trackId),
       eventTimeSeconds,
+      dispatchAudioFrame,
     }];
   }
   return report;

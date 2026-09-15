@@ -72,7 +72,9 @@ function liveFixture(): LiveQualityReport {
       capturedFrames: 120_000,
       channelSampleCount: 240_000,
       outputOnsetFrame: 48_240,
+      scheduledEventToDispatchFrames: -7_200,
       scheduledEventToOnsetFrames: 240,
+      renderReferenceToOnsetFrames: 240,
       randomCalls: 17,
       preArmUiUnmutedTrackIds: ['track-primary'],
       preArmCommandedTrackBusOpenIds: ['track-primary'],
@@ -85,6 +87,7 @@ function liveFixture(): LiveQualityReport {
         midiVelocity: LIVE_MIDI_VELOCITY,
         noteGain: LIVE_NOTE_GAIN,
         eventTimeSeconds: 1,
+        dispatchAudioFrame: 40_800,
         durationSeconds: LIVE_NOTE_DURATION_SECONDS,
         argumentCount: 8,
         variationKey: null,
@@ -234,6 +237,7 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
     confirmation.instruments[0].preArmCommandedTrackBusOpenIds = ['track-confirmation'];
     confirmation.instruments[0].observedEngineDispatches[0].trackId = 'track-confirmation';
     confirmation.instruments[0].observedEngineDispatches[0].eventTimeSeconds = 2;
+    confirmation.instruments[0].observedEngineDispatches[0].dispatchAudioFrame = 88_800;
     confirmation.instruments[0].outputOnsetFrame = 96_240;
     confirmation.instruments[0].peak *= withinAlarmRatio;
     confirmation.instruments[0].rms *= withinAlarmRatio;
