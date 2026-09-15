@@ -27,6 +27,8 @@ type CapturingProcessorConstructor = new (options: {
   processorOptions: { inputCount: number; channelCount: number; onsetThreshold: number };
 }) => CapturingProcessor;
 
+let simulatedCurrentFrame = 0;
+
 function loadCapturingProcessor(): CapturingProcessorConstructor {
   const specPath = fileURLToPath(
     new URL('../e2e/all-instruments-master-output.spec.ts', import.meta.url),
@@ -40,12 +42,16 @@ function loadCapturingProcessor(): CapturingProcessorConstructor {
   const workletSource = specSource.slice(start + startMarker.length, end);
 
   let Processor: CapturingProcessorConstructor | null = null;
-  runInNewContext(workletSource, {
+  const workletGlobals = {
     AudioWorkletProcessor: FakeAudioWorkletProcessor,
     registerProcessor: (_name: string, candidate: CapturingProcessorConstructor) => {
       Processor = candidate;
     },
+  } as Record<string, unknown>;
+  Object.defineProperty(workletGlobals, 'currentFrame', {
+    get: () => simulatedCurrentFrame,
   });
+  runInNewContext(workletSource, workletGlobals);
   if (Processor === null) throw new Error('Live energy worklet did not register its processor');
   return Processor;
 }
@@ -53,6 +59,7 @@ function loadCapturingProcessor(): CapturingProcessorConstructor {
 const Processor = loadCapturingProcessor();
 
 function createProcessor(channelCount = 1): CapturingProcessor {
+  simulatedCurrentFrame = 0;
   return new Processor({
     processorOptions: { inputCount: 1, channelCount, onsetThreshold: 1e-7 },
   });
@@ -62,19 +69,14 @@ function arm(processor: CapturingProcessor, frameCount: number): void {
   processor.port.onmessage?.({ data: { type: 'arm', frameCount } });
 }
 
-function start(processor: CapturingProcessor): void {
-  processor.port.onmessage?.({ data: { type: 'start' } });
-}
-
 describe('live energy worklet lifecycle', () => {
-  it('stays alive before asynchronous arm and start, then retires on the exact done quantum', () => {
+  it('stays alive before asynchronous arm, then retires on the exact done quantum', () => {
     const processor = createProcessor();
     expect(processor.process([], [[new Float32Array(1)]])).toBe(true);
 
     arm(processor, 1);
     expect(processor.port.messages).toContainEqual({ type: 'armed', frameCount: 1 });
-    expect(processor.process([], [[new Float32Array(1)]])).toBe(true);
-    start(processor);
+    simulatedCurrentFrame = 2_048;
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(1)]],
@@ -82,25 +84,23 @@ describe('live energy worklet lifecycle', () => {
     expect(processor.port.messages.at(-1)).toMatchObject({
       type: 'done',
       capturedFrames: 1,
+      outputOnsetFrame: 2_048,
     });
     expect(processor.process([], [[new Float32Array(1)]])).toBe(false);
   });
 
-  it('excludes render quanta between arm acknowledgement and the start marker', () => {
+  it('reports the absolute audio-thread frame of the first output onset', () => {
     const processor = createProcessor();
     arm(processor, 1);
-    for (let quantum = 0; quantum < 50; quantum++) {
-      expect(processor.process([], [[new Float32Array(128)]])).toBe(true);
-    }
-
-    start(processor);
+    expect(processor.process([], [[new Float32Array(128)]])).toBe(true);
+    simulatedCurrentFrame = 128;
     expect(processor.process(
-      [[Float32Array.from([0.5])]],
-      [[new Float32Array(1)]],
+      [[Float32Array.from([0, 0.5])]],
+      [[new Float32Array(2)]],
     )).toBe(false);
     expect(processor.port.messages.at(-1)).toMatchObject({
       type: 'done',
-      startMarkerToOnsetFrames: 0,
+      outputOnsetFrame: 129,
     });
   });
 
@@ -114,7 +114,6 @@ describe('live energy worklet lifecycle', () => {
   it('returns false on the render quantum that reports a missing output', () => {
     const processor = createProcessor();
     arm(processor, 1);
-    start(processor);
     expect(processor.process([], [])).toBe(false);
     expect(processor.port.messages.at(-1)).toMatchObject({ type: 'error' });
     expect(processor.process([], [[new Float32Array(1)]])).toBe(false);
@@ -123,7 +122,6 @@ describe('live energy worklet lifecycle', () => {
   it('returns false on the render quantum that reports a channel-count mismatch', () => {
     const processor = createProcessor(2);
     arm(processor, 1);
-    start(processor);
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(1)]],
@@ -135,7 +133,6 @@ describe('live energy worklet lifecycle', () => {
   it('returns false on the render quantum that reports an incomplete channel', () => {
     const processor = createProcessor();
     arm(processor, 2);
-    start(processor);
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(2)]],

@@ -16,9 +16,9 @@ import {
   LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
-  LIVE_MAX_START_MARKER_TO_ONSET_SECONDS,
+  LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS,
   LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
-  LIVE_MIN_START_MARKER_TO_ONSET_SECONDS,
+  LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS,
   LIVE_ONSET_THRESHOLD,
   LIVE_PATTERN_PERIOD_SECONDS,
   LIVE_PATTERN_STORAGE_STEP_COUNT,
@@ -75,8 +75,8 @@ function validReceipt(): LiveQualityReport {
       durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
       channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
       onsetThreshold: LIVE_ONSET_THRESHOLD,
-      minStartMarkerToOnsetSeconds: LIVE_MIN_START_MARKER_TO_ONSET_SECONDS,
-      maxStartMarkerToOnsetSeconds: LIVE_MAX_START_MARKER_TO_ONSET_SECONDS,
+      minScheduledEventToOnsetSeconds: LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+      maxScheduledEventToOnsetSeconds: LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS,
       trialMode: LIVE_TRIAL_MODE,
       maxConcurrentAudibleTracks: LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
       isolationScope: LIVE_ISOLATION_SCOPE,
@@ -105,6 +105,8 @@ function validReceipt(): LiveQualityReport {
     sessions,
     instruments: specs.map((spec, index) => {
       const trackId = `track-${index}`;
+      const eventTimeSeconds = 1 + index * 4;
+      const scheduledEventToOnsetFrames = 240;
       return {
         ...spec,
         trackId,
@@ -115,13 +117,15 @@ function validReceipt(): LiveQualityReport {
         masterRms: 0.016,
         capturedFrames,
         channelSampleCount,
-        startMarkerToOnsetFrames: 24_000,
+        outputOnsetFrame: Math.round(eventTimeSeconds * 48_000)
+          + scheduledEventToOnsetFrames,
+        scheduledEventToOnsetFrames,
         randomCalls: 10_000,
         preArmUiUnmutedTrackIds: [trackId],
         preArmCommandedTrackBusOpenIds: [trackId],
         observedEngineDispatches: [{
           ...expectedLiveEngineDispatchIdentity(spec, trackId),
-          eventTimeSeconds: 1 + index * 4,
+          eventTimeSeconds,
         }],
       };
     }),
@@ -148,16 +152,16 @@ describe('live instrument-quality receipt', () => {
   });
 
   it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
-    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(9);
+    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(10);
     const stepDuration = 60 / LIVE_TEMPO / 4;
     expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
     expect(LIVE_NOTE_DURATION_SECONDS).toBe(stepDuration * 0.9);
     expect(LIVE_MIDI_VELOCITY).toBe(127);
     expect(LIVE_NOTE_GAIN).toBe(1);
     expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
-    expect(
-      LIVE_MAX_START_MARKER_TO_ONSET_SECONDS - LIVE_ACTIVE_STEP_OFFSET_SECONDS,
-    ).toBeCloseTo(0.08, 6);
+    expect(LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS).toBe(-0.01);
+    expect(LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS).toBe(0.08);
+    expect(LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS).toBeLessThan(0.1);
     expect(LIVE_STEP_COUNT * stepDuration).toBe(LIVE_PATTERN_PERIOD_SECONDS);
     expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
     expect(LIVE_PATTERN_STORAGE_STEP_COUNT).toBe(128);
@@ -242,18 +246,26 @@ describe('live instrument-quality receipt', () => {
     expect(() => validateLiveQualityReport(forgedOnset, SUBJECT)).toThrow(/capture settings/);
 
     const lateOnset = validReceipt();
-    lateOnset.instruments[0].startMarkerToOnsetFrames = 48_001;
+    lateOnset.instruments[0].scheduledEventToOnsetFrames = 4_801;
+    lateOnset.instruments[0].outputOnsetFrame = 48_000 + 4_801;
     expect(() => validateLiveQualityReport(lateOnset, SUBJECT)).toThrow(
-      /maximum start-marker-to-onset/,
+      /maximum scheduled-event-to-onset/,
     );
 
     const earlyOnset = validReceipt();
     // Each probe includes masterGain, so a release tail leaking from a prior
     // trial would cross the onset threshold before the scheduled step-four
     // event and must make the receipt unverifiable.
-    earlyOnset.instruments[0].startMarkerToOnsetFrames = 1;
+    earlyOnset.instruments[0].scheduledEventToOnsetFrames = -481;
+    earlyOnset.instruments[0].outputOnsetFrame = 48_000 - 481;
     expect(() => validateLiveQualityReport(earlyOnset, SUBJECT)).toThrow(
-      /minimum start-marker-to-onset/,
+      /minimum scheduled-event-to-onset/,
+    );
+
+    const unboundOnset = validReceipt();
+    unboundOnset.instruments[0].outputOnsetFrame += 2_400;
+    expect(() => validateLiveQualityReport(unboundOnset, SUBJECT)).toThrow(
+      /onset delta is not bound to its absolute frames/,
     );
 
     const malformedRandomCalls = validReceipt();
@@ -447,6 +459,9 @@ describe('live instrument-quality receipt', () => {
     const reversed = validReceipt();
     reversed.instruments[1].observedEngineDispatches[0].eventTimeSeconds =
       reversed.instruments[0].observedEngineDispatches[0].eventTimeSeconds;
+    reversed.instruments[1].outputOnsetFrame = Math.round(
+      reversed.instruments[1].observedEngineDispatches[0].eventTimeSeconds * 48_000,
+    ) + reversed.instruments[1].scheduledEventToOnsetFrames;
     expect(() => validateLiveQualityReport(reversed, SUBJECT)).toThrow(/not strictly increasing/);
   });
 });

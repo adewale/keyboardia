@@ -13,8 +13,8 @@ import {
   LIVE_CAPTURE_ALIGNMENT,
   LIVE_CAPTURE_METHOD,
   LIVE_CAPTURE_TIMING_ORIGIN,
-  LIVE_MAX_START_MARKER_TO_ONSET_SECONDS,
-  LIVE_MIN_START_MARKER_TO_ONSET_SECONDS,
+  LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS,
+  LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS,
   LIVE_RECEIPT_SCHEMA_VERSION,
   expectedLiveEngineDispatchIdentity,
   type LiveInstrumentSpec,
@@ -99,8 +99,8 @@ function currentLiveReportFixture(): Record<string, unknown> {
   capture.method = LIVE_CAPTURE_METHOD;
   capture.alignment = LIVE_CAPTURE_ALIGNMENT;
   capture.timingOrigin = LIVE_CAPTURE_TIMING_ORIGIN;
-  capture.minStartMarkerToOnsetSeconds = LIVE_MIN_START_MARKER_TO_ONSET_SECONDS;
-  capture.maxStartMarkerToOnsetSeconds = LIVE_MAX_START_MARKER_TO_ONSET_SECONDS;
+  capture.minScheduledEventToOnsetSeconds = LIVE_MIN_SCHEDULED_EVENT_TO_ONSET_SECONDS;
+  capture.maxScheduledEventToOnsetSeconds = LIVE_MAX_SCHEDULED_EVENT_TO_ONSET_SECONDS;
 
   const fixtureByInstrument = new Map<string, { position: number; sampleRate: number }>();
   for (const session of report.sessions as Array<{ instruments: string[]; sampleRate: number }>) {
@@ -110,15 +110,19 @@ function currentLiveReportFixture(): Record<string, unknown> {
   }
   for (const item of report.instruments as Array<LiveInstrumentSpec & {
     trackId: string;
-    startMarkerToOnsetFrames: number;
+    outputOnsetFrame: number;
+    scheduledEventToOnsetFrames: number;
     observedEngineDispatches: unknown[];
   }>) {
     const fixture = fixtureByInstrument.get(item.sampleId);
     if (fixture === undefined) throw new Error(`Live fixture session omits ${item.sampleId}`);
-    item.startMarkerToOnsetFrames = Math.round(0.52 * fixture.sampleRate);
+    const eventTimeSeconds = fixture.position + 1;
+    item.scheduledEventToOnsetFrames = Math.round(0.01 * fixture.sampleRate);
+    item.outputOnsetFrame = Math.round(eventTimeSeconds * fixture.sampleRate)
+      + item.scheduledEventToOnsetFrames;
     item.observedEngineDispatches = [{
       ...expectedLiveEngineDispatchIdentity(item, item.trackId),
-      eventTimeSeconds: fixture.position + 1,
+      eventTimeSeconds,
     }];
   }
   return report;
