@@ -109,6 +109,14 @@ describe('XYPadController', () => {
       // Should still have filter-sweep mappings
       expect(controller.getMappings()).toHaveLength(2);
     });
+
+    it('exposes the full documented ADSR attack and release ranges', () => {
+      controller.loadPreset('envelope-shape');
+      expect(controller.getMappings()).toEqual([
+        { parameter: 'attack', axis: 'x', min: 0.001, max: 4, curve: 'exponential' },
+        { parameter: 'release', axis: 'y', min: 0.001, max: 8, curve: 'exponential' },
+      ]);
+    });
   });
 
   describe('custom mappings', () => {

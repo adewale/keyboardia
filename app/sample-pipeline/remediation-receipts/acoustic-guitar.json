@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-guitar",
+  "source": {
+    "url": "https://github.com/sfzinstruments/Discord-SFZ-GM-Bank",
+    "revision": "7a9c478fe331f94f246d33332f0adedb25bbbe27",
+    "license": "CC0 1.0 Universal",
+    "mappingPath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/_MartinGM2-loop-sw.sfz",
+    "mappingSha256": "4a91af9c47f3c179359b6aee43896cf141438e46c2c7704be4c9534427333d45",
+    "verificationScope": "CI binds shipped delivery bytes and declared external-source identifiers; reproducing the transform requires separately hydrating the pinned source revision."
+  },
+  "transform": {
+    "tool": "ffmpeg 8.1.2",
+    "commandTemplate": "ffmpeg -i {sourcePath} -af areverse,afade=t=in:st=0:d=0.01,areverse,apad=pad_dur=0.006 -ar 44100 -ac 1 -c:a pcm_s16le {deliveryPath}",
+    "sourceCodec": "pcm_s16le",
+    "deliveryCodec": "pcm_s16le",
+    "sampleRate": 44100,
+    "channels": 1,
+    "lossyTranscode": false,
+    "ffmpegAudioFilter": "areverse,afade=t=in:st=0:d=0.01,areverse,apad=pad_dur=0.006",
+    "rationale": "Apply a tail-only 10ms amplitude fade to reach an actual zero boundary, then append 6ms of zero-valued PCM; no pitch, onset, or uniform-gain transform."
+  },
+  "files": [
+    {
+      "rootMidi": 40,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_040__E2_1.wav",
+      "sourceSha256": "3d80eb25aa8cbe8d1d2b5971d42a63df279c5429437df6267422ceef1c75b50f",
+      "deliveryPath": "public/instruments/acoustic-guitar/E2.wav",
+      "deliverySha256": "559c89207a07a3045c81a60858f8114ab546f789dcb77fb3675d81e248a37095"
+    },
+    {
+      "rootMidi": 43,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_043__G2_1.wav",
+      "sourceSha256": "574f9b934a6965cfbb9eee1db6918a7bc47ea8577c321ac98ff20872e8da42ed",
+      "deliveryPath": "public/instruments/acoustic-guitar/G2.wav",
+      "deliverySha256": "11246cd144072179c5967ac6e093960f36e69bbb96d8112e88b9510e48b081c0"
+    },
+    {
+      "rootMidi": 46,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_046_Bb2_1.wav",
+      "sourceSha256": "aadf19ca38c73473373a22947f49317dbee0c2b58e040e0115801fe57b76d3e6",
+      "deliveryPath": "public/instruments/acoustic-guitar/Bb2.wav",
+      "deliverySha256": "b36199ddac764fbd1b80b53485cab22d308453e792498122ae3891bdc9fe2bbe"
+    },
+    {
+      "rootMidi": 49,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_049_Db3_1.wav",
+      "sourceSha256": "bf57a94a18e63c6c7f90c84c6bf08e998a1ea7e0b8bf1a6a09d31bed77e4a2c7",
+      "deliveryPath": "public/instruments/acoustic-guitar/Db3.wav",
+      "deliverySha256": "7ca1875a3f81acf87bd52ddc4ce12fb09fa46a479f7753cdc235234f302989ee"
+    },
+    {
+      "rootMidi": 52,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_052__E3_1.wav",
+      "sourceSha256": "e2ee2b611260e25bd6dacf00dbe5b3b8c7e5f69cc2cc252461af98025dd284fe",
+      "deliveryPath": "public/instruments/acoustic-guitar/E3.wav",
+      "deliverySha256": "58617790112ebc407f3b1be40e4d1876fe16422f769607722061285844f4651c"
+    },
+    {
+      "rootMidi": 55,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_055__G3_1.wav",
+      "sourceSha256": "694679709136628e7b807a8059a10e4264af8123bf5fc819e9761c4e0e563f29",
+      "deliveryPath": "public/instruments/acoustic-guitar/G3.wav",
+      "deliverySha256": "06cd338fde1394fbf3dcc346163ebde58264407622c260423855014804270e34"
+    },
+    {
+      "rootMidi": 58,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_058_Bb3_1.wav",
+      "sourceSha256": "cdacb0918cbe4c2e8da3324f559d94b2be11c3614be6c5da0b7654373e842080",
+      "deliveryPath": "public/instruments/acoustic-guitar/Bb3.wav",
+      "deliverySha256": "f544f11d1126c08719bc984c92e52ab521c34d8069493029850a4b9b26eedcf2"
+    },
+    {
+      "rootMidi": 61,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_061_Db4_1.wav",
+      "sourceSha256": "81c1ea3bdd795d7e91b369f47001757ab3e6f82da0aeb4486da9032451cae958",
+      "deliveryPath": "public/instruments/acoustic-guitar/Db4.wav",
+      "deliverySha256": "7233923a246fdd5c953a5a2ff1f864e9e59bc1e3bb83c524f1ad239975d596e7"
+    },
+    {
+      "rootMidi": 64,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_064__E4_1.wav",
+      "sourceSha256": "1ce5ce765892d3f557cd3c47c7fbba9ac866765d10fe342cb03e00b8be0ee412",
+      "deliveryPath": "public/instruments/acoustic-guitar/E4.wav",
+      "deliverySha256": "2da1c7d01a73dae60780ff39cdb780a99cb4d579f67555c5863979d2e9e22cae"
+    },
+    {
+      "rootMidi": 68,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_068_Ab4_1.wav",
+      "sourceSha256": "85595b30c7d2fcca30186a3539ca401c4e551e4ca6506c72c26c291a8d333701",
+      "deliveryPath": "public/instruments/acoustic-guitar/Ab4.wav",
+      "deliverySha256": "67b15b999d681be0215137bc920dd73d8259c8ed91b97629752625e5e670a0d3"
+    },
+    {
+      "rootMidi": 71,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_071__B4_1.wav",
+      "sourceSha256": "5278514d5a99ba1871c2a5035335219740d759cc6553a06eb54d82742ae052f3",
+      "deliveryPath": "public/instruments/acoustic-guitar/B4.wav",
+      "deliverySha256": "be1a4f91e1c9450ca225bc0d56d3156fadd9939296289ccf081a1d9458a7444b"
+    },
+    {
+      "rootMidi": 74,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_074__D5_1.wav",
+      "sourceSha256": "272f34deb22bc1ddc17f01c65b34016a6bc519bacf912aa57aecad827ff2f0da",
+      "deliveryPath": "public/instruments/acoustic-guitar/D5.wav",
+      "deliverySha256": "0e0540abb85eb1a93f387828cebfab2c77a3994530b3d475fe77ceb6ae9370ca"
+    },
+    {
+      "rootMidi": 77,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_077__F5_1.wav",
+      "sourceSha256": "981d8956ffde9ec5b045a3ddf563d3802957e6845079540cf4958797060c415a",
+      "deliveryPath": "public/instruments/acoustic-guitar/F5.wav",
+      "deliverySha256": "e8894b6dc43df4f4d0422bd23b7a0c052c60a9f5affd5f63126531fbb01889a1"
+    },
+    {
+      "rootMidi": 80,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_080_Ab5_1.wav",
+      "sourceSha256": "1dfca9cf6adb0f6e4a37ac7ab3818c62c5bab560e6db13373255db7cef23de2e",
+      "deliveryPath": "public/instruments/acoustic-guitar/Ab5.wav",
+      "deliverySha256": "df909aa84b0e52092cbec3388d9320b050a88247373c572b005d2faff3c17f42"
+    },
+    {
+      "rootMidi": 83,
+      "sourcePath": "Discord GM/Melodic/026-Acoustic Guitar (steel)/MartinGM2_083__B5_1.wav",
+      "sourceSha256": "da4133e56cc7e73f7284f91fd098a0120190deac4c9dbdd59c47f4a08c4a70c5",
+      "deliveryPath": "public/instruments/acoustic-guitar/B5.wav",
+      "deliverySha256": "6c607d6cf30efbe2c6d54182ce75431375795b8b7d0be64eb110eafe61c52ae6"
+    }
+  ]
+}

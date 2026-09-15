@@ -12,6 +12,7 @@ import {
   RELEASE_FLOOR_GAIN,
   RELEASE_TAIL_GUARD_SEC,
 } from './note-schedule';
+import { schedulerMidiForTargetMidi } from '../../scripts/instrument-quality-matrix';
 
 /**
  * Behavioural tests for SampledInstrument.playNote — the function that
@@ -76,6 +77,23 @@ afterEach(() => {
 const SINGLE_SAMPLE = { samples: [{ note: 60, file: 'C4.mp3' }] };
 
 describe('playNote scheduling (P1)', () => {
+  it('renders matrix target coordinates through playbackNote without falling outside the real range', async () => {
+    const { ctx, instrument } = await loadInstrument({
+      manifest: {
+        playbackNote: 36,
+        playableRange: { min: 24, max: 73 },
+        samples: [{ note: 36, file: 'kick.mp3' }],
+      },
+    });
+    const schedulerMidi = schedulerMidiForTargetMidi(24, 36);
+
+    const source = instrument.playNote('matrix-min', schedulerMidi, 0, 0.25, 1);
+
+    expect(schedulerMidi).toBe(48);
+    expect(source).not.toBeNull();
+    expect(ctx.lastSource.playbackRate.value).toBeCloseTo(0.5, 10);
+  });
+
   it('does not try to resume an OfflineAudioContext before rendering', async () => {
     const { ctx, instrument } = await loadInstrument({ manifest: SINGLE_SAMPLE });
     ctx.state = 'suspended';
@@ -269,6 +287,32 @@ describe('sample-specific playback metadata (pipeline stages 5-6)', () => {
     instrument.playNote('kick', 60, 2, 0.25, 1);
 
     expect(ctx.lastSource.startCalls[0].offset).toBeCloseTo(0.008, 8);
+  });
+
+  it('uses a provenance-backed AAC ceiling only when this decoder exposes delay', async () => {
+    const id = 'alto-sax';
+    const fullManifest: InstrumentManifest = {
+      id,
+      name: 'Alto Sax',
+      type: 'sampled',
+      releaseTime: 0.4,
+      maxAdaptiveCodecDelay: 0.06,
+      samples: [{ note: 50, file: 'D3-soft.m4a' }],
+    };
+    vi.stubGlobal('fetch', makeSampleFetchStub(fullManifest));
+    const ctx = new FakeAudioContext();
+    ctx.decodeAudioData = async () => {
+      const buffer = ctx.createBuffer(1, 48_000, 48_000);
+      buffer.getChannelData(0)[2_344] = 0.9; // 48.83 ms in Node's AAC timeline
+      return buffer;
+    };
+    const instrument = new SampledInstrument(id);
+    instrument.initialize(ctx.asAudioContext(), new FakeGainNode() as unknown as AudioNode);
+    expect(await instrument.ensureLoaded()).toBe(true);
+
+    instrument.playNote('sax', 50, 2, 0.25, 1);
+
+    expect(ctx.lastSource.startCalls[0].offset).toBeCloseTo(2_344 / 48_000 - 0.005, 8);
   });
 });
 

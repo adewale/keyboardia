@@ -65,10 +65,10 @@ export interface SynthParams {
   waveform: WaveformType;
   filterCutoff: number;    // 100-10000 Hz
   filterResonance: number; // 0-20
-  attack: number;          // 0-1 seconds
+  attack: number;          // 0.001-4 seconds
   decay: number;           // 0-1 seconds
   sustain: number;         // 0-1 amplitude
-  release: number;         // 0-2 seconds
+  release: number;         // 0-8 seconds
   /** Source-side loudness calibration; independent of track and note gain. */
   outputGainDb?: number;
 
@@ -132,6 +132,66 @@ const {
   MIN_FILTER_FREQ,
   MAX_FILTER_FREQ,
 } = SYNTH_CONSTANTS;
+
+/** Longest release accepted by either synth runtime. */
+export const MAX_SYNTH_RELEASE_SECONDS = 8;
+/** Shortest/longest attack accepted by either synth runtime. */
+export const MIN_SYNTH_ATTACK_SECONDS = 0.001;
+export const MAX_SYNTH_ATTACK_SECONDS = 4;
+
+/** Normalize envelope attack to the shared ADSR contract. */
+export function normalizeSynthAttackSeconds(
+  value: number,
+  fallback: number = 0.01,
+): number {
+  const finiteFallback = Number.isFinite(fallback) ? fallback : 0.01;
+  const candidate = Number.isFinite(value) ? value : finiteFallback;
+  return Math.max(MIN_SYNTH_ATTACK_SECONDS, Math.min(MAX_SYNTH_ATTACK_SECONDS, candidate));
+}
+
+/**
+ * Normalize authored and live-control release values without losing an
+ * intentional zero. Non-finite input falls back to the ordinary 0.5s tail.
+ */
+export function normalizeSynthReleaseSeconds(
+  value: number,
+  fallback: number = 0.5,
+): number {
+  const finiteFallback = Number.isFinite(fallback) ? fallback : 0.5;
+  const candidate = Number.isFinite(value) ? value : finiteFallback;
+  return Math.max(0, Math.min(MAX_SYNTH_RELEASE_SECONDS, candidate));
+}
+
+/**
+ * Return a safe bipolar filter-LFO range in Hz. Web Audio sums modulation
+ * inputs with the automated AudioParam value, so the range must account for
+ * every point in the filter envelope, not just the initial cutoff. Letting a
+ * resonant filter cross 0 Hz can produce implementation-specific instability.
+ */
+export function boundedFilterLfoRange(
+  baseCutoff: number,
+  depth: number,
+  filterEnvelope?: FilterEnvConfig,
+): number {
+  const base = Math.max(MIN_FILTER_FREQ, Math.min(MAX_FILTER_FREQ, baseCutoff));
+  const automatedCutoffs = [base];
+
+  if (filterEnvelope) {
+    const delta = filterEnvelope.amount * base * 4;
+    automatedCutoffs.push(
+      Math.max(MIN_FILTER_FREQ, Math.min(MAX_FILTER_FREQ, base + delta)),
+      Math.max(
+        MIN_FILTER_FREQ,
+        Math.min(MAX_FILTER_FREQ, base + delta * filterEnvelope.sustain),
+      ),
+    );
+  }
+
+  const requested = base * Math.max(0, Math.min(1, depth)) * 2;
+  const downwardHeadroom = Math.min(...automatedCutoffs) - MIN_FILTER_FREQ;
+  const upwardHeadroom = MAX_FILTER_FREQ - Math.max(...automatedCutoffs);
+  return Math.max(0, Math.min(requested, downwardHeadroom, upwardHeadroom));
+}
 
 // Preset synth patches
 export const SYNTH_PRESETS: Record<string, SynthParams> = {
@@ -738,7 +798,6 @@ export class SynthEngine {
   private masterGain: GainNode | null = null;
   private activeVoices: Map<string, SynthVoice> = new Map();
   private voiceOrder: string[] = []; // Track order for voice stealing
-  private pendingCleanups: Set<ReturnType<typeof setTimeout>> = new Set();
 
   initialize(audioContext: AudioContext, masterGain: GainNode): void {
     this.audioContext = audioContext;
@@ -797,19 +856,19 @@ export class SynthEngine {
 
     // Phase 25: Use provided destination or fall back to masterGain
     const outputNode = destination ?? this.masterGain;
-    const voice = new SynthVoice(this.audioContext, outputNode, params);
+    const voice = new SynthVoice(this.audioContext, outputNode, params, () => {
+      // A note ID can be reused while an older voice is still releasing. Only
+      // the currently registered instance may retire that ID when its source
+      // reaches the end of the AudioContext timeline.
+      if (this.activeVoices.get(noteId) !== voice) return;
+      this.activeVoices.delete(noteId);
+      this.voiceOrder = this.voiceOrder.filter(id => id !== noteId);
+    });
     voice.start(frequency, time, volume, midiVelocity);
     logger.audio.log(`SynthEngine voice created and started: noteId=${noteId}, preset=${params.waveform}, vol=${volume}, activeVoices=${this.activeVoices.size + 1}`);
 
     if (duration !== undefined) {
       voice.stop(time + duration);
-      // Clean up after release (tracked for stopAll cleanup)
-      const cleanupTimer = setTimeout(() => {
-        this.pendingCleanups.delete(cleanupTimer);
-        this.activeVoices.delete(noteId);
-        this.voiceOrder = this.voiceOrder.filter(id => id !== noteId);
-      }, (time - this.audioContext.currentTime + duration + params.release) * 1000 + 100);
-      this.pendingCleanups.add(cleanupTimer);
     }
 
     this.activeVoices.set(noteId, voice);
@@ -836,17 +895,10 @@ export class SynthEngine {
     if (!this.audioContext) return;
     const now = this.audioContext.currentTime;
     for (const voice of this.activeVoices.values()) {
-      // Cancel any pending cleanup timer before stopping
-      voice.cancelPendingCleanup();
       voice.stop(now);
     }
     this.activeVoices.clear();
     this.voiceOrder = [];
-    // Clear pending cleanup timers to prevent stale state after stop
-    for (const timer of this.pendingCleanups) {
-      clearTimeout(timer);
-    }
-    this.pendingCleanups.clear();
   }
 }
 
@@ -860,7 +912,7 @@ class SynthVoice {
   private audioContext: AudioContext;
   private params: SynthParams;
   private isCleanedUp: boolean = false;
-  private cleanupTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private onEnded: (() => void) | null;
   private noteStartTime = 0;
   private envelopePeak: number = MIN_GAIN_VALUE;
   private activeFilterCutoff: number;
@@ -882,11 +934,17 @@ class SynthVoice {
   constructor(
     audioContext: AudioContext,
     destination: AudioNode,
-    params: SynthParams
+    params: SynthParams,
+    onEnded?: () => void,
   ) {
-    this.params = params;
+    this.params = {
+      ...params,
+      attack: normalizeSynthAttackSeconds(params.attack),
+      release: normalizeSynthReleaseSeconds(params.release),
+    };
+    this.onEnded = onEnded ?? null;
     this.audioContext = audioContext;
-    this.activeFilterCutoff = params.filterCutoff;
+    this.activeFilterCutoff = this.params.filterCutoff;
 
     // Create main filter (shared by all oscillators)
     this.filter = audioContext.createBiquadFilter();
@@ -901,6 +959,11 @@ class SynthVoice {
     // Create oscillator 1
     this.oscillator1 = audioContext.createOscillator();
     this.oscillator1.type = params.waveform;
+    this.oscillator1.onended = () => {
+      this.cleanup();
+      this.onEnded?.();
+      this.onEnded = null;
+    };
 
     // Check if we need dual oscillator
     if (params.osc2) {
@@ -961,7 +1024,11 @@ class SynthVoice {
       case 'filter': {
         // LFO modulates filter frequency
         // Scale: depth * cutoff creates reasonable sweep range
-        const modRange = this.params.filterCutoff * lfoConfig.depth * 2;
+        const modRange = boundedFilterLfoRange(
+          this.params.filterCutoff,
+          lfoConfig.depth,
+          this.params.filterEnv,
+        );
         this.lfoGain.gain.value = modRange;
         this.lfoGain.connect(this.filter.frequency);
         break;
@@ -1002,6 +1069,16 @@ class SynthVoice {
     this.envelopePeak = Math.max(ENVELOPE_PEAK * volume * sourceGain, MIN_GAIN_VALUE);
     this.activeFilterCutoff = velocityFilterCutoff(this.params.filterCutoff, midiVelocity);
     this.filter.frequency.setValueAtTime(this.activeFilterCutoff, time);
+    if (this.params.lfo?.destination === 'filter' && this.lfoGain) {
+      this.lfoGain.gain.setValueAtTime(
+        boundedFilterLfoRange(
+          this.activeFilterCutoff,
+          this.params.lfo.depth,
+          this.params.filterEnv,
+        ),
+        time,
+      );
+    }
 
     // Set oscillator 1 frequency
     this.oscillator1.frequency.setValueAtTime(frequency, time);
@@ -1215,23 +1292,8 @@ class SynthVoice {
       this.lfoOscillator.stop(stopTime);
     }
 
-    // Schedule cleanup - track the timer so it can be cancelled
-    const cleanupDelay = (stopTime - this.audioContext.currentTime) * 1000 + 50;
-    this.cleanupTimeoutId = setTimeout(() => {
-      this.cleanupTimeoutId = null;
-      this.cleanup();
-    }, Math.max(cleanupDelay, 0));
-  }
-
-  /**
-   * Cancel pending cleanup timer.
-   * Called when stopAll() is invoked to prevent stale timers.
-   */
-  cancelPendingCleanup(): void {
-    if (this.cleanupTimeoutId) {
-      clearTimeout(this.cleanupTimeoutId);
-      this.cleanupTimeoutId = null;
-    }
+    // oscillator1.onended owns cleanup. Unlike a wall-clock timeout, the event
+    // pauses while the AudioContext is suspended and cannot cut off a tail.
   }
 
   /**
@@ -1241,6 +1303,7 @@ class SynthVoice {
   private cleanup(): void {
     if (this.isCleanedUp) return;
     this.isCleanedUp = true;
+    this.oscillator1.onended = null;
 
     try {
       this.oscillator1.disconnect();
@@ -1274,5 +1337,5 @@ class SynthVoice {
 // Singleton instance
 export const synthEngine = new SynthEngine();
 
-// HMR cleanup - stops all voices and clears pending timers during development
+// HMR cleanup - stops all voices during development
 registerHmrDispose('SynthEngine', () => synthEngine.stopAll());

@@ -324,6 +324,13 @@ jobs:
           USE_MOCK_API: '1'
           CI: 'true'
 
+      - name: Verify WebKit TrackBus dynamics
+        run: npx playwright test e2e/capture-session.spec.ts --project=webkit --no-deps --grep "keeps the per-track ceiling" --retries=0
+        env:
+          USE_MOCK_API: '1'
+          E2E_WEBKIT_AUDIO_PROBE: '1'
+          CI: 'true'
+
   # E2E is split into three jobs by what each one needs, replacing a single
   # `continue-on-error: true` job whose comment read "E2E tests are advisory -
   # many require real backend". Exempting all 35 spec files because some of them
@@ -400,7 +407,7 @@ jobs:
           # by the real-Worker Linux visual lane. populated-visual.spec.ts is
           # deterministic mock-backed evidence and remains in this lane.
           npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 85 72
+          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 87 72
         env:
           USE_MOCK_API: '1'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -559,7 +566,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --workers=2
-          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 209 19
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 209 24
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -571,7 +578,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 53
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 57
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'

@@ -6,6 +6,8 @@ import {
   semitoneToFrequency,
   serializeSynthParams as encodeSynthParams,
   deserializeSynthParams as decodeSynthParams,
+  normalizeSynthAttackSeconds,
+  normalizeSynthReleaseSeconds,
   type SynthParams,
 } from './synth';
 import { logger } from '../utils/logger';
@@ -52,6 +54,36 @@ const AudioContextClass = window.AudioContext || (window as unknown as { webkitA
 
 // Audio Engineering Constants
 const FADE_TIME = NOTE_FADE_SECONDS;
+const AUDIO_CLOCK_POLL_MS = 20;
+const AUDIO_CLOCK_LIVENESS_TIMEOUT_MS = 160;
+
+function isRecoverableContextState(state: string): boolean {
+  return state === 'suspended' || state === 'interrupted';
+}
+
+/**
+ * Resolve only when a context reported as running is actually advancing.
+ * Safari can transiently report `running` after an interruption while leaving
+ * currentTime parked, which otherwise looks ready but produces no sound.
+ */
+export async function waitForLiveAudioClock(
+  context: Pick<AudioContext, 'currentTime' | 'state'>,
+  timeoutMs: number = AUDIO_CLOCK_LIVENESS_TIMEOUT_MS,
+  pollMs: number = AUDIO_CLOCK_POLL_MS,
+): Promise<boolean> {
+  if ((context.state as string) !== 'running') return false;
+  const initialTime = context.currentTime;
+  const interval = Math.max(1, pollMs);
+  const attempts = Math.max(1, Math.ceil(Math.max(0, timeoutMs) / interval));
+
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    await new Promise<void>(resolve => setTimeout(resolve, interval));
+    if ((context.state as string) !== 'running') return false;
+    if (context.currentTime > initialTime + 1e-6) return true;
+  }
+
+  return false;
+}
 
 // Grain size used by pitch-shift.worklet.ts. The worklet introduces one
 // grain of latency before producing meaningful output, so the envelope
@@ -76,10 +108,11 @@ export class AudioEngine {
   private initializationPromise: Promise<void> | null = null;
   private unlockListenerAttached = false;
   private unlockHandler: (() => Promise<void>) | null = null; // Store reference for cleanup
+  private visibilityHandler: (() => void) | null = null;
+  private stateChangeHandler: (() => void) | null = null;
 
-  // Race condition prevention flags
-  private resumeInProgress = false;
-  private resumePromise: Promise<void> | null = null;
+  // Promise lock prevents overlapping gesture/visibility/state recoveries.
+  private resumePromise: Promise<boolean> | null = null;
 
   // Tone.js integration (Phase 22: Synthesis Engine)
   private toneEffects: ToneEffectsChain | null = null;
@@ -181,9 +214,10 @@ export class AudioEngine {
   }
 
   /** Eagerly create the advanced synth for a track (avoids first-note latency). */
-  async warmAdvancedSynthForTrack(trackId: string): Promise<void> {
+  async warmAdvancedSynthForTrack(trackId: string, presetId?: string): Promise<void> {
     if (!this.toneInitialized) return;
-    await this.advancedSynthRegistry.getOrCreate(trackId);
+    const synth = await this.advancedSynthRegistry.getOrCreate(trackId);
+    if (presetId !== undefined) synth.setPreset(presetId);
   }
 
   /**
@@ -438,6 +472,11 @@ export class AudioEngine {
           Tone.setContext(this.audioContext!);
           await Tone.start();
           logger.audio.log('Tone.js context after force switch:', Tone.getContext().state);
+          if (Tone.getContext().rawContext !== this.audioContext) {
+            throw new Error(
+              'Cannot initialize Tone.js: context switch failed; refusing to construct a disconnected Tone graph.',
+            );
+          }
         }
 
         // Initialize effects chain
@@ -600,44 +639,10 @@ export class AudioEngine {
 
     // Store handler reference for cleanup
     this.unlockHandler = async () => {
-      // Only unlock if we have a context and it's suspended
-      if (!this.audioContext || this.audioContext.state !== 'suspended') {
-        return;
-      }
-
-      // Prevent concurrent resume() calls
-      if (this.resumeInProgress) {
-        // Wait for existing resume to complete
-        if (this.resumePromise) {
-          await this.resumePromise;
-        }
-        return;
-      }
-
-      this.resumeInProgress = true;
-      logger.audio.log('Unlocking AudioContext via user gesture');
-
-      this.resumePromise = (async () => {
-        try {
-          await this.audioContext!.resume();
-          logger.audio.log('AudioContext unlocked, state:', this.audioContext!.state);
-
-          // Phase 29 fix: Also resume Tone.js context when Web Audio is unlocked
-          // This ensures Tone.js synths (advanced:*, tone:*) resume after browser
-          // suspends the AudioContext (e.g., tab goes to background).
-          if (this.toneInitialized) {
-            await Tone.start();
-            logger.audio.log('Tone.js context resumed after unlock');
-          }
-        } catch (e) {
-          logger.audio.error('Failed to unlock AudioContext:', e);
-        } finally {
-          this.resumeInProgress = false;
-          this.resumePromise = null;
-        }
-      })();
-
-      await this.resumePromise;
+      // A gesture is also the only reliable opportunity to recover Safari's
+      // rarer "running but parked" clock state, so verify liveness even when
+      // the state string does not say suspended.
+      await this.resumeAllAudioContexts('user-gesture');
     };
 
     // Listen for various user gestures that can unlock audio
@@ -647,12 +652,105 @@ export class AudioEngine {
       document.addEventListener(event, this.unlockHandler!, { once: false, passive: true });
     });
 
+    this.visibilityHandler = () => {
+      if (document.visibilityState === 'visible') {
+        void this.resumeAllAudioContexts('visibilitychange');
+      }
+    };
+    document.addEventListener('visibilitychange', this.visibilityHandler);
+
+    this.stateChangeHandler = () => {
+      const state = this.audioContext?.state as string | undefined;
+      logger.audio.log('AudioContext statechange event, state:', state);
+      if (
+        state
+        && isRecoverableContextState(state)
+        && document.visibilityState !== 'hidden'
+      ) {
+        void this.resumeAllAudioContexts('statechange');
+      }
+    };
+    this.audioContext?.addEventListener?.('statechange', this.stateChangeHandler);
+
     logger.audio.log('Audio unlock listeners attached');
   }
 
-  // Note: Audio unlock listeners are not removed because AudioEngine is a singleton
-  // that persists for the lifetime of the application. If a dispose() method is
-  // needed in the future, unlockHandler reference is available for cleanup.
+  /** Resume native and Tone contexts, then prove that the shared clock is live. */
+  private async resumeAllAudioContexts(trigger: string): Promise<boolean> {
+    if (this.resumePromise) return this.resumePromise;
+
+    const context = this.audioContext;
+    if (!context || (context.state as string) === 'closed') return false;
+
+    const resumeAttempt = async (): Promise<boolean> => {
+      // Once Tone infrastructure exists, changing Tone's global context does
+      // not migrate any effects or per-track nodes already constructed in the
+      // old context. Fail closed instead of reporting native readiness while
+      // those nodes remain permanently disconnected from the engine graph.
+      if (this.toneInitialized && Tone.getContext().rawContext !== context) {
+        logger.audio.error('Tone.js/native AudioContext mismatch during recovery; playback remains blocked');
+        return false;
+      }
+
+      if (isRecoverableContextState(context.state as string)) {
+        await context.resume();
+      }
+
+      if (!this.toneInitialized) return true;
+
+      await Tone.start();
+
+      // Tone.start() has historically missed WebKit's non-standard
+      // "interrupted" state. Resume the underlying context as a fallback.
+      const resumableRawContext = Tone.getContext().rawContext as BaseAudioContext & {
+        resume?: () => Promise<void>;
+      };
+      if (
+        isRecoverableContextState(resumableRawContext.state as string)
+        && typeof resumableRawContext.resume === 'function'
+      ) {
+        await resumableRawContext.resume();
+      }
+      return true;
+    };
+
+    const recovery = (async (): Promise<boolean> => {
+      try {
+        logger.audio.log(`Resuming audio (trigger: ${trigger}), state:`, context.state);
+        if (!await resumeAttempt()) return false;
+        if ((context.state as string) !== 'running') return false;
+        if (await waitForLiveAudioClock(context)) return true;
+
+        // Some Safari versions resolve resume() while currentTime remains
+        // parked. A second direct resume under the current gesture/lifecycle
+        // event gives WebKit one bounded recovery attempt.
+        logger.audio.warn(`AudioContext clock remained parked after ${trigger}; retrying resume`);
+        await context.resume();
+        if (this.toneInitialized) {
+          if (Tone.getContext().rawContext !== context) {
+            logger.audio.error('Tone.js/native AudioContext mismatch during retry; playback remains blocked');
+            return false;
+          }
+          await Tone.start();
+        }
+        const live = await waitForLiveAudioClock(context);
+        if (!live) {
+          logger.audio.error(`AudioContext clock did not recover after ${trigger}`);
+        }
+        return live;
+      } catch (error) {
+        logger.audio.error(`Failed to resume AudioContext (trigger: ${trigger}):`, error);
+        return false;
+      }
+    })();
+
+    this.resumePromise = recovery;
+    try {
+      return await recovery;
+    } finally {
+      if (this.resumePromise === recovery) this.resumePromise = null;
+    }
+  }
 
   /**
    * Ensure audio context is running (call before playback)
@@ -671,30 +769,7 @@ export class AudioEngine {
       logger.audio.warn('AudioContext not created');
       return false;
     }
-
-    const state = this.audioContext.state as string;
-    if (state === 'suspended' || state === 'interrupted') {
-      logger.audio.log('Resuming AudioContext before playback, state:', state);
-      try {
-        await this.audioContext.resume();
-        logger.audio.log('AudioContext resumed, state:', this.audioContext.state);
-
-        // Phase 29 fix: Also resume Tone.js context if initialized
-        // When the Web Audio context is suspended and resumed, Tone.js's internal
-        // transport and nodes may be in an inconsistent state. Calling Tone.start()
-        // ensures Tone.js is synchronized with the resumed AudioContext.
-        if (this.toneInitialized) {
-          logger.audio.log('Resuming Tone.js context after Web Audio resume...');
-          await Tone.start();
-          logger.audio.log('Tone.js context resumed, state:', Tone.getContext().state);
-        }
-      } catch (e) {
-        logger.audio.error('Failed to resume AudioContext:', e);
-        return false;
-      }
-    }
-
-    return this.audioContext.state === 'running';
+    return this.resumeAllAudioContexts('playback');
   }
 
   /**
@@ -930,6 +1005,10 @@ export class AudioEngine {
     // the chain — the worklet buffers one grain before producing output, so
     // the envelope must wait for that audio to arrive.
     const envGain = this.audioContext.createGain();
+    // AudioParam defaults to unity. Make the pre-note state silent before an
+    // attack is scheduled so a source and its zero-valued automation event on
+    // the same render frame cannot leak one full-amplitude boundary sample.
+    envGain.gain.value = 0;
 
     // Apply pitch shift: worklet for large shifts (>6 semitones), native
     // playbackRate otherwise. When we engage the worklet we must
@@ -1065,21 +1144,6 @@ export class AudioEngine {
 
   getCurrentTime(): number {
     return this.audioContext?.currentTime ?? 0;
-  }
-
-  /**
-   * Convert absolute Web Audio time to relative Tone.js time offset
-   *
-   * Phase 22: Centralizes Tone.js time conversion to prevent timing bugs.
-   * Ensures the offset is always positive (at least 1ms in the future).
-   *
-   * @param webAudioTime Absolute Web Audio context time
-   * @returns Safe relative time offset for Tone.js scheduling
-   */
-  private toToneRelativeTime(webAudioTime: number): number {
-    const relativeTime = webAudioTime - this.getCurrentTime();
-    // Ensure minimum 1ms offset to prevent "start time must be greater than previous" errors
-    return Math.max(0.001, relativeTime);
   }
 
   getSampleIds(): string[] {
@@ -1308,8 +1372,9 @@ export class AudioEngine {
    * Play a Tone.js synth note
    * Used for advanced synth types (FM, AM, Membrane, Metal, etc.)
    *
-   * Phase 22: Now accepts absolute Web Audio time (consistent with other play methods).
-   * Time conversion to Tone.js is handled internally.
+   * The scheduler's absolute Web Audio timestamp is passed through unchanged.
+   * Tone.js shares the same raw AudioContext clock; converting this to a
+   * relative delay would apply Tone's lookahead a second time.
    *
    * @param presetName Tone.js synth preset (e.g., "fm-epiano", "membrane-kick")
    * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
@@ -1361,8 +1426,7 @@ export class AudioEngine {
     }
 
     const noteName = synth.semitoneToNoteName(semitone);
-    const toneTime = this.toToneRelativeTime(time);
-    synth.playNote(presetName, noteName, duration, toneTime, volume);
+    synth.playNote(presetName, noteName, duration, time, volume);
   }
 
   /**
@@ -1396,8 +1460,9 @@ export class AudioEngine {
   /**
    * Play an advanced synth note (dual oscillator, filter envelope, LFO)
    *
-   * Phase 22: Now accepts absolute Web Audio time (consistent with other play methods).
-   * Time conversion to Tone.js is handled internally.
+   * The scheduler's absolute Web Audio timestamp is passed through unchanged.
+   * Tone.js shares the same raw AudioContext clock; converting this to a
+   * relative delay would apply Tone's lookahead a second time.
    *
    * @param presetName Advanced synth preset (e.g., "supersaw", "wobble-bass")
    * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
@@ -1433,9 +1498,11 @@ export class AudioEngine {
     } else {
       synth = this.advancedSynthRegistry.getIfReady(trackId);
       if (!synth) {
-        this.advancedSynthRegistry.getOrCreate(trackId).catch((err) => {
-          logger.audio.error('Deferred advanced synth creation failed:', err);
-        });
+        this.advancedSynthRegistry.getOrCreate(trackId)
+          .then((created) => created.setPreset(presetName))
+          .catch((err) => {
+            logger.audio.error('Deferred advanced synth creation failed:', err);
+          });
         logger.audio.warn(`Advanced synth for track ${trackId} not ready — skipping note`);
         return;
       }
@@ -1456,8 +1523,7 @@ export class AudioEngine {
     }
 
     synth.setPreset(presetName);
-    const toneTime = this.toToneRelativeTime(time);
-    synth.playNoteSemitone(semitone, duration, toneTime, volume, midiVelocity);
+    synth.playNoteSemitone(semitone, duration, time, volume, midiVelocity);
   }
 
   /**
@@ -1498,12 +1564,14 @@ export class AudioEngine {
     this.advancedSynthRegistry.forEach((s) => s.setLfoAmount(amount));
   }
   setAttack(seconds: number): void {
-    this.advancedOverrides.attack = seconds;
-    this.advancedSynthRegistry.forEach((s) => s.setAttack(seconds));
+    const attack = normalizeSynthAttackSeconds(seconds);
+    this.advancedOverrides.attack = attack;
+    this.advancedSynthRegistry.forEach((s) => s.setAttack(attack));
   }
   setRelease(seconds: number): void {
-    this.advancedOverrides.release = seconds;
-    this.advancedSynthRegistry.forEach((s) => s.setRelease(seconds));
+    const release = normalizeSynthReleaseSeconds(seconds);
+    this.advancedOverrides.release = release;
+    this.advancedSynthRegistry.forEach((s) => s.setRelease(release));
   }
   setOscMix(mix: number): void {
     this.advancedOverrides.oscMix = mix;
@@ -1586,7 +1654,10 @@ export class AudioEngine {
       if (t.sampleId.startsWith('tone:')) {
         toneWarms.push(this.warmToneSynthForTrack(t.id));
       } else if (t.sampleId.startsWith('advanced:')) {
-        advancedWarms.push(this.warmAdvancedSynthForTrack(t.id));
+        advancedWarms.push(this.warmAdvancedSynthForTrack(
+          t.id,
+          t.sampleId.slice('advanced:'.length),
+        ));
       }
     }
 
@@ -1708,7 +1779,7 @@ export class AudioEngine {
   dispose(): void {
     logger.audio.log('Disposing AudioEngine...');
 
-    // Stop basic synth engine (clears activeVoices and pending timers)
+    // Stop the basic synth engine and retire its active voice registry.
     synthEngine.stopAll();
 
     // BUG FIX: Stop and clear Tone.js Transport to prevent stale scheduled events
@@ -1753,6 +1824,16 @@ export class AudioEngine {
       this.unlockHandler = null;
     }
 
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
+    }
+
+    if (this.stateChangeHandler) {
+      this.audioContext?.removeEventListener?.('statechange', this.stateChangeHandler);
+      this.stateChangeHandler = null;
+    }
+
     // Disconnect native audio nodes
     this.masterGain?.disconnect();
     this.compressor?.disconnect();
@@ -1777,6 +1858,7 @@ export class AudioEngine {
     this.toneInitialized = false;
     this.toneInitPromise = null;
     this.initializationPromise = null;
+    this.resumePromise = null;
     this.effectsChainConnected = false;
     this.tempo = DEFAULT_TEMPO;
     this.initialized = false;

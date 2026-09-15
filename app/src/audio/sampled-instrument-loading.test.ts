@@ -90,7 +90,7 @@ describe('observable progressive readiness (pipeline stage 8)', () => {
 
     await expect(instrument.ensureLoaded()).resolves.toBe(true);
     await vi.waitFor(() => expect(maximumBackground).toBeGreaterThan(0));
-    expect(maximumBackground).toBeLessThanOrEqual(6);
+    expect(maximumBackground).toBeLessThanOrEqual(5);
     releaseBackground();
     await instrument.waitForBackgroundLoad();
     expect(instrument.getLoadState()).toBe('complete');
@@ -135,9 +135,167 @@ describe('observable progressive readiness (pipeline stage 8)', () => {
 
     await Promise.all(instruments.map(instrument => instrument.ensureLoaded()));
     await vi.waitFor(() => expect(maximum).toBeGreaterThan(0));
-    expect(maximum).toBeLessThanOrEqual(6);
+    expect(maximum).toBeLessThanOrEqual(5);
     releaseBackground();
     await Promise.all(instruments.map(instrument => instrument.waitForBackgroundLoad()));
+  });
+
+  it('reserves capacity and prioritizes a new foreground root over queued background work', async () => {
+    const backgroundManifest: InstrumentManifest = {
+      id: 'background-pack',
+      name: 'Background Pack',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [60],
+      samples: [
+        { note: 60, file: 'priority.mp3' },
+        ...Array.from({ length: 10 }, (_, index) => ({
+          note: 61 + index,
+          file: `background-${index}.mp3`,
+        })),
+      ],
+    };
+    const foregroundManifest: InstrumentManifest = {
+      id: 'foreground-pack',
+      name: 'Foreground Pack',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [60],
+      samples: [{ note: 60, file: 'foreground.mp3' }],
+    };
+    let releaseBackground!: () => void;
+    const backgroundGate = new Promise<void>(resolve => { releaseBackground = resolve; });
+    const backgroundFetches: string[] = [];
+    let foregroundFetches = 0;
+    vi.stubGlobal('fetch', (async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url.endsWith('manifest.json')) {
+        return {
+          ok: true,
+          json: async () => url.includes('/background-pack/')
+            ? backgroundManifest
+            : foregroundManifest,
+        } as Response;
+      }
+      const filename = url.split('/').at(-1)!;
+      if (filename.startsWith('background-')) {
+        backgroundFetches.push(filename);
+        await backgroundGate;
+      }
+      if (filename === 'foreground.mp3') foregroundFetches++;
+      return {
+        ok: true,
+        arrayBuffer: async () => new TextEncoder().encode(filename).buffer,
+      } as Response;
+    }) as typeof fetch);
+    const context = new FakeAudioContext();
+    const create = (id: string) => {
+      const instrument = new SampledInstrument(id, '/instruments');
+      instrument.initialize(context.asAudioContext(), new FakeGainNode() as unknown as AudioNode);
+      return instrument;
+    };
+    const background = create(backgroundManifest.id);
+    const foreground = create(foregroundManifest.id);
+
+    await expect(background.ensureLoaded()).resolves.toBe(true);
+    await vi.waitFor(() => expect(backgroundFetches).toHaveLength(5));
+    await expect(foreground.ensureLoaded()).resolves.toBe(true);
+    expect(foregroundFetches).toBe(1);
+    releaseBackground();
+    await background.waitForBackgroundLoad();
+  });
+
+  it('preempts active background transfers for a multi-file foreground root, then resumes them', async () => {
+    const backgroundManifest: InstrumentManifest = {
+      id: 'preemptible-background-pack',
+      name: 'Preemptible Background Pack',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [60],
+      samples: [
+        { note: 60, file: 'priority.wav' },
+        ...Array.from({ length: 8 }, (_, index) => ({
+          note: 61 + index,
+          file: `background-${index}.wav`,
+        })),
+      ],
+    };
+    const foregroundManifest: InstrumentManifest = {
+      id: 'atomic-foreground-pack',
+      name: 'Atomic Foreground Pack',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [49],
+      samples: Array.from({ length: 12 }, (_, index) => ({
+        note: 49,
+        file: `foreground-${index}.wav`,
+        roundRobinGroup: 'crash',
+        roundRobinIndex: index,
+      })),
+    };
+    let releaseBackground!: () => void;
+    const backgroundGate = new Promise<void>(resolve => { releaseBackground = resolve; });
+    let activeBackground = 0;
+    let abortedBackground = 0;
+    let foregroundFetches = 0;
+    vi.stubGlobal('fetch', (async (
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = input.toString();
+      if (url.endsWith('manifest.json')) {
+        return {
+          ok: true,
+          json: async () => url.includes('/preemptible-background-pack/')
+            ? backgroundManifest
+            : foregroundManifest,
+        } as Response;
+      }
+      const filename = url.split('/').at(-1)!;
+      if (filename.startsWith('background-')) {
+        activeBackground++;
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const onAbort = () => {
+              abortedBackground++;
+              reject(new DOMException('aborted', 'AbortError'));
+            };
+            init?.signal?.addEventListener('abort', onAbort, { once: true });
+            void backgroundGate.then(resolve);
+          });
+        } finally {
+          activeBackground--;
+        }
+      }
+      if (filename.startsWith('foreground-')) foregroundFetches++;
+      return {
+        ok: true,
+        arrayBuffer: async () => new TextEncoder().encode(filename).buffer,
+      } as Response;
+    }) as typeof fetch);
+    const context = new FakeAudioContext();
+    const create = (id: string) => {
+      const instrument = new SampledInstrument(id, '/instruments');
+      instrument.initialize(context.asAudioContext(), new FakeGainNode() as unknown as AudioNode);
+      return instrument;
+    };
+    const background = create(backgroundManifest.id);
+    const foreground = create(foregroundManifest.id);
+
+    await expect(background.ensureLoaded()).resolves.toBe(true);
+    await vi.waitFor(() => expect(activeBackground).toBe(5));
+
+    try {
+      await expect(foreground.ensureLoaded()).resolves.toBe(true);
+      expect(foregroundFetches).toBe(12);
+      expect(abortedBackground).toBe(5);
+      expect(background.getLoadFailures()).toEqual([]);
+    } finally {
+      releaseBackground();
+    }
+    await background.waitForBackgroundLoad();
+    expect(background.getLoadState()).toBe('complete');
+    expect(background.getSampleNotes()).toHaveLength(9);
   });
 
   it('deduplicates concurrent mappings that reference one delivery file', async () => {
@@ -321,6 +479,49 @@ describe('observable progressive readiness (pipeline stage 8)', () => {
     await Promise.resolve();
     expect(instrument.getLoadState()).toBe('idle');
     expect(instrument.getSampleNotes()).toEqual([]);
+  });
+
+  it('does not advance queued background requests after disposal', async () => {
+    const manifest: InstrumentManifest = {
+      id: 'dispose-queued-loads',
+      name: 'Dispose Queued Loads',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [60],
+      samples: [
+        { note: 60, file: 'priority.mp3' },
+        ...Array.from({ length: 18 }, (_, index) => ({
+          note: 61 + index,
+          file: `background-${index}.mp3`,
+        })),
+      ],
+    };
+    let releaseBackground!: () => void;
+    const backgroundGate = new Promise<void>(resolve => { releaseBackground = resolve; });
+    const backgroundFetches: string[] = [];
+    vi.stubGlobal('fetch', (async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url.endsWith('manifest.json')) return { ok: true, json: async () => manifest } as Response;
+      const filename = url.split('/').at(-1)!;
+      if (filename.startsWith('background-')) {
+        backgroundFetches.push(filename);
+        await backgroundGate;
+      }
+      return { ok: true, arrayBuffer: async () => new TextEncoder().encode(filename).buffer } as Response;
+    }) as typeof fetch);
+    const context = new FakeAudioContext();
+    const instrument = new SampledInstrument(manifest.id, '/instruments');
+    instrument.initialize(context.asAudioContext(), new FakeGainNode() as unknown as AudioNode);
+
+    await expect(instrument.ensureLoaded()).resolves.toBe(true);
+    await vi.waitFor(() => expect(backgroundFetches).toHaveLength(5));
+    instrument.dispose();
+    releaseBackground();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(backgroundFetches).toHaveLength(5);
+    expect(instrument.getLoadState()).toBe('idle');
   });
 
   it('cannot be resurrected by an in-flight sprite load after disposal', async () => {

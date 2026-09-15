@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import * as Tone from 'tone';
 import {
   AdvancedSynthVoice,
   AdvancedSynthEngine,
@@ -21,6 +22,7 @@ vi.mock('tone', () => {
     const param = {
       value: initial,
       cancelScheduledValues: vi.fn(),
+      setValueAtTime: vi.fn((value: number) => { param.value = value; }),
       setTargetAtTime: vi.fn((value: number) => { param.value = value; }),
     };
     return param;
@@ -191,6 +193,7 @@ vi.mock('tone', () => {
       sampleRate: 44100,
     }),
     now: vi.fn().mockReturnValue(0),
+    immediate: vi.fn().mockReturnValue(0),
   };
 });
 
@@ -367,12 +370,16 @@ describe('AdvancedSynthEngine', () => {
   let engine: AdvancedSynthEngine;
 
   beforeEach(async () => {
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
     engine = new AdvancedSynthEngine();
     await engine.initialize();
   });
 
   afterEach(() => {
     engine.dispose();
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
   });
 
   describe('initialization', () => {
@@ -437,6 +444,23 @@ describe('AdvancedSynthEngine', () => {
         expect(voice['ampEnvelope']!.attack).toBe(0.37);
       }
     });
+
+    it('bounds live envelope controls to the shared ADSR contract', () => {
+      engine.setAttack(99);
+      engine.setRelease(99);
+
+      for (const voice of engine['voices']) {
+        expect(voice['ampEnvelope']!.attack).toBe(4);
+        expect(voice['ampEnvelope']!.release).toBe(8);
+      }
+
+      engine.setAttack(0);
+      engine.setRelease(0);
+      for (const voice of engine['voices']) {
+        expect(voice['ampEnvelope']!.attack).toBe(0.001);
+        expect(voice['ampEnvelope']!.release).toBe(0);
+      }
+    });
   });
 
   describe('note playback', () => {
@@ -448,6 +472,16 @@ describe('AdvancedSynthEngine', () => {
       expect(() => engine.playNoteFrequency(440, 0.5)).not.toThrow();
     });
 
+    it('does not rebuild an already-selected preset on the note hot path', () => {
+      engine.setPreset('tremolo-strings');
+      const voice = engine['voices'][0];
+      const applyPreset = vi.spyOn(voice, 'applyPreset');
+
+      engine.playNoteFrequency(440, 0.5, 0.1);
+
+      expect(applyPreset).not.toHaveBeenCalled();
+    });
+
     it('plays note by name', () => {
       expect(() => engine.playNote('C4', 0.5)).not.toThrow();
     });
@@ -456,21 +490,40 @@ describe('AdvancedSynthEngine', () => {
       expect(() => engine.playNoteSemitone(0, 0.5, 0.1)).not.toThrow();
     });
 
+    it('does not move a rejected event to a renderer-chosen retry time', () => {
+      const voice = engine['voices'][0];
+      const trigger = vi.spyOn(voice, 'triggerAttackRelease');
+      trigger.mockImplementationOnce(() => { throw new Error('timeline rejected'); });
+
+      expect(() => engine.playNoteSemitone(0, 0.5, 2)).not.toThrow();
+
+      expect(trigger).toHaveBeenCalledTimes(1);
+      expect(trigger).toHaveBeenCalledWith(expect.any(Number), 0.5, 2, 1);
+      expect(voice.isActive()).toBe(false);
+      expect(engine.getDiagnostics().failureReasons.at(-1)).toContain(
+        'Tone.js timing error at 2.000',
+      );
+    });
+
     it('uses MIDI velocity for cutoff while preserving noteGain as amplitude', () => {
       const voice = engine['voices'][0];
       const trigger = vi.spyOn(voice, 'triggerAttackRelease');
+      vi.mocked(Tone.immediate).mockReturnValue(10);
+      vi.mocked(Tone.now).mockReturnValue(10.1);
 
-      engine.playNoteSemitone(0, 0.5, 0.1, 0.42, 90);
+      engine.playNoteSemitone(0, 0.5, 10.25, 0.42, 90);
 
       const expectedCutoff = advancedVelocityFilterFrequency(
         ADVANCED_SYNTH_PRESETS.supersaw.filter.frequency,
         90,
       );
       expect(voice['filterEnvAdder']!.addend.value).toBeCloseTo(expectedCutoff, 8);
+      expect(voice['filter']!.frequency.setValueAtTime).toHaveBeenLastCalledWith(expectedCutoff, 10.25);
+      expect(voice['filterEnvAdder']!.addend.setValueAtTime).toHaveBeenLastCalledWith(expectedCutoff, 10.25);
       expect(trigger).toHaveBeenCalledWith(
         expect.any(Number),
         0.5,
-        expect.any(Number),
+        10.25,
         0.42,
       );
     });
@@ -712,19 +765,22 @@ describe('voice release tracking', () => {
   let voice: AdvancedSynthVoice;
 
   beforeEach(() => {
-    vi.useFakeTimers();
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
     voice = new AdvancedSynthVoice();
     voice.initialize();
   });
 
   afterEach(() => {
     voice.dispose();
-    vi.useRealTimers();
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
   });
 
-  it('voice becomes inactive after note duration + release', () => {
+  it('retires a voice from Tone audio time without scheduling a wall-clock timer', () => {
     const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
     voice.applyPreset(preset);
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
 
     // Trigger note with 0.5s duration
     voice.triggerAttackRelease(440, 0.5);
@@ -732,15 +788,43 @@ describe('voice release tracking', () => {
     // Voice should be active immediately
     expect(voice.isActive()).toBe(true);
 
-    // Advance time past duration + release + buffer
-    // duration=0.5s, release=0.5s, buffer=50ms = ~1050ms
-    vi.advanceTimersByTime(1100);
+    expect(setTimeoutSpy).not.toHaveBeenCalled();
+
+    // Advance the audio clock past duration + release + the tail guard.
+    vi.mocked(Tone.now).mockReturnValue(1.2);
+    vi.mocked(Tone.immediate).mockReturnValue(1.1);
 
     // Voice should now be inactive
     expect(voice.isActive()).toBe(false);
+    setTimeoutSpy.mockRestore();
   });
 
-  it('triggerAttack does not schedule release timeout', () => {
+  it('reuses a retired voice without restarting its continuous sources', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS['warm-pad']);
+    const osc1Start = voice['osc1']!.start;
+    const osc2Start = voice['osc2']!.start;
+    const noiseStart = voice['noise']!.start;
+    const lfoStart = voice['lfo']!.start;
+    const ampTriggers = voice['ampEnvelope']!.triggerAttackRelease;
+    const filterTriggers = voice['filterEnvelope']!.triggerAttackRelease;
+
+    voice.triggerAttackRelease(440, 0.1);
+    vi.mocked(Tone.now).mockReturnValue(2.1);
+    vi.mocked(Tone.immediate).mockReturnValue(2);
+    expect(voice.isActive()).toBe(false);
+
+    voice.triggerAttackRelease(660, 0.1);
+
+    expect(osc1Start).toHaveBeenCalledTimes(1);
+    expect(osc2Start).toHaveBeenCalledTimes(1);
+    expect(noiseStart).toHaveBeenCalledTimes(1);
+    expect(lfoStart).toHaveBeenCalledTimes(1);
+    expect(ampTriggers).toHaveBeenCalledTimes(2);
+    expect(filterTriggers).toHaveBeenCalledTimes(2);
+    expect(voice.isActive()).toBe(true);
+  });
+
+  it('triggerAttack remains active until an explicit audio-time release', () => {
     const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
     voice.applyPreset(preset);
 
@@ -750,37 +834,66 @@ describe('voice release tracking', () => {
     // Voice should be active
     expect(voice.isActive()).toBe(true);
 
-    // Advance time
-    vi.advanceTimersByTime(5000);
+    vi.mocked(Tone.now).mockReturnValue(5000);
+    vi.mocked(Tone.immediate).mockReturnValue(4999.9);
 
-    // Voice should still be active (no automatic release)
+    // Voice should still be active (no automatic release deadline).
     expect(voice.isActive()).toBe(true);
   });
 
-  it('tracks note start time for voice stealing priority', () => {
+  it('tracks note start time on the Tone audio clock for voice stealing', () => {
     const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
     voice.applyPreset(preset);
+    vi.mocked(Tone.now).mockReturnValue(12.5);
+    vi.mocked(Tone.immediate).mockReturnValue(12.4);
 
-    const timeBefore = Date.now();
     voice.triggerAttack(440);
-    const timeAfter = Date.now();
 
-    expect(voice.getNoteStartTime()).toBeGreaterThanOrEqual(timeBefore);
-    expect(voice.getNoteStartTime()).toBeLessThanOrEqual(timeAfter);
+    expect(voice.getNoteStartTime()).toBe(12.4);
   });
 
-  it('dispose clears pending release timeout', () => {
+  it('preserves an authored zero release instead of substituting 0.5 seconds', () => {
     const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
     voice.applyPreset(preset);
+    voice['ampEnvelope']!.release = 0;
 
     voice.triggerAttackRelease(440, 0.5);
     expect(voice.isActive()).toBe(true);
 
-    // Dispose should clear the release timeout
-    voice.dispose();
+    vi.mocked(Tone.now).mockReturnValue(0.66);
+    vi.mocked(Tone.immediate).mockReturnValue(0.56);
+    expect(voice.isActive()).toBe(false);
+  });
 
-    // Should not throw when timers advance
-    expect(() => vi.advanceTimersByTime(2000)).not.toThrow();
+  it('scales notation-based retirement deadlines with the current tempo', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS.supersaw);
+    voice.setTempo(60);
+    voice.triggerAttackRelease(440, '4n');
+
+    expect(voice['ampEnvelope']!.triggerAttackRelease).toHaveBeenCalledWith(1, undefined, 1);
+    expect(voice['filterEnvelope']!.triggerAttackRelease).toHaveBeenCalledWith(1, undefined);
+
+    // A quarter note at 60 BPM lasts one second, plus 0.5s release and
+    // the 50ms tail guard. The old fixed-120 calculation retired at 1.05s.
+    vi.mocked(Tone.now).mockReturnValue(1.2);
+    vi.mocked(Tone.immediate).mockReturnValue(1.1);
+    expect(voice.isActive()).toBe(true);
+    vi.mocked(Tone.now).mockReturnValue(1.66);
+    vi.mocked(Tone.immediate).mockReturnValue(1.56);
+    expect(voice.isActive()).toBe(false);
+  });
+
+  it('does not retire a voice early because Tone.now includes lookahead', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS.supersaw);
+    voice.triggerAttackRelease(440, 0.5, 10);
+
+    // The raw clock is still before the 10 + 0.5 + 0.5 + 0.05 deadline,
+    // although Tone.now() has already crossed it by adding 100 ms lookahead.
+    vi.mocked(Tone.now).mockReturnValue(11.06);
+    vi.mocked(Tone.immediate).mockReturnValue(10.96);
+    expect(voice.isActive()).toBe(true);
+
+    vi.mocked(Tone.immediate).mockReturnValue(11.06);
     expect(voice.isActive()).toBe(false);
   });
 });
@@ -800,15 +913,25 @@ describe('voice stealing', () => {
   });
 
   it('steals oldest voice when all voices are active', () => {
-    // Play 8 notes (max voices) with delays between them
-    for (let i = 0; i < 8; i++) {
-      engine.playNoteSemitone(i, 10); // Long duration to keep active
-      vi.advanceTimersByTime(100); // 100ms between notes
-    }
+    const voices = (engine as unknown as { voices: AdvancedSynthVoice[] }).voices;
+    const triggers = voices.map(voice => vi.spyOn(voice, 'triggerAttackRelease'));
 
-    // All voices should be active
-    // Play a 9th note - should steal the oldest (first) voice
-    expect(() => engine.playNoteSemitone(10, 10)).not.toThrow();
+    // Fill all eight allocator slots. Production audio time is mocked at zero,
+    // while the engine's strict scheduling cursor gives each voice a distinct
+    // start time; fake wall-clock advancement is deliberately irrelevant.
+    for (let i = 0; i < 8; i++) {
+      engine.playNoteSemitone(i, 10);
+    }
+    const orderedStartTimes = voices.map(voice => voice.getNoteStartTime());
+    expect(orderedStartTimes).toEqual([...orderedStartTimes].sort((a, b) => a - b));
+    expect(new Set(orderedStartTimes).size).toBe(voices.length);
+    triggers.forEach(trigger => trigger.mockClear());
+
+    engine.playNoteSemitone(10, 10);
+
+    expect(triggers[0]).toHaveBeenCalledTimes(1);
+    triggers.slice(1).forEach(trigger => expect(trigger).not.toHaveBeenCalled());
+    expect(voices[0].getNoteStartTime()).toBeGreaterThan(orderedStartTimes.at(-1)!);
   });
 });
 

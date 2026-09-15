@@ -14,12 +14,33 @@ import { logger } from '../utils/logger';
 import { NOTE_DURATIONS_120BPM, semitoneToFrequency, slewAudioParam } from './constants';
 import { parseInstrumentId } from './instrument-types';
 import type { WaveformType, LFODestination, ADSREnvelope as BaseADSREnvelope, FilterType } from './synth-types';
-import { DEFAULT_MIDI_VELOCITY, MIDI_VELOCITY_MAX } from '../shared/constants';
+import {
+  clamp,
+  DEFAULT_MIDI_VELOCITY,
+  DEFAULT_TEMPO,
+  MAX_TEMPO,
+  MIDI_VELOCITY_MAX,
+  MIN_TEMPO,
+} from '../shared/constants';
 import { ADVANCED_SOURCE_GAIN_DB, dbToGain } from './source-calibration';
-import { peakSafeOscillatorMix } from './synth';
+import {
+  normalizeSynthAttackSeconds,
+  normalizeSynthReleaseSeconds,
+  peakSafeOscillatorMix,
+} from './synth';
+import { absoluteToneStartTime } from './tone-schedule';
 
 const MIN_ADVANCED_FILTER_FREQUENCY = 20;
 const MAX_ADVANCED_FILTER_FREQUENCY = 20_000;
+const VOICE_TAIL_GUARD_SECONDS = 0.05;
+
+function noteDurationSeconds(duration: number | string, tempo: number): number {
+  if (typeof duration === 'number') {
+    return Number.isFinite(duration) ? Math.max(0, duration) : 0.25;
+  }
+  const durationAt120 = NOTE_DURATIONS_120BPM[duration] ?? 0.25;
+  return durationAt120 * (DEFAULT_TEMPO / clamp(tempo, MIN_TEMPO, MAX_TEMPO));
+}
 
 /**
  * Open the advanced-voice filter with MIDI velocity, independently of note
@@ -232,10 +253,12 @@ export class AdvancedSynthVoice {
   private preset: AdvancedSynthPreset | null = null;
   private tempo = 120;
   private active = false;
+  private sourcesStarted = false;
+  private noiseStarted = false;
   private filterEnvScaler: Tone.Multiply | null = null;
   private filterEnvAdder: Tone.Add | null = null;
-  private releaseTimeoutId: ReturnType<typeof setTimeout> | null = null;
-  private noteStartTime = 0; // Track when note started for voice stealing priority
+  private activeUntilAudioTime = Number.NEGATIVE_INFINITY;
+  private noteStartTime = 0; // Tone audio time, used for voice stealing priority
 
   /**
    * Initialize the voice with audio nodes
@@ -328,13 +351,15 @@ export class AdvancedSynthVoice {
    * every cutoff change preserves the invariant:
    *   effectiveCutoff = baseCutoff + filterEnvelope + filterLFO
    */
-  setFilterFrequency(hz: number): void {
-    const now = Tone.now();
+  setFilterFrequency(hz: number, eventTime?: number): void {
+    const now = eventTime ?? Tone.now();
     if (this.filter) {
-      slewAudioParam(this.filter.frequency, hz, now);
+      if (eventTime === undefined) slewAudioParam(this.filter.frequency, hz, now);
+      else this.filter.frequency.setValueAtTime(hz, eventTime);
     }
     if (this.filterEnvAdder) {
-      slewAudioParam(this.filterEnvAdder.addend, hz, now);
+      if (eventTime === undefined) slewAudioParam(this.filterEnvAdder.addend, hz, now);
+      else this.filterEnvAdder.addend.setValueAtTime(hz, eventTime);
     }
   }
 
@@ -343,9 +368,9 @@ export class AdvancedSynthVoice {
   }
 
   setTempo(bpm: number): void {
-    this.tempo = bpm;
+    this.tempo = clamp(bpm, MIN_TEMPO, MAX_TEMPO);
     if (this.preset?.lfo.sync) {
-      this.setLfoRate(this.preset.lfo.frequency * (bpm / 120));
+      this.setLfoRate(this.preset.lfo.frequency * (this.tempo / DEFAULT_TEMPO));
     }
   }
 
@@ -386,16 +411,16 @@ export class AdvancedSynthVoice {
     this.filter.Q.value = preset.filter.resonance;
 
     // Apply amplitude envelope
-    this.ampEnvelope.attack = preset.amplitudeEnvelope.attack;
+    this.ampEnvelope.attack = normalizeSynthAttackSeconds(preset.amplitudeEnvelope.attack);
     this.ampEnvelope.decay = preset.amplitudeEnvelope.decay;
     this.ampEnvelope.sustain = preset.amplitudeEnvelope.sustain;
-    this.ampEnvelope.release = preset.amplitudeEnvelope.release;
+    this.ampEnvelope.release = normalizeSynthReleaseSeconds(preset.amplitudeEnvelope.release);
 
     // Apply filter envelope
-    this.filterEnvelope.attack = preset.filterEnvelope.attack;
+    this.filterEnvelope.attack = normalizeSynthAttackSeconds(preset.filterEnvelope.attack);
     this.filterEnvelope.decay = preset.filterEnvelope.decay;
     this.filterEnvelope.sustain = preset.filterEnvelope.sustain;
-    this.filterEnvelope.release = preset.filterEnvelope.release;
+    this.filterEnvelope.release = normalizeSynthReleaseSeconds(preset.filterEnvelope.release);
 
     // Apply filter envelope amount (scale in Hz)
     if (this.filterEnvScaler) {
@@ -501,30 +526,26 @@ export class AdvancedSynthVoice {
       return;
     }
 
-    // Clear any pending release timeout
-    if (this.releaseTimeoutId) {
-      clearTimeout(this.releaseTimeoutId);
-      this.releaseTimeoutId = null;
-    }
-
-    this.noteStartTime = Date.now();
-
     // Schedule retuning with the attack so a reused voice's release tail does
     // not jump pitch during scheduler lookahead.
-    const frequencyTime = time ?? Tone.now();
+    const frequencyTime = time ?? Tone.immediate();
+    this.noteStartTime = frequencyTime;
+    this.activeUntilAudioTime = Number.POSITIVE_INFINITY;
     this.osc1.frequency.setValueAtTime(frequency, frequencyTime);
     this.osc2.frequency.setValueAtTime(frequency, frequencyTime);
 
     // Start oscillators if not running
-    if (!this.active) {
+    if (!this.sourcesStarted) {
       this.osc1.start(time);
       this.osc2.start(time);
-      if (this.preset && this.preset.noiseLevel > 0) {
-        this.noise.start(time);
-      }
       this.lfo.start(time);
-      this.active = true;
+      this.sourcesStarted = true;
     }
+    if (!this.noiseStarted && this.preset && this.preset.noiseLevel > 0) {
+      this.noise.start(time);
+      this.noiseStarted = true;
+    }
+    this.active = true;
 
     // Trigger envelopes
     this.ampEnvelope.triggerAttack(time);
@@ -539,6 +560,10 @@ export class AdvancedSynthVoice {
 
     this.ampEnvelope.triggerRelease(time);
     this.filterEnvelope.triggerRelease(time);
+    const releaseStart = time ?? Tone.immediate();
+    this.activeUntilAudioTime = releaseStart
+      + normalizeSynthReleaseSeconds(Number(this.ampEnvelope.release))
+      + VOICE_TAIL_GUARD_SECONDS;
   }
 
   /**
@@ -558,57 +583,52 @@ export class AdvancedSynthVoice {
     const outputGain = this.output?.gain?.value ?? 'null';
     logger.audio.log(`Voice triggering: freq=${frequency.toFixed(1)}Hz, vol=${volume}, wasActive=${this.active}, time=${time?.toFixed(3) ?? 'undefined'}, filter=${filterFreq}, osc1=${osc1Gain}, osc2=${osc2Gain}, out=${outputGain}`);
 
-    // Clear any pending release timeout
-    if (this.releaseTimeoutId) {
-      clearTimeout(this.releaseTimeoutId);
-      this.releaseTimeoutId = null;
-    }
-
-    this.noteStartTime = Date.now();
-
     // Schedule retuning with the attack so voice stealing cannot alter an
     // audible tail before the replacement note begins.
-    const frequencyTime = time ?? Tone.now();
+    const frequencyTime = time ?? Tone.immediate();
+    this.noteStartTime = frequencyTime;
     this.osc1.frequency.setValueAtTime(frequency, frequencyTime);
     this.osc2.frequency.setValueAtTime(frequency, frequencyTime);
 
     // Start oscillators if not running
-    if (!this.active) {
+    if (!this.sourcesStarted) {
       this.osc1.start(time);
       this.osc2.start(time);
-      if (this.preset && this.preset.noiseLevel > 0) {
-        this.noise.start(time);
-      }
       this.lfo.start(time);
-      this.active = true;
+      this.sourcesStarted = true;
     }
-
-    // Trigger envelopes - pass volume as velocity to amplitude envelope
-    this.ampEnvelope.triggerAttackRelease(duration, time, volume);
-    this.filterEnvelope.triggerAttackRelease(duration, time);
-
-    // Schedule voice to become inactive after duration + release
-    // Convert duration to seconds if it's a string notation
-    let durationSec: number;
-    if (typeof duration === 'string') {
-      durationSec = NOTE_DURATIONS_120BPM[duration] || 0.25;
-    } else {
-      durationSec = duration;
+    if (!this.noiseStarted && this.preset && this.preset.noiseLevel > 0) {
+      this.noise.start(time);
+      this.noiseStarted = true;
     }
+    this.active = true;
 
-    const releaseTime = this.preset?.amplitudeEnvelope.release || 0.5;
-    const totalTime = (durationSec + releaseTime) * 1000 + 50; // +50ms buffer
+    const durationSeconds = noteDurationSeconds(duration, this.tempo);
 
-    this.releaseTimeoutId = setTimeout(() => {
-      this.active = false;
-      this.releaseTimeoutId = null;
-    }, totalTime);
+    // Resolve notation against Keyboardia's tempo before handing it to Tone.
+    // Tone's global Transport is not the sequencer clock, so passing "4n"
+    // through directly would render at Tone's default BPM while the allocator
+    // retired the voice against the app tempo.
+    this.ampEnvelope.triggerAttackRelease(durationSeconds, time, volume);
+    this.filterEnvelope.triggerAttackRelease(durationSeconds, time);
+
+    // Voice allocation follows Tone's audio clock. When a tab is suspended,
+    // wall time keeps advancing but this deadline does not, so a releasing
+    // voice cannot be recycled before its audible tail has actually rendered.
+    const releaseSeconds = normalizeSynthReleaseSeconds(Number(this.ampEnvelope.release));
+    this.activeUntilAudioTime = frequencyTime
+      + durationSeconds
+      + releaseSeconds
+      + VOICE_TAIL_GUARD_SECONDS;
   }
 
   /**
    * Check if voice is active
    */
   isActive(): boolean {
+    if (this.active && Tone.immediate() >= this.activeUntilAudioTime) {
+      this.active = false;
+    }
     return this.active;
   }
 
@@ -620,15 +640,11 @@ export class AdvancedSynthVoice {
   }
 
   /**
-   * Cancel pending release timeout.
-   * Called when stopping all voices to prevent stale timers.
+   * Make this voice immediately available to the allocator.
    */
   cancelPendingRelease(): void {
-    if (this.releaseTimeoutId) {
-      clearTimeout(this.releaseTimeoutId);
-      this.releaseTimeoutId = null;
-    }
     this.active = false;
+    this.activeUntilAudioTime = Number.NEGATIVE_INFINITY;
   }
 
   /**
@@ -671,6 +687,8 @@ export class AdvancedSynthVoice {
     this.lfo = null;
     this.output = null;
     this.noteStartTime = 0;
+    this.sourcesStarted = false;
+    this.noiseStarted = false;
 
     logger.audio.log('AdvancedSynthVoice disposed');
   }
@@ -988,9 +1006,10 @@ export class AdvancedSynthEngine {
    * Set amplitude envelope attack across all voices.
    */
   setAttack(seconds: number): void {
-    this.overrides.attack = seconds;
+    const attack = normalizeSynthAttackSeconds(seconds);
+    this.overrides.attack = attack;
     for (const voice of this.voices) {
-      if (voice['ampEnvelope']) voice['ampEnvelope'].attack = seconds;
+      if (voice['ampEnvelope']) voice['ampEnvelope'].attack = attack;
     }
   }
 
@@ -998,9 +1017,10 @@ export class AdvancedSynthEngine {
    * Set amplitude envelope release across all voices.
    */
   setRelease(seconds: number): void {
-    this.overrides.release = seconds;
+    const release = normalizeSynthReleaseSeconds(seconds);
+    this.overrides.release = release;
     for (const voice of this.voices) {
-      if (voice['ampEnvelope']) voice['ampEnvelope'].release = seconds;
+      if (voice['ampEnvelope']) voice['ampEnvelope'].release = release;
     }
   }
 
@@ -1092,52 +1112,37 @@ export class AdvancedSynthEngine {
       return;
     }
 
-    // Apply current preset
+    const startTime = absoluteToneStartTime(time, Tone.immediate(), this.lastScheduledTime);
+    this.lastScheduledTime = startTime;
+
+    // setPreset() applies definitions to every voice. Reapplying the same
+    // preset here would disconnect/reconnect LFO AudioParams on the scheduler
+    // hot path. Keep graph mutation out of note dispatch; per-note velocity is
+    // the only state that belongs here.
     if (this.currentPreset) {
-      voice.applyPreset(this.currentPreset);
       const baseCutoff = this.overrides.filterFrequency ?? this.currentPreset.filter.frequency;
-      voice.setFilterFrequency(advancedVelocityFilterFrequency(baseCutoff, midiVelocity));
+      // Velocity is note state, not a live UI control. Bind it to the same raw
+      // AudioContext timestamp as the attack so Tone lookahead cannot make a
+      // soft note begin with the previous voice cutoff.
+      voice.setFilterFrequency(advancedVelocityFilterFrequency(baseCutoff, midiVelocity), startTime);
     } else {
       this.recordFailure('no preset applied');
       return;
     }
 
-    // Phase 22: Ensure time is always positive and in the future
-    // The scheduler passes a relative offset from now, but it can be 0 or negative
-    // if audio context time advanced between calculation and playback.
-    const safeTime = Math.max(0.001, time ?? 0);
-    let startTime = Tone.now() + safeTime;
-
-    // Ensure startTime is strictly greater than the last scheduled time
-    // This prevents "time must be greater than previous" errors during BPM changes
-    if (startTime <= this.lastScheduledTime) {
-      startTime = this.lastScheduledTime + 0.001;
-    }
-    this.lastScheduledTime = startTime;
-
     logger.audio.log(`AdvancedSynth playing: freq=${frequency.toFixed(1)}Hz, duration=${duration}, time=${startTime.toFixed(3)}, vol=${volume}, velocity=${midiVelocity}, preset=${this.currentPreset?.name}`);
 
-    // Use try-catch to handle cases where Tone.js internal state rejects the time
-    // This can happen during rapid BPM changes
-    // Volume P-lock is passed to voice for amplitude scaling
+    // Volume P-lock is passed to voice for amplitude scaling. If Tone rejects
+    // the event, report it at the authoritative time instead of shifting the
+    // note to a renderer-chosen retry timestamp.
     try {
       voice.triggerAttackRelease(frequency, duration, startTime, volume);
       // Track successful play
       this.playSuccesses++;
       this.lastSuccessfulPlay = Date.now();
-    } catch (err) {
-      // If Tone.js rejects the time, retry with current time + buffer
-      const retryTime = Tone.now() + 0.01;
-      this.lastScheduledTime = retryTime;
-      logger.audio.warn(`AdvancedSynth timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}, error=${err}`);
-      try {
-        voice.triggerAttackRelease(frequency, duration, retryTime, volume);
-        // Retry succeeded
-        this.playSuccesses++;
-        this.lastSuccessfulPlay = Date.now();
-      } catch (retryErr) {
-        this.recordFailure(`Tone.js timing error after retry: ${retryErr}`);
-      }
+    } catch (error) {
+      voice.cancelPendingRelease();
+      this.recordFailure(`Tone.js timing error at ${startTime.toFixed(3)}: ${error}`);
     }
   }
 
@@ -1154,8 +1159,7 @@ export class AdvancedSynthEngine {
   }
 
   /**
-   * Stop all playing voices and cancel pending release timers.
-   * Called when playback stops to prevent stale timers from firing.
+   * Stop tracking all playing voices in the allocator.
    */
   stopAll(): void {
     for (const voice of this.voices) {

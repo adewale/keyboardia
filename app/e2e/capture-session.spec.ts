@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { truePeakDbfs } from '../src/test/audio-measures';
+import { TRACK_SAMPLE_PEAK_CEILING } from '../src/audio/constants';
 
 const TOTAL_STEPS = 128;
 const REPORT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../test-results/audio-capture');
@@ -55,6 +56,116 @@ function probeTrack(id: string, sampleId: string, activeSteps: readonly number[]
     stepCount: 16,
   };
 }
+
+test('keeps the per-track ceiling at unity below threshold and contains overloads', async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name !== 'chromium' && testInfo.project.name !== 'webkit',
+    'real Web Audio dynamics contract is desktop-only',
+  );
+  test.skip(
+    Boolean(process.env.PLAYWRIGHT_BASE_URL),
+    'the production Worker build does not serve source modules for the dynamics probe',
+  );
+  await page.goto(API_BASE);
+
+  const result = await page.evaluate(async () => {
+    const { TrackBus } = await import('/src/audio/track-bus.ts');
+    const sampleRate = 48_000;
+    const render = async (amplitude: number, useTrackBus: boolean) => {
+      const context = new OfflineAudioContext(2, sampleRate, sampleRate);
+      const destination = context.createGain();
+      destination.connect(context.destination);
+      let input: AudioNode;
+      if (useTrackBus) {
+        const bus = new TrackBus(context as unknown as AudioContext, destination);
+        input = bus.getInput();
+      } else {
+        const referenceGain = context.createGain();
+        const referencePan = context.createStereoPanner();
+        referenceGain.connect(referencePan).connect(destination);
+        input = referenceGain;
+      }
+      const oscillator = context.createOscillator();
+      const sourceGain = context.createGain();
+      oscillator.frequency.value = 1_000;
+      sourceGain.gain.value = amplitude;
+      oscillator.connect(sourceGain).connect(input);
+      oscillator.start(0.1);
+      oscillator.stop(0.9);
+      const rendered = await context.startRendering();
+      const startFrame = Math.round(0.25 * sampleRate);
+      const endFrame = Math.round(0.75 * sampleRate);
+      let energy = 0;
+      let peak = 0;
+      let samples = 0;
+      for (let channel = 0; channel < rendered.numberOfChannels; channel++) {
+        const pcm = rendered.getChannelData(channel);
+        for (let frame = startFrame; frame < endFrame; frame++) {
+          const value = pcm[frame];
+          energy += value * value;
+          peak = Math.max(peak, Math.abs(value));
+          samples++;
+        }
+      }
+      return { rms: Math.sqrt(energy / samples), peak };
+    };
+
+    const renderTransient = async (sampleRate: number, amplitude: number) => {
+      const context = new OfflineAudioContext(2, sampleRate, sampleRate);
+      const destination = context.createGain();
+      destination.connect(context.destination);
+      const bus = new TrackBus(context as unknown as AudioContext, destination);
+      const impulseBuffer = context.createBuffer(1, 1, sampleRate);
+      impulseBuffer.getChannelData(0)[0] = amplitude;
+      const impulse = context.createBufferSource();
+      impulse.buffer = impulseBuffer;
+      impulse.connect(bus.getInput());
+      impulse.start(0.1);
+      const rendered = await context.startRendering();
+      let peak = 0;
+      for (let channel = 0; channel < rendered.numberOfChannels; channel++) {
+        for (const sample of rendered.getChannelData(channel)) {
+          peak = Math.max(peak, Math.abs(sample));
+        }
+      }
+      return { sampleRate, amplitude, peak };
+    };
+
+    const reference = await render(0.01, false);
+    const quietTrack = await render(0.01, true);
+    const overloadedTrack = await render(1.5, true);
+    const transientPeaks = await Promise.all(
+      [44_100, 48_000].flatMap(sampleRate =>
+        [3, 10].map(amplitude => renderTransient(sampleRate, amplitude))
+      ),
+    );
+    return {
+      sampleRate,
+      quietThroughGainDb: 20 * Math.log10(quietTrack.rms / reference.rms),
+      overloadedPeak: overloadedTrack.peak,
+      overloadedPeakDbfs: 20 * Math.log10(overloadedTrack.peak),
+      transientPeaks,
+    };
+  });
+
+  console.log('track ceiling render', result);
+  expect(Math.abs(result.quietThroughGainDb)).toBeLessThanOrEqual(0.05);
+  expect(result.overloadedPeak).toBeLessThanOrEqual(1);
+  for (const transient of result.transientPeaks) {
+    expect(transient.peak).toBeLessThanOrEqual(TRACK_SAMPLE_PEAK_CEILING + 1e-6);
+  }
+  mkdirSync(REPORT_DIR, { recursive: true });
+  writeFileSync(
+    resolve(REPORT_DIR, 'track-bus-dynamics.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      fixture: 'production TrackBus against a pan-matched bypass reference',
+      ...result,
+    }, null, 2) + '\n',
+  );
+});
 
 test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', async ({
   page,
@@ -378,7 +489,7 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
     Boolean(process.env.PLAYWRIGHT_BASE_URL),
     'the production Worker build intentionally omits the development-only PCM capture hook',
   );
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   const { id } = await createSessionWithRetry(request, {
     tracks: CAPACITY_TRACKS.map(([trackId, sampleId, activeSteps]) =>
       probeTrack(trackId, sampleId, activeSteps)
@@ -398,10 +509,29 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
   await page.waitForFunction(() => Boolean(
     (window as unknown as { __captureMaster__?: unknown }).__captureMaster__
   ), undefined, { timeout: 30_000 });
-  // Progressive sample loads are product behavior, but the master-capacity
-  // measurement is a steady-state audio test. Keep network/decode startup out
-  // of the render-clock diagnostic.
-  await page.waitForTimeout(5_000);
+  // Progressive sample loads are product behavior, but the capacity and
+  // true-peak measurement is a steady-state test. Await the observable load
+  // contract instead of assuming a fixed five seconds is sufficient.
+  await page.evaluate(async (instrumentIds) => {
+    const registryModule = await import('/src/audio/sampled-instrument.ts') as {
+      sampledInstrumentRegistry: {
+        get: (instrumentId: string) => {
+          ensureLoaded: () => Promise<boolean>;
+          waitForBackgroundLoad: () => Promise<string>;
+        } | undefined;
+      };
+    };
+    await Promise.all(instrumentIds.map(async instrumentId => {
+      const instrument = registryModule.sampledInstrumentRegistry.get(instrumentId);
+      if (!instrument) throw new Error(`Sampled instrument ${instrumentId} was not registered`);
+      if (!await instrument.ensureLoaded()) throw new Error(`${instrumentId} priority load failed`);
+      const state = await instrument.waitForBackgroundLoad();
+      if (state !== 'complete') throw new Error(`${instrumentId} background load ended in ${state}`);
+    }));
+  }, CAPACITY_TRACKS
+    .map(([, sampleId]) => sampleId)
+    .filter(sampleId => sampleId.startsWith('sampled:'))
+    .map(sampleId => sampleId.slice('sampled:'.length)));
 
   const captured = await page.evaluate(async () => {
     type Capture = {
@@ -411,7 +541,7 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
     };
     const capture = await (window as unknown as {
       __captureMaster__: (seconds: number) => Promise<Capture>;
-    }).__captureMaster__(2.1);
+    }).__captureMaster__(4.1);
     const summaries = Object.fromEntries(Object.entries(capture.taps).map(([name, tap]) => {
       let peak = 0;
       let energy = 0;
@@ -458,7 +588,7 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
     resolve(REPORT_DIR, 'browser-capacity-capture.json'),
     JSON.stringify({
       schemaVersion: 1,
-      fixture: 'user-reachable 16-track mixed-engine session',
+      fixture: 'user-reachable 16-track mixed-engine session; complete sample loads; two full transport cycles plus guard',
       ...result,
     }, null, 2) + '\n',
   );

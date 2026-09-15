@@ -22,22 +22,32 @@ describe('Timer cleanup behavior', () => {
     vi.useRealTimers();
   });
 
-  it('SynthEngine.stopAll should clear pending cleanup timers', async () => {
+  it('SynthEngine retires scheduled voices from oscillator audio time without timers', async () => {
     const { SynthEngine } = await import('./synth');
     const engine = new SynthEngine();
+    const oscillators: Array<{
+      onended: ((event: Event) => void) | null;
+      disconnect: ReturnType<typeof vi.fn>;
+    }> = [];
 
     // Create a mock audio context with all required methods
     const mockContext = {
       currentTime: 0,
       state: 'running',
-      createOscillator: () => ({
-        type: 'sine',
-        frequency: { value: 440, setValueAtTime: vi.fn(), cancelScheduledValues: vi.fn() },
-        connect: vi.fn(),
-        start: vi.fn(),
-        stop: vi.fn(),
-        disconnect: vi.fn(),
-      }),
+      createOscillator: () => {
+        const oscillator = {
+          type: 'sine',
+          onended: null as ((event: Event) => void) | null,
+          frequency: { value: 440, setValueAtTime: vi.fn(), cancelScheduledValues: vi.fn() },
+          detune: { value: 0, setValueAtTime: vi.fn() },
+          connect: vi.fn(),
+          start: vi.fn(),
+          stop: vi.fn(),
+          disconnect: vi.fn(),
+        };
+        oscillators.push(oscillator);
+        return oscillator;
+      },
       createGain: () => ({
         gain: {
           value: 1,
@@ -83,13 +93,14 @@ describe('Timer cleanup behavior', () => {
       filterResonance: 1,
     }, 0, 0.5);
 
-    // stopAll should clear pending timers
-    engine.stopAll();
+    expect(vi.getTimerCount()).toBe(0);
+    expect(engine.getVoiceCount()).toBe(1);
+    expect(oscillators[0].onended).toEqual(expect.any(Function));
 
-    // Fast forward - verify no errors from stale timers
-    vi.advanceTimersByTime(2000);
-
-    // Verify stopAll cleared voices - activeVoices should be empty
+    // The Web Audio source owns retirement: suspension pauses currentTime and
+    // therefore also pauses this callback instead of letting wall time win.
+    oscillators[0].onended!(new Event('ended'));
     expect(engine.getVoiceCount()).toBe(0);
+    expect(oscillators[0].disconnect).toHaveBeenCalledTimes(1);
   });
 });

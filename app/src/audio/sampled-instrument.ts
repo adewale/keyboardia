@@ -36,11 +36,25 @@ import {
   compensatedSampleStartOffset,
   measureDecodedLeadingSilenceSeconds,
 } from './sample-onset';
+import {
+  MAX_CONCURRENT_BACKGROUND_SAMPLE_LOADS,
+  MAX_CONCURRENT_SAMPLE_LOADS,
+} from './sample-load-policy';
 
 /** Bound aggregate request/decode pressure across every deep sample library. */
-const MAX_CONCURRENT_SAMPLE_LOADS = 6;
 let activeSampleLoads = 0;
-const pendingSampleLoadSlots: Array<() => void> = [];
+let activePrioritySampleLoads = 0;
+let activeBackgroundSampleLoads = 0;
+const pendingPrioritySampleLoadSlots: Array<() => void> = [];
+const pendingBackgroundSampleLoadSlots: Array<() => void> = [];
+const activeBackgroundSampleLoadControllers = new Set<AbortController>();
+
+class BackgroundSampleLoadPreempted extends Error {
+  constructor() {
+    super('Background sample load yielded to foreground readiness');
+    this.name = 'BackgroundSampleLoadPreempted';
+  }
+}
 
 /**
  * Engine-owned drum balance. Keeping these trims outside content manifests
@@ -67,16 +81,58 @@ export function sampledInstrumentOutputGainDb(
   return manifestGainDb + (SAMPLED_INSTRUMENT_OUTPUT_GAIN_DB[instrumentId] ?? 0);
 }
 
-async function withSampleLoadSlot<T>(operation: () => Promise<T>): Promise<T> {
-  if (activeSampleLoads >= MAX_CONCURRENT_SAMPLE_LOADS) {
-    await new Promise<void>(resolve => pendingSampleLoadSlots.push(resolve));
+function startPendingSampleLoads(): void {
+  while (activeSampleLoads < MAX_CONCURRENT_SAMPLE_LOADS) {
+    const priority = pendingPrioritySampleLoadSlots.shift();
+    if (priority) {
+      activeSampleLoads++;
+      activePrioritySampleLoads++;
+      priority();
+      continue;
+    }
+    // Keep a foreground root atomic across worker batches. Otherwise a
+    // background transfer can restart in the microtask gap between two batches
+    // and immediately consume bandwidth the same foreground root still needs.
+    if (activePrioritySampleLoads > 0) return;
+    if (activeBackgroundSampleLoads >= MAX_CONCURRENT_BACKGROUND_SAMPLE_LOADS) return;
+    const background = pendingBackgroundSampleLoadSlots.shift();
+    if (!background) return;
+    activeSampleLoads++;
+    activeBackgroundSampleLoads++;
+    background();
   }
-  activeSampleLoads++;
+}
+
+async function withSampleLoadSlot<T>(
+  operation: (signal?: AbortSignal) => Promise<T>,
+  priority: boolean,
+): Promise<T> {
+  await new Promise<void>(resolve => {
+    if (priority) pendingPrioritySampleLoadSlots.push(resolve);
+    else pendingBackgroundSampleLoadSlots.push(resolve);
+    startPendingSampleLoads();
+
+    // Reserving a connection prevents queue starvation, but it does not reserve
+    // bandwidth. If a foreground root needs more than the one free slot, yield
+    // active background transfers so the complete playable root can meet the
+    // readiness budget. Aborted background work is requeued below.
+    if (priority && pendingPrioritySampleLoadSlots.length > 0) {
+      for (const controller of activeBackgroundSampleLoadControllers) controller.abort();
+    }
+  });
+  const controller = priority ? null : new AbortController();
+  if (controller) activeBackgroundSampleLoadControllers.add(controller);
   try {
-    return await operation();
+    return await operation(controller?.signal);
+  } catch (error) {
+    if (controller?.signal.aborted) throw new BackgroundSampleLoadPreempted();
+    throw error;
   } finally {
+    if (controller) activeBackgroundSampleLoadControllers.delete(controller);
     activeSampleLoads--;
-    pendingSampleLoadSlots.shift()?.();
+    if (priority) activePrioritySampleLoads--;
+    else activeBackgroundSampleLoads--;
+    startPendingSampleLoads();
   }
 }
 
@@ -148,6 +204,12 @@ export interface InstrumentManifest {
   gainDb?: number;
   /** Shared non-destructive decode-onset trim (for codec encoder delay). */
   startOffset?: number;
+  /**
+   * Optional decoder-delay ceiling in seconds for sources whose Node and
+   * browser AAC timelines are provenance-tested. Unlike startOffset, this
+   * never trims when the active browser decoder exposes an immediate attack.
+   */
+  maxAdaptiveCodecDelay?: number;
   /** Width in MIDI velocity units for equal-power-free linear layer blending. */
   velocityCrossfade?: number;
   /** Notes whose complete layer/RR sets must decode before playback is ready. */
@@ -395,7 +457,7 @@ export class SampledInstrument {
     const backgroundMappings = manifest.samples.filter(mapping => !priorityNotes.has(mapping.note));
     if (priorityMappings.length === 0) throw new Error('No mappings exist for the declared priority notes');
 
-    const priorityResults = await this.settleSampleLoads(priorityMappings, generation, (result, mapping) => {
+    const priorityResults = await this.settleSampleLoads(priorityMappings, generation, true, (result, mapping) => {
       if (generation !== this.lifecycleGeneration) return;
       if (result.status === 'fulfilled') this.installLoadedSample(result.value);
       else this.recordLoadFailure(mapping, result.reason, true);
@@ -452,16 +514,18 @@ export class SampledInstrument {
   private async settleSampleLoads(
     mappings: readonly SampleMapping[],
     generation: number,
+    priority: boolean,
     onSettled: (result: PromiseSettledResult<LoadedSample>, mapping: SampleMapping) => void,
   ): Promise<Array<{ status: 'fulfilled' } | { status: 'rejected'; reason: unknown }>> {
     const results = new Array<{ status: 'fulfilled' } | { status: 'rejected'; reason: unknown }>(mappings.length);
     let cursor = 0;
     const worker = async (): Promise<void> => {
       while (cursor < mappings.length) {
+        if (generation !== this.lifecycleGeneration) return;
         const index = cursor++;
         const mapping = mappings[index];
         try {
-          const value = await this.loadSingleSample(mapping, generation);
+          const value = await this.loadSingleSample(mapping, generation, priority);
           onSettled({ status: 'fulfilled', value }, mapping);
           results[index] = { status: 'fulfilled' };
         } catch (reason) {
@@ -479,7 +543,7 @@ export class SampledInstrument {
 
   /** Successful background decodes install as each request settles. */
   private async loadRemainingSamples(mappings: SampleMapping[], generation: number): Promise<void> {
-    await this.settleSampleLoads(mappings, generation, (result, mapping) => {
+    await this.settleSampleLoads(mappings, generation, false, (result, mapping) => {
       if (generation !== this.lifecycleGeneration) return;
       if (result.status === 'fulfilled') this.installLoadedSample(result.value);
       else this.recordLoadFailure(mapping, result.reason, false);
@@ -503,6 +567,7 @@ export class SampledInstrument {
       configuredStart,
       adaptCodecDelay ? measureDecodedLeadingSilenceSeconds(buffer) : 0,
       adaptCodecDelay,
+      this.manifest?.maxAdaptiveCodecDelay,
     );
     const end = Number.isFinite(mapping.endOffset) && (mapping.endOffset ?? 0) > (start ?? 0) && (mapping.endOffset ?? Infinity) <= buffer.duration
       ? mapping.endOffset
@@ -526,7 +591,14 @@ export class SampledInstrument {
   }
 
   /** Load one unique delivery file through the memory-bounded cache. */
-  private async loadSingleSample(mapping: SampleMapping, generation: number): Promise<LoadedSample> {
+  private async loadSingleSample(
+    mapping: SampleMapping,
+    generation: number,
+    priority: boolean,
+  ): Promise<LoadedSample> {
+    if (generation !== this.lifecycleGeneration) {
+      throw new Error('Sample load superseded by a newer lifecycle');
+    }
     const cacheKey = this.cacheKeyFor(mapping);
     const cachedBuffer = sampleCache.get(cacheKey);
     if (cachedBuffer) {
@@ -536,20 +608,38 @@ export class SampledInstrument {
 
     let bufferPromise = this.inFlightBuffers.get(cacheKey);
     if (!bufferPromise) {
-      bufferPromise = withSampleLoadSlot(async () => {
-        const sampleUrl = `${this.baseUrl}/${mapping.file}`;
-        logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
-        const response = await fetch(sampleUrl);
-        if (!response.ok) throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
-        const arrayBuffer = await response.arrayBuffer();
-        const context = this.audioContext;
-        if (!context) throw new Error('SampledInstrument was disposed during loading');
-        const audioBuffer = await context.decodeAudioData(arrayBuffer);
-        if (generation !== this.lifecycleGeneration) throw new Error('Sample load superseded by a newer lifecycle');
-        sampleCache.set(cacheKey, audioBuffer);
-        logger.audio.log(`[CACHED] ${cacheKey}`);
-        return audioBuffer;
-      });
+      bufferPromise = (async (): Promise<AudioBuffer> => {
+        while (true) {
+          try {
+            return await withSampleLoadSlot(async signal => {
+              // A different instrument may have held the global six-slot queue while
+              // this instance was disposed. Do not start obsolete network work once
+              // the slot finally becomes available.
+              if (generation !== this.lifecycleGeneration) {
+                throw new Error('Sample load superseded by a newer lifecycle');
+              }
+              const sampleUrl = `${this.baseUrl}/${mapping.file}`;
+              logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
+              const response = await fetch(sampleUrl, signal ? { signal } : undefined);
+              if (!response.ok) throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
+              const arrayBuffer = await response.arrayBuffer();
+              const context = this.audioContext;
+              if (!context) throw new Error('SampledInstrument was disposed during loading');
+              const audioBuffer = await context.decodeAudioData(arrayBuffer);
+              if (generation !== this.lifecycleGeneration) throw new Error('Sample load superseded by a newer lifecycle');
+              sampleCache.set(cacheKey, audioBuffer);
+              logger.audio.log(`[CACHED] ${cacheKey}`);
+              return audioBuffer;
+            }, priority);
+          } catch (error) {
+            if (error instanceof BackgroundSampleLoadPreempted && generation === this.lifecycleGeneration) {
+              logger.audio.log(`[PROGRESSIVE] Requeueing ${mapping.file} after foreground preemption`);
+              continue;
+            }
+            throw error;
+          }
+        }
+      })();
       this.inFlightBuffers.set(cacheKey, bufferPromise);
       const clear = (): void => {
         if (this.inFlightBuffers.get(cacheKey) === bufferPromise) this.inFlightBuffers.delete(cacheKey);
@@ -781,7 +871,7 @@ export class SampledInstrument {
     const generation = ++this.lifecycleGeneration;
     this.loadState = 'loading';
     this.loadFailures = this.loadFailures.filter(failure => !failedFiles.has(failure.file));
-    await this.settleSampleLoads(mappings, generation, (result, mapping) => {
+    await this.settleSampleLoads(mappings, generation, true, (result, mapping) => {
       if (generation !== this.lifecycleGeneration) return;
       if (result.status === 'fulfilled') this.installLoadedSample(result.value);
       else this.recordLoadFailure(mapping, result.reason, false);

@@ -26,6 +26,7 @@ const toneTestState = vi.hoisted(() => ({
     harmonicity: { value: number };
     modulationIndex: { value: number };
     set: ReturnType<typeof vi.fn>;
+    triggerAttackRelease: ReturnType<typeof vi.fn>;
   }>,
   gains: [] as Array<{
     gain: { value: number; setValueAtTime: ReturnType<typeof vi.fn> };
@@ -153,6 +154,7 @@ vi.mock('tone', () => {
   return {
     start: vi.fn().mockResolvedValue(undefined),
     now: vi.fn().mockReturnValue(0),
+    immediate: vi.fn().mockReturnValue(0),
     FMSynth: MockFMSynth,
     AMSynth: MockAMSynth,
     MembraneSynth: MockMembraneSynth,
@@ -242,6 +244,29 @@ describe('ToneSynthManager', () => {
       manager.playNote('fm-epiano', 'C4', '8n', 0);
       // Should not throw
       expect(manager.isReady()).toBe(true);
+    });
+
+    it('uses the scheduler absolute timestamp without adding Tone lookahead', () => {
+      manager.playNote('fm-epiano', 'C4', '8n', 5);
+
+      expect(toneTestState.fmSynths[0].triggerAttackRelease).toHaveBeenLastCalledWith(
+        'C4',
+        '8n',
+        5,
+        1,
+      );
+    });
+
+    it('does not move a rejected event to a renderer-chosen retry time', () => {
+      manager.playNote('fm-epiano', 'C4', '8n', 5);
+      const trigger = toneTestState.fmSynths[0].triggerAttackRelease;
+      trigger.mockClear();
+      trigger.mockImplementationOnce(() => { throw new Error('timeline rejected'); });
+
+      expect(() => manager.playNote('fm-epiano', 'E4', '8n', 6)).not.toThrow();
+
+      expect(trigger).toHaveBeenCalledTimes(1);
+      expect(trigger).toHaveBeenCalledWith('E4', '8n', 6, 1);
     });
 
     it('plays a note with membrane-kick preset', () => {
