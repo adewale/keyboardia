@@ -27,21 +27,57 @@ import {
 const APP_ROOT = path.resolve(import.meta.dirname, '..');
 const REPOSITORY_ROOT = path.resolve(APP_ROOT, '..');
 const EVIDENCE_ROOT = path.resolve(REPOSITORY_ROOT, 'docs/evidence');
+const CURRENT_EVIDENCE_INDEX_PATH = path.resolve(
+  EVIDENCE_ROOT,
+  'current-instrument-quality-evidence.json',
+);
 
-function uniqueCandidateEvidence(
-  prefix: string,
-  accepts: (report: Record<string, unknown>) => boolean,
-): string {
-  const matches = fs.readdirSync(EVIDENCE_ROOT)
-    .filter(filename => filename.startsWith(prefix) && filename.endsWith('.json'))
-    .filter(filename => accepts(JSON.parse(
-      fs.readFileSync(path.resolve(EVIDENCE_ROOT, filename), 'utf8'),
-    ) as Record<string, unknown>))
-    .sort();
-  if (matches.length !== 1) {
-    throw new Error(`Expected one current ${prefix}*.json evidence fixture, found ${matches.length}`);
+interface CurrentEvidenceArtifact {
+  path: string;
+  sha256: string;
+}
+
+interface CurrentEvidenceIndex {
+  schemaVersion: number;
+  subjectCommit: string;
+  artifacts: Record<string, CurrentEvidenceArtifact>;
+}
+
+function currentEvidenceIndex(): CurrentEvidenceIndex {
+  const index = JSON.parse(fs.readFileSync(
+    CURRENT_EVIDENCE_INDEX_PATH,
+    'utf8',
+  )) as CurrentEvidenceIndex;
+  if (index.schemaVersion !== 1) {
+    throw new Error(`Unsupported current evidence index schema ${index.schemaVersion}`);
   }
-  return path.resolve(EVIDENCE_ROOT, matches[0]);
+  if (!/^[0-9a-f]{40}$/.test(index.subjectCommit)) {
+    throw new Error('Current evidence index has no exact subject commit');
+  }
+  return index;
+}
+
+function currentEvidenceArtifactPath(key: string): string {
+  const artifact = currentEvidenceIndex().artifacts[key];
+  if (artifact === undefined) {
+    throw new Error(`Current evidence index omits ${key}`);
+  }
+  const artifactPath = path.resolve(EVIDENCE_ROOT, artifact.path);
+  const relativePath = path.relative(EVIDENCE_ROOT, artifactPath);
+  if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+    throw new Error(`Current evidence artifact escapes evidence root: ${artifact.path}`);
+  }
+  if (!fs.existsSync(artifactPath)) {
+    throw new Error(`Current evidence artifact is missing: ${artifact.path}`);
+  }
+  const actualSha256 = sha256File(artifactPath);
+  if (actualSha256 !== artifact.sha256) {
+    throw new Error(
+      `Current evidence artifact hash differs for ${artifact.path}: `
+      + `expected ${artifact.sha256}, found ${actualSha256}`,
+    );
+  }
+  return artifactPath;
 }
 
 function currentSubjectCommit(): string {
@@ -52,34 +88,28 @@ function currentSubjectCommit(): string {
 }
 
 function currentLiveEvidenceFixturePath(): string {
-  return uniqueCandidateEvidence('candidate-live-primary-', candidate =>
-    candidate.schemaVersion === LIVE_RECEIPT_SCHEMA_VERSION
-  );
+  return currentEvidenceArtifactPath('candidateLivePrimary');
 }
 
 function currentEvidenceSubjectCommit(): string {
-  const report = JSON.parse(fs.readFileSync(
-    currentLiveEvidenceFixturePath(),
-    'utf8',
-  )) as Record<string, unknown>;
-  if (typeof report.subjectCommit !== 'string') {
-    throw new Error('Current live evidence fixture has no subject commit');
-  }
-  return report.subjectCommit;
+  return currentEvidenceIndex().subjectCommit;
 }
 
 function currentCandidateSampleReport(): Record<string, unknown> {
   const evidenceSubjectCommit = currentEvidenceSubjectCommit();
   const report = JSON.parse(fs.readFileSync(
-    uniqueCandidateEvidence('candidate-sample-quality-', candidate =>
-      candidate.evaluatorBundleSha256 === sampleQualityEvaluatorBundleSha256(APP_ROOT)
-      && candidate.baselineSha256 === sha256File(
-        path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
-      )
-      && candidate.subjectCommit === evidenceSubjectCommit
-    ),
+    currentEvidenceArtifactPath('candidateSampleQuality'),
     'utf8',
   )) as Record<string, unknown>;
+  if (report.subjectCommit !== evidenceSubjectCommit) {
+    throw new Error('Current sample-quality evidence subject differs from its index');
+  }
+  if (report.evaluatorBundleSha256 !== sampleQualityEvaluatorBundleSha256(APP_ROOT)
+    || report.baselineSha256 !== sha256File(
+      path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
+    )) {
+    throw new Error('Current sample-quality evidence has stale evaluator or baseline identity');
+  }
   report.subjectCommit = currentSubjectCommit();
   report.evaluatorBundleSha256 = sampleQualityEvaluatorBundleSha256(APP_ROOT);
   report.baselineSha256 = sha256File(
@@ -210,6 +240,33 @@ function runRequiredAudit(
 }
 
 describe('instrument quality audit evidence coverage', () => {
+  it('binds every current evidence artifact to one explicit subject and SHA-256', () => {
+    const index = currentEvidenceIndex();
+    expect(Object.keys(index.artifacts).sort()).toEqual([
+      'browserCapacityCapture',
+      'browserDecodeChromium',
+      'browserDecodeWebKit',
+      'browserMasterCapture',
+      'candidateInstrumentQualityConfirmation',
+      'candidateInstrumentQualityPrimary',
+      'candidateLiveConfirmation',
+      'candidateLivePrimary',
+      'candidateSampleQuality',
+      'sampleLoadNetworkReadiness',
+      'trackBusDynamicsChromium',
+      'trackBusDynamicsWebKit',
+    ]);
+    for (const key of Object.keys(index.artifacts)) {
+      expect(currentEvidenceArtifactPath(key)).toBeTruthy();
+    }
+    const liveReport = JSON.parse(fs.readFileSync(
+      currentEvidenceArtifactPath('candidateLivePrimary'),
+      'utf8',
+    )) as Record<string, unknown>;
+    expect(liveReport.schemaVersion).toBe(LIVE_RECEIPT_SCHEMA_VERSION);
+    expect(liveReport.subjectCommit).toBe(index.subjectCommit);
+  });
+
   it.each([
     {
       field: 'spectral centroid Hz',

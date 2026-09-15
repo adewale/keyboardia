@@ -1,8 +1,0 @@
-{
-  "schemaVersion": 1,
-  "fixture": "production TrackBus against a pan-matched bypass reference",
-  "sampleRate": 48000,
-  "quietThroughGainDb": 0.000002000583975233244,
-  "overloadedPeak": 0.8156105875968933,
-  "overloadedPeakDbfs": -1.7703429039529248
-}

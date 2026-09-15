@@ -1,11 +1,11 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-09-15T03:51:14.370Z",
-  "commit": "462cb1e7351ff293b41c8e8b6c1527c8cf1b47a7",
+  "generatedAt": "2026-09-15T21:13:09.399Z",
+  "commit": "d178d4c033a0d8d25267b625880d8c69a59f7c84",
   "provenance": {
-    "evaluatorCommit": "462cb1e7351ff293b41c8e8b6c1527c8cf1b47a7",
-    "subjectCommit": "462cb1e7351ff293b41c8e8b6c1527c8cf1b47a7",
-    "evaluatorTreeSha256": "6498b6b7925e3165efaf26006547a36cdbc2d6d057f897a961ef67ba1100ed50",
+    "evaluatorCommit": "d178d4c033a0d8d25267b625880d8c69a59f7c84",
+    "subjectCommit": "d178d4c033a0d8d25267b625880d8c69a59f7c84",
+    "evaluatorTreeSha256": "0d42f3f03a0ac67c54a055f24db2fd2961e21160fea5434f58c52b88311d6276",
     "evaluatorDirty": false,
     "runtime": {
       "node": "v26.0.0",
@@ -26,11 +26,11 @@
   "inputs": {
     "sampleReport": {
       "path": "test-results/sample-quality/metrics.json",
-      "sha256": "db3d99abc30117cb277094db65cc75c1b5f7ec04d07f9c218aa0dccf9a78ab22"
+      "sha256": "fe9cf3ffe1da210a624beb92e8b370c19f8dfc89e3728a015154c119c4fe37ee"
     },
     "liveReport": {
-      "path": "reports/instrument-quality/live-confirmation/live-master-output.json",
-      "sha256": "43848233e85b9e25b7083bd6b26c53f60cc61f5127fb51b649a05f2f9b1e55a4"
+      "path": "reports/instrument-quality/live-master-output.json",
+      "sha256": "3fa6bffc0f3d19eced0d076ce3ffba5cba2bfc4fae7b313693111e6e373ade6b"
     },
     "matrixReport": null
   },
@@ -54,13 +54,13 @@
       "score": 20.8,
       "band": "medium",
       "evidenceGrade": "A",
-      "evidence": "4 decoded files, 5 measured findings (5 disposition-accepted, 0 unwaived), live peak -0.9 dBFS",
+      "evidence": "4 decoded files, 5 measured findings (5 disposition-accepted, 0 unwaived), live peak -3.1 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -0.9,
-        "rmsDbfs": -28.1,
-        "categoryRmsDeltaDb": 0.1
+        "peakDbfs": -3.1,
+        "rmsDbfs": -29.6,
+        "categoryRmsDeltaDb": -1.2
       },
       "sampled": {
         "fileCount": 4,
@@ -140,13 +140,13 @@
       "score": 16,
       "band": "medium",
       "evidenceGrade": "A",
-      "evidence": "4 decoded files, 6 measured findings (6 disposition-accepted, 0 unwaived), live peak -6.9 dBFS",
+      "evidence": "4 decoded files, 6 measured findings (6 disposition-accepted, 0 unwaived), live peak -7.6 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -6.9,
-        "rmsDbfs": -31,
-        "categoryRmsDeltaDb": -0.7
+        "peakDbfs": -7.6,
+        "rmsDbfs": -31.3,
+        "categoryRmsDeltaDb": -0.8
       },
       "sampled": {
         "fileCount": 4,
@@ -231,8 +231,8 @@
         "measured": true,
         "silent": false,
         "peakDbfs": -8.7,
-        "rmsDbfs": -30.8,
-        "categoryRmsDeltaDb": -0.5
+        "rmsDbfs": -31.2,
+        "categoryRmsDeltaDb": -0.7
       },
       "sampled": {
         "fileCount": 12,
@@ -372,13 +372,13 @@
       "score": 14,
       "band": "medium",
       "evidenceGrade": "A",
-      "evidence": "10 decoded files, 8 measured findings (8 disposition-accepted, 0 unwaived), live peak -0.8 dBFS",
+      "evidence": "10 decoded files, 8 measured findings (8 disposition-accepted, 0 unwaived), live peak -6.4 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -0.8,
-        "rmsDbfs": -26.5,
-        "categoryRmsDeltaDb": 0.6
+        "peakDbfs": -6.4,
+        "rmsDbfs": -27.6,
+        "categoryRmsDeltaDb": -0.1
       },
       "sampled": {
         "fileCount": 10,
@@ -462,8 +462,8 @@
         "measured": true,
         "silent": false,
         "peakDbfs": -1.4,
-        "rmsDbfs": -23.9,
-        "categoryRmsDeltaDb": 3.2
+        "rmsDbfs": -24,
+        "categoryRmsDeltaDb": 3.4
       },
       "sampled": {
         "fileCount": 21,
@@ -548,7 +548,7 @@
         "silent": false,
         "peakDbfs": -1.8,
         "rmsDbfs": -26.3,
-        "categoryRmsDeltaDb": 4
+        "categoryRmsDeltaDb": 4.2
       },
       "sampled": {
         "fileCount": 15,
@@ -626,13 +626,13 @@
       "score": 11.3,
       "band": "low",
       "evidenceGrade": "A",
-      "evidence": "30 decoded files, 22 measured findings (22 disposition-accepted, 0 unwaived), live peak -1.9 dBFS",
+      "evidence": "30 decoded files, 22 measured findings (22 disposition-accepted, 0 unwaived), live peak -2.1 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -1.9,
-        "rmsDbfs": -21,
-        "categoryRmsDeltaDb": 6.2
+        "peakDbfs": -2.1,
+        "rmsDbfs": -21.4,
+        "categoryRmsDeltaDb": 6.1
       },
       "sampled": {
         "fileCount": 30,
@@ -711,13 +711,13 @@
       "score": 6,
       "band": "low",
       "evidenceGrade": "A",
-      "evidence": "215 decoded files, 85 measured findings (85 disposition-accepted, 0 unwaived), live peak -1.5 dBFS",
+      "evidence": "215 decoded files, 85 measured findings (85 disposition-accepted, 0 unwaived), live peak -3.7 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -1.5,
-        "rmsDbfs": -23.8,
-        "categoryRmsDeltaDb": 3.3
+        "peakDbfs": -3.7,
+        "rmsDbfs": -25.3,
+        "categoryRmsDeltaDb": 2.1
       },
       "sampled": {
         "fileCount": 215,
@@ -790,13 +790,13 @@
       "score": 6,
       "band": "low",
       "evidenceGrade": "A",
-      "evidence": "15 decoded files, 3 measured findings (3 disposition-accepted, 0 unwaived), live peak -9.3 dBFS",
+      "evidence": "15 decoded files, 3 measured findings (3 disposition-accepted, 0 unwaived), live peak -9.6 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -9.3,
-        "rmsDbfs": -29,
-        "categoryRmsDeltaDb": 0.7
+        "peakDbfs": -9.6,
+        "rmsDbfs": -29.2,
+        "categoryRmsDeltaDb": 0.5
       },
       "sampled": {
         "fileCount": 15,
@@ -869,13 +869,13 @@
       "score": 5,
       "band": "low",
       "evidenceGrade": "A",
-      "evidence": "3 decoded files, 3 measured findings (3 disposition-accepted, 0 unwaived), live peak -8.9 dBFS",
+      "evidence": "3 decoded files, 3 measured findings (3 disposition-accepted, 0 unwaived), live peak -13.4 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -8.9,
-        "rmsDbfs": -36,
-        "categoryRmsDeltaDb": -0.3
+        "peakDbfs": -13.4,
+        "rmsDbfs": -39.5,
+        "categoryRmsDeltaDb": -3
       },
       "sampled": {
         "fileCount": 3,
@@ -946,13 +946,13 @@
       "score": 4.3,
       "band": "low",
       "evidenceGrade": "A",
-      "evidence": "22 decoded files, 5 measured findings (5 disposition-accepted, 0 unwaived), live peak -5.5 dBFS",
+      "evidence": "22 decoded files, 5 measured findings (5 disposition-accepted, 0 unwaived), live peak -8.5 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -5.5,
-        "rmsDbfs": -27.9,
-        "categoryRmsDeltaDb": -0.8
+        "peakDbfs": -8.5,
+        "rmsDbfs": -29.3,
+        "categoryRmsDeltaDb": -1.9
       },
       "sampled": {
         "fileCount": 22,
@@ -1025,13 +1025,13 @@
       "score": 3.7,
       "band": "low",
       "evidenceGrade": "A",
-      "evidence": "112 decoded files, 19 measured findings (19 disposition-accepted, 0 unwaived), live peak -1.1 dBFS",
+      "evidence": "112 decoded files, 19 measured findings (19 disposition-accepted, 0 unwaived), live peak -3.3 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -1.1,
-        "rmsDbfs": -25,
-        "categoryRmsDeltaDb": 3.1
+        "peakDbfs": -3.3,
+        "rmsDbfs": -27,
+        "categoryRmsDeltaDb": 1.3
       },
       "sampled": {
         "fileCount": 112,
@@ -1182,13 +1182,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -5.2 dBFS, RMS -31.8 dBFS",
+      "evidence": "canonical live peak -5.2 dBFS, RMS -31.5 dBFS",
       "live": {
         "measured": true,
         "silent": false,
         "peakDbfs": -5.2,
-        "rmsDbfs": -31.8,
-        "categoryRmsDeltaDb": -3.6
+        "rmsDbfs": -31.5,
+        "categoryRmsDeltaDb": -3.2
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1239,13 +1239,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -9.9 dBFS, RMS -28.2 dBFS",
+      "evidence": "canonical live peak -8.3 dBFS, RMS -27.2 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -9.9,
-        "rmsDbfs": -28.2,
-        "categoryRmsDeltaDb": 0
+        "peakDbfs": -8.3,
+        "rmsDbfs": -27.2,
+        "categoryRmsDeltaDb": 1.2
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1302,7 +1302,7 @@
         "silent": false,
         "peakDbfs": -13.3,
         "rmsDbfs": -36.9,
-        "categoryRmsDeltaDb": -6.6
+        "categoryRmsDeltaDb": -6.4
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1353,13 +1353,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -10.3 dBFS, RMS -29.8 dBFS",
+      "evidence": "canonical live peak -10.4 dBFS, RMS -29.8 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -10.3,
+        "peakDbfs": -10.4,
         "rmsDbfs": -29.8,
-        "categoryRmsDeltaDb": 0.5
+        "categoryRmsDeltaDb": 0.7
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1468,13 +1468,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -10.9 dBFS, RMS -31.2 dBFS",
+      "evidence": "canonical live peak -11 dBFS, RMS -31.2 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -10.9,
+        "peakDbfs": -11,
         "rmsDbfs": -31.2,
-        "categoryRmsDeltaDb": -0.9
+        "categoryRmsDeltaDb": -0.8
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1525,12 +1525,12 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -22.9 dBFS, RMS -43.6 dBFS",
+      "evidence": "canonical live peak -22.9 dBFS, RMS -43.5 dBFS",
       "live": {
         "measured": true,
         "silent": false,
         "peakDbfs": -22.9,
-        "rmsDbfs": -43.6,
+        "rmsDbfs": -43.5,
         "categoryRmsDeltaDb": -13.9
       },
       "sampled": null,
@@ -1583,13 +1583,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -7.9 dBFS, RMS -30.2 dBFS",
+      "evidence": "canonical live peak -7.8 dBFS, RMS -30.1 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -7.9,
-        "rmsDbfs": -30.2,
-        "categoryRmsDeltaDb": -2
+        "peakDbfs": -7.8,
+        "rmsDbfs": -30.1,
+        "categoryRmsDeltaDb": -1.7
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1646,7 +1646,7 @@
         "silent": false,
         "peakDbfs": -4.6,
         "rmsDbfs": -22.9,
-        "categoryRmsDeltaDb": 5.3
+        "categoryRmsDeltaDb": 5.5
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1703,7 +1703,7 @@
         "silent": false,
         "peakDbfs": -16.9,
         "rmsDbfs": -45.4,
-        "categoryRmsDeltaDb": -9.7
+        "categoryRmsDeltaDb": -9
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1823,7 +1823,7 @@
         "silent": false,
         "peakDbfs": -9.5,
         "rmsDbfs": -34.9,
-        "categoryRmsDeltaDb": 0.8
+        "categoryRmsDeltaDb": 1.5
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1885,7 +1885,7 @@
         "silent": false,
         "peakDbfs": -9.7,
         "rmsDbfs": -37.8,
-        "categoryRmsDeltaDb": -2.1
+        "categoryRmsDeltaDb": -1.4
       },
       "sampled": null,
       "scoreComponents": [],
@@ -1947,7 +1947,7 @@
         "silent": false,
         "peakDbfs": -9.2,
         "rmsDbfs": -29.7,
-        "categoryRmsDeltaDb": 6
+        "categoryRmsDeltaDb": 6.7
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2009,7 +2009,7 @@
         "silent": false,
         "peakDbfs": -10.7,
         "rmsDbfs": -33.8,
-        "categoryRmsDeltaDb": 1.9
+        "categoryRmsDeltaDb": 2.7
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2071,7 +2071,7 @@
         "silent": false,
         "peakDbfs": -12.3,
         "rmsDbfs": -43.2,
-        "categoryRmsDeltaDb": -7.5
+        "categoryRmsDeltaDb": -6.8
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2133,7 +2133,7 @@
         "silent": false,
         "peakDbfs": -3.8,
         "rmsDbfs": -23.2,
-        "categoryRmsDeltaDb": 12.5
+        "categoryRmsDeltaDb": 13.2
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2195,7 +2195,7 @@
         "silent": false,
         "peakDbfs": -14.6,
         "rmsDbfs": -23.8,
-        "categoryRmsDeltaDb": 6.5
+        "categoryRmsDeltaDb": 6.7
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2307,7 +2307,7 @@
         "silent": false,
         "peakDbfs": -10.6,
         "rmsDbfs": -36,
-        "categoryRmsDeltaDb": -0.3
+        "categoryRmsDeltaDb": 0.4
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2427,7 +2427,7 @@
         "silent": false,
         "peakDbfs": -3.5,
         "rmsDbfs": -25.7,
-        "categoryRmsDeltaDb": 4.6
+        "categoryRmsDeltaDb": 4.8
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2484,7 +2484,7 @@
         "silent": false,
         "peakDbfs": -11.1,
         "rmsDbfs": -41.4,
-        "categoryRmsDeltaDb": -5.7
+        "categoryRmsDeltaDb": -5
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2546,7 +2546,7 @@
         "silent": false,
         "peakDbfs": -15.9,
         "rmsDbfs": -42.2,
-        "categoryRmsDeltaDb": -6.5
+        "categoryRmsDeltaDb": -5.8
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2608,7 +2608,7 @@
         "silent": false,
         "peakDbfs": -4.5,
         "rmsDbfs": -31,
-        "categoryRmsDeltaDb": 4.7
+        "categoryRmsDeltaDb": 5.4
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2670,7 +2670,7 @@
         "silent": false,
         "peakDbfs": -5.5,
         "rmsDbfs": -18.6,
-        "categoryRmsDeltaDb": 9.6
+        "categoryRmsDeltaDb": 9.8
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2727,7 +2727,7 @@
         "silent": false,
         "peakDbfs": -3.4,
         "rmsDbfs": -28.8,
-        "categoryRmsDeltaDb": -0.7
+        "categoryRmsDeltaDb": -0.4
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2784,7 +2784,7 @@
         "silent": false,
         "peakDbfs": -4.4,
         "rmsDbfs": -27.9,
-        "categoryRmsDeltaDb": 0.3
+        "categoryRmsDeltaDb": 0.5
       },
       "sampled": null,
       "scoreComponents": [],
@@ -2951,7 +2951,7 @@
         "silent": false,
         "peakDbfs": -9.3,
         "rmsDbfs": -32.7,
-        "categoryRmsDeltaDb": -5.6
+        "categoryRmsDeltaDb": -5.2
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3009,7 +3009,7 @@
         "silent": false,
         "peakDbfs": -7.7,
         "rmsDbfs": -27.9,
-        "categoryRmsDeltaDb": 0.3
+        "categoryRmsDeltaDb": 0.5
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3124,7 +3124,7 @@
         "silent": false,
         "peakDbfs": -10.4,
         "rmsDbfs": -26.9,
-        "categoryRmsDeltaDb": 0.2
+        "categoryRmsDeltaDb": 0.5
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3240,7 +3240,7 @@
         "silent": false,
         "peakDbfs": -6.4,
         "rmsDbfs": -28.4,
-        "categoryRmsDeltaDb": -0.2
+        "categoryRmsDeltaDb": 0
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3410,7 +3410,7 @@
         "silent": false,
         "peakDbfs": -17.3,
         "rmsDbfs": -38.4,
-        "categoryRmsDeltaDb": -10.3
+        "categoryRmsDeltaDb": -10.1
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3467,7 +3467,7 @@
         "silent": false,
         "peakDbfs": -16.3,
         "rmsDbfs": -38.5,
-        "categoryRmsDeltaDb": -8.2
+        "categoryRmsDeltaDb": -8
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3582,7 +3582,7 @@
         "silent": false,
         "peakDbfs": -9.3,
         "rmsDbfs": -27.4,
-        "categoryRmsDeltaDb": 2.8
+        "categoryRmsDeltaDb": 3
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3639,7 +3639,7 @@
         "silent": false,
         "peakDbfs": -13.3,
         "rmsDbfs": -30.7,
-        "categoryRmsDeltaDb": -3.6
+        "categoryRmsDeltaDb": -3.2
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3697,7 +3697,7 @@
         "silent": false,
         "peakDbfs": -13,
         "rmsDbfs": -31.6,
-        "categoryRmsDeltaDb": -4.5
+        "categoryRmsDeltaDb": -4.2
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3813,7 +3813,7 @@
         "silent": false,
         "peakDbfs": -4.8,
         "rmsDbfs": -26.6,
-        "categoryRmsDeltaDb": 3.7
+        "categoryRmsDeltaDb": 3.9
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3870,7 +3870,7 @@
         "silent": false,
         "peakDbfs": -11.7,
         "rmsDbfs": -33.6,
-        "categoryRmsDeltaDb": -5.5
+        "categoryRmsDeltaDb": -5.3
       },
       "sampled": null,
       "scoreComponents": [],
@@ -3927,7 +3927,7 @@
         "silent": false,
         "peakDbfs": -9.4,
         "rmsDbfs": -25.1,
-        "categoryRmsDeltaDb": 2
+        "categoryRmsDeltaDb": 2.3
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4156,7 +4156,7 @@
         "silent": false,
         "peakDbfs": -10.9,
         "rmsDbfs": -27.4,
-        "categoryRmsDeltaDb": 0.8
+        "categoryRmsDeltaDb": 1
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4213,7 +4213,7 @@
         "silent": false,
         "peakDbfs": -16.6,
         "rmsDbfs": -38.7,
-        "categoryRmsDeltaDb": -8.4
+        "categoryRmsDeltaDb": -8.2
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4328,7 +4328,7 @@
         "silent": false,
         "peakDbfs": -9.8,
         "rmsDbfs": -24.6,
-        "categoryRmsDeltaDb": 2.5
+        "categoryRmsDeltaDb": 2.8
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4499,7 +4499,7 @@
         "silent": false,
         "peakDbfs": -9.4,
         "rmsDbfs": -27.4,
-        "categoryRmsDeltaDb": -0.3
+        "categoryRmsDeltaDb": 0.1
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4557,7 +4557,7 @@
         "silent": false,
         "peakDbfs": -16.1,
         "rmsDbfs": -41.4,
-        "categoryRmsDeltaDb": -5.8
+        "categoryRmsDeltaDb": -5
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4619,7 +4619,7 @@
         "silent": false,
         "peakDbfs": -5.7,
         "rmsDbfs": -23.4,
-        "categoryRmsDeltaDb": 12.3
+        "categoryRmsDeltaDb": 13
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4791,7 +4791,7 @@
         "silent": false,
         "peakDbfs": -6.7,
         "rmsDbfs": -28.2,
-        "categoryRmsDeltaDb": 2.1
+        "categoryRmsDeltaDb": 2.3
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4848,7 +4848,7 @@
         "silent": false,
         "peakDbfs": -17.1,
         "rmsDbfs": -37.4,
-        "categoryRmsDeltaDb": -9.2
+        "categoryRmsDeltaDb": -9
       },
       "sampled": null,
       "scoreComponents": [],
@@ -4960,7 +4960,7 @@
         "silent": false,
         "peakDbfs": -19,
         "rmsDbfs": -39.8,
-        "categoryRmsDeltaDb": -12.7
+        "categoryRmsDeltaDb": -12.3
       },
       "sampled": null,
       "scoreComponents": [],
@@ -5018,7 +5018,7 @@
         "silent": false,
         "peakDbfs": -6.1,
         "rmsDbfs": -27.6,
-        "categoryRmsDeltaDb": 8.1
+        "categoryRmsDeltaDb": 8.8
       },
       "sampled": null,
       "scoreComponents": [],
@@ -5080,7 +5080,7 @@
         "silent": false,
         "peakDbfs": -8.1,
         "rmsDbfs": -30.7,
-        "categoryRmsDeltaDb": 5
+        "categoryRmsDeltaDb": 5.7
       },
       "sampled": null,
       "scoreComponents": [],
@@ -5136,13 +5136,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "B",
-      "evidence": "canonical live peak -2.2 dBFS, RMS -25.4 dBFS",
+      "evidence": "canonical live peak -2.3 dBFS, RMS -25.5 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -2.2,
-        "rmsDbfs": -25.4,
-        "categoryRmsDeltaDb": 10.3
+        "peakDbfs": -2.3,
+        "rmsDbfs": -25.5,
+        "categoryRmsDeltaDb": 10.9
       },
       "sampled": null,
       "scoreComponents": [],
@@ -5204,7 +5204,7 @@
         "silent": false,
         "peakDbfs": -1.9,
         "rmsDbfs": -34.2,
-        "categoryRmsDeltaDb": 1.5
+        "categoryRmsDeltaDb": 2.2
       },
       "sampled": null,
       "scoreComponents": [],
@@ -5266,7 +5266,7 @@
         "silent": false,
         "peakDbfs": -12.7,
         "rmsDbfs": -35.1,
-        "categoryRmsDeltaDb": -4.8
+        "categoryRmsDeltaDb": -4.6
       },
       "sampled": null,
       "scoreComponents": [],
@@ -5323,7 +5323,7 @@
         "silent": false,
         "peakDbfs": -9.5,
         "rmsDbfs": -35.4,
-        "categoryRmsDeltaDb": 0.3
+        "categoryRmsDeltaDb": 1
       },
       "sampled": null,
       "scoreComponents": [],
@@ -5440,7 +5440,7 @@
         "silent": false,
         "peakDbfs": -10.9,
         "rmsDbfs": -40.3,
-        "categoryRmsDeltaDb": -4.6
+        "categoryRmsDeltaDb": -3.9
       },
       "sampled": {
         "fileCount": 1,
@@ -5509,7 +5509,7 @@
         "silent": false,
         "peakDbfs": -18.9,
         "rmsDbfs": -53,
-        "categoryRmsDeltaDb": -17.3
+        "categoryRmsDeltaDb": -16.6
       },
       "sampled": {
         "fileCount": 1,
@@ -5578,7 +5578,7 @@
         "silent": false,
         "peakDbfs": -15.5,
         "rmsDbfs": -39.4,
-        "categoryRmsDeltaDb": -3.7
+        "categoryRmsDeltaDb": -3
       },
       "sampled": {
         "fileCount": 1,
@@ -5647,7 +5647,7 @@
         "silent": false,
         "peakDbfs": -6.2,
         "rmsDbfs": -25.7,
-        "categoryRmsDeltaDb": 10
+        "categoryRmsDeltaDb": 10.7
       },
       "sampled": {
         "fileCount": 1,
@@ -5716,7 +5716,7 @@
         "silent": false,
         "peakDbfs": -11.6,
         "rmsDbfs": -42.2,
-        "categoryRmsDeltaDb": -6.6
+        "categoryRmsDeltaDb": -5.8
       },
       "sampled": {
         "fileCount": 1,
@@ -5785,7 +5785,7 @@
         "silent": false,
         "peakDbfs": -2.9,
         "rmsDbfs": -25.4,
-        "categoryRmsDeltaDb": 10.3
+        "categoryRmsDeltaDb": 11
       },
       "sampled": {
         "fileCount": 12,
@@ -5854,7 +5854,7 @@
         "silent": false,
         "peakDbfs": -13.3,
         "rmsDbfs": -40.9,
-        "categoryRmsDeltaDb": -5.2
+        "categoryRmsDeltaDb": -4.5
       },
       "sampled": {
         "fileCount": 16,
@@ -5923,7 +5923,7 @@
         "silent": false,
         "peakDbfs": -10.4,
         "rmsDbfs": -36.8,
-        "categoryRmsDeltaDb": -1.1
+        "categoryRmsDeltaDb": -0.4
       },
       "sampled": {
         "fileCount": 12,
@@ -5986,13 +5986,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "A",
-      "evidence": "16 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -3.1 dBFS",
+      "evidence": "16 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -4.3 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -3.1,
-        "rmsDbfs": -25,
-        "categoryRmsDeltaDb": 10.7
+        "peakDbfs": -4.3,
+        "rmsDbfs": -26,
+        "categoryRmsDeltaDb": 10.4
       },
       "sampled": {
         "fileCount": 16,
@@ -6055,13 +6055,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "A",
-      "evidence": "12 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -20.8 dBFS",
+      "evidence": "12 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -22.7 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -20.8,
-        "rmsDbfs": -49.3,
-        "categoryRmsDeltaDb": -13.6
+        "peakDbfs": -22.7,
+        "rmsDbfs": -51.2,
+        "categoryRmsDeltaDb": -14.8
       },
       "sampled": {
         "fileCount": 12,
@@ -6124,13 +6124,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "A",
-      "evidence": "16 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -6.9 dBFS",
+      "evidence": "16 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -11.6 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -6.9,
-        "rmsDbfs": -34.5,
-        "categoryRmsDeltaDb": 1.2
+        "peakDbfs": -11.6,
+        "rmsDbfs": -37.4,
+        "categoryRmsDeltaDb": -1
       },
       "sampled": {
         "fileCount": 16,
@@ -6193,13 +6193,13 @@
       "score": 0,
       "band": "baseline",
       "evidenceGrade": "A",
-      "evidence": "13 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -6.8 dBFS",
+      "evidence": "13 decoded files, 0 measured findings (0 disposition-accepted, 0 unwaived), live peak -7.4 dBFS",
       "live": {
         "measured": true,
         "silent": false,
-        "peakDbfs": -6.8,
-        "rmsDbfs": -27.3,
-        "categoryRmsDeltaDb": -0.2
+        "peakDbfs": -7.4,
+        "rmsDbfs": -28.1,
+        "categoryRmsDeltaDb": -0.6
       },
       "sampled": {
         "fileCount": 13,
