@@ -168,6 +168,18 @@ describe('Per-track tone/advanced synth instances', () => {
     expect(toneInstances[1].playNoteSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('passes absolute scheduler timestamps through both Tone-backed engines', async () => {
+    const engine = await makeInitializedEngine();
+    await engine.warmToneSynthForTrack('trackA');
+    await engine.warmAdvancedSynthForTrack('trackB');
+
+    engine.playToneSynth('fm-bass', 0, 5.125, 0.1, 1, 'trackA');
+    engine.playAdvancedSynth('supersaw', 0, 5.125, 0.1, 1, 'trackB');
+
+    expect(toneInstances[0].playNoteSpy.mock.calls[0][3]).toBe(5.125);
+    expect(advancedInstances[0].playNoteSpy.mock.calls[0][2]).toBe(5.125);
+  });
+
   it('creates a separate AdvancedSynthEngine per track', async () => {
     const engine = await makeInitializedEngine();
     await engine.warmAdvancedSynthForTrack('trackA');

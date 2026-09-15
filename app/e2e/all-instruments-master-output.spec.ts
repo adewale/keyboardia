@@ -1349,6 +1349,7 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
   const silentMasterTrials = results.filter(r =>
     r.masterPeak <= LIVE_SILENCE_PEAK_THRESHOLD && r.masterRms <= LIVE_SILENCE_RMS_THRESHOLD
   );
+  const hotTracks = results.filter(r => r.peak > 1);
   expect(pageErrors, 'Browser page errors during all-instrument sequencer output smoke').toEqual([]);
   expect(consoleErrors, 'Console errors/skipped notes during all-instrument sequencer output smoke').toEqual([]);
   expect(
@@ -1358,6 +1359,10 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
   expect(
     silentTracks.map(r => ({ sampleId: r.sampleId, type: r.type, pitch: r.pitch, peak: r.peak, rms: r.rms })),
     'Every catalog instrument should produce per-track output from a scheduled sequencer step',
+  ).toEqual([]);
+  expect(
+    hotTracks.map(r => ({ sampleId: r.sampleId, peak: r.peak })),
+    'Every isolated post-track capture should remain at or below 0 dBFS',
   ).toEqual([]);
 
   // Publish only evidence that has passed the producer's runtime assertions

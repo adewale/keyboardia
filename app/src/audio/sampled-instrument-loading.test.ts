@@ -323,6 +323,49 @@ describe('observable progressive readiness (pipeline stage 8)', () => {
     expect(instrument.getSampleNotes()).toEqual([]);
   });
 
+  it('does not advance queued background requests after disposal', async () => {
+    const manifest: InstrumentManifest = {
+      id: 'dispose-queued-loads',
+      name: 'Dispose Queued Loads',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [60],
+      samples: [
+        { note: 60, file: 'priority.mp3' },
+        ...Array.from({ length: 18 }, (_, index) => ({
+          note: 61 + index,
+          file: `background-${index}.mp3`,
+        })),
+      ],
+    };
+    let releaseBackground!: () => void;
+    const backgroundGate = new Promise<void>(resolve => { releaseBackground = resolve; });
+    const backgroundFetches: string[] = [];
+    vi.stubGlobal('fetch', (async (input: string | URL | Request) => {
+      const url = input.toString();
+      if (url.endsWith('manifest.json')) return { ok: true, json: async () => manifest } as Response;
+      const filename = url.split('/').at(-1)!;
+      if (filename.startsWith('background-')) {
+        backgroundFetches.push(filename);
+        await backgroundGate;
+      }
+      return { ok: true, arrayBuffer: async () => new TextEncoder().encode(filename).buffer } as Response;
+    }) as typeof fetch);
+    const context = new FakeAudioContext();
+    const instrument = new SampledInstrument(manifest.id, '/instruments');
+    instrument.initialize(context.asAudioContext(), new FakeGainNode() as unknown as AudioNode);
+
+    await expect(instrument.ensureLoaded()).resolves.toBe(true);
+    await vi.waitFor(() => expect(backgroundFetches).toHaveLength(6));
+    instrument.dispose();
+    releaseBackground();
+    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(backgroundFetches).toHaveLength(6);
+    expect(instrument.getLoadState()).toBe('idle');
+  });
+
   it('cannot be resurrected by an in-flight sprite load after disposal', async () => {
     const manifest: InstrumentManifest = {
       id: 'sprite-dispose',

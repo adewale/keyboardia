@@ -18,6 +18,7 @@ import { logger } from '../utils/logger';
 import { parseInstrumentId } from './instrument-types';
 import { NOTE_NAMES } from '../music/music-theory';
 import { TONE_SOURCE_GAIN_DB, dbToGain } from './source-calibration';
+import { absoluteToneStartTime } from './tone-schedule';
 
 /**
  * Synth type identifiers used in sample IDs
@@ -377,20 +378,8 @@ export class ToneSynthManager {
     // Convert note if it's a semitone number
     const noteValue = typeof note === 'number' ? this.semitoneToNoteName(note) : note;
 
-    // Phase 22: Ensure time is always positive and in the future
-    // The scheduler passes a relative offset from now, but it can be 0 or negative
-    // if audio context time advanced between calculation and playback.
-    // Use a minimum of 1ms to ensure Tone.js synths always have valid timing.
-    const safeTime = Math.max(0.001, time);
-    let startTime = Tone.now() + safeTime;
-
-    // Ensure startTime is strictly greater than the last scheduled time for this synth type
-    // This prevents "time must be greater than previous" errors during BPM changes
     const lastTime = this.lastScheduledTime.get(preset.type) ?? 0;
-    if (startTime <= lastTime) {
-      // Add a small offset to ensure strictly greater time
-      startTime = lastTime + 0.001;
-    }
+    const startTime = absoluteToneStartTime(time, Tone.immediate(), lastTime);
     this.lastScheduledTime.set(preset.type, startTime);
     sourceGain?.gain.setValueAtTime(dbToGain(TONE_SOURCE_GAIN_DB[presetName]), startTime);
 
@@ -410,7 +399,7 @@ export class ToneSynthManager {
     } catch (_err) {
       // If Tone.js rejects the time, retry with current time + buffer
       // This gracefully handles edge cases during BPM changes
-      const retryTime = Tone.now() + 0.01;
+      const retryTime = Math.max(Tone.immediate() + 0.01, startTime + 0.001);
       this.lastScheduledTime.set(preset.type, retryTime);
       logger.audio.warn(`Tone.js timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
       try {

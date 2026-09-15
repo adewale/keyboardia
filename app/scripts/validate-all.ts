@@ -12,6 +12,7 @@
  *    including active-RMS velocity layer ordering
  * 4. Release Times - Validates release time consistency
  * 5. Sync Checklist - Ensures multiplayer sync implementation is complete
+ * 6. Sample Load Budgets - Bounds throttled-network readiness/background transfer
  *
  * Usage:
  *   npx tsx scripts/validate-all.ts
@@ -70,6 +71,11 @@ const VALIDATORS = [
     name: 'Release Time Validation',
     script: 'npx tsx scripts/validate-release-times.ts',
     description: 'Validates release time consistency across instruments',
+  },
+  {
+    name: 'Sample Load Budget Validation',
+    script: 'npx tsx scripts/validate-sample-load-budgets.ts',
+    description: 'Checks priority readiness and background payloads against the throttled-network transfer budget',
   },
   {
     name: 'Sync Checklist Validation',

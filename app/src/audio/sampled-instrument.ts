@@ -36,9 +36,9 @@ import {
   compensatedSampleStartOffset,
   measureDecodedLeadingSilenceSeconds,
 } from './sample-onset';
+import { MAX_CONCURRENT_SAMPLE_LOADS } from './sample-load-policy';
 
 /** Bound aggregate request/decode pressure across every deep sample library. */
-const MAX_CONCURRENT_SAMPLE_LOADS = 6;
 let activeSampleLoads = 0;
 const pendingSampleLoadSlots: Array<() => void> = [];
 
@@ -464,6 +464,7 @@ export class SampledInstrument {
     let cursor = 0;
     const worker = async (): Promise<void> => {
       while (cursor < mappings.length) {
+        if (generation !== this.lifecycleGeneration) return;
         const index = cursor++;
         const mapping = mappings[index];
         try {
@@ -534,6 +535,9 @@ export class SampledInstrument {
 
   /** Load one unique delivery file through the memory-bounded cache. */
   private async loadSingleSample(mapping: SampleMapping, generation: number): Promise<LoadedSample> {
+    if (generation !== this.lifecycleGeneration) {
+      throw new Error('Sample load superseded by a newer lifecycle');
+    }
     const cacheKey = this.cacheKeyFor(mapping);
     const cachedBuffer = sampleCache.get(cacheKey);
     if (cachedBuffer) {
@@ -544,6 +548,12 @@ export class SampledInstrument {
     let bufferPromise = this.inFlightBuffers.get(cacheKey);
     if (!bufferPromise) {
       bufferPromise = withSampleLoadSlot(async () => {
+        // A different instrument may have held the global six-slot queue while
+        // this instance was disposed. Do not start obsolete network work once
+        // the slot finally becomes available.
+        if (generation !== this.lifecycleGeneration) {
+          throw new Error('Sample load superseded by a newer lifecycle');
+        }
         const sampleUrl = `${this.baseUrl}/${mapping.file}`;
         logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
         const response = await fetch(sampleUrl);

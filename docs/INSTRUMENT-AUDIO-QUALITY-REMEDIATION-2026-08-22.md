@@ -1,5 +1,9 @@
 # Instrument audio-quality remediation report — 2026-08-22
 
+> Post-rebase implementation and remaining-work decisions are recorded in
+> [Instrument audio quality follow-up — 2026-09-15](./INSTRUMENT-AUDIO-QUALITY-FOLLOW-UP-2026-09-15.md).
+> This document remains the immutable pre-follow-up remediation record.
+
 ## Scope and claim boundary
 
 The retained measured production/ranking subject and evaluator are

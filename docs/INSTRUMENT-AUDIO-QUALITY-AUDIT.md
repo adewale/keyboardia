@@ -1,5 +1,9 @@
 # Instrument audio-quality audit
 
+> Post-rebase implementation and remaining-work decisions are recorded in
+> [Instrument audio quality follow-up — 2026-09-15](./INSTRUMENT-AUDIO-QUALITY-FOLLOW-UP-2026-09-15.md).
+> The measurements below remain the immutable pre-follow-up evidence baseline.
+
 Generated for subject `fb6c341941b6d7485d61bf4e63132b80b9128cd1` with evaluator `fb6c341941b6d7485d61bf4e63132b80b9128cd1` at 2026-08-22T23:19:48.333Z.
 
 Evaluator tree SHA-256: `b717827dd516a810a8d49db6f975e821f42bb50a37b0dc68a9e0a2b74672515b`.

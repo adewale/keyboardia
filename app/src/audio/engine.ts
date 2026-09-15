@@ -1145,21 +1145,6 @@ export class AudioEngine {
     return this.audioContext?.currentTime ?? 0;
   }
 
-  /**
-   * Convert absolute Web Audio time to relative Tone.js time offset
-   *
-   * Phase 22: Centralizes Tone.js time conversion to prevent timing bugs.
-   * Ensures the offset is always positive (at least 1ms in the future).
-   *
-   * @param webAudioTime Absolute Web Audio context time
-   * @returns Safe relative time offset for Tone.js scheduling
-   */
-  private toToneRelativeTime(webAudioTime: number): number {
-    const relativeTime = webAudioTime - this.getCurrentTime();
-    // Ensure minimum 1ms offset to prevent "start time must be greater than previous" errors
-    return Math.max(0.001, relativeTime);
-  }
-
   getSampleIds(): string[] {
     return Array.from(this.samples.keys());
   }
@@ -1386,8 +1371,9 @@ export class AudioEngine {
    * Play a Tone.js synth note
    * Used for advanced synth types (FM, AM, Membrane, Metal, etc.)
    *
-   * Phase 22: Now accepts absolute Web Audio time (consistent with other play methods).
-   * Time conversion to Tone.js is handled internally.
+   * The scheduler's absolute Web Audio timestamp is passed through unchanged.
+   * Tone.js shares the same raw AudioContext clock; converting this to a
+   * relative delay would apply Tone's lookahead a second time.
    *
    * @param presetName Tone.js synth preset (e.g., "fm-epiano", "membrane-kick")
    * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
@@ -1439,8 +1425,7 @@ export class AudioEngine {
     }
 
     const noteName = synth.semitoneToNoteName(semitone);
-    const toneTime = this.toToneRelativeTime(time);
-    synth.playNote(presetName, noteName, duration, toneTime, volume);
+    synth.playNote(presetName, noteName, duration, time, volume);
   }
 
   /**
@@ -1474,8 +1459,9 @@ export class AudioEngine {
   /**
    * Play an advanced synth note (dual oscillator, filter envelope, LFO)
    *
-   * Phase 22: Now accepts absolute Web Audio time (consistent with other play methods).
-   * Time conversion to Tone.js is handled internally.
+   * The scheduler's absolute Web Audio timestamp is passed through unchanged.
+   * Tone.js shares the same raw AudioContext clock; converting this to a
+   * relative delay would apply Tone's lookahead a second time.
    *
    * @param presetName Advanced synth preset (e.g., "supersaw", "wobble-bass")
    * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
@@ -1534,8 +1520,7 @@ export class AudioEngine {
     }
 
     synth.setPreset(presetName);
-    const toneTime = this.toToneRelativeTime(time);
-    synth.playNoteSemitone(semitone, duration, toneTime, volume, midiVelocity);
+    synth.playNoteSemitone(semitone, duration, time, volume, midiVelocity);
   }
 
   /**

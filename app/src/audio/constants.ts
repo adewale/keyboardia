@@ -102,6 +102,15 @@ export const MASTER_COMPRESSOR_SETTINGS = Object.freeze({
   release: 0.08,
 });
 
+/** Transparent per-track transient ceiling before tracks reach the master sum. */
+export const TRACK_PEAK_LIMITER_SETTINGS = Object.freeze({
+  threshold: -1,
+  knee: 0,
+  ratio: 20,
+  attack: 0,
+  release: 0.05,
+});
+
 /** Re-measured by the browser capture receipt when the safety curve changes. */
 export const MASTER_COMPRESSOR_AUTO_MAKEUP_DB = 0.5248653331;
 

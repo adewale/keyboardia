@@ -11,14 +11,14 @@
  * - Sampled instruments (sampled:piano)
  *
  * Audio Chain:
- *   Source → InputGain → VolumeGain → MuteGain → PanNode → OutputGain → Destination
+ *   Source → InputGain → VolumeGain → MuteGain → PanNode → PeakLimiter → OutputGain → Destination
  *
  * This solves the problem where synths were bypassing track-level volume controls.
  */
 
 import { logger } from '../utils/logger';
 import { clampVolume, clampPan, clampGain } from '../shared/validation';
-import { slewAudioParam } from './constants';
+import { slewAudioParam, TRACK_PEAK_LIMITER_SETTINGS } from './constants';
 
 export class TrackBus {
   private context: AudioContext;
@@ -26,6 +26,7 @@ export class TrackBus {
   private volumeGain: GainNode;
   private muteGain: GainNode;
   private panNode: StereoPannerNode;
+  private peakLimiter: DynamicsCompressorNode;
   private outputGain: GainNode;
   private disposed = false;
 
@@ -37,13 +38,17 @@ export class TrackBus {
     this.volumeGain = context.createGain();
     this.muteGain = context.createGain();
     this.panNode = context.createStereoPanner();
+    this.peakLimiter = context.createDynamicsCompressor();
     this.outputGain = context.createGain();
 
-    // Connect chain: input → volume → mute → pan → output → destination
+    // Keep individual tracks inside the fixed-point output domain before they
+    // enter the floating-point master sum. The final output limiter remains
+    // responsible for inter-track summation and inter-sample true peak.
     this.inputGain.connect(this.volumeGain);
     this.volumeGain.connect(this.muteGain);
     this.muteGain.connect(this.panNode);
-    this.panNode.connect(this.outputGain);
+    this.panNode.connect(this.peakLimiter);
+    this.peakLimiter.connect(this.outputGain);
     this.outputGain.connect(destination);
 
     // Set defaults
@@ -51,6 +56,11 @@ export class TrackBus {
     this.volumeGain.gain.value = 1;
     this.muteGain.gain.value = 1;
     this.panNode.pan.value = 0;
+    this.peakLimiter.threshold.value = TRACK_PEAK_LIMITER_SETTINGS.threshold;
+    this.peakLimiter.knee.value = TRACK_PEAK_LIMITER_SETTINGS.knee;
+    this.peakLimiter.ratio.value = TRACK_PEAK_LIMITER_SETTINGS.ratio;
+    this.peakLimiter.attack.value = TRACK_PEAK_LIMITER_SETTINGS.attack;
+    this.peakLimiter.release.value = TRACK_PEAK_LIMITER_SETTINGS.release;
     this.outputGain.gain.value = 1;
 
     logger.audio.log('TrackBus created');
@@ -150,6 +160,7 @@ export class TrackBus {
       this.volumeGain.disconnect();
       this.muteGain.disconnect();
       this.panNode.disconnect();
+      this.peakLimiter.disconnect();
       this.outputGain.disconnect();
       logger.audio.log('TrackBus disposed');
     } catch (err) {

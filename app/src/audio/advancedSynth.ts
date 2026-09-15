@@ -28,6 +28,7 @@ import {
   normalizeSynthReleaseSeconds,
   peakSafeOscillatorMix,
 } from './synth';
+import { absoluteToneStartTime } from './tone-schedule';
 
 const MIN_ADVANCED_FILTER_FREQUENCY = 20;
 const MAX_ADVANCED_FILTER_FREQUENCY = 20_000;
@@ -1119,17 +1120,7 @@ export class AdvancedSynthEngine {
       return;
     }
 
-    // Phase 22: Ensure time is always positive and in the future
-    // The scheduler passes a relative offset from now, but it can be 0 or negative
-    // if audio context time advanced between calculation and playback.
-    const safeTime = Math.max(0.001, time ?? 0);
-    let startTime = Tone.now() + safeTime;
-
-    // Ensure startTime is strictly greater than the last scheduled time
-    // This prevents "time must be greater than previous" errors during BPM changes
-    if (startTime <= this.lastScheduledTime) {
-      startTime = this.lastScheduledTime + 0.001;
-    }
+    const startTime = absoluteToneStartTime(time, Tone.immediate(), this.lastScheduledTime);
     this.lastScheduledTime = startTime;
 
     logger.audio.log(`AdvancedSynth playing: freq=${frequency.toFixed(1)}Hz, duration=${duration}, time=${startTime.toFixed(3)}, vol=${volume}, velocity=${midiVelocity}, preset=${this.currentPreset?.name}`);
@@ -1144,7 +1135,7 @@ export class AdvancedSynthEngine {
       this.lastSuccessfulPlay = Date.now();
     } catch (err) {
       // If Tone.js rejects the time, retry with current time + buffer
-      const retryTime = Tone.now() + 0.01;
+      const retryTime = Math.max(Tone.immediate() + 0.01, startTime + 0.001);
       this.lastScheduledTime = retryTime;
       logger.audio.warn(`AdvancedSynth timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}, error=${err}`);
       try {

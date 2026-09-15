@@ -192,6 +192,7 @@ vi.mock('tone', () => {
       sampleRate: 44100,
     }),
     now: vi.fn().mockReturnValue(0),
+    immediate: vi.fn().mockReturnValue(0),
   };
 });
 

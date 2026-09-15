@@ -378,7 +378,7 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
     Boolean(process.env.PLAYWRIGHT_BASE_URL),
     'the production Worker build intentionally omits the development-only PCM capture hook',
   );
-  test.setTimeout(90_000);
+  test.setTimeout(120_000);
   const { id } = await createSessionWithRetry(request, {
     tracks: CAPACITY_TRACKS.map(([trackId, sampleId, activeSteps]) =>
       probeTrack(trackId, sampleId, activeSteps)
@@ -398,10 +398,29 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
   await page.waitForFunction(() => Boolean(
     (window as unknown as { __captureMaster__?: unknown }).__captureMaster__
   ), undefined, { timeout: 30_000 });
-  // Progressive sample loads are product behavior, but the master-capacity
-  // measurement is a steady-state audio test. Keep network/decode startup out
-  // of the render-clock diagnostic.
-  await page.waitForTimeout(5_000);
+  // Progressive sample loads are product behavior, but the capacity and
+  // true-peak measurement is a steady-state test. Await the observable load
+  // contract instead of assuming a fixed five seconds is sufficient.
+  await page.evaluate(async (instrumentIds) => {
+    const registryModule = await import('/src/audio/sampled-instrument.ts') as {
+      sampledInstrumentRegistry: {
+        get: (instrumentId: string) => {
+          ensureLoaded: () => Promise<boolean>;
+          waitForBackgroundLoad: () => Promise<string>;
+        } | undefined;
+      };
+    };
+    await Promise.all(instrumentIds.map(async instrumentId => {
+      const instrument = registryModule.sampledInstrumentRegistry.get(instrumentId);
+      if (!instrument) throw new Error(`Sampled instrument ${instrumentId} was not registered`);
+      if (!await instrument.ensureLoaded()) throw new Error(`${instrumentId} priority load failed`);
+      const state = await instrument.waitForBackgroundLoad();
+      if (state !== 'complete') throw new Error(`${instrumentId} background load ended in ${state}`);
+    }));
+  }, CAPACITY_TRACKS
+    .map(([, sampleId]) => sampleId)
+    .filter(sampleId => sampleId.startsWith('sampled:'))
+    .map(sampleId => sampleId.slice('sampled:'.length)));
 
   const captured = await page.evaluate(async () => {
     type Capture = {
@@ -411,7 +430,7 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
     };
     const capture = await (window as unknown as {
       __captureMaster__: (seconds: number) => Promise<Capture>;
-    }).__captureMaster__(2.1);
+    }).__captureMaster__(4.1);
     const summaries = Object.fromEntries(Object.entries(capture.taps).map(([name, tap]) => {
       let peak = 0;
       let energy = 0;
@@ -458,7 +477,7 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
     resolve(REPORT_DIR, 'browser-capacity-capture.json'),
     JSON.stringify({
       schemaVersion: 1,
-      fixture: 'user-reachable 16-track mixed-engine session',
+      fixture: 'user-reachable 16-track mixed-engine session; complete sample loads; two full transport cycles plus guard',
       ...result,
     }, null, 2) + '\n',
   );

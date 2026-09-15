@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TrackBus } from './track-bus';
+import { TRACK_PEAK_LIMITER_SETTINGS } from './constants';
 
 /**
  * Phase 25: TrackBus Unit Tests
@@ -37,10 +38,23 @@ function createMockStereoPannerNode() {
   return node;
 }
 
+function createMockDynamicsCompressorNode() {
+  return {
+    threshold: { value: 0 },
+    knee: { value: 0 },
+    ratio: { value: 0 },
+    attack: { value: 0 },
+    release: { value: 0 },
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+}
+
 function createMockAudioContext() {
   return {
     createGain: vi.fn(() => createMockGainNode()),
     createStereoPanner: vi.fn(() => createMockStereoPannerNode()),
+    createDynamicsCompressor: vi.fn(() => createMockDynamicsCompressorNode()),
     currentTime: 0,
   } as unknown as AudioContext;
 }
@@ -61,6 +75,18 @@ describe('TrackBus', () => {
       // Should create 4 gain nodes (input, volume, mute, output) + 1 panner
       expect(context.createGain).toHaveBeenCalledTimes(4);
       expect(context.createStereoPanner).toHaveBeenCalledTimes(1);
+      expect(context.createDynamicsCompressor).toHaveBeenCalledTimes(1);
+    });
+
+    it('configures the post-pan track peak ceiling', () => {
+      new TrackBus(context, destination);
+      const limiter = vi.mocked(context.createDynamicsCompressor).mock.results[0]?.value;
+
+      expect(limiter?.threshold.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.threshold);
+      expect(limiter?.knee.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.knee);
+      expect(limiter?.ratio.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.ratio);
+      expect(limiter?.attack.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.attack);
+      expect(limiter?.release.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.release);
     });
 
     it('should connect nodes in correct order', () => {
