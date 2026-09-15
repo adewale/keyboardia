@@ -83,6 +83,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 72: A Resource ID Is Scoped to the Environment That Owns It](#lesson-72-a-resource-id-is-scoped-to-the-environment-that-owns-it)
 - [Lesson 73: A Timestamp Contract Is Incomplete Until Policy and Ownership Move With It](#lesson-73-a-timestamp-contract-is-incomplete-until-policy-and-ownership-move-with-it)
 - [Lesson 74: An Objective Comparison Needs a Shared Observable, Not a Shared Vibe](#lesson-74-an-objective-comparison-needs-a-shared-observable-not-a-shared-vibe)
+- [Lesson 75: A Shared Fixture Is Not a Paired Audio Experiment](#lesson-75-a-shared-fixture-is-not-a-paired-audio-experiment)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -6401,3 +6402,56 @@ unmeasured domain visible in the same ledger as the passes. Re-run that ledger
 against the exact merge candidate and required CI runtime. A green assertion
 count is necessary but not sufficient: the lane must execute the promised
 inventory, preserve its evidence, and exit cleanly.
+
+---
+
+## Lesson 75: A Shared Fixture Is Not a Paired Audio Experiment
+
+**Date:** September 2026
+**Context:** Phase 44 capacity/headroom gate after rebasing PR
+[#98](https://github.com/adewale/keyboardia/pull/98)
+
+### What happened
+
+The 16-track capacity test appeared controlled because both observations used
+the same session fixture. It nevertheless captured its dry and wet windows at
+different times while 16 live schedulers continued to render. The input samples
+were not paired. Source phase, sample position, and render-quantum placement
+varied between observations, so the computed difference included uncontrolled
+input variation as well as the room-state change.
+
+That design happened to remain within its 0.1 dB pumping budget during the
+earlier 48 kHz macOS work. Repetition later produced +0.103 dB locally, and the
+required 44.1 kHz Linux lane reported +1.373 dB. The Linux run also measured
++0.152 dBFS/+0.152 dBTP at the user output. The −1.75 dB output trim had enough
+margin for the observed Mac runs, not for the supported runtime matrix.
+
+The test did not run in the old pre-push real-Worker lane because its PCM taps
+are intentionally available only in the development build. CI owned the mock
+build that exposes those taps, so this required evidence was effectively
+CI-only even though the broader local browser suite was green.
+
+### The fix
+
+The capacity test now captures one real 16-track pre-compressor programme,
+stops the live scheduler, and replays those exact samples twice through the
+production master path—once dry and once wet. The room is downstream of the
+compressor, so a valid paired experiment should report no change in compressor
+gain reduction; three repeated 48 kHz runs measured exactly 0.000 dB. The
+production output trim is now −2.25 dB, with the repeated local true peaks below
+−0.76 dBTP. The required Linux lane remains the authority for the 44.1 kHz
+platform result.
+
+Pre-push now runs all five `capture-session.spec.ts` tests against the mock/Vite
+build and asserts the exact five-pass inventory. The inventory validator binds
+that declared count to Playwright's authoritative collector before the costly
+browser gates begin.
+
+### The rule
+
+**Changing one label is not the same as changing one variable.** A comparative
+audio test must replay the same captured input, use a deterministic source, or
+measure and pass a repeat-null that bounds input variation. Calibrate safety
+headroom across every supported sample-rate/platform lane, and never let a
+required evidence path exist only in remote CI because another local suite has
+a similar name.

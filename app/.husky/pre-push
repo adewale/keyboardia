@@ -1,10 +1,11 @@
 #!/bin/sh
 
-# Pre-push hook: Four-phase testing (plus phase-zero validation)
+# Pre-push hook: Five-phase testing (plus phase-zero validation)
 # Phase 1: Unit tests (fast, ~11s)
-# Phase 2: Full functional E2E test (Chromium, including real Web Audio)
-# Phase 3: Broad desktop WebKit contract
-# Phase 4: Mobile Safari test (iPhone viewport + touch)
+# Phase 2: Dev-only PCM/audio evidence (Chromium mock build)
+# Phase 3: Full functional E2E test (Chromium, including real Web Audio)
+# Phase 4: Broad desktop WebKit contract
+# Phase 5: Mobile Safari test (iPhone viewport + touch)
 #
 # The full-stack runner owns its Wrangler process. This keeps the backend
 # lifecycle deterministic and applies the local-only session-create allowance
@@ -98,9 +99,37 @@ else
     exit 1
 fi
 
-# Phase 2: Full Chromium test (comprehensive functional and audio contracts)
+# Phase 2: Dev-only PCM/audio evidence
 echo "----------------------------------------"
-echo "Phase 2: Full E2E Test (Chromium)"
+echo "Phase 2: PCM Capture Tests (Chromium)"
+echo "----------------------------------------"
+echo ""
+
+PCM_START=$(date +%s)
+
+# The synchronized PCM taps are deliberately omitted from production Worker
+# bundles. The real-backend lanes therefore skip this file, so run its complete
+# five-test contract against the mock/Vite build instead of leaving it CI-only.
+if USE_MOCK_API=1 E2E_FUNCTIONAL_ONLY=1 CI=true E2E_PORT=5176 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-pcm.json npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0 && node scripts/assert-playwright-stats.mjs test-results/prepush-pcm.json 5 0; then
+    PCM_END=$(date +%s)
+    PCM_DURATION=$((PCM_END - PCM_START))
+    echo ""
+    echo "✅ PCM capture tests passed! (${PCM_DURATION}s)"
+    echo ""
+else
+    echo ""
+    echo "❌ PCM capture tests FAILED"
+    echo ""
+    echo "The dev-only audio evidence or its exact five-test inventory failed."
+    echo "Fix the issue before pushing."
+    echo "To skip: git push --no-verify"
+    echo ""
+    exit 1
+fi
+
+# Phase 3: Full Chromium test (comprehensive functional and audio contracts)
+echo "----------------------------------------"
+echo "Phase 3: Full E2E Test (Chromium)"
 echo "----------------------------------------"
 echo ""
 
@@ -126,9 +155,9 @@ else
     exit 1
 fi
 
-# Phase 3: Broad desktop WebKit test (UI, collaboration, and layout contracts)
+# Phase 4: Broad desktop WebKit test (UI, collaboration, and layout contracts)
 echo "----------------------------------------"
-echo "Phase 3: Full WebKit Test"
+echo "Phase 4: Full WebKit Test"
 echo "----------------------------------------"
 echo ""
 
@@ -148,9 +177,9 @@ else
     exit 1
 fi
 
-# Phase 4: Mobile Safari Test (iPhone viewport + touch interactions)
+# Phase 5: Mobile Safari Test (iPhone viewport + touch interactions)
 echo "----------------------------------------"
-echo "Phase 4: Mobile Safari (iPhone)"
+echo "Phase 5: Mobile Safari (iPhone)"
 echo "----------------------------------------"
 echo ""
 
@@ -173,7 +202,7 @@ else
     exit 1
 fi
 
-TOTAL_DURATION=$((UNIT_DURATION + FULL_DURATION + WEBKIT_DURATION + MOBILE_DURATION))
+TOTAL_DURATION=$((UNIT_DURATION + PCM_DURATION + FULL_DURATION + WEBKIT_DURATION + MOBILE_DURATION))
 
 echo "========================================"
 echo "  ✅ All tests passed! (${TOTAL_DURATION}s)"

@@ -167,12 +167,12 @@
       "attack": 0.003,
       "release": 0.08
     },
-    "outputTrimDb": -1.75,
+    "outputTrimDb": -2.25,
     "real16TrackBrowser": {
       "preCompressorPeakDbfs": 7.020071129002583,
-      "postMakeupPeakDbfs": 1.4320983953143842,
-      "heardOutputPeakDbfs": -0.3536474630931238,
-      "heardOutputTruePeakDbfs": -0.288630208637162
+      "postMakeupPeakDbfs": 1.4348989248343673,
+      "heardOutputPeakDbfs": -0.8686506479382796,
+      "heardOutputTruePeakDbfs": -0.8385596810053576
     },
     "browserCalibration": {
       "latencyFrames": 288,
