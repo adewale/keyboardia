@@ -214,9 +214,10 @@ export class AudioEngine {
   }
 
   /** Eagerly create the advanced synth for a track (avoids first-note latency). */
-  async warmAdvancedSynthForTrack(trackId: string): Promise<void> {
+  async warmAdvancedSynthForTrack(trackId: string, presetId?: string): Promise<void> {
     if (!this.toneInitialized) return;
-    await this.advancedSynthRegistry.getOrCreate(trackId);
+    const synth = await this.advancedSynthRegistry.getOrCreate(trackId);
+    if (presetId !== undefined) synth.setPreset(presetId);
   }
 
   /**
@@ -1497,9 +1498,11 @@ export class AudioEngine {
     } else {
       synth = this.advancedSynthRegistry.getIfReady(trackId);
       if (!synth) {
-        this.advancedSynthRegistry.getOrCreate(trackId).catch((err) => {
-          logger.audio.error('Deferred advanced synth creation failed:', err);
-        });
+        this.advancedSynthRegistry.getOrCreate(trackId)
+          .then((created) => created.setPreset(presetName))
+          .catch((err) => {
+            logger.audio.error('Deferred advanced synth creation failed:', err);
+          });
         logger.audio.warn(`Advanced synth for track ${trackId} not ready — skipping note`);
         return;
       }
@@ -1651,7 +1654,10 @@ export class AudioEngine {
       if (t.sampleId.startsWith('tone:')) {
         toneWarms.push(this.warmToneSynthForTrack(t.id));
       } else if (t.sampleId.startsWith('advanced:')) {
-        advancedWarms.push(this.warmAdvancedSynthForTrack(t.id));
+        advancedWarms.push(this.warmAdvancedSynthForTrack(
+          t.id,
+          t.sampleId.slice('advanced:'.length),
+        ));
       }
     }
 

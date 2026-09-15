@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { truePeakDbfs } from '../src/test/audio-measures';
+import { TRACK_SAMPLE_PEAK_CEILING } from '../src/audio/constants';
 
 const TOTAL_STEPS = 128;
 const REPORT_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '../test-results/audio-capture');
@@ -108,20 +109,50 @@ test('keeps the per-track ceiling at unity below threshold and contains overload
       return { rms: Math.sqrt(energy / samples), peak };
     };
 
+    const renderTransient = async (sampleRate: number, amplitude: number) => {
+      const context = new OfflineAudioContext(2, sampleRate, sampleRate);
+      const destination = context.createGain();
+      destination.connect(context.destination);
+      const bus = new TrackBus(context as unknown as AudioContext, destination);
+      const impulseBuffer = context.createBuffer(1, 1, sampleRate);
+      impulseBuffer.getChannelData(0)[0] = amplitude;
+      const impulse = context.createBufferSource();
+      impulse.buffer = impulseBuffer;
+      impulse.connect(bus.getInput());
+      impulse.start(0.1);
+      const rendered = await context.startRendering();
+      let peak = 0;
+      for (let channel = 0; channel < rendered.numberOfChannels; channel++) {
+        for (const sample of rendered.getChannelData(channel)) {
+          peak = Math.max(peak, Math.abs(sample));
+        }
+      }
+      return { sampleRate, amplitude, peak };
+    };
+
     const reference = await render(0.01, false);
     const quietTrack = await render(0.01, true);
     const overloadedTrack = await render(1.5, true);
+    const transientPeaks = await Promise.all(
+      [44_100, 48_000].flatMap(sampleRate =>
+        [3, 10].map(amplitude => renderTransient(sampleRate, amplitude))
+      ),
+    );
     return {
       sampleRate,
       quietThroughGainDb: 20 * Math.log10(quietTrack.rms / reference.rms),
       overloadedPeak: overloadedTrack.peak,
       overloadedPeakDbfs: 20 * Math.log10(overloadedTrack.peak),
+      transientPeaks,
     };
   });
 
   console.log('track ceiling render', result);
   expect(Math.abs(result.quietThroughGainDb)).toBeLessThanOrEqual(0.05);
   expect(result.overloadedPeak).toBeLessThanOrEqual(1);
+  for (const transient of result.transientPeaks) {
+    expect(transient.peak).toBeLessThanOrEqual(TRACK_SAMPLE_PEAK_CEILING + 1e-6);
+  }
   mkdirSync(REPORT_DIR, { recursive: true });
   writeFileSync(
     resolve(REPORT_DIR, 'track-bus-dynamics.json'),

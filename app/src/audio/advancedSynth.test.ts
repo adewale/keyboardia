@@ -467,6 +467,16 @@ describe('AdvancedSynthEngine', () => {
       expect(() => engine.playNoteFrequency(440, 0.5)).not.toThrow();
     });
 
+    it('does not rebuild an already-selected preset on the note hot path', () => {
+      engine.setPreset('tremolo-strings');
+      const voice = engine['voices'][0];
+      const applyPreset = vi.spyOn(voice, 'applyPreset');
+
+      engine.playNoteFrequency(440, 0.5, 0.1);
+
+      expect(applyPreset).not.toHaveBeenCalled();
+    });
+
     it('plays note by name', () => {
       expect(() => engine.playNote('C4', 0.5)).not.toThrow();
     });

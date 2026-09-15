@@ -49,11 +49,21 @@ function createMockDynamicsCompressorNode() {
   };
 }
 
+function createMockWaveShaperNode() {
+  return {
+    curve: null,
+    oversample: 'none',
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+}
+
 function createMockAudioContext() {
   return {
     createGain: vi.fn(() => createMockGainNode()),
     createStereoPanner: vi.fn(() => createMockStereoPannerNode()),
     createDynamicsCompressor: vi.fn(() => createMockDynamicsCompressorNode()),
+    createWaveShaper: vi.fn(() => createMockWaveShaperNode()),
     currentTime: 0,
   } as unknown as AudioContext;
 }

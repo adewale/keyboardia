@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TrackBus } from './track-bus';
 import {
+  TRACK_SAMPLE_PEAK_CEILING,
+  TRACK_SAMPLE_PEAK_CURVE_POINTS,
   TRACK_PEAK_LIMITER_MAKEUP_GAIN,
   TRACK_PEAK_LIMITER_SETTINGS,
 } from './constants';
@@ -53,11 +55,21 @@ function createMockDynamicsCompressorNode() {
   };
 }
 
+function createMockWaveShaperNode() {
+  return {
+    curve: null as Float32Array | null,
+    oversample: 'none' as OverSampleType,
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+}
+
 function createMockAudioContext() {
   return {
     createGain: vi.fn(() => createMockGainNode()),
     createStereoPanner: vi.fn(() => createMockStereoPannerNode()),
     createDynamicsCompressor: vi.fn(() => createMockDynamicsCompressorNode()),
+    createWaveShaper: vi.fn(() => createMockWaveShaperNode()),
     currentTime: 0,
   } as unknown as AudioContext;
 }
@@ -79,12 +91,14 @@ describe('TrackBus', () => {
       expect(context.createGain).toHaveBeenCalledTimes(5);
       expect(context.createStereoPanner).toHaveBeenCalledTimes(1);
       expect(context.createDynamicsCompressor).toHaveBeenCalledTimes(1);
+      expect(context.createWaveShaper).toHaveBeenCalledTimes(1);
     });
 
     it('configures the post-pan track peak ceiling', () => {
       new TrackBus(context, destination);
       const limiter = vi.mocked(context.createDynamicsCompressor).mock.results[0]?.value;
       const makeupTrim = vi.mocked(context.createGain).mock.results[3]?.value;
+      const sampleCeiling = vi.mocked(context.createWaveShaper).mock.results[0]?.value;
 
       expect(limiter?.threshold.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.threshold);
       expect(limiter?.knee.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.knee);
@@ -92,6 +106,10 @@ describe('TrackBus', () => {
       expect(limiter?.attack.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.attack);
       expect(limiter?.release.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.release);
       expect(makeupTrim?.gain.value).toBeCloseTo(TRACK_PEAK_LIMITER_MAKEUP_GAIN, 12);
+      expect(sampleCeiling?.oversample).toBe('none');
+      expect(sampleCeiling?.curve).toHaveLength(TRACK_SAMPLE_PEAK_CURVE_POINTS);
+      expect(Math.max(...sampleCeiling!.curve!)).toBeCloseTo(TRACK_SAMPLE_PEAK_CEILING, 6);
+      expect(Math.min(...sampleCeiling!.curve!)).toBeCloseTo(-TRACK_SAMPLE_PEAK_CEILING, 6);
     });
 
     it('should connect nodes in correct order', () => {

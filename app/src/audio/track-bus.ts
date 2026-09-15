@@ -11,7 +11,7 @@
  * - Sampled instruments (sampled:piano)
  *
  * Audio Chain:
- *   Source → InputGain → VolumeGain → MuteGain → PanNode → PeakLimiter → MakeupTrim → OutputGain → Destination
+ *   Source → InputGain → VolumeGain → MuteGain → PanNode → PeakLimiter → MakeupTrim → OutputGain → SampleCeiling → Destination
  *
  * This solves the problem where synths were bypassing track-level volume controls.
  */
@@ -20,6 +20,7 @@ import { logger } from '../utils/logger';
 import { clampVolume, clampPan, clampGain } from '../shared/validation';
 import {
   slewAudioParam,
+  createTrackSamplePeakCurve,
   TRACK_PEAK_LIMITER_MAKEUP_GAIN,
   TRACK_PEAK_LIMITER_SETTINGS,
 } from './constants';
@@ -33,6 +34,7 @@ export class TrackBus {
   private peakLimiter: DynamicsCompressorNode;
   private peakLimiterMakeupTrim: GainNode;
   private outputGain: GainNode;
+  private samplePeakCeiling: WaveShaperNode;
   private disposed = false;
 
   constructor(context: AudioContext, destination: AudioNode) {
@@ -46,6 +48,7 @@ export class TrackBus {
     this.peakLimiter = context.createDynamicsCompressor();
     this.peakLimiterMakeupTrim = context.createGain();
     this.outputGain = context.createGain();
+    this.samplePeakCeiling = context.createWaveShaper();
 
     // Keep individual tracks inside the fixed-point output domain before they
     // enter the floating-point master sum. The final output limiter remains
@@ -56,7 +59,8 @@ export class TrackBus {
     this.panNode.connect(this.peakLimiter);
     this.peakLimiter.connect(this.peakLimiterMakeupTrim);
     this.peakLimiterMakeupTrim.connect(this.outputGain);
-    this.outputGain.connect(destination);
+    this.outputGain.connect(this.samplePeakCeiling);
+    this.samplePeakCeiling.connect(destination);
 
     // Set defaults
     this.inputGain.gain.value = 1;
@@ -70,6 +74,11 @@ export class TrackBus {
     this.peakLimiter.release.value = TRACK_PEAK_LIMITER_SETTINGS.release;
     this.peakLimiterMakeupTrim.gain.value = TRACK_PEAK_LIMITER_MAKEUP_GAIN;
     this.outputGain.gain.value = 1;
+    this.samplePeakCeiling.curve = createTrackSamplePeakCurve();
+    // Oversampling after a hard bound can reconstruct samples above the
+    // authored ceiling. Final-output inter-sample behaviour is measured at the
+    // master; this node owns the exact per-track sample-domain contract.
+    this.samplePeakCeiling.oversample = 'none';
 
     logger.audio.log('TrackBus created');
   }
@@ -144,8 +153,8 @@ export class TrackBus {
   /**
    * Get the output node (for metering tap point)
    */
-  getOutputNode(): GainNode {
-    return this.outputGain;
+  getOutputNode(): AudioNode {
+    return this.samplePeakCeiling;
   }
 
   /**
@@ -171,6 +180,7 @@ export class TrackBus {
       this.peakLimiter.disconnect();
       this.peakLimiterMakeupTrim.disconnect();
       this.outputGain.disconnect();
+      this.samplePeakCeiling.disconnect();
       logger.audio.log('TrackBus disposed');
     } catch (err) {
       // Ignore errors during disposal (nodes may already be disconnected)

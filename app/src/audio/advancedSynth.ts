@@ -1110,9 +1110,11 @@ export class AdvancedSynthEngine {
       return;
     }
 
-    // Apply current preset
+    // setPreset() applies definitions to every voice. Reapplying the same
+    // preset here would disconnect/reconnect LFO AudioParams on the scheduler
+    // hot path. Keep graph mutation out of note dispatch; per-note velocity is
+    // the only state that belongs here.
     if (this.currentPreset) {
-      voice.applyPreset(this.currentPreset);
       const baseCutoff = this.overrides.filterFrequency ?? this.currentPreset.filter.frequency;
       voice.setFilterFrequency(advancedVelocityFilterFrequency(baseCutoff, midiVelocity));
     } else {
