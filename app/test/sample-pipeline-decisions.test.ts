@@ -26,6 +26,13 @@ const sha256File = (filename: string): string => createHash('sha256').update(fs.
 const sorted = (values: readonly string[]): string[] => [...values].sort((left, right) => left.localeCompare(right));
 
 describe('exact-hash human rejection decisions', () => {
+  it('binds every mapping-calibration receipt to its current production manifest', () => {
+    for (const calibration of mappingCalibrationReceipt.instruments) {
+      const manifestPath = path.resolve('public/instruments', calibration.id, 'manifest.json');
+      expect(sha256File(manifestPath), calibration.id).toBe(calibration.manifestSha256);
+    }
+  });
+
   it('retains their exact historical evidence without confusing later owner-directed enrichment with human preference', () => {
     const files = fs.readdirSync(decisionsRoot).filter(filename => filename.endsWith('.json')).sort();
     expect(files).toHaveLength(10);

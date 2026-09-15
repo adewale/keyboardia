@@ -4,7 +4,20 @@ import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
+const repoRoot = resolve(appRoot, '..');
 const e2eRoot = resolve(appRoot, 'e2e');
+
+function readDispositionContract(path, resultFile) {
+  const source = readFileSync(path, 'utf8');
+  const escapedResultFile = resultFile.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const match = source.match(new RegExp(
+    `assert-playwright-stats\\.mjs\\s+\\S*${escapedResultFile}\\s+(\\d+)\\s+(\\d+)`,
+  ));
+  if (!match) {
+    throw new Error(`Unable to find ${resultFile} disposition contract in ${path}`);
+  }
+  return { expected: Number(match[1]), skipped: Number(match[2]) };
+}
 
 function readManifest(name) {
   const path = resolve(e2eRoot, name);
@@ -61,6 +74,28 @@ const mandatoryWorkerSpecs = [
 const missingWorkerCoverage = [...new Set([...realBackendGuards, ...mandatoryWorkerSpecs])]
   .filter(path => !workerSpecs.includes(path));
 const overlappingBackends = mockSpecs.filter(path => workerSpecs.includes(path));
+const workflowPath = resolve(repoRoot, '.github/workflows/ci.yml');
+const prePushPath = resolve(appRoot, '.husky/pre-push');
+const dispositionContracts = [
+  {
+    label: 'Chromium real-backend',
+    project: 'chromium',
+    noDeps: false,
+    ci: readDispositionContract(workflowPath, 'real-backend-results.json'),
+    local: readDispositionContract(prePushPath, 'prepush-chromium.json'),
+  },
+  {
+    label: 'WebKit real-backend',
+    project: 'webkit',
+    noDeps: true,
+    ci: readDispositionContract(workflowPath, 'webkit-results.json'),
+    local: readDispositionContract(prePushPath, 'prepush-webkit.json'),
+  },
+];
+const pcmContract = {
+  spec: 'e2e/capture-session.spec.ts',
+  ...readDispositionContract(prePushPath, 'prepush-pcm.json'),
+};
 
 const playwright = process.platform === 'win32'
   ? resolve(appRoot, 'node_modules/.bin/playwright.cmd')
@@ -98,5 +133,54 @@ if (overlappingBackends.length > 0) {
 if (unguardedContexts.length > 0) {
   throw new Error(`Custom browser contexts must use createE2EContext so WebKit setup is not bypassed:\n${unguardedContexts.join('\n')}`);
 }
+for (const contract of dispositionContracts) {
+  if (JSON.stringify(contract.ci) !== JSON.stringify(contract.local)) {
+    throw new Error(`${contract.label} disposition contract differs between CI and pre-push: `
+      + `${JSON.stringify({ ci: contract.ci, prePush: contract.local })}`);
+  }
+  const args = ['test', `--project=${contract.project}`];
+  if (contract.noDeps) args.push('--no-deps');
+  args.push('--list');
+  const collected = spawnSync(playwright, args, {
+    cwd: appRoot,
+    encoding: 'utf8',
+    env: { ...process.env, E2E_FUNCTIONAL_ONLY: '1', USE_MOCK_API: '' },
+  });
+  if (collected.status !== 0) {
+    throw new Error(`Unable to collect ${contract.label} disposition total:\n`
+      + `${collected.stderr || collected.stdout}`);
+  }
+  const totalMatch = collected.stdout.match(/Total:\s+(\d+)\s+tests?\b/);
+  if (!totalMatch) {
+    throw new Error(`Unable to parse ${contract.label} disposition total:\n${collected.stdout}`);
+  }
+  const collectedTotal = Number(totalMatch[1]);
+  const contractedTotal = contract.ci.expected + contract.ci.skipped;
+  if (contractedTotal !== collectedTotal) {
+    throw new Error(`${contract.label} disposition contract accounts for ${contractedTotal} results, `
+      + `but Playwright collects ${collectedTotal} with the gate's project and environment`);
+  }
+}
 
-console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests`);
+const pcmListed = spawnSync(playwright, [
+  'test', pcmContract.spec, '--project=chromium', '--list',
+], {
+  cwd: appRoot,
+  encoding: 'utf8',
+  env: { ...process.env, E2E_FUNCTIONAL_ONLY: '1', USE_MOCK_API: '1', CI: 'true' },
+});
+if (pcmListed.status !== 0) {
+  throw new Error(`Unable to collect local PCM gate inventory:\n${pcmListed.stderr || pcmListed.stdout}`);
+}
+const pcmTotalMatch = pcmListed.stdout.match(/Total:\s+(\d+)\s+tests?\b/);
+if (!pcmTotalMatch) {
+  throw new Error(`Unable to parse local PCM gate inventory:\n${pcmListed.stdout}`);
+}
+const pcmCollectedTotal = Number(pcmTotalMatch[1]);
+const pcmContractedTotal = pcmContract.expected + pcmContract.skipped;
+if (pcmCollectedTotal !== pcmContractedTotal) {
+  throw new Error(`Local PCM gate accounts for ${pcmContractedTotal} results, `
+    + `but Playwright collects ${pcmCollectedTotal} from ${pcmContract.spec}`);
+}
+
+console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests, ${dispositionContracts.length} local/CI disposition contracts, ${pcmCollectedTotal}-test local PCM contract`);

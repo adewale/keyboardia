@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { MASTER_OUTPUT_TRIM_DB } from '../constants';
 import before from './automatic-improvements-before.json';
 import after from './automatic-improvements-after.json';
 
@@ -46,7 +47,7 @@ describe('automatic audio improvements before/after receipt', () => {
     const afterMaster = after.master.real16TrackBrowser;
     expect(afterMaster.preCompressorPeakDbfs - afterMaster.postMakeupPeakDbfs).toBeGreaterThan(5);
     expect(afterMaster.heardOutputTruePeakDbfs).toBeLessThanOrEqual(0);
-    expect(after.master.outputTrimDb).toBeGreaterThan(before.master.outputTrimDb);
+    expect(after.master.outputTrimDb).toBe(MASTER_OUTPUT_TRIM_DB);
     expect(Math.abs(after.master.browserCalibration.throughGainDb)).toBeLessThanOrEqual(0.1);
     expect(Math.abs(after.master.browserCalibration.controlledHatDeltaDb)).toBeLessThan(2);
     expect(after.release.finalGainBeforeHardStop).toBe(0);

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { StrictMode } from 'react';
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { Track } from '../types';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   ensureAudioReady: vi.fn(),
   isToneInitialized: vi.fn(),
   initializeTone: vi.fn(),
+  mediaSessionHandlers: null as null | { play: () => void; pause: () => void },
   state: {
     tracks: [] as Track[], tempo: 120, swing: 0,
     effects: {
@@ -50,6 +51,12 @@ vi.mock('../audio/audioTriggers', () => ({
   signalMusicIntent: vi.fn(),
   requireAudioEngine: mocks.requireAudioEngine,
 }));
+vi.mock('../audio/media-session', () => ({
+  installMediaSessionActionHandlers: vi.fn((handlers: { play: () => void; pause: () => void }) => {
+    mocks.mediaSessionHandlers = handlers;
+    return () => { mocks.mediaSessionHandlers = null; };
+  }),
+}));
 vi.mock('../audio/engine', () => ({
   audioEngine: { removeTrackGain: vi.fn(), setFMParams: vi.fn(), setTrackVolume: vi.fn() },
 }));
@@ -69,6 +76,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.state.tracks = [];
   mocks.state.isPlaying = false;
+  mocks.mediaSessionHandlers = null;
   mocks.ensureAudioReady.mockResolvedValue(true);
   mocks.isToneInitialized.mockReturnValue(true);
   mocks.initializeTone.mockResolvedValue(undefined);
@@ -101,6 +109,30 @@ describe('StepSequencer playback lifecycle', () => {
     expect(stop).toHaveBeenCalled();
     expect(start).not.toHaveBeenCalled();
     expect(setOnStepChange).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_PLAYING', isPlaying: true });
+  });
+
+  it('does not honor a queued play-after-pause retry after unmount', async () => {
+    let releaseObsolete!: () => void;
+    preload.mockImplementationOnce(() => new Promise<void>(resolve => { releaseObsolete = resolve; }));
+    const view = render(<StepSequencer />);
+
+    mocks.mediaSessionHandlers!.play();
+    await waitFor(() => expect(preload).toHaveBeenCalledOnce());
+    mocks.mediaSessionHandlers!.pause();
+    mocks.mediaSessionHandlers!.play();
+    view.unmount();
+    await act(async () => {
+      releaseObsolete();
+      // Drain the latch's outer continuation, not only the preload promise's
+      // microtasks. Without this task boundary the assertion can run before a
+      // defective queued restart attempts its second engine load.
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+
+    expect(mocks.requireAudioEngine).toHaveBeenCalledTimes(1);
+    expect(preload).toHaveBeenCalledTimes(1);
+    expect(start).not.toHaveBeenCalled();
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_PLAYING', isPlaying: true });
   });
 
@@ -152,5 +184,93 @@ describe('StepSequencer playback lifecycle', () => {
 
     expect(start).toHaveBeenCalledOnce();
     expect(dispatch.mock.calls.filter(([action]) => action.type === 'SET_PLAYING' && action.isPlaying)).toHaveLength(1);
+  });
+
+  it('treats repeated Media Session play as idempotent while startup is pending', async () => {
+    let release!: () => void;
+    preload.mockImplementationOnce(() => new Promise<void>(resolve => { release = resolve; }));
+    render(<StepSequencer />);
+
+    mocks.mediaSessionHandlers!.play();
+    await waitFor(() => expect(preload).toHaveBeenCalledOnce());
+    mocks.mediaSessionHandlers!.play();
+    release();
+    await waitFor(() => expect(start).toHaveBeenCalledOnce());
+
+    expect(mocks.requireAudioEngine).toHaveBeenCalledTimes(1);
+  });
+
+  it('cancels pending startup when Media Session pause arrives', async () => {
+    let release!: () => void;
+    preload.mockImplementationOnce(() => new Promise<void>(resolve => { release = resolve; }));
+    render(<StepSequencer />);
+
+    mocks.mediaSessionHandlers!.play();
+    await waitFor(() => expect(preload).toHaveBeenCalledOnce());
+    mocks.mediaSessionHandlers!.pause();
+    release();
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(start).not.toHaveBeenCalled();
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_PLAYING', isPlaying: true });
+  });
+
+  it('honors play after pause even while the cancelled startup is still settling', async () => {
+    let releaseObsolete!: () => void;
+    preload.mockImplementationOnce(() => new Promise<void>(resolve => { releaseObsolete = resolve; }));
+    render(<StepSequencer />);
+
+    mocks.mediaSessionHandlers!.play();
+    await waitFor(() => expect(preload).toHaveBeenCalledOnce());
+    mocks.mediaSessionHandlers!.pause();
+    mocks.mediaSessionHandlers!.play();
+    releaseObsolete();
+
+    await waitFor(() => expect(start).toHaveBeenCalledOnce());
+    expect(mocks.requireAudioEngine).toHaveBeenCalledTimes(2);
+    expect(preload).toHaveBeenCalledTimes(2);
+  });
+
+  it('converges on the latest UI toggle while cancelled startup is settling', async () => {
+    let releaseObsolete!: () => void;
+    preload.mockImplementationOnce(() => new Promise<void>(resolve => { releaseObsolete = resolve; }));
+    render(<StepSequencer />);
+    const playToggle = screen.getByRole('button', { name: 'Start test playback' });
+
+    fireEvent.click(playToggle);
+    await waitFor(() => expect(preload).toHaveBeenCalledOnce());
+    fireEvent.click(playToggle);
+    fireEvent.click(playToggle);
+    releaseObsolete();
+
+    await waitFor(() => expect(start).toHaveBeenCalledOnce());
+    expect(mocks.requireAudioEngine).toHaveBeenCalledTimes(2);
+    expect(preload).toHaveBeenCalledTimes(2);
+  });
+
+  it('refreshes audio readiness without stopping an active transport on Media Session play', async () => {
+    render(<StepSequencer />);
+    mocks.mediaSessionHandlers!.play();
+    await waitFor(() => expect(start).toHaveBeenCalledOnce());
+    mocks.ensureAudioReady.mockClear();
+    stop.mockClear();
+
+    mocks.mediaSessionHandlers!.play();
+    await waitFor(() => expect(mocks.ensureAudioReady).toHaveBeenCalledOnce());
+
+    expect(stop).not.toHaveBeenCalled();
+    expect(start).toHaveBeenCalledOnce();
+  });
+
+  it('stops an active transport when Media Session pause arrives', async () => {
+    render(<StepSequencer />);
+    mocks.mediaSessionHandlers!.play();
+    await waitFor(() => expect(start).toHaveBeenCalledOnce());
+
+    mocks.mediaSessionHandlers!.pause();
+
+    expect(stop).toHaveBeenCalledOnce();
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_PLAYING', isPlaying: false });
   });
 });

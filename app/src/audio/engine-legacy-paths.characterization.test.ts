@@ -27,6 +27,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 const synthPlayNote = vi.fn<(...args: unknown[]) => void>();
 const sampledRegistryGet = vi.fn<(id: string) => unknown>();
+const { waitForClockAdvance } = vi.hoisted(() => ({
+  waitForClockAdvance: vi.fn(async () => true),
+}));
+
+vi.mock('./clock-liveness', () => ({ waitForClockAdvance }));
 
 vi.mock('./synth', async () => {
   const actual = await vi.importActual<typeof import('./synth')>('./synth');
@@ -81,6 +86,7 @@ function setupEngine(): { engine: AudioEngine; busInputs: Map<string, FakeBusInp
 describe('characterization: playSynthNote', () => {
   beforeEach(() => {
     synthPlayNote.mockClear();
+    waitForClockAdvance.mockClear();
   });
 
   it('passes (noteId, frequency, preset, time, duration, volume, destination) to synthEngine.playNote', () => {
@@ -128,6 +134,52 @@ describe('characterization: playSynthNote', () => {
 
     // Octave doubles the frequency (within fp tolerance).
     expect(freqAtTwelve / freqAtZero).toBeCloseTo(2, 2);
+  });
+});
+
+describe('mobile output readiness', () => {
+  it('proves clock liveness and unlocks media even when AudioContext already reports running', async () => {
+    const engine = new AudioEngine();
+    const unlock = vi.fn();
+    const context = {
+      state: 'running' as AudioContextState,
+      currentTime: 1.5,
+    };
+    (engine as unknown as { audioContext: Partial<AudioContext> }).audioContext = context;
+    (engine as unknown as { mediaOutput: { unlock: () => void } }).mediaOutput = { unlock };
+
+    await expect(engine.ensureAudioReady()).resolves.toBe(true);
+    expect(unlock).toHaveBeenCalledOnce();
+    expect(waitForClockAdvance).toHaveBeenCalledWith(context);
+  });
+
+  it('proves clock liveness after a gesture-path resume', async () => {
+    const engine = new AudioEngine();
+    const context = {
+      state: 'suspended' as AudioContextState,
+      currentTime: 0,
+      resume: vi.fn(async () => { context.state = 'running'; }),
+    };
+    (engine as unknown as { audioContext: Partial<AudioContext> }).audioContext = context;
+    (engine as unknown as { mediaOutput: { unlock: () => void } }).mediaOutput = {
+      unlock: vi.fn(),
+    };
+
+    const internals = engine as unknown as {
+      attachUnlockListeners(): void;
+      unlockHandler: (() => Promise<void>) | null;
+    };
+    internals.attachUnlockListeners();
+    const handler = internals.unlockHandler!;
+    try {
+      await handler();
+      expect(context.resume).toHaveBeenCalledOnce();
+      expect(waitForClockAdvance).toHaveBeenCalledWith(context);
+    } finally {
+      for (const event of ['touchstart', 'touchend', 'click', 'keydown']) {
+        document.removeEventListener(event, handler);
+      }
+    }
   });
 });
 

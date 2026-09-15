@@ -369,11 +369,11 @@ jobs:
         run: |
           required_specs=()
           while IFS= read -r spec; do required_specs+=("$spec"); done < e2e/mock-compatible-files.txt
-          test "${#required_specs[@]}" -eq 7
+          test "${#required_specs[@]}" -eq 8
           discovered=$(npx playwright test "${required_specs[@]}" --project=chromium --list | sed -n 's/^Total: \([0-9][0-9]*\) tests.*/\1/p')
-          test "$discovered" = "74"
+          test "$discovered" = "75"
           npx playwright test "${required_specs[@]}" --project=chromium --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 74 0
+          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 75 0
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -400,7 +400,7 @@ jobs:
           # by the real-Worker Linux visual lane. populated-visual.spec.ts is
           # deterministic mock-backed evidence and remains in this lane.
           npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 85 72
+          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 88 72
         env:
           USE_MOCK_API: '1'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -559,7 +559,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --workers=2
-          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 209 19
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 209 26
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -571,7 +571,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 53
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 57
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'

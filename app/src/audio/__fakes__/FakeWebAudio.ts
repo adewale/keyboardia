@@ -92,6 +92,22 @@ export class FakeGainNode {
   }
 }
 
+export class FakeBiquadFilterNode {
+  type: BiquadFilterType = 'lowpass';
+  readonly frequency = new FakeAudioParam();
+  readonly Q = new FakeAudioParam();
+  readonly connectedTo: unknown[] = [];
+  disconnected = false;
+
+  connect(node: unknown): unknown {
+    this.connectedTo.push(node);
+    return node;
+  }
+  disconnect(): void {
+    this.disconnected = true;
+  }
+}
+
 export interface StartCall {
   when?: number;
   offset?: number;
@@ -132,7 +148,8 @@ export class FakeBufferSourceNode {
 
 /**
  * Fake AudioContext covering exactly the surface SampledInstrument uses:
- * state / currentTime / createBufferSource / createGain / decodeAudioData / resume.
+ * state / currentTime / createBufferSource / createGain /
+ * createBiquadFilter / decodeAudioData / resume.
  *
  * decodeAudioData labels each buffer with the UTF-8 contents of the
  * ArrayBuffer it was given, so a test's fetch stub can encode the
@@ -145,6 +162,7 @@ export class FakeAudioContext {
   readonly sampleRate = 44100;
   readonly createdSources: FakeBufferSourceNode[] = [];
   readonly createdGains: FakeGainNode[] = [];
+  readonly createdBiquadFilters: FakeBiquadFilterNode[] = [];
   resumeCalls = 0;
   /** Duration assigned to decoded buffers (override per test if needed). */
   decodedDuration = 5;
@@ -157,6 +175,11 @@ export class FakeAudioContext {
   createGain(): FakeGainNode {
     const node = new FakeGainNode();
     this.createdGains.push(node);
+    return node;
+  }
+  createBiquadFilter(): FakeBiquadFilterNode {
+    const node = new FakeBiquadFilterNode();
+    this.createdBiquadFilters.push(node);
     return node;
   }
   createBuffer(numberOfChannels: number, length: number, sampleRate: number): FakeAudioBuffer {
@@ -197,6 +220,7 @@ type UsedAudioContextSurface = Pick<
   | 'createBuffer'
   | 'createBufferSource'
   | 'createGain'
+  | 'createBiquadFilter'
   | 'decodeAudioData'
   | 'resume'
 >;

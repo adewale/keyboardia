@@ -117,7 +117,7 @@ export const MASTER_LIMITER_THRESHOLD_DB = -2;
  * preserves the compressor response while keeping rendered samples below full
  * scale. This is gain staging, not a claim of true-peak limiting.
  */
-export const MASTER_OUTPUT_TRIM_DB = -1.75;
+export const MASTER_OUTPUT_TRIM_DB = -2.25;
 export const MASTER_OUTPUT_TRIM = 10 ** (MASTER_OUTPUT_TRIM_DB / 20);
 
 /** Remove low-frequency energy before it is sent into the parallel reverb. */

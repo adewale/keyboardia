@@ -17,6 +17,64 @@ import { computeReceiveLateness, measureAndReportLateness } from './scheduler-wo
 import { AudioMetricsCollector } from './metrics/audio-metrics';
 import { GrainPitchShifter } from './worklets/pitch-shift-engine';
 import { RingBuffer } from './metrics/ring-buffer';
+import { SampledInstrument, type InstrumentManifest } from './sampled-instrument';
+import {
+  FakeAudioContext,
+  FakeGainNode,
+  makeSampleFetchStub,
+} from './__fakes__/FakeWebAudio';
+
+const sampledVoiceContext = new FakeAudioContext();
+const sampledVoiceDestination = new FakeGainNode();
+const sampledVoiceInstrument = new SampledInstrument('bench-filtered', '/instruments', {
+  velocityAnchorForNote: () => 4_000,
+});
+const sampledVoiceManifest: InstrumentManifest = {
+  id: 'bench-filtered',
+  name: 'Filtered voice benchmark',
+  type: 'sampled',
+  releaseTime: 0.1,
+  samples: [{ note: 60, file: 'C4.wav' }],
+};
+
+function clearSampledVoiceNodes(): void {
+  for (const source of sampledVoiceContext.createdSources) source.fireEnded();
+  sampledVoiceContext.createdSources.length = 0;
+  sampledVoiceContext.createdGains.length = 0;
+  sampledVoiceContext.createdBiquadFilters.length = 0;
+}
+
+// Vitest's benchmark runner does not execute the suite hooks used by the unit
+// runner. Initialize at module scope so these benches cannot silently measure
+// SampledInstrument's unloaded early-return path.
+const originalFetch = globalThis.fetch;
+try {
+  globalThis.fetch = makeSampleFetchStub(sampledVoiceManifest);
+  sampledVoiceInstrument.initialize(
+    sampledVoiceContext.asAudioContext(),
+    sampledVoiceDestination as unknown as AudioNode,
+  );
+  if (!await sampledVoiceInstrument.ensureLoaded()) {
+    throw new Error('benchmark instrument did not load');
+  }
+} finally {
+  globalThis.fetch = originalFetch;
+}
+
+// Discriminating controls outside the timed loops prove that the two cases
+// reach the intended production branches. This is a fake-node JavaScript
+// allocation benchmark; it does not measure browser DSP or render cost.
+const filteredProbe = sampledVoiceInstrument.playNote('bench-probe', 60, 0, 0.1, 1, 40);
+if (!filteredProbe || sampledVoiceContext.createdBiquadFilters.length !== 1) {
+  throw new Error('filtered benchmark probe did not allocate exactly one low-pass filter');
+}
+clearSampledVoiceNodes();
+const bypassProbe = sampledVoiceInstrument.playNote('bench-probe', 60, 0, 0.1, 1, 90);
+const bypassFilterCount = Number(sampledVoiceContext.createdBiquadFilters.length);
+if (!bypassProbe || bypassFilterCount !== 0) {
+  throw new Error('bypass benchmark probe unexpectedly allocated a low-pass filter');
+}
+clearSampledVoiceNodes();
 
 describe('scheduler hot paths', () => {
   const baseInput = {
@@ -91,6 +149,22 @@ describe('pitch-shift engine', () => {
     const shifter = new GrainPitchShifter(grainSize);
     shifter.write(inputBlock);
     shifter.read(outputBlock, 0.5);
+  });
+});
+
+describe('sampled voice allocation', () => {
+  function allocateAndEndVoice(velocity: number): void {
+    const source = sampledVoiceInstrument.playNote('bench', 60, 0, 0.1, 1, velocity);
+    if (!source) throw new Error('initialized benchmark instrument returned no source');
+    clearSampledVoiceNodes();
+  }
+
+  bench('SampledInstrument.playNote (v40 filtered voice)', () => {
+    allocateAndEndVoice(40);
+  });
+
+  bench('SampledInstrument.playNote (v90 bypass control)', () => {
+    allocateAndEndVoice(90);
   });
 });
 

@@ -58,6 +58,12 @@ function installInstrumentDiskFetch(): () => void {
   };
 }
 
+// Stem loading is CPU-bound decode (finger-bass alone carries 112 files) and
+// must survive contended low-core CI runners. Keep enclosing test budgets at
+// least twice this value so the helpers' exact assertions fire before the
+// test's own timeout turns the failure into an opaque "timed out".
+const SAMPLE_LOAD_DEADLINE_MS = 30_000;
+
 async function waitForSampledStem(
   instrument: SampledInstrument,
   stem: SampledSpatialStem,
@@ -68,7 +74,7 @@ async function waitForSampledStem(
   const renderedMidi = manifest.playbackNote ?? stem.midi;
   const expectedNotes = new Set(manifest.samples.map(sample => sample.note)).size;
   const expectedLayersAtMidi = manifest.samples.filter(sample => sample.note === renderedMidi).length;
-  const deadline = Date.now() + 10_000;
+  const deadline = Date.now() + SAMPLE_LOAD_DEADLINE_MS;
   while (Date.now() < deadline) {
     if (
       instrument.getSampleNotes().length >= expectedNotes
@@ -171,7 +177,7 @@ async function renderPianoVelocitySweep(velocityCrossfade: number): Promise<Floa
 }
 
 async function viWaitForVelocityLayers(instrument: SampledInstrument, expected: number): Promise<void> {
-  const deadline = Date.now() + 10_000;
+  const deadline = Date.now() + SAMPLE_LOAD_DEADLINE_MS;
   while (instrument.getVelocityLayerCount(60) < expected && Date.now() < deadline) {
     await new Promise(resolveDelay => setTimeout(resolveDelay, 10));
   }
@@ -227,7 +233,7 @@ describe('required offline audio measurement lane', () => {
       .toEqual(new Uint8Array(second.channels[0].buffer));
     expect(peakDbfs(first.channels[0])).toBeGreaterThan(-12);
     expect(rmsDb(first.channels[0])).toBeGreaterThan(-35);
-  }, 30_000);
+  }, 60_000);
 
   it('changes noise-bearing PCM when the seed changes', async () => {
     const first = await renderProceduralPattern({
@@ -242,7 +248,7 @@ describe('required offline audio measurement lane', () => {
     });
     expect(new Uint8Array(first.channels[0].buffer))
       .not.toEqual(new Uint8Array(second.channels[0].buffer));
-  }, 30_000);
+  }, 60_000);
 
   it('reduces the real piano mf-to-ff layer cliff with the manifest crossfade', async () => {
     const hardSwitch = await renderPianoVelocitySweep(0);
@@ -261,7 +267,7 @@ describe('required offline audio measurement lane', () => {
       ratio,
     }));
     expect(ratio).toBeLessThanOrEqual(0.75);
-  }, 60_000);
+  }, 120_000);
 
   it('renders non-zero unlocked hit variation while explicit locks remain exact', async () => {
     const gains = (locked: boolean) => Array.from({ length: 16 }, (_, step) =>
@@ -324,7 +330,7 @@ describe('required offline audio measurement lane', () => {
     expect(lockedReplayDeltaDb).toBeLessThan(1e-8);
     expect(new Uint8Array(locked.channels[0].buffer))
       .toEqual(new Uint8Array(lockedReplay.channels[0].buffer));
-  }, 30_000);
+  }, 60_000);
 
   it('keeps the MIDI-90 default render close to the pre-mapping full-velocity lead', async () => {
     const [defaultVelocity, previousFullVelocity] = await Promise.all([
@@ -341,7 +347,7 @@ describe('required offline audio measurement lane', () => {
     expect(Math.abs(levelDeltaDb)).toBeLessThanOrEqual(1);
     expect(centroidRatio).toBeGreaterThanOrEqual(0.9);
     expect(centroidRatio).toBeLessThanOrEqual(1.1);
-  }, 30_000);
+  }, 60_000);
 
   it('keeps the procedural native-panner canary within its measured S5 band', async () => {
     const centered = [
@@ -434,7 +440,7 @@ describe('required offline audio measurement lane', () => {
     expect(spatialMidSideDb).toBeGreaterThanOrEqual(-20.75);
     expect(spatialMidSideDb).toBeLessThanOrEqual(-19.5);
     expect(Math.abs(monoFoldDeltaDb)).toBeLessThanOrEqual(1);
-  }, 30_000);
+  }, 60_000);
 
   it('keeps shipped stereo samples centered by default while manual pan stays mono-safe', async () => {
     const centered = SAMPLED_SPATIAL_STEMS.map(stem => ({ ...stem, pan: 0 }));
@@ -492,5 +498,5 @@ describe('required offline audio measurement lane', () => {
     expect(Math.abs(spatialMidSideDb - baselineMidSideDb)).toBeGreaterThan(0.1);
     expect(Number.isFinite(spatialMidSideDb)).toBe(true);
     expect(Math.abs(monoFoldDeltaDb)).toBeLessThanOrEqual(1);
-  }, 60_000);
+  }, 120_000);
 });

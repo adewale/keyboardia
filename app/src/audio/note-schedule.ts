@@ -15,6 +15,13 @@
 /** Linear attack ramp applied at note start to prevent clicks. */
 export const ATTACK_FADE_SEC = 0.003;
 
+/** Four 128-frame render quanta plus one frame for real-time control handoff. */
+const REALTIME_CONTROL_LEAD_FRAMES = 513;
+
+export function realtimeNoteLeadTime(sampleRate: number): number {
+  return Math.max(ATTACK_FADE_SEC, REALTIME_CONTROL_LEAD_FRAMES / sampleRate);
+}
+
 /** Notes shorter than this are stretched so they remain audible. */
 export const MIN_NOTE_DURATION_SEC = 0.1;
 
@@ -32,6 +39,8 @@ export interface NoteScheduleInput {
   eventTime: number;
   /** audioContext.currentTime at the moment of scheduling. */
   currentTime: number;
+  /** Lead reserved for real-time control messages; zero for offline rendering. */
+  minimumLeadTime?: number;
   /** Note length in seconds; undefined = sustained (no release section). */
   duration?: number;
   /** Manifest release time in seconds. */
@@ -39,7 +48,7 @@ export interface NoteScheduleInput {
 }
 
 export interface NoteSchedule {
-  /** When the source actually starts: max(eventTime, currentTime). */
+  /** When the source actually starts: no earlier than the requested lead. */
   startTime: number;
   /** End of the declick attack ramp. */
   attackEnd: number;
@@ -55,8 +64,11 @@ export interface NoteSchedule {
 }
 
 export function computeNoteSchedule(input: NoteScheduleInput): NoteSchedule {
-  // Web Audio refuses to start sources in the past; clamp late notes to now.
-  const startTime = Math.max(input.eventTime, input.currentTime);
+  // A real-time caller can reserve enough lead for its control messages to
+  // reach the render thread. Starting a source and a short gain ramp at
+  // currentTime lets the next render quantum enter halfway through that ramp.
+  const minimumLeadTime = Math.max(0, input.minimumLeadTime ?? 0);
+  const startTime = Math.max(input.eventTime, input.currentTime + minimumLeadTime);
   const attackEnd = startTime + ATTACK_FADE_SEC;
 
   if (input.duration === undefined) {

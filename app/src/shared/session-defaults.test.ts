@@ -1,13 +1,18 @@
 import { describe, expect, it } from 'vitest';
 import { createInitialSessionState } from './session-defaults';
-import { DEFAULT_EFFECTS_STATE } from './effects-defaults';
+import {
+  DEFAULT_EFFECTS_STATE,
+  LEGACY_MISSING_EFFECTS_STATE,
+  NEW_SESSION_EFFECTS_STATE,
+  normalizeSessionEffects,
+} from './effects-defaults';
 import { DEFAULT_NEW_SESSION_SCALE_STATE } from './scale-defaults';
 
 const DEFAULT_STATE = {
   tracks: [],
   tempo: 120,
   swing: 0,
-  effects: DEFAULT_EFFECTS_STATE,
+  effects: NEW_SESSION_EFFECTS_STATE,
   scale: DEFAULT_NEW_SESSION_SCALE_STATE,
   version: 1,
 };
@@ -40,8 +45,30 @@ describe('createInitialSessionState', () => {
 
     first.effects!.reverb.wet = 0.9;
 
-    expect(second.effects).toEqual(DEFAULT_EFFECTS_STATE);
-    expect(second.effects).not.toBe(DEFAULT_EFFECTS_STATE);
-    expect(second.effects!.reverb).not.toBe(DEFAULT_EFFECTS_STATE.reverb);
+    expect(second.effects).toEqual(NEW_SESSION_EFFECTS_STATE);
+    expect(second.effects).not.toBe(NEW_SESSION_EFFECTS_STATE);
+    expect(second.effects!.reverb).not.toBe(NEW_SESSION_EFFECTS_STATE.reverb);
+  });
+});
+
+describe('missing-effects policies (Phase 44 Change 3)', () => {
+  it('gives new sessions the default room while legacy sessions stay exactly dry', () => {
+    // The room lives only in the new-session policy: the shared baseline the
+    // UI and audio chain initialize from before a session loads stays dry.
+    expect(DEFAULT_EFFECTS_STATE.reverb.wet).toBe(0);
+    expect(NEW_SESSION_EFFECTS_STATE.reverb.wet).toBe(0.15);
+    expect(LEGACY_MISSING_EFFECTS_STATE.reverb.wet).toBe(0);
+    expect(normalizeSessionEffects(undefined, 'new-session').reverb.wet).toBe(0.15);
+    // The legacy guard: a stored session that never wrote effects must keep
+    // rendering dry, or the change reinterprets saved music.
+    expect(normalizeSessionEffects(undefined, 'legacy-session')).toEqual(
+      LEGACY_MISSING_EFFECTS_STATE,
+    );
+    // Stored values always win over either fallback.
+    const stored = normalizeSessionEffects(
+      { ...DEFAULT_EFFECTS_STATE, reverb: { decay: 4, wet: 0.6 } },
+      'legacy-session',
+    );
+    expect(stored.reverb).toEqual({ decay: 4, wet: 0.6 });
   });
 });
