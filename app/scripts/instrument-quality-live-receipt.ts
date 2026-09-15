@@ -6,7 +6,7 @@ import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
-export const LIVE_RECEIPT_SCHEMA_VERSION = 7;
+export const LIVE_RECEIPT_SCHEMA_VERSION = 8;
 export const LIVE_RECEIPT_CLAIM = 'live-post-track-signal-evidence';
 export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
@@ -43,7 +43,10 @@ export const LIVE_CAPTURE_DURATION_SECONDS = 2.5;
 export const LIVE_CAPTURE_CHANNEL_COUNT = 2;
 export const LIVE_ONSET_THRESHOLD = 1e-7;
 export const LIVE_MIN_ARM_TO_ONSET_SECONDS = 0.45;
-export const LIVE_MAX_ARM_TO_ONSET_SECONDS = 1;
+// The event is scheduled at 0.5 s. Allow 80 ms for message/render quanta,
+// source onset, and the shared 6 ms track ceiling, but not Tone's historical
+// extra 100 ms lookahead.
+export const LIVE_MAX_ARM_TO_ONSET_SECONDS = 0.58;
 export const LIVE_PEAK_METRIC = 'maximum-absolute-sample-over-all-captured-channel-samples';
 export const LIVE_RMS_METRIC = 'root-mean-square-over-all-captured-channel-samples';
 export const LIVE_RANDOM_SEED = 0x4b455942;

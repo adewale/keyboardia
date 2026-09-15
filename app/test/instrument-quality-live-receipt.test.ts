@@ -146,13 +146,14 @@ describe('live instrument-quality receipt', () => {
   });
 
   it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
-    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(7);
+    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(8);
     const stepDuration = 60 / LIVE_TEMPO / 4;
     expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
     expect(LIVE_NOTE_DURATION_SECONDS).toBe(stepDuration * 0.9);
     expect(LIVE_MIDI_VELOCITY).toBe(127);
     expect(LIVE_NOTE_GAIN).toBe(1);
     expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
+    expect(LIVE_MAX_ARM_TO_ONSET_SECONDS - LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeCloseTo(0.08, 6);
     expect(LIVE_STEP_COUNT * stepDuration).toBe(LIVE_PATTERN_PERIOD_SECONDS);
     expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
     expect(LIVE_PATTERN_STORAGE_STEP_COUNT).toBe(128);
