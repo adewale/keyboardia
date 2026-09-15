@@ -79,11 +79,15 @@ const prePushPath = resolve(appRoot, '.husky/pre-push');
 const dispositionContracts = [
   {
     label: 'Chromium real-backend',
+    project: 'chromium',
+    noDeps: false,
     ci: readDispositionContract(workflowPath, 'real-backend-results.json'),
     local: readDispositionContract(prePushPath, 'prepush-chromium.json'),
   },
   {
     label: 'WebKit real-backend',
+    project: 'webkit',
+    noDeps: true,
     ci: readDispositionContract(workflowPath, 'webkit-results.json'),
     local: readDispositionContract(prePushPath, 'prepush-webkit.json'),
   },
@@ -129,6 +133,28 @@ for (const contract of dispositionContracts) {
   if (JSON.stringify(contract.ci) !== JSON.stringify(contract.local)) {
     throw new Error(`${contract.label} disposition contract differs between CI and pre-push: `
       + `${JSON.stringify({ ci: contract.ci, prePush: contract.local })}`);
+  }
+  const args = ['test', `--project=${contract.project}`];
+  if (contract.noDeps) args.push('--no-deps');
+  args.push('--list');
+  const collected = spawnSync(playwright, args, {
+    cwd: appRoot,
+    encoding: 'utf8',
+    env: { ...process.env, E2E_FUNCTIONAL_ONLY: '1', USE_MOCK_API: '' },
+  });
+  if (collected.status !== 0) {
+    throw new Error(`Unable to collect ${contract.label} disposition total:\n`
+      + `${collected.stderr || collected.stdout}`);
+  }
+  const totalMatch = collected.stdout.match(/Total:\s+(\d+)\s+tests?\b/);
+  if (!totalMatch) {
+    throw new Error(`Unable to parse ${contract.label} disposition total:\n${collected.stdout}`);
+  }
+  const collectedTotal = Number(totalMatch[1]);
+  const contractedTotal = contract.ci.expected + contract.ci.skipped;
+  if (contractedTotal !== collectedTotal) {
+    throw new Error(`${contract.label} disposition contract accounts for ${contractedTotal} results, `
+      + `but Playwright collects ${collectedTotal} with the gate's project and environment`);
   }
 }
 
