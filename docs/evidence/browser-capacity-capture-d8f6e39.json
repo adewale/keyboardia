@@ -1,0 +1,25 @@
+{
+  "schemaVersion": 1,
+  "fixture": "user-reachable 16-track mixed-engine session; complete sample loads; two full transport cycles plus guard",
+  "sampleRate": 48000,
+  "maxRenderFrameDrift": 0,
+  "trackCount": 16,
+  "summaries": {
+    "preCompressor": {
+      "peak": 2.1055102348327637,
+      "peakDbfs": 6.4671471371213,
+      "rms": 0.34195894488501727
+    },
+    "postMakeup": {
+      "peak": 1.1620838642120361,
+      "peakDbfs": 1.3047494190941291,
+      "rms": 0.2759568201944426
+    },
+    "userOutput": {
+      "peak": 0.9483601450920105,
+      "peakDbfs": -0.46053411138674516,
+      "rms": 0.22638005602028222
+    }
+  },
+  "userOutputTruePeakDbfs": -0.4189100040684884
+}
