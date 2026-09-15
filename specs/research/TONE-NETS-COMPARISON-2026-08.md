@@ -48,9 +48,11 @@ not a winner:
 - **Space** — Tone Nets carries reverb send on 99% of zones. Keyboardia now
   defaults new sessions to a measured bass-protected 0.15 global room; it has
   no per-instrument send.
-- **Mobile route** — both now have media-element output architectures.
-  Keyboardia's physical ringer-off result and added device latency remain an
-  open manual gate, so architecture is not reported as physical proof.
+- **Mobile route** — both now have media-element output architectures. A
+  2026-09-15 user-reported physical-iPhone test closes Keyboardia's ringer-off
+  audibility gate across the iOS browsers tested. Added device output latency
+  remains unmeasured, and backgrounded browsers can miss beats; neither is
+  inferred from the architecture.
 - **Startup** — §8 measures first master PCM rather than inferring speed from
   initialization code. The tested Keyboardia medians are 244.5–383.6 ms; the
   frozen Tone Nets first-MIDI median is 1,215.9 ms under its heavier required
@@ -550,7 +552,7 @@ The final paired raw values and oracle controls are preserved in
 | New-session space | global reverb 0 | 0.15 room; tail +19.7–24.8 dB, bass body within ±0.109 dB, peak/LU bounded, and 0.000 dB compressor delta when the exact captured 16-track input is replayed dry/wet | one global depth |
 | Cold startup evidence | sampled first-use fixture only | retained native/Tone/advanced medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced contention outlier | physical-device matrix/generalization |
 | First sampled onset consistency | first note could schedule its de-click ramp at `currentTime`, allowing the render thread to enter mid-ramp | real-time sampled lead `max(3 ms, 513 / sampleRate)`; a zero-lead mutation failed source RMS in 2/12 contexts, while 13/13 guarded contexts measured 38.7–54.7 ms click-to-audible and a 0/≤0.000002 dB source peak/RMS repeat null | the floor costs 10.6875 ms at 48 kHz for an event with insufficient lead; other sampled instruments and physical devices remain unmeasured |
-| Mobile output | direct Web Audio destination | both final graphs terminate through the mobile media-element route | physical ringer-off and latency pass still open |
+| Mobile output | direct Web Audio destination | both final graphs terminate through the mobile media-element route; user-reported physical ringer-off pass across the iOS browsers tested | device output latency unmeasured; continuous background cadence not supported |
 | Sustain safety | loop metadata existed but was mostly absent | eight sustaining manifests have a ≥2 s median native-root regression guard | intentionally no every-note/extreme-tie guarantee |
 
 ### 8.3 Why sustain loops were demoted

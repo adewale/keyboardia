@@ -9,8 +9,10 @@
 audit. Unit, offline-render, performance, and Chromium browser-capture gates
 pass. Silent-voice warm-up is not indicated by the first-use sampled fixture;
 the previously open cold Tone, advanced, and whole-engine domains are now
-measured in §8. The physical-iPhone ringer-switch and device-latency gate
-remains open and is not inferred from CI.
+measured in §8. A user-reported physical-iPhone test on 2026-09-15 passed the
+ringer-off audibility gate across the iOS browsers tested. Device output
+latency remains unmeasured, and continuous beat delivery while an iOS browser
+is backgrounded is explicitly not claimed.
 
 This plan now distinguishes three claim levels:
 
@@ -129,6 +131,14 @@ the signal. The acceptance gate is a manual pass on a physical device, Safari
 and Chrome iOS, ringer off. And the repo
 contains nothing that would let anyone estimate what share of iOS users are
 affected; do not put a number on it.
+
+**Physical result, 2026-09-15.** The user reported that the staged build was
+audible with the iPhone ringer switch off across the iOS browsers tested and
+worked as expected except that a backgrounded browser did not play every beat.
+The device model, iOS/browser versions, and an objective output-latency result
+were not recorded, so this closes the audibility gate only. Media-element
+output permission and foreground recovery do not imply that a backgrounded web
+page will continue executing the sequencer at full cadence.
 
 **Risk.** The media element adds output latency, which matters for a sequencer
 people play along to. Measure it before shipping (loopback capture, or
@@ -433,7 +443,7 @@ original 2026-08-19 baseline.
 
 | Dimension | Original baseline | Current audited state | Remaining vs Tone Nets |
 |---|---|---|---|
-| Mobile audibility (iOS ringer switch) | direct Web Audio destination | final media-element route implemented; physical result unclaimed | physical iPhone ringer-off and latency gate |
+| Mobile audibility (iOS ringer switch) | direct Web Audio destination | final media-element route implemented; user-reported physical ringer-off pass across the iOS browsers tested | output-latency measurement; continuous background cadence is not supported |
 | Velocity → timbre, sampled path | 0% centroid spread on 12/26 instruments | 29.7–30.3% v40-v127 centroid drop on 281 requested notes for six tonal gain-only instruments; v≥90 bypass | unlocked steps unchanged by design; no time-varying filter motion |
 | Per-note motion (filter envelope, LFO) | none | none — out of scope | full gap: SF2 has a filter envelope on 89% of zones, LFO on 100% |
 | Default space | `reverb.wet: 0` | 0.15 bass-protected, new sessions only; browser tail/body/peak/LU/pumping gates pass | per-instrument depth — Tone Nets carries sends per zone |
@@ -475,7 +485,9 @@ outrun their evidence:
 | Cold engine startup | transport + engine/preload + master output | five fresh contexts each for native, Tone, advanced | audio-thread-retained first master-PCM frame; scheduler-boundary, pulsed-late-install, overload, and 700 ms main-thread-block controls | passed; retained medians 244.5/354.5/383.6 ms; preceding-batch max 755.9 ms disclosed |
 | Frozen Tone Nets reference | external first-contact path | five fresh contexts; exact ten-asset hash gate | MIDI selection to audio-thread-retained first master-PCM frame; readiness before first master input | measured; median 1,215.9 ms |
 | Sustaining library statistic | validator | eight classified manifests | median native-root duration ≥2 s; no every-note claim | passed |
-| Physical mobile output | final media-element route | Safari + Chrome iOS, ringer off | physical audition and latency capture | **open release gate** |
+| Physical mobile audibility | final media-element route | physical iPhone, ringer off, iOS browsers tested by the user | user-reported audition on 2026-09-15; device and browser versions not recorded | **passed with evidence limitation** |
+| Physical mobile output latency | final media-element route | physical iPhone | loopback capture or known-impulse estimate | **open release gate** |
+| Background sequencing | web scheduler + audio lifecycle | backgrounded iOS browsers | user reported missed beats on 2026-09-15 | **known limitation; continuous cadence not supported** |
 
 - **Change 2 — velocity → cutoff** (`velocity-sample-filter.ts`,
   `sampled-instrument.ts`). One lowpass per voice, bypassed at
@@ -513,9 +525,10 @@ outrun their evidence:
   first gesture-path `await`, is retried even while AudioContext says
   `running`, and re-arms after an OS pause; desktop stays on `destination`.
   Verified: both final routes, fallback, running-context unlock, gesture retry,
-  external pause, and dispose. **Still owed:** the
-  physical-iPhone ringer-switch pass and the output-latency measurement —
-  CI cannot provide either.
+  external pause, and dispose. The 2026-09-15 physical-iPhone report closes
+  ringer-off audibility across the iOS browsers tested. **Still owed:** an
+  objective output-latency measurement. Backgrounded browsers can miss beats;
+  this route was not designed or accepted as continuous background sequencing.
 - **§4 guard** (`instrument-classification.ts`,
   `scripts/validate-sustain-ceiling.ts`, in `validate:all`). Eight
   sustaining instruments pass the deliberately median/native-root statistic;
@@ -691,11 +704,14 @@ therefore found cases outside the old tests' support rather than intermittent
 failures inside it.
 
 The remaining Phase 44 release evidence gap is irreducibly physical: CI cannot
-prove behavior with an iPhone ringer switch or measure that device's added
-output latency. That manual Safari/Chrome iOS pass remains a release gate rather
-than a claim inferred from WebKit or Chromium emulation. §8 closes the objective
-desktop first-contact comparison; a randomized, level-matched listening study
-remains necessary only if release language asserts listener preference.
+measure the iPhone's added output latency. The user-reported 2026-09-15 test
+closes ringer-off audibility across the iOS browsers tested, but did not record
+device/browser versions or a latency result. It also confirmed the separate
+known limitation that backgrounded iOS browsers can miss sequencer beats; no
+continuous-background guarantee should be inferred from the media-element
+route. §8 closes the objective desktop first-contact comparison; a randomized,
+level-matched listening study remains necessary only if release language
+asserts listener preference.
 
 ## 12. Feasibility of the three remaining Tone Nets-inspired features
 
@@ -720,7 +736,9 @@ items must not be collapsed into that statement:
 
 | Item | Phase 44 status | What closes it |
 |---|---|---|
-| Physical mobile output | **Open release gate** | Safari and Chrome on a physical iPhone with ringer off, plus added output-latency measurement |
+| Physical mobile audibility | **Passed with evidence limitation** | user-reported ringer-off pass on 2026-09-15 across the iOS browsers tested; record device/iOS/browser versions in any repeat |
+| Physical mobile output latency | **Open release gate** | loopback capture or a known-impulse estimate on a physical iPhone |
+| Continuous background sequencing on iOS | **Known limitation; not supported** | requires a separately specified platform/architecture investigation if it becomes a product requirement |
 | Startup generalization | **Measured on one desktop environment only** | preregistered physical/device/browser matrix; five-trial p95 here is the observed maximum, not a population tail estimate |
 | Silent voice warm-up | **Rejected only for the sampled `slap-bass` fixture** | first-note-versus-steady ablations for native, Tone, and advanced paths before making a broader claim |
 | Sustain loops | **Deliberately demoted, not missing** | no action while the manifest-driven duration guard passes; add instrument-specific loops only after a requested-note/session failure |

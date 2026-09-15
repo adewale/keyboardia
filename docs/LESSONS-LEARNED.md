@@ -83,6 +83,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 72: A Resource ID Is Scoped to the Environment That Owns It](#lesson-72-a-resource-id-is-scoped-to-the-environment-that-owns-it)
 - [Lesson 73: An Objective Comparison Needs a Shared Observable, Not a Shared Vibe](#lesson-73-an-objective-comparison-needs-a-shared-observable-not-a-shared-vibe)
 - [Lesson 74: A Shared Fixture Is Not a Paired Audio Experiment](#lesson-74-a-shared-fixture-is-not-a-paired-audio-experiment)
+- [Lesson 75: An Audio Route Does Not Guarantee Background Scheduling](#lesson-75-an-audio-route-does-not-guarantee-background-scheduling)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -6380,3 +6381,55 @@ measure and pass a repeat-null that bounds input variation. Calibrate safety
 headroom across every supported sample-rate/platform lane, and never let a
 required evidence path exist only in remote CI because another local suite has
 a similar name.
+
+---
+
+## Lesson 75: An Audio Route Does Not Guarantee Background Scheduling
+
+**Date:** September 2026
+**Context:** Phase 44 physical-iPhone acceptance for PR
+[#98](https://github.com/adewale/keyboardia/pull/98)
+
+### What happened
+
+The Phase 44 media-element terminal solved the contract it was built for. In a
+2026-09-15 physical-iPhone test, the staged build remained audible with the
+ringer switch off across the iOS browsers tested. The same session exposed a
+different behavior: once a browser was backgrounded, it did not play every
+sequencer beat.
+
+We had grouped several mobile-audio questions under one informal phrase—“works
+on iPhone”—even though they have different mechanisms and evidence:
+
+1. Can a user gesture unlock audio?
+2. Is the final output route audible in Silent Mode?
+3. Can playback recover after interruption or returning to the foreground?
+4. Does the sequencer deliver every beat while the page remains backgrounded?
+5. What latency does the physical output route add?
+
+The implementation and automated tests cover the first three at their stated
+boundaries. The physical report closes the second. It does not close the
+fourth or fifth. Sending audio through a media element changes the output
+category; it does not prove that a backgrounded web page continues to schedule
+notes at foreground cadence.
+
+### Why we did not catch the distinction earlier
+
+CI has no physical ringer switch and does not reproduce the lifecycle of a
+real backgrounded iPhone browser. More importantly, the original acceptance
+row combined “ringer-off audition” and “latency capture,” while background
+continuity appeared only as an architectural observation about Tone Nets. That
+made the manual test carry more implied scope than its observable could prove.
+
+The device model, iOS/browser versions, and objective output latency were not
+recorded in the 2026-09-15 report. The audibility result is useful, but its
+generalization is therefore limited and must stay labelled user-reported.
+
+### The rule
+
+**Specify mobile audio as separate route, lifecycle, cadence, and latency
+contracts.** A passing Silent Mode test says the route is audible. A successful
+resume says foreground recovery works. Neither says a backgrounded sequencer
+will deliver every beat. If continuous background playback becomes a product
+requirement, give it its own platform investigation, measurement, and release
+gate rather than expanding the meaning of the unlock test after the fact.
