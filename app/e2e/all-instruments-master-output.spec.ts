@@ -55,9 +55,19 @@ const REPORT_DIR = process.env.KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR
   ? resolve(process.env.KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR)
   : resolve(THIS_DIR, '../reports/instrument-quality');
 
-const ENERGY_PROCESSOR_NAME = 'keyboardia-onset-aligned-energy-v4';
+const ENERGY_PROCESSOR_NAME = 'keyboardia-onset-aligned-energy-v5';
 const ENERGY_WORKLET_SOURCE = String.raw`
 class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
+  static get parameterDescriptors() {
+    return [{
+      name: 'productionDispatchMarker',
+      defaultValue: 0,
+      minValue: 0,
+      maxValue: 1,
+      automationRate: 'a-rate',
+    }];
+  }
+
   constructor(options) {
     super();
     this.inputCount = options.processorOptions.inputCount;
@@ -68,6 +78,7 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
     this.targetFrames = 0;
     this.capturedFrames = 0;
     this.outputOnsetFrame = -1;
+    this.dispatchAudioFrame = -1;
     this.onsetThreshold = options.processorOptions.onsetThreshold;
     this.sumSquares = [];
     this.sampleCounts = [];
@@ -82,6 +93,7 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
         this.targetFrames = frameCount;
         this.capturedFrames = 0;
         this.outputOnsetFrame = -1;
+        this.dispatchAudioFrame = -1;
         this.started = false;
         this.sumSquares = new Array(this.inputCount).fill(0);
         this.sampleCounts = new Array(this.inputCount).fill(0);
@@ -98,7 +110,7 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
     this.port.postMessage({ type: 'error', message });
   }
 
-  process(inputs, outputs) {
+  process(inputs, outputs, parameters) {
     if (this.terminal) return false;
     // The node is connected before its asynchronous arm acknowledgement. Keep
     // it alive while waiting, but retire it permanently after error or done.
@@ -107,6 +119,18 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
     if (!renderQuantum || renderQuantum.length === 0) {
       this.fail('continuous energy capture received no render quantum');
       return false;
+    }
+    if (this.dispatchAudioFrame < 0) {
+      const marker = parameters.productionDispatchMarker;
+      if (marker && marker.length > 0) {
+        let markedOffset = -1;
+        if (marker.length === 1) {
+          if (marker[0] > 0) markedOffset = 0;
+        } else {
+          markedOffset = marker.findIndex(value => value > 0);
+        }
+        if (markedOffset >= 0) this.dispatchAudioFrame = currentFrame + markedOffset;
+      }
     }
     let frameOffset = 0;
     if (!this.started) {
@@ -169,6 +193,10 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
     }
     this.capturedFrames += framesToCapture;
     if (this.capturedFrames === this.targetFrames) {
+      if (this.dispatchAudioFrame < 0) {
+        this.fail('continuous energy capture observed no production dispatch marker');
+        return false;
+      }
       const measurements = this.peaks.map((peak, inputIndex) => ({
         inputIndex,
         peak,
@@ -182,6 +210,7 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
         type: 'done',
         capturedFrames: this.capturedFrames,
         outputOnsetFrame: this.outputOnsetFrame,
+        dispatchAudioFrame: this.dispatchAudioFrame,
         measurements,
       });
       return false;
@@ -226,6 +255,7 @@ type TrackProbeResult = InstrumentSpec & {
   capturedFrames: number;
   channelSampleCount: number;
   outputOnsetFrame: number;
+  scheduledEventToControlDispatchFrames: number;
   scheduledEventToDispatchFrames: number;
   scheduledEventToOnsetFrames: number;
   renderReferenceToOnsetFrames: number;
@@ -240,6 +270,8 @@ type PreArmIsolationSnapshot = {
   commandedTrackBusOpenIds: string[];
 };
 
+type ProbedEngineDispatch = Omit<LiveEngineDispatch, 'dispatchAudioFrame'>;
+
 type EnergyMeasurement = {
   peak: number;
   rms: number;
@@ -252,6 +284,7 @@ type EnergyCaptureResult = {
   master: EnergyMeasurement;
   tracks: Record<string, EnergyMeasurement>;
   outputOnsetFrame: number;
+  dispatchAudioFrame: number;
   randomCalls: number;
 };
 
@@ -441,7 +474,7 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
       midiVelocity: number;
       noteGain: number;
       eventTimeSeconds: number;
-      dispatchAudioFrame: number;
+      controlDispatchAudioFrame: number;
       durationSeconds: number;
       argumentCount: number;
       variationKey: string | null;
@@ -459,6 +492,7 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
     type Globals = {
       __audioEngine__?: Engine;
       __liveQualityDispatchProbe__?: DispatchProbe;
+      __allInstrumentSequencerProbe__?: { node: AudioWorkletNode };
     };
 
     const globals = window as unknown as Globals;
@@ -517,10 +551,24 @@ async function installEngineDispatchProbe(page: Page): Promise<void> {
             if (!audioContext) {
               throw new Error('AudioContext unavailable at production renderer dispatch');
             }
-            const dispatchAudioFrame = Math.round(
-              audioContext.currentTime * audioContext.sampleRate,
-            );
-            dispatches.push({ ...observedDispatch, dispatchAudioFrame });
+            const marker = globals.__allInstrumentSequencerProbe__?.node.parameters
+              .get('productionDispatchMarker');
+            if (!marker) {
+              throw new Error('Audio-thread production dispatch marker unavailable');
+            }
+            const controlDispatchTime = audioContext.currentTime;
+            // Enqueue the marker immediately before the production call. The
+            // capture worklet observes when this control-thread action reaches
+            // the render timeline while this separate snapshot preserves the
+            // main-thread diagnostic. FIFO ordering keeps the marker ahead of
+            // renderer graph setup on the context's control-message queue.
+            marker.setValueAtTime(1, controlDispatchTime);
+            dispatches.push({
+              ...observedDispatch,
+              controlDispatchAudioFrame: Math.round(
+                controlDispatchTime * audioContext.sampleRate,
+              ),
+            });
           }
           return Reflect.apply(original, this, args);
         },
@@ -584,9 +632,9 @@ async function armTrialObservation(
   }, orderedTrackIds);
 }
 
-async function readAndDisarmEngineDispatchProbe(page: Page): Promise<LiveEngineDispatch[]> {
+async function readAndDisarmEngineDispatchProbe(page: Page): Promise<ProbedEngineDispatch[]> {
   return page.evaluate(() => {
-    type DispatchProbe = { readAndDisarm: () => LiveEngineDispatch[] };
+    type DispatchProbe = { readAndDisarm: () => ProbedEngineDispatch[] };
     const probe = (window as unknown as {
       __liveQualityDispatchProbe__?: DispatchProbe;
     }).__liveQualityDispatchProbe__;
@@ -700,6 +748,7 @@ async function attachContinuousEnergyCapture(page: Page, trackIds: string[]): Pr
           type: 'done';
           capturedFrames: number;
           outputOnsetFrame: number;
+          dispatchAudioFrame: number;
           measurements: Array<EnergyMeasurement & { inputIndex: number }>;
         }>;
       };
@@ -726,6 +775,7 @@ async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
       type: 'done';
       capturedFrames: number;
       outputOnsetFrame: number;
+      dispatchAudioFrame: number;
       measurements: Array<EnergyMeasurement & { inputIndex: number }>;
     };
     type ErrorMessage = { type: 'error'; message: string };
@@ -800,8 +850,8 @@ async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
     const playButton = document.querySelector<HTMLButtonElement>('[data-testid="play-button"]');
     if (!playButton) throw new Error('Play button unavailable after continuous capture armed');
     // Audio was already unlocked by prepareAudioForTracks. The worklet records
-    // the absolute onset frame, so delayed arm acknowledgement does not enter
-    // the scheduler-owned event-to-output comparison.
+    // the absolute onset and production-dispatch marker frames on the same
+    // render clock, so delayed arm acknowledgement cannot skew their interval.
     playButton.click();
   });
 }
@@ -812,6 +862,7 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
       type: 'done';
       capturedFrames: number;
       outputOnsetFrame: number;
+      dispatchAudioFrame: number;
       measurements: Array<EnergyMeasurement & { inputIndex: number }>;
     };
     const probe = (window as unknown as {
@@ -849,6 +900,9 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
     }
     if (!Number.isInteger(result.outputOnsetFrame) || result.outputOnsetFrame < 0) {
       throw new Error('Continuous energy capture returned an invalid absolute output-onset frame');
+    }
+    if (!Number.isInteger(result.dispatchAudioFrame) || result.dispatchAudioFrame < 0) {
+      throw new Error('Continuous energy capture returned an invalid dispatch-marker frame');
     }
 
     const byInput = new Map(result.measurements.map(measurement => [measurement.inputIndex, measurement]));
@@ -904,6 +958,7 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
       master,
       tracks,
       outputOnsetFrame: result.outputOnsetFrame,
+      dispatchAudioFrame: result.dispatchAudioFrame,
       randomCalls: randomState.calls,
     };
   }, {
@@ -1241,7 +1296,7 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
         // and must not move an instrument's level rank.
         let energy: EnergyCaptureResult | null = null;
         let isolationSnapshot: PreArmIsolationSnapshot | null = null;
-        let observedEngineDispatches: LiveEngineDispatch[] | null = null;
+        let probedEngineDispatches: ProbedEngineDispatch[] | null = null;
         let trialPrimaryError: unknown;
         let trialCleanupFailure: unknown;
         try {
@@ -1253,15 +1308,17 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           await armAndStartContinuousEnergyCapture(page);
           energy = await readContinuousEnergyCapture(page);
           await stopPlaybackIfActive(page);
-          observedEngineDispatches = await readAndDisarmEngineDispatchProbe(page);
-          expect(observedEngineDispatches).toHaveLength(1);
-          expect(observedEngineDispatches[0]).toMatchObject(
+          probedEngineDispatches = await readAndDisarmEngineDispatchProbe(page);
+          expect(probedEngineDispatches).toHaveLength(1);
+          expect(probedEngineDispatches[0]).toMatchObject(
             expectedLiveEngineDispatchIdentity(spec, trackId),
           );
-          expect(Number.isFinite(observedEngineDispatches[0].eventTimeSeconds)).toBe(true);
-          expect(observedEngineDispatches[0].eventTimeSeconds).toBeGreaterThanOrEqual(0);
-          expect(Number.isInteger(observedEngineDispatches[0].dispatchAudioFrame)).toBe(true);
-          expect(observedEngineDispatches[0].dispatchAudioFrame).toBeGreaterThanOrEqual(0);
+          expect(Number.isFinite(probedEngineDispatches[0].eventTimeSeconds)).toBe(true);
+          expect(probedEngineDispatches[0].eventTimeSeconds).toBeGreaterThanOrEqual(0);
+          expect(Number.isInteger(
+            probedEngineDispatches[0].controlDispatchAudioFrame,
+          )).toBe(true);
+          expect(probedEngineDispatches[0].controlDispatchAudioFrame).toBeGreaterThanOrEqual(0);
         } catch (error) {
           trialPrimaryError = error;
           throw error;
@@ -1280,10 +1337,13 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           }
         }
         if (trialCleanupFailure !== undefined) throw trialCleanupFailure;
-        if (!energy || !isolationSnapshot || !observedEngineDispatches) {
+        if (!energy || !isolationSnapshot || !probedEngineDispatches) {
           throw new Error(`Isolated trial ${trackId} completed without all evidence fields`);
         }
         expect(energy.sampleRate).toBe(expectedSampleRate);
+        const observedEngineDispatches: LiveEngineDispatch[] = probedEngineDispatches.map(
+          dispatch => ({ ...dispatch, dispatchAudioFrame: energy.dispatchAudioFrame }),
+        );
 
         const trackEnergy = energy.tracks[trackId];
         if (!trackEnergy) throw new Error(`Continuous energy capture omitted ${trackId}`);
@@ -1291,6 +1351,7 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           observedEngineDispatches[0].eventTimeSeconds * energy.sampleRate,
         );
         const dispatchAudioFrame = observedEngineDispatches[0].dispatchAudioFrame;
+        const controlDispatchAudioFrame = observedEngineDispatches[0].controlDispatchAudioFrame;
         const renderReferenceFrame = Math.max(scheduledEventFrame, dispatchAudioFrame);
         results.push({
           ...spec,
@@ -1300,6 +1361,8 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           masterPeak: energy.master.peak,
           masterRms: energy.master.rms,
           outputOnsetFrame: energy.outputOnsetFrame,
+          scheduledEventToControlDispatchFrames:
+            controlDispatchAudioFrame - scheduledEventFrame,
           scheduledEventToDispatchFrames: dispatchAudioFrame - scheduledEventFrame,
           scheduledEventToOnsetFrames: energy.outputOnsetFrame - scheduledEventFrame,
           renderReferenceToOnsetFrames: energy.outputOnsetFrame - renderReferenceFrame,

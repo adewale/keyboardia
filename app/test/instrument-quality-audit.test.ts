@@ -113,6 +113,7 @@ function currentLiveReportFixture(): Record<string, unknown> {
   for (const item of report.instruments as Array<LiveInstrumentSpec & {
     trackId: string;
     outputOnsetFrame: number;
+    scheduledEventToControlDispatchFrames: number;
     scheduledEventToDispatchFrames: number;
     scheduledEventToOnsetFrames: number;
     renderReferenceToOnsetFrames: number;
@@ -123,6 +124,7 @@ function currentLiveReportFixture(): Record<string, unknown> {
     const eventTimeSeconds = fixture.position + 1;
     const scheduledEventFrame = Math.round(eventTimeSeconds * fixture.sampleRate);
     const dispatchAudioFrame = Math.max(0, scheduledEventFrame - 7_200);
+    item.scheduledEventToControlDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
     item.scheduledEventToDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
     item.scheduledEventToOnsetFrames = Math.round(0.01 * fixture.sampleRate);
     item.outputOnsetFrame = scheduledEventFrame
@@ -132,6 +134,7 @@ function currentLiveReportFixture(): Record<string, unknown> {
     item.observedEngineDispatches = [{
       ...expectedLiveEngineDispatchIdentity(item, item.trackId),
       eventTimeSeconds,
+      controlDispatchAudioFrame: dispatchAudioFrame,
       dispatchAudioFrame,
     }];
   }

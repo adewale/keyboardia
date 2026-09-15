@@ -108,6 +108,9 @@ function validReceipt(): LiveQualityReport {
       const eventTimeSeconds = 1 + index * 4;
       const scheduledEventFrame = Math.round(eventTimeSeconds * 48_000);
       const dispatchAudioFrame = scheduledEventFrame - 7_200;
+      const controlDispatchAudioFrame = dispatchAudioFrame;
+      const scheduledEventToControlDispatchFrames =
+        controlDispatchAudioFrame - scheduledEventFrame;
       const scheduledEventToDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
       const scheduledEventToOnsetFrames = 240;
       const outputOnsetFrame = scheduledEventFrame + scheduledEventToOnsetFrames;
@@ -124,6 +127,7 @@ function validReceipt(): LiveQualityReport {
         capturedFrames,
         channelSampleCount,
         outputOnsetFrame,
+        scheduledEventToControlDispatchFrames,
         scheduledEventToDispatchFrames,
         scheduledEventToOnsetFrames,
         renderReferenceToOnsetFrames,
@@ -133,6 +137,7 @@ function validReceipt(): LiveQualityReport {
         observedEngineDispatches: [{
           ...expectedLiveEngineDispatchIdentity(spec, trackId),
           eventTimeSeconds,
+          controlDispatchAudioFrame,
           dispatchAudioFrame,
         }],
       };
@@ -149,8 +154,10 @@ function bindTiming(
 ): void {
   const dispatch = result.observedEngineDispatches[0];
   const scheduledEventFrame = Math.round(dispatch.eventTimeSeconds * sampleRate);
+  dispatch.controlDispatchAudioFrame = dispatchAudioFrame;
   dispatch.dispatchAudioFrame = dispatchAudioFrame;
   result.outputOnsetFrame = outputOnsetFrame;
+  result.scheduledEventToControlDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
   result.scheduledEventToDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
   result.scheduledEventToOnsetFrames = outputOnsetFrame - scheduledEventFrame;
   result.renderReferenceToOnsetFrames = outputOnsetFrame
@@ -176,7 +183,7 @@ describe('live instrument-quality receipt', () => {
   });
 
   it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
-    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(11);
+    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(12);
     const stepDuration = 60 / LIVE_TEMPO / 4;
     expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
     expect(LIVE_NOTE_DURATION_SECONDS).toBe(stepDuration * 0.9);
@@ -294,6 +301,12 @@ describe('live instrument-quality receipt', () => {
     bindTiming(onTimeDispatch.instruments[0], 48_000, 48_000, 48_240);
     expect(validateLiveQualityReport(onTimeDispatch, SUBJECT)).toBe(onTimeDispatch);
 
+    const onTimeDispatchWithToneLookahead = validReceipt();
+    bindTiming(onTimeDispatchWithToneLookahead.instruments[0], 48_000, 48_000, 52_801);
+    expect(() => validateLiveQualityReport(onTimeDispatchWithToneLookahead, SUBJECT)).toThrow(
+      /maximum renderer-reference-to-onset/,
+    );
+
     const lateCommonDispatch = validReceipt();
     bindTiming(lateCommonDispatch.instruments[0], 48_000, 48_000 + 4_800, 48_000 + 5_040);
     expect(lateCommonDispatch.instruments[0]).toMatchObject({
@@ -324,6 +337,12 @@ describe('live instrument-quality receipt', () => {
     unboundDispatch.instruments[0].scheduledEventToDispatchFrames += 1;
     expect(() => validateLiveQualityReport(unboundDispatch, SUBJECT)).toThrow(
       /dispatch delta is not bound to its absolute frames/,
+    );
+
+    const unboundControlDispatch = validReceipt();
+    unboundControlDispatch.instruments[0].scheduledEventToControlDispatchFrames += 1;
+    expect(() => validateLiveQualityReport(unboundControlDispatch, SUBJECT)).toThrow(
+      /control-dispatch delta is not bound to its absolute frames/,
     );
 
     const unboundRendererOnset = validReceipt();
@@ -535,5 +554,17 @@ describe('live instrument-quality receipt', () => {
     fractionalDispatchFrame.instruments[0].observedEngineDispatches[0].dispatchAudioFrame += 0.5;
     expect(() => validateLiveQualityReport(fractionalDispatchFrame, SUBJECT))
       .toThrow(/dispatchAudioFrame must be a nonnegative integer/);
+
+    const negativeControlDispatchFrame = validReceipt();
+    negativeControlDispatchFrame.instruments[0]
+      .observedEngineDispatches[0].controlDispatchAudioFrame = -1;
+    expect(() => validateLiveQualityReport(negativeControlDispatchFrame, SUBJECT))
+      .toThrow(/controlDispatchAudioFrame must be a nonnegative integer/);
+
+    const fractionalControlDispatchFrame = validReceipt();
+    fractionalControlDispatchFrame.instruments[0]
+      .observedEngineDispatches[0].controlDispatchAudioFrame += 0.5;
+    expect(() => validateLiveQualityReport(fractionalControlDispatchFrame, SUBJECT))
+      .toThrow(/controlDispatchAudioFrame must be a nonnegative integer/);
   });
 });

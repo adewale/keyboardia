@@ -6,7 +6,7 @@ import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
-export const LIVE_RECEIPT_SCHEMA_VERSION = 11;
+export const LIVE_RECEIPT_SCHEMA_VERSION = 12;
 export const LIVE_RECEIPT_CLAIM = 'live-post-track-signal-evidence';
 export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
@@ -36,11 +36,11 @@ export const LIVE_UNMUTE_SETTLE_SECONDS = 0.25;
 export const LIVE_TRIAL_MODE = 'single-unmuted-track-plus-master-per-capture';
 export const LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS = 1;
 export const LIVE_ISOLATION_SCOPE = 'audible-routing-only-muted-release-tails-may-remain-allocated';
-export const LIVE_CAPTURE_METHOD = 'onset-aligned-audio-worklet-accumulator-v4';
+export const LIVE_CAPTURE_METHOD = 'onset-aligned-audio-worklet-accumulator-v5';
 export const LIVE_CAPTURE_ALIGNMENT =
   'first-isolated-track-or-master-output-frame-above-pinned-threshold';
 export const LIVE_CAPTURE_TIMING_ORIGIN =
-  'absolute-audio-worklet-output-onset-frame-minus-later-of-scheduled-event-and-observed-production-dispatch-frame';
+  'absolute-audio-worklet-output-onset-frame-minus-later-of-scheduled-event-and-audio-param-marked-production-dispatch-frame';
 export const LIVE_CAPTURE_DURATION_SECONDS = 2.5;
 export const LIVE_CAPTURE_CHANNEL_COUNT = 2;
 export const LIVE_ONSET_THRESHOLD = 1e-7;
@@ -172,7 +172,9 @@ export interface LiveEngineDispatchIdentity {
 export interface LiveEngineDispatch extends LiveEngineDispatchIdentity {
   /** Absolute AudioContext time passed to the production renderer. */
   eventTimeSeconds: number;
-  /** Same-context AudioContext frame observed immediately before renderer dispatch. */
+  /** Main-thread AudioContext frame snapshotted immediately before renderer dispatch. */
+  controlDispatchAudioFrame: number;
+  /** Render-thread frame where the pre-renderer AudioParam marker became observable. */
   dispatchAudioFrame: number;
 }
 
@@ -214,7 +216,9 @@ export interface LiveInstrumentResult extends LiveInstrumentSpec {
   capturedFrames: number;
   channelSampleCount: number;
   outputOnsetFrame: number;
-  /** Raw sequencer diagnostic; signed because lookahead dispatches are early. */
+  /** Raw main-thread sequencer diagnostic; signed because lookahead dispatches are early. */
+  scheduledEventToControlDispatchFrames: number;
+  /** Raw render-thread marker diagnostic; signed because lookahead dispatches are early. */
   scheduledEventToDispatchFrames: number;
   /** Raw end-to-end diagnostic from the scheduled target to output onset. */
   scheduledEventToOnsetFrames: number;
@@ -495,6 +499,7 @@ export function validateLiveQualityReport(
     positiveInteger(item.channelSampleCount, `instrument ${item.sampleId}.channelSampleCount`);
     positiveInteger(item.outputOnsetFrame, `instrument ${item.sampleId}.outputOnsetFrame`);
     for (const key of [
+      'scheduledEventToControlDispatchFrames',
       'scheduledEventToDispatchFrames',
       'scheduledEventToOnsetFrames',
       'renderReferenceToOnsetFrames',
@@ -532,6 +537,10 @@ export function validateLiveQualityReport(
     finiteNonnegative(
       dispatch.eventTimeSeconds,
       `instrument ${item.sampleId}.dispatch.eventTimeSeconds`,
+    );
+    nonnegativeInteger(
+      dispatch.controlDispatchAudioFrame,
+      `instrument ${item.sampleId}.dispatch.controlDispatchAudioFrame`,
     );
     nonnegativeInteger(
       dispatch.dispatchAudioFrame,
@@ -599,16 +608,28 @@ export function validateLiveQualityReport(
       const scheduledEventFrame = Math.round(
         dispatch.eventTimeSeconds * (session.sampleRate as number),
       );
+      const controlDispatchAudioFrame = dispatch.controlDispatchAudioFrame;
       const dispatchAudioFrame = dispatch.dispatchAudioFrame;
+      const scheduledEventToControlDispatchFrames =
+        result.scheduledEventToControlDispatchFrames as number;
       const scheduledEventToDispatchFrames = result.scheduledEventToDispatchFrames as number;
       const scheduledEventToOnsetFrames = result.scheduledEventToOnsetFrames as number;
       const renderReferenceToOnsetFrames = result.renderReferenceToOnsetFrames as number;
+      const derivedScheduledEventToControlDispatchFrames =
+        controlDispatchAudioFrame - scheduledEventFrame;
       const derivedScheduledEventToDispatchFrames = dispatchAudioFrame - scheduledEventFrame;
       const derivedScheduledEventToOnsetFrames = (result.outputOnsetFrame as number)
         - scheduledEventFrame;
       const renderReferenceFrame = Math.max(scheduledEventFrame, dispatchAudioFrame);
       const derivedRenderReferenceToOnsetFrames = (result.outputOnsetFrame as number)
         - renderReferenceFrame;
+      if (scheduledEventToControlDispatchFrames !== derivedScheduledEventToControlDispatchFrames) {
+        throw new Error(
+          `Live receipt instrument ${id} control-dispatch delta is not bound to its absolute frames: `
+          + `${scheduledEventToControlDispatchFrames} reported != `
+          + `${derivedScheduledEventToControlDispatchFrames} derived`,
+        );
+      }
       if (scheduledEventToDispatchFrames !== derivedScheduledEventToDispatchFrames) {
         throw new Error(
           `Live receipt instrument ${id} dispatch delta is not bound to its absolute frames: `
