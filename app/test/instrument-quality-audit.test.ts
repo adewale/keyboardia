@@ -24,12 +24,18 @@ const APP_ROOT = path.resolve(import.meta.dirname, '..');
 const REPOSITORY_ROOT = path.resolve(APP_ROOT, '..');
 const EVIDENCE_ROOT = path.resolve(REPOSITORY_ROOT, 'docs/evidence');
 
-function uniqueCandidateEvidence(prefix: string): string {
+function uniqueCandidateEvidence(
+  prefix: string,
+  accepts: (report: Record<string, unknown>) => boolean,
+): string {
   const matches = fs.readdirSync(EVIDENCE_ROOT)
     .filter(filename => filename.startsWith(prefix) && filename.endsWith('.json'))
+    .filter(filename => accepts(JSON.parse(
+      fs.readFileSync(path.resolve(EVIDENCE_ROOT, filename), 'utf8'),
+    ) as Record<string, unknown>))
     .sort();
   if (matches.length !== 1) {
-    throw new Error(`Expected one ${prefix}*.json evidence fixture, found ${matches.length}`);
+    throw new Error(`Expected one current ${prefix}*.json evidence fixture, found ${matches.length}`);
   }
   return path.resolve(EVIDENCE_ROOT, matches[0]);
 }
@@ -43,7 +49,12 @@ function currentSubjectCommit(): string {
 
 function currentCandidateSampleReport(): Record<string, unknown> {
   const report = JSON.parse(fs.readFileSync(
-    uniqueCandidateEvidence('candidate-sample-quality-'),
+    uniqueCandidateEvidence('candidate-sample-quality-', candidate =>
+      candidate.evaluatorBundleSha256 === sampleQualityEvaluatorBundleSha256(APP_ROOT)
+      && candidate.baselineSha256 === sha256File(
+        path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
+      )
+    ),
     'utf8',
   )) as Record<string, unknown>;
   report.subjectCommit = currentSubjectCommit();
@@ -56,7 +67,9 @@ function currentCandidateSampleReport(): Record<string, unknown> {
 
 function currentLiveReportFixture(): Record<string, unknown> {
   const report = JSON.parse(fs.readFileSync(
-    uniqueCandidateEvidence('candidate-live-primary-'),
+    uniqueCandidateEvidence('candidate-live-primary-', candidate =>
+      candidate.schemaVersion === LIVE_RECEIPT_SCHEMA_VERSION
+    ),
     'utf8',
   )) as Record<string, unknown>;
   report.schemaVersion = LIVE_RECEIPT_SCHEMA_VERSION;
