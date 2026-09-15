@@ -3553,7 +3553,7 @@ The automatically verifiable follow-up has its own before/after receipt in
 Song Maker preference trial remains a release-quality listening task and is not
 represented as completed by automation.
 
-### Phase 44: Measured Sound Changes 🟡 Implemented / Device Gate Open
+### Phase 44: Measured Sound Changes 🟡 Implemented / Latency Gate Open
 
 Implement the highest-value, objectively testable findings from the frozen
 Tone Nets comparison without treating architectural difference as listener
@@ -3588,10 +3588,14 @@ five trials, reported p95 is the observed maximum rather than a population
 estimate. Phase 44's velocity, room, capacity, migration, and sustain gates
 pass. This is not a timbre or listener-preference ranking.
 
-**Open release gate:** physical iPhone Safari and Chrome with the ringer switch
-off, including added output-latency measurement. Candidate follow-ons — sampled
-filter-envelope/LFO motion, per-instrument room sends, and device quality tiers
-— are feasibility-assessed only and deliberately not represented as shipped.
+**Physical result:** on 2026-09-15 the user reported that the staged build was
+audible with the iPhone ringer switch off across the iOS browsers tested. The
+same test confirmed the known limitation that a backgrounded browser can miss
+sequencer beats; continuous background cadence is not a Phase 44 claim.
+**Open release gate:** objective device output-latency measurement. Candidate
+follow-ons — sampled filter-envelope/LFO motion, per-instrument room sends, and
+device quality tiers — are feasibility-assessed only and deliberately not
+represented as shipped.
 Per-instrument derived room defaults are the best next engine candidate;
 automatic device tiers remain blocked on dropout/voice-steal observability and
 a physical-device calibration matrix.
