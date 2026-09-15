@@ -47,24 +47,32 @@ function currentSubjectCommit(): string {
   }).trim();
 }
 
-function subjectIsAncestorOfCurrentHead(report: Record<string, unknown>): boolean {
-  if (typeof report.subjectCommit !== 'string') return false;
-  return spawnSync('git', [
-    'merge-base',
-    '--is-ancestor',
-    report.subjectCommit,
-    'HEAD',
-  ], { cwd: APP_ROOT }).status === 0;
+function currentLiveEvidenceFixturePath(): string {
+  return uniqueCandidateEvidence('candidate-live-primary-', candidate =>
+    candidate.schemaVersion === LIVE_RECEIPT_SCHEMA_VERSION
+  );
+}
+
+function currentEvidenceSubjectCommit(): string {
+  const report = JSON.parse(fs.readFileSync(
+    currentLiveEvidenceFixturePath(),
+    'utf8',
+  )) as Record<string, unknown>;
+  if (typeof report.subjectCommit !== 'string') {
+    throw new Error('Current live evidence fixture has no subject commit');
+  }
+  return report.subjectCommit;
 }
 
 function currentCandidateSampleReport(): Record<string, unknown> {
+  const evidenceSubjectCommit = currentEvidenceSubjectCommit();
   const report = JSON.parse(fs.readFileSync(
     uniqueCandidateEvidence('candidate-sample-quality-', candidate =>
       candidate.evaluatorBundleSha256 === sampleQualityEvaluatorBundleSha256(APP_ROOT)
       && candidate.baselineSha256 === sha256File(
         path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
       )
-      && subjectIsAncestorOfCurrentHead(candidate)
+      && candidate.subjectCommit === evidenceSubjectCommit
     ),
     'utf8',
   )) as Record<string, unknown>;
@@ -78,9 +86,7 @@ function currentCandidateSampleReport(): Record<string, unknown> {
 
 function currentLiveReportFixture(): Record<string, unknown> {
   const report = JSON.parse(fs.readFileSync(
-    uniqueCandidateEvidence('candidate-live-primary-', candidate =>
-      candidate.schemaVersion === LIVE_RECEIPT_SCHEMA_VERSION
-    ),
+    currentLiveEvidenceFixturePath(),
     'utf8',
   )) as Record<string, unknown>;
   report.schemaVersion = LIVE_RECEIPT_SCHEMA_VERSION;
