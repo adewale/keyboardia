@@ -5857,6 +5857,13 @@ green lane only after spending 3.6 minutes running it. The E2E inventory
 validator now compares the local Chromium/WebKit disposition contracts with
 CI, and pre-push runs that check before launching either browser suite.
 
+The next rebase exposed a higher-order gap: upstream added three
+homepage-remix tests. CI and pre-push still agreed with each other, but both
+accounted for 232 Chromium results while Playwright now collected 235 (and 216
+versus 219 in WebKit). The validator now also lists each exact Playwright
+project under the gate's functional-only environment and requires the expected
+plus skipped counts to equal the collected total.
+
 ### The rule
 
 Rebase immediately before final visual approval and regenerate metrics,
@@ -5866,6 +5873,8 @@ invalidates approval until affected evidence is refreshed. Stacked PRs reduce
 review size; they do not make inherited evidence permanent. When local and CI
 gates repeat an exact inventory, mechanically cross-check the copies before the
 expensive lane starts; a prose promise that they match is not a contract.
+Agreement between copies proves consistency, not correctness: bind repeated
+counts to the authoritative collector as well.
 
 ---
 
