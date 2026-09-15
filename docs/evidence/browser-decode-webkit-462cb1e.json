@@ -1,13 +1,13 @@
 {
   "schemaVersion": 2,
   "claim": "cross-decoder-sample-onset-evidence",
-  "generatedAt": "2026-09-15T03:19:36.137Z",
-  "subjectCommit": "cd42b4d85b757cf6219df126b1fa7785cfdd1bef",
+  "generatedAt": "2026-09-15T03:50:07.253Z",
+  "subjectCommit": "462cb1e7351ff293b41c8e8b6c1527c8cf1b47a7",
   "subjectTreeClean": true,
   "browser": {
-    "name": "chromium",
-    "version": "143.0.7499.4",
-    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/143.0.7499.4 Safari/537.36"
+    "name": "webkit",
+    "version": "26.0",
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.0 Safari/605.1.15"
   },
   "results": [
     {
@@ -16,10 +16,10 @@
       "url": "/instruments/808-clap/clap.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.0000226757369615,
+      "duration": 2.0375510204081633,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.15873015873015872
     },
     {
       "instrumentId": "808-hihat-closed",
@@ -27,7 +27,7 @@
       "url": "/instruments/808-hihat-closed/hihat.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.25,
+      "duration": 0.2873469387755102,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0
@@ -38,10 +38,10 @@
       "url": "/instruments/808-hihat-open/hihat-open.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.5000226757369615,
+      "duration": 0.5485714285714286,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "808-kick",
@@ -49,10 +49,10 @@
       "url": "/instruments/808-kick/kick.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5000226757369615,
+      "duration": 1.5412244897959184,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 13.08390022675737
     },
     {
       "instrumentId": "808-snare",
@@ -60,7 +60,7 @@
       "url": "/instruments/808-snare/snare.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.5000226757369615,
+      "duration": 0.5485714285714286,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0
@@ -71,7 +71,7 @@
       "url": "/instruments/acoustic-crash/source-0001.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 11.430589569160997,
+      "duration": 11.43,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -82,10 +82,10 @@
       "url": "/instruments/acoustic-crash/source-0002.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 11.948707482993198,
+      "duration": 11.947981859410431,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-crash",
@@ -93,7 +93,7 @@
       "url": "/instruments/acoustic-crash/source-0003.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 10.966031746031746,
+      "duration": 10.965986394557824,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -104,10 +104,10 @@
       "url": "/instruments/acoustic-crash/source-0004.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 12.018820861678005,
+      "duration": 12.018979591836734,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "acoustic-crash",
@@ -115,7 +115,7 @@
       "url": "/instruments/acoustic-crash/source-0005.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 12.62358276643991,
+      "duration": 12.622993197278912,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -126,7 +126,7 @@
       "url": "/instruments/acoustic-crash/source-0006.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 11.537097505668934,
+      "duration": 11.536984126984127,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -137,7 +137,7 @@
       "url": "/instruments/acoustic-crash/source-0007.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 10.834149659863945,
+      "duration": 10.833990929705216,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -148,10 +148,10 @@
       "url": "/instruments/acoustic-crash/source-0008.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 12.890249433106575,
+      "duration": 12.89,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.045351473922902494
     },
     {
       "instrumentId": "acoustic-crash",
@@ -159,10 +159,10 @@
       "url": "/instruments/acoustic-crash/source-0009.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 14.107233560090704,
+      "duration": 14.106984126984127,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-crash",
@@ -170,7 +170,7 @@
       "url": "/instruments/acoustic-crash/source-0010.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 13.776349206349206,
+      "duration": 13.775986394557822,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -181,7 +181,7 @@
       "url": "/instruments/acoustic-crash/source-0011.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 13.057097505668935,
+      "duration": 13.056984126984126,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -192,7 +192,7 @@
       "url": "/instruments/acoustic-crash/source-0012.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 13.502063492063492,
+      "duration": 13.501995464852607,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -368,10 +368,10 @@
       "url": "/instruments/acoustic-hihat-closed/source-0001.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.7590022675736962,
+      "duration": 0.7589795918367347,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.8163265306122449
+      "leadingSilenceMs": 0.7709750566893424
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -382,7 +382,7 @@
       "duration": 0.56,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.045351473922902494
+      "leadingSilenceMs": 0.5668934240362812
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -390,10 +390,10 @@
       "url": "/instruments/acoustic-hihat-closed/source-0003.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.661859410430839,
+      "duration": 0.6619954648526077,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.06802721088435375
+      "leadingSilenceMs": 0.31746031746031744
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -401,10 +401,10 @@
       "url": "/instruments/acoustic-hihat-closed/source-0004.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.6231746031746032,
+      "duration": 0.6229931972789116,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.1360544217687075
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -412,10 +412,10 @@
       "url": "/instruments/acoustic-hihat-closed/source-0005.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.6266666666666667,
+      "duration": 0.6259863945578231,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.06802721088435375
+      "leadingSilenceMs": 0.045351473922902494
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -423,10 +423,10 @@
       "url": "/instruments/acoustic-hihat-closed/source-0006.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.5856235827664399,
+      "duration": 0.5849886621315192,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.11337868480725624
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -434,10 +434,10 @@
       "url": "/instruments/acoustic-hihat-closed/source-0007.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.7079591836734694,
+      "duration": 0.7079818594104308,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -445,10 +445,10 @@
       "url": "/instruments/acoustic-hihat-closed/source-0008.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.6613378684807256,
+      "duration": 0.6609977324263039,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -456,7 +456,7 @@
       "url": "/instruments/acoustic-hihat-closed/source-0009.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.6959637188208617,
+      "duration": 0.6959863945578232,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -467,10 +467,10 @@
       "url": "/instruments/acoustic-hihat-closed/source-0010.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.6994104308390022,
+      "duration": 0.6989795918367347,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-hihat-closed",
@@ -478,7 +478,7 @@
       "url": "/instruments/acoustic-hihat-closed/source-0011.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.7221995464852607,
+      "duration": 0.7219954648526077,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -489,7 +489,7 @@
       "url": "/instruments/acoustic-hihat-closed/source-0012.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.7228571428571429,
+      "duration": 0.7229931972789115,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -500,7 +500,7 @@
       "url": "/instruments/acoustic-hihat-closed/source-0013.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.7810430839002268,
+      "duration": 0.7809977324263039,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -511,7 +511,7 @@
       "url": "/instruments/acoustic-hihat-closed/source-0014.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.7676190476190476,
+      "duration": 0.766984126984127,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -522,7 +522,7 @@
       "url": "/instruments/acoustic-hihat-closed/source-0015.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.7302267573696145,
+      "duration": 0.73,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -533,7 +533,7 @@
       "url": "/instruments/acoustic-hihat-closed/source-0016.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.7622902494331065,
+      "duration": 0.7619954648526077,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -544,7 +544,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0001.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 8.77154195011338,
+      "duration": 8.770997732426304,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -555,7 +555,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0002.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 7.460090702947846,
+      "duration": 7.46,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -566,10 +566,10 @@
       "url": "/instruments/acoustic-hihat-open/source-0003.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 7.671700680272109,
+      "duration": 7.6709977324263035,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.11337868480725624
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-hihat-open",
@@ -577,7 +577,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0004.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 7.841496598639456,
+      "duration": 7.840997732426304,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -588,7 +588,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0005.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 7.19968253968254,
+      "duration": 7.198979591836735,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -599,7 +599,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0006.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 8.052086167800454,
+      "duration": 8.051995464852608,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -610,7 +610,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0007.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 9.561814058956916,
+      "duration": 9.561995464852608,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -621,7 +621,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0008.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 10.128684807256235,
+      "duration": 10.127981859410431,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -632,7 +632,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0009.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 10.279024943310658,
+      "duration": 10.278979591836734,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -643,7 +643,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0010.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 11.41437641723356,
+      "duration": 11.413990929705216,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -654,7 +654,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0011.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 12.231224489795919,
+      "duration": 12.230997732426303,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -665,7 +665,7 @@
       "url": "/instruments/acoustic-hihat-open/source-0012.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 11.45578231292517,
+      "duration": 11.455986394557824,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -676,7 +676,7 @@
       "url": "/instruments/acoustic-kick/source-0001.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.4560544217687075,
+      "duration": 2.455986394557823,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 2.879818594104308
@@ -687,7 +687,7 @@
       "url": "/instruments/acoustic-kick/source-0002.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.046235827664399,
+      "duration": 2.045986394557823,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 1.836734693877551
@@ -698,7 +698,7 @@
       "url": "/instruments/acoustic-kick/source-0003.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.0502721088435374,
+      "duration": 2.05,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 4.217687074829932
@@ -709,7 +709,7 @@
       "url": "/instruments/acoustic-kick/source-0004.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9313378684807256,
+      "duration": 1.930997732426304,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 3.492063492063492
@@ -720,7 +720,7 @@
       "url": "/instruments/acoustic-kick/source-0005.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.0776190476190477,
+      "duration": 2.076984126984127,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 1.1111111111111112
@@ -731,7 +731,7 @@
       "url": "/instruments/acoustic-kick/source-0006.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9707256235827664,
+      "duration": 1.97,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 1.0204081632653061
@@ -742,7 +742,7 @@
       "url": "/instruments/acoustic-kick/source-0007.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.164920634920635,
+      "duration": 2.164988662131519,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 1.2471655328798186
@@ -753,10 +753,10 @@
       "url": "/instruments/acoustic-kick/source-0008.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9896598639455783,
+      "duration": 1.9889795918367348,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 1.4512471655328798
+      "leadingSilenceMs": 1.4285714285714286
     },
     {
       "instrumentId": "acoustic-kick",
@@ -764,10 +764,10 @@
       "url": "/instruments/acoustic-kick/source-0009.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.349433106575964,
+      "duration": 2.3489795918367347,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.20408163265306123
+      "leadingSilenceMs": 0.22675736961451248
     },
     {
       "instrumentId": "acoustic-kick",
@@ -775,7 +775,7 @@
       "url": "/instruments/acoustic-kick/source-0010.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.408798185941043,
+      "duration": 2.4089795918367347,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.40816326530612246
@@ -786,7 +786,7 @@
       "url": "/instruments/acoustic-kick/source-0011.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.4282539682539683,
+      "duration": 2.4279818594104308,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -797,10 +797,10 @@
       "url": "/instruments/acoustic-kick/source-0012.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1810430839002266,
+      "duration": 2.1809977324263037,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.045351473922902494
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-kick",
@@ -808,10 +808,10 @@
       "url": "/instruments/acoustic-kick/source-0013.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.359501133786848,
+      "duration": 2.358979591836735,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.20408163265306123
+      "leadingSilenceMs": 0.09070294784580499
     },
     {
       "instrumentId": "acoustic-kick",
@@ -819,7 +819,7 @@
       "url": "/instruments/acoustic-kick/source-0014.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.4851020408163267,
+      "duration": 2.4849886621315194,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.2947845804988662
@@ -830,7 +830,7 @@
       "url": "/instruments/acoustic-kick/source-0015.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3233333333333333,
+      "duration": 2.3229931972789117,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -841,7 +841,7 @@
       "url": "/instruments/acoustic-kick/source-0016.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3496825396825396,
+      "duration": 2.3489795918367347,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -863,7 +863,7 @@
       "url": "/instruments/acoustic-ride/source-0002.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 8.142312925170067,
+      "duration": 8.141995464852608,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -874,10 +874,10 @@
       "url": "/instruments/acoustic-ride/source-0003.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 8.770340136054422,
+      "duration": 8.77,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "acoustic-ride",
@@ -885,10 +885,10 @@
       "url": "/instruments/acoustic-ride/source-0004.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 7.589319727891157,
+      "duration": 7.588979591836734,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.045351473922902494
     },
     {
       "instrumentId": "acoustic-ride",
@@ -896,7 +896,7 @@
       "url": "/instruments/acoustic-ride/source-0005.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 8.44546485260771,
+      "duration": 8.44498866213152,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -907,7 +907,7 @@
       "url": "/instruments/acoustic-ride/source-0006.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 8.480612244897959,
+      "duration": 8.48,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -918,7 +918,7 @@
       "url": "/instruments/acoustic-ride/source-0007.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 8.123174603174602,
+      "duration": 8.122993197278912,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -929,7 +929,7 @@
       "url": "/instruments/acoustic-ride/source-0008.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 7.689818594104309,
+      "duration": 7.69,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -940,7 +940,7 @@
       "url": "/instruments/acoustic-ride/source-0009.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 7.774557823129252,
+      "duration": 7.773990929705215,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -962,7 +962,7 @@
       "url": "/instruments/acoustic-ride/source-0011.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 7.633673469387755,
+      "duration": 7.632993197278911,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -973,7 +973,7 @@
       "url": "/instruments/acoustic-ride/source-0012.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 8.014625850340137,
+      "duration": 8.013990929705216,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -995,10 +995,10 @@
       "url": "/instruments/acoustic-snare/source-0005.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.6643310657596373,
+      "duration": 1.6639909297052153,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.09070294784580499
+      "leadingSilenceMs": 0.11337868480725624
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1006,10 +1006,10 @@
       "url": "/instruments/acoustic-snare/source-0009.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.622312925170068,
+      "duration": 1.6219954648526078,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.20408163265306123
+      "leadingSilenceMs": 1.8140589569160999
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1017,7 +1017,7 @@
       "url": "/instruments/acoustic-snare/source-0010.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.704331065759637,
+      "duration": 1.7039909297052154,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -1028,7 +1028,7 @@
       "url": "/instruments/acoustic-snare/source-0012.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.6017006802721088,
+      "duration": 1.6009977324263038,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.5895691609977324
@@ -1039,10 +1039,10 @@
       "url": "/instruments/acoustic-snare/source-0013.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.8592063492063493,
+      "duration": 1.8589795918367347,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 3.922902494331066
+      "leadingSilenceMs": 3.877551020408163
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1050,10 +1050,10 @@
       "url": "/instruments/acoustic-snare/source-0016.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9455555555555555,
+      "duration": 1.9449886621315193,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 6.054421768707483
+      "leadingSilenceMs": 6.099773242630386
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1061,10 +1061,10 @@
       "url": "/instruments/acoustic-snare/source-0017.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.671156462585034,
+      "duration": 1.670997732426304,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 3.197278911564626
+      "leadingSilenceMs": 3.1519274376417235
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1072,10 +1072,10 @@
       "url": "/instruments/acoustic-snare/source-0018.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9665079365079365,
+      "duration": 1.965986394557823,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 1.7913832199546484
+      "leadingSilenceMs": 1.9047619047619047
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1083,10 +1083,10 @@
       "url": "/instruments/acoustic-snare/source-0023.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.0110884353741496,
+      "duration": 2.0109977324263038,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.3854875283446712
+      "leadingSilenceMs": 0.36281179138321995
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1094,10 +1094,10 @@
       "url": "/instruments/acoustic-snare/source-0024.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.0277097505668933,
+      "duration": 2.026984126984127,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.045351473922902494
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1105,7 +1105,7 @@
       "url": "/instruments/acoustic-snare/source-0026.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.0548072562358275,
+      "duration": 2.054988662131519,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -1116,10 +1116,10 @@
       "url": "/instruments/acoustic-snare/source-0028.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9630612244897958,
+      "duration": 1.9629931972789116,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.7709750566893424
+      "leadingSilenceMs": 0.8843537414965986
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1127,10 +1127,10 @@
       "url": "/instruments/acoustic-snare/source-0029.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.8477551020408163,
+      "duration": 1.846984126984127,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 1.9727891156462585
+      "leadingSilenceMs": 0.8843537414965986
     },
     {
       "instrumentId": "acoustic-snare",
@@ -1138,7 +1138,7 @@
       "url": "/instruments/acoustic-snare/source-0032.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.566326530612245,
+      "duration": 1.5659863945578232,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -1149,10 +1149,10 @@
       "url": "/instruments/acoustic-snare/source-0034.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5848526077097507,
+      "duration": 1.5849886621315192,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.20408163265306123
+      "leadingSilenceMs": 0.22675736961451248
     },
     {
       "instrumentId": "alto-sax",
@@ -1161,7 +1161,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 5.826757369614512,
+      "duration": 5.8119954648526075,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.54421768707483
@@ -1173,7 +1173,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 4.549659863945578,
+      "duration": 4.528662131519274,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.11337868480725624
@@ -1185,7 +1185,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 6.2214965986394555,
+      "duration": 6.2109977324263035,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0
@@ -1197,7 +1197,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 5.478458049886621,
+      "duration": 5.466507936507936,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.045351473922902494
@@ -1209,7 +1209,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 5.966077097505669,
+      "duration": 5.963219954648526,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 1.2471655328798186
@@ -1221,7 +1221,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 6.801995464852608,
+      "duration": 6.79859410430839,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.045351473922902494
@@ -1233,7 +1233,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 4.990839002267574,
+      "duration": 4.9800453514739225,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.8616780045351474
@@ -1245,7 +1245,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 5.223038548752834,
+      "duration": 5.2214512471655325,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.9297052154195011
@@ -1257,7 +1257,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 5.315918367346939,
+      "duration": 5.306870748299319,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.045351473922902494
@@ -1269,7 +1269,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 6.19827664399093,
+      "duration": 6.181315192743764,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.06802721088435375
@@ -1281,7 +1281,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 6.012517006802721,
+      "duration": 5.999886621315193,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 1.2018140589569162
@@ -1293,7 +1293,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 5.060498866213152,
+      "duration": 5.044671201814059,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0.022675736961451247
@@ -1304,10 +1304,10 @@
       "url": "/instruments/brushes-snare/brush-hard.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.1,
+      "duration": 1.1493877551020408,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.54421768707483
     },
     {
       "instrumentId": "brushes-snare",
@@ -1315,10 +1315,10 @@
       "url": "/instruments/brushes-snare/brush-hit.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.1,
+      "duration": 1.1493877551020408,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.6575963718820862
     },
     {
       "instrumentId": "brushes-snare",
@@ -1326,10 +1326,10 @@
       "url": "/instruments/brushes-snare/brush-tap.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.8,
+      "duration": 0.8359183673469388,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.20408163265306123
     },
     {
       "instrumentId": "clean-guitar",
@@ -1337,10 +1337,10 @@
       "url": "/instruments/clean-guitar/E2.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 4.820997732426304,
+      "duration": 4.858775510204081,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 3.401360544217687
     },
     {
       "instrumentId": "clean-guitar",
@@ -1348,10 +1348,10 @@
       "url": "/instruments/clean-guitar/E3.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 5.928049886621316,
+      "duration": 5.955918367346939,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 13.061224489795919
     },
     {
       "instrumentId": "clean-guitar",
@@ -1359,10 +1359,10 @@
       "url": "/instruments/clean-guitar/E4.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 5.124943310657597,
+      "duration": 5.1722448979591835,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 13.061224489795919
     },
     {
       "instrumentId": "clean-guitar",
@@ -1370,10 +1370,10 @@
       "url": "/instruments/clean-guitar/E5.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.987142857142857,
+      "duration": 4.022857142857143,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 13.061224489795919
     },
     {
       "instrumentId": "finger-bass",
@@ -1461,7 +1461,7 @@
       "duration": 5,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.2947845804988662
+      "leadingSilenceMs": 0.31746031746031744
     },
     {
       "instrumentId": "finger-bass",
@@ -1472,7 +1472,7 @@
       "duration": 4.1,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.09070294784580499
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "finger-bass",
@@ -1483,7 +1483,7 @@
       "duration": 4.1,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.1360544217687075
+      "leadingSilenceMs": 0.15873015873015872
     },
     {
       "instrumentId": "finger-bass",
@@ -1549,7 +1549,7 @@
       "duration": 4.1,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -1670,7 +1670,7 @@
       "duration": 2.9,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -1714,7 +1714,7 @@
       "duration": 2.9,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -1747,7 +1747,7 @@
       "duration": 5,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.09070294784580499
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "finger-bass",
@@ -1758,7 +1758,7 @@
       "duration": 5,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -1780,7 +1780,7 @@
       "duration": 5,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "finger-bass",
@@ -1824,7 +1824,7 @@
       "duration": 4,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.22675736961451248
+      "leadingSilenceMs": 0.2494331065759637
     },
     {
       "instrumentId": "finger-bass",
@@ -1835,7 +1835,7 @@
       "duration": 4,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.1360544217687075
+      "leadingSilenceMs": 0.15873015873015872
     },
     {
       "instrumentId": "finger-bass",
@@ -1857,7 +1857,7 @@
       "duration": 4,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -1934,7 +1934,7 @@
       "duration": 3.8,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.09070294784580499
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "finger-bass",
@@ -1978,7 +1978,7 @@
       "duration": 3.8,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -2176,7 +2176,7 @@
       "duration": 4,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.3401360544217687
+      "leadingSilenceMs": 0.36281179138321995
     },
     {
       "instrumentId": "finger-bass",
@@ -2198,7 +2198,7 @@
       "duration": 4,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -2209,7 +2209,7 @@
       "duration": 4,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.18140589569160998
+      "leadingSilenceMs": 0.31746031746031744
     },
     {
       "instrumentId": "finger-bass",
@@ -2231,7 +2231,7 @@
       "duration": 4,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.06802721088435375
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "finger-bass",
@@ -2275,7 +2275,7 @@
       "duration": 3.6,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -2297,7 +2297,7 @@
       "duration": 3.6,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -2374,7 +2374,7 @@
       "duration": 4.2,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "finger-bass",
@@ -2440,7 +2440,7 @@
       "duration": 4,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.11337868480725624
+      "leadingSilenceMs": 0.09070294784580499
     },
     {
       "instrumentId": "finger-bass",
@@ -2539,7 +2539,7 @@
       "duration": 3.2,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0.045351473922902494
     },
     {
       "instrumentId": "finger-bass",
@@ -2583,7 +2583,7 @@
       "duration": 3.2,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "finger-bass",
@@ -2614,7 +2614,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 10.377868480725624,
+      "duration": 10.36859410430839,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -2626,7 +2626,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 13.721541950113378,
+      "duration": 13.704920634920635,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.22675736961451248
@@ -2638,7 +2638,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 3.9923809523809526,
+      "duration": 3.991904761904762,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.09070294784580499
@@ -2650,7 +2650,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 6.2214965986394555,
+      "duration": 6.200748299319728,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.40816326530612246
@@ -2662,7 +2662,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 12.003265306122449,
+      "duration": 11.985668934240362,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.11337868480725624
@@ -2674,7 +2674,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 14.30204081632653,
+      "duration": 14.282335600907029,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.18140589569160998
@@ -2686,7 +2686,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 9.913469387755102,
+      "duration": 9.898866213151928,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.20408163265306123
@@ -2698,7 +2698,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 14.162721088435374,
+      "duration": 14.145714285714286,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 2.9024943310657596
@@ -2710,7 +2710,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 8.195192743764173,
+      "duration": 8.191927437641723,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.18140589569160998
@@ -2722,7 +2722,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 5.269478458049886,
+      "duration": 5.256507936507936,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.272108843537415
@@ -2746,7 +2746,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 9.611609977324264,
+      "duration": 9.595487528344671,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -2758,7 +2758,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 12.281904761904762,
+      "duration": 12.26235827664399,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.22675736961451248
@@ -2770,7 +2770,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 8.380952380952381,
+      "duration": 8.375804988662132,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.1360544217687075
@@ -2782,7 +2782,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 5.339138321995465,
+      "duration": 5.337936507936508,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.31746031746031744
@@ -2794,7 +2794,7 @@
       "startOffset": 0,
       "maxAdaptiveCodecDelay": 0.06,
       "ok": true,
-      "duration": 11.562086167800453,
+      "duration": 11.557165532879818,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -3105,7 +3105,7 @@
       "duration": 0.6303628117913832,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.045351473922902494
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "marimba",
@@ -3149,7 +3149,7 @@
       "duration": 6.414807256235828,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.7029478458049887
+      "leadingSilenceMs": 0.4988662131519274
     },
     {
       "instrumentId": "marimba",
@@ -3501,7 +3501,7 @@
       "duration": 7,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 3.4693877551020407
+      "leadingSilenceMs": 3.492063492063492
     },
     {
       "instrumentId": "piano",
@@ -3619,10 +3619,10 @@
       "url": "/instruments/slap-bass/slap-a3.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.4310204081632653,
+      "duration": 0.45598639455782314,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 10.612244897959183
     },
     {
       "instrumentId": "slap-bass",
@@ -3630,10 +3630,10 @@
       "url": "/instruments/slap-bass/slap-c3.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.4310204081632653,
+      "duration": 0.45598639455782314,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 11.995464852607709
     },
     {
       "instrumentId": "slap-bass",
@@ -3641,10 +3641,10 @@
       "url": "/instruments/slap-bass/slap-c4.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.4310204081632653,
+      "duration": 0.45598639455782314,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 11.11111111111111
     },
     {
       "instrumentId": "slap-bass",
@@ -3652,7 +3652,7 @@
       "url": "/instruments/slap-bass/slap-e2.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 0.5172108843537415,
+      "duration": 0.5519954648526078,
       "sampleRate": 44100,
       "channels": 1,
       "leadingSilenceMs": 0
@@ -3663,7 +3663,7 @@
       "url": "/instruments/steel-drums/source-0002.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.700362811791383,
+      "duration": 2.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3674,7 +3674,7 @@
       "url": "/instruments/steel-drums/source-0003.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.9001360544217687,
+      "duration": 2.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -3685,7 +3685,7 @@
       "url": "/instruments/steel-drums/source-0005.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.1002267573696147,
+      "duration": 3.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.1360544217687075
@@ -3696,10 +3696,10 @@
       "url": "/instruments/steel-drums/source-0006.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.1002494331065757,
+      "duration": 3.1,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.11337868480725624
+      "leadingSilenceMs": 0.1360544217687075
     },
     {
       "instrumentId": "steel-drums",
@@ -3707,7 +3707,7 @@
       "url": "/instruments/steel-drums/source-0009.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.700249433106576,
+      "duration": 2.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3718,7 +3718,7 @@
       "url": "/instruments/steel-drums/source-0010.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.300340136054422,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.18140589569160998
@@ -3729,7 +3729,7 @@
       "url": "/instruments/steel-drums/source-0011.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.9002721088435375,
+      "duration": 2.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3740,7 +3740,7 @@
       "url": "/instruments/steel-drums/source-0013.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3002721088435374,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3751,7 +3751,7 @@
       "url": "/instruments/steel-drums/source-0015.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.102018140589569,
+      "duration": 2.1019954648526076,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -3762,7 +3762,7 @@
       "url": "/instruments/steel-drums/source-0017.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.101111111111111,
+      "duration": 2.100997732426304,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -3773,7 +3773,7 @@
       "url": "/instruments/steel-drums/source-0019.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.700362811791383,
+      "duration": 3.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3784,7 +3784,7 @@
       "url": "/instruments/steel-drums/source-0020.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.300340136054422,
+      "duration": 3.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.11337868480725624
@@ -3795,7 +3795,7 @@
       "url": "/instruments/steel-drums/source-0022.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 4.10031746031746,
+      "duration": 4.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3806,7 +3806,7 @@
       "url": "/instruments/steel-drums/source-0023.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 4.100362811791383,
+      "duration": 4.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.18140589569160998
@@ -3817,10 +3817,10 @@
       "url": "/instruments/steel-drums/source-0025.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.1002040816326533,
+      "duration": 3.1,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.11337868480725624
+      "leadingSilenceMs": 0.09070294784580499
     },
     {
       "instrumentId": "steel-drums",
@@ -3828,7 +3828,7 @@
       "url": "/instruments/steel-drums/source-0028.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.100362811791383,
+      "duration": 3.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -3839,7 +3839,7 @@
       "url": "/instruments/steel-drums/source-0029.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.300408163265306,
+      "duration": 3.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.09070294784580499
@@ -3850,7 +3850,7 @@
       "url": "/instruments/steel-drums/source-0030.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.300408163265306,
+      "duration": 3.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -3861,7 +3861,7 @@
       "url": "/instruments/steel-drums/source-0033.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 4.100340136054422,
+      "duration": 4.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.11337868480725624
@@ -3872,7 +3872,7 @@
       "url": "/instruments/steel-drums/source-0034.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 4.3002267573696145,
+      "duration": 4.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -3883,7 +3883,7 @@
       "url": "/instruments/steel-drums/source-0035.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.500294784580499,
+      "duration": 3.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3894,7 +3894,7 @@
       "url": "/instruments/steel-drums/source-0038.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 3.500249433106576,
+      "duration": 3.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3905,7 +3905,7 @@
       "url": "/instruments/steel-drums/source-0039.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.5002267573696146,
+      "duration": 2.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -3916,7 +3916,7 @@
       "url": "/instruments/steel-drums/source-0041.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.500204081632653,
+      "duration": 2.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.15873015873015872
@@ -3927,7 +3927,7 @@
       "url": "/instruments/steel-drums/source-0042.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.100408163265306,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -3938,7 +3938,7 @@
       "url": "/instruments/steel-drums/source-0043.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1004308390022675,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -3949,7 +3949,7 @@
       "url": "/instruments/steel-drums/source-0045.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3002721088435374,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -3960,7 +3960,7 @@
       "url": "/instruments/steel-drums/source-0047.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.300408163265306,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -3971,7 +3971,7 @@
       "url": "/instruments/steel-drums/source-0050.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3003174603174603,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.20408163265306123
@@ -3982,7 +3982,7 @@
       "url": "/instruments/steel-drums/source-0051.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.5002721088435376,
+      "duration": 2.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.20408163265306123
@@ -3993,7 +3993,7 @@
       "url": "/instruments/steel-drums/source-0053.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.10031746031746,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -4004,7 +4004,7 @@
       "url": "/instruments/steel-drums/source-0054.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4015,7 +4015,7 @@
       "url": "/instruments/steel-drums/source-0056.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1004308390022675,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -4026,7 +4026,7 @@
       "url": "/instruments/steel-drums/source-0057.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.100453514739229,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -4037,7 +4037,7 @@
       "url": "/instruments/steel-drums/source-0058.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3002721088435374,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -4048,7 +4048,7 @@
       "url": "/instruments/steel-drums/source-0059.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3003174603174603,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4059,10 +4059,10 @@
       "url": "/instruments/steel-drums/source-0062.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002494331065757,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.11337868480725624
+      "leadingSilenceMs": 0.09070294784580499
     },
     {
       "instrumentId": "steel-drums",
@@ -4070,7 +4070,7 @@
       "url": "/instruments/steel-drums/source-0064.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.10031746031746,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -4081,10 +4081,10 @@
       "url": "/instruments/steel-drums/source-0065.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002947845804987,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "steel-drums",
@@ -4092,7 +4092,7 @@
       "url": "/instruments/steel-drums/source-0066.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.300204081632653,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4103,7 +4103,7 @@
       "url": "/instruments/steel-drums/source-0069.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1006802721088436,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -4114,7 +4114,7 @@
       "url": "/instruments/steel-drums/source-0070.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.101791383219955,
+      "duration": 2.1019954648526076,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4125,7 +4125,7 @@
       "url": "/instruments/steel-drums/source-0071.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3003854875283447,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -4136,7 +4136,7 @@
       "url": "/instruments/steel-drums/source-0073.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3003854875283447,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -4147,7 +4147,7 @@
       "url": "/instruments/steel-drums/source-0075.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.10031746031746,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4158,7 +4158,7 @@
       "url": "/instruments/steel-drums/source-0078.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.100362811791383,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4169,7 +4169,7 @@
       "url": "/instruments/steel-drums/source-0080.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4180,7 +4180,7 @@
       "url": "/instruments/steel-drums/source-0082.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.1360544217687075
@@ -4191,7 +4191,7 @@
       "url": "/instruments/steel-drums/source-0085.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9004308390022675,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -4202,7 +4202,7 @@
       "url": "/instruments/steel-drums/source-0086.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9008843537414966,
+      "duration": 1.9009977324263039,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4213,7 +4213,7 @@
       "url": "/instruments/steel-drums/source-0087.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002494331065757,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4224,7 +4224,7 @@
       "url": "/instruments/steel-drums/source-0088.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002947845804987,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -4235,7 +4235,7 @@
       "url": "/instruments/steel-drums/source-0091.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.10031746031746,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4246,7 +4246,7 @@
       "url": "/instruments/steel-drums/source-0093.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900362811791383,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.11337868480725624
@@ -4257,7 +4257,7 @@
       "url": "/instruments/steel-drums/source-0094.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900408163265306,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4268,7 +4268,7 @@
       "url": "/instruments/steel-drums/source-0096.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9002721088435375,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4279,7 +4279,7 @@
       "url": "/instruments/steel-drums/source-0098.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003174603174604,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4290,7 +4290,7 @@
       "url": "/instruments/steel-drums/source-0099.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003401360544219,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4301,7 +4301,7 @@
       "url": "/instruments/steel-drums/source-0101.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002267573696147,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4312,7 +4312,7 @@
       "url": "/instruments/steel-drums/source-0103.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003174603174604,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -4323,7 +4323,7 @@
       "url": "/instruments/steel-drums/source-0106.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003174603174604,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4334,7 +4334,7 @@
       "url": "/instruments/steel-drums/source-0107.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -4345,7 +4345,7 @@
       "url": "/instruments/steel-drums/source-0108.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900249433106576,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4356,7 +4356,7 @@
       "url": "/instruments/steel-drums/source-0109.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900249433106576,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4367,7 +4367,7 @@
       "url": "/instruments/steel-drums/source-0111.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900453514739229,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.11337868480725624
@@ -4378,7 +4378,7 @@
       "url": "/instruments/steel-drums/source-0113.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7006802721088434,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4389,7 +4389,7 @@
       "url": "/instruments/steel-drums/source-0114.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900249433106576,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4400,7 +4400,7 @@
       "url": "/instruments/steel-drums/source-0117.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9002267573696145,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -4411,7 +4411,7 @@
       "url": "/instruments/steel-drums/source-0119.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900249433106576,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.1360544217687075
@@ -4422,10 +4422,10 @@
       "url": "/instruments/steel-drums/source-0120.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.045351473922902494
+      "leadingSilenceMs": 0
     },
     {
       "instrumentId": "steel-drums",
@@ -4433,10 +4433,10 @@
       "url": "/instruments/steel-drums/source-0122.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.09070294784580499
     },
     {
       "instrumentId": "steel-drums",
@@ -4444,7 +4444,7 @@
       "url": "/instruments/steel-drums/source-0123.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4455,7 +4455,7 @@
       "url": "/instruments/steel-drums/source-0125.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003401360544219,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4466,7 +4466,7 @@
       "url": "/instruments/steel-drums/source-0126.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003174603174604,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4477,7 +4477,7 @@
       "url": "/instruments/steel-drums/source-0127.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002494331065757,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4488,7 +4488,7 @@
       "url": "/instruments/steel-drums/source-0129.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002494331065757,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4499,7 +4499,7 @@
       "url": "/instruments/steel-drums/source-0130.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1004761904761904,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4510,7 +4510,7 @@
       "url": "/instruments/steel-drums/source-0131.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002494331065757,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4521,7 +4521,7 @@
       "url": "/instruments/steel-drums/source-0136.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003174603174604,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4532,7 +4532,7 @@
       "url": "/instruments/steel-drums/source-0137.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003174603174604,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4543,7 +4543,7 @@
       "url": "/instruments/steel-drums/source-0138.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004761904761905,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -4554,10 +4554,10 @@
       "url": "/instruments/steel-drums/source-0140.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7005215419501134,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "steel-drums",
@@ -4565,7 +4565,7 @@
       "url": "/instruments/steel-drums/source-0142.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002494331065757,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4576,7 +4576,7 @@
       "url": "/instruments/steel-drums/source-0143.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4587,10 +4587,10 @@
       "url": "/instruments/steel-drums/source-0144.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.300340136054422,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.18140589569160998
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -4598,10 +4598,10 @@
       "url": "/instruments/steel-drums/source-0145.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.3003174603174603,
+      "duration": 2.3,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.18140589569160998
+      "leadingSilenceMs": 0.20408163265306123
     },
     {
       "instrumentId": "steel-drums",
@@ -4609,7 +4609,7 @@
       "url": "/instruments/steel-drums/source-0148.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.10031746031746,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4620,7 +4620,7 @@
       "url": "/instruments/steel-drums/source-0150.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.100408163265306,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4631,7 +4631,7 @@
       "url": "/instruments/steel-drums/source-0152.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.500702947845805,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4642,7 +4642,7 @@
       "url": "/instruments/steel-drums/source-0153.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.500498866213152,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4653,10 +4653,10 @@
       "url": "/instruments/steel-drums/source-0155.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002494331065757,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.09070294784580499
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -4664,7 +4664,7 @@
       "url": "/instruments/steel-drums/source-0157.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -4675,7 +4675,7 @@
       "url": "/instruments/steel-drums/source-0159.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002947845804987,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -4686,7 +4686,7 @@
       "url": "/instruments/steel-drums/source-0161.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002947845804987,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.09070294784580499
@@ -4697,7 +4697,7 @@
       "url": "/instruments/steel-drums/source-0163.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900204081632653,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4708,7 +4708,7 @@
       "url": "/instruments/steel-drums/source-0164.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900249433106576,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4719,10 +4719,10 @@
       "url": "/instruments/steel-drums/source-0168.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003401360544219,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.045351473922902494
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "steel-drums",
@@ -4730,7 +4730,7 @@
       "url": "/instruments/steel-drums/source-0169.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003401360544219,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4741,7 +4741,7 @@
       "url": "/instruments/steel-drums/source-0170.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9004761904761904,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -4752,7 +4752,7 @@
       "url": "/instruments/steel-drums/source-0171.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9004308390022675,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4763,7 +4763,7 @@
       "url": "/instruments/steel-drums/source-0173.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003401360544219,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4774,10 +4774,10 @@
       "url": "/instruments/steel-drums/source-0176.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900362811791383,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.15873015873015872
+      "leadingSilenceMs": 0.1360544217687075
     },
     {
       "instrumentId": "steel-drums",
@@ -4785,10 +4785,10 @@
       "url": "/instruments/steel-drums/source-0178.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003401360544219,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.1360544217687075
+      "leadingSilenceMs": 0.09070294784580499
     },
     {
       "instrumentId": "steel-drums",
@@ -4796,7 +4796,7 @@
       "url": "/instruments/steel-drums/source-0179.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003401360544219,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4807,10 +4807,10 @@
       "url": "/instruments/steel-drums/source-0182.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900408163265306,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.09070294784580499
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -4818,10 +4818,10 @@
       "url": "/instruments/steel-drums/source-0184.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003854875283446,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.09070294784580499
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -4829,7 +4829,7 @@
       "url": "/instruments/steel-drums/source-0185.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003854875283446,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4840,7 +4840,7 @@
       "url": "/instruments/steel-drums/source-0188.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4851,7 +4851,7 @@
       "url": "/instruments/steel-drums/source-0191.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4862,10 +4862,10 @@
       "url": "/instruments/steel-drums/source-0192.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004308390022675,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.2494331065759637
+      "leadingSilenceMs": 0.22675736961451248
     },
     {
       "instrumentId": "steel-drums",
@@ -4873,7 +4873,7 @@
       "url": "/instruments/steel-drums/source-0194.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900362811791383,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4884,7 +4884,7 @@
       "url": "/instruments/steel-drums/source-0195.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4895,7 +4895,7 @@
       "url": "/instruments/steel-drums/source-0198.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004761904761905,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4906,7 +4906,7 @@
       "url": "/instruments/steel-drums/source-0200.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004761904761905,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4917,7 +4917,7 @@
       "url": "/instruments/steel-drums/source-0201.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900362811791383,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4928,7 +4928,7 @@
       "url": "/instruments/steel-drums/source-0203.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003854875283446,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4939,7 +4939,7 @@
       "url": "/instruments/steel-drums/source-0206.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003174603174604,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4950,7 +4950,7 @@
       "url": "/instruments/steel-drums/source-0207.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4961,7 +4961,7 @@
       "url": "/instruments/steel-drums/source-0208.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4972,7 +4972,7 @@
       "url": "/instruments/steel-drums/source-0210.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9004308390022675,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4983,7 +4983,7 @@
       "url": "/instruments/steel-drums/source-0211.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -4994,7 +4994,7 @@
       "url": "/instruments/steel-drums/source-0212.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5003401360544217,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5005,10 +5005,10 @@
       "url": "/instruments/steel-drums/source-0214.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1003854875283445,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.18140589569160998
+      "leadingSilenceMs": 0.272108843537415
     },
     {
       "instrumentId": "steel-drums",
@@ -5016,7 +5016,7 @@
       "url": "/instruments/steel-drums/source-0216.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9002721088435375,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -5027,10 +5027,10 @@
       "url": "/instruments/steel-drums/source-0218.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1003854875283445,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.18140589569160998
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -5038,10 +5038,10 @@
       "url": "/instruments/steel-drums/source-0218.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1003854875283445,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.18140589569160998
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -5049,7 +5049,7 @@
       "url": "/instruments/steel-drums/source-0219.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9004761904761904,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.09070294784580499
@@ -5060,7 +5060,7 @@
       "url": "/instruments/steel-drums/source-0219.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9004761904761904,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.09070294784580499
@@ -5071,7 +5071,7 @@
       "url": "/instruments/steel-drums/source-0221.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -5082,7 +5082,7 @@
       "url": "/instruments/steel-drums/source-0223.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003174603174604,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5093,7 +5093,7 @@
       "url": "/instruments/steel-drums/source-0224.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5104,7 +5104,7 @@
       "url": "/instruments/steel-drums/source-0225.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7001587301587302,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5115,7 +5115,7 @@
       "url": "/instruments/steel-drums/source-0226.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 2.1002267573696147,
+      "duration": 2.1,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.06802721088435375
@@ -5126,7 +5126,7 @@
       "url": "/instruments/steel-drums/source-0229.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900249433106576,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5137,10 +5137,10 @@
       "url": "/instruments/steel-drums/source-0231.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "steel-drums",
@@ -5148,7 +5148,18 @@
       "url": "/instruments/steel-drums/source-0231.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
+      "sampleRate": 44100,
+      "channels": 2,
+      "leadingSilenceMs": 0.022675736961451247
+    },
+    {
+      "instrumentId": "steel-drums",
+      "file": "source-0232.m4a",
+      "url": "/instruments/steel-drums/source-0232.m4a",
+      "startOffset": 0,
+      "ok": true,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5159,18 +5170,7 @@
       "url": "/instruments/steel-drums/source-0232.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900408163265306,
-      "sampleRate": 44100,
-      "channels": 2,
-      "leadingSilenceMs": 0
-    },
-    {
-      "instrumentId": "steel-drums",
-      "file": "source-0232.m4a",
-      "url": "/instruments/steel-drums/source-0232.m4a",
-      "startOffset": 0,
-      "ok": true,
-      "duration": 1.900408163265306,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5181,7 +5181,7 @@
       "url": "/instruments/steel-drums/source-0233.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5192,7 +5192,7 @@
       "url": "/instruments/steel-drums/source-0236.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003628117913832,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5203,7 +5203,7 @@
       "url": "/instruments/steel-drums/source-0237.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5214,7 +5214,7 @@
       "url": "/instruments/steel-drums/source-0238.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5003854875283447,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5225,7 +5225,7 @@
       "url": "/instruments/steel-drums/source-0240.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5236,7 +5236,7 @@
       "url": "/instruments/steel-drums/source-0241.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5247,7 +5247,7 @@
       "url": "/instruments/steel-drums/source-0243.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5258,7 +5258,7 @@
       "url": "/instruments/steel-drums/source-0243.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5269,7 +5269,7 @@
       "url": "/instruments/steel-drums/source-0244.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5280,7 +5280,7 @@
       "url": "/instruments/steel-drums/source-0244.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5291,10 +5291,10 @@
       "url": "/instruments/steel-drums/source-0247.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.022675736961451247
+      "leadingSilenceMs": 0.045351473922902494
     },
     {
       "instrumentId": "steel-drums",
@@ -5302,7 +5302,7 @@
       "url": "/instruments/steel-drums/source-0248.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003628117913832,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -5313,7 +5313,7 @@
       "url": "/instruments/steel-drums/source-0251.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5002947845804988,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5324,7 +5324,7 @@
       "url": "/instruments/steel-drums/source-0252.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5002494331065759,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5335,7 +5335,7 @@
       "url": "/instruments/steel-drums/source-0254.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -5346,7 +5346,7 @@
       "url": "/instruments/steel-drums/source-0255.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5357,7 +5357,7 @@
       "url": "/instruments/steel-drums/source-0256.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900362811791383,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5368,7 +5368,7 @@
       "url": "/instruments/steel-drums/source-0256.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900362811791383,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5379,7 +5379,7 @@
       "url": "/instruments/steel-drums/source-0257.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5390,7 +5390,7 @@
       "url": "/instruments/steel-drums/source-0257.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5401,7 +5401,7 @@
       "url": "/instruments/steel-drums/source-0261.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003628117913832,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5412,7 +5412,7 @@
       "url": "/instruments/steel-drums/source-0262.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7002947845804988,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5423,7 +5423,7 @@
       "url": "/instruments/steel-drums/source-0263.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5002267573696144,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5434,7 +5434,7 @@
       "url": "/instruments/steel-drums/source-0264.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5445,7 +5445,7 @@
       "url": "/instruments/steel-drums/source-0268.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.045351473922902494
@@ -5456,7 +5456,7 @@
       "url": "/instruments/steel-drums/source-0270.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5467,7 +5467,7 @@
       "url": "/instruments/steel-drums/source-0271.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004761904761905,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5478,7 +5478,7 @@
       "url": "/instruments/steel-drums/source-0271.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004761904761905,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5489,7 +5489,7 @@
       "url": "/instruments/steel-drums/source-0272.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004761904761905,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5500,7 +5500,7 @@
       "url": "/instruments/steel-drums/source-0272.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004761904761905,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5511,10 +5511,10 @@
       "url": "/instruments/steel-drums/source-0275.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0.045351473922902494
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -5522,7 +5522,7 @@
       "url": "/instruments/steel-drums/source-0276.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5003854875283447,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5533,7 +5533,7 @@
       "url": "/instruments/steel-drums/source-0277.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5002947845804988,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5544,7 +5544,7 @@
       "url": "/instruments/steel-drums/source-0278.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.217732426303855,
+      "duration": 1.216984126984127,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5555,7 +5555,7 @@
       "url": "/instruments/steel-drums/source-0280.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7001814058956917,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5566,7 +5566,7 @@
       "url": "/instruments/steel-drums/source-0282.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7002947845804988,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5577,7 +5577,7 @@
       "url": "/instruments/steel-drums/source-0285.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003628117913832,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5588,7 +5588,7 @@
       "url": "/instruments/steel-drums/source-0285.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003628117913832,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5599,7 +5599,7 @@
       "url": "/instruments/steel-drums/source-0286.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5610,7 +5610,7 @@
       "url": "/instruments/steel-drums/source-0286.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5621,7 +5621,7 @@
       "url": "/instruments/steel-drums/source-0288.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5632,7 +5632,7 @@
       "url": "/instruments/steel-drums/source-0290.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5643,7 +5643,7 @@
       "url": "/instruments/steel-drums/source-0291.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.1087528344671203,
+      "duration": 1.107981859410431,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5654,7 +5654,7 @@
       "url": "/instruments/steel-drums/source-0292.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.2831746031746032,
+      "duration": 1.2829931972789115,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5665,7 +5665,7 @@
       "url": "/instruments/steel-drums/source-0294.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7002947845804988,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5676,7 +5676,7 @@
       "url": "/instruments/steel-drums/source-0295.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7001814058956917,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5687,7 +5687,7 @@
       "url": "/instruments/steel-drums/source-0297.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5698,7 +5698,7 @@
       "url": "/instruments/steel-drums/source-0297.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5709,7 +5709,7 @@
       "url": "/instruments/steel-drums/source-0299.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5720,7 +5720,7 @@
       "url": "/instruments/steel-drums/source-0299.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5731,7 +5731,7 @@
       "url": "/instruments/steel-drums/source-0301.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7001814058956917,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5742,7 +5742,7 @@
       "url": "/instruments/steel-drums/source-0302.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5003401360544217,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5753,7 +5753,7 @@
       "url": "/instruments/steel-drums/source-0305.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5764,7 +5764,7 @@
       "url": "/instruments/steel-drums/source-0306.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5775,7 +5775,7 @@
       "url": "/instruments/steel-drums/source-0307.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5786,7 +5786,7 @@
       "url": "/instruments/steel-drums/source-0309.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7002947845804988,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5797,7 +5797,7 @@
       "url": "/instruments/steel-drums/source-0310.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900498866213152,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -5808,7 +5808,7 @@
       "url": "/instruments/steel-drums/source-0310.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900498866213152,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -5819,7 +5819,7 @@
       "url": "/instruments/steel-drums/source-0312.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004308390022675,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5830,7 +5830,7 @@
       "url": "/instruments/steel-drums/source-0312.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004308390022675,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5841,10 +5841,10 @@
       "url": "/instruments/steel-drums/source-0315.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.022675736961451247
     },
     {
       "instrumentId": "steel-drums",
@@ -5852,7 +5852,7 @@
       "url": "/instruments/steel-drums/source-0317.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700453514739229,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5863,7 +5863,7 @@
       "url": "/instruments/steel-drums/source-0318.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5874,7 +5874,7 @@
       "url": "/instruments/steel-drums/source-0320.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5885,7 +5885,7 @@
       "url": "/instruments/steel-drums/source-0322.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7002947845804988,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5896,7 +5896,7 @@
       "url": "/instruments/steel-drums/source-0323.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -5907,7 +5907,7 @@
       "url": "/instruments/steel-drums/source-0324.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5918,7 +5918,7 @@
       "url": "/instruments/steel-drums/source-0324.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5929,7 +5929,7 @@
       "url": "/instruments/steel-drums/source-0325.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004308390022675,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5940,7 +5940,7 @@
       "url": "/instruments/steel-drums/source-0325.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004308390022675,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5951,7 +5951,7 @@
       "url": "/instruments/steel-drums/source-0327.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7004761904761905,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5962,7 +5962,7 @@
       "url": "/instruments/steel-drums/source-0328.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003628117913832,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5973,7 +5973,7 @@
       "url": "/instruments/steel-drums/source-0331.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.500544217687075,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5984,7 +5984,7 @@
       "url": "/instruments/steel-drums/source-0332.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5002494331065759,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -5995,7 +5995,7 @@
       "url": "/instruments/steel-drums/source-0334.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7002267573696146,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6006,7 +6006,7 @@
       "url": "/instruments/steel-drums/source-0335.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003628117913832,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6017,7 +6017,7 @@
       "url": "/instruments/steel-drums/source-0336.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7002947845804988,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6028,7 +6028,7 @@
       "url": "/instruments/steel-drums/source-0336.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7002947845804988,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6039,7 +6039,7 @@
       "url": "/instruments/steel-drums/source-0338.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7005668934240363,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6050,7 +6050,7 @@
       "url": "/instruments/steel-drums/source-0338.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7005668934240363,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6061,7 +6061,7 @@
       "url": "/instruments/steel-drums/source-0339.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.500453514739229,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6072,7 +6072,7 @@
       "url": "/instruments/steel-drums/source-0340.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.5002494331065759,
+      "duration": 1.5,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6083,7 +6083,7 @@
       "url": "/instruments/steel-drums/source-0343.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3010884353741496,
+      "duration": 1.3009977324263038,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6094,7 +6094,7 @@
       "url": "/instruments/steel-drums/source-0344.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3011791383219955,
+      "duration": 1.3009977324263038,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6105,7 +6105,7 @@
       "url": "/instruments/steel-drums/source-0346.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6116,7 +6116,7 @@
       "url": "/instruments/steel-drums/source-0347.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9001814058956916,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6127,7 +6127,7 @@
       "url": "/instruments/steel-drums/source-0348.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003854875283446,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6138,7 +6138,7 @@
       "url": "/instruments/steel-drums/source-0348.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9003854875283446,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6149,7 +6149,7 @@
       "url": "/instruments/steel-drums/source-0352.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9001587301587302,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6160,7 +6160,7 @@
       "url": "/instruments/steel-drums/source-0354.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.900294784580499,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6171,7 +6171,7 @@
       "url": "/instruments/steel-drums/source-0355.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6182,7 +6182,7 @@
       "url": "/instruments/steel-drums/source-0357.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.3003174603174603,
+      "duration": 1.3,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6193,7 +6193,7 @@
       "url": "/instruments/steel-drums/source-0358.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6204,7 +6204,7 @@
       "url": "/instruments/steel-drums/source-0359.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.700249433106576,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6215,7 +6215,7 @@
       "url": "/instruments/steel-drums/source-0362.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6226,7 +6226,7 @@
       "url": "/instruments/steel-drums/source-0362.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6237,10 +6237,10 @@
       "url": "/instruments/steel-drums/source-0363.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9005442176870748,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -6248,10 +6248,10 @@
       "url": "/instruments/steel-drums/source-0363.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.9005442176870748,
+      "duration": 1.9,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 0.06802721088435375
     },
     {
       "instrumentId": "steel-drums",
@@ -6259,7 +6259,7 @@
       "url": "/instruments/steel-drums/source-0365.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003174603174602,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6270,7 +6270,7 @@
       "url": "/instruments/steel-drums/source-0368.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 1.7003854875283446,
+      "duration": 1.7,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0
@@ -6314,10 +6314,10 @@
       "url": "/instruments/string-section/C2.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 12.60734693877551,
+      "duration": 12.64326530612245,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 1.2471655328798186
+      "leadingSilenceMs": 14.308390022675736
     },
     {
       "instrumentId": "string-section",
@@ -6325,10 +6325,10 @@
       "url": "/instruments/string-section/C4.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 11.410997732426305,
+      "duration": 11.441632653061225,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.06802721088435375
+      "leadingSilenceMs": 13.129251700680273
     },
     {
       "instrumentId": "string-section",
@@ -6336,10 +6336,10 @@
       "url": "/instruments/string-section/C5.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 11.167392290249433,
+      "duration": 11.206530612244897,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0.06802721088435375
+      "leadingSilenceMs": 13.151927437641723
     },
     {
       "instrumentId": "string-section",
@@ -6372,7 +6372,7 @@
       "duration": 9.313356009070295,
       "sampleRate": 44100,
       "channels": 2,
-      "leadingSilenceMs": 1.836734693877551
+      "leadingSilenceMs": 2.0408163265306123
     },
     {
       "instrumentId": "string-section",
@@ -6435,7 +6435,7 @@
       "url": "/instruments/string-section/G5.m4a",
       "startOffset": 0,
       "ok": true,
-      "duration": 9.589251700680272,
+      "duration": 9.588979591836734,
       "sampleRate": 44100,
       "channels": 2,
       "leadingSilenceMs": 0.022675736961451247
@@ -6688,10 +6688,10 @@
       "url": "/instruments/vinyl-crackle/crackle.mp3",
       "startOffset": 0,
       "ok": true,
-      "duration": 3,
+      "duration": 3.030204081632653,
       "sampleRate": 44100,
       "channels": 1,
-      "leadingSilenceMs": 0
+      "leadingSilenceMs": 12.789115646258503
     }
   ]
 }
