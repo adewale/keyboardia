@@ -301,8 +301,8 @@ guessing it:
 | `pumpingProfile` on an exact replay of the captured 16-track pre-compressor programme | same synchronized programme replayed once dry and once wet | no new pumping — reverb energy is downstream and must not drive the compressor |
 
 The production-browser probes now supply the thresholds and evidence across
-the audit reruns: full-band tail +19.7 to +21.1 dB and high-band tail +23.6 to
-+25.1 dB from the corrected 300 ms boundary, bass-body low band within
+the audit reruns: full-band tail +19.7 to +24.8 dB and high-band tail +23.6 to
++29.1 dB from the corrected 300 ms boundary, bass-body low band within
 ±0.109 dB, wet true peak within 0.013 dB of dry, maximum K-weighted loudness
 within 0.055 LU. The capacity gate captures a real 16-track pre-compressor
 programme once, stops the scheduler, and replays those exact samples through
