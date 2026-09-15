@@ -47,6 +47,16 @@ function currentSubjectCommit(): string {
   }).trim();
 }
 
+function subjectIsAncestorOfCurrentHead(report: Record<string, unknown>): boolean {
+  if (typeof report.subjectCommit !== 'string') return false;
+  return spawnSync('git', [
+    'merge-base',
+    '--is-ancestor',
+    report.subjectCommit,
+    'HEAD',
+  ], { cwd: APP_ROOT }).status === 0;
+}
+
 function currentCandidateSampleReport(): Record<string, unknown> {
   const report = JSON.parse(fs.readFileSync(
     uniqueCandidateEvidence('candidate-sample-quality-', candidate =>
@@ -54,6 +64,7 @@ function currentCandidateSampleReport(): Record<string, unknown> {
       && candidate.baselineSha256 === sha256File(
         path.resolve(APP_ROOT, 'scripts/sample-quality-baseline.json'),
       )
+      && subjectIsAncestorOfCurrentHead(candidate)
     ),
     'utf8',
   )) as Record<string, unknown>;
