@@ -17,13 +17,14 @@ import {
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
   LIVE_CAPTURE_METHOD,
+  LIVE_CAPTURE_TIMING_ORIGIN,
   LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD,
   LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
-  LIVE_MAX_ARM_TO_ONSET_SECONDS,
+  LIVE_MAX_START_MARKER_TO_ONSET_SECONDS,
   LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
-  LIVE_MIN_ARM_TO_ONSET_SECONDS,
+  LIVE_MIN_START_MARKER_TO_ONSET_SECONDS,
   LIVE_ONSET_THRESHOLD,
   LIVE_PATTERN_PERIOD_SECONDS,
   LIVE_PATTERN_STORAGE_STEP_COUNT,
@@ -54,39 +55,51 @@ const REPORT_DIR = process.env.KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR
   ? resolve(process.env.KEYBOARDIA_INSTRUMENT_QUALITY_REPORT_DIR)
   : resolve(THIS_DIR, '../reports/instrument-quality');
 
-const ENERGY_PROCESSOR_NAME = 'keyboardia-onset-aligned-energy-v2';
+const ENERGY_PROCESSOR_NAME = 'keyboardia-onset-aligned-energy-v3';
 const ENERGY_WORKLET_SOURCE = String.raw`
 class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
   constructor(options) {
     super();
     this.inputCount = options.processorOptions.inputCount;
     this.channelCount = options.processorOptions.channelCount;
+    this.armed = false;
     this.active = false;
     this.terminal = false;
     this.started = false;
     this.targetFrames = 0;
     this.capturedFrames = 0;
-    this.armToOnsetFrames = 0;
+    this.startMarkerToOnsetFrames = 0;
     this.onsetThreshold = options.processorOptions.onsetThreshold;
     this.sumSquares = [];
     this.sampleCounts = [];
     this.peaks = [];
     this.port.onmessage = event => {
-      if (event.data.type !== 'arm') return;
-      const frameCount = event.data.frameCount;
-      if (!Number.isInteger(frameCount) || frameCount <= 0) {
-        this.fail('capture frameCount must be a positive integer');
+      if (event.data.type === 'arm') {
+        const frameCount = event.data.frameCount;
+        if (!Number.isInteger(frameCount) || frameCount <= 0) {
+          this.fail('capture frameCount must be a positive integer');
+          return;
+        }
+        this.targetFrames = frameCount;
+        this.capturedFrames = 0;
+        this.startMarkerToOnsetFrames = 0;
+        this.started = false;
+        this.sumSquares = new Array(this.inputCount).fill(0);
+        this.sampleCounts = new Array(this.inputCount).fill(0);
+        this.peaks = new Array(this.inputCount).fill(0);
+        this.armed = true;
+        this.active = false;
+        this.port.postMessage({ type: 'armed', frameCount });
         return;
       }
-      this.targetFrames = frameCount;
-      this.capturedFrames = 0;
-      this.armToOnsetFrames = 0;
-      this.started = false;
-      this.sumSquares = new Array(this.inputCount).fill(0);
-      this.sampleCounts = new Array(this.inputCount).fill(0);
-      this.peaks = new Array(this.inputCount).fill(0);
-      this.active = true;
-      this.port.postMessage({ type: 'armed', frameCount });
+      if (event.data.type === 'start') {
+        if (!this.armed || this.active) {
+          this.fail('continuous energy capture received start before a valid arm');
+          return;
+        }
+        this.startMarkerToOnsetFrames = 0;
+        this.active = true;
+      }
     };
   }
 
@@ -124,12 +137,12 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
         }
       }
       if (onsetFrame < 0) {
-        this.armToOnsetFrames += renderQuantum.length;
+        this.startMarkerToOnsetFrames += renderQuantum.length;
         return true;
       }
       this.started = true;
       frameOffset = onsetFrame;
-      this.armToOnsetFrames += onsetFrame;
+      this.startMarkerToOnsetFrames += onsetFrame;
     }
     const framesToCapture = Math.min(
       renderQuantum.length - frameOffset,
@@ -176,11 +189,12 @@ class KeyboardiaContinuousEnergyProcessor extends AudioWorkletProcessor {
         channelSampleCount: this.sampleCounts[inputIndex],
       }));
       this.active = false;
+      this.armed = false;
       this.terminal = true;
       this.port.postMessage({
         type: 'done',
         capturedFrames: this.capturedFrames,
-        armToOnsetFrames: this.armToOnsetFrames,
+        startMarkerToOnsetFrames: this.startMarkerToOnsetFrames,
         measurements,
       });
       return false;
@@ -224,7 +238,7 @@ type TrackProbeResult = InstrumentSpec & {
   masterRms: number;
   capturedFrames: number;
   channelSampleCount: number;
-  armToOnsetFrames: number;
+  startMarkerToOnsetFrames: number;
   randomCalls: number;
   preArmUiUnmutedTrackIds: string[];
   preArmCommandedTrackBusOpenIds: string[];
@@ -247,7 +261,7 @@ type EnergyCaptureResult = {
   sampleRate: number;
   master: EnergyMeasurement;
   tracks: Record<string, EnergyMeasurement>;
-  armToOnsetFrames: number;
+  startMarkerToOnsetFrames: number;
   randomCalls: number;
 };
 
@@ -684,7 +698,7 @@ async function attachContinuousEnergyCapture(page: Page, trackIds: string[]): Pr
         done?: Promise<{
           type: 'done';
           capturedFrames: number;
-          armToOnsetFrames: number;
+          startMarkerToOnsetFrames: number;
           measurements: Array<EnergyMeasurement & { inputIndex: number }>;
         }>;
       };
@@ -710,7 +724,7 @@ async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
     type DoneMessage = {
       type: 'done';
       capturedFrames: number;
-      armToOnsetFrames: number;
+      startMarkerToOnsetFrames: number;
       measurements: Array<EnergyMeasurement & { inputIndex: number }>;
     };
     type ErrorMessage = { type: 'error'; message: string };
@@ -784,9 +798,12 @@ async function armAndStartContinuousEnergyCapture(page: Page): Promise<void> {
     }
     const playButton = document.querySelector<HTMLButtonElement>('[data-testid="play-button"]');
     if (!playButton) throw new Error('Play button unavailable after continuous capture armed');
-    // Audio was already unlocked by prepareAudioForTracks. Dispatching the
-    // measured restart in this same page task minimizes variable leading
-    // silence between the worklet acknowledgement and sequencer step zero.
+    // The arm acknowledgement crosses from the real-time audio thread to the
+    // main thread and can be delayed by a busy CI host. Begin the timing window
+    // with a second message sent immediately before the production play handler
+    // in this same task, so only audio-thread delivery plus scheduler timing is
+    // measured. Audio was already unlocked by prepareAudioForTracks.
+    probe.node.port.postMessage({ type: 'start' });
     playButton.click();
   });
 }
@@ -796,7 +813,7 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
     type DoneMessage = {
       type: 'done';
       capturedFrames: number;
-      armToOnsetFrames: number;
+      startMarkerToOnsetFrames: number;
       measurements: Array<EnergyMeasurement & { inputIndex: number }>;
     };
     const probe = (window as unknown as {
@@ -832,8 +849,9 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
     if (result.measurements.length !== probe.trackIds.length + 1) {
       throw new Error('Continuous energy capture omitted an input');
     }
-    if (!Number.isInteger(result.armToOnsetFrames) || result.armToOnsetFrames < 0) {
-      throw new Error('Continuous energy capture returned an invalid arm-to-onset interval');
+    if (!Number.isInteger(result.startMarkerToOnsetFrames)
+      || result.startMarkerToOnsetFrames < 0) {
+      throw new Error('Continuous energy capture returned an invalid start-marker-to-onset interval');
     }
 
     const byInput = new Map(result.measurements.map(measurement => [measurement.inputIndex, measurement]));
@@ -888,7 +906,7 @@ async function readContinuousEnergyCapture(page: Page): Promise<EnergyCaptureRes
       sampleRate,
       master,
       tracks,
-      armToOnsetFrames: result.armToOnsetFrames,
+      startMarkerToOnsetFrames: result.startMarkerToOnsetFrames,
       randomCalls: randomState.calls,
     };
   }, {
@@ -1277,7 +1295,7 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
           ...trackEnergy,
           masterPeak: energy.master.peak,
           masterRms: energy.master.rms,
-          armToOnsetFrames: energy.armToOnsetFrames,
+          startMarkerToOnsetFrames: energy.startMarkerToOnsetFrames,
           randomCalls: energy.randomCalls,
           preArmUiUnmutedTrackIds: isolationSnapshot.uiUnmutedTrackIds,
           preArmCommandedTrackBusOpenIds: isolationSnapshot.commandedTrackBusOpenIds,
@@ -1308,11 +1326,12 @@ test('every catalog instrument is non-silent at isolated track and masterGain ta
     capture: {
       method: LIVE_CAPTURE_METHOD,
       alignment: LIVE_CAPTURE_ALIGNMENT,
+      timingOrigin: LIVE_CAPTURE_TIMING_ORIGIN,
       durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
       channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
       onsetThreshold: LIVE_ONSET_THRESHOLD,
-      minArmToOnsetSeconds: LIVE_MIN_ARM_TO_ONSET_SECONDS,
-      maxArmToOnsetSeconds: LIVE_MAX_ARM_TO_ONSET_SECONDS,
+      minStartMarkerToOnsetSeconds: LIVE_MIN_START_MARKER_TO_ONSET_SECONDS,
+      maxStartMarkerToOnsetSeconds: LIVE_MAX_START_MARKER_TO_ONSET_SECONDS,
       trialMode: LIVE_TRIAL_MODE,
       maxConcurrentAudibleTracks: LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
       isolationScope: LIVE_ISOLATION_SCOPE,

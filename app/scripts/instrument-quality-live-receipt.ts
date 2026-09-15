@@ -6,7 +6,7 @@ import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
-export const LIVE_RECEIPT_SCHEMA_VERSION = 8;
+export const LIVE_RECEIPT_SCHEMA_VERSION = 9;
 export const LIVE_RECEIPT_CLAIM = 'live-post-track-signal-evidence';
 export const LIVE_SILENCE_PEAK_THRESHOLD = 1e-4;
 export const LIVE_SILENCE_RMS_THRESHOLD = 1e-5;
@@ -17,7 +17,7 @@ export const LIVE_PATTERN_STORAGE_STEP_COUNT = MAX_STEPS;
 // renderers through the scheduler worklet's MessagePort too late to preserve
 // its transient. Step four is 500 ms after transport start at the pinned tempo,
 // comfortably beyond the 150 ms lookahead boundary while remaining below the
-// one-second arm-to-onset ceiling.
+// the strict start-marker-to-onset ceiling.
 export const LIVE_ACTIVE_STEP = 4;
 export const LIVE_ACTIVE_STEP_OFFSET_SECONDS = 0.5;
 // The production scheduler gates an untied 16th note to 90% of its step.
@@ -36,17 +36,19 @@ export const LIVE_UNMUTE_SETTLE_SECONDS = 0.25;
 export const LIVE_TRIAL_MODE = 'single-unmuted-track-plus-master-per-capture';
 export const LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS = 1;
 export const LIVE_ISOLATION_SCOPE = 'audible-routing-only-muted-release-tails-may-remain-allocated';
-export const LIVE_CAPTURE_METHOD = 'onset-aligned-audio-worklet-accumulator-v2';
+export const LIVE_CAPTURE_METHOD = 'onset-aligned-audio-worklet-accumulator-v3';
 export const LIVE_CAPTURE_ALIGNMENT =
   'first-isolated-track-or-master-output-frame-above-pinned-threshold';
+export const LIVE_CAPTURE_TIMING_ORIGIN =
+  'audio-thread-receipt-of-start-marker-sent-immediately-before-production-play-handler';
 export const LIVE_CAPTURE_DURATION_SECONDS = 2.5;
 export const LIVE_CAPTURE_CHANNEL_COUNT = 2;
 export const LIVE_ONSET_THRESHOLD = 1e-7;
-export const LIVE_MIN_ARM_TO_ONSET_SECONDS = 0.45;
+export const LIVE_MIN_START_MARKER_TO_ONSET_SECONDS = 0.45;
 // The event is scheduled at 0.5 s. Allow 80 ms for message/render quanta,
 // source onset, and the shared 6 ms track ceiling, but not Tone's historical
 // extra 100 ms lookahead.
-export const LIVE_MAX_ARM_TO_ONSET_SECONDS = 0.58;
+export const LIVE_MAX_START_MARKER_TO_ONSET_SECONDS = 0.58;
 export const LIVE_PEAK_METRIC = 'maximum-absolute-sample-over-all-captured-channel-samples';
 export const LIVE_RMS_METRIC = 'root-mean-square-over-all-captured-channel-samples';
 export const LIVE_RANDOM_SEED = 0x4b455942;
@@ -206,7 +208,7 @@ export interface LiveInstrumentResult extends LiveInstrumentSpec {
   masterRms: number;
   capturedFrames: number;
   channelSampleCount: number;
-  armToOnsetFrames: number;
+  startMarkerToOnsetFrames: number;
   randomCalls: number;
   preArmUiUnmutedTrackIds: string[];
   preArmCommandedTrackBusOpenIds: string[];
@@ -239,11 +241,12 @@ export interface LiveQualityReport {
   capture: {
     method: typeof LIVE_CAPTURE_METHOD;
     alignment: typeof LIVE_CAPTURE_ALIGNMENT;
+    timingOrigin: typeof LIVE_CAPTURE_TIMING_ORIGIN;
     durationSeconds: typeof LIVE_CAPTURE_DURATION_SECONDS;
     channelCount: typeof LIVE_CAPTURE_CHANNEL_COUNT;
     onsetThreshold: typeof LIVE_ONSET_THRESHOLD;
-    minArmToOnsetSeconds: typeof LIVE_MIN_ARM_TO_ONSET_SECONDS;
-    maxArmToOnsetSeconds: typeof LIVE_MAX_ARM_TO_ONSET_SECONDS;
+    minStartMarkerToOnsetSeconds: typeof LIVE_MIN_START_MARKER_TO_ONSET_SECONDS;
+    maxStartMarkerToOnsetSeconds: typeof LIVE_MAX_START_MARKER_TO_ONSET_SECONDS;
     trialMode: typeof LIVE_TRIAL_MODE;
     maxConcurrentAudibleTracks: typeof LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS;
     isolationScope: typeof LIVE_ISOLATION_SCOPE;
@@ -401,11 +404,12 @@ export function validateLiveQualityReport(
     || !isRecord(value.capture)
     || value.capture.method !== LIVE_CAPTURE_METHOD
     || value.capture.alignment !== LIVE_CAPTURE_ALIGNMENT
+    || value.capture.timingOrigin !== LIVE_CAPTURE_TIMING_ORIGIN
     || value.capture.durationSeconds !== LIVE_CAPTURE_DURATION_SECONDS
     || value.capture.channelCount !== LIVE_CAPTURE_CHANNEL_COUNT
     || value.capture.onsetThreshold !== LIVE_ONSET_THRESHOLD
-    || value.capture.minArmToOnsetSeconds !== LIVE_MIN_ARM_TO_ONSET_SECONDS
-    || value.capture.maxArmToOnsetSeconds !== LIVE_MAX_ARM_TO_ONSET_SECONDS
+    || value.capture.minStartMarkerToOnsetSeconds !== LIVE_MIN_START_MARKER_TO_ONSET_SECONDS
+    || value.capture.maxStartMarkerToOnsetSeconds !== LIVE_MAX_START_MARKER_TO_ONSET_SECONDS
     || value.capture.trialMode !== LIVE_TRIAL_MODE
     || value.capture.maxConcurrentAudibleTracks !== LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS
     || value.capture.isolationScope !== LIVE_ISOLATION_SCOPE
@@ -470,7 +474,10 @@ export function validateLiveQualityReport(
     validateEnergy(item.masterPeak, item.masterRms, `instrument ${item.sampleId} master`);
     positiveInteger(item.capturedFrames, `instrument ${item.sampleId}.capturedFrames`);
     positiveInteger(item.channelSampleCount, `instrument ${item.sampleId}.channelSampleCount`);
-    positiveInteger(item.armToOnsetFrames, `instrument ${item.sampleId}.armToOnsetFrames`);
+    positiveInteger(
+      item.startMarkerToOnsetFrames,
+      `instrument ${item.sampleId}.startMarkerToOnsetFrames`,
+    );
     positiveInteger(item.randomCalls, `instrument ${item.sampleId}.randomCalls`);
     const expectedIsolationIds = JSON.stringify([item.trackId]);
     if (!Array.isArray(item.preArmUiUnmutedTrackIds)
@@ -555,15 +562,24 @@ export function validateLiveQualityReport(
         throw new Error(`Live receipt ${id} disagrees with its declared session`);
       }
       validateCaptureGeometry(result, `instrument ${id}`, expectedFrames);
-      if ((result.armToOnsetFrames as number) < Math.floor(
-        LIVE_MIN_ARM_TO_ONSET_SECONDS * (session.sampleRate as number),
-      )) {
-        throw new Error(`Live receipt instrument ${id} preceded the minimum arm-to-onset interval`);
+      const startMarkerToOnsetFrames = result.startMarkerToOnsetFrames as number;
+      const minimumStartMarkerToOnsetFrames = Math.floor(
+        LIVE_MIN_START_MARKER_TO_ONSET_SECONDS * (session.sampleRate as number),
+      );
+      const maximumStartMarkerToOnsetFrames = Math.ceil(
+        LIVE_MAX_START_MARKER_TO_ONSET_SECONDS * (session.sampleRate as number),
+      );
+      if (startMarkerToOnsetFrames < minimumStartMarkerToOnsetFrames) {
+        throw new Error(
+          `Live receipt instrument ${id} preceded the minimum start-marker-to-onset interval: `
+          + `${startMarkerToOnsetFrames} frames < ${minimumStartMarkerToOnsetFrames}`,
+        );
       }
-      if ((result.armToOnsetFrames as number) > Math.ceil(
-        LIVE_MAX_ARM_TO_ONSET_SECONDS * (session.sampleRate as number),
-      )) {
-        throw new Error(`Live receipt instrument ${id} exceeded the maximum arm-to-onset interval`);
+      if (startMarkerToOnsetFrames > maximumStartMarkerToOnsetFrames) {
+        throw new Error(
+          `Live receipt instrument ${id} exceeded the maximum start-marker-to-onset interval: `
+          + `${startMarkerToOnsetFrames} frames > ${maximumStartMarkerToOnsetFrames}`,
+        );
       }
       if ((result.randomCalls as number) < previousRandomCalls) {
         throw new Error(`Live receipt session ${session.sessionId} random call counts are not nondecreasing`);

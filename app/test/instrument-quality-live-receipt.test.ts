@@ -8,6 +8,7 @@ import {
   LIVE_CAPTURE_CHANNEL_COUNT,
   LIVE_CAPTURE_DURATION_SECONDS,
   LIVE_CAPTURE_METHOD,
+  LIVE_CAPTURE_TIMING_ORIGIN,
   LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD,
   LIVE_MIDI_VELOCITY,
   LIVE_NOTE_GAIN,
@@ -15,9 +16,9 @@ import {
   LIVE_SCHEDULED_ACTIVE_STEPS_PER_TRACK,
   LIVE_GENERATED_FROM,
   LIVE_ISOLATION_SCOPE,
-  LIVE_MAX_ARM_TO_ONSET_SECONDS,
+  LIVE_MAX_START_MARKER_TO_ONSET_SECONDS,
   LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
-  LIVE_MIN_ARM_TO_ONSET_SECONDS,
+  LIVE_MIN_START_MARKER_TO_ONSET_SECONDS,
   LIVE_ONSET_THRESHOLD,
   LIVE_PATTERN_PERIOD_SECONDS,
   LIVE_PATTERN_STORAGE_STEP_COUNT,
@@ -70,11 +71,12 @@ function validReceipt(): LiveQualityReport {
     capture: {
       method: LIVE_CAPTURE_METHOD,
       alignment: LIVE_CAPTURE_ALIGNMENT,
+      timingOrigin: LIVE_CAPTURE_TIMING_ORIGIN,
       durationSeconds: LIVE_CAPTURE_DURATION_SECONDS,
       channelCount: LIVE_CAPTURE_CHANNEL_COUNT,
       onsetThreshold: LIVE_ONSET_THRESHOLD,
-      minArmToOnsetSeconds: LIVE_MIN_ARM_TO_ONSET_SECONDS,
-      maxArmToOnsetSeconds: LIVE_MAX_ARM_TO_ONSET_SECONDS,
+      minStartMarkerToOnsetSeconds: LIVE_MIN_START_MARKER_TO_ONSET_SECONDS,
+      maxStartMarkerToOnsetSeconds: LIVE_MAX_START_MARKER_TO_ONSET_SECONDS,
       trialMode: LIVE_TRIAL_MODE,
       maxConcurrentAudibleTracks: LIVE_MAX_CONCURRENT_AUDIBLE_TRACKS,
       isolationScope: LIVE_ISOLATION_SCOPE,
@@ -113,7 +115,7 @@ function validReceipt(): LiveQualityReport {
         masterRms: 0.016,
         capturedFrames,
         channelSampleCount,
-        armToOnsetFrames: 24_000,
+        startMarkerToOnsetFrames: 24_000,
         randomCalls: 10_000,
         preArmUiUnmutedTrackIds: [trackId],
         preArmCommandedTrackBusOpenIds: [trackId],
@@ -146,14 +148,16 @@ describe('live instrument-quality receipt', () => {
   });
 
   it('pins one lookahead-safe event outside the 2.5-second capture cycle', () => {
-    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(8);
+    expect(LIVE_RECEIPT_SCHEMA_VERSION).toBe(9);
     const stepDuration = 60 / LIVE_TEMPO / 4;
     expect(LIVE_ACTIVE_STEP * stepDuration).toBe(LIVE_ACTIVE_STEP_OFFSET_SECONDS);
     expect(LIVE_NOTE_DURATION_SECONDS).toBe(stepDuration * 0.9);
     expect(LIVE_MIDI_VELOCITY).toBe(127);
     expect(LIVE_NOTE_GAIN).toBe(1);
     expect(LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeGreaterThan(LIVE_SCHEDULER_LOOKAHEAD_SECONDS);
-    expect(LIVE_MAX_ARM_TO_ONSET_SECONDS - LIVE_ACTIVE_STEP_OFFSET_SECONDS).toBeCloseTo(0.08, 6);
+    expect(
+      LIVE_MAX_START_MARKER_TO_ONSET_SECONDS - LIVE_ACTIVE_STEP_OFFSET_SECONDS,
+    ).toBeCloseTo(0.08, 6);
     expect(LIVE_STEP_COUNT * stepDuration).toBe(LIVE_PATTERN_PERIOD_SECONDS);
     expect(LIVE_PATTERN_PERIOD_SECONDS).toBeGreaterThan(LIVE_CAPTURE_DURATION_SECONDS);
     expect(LIVE_PATTERN_STORAGE_STEP_COUNT).toBe(128);
@@ -238,15 +242,19 @@ describe('live instrument-quality receipt', () => {
     expect(() => validateLiveQualityReport(forgedOnset, SUBJECT)).toThrow(/capture settings/);
 
     const lateOnset = validReceipt();
-    lateOnset.instruments[0].armToOnsetFrames = 48_001;
-    expect(() => validateLiveQualityReport(lateOnset, SUBJECT)).toThrow(/maximum arm-to-onset/);
+    lateOnset.instruments[0].startMarkerToOnsetFrames = 48_001;
+    expect(() => validateLiveQualityReport(lateOnset, SUBJECT)).toThrow(
+      /maximum start-marker-to-onset/,
+    );
 
     const earlyOnset = validReceipt();
     // Each probe includes masterGain, so a release tail leaking from a prior
     // trial would cross the onset threshold before the scheduled step-four
     // event and must make the receipt unverifiable.
-    earlyOnset.instruments[0].armToOnsetFrames = 1;
-    expect(() => validateLiveQualityReport(earlyOnset, SUBJECT)).toThrow(/minimum arm-to-onset/);
+    earlyOnset.instruments[0].startMarkerToOnsetFrames = 1;
+    expect(() => validateLiveQualityReport(earlyOnset, SUBJECT)).toThrow(
+      /minimum start-marker-to-onset/,
+    );
 
     const malformedRandomCalls = validReceipt();
     malformedRandomCalls.instruments[0].randomCalls = -1;

@@ -1168,13 +1168,13 @@ async function main(): Promise<void> {
             },
           },
           independentlyValidatorBounded: [
-            'arm-to-onset-receipt-bounds',
+            'start-marker-to-onset-receipt-bounds',
           ],
           excludedAsVolatileAndNonScoring: [
             'generatedAt',
             'sessionId',
             'trackId',
-            'armToOnsetFrames-within-validator-bounds',
+            'startMarkerToOnsetFrames-within-validator-bounds',
             'display-only-live-dB-values-and-category-deltas-after-decision-projection',
           ],
           aggregationPolicy:

@@ -10,7 +10,11 @@ import {
   summarizeStableSampleQualityReceiptNumericMismatches,
 } from '../scripts/audit-instrument-quality';
 import {
-  LIVE_MAX_ARM_TO_ONSET_SECONDS,
+  LIVE_CAPTURE_ALIGNMENT,
+  LIVE_CAPTURE_METHOD,
+  LIVE_CAPTURE_TIMING_ORIGIN,
+  LIVE_MAX_START_MARKER_TO_ONSET_SECONDS,
+  LIVE_MIN_START_MARKER_TO_ONSET_SECONDS,
   LIVE_RECEIPT_SCHEMA_VERSION,
   expectedLiveEngineDispatchIdentity,
   type LiveInstrumentSpec,
@@ -91,7 +95,12 @@ function currentLiveReportFixture(): Record<string, unknown> {
   )) as Record<string, unknown>;
   report.schemaVersion = LIVE_RECEIPT_SCHEMA_VERSION;
   report.subjectCommit = currentSubjectCommit();
-  (report.capture as Record<string, unknown>).maxArmToOnsetSeconds = LIVE_MAX_ARM_TO_ONSET_SECONDS;
+  const capture = report.capture as Record<string, unknown>;
+  capture.method = LIVE_CAPTURE_METHOD;
+  capture.alignment = LIVE_CAPTURE_ALIGNMENT;
+  capture.timingOrigin = LIVE_CAPTURE_TIMING_ORIGIN;
+  capture.minStartMarkerToOnsetSeconds = LIVE_MIN_START_MARKER_TO_ONSET_SECONDS;
+  capture.maxStartMarkerToOnsetSeconds = LIVE_MAX_START_MARKER_TO_ONSET_SECONDS;
 
   const fixtureByInstrument = new Map<string, { position: number; sampleRate: number }>();
   for (const session of report.sessions as Array<{ instruments: string[]; sampleRate: number }>) {
@@ -101,12 +110,12 @@ function currentLiveReportFixture(): Record<string, unknown> {
   }
   for (const item of report.instruments as Array<LiveInstrumentSpec & {
     trackId: string;
-    armToOnsetFrames: number;
+    startMarkerToOnsetFrames: number;
     observedEngineDispatches: unknown[];
   }>) {
     const fixture = fixtureByInstrument.get(item.sampleId);
     if (fixture === undefined) throw new Error(`Live fixture session omits ${item.sampleId}`);
-    item.armToOnsetFrames = Math.round(0.52 * fixture.sampleRate);
+    item.startMarkerToOnsetFrames = Math.round(0.52 * fixture.sampleRate);
     item.observedEngineDispatches = [{
       ...expectedLiveEngineDispatchIdentity(item, item.trackId),
       eventTimeSeconds: fixture.position + 1,

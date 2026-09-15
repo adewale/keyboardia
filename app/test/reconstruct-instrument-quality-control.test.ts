@@ -71,7 +71,7 @@ function liveFixture(): LiveQualityReport {
       masterRms: 0.125,
       capturedFrames: 120_000,
       channelSampleCount: 240_000,
-      armToOnsetFrames: 24_000,
+      startMarkerToOnsetFrames: 24_000,
       randomCalls: 17,
       preArmUiUnmutedTrackIds: ['track-primary'],
       preArmCommandedTrackBusOpenIds: ['track-primary'],
@@ -221,7 +221,7 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
     });
   });
 
-  it('accepts volatile IDs, bounded arm timing, and raw energy variation within the alarm', () => {
+  it('accepts volatile IDs, bounded start-marker timing, and raw energy variation within the alarm', () => {
     const primary = liveFixture();
     const confirmation = cloneLiveFixture(primary);
     const withinAlarmRatio = 10 ** ((LIVE_ENERGY_SPREAD_ALARM_DB - 0.1) / 20);
@@ -233,7 +233,7 @@ describe('instrument-quality controlled-comparison reconstruction', () => {
     confirmation.instruments[0].preArmCommandedTrackBusOpenIds = ['track-confirmation'];
     confirmation.instruments[0].observedEngineDispatches[0].trackId = 'track-confirmation';
     confirmation.instruments[0].observedEngineDispatches[0].eventTimeSeconds = 2;
-    confirmation.instruments[0].armToOnsetFrames = 31_000;
+    confirmation.instruments[0].startMarkerToOnsetFrames = 31_000;
     confirmation.instruments[0].peak *= withinAlarmRatio;
     confirmation.instruments[0].rms *= withinAlarmRatio;
     confirmation.instruments[0].masterPeak *= withinAlarmRatio;
