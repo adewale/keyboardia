@@ -571,7 +571,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 58
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 57
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
