@@ -10,23 +10,31 @@ audio implementation commit.
 | Area | Resolution | Why this is safe |
 |---|---|---|
 | Post-track headroom | Add a hard-knee, 20:1, -2 dBFS dynamics stage after each track's pan stage, followed by a -1.139863 dB trim that cancels Chromium's automatic compressor makeup. A final linear-below-threshold WaveShaper after `outputGain` enforces an exact -1 dBFS sample ceiling before the metering/master-sum output. | The rendered bypass comparison measures -0.000000052 dB quiet-signal gain, so ordinary tracks retain unity. Four 3x/10x one-sample probes at 44.1/48 kHz reach exactly -1 dBFS. Both 99-instrument runs contain zero post-track peaks above that ceiling. The verified tradeoff from the dynamics stage remains deliberate compression of the three formerly hot primary fixtures: finger bass -3.46 dB RMS, kalimba -1.78 dB, and slap bass -3.22 dB. Simple manifest trims were rejected because the strict audit showed they would create three hard tonal-loudness mismatches. |
-| Final-output peak coverage | Keep the real `userOutput` tap and 4x windowed-sinc inter-sample true-peak gate. The 16-track capture now waits for observable completion of every sampled pack and covers 4.1 seconds (two complete transport cycles plus guard) rather than sleeping for five seconds and capturing 2.1 seconds. | It measures the heard-output topology, including both channels, and removes a timing assumption from the readiness gate. The final exact-head run is -0.419 dBTP even though its pre-compressor sum reaches +6.47 dBFS. |
-| Tone/advanced timing | Pass one absolute AudioContext event timestamp end-to-end. Tone-backed renderers clamp late events against `Tone.immediate()` and never add `Tone.now()` lookahead to an already scheduled event. Advanced presets are now selected during prewarm and are not redundantly rebuilt on every note dispatch. | Native, sampled, Tone, and advanced renderers now use the same clock contract. Unit tests fail if either engine-to-renderer pass-through, the raw-clock clamp, prewarmed preset selection, or the no-rebuild hot path regresses; the schema-v10 browser receipt subtracts the recorded production dispatch frame from the absolute AudioWorklet output-onset frame. Its -10/+80 ms window excludes the historical extra 100 ms independently of MessagePort delivery latency and also rejects an early release tail. Removing repeated graph mutation is an objective hot-path simplification, not a claim that it was the proven cause of the one intermittent tremolo-strings spike. |
+| Final-output peak coverage | Keep the real `userOutput` tap and 4x windowed-sinc inter-sample true-peak gate. The 16-track capture now waits for observable completion of every sampled pack and covers 4.1 seconds (two complete transport cycles plus guard) rather than sleeping for five seconds and capturing 2.1 seconds. | It measures the heard-output topology, including both channels, and removes a timing assumption from the readiness gate. The final exact-head run is -0.421 dBTP even though its pre-compressor sum reaches +6.47 dBFS. |
+| Tone/advanced timing | Pass one absolute AudioContext event timestamp end-to-end. Tone-backed renderers clamp late events against `Tone.immediate()` and never add `Tone.now()` lookahead to an already scheduled event. Advanced presets are now selected during prewarm and are not redundantly rebuilt on every note dispatch. | Native, sampled, Tone, and advanced renderers now use the same clock contract. Unit tests fail if either engine-to-renderer pass-through, the raw-clock clamp, prewarmed preset selection, or the no-rebuild hot path regresses. The schema-v11 browser receipt records actual dispatch from the same AudioContext immediately before production renderer invocation, preserves signed schedule-to-dispatch and raw schedule-to-output diagnostics, and applies the -10/+80 ms gate only to output onset minus the later of scheduled event and actual dispatch. That excludes the historical renderer-added 100 ms without misclassifying shared scheduler lateness and still rejects an early release tail. Removing repeated graph mutation is an objective hot-path simplification, not a claim that it was the proven cause of the one intermittent tremolo-strings spike. |
 | Progressive loading | Stop workers before advancing an obsolete mapping, recheck lifecycle generation after a queued global slot is granted, service foreground roots before queued background work, and reserve one of six aggregate slots for new manifests/priority roots. | Disposed instruments no longer keep fetching/decode-loading their remaining background queue, and one large pack can no longer starve a newly selected instrument. |
-| Throttled-network readiness | Keep a cheap transfer-size gate for all 26 sampled packs and add a cold-cache Chromium run at 1.6 Mbps / 150 ms RTT, including browser fetch, decode, manifest latency, and contention. | The static worst cases are acoustic crash priority at 15.26 seconds and steel drums background at 46.79 seconds. In the real contention fixture, Hammond is priority-ready in 2.20 seconds and finishes background in 42.07 seconds; acoustic guitar becomes priority-ready in 8.23 seconds while Hammond is transferring and finishes background in 33.70 seconds. The whole scenario completes in 44.27 seconds. |
+| Throttled-network readiness | Keep a cheap transfer-size gate for all 26 sampled packs and add a cold-cache Chromium run at 1.6 Mbps / 150 ms RTT, including browser fetch, decode, manifest latency, and contention. | The static worst cases are acoustic crash priority at 15.26 seconds and steel drums background at 46.79 seconds. In the real contention fixture, Hammond is priority-ready in 2.21 seconds and finishes background in 42.04 seconds; acoustic guitar becomes priority-ready in 8.22 seconds while Hammond is transferring and finishes background in 33.72 seconds. The whole scenario completes in 44.25 seconds. |
 
 No source audio was transcoded for these changes.
 
 ## Evidence
 
 The final measured implementation and evidence subject is
-`a55c812374a8bab693f335d6b8235582572d87f1`. The timing producer was first
+`e30e6f5ec236482daef1aec4ccf52d6137515053`. The timing producer was first
 hardened at `462cb1e7351ff293b41c8e8b6c1527c8cf1b47a7` after a CI trace showed
 that a single delayed audio-worklet arm acknowledgement could add 5,632
 unrelated frames to the old measurement origin. An Astra audit then
 demonstrated that a replacement relative start marker could hide a real late
 onset if delivery of that marker were itself delayed, so the retained schema
 uses absolute frames and has no control-plane timing origin.
+
+A later schema-v10 CI run reported a 4,711-frame raw scheduled-event-to-output
+interval for `rim`. That receipt could not distinguish shared scheduler
+lateness from renderer-added latency, so increasing the ceiling would have
+weakened the historical 100 ms regression gate. Schema v11 instead binds the
+scheduled event, actual production-dispatch frame, output-onset frame, and all
+three derived intervals. The failed schema-v10 observation is evidence of the
+old measurement ambiguity; by itself it does not prove where the delay arose.
 
 The first CI run of that timing-evidence head also exposed one intermittent
 `advanced:tremolo-strings` post-track sample at 1.30525 despite stable isolated
@@ -39,33 +47,35 @@ limiter. Astra independently checked the placement and found no simpler equally
 robust containment.
 
 - Chromium and WebKit each decode all 605 mappings across 582 delivery files:
-  [Chromium](evidence/browser-decode-chromium-a55c812.json) and
-  [WebKit](evidence/browser-decode-webkit-a55c812.json).
-- Independent [primary](evidence/candidate-live-primary-a55c812.json) and
-  [confirmation](evidence/candidate-live-confirmation-a55c812.json) runs each
+  [Chromium](evidence/browser-decode-chromium-e30e6f5.json) and
+  [WebKit](evidence/browser-decode-webkit-e30e6f5.json).
+- Independent [primary](evidence/candidate-live-primary-e30e6f5.json) and
+  [confirmation](evidence/candidate-live-confirmation-e30e6f5.json) runs each
   contain 99 audible isolated instruments, no post-track peak above -1 dBFS,
-  and a worst scheduled-event-to-output-onset value of 472 frames at 48 kHz
-  (9.83 ms). Both runs span 288–472 frames (6.0–9.83 ms), leaving more than
-  70 ms before the pinned upper bound and more than 90 ms before the historical
-  extra lookahead.
-- The [TrackBus dynamics render](evidence/track-bus-dynamics-a55c812.json)
+  and a renderer-reference-to-output-onset span of 288–472 frames at 48 kHz
+  (6.0–9.83 ms). The signed schedule-to-dispatch diagnostic spans -7,104 to
+  -4,544 frames across both runs, recording the intentional 94.7–148 ms
+  scheduler lookahead rather than treating it as renderer latency. The
+  renderer interval leaves more than 70 ms before the pinned upper bound and
+  more than 90 ms before the historical extra lookahead.
+- The [TrackBus dynamics render](evidence/track-bus-dynamics-e30e6f5.json)
   measures -0.000000052 dB below-threshold gain, -1.77 dBFS for its continuous
   overload probe, and exactly -1 dBFS for 3x/10x sample impulses at both 44.1
   and 48 kHz.
-- The [16-track capacity capture](evidence/browser-capacity-capture-a55c812.json)
-  measures -0.419 dBTP at the heard output. The
-  [master-chain canary](evidence/browser-master-capture-a55c812.json) retains
+- The [16-track capacity capture](evidence/browser-capacity-capture-e30e6f5.json)
+  measures -0.421 dBTP at the heard output. The
+  [master-chain canary](evidence/browser-master-capture-e30e6f5.json) retains
   synchronized pre-compressor, post-makeup, and user-output taps.
-- The [throttled readiness receipt](evidence/sample-load-network-readiness-a55c812.json)
+- The [throttled readiness receipt](evidence/sample-load-network-readiness-e30e6f5.json)
   records all 30 cold-cache lossless-file/manifest requests: Hammond reaches
-  priority in 2.20 seconds and finishes in 42.07 seconds; contending acoustic
-  guitar reaches priority in 8.23 seconds and finishes in 33.70 seconds; the
-  complete scenario takes 44.27 seconds.
-- The [strict decoded receipt](evidence/candidate-sample-quality-a55c812.json)
+  priority in 2.21 seconds and finishes in 42.04 seconds; contending acoustic
+  guitar reaches priority in 8.22 seconds and finishes in 33.72 seconds; the
+  complete scenario takes 44.25 seconds.
+- The [strict decoded receipt](evidence/candidate-sample-quality-e30e6f5.json)
   covers 26 instruments, 605 mappings, and 582 files, with 203
   disposition-accepted findings and zero unwaived errors or review flags.
-- The regenerated [primary ranking](evidence/candidate-instrument-quality-primary-a55c812.json)
-  and [confirmation ranking](evidence/candidate-instrument-quality-confirmation-a55c812.json)
+- The regenerated [primary ranking](evidence/candidate-instrument-quality-primary-e30e6f5.json)
+  and [confirmation ranking](evidence/candidate-instrument-quality-confirmation-e30e6f5.json)
   retain identical priority bands and remediation decisions.
 
 ## Deliberately not changed

@@ -1,0 +1,208 @@
+{
+  "schemaVersion": 1,
+  "fixture": "cold-cache Hammond background plus contending acoustic-guitar foreground",
+  "networkProfile": {
+    "name": "1.6 Mbps / 150 ms RTT",
+    "bitsPerSecond": 1600000,
+    "roundTripSeconds": 0.15,
+    "priorityReadySeconds": 20,
+    "backgroundTransferSeconds": 60
+  },
+  "initialStates": {
+    "hammond": "idle",
+    "acousticGuitar": "idle"
+  },
+  "hammond": {
+    "prioritySeconds": 2.2056000003814695,
+    "backgroundSeconds": 42.044,
+    "state": "complete"
+  },
+  "acousticGuitar": {
+    "prioritySeconds": 8.224699998855591,
+    "backgroundSeconds": 33.71670000076294,
+    "state": "complete"
+  },
+  "scenarioSeconds": 44.24960000038147,
+  "resources": [
+    {
+      "name": "/instruments/hammond-organ/manifest.json",
+      "durationSeconds": 0.173,
+      "encodedBodyBytes": 2167,
+      "transferBytes": 2467
+    },
+    {
+      "name": "/instruments/hammond-organ/C4.wav",
+      "durationSeconds": 2.0226000003814697,
+      "encodedBodyBytes": 372420,
+      "transferBytes": 372720
+    },
+    {
+      "name": "/instruments/hammond-organ/C2.wav",
+      "durationSeconds": 18.89089999961853,
+      "encodedBodyBytes": 705874,
+      "transferBytes": 706174
+    },
+    {
+      "name": "/instruments/hammond-organ/E2.wav",
+      "durationSeconds": 11.8345,
+      "encodedBodyBytes": 414282,
+      "transferBytes": 414582
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs2.wav",
+      "durationSeconds": 13.777,
+      "encodedBodyBytes": 497578,
+      "transferBytes": 497878
+    },
+    {
+      "name": "/instruments/hammond-organ/C3.wav",
+      "durationSeconds": 12.486700000762939,
+      "encodedBodyBytes": 441178,
+      "transferBytes": 441478
+    },
+    {
+      "name": "/instruments/hammond-organ/E3.wav",
+      "durationSeconds": 12.50139999961853,
+      "encodedBodyBytes": 441410,
+      "transferBytes": 441710
+    },
+    {
+      "name": "/instruments/acoustic-guitar/manifest.json",
+      "durationSeconds": 0.23879999923706055,
+      "encodedBodyBytes": 1340,
+      "transferBytes": 1640
+    },
+    {
+      "name": "/instruments/acoustic-guitar/Db4.wav",
+      "durationSeconds": 7.97929999923706,
+      "encodedBodyBytes": 259540,
+      "transferBytes": 259840
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs3.wav",
+      "durationSeconds": 8.86519999885559,
+      "encodedBodyBytes": 356554,
+      "transferBytes": 356854
+    },
+    {
+      "name": "/instruments/acoustic-guitar/E2.wav",
+      "durationSeconds": 10.335,
+      "encodedBodyBytes": 412478,
+      "transferBytes": 412778
+    },
+    {
+      "name": "/instruments/acoustic-guitar/G2.wav",
+      "durationSeconds": 4.56779999923706,
+      "encodedBodyBytes": 178224,
+      "transferBytes": 178524
+    },
+    {
+      "name": "/instruments/acoustic-guitar/Bb2.wav",
+      "durationSeconds": 9.897099998474122,
+      "encodedBodyBytes": 396368,
+      "transferBytes": 396668
+    },
+    {
+      "name": "/instruments/acoustic-guitar/Db3.wav",
+      "durationSeconds": 5.98680000114441,
+      "encodedBodyBytes": 236808,
+      "transferBytes": 237108
+    },
+    {
+      "name": "/instruments/acoustic-guitar/E3.wav",
+      "durationSeconds": 8.11919999885559,
+      "encodedBodyBytes": 325608,
+      "transferBytes": 325908
+    },
+    {
+      "name": "/instruments/acoustic-guitar/G3.wav",
+      "durationSeconds": 5.1736000003814695,
+      "encodedBodyBytes": 205210,
+      "transferBytes": 205510
+    },
+    {
+      "name": "/instruments/hammond-organ/E4.wav",
+      "durationSeconds": 9.11129999923706,
+      "encodedBodyBytes": 363594,
+      "transferBytes": 363894
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs4.wav",
+      "durationSeconds": 10.22530000114441,
+      "encodedBodyBytes": 408338,
+      "transferBytes": 408638
+    },
+    {
+      "name": "/instruments/hammond-organ/C5.wav",
+      "durationSeconds": 9.88189999961853,
+      "encodedBodyBytes": 395338,
+      "transferBytes": 395638
+    },
+    {
+      "name": "/instruments/hammond-organ/E5.wav",
+      "durationSeconds": 9.73839999961853,
+      "encodedBodyBytes": 390672,
+      "transferBytes": 390972
+    },
+    {
+      "name": "/instruments/acoustic-guitar/Bb3.wav",
+      "durationSeconds": 7.72639999961853,
+      "encodedBodyBytes": 306218,
+      "transferBytes": 306518
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs5.wav",
+      "durationSeconds": 9.63119999885559,
+      "encodedBodyBytes": 391688,
+      "transferBytes": 391988
+    },
+    {
+      "name": "/instruments/hammond-organ/C6.wav",
+      "durationSeconds": 8.71439999961853,
+      "encodedBodyBytes": 379978,
+      "transferBytes": 380278
+    },
+    {
+      "name": "/instruments/acoustic-guitar/E4.wav",
+      "durationSeconds": 4.5385,
+      "encodedBodyBytes": 178188,
+      "transferBytes": 178488
+    },
+    {
+      "name": "/instruments/acoustic-guitar/Ab4.wav",
+      "durationSeconds": 3.96089999961853,
+      "encodedBodyBytes": 154528,
+      "transferBytes": 154828
+    },
+    {
+      "name": "/instruments/acoustic-guitar/B4.wav",
+      "durationSeconds": 2.9988999996185304,
+      "encodedBodyBytes": 114666,
+      "transferBytes": 114966
+    },
+    {
+      "name": "/instruments/acoustic-guitar/D5.wav",
+      "durationSeconds": 2.1926000003814696,
+      "encodedBodyBytes": 84026,
+      "transferBytes": 84326
+    },
+    {
+      "name": "/instruments/acoustic-guitar/F5.wav",
+      "durationSeconds": 3.288,
+      "encodedBodyBytes": 138172,
+      "transferBytes": 138472
+    },
+    {
+      "name": "/instruments/acoustic-guitar/Ab5.wav",
+      "durationSeconds": 2.7705,
+      "encodedBodyBytes": 105148,
+      "transferBytes": 105448
+    },
+    {
+      "name": "/instruments/acoustic-guitar/B5.wav",
+      "durationSeconds": 1.558,
+      "encodedBodyBytes": 62910,
+      "transferBytes": 63210
+    }
+  ]
+}
