@@ -383,10 +383,9 @@ export class ToneSynthManager {
     this.lastScheduledTime.set(preset.type, startTime);
     sourceGain?.gain.setValueAtTime(dbToGain(TONE_SOURCE_GAIN_DB[presetName]), startTime);
 
-    // PluckSynth doesn't have triggerAttackRelease
-    // Use try-catch to handle cases where Tone.js internal state rejects the time
-    // This can happen during rapid BPM changes where Tone.js's StateTimeline
-    // has events scheduled at later times from previous notes' release phases
+    // PluckSynth doesn't have triggerAttackRelease. A renderer error is logged
+    // at the authoritative timestamp; it must not silently move the note to a
+    // different time, because that would turn a visible failure into bad groove.
     // Volume P-lock is passed as velocity (4th param of triggerAttackRelease)
     try {
       if (preset.type === 'pluck') {
@@ -396,24 +395,8 @@ export class ToneSynthManager {
         (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
           .triggerAttackRelease(noteValue, duration, startTime, volume);
       }
-    } catch (_err) {
-      // If Tone.js rejects the time, retry with current time + buffer
-      // This gracefully handles edge cases during BPM changes
-      const retryTime = Math.max(Tone.immediate() + 0.01, startTime + 0.001);
-      this.lastScheduledTime.set(preset.type, retryTime);
-      logger.audio.warn(`Tone.js timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
-      try {
-        if (preset.type === 'pluck') {
-          this.pluckGain?.gain.setValueAtTime(volume * dbToGain(TONE_SOURCE_GAIN_DB[presetName]), retryTime);
-          (synth as Tone.PluckSynth).triggerAttack(noteValue, retryTime);
-        } else {
-          (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
-            .triggerAttackRelease(noteValue, duration, retryTime, volume);
-        }
-      } catch (retryErr) {
-        // If retry also fails, log and skip this note
-        logger.audio.error('Tone.js timing error - note skipped:', retryErr);
-      }
+    } catch (error) {
+      logger.audio.error(`Tone.js timing error at ${startTime.toFixed(3)} - note skipped:`, error);
     }
   }
 

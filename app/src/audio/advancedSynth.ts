@@ -351,13 +351,15 @@ export class AdvancedSynthVoice {
    * every cutoff change preserves the invariant:
    *   effectiveCutoff = baseCutoff + filterEnvelope + filterLFO
    */
-  setFilterFrequency(hz: number): void {
-    const now = Tone.now();
+  setFilterFrequency(hz: number, eventTime?: number): void {
+    const now = eventTime ?? Tone.now();
     if (this.filter) {
-      slewAudioParam(this.filter.frequency, hz, now);
+      if (eventTime === undefined) slewAudioParam(this.filter.frequency, hz, now);
+      else this.filter.frequency.setValueAtTime(hz, eventTime);
     }
     if (this.filterEnvAdder) {
-      slewAudioParam(this.filterEnvAdder.addend, hz, now);
+      if (eventTime === undefined) slewAudioParam(this.filterEnvAdder.addend, hz, now);
+      else this.filterEnvAdder.addend.setValueAtTime(hz, eventTime);
     }
   }
 
@@ -526,7 +528,7 @@ export class AdvancedSynthVoice {
 
     // Schedule retuning with the attack so a reused voice's release tail does
     // not jump pitch during scheduler lookahead.
-    const frequencyTime = time ?? Tone.now();
+    const frequencyTime = time ?? Tone.immediate();
     this.noteStartTime = frequencyTime;
     this.activeUntilAudioTime = Number.POSITIVE_INFINITY;
     this.osc1.frequency.setValueAtTime(frequency, frequencyTime);
@@ -558,7 +560,7 @@ export class AdvancedSynthVoice {
 
     this.ampEnvelope.triggerRelease(time);
     this.filterEnvelope.triggerRelease(time);
-    const releaseStart = time ?? Tone.now();
+    const releaseStart = time ?? Tone.immediate();
     this.activeUntilAudioTime = releaseStart
       + normalizeSynthReleaseSeconds(Number(this.ampEnvelope.release))
       + VOICE_TAIL_GUARD_SECONDS;
@@ -583,7 +585,7 @@ export class AdvancedSynthVoice {
 
     // Schedule retuning with the attack so voice stealing cannot alter an
     // audible tail before the replacement note begins.
-    const frequencyTime = time ?? Tone.now();
+    const frequencyTime = time ?? Tone.immediate();
     this.noteStartTime = frequencyTime;
     this.osc1.frequency.setValueAtTime(frequency, frequencyTime);
     this.osc2.frequency.setValueAtTime(frequency, frequencyTime);
@@ -624,7 +626,7 @@ export class AdvancedSynthVoice {
    * Check if voice is active
    */
   isActive(): boolean {
-    if (this.active && Tone.now() >= this.activeUntilAudioTime) {
+    if (this.active && Tone.immediate() >= this.activeUntilAudioTime) {
       this.active = false;
     }
     return this.active;
@@ -1110,44 +1112,37 @@ export class AdvancedSynthEngine {
       return;
     }
 
+    const startTime = absoluteToneStartTime(time, Tone.immediate(), this.lastScheduledTime);
+    this.lastScheduledTime = startTime;
+
     // setPreset() applies definitions to every voice. Reapplying the same
     // preset here would disconnect/reconnect LFO AudioParams on the scheduler
     // hot path. Keep graph mutation out of note dispatch; per-note velocity is
     // the only state that belongs here.
     if (this.currentPreset) {
       const baseCutoff = this.overrides.filterFrequency ?? this.currentPreset.filter.frequency;
-      voice.setFilterFrequency(advancedVelocityFilterFrequency(baseCutoff, midiVelocity));
+      // Velocity is note state, not a live UI control. Bind it to the same raw
+      // AudioContext timestamp as the attack so Tone lookahead cannot make a
+      // soft note begin with the previous voice cutoff.
+      voice.setFilterFrequency(advancedVelocityFilterFrequency(baseCutoff, midiVelocity), startTime);
     } else {
       this.recordFailure('no preset applied');
       return;
     }
 
-    const startTime = absoluteToneStartTime(time, Tone.immediate(), this.lastScheduledTime);
-    this.lastScheduledTime = startTime;
-
     logger.audio.log(`AdvancedSynth playing: freq=${frequency.toFixed(1)}Hz, duration=${duration}, time=${startTime.toFixed(3)}, vol=${volume}, velocity=${midiVelocity}, preset=${this.currentPreset?.name}`);
 
-    // Use try-catch to handle cases where Tone.js internal state rejects the time
-    // This can happen during rapid BPM changes
-    // Volume P-lock is passed to voice for amplitude scaling
+    // Volume P-lock is passed to voice for amplitude scaling. If Tone rejects
+    // the event, report it at the authoritative time instead of shifting the
+    // note to a renderer-chosen retry timestamp.
     try {
       voice.triggerAttackRelease(frequency, duration, startTime, volume);
       // Track successful play
       this.playSuccesses++;
       this.lastSuccessfulPlay = Date.now();
-    } catch (err) {
-      // If Tone.js rejects the time, retry with current time + buffer
-      const retryTime = Math.max(Tone.immediate() + 0.01, startTime + 0.001);
-      this.lastScheduledTime = retryTime;
-      logger.audio.warn(`AdvancedSynth timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}, error=${err}`);
-      try {
-        voice.triggerAttackRelease(frequency, duration, retryTime, volume);
-        // Retry succeeded
-        this.playSuccesses++;
-        this.lastSuccessfulPlay = Date.now();
-      } catch (retryErr) {
-        this.recordFailure(`Tone.js timing error after retry: ${retryErr}`);
-      }
+    } catch (error) {
+      voice.cancelPendingRelease();
+      this.recordFailure(`Tone.js timing error at ${startTime.toFixed(3)}: ${error}`);
     }
   }
 

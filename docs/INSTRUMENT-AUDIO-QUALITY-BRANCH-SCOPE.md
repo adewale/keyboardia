@@ -1,5 +1,11 @@
 # Instrument quality branch scope — 2026-08-22
 
+> **Historical snapshot.** This document records the 2026-08-22 branch state
+> and commit identities; it is not the current merge guide. See
+> [the 2026-09-15 follow-up](./INSTRUMENT-AUDIO-QUALITY-FOLLOW-UP-2026-09-15.md)
+> and PR #100 for the current implementation, evidence, residual work, and
+> integration order.
+
 The audit inspected all available GitHub branch heads and resolved open pull
 requests independently of branch naming. The final remote refresh on
 2026-08-23 found eight open pull requests and three open issues.

@@ -205,6 +205,99 @@ describe('observable progressive readiness (pipeline stage 8)', () => {
     await background.waitForBackgroundLoad();
   });
 
+  it('preempts active background transfers for a multi-file foreground root, then resumes them', async () => {
+    const backgroundManifest: InstrumentManifest = {
+      id: 'preemptible-background-pack',
+      name: 'Preemptible Background Pack',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [60],
+      samples: [
+        { note: 60, file: 'priority.wav' },
+        ...Array.from({ length: 8 }, (_, index) => ({
+          note: 61 + index,
+          file: `background-${index}.wav`,
+        })),
+      ],
+    };
+    const foregroundManifest: InstrumentManifest = {
+      id: 'atomic-foreground-pack',
+      name: 'Atomic Foreground Pack',
+      type: 'sampled',
+      releaseTime: 0.5,
+      priorityNotes: [49],
+      samples: Array.from({ length: 12 }, (_, index) => ({
+        note: 49,
+        file: `foreground-${index}.wav`,
+        roundRobinGroup: 'crash',
+        roundRobinIndex: index,
+      })),
+    };
+    let releaseBackground!: () => void;
+    const backgroundGate = new Promise<void>(resolve => { releaseBackground = resolve; });
+    let activeBackground = 0;
+    let abortedBackground = 0;
+    let foregroundFetches = 0;
+    vi.stubGlobal('fetch', (async (
+      input: string | URL | Request,
+      init?: RequestInit,
+    ) => {
+      const url = input.toString();
+      if (url.endsWith('manifest.json')) {
+        return {
+          ok: true,
+          json: async () => url.includes('/preemptible-background-pack/')
+            ? backgroundManifest
+            : foregroundManifest,
+        } as Response;
+      }
+      const filename = url.split('/').at(-1)!;
+      if (filename.startsWith('background-')) {
+        activeBackground++;
+        try {
+          await new Promise<void>((resolve, reject) => {
+            const onAbort = () => {
+              abortedBackground++;
+              reject(new DOMException('aborted', 'AbortError'));
+            };
+            init?.signal?.addEventListener('abort', onAbort, { once: true });
+            void backgroundGate.then(resolve);
+          });
+        } finally {
+          activeBackground--;
+        }
+      }
+      if (filename.startsWith('foreground-')) foregroundFetches++;
+      return {
+        ok: true,
+        arrayBuffer: async () => new TextEncoder().encode(filename).buffer,
+      } as Response;
+    }) as typeof fetch);
+    const context = new FakeAudioContext();
+    const create = (id: string) => {
+      const instrument = new SampledInstrument(id, '/instruments');
+      instrument.initialize(context.asAudioContext(), new FakeGainNode() as unknown as AudioNode);
+      return instrument;
+    };
+    const background = create(backgroundManifest.id);
+    const foreground = create(foregroundManifest.id);
+
+    await expect(background.ensureLoaded()).resolves.toBe(true);
+    await vi.waitFor(() => expect(activeBackground).toBe(5));
+
+    try {
+      await expect(foreground.ensureLoaded()).resolves.toBe(true);
+      expect(foregroundFetches).toBe(12);
+      expect(abortedBackground).toBe(5);
+      expect(background.getLoadFailures()).toEqual([]);
+    } finally {
+      releaseBackground();
+    }
+    await background.waitForBackgroundLoad();
+    expect(background.getLoadState()).toBe('complete');
+    expect(background.getSampleNotes()).toHaveLength(9);
+  });
+
   it('deduplicates concurrent mappings that reference one delivery file', async () => {
     const manifest: InstrumentManifest = {
       id: 'shared-file',

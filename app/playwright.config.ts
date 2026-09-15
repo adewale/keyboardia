@@ -11,7 +11,7 @@ if (process.env.E2E_FUNCTIONAL_ONLY === '1') ignoredSpecs.push(/e2e\/visual\.spe
 // Chromium remains the real-audio browser lane; WebKit runs the broad UI,
 // collaboration and layout contract. Mixed files review-skip only their
 // playback tests at the test site so their remaining cross-browser value stays.
-const headlessWebkitAudioSpecs = [
+const headlessWebkitAudioSpecs = process.env.E2E_WEBKIT_AUDIO_PROBE === '1' ? [] : [
   /e2e\/advanced-sub-bass-session\.spec\.ts$/,
   /e2e\/all-instruments-master-output\.spec\.ts$/,
   /e2e\/capture-session\.spec\.ts$/,

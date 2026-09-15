@@ -22,6 +22,7 @@ vi.mock('tone', () => {
     const param = {
       value: initial,
       cancelScheduledValues: vi.fn(),
+      setValueAtTime: vi.fn((value: number) => { param.value = value; }),
       setTargetAtTime: vi.fn((value: number) => { param.value = value; }),
     };
     return param;
@@ -369,12 +370,16 @@ describe('AdvancedSynthEngine', () => {
   let engine: AdvancedSynthEngine;
 
   beforeEach(async () => {
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
     engine = new AdvancedSynthEngine();
     await engine.initialize();
   });
 
   afterEach(() => {
     engine.dispose();
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
   });
 
   describe('initialization', () => {
@@ -485,21 +490,40 @@ describe('AdvancedSynthEngine', () => {
       expect(() => engine.playNoteSemitone(0, 0.5, 0.1)).not.toThrow();
     });
 
+    it('does not move a rejected event to a renderer-chosen retry time', () => {
+      const voice = engine['voices'][0];
+      const trigger = vi.spyOn(voice, 'triggerAttackRelease');
+      trigger.mockImplementationOnce(() => { throw new Error('timeline rejected'); });
+
+      expect(() => engine.playNoteSemitone(0, 0.5, 2)).not.toThrow();
+
+      expect(trigger).toHaveBeenCalledTimes(1);
+      expect(trigger).toHaveBeenCalledWith(expect.any(Number), 0.5, 2, 1);
+      expect(voice.isActive()).toBe(false);
+      expect(engine.getDiagnostics().failureReasons.at(-1)).toContain(
+        'Tone.js timing error at 2.000',
+      );
+    });
+
     it('uses MIDI velocity for cutoff while preserving noteGain as amplitude', () => {
       const voice = engine['voices'][0];
       const trigger = vi.spyOn(voice, 'triggerAttackRelease');
+      vi.mocked(Tone.immediate).mockReturnValue(10);
+      vi.mocked(Tone.now).mockReturnValue(10.1);
 
-      engine.playNoteSemitone(0, 0.5, 0.1, 0.42, 90);
+      engine.playNoteSemitone(0, 0.5, 10.25, 0.42, 90);
 
       const expectedCutoff = advancedVelocityFilterFrequency(
         ADVANCED_SYNTH_PRESETS.supersaw.filter.frequency,
         90,
       );
       expect(voice['filterEnvAdder']!.addend.value).toBeCloseTo(expectedCutoff, 8);
+      expect(voice['filter']!.frequency.setValueAtTime).toHaveBeenLastCalledWith(expectedCutoff, 10.25);
+      expect(voice['filterEnvAdder']!.addend.setValueAtTime).toHaveBeenLastCalledWith(expectedCutoff, 10.25);
       expect(trigger).toHaveBeenCalledWith(
         expect.any(Number),
         0.5,
-        expect.any(Number),
+        10.25,
         0.42,
       );
     });
@@ -742,6 +766,7 @@ describe('voice release tracking', () => {
 
   beforeEach(() => {
     vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
     voice = new AdvancedSynthVoice();
     voice.initialize();
   });
@@ -749,6 +774,7 @@ describe('voice release tracking', () => {
   afterEach(() => {
     voice.dispose();
     vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
   });
 
   it('retires a voice from Tone audio time without scheduling a wall-clock timer', () => {
@@ -765,7 +791,8 @@ describe('voice release tracking', () => {
     expect(setTimeoutSpy).not.toHaveBeenCalled();
 
     // Advance the audio clock past duration + release + the tail guard.
-    vi.mocked(Tone.now).mockReturnValue(1.1);
+    vi.mocked(Tone.now).mockReturnValue(1.2);
+    vi.mocked(Tone.immediate).mockReturnValue(1.1);
 
     // Voice should now be inactive
     expect(voice.isActive()).toBe(false);
@@ -782,7 +809,8 @@ describe('voice release tracking', () => {
     const filterTriggers = voice['filterEnvelope']!.triggerAttackRelease;
 
     voice.triggerAttackRelease(440, 0.1);
-    vi.mocked(Tone.now).mockReturnValue(2);
+    vi.mocked(Tone.now).mockReturnValue(2.1);
+    vi.mocked(Tone.immediate).mockReturnValue(2);
     expect(voice.isActive()).toBe(false);
 
     voice.triggerAttackRelease(660, 0.1);
@@ -807,6 +835,7 @@ describe('voice release tracking', () => {
     expect(voice.isActive()).toBe(true);
 
     vi.mocked(Tone.now).mockReturnValue(5000);
+    vi.mocked(Tone.immediate).mockReturnValue(4999.9);
 
     // Voice should still be active (no automatic release deadline).
     expect(voice.isActive()).toBe(true);
@@ -816,10 +845,11 @@ describe('voice release tracking', () => {
     const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
     voice.applyPreset(preset);
     vi.mocked(Tone.now).mockReturnValue(12.5);
+    vi.mocked(Tone.immediate).mockReturnValue(12.4);
 
     voice.triggerAttack(440);
 
-    expect(voice.getNoteStartTime()).toBe(12.5);
+    expect(voice.getNoteStartTime()).toBe(12.4);
   });
 
   it('preserves an authored zero release instead of substituting 0.5 seconds', () => {
@@ -830,7 +860,8 @@ describe('voice release tracking', () => {
     voice.triggerAttackRelease(440, 0.5);
     expect(voice.isActive()).toBe(true);
 
-    vi.mocked(Tone.now).mockReturnValue(0.56);
+    vi.mocked(Tone.now).mockReturnValue(0.66);
+    vi.mocked(Tone.immediate).mockReturnValue(0.56);
     expect(voice.isActive()).toBe(false);
   });
 
@@ -844,9 +875,25 @@ describe('voice release tracking', () => {
 
     // A quarter note at 60 BPM lasts one second, plus 0.5s release and
     // the 50ms tail guard. The old fixed-120 calculation retired at 1.05s.
-    vi.mocked(Tone.now).mockReturnValue(1.1);
+    vi.mocked(Tone.now).mockReturnValue(1.2);
+    vi.mocked(Tone.immediate).mockReturnValue(1.1);
     expect(voice.isActive()).toBe(true);
-    vi.mocked(Tone.now).mockReturnValue(1.56);
+    vi.mocked(Tone.now).mockReturnValue(1.66);
+    vi.mocked(Tone.immediate).mockReturnValue(1.56);
+    expect(voice.isActive()).toBe(false);
+  });
+
+  it('does not retire a voice early because Tone.now includes lookahead', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS.supersaw);
+    voice.triggerAttackRelease(440, 0.5, 10);
+
+    // The raw clock is still before the 10 + 0.5 + 0.5 + 0.05 deadline,
+    // although Tone.now() has already crossed it by adding 100 ms lookahead.
+    vi.mocked(Tone.now).mockReturnValue(11.06);
+    vi.mocked(Tone.immediate).mockReturnValue(10.96);
+    expect(voice.isActive()).toBe(true);
+
+    vi.mocked(Tone.immediate).mockReturnValue(11.06);
     expect(voice.isActive()).toBe(false);
   });
 });

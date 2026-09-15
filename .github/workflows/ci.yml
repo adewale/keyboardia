@@ -324,6 +324,13 @@ jobs:
           USE_MOCK_API: '1'
           CI: 'true'
 
+      - name: Verify WebKit TrackBus dynamics
+        run: npx playwright test e2e/capture-session.spec.ts --project=webkit --no-deps --grep "keeps the per-track ceiling" --retries=0
+        env:
+          USE_MOCK_API: '1'
+          E2E_WEBKIT_AUDIO_PROBE: '1'
+          CI: 'true'
+
   # E2E is split into three jobs by what each one needs, replacing a single
   # `continue-on-error: true` job whose comment read "E2E tests are advisory -
   # many require real backend". Exempting all 35 spec files because some of them

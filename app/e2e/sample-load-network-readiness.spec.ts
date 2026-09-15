@@ -62,7 +62,7 @@ test('keeps lossless foreground and background loads ready on the throttled prof
   let result: {
     initialStates: Record<string, string>;
     hammond: { prioritySeconds: number; backgroundSeconds: number; state: string };
-    acousticGuitar: { prioritySeconds: number; backgroundSeconds: number; state: string };
+    acousticCrash: { prioritySeconds: number; backgroundSeconds: number; state: string };
     scenarioSeconds: number;
     resources: Array<{
       name: string;
@@ -75,11 +75,11 @@ test('keeps lossless foreground and background loads ready on the throttled prof
     result = await page.evaluate(async () => {
       const { sampledInstrumentRegistry } = await import('/src/audio/sampled-instrument.ts');
       const hammond = sampledInstrumentRegistry.get('hammond-organ');
-      const acousticGuitar = sampledInstrumentRegistry.get('acoustic-guitar');
-      if (!hammond || !acousticGuitar) throw new Error('Readiness instruments are not registered');
+      const acousticCrash = sampledInstrumentRegistry.get('acoustic-crash');
+      if (!hammond || !acousticCrash) throw new Error('Readiness instruments are not registered');
       const initialStates = {
         hammond: hammond.getLoadState(),
-        acousticGuitar: acousticGuitar.getLoadState(),
+        acousticCrash: acousticCrash.getLoadState(),
       };
       performance.clearResourceTimings();
       const scenarioStart = performance.now();
@@ -91,12 +91,13 @@ test('keeps lossless foreground and background loads ready on the throttled prof
       }));
 
       // Hammond's lossless background files occupy the shared six-slot queue.
-      // A newly requested acoustic guitar priority root must still become ready
-      // inside the foreground budget while that transfer is in progress.
+      // Acoustic crash has the largest production priority root (12 files).
+      // It must preempt Hammond background bandwidth and become playable inside
+      // the foreground budget, then allow Hammond's background work to resume.
       const acousticPriorityStart = performance.now();
-      if (!await acousticGuitar.ensureLoaded()) throw new Error('Acoustic guitar priority load failed');
+      if (!await acousticCrash.ensureLoaded()) throw new Error('Acoustic crash priority load failed');
       const acousticPriorityAt = performance.now();
-      const acousticBackground = acousticGuitar.waitForBackgroundLoad().then(state => ({
+      const acousticBackground = acousticCrash.waitForBackgroundLoad().then(state => ({
         state,
         finishedAt: performance.now(),
       }));
@@ -106,7 +107,7 @@ test('keeps lossless foreground and background loads ready on the throttled prof
       ]);
       const scenarioFinishedAt = Math.max(hammondDone.finishedAt, acousticDone.finishedAt);
       const resources = (performance.getEntriesByType('resource') as PerformanceResourceTiming[])
-        .filter(entry => /\/instruments\/(?:hammond-organ|acoustic-guitar)\//.test(entry.name))
+        .filter(entry => /\/instruments\/(?:hammond-organ|acoustic-crash)\//.test(entry.name))
         .map(entry => ({
           name: new URL(entry.name).pathname,
           durationSeconds: entry.duration / 1_000,
@@ -120,7 +121,7 @@ test('keeps lossless foreground and background loads ready on the throttled prof
           backgroundSeconds: (hammondDone.finishedAt - hammondPriorityAt) / 1_000,
           state: hammondDone.state,
         },
-        acousticGuitar: {
+        acousticCrash: {
           prioritySeconds: (acousticPriorityAt - acousticPriorityStart) / 1_000,
           backgroundSeconds: (acousticDone.finishedAt - acousticPriorityAt) / 1_000,
           state: acousticDone.state,
@@ -139,29 +140,32 @@ test('keeps lossless foreground and background loads ready on the throttled prof
   }
 
   console.log('throttled sample readiness', result);
-  expect(result.initialStates).toEqual({ hammond: 'idle', acousticGuitar: 'idle' });
+  expect(result.initialStates).toEqual({ hammond: 'idle', acousticCrash: 'idle' });
   expect(result.hammond.state).toBe('complete');
-  expect(result.acousticGuitar.state).toBe('complete');
+  expect(result.acousticCrash.state).toBe('complete');
   expect(result.hammond.prioritySeconds).toBeLessThanOrEqual(
     THROTTLED_SAMPLE_NETWORK_PROFILE.priorityReadySeconds
   );
-  expect(result.acousticGuitar.prioritySeconds).toBeLessThanOrEqual(
+  expect(result.acousticCrash.prioritySeconds).toBeLessThanOrEqual(
     THROTTLED_SAMPLE_NETWORK_PROFILE.priorityReadySeconds
   );
   expect(result.hammond.backgroundSeconds).toBeLessThanOrEqual(
     THROTTLED_SAMPLE_NETWORK_PROFILE.backgroundTransferSeconds
   );
-  expect(result.acousticGuitar.backgroundSeconds).toBeLessThanOrEqual(
+  expect(result.acousticCrash.backgroundSeconds).toBeLessThanOrEqual(
     THROTTLED_SAMPLE_NETWORK_PROFILE.backgroundTransferSeconds
   );
-  expect(result.resources.length).toBeGreaterThanOrEqual(30);
+  // Two manifests plus all 25 unique delivery files must be visible. Aborted
+  // background attempts may add entries, but the assertion does not depend on
+  // browser-specific reporting of those cancelled requests.
+  expect(result.resources.length).toBeGreaterThanOrEqual(27);
 
   mkdirSync(REPORT_DIR, { recursive: true });
   writeFileSync(
     resolve(REPORT_DIR, 'sample-load-network-readiness.json'),
     JSON.stringify({
       schemaVersion: 1,
-      fixture: 'cold-cache Hammond background plus contending acoustic-guitar foreground',
+      fixture: 'cold-cache Hammond background plus contending 12-file acoustic-crash foreground',
       networkProfile: THROTTLED_SAMPLE_NETWORK_PROFILE,
       ...result,
     }, null, 2) + '\n',

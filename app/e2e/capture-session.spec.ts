@@ -60,7 +60,10 @@ function probeTrack(id: string, sampleId: string, activeSteps: readonly number[]
 test('keeps the per-track ceiling at unity below threshold and contains overloads', async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name !== 'chromium', 'real Web Audio dynamics contract is desktop Chromium-only');
+  test.skip(
+    testInfo.project.name !== 'chromium' && testInfo.project.name !== 'webkit',
+    'real Web Audio dynamics contract is desktop-only',
+  );
   test.skip(
     Boolean(process.env.PLAYWRIGHT_BASE_URL),
     'the production Worker build does not serve source modules for the dynamics probe',

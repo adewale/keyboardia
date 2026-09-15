@@ -257,6 +257,18 @@ describe('ToneSynthManager', () => {
       );
     });
 
+    it('does not move a rejected event to a renderer-chosen retry time', () => {
+      manager.playNote('fm-epiano', 'C4', '8n', 5);
+      const trigger = toneTestState.fmSynths[0].triggerAttackRelease;
+      trigger.mockClear();
+      trigger.mockImplementationOnce(() => { throw new Error('timeline rejected'); });
+
+      expect(() => manager.playNote('fm-epiano', 'E4', '8n', 6)).not.toThrow();
+
+      expect(trigger).toHaveBeenCalledTimes(1);
+      expect(trigger).toHaveBeenCalledWith('E4', '8n', 6, 1);
+    });
+
     it('plays a note with membrane-kick preset', () => {
       manager.playNote('membrane-kick', 'C2', '16n', 0);
       expect(manager.isReady()).toBe(true);

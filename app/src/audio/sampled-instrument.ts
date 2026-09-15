@@ -43,9 +43,18 @@ import {
 
 /** Bound aggregate request/decode pressure across every deep sample library. */
 let activeSampleLoads = 0;
+let activePrioritySampleLoads = 0;
 let activeBackgroundSampleLoads = 0;
 const pendingPrioritySampleLoadSlots: Array<() => void> = [];
 const pendingBackgroundSampleLoadSlots: Array<() => void> = [];
+const activeBackgroundSampleLoadControllers = new Set<AbortController>();
+
+class BackgroundSampleLoadPreempted extends Error {
+  constructor() {
+    super('Background sample load yielded to foreground readiness');
+    this.name = 'BackgroundSampleLoadPreempted';
+  }
+}
 
 /**
  * Engine-owned drum balance. Keeping these trims outside content manifests
@@ -77,9 +86,14 @@ function startPendingSampleLoads(): void {
     const priority = pendingPrioritySampleLoadSlots.shift();
     if (priority) {
       activeSampleLoads++;
+      activePrioritySampleLoads++;
       priority();
       continue;
     }
+    // Keep a foreground root atomic across worker batches. Otherwise a
+    // background transfer can restart in the microtask gap between two batches
+    // and immediately consume bandwidth the same foreground root still needs.
+    if (activePrioritySampleLoads > 0) return;
     if (activeBackgroundSampleLoads >= MAX_CONCURRENT_BACKGROUND_SAMPLE_LOADS) return;
     const background = pendingBackgroundSampleLoadSlots.shift();
     if (!background) return;
@@ -90,19 +104,34 @@ function startPendingSampleLoads(): void {
 }
 
 async function withSampleLoadSlot<T>(
-  operation: () => Promise<T>,
+  operation: (signal?: AbortSignal) => Promise<T>,
   priority: boolean,
 ): Promise<T> {
   await new Promise<void>(resolve => {
     if (priority) pendingPrioritySampleLoadSlots.push(resolve);
     else pendingBackgroundSampleLoadSlots.push(resolve);
     startPendingSampleLoads();
+
+    // Reserving a connection prevents queue starvation, but it does not reserve
+    // bandwidth. If a foreground root needs more than the one free slot, yield
+    // active background transfers so the complete playable root can meet the
+    // readiness budget. Aborted background work is requeued below.
+    if (priority && pendingPrioritySampleLoadSlots.length > 0) {
+      for (const controller of activeBackgroundSampleLoadControllers) controller.abort();
+    }
   });
+  const controller = priority ? null : new AbortController();
+  if (controller) activeBackgroundSampleLoadControllers.add(controller);
   try {
-    return await operation();
+    return await operation(controller?.signal);
+  } catch (error) {
+    if (controller?.signal.aborted) throw new BackgroundSampleLoadPreempted();
+    throw error;
   } finally {
+    if (controller) activeBackgroundSampleLoadControllers.delete(controller);
     activeSampleLoads--;
-    if (!priority) activeBackgroundSampleLoads--;
+    if (priority) activePrioritySampleLoads--;
+    else activeBackgroundSampleLoads--;
     startPendingSampleLoads();
   }
 }
@@ -579,26 +608,38 @@ export class SampledInstrument {
 
     let bufferPromise = this.inFlightBuffers.get(cacheKey);
     if (!bufferPromise) {
-      bufferPromise = withSampleLoadSlot(async () => {
-        // A different instrument may have held the global six-slot queue while
-        // this instance was disposed. Do not start obsolete network work once
-        // the slot finally becomes available.
-        if (generation !== this.lifecycleGeneration) {
-          throw new Error('Sample load superseded by a newer lifecycle');
+      bufferPromise = (async (): Promise<AudioBuffer> => {
+        while (true) {
+          try {
+            return await withSampleLoadSlot(async signal => {
+              // A different instrument may have held the global six-slot queue while
+              // this instance was disposed. Do not start obsolete network work once
+              // the slot finally becomes available.
+              if (generation !== this.lifecycleGeneration) {
+                throw new Error('Sample load superseded by a newer lifecycle');
+              }
+              const sampleUrl = `${this.baseUrl}/${mapping.file}`;
+              logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
+              const response = await fetch(sampleUrl, signal ? { signal } : undefined);
+              if (!response.ok) throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
+              const arrayBuffer = await response.arrayBuffer();
+              const context = this.audioContext;
+              if (!context) throw new Error('SampledInstrument was disposed during loading');
+              const audioBuffer = await context.decodeAudioData(arrayBuffer);
+              if (generation !== this.lifecycleGeneration) throw new Error('Sample load superseded by a newer lifecycle');
+              sampleCache.set(cacheKey, audioBuffer);
+              logger.audio.log(`[CACHED] ${cacheKey}`);
+              return audioBuffer;
+            }, priority);
+          } catch (error) {
+            if (error instanceof BackgroundSampleLoadPreempted && generation === this.lifecycleGeneration) {
+              logger.audio.log(`[PROGRESSIVE] Requeueing ${mapping.file} after foreground preemption`);
+              continue;
+            }
+            throw error;
+          }
         }
-        const sampleUrl = `${this.baseUrl}/${mapping.file}`;
-        logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
-        const response = await fetch(sampleUrl);
-        if (!response.ok) throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
-        const arrayBuffer = await response.arrayBuffer();
-        const context = this.audioContext;
-        if (!context) throw new Error('SampledInstrument was disposed during loading');
-        const audioBuffer = await context.decodeAudioData(arrayBuffer);
-        if (generation !== this.lifecycleGeneration) throw new Error('Sample load superseded by a newer lifecycle');
-        sampleCache.set(cacheKey, audioBuffer);
-        logger.audio.log(`[CACHED] ${cacheKey}`);
-        return audioBuffer;
-      }, priority);
+      })();
       this.inFlightBuffers.set(cacheKey, bufferPromise);
       const clear = (): void => {
         if (this.inFlightBuffers.get(cacheKey) === bufferPromise) this.inFlightBuffers.delete(cacheKey);
