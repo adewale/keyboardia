@@ -1361,25 +1361,19 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
   // of the render-clock diagnostic.
   await page.waitForTimeout(5_000);
 
-  const captured = await page.evaluate(async ({ explicitDry, newSession }) => {
+  const captured = await page.evaluate(async (newSession) => {
     type Capture = {
       sampleRate: number;
       maxRenderFrameDrift: number;
       taps: Record<string, { channels: Float32Array[] }>;
     };
-    type Effects = typeof explicitDry;
     const globals = window as unknown as {
       __captureMaster__: (seconds: number) => Promise<Capture>;
-      __audioEngine__: { applyEffectsState: (effects: Effects) => void };
+      __audioEngine__: { applyEffectsState: (effects: typeof newSession) => void };
     };
-    const runCapture = async (effects: Effects) => {
-      globals.__audioEngine__.applyEffectsState(effects);
-      await new Promise(resolve => setTimeout(resolve, 350));
-      return globals.__captureMaster__(2.1);
-    };
-    const dryCapture = await runCapture(explicitDry);
-    const wetCapture = await runCapture(newSession);
-    const capture = wetCapture;
+    globals.__audioEngine__.applyEffectsState(newSession);
+    await new Promise(resolve => setTimeout(resolve, 350));
+    const capture = await globals.__captureMaster__(2.1);
     const summaries = Object.fromEntries(Object.entries(capture.taps).map(([name, tap]) => {
       let peak = 0;
       let energy = 0;
@@ -1403,49 +1397,114 @@ test('keeps a user-reachable 16-track mixed-engine session below digital full sc
       trackCount: document.querySelectorAll('.track-row').length,
       summaries,
       userOutputChannels: capture.taps.userOutput.channels.map(channel => Array.from(channel)),
-      dryPre: Array.from(dryCapture.taps.preCompressor.channels[0]),
-      dryPost: Array.from(dryCapture.taps.postMakeup.channels[0]),
-      wetPre: Array.from(wetCapture.taps.preCompressor.channels[0]),
-      wetPost: Array.from(wetCapture.taps.postMakeup.channels[0]),
+      capacityProgramChannels: capture.taps.preCompressor.channels.map(channel => Array.from(channel)),
+    };
+  }, NEW_SESSION_EFFECTS_STATE);
+
+  // Stop the live scheduler before replaying its captured 16-track programme.
+  // Comparing two independently scheduled live windows is not a paired test:
+  // source phase and render-quantum placement vary enough to swamp a 0.1 dB
+  // pumping budget. Replaying the exact captured input keeps the production
+  // graph and capacity-level waveform while changing only the room state.
+  await page
+    .locator('[data-testid="play-button"]')
+    .or(page.getByRole('button', { name: /pause|stop/i }))
+    .first()
+    .click();
+  await page.waitForTimeout(350);
+
+  const replay = await page.evaluate(async ({ explicitDry, newSession, programChannels }) => {
+    type Capture = {
+      sampleRate: number;
+      startFrame: number;
+      maxRenderFrameDrift: number;
+      taps: Record<string, { channels: Float32Array[] }>;
+    };
+    type Effects = typeof explicitDry;
+    type Engine = {
+      applyEffectsState: (effects: Effects) => void;
+      getAudioContext: () => AudioContext | null;
+      masterGain: GainNode | null;
+    };
+    const globals = window as unknown as {
+      __captureMaster__: (seconds: number) => Promise<Capture>;
+      __audioEngine__: Engine;
+    };
+    const context = globals.__audioEngine__.getAudioContext();
+    const masterInput = globals.__audioEngine__.masterGain;
+    if (!context || !masterInput) throw new Error('Master input unavailable for capacity replay');
+    const programFrames = Math.min(...programChannels.map(channel => channel.length));
+    const programSeconds = programFrames / context.sampleRate;
+
+    const runReplay = async (effects: Effects) => {
+      globals.__audioEngine__.applyEffectsState(effects);
+      await new Promise(resolve => setTimeout(resolve, 350));
+      const buffer = context.createBuffer(programChannels.length, programFrames, context.sampleRate);
+      programChannels.forEach((channel, index) => {
+        buffer.copyToChannel(Float32Array.from(channel.slice(0, programFrames)), index);
+      });
+      const source = context.createBufferSource();
+      source.buffer = buffer;
+      source.connect(masterInput);
+      const startTime = context.currentTime + 0.15;
+      source.start(startTime);
+      const capture = await globals.__captureMaster__(programSeconds + 0.3);
+      const programStartFrame = Math.round(startTime * capture.sampleRate - capture.startFrame);
+      const paddingFrames = Math.round(capture.sampleRate * 0.05);
+      const analysisStart = Math.max(0, programStartFrame - paddingFrames);
+      const analysisEnd = programStartFrame + programFrames + paddingFrames;
+      return {
+        maxRenderFrameDrift: capture.maxRenderFrameDrift,
+        pre: Array.from(capture.taps.preCompressor.channels[0].slice(analysisStart, analysisEnd)),
+        post: Array.from(capture.taps.postMakeup.channels[0].slice(analysisStart, analysisEnd)),
+      };
+    };
+
+    return {
+      dry: await runReplay(explicitDry),
+      wet: await runReplay(newSession),
     };
   }, {
     explicitDry: LEGACY_MISSING_EFFECTS_STATE,
     newSession: NEW_SESSION_EFFECTS_STATE,
+    programChannels: captured.capacityProgramChannels,
   });
 
   const userOutputTruePeakDbfs = Math.max(...captured.userOutputChannels.map(channel =>
     truePeakDbfs(channel)
   ));
   const latencyFrames = estimateLatencyFrames(
-    captured.dryPre,
-    captured.dryPost,
+    replay.dry.pre,
+    replay.dry.post,
     Math.round(captured.sampleRate * 0.02),
   );
-  const dryPumping = pumpingProfile(captured.dryPre, captured.dryPost, captured.sampleRate, {
+  const dryPumping = pumpingProfile(replay.dry.pre, replay.dry.post, captured.sampleRate, {
     latencyFrames,
   });
-  const wetPumping = pumpingProfile(captured.wetPre, captured.wetPost, captured.sampleRate, {
+  const wetPumping = pumpingProfile(replay.wet.pre, replay.wet.post, captured.sampleRate, {
     latencyFrames,
   });
   const capacityPumpingDeltaDb = wetPumping.maxAttenuationDb - dryPumping.maxAttenuationDb;
   const {
     userOutputChannels: _userOutputChannels,
-    dryPre: _dryPre,
-    dryPost: _dryPost,
-    wetPre: _wetPre,
-    wetPost: _wetPost,
+    capacityProgramChannels: _capacityProgramChannels,
     ...result
   } = captured;
   void _userOutputChannels;
-  void _dryPre;
-  void _dryPost;
-  void _wetPre;
-  void _wetPost;
-  Object.assign(result, { userOutputTruePeakDbfs, capacityPumpingDeltaDb, latencyFrames });
+  void _capacityProgramChannels;
+  Object.assign(result, {
+    userOutputTruePeakDbfs,
+    capacityPumpingDeltaDb,
+    dryMaxAttenuationDb: dryPumping.maxAttenuationDb,
+    wetMaxAttenuationDb: wetPumping.maxAttenuationDb,
+    latencyFrames,
+  });
 
   console.log('16-track session capture', result);
   expect(result.trackCount).toBe(16);
   expect(result.maxRenderFrameDrift).toBeLessThanOrEqual(MAX_CAPTURE_RENDER_DRIFT_FRAMES);
+  expect(replay.dry.maxRenderFrameDrift).toBeLessThanOrEqual(MAX_CAPTURE_RENDER_DRIFT_FRAMES);
+  expect(replay.wet.maxRenderFrameDrift).toBeLessThanOrEqual(MAX_CAPTURE_RENDER_DRIFT_FRAMES);
   expect(result.summaries.preCompressor.rms).toBeGreaterThan(1e-5);
   expect(result.summaries.userOutput.rms).toBeGreaterThan(1e-5);
   expect(result.summaries.userOutput.peakDbfs).toBeLessThanOrEqual(0);

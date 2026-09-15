@@ -242,7 +242,7 @@ optional sustain loops
 ```
 source → track gain → master gain
   → DynamicsCompressor(-1 dB, 8:1, 3 ms / 80 ms)   engine.ts:289-306
-  → makeup (-0.52 dB)  → outputTrim (-1.75 dB)     constants.ts
+  → makeup (-0.52 dB)  → outputTrim (-2.25 dB)     constants.ts
   → destination
 ```
 with the Tone effects chain, when enabled, inserted before the trim:
@@ -547,7 +547,7 @@ The final paired raw values and oracle controls are preserved in
 | Contract | Before | Audited Phase 44 state | Residual gap |
 |---|---|---|---|
 | Sampled velocity timbre | 12/26 instruments gain-only | six tonal gain-only instruments now show 29.7–30.3% v40-v127 centroid reduction over all 281 audited requested notes at 44.1/48 kHz | unlocked/v≥90 notes bypass; no sampled per-note motion |
-| New-session space | global reverb 0 | 0.15 room; tail +19.7–21.1 dB, bass body within ±0.038 dB, peak/LU/pumping bounded in Chromium | one global depth |
+| New-session space | global reverb 0 | 0.15 room; tail +19.7–21.1 dB, bass body within ±0.109 dB, peak/LU bounded, and 0.000 dB compressor delta when the exact captured 16-track input is replayed dry/wet | one global depth |
 | Cold startup evidence | sampled first-use fixture only | retained native/Tone/advanced medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced contention outlier | physical-device matrix/generalization |
 | First sampled onset consistency | first note could schedule its de-click ramp at `currentTime`, allowing the render thread to enter mid-ramp | real-time sampled lead `max(3 ms, 513 / sampleRate)`; a zero-lead mutation failed source RMS in 2/12 contexts, while 13/13 guarded contexts measured 38.7–54.7 ms click-to-audible and a 0/≤0.000002 dB source peak/RMS repeat null | the floor costs 10.6875 ms at 48 kHz for an event with insufficient lead; other sampled instruments and physical devices remain unmeasured |
 | Mobile output | direct Web Audio destination | both final graphs terminate through the mobile media-element route | physical ringer-off and latency pass still open |

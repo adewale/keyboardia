@@ -92,6 +92,10 @@ const dispositionContracts = [
     local: readDispositionContract(prePushPath, 'prepush-webkit.json'),
   },
 ];
+const pcmContract = {
+  spec: 'e2e/capture-session.spec.ts',
+  ...readDispositionContract(prePushPath, 'prepush-pcm.json'),
+};
 
 const playwright = process.platform === 'win32'
   ? resolve(appRoot, 'node_modules/.bin/playwright.cmd')
@@ -158,4 +162,25 @@ for (const contract of dispositionContracts) {
   }
 }
 
-console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests, ${dispositionContracts.length} local/CI disposition contracts`);
+const pcmListed = spawnSync(playwright, [
+  'test', pcmContract.spec, '--project=chromium', '--list',
+], {
+  cwd: appRoot,
+  encoding: 'utf8',
+  env: { ...process.env, E2E_FUNCTIONAL_ONLY: '1', USE_MOCK_API: '1', CI: 'true' },
+});
+if (pcmListed.status !== 0) {
+  throw new Error(`Unable to collect local PCM gate inventory:\n${pcmListed.stderr || pcmListed.stdout}`);
+}
+const pcmTotalMatch = pcmListed.stdout.match(/Total:\s+(\d+)\s+tests?\b/);
+if (!pcmTotalMatch) {
+  throw new Error(`Unable to parse local PCM gate inventory:\n${pcmListed.stdout}`);
+}
+const pcmCollectedTotal = Number(pcmTotalMatch[1]);
+const pcmContractedTotal = pcmContract.expected + pcmContract.skipped;
+if (pcmCollectedTotal !== pcmContractedTotal) {
+  throw new Error(`Local PCM gate accounts for ${pcmContractedTotal} results, `
+    + `but Playwright collects ${pcmCollectedTotal} from ${pcmContract.spec}`);
+}
+
+console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests, ${dispositionContracts.length} local/CI disposition contracts, ${pcmCollectedTotal}-test local PCM contract`);

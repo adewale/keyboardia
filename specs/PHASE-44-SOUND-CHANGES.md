@@ -298,17 +298,22 @@ guessing it:
 | `bandRmsDb`, below 275 Hz | 0.15–0.55 s bass-program body | **within ±0.3 dB of dry** — proves the HPF protects the bass body |
 | `truePeakDbfs` at `userOutput` | whole capture | no increase beyond the explicit-dry live-repeat floor + 0.01 dB numerical margin |
 | `loudnessKMax` | whole capture | **≤ 1 LU** change |
-| `pumpingProfile` on the 16-track capacity fixture | whole capture | no new pumping — reverb energy must not drive the compressor |
+| `pumpingProfile` on an exact replay of the captured 16-track pre-compressor programme | same synchronized programme replayed once dry and once wet | no new pumping — reverb energy is downstream and must not drive the compressor |
 
 The production-browser probes now supply the thresholds and evidence across
-the audit reruns: full-band tail +19.7 to +21.1 dB and high-band tail +24.0 to
+the audit reruns: full-band tail +19.7 to +21.1 dB and high-band tail +23.6 to
 +25.1 dB from the corrected 300 ms boundary, bass-body low band within
-±0.038 dB, wet true peak within 0.013 dB of dry, maximum K-weighted loudness
-within 0.055 LU, and 16-track compressor-attenuation delta −0.071 to
-+0.095 dB. Exact peak ordering varies below the live repeat floor, so the gate
-allows that measured floor plus 0.01 dB instead of claiming bit-stability. The
-committed assertions retain useful margin around those observations rather
-than comparing against an offline reverb proxy.
+±0.109 dB, wet true peak within 0.013 dB of dry, maximum K-weighted loudness
+within 0.055 LU. The capacity gate captures a real 16-track pre-compressor
+programme once, stops the scheduler, and replays those exact samples through
+the production master path under dry and wet room states. Three repeated
+48 kHz runs produced a 0.000 dB compressor-attenuation delta, matching the
+graph topology: the room branches after the compressor and cannot causally
+change its gain reduction. Exact peak ordering in the separate live room probe
+varies below its repeat floor, so that gate allows the measured floor plus
+0.01 dB instead of claiming bit-stability. The committed assertions retain
+useful margin around those observations rather than comparing against an
+offline reverb proxy.
 
 **The migration is the hard part, not the DSP.** Changing a default
 reinterprets every session that never stored effects. `normalizeSessionEffects`
@@ -464,7 +469,7 @@ outrun their evidence:
 | Velocity baseline | measurement script | note + articulation pairs, RR averaged | synthetic pitch/articulation confound remains 0 | passed |
 | Playback readiness | engine + transport caller | running/frozen, resume/gesture, timeout/cancel | removing the caller check or pending-start latch fails | passed |
 | Media Session | sequencer lifecycle | pending, active, OS-pause, retry, unmount | latest play intent survives cancellation but cannot survive unmount | passed |
-| Default room | Tone effects + real master chain | Chromium deterministic probe + 16-track capacity fixture | corrected tail boundary; bass-body/peak/LU bounds; capacity pumping against dry | passed |
+| Default room | Tone effects + real master chain | Chromium deterministic probe + exact paired replay of a captured 16-track capacity programme | corrected tail boundary; bass-body/peak/LU bounds; same-input wet-vs-dry capacity pumping | passed |
 | Legacy room migration | HTTP hydration + real master chain | effects-absent stored session | exact dry state plus live render at explicit-dry repeat null | passed |
 | Sampled first use | preload + scheduler + sampled voice | priority-loaded `slap-bass`, five hits; master preinitialized; 13 fresh contexts | 38.7–54.7 ms DOM event to audible; source-tap repeat null 0/≤0.000002 dB peak/RMS; heard-output diagnostic ≤0.010/0.005 dB; zero-lead mutation fails source RMS in 2/12 contexts | passed with `max(3 ms, 513 / sampleRate)` real-time sampled lead; 10.6875 ms at 48 kHz; no silent voice warm-up indicated in this fixture |
 | Cold engine startup | transport + engine/preload + master output | five fresh contexts each for native, Tone, advanced | audio-thread-retained first master-PCM frame; scheduler-boundary, pulsed-late-install, overload, and 700 ms main-thread-block controls | passed; retained medians 244.5/354.5/383.6 ms; preceding-batch max 755.9 ms disclosed |
@@ -498,8 +503,10 @@ outrun their evidence:
   client cannot overwrite the server's 0.15 room with a stale dry reset. The
   Chromium production-master captures now pass every revised §5 row: the
   deterministic room probe uses the promised tail boundary and the separate
-  16-track fixture measures wet-versus-dry pumping. The migration lane loads an
-  actual effects-absent stored session before comparing it with explicit dry.
+  16-track fixture captures one capacity programme, then replays those exact
+  pre-compressor samples through dry and wet production master states. The
+  migration lane loads an actual effects-absent stored session before comparing
+  it with explicit dry.
 - **Change 1 — mobile output** (`mobile-media-output.ts`, `engine.ts`).
   Both the native and Tone-effects master chains terminate in the same
   MediaStreamDestination → hidden `playsinline` element. It starts before the
@@ -654,6 +661,22 @@ same simplified models:
     taps separately, gates the causal source tap at 0.01 dB, writes its evidence
     before assertions, and leaves the stateful master result as a diagnostic.
     Its schema-v3 report retains the exact first 256 causal source frames.
+15. **A shared fixture was mistaken for a paired audio experiment, and its
+    required lane existed only in CI.** The capacity test captured dry and wet
+    windows sequentially while 16 live schedulers continued to run. Those
+    windows named the same session but did not contain the same input samples;
+    oscillator/sample phase and render-quantum placement could therefore swamp
+    a 0.1 dB causal budget. A macOS 48 kHz run narrowly crossed it at +0.103 dB,
+    while Linux at 44.1 kHz reported +1.373 dB. The same Linux run also exposed
+    +0.152 dBFS/+0.152 dBTP at the user output: the −1.75 dB trim had been
+    calibrated too close to one platform's observed ceiling. The production
+    trim is now −2.25 dB. The test captures one live capacity programme and
+    replays the exact pre-compressor samples twice through the production
+    master graph, changing only the room state; three 48 kHz repeats measured
+    0.000 dB pumping delta and remained below −0.76 dBTP. The complete five-test
+    dev-only PCM file is now an exact-inventory pre-push gate. Cross-platform
+    safety is enforced in the required Linux CI lane rather than inferred from
+    a single hardware sample rate.
 
 The pre-audit suites were green because their oracles were built from the same
 assumptions as the implementation: one note, one route, filename-derived or
