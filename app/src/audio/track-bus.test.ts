@@ -1,6 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { TrackBus } from './track-bus';
-import { TRACK_PEAK_LIMITER_SETTINGS } from './constants';
+import {
+  TRACK_PEAK_LIMITER_MAKEUP_GAIN,
+  TRACK_PEAK_LIMITER_SETTINGS,
+} from './constants';
 
 /**
  * Phase 25: TrackBus Unit Tests
@@ -72,8 +75,8 @@ describe('TrackBus', () => {
     it('should create all internal nodes', () => {
       new TrackBus(context, destination);
 
-      // Should create 4 gain nodes (input, volume, mute, output) + 1 panner
-      expect(context.createGain).toHaveBeenCalledTimes(4);
+      // input, volume, mute, limiter makeup trim, and output
+      expect(context.createGain).toHaveBeenCalledTimes(5);
       expect(context.createStereoPanner).toHaveBeenCalledTimes(1);
       expect(context.createDynamicsCompressor).toHaveBeenCalledTimes(1);
     });
@@ -81,12 +84,14 @@ describe('TrackBus', () => {
     it('configures the post-pan track peak ceiling', () => {
       new TrackBus(context, destination);
       const limiter = vi.mocked(context.createDynamicsCompressor).mock.results[0]?.value;
+      const makeupTrim = vi.mocked(context.createGain).mock.results[3]?.value;
 
       expect(limiter?.threshold.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.threshold);
       expect(limiter?.knee.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.knee);
       expect(limiter?.ratio.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.ratio);
       expect(limiter?.attack.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.attack);
       expect(limiter?.release.value).toBe(TRACK_PEAK_LIMITER_SETTINGS.release);
+      expect(makeupTrim?.gain.value).toBeCloseTo(TRACK_PEAK_LIMITER_MAKEUP_GAIN, 12);
     });
 
     it('should connect nodes in correct order', () => {

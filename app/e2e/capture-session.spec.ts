@@ -56,6 +56,83 @@ function probeTrack(id: string, sampleId: string, activeSteps: readonly number[]
   };
 }
 
+test('keeps the per-track ceiling at unity below threshold and contains overloads', async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== 'chromium', 'real Web Audio dynamics contract is desktop Chromium-only');
+  test.skip(
+    Boolean(process.env.PLAYWRIGHT_BASE_URL),
+    'the production Worker build does not serve source modules for the dynamics probe',
+  );
+  await page.goto(API_BASE);
+
+  const result = await page.evaluate(async () => {
+    const { TrackBus } = await import('/src/audio/track-bus.ts');
+    const sampleRate = 48_000;
+    const render = async (amplitude: number, useTrackBus: boolean) => {
+      const context = new OfflineAudioContext(2, sampleRate, sampleRate);
+      const destination = context.createGain();
+      destination.connect(context.destination);
+      let input: AudioNode;
+      if (useTrackBus) {
+        const bus = new TrackBus(context as unknown as AudioContext, destination);
+        input = bus.getInput();
+      } else {
+        const referenceGain = context.createGain();
+        const referencePan = context.createStereoPanner();
+        referenceGain.connect(referencePan).connect(destination);
+        input = referenceGain;
+      }
+      const oscillator = context.createOscillator();
+      const sourceGain = context.createGain();
+      oscillator.frequency.value = 1_000;
+      sourceGain.gain.value = amplitude;
+      oscillator.connect(sourceGain).connect(input);
+      oscillator.start(0.1);
+      oscillator.stop(0.9);
+      const rendered = await context.startRendering();
+      const startFrame = Math.round(0.25 * sampleRate);
+      const endFrame = Math.round(0.75 * sampleRate);
+      let energy = 0;
+      let peak = 0;
+      let samples = 0;
+      for (let channel = 0; channel < rendered.numberOfChannels; channel++) {
+        const pcm = rendered.getChannelData(channel);
+        for (let frame = startFrame; frame < endFrame; frame++) {
+          const value = pcm[frame];
+          energy += value * value;
+          peak = Math.max(peak, Math.abs(value));
+          samples++;
+        }
+      }
+      return { rms: Math.sqrt(energy / samples), peak };
+    };
+
+    const reference = await render(0.01, false);
+    const quietTrack = await render(0.01, true);
+    const overloadedTrack = await render(1.5, true);
+    return {
+      sampleRate,
+      quietThroughGainDb: 20 * Math.log10(quietTrack.rms / reference.rms),
+      overloadedPeak: overloadedTrack.peak,
+      overloadedPeakDbfs: 20 * Math.log10(overloadedTrack.peak),
+    };
+  });
+
+  console.log('track ceiling render', result);
+  expect(Math.abs(result.quietThroughGainDb)).toBeLessThanOrEqual(0.05);
+  expect(result.overloadedPeak).toBeLessThanOrEqual(1);
+  mkdirSync(REPORT_DIR, { recursive: true });
+  writeFileSync(
+    resolve(REPORT_DIR, 'track-bus-dynamics.json'),
+    JSON.stringify({
+      schemaVersion: 1,
+      fixture: 'production TrackBus against a pan-matched bypass reference',
+      ...result,
+    }, null, 2) + '\n',
+  );
+});
+
 test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', async ({
   page,
   request,

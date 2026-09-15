@@ -10,6 +10,7 @@ import {
   summarizeStableSampleQualityReceiptNumericMismatches,
 } from '../scripts/audit-instrument-quality';
 import {
+  LIVE_MAX_ARM_TO_ONSET_SECONDS,
   LIVE_RECEIPT_SCHEMA_VERSION,
   expectedLiveEngineDispatchIdentity,
   type LiveInstrumentSpec,
@@ -60,22 +61,25 @@ function currentLiveReportFixture(): Record<string, unknown> {
   )) as Record<string, unknown>;
   report.schemaVersion = LIVE_RECEIPT_SCHEMA_VERSION;
   report.subjectCommit = currentSubjectCommit();
+  (report.capture as Record<string, unknown>).maxArmToOnsetSeconds = LIVE_MAX_ARM_TO_ONSET_SECONDS;
 
-  const positionByInstrument = new Map<string, number>();
-  for (const session of report.sessions as Array<{ instruments: string[] }>) {
+  const fixtureByInstrument = new Map<string, { position: number; sampleRate: number }>();
+  for (const session of report.sessions as Array<{ instruments: string[]; sampleRate: number }>) {
     session.instruments.forEach((instrumentId, index) => {
-      positionByInstrument.set(instrumentId, index);
+      fixtureByInstrument.set(instrumentId, { position: index, sampleRate: session.sampleRate });
     });
   }
   for (const item of report.instruments as Array<LiveInstrumentSpec & {
     trackId: string;
+    armToOnsetFrames: number;
     observedEngineDispatches: unknown[];
   }>) {
-    const position = positionByInstrument.get(item.sampleId);
-    if (position === undefined) throw new Error(`Live fixture session omits ${item.sampleId}`);
+    const fixture = fixtureByInstrument.get(item.sampleId);
+    if (fixture === undefined) throw new Error(`Live fixture session omits ${item.sampleId}`);
+    item.armToOnsetFrames = Math.round(0.52 * fixture.sampleRate);
     item.observedEngineDispatches = [{
       ...expectedLiveEngineDispatchIdentity(item, item.trackId),
-      eventTimeSeconds: position + 1,
+      eventTimeSeconds: fixture.position + 1,
     }];
   }
   return report;

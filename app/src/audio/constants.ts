@@ -111,6 +111,14 @@ export const TRACK_PEAK_LIMITER_SETTINGS = Object.freeze({
   release: 0.05,
 });
 
+/** Chromium's measured automatic makeup for the track ceiling above. */
+export const TRACK_PEAK_LIMITER_AUTO_MAKEUP_DB = 1.139863;
+
+/** Preserve unity gain below the track ceiling despite compressor makeup. */
+export const TRACK_PEAK_LIMITER_MAKEUP_GAIN = 10 ** (
+  -TRACK_PEAK_LIMITER_AUTO_MAKEUP_DB / 20
+);
+
 /** Re-measured by the browser capture receipt when the safety curve changes. */
 export const MASTER_COMPRESSOR_AUTO_MAKEUP_DB = 0.5248653331;
 

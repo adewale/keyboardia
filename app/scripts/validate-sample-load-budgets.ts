@@ -6,6 +6,7 @@ import path from 'node:path';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
 import {
   estimatedSampleTransferSeconds,
+  MAX_CONCURRENT_BACKGROUND_SAMPLE_LOADS,
   THROTTLED_SAMPLE_NETWORK_PROFILE,
 } from '../src/audio/sample-load-policy';
 import { nearestSampleNote } from '../src/audio/sample-selection';
@@ -78,7 +79,11 @@ function inspectManifest(manifestPath: string): BudgetResult {
     prioritySeconds: estimatedSampleTransferSeconds(priorityBytes, priorityFiles.length),
     backgroundFiles: backgroundFiles.length,
     backgroundBytes,
-    backgroundSeconds: estimatedSampleTransferSeconds(backgroundBytes, backgroundFiles.length),
+    backgroundSeconds: estimatedSampleTransferSeconds(
+      backgroundBytes,
+      backgroundFiles.length,
+      MAX_CONCURRENT_BACKGROUND_SAMPLE_LOADS,
+    ),
   };
 }
 
