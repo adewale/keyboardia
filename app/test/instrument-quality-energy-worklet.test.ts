@@ -62,13 +62,19 @@ function arm(processor: CapturingProcessor, frameCount: number): void {
   processor.port.onmessage?.({ data: { type: 'arm', frameCount } });
 }
 
+function start(processor: CapturingProcessor): void {
+  processor.port.onmessage?.({ data: { type: 'start' } });
+}
+
 describe('live energy worklet lifecycle', () => {
-  it('stays alive before asynchronous arm, then retires on the exact done quantum', () => {
+  it('stays alive before asynchronous arm and start, then retires on the exact done quantum', () => {
     const processor = createProcessor();
     expect(processor.process([], [[new Float32Array(1)]])).toBe(true);
 
     arm(processor, 1);
     expect(processor.port.messages).toContainEqual({ type: 'armed', frameCount: 1 });
+    expect(processor.process([], [[new Float32Array(1)]])).toBe(true);
+    start(processor);
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(1)]],
@@ -78,6 +84,24 @@ describe('live energy worklet lifecycle', () => {
       capturedFrames: 1,
     });
     expect(processor.process([], [[new Float32Array(1)]])).toBe(false);
+  });
+
+  it('excludes render quanta between arm acknowledgement and the start marker', () => {
+    const processor = createProcessor();
+    arm(processor, 1);
+    for (let quantum = 0; quantum < 50; quantum++) {
+      expect(processor.process([], [[new Float32Array(128)]])).toBe(true);
+    }
+
+    start(processor);
+    expect(processor.process(
+      [[Float32Array.from([0.5])]],
+      [[new Float32Array(1)]],
+    )).toBe(false);
+    expect(processor.port.messages.at(-1)).toMatchObject({
+      type: 'done',
+      startMarkerToOnsetFrames: 0,
+    });
   });
 
   it('retires after an invalid arm instead of remaining a permanent live node', () => {
@@ -90,6 +114,7 @@ describe('live energy worklet lifecycle', () => {
   it('returns false on the render quantum that reports a missing output', () => {
     const processor = createProcessor();
     arm(processor, 1);
+    start(processor);
     expect(processor.process([], [])).toBe(false);
     expect(processor.port.messages.at(-1)).toMatchObject({ type: 'error' });
     expect(processor.process([], [[new Float32Array(1)]])).toBe(false);
@@ -98,6 +123,7 @@ describe('live energy worklet lifecycle', () => {
   it('returns false on the render quantum that reports a channel-count mismatch', () => {
     const processor = createProcessor(2);
     arm(processor, 1);
+    start(processor);
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(1)]],
@@ -109,6 +135,7 @@ describe('live energy worklet lifecycle', () => {
   it('returns false on the render quantum that reports an incomplete channel', () => {
     const processor = createProcessor();
     arm(processor, 2);
+    start(processor);
     expect(processor.process(
       [[Float32Array.from([0.5])]],
       [[new Float32Array(2)]],
