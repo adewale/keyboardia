@@ -102,6 +102,45 @@ export const MASTER_COMPRESSOR_SETTINGS = Object.freeze({
   release: 0.08,
 });
 
+/** Transparent per-track transient ceiling before tracks reach the master sum. */
+export const TRACK_PEAK_LIMITER_SETTINGS = Object.freeze({
+  threshold: -2,
+  knee: 0,
+  ratio: 20,
+  attack: 0,
+  release: 0.05,
+});
+
+/** Chromium's measured automatic makeup for the track ceiling above. */
+export const TRACK_PEAK_LIMITER_AUTO_MAKEUP_DB = 1.139863;
+
+/** Preserve unity gain below the track ceiling despite compressor makeup. */
+export const TRACK_PEAK_LIMITER_MAKEUP_GAIN = 10 ** (
+  -TRACK_PEAK_LIMITER_AUTO_MAKEUP_DB / 20
+);
+
+/**
+ * Final per-track sample ceiling after the dynamics stage. A Web Audio
+ * DynamicsCompressor is programme-dependent and can overshoot on isolated
+ * transients even with a zero-second attack, so it cannot enforce this bound
+ * by itself. The waveshaper is linear below the ceiling and clamps only the
+ * samples that would otherwise leave the fixed-point output domain.
+ */
+export const TRACK_SAMPLE_PEAK_CEILING_DB = -1;
+export const TRACK_SAMPLE_PEAK_CEILING = 10 ** (TRACK_SAMPLE_PEAK_CEILING_DB / 20);
+export const TRACK_SAMPLE_PEAK_CURVE_POINTS = 8_193;
+
+export function createTrackSamplePeakCurve(): Float32Array<ArrayBuffer> {
+  const curve = new Float32Array(
+    new ArrayBuffer(TRACK_SAMPLE_PEAK_CURVE_POINTS * Float32Array.BYTES_PER_ELEMENT),
+  );
+  for (let index = 0; index < curve.length; index++) {
+    const input = (2 * index / (curve.length - 1)) - 1;
+    curve[index] = Math.max(-TRACK_SAMPLE_PEAK_CEILING, Math.min(TRACK_SAMPLE_PEAK_CEILING, input));
+  }
+  return curve;
+}
+
 /** Re-measured by the browser capture receipt when the safety curve changes. */
 export const MASTER_COMPRESSOR_AUTO_MAKEUP_DB = 0.5248653331;
 

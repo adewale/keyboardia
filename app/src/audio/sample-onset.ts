@@ -12,6 +12,8 @@ export const MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS = 0.005;
  * silently remove.
  */
 export const MAX_ADAPTIVE_CODEC_DELAY_SECONDS = 0.03;
+/** Hard ceiling for a provenance-backed per-manifest decoder-delay allowance. */
+export const MAX_CONFIGURED_ADAPTIVE_CODEC_DELAY_SECONDS = 0.1;
 
 export interface DecodedAudioBufferView {
   readonly length: number;
@@ -68,14 +70,21 @@ export function compensatedSampleStartOffset(
   configuredStart: number | undefined,
   decodedLeadingSilence: number,
   adaptCodecDelay: boolean,
+  maxAdaptiveCodecDelay: number = MAX_ADAPTIVE_CODEC_DELAY_SECONDS,
 ): number | undefined {
   const configured = Number.isFinite(configuredStart) && (configuredStart ?? -1) >= 0
     ? configuredStart
     : undefined;
+  const adaptiveLimit = Number.isFinite(maxAdaptiveCodecDelay)
+    ? Math.min(
+        MAX_CONFIGURED_ADAPTIVE_CODEC_DELAY_SECONDS,
+        Math.max(0, maxAdaptiveCodecDelay),
+      )
+    : MAX_ADAPTIVE_CODEC_DELAY_SECONDS;
   const canAdapt = adaptCodecDelay &&
     Number.isFinite(decodedLeadingSilence) &&
     decodedLeadingSilence > MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS &&
-    decodedLeadingSilence <= MAX_ADAPTIVE_CODEC_DELAY_SECONDS;
+    decodedLeadingSilence <= adaptiveLimit;
   if (!canAdapt) return configured;
 
   const adaptive = decodedLeadingSilence - MAX_EFFECTIVE_PERCUSSION_ONSET_SECONDS;

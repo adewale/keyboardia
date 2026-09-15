@@ -3,6 +3,7 @@
   "name": "French Horn",
   "type": "sampled",
   "releaseTime": 0.6,
+  "maxAdaptiveCodecDelay": 0.06,
   "gainDb": 7.25,
   "velocityCrossfade": 8,
   "credits": {

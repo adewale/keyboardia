@@ -22,6 +22,21 @@ const mappingCalibrationReceipt = JSON.parse(
 ) as {
   instruments: Array<{ id: string; manifestSha256: string }>;
 };
+const remediationCalibrationReceipt = JSON.parse(
+  fs.readFileSync(
+    path.resolve('sample-pipeline/remediation-receipts/manifest-calibrations.json'),
+    'utf8',
+  ),
+) as {
+  claim: string;
+  perceptualPreferenceClaimed: boolean;
+  instruments: Array<{
+    id: string;
+    previousManifestSha256: string;
+    manifestSha256: string;
+    audioBytesChanged: boolean;
+  }>;
+};
 const sha256File = (filename: string): string => createHash('sha256').update(fs.readFileSync(filename)).digest('hex');
 const sorted = (values: readonly string[]): string[] => [...values].sort((left, right) => left.localeCompare(right));
 
@@ -66,6 +81,7 @@ describe('exact-hash human rejection decisions', () => {
       const productionHashes = [...new Set<string>(productionManifest.samples.map((sample: { file: string }) => sample.file))]
         .map(file => sha256File(path.join(productionRoot, file)));
       const enrichmentReceiptPath = path.resolve('sample-pipeline/enrichment/evidence', instrumentId, 'promotion.json');
+      const remediation = remediationCalibrationReceipt.instruments.find(entry => entry.id === instrumentId);
       if (fs.existsSync(enrichmentReceiptPath)) {
         const enrichment = JSON.parse(fs.readFileSync(enrichmentReceiptPath, 'utf8'));
         const curation = curationReceipt.instruments.find(entry => entry.id === instrumentId);
@@ -73,13 +89,30 @@ describe('exact-hash human rejection decisions', () => {
         expect(enrichment.perceptualPreferenceClaimed).toBe(false);
         expect(curationReceipt.policy.perceptualPreferenceClaimed).toBe(false);
         expect(curation).toBeDefined();
-        expect(sha256File(productionManifestPath)).toBe(curation!.manifestSha256);
+        expect(remediation?.previousManifestSha256 ?? sha256File(productionManifestPath))
+          .toBe(curation!.manifestSha256);
+        if (remediation) {
+          expect(sha256File(productionManifestPath)).toBe(remediation.manifestSha256);
+          expect(remediationCalibrationReceipt.claim).toBe('objective-manifest-calibration');
+          expect(remediationCalibrationReceipt.perceptualPreferenceClaimed).toBe(false);
+          expect(remediation.audioBytesChanged).toBe(false);
+        }
         expect(sorted(productionHashes)).toEqual(sorted(curation!.shipped.map(output => output.sha256)));
       } else {
         const calibration = mappingCalibrationReceipt.instruments.find(entry => entry.id === instrumentId);
         expect(sha256File(productionManifestPath)).toBe(
-          calibration?.manifestSha256 ?? comparison.before.buildReportSha256,
+          remediation?.manifestSha256
+            ?? calibration?.manifestSha256
+            ?? comparison.before.buildReportSha256,
         );
+        if (remediation) {
+          expect(remediationCalibrationReceipt.claim).toBe('objective-manifest-calibration');
+          expect(remediationCalibrationReceipt.perceptualPreferenceClaimed).toBe(false);
+          expect(remediation.previousManifestSha256).toBe(
+            calibration?.manifestSha256 ?? comparison.before.buildReportSha256,
+          );
+          expect(remediation.audioBytesChanged).toBe(false);
+        }
         expect(sorted(productionHashes)).toEqual(sorted(comparison.before.outputHashes));
       }
       expect(fs.existsSync(path.join(productionRoot, 'build-report.json'))).toBe(false);

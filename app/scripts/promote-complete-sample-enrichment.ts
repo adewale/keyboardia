@@ -84,6 +84,18 @@ interface CurationReceipt {
   instruments: CurationEntry[];
 }
 
+interface RemediationCalibrationReceipt {
+  version: 1;
+  claim: 'objective-manifest-calibration';
+  perceptualPreferenceClaimed: false;
+  instruments: Array<{
+    id: string;
+    previousManifestSha256: string;
+    manifestSha256: string;
+    audioBytesChanged: false;
+  }>;
+}
+
 interface VerifiedCandidate {
   id: string;
   candidateRoot: string;
@@ -179,7 +191,19 @@ function verifyPromoted(id: string): void {
   if (fs.existsSync(curationPath)) {
     const curation = readJson<CurationReceipt>(curationPath).instruments.find(entry => entry.id === id);
     assert(curation, `${id}: technical curation receipt is missing`);
-    assert(sha256(path.join(productionRoot, 'manifest.json')) === curation.manifestSha256, `${id}: curated manifest hash mismatch`);
+    const productionManifestSha256 = sha256(path.join(productionRoot, 'manifest.json'));
+    if (productionManifestSha256 !== curation.manifestSha256) {
+      const remediation = readJson<RemediationCalibrationReceipt>(
+        path.resolve('sample-pipeline', 'remediation-receipts', 'manifest-calibrations.json'),
+      );
+      const calibration = remediation.instruments.find(entry => entry.id === id);
+      assert(remediation.claim === 'objective-manifest-calibration', `${id}: manifest remediation claim is invalid`);
+      assert(remediation.perceptualPreferenceClaimed === false, `${id}: manifest remediation must not claim perceptual preference`);
+      assert(calibration, `${id}: changed curated manifest has no remediation receipt`);
+      assert(calibration.previousManifestSha256 === curation.manifestSha256, `${id}: manifest remediation does not start at the curated hash`);
+      assert(calibration.manifestSha256 === productionManifestSha256, `${id}: manifest remediation does not bind the production hash`);
+      assert(calibration.audioBytesChanged === false, `${id}: manifest-only remediation cannot claim changed audio bytes`);
+    }
     const manifest = readJson<{ samples: unknown[] }>(path.join(productionRoot, 'manifest.json'));
     assert(manifest.samples.length === curation.after.mappings, `${id}: curated mapping count mismatch`);
     const physical = fs.readdirSync(productionRoot).filter(file => /\.(?:m4a|mp3|wav)$/i.test(file)).sort();

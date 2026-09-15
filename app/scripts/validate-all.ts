@@ -12,6 +12,7 @@
  *    including active-RMS velocity layer ordering
  * 4. Release Times - Validates release time consistency
  * 5. Sync Checklist - Ensures multiplayer sync implementation is complete
+ * 6. Sample Load Budgets - Bounds transfer size before runtime network/decode verification
  *
  * Usage:
  *   npx tsx scripts/validate-all.ts
@@ -39,6 +40,12 @@ interface ValidatorResult {
   error?: string;
 }
 
+function diagnosticTail(value: string, maximumCharacters = 4_000): string {
+  const trimmed = value.trim();
+  if (trimmed.length <= maximumCharacters) return trimmed;
+  return `[earlier output omitted]\n${trimmed.slice(-maximumCharacters)}`;
+}
+
 const VALIDATORS = [
   {
     name: 'Manifest Validation',
@@ -64,6 +71,11 @@ const VALIDATORS = [
     name: 'Release Time Validation',
     script: 'npx tsx scripts/validate-release-times.ts',
     description: 'Validates release time consistency across instruments',
+  },
+  {
+    name: 'Sample Load Budget Validation',
+    script: 'npx tsx scripts/validate-sample-load-budgets.ts',
+    description: 'Checks priority and background payload sizes against the static transfer budget',
   },
   {
     name: 'Sync Checklist Validation',
@@ -118,8 +130,11 @@ function main(): void {
       console.log(`  ${colors.green}✓ Passed${colors.reset} ${colors.dim}(${result.duration}ms)${colors.reset}\n`);
     } else {
       console.log(`  ${colors.red}✗ Failed${colors.reset} ${colors.dim}(${result.duration}ms)${colors.reset}`);
+      if (result.output?.trim()) {
+        console.log(`  ${colors.red}Output:\n${diagnosticTail(result.output)}${colors.reset}`);
+      }
       if (result.error) {
-        console.log(`  ${colors.red}Error: ${result.error.slice(0, 200)}${colors.reset}\n`);
+        console.log(`  ${colors.red}Error:\n${diagnosticTail(result.error)}${colors.reset}\n`);
       }
     }
   }

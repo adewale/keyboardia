@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 const toneCreates: string[] = [];
 const advancedCreates: string[] = [];
+const advancedPresetSelections: string[] = [];
 
 vi.mock('./toneSynths', async () => {
   const actual = await vi.importActual<typeof import('./toneSynths')>('./toneSynths');
@@ -34,7 +35,7 @@ vi.mock('./advancedSynth', async () => {
     isReady(): boolean { return true; }
     getOutput(): { connect: () => void } { return { connect: () => {} }; }
     setTempo(): void {}
-    setPreset(): void {}
+    setPreset(name: string): void { advancedPresetSelections.push(name); }
     playNoteSemitone(): void {}
     getDiagnostics(): unknown { return { activeVoices: 0 }; }
     setFilterFrequency(): void {}
@@ -77,6 +78,7 @@ describe('Phase 5: pre-warm tone/advanced synths', () => {
   beforeEach(() => {
     toneCreates.length = 0;
     advancedCreates.length = 0;
+    advancedPresetSelections.length = 0;
   });
   afterEach(() => {
     vi.clearAllMocks();
@@ -108,6 +110,7 @@ describe('Phase 5: pre-warm tone/advanced synths', () => {
 
     const reg = (engine as unknown as { advancedSynthRegistry: { activeTrackIds(): string[] } }).advancedSynthRegistry;
     expect(reg.activeTrackIds().sort()).toEqual(['A', 'B']);
+    expect(advancedPresetSelections.sort()).toEqual(['supersaw', 'wobble-bass']);
   });
 
   it('handles a mix of track types without blowing up', async () => {

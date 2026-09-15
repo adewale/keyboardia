@@ -37,10 +37,33 @@ function createMockStereoPannerNode() {
   return node;
 }
 
+function createMockDynamicsCompressorNode() {
+  return {
+    threshold: { value: 0 },
+    knee: { value: 0 },
+    ratio: { value: 0 },
+    attack: { value: 0 },
+    release: { value: 0 },
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+}
+
+function createMockWaveShaperNode() {
+  return {
+    curve: null,
+    oversample: 'none',
+    connect: vi.fn(),
+    disconnect: vi.fn(),
+  };
+}
+
 function createMockAudioContext() {
   return {
     createGain: vi.fn(() => createMockGainNode()),
     createStereoPanner: vi.fn(() => createMockStereoPannerNode()),
+    createDynamicsCompressor: vi.fn(() => createMockDynamicsCompressorNode()),
+    createWaveShaper: vi.fn(() => createMockWaveShaperNode()),
     currentTime: 0,
   } as unknown as AudioContext;
 }

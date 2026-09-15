@@ -217,6 +217,21 @@ describe('Phase 3: global controls fan out + overrides', () => {
     expect(advancedInstances[0].setFilterFrequency).toHaveBeenCalledWith(1500);
   });
 
+  it('persists bounded envelope overrides for every future per-track instance', async () => {
+    const engine = new AudioEngine();
+    stubEngineInternals(engine);
+
+    engine.setAttack(99);
+    engine.setRelease(0);
+    await engine.warmAdvancedSynthForTrack('A');
+    await engine.warmAdvancedSynthForTrack('B');
+
+    for (const instance of advancedInstances) {
+      expect(instance.setAttack).toHaveBeenCalledWith(4);
+      expect(instance.setRelease).toHaveBeenCalledWith(0);
+    }
+  });
+
   it('multiple XY-pad settings stack and apply together to new tracks', async () => {
     const engine = new AudioEngine();
     stubEngineInternals(engine);
