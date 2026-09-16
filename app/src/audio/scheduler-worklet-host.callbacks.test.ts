@@ -4,8 +4,8 @@
  * messages up to 150 ms ahead of audio time. The playhead and
  * metronome pulse advanced too early.
  *
- * Fix: delay the callback by `event.time - audioContext.currentTime`
- * via setTimeout, tracked in pendingTimers so stop() can clear them.
+ * Fix: derive presentation from AudioContext position on animation frames.
+ * This keeps wall-clock timers out of the transport correctness path.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
@@ -62,8 +62,10 @@ describe('Worklet host UI-callback timing (#1)', () => {
     // It MUST NOT have been called yet (was the bug).
     expect(onStep).not.toHaveBeenCalled();
 
-    // After 150 ms the timer fires.
-    vi.advanceTimersByTime(150);
+    vi.advanceTimersByTime(149);
+    expect(onStep).not.toHaveBeenCalled();
+    mockCtx.currentTime = 10.150;
+    vi.advanceTimersByTime(16);
     expect(onStep).toHaveBeenCalledTimes(1);
     expect(onStep).toHaveBeenCalledWith(3);
   });
@@ -77,7 +79,8 @@ describe('Worklet host UI-callback timing (#1)', () => {
     dispatch(host, { type: 'beat', beat: 1, time: 10.075 });
     expect(onBeat).not.toHaveBeenCalled();
 
-    vi.advanceTimersByTime(75);
+    mockCtx.currentTime = 10.075;
+    vi.advanceTimersByTime(16);
     expect(onBeat).toHaveBeenCalledWith(1);
   });
 
@@ -88,7 +91,7 @@ describe('Worklet host UI-callback timing (#1)', () => {
     mockCtx.currentTime = 10.0;
 
     dispatch(host, { type: 'step', step: 4, time: 9.95 }); // already late
-    vi.advanceTimersByTime(0); // run any 0ms timer
+    vi.advanceTimersByTime(16);
     expect(onStep).toHaveBeenCalledWith(4);
   });
 
