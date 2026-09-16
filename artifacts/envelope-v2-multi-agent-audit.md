@@ -117,9 +117,22 @@ Still open and therefore not merge/release evidence:
 - CI p50/p95, retry and spend distribution, canary telemetry, rollback drill,
   and one retained release cycle.
 
-The current catalogue baseline is 582 files / 42,914,625 encoded bytes. Focused
-local evidence at the time of this addendum is TypeScript, build, 75 semantic,
-276 renderer-correctness, 232 rolling-state, and 13 PCM tests, plus ten real-
-Worker multiplayer contracts including atomic Gate→AR→release convergence and
-reload. Broader historical counts above are not attributed to this rebased
-commit until their lanes rerun.
+The current catalogue baseline is 582 files / 42,914,625 encoded bytes, with no
+audio bytes added by this PR. Evidence on the rebased implementation commit is:
+
+- 310 unit files and 5,086 tests passed; one external real-contract test is
+  intentionally skipped;
+- 75 semantic, 276 renderer-correctness, 232 rolling-state, and 13 PCM tests
+  passed in the named envelope lanes;
+- 12 built-Worker integration files and 140 integration tests passed;
+- ten real-Worker multiplayer contracts passed, including atomic
+  Gate→AR→release convergence and reload;
+- app and Worker type checks, ESLint, test-quality analysis, production build,
+  documentation/schema/inventory validation, and resource policy passed; and
+- the production build is 245,089 initial and 321,970 total gzip JavaScript
+  bytes. The PR remains inside the reviewed resource budget and adds no audio
+  asset.
+
+These results establish regression and contract evidence. They do not close
+the independent-renderer, human-listening, canary, rollback, retained-release,
+sample-asset, or D2 product-research gates listed above.
