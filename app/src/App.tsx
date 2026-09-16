@@ -491,20 +491,6 @@ export function SessionControls({ children, focusHeadingOnMount = false }: Sessi
             >
               Export MIDI
             </button>
-            <button
-              className="session-btn download-btn notation-copy-btn"
-              onClick={handleCopyNotation}
-              disabled={!notationReady}
-              aria-label={notationCopied ? 'Notation Copied!' : 'Copy Notation'}
-              title="Copy canonical v2.4 session notation"
-            >
-              <span className="notation-copy-label-long">
-                {notationCopied ? 'Notation Copied!' : 'Copy Notation'}
-              </span>
-              <span className="notation-copy-label-short" aria-hidden="true">
-                {notationCopied ? 'Copied!' : 'Notation'}
-              </span>
-            </button>
             {/* Phase 21: No Invite button on published sessions (spec line 298) */}
             {!isPublished && (
               <div className="share-dropdown-container">
@@ -528,6 +514,18 @@ export function SessionControls({ children, focusHeadingOnMount = false }: Sessi
                       }}
                     >
                       <CopyLink size={14} aria-hidden="true" /> Copy Link
+                    </button>
+                    <button
+                      className="share-dropdown-item"
+                      onClick={() => {
+                        handleCopyNotation();
+                        setShareDropdownOpen(false);
+                      }}
+                      disabled={!notationReady}
+                      title="Copy canonical v2.4 session notation"
+                    >
+                      <CopyLink size={14} aria-hidden="true" />
+                      {notationCopied ? 'Notation Copied!' : 'Copy Notation'}
                     </button>
                     <button
                       className="share-dropdown-item"

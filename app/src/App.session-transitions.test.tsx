@@ -154,13 +154,15 @@ describe('App session transition ownership', () => {
 
   it('copies canonical v2.4 notation through the shipped serializer', async () => {
     const view = render(<SessionControls><div>content</div></SessionControls>);
+    expect(screen.queryByRole('button', { name: 'Copy Notation' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: /Invite/ }));
     const button = await screen.findByRole('button', { name: 'Copy Notation' });
     await waitFor(() => expect(button.hasAttribute('disabled')).toBe(false));
 
     fireEvent.click(button);
 
     await waitFor(() => expect(mocks.copyToClipboard).toHaveBeenCalledWith(''));
-    await screen.findByRole('button', { name: 'Notation Copied!' });
+    expect(screen.queryByRole('button', { name: 'Notation Copied!' })).toBeNull();
     view.unmount();
   });
 
