@@ -23,7 +23,6 @@ import type { PlayerInfo, CursorPosition } from './player';
 export const TRACK_ENVELOPE_CAPABILITY = 'track-envelope-v1';
 export const TRACK_ENVELOPE_V2_CAPABILITY = 'track-envelope-v2';
 export const TRACK_ENVELOPE_CAPABILITIES = [
-  TRACK_ENVELOPE_CAPABILITY,
   TRACK_ENVELOPE_V2_CAPABILITY,
 ] as const;
 

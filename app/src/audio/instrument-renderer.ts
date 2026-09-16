@@ -130,13 +130,24 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.midiVelocity,
         ] as const;
-        engine.playSample(
-          ...baseArguments,
-          event.hasExplicitLock ? undefined : `${event.noteId}-loop-${event.loopIteration}`,
-          event.envelopeLock,
-          event.resolvedEnvelope,
-          event.playbackMode,
-        );
+        const variationKey = event.hasExplicitLock
+          ? undefined
+          : `${event.noteId}-loop-${event.loopIteration}`;
+        if (event.envelopeLock !== undefined
+            || event.resolvedEnvelope !== undefined
+            || event.playbackMode !== undefined) {
+          engine.playSample(
+            ...baseArguments,
+            variationKey,
+            event.envelopeLock,
+            event.resolvedEnvelope,
+            event.playbackMode,
+          );
+        } else if (variationKey !== undefined) {
+          engine.playSample(...baseArguments, variationKey);
+        } else {
+          engine.playSample(...baseArguments);
+        }
         return SCHEDULED;
       },
     },

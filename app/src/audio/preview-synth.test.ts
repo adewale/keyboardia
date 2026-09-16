@@ -139,7 +139,7 @@ describe('Preview synth (merged_bug_002)', () => {
       'membrane-kick',
       'n0',
       0.5,
-      0.001,
+      0,
       1,
       { attack: 0.1, decay: 0, sustain: 1, release: 0.8 },
     ]);

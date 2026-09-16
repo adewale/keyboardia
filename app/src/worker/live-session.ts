@@ -97,6 +97,7 @@ import {
   projectCanonicalStateForEnvelopeV2Capability,
 } from '../shared/rolling-envelope-state-v2';
 import { applyEnvelopeLockDurationV2 } from '../shared/envelope-lock-v2';
+import { adaptEnvelopeToPlaybackMode } from '../shared/envelope-capabilities';
 import {
   ENVELOPE_DURATION_RANGES_V2,
   convertTrackEnvelopeUnitsWithReportV2,
@@ -2706,7 +2707,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const track = await this.prepareEnvelopeV2Mutation(ws, player, msg);
     if (!track) return;
     if (msg.mode === null) delete track.samplePlaybackMode;
-    else if (isSamplePlaybackMode(msg.mode)) track.samplePlaybackMode = msg.mode;
+    else if (isSamplePlaybackMode(msg.mode)) {
+      track.samplePlaybackMode = msg.mode;
+      const current = track.envelopeV2
+        ?? (track.envelope
+          ? legacyTrackEnvelopeToV2(track.envelope, track.envelopeTimeUnit ?? 'seconds')
+          : undefined);
+      track.envelopeV2 = adaptEnvelopeToPlaybackMode(current, msg.mode);
+    }
     else {
       await this.rejectEnvelopeV2Mutation(ws, player, msg, 'INVALID_PLAYBACK_MODE', 'mode must be trigger, gate, or loop', track);
       return;

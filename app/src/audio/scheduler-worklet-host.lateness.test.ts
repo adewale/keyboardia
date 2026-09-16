@@ -127,7 +127,6 @@ describe('SchedulerWorkletHost lateness metrics', () => {
 
     expect(audioEngine.playSample).toHaveBeenCalledWith(
       'sample:kick', 't1', 10.05, 0.1, 0, 0.1, 64,
-      undefined, undefined, undefined, undefined,
     );
     expect(audioEngine.setTrackVolume).not.toHaveBeenCalled();
   });
@@ -136,7 +135,6 @@ describe('SchedulerWorkletHost lateness metrics', () => {
     dispatchTo(host, sampleNoteEvent(10.05));
     expect(audioEngine.playSample).toHaveBeenLastCalledWith(
       'sample:kick', 't1', 10.05, 0.1, 0, 1, 90, 'n1-loop-0',
-      undefined, undefined, undefined,
     );
 
     dispatchTo(host, sampleNoteEvent(10.1, 1));
@@ -159,6 +157,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
       90,
       undefined,
       undefined,
+      false,
     );
   });
 

@@ -171,6 +171,8 @@ export class AudioEngine {
     filterResonance?: number;
     lfoRate?: number;
     lfoAmount?: number;
+    attack?: number;
+    release?: number;
     oscMix?: number;
   } = {};
   // FM parameters are track state, not a global synth preference. Keeping the
@@ -298,6 +300,8 @@ export class AudioEngine {
     if (ov.filterResonance !== undefined) synth.setFilterResonance(ov.filterResonance);
     if (ov.lfoRate !== undefined) synth.setLfoRate(ov.lfoRate);
     if (ov.lfoAmount !== undefined) synth.setLfoAmount(ov.lfoAmount);
+    if (ov.attack !== undefined) synth.setAttack(ov.attack);
+    if (ov.release !== undefined) synth.setRelease(ov.release);
     if (ov.oscMix !== undefined) synth.setOscMix(ov.oscMix);
     synth.setEnvelope(this.trackEnvelopeOverrides.get(trackId) ?? null);
     logger.audio.log(`Created AdvancedSynthEngine for track ${trackId}`);
@@ -358,6 +362,8 @@ export class AudioEngine {
       if (ov.filterResonance !== undefined) a.setFilterResonance(ov.filterResonance);
       if (ov.lfoRate !== undefined) a.setLfoRate(ov.lfoRate);
       if (ov.lfoAmount !== undefined) a.setLfoAmount(ov.lfoAmount);
+      if (ov.attack !== undefined) a.setAttack(ov.attack);
+      if (ov.release !== undefined) a.setRelease(ov.release);
       if (ov.oscMix !== undefined) a.setOscMix(ov.oscMix);
       const out = a.getOutput();
       if (out && effectsInput) {
@@ -937,7 +943,7 @@ export class AudioEngine {
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
     noteEnvelopeLock?: EnvelopeNoteLock,
     resolvedEnvelope?: ResolvedEnvelopeV2,
-    authoredEnvelope: boolean = false,
+    authoredEnvelope: boolean = resolvedEnvelope !== undefined,
   ): void {
     const quarantine = getSampledInstrumentQuarantine(presetName);
     if (quarantine) {
@@ -1792,7 +1798,7 @@ export class AudioEngine {
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
     noteEnvelopeLock?: EnvelopeNoteLock,
     resolvedEnvelope?: ResolvedEnvelopeV2,
-    authoredEnvelope: boolean = false,
+    authoredEnvelope: boolean = resolvedEnvelope !== undefined,
   ): void {
     // Tone presets currently use the canonical note gain only.
     void midiVelocity;
@@ -1897,7 +1903,7 @@ export class AudioEngine {
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
     noteEnvelopeLock?: EnvelopeNoteLock,
     resolvedEnvelope?: ResolvedEnvelopeV2,
-    authoredEnvelope: boolean = false,
+    authoredEnvelope: boolean = resolvedEnvelope !== undefined,
   ): void {
     if (!this.toneInitialized) {
       logger.audio.error('playAdvancedSynth BLOCKED: Tone.js not initialized', {

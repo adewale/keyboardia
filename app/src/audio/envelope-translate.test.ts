@@ -99,7 +99,13 @@ describe('preset migration gate', () => {
 
   it('uses the exact shared envelope ranges in the XY macro', () => {
     const [attack, release] = XY_PAD_PRESETS['envelope-shape']!.mappings;
-    expect({ min: attack!.min, max: attack!.max }).toEqual(ENVELOPE_RANGES.attack);
-    expect({ min: release!.min, max: release!.max }).toEqual(ENVELOPE_RANGES.release);
+    expect({ min: attack!.min, max: attack!.max }).toEqual({
+      min: ENVELOPE_RANGES.attack.min,
+      max: ENVELOPE_RANGES.attack.max,
+    });
+    expect({ min: release!.min, max: release!.max }).toEqual({
+      min: ENVELOPE_RANGES.release.min,
+      max: ENVELOPE_RANGES.release.max,
+    });
   });
 });

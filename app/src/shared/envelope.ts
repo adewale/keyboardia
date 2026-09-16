@@ -1,7 +1,10 @@
 import type { TrackEnvelope } from './sync-types';
 import { clamp } from './constants';
 import {
+  ENVELOPE_PARAMETER_DESCRIPTORS_V2,
   legacyTrackEnvelopeToV2,
+  SUSTAIN_PARAMETER_DESCRIPTOR_V2,
+  TRACK_GATE_PARAMETER_DESCRIPTOR_V2,
   type SamplePlaybackMode,
   type TrackEnvelopeV2,
 } from './envelope-contract-v2';
@@ -13,22 +16,22 @@ import {
 
 /** Canonical authored ranges used by state validation, UI, MCP, and audio. */
 export const ENVELOPE_RANGES = {
-  attack: { min: 0, max: 4 },
-  decay: { min: 0, max: 4 },
-  sustain: { min: 0, max: 1 },
-  release: { min: 0, max: 8 },
+  attack: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds,
+  decay: ENVELOPE_PARAMETER_DESCRIPTORS_V2.decay.seconds,
+  sustain: SUSTAIN_PARAMETER_DESCRIPTOR_V2,
+  release: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds,
 } as const;
 
-export const TRACK_GATE_RANGE = { min: 0, max: 100 } as const;
+export const TRACK_GATE_RANGE = TRACK_GATE_PARAMETER_DESCRIPTOR_V2;
 /** Preserve Keyboardia's historical 90% step gate when a track omits `gate`. */
-export const DEFAULT_TRACK_GATE = 90;
+export const DEFAULT_TRACK_GATE = TRACK_GATE_PARAMETER_DESCRIPTOR_V2.default;
 
 /** Safe fallback for instruments whose preset does not expose a full ADSR. */
 export const DEFAULT_TRACK_ENVELOPE: TrackEnvelope = {
-  attack: 0.003,
-  decay: 0,
-  sustain: 1,
-  release: 0.1,
+  attack: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds.default,
+  decay: ENVELOPE_PARAMETER_DESCRIPTORS_V2.decay.seconds.default,
+  sustain: SUSTAIN_PARAMETER_DESCRIPTOR_V2.default,
+  release: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds.default,
 };
 
 export function isTrackEnvelope(value: unknown): value is TrackEnvelope {

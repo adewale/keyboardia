@@ -15,7 +15,7 @@ import {
   STEPS_PER_BEAT,
   MAX_STEPS,
 } from './timing-calculations';
-import { arbTempo, arbSwing, createTrackWithTies, VALID_STEP_COUNTS } from '../test/arbitraries';
+import { arbTempo, arbSwing } from '../test/arbitraries';
 import { seconds } from './audio-time';
 
 // =============================================================================
@@ -140,69 +140,6 @@ describe('calculateSwingDelay properties', () => {
       ),
       { numRuns: 200 }
     );
-  });
-});
-
-// =============================================================================
-// Tied Duration Properties
-// =============================================================================
-
-describe('calculateTiedDuration properties', () => {
-  it('duration is at least single step duration', () => {
-    fc.assert(
-      fc.property(
-        fc.constantFrom(...VALID_STEP_COUNTS),
-        arbTempo,
-        (stepCount, tempo) => {
-          const stepDuration = getStepDuration(tempo);
-          const track = {
-            steps: [true, ...new Array(MAX_STEPS - 1).fill(false)],
-            parameterLocks: new Array(MAX_STEPS).fill(null),
-          };
-          const duration = calculateTiedDuration(track, 0, stepCount, stepDuration);
-          expect(duration).toBeGreaterThanOrEqual(stepDuration * 0.9 - 0.0001);
-        }
-      ),
-      { numRuns: 200 }
-    );
-  });
-
-  it('duration equals tieLength * stepDuration * 0.9', () => {
-    fc.assert(
-      fc.property(
-        fc.constantFrom(...VALID_STEP_COUNTS.filter((s) => s >= 8)),
-        fc.integer({ min: 2, max: 6 }),
-        arbTempo,
-        (stepCount, tieLength, tempo) => {
-          // tieLength <= 6 < 8 <= stepCount by construction; the old
-          // fc.pre(tieLength < stepCount) here could never reject (dead guard).
-          const stepDuration = getStepDuration(tempo);
-          const { steps, parameterLocks } = createTrackWithTies(0, tieLength, stepCount);
-          const track = { steps, parameterLocks };
-          const duration = calculateTiedDuration(track, 0, stepCount, stepDuration);
-          expect(duration).toBeCloseTo(stepDuration * tieLength * 0.9, 4);
-        }
-      ),
-      { numRuns: 200 }
-    );
-  });
-
-  it('wrap-around ties are counted correctly', () => {
-    const stepCount = 16;
-    const stepDuration = seconds(0.125);
-
-    // Create a track with step 15 tied to step 0
-    const track = {
-      steps: new Array(MAX_STEPS).fill(false),
-      parameterLocks: new Array(MAX_STEPS).fill(null) as ({ tie?: boolean } | null)[],
-    };
-    track.steps[15] = true;
-    track.steps[0] = true;
-    track.parameterLocks[0] = { tie: true };
-
-    const duration = calculateTiedDuration(track, 15, stepCount, stepDuration);
-    // Should count 2 steps (15 and 0)
-    expect(duration).toBeCloseTo(stepDuration * 2 * 0.9, 6);
   });
 });
 

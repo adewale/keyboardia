@@ -115,7 +115,7 @@ describe('MultiplayerConnection with transport faults', () => {
     sockets[0].receive(snapshot());
 
     expect(connection.getState().status).toBe('connected');
-    expect(connection.supportsCapability(TRACK_ENVELOPE_CAPABILITY)).toBe(true);
+    expect(connection.supportsCapability(TRACK_ENVELOPE_CAPABILITY)).toBe(false);
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({
       type: 'LOAD_STATE',
       tempo: 120,

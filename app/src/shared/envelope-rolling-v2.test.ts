@@ -105,7 +105,11 @@ describe('rolling-safe envelope v2 state', () => {
       operationId: 'operation-3',
     });
 
-    expect(current.tracks[0].envelopeV2).toEqual(ahdEnvelope);
+    expect(current.tracks[0].envelopeV2).toEqual({
+      model: 'ar',
+      attack: ahdEnvelope.attack,
+      release: { value: 0.1, unit: 'seconds' },
+    });
     expect(current.tracks[0].samplePlaybackMode).toBe('gate');
     expect(current.tracks[0].parameterLocks[3]).toEqual({
       holdDuration: { value: 3, unit: 'steps' },

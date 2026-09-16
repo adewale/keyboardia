@@ -59,36 +59,36 @@
     }
   },
   "release": {
-    "capturedAt": "2026-08-22",
+    "capturedAt": "2026-09-16",
     "productionAudio": {
-      "encodedBytes": 35577302,
+      "encodedBytes": 42914625,
       "audioFileCount": 582,
-      "catalogueSha256": "ff26d1ad896bffd33aef599fc60d195315535f43f318fd56ad7bca6c00fe8d2d",
-      "notes": "The PR base already contains the enriched 582-file catalogue. The envelope implementation changes no production audio bytes."
+      "catalogueSha256": "5bd9e4bba8f1ce6ee1c17a142f792478ffa2fac859e376e4c50a3ad72042f7f2",
+      "notes": "Remeasured after rebasing onto current main. PR 87 changes Hammond loop metadata but adds no production audio file or byte."
     },
     "javascript": {
-      "allChunksGzipBytes": 306851,
+      "allChunksGzipBytes": 321970,
       "chunkBudgets": {
         "mainEntry": {
           "prefix": "index",
           "entry": true,
           "loading": "initial",
-          "gzipBytes": 168858
+          "gzipBytes": 174910
         },
         "stepSequencer": {
           "prefix": "StepSequencer",
           "loading": "lazy",
-          "gzipBytes": 38205
+          "gzipBytes": 38308
         },
         "sessionNotation": {
           "prefix": "session-notation-v24",
           "loading": "lazy",
-          "gzipBytes": 4335
+          "gzipBytes": 4338
         },
         "schedulerWorklet": {
           "prefix": "scheduler.worklet",
           "loading": "lazy",
-          "gzipBytes": 6471
+          "gzipBytes": 6825
         }
       }
     },

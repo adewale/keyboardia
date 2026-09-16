@@ -9,14 +9,26 @@
 export type SynthRenderer = 'native' | 'advanced';
 export type MigrationEvidenceState = 'pending' | 'approved' | 'rejected';
 
+export interface MigrationEvidenceArtifact {
+  path: string;
+  sha256: string;
+  subjectCommit: string;
+}
+
+export interface ListeningApproval {
+  reviewer: string;
+  decision: 'approved' | 'rejected';
+  evidence: MigrationEvidenceArtifact;
+}
+
 export interface SynthRendererMigrationRecord {
   renderer: SynthRenderer;
   cohort: string;
   pcm: MigrationEvidenceState;
-  pcmReport: string | null;
+  pcmReport: MigrationEvidenceArtifact | null;
   approvalRevision: string | null;
-  listeningApprovals: readonly string[];
-  canaryTelemetry: string | null;
+  listeningApprovals: readonly ListeningApproval[];
+  canaryTelemetry: MigrationEvidenceArtifact | null;
   rollbackVerified: boolean;
 }
 
@@ -53,15 +65,32 @@ export const SYNTH_RENDERER_MIGRATION_MANIFEST: Readonly<
   pending(`cohort-${Math.floor(index / 4) + 1}`),
 ])) as Record<PublishedNativeSynthPreset, SynthRendererMigrationRecord>);
 
-export function isSynthRendererApproved(preset: string): boolean {
-  const record = SYNTH_RENDERER_MIGRATION_MANIFEST[preset as PublishedNativeSynthPreset];
-  return Boolean(record
-    && record.renderer === 'advanced'
+function isBoundArtifact(value: MigrationEvidenceArtifact | null): value is MigrationEvidenceArtifact {
+  return Boolean(value
+    && value.path.trim()
+    && /^[a-f0-9]{64}$/i.test(value.sha256)
+    && /^[a-f0-9]{7,40}$/i.test(value.subjectCommit));
+}
+
+export function isSynthRendererMigrationRecordApproved(
+  record: SynthRendererMigrationRecord | undefined,
+): boolean {
+  if (!record || !isBoundArtifact(record.pcmReport) || !isBoundArtifact(record.canaryTelemetry)) {
+    return false;
+  }
+  const approvals = record.listeningApprovals.filter(approval =>
+    approval.decision === 'approved' && isBoundArtifact(approval.evidence));
+  const distinctReviewers = new Set(approvals.map(approval => approval.reviewer.trim()).filter(Boolean));
+  return Boolean(record.renderer === 'advanced'
     && record.pcm === 'approved'
-    && record.pcmReport
     && record.approvalRevision
-    && record.listeningApprovals.length >= 2
-    && record.canaryTelemetry
+    && /^[a-f0-9]{7,40}$/i.test(record.approvalRevision)
+    && distinctReviewers.size >= 2
     && record.rollbackVerified);
 }
 
+export function isSynthRendererApproved(preset: string): boolean {
+  return isSynthRendererMigrationRecordApproved(
+    SYNTH_RENDERER_MIGRATION_MANIFEST[preset as PublishedNativeSynthPreset],
+  );
+}

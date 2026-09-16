@@ -81,48 +81,6 @@ export function calculateSwingDelay(
 }
 
 /**
- * Calculate tied note duration including consecutive tied steps.
- *
- * Scans forward from startStep to count consecutive tied steps.
- * Uses step count iteration instead of index comparison to handle wrap-around.
- *
- * @param track - Track with steps and parameter locks
- * @param startStep - Starting step index
- * @param trackStepCount - Number of steps in this track
- * @param stepDuration - Duration of one step in seconds
- * @returns Total duration in seconds (with 90% gate time)
- *
- * Property: duration >= single step duration (AU-004a)
- * Property: duration proportional to tie count (AU-004c)
- * Property: handles wrap-around correctly (AU-004d)
- */
-export function calculateTiedDuration(
-  track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
-  startStep: number,
-  trackStepCount: number,
-  stepDuration: Seconds
-): Seconds {
-  let tieCount = 1; // Start with 1 for the current step
-  let stepsChecked = 0;
-
-  // Use stepsChecked counter instead of index comparison to handle wrap-around
-  while (stepsChecked < trackStepCount - 1) {
-    const nextStep = (startStep + 1 + stepsChecked) % trackStepCount;
-    const nextPLock = track.parameterLocks[nextStep];
-
-    if (track.steps[nextStep] && nextPLock?.tie === true) {
-      tieCount++;
-      stepsChecked++;
-    } else {
-      break;
-    }
-  }
-
-  // Return extended duration (with gate time for natural release)
-  return seconds(stepDuration * tieCount * GATE_TIME_RATIO);
-}
-
-/**
  * Calculate absolute step time using drift-free formula.
  *
  * Uses integer step index multiplication to avoid floating-point drift

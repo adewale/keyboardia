@@ -19,6 +19,7 @@ import {
 } from '../shared/envelope-contract-v2';
 import { DEFAULT_TRACK_GATE, getEffectiveTrackEnvelopeV2 } from '../shared/envelope';
 import { calculateSwingDelay } from './timing-calculations';
+import { seconds } from './audio-time';
 import type { TrackEnvelope } from '../shared/sync-types';
 
 export interface SchedulerDurationLocksV2 {
@@ -315,7 +316,7 @@ export function resolveNoteEventV2(input: ResolveNoteEventInputV2): NoteEventRes
   const globalSwing = bounded(finiteOr(input.globalSwing, 0), 0, 1);
   const trackSwing = bounded(finiteOr(track.swing, 0) / 100, 0, 1);
   const onsetSeconds = finiteOr(input.stepTimeSeconds, 0)
-    + calculateSwingDelay(trackStep, globalSwing, trackSwing, stepDurationSeconds);
+    + calculateSwingDelay(trackStep, globalSwing, trackSwing, seconds(stepDurationSeconds));
   const inferredPipelineLatency = !track.sampleId.includes(':') && Math.abs(pitchSemitones) > 6
     ? track.largePitchShiftLatencySeconds
     : 0;

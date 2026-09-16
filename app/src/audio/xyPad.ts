@@ -11,7 +11,7 @@
  */
 
 import { logger } from '../utils/logger';
-import { ENVELOPE_RANGES } from '../shared/envelope';
+import { ENVELOPE_PARAMETER_DESCRIPTORS_V2 } from '../shared/envelope-contract-v2';
 
 /**
  * Available parameters that can be controlled by XY pad
@@ -34,7 +34,7 @@ export type XYPadParameter =
 /**
  * Curve type for parameter scaling
  */
-export type XYCurveType = 'linear' | 'exponential';
+export type XYCurveType = 'linear' | 'exponential' | 'cubic';
 
 /**
  * Single axis mapping configuration
@@ -77,8 +77,18 @@ export const XY_PAD_PRESETS: Record<string, { name: string; mappings: XYPadMappi
   'envelope-shape': {
     name: 'Envelope Shape',
     mappings: [
-      { parameter: 'attack', axis: 'x', min: ENVELOPE_RANGES.attack.min, max: ENVELOPE_RANGES.attack.max, curve: 'exponential' },
-      { parameter: 'release', axis: 'y', min: ENVELOPE_RANGES.release.min, max: ENVELOPE_RANGES.release.max, curve: 'exponential' },
+      {
+        parameter: 'attack', axis: 'x',
+        min: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds.min,
+        max: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds.max,
+        curve: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds.taper,
+      },
+      {
+        parameter: 'release', axis: 'y',
+        min: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds.min,
+        max: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds.max,
+        curve: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds.taper,
+      },
     ],
   },
   'reverb-control': {
@@ -119,6 +129,7 @@ function applyCurve(value: number, curve: XYCurveType): number {
     // Exponential curve for frequency-like parameters
     return Math.pow(value, 2);
   }
+  if (curve === 'cubic') return value ** 3;
   return value; // Linear
 }
 

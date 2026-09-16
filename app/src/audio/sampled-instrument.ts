@@ -71,6 +71,17 @@ class BackgroundSampleLoadPreempted extends Error {
   }
 }
 
+/** Stable FNV-1a selection so collaborators resolve the same RR layer. */
+function stableSelectionIndex(key: string, variantCount: number): number {
+  if (variantCount <= 1) return 0;
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < key.length; index++) {
+    hash ^= key.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0) % variantCount;
+}
+
 /**
  * Engine-owned drum balance. Keeping these trims outside content manifests
  * preserves the exact hashes used to pin prior human sample decisions.
@@ -314,6 +325,8 @@ export interface PlaySampleVoiceOptions {
   articulation?: string;
   envelope?: SampleEnvelopeInput;
   tempoBpm?: number;
+  /** Preserve the pre-v2 positional wrapper's sequential RR behavior. */
+  legacyRoundRobin?: boolean;
 }
 
 function isResolvedEnvelopeV2(value: SampleEnvelopeInput | undefined): value is ResolvedEnvelopeV2 {
@@ -817,7 +830,7 @@ export class SampledInstrument {
             if (generation !== this.lifecycleGeneration) throw new Error('Release-region load superseded by a newer lifecycle');
             sampleCache.set(cacheKey, decoded);
             return decoded;
-          });
+          }, true);
           this.inFlightBuffers.set(cacheKey, bufferPromise);
           const clear = (): void => {
             if (this.inFlightBuffers.get(cacheKey) === bufferPromise) this.inFlightBuffers.delete(cacheKey);
@@ -905,6 +918,7 @@ export class SampledInstrument {
     releaseGroup: string,
     midiNote: number,
     velocity: number,
+    selectionKey: string,
   ): LoadedReleaseRegion | null {
     const velocityMatches = this.releaseRegions.filter(region =>
       region.releaseGroup === releaseGroup
@@ -917,11 +931,10 @@ export class SampledInstrument {
     const variants = velocityMatches
       .filter(region => region.rootMidi === root)
       .sort((a, b) => a.roundRobin - b.roundRobin);
-    const key = `release:${releaseGroup}:${root}:${variants[0]?.velocityMin}-${variants[0]?.velocityMax}`;
-    const cursor = this.roundRobinCursors.get(key) ?? 0;
-    const selected = variants[cursor % variants.length] ?? null;
-    if (variants.length > 1) this.roundRobinCursors.set(key, cursor + 1);
-    return selected;
+    return variants[stableSelectionIndex(
+      `${selectionKey}:release:${releaseGroup}:${root}:${variants[0]?.velocityMin}-${variants[0]?.velocityMax}`,
+      variants.length,
+    )] ?? null;
   }
 
   private createReleaseComponents(
@@ -933,11 +946,12 @@ export class SampledInstrument {
     destination: AudioNode,
     when: number,
     heldSeconds: number,
+    selectionKey: string,
   ): SampleVoiceComponent[] {
     const context = this.audioContext;
     if (!context) return [];
     return groups.flatMap(group => {
-      const region = this.selectReleaseRegion(group, midiNote, velocity);
+      const region = this.selectReleaseRegion(group, midiNote, velocity, selectionKey);
       if (!region) return [];
       const source = context.createBufferSource();
       source.buffer = region.buffer;
@@ -1023,6 +1037,7 @@ export class SampledInstrument {
       adjustedMidiNote,
       velocity,
       options.articulation ?? 'default',
+      options.legacyRoundRobin ? undefined : options.id,
     );
     if (sampleInfos.length === 0) return null;
     const loopCapable = sampleInfos.every(info =>
@@ -1113,6 +1128,7 @@ export class SampledInstrument {
         voiceDestination,
         when,
         heldSeconds,
+        options.id,
       ),
       onComplete: () => {
         velocityFilter?.disconnect();
@@ -1197,6 +1213,7 @@ export class SampledInstrument {
       // Requesting loop here preserves that behavior; playVoice truthfully
       // degrades non-loop mappings back to gate.
       mode: duration === undefined ? 'gate' : 'loop',
+      legacyRoundRobin: true,
     });
     return voice instanceof ManagedSampleVoice ? voice.primarySource : null;
   }
@@ -1206,6 +1223,7 @@ export class SampledInstrument {
     midiNote: number,
     velocity: number = DEFAULT_MIDI_VELOCITY,
     requestedArticulation: string = 'default',
+    selectionKey?: string,
   ): Array<{
     sample: LoadedSample;
     pitchRatio: number;
@@ -1232,10 +1250,14 @@ export class SampledInstrument {
         : group.layers.filter(layer => layer.roundRobinGroup === rrGroup);
       if (variants.length === 0) return [];
       const key = `${nearestNote}:${variants[0].velocityMin}-${variants[0].velocityMax}:${articulation ?? 'default'}:${rrGroup ?? 'single'}`;
-      const cursor = this.roundRobinCursors.get(key) ?? 0;
+      const cursor = selectionKey === undefined
+        ? (this.roundRobinCursors.get(key) ?? 0)
+        : stableSelectionIndex(`${selectionKey}:${key}`, variants.length);
       const sample = selectRoundRobinVariant(variants, cursor);
       if (!sample) return [];
-      if (variants.length > 1) this.roundRobinCursors.set(key, cursor + 1);
+      if (selectionKey === undefined && variants.length > 1) {
+        this.roundRobinCursors.set(key, cursor + 1);
+      }
       const semitoneOffset = midiNote - nearestNote;
       const pitchRatio = Math.pow(2, semitoneOffset / 12 + sample.tuneCents / 1200);
       return [{ sample, pitchRatio, weight: group.weight }];

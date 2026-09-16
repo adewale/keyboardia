@@ -73,36 +73,75 @@ export interface ConvertedEnvelopeUnitsV2 {
   clampedStages: readonly EnvelopeStageName[];
 }
 
-export const ENVELOPE_DURATION_RANGES_V2: Record<
+export type EnvelopeParameterTaper = 'linear' | 'cubic';
+
+export interface EnvelopeParameterDescriptorV2<U extends string = string> {
+  readonly min: number;
+  readonly max: number;
+  readonly default: number;
+  readonly taper: EnvelopeParameterTaper;
+  readonly unit: U;
+}
+
+/**
+ * One descriptor source for validation, editors, macros, MCP schemas, and
+ * renderer-facing tooling. A control must not invent its own range or taper.
+ */
+export const ENVELOPE_PARAMETER_DESCRIPTORS_V2: Record<
   EnvelopeStageName,
-  Record<EnvelopeDurationUnit, { min: number; max: number }>
+  Record<EnvelopeDurationUnit, EnvelopeParameterDescriptorV2<EnvelopeDurationUnit>>
 > = {
   attack: {
-    seconds: { min: 0, max: 4 },
-    steps: { min: 0, max: 48 },
+    seconds: { min: 0, max: 4, default: 0.003, taper: 'cubic', unit: 'seconds' },
+    steps: { min: 0, max: 48, default: 0, taper: 'cubic', unit: 'steps' },
   },
   hold: {
-    seconds: { min: 0, max: 8 },
-    steps: { min: 0, max: 96 },
+    seconds: { min: 0, max: 8, default: 0, taper: 'cubic', unit: 'seconds' },
+    steps: { min: 0, max: 96, default: 0, taper: 'cubic', unit: 'steps' },
   },
   decay: {
-    seconds: { min: 0, max: 8 },
-    steps: { min: 0, max: 96 },
+    seconds: { min: 0, max: 8, default: 0, taper: 'cubic', unit: 'seconds' },
+    steps: { min: 0, max: 96, default: 0, taper: 'cubic', unit: 'steps' },
   },
   release: {
-    seconds: { min: 0, max: 8 },
-    steps: { min: 0, max: 96 },
+    seconds: { min: 0, max: 8, default: 0.1, taper: 'cubic', unit: 'seconds' },
+    steps: { min: 0, max: 96, default: 1, taper: 'cubic', unit: 'steps' },
   },
 };
 
-export const TRACK_GATE_RANGE_V2 = { min: 0, max: 100 } as const;
+/** Backwards-compatible range view, derived from the complete descriptors. */
+export const ENVELOPE_DURATION_RANGES_V2: Record<
+  EnvelopeStageName,
+  Record<EnvelopeDurationUnit, { min: number; max: number }>
+> = Object.fromEntries(
+  Object.entries(ENVELOPE_PARAMETER_DESCRIPTORS_V2).map(([stage, units]) => [
+    stage,
+    Object.fromEntries(Object.entries(units).map(([unit, descriptor]) => [
+      unit,
+      { min: descriptor.min, max: descriptor.max },
+    ])),
+  ]),
+) as Record<EnvelopeStageName, Record<EnvelopeDurationUnit, { min: number; max: number }>>;
+
+export const SUSTAIN_PARAMETER_DESCRIPTOR_V2: EnvelopeParameterDescriptorV2<'linear'> = {
+  min: 0, max: 1, default: 1, taper: 'linear', unit: 'linear',
+};
+
+export const TRACK_GATE_PARAMETER_DESCRIPTOR_V2: EnvelopeParameterDescriptorV2<'percent'> = {
+  min: 0, max: 100, default: 90, taper: 'linear', unit: 'percent',
+};
+
+export const TRACK_GATE_RANGE_V2 = {
+  min: TRACK_GATE_PARAMETER_DESCRIPTOR_V2.min,
+  max: TRACK_GATE_PARAMETER_DESCRIPTOR_V2.max,
+} as const;
 
 export const DEFAULT_TRACK_ENVELOPE_V2: TrackEnvelopeV2 = {
   model: 'adsr',
-  attack: { value: 0.003, unit: 'seconds' },
-  decay: { value: 0, unit: 'seconds' },
-  sustain: 1,
-  release: { value: 0.1, unit: 'seconds' },
+  attack: { value: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds.default, unit: 'seconds' },
+  decay: { value: ENVELOPE_PARAMETER_DESCRIPTORS_V2.decay.seconds.default, unit: 'seconds' },
+  sustain: SUSTAIN_PARAMETER_DESCRIPTOR_V2.default,
+  release: { value: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds.default, unit: 'seconds' },
 };
 
 export interface ResolvedEnvelopeV2 {

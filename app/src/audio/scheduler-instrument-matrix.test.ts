@@ -149,6 +149,7 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           dynamics.midiVelocity,
           undefined,
           resolvedEnvelope,
+          false,
         );
         break;
       case 'tone':
@@ -163,6 +164,7 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           dynamics.midiVelocity,
           undefined,
           resolvedEnvelope,
+          false,
         );
         break;
       case 'advanced':
@@ -177,6 +179,7 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
           dynamics.midiVelocity,
           undefined,
           resolvedEnvelope,
+          false,
         );
         break;
       case 'sample':

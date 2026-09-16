@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { VALID_SAMPLE_IDS } from './instrument-catalog';
 import {
+  adaptEnvelopeToPlaybackMode,
   ENVELOPE_CAPABILITY_REGISTRY,
   describeEnvelopeCompatibility,
   getEnvelopeCapability,
@@ -41,5 +42,36 @@ describe('envelope capability inventory', () => {
       : { model, attack: { value: 0, unit: 'seconds' as const }, hold: { value: 1, unit: 'seconds' as const }, decay: { value: 1, unit: 'seconds' as const } };
     expect(describeEnvelopeCompatibility('sampled:hammond-organ', envelope, mode))
       .toMatchObject({ active: false, reason: expect.stringContaining('not compatible') });
+  });
+
+  it('changes finite-sample playback and envelope shape atomically', () => {
+    const trigger = {
+      model: 'ahd' as const,
+      attack: { value: 0.02, unit: 'seconds' as const },
+      hold: { value: 2, unit: 'steps' as const },
+      decay: { value: 0.4, unit: 'seconds' as const },
+    };
+
+    expect(adaptEnvelopeToPlaybackMode(trigger, 'gate')).toEqual({
+      model: 'ar',
+      attack: trigger.attack,
+      release: { value: 0.1, unit: 'seconds' },
+    });
+    expect(adaptEnvelopeToPlaybackMode(trigger, 'loop')).toEqual({
+      model: 'adsr',
+      attack: trigger.attack,
+      decay: trigger.decay,
+      sustain: 1,
+      release: { value: 0.1, unit: 'seconds' },
+    });
+  });
+
+  it('preserves compatible authored shapes without allocating a replacement', () => {
+    const gate = {
+      model: 'ar' as const,
+      attack: { value: 1, unit: 'steps' as const },
+      release: { value: 3, unit: 'steps' as const },
+    };
+    expect(adaptEnvelopeToPlaybackMode(gate, 'gate')).toBe(gate);
   });
 });

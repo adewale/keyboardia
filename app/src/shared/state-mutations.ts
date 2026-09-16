@@ -37,8 +37,10 @@ import { setTrackInstrument } from './track-instrument';
 import { clampTrackEnvelope, TRACK_GATE_RANGE } from './envelope';
 import {
   convertTrackEnvelopeUnitsWithReportV2,
+  legacyTrackEnvelopeToV2,
   repairTrackEnvelopeV2,
 } from './envelope-contract-v2';
+import { adaptEnvelopeToPlaybackMode } from './envelope-capabilities';
 import { applyEnvelopeLockDurationV2 } from './envelope-lock-v2';
 // Import runtime-neutral pattern operations (Phase 32: Sync fix)
 import {
@@ -326,7 +328,15 @@ export function applyMutation(
           delete next.samplePlaybackMode;
           return next;
         }
-        return { ...track, samplePlaybackMode: message.mode };
+        const current = track.envelopeV2
+          ?? (track.envelope
+            ? legacyTrackEnvelopeToV2(track.envelope, track.envelopeTimeUnit ?? 'seconds')
+            : undefined);
+        return {
+          ...track,
+          samplePlaybackMode: message.mode,
+          envelopeV2: adaptEnvelopeToPlaybackMode(current, message.mode),
+        };
       });
     }
 

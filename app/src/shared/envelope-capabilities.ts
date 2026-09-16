@@ -5,6 +5,7 @@ import type {
   SamplePlaybackMode,
   TrackEnvelopeV2,
 } from './envelope-contract-v2';
+import { DEFAULT_TRACK_ENVELOPE_V2 } from './envelope-contract-v2';
 
 export type EnvelopeSustainSource = 'oscillator' | 'finite-buffer' | 'sample-loop' | 'none';
 export type EnvelopeReleaseSource = 'gain-only' | 'source-tail' | 'release-trigger' | 'none';
@@ -124,6 +125,46 @@ export function isEnvelopeModelCompatibleWithPlayback(
   if (playbackMode === 'trigger') return model === 'ad' || model === 'ahd';
   if (playbackMode === 'gate') return model === 'ar';
   return model === 'adsr';
+}
+
+/**
+ * Change sample playback and its required envelope model as one transaction.
+ * Stage values that still have meaning are preserved; missing stages use the
+ * canonical defaults. This prevents a valid Gate selection from snapping back
+ * because an older Trigger-shaped envelope remained in state.
+ */
+export function adaptEnvelopeToPlaybackMode(
+  envelope: TrackEnvelopeV2 | undefined,
+  playbackMode: SamplePlaybackMode,
+): TrackEnvelopeV2 {
+  const source = envelope ?? DEFAULT_TRACK_ENVELOPE_V2;
+  if (isEnvelopeModelCompatibleWithPlayback(source.model, playbackMode)) return source;
+  const attack = source.attack;
+  const defaultAdsr = DEFAULT_TRACK_ENVELOPE_V2;
+  if (defaultAdsr.model !== 'adsr') {
+    throw new Error('The canonical envelope default must remain ADSR');
+  }
+  const decay = 'decay' in source ? source.decay : defaultAdsr.decay;
+  const release = 'release' in source ? source.release : defaultAdsr.release;
+
+  if (playbackMode === 'gate') return { model: 'ar', attack, release };
+  if (playbackMode === 'loop') {
+    return {
+      model: 'adsr',
+      attack,
+      decay,
+      sustain: 'sustain' in source ? source.sustain : defaultAdsr.sustain,
+      release,
+    };
+  }
+  return {
+    model: 'ahd',
+    attack,
+    hold: 'hold' in source
+      ? source.hold
+      : { value: 0, unit: attack.unit },
+    decay,
+  };
 }
 
 export function describeEnvelopeCompatibility(

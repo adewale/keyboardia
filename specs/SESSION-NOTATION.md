@@ -409,7 +409,7 @@ const VALID_STEP_COUNTS = [
 | `[play:gate]` | `track.samplePlaybackMode: "gate"` |
 | `[amp:adsr,10ms,200ms,0.7,2st]` | `track.envelopeV2` with model `adsr` and per-stage `{ value, unit }` durations |
 | `[gate:75%]` | `track.gate: 75` |
-| `[lock:4,release,2st]` | `parameterLocks[3].envelopeV2.release = { value: 2, unit: "steps" }` |
+| `[lock:4,release,2st]` | `parameterLocks[3].releaseDuration = { value: 2, unit: "steps" }` |
 
 ### Round-Trip Fidelity
 

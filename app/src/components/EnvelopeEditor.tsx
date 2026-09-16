@@ -4,6 +4,7 @@ import type { EnvelopeCapability } from '../shared/envelope-capabilities';
 import {
   DEFAULT_TRACK_ENVELOPE_V2,
   ENVELOPE_DURATION_RANGES_V2,
+  ENVELOPE_PARAMETER_DESCRIPTORS_V2,
   TRACK_GATE_RANGE_V2,
   activeEnvelopeStages,
   clampEnvelopeDurationV2,
@@ -19,6 +20,7 @@ import {
 import {
   amplitudeAtEnvelopeTimeV2,
   buildEnvelopeOracleTimelineV2,
+  DEFAULT_ENVELOPE_PREVIEW_TIED_STEPS,
 } from '../shared/envelope-oracle-v2';
 import { DEFAULT_TRACK_GATE } from '../shared/envelope';
 import './EnvelopeEditor.css';
@@ -170,9 +172,10 @@ function sameEnvelope(a: TrackEnvelopeV2, b: TrackEnvelopeV2): boolean {
 
 /** Reversible coarse control mapping that preserves useful travel for milliseconds. */
 function durationToPosition(stage: EnvelopeStageName, duration: EnvelopeDuration): number {
-  const range = ENVELOPE_DURATION_RANGES_V2[stage][duration.unit];
-  if (range.max === range.min) return 0;
-  return Math.cbrt((duration.value - range.min) / (range.max - range.min));
+  const descriptor = ENVELOPE_PARAMETER_DESCRIPTORS_V2[stage][duration.unit];
+  if (descriptor.max === descriptor.min) return 0;
+  const normalized = (duration.value - descriptor.min) / (descriptor.max - descriptor.min);
+  return descriptor.taper === 'cubic' ? Math.cbrt(normalized) : normalized;
 }
 
 function positionToDuration(
@@ -180,11 +183,13 @@ function positionToDuration(
   position: number,
   unit: EnvelopeDuration['unit'],
 ): EnvelopeDuration {
-  const range = ENVELOPE_DURATION_RANGES_V2[stage][unit];
+  const descriptor = ENVELOPE_PARAMETER_DESCRIPTORS_V2[stage][unit];
   const normalized = Math.min(1, Math.max(0, position));
   return clampEnvelopeDurationV2(stage, {
     unit,
-    value: range.min + (normalized ** 3) * (range.max - range.min),
+    value: descriptor.min
+      + (descriptor.taper === 'cubic' ? normalized ** 3 : normalized)
+        * (descriptor.max - descriptor.min),
   });
 }
 
@@ -205,7 +210,7 @@ function curveGeometry(envelope: TrackEnvelopeV2, gate: number, bpm: number) {
     envelope,
     bpm,
     onsetSeconds: 0,
-    tiedSteps: 2,
+    tiedSteps: DEFAULT_ENVELOPE_PREVIEW_TIED_STEPS,
     gatePercent: gate,
   });
   const duration = Math.max(timeline.completionSeconds, 0.001);
@@ -227,7 +232,10 @@ function curveGeometry(envelope: TrackEnvelopeV2, gate: number, bpm: number) {
     x: Math.min(100, (time / duration) * 100),
     y: 36 - Math.min(1, Math.max(0, amplitudeAtEnvelopeTimeV2(timeline, time))) * 32,
   }));
-  return { points, landmarks };
+  const gateX = timeline.releaseStartSeconds === undefined
+    ? undefined
+    : Math.min(100, (timeline.releaseStartSeconds / duration) * 100);
+  return { points, landmarks, gateX };
 }
 
 function EnvelopeCurve({
@@ -254,8 +262,17 @@ function EnvelopeCurve({
       data-model={envelope.model}
     >
       <title id={titleId}>{MODEL_LABELS[envelope.model]} envelope</title>
-      <desc id={descriptionId}>Amplitude over time; the curve follows the same semantic timeline as playback.</desc>
+      <desc id={descriptionId}>Amplitude over one sequencer step; the gate marker is the preview note-off used by audition.</desc>
       <path className="envelope-editor__curve-axis" d="M 0 36 L 100 36" />
+      {geometry.gateX !== undefined && (
+        <line
+          className="envelope-editor__curve-gate"
+          x1={geometry.gateX}
+          x2={geometry.gateX}
+          y1="3"
+          y2="36"
+        />
+      )}
       <path className="envelope-editor__curve-line" d={geometry.points} />
       {!compact && geometry.landmarks.map((point, index) => (
         <circle

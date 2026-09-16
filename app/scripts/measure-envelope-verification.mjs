@@ -36,21 +36,37 @@ const artifactPaths = (process.env.ENVELOPE_VERIFICATION_ARTIFACT_PATHS ?? '')
   .filter(Boolean);
 const artifactBytes = (await Promise.all(artifactPaths.map(bytesBelow)))
   .reduce((sum, bytes) => sum + bytes, 0);
+const observedRetryCount = Number.parseInt(
+  process.env.ENVELOPE_VERIFICATION_OBSERVED_RETRIES ?? '0',
+  10,
+);
+const humanReviewMinutes = Number.parseFloat(
+  process.env.ENVELOPE_VERIFICATION_HUMAN_MINUTES ?? '0',
+);
+const runnerCostPerMinute = Number.parseFloat(
+  process.env.ENVELOPE_RUNNER_COST_USD_PER_MINUTE ?? '',
+);
+const runnerCostUsd = Number.isFinite(runnerCostPerMinute)
+  ? Number((wallTimeMs / 60_000 * runnerCostPerMinute).toFixed(6))
+  : null;
 const report = {
   schemaVersion: 1,
   lane,
   command: [executable, ...args],
   wallTimeMs: Math.round(wallTimeMs),
   estimatedRunnerMinutes: Number((wallTimeMs / 60_000).toFixed(4)),
+  runnerCostUsd,
   artifactBytes,
-  retryBudget: 0,
+  observedRetryCount: Number.isFinite(observedRetryCount) ? observedRetryCount : 0,
+  humanReviewMinutes: Number.isFinite(humanReviewMinutes) ? humanReviewMinutes : 0,
   exitCode: result.status ?? 1,
   signal: result.signal ?? null,
   runner: process.env.RUNNER_OS ?? process.platform,
   commit: process.env.GITHUB_SHA ?? null,
   baselineStatus: 'collecting-ci-distribution',
-  note: 'Set a blocking p50/p95 regression budget only after comparable CI runner samples exist.',
+  note: 'Automated lanes report zero human minutes. Set runner price in CI and blocking p50/p95 budgets only after comparable samples exist.',
 };
+report.costRecordBytes = Buffer.byteLength(`${JSON.stringify(report, null, 2)}\n`);
 await mkdir(dirname(resolve(outputPath)), { recursive: true });
 await writeFile(resolve(outputPath), `${JSON.stringify(report, null, 2)}\n`);
 process.exit(result.status ?? 1);

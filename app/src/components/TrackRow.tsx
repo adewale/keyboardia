@@ -34,6 +34,7 @@ import {
   getEffectiveTrackEnvelopeV2,
 } from '../shared/envelope';
 import { activeEnvelopeStages, legacyTrackEnvelopeToV2, resolveEnvelopeV2 } from '../shared/envelope-contract-v2';
+import { resolveEnvelopePreviewDurationSecondsV2 } from '../shared/envelope-oracle-v2';
 import { previewInstrument } from '../audio/audioTriggers';
 import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
@@ -1257,7 +1258,10 @@ export const TrackRow = React.memo(function TrackRow({
               void previewInstrument('preview_pitch', {
                 sampleId: track.sampleId,
                 previewId: `envelope-preview-${track.id}`,
-                duration: 0.35,
+                duration: resolveEnvelopePreviewDurationSecondsV2(
+                  tempo,
+                  track.gate ?? DEFAULT_TRACK_GATE,
+                ),
                 resolvedEnvelope: resolveEnvelopeV2(envelopeEditorValue, tempo),
                 playbackMode: envelopeV2Report.playbackMode,
               });

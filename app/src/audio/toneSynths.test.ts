@@ -373,7 +373,7 @@ describe('ToneSynthManager', () => {
         }),
       );
       expect(toneTestState.fmSynths[0].triggerAttackRelease)
-        .toHaveBeenCalledWith('C4', 0.125, 0.001, 1);
+        .toHaveBeenCalledWith('C4', 0.125, 0, 1);
     });
 
     it('resets FM overrides to the active preset without replacing the synth', () => {

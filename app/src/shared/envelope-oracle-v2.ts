@@ -7,6 +7,20 @@ import {
 } from './envelope-contract-v2';
 
 export const ENVELOPE_EPSILON_V2 = 0.0001;
+/** Shared graph/audition span when no concrete sequencer note is selected. */
+export const DEFAULT_ENVELOPE_PREVIEW_TIED_STEPS = 1;
+
+export function resolveEnvelopePreviewDurationSecondsV2(
+  bpm: number,
+  gatePercent: number,
+): number {
+  return resolveGateNoteOffSecondsV2(
+    0,
+    bpm,
+    DEFAULT_ENVELOPE_PREVIEW_TIED_STEPS,
+    gatePercent,
+  );
+}
 export const ENVELOPE_STOP_GUARD_SECONDS_V2 = 0.01;
 export const DEFAULT_GATE_PERCENT_V2 = 90;
 
@@ -182,6 +196,21 @@ export function amplitudeAtEnvelopeTimeV2(
   if (timeSeconds < timeline.onsetSeconds || timeSeconds >= timeline.stopSeconds) return 0;
 
   const { envelope } = timeline;
+  const releaseStart = timeline.releaseStartSeconds;
+  if ((timeline.model === 'ar' || timeline.model === 'adsr')
+      && releaseStart !== undefined
+      && timeSeconds >= releaseStart) {
+    const releaseSeconds = envelope.releaseSeconds ?? 0;
+    if (releaseSeconds === 0 || timeSeconds >= (timeline.releaseEndSeconds ?? 0)) {
+      return ENVELOPE_EPSILON_V2;
+    }
+    return boundedExponential(
+      timeline.releaseStartAmplitude ?? ENVELOPE_EPSILON_V2,
+      ENVELOPE_EPSILON_V2,
+      (timeSeconds - releaseStart) / releaseSeconds,
+    );
+  }
+
   if (envelope.attackSeconds > 0 && timeSeconds < timeline.attackEndSeconds) {
     return linear(
       ENVELOPE_EPSILON_V2,
@@ -220,13 +249,5 @@ export function amplitudeAtEnvelopeTimeV2(
   if (timeSeconds < (timeline.releaseStartSeconds ?? Number.POSITIVE_INFINITY)) {
     return amplitudeBeforeRelease(envelope, timeline.onsetSeconds, timeline.peak, timeSeconds);
   }
-  const releaseSeconds = envelope.releaseSeconds ?? 0;
-  if (releaseSeconds === 0 || timeSeconds >= (timeline.releaseEndSeconds ?? 0)) {
-    return ENVELOPE_EPSILON_V2;
-  }
-  return boundedExponential(
-    timeline.releaseStartAmplitude ?? ENVELOPE_EPSILON_V2,
-    ENVELOPE_EPSILON_V2,
-    (timeSeconds - (timeline.releaseStartSeconds ?? timeSeconds)) / releaseSeconds,
-  );
+  return ENVELOPE_EPSILON_V2;
 }
