@@ -6,6 +6,7 @@ import {
   TRACK_PEAK_LIMITER_MAKEUP_GAIN,
   TRACK_PEAK_LIMITER_SETTINGS,
 } from './constants';
+import { audioTime } from './audio-time';
 
 /**
  * Phase 25: TrackBus Unit Tests
@@ -19,6 +20,7 @@ function createMockGainNode() {
   const node = {
     gain: {
       value: 1,
+      cancelScheduledValues: vi.fn(),
       setValueAtTime: vi.fn((value: number) => { node.gain.value = value; }),
       linearRampToValueAtTime: vi.fn(),
       setTargetAtTime: vi.fn((value: number) => { node.gain.value = value; }),
@@ -193,6 +195,14 @@ describe('TrackBus', () => {
       const panner = vi.mocked(context.createStereoPanner).mock.results[0]?.value;
       expect(panner.pan.cancelScheduledValues).toHaveBeenCalledWith(context.currentTime);
       expect(panner.pan.setTargetAtTime).toHaveBeenCalledWith(0.5, context.currentTime, 0.04);
+    });
+
+    it('anchors pan automation at an explicit audio timestamp', () => {
+      const bus = new TrackBus(context, destination);
+      bus.setPan(0.5, audioTime(4.25));
+      const panner = vi.mocked(context.createStereoPanner).mock.results[0]?.value;
+      expect(panner.pan.cancelScheduledValues).toHaveBeenCalledWith(4.25);
+      expect(panner.pan.setTargetAtTime).toHaveBeenCalledWith(0.5, 4.25, 0.04);
     });
 
     it('should clamp pan to valid range', () => {

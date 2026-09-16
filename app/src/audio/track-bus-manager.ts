@@ -19,6 +19,7 @@ import { TrackBus } from './track-bus';
 import { meteringHost } from './metering-host';
 import { logger } from '../utils/logger';
 import { clampPan, clampVolume } from '../shared/validation';
+import type { AudioTime } from './audio-time';
 
 export class TrackBusManager {
   private context: AudioContext;
@@ -82,12 +83,13 @@ export class TrackBusManager {
   /**
    * Set volume for a track (0-1)
    */
-  setTrackVolume(trackId: string, volume: number): void {
+  setTrackVolume(trackId: string, volume: number, effectiveAt?: AudioTime): void {
     const clamped = clampVolume(volume);
     this.desiredVolumes.set(trackId, clamped);
     const bus = this.buses.get(trackId);
     if (bus && !bus.isDisposed()) {
-      bus.setVolume(clamped);
+      if (effectiveAt === undefined) bus.setVolume(clamped);
+      else bus.setVolume(clamped, effectiveAt);
     }
   }
 
@@ -121,12 +123,13 @@ export class TrackBusManager {
   /**
    * Set pan for a track (-1 to 1)
    */
-  setTrackPan(trackId: string, pan: number): void {
+  setTrackPan(trackId: string, pan: number, effectiveAt?: AudioTime): void {
     const clamped = clampPan(pan);
     this.desiredPans.set(trackId, clamped);
     const bus = this.buses.get(trackId);
     if (bus && !bus.isDisposed()) {
-      bus.setPan(clamped);
+      if (effectiveAt === undefined) bus.setPan(clamped);
+      else bus.setPan(clamped, effectiveAt);
     }
   }
 

@@ -11,6 +11,12 @@
  * This file prevents that class of bugs.
  */
 
+import { seconds, type AudioTime } from './audio-time';
+import {
+  applyParameterAutomation,
+  type AutomatableAudioParam,
+} from './parameter-automation';
+
 /**
  * Frequency of C4 (middle C) in Hz
  * Used as the reference for semitone calculations
@@ -172,19 +178,21 @@ export const CONTINUOUS_PARAMETER_SLEW_SECONDS = 0.04;
 export const NOTE_FADE_SECONDS = 0.003;
 
 /** Minimal shape shared by Web Audio AudioParam and Tone.Param. */
-export interface SlewableAudioParam {
-  cancelScheduledValues(startTime: number): unknown;
-  setTargetAtTime(value: number, startTime: number, timeConstant: number): unknown;
-}
+export type SlewableAudioParam = AutomatableAudioParam;
 
 /** Apply a click-resistant target ramp without duplicating automation policy. */
 export function slewAudioParam(
   param: SlewableAudioParam,
   value: number,
-  startTime: number,
+  startTime: AudioTime,
 ): void {
-  param.cancelScheduledValues(startTime);
-  param.setTargetAtTime(value, startTime, CONTINUOUS_PARAMETER_SLEW_SECONDS);
+  applyParameterAutomation(param, {
+    parameter: 'continuous',
+    value,
+    effectiveAt: startTime,
+    curve: 'target',
+    duration: seconds(CONTINUOUS_PARAMETER_SLEW_SECONDS),
+  });
 }
 
 // ============================================================================

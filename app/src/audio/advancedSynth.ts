@@ -29,6 +29,7 @@ import {
   peakSafeOscillatorMix,
 } from './synth';
 import { absoluteToneStartTime } from './tone-schedule';
+import { audioTime, type AudioTime } from './audio-time';
 
 const MIN_ADVANCED_FILTER_FREQUENCY = 20;
 const MAX_ADVANCED_FILTER_FREQUENCY = 20_000;
@@ -351,8 +352,8 @@ export class AdvancedSynthVoice {
    * every cutoff change preserves the invariant:
    *   effectiveCutoff = baseCutoff + filterEnvelope + filterLFO
    */
-  setFilterFrequency(hz: number, eventTime?: number): void {
-    const now = eventTime ?? Tone.now();
+  setFilterFrequency(hz: number, eventTime?: AudioTime): void {
+    const now = eventTime ?? audioTime(Tone.immediate());
     if (this.filter) {
       if (eventTime === undefined) slewAudioParam(this.filter.frequency, hz, now);
       else this.filter.frequency.setValueAtTime(hz, eventTime);
@@ -363,8 +364,10 @@ export class AdvancedSynthVoice {
     }
   }
 
-  setLfoRate(hz: number): void {
-    if (this.lfo) slewAudioParam(this.lfo.frequency, hz, Tone.now());
+  setLfoRate(hz: number, effectiveAt?: AudioTime): void {
+    if (this.lfo) {
+      slewAudioParam(this.lfo.frequency, hz, effectiveAt ?? audioTime(Tone.immediate()));
+    }
   }
 
   setTempo(bpm: number): void {
@@ -942,20 +945,20 @@ export class AdvancedSynthEngine {
 
   private applyOverridesToVoices(): void {
     const ov = this.overrides;
+    const effectiveAt = audioTime(Tone.immediate());
     for (const voice of this.voices) {
-      if (ov.filterFrequency !== undefined) voice.setFilterFrequency(ov.filterFrequency);
+      if (ov.filterFrequency !== undefined) voice.setFilterFrequency(ov.filterFrequency, effectiveAt);
       if (ov.filterResonance !== undefined && voice['filter']) {
-        slewAudioParam(voice['filter'].Q, ov.filterResonance, Tone.now());
+        slewAudioParam(voice['filter'].Q, ov.filterResonance, effectiveAt);
       }
-      if (ov.lfoRate !== undefined) voice.setLfoRate(ov.lfoRate);
+      if (ov.lfoRate !== undefined) voice.setLfoRate(ov.lfoRate, effectiveAt);
       if (ov.lfoAmount !== undefined) this.applyLfoAmount(voice, ov.lfoAmount);
       if (ov.attack !== undefined && voice['ampEnvelope']) voice['ampEnvelope'].attack = ov.attack;
       if (ov.release !== undefined && voice['ampEnvelope']) voice['ampEnvelope'].release = ov.release;
       if (ov.oscMix !== undefined) {
-        const now = Tone.now();
         const [osc1Level, osc2Level] = peakSafeOscillatorMix(ov.oscMix);
-        if (voice['osc1Gain']) slewAudioParam(voice['osc1Gain'].gain, osc1Level, now);
-        if (voice['osc2Gain']) slewAudioParam(voice['osc2Gain'].gain, osc2Level, now);
+        if (voice['osc1Gain']) slewAudioParam(voice['osc1Gain'].gain, osc1Level, effectiveAt);
+        if (voice['osc2Gain']) slewAudioParam(voice['osc2Gain'].gain, osc2Level, effectiveAt);
       }
     }
   }
@@ -969,17 +972,17 @@ export class AdvancedSynthEngine {
   }
 
   /** Set filter cutoff frequency across all voices. */
-  setFilterFrequency(hz: number): void {
+  setFilterFrequency(hz: number, effectiveAt?: AudioTime): void {
     this.overrides.filterFrequency = hz;
-    for (const voice of this.voices) voice.setFilterFrequency(hz);
+    for (const voice of this.voices) voice.setFilterFrequency(hz, effectiveAt);
   }
 
   /**
    * Set filter resonance (Q) across all voices.
    */
-  setFilterResonance(q: number): void {
+  setFilterResonance(q: number, effectiveAt?: AudioTime): void {
     this.overrides.filterResonance = q;
-    const now = Tone.now();
+    const now = effectiveAt ?? audioTime(Tone.immediate());
     for (const voice of this.voices) {
       if (voice['filter']) slewAudioParam(voice['filter'].Q, q, now);
     }
@@ -988,9 +991,9 @@ export class AdvancedSynthEngine {
   /**
    * Set LFO rate across all voices.
    */
-  setLfoRate(hz: number): void {
+  setLfoRate(hz: number, effectiveAt?: AudioTime): void {
     this.overrides.lfoRate = hz;
-    for (const voice of this.voices) voice.setLfoRate(hz);
+    for (const voice of this.voices) voice.setLfoRate(hz, effectiveAt);
   }
 
   /**
@@ -1028,9 +1031,9 @@ export class AdvancedSynthEngine {
    * Set oscillator mix (osc1 level vs osc2 level) across all voices.
    * 0 = only osc1, 1 = only osc2, 0.5 = equal mix.
    */
-  setOscMix(mix: number): void {
+  setOscMix(mix: number, effectiveAt?: AudioTime): void {
     this.overrides.oscMix = mix;
-    const now = Tone.now();
+    const now = effectiveAt ?? audioTime(Tone.immediate());
     const [osc1Level, osc2Level] = peakSafeOscillatorMix(mix);
     for (const voice of this.voices) {
       const osc1Gain = voice['osc1Gain'] as Tone.Gain | null;
@@ -1124,7 +1127,10 @@ export class AdvancedSynthEngine {
       // Velocity is note state, not a live UI control. Bind it to the same raw
       // AudioContext timestamp as the attack so Tone lookahead cannot make a
       // soft note begin with the previous voice cutoff.
-      voice.setFilterFrequency(advancedVelocityFilterFrequency(baseCutoff, midiVelocity), startTime);
+      voice.setFilterFrequency(
+        advancedVelocityFilterFrequency(baseCutoff, midiVelocity),
+        audioTime(startTime),
+      );
     } else {
       this.recordFailure('no preset applied');
       return;

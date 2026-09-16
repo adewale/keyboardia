@@ -14,6 +14,7 @@ import {
   REVERB_PREDELAY_SECONDS,
   REVERB_SEND_HIGHPASS_HZ,
 } from './constants';
+import { audioTime } from './audio-time';
 
 /**
  * Tests for ToneEffectsChain
@@ -34,7 +35,9 @@ vi.mock('tone', () => {
     const param = {
       value: initial,
       cancelScheduledValues: vi.fn(),
+      setValueAtTime: vi.fn((value: number) => { param.value = value; }),
       setTargetAtTime: vi.fn((value: number) => { param.value = value; }),
+      linearRampToValueAtTime: vi.fn((value: number) => { param.value = value; }),
     };
     return param;
   };
@@ -240,6 +243,12 @@ describe('ToneEffectsChain', () => {
       chain.setReverbWet(0.5);
       expect(chain.getState().reverb.wet).toBe(0.5);
       expect(chain['reverbWetGain']?.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.5, 0, 0.04);
+    });
+
+    it('anchors multiplayer effect automation at the supplied AudioTime', () => {
+      chain.setReverbWet(0.5, audioTime(6.25));
+      expect(chain['reverbWetGain']?.gain.cancelScheduledValues).toHaveBeenLastCalledWith(6.25);
+      expect(chain['reverbWetGain']?.gain.setTargetAtTime).toHaveBeenLastCalledWith(0.5, 6.25, 0.04);
     });
 
     it('sets convolution reverb decay correctly', async () => {

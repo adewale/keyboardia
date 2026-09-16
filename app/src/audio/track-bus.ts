@@ -24,6 +24,8 @@ import {
   TRACK_PEAK_LIMITER_MAKEUP_GAIN,
   TRACK_PEAK_LIMITER_SETTINGS,
 } from './constants';
+import { audioTime, type AudioTime } from './audio-time';
+import { cancelParameterAutomation } from './parameter-automation';
 
 export class TrackBus {
   private context: AudioContext;
@@ -95,9 +97,12 @@ export class TrackBus {
    * Set track volume (0-1)
    * Applied via volumeGain node
    */
-  setVolume(value: number): void {
+  setVolume(value: number, effectiveAt?: AudioTime): void {
     if (this.disposed) return;
-    this.volumeGain.gain.setValueAtTime(clampVolume(value), this.context.currentTime);
+    this.volumeGain.gain.setValueAtTime(
+      clampVolume(value),
+      effectiveAt ?? audioTime(this.context.currentTime),
+    );
   }
 
   /**
@@ -128,9 +133,9 @@ export class TrackBus {
   /**
    * Set track pan position (-1 = left, 0 = center, 1 = right)
    */
-  setPan(value: number): void {
+  setPan(value: number, effectiveAt?: AudioTime): void {
     if (this.disposed) return;
-    const now = this.context.currentTime;
+    const now = effectiveAt ?? audioTime(this.context.currentTime);
     const target = clampPan(value);
     slewAudioParam(this.panNode.pan, target, now);
   }
@@ -173,6 +178,11 @@ export class TrackBus {
     this.disposed = true;
 
     try {
+      const now = audioTime(this.context.currentTime);
+      cancelParameterAutomation(this.volumeGain.gain, now);
+      cancelParameterAutomation(this.muteGain.gain, now);
+      cancelParameterAutomation(this.panNode.pan, now);
+      cancelParameterAutomation(this.outputGain.gain, now);
       this.inputGain.disconnect();
       this.volumeGain.disconnect();
       this.muteGain.disconnect();
