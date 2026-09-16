@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   remix: vi.fn(),
   createNew: vi.fn(),
   copyToClipboard: vi.fn(),
+  downloadMidi: vi.fn(),
   activateQR: vi.fn(),
   deactivateQR: vi.fn(),
 }));
@@ -85,7 +86,7 @@ vi.mock('./components/ToastNotification', () => ({
 }));
 vi.mock('./icons', () => ({ Close: () => null, CopyLink: () => null, Qr: () => null }));
 vi.mock('./utils/clipboard', () => ({ copyToClipboard: mocks.copyToClipboard }));
-vi.mock('./audio/midiExport', () => ({ downloadMidi: vi.fn() }));
+vi.mock('./audio/midiExport', () => ({ downloadMidi: mocks.downloadMidi }));
 
 import { SessionControls } from './App';
 
@@ -100,6 +101,7 @@ describe('App session transition ownership', () => {
     vi.clearAllMocks();
     mocks.sessionId = '11111111-1111-4111-8111-111111111111';
     mocks.copyToClipboard.mockResolvedValue(true);
+    mocks.downloadMidi.mockResolvedValue(undefined);
     mocks.remix.mockResolvedValue('');
     mocks.createNew.mockResolvedValue(undefined);
   });
@@ -135,6 +137,18 @@ describe('App session transition ownership', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Remix' }));
     await waitFor(() => expect(mocks.remix).toHaveBeenCalledOnce());
+    view.unmount();
+  });
+
+  it('loads MIDI export on demand and exports the current session', async () => {
+    const view = render(<SessionControls><div>content</div></SessionControls>);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Export MIDI' }));
+
+    await waitFor(() => expect(mocks.downloadMidi).toHaveBeenCalledWith(
+      expect.objectContaining({ tempo: 120, swing: 0 }),
+      null,
+    ));
     view.unmount();
   });
 

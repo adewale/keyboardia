@@ -17,7 +17,7 @@
  */
 
 import { tracer } from './debug-tracer';
-import type { StoredLog } from './log-store';
+import { queryLogs, type StoredLog } from './log-store';
 
 /**
  * Bug pattern severity levels
@@ -1513,16 +1513,6 @@ export async function detectFromStoredLogs(
 ): Promise<Map<string, LogBasedDetectionResult>> {
   const results = new Map<string, LogBasedDetectionResult>();
 
-  // Dynamically import to avoid circular dependency
-  let queryLogs: typeof import('./log-store').queryLogs;
-  try {
-    const logStore = await import('./log-store');
-    queryLogs = logStore.queryLogs;
-  } catch {
-    // Log store not available
-    return results;
-  }
-
   const startTime = Date.now() - minutes * 60 * 1000;
 
   for (const pattern of BUG_PATTERNS) {
@@ -1571,9 +1561,8 @@ export async function searchLogsForSymptom(
   minutes: number = 60
 ): Promise<StoredLog[]> {
   try {
-    const logStore = await import('./log-store');
     const startTime = Date.now() - minutes * 60 * 1000;
-    const logs = await logStore.queryLogs({ startTime, limit: 10000 });
+    const logs = await queryLogs({ startTime, limit: 10000 });
 
     const lowerSymptom = symptomText.toLowerCase();
     return logs.filter(log => {
@@ -1590,9 +1579,8 @@ export async function searchLogsForSymptom(
  */
 export async function getRecentErrors(minutes: number = 30): Promise<StoredLog[]> {
   try {
-    const logStore = await import('./log-store');
     const startTime = Date.now() - minutes * 60 * 1000;
-    return await logStore.queryLogs({ level: 'error', startTime, limit: 500 });
+    return await queryLogs({ level: 'error', startTime, limit: 500 });
   } catch {
     return [];
   }

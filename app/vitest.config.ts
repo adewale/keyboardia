@@ -26,14 +26,6 @@ export default defineConfig({
     // tests touch the audioEngine singleton, threads + isolate is the
     // right tradeoff.
     pool: 'threads',
-    poolOptions: {
-      threads: {
-        // Use available cores; default is half-cpu-count which leaves
-        // headroom on the table.
-        maxThreads: undefined,
-        minThreads: undefined,
-      },
-    },
     // Default to node — fast (~1ms boot per file vs ~450ms for jsdom).
     // Tests that actually need a DOM opt in via the file-level directive:
     //   // @vitest-environment jsdom

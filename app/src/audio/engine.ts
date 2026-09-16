@@ -27,8 +27,6 @@ import {
 } from './sampled-instrument';
 import { collectSampledInstruments } from './instrument-types';
 import { DEFAULT_MIDI_VELOCITY } from './velocity';
-import { tracer } from '../utils/debug-tracer';
-import { runAllDetections } from '../utils/bug-patterns';
 import { TrackBusManager } from './track-bus-manager';
 import { TrackSynthRegistry } from './track-synth-registry';
 import { pitchSemitonesToWorkletRatio } from './pitch-shift-range';
@@ -470,12 +468,19 @@ export class AudioEngine {
 
     // Run initial bug detection (logs warnings if patterns detected)
     if (typeof window !== 'undefined' && window.__DEBUG_TRACE__) {
-      const detectionResults = runAllDetections();
-      for (const [patternId, result] of detectionResults) {
-        if (result.detected) {
-          tracer.warning('bug-detection', `Pattern detected: ${patternId}`, result.message || 'Bug pattern detected', result.evidence);
+      void Promise.all([
+        import('../utils/bug-patterns'),
+        import('../utils/debug-tracer'),
+      ]).then(([{ runAllDetections }, { tracer }]) => {
+        const detectionResults = runAllDetections();
+        for (const [patternId, result] of detectionResults) {
+          if (result.detected) {
+            tracer.warning('bug-detection', `Pattern detected: ${patternId}`, result.message || 'Bug pattern detected', result.evidence);
+          }
         }
-      }
+      }).catch((error: unknown) => {
+        logger.audio.warn('Initial bug detection failed (non-fatal):', error);
+      });
     }
 
     logger.audio.log('AudioEngine initialized, state:', this.audioContext.state);
