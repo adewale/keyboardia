@@ -129,7 +129,7 @@ audio bytes added by this PR. Evidence on the rebased implementation commit is:
   Gate→AR→release convergence and reload;
 - app and Worker type checks, ESLint, test-quality analysis, production build,
   documentation/schema/inventory validation, and resource policy passed; and
-- the production build is 224,734 initial and 323,236 total gzip JavaScript
+- the production build is 224,735 initial and 323,243 total gzip JavaScript
   bytes. The PR remains inside the reviewed resource budget and adds no audio
   asset.
 

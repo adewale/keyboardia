@@ -30,7 +30,7 @@ volume, dependencies, and intended cadence before making it a merge gate.
 | `npm run test:e2e:collaboration:worker` | 73 serial Chromium tests, 2.3 min test time plus build/startup | T1/T2; expensive broad regression gate for shared state/UI changes and release candidates, not the inner edit loop |
 | `npm run build` | pass; Vite phase 1.69–1.85 s after TypeScript | T0/T1 packaging gate; current pre-existing dynamic-import and >500 kB chunk warnings remain visible |
 | `npm run check:worker` | 2,027,601 JS bytes; 3,503,037 upload bytes; 949.73 KiB gzip | T0/T1 packaging gate; the measured envelope collaboration/MCP contract adds 65,966 upload bytes (1.92%) over PR 87's original head. The reviewed ratchet is 3,525,000 bytes, leaving 21,963 bytes; browser audio/UI/notation code remains excluded |
-| `npm run validate:envelope-resources` | 582 audio files, 42,914,625 encoded bytes, 323,236 bytes gzip JS | T0 resource gate remeasured after the current-main rebase; the PR adds zero audio bytes |
+| `npm run validate:envelope-resources` | 582 audio files, 42,914,625 encoded bytes, 323,243 bytes gzip JS | T0 resource gate remeasured after the current-main rebase; the PR adds zero audio bytes |
 | `git diff --check` | pass | T0 formatting/integrity check |
 
 `test:unit:quiet` uses `--silent=passed-only`. It suppresses console output
