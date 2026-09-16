@@ -33,6 +33,7 @@ import { audioTime, seconds, serverTimeMs } from './audio-time';
 import { dispatchResolvedNote } from './note-dispatcher';
 import type { ResolvedNoteEvent } from './resolved-note-event';
 import { audioMetrics } from './metrics/audio-metrics';
+import { PresentationClock } from './presentation-clock';
 
 // =============================================================================
 // Constants
@@ -67,8 +68,9 @@ export class Scheduler implements IScheduler {
   private getServerTime: (() => number) | null = null;
   private audioStartTime: number = 0;
 
-  // Phase 13B: Track pending timers for cleanup on stop
-  private pendingTimers: Set<ReturnType<typeof setTimeout>> = new Set();
+  private readonly presentationClock = new PresentationClock({
+    now: () => audioTime(audioEngine.getCurrentTime()),
+  });
 
   // Phase 13B: Track total steps scheduled to compute drift-free timing
   // Instead of accumulating nextStepTime += stepDuration (which drifts),
@@ -124,7 +126,7 @@ export class Scheduler implements IScheduler {
   start(getState: () => GridState, serverStartTime?: number): void {
     // Debug: Track state before start
     instrumentSchedulerStart(this, () => this.isRunning, this.timerId);
-    logStateSnapshot(this, this.pendingTimers.size, this.timerId);
+    logStateSnapshot(this, this.presentationClock.pendingCount, this.timerId);
 
     if (this.isRunning) return;
     if (!audioEngine.isInitialized()) {
@@ -182,7 +184,7 @@ export class Scheduler implements IScheduler {
     // Debug: Capture state BEFORE stop
     const isRunningBefore = this.isRunning;
     const timerIdBefore = this.timerId;
-    const pendingTimersCountBefore = this.pendingTimers.size;
+    const pendingTimersCountBefore = this.presentationClock.pendingCount;
     instrumentSchedulerStop(this, isRunningBefore, timerIdBefore, pendingTimersCountBefore);
 
     this.isRunning = false;
@@ -194,16 +196,12 @@ export class Scheduler implements IScheduler {
       clearTimeout(this.timerId);
       this.timerId = null;
     }
-    // Phase 13B: Clear all pending UI notification timers.
-    for (const timer of this.pendingTimers) {
-      clearTimeout(timer);
-    }
-    this.pendingTimers.clear();
+    this.presentationClock.clear();
 
     // Debug: Verify invariants and assert clean stop
-    verifySchedulerInvariants(this.isRunning, this.timerId, this.pendingTimers.size, this.getState);
-    assertPlaybackStopped(this.isRunning, this.timerId, this.pendingTimers.size);
-    logStateSnapshot(this, this.pendingTimers.size, this.timerId);
+    verifySchedulerInvariants(this.isRunning, this.timerId, this.presentationClock.pendingCount, this.getState);
+    assertPlaybackStopped(this.isRunning, this.timerId, this.presentationClock.pendingCount);
+    logStateSnapshot(this, this.presentationClock.pendingCount, this.timerId);
   }
 
   private scheduleLoop(): void {
@@ -255,35 +253,26 @@ export class Scheduler implements IScheduler {
       // Notify UI of step change (for playhead) - only if step actually changed
       // Note: We use nextStepTime here (not swung) because playhead shows grid position
       if (this.onStepChange && this.currentStep !== this.lastNotifiedStep) {
-        const delay = Math.max(0, (this.nextStepTime - currentTime) * 1000);
         const step = this.currentStep;
         this.lastNotifiedStep = step;
-        // Phase 13B: Track timer for cleanup
-        const timer = setTimeout(() => {
-          this.pendingTimers.delete(timer);
-          // Only notify if scheduler is still running (prevents stale updates)
+        this.presentationClock.schedule('step', audioTime(this.nextStepTime), () => {
           if (this.isRunning) {
             this.onStepChange?.(step);
           }
-        }, delay);
-        this.pendingTimers.add(timer);
+        });
       }
 
       // Phase 31A: Notify UI of beat changes (every 4 steps = quarter note)
       // Used for metronome pulse visual feedback on play button
       const currentBeat = Math.floor(this.currentStep / STEPS_PER_BEAT);
       if (this.onBeat && currentBeat !== this.lastNotifiedBeat) {
-        const delay = Math.max(0, (this.nextStepTime - currentTime) * 1000);
         const beat = currentBeat;
         this.lastNotifiedBeat = beat;
-        // Track timer for cleanup
-        const beatTimer = setTimeout(() => {
-          this.pendingTimers.delete(beatTimer);
+        this.presentationClock.schedule('beat', audioTime(this.nextStepTime), () => {
           if (this.isRunning) {
             this.onBeat?.(beat);
           }
-        }, delay);
-        this.pendingTimers.add(beatTimer);
+        });
       }
 
       // Phase 31G: Advance to next step - respect loop region if set

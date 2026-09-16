@@ -221,8 +221,11 @@ describe('scheduler under racing mutations (virtual time)', () => {
       clock.t += 1;
       vi.advanceTimersByTime(1000);
       expect(triggers.length, 'triggers after stop').toBe(afterStop);
-      const internals = sched as unknown as { pendingTimers: Set<unknown>; timerId: number | null };
-      expect(internals.pendingTimers.size, 'pending timers after stop').toBe(0);
+      const internals = sched as unknown as {
+        presentationClock: { pendingCount: number };
+        timerId: number | null;
+      };
+      expect(internals.presentationClock.pendingCount, 'pending presentation events after stop').toBe(0);
       expect(internals.timerId, 'loop timer after stop').toBeNull();
     } finally {
       try { sched.stop(); } catch { /* already stopped */ }

@@ -26,6 +26,7 @@ import {
 } from './audio-time';
 import { dispatchResolvedNote } from './note-dispatcher';
 import type { ResolvedNoteEvent } from './resolved-note-event';
+import { PresentationClock } from './presentation-clock';
 
 // ─── Event types from the worklet ────────────────────────────────────────
 
@@ -68,7 +69,9 @@ export class SchedulerWorkletHost implements IScheduler {
   private isRunning = false;
   private currentStep = 0;
   private moduleLoaded = false;
-  private pendingTimers = new Set<ReturnType<typeof setTimeout>>();
+  private readonly presentationClock = new PresentationClock({
+    now: () => this.audioClock?.now() ?? audioTime(0),
+  });
 
   // Callbacks
   private onStepChange: ((step: number) => void) | null = null;
@@ -178,11 +181,7 @@ export class SchedulerWorkletHost implements IScheduler {
     this.isRunning = false;
     this.node?.port.postMessage({ type: 'stop' });
 
-    // Clear pending UI callback timers.
-    for (const timer of this.pendingTimers) {
-      clearTimeout(timer);
-    }
-    this.pendingTimers.clear();
+    this.presentationClock.clear();
 
     logger.audio.log('SchedulerWorkletHost stopped');
   }
@@ -219,13 +218,13 @@ export class SchedulerWorkletHost implements IScheduler {
         this.handleNoteEvent(event);
         break;
       case 'step':
-        this.scheduleUiCallback(event.time, () => {
+        this.scheduleUiCallback('step', event.time, () => {
           this.currentStep = event.step;
           this.onStepChange?.(event.step);
         });
         break;
       case 'beat':
-        this.scheduleUiCallback(event.time, () => {
+        this.scheduleUiCallback('beat', event.time, () => {
           this.onBeat?.(event.beat);
         });
         break;
@@ -235,16 +234,13 @@ export class SchedulerWorkletHost implements IScheduler {
   /**
    * Defer a UI-side callback (playhead, metronome) until the audio time
    * the worklet emitted. Without this, UI runs ~SCHEDULE_AHEAD_SEC ahead
-   * of audio (review finding #1). Cancelled by stop() via pendingTimers.
+   * of audio (review finding #1). Presentation is lossy and frame-driven;
+   * audio scheduling never depends on it.
    */
-  private scheduleUiCallback(eventTime: number, fn: () => void): void {
-    const now = this.audioClock?.now() ?? audioTime(0);
-    const delayMs = Math.max(0, (eventTime - now) * 1000);
-    const timer = setTimeout(() => {
-      this.pendingTimers.delete(timer);
+  private scheduleUiCallback(channel: string, eventTime: number, fn: () => void): void {
+    this.presentationClock.schedule(channel, audioTime(eventTime), () => {
       if (this.isRunning) fn();
-    }, delayMs);
-    this.pendingTimers.add(timer);
+    });
   }
 
   private handleNoteEvent(event: NoteEvent): void {
