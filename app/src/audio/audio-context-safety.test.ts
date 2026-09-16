@@ -178,6 +178,7 @@ vi.mock('tone', () => {
       toFrequency: () => 440,
     })),
     now: vi.fn(() => 0),
+    immediate: vi.fn(() => 0),
     Gain: MockGain,
     Freeverb: MockFreeverb,
     Reverb: MockReverb,

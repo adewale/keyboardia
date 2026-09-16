@@ -5,17 +5,19 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { GridState } from '../types';
+import { audioTime } from './audio-time';
 
 type NumberSetter = ReturnType<typeof vi.fn<(v: number) => void>>;
+type TimedNumberSetter = ReturnType<typeof vi.fn<(v: number, at?: number) => void>>;
 interface SpyAdvanced {
   setTempo: NumberSetter;
-  setFilterFrequency: NumberSetter;
-  setFilterResonance: NumberSetter;
-  setLfoRate: NumberSetter;
+  setFilterFrequency: TimedNumberSetter;
+  setFilterResonance: TimedNumberSetter;
+  setLfoRate: TimedNumberSetter;
   setLfoAmount: NumberSetter;
   setAttack: NumberSetter;
   setRelease: NumberSetter;
-  setOscMix: NumberSetter;
+  setOscMix: TimedNumberSetter;
 }
 interface SpyTone {
   setFMParams: ReturnType<typeof vi.fn<(h: number, m: number) => void>>;
@@ -63,13 +65,13 @@ vi.mock('./advancedSynth', async () => {
     constructor() {
       this.spies = {
         setTempo: vi.fn<(v: number) => void>(),
-        setFilterFrequency: vi.fn<(v: number) => void>(),
-        setFilterResonance: vi.fn<(v: number) => void>(),
-        setLfoRate: vi.fn<(v: number) => void>(),
+        setFilterFrequency: vi.fn<(v: number, at?: number) => void>(),
+        setFilterResonance: vi.fn<(v: number, at?: number) => void>(),
+        setLfoRate: vi.fn<(v: number, at?: number) => void>(),
         setLfoAmount: vi.fn<(v: number) => void>(),
         setAttack: vi.fn<(v: number) => void>(),
         setRelease: vi.fn<(v: number) => void>(),
-        setOscMix: vi.fn<(v: number) => void>(),
+        setOscMix: vi.fn<(v: number, at?: number) => void>(),
       };
       advancedInstances.push(this.spies);
     }
@@ -80,13 +82,25 @@ vi.mock('./advancedSynth', async () => {
     setPreset(): void {}
     playNoteSemitone(): void {}
     getDiagnostics(): unknown { return { activeVoices: 0 }; }
-    setFilterFrequency(v: number): void { this.spies.setFilterFrequency(v); }
-    setFilterResonance(v: number): void { this.spies.setFilterResonance(v); }
-    setLfoRate(v: number): void { this.spies.setLfoRate(v); }
+    setFilterFrequency(v: number, at?: number): void {
+      if (at === undefined) this.spies.setFilterFrequency(v);
+      else this.spies.setFilterFrequency(v, at);
+    }
+    setFilterResonance(v: number, at?: number): void {
+      if (at === undefined) this.spies.setFilterResonance(v);
+      else this.spies.setFilterResonance(v, at);
+    }
+    setLfoRate(v: number, at?: number): void {
+      if (at === undefined) this.spies.setLfoRate(v);
+      else this.spies.setLfoRate(v, at);
+    }
     setLfoAmount(v: number): void { this.spies.setLfoAmount(v); }
     setAttack(v: number): void { this.spies.setAttack(v); }
     setRelease(v: number): void { this.spies.setRelease(v); }
-    setOscMix(v: number): void { this.spies.setOscMix(v); }
+    setOscMix(v: number, at?: number): void {
+      if (at === undefined) this.spies.setOscMix(v);
+      else this.spies.setOscMix(v, at);
+    }
     dispose(): void {}
   }
   return { ...actual, AdvancedSynthEngine: MockAdvancedSynthEngine };
@@ -184,6 +198,23 @@ describe('Phase 3: global controls fan out + overrides', () => {
     expect(advancedInstances.length).toBe(3);
     for (const s of advancedInstances) {
       expect(s.setFilterFrequency).toHaveBeenCalledWith(1234);
+    }
+  });
+
+  it('routes a timestamped parameter update to every active renderer', async () => {
+    const engine = new AudioEngine();
+    stubEngineInternals(engine);
+    await engine.warmAdvancedSynthForTrack('A');
+    await engine.warmAdvancedSynthForTrack('B');
+
+    engine.applySynthParameterUpdate({
+      parameter: 'filterFrequency',
+      value: 1800,
+      effectiveAt: audioTime(8.5),
+    });
+
+    for (const synth of advancedInstances) {
+      expect(synth.setFilterFrequency).toHaveBeenCalledWith(1800, 8.5);
     }
   });
 

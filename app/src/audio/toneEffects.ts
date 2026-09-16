@@ -45,6 +45,11 @@ import {
   REVERB_SEND_HIGHPASS_HZ,
   slewAudioParam,
 } from './constants';
+import { audioTime, type AudioTime } from './audio-time';
+import {
+  applyParameterAutomation,
+  cancelParameterAutomation,
+} from './parameter-automation';
 
 /** Map the persisted decay range logarithmically onto Freeverb room size. */
 export function decayToRoomSize(decaySeconds: number): number {
@@ -301,19 +306,19 @@ export class ToneEffectsChain {
 
   // --- Reverb Controls ---
 
-  setReverbWet(wet: number): void {
+  setReverbWet(wet: number, effectiveAt?: AudioTime): void {
     this.state.reverb.wet = clamp(wet, 0, 1);
     if (this.reverbWetGain && this.enabled) {
-      slewAudioParam(this.reverbWetGain.gain, this.state.reverb.wet, Tone.now());
+      slewAudioParam(this.reverbWetGain.gain, this.state.reverb.wet, effectiveAt ?? audioTime(Tone.now()));
     }
   }
 
-  setReverbDecay(decay: number): void {
+  setReverbDecay(decay: number, effectiveAt?: AudioTime): void {
     this.state.reverb.decay = clamp(decay, REVERB_MIN_DECAY, REVERB_MAX_DECAY);
     if (this.reverb && 'roomSize' in this.reverb) {
       // Freeverb uses roomSize (0-1) instead of decay
       // Map decay (0.1-10s) to roomSize (0.1-0.99)
-      slewAudioParam(this.reverb.roomSize, decayToRoomSize(this.state.reverb.decay), Tone.now());
+      slewAudioParam(this.reverb.roomSize, decayToRoomSize(this.state.reverb.decay), effectiveAt ?? audioTime(Tone.now()));
     }
     if (this.convolutionReverb) {
       this.convolutionReverb.decay = this.state.reverb.decay;
@@ -322,49 +327,64 @@ export class ToneEffectsChain {
 
   // --- Delay Controls ---
 
-  setDelayWet(wet: number): void {
+  setDelayWet(wet: number, effectiveAt?: AudioTime): void {
     this.state.delay.wet = clamp(wet, 0, 1);
     if (this.delay && this.enabled) {
-      slewAudioParam(this.delay.wet, this.state.delay.wet, Tone.now());
+      slewAudioParam(this.delay.wet, this.state.delay.wet, effectiveAt ?? audioTime(Tone.now()));
     }
   }
 
-  setDelayTime(time: string): void {
+  setDelayTime(time: string, effectiveAt?: AudioTime): void {
     const seconds = musicalTimeToSeconds(time, this.tempo);
     this.state.delay.time = time;
     if (this.delay) {
-      this.delay.delayTime.value = seconds;
+      applyParameterAutomation(this.delay.delayTime, {
+        parameter: 'delayTime',
+        value: seconds,
+        effectiveAt: effectiveAt ?? audioTime(Tone.now()),
+        curve: 'step',
+      });
     }
   }
 
   /** Keep notation-based delay timing locked to Keyboardia's scheduler. */
-  setTempo(bpm: number): void {
+  setTempo(bpm: number, effectiveAt?: AudioTime): void {
     this.tempo = clamp(bpm, MIN_TEMPO, MAX_TEMPO);
     if (this.delay) {
-      this.delay.delayTime.value = musicalTimeToSeconds(this.state.delay.time, this.tempo);
+      applyParameterAutomation(this.delay.delayTime, {
+        parameter: 'delayTime',
+        value: musicalTimeToSeconds(this.state.delay.time, this.tempo),
+        effectiveAt: effectiveAt ?? audioTime(Tone.now()),
+        curve: 'step',
+      });
     }
   }
 
-  setDelayFeedback(feedback: number): void {
+  setDelayFeedback(feedback: number, effectiveAt?: AudioTime): void {
     this.state.delay.feedback = clamp(feedback, 0, DELAY_MAX_FEEDBACK);
     if (this.delay) {
-      slewAudioParam(this.delay.feedback, this.state.delay.feedback, Tone.now());
+      slewAudioParam(this.delay.feedback, this.state.delay.feedback, effectiveAt ?? audioTime(Tone.now()));
     }
   }
 
   // --- Chorus Controls ---
 
-  setChorusWet(wet: number): void {
+  setChorusWet(wet: number, effectiveAt?: AudioTime): void {
     this.state.chorus.wet = clamp(wet, 0, 1);
     if (this.chorus && this.enabled) {
-      slewAudioParam(this.chorus.wet, this.state.chorus.wet, Tone.now());
+      slewAudioParam(this.chorus.wet, this.state.chorus.wet, effectiveAt ?? audioTime(Tone.now()));
     }
   }
 
-  setChorusFrequency(frequency: number): void {
+  setChorusFrequency(frequency: number, effectiveAt?: AudioTime): void {
     this.state.chorus.frequency = clamp(frequency, CHORUS_MIN_FREQUENCY, CHORUS_MAX_FREQUENCY);
     if (this.chorus) {
-      this.chorus.frequency.value = this.state.chorus.frequency;
+      applyParameterAutomation(this.chorus.frequency, {
+        parameter: 'chorusFrequency',
+        value: this.state.chorus.frequency,
+        effectiveAt: effectiveAt ?? audioTime(Tone.now()),
+        curve: 'step',
+      });
     }
   }
 
@@ -377,10 +397,10 @@ export class ToneEffectsChain {
 
   // --- Distortion Controls ---
 
-  setDistortionWet(wet: number): void {
+  setDistortionWet(wet: number, effectiveAt?: AudioTime): void {
     this.state.distortion.wet = clamp(wet, 0, 1);
     if (this.distortion && this.enabled) {
-      slewAudioParam(this.distortion.wet, this.state.distortion.wet, Tone.now());
+      slewAudioParam(this.distortion.wet, this.state.distortion.wet, effectiveAt ?? audioTime(Tone.now()));
     }
   }
 
@@ -403,23 +423,23 @@ export class ToneEffectsChain {
   /**
    * Apply state from multiplayer sync or session load
    */
-  applyState(newState: EffectsState): void {
+  applyState(newState: EffectsState, effectiveAt?: AudioTime): void {
     this.state = cloneEffectsState(newState);
 
     if (this.ready) {
       // Apply all values to Tone.js nodes
-      this.setReverbWet(newState.reverb.wet);
-      this.setReverbDecay(newState.reverb.decay);
-      this.setDelayWet(newState.delay.wet);
-      this.setDelayTime(newState.delay.time);
-      this.setDelayFeedback(newState.delay.feedback);
-      this.setChorusWet(newState.chorus.wet);
-      this.setChorusFrequency(newState.chorus.frequency);
+      this.setReverbWet(newState.reverb.wet, effectiveAt);
+      this.setReverbDecay(newState.reverb.decay, effectiveAt);
+      this.setDelayWet(newState.delay.wet, effectiveAt);
+      this.setDelayTime(newState.delay.time, effectiveAt);
+      this.setDelayFeedback(newState.delay.feedback, effectiveAt);
+      this.setChorusWet(newState.chorus.wet, effectiveAt);
+      this.setChorusFrequency(newState.chorus.frequency, effectiveAt);
       this.setChorusDepth(newState.chorus.depth);
-      this.setDistortionWet(newState.distortion.wet);
+      this.setDistortionWet(newState.distortion.wet, effectiveAt);
       this.setDistortionAmount(newState.distortion.amount);
       // Apply bypass state (if bypassed, effects are disabled)
-      this.setEnabled(!(newState.bypass ?? false));
+      this.setEnabled(!(newState.bypass ?? false), effectiveAt);
     }
 
     logger.audio.log('Applied effects state:', newState);
@@ -431,21 +451,17 @@ export class ToneEffectsChain {
    * Enable or disable all effects (bypass mode)
    * Note: this.state is always the source of truth - effects setters update it even when bypassed
    */
-  setEnabled(enabled: boolean): void {
+  setEnabled(enabled: boolean, effectiveAt?: AudioTime): void {
     if (enabled === this.enabled) return;
 
-    if (!enabled) {
-      // Bypass: set all wet to 0 (state is preserved in this.state)
-      if (this.reverbWetGain) this.reverbWetGain.gain.value = 0;
-      if (this.delay) this.delay.wet.value = 0;
-      if (this.chorus) this.chorus.wet.value = 0;
-      if (this.distortion) this.distortion.wet.value = 0;
-    } else {
-      // Un-bypass: restore from current state (may have changed while bypassed)
-      if (this.reverbWetGain) this.reverbWetGain.gain.value = this.state.reverb.wet;
-      if (this.delay) this.delay.wet.value = this.state.delay.wet;
-      if (this.chorus) this.chorus.wet.value = this.state.chorus.wet;
-      if (this.distortion) this.distortion.wet.value = this.state.distortion.wet;
+    const at = effectiveAt ?? audioTime(Tone.now());
+    if (this.reverbWetGain) {
+      slewAudioParam(this.reverbWetGain.gain, enabled ? this.state.reverb.wet : 0, at);
+    }
+    if (this.delay) slewAudioParam(this.delay.wet, enabled ? this.state.delay.wet : 0, at);
+    if (this.chorus) slewAudioParam(this.chorus.wet, enabled ? this.state.chorus.wet : 0, at);
+    if (this.distortion) {
+      slewAudioParam(this.distortion.wet, enabled ? this.state.distortion.wet : 0, at);
     }
 
     this.enabled = enabled;
@@ -461,6 +477,19 @@ export class ToneEffectsChain {
     if (!this.ready) return;
 
     logger.audio.log('Disposing ToneEffectsChain...');
+
+    const now = audioTime(Tone.now());
+    if (this.reverbWetGain) cancelParameterAutomation(this.reverbWetGain.gain, now);
+    if (this.delay) {
+      cancelParameterAutomation(this.delay.delayTime, now);
+      cancelParameterAutomation(this.delay.feedback, now);
+      cancelParameterAutomation(this.delay.wet, now);
+    }
+    if (this.chorus) {
+      cancelParameterAutomation(this.chorus.frequency, now);
+      cancelParameterAutomation(this.chorus.wet, now);
+    }
+    if (this.distortion) cancelParameterAutomation(this.distortion.wet, now);
 
     this.input?.dispose();
     this.compressor?.dispose();

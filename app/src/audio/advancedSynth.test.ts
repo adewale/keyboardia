@@ -15,6 +15,7 @@ import {
   getAdvancedSynthPresetId,
 } from './advancedSynth';
 import { semitoneToFrequency } from './constants';
+import { audioTime } from './audio-time';
 
 // Mock Tone.js
 vi.mock('tone', () => {
@@ -307,6 +308,14 @@ describe('AdvancedSynthVoice', () => {
       expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
       expect(voice['filter']!.frequency.setTargetAtTime).toHaveBeenLastCalledWith(1234, 0, 0.04);
       expect(voice['filterEnvAdder']!.addend.setTargetAtTime).toHaveBeenLastCalledWith(1234, 0, 0.04);
+    });
+
+    it('anchors a timestamped filter update without reading local now', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['sub-bass']);
+      voice.setFilterFrequency(1234, audioTime(5.25));
+
+      expect(voice['filter']!.frequency.setValueAtTime).toHaveBeenLastCalledWith(1234, 5.25);
+      expect(voice['filterEnvAdder']!.addend.setValueAtTime).toHaveBeenLastCalledWith(1234, 5.25);
     });
 
     it('scales sync-enabled LFO rates from the sequencer tempo', () => {

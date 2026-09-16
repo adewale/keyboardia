@@ -52,6 +52,14 @@ import {
   AudioRuntimeReadiness,
   type AudioRuntimeState,
 } from './audio-runtime-readiness';
+import type { AudioTime } from './audio-time';
+import type { TimestampedParameterUpdate } from './parameter-automation';
+
+export type AutomatableSynthParameter =
+  | 'filterFrequency'
+  | 'filterResonance'
+  | 'lfoRate'
+  | 'oscMix';
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -982,18 +990,20 @@ export class AudioEngine {
     return this.toneInitialized;
   }
 
-  setTrackVolume(trackId: string, volume: number): void {
+  setTrackVolume(trackId: string, volume: number, effectiveAt?: AudioTime): void {
     // Session/fader updates can precede AudioContext initialization and lazy
     // bus creation. Retain the value at both lifecycle boundaries.
     this.pendingTrackVolumes.set(trackId, volume);
-    this.trackBusManager?.setTrackVolume(trackId, volume);
+    if (effectiveAt === undefined) this.trackBusManager?.setTrackVolume(trackId, volume);
+    else this.trackBusManager?.setTrackVolume(trackId, volume, effectiveAt);
   }
 
-  setTrackPan(trackId: string, pan: number): void {
+  setTrackPan(trackId: string, pan: number, effectiveAt?: AudioTime): void {
     // Session/remote updates can precede both manager initialization and its
     // lazy TrackBus. Retain at both boundaries, matching authored faders.
     this.pendingTrackPans.set(trackId, pan);
-    this.trackBusManager?.setTrackPan(trackId, pan);
+    if (effectiveAt === undefined) this.trackBusManager?.setTrackPan(trackId, pan);
+    else this.trackBusManager?.setTrackPan(trackId, pan, effectiveAt);
   }
 
   /** Read the reconciled pan even while the per-track bus is still lazy. */
@@ -1359,12 +1369,12 @@ export class AudioEngine {
   /**
    * Apply effects state from session load or multiplayer sync
    */
-  applyEffectsState(state: EffectsState): void {
+  applyEffectsState(state: EffectsState, effectiveAt?: AudioTime): void {
     if (!this.toneEffects) {
       logger.audio.warn('Cannot apply effects state: Tone.js not initialized');
       return;
     }
-    this.toneEffects.applyState(state);
+    this.toneEffects.applyState(state, effectiveAt);
   }
 
   /**
@@ -1659,17 +1669,45 @@ export class AudioEngine {
   // Fan out to every registered track instance AND store as an override so
   // tracks created later inherit the current shared-control state.
 
-  setFilterFrequency(hz: number): void {
+  applySynthParameterUpdate(
+    update: TimestampedParameterUpdate<AutomatableSynthParameter>,
+  ): void {
+    switch (update.parameter) {
+      case 'filterFrequency':
+        this.setFilterFrequency(update.value, update.effectiveAt);
+        break;
+      case 'filterResonance':
+        this.setFilterResonance(update.value, update.effectiveAt);
+        break;
+      case 'lfoRate':
+        this.setLfoRate(update.value, update.effectiveAt);
+        break;
+      case 'oscMix':
+        this.setOscMix(update.value, update.effectiveAt);
+        break;
+    }
+  }
+
+  setFilterFrequency(hz: number, effectiveAt?: AudioTime): void {
     this.advancedOverrides.filterFrequency = hz;
-    this.advancedSynthRegistry.forEach((s) => s.setFilterFrequency(hz));
+    this.advancedSynthRegistry.forEach((s) => {
+      if (effectiveAt === undefined) s.setFilterFrequency(hz);
+      else s.setFilterFrequency(hz, effectiveAt);
+    });
   }
-  setFilterResonance(q: number): void {
+  setFilterResonance(q: number, effectiveAt?: AudioTime): void {
     this.advancedOverrides.filterResonance = q;
-    this.advancedSynthRegistry.forEach((s) => s.setFilterResonance(q));
+    this.advancedSynthRegistry.forEach((s) => {
+      if (effectiveAt === undefined) s.setFilterResonance(q);
+      else s.setFilterResonance(q, effectiveAt);
+    });
   }
-  setLfoRate(hz: number): void {
+  setLfoRate(hz: number, effectiveAt?: AudioTime): void {
     this.advancedOverrides.lfoRate = hz;
-    this.advancedSynthRegistry.forEach((s) => s.setLfoRate(hz));
+    this.advancedSynthRegistry.forEach((s) => {
+      if (effectiveAt === undefined) s.setLfoRate(hz);
+      else s.setLfoRate(hz, effectiveAt);
+    });
   }
   setLfoAmount(amount: number): void {
     this.advancedOverrides.lfoAmount = amount;
@@ -1685,9 +1723,12 @@ export class AudioEngine {
     this.advancedOverrides.release = release;
     this.advancedSynthRegistry.forEach((s) => s.setRelease(release));
   }
-  setOscMix(mix: number): void {
+  setOscMix(mix: number, effectiveAt?: AudioTime): void {
     this.advancedOverrides.oscMix = mix;
-    this.advancedSynthRegistry.forEach((s) => s.setOscMix(mix));
+    this.advancedSynthRegistry.forEach((s) => {
+      if (effectiveAt === undefined) s.setOscMix(mix);
+      else s.setOscMix(mix, effectiveAt);
+    });
   }
 
   /**
