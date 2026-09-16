@@ -14,6 +14,7 @@ const mocks = vi.hoisted(() => ({
   ensureAudioReady: vi.fn(),
   isToneInitialized: vi.fn(),
   initializeTone: vi.fn(),
+  prepareForPlayback: vi.fn(),
   state: {
     tracks: [] as Track[], tempo: 120, swing: 0,
     effects: {
@@ -73,11 +74,20 @@ beforeEach(() => {
   mocks.isToneInitialized.mockReturnValue(true);
   mocks.initializeTone.mockResolvedValue(undefined);
   preload.mockResolvedValue(undefined);
+  mocks.prepareForPlayback.mockImplementation(async (tracks: Track[]) => {
+    if (!await mocks.ensureAudioReady()) return false;
+    if (
+      tracks.some(track => track.sampleId.startsWith('tone:') || track.sampleId.startsWith('advanced:'))
+      && !mocks.isToneInitialized()
+    ) {
+      await mocks.initializeTone();
+    }
+    await preload();
+    return true;
+  });
   mocks.requireAudioEngine.mockResolvedValue({
-    ensureAudioReady: mocks.ensureAudioReady,
-    isToneInitialized: mocks.isToneInitialized,
-    initializeTone: mocks.initializeTone,
-    preloadInstrumentsForTracks: preload,
+    prepareForPlayback: mocks.prepareForPlayback,
+    getRuntimeState: () => ({ status: 'ready', generation: 1 }),
   });
 });
 
@@ -104,7 +114,7 @@ describe('StepSequencer playback lifecycle', () => {
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_PLAYING', isPlaying: true });
   });
 
-  it('does not continue when Tone initialization resolves after unmount', async () => {
+  it('does not start when renderer preparation resolves after unmount', async () => {
     let release!: () => void;
     mocks.state.tracks = [{
       id: 'tone-track', name: 'Tone Bass', sampleId: 'tone:fm-bass',
@@ -122,7 +132,6 @@ describe('StepSequencer playback lifecycle', () => {
     await Promise.resolve();
     await Promise.resolve();
 
-    expect(preload).not.toHaveBeenCalled();
     expect(start).not.toHaveBeenCalled();
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_PLAYING', isPlaying: true });
   });
@@ -136,10 +145,8 @@ describe('StepSequencer playback lifecycle', () => {
     first.unmount();
 
     const liveEngine = {
-      ensureAudioReady: mocks.ensureAudioReady,
-      isToneInitialized: mocks.isToneInitialized,
-      initializeTone: mocks.initializeTone,
-      preloadInstrumentsForTracks: preload,
+      prepareForPlayback: mocks.prepareForPlayback,
+      getRuntimeState: () => ({ status: 'ready', generation: 1 }),
     };
     mocks.requireAudioEngine.mockResolvedValueOnce(liveEngine);
     render(<StrictMode><StepSequencer /></StrictMode>);

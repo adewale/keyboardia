@@ -48,6 +48,10 @@ import {
   MASTER_OUTPUT_TRIM,
   NOTE_FADE_SECONDS,
 } from './constants';
+import {
+  AudioRuntimeReadiness,
+  type AudioRuntimeState,
+} from './audio-runtime-readiness';
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -91,6 +95,7 @@ export async function waitForLiveAudioClock(
 // KEEP IN SYNC with processorOptions.grainSize (default 1024).
 const PITCH_SHIFT_GRAIN_SIZE = 1024;
 export class AudioEngine {
+  private readonly runtimeReadiness = new AudioRuntimeReadiness();
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
@@ -106,6 +111,7 @@ export class AudioEngine {
   private syncedTrackIds = new Set<string>();
   private initialized = false;
   private initializationPromise: Promise<void> | null = null;
+  private playbackPreparationPromise: Promise<boolean> | null = null;
   private unlockListenerAttached = false;
   private unlockHandler: (() => Promise<void>) | null = null; // Store reference for cleanup
   private visibilityHandler: (() => void) | null = null;
@@ -287,9 +293,18 @@ export class AudioEngine {
     if (this.initialized) return;
     if (this.initializationPromise) return this.initializationPromise;
 
-    this.initializationPromise = this.initializeInternal().finally(() => {
-      this.initializationPromise = null;
-    });
+    const generation = this.runtimeReadiness.beginStart();
+    this.initializationPromise = this.initializeInternal()
+      .then(() => {
+        this.runtimeReadiness.markBaseReady(generation);
+      })
+      .catch((error: unknown) => {
+        this.runtimeReadiness.fail(generation, 'starting', error);
+        throw error;
+      })
+      .finally(() => {
+        this.initializationPromise = null;
+      });
     return this.initializationPromise;
   }
 
@@ -840,6 +855,103 @@ export class AudioEngine {
   /** Validate and copy an authored synth definition before it reaches audio nodes. */
   deserializeSynthParams(serialized: string): SynthParams {
     return decodeSynthParams(serialized);
+  }
+
+  /** Observable readiness state for playback, diagnostics, and UI. */
+  getRuntimeState(): AudioRuntimeState {
+    return this.runtimeReadiness.getState();
+  }
+
+  onRuntimeStateChange(listener: (state: AudioRuntimeState) => void): () => void {
+    return this.runtimeReadiness.subscribe(listener);
+  }
+
+  /**
+   * Make every renderer needed by the supplied track snapshot ready before
+   * scheduler start. Concurrent play actions share one preparation promise.
+   */
+  async prepareForPlayback(
+    tracks: readonly { id?: string; sampleId: string }[],
+  ): Promise<boolean> {
+    if (this.playbackPreparationPromise) return this.playbackPreparationPromise;
+
+    this.playbackPreparationPromise = (async () => {
+      if (!this.initialized) await this.initialize();
+
+      let state = this.runtimeReadiness.getState();
+      let generation = state.generation;
+      if (state.status === 'failed' || state.status === 'locked' || state.status === 'disposed') {
+        generation = this.runtimeReadiness.beginStart();
+        if (!this.initialized) return false;
+        this.runtimeReadiness.markBaseReady(generation);
+        state = this.runtimeReadiness.getState();
+      }
+      if (state.status === 'starting') {
+        await this.initializationPromise;
+        state = this.runtimeReadiness.getState();
+        generation = state.generation;
+      }
+      if (state.status !== 'base-ready' && state.status !== 'ready') {
+        throw new Error(`Audio runtime cannot prepare from ${state.status}`);
+      }
+
+      const snapshot = tracks.map(({ id, sampleId }) => ({ id, sampleId }));
+      this.runtimeReadiness.beginPreparing(
+        generation,
+        snapshot.map(track => track.sampleId),
+      );
+
+      const clockReady = await this.ensureAudioReady();
+      if (!this.runtimeReadiness.isCurrent(generation)) return false;
+      if (!clockReady) throw new Error('AudioContext clock did not become ready');
+
+      const needsTone = snapshot.some(
+        track => track.sampleId.startsWith('tone:') || track.sampleId.startsWith('advanced:'),
+      );
+      if (needsTone) await this.initializeTone();
+      if (!this.runtimeReadiness.isCurrent(generation)) return false;
+
+      await this.preloadInstrumentsForTracks(snapshot);
+      if (!this.runtimeReadiness.isCurrent(generation)) return false;
+
+      const unavailable = this.unavailableInstruments(snapshot);
+      if (unavailable.length > 0) {
+        throw new Error(`Audio instruments not ready: ${unavailable.join(', ')}`);
+      }
+
+      return this.runtimeReadiness.markReady(generation);
+    })().catch((error: unknown) => {
+      const generation = this.runtimeReadiness.getState().generation;
+      this.runtimeReadiness.fail(generation, 'preparing', error);
+      logger.audio.error('Audio runtime preparation failed:', error);
+      return false;
+    }).finally(() => {
+      this.playbackPreparationPromise = null;
+    });
+
+    return this.playbackPreparationPromise;
+  }
+
+  private unavailableInstruments(
+    tracks: readonly { id?: string; sampleId: string }[],
+  ): string[] {
+    const unavailable = new Set<string>();
+    const sampled = collectSampledInstruments([...tracks]);
+    for (const instrumentId of sampled) {
+      if (!this.isSampledInstrumentReady(instrumentId)) unavailable.add(`sampled:${instrumentId}`);
+    }
+    for (const track of tracks) {
+      if (track.sampleId.startsWith('tone:')) {
+        if (!this.toneInitialized || (track.id && !this.toneSynthRegistry.getIfReady(track.id))) {
+          unavailable.add(track.sampleId);
+        }
+      } else if (track.sampleId.startsWith('advanced:')) {
+        if (!this.toneInitialized || (track.id && !this.advancedSynthRegistry.getIfReady(track.id))) {
+          unavailable.add(track.sampleId);
+        }
+      }
+    }
+    return [...unavailable].sort();
   }
 
   isInitialized(): boolean {
@@ -1778,6 +1890,8 @@ export class AudioEngine {
    */
   dispose(): void {
     logger.audio.log('Disposing AudioEngine...');
+    // Invalidate every in-flight async completion before releasing nodes.
+    this.runtimeReadiness.dispose();
 
     // Stop the basic synth engine and retire its active voice registry.
     synthEngine.stopAll();
@@ -1858,6 +1972,7 @@ export class AudioEngine {
     this.toneInitialized = false;
     this.toneInitPromise = null;
     this.initializationPromise = null;
+    this.playbackPreparationPromise = null;
     this.resumePromise = null;
     this.effectsChainConnected = false;
     this.tempo = DEFAULT_TEMPO;
