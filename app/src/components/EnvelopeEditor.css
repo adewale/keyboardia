@@ -43,7 +43,7 @@
   padding: 2px 6px;
   border: 1px solid var(--color-warning);
   border-radius: 999px;
-  color: var(--color-warning);
+  color: var(--color-warning-text);
   font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
@@ -96,7 +96,7 @@
   padding: 8px 10px;
   border-left: 3px solid var(--color-warning);
   background: var(--color-warning-muted);
-  color: var(--color-text);
+  color: var(--color-warning-text);
   font-size: 12px;
 }
 
