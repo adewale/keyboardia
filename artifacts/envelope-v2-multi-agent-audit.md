@@ -120,7 +120,7 @@ Still open and therefore not merge/release evidence:
 The current catalogue baseline is 582 files / 42,914,625 encoded bytes, with no
 audio bytes added by this PR. Evidence on the rebased implementation commit is:
 
-- 310 unit files and 5,086 tests passed; one external real-contract test is
+- 310 unit files and 5,087 tests passed; one external real-contract test is
   intentionally skipped;
 - 75 semantic, 276 renderer-correctness, 232 rolling-state, and 13 PCM tests
   passed in the named envelope lanes;
