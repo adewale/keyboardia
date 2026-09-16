@@ -121,6 +121,15 @@ architecture changes, several overlap the still-open #87, #98, and #102 work,
 and mixing them into this measured audio-remediation PR would widen the review
 and invalidate evidence without being necessary to close a proven defect here.
 
+### Subsequent implementation status — 2026-09-16
+
+The paragraph above remains an accurate boundary for PR #100 itself. The
+follow-on stacked implementation now completes those deferred architecture
+items without rewriting PR #100's historical receipts. See
+[`specs/AUDIO-TIMING-ARCHITECTURE.md`](../specs/AUDIO-TIMING-ARCHITECTURE.md)
+for the branch-by-branch status, invariants, extracted PR #87/#98 work, full
+verification result, and correctness/performance/memory impact.
+
 ## Deliberately not changed
 
 ### Root and velocity coverage

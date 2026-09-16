@@ -81,6 +81,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 70: Stateful Properties Need Shrinkable Commands, Not Random Scripts](#lesson-70-stateful-properties-need-shrinkable-commands-not-random-scripts)
 - [Lesson 71: A Seed Policy Must Reach Every Vitest Project](#lesson-71-a-seed-policy-must-reach-every-vitest-project)
 - [Lesson 72: A Resource ID Is Scoped to the Environment That Owns It](#lesson-72-a-resource-id-is-scoped-to-the-environment-that-owns-it)
+- [Lesson 73: A Timestamp Contract Is Incomplete Until Policy and Ownership Move With It](#lesson-73-a-timestamp-contract-is-incomplete-until-policy-and-ownership-move-with-it)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -6113,3 +6114,77 @@ be an explicit, complete fixture owned by the feature that consumes it, not a
 production UUID or a lucky seed. For cross-environment actions, the strongest
 test starts with a real source record and proves the complete
 UI → request → creation → navigation → reload path.
+
+---
+
+## Lesson 73: A Timestamp Contract Is Incomplete Until Policy and Ownership Move With It
+
+**Date:** September 2026
+
+**Context:** Audio timing architecture after PR #100
+
+### What happened
+
+PR #100 correctly changed Tone and advanced playback to accept the scheduler's
+absolute AudioContext timestamp. That fixed the largest time-domain error, but
+the renderers still clamped late and duplicate events against their own raw
+clock and a private “last scheduled” cursor. Global Tone readiness could also
+report true before the exact per-track renderer existed, and Tone effects still
+owned a destination independently of the native graph.
+
+Each local behavior looked defensive. Together they meant the timestamp was
+absolute in type and call shape but not yet authoritative in behavior.
+
+The first integrated production bundle also exposed a different ownership
+mistake: the dispatcher eagerly constructed its default renderer registry from
+the engine singleton while the engine imported the scheduler. Rollup flattened
+that cycle into a temporal-dead-zone crash and a blank page, even though the
+module-oriented unit suite was green.
+
+### The fix
+
+The follow-on stack moved the adjacent policies with the timestamp:
+
+- a nominal `AudioTime` crosses one resolved-event boundary;
+- one dispatcher decides on-time, clamp, or drop for every renderer;
+- Tone and advanced renderers preserve that decision and never create a new
+  time or monotonic cursor;
+- playback preparation proves track-specific renderer readiness, while a miss
+  at dispatch is counted as an invariant violation;
+- parameter automation carries the same clock explicitly;
+- one generation-checked graph owner controls the native, Tone, desktop, and
+  mobile terminal; and
+- frame-driven presentation derives from audio time but cannot affect it.
+
+The dispatcher now binds its default registry on first dispatch, after module
+evaluation is complete, and a regression test locks down that lazy boundary.
+The production build plus browser gate remains required because only the
+bundled module order reproduced the original failure.
+
+The audit also found that CI's reviewed Chromium and WebKit skip inventories
+had been refreshed without updating the equivalent pre-push assertions. The
+local contracts now use the same 209/24 and 162/57 pass/skip dispositions, so a
+successful full browser run is accepted consistently in both places.
+
+The implementation also made the cost visible. Nominal units remain primitive
+numbers, presentation retains at most eight callbacks per fixed channel, the
+graph adds one unity gain per runtime, and stale async completions dispose their
+nodes. Same-machine microbenchmarks exposed a roughly 33–35% slowdown in the
+validated multiplayer-join helpers, but those helpers still execute in
+74–110 ns and are not render-quantum loops. Recording that tradeoff is more
+useful than calling a type-only refactor “free.”
+
+### The rule
+
+When a value becomes authoritative, inventory every layer that can still
+reinterpret, defer, retry, gate, route, or retain it. A type alias at the first
+boundary is not the architecture. Centralize the policy, make failure
+observable, give resources one lifecycle owner, and record both the semantic
+gain and the runtime cost. When the refactor creates a module cycle, test the
+production bundle in a real browser; source-module tests cannot prove bundle
+evaluation order is safe. Also distinguish an absolute event timestamp from a
+signed timeline anchor used to derive it: tempo recalibration may move the
+anchor before zero even though a scheduled event may never occur there.
+When the same test disposition contract exists in CI and local hooks, update
+both from one reviewed result set; a green suite must not fail only because one
+copy of its expected inventory drifted.
