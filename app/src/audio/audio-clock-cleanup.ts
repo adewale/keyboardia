@@ -24,4 +24,3 @@ export function scheduleAudioClockCleanup(
     return null;
   }
 }
-

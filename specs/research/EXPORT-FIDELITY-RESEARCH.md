@@ -1,6 +1,6 @@
 # Export Fidelity Research and Decision
 
-**Status:** DEFERRED RESEARCH — NOT IN `ADSR-OVERHAUL-v2.md`  
+**Status:** DEFERRED RESEARCH — NOT IN `ADSR-OVERHAUL-v2.md`
 **Date:** 2026-08-03
 
 Keyboardia v2 keeps the existing simple one-click SMF export. This document is

@@ -1,6 +1,6 @@
 # Envelope UI Research and Decision
 
-**Status:** Accepted design input for `ADSR-OVERHAUL-v2`; D2 implementation pending  
+**Status:** Accepted design input for `ADSR-OVERHAUL-v2`; D2 implementation pending
 **Date:** 2026-08-22
 
 ## Decision

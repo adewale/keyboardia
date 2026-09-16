@@ -1,8 +1,8 @@
 # Envelope v2 Final Multi-Agent Audit
 
-**Date:** 2026-08-03  
+**Date:** 2026-08-03
 **Scope:** all six implementation slices at the 2026-08-03 audit revision;
-the 2026-08-22 release-profile follow-up is recorded below  
+the 2026-08-22 release-profile follow-up is recorded below
 **Disposition:** historical audit, superseded by the 2026-09-16 post-rebase audit below
 
 Three independent reviewers audited the integrated implementation from their
