@@ -4,15 +4,16 @@ import './index.css'
 import App from './App.tsx'
 import './motion.css'
 
-// Initialize unified debugging infrastructure
-// The debug coordinator handles URL flags (?debug=1, ?trace=1, etc.)
-// and initializes all subsystems (log-store, tracer, playback-debug, bug-patterns)
-import { initDebugCoordinator } from './utils/debug-coordinator'
-
 // Initialize debug systems in development
-// In production, only error logging is enabled by default
+// In production, only error logging is enabled by default. Keeping this
+// import behind the compile-time DEV guard prevents diagnostic tooling from
+// becoming part of the production entry chunk.
 if (import.meta.env.DEV) {
-  initDebugCoordinator()
+  void import('./utils/debug-coordinator').then(({ initDebugCoordinator }) => {
+    initDebugCoordinator()
+  }).catch((error: unknown) => {
+    console.error('Failed to initialize debug tooling:', error)
+  })
 }
 
 /**

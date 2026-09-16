@@ -29,6 +29,8 @@
  *   window.__getSpanStats__()
  */
 
+import { storeLog } from './log-store';
+
 // Global type declarations
 declare global {
   interface Window {
@@ -182,7 +184,6 @@ function addTrace(event: TraceEvent): void {
  * Persist trace event to log store for post-mortem analysis
  */
 function persistTraceEvent(event: TraceEvent): void {
-  // Check if persistence is enabled (lazy import to avoid circular deps)
   if (typeof window === 'undefined' || !window.__LOG_PERSIST__) return;
 
   // Map trace type to log level
@@ -190,27 +191,22 @@ function persistTraceEvent(event: TraceEvent): void {
                 event.type === 'warning' ? 'warn' :
                 'debug';
 
-  // Dynamically import to avoid circular dependency
-  import('./log-store').then(({ storeLog }) => {
-    storeLog(
-      level,
-      `trace:${event.category}`,
-      event.name,
-      {
-        traceId: event.id,
-        correlationId: event.correlationId,
-        parentSpanId: event.parentSpanId,
-        eventType: event.type,
-        duration: event.duration,
-        audioTime: event.audioTime,
-        ...event.data,
-      },
-      event.stack
-    ).catch(() => {
-      // Silently ignore - logging should never break the app
-    });
-  }).catch(() => {
-    // Module not loaded yet, skip persistence
+  storeLog(
+    level,
+    `trace:${event.category}`,
+    event.name,
+    {
+      traceId: event.id,
+      correlationId: event.correlationId,
+      parentSpanId: event.parentSpanId,
+      eventType: event.type,
+      duration: event.duration,
+      audioTime: event.audioTime,
+      ...event.data,
+    },
+    event.stack
+  ).catch(() => {
+    // Silently ignore - logging should never break the app
   });
 }
 

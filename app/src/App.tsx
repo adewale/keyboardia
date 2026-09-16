@@ -39,7 +39,6 @@ import type { LoadedSessionState } from './types'
 import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
 import { AsyncActionLatch } from './utils/AsyncActionLatch'
-import { downloadMidi } from './audio/midiExport'
 import { createSession, remixSession, updateUrlWithSession } from './sync/session'
 import './App.css'
 
@@ -319,6 +318,15 @@ export function SessionControls({ children, focusHeadingOnMount = false }: Sessi
     await runSessionAction('new', createNew);
   }, [createNew, runSessionAction]);
 
+  const handleDownloadMidi = useCallback(async () => {
+    try {
+      const { downloadMidi } = await import('./audio/midiExport');
+      await downloadMidi(state, sessionName);
+    } catch (error) {
+      logger.error('Failed to export MIDI:', error);
+    }
+  }, [sessionName, state]);
+
   // Session controls UI component
   const sessionControlsUI = (
     <>
@@ -418,7 +426,7 @@ export function SessionControls({ children, focusHeadingOnMount = false }: Sessi
             </button>
             <button
               className="session-btn download-btn"
-              onClick={() => downloadMidi(state, sessionName)}
+              onClick={handleDownloadMidi}
               title="Export session as MIDI file"
             >
               Export MIDI
