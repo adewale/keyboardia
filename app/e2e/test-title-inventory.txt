@@ -153,6 +153,7 @@ multiplayer.spec.ts › Multiplayer input validation › invalid tempo values ar
 multiplayer.spec.ts › Multiplayer real-time sync › add track syncs to other client
 multiplayer.spec.ts › Multiplayer real-time sync › mute/solo remain local (do not sync)
 multiplayer.spec.ts › Multiplayer real-time sync › pan reaches the engine after a local edit, remote sync, and reload
+multiplayer.spec.ts › Multiplayer real-time sync › sample envelope mode and release converge atomically and survive reload
 multiplayer.spec.ts › Multiplayer real-time sync › scale unlock syncs to the other client and survives reload
 multiplayer.spec.ts › Multiplayer real-time sync › step toggle syncs between clients
 multiplayer.spec.ts › Multiplayer real-time sync › tempo change syncs between clients

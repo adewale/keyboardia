@@ -5,7 +5,11 @@ import { MAX_PAN, MAX_STEPS, MAX_TEMPO, MIN_PAN, MIN_TEMPO } from '../shared/con
 import type { Session } from '../shared/state';
 import { PatternExpansionError } from '../shared/pattern-expansion';
 import { ENVELOPE_RANGES, TRACK_GATE_RANGE } from '../shared/envelope';
-import { ENVELOPE_DURATION_RANGES_V2, type EnvelopeStageName } from '../shared/envelope-contract-v2';
+import {
+  ENVELOPE_DURATION_RANGES_V2,
+  SUSTAIN_PARAMETER_DESCRIPTOR_V2,
+  type EnvelopeStageName,
+} from '../shared/envelope-contract-v2';
 import { MAX_SESSION_NAME_LENGTH, MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 import type { Env } from './types';
 import {
@@ -264,7 +268,10 @@ const expandedEnvelopeSchema = z.discriminatedUnion('model', [
   z.object({ model: z.literal('ar'), attack: envelopeDurationSchema('attack'), release: envelopeDurationSchema('release') }).strict(),
   z.object({
     model: z.literal('adsr'), attack: envelopeDurationSchema('attack'), decay: envelopeDurationSchema('decay'),
-    sustain: z.number().min(0).max(1), release: envelopeDurationSchema('release'),
+    sustain: z.number()
+      .min(SUSTAIN_PARAMETER_DESCRIPTOR_V2.min)
+      .max(SUSTAIN_PARAMETER_DESCRIPTOR_V2.max),
+    release: envelopeDurationSchema('release'),
   }).strict(),
 ]);
 const compactStage = (stage: EnvelopeStageName, unit: 'seconds' | 'steps') => z.number()
@@ -274,7 +281,7 @@ const compactEnvelopeSchema = z.union((['seconds', 'steps'] as const).flatMap(un
   z.object({ model: z.literal('ad'), attack: compactStage('attack', unit), decay: compactStage('decay', unit), duration_unit: z.literal(unit) }).strict(),
   z.object({ model: z.literal('ahd'), attack: compactStage('attack', unit), hold: compactStage('hold', unit), decay: compactStage('decay', unit), duration_unit: z.literal(unit) }).strict(),
   z.object({ model: z.literal('ar'), attack: compactStage('attack', unit), release: compactStage('release', unit), duration_unit: z.literal(unit) }).strict(),
-  z.object({ model: z.literal('adsr'), attack: compactStage('attack', unit), decay: compactStage('decay', unit), sustain: z.number().min(0).max(1), release: compactStage('release', unit), duration_unit: z.literal(unit) }).strict(),
+  z.object({ model: z.literal('adsr'), attack: compactStage('attack', unit), decay: compactStage('decay', unit), sustain: z.number().min(SUSTAIN_PARAMETER_DESCRIPTOR_V2.min).max(SUSTAIN_PARAMETER_DESCRIPTOR_V2.max), release: compactStage('release', unit), duration_unit: z.literal(unit) }).strict(),
 ]));
 const mcpEnvelopeSchema = z.union([
   legacyEnvelopeSchema,

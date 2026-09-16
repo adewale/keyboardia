@@ -1,7 +1,7 @@
 # ADSR Overhaul v2 — Executable Specification
 
-**Status:** CORE CORRECTNESS VERIFIED — SHAPE UI AND PRODUCTION RENDERER CUTOVER PENDING  
-**Date:** 2026-08-22  
+**Status:** REBASED IMPLEMENTATION CANDIDATE — LOCAL CORE GATES PASS; FULL-STACK, SHAPE UI, AND PRODUCTION CUTOVER PENDING
+**Date:** 2026-09-16
 **Supersedes:** `specs/ADSR-OVERHAUL.md`  
 **Protocol capability:** `track-envelope-v2`
 **Operational sample requirements:** `docs/SAMPLE-INTAKE-REQUIREMENTS.md`  
@@ -22,22 +22,42 @@ The words **MUST**, **MUST NOT**, **SHOULD**, and **MAY** are normative.
 
 ## Implementation ledger
 
-The original locally executable work in Slices A–D is implemented. The shared v2
-contract now crosses production state, validation, sync, persistence, hashing,
-reconnect, MCP, notation, main/worklet scheduling, synth adapters, and managed
-sample voices. The capability-aware exact editor, selected-track XY batch
-transactions, unchanged MIDI boundary, rich examples, cost/resource records,
-and stable semantic/PCM/rolling/browser gates are checked in.
+PR 87 was rebased onto the current audio architecture on 2026-09-16. Its v2
+resolver now feeds the project's centralized `ResolvedNoteEvent` dispatcher and
+instrument-renderer registry, uses nominal audio-clock types, retains absolute
+Tone scheduling, and participates in the shared readiness, presentation-clock,
+timestamped-automation, and owned-audio-graph lifecycles. The older parallel
+scheduler-to-renderer switch was removed during the rebase.
 
-The core release profile now has explicit flag-off evidence rather than relying
-on structural inference. With `VITE_FEATURE_ENVELOPE_V2=false`, a browser fixture
-proves that authoring controls disappear while mixed-unit ADSR, gate, locks,
-notation, and the audio-engine runtime retain the authored values. Publish and
-remix tests compare the complete canonical state and hash. Native, real Tone
-OfflineAudioContext, advanced-adapter, and managed-sample tests exercise an
-authored `release: 0.3` plus zero release without wall-clock voice ownership.
-The focused correctness commands are first-class CI lanes, not manually selected
-files hidden outside the merge workflow.
+The shared v2 contract crosses production state, validation, sync, persistence,
+hashing, reconnect, MCP, notation, main/worklet scheduling, synth adapters, and
+managed sample voices. The capability-aware exact editor, selected-track XY
+batch transactions, unchanged MIDI boundary, examples, and resource/cost
+collectors are present. This is an implementation candidate, not proof that all
+release profiles are complete.
+
+The post-rebase audit corrected several material defects: early note-off now
+retains the in-progress native attack ramp; renderer adapters no longer clamp a
+resolved long duration through legacy limits; absent authored overrides retain
+preset sound; the semantic oracle evaluates release after an early note-off;
+preview graph, audition, and sequencer use the same one-step gate; sample
+playback mode and envelope model change atomically; release-region round robin
+is keyed by voice identity; and renderer promotion evidence is bound to a
+commit, artifact hash, and two distinct reviewers.
+
+Repository history and GitHub releases contain no shipped `track-envelope-v1`:
+that wire shape exists only in PR 87's earlier commits. Current clients and the
+Worker therefore advertise v2 only. Tolerant v1 import/projection remains for
+sessions created while reviewing the PR, but it is not a permanent public
+capability or a reason to duplicate new behavior.
+
+The focused local gates currently pass (75 semantic, 276 renderer-correctness,
+232 rolling-state, and 13 PCM tests, plus TypeScript, production build,
+documentation/resource validators, and ten real-Worker two-browser multiplayer
+contracts). Full unit, built integration, broader browser accessibility, and
+mobile gates must still rerun on the rebased revision before merge. Real advanced-renderer
+PCM equivalence, human listening, canary telemetry, and one release cycle remain
+external evidence; configuration mirrors and mocks are not substitutes.
 
 The 2026-08-22 product-design review found that the delivered editor still jumps
 from a compact summary to expert envelope terminology. Slice D therefore has a
@@ -58,18 +78,13 @@ were added. The existing Hammond loop remains supported with decoded-frame
 validation. CI p50/p95, human minutes, canary telemetry, and one shipped release
 cycle are external release evidence and cannot be manufactured by this change.
 
-Local release-candidate evidence on 2026-08-22 is green: 263 focused
-correctness tests, 4,694 full-unit tests, 135 built integration tests, three
-editor browser contracts, two flag-off/real-Tone browser contracts, 15
-real-Worker desktop smoke contracts, seven real-Worker mobile Safari contracts,
-and 73 serial real-Worker collaboration contracts. TypeScript, worker
-TypeScript/bundle isolation, ESLint, sync inventory, test-quality, E2E
-inventory, documentation freshness, resource budget, production build, and
-whitespace integrity also pass. The measured durations and intended cadence are
-recorded in the verification-cost baseline; these local results do not stand in
-for production canary or human-listening evidence.
+The 2026-08-22 counts below are historical evidence for the pre-rebase revision,
+not current status. Current counts and costs must come from machine-readable CI
+records for the exact head commit. A report records observed retries, artifact
+bytes, configured runner price, and actual human-review minutes; an assumed
+retry budget is not an observed cost.
 
-### Original-goal status at 2026-08-22
+### Original-goal status at 2026-09-16
 
 These statuses distinguish implemented architecture from production audio
 promotion. **Achieved** means the locally executable code and its direct
@@ -79,12 +94,12 @@ current production path deliberately remains unchanged.
 
 | Original goal | Status | Evidence and remaining boundary |
 |---|---|---|
-| Give `release: 0.3` one meaning across three divergent audio implementations | **Achieved for the authored correctness profile** | The oracle defines authored R as the duration from note-off/current gain to epsilon. Native synth, real Tone OfflineAudioContext/advanced adapters, and managed samples now have direct endpoint, tail-energy, and zero-release evidence for the same resolved `0.3 s`. Untouched legacy preset fallback deliberately keeps its prior sound; complete per-preset renderer-convergence evidence remains a separate T3 gate. |
-| Make envelopes per-track, persistent, synchronized, and publishable | **Achieved** | Optional `envelopeV2`, playback mode, gate, and locks cross canonical `SessionState`, validation, granular operations, optimistic and authoritative reducers, hashes, reconnect, Durable Object storage, old/new rolling merges, and worker/client boundaries. Publish and remix copy the complete validated live state rather than reconstructing selected fields. |
+| Give `release: 0.3` one meaning across three divergent audio implementations | **Provisional** | The oracle and native, real-Tone, and managed-sample tests share the endpoint convention. The advanced path still needs an independent real-renderer PCM subject, and every native-preset migration remains evidence-gated. |
+| Make envelopes per-track, persistent, synchronized, and publishable | **Achieved for the local architecture profile** | Optional `envelopeV2`, playback mode, gate, and locks cross canonical state, validation, granular operations, reducers, hashes, reconnect, storage, rolling merges, publish/remix, and worker/client boundaries. A real two-browser Gate→AR→release edit converges atomically and survives reload against the built Worker. |
 | Expose full ADSR through UI, MCP, and notation | **Achieved for the exact, capability-aware surface; D2 pending** | The exact editor, MCP edit/read/analysis operations, and v2.4 parser/serializer all carry A/D/S/R. Instruments that cannot truthfully sustain expose AD, AHD, or AR instead; that is an intentional correction to the universal-ADSR premise, not a missing adapter. The simpler musical Shape layer is still unimplemented. |
 | Add sequencer expression through envelope locks, gate, and tempo-relative timing | **Achieved** | Typed onset locks cover A/H/D/R, gate is per track, each duration carries seconds or steps, tied runs have specified semantics, and main/worklet paths are checked against the same onset-time resolver. |
 | Eventually consolidate the native and Tone synth renderers | **Pending by design** | The migration ledger, translated candidates, fail-closed routing, PCM harness, approval schema, canary, and rollback mechanism exist. All 32 published native presets remain native until per-preset T3 evidence and one release cycle exist; duplicate renderer code has not been removed. |
-| Fix concrete cleanup, range, zero, and release bugs | **Achieved for the scoped defects** | Shared ranges now feed validation, MCP, UI, and XY; `0` no longer falls through a truthy release default; authored native/sample releases have explicit endpoints and guards; source/oscillator `ended` events, Tone's audio clock, and an audio-clock sentinel replace wall-clock voice teardown. The remaining scheduler/UI timers are not voice-lifetime authorities. |
+| Fix concrete cleanup, range, zero, and release bugs | **Implemented; regression matrix pending** | One descriptor source now feeds validation, MCP, UI, defaults, gate, and XY; `0` no longer falls through a truthy release default; early native release preserves the attack ramp; authored native/sample releases have explicit endpoints and guards; source/oscillator `ended` events and the audio clock own teardown. Full rebased regression and browser matrices remain merge gates. |
 
 The third and fifth rows are deliberately not collapsed into a single
 “ADSR complete” claim. The exact authoring feature is present; beginner UI
@@ -424,6 +439,17 @@ Values authored in seconds do not. A tempo edit does not bend an already
 started voice; it affects later onsets. This keeps the resolver single-shot,
 main/worklet behavior deterministic, and automation discontinuity-free.
 
+Envelope edits follow the same onset-snapshot rule: they shape later voices and
+MUST NOT rewrite automation already owned by a sounding voice. The original
+30–50 ms “live slew” recommendation is therefore narrowed to genuinely
+continuous parameters such as pan, filter, effect mix, oscillator balance, and
+other macros. Those destinations use the project's timestamped parameter-
+automation primitive and its canonical 40 ms slew. Applying that slew to A/H/D/S/R
+would give one note two competing envelope definitions, break deterministic
+main/worklet playback, and make collaborators hear edit timing instead of the
+published note state. A local draft audition may preview the new shape without
+changing the active sequencer voice or broadcasting intermediate drag values.
+
 ### 4.3 Precedence
 
 For each active field, the effective value is:
@@ -607,8 +633,8 @@ fails CI.
 
 ### 6.2 What the shipped library actually contains
 
-The 26 shipped sampled instruments currently contain 223 manifest regions. Of
-those, only Hammond Organ's 13 regions carry loop metadata. All other manifests
+The 26 shipped sampled instruments currently reference 582 delivery audio
+files. Only Hammond Organ's 13 regions carry loop metadata. All other manifests
 have finite buffers. This is the baseline; source folder names such as
 “sustain” do not upgrade a manifest to `sample-loop`.
 
@@ -722,8 +748,8 @@ make this checklist executable.
 | Client | Worker | Required behavior |
 |---|---|---|
 | v2 | v2 | Full controls and granular sync |
-| v1 | v2 | Unknown optional snapshot fields preserved server-side; no envelope broadcasts the client cannot parse |
-| v2 | v1 | Capability absent; controls are read-only/disabled and no optimistic mutation is sent |
+| PR-preview v1 | v2 | Tolerant import and projection remain for preview data, but `track-envelope-v1` is not advertised as a public capability |
+| v2 | pre-v2 | Capability absent; controls are read-only/disabled and no optimistic mutation is sent |
 | disconnected v2 | upgraded v2 | Queued supported operations replay once; stale operations reconcile by ID |
 
 The worker advertises `track-envelope-v2`. UI and XY controls MUST gate on that
@@ -1164,8 +1190,8 @@ to make its current behavior safe.
 
 ### Slice A — Foundation, legacy correctness, and proof harnesses
 
-**Implementation disposition:** complete locally; CI percentile telemetry will
-accumulate in real CI rather than being invented from one machine.
+**Implementation disposition:** implemented and passing focused local gates on
+the rebased head; full CI, PCM, resource, and cost-distribution evidence pending.
 
 - Check in the semantic decision record, envelope/playback/asset capability
   schema, complete preset and scheduler-path inventories, sample-source audit,
@@ -1189,9 +1215,9 @@ published.
 
 ### Slice B — Canonical state, sync, persistence, and rolling deployment
 
-**Implementation disposition:** complete locally, including the explicit
-flag-off headless conformance fixture added by the 2026-08-22 release-profile
-revision.
+**Implementation disposition:** implemented, including the explicit flag-off
+headless fixture and a real two-browser Gate→AR→release edit/reload convergence
+contract against the rebased built Worker.
 
 - Add optional discriminated `TrackEnvelope`, per-duration units, sample
   playback mode, gate, and A/H/D/R p-lock fields plus the v2.3 adapter.
@@ -1211,8 +1237,9 @@ deterministically; `test:envelope:rolling` passes.
 
 ### Slice C — Complete playback semantics across engines and samples
 
-**Implementation disposition:** complete for engine/runtime support and the
-existing catalogue. Optional new asset promotions remain correctly deferred.
+**Implementation disposition:** core runtime is implemented and focused tests
+pass. Independent real advanced-renderer PCM, full scheduler/catalogue matrix,
+and release-candidate browser evidence remain open; optional assets are deferred.
 
 - Implement the independent semantic oracle and production resolver for AD,
   AHD, AR, and ADSR, including mixed duration units, early note-off, zero times,
@@ -1235,8 +1262,9 @@ documented voice/memory budget.
 
 ### Slice D — Human and agent editing surfaces
 
-**Implementation disposition:** core complete; D2 Shape-layer refinement
-specified on 2026-08-22 and still to implement.
+**Implementation disposition:** exact capability editor, MCP, and notation are
+implemented; D2 Shape-layer refinement and its user/accessibility evidence are
+still to implement. This slice is not complete.
 
 - Keep the shipped compact summary, semantic SVG curve, nonlinear per-stage
   fields, sample behavior, gate, Reset, inactive-authoring explanation, atomic
@@ -1299,10 +1327,11 @@ telemetry, and a tested rollback entry; no unapproved preset is silently routed.
 
 ### Slice F — Asset promotion, final cutover, and consolidation
 
-**Implementation disposition:** release decisions, feature flags, intake
-contract, runtime support, resource accounting, and cleanup validators complete.
-New asset promotion and native-renderer deletion are withheld until the T3
-release conditions below actually occur.
+**Implementation disposition:** release decisions, intake contract, schema, and
+zero-crossfade/runtime foundations exist. No release-trigger asset is shipped,
+nonzero loop crossfade rendering is not implemented, resource baselines require
+refresh after the rebase, and native-renderer deletion remains withheld pending
+the T3 release conditions below.
 
 - Decide the release-trigger and looped-sample experiments through blind A/B,
   exact license/commit/hash intake, payload and decoded-memory budgets, loop
@@ -1397,10 +1426,10 @@ more than a universal cosmetic ADSR.
   more expressive but risks discontinuities and automation churn. v2 snapshots
   tempo for the entire voice at note-on; the new tempo applies to later voices.
 
-The measured 2026-08-22 release catalogue is 35,577,302 encoded bytes (33.93
-MiB) across 582 files, with a content-addressed catalogue hash. PR 87's
-original head already contains those bytes; the envelope implementation adds
-zero sample files and zero sample bytes. Decoded-memory cost is measured per
+The measured 2026-09-16 current-main catalogue is 42,914,625 encoded bytes
+(40.93 MiB) across 582 files, with a content-addressed catalogue hash. PR 87
+adds loop metadata but zero sample files and zero sample bytes. Decoded-memory
+cost is measured per
 intake packet because channel count, sample rate, duration, and cache residency
 make a catalogue-wide estimate misleading. These files are copied as static
 deployment assets and fetched per selected instrument, so sample additions do
@@ -1408,8 +1437,9 @@ not belong in the initial JavaScript bundle—but “not JS” does not mean fre
 they increase the deployed site, offline/cache storage, selected-instrument
 transfer, background decode, and eviction pressure.
 
-The 2026-08-22 production build loads 239,035 bytes (233.4 KiB) of gzipped
-JavaScript initially and contains 315,602 bytes across all JavaScript chunks.
+The 2026-09-16 rebased production build loads 245,089 bytes (239.3 KiB) of
+gzipped JavaScript initially and contains 321,970 bytes across all JavaScript
+chunks.
 It already exceeds the older `< 200KB` target in `specs/STATUS.md`. The editor is
 reached through the code-split StepSequencer path, and the UI should have a
 small JavaScript impact: the curve is repository-native SVG/CSS and shared pure
@@ -1482,15 +1512,14 @@ the smaller implementation and asset set.
 
 ## 14. Implementation blockers and release gates
 
-The original architectural blockers are closed in code. The later product-design
-review found two narrower UI/scope blockers: the missing musical middle layer
-and global ephemeral synth XY mappings that look more durable than they are.
-The earlier verification gap between runtime and editor visibility is now
-closed by semantic and browser flag-off fixtures plus exact publish/remix state
-comparison. The app can ship the v2 state, exact editing, notation, and truthful
-sample behavior without silently rerouting every existing synth preset or
-importing unapproved audio, but the full product definition is not complete
-until D2 lands.
+The rebase closes the largest architectural blocker by routing v2 through the
+project's current audio primitives instead of maintaining a parallel dispatcher.
+It does not close every ship blocker. Full-stack rebased evidence, an independent
+advanced-renderer subject, the musical middle layer, and honest asset support
+remain. Global ephemeral synth XY mappings also look more durable than they are.
+The app can stage v2 state, exact editing, notation, and truthful sample behavior
+without silently rerouting every existing synth preset or importing unapproved
+audio, but no release profile is promoted until its explicit gates below pass.
 
 | Former blocker | Implemented disposition |
 |---|---|
@@ -1509,24 +1538,27 @@ until D2 lands.
 
 ### 14.1 What remains
 
-Two locally executable UI tasks remain, followed by release-evidence work that
-depends on complete local renders, observed users, or production time:
+Locally executable product and proof tasks remain, followed by release evidence
+that depends on human review or production time:
 
 1. Implement the three-layer Summary → Shape → Details flow, versioned recipes,
    Start/Tail labels, selected-track phase audition, and the four guided tasks.
 2. Move the envelope macro beside its track; retain global effects macros; hide
    or explicitly mark global Filter/LFO/Oscillator XY as developer preview until
    canonical per-track state and reconciliation exist.
-3. Generate the full per-preset T3 PCM matrix and retain metric reports for the
-   exact release revision.
-4. Obtain two independent listening approvals per promoted cohort, record
+3. Replace advanced translated-configuration equivalence with an independent
+   real-renderer PCM subject, then generate the full per-preset T3 matrix and
+   retain reports bound to the exact revision.
+4. Implement nonzero loop crossfade before accepting such metadata; import no
+   release-trigger asset until its intake, resource, and listening packet passes.
+5. Obtain two independent listening approvals per promoted cohort, record
    canary telemetry, and perform the rollback drill.
-5. Keep the approved renderer canary alive for one real release cycle before
+6. Keep the approved renderer canary alive for one real release cycle before
    deleting the native rollback route.
-6. For any new release or loop sample, pin exact source/license/hash data, run
+7. For any new release or loop sample, pin exact source/license/hash data, run
    blind A/B and mobile memory/first-use tests, then approve its separate asset
    packet.
-7. Measure CI p50/p95, retry rate, artifact storage, runner spend, and human
+8. Measure CI p50/p95, retry rate, artifact storage, runner spend, and human
    listening minutes from the actual CI/release environment.
 
 Until those facts exist, `isSynthRendererApproved` fails closed per preset, all

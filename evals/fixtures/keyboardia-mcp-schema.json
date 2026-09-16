@@ -426,7 +426,7 @@
                               "decay": {
                                 "type": "number",
                                 "minimum": 0,
-                                "maximum": 4
+                                "maximum": 8
                               },
                               "sustain": {
                                 "type": "number",

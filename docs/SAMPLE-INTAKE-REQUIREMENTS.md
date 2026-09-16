@@ -1,7 +1,7 @@
 # Sample Intake and Envelope-Capability Requirements
 
 **Status:** Normative for new or replacement sampled instruments  
-**Last reviewed:** 2026-08-03  
+**Last reviewed:** 2026-09-16
 **Related:** `app/sample-lab/README.md`, `app/sample-pipeline/README.md`,
 `specs/ADSR-OVERHAUL-v2.md`
 
@@ -14,10 +14,13 @@ review evidence.
 
 ## Current baseline and lessons
 
-The production library currently has 26 sampled instruments, 223 delivery
-files/regions, 914 seconds of encoded audio, and 13.12 MiB of encoded audio.
-Decoded as Web Audio `Float32` PCM, the whole catalogue would occupy about
-275.8 MiB. Only Hammond Organ's 13 regions currently carry loop metadata.
+The production library currently has 26 sampled instruments and 582 delivery
+audio files: 2,099.9 seconds and 42,914,625 bytes (40.93 MiB) of encoded audio.
+Decoded at each file's declared sample rate and channel count as Web Audio
+`Float32` PCM, the whole catalogue is approximately 593.5 MiB. These values
+were remeasured after rebasing PR 87 onto current `main`; PR 87 changes Hammond
+metadata but adds no audio file or audio byte. Only Hammond Organ's 13 regions
+currently carry validated loop metadata.
 
 The runtime does not fetch the whole catalogue at startup. It fetches a chosen
 instrument's manifest and priority set, then loads the rest of that instrument

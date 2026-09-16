@@ -130,6 +130,10 @@ export const SUSTAIN_PARAMETER_DESCRIPTOR_V2: EnvelopeParameterDescriptorV2<'lin
 export const TRACK_GATE_PARAMETER_DESCRIPTOR_V2: EnvelopeParameterDescriptorV2<'percent'> = {
   min: 0, max: 100, default: 90, taper: 'linear', unit: 'percent',
 };
+export const TRACK_GATE_RANGE_V2 = {
+  min: TRACK_GATE_PARAMETER_DESCRIPTOR_V2.min,
+  max: TRACK_GATE_PARAMETER_DESCRIPTOR_V2.max,
+} as const;
 
 export const DEFAULT_TRACK_ENVELOPE_V2: TrackEnvelopeV2 = {
   model: 'adsr',

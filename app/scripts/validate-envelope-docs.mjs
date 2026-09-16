@@ -1,7 +1,13 @@
 import { readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import process from 'node:process';
-import { ENVELOPE_DURATION_RANGES_V2, TRACK_GATE_RANGE_V2 } from '../src/shared/envelope-contract-v2.ts';
+import {
+  ENVELOPE_DURATION_RANGES_V2,
+  ENVELOPE_PARAMETER_DESCRIPTORS_V2,
+  SUSTAIN_PARAMETER_DESCRIPTOR_V2,
+  TRACK_GATE_PARAMETER_DESCRIPTOR_V2,
+  TRACK_GATE_RANGE_V2,
+} from '../src/shared/envelope-contract-v2.ts';
 import { ENVELOPE_NOTATION_EXAMPLE_SESSIONS } from '../src/shared/__fixtures__/envelope-notation-examples.ts';
 import {
   parseEnvelopeSessionNotation,
@@ -54,7 +60,30 @@ for (const row of [
   '[volumes:',
   '[trackSwing:',
   '[fm:',
+  '| `[lock:4,release,2st]` | `parameterLocks[3].releaseDuration = { value: 2, unit: "steps" }` |',
 ]) requireText('public syntax', sources.publicSyntax, row);
+if (sources.publicSyntax?.includes('parameterLocks[3].envelopeV2.release')) {
+  errors.push('public syntax: stale nested envelope-lock storage mapping');
+}
+
+// These assertions make descriptor consolidation observable. A range-only
+// documentation gate would not catch a UI/MCP default or taper drifting away.
+for (const [stage, units] of Object.entries(ENVELOPE_PARAMETER_DESCRIPTORS_V2)) {
+  for (const [unit, descriptor] of Object.entries(units)) {
+    if (descriptor.unit !== unit) errors.push(`${stage}.${unit}: descriptor unit mismatch`);
+    if (descriptor.default < descriptor.min || descriptor.default > descriptor.max) {
+      errors.push(`${stage}.${unit}: default is outside the documented range`);
+    }
+  }
+}
+if (SUSTAIN_PARAMETER_DESCRIPTOR_V2.default < SUSTAIN_PARAMETER_DESCRIPTOR_V2.min
+    || SUSTAIN_PARAMETER_DESCRIPTOR_V2.default > SUSTAIN_PARAMETER_DESCRIPTOR_V2.max) {
+  errors.push('sustain descriptor default is outside its range');
+}
+if (TRACK_GATE_PARAMETER_DESCRIPTOR_V2.default < TRACK_GATE_PARAMETER_DESCRIPTOR_V2.min
+    || TRACK_GATE_PARAMETER_DESCRIPTOR_V2.default > TRACK_GATE_PARAMETER_DESCRIPTOR_V2.max) {
+  errors.push('gate descriptor default is outside its range');
+}
 
 for (const example of ENVELOPE_NOTATION_EXAMPLE_SESSIONS) {
   requireText('examples', sources.examples, `\`${example.id}\``);

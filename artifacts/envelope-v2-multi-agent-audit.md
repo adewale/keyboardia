@@ -3,7 +3,7 @@
 **Date:** 2026-08-03  
 **Scope:** all six implementation slices at the 2026-08-03 audit revision;
 the 2026-08-22 release-profile follow-up is recorded below  
-**Disposition:** 19 P1/P2 findings reproduced and fixed; no unresolved P0-P2 finding
+**Disposition:** historical audit, superseded by the 2026-09-16 post-rebase audit below
 
 Three independent reviewers audited the integrated implementation from their
 own domain. Their conclusions were reconciled only after each review completed.
@@ -77,3 +77,49 @@ seven mobile Safari tests, and 73 serial collaboration tests. The current
 resource measurement is 223 audio files / 13,761,117 bytes and 306,851 gzipped
 JavaScript bytes (+8.74% from baseline). No audio asset was added. The external
 T3 boundaries above remain unchanged.
+
+## 2026-09-16 Astra Ultra post-rebase audit
+
+The earlier “no unresolved P0–P2” disposition did not survive review against
+current `main`. The audit found architectural drift, real correctness defects,
+and evidence that proved configuration rather than independent audio behavior.
+PR 87 was rebased and the duplicate scheduler/renderer cutover was replaced by
+the current centralized resolved-note dispatcher, renderer registry, nominal
+audio-time types, readiness lifecycle, presentation clock, timestamped
+parameter automation, and owned audio graph.
+
+Closed on the rebased head:
+
+- native early note-off now preserves the in-progress linear attack before
+  beginning release;
+- Tone and advanced adapters consume resolved long durations without legacy
+  re-clamping, while absent authored overrides retain existing preset sound;
+- the oracle applies release-phase ordering correctly after early note-off;
+- envelope preview, audition, and sequencer share a one-step gate definition;
+- sample playback mode and envelope model change in one synchronized mutation;
+- release and primary sample round robin are stable from voice identity;
+- one parameter descriptor supplies range, default, taper, and unit to UI,
+  MCP, validation, defaults, gate, and XY mappings;
+- renderer approval requires commit-bound hashed artifacts, two distinct human
+  reviewers, canary evidence, and a rollback drill; and
+- verification cost output records observed retries, configured runner price,
+  actual human-review minutes, and artifact bytes rather than an assumed retry
+  budget.
+
+Still open and therefore not merge/release evidence:
+
+- independent real advanced-renderer PCM rather than a translated-configuration
+  mirror, followed by the complete preset matrix and human listening;
+- D2 Summary → Shape → Details UI and its novice/accessibility studies;
+- nonzero sample-loop crossfade rendering and any approved release-trigger
+  audio; current shipped assets use zero-frame Hammond loops and no release
+  region set; and
+- CI p50/p95, retry and spend distribution, canary telemetry, rollback drill,
+  and one retained release cycle.
+
+The current catalogue baseline is 582 files / 42,914,625 encoded bytes. Focused
+local evidence at the time of this addendum is TypeScript, build, 75 semantic,
+276 renderer-correctness, 232 rolling-state, and 13 PCM tests, plus ten real-
+Worker multiplayer contracts including atomic Gate→AR→release convergence and
+reload. Broader historical counts above are not attributed to this rebased
+commit until their lanes rerun.

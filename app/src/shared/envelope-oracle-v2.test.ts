@@ -77,6 +77,7 @@ describe('envelope v2 independent amplitude oracle', () => {
     const held = amplitudeAtEnvelopeTimeV2(timeline, 0.1);
     expect(timeline.releaseStartAmplitude).toBeCloseTo(0.50005);
     expect(held).toBeCloseTo(timeline.releaseStartAmplitude ?? 0);
+    expect(amplitudeAtEnvelopeTimeV2(timeline, 0.15)).toBeCloseTo(0.172439, 5);
     expect(amplitudeAtEnvelopeTimeV2(timeline, 0.5)).toBe(ENVELOPE_EPSILON_V2);
   });
 

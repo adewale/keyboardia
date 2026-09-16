@@ -40,8 +40,6 @@ import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
 import { AsyncActionLatch } from './utils/AsyncActionLatch'
 import { createSession, remixSession, updateUrlWithSession } from './sync/session'
-import { LANDING_SAMPLES } from './data/landing-session-defaults'
-import { createStarterSessionState } from './data/starter-session'
 import { features } from './config/features'
 import './App.css'
 
