@@ -121,6 +121,9 @@ function stubEngineInternals(engine: AudioEngine): void {
   (engine as unknown as { audioContext: unknown }).audioContext = fakeCtx;
   (engine as unknown as { initialized: boolean }).initialized = true;
   (engine as unknown as { toneInitialized: boolean }).toneInitialized = true;
+  (engine as unknown as { audioGraph: unknown }).audioGraph = {
+    assertCurrent: vi.fn(), unlock: vi.fn(), dispose: vi.fn(),
+  };
   const fakeBusManager = {
     getBusInput: () => ({ connect: vi.fn(), disconnect: vi.fn() }),
     setTrackVolume: vi.fn(),

@@ -70,6 +70,9 @@ function stubEngineInternals(engine: AudioEngine): void {
   (engine as unknown as { audioContext: unknown }).audioContext = { currentTime: 0, state: 'running', sampleRate: 48000 };
   (engine as unknown as { initialized: boolean }).initialized = true;
   (engine as unknown as { toneInitialized: boolean }).toneInitialized = true;
+  (engine as unknown as { audioGraph: unknown }).audioGraph = {
+    assertCurrent: vi.fn(), unlock: vi.fn(), dispose: vi.fn(),
+  };
   const buses = new Set<string>();
   const fakeBusManager = {
     getBusInput: () => ({ connect: vi.fn(), disconnect: vi.fn() }),

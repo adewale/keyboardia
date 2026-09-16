@@ -26,6 +26,10 @@ export interface SchedulerJitterMetrics {
    * and play late. Counter is monotonic until reset().
    */
   lateNoteCount: number;
+  /** Events rejected by the central lateness policy. */
+  droppedNoteCount: number;
+  /** Readiness invariant violations at the renderer boundary. */
+  rendererUnavailableCount: number;
 }
 
 export interface InputLatencyMetrics {
@@ -71,6 +75,8 @@ export class AudioMetricsCollector {
 
   // Late-note counter (notes clamped by Math.max(time, currentTime))
   private lateNoteCount = 0;
+  private droppedNoteCount = 0;
+  private rendererUnavailableCount = 0;
 
   // Long task tracking
   private longTaskCount = 0;
@@ -117,6 +123,14 @@ export class AudioMetricsCollector {
    */
   recordLateNote(): void {
     this.lateNoteCount++;
+  }
+
+  recordDroppedNote(): void {
+    this.droppedNoteCount++;
+  }
+
+  recordRendererUnavailable(): void {
+    this.rendererUnavailableCount++;
   }
 
   setImplementation(impl: 'main-thread' | 'worklet'): void {
@@ -166,6 +180,8 @@ export class AudioMetricsCollector {
         max: jitters.length > 0 ? Math.max(...jitters) : 0,
         samples: jitters.length,
         lateNoteCount: this.lateNoteCount,
+        droppedNoteCount: this.droppedNoteCount,
+        rendererUnavailableCount: this.rendererUnavailableCount,
       },
       inputLatency: {
         p50: percentile(latencies, 50),
@@ -210,6 +226,8 @@ export class AudioMetricsCollector {
     this.longTaskCount = 0;
     this.longTaskTotalMs = 0;
     this.lateNoteCount = 0;
+    this.droppedNoteCount = 0;
+    this.rendererUnavailableCount = 0;
     this.jitterCounter = 0;
     this.latencyCounter = 0;
   }

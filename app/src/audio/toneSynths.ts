@@ -265,8 +265,6 @@ export class ToneSynthManager {
   private activePresets: Map<BaseSynthType, ToneSynthType> = new Map();
   private fmOverride: { harmonicity: number; modulationIndex: number } | null = null;
   private ready = false;
-  // Track last scheduled time per synth to prevent "time must be greater than previous" errors
-  private lastScheduledTime: Map<BaseSynthType, number> = new Map();
 
   /**
    * Initialize the synth manager
@@ -378,9 +376,7 @@ export class ToneSynthManager {
     // Convert note if it's a semitone number
     const noteValue = typeof note === 'number' ? this.semitoneToNoteName(note) : note;
 
-    const lastTime = this.lastScheduledTime.get(preset.type) ?? 0;
-    const startTime = absoluteToneStartTime(time, Tone.immediate(), lastTime);
-    this.lastScheduledTime.set(preset.type, startTime);
+    const startTime = absoluteToneStartTime(time, Tone.immediate());
     sourceGain?.gain.setValueAtTime(dbToGain(TONE_SOURCE_GAIN_DB[presetName]), startTime);
 
     // PluckSynth doesn't have triggerAttackRelease. A renderer error is logged

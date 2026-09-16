@@ -118,6 +118,9 @@ async function makeInitializedEngine(): Promise<AudioEngine> {
   (engine as unknown as { audioContext: unknown }).audioContext = fakeCtx;
   (engine as unknown as { initialized: boolean }).initialized = true;
   (engine as unknown as { toneInitialized: boolean }).toneInitialized = true;
+  (engine as unknown as { audioGraph: unknown }).audioGraph = {
+    assertCurrent: vi.fn(), unlock: vi.fn(), dispose: vi.fn(),
+  };
   // TrackBusManager returns a fake bus input per track.
   const busInputs = new Map<string, { connect: VoidSpy; disconnect: VoidSpy }>();
   const fakeBusManager = {

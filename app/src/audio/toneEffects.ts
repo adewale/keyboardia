@@ -130,7 +130,7 @@ export class ToneEffectsChain {
    * Initialize the effects chain
    * Must be called after Tone.start() has been invoked
    */
-  async initialize(): Promise<void> {
+  async initialize(destination: AudioNode): Promise<void> {
     if (this.ready) {
       logger.audio.log('ToneEffectsChain already initialized');
       return;
@@ -198,7 +198,10 @@ export class ToneEffectsChain {
     this.reverb.connect(this.reverbWetGain);
     this.reverbWetGain.connect(this.limiter);
     this.limiter.connect(this.outputTrim);
-    this.outputTrim.toDestination();
+    // The AudioEngine owns the only user-output terminal. Never call
+    // toDestination() here: doing so would create a second route that bypasses
+    // mobile output handling and runtime-generation ownership.
+    this.outputTrim.connect(destination as Parameters<typeof this.outputTrim.connect>[0]);
 
     this.ready = true;
     void this.initializeConvolutionReverb();
@@ -278,15 +281,14 @@ export class ToneEffectsChain {
     postMakeup: AudioNode;
     userOutput: AudioNode;
   } | null {
-    if (!this.compressor || !this.makeupTrim) return null;
-    const destination = Tone.getDestination();
+    if (!this.input || !this.compressor || !this.makeupTrim || !this.outputTrim) return null;
     return {
       // Tone.Compressor exposes the native DynamicsCompressorNode as both its
       // input and output; tapping it therefore captures post-compression PCM.
       // Fan out from the upstream input gain to obtain a genuine pre tap.
-      preCompressor: this.input!.output as unknown as AudioNode,
+      preCompressor: this.input.output as unknown as AudioNode,
       postMakeup: this.makeupTrim.output as unknown as AudioNode,
-      userOutput: destination.output as unknown as AudioNode,
+      userOutput: this.outputTrim.output as unknown as AudioNode,
     };
   }
 

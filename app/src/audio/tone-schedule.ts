@@ -1,24 +1,19 @@
-/** Tone.js event times share the underlying AudioContext's absolute clock. */
-export const MIN_TONE_SCHEDULE_LEAD_SECONDS = 0.001;
-
 /**
- * Preserve a scheduler-owned absolute event time while protecting late or
- * duplicate events from Tone.js's strictly-increasing timeline checks.
+ * Preserve a scheduler-owned absolute event time without renderer policy.
  *
- * `immediateTime` must come from Tone.immediate(), not Tone.now(): Tone.now()
- * includes the configured lookahead and would add it a second time.
+ * The central dispatcher has already made the lateness decision. The raw
+ * immediate clock is only a compatibility fallback for unscheduled previews.
  */
 export function absoluteToneStartTime(
   eventTime: number | undefined,
   immediateTime: number,
-  lastScheduledTime = Number.NEGATIVE_INFINITY,
 ): number {
-  const requestedTime = eventTime !== undefined && Number.isFinite(eventTime)
-    ? eventTime
-    : immediateTime;
-  return Math.max(
-    requestedTime,
-    immediateTime + MIN_TONE_SCHEDULE_LEAD_SECONDS,
-    lastScheduledTime + MIN_TONE_SCHEDULE_LEAD_SECONDS,
-  );
+  if (!Number.isFinite(immediateTime)) {
+    throw new RangeError(`Tone immediate time must be finite; received ${String(immediateTime)}`);
+  }
+  if (eventTime === undefined) return immediateTime;
+  if (!Number.isFinite(eventTime)) {
+    throw new RangeError(`Tone event time must be finite; received ${String(eventTime)}`);
+  }
+  return eventTime;
 }

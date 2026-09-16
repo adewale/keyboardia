@@ -53,6 +53,8 @@ describe('InstrumentRendererRegistry', () => {
     expect(vi.mocked(engine.playSampledInstrument).mock.calls[0]?.[3]).toBe(10);
     expect(vi.mocked(engine.playToneSynth).mock.calls[0]?.[2]).toBe(10);
     expect(vi.mocked(engine.playAdvancedSynth).mock.calls[0]?.[2]).toBe(10);
+    expect(engine.isToneSynthReady).toHaveBeenCalledWith('tone', 'track-1');
+    expect(engine.isToneSynthReady).toHaveBeenCalledWith('advanced', 'track-1');
   });
 
   it('uses the resolved velocity and gain rather than recomputing dynamics', () => {
@@ -66,5 +68,22 @@ describe('InstrumentRendererRegistry', () => {
     expect(engine.playSample).toHaveBeenCalledWith(
       'sample:kick', 'track-1', 10, 0.125, 0, 0.1, 64,
     );
+  });
+
+  it('returns an explicit unavailable result instead of silently swallowing readiness misses', () => {
+    const engine = enginePort();
+    vi.mocked(engine.isToneSynthReady).mockReturnValue(false);
+
+    const result = createInstrumentRendererRegistry(engine).schedule(event({
+      instrumentType: 'advanced',
+      presetId: 'sub-bass',
+    }));
+
+    expect(result).toEqual({
+      kind: 'renderer-unavailable',
+      instrumentType: 'advanced',
+      presetId: 'sub-bass',
+    });
+    expect(engine.playAdvancedSynth).not.toHaveBeenCalled();
   });
 });
