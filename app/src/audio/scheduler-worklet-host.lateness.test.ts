@@ -103,6 +103,24 @@ describe('SchedulerWorkletHost lateness metrics', () => {
     expect(snap.scheduler.max).toBeCloseTo(200, 0);
   });
 
+  it('applies the same late clamp before renderer dispatch', () => {
+    mockCtx.currentTime = 10.2;
+    dispatchTo(host, sampleNoteEvent(10.15));
+
+    const call = vi.mocked(audioEngine.playSample).mock.calls[0];
+    expect(call?.[0]).toBe('sample:kick');
+    expect(call?.[1]).toBe('t1');
+    expect(call?.[2]).toBeCloseTo(10.201, 10);
+    expect(call?.slice(3)).toEqual([0.1, 0, 1, 90, 'n1-loop-0']);
+  });
+
+  it('drops events beyond the central stale-event tolerance', () => {
+    mockCtx.currentTime = 10.2;
+    dispatchTo(host, sampleNoteEvent(10.0));
+
+    expect(audioEngine.playSample).not.toHaveBeenCalled();
+  });
+
   it('does not automate the shared track bus for note-level volume', () => {
     dispatchTo(host, sampleNoteEvent(10.05, 0.5));
 

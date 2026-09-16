@@ -24,7 +24,6 @@ export default {
     'src/audio/scheduler-multiplayer-sync.ts',
     'src/audio/pitch-shift-range.ts',
     'src/audio/envelope-anchor.ts',
-    'src/audio/scheduler-worklet-lateness.ts',
     'src/audio/note-dynamics.ts',
     'src/shared/scale-defaults.ts',
     'src/audio/metrics/percentile.ts',

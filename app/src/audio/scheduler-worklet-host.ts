@@ -11,10 +11,8 @@ import type { IScheduler, WorkletSchedulerState, WorkletTrack, WorkletPLock } fr
 import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../shared/constants';
 import { audioEngine } from './engine';
 import { parseInstrumentId, type InstrumentType } from './instrument-types';
-import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { loadWorkletModule } from './worklet-support';
 import { audioMetrics } from './metrics/audio-metrics';
-import { measureAndReportLateness } from './scheduler-worklet-lateness';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { resolveNoteDynamics } from './note-dynamics';
 import { logger } from '../utils/logger';
@@ -22,9 +20,12 @@ import schedulerWorkletUrl from './worklets/scheduler.worklet.ts?worker&url';
 import {
   audioContextClock,
   audioTime,
+  seconds,
   serverTimeMs,
   type AudioClock,
 } from './audio-time';
+import { dispatchResolvedNote } from './note-dispatcher';
+import type { ResolvedNoteEvent } from './resolved-note-event';
 
 // ─── Event types from the worklet ────────────────────────────────────────
 
@@ -247,85 +248,38 @@ export class SchedulerWorkletHost implements IScheduler {
   }
 
   private handleNoteEvent(event: NoteEvent): void {
-    // Measure real main-thread receive lateness. This is the number that
-    // determines whether Math.max(time, currentTime) will clamp in the audio
-    // engine — the worklet's internal scheduling precision is ~0 by
-    // construction and not worth recording.
-    if (this.audioClock) {
-      measureAndReportLateness(event.time, this.audioClock.now(), audioMetrics);
-    }
-
     const { type: instrumentType, presetId } = parseInstrumentId(event.sampleId);
-
-    // Dispatch per-note dynamics to the voice. The shared track bus remains
-    // at its stable base fader so locks cannot affect neighbouring tails.
     this.playInstrumentNote(instrumentType, presetId, event);
   }
 
   private playInstrumentNote(
     instrumentType: InstrumentType,
     presetId: string,
-    event: NoteEvent
+    event: NoteEvent,
   ): void {
     const fallback = resolveNoteDynamics(event.volumeMultiplier);
     const midiVelocity = event.midiVelocity ?? fallback.midiVelocity;
     const noteGain = event.noteGain ?? fallback.noteGain;
-    switch (instrumentType) {
-      case 'synth':
-        audioEngine.playSynthNote(
-          event.noteId, presetId, event.pitchSemitones,
-          event.time, event.duration, noteGain, event.trackId, midiVelocity
-        );
-        break;
-
-      // All bus-routed branches pass canonical noteGain only; the bus's
-      // volumeGain handles per-track volume. See bug_010.
-      case 'sampled': {
-        if (!audioEngine.isSampledInstrumentReady(presetId)) return;
-        const midiNote = SCHEDULER_BASE_MIDI_NOTE + event.pitchSemitones;
-        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, noteGain, event.trackId, midiVelocity);
-        break;
-      }
-
-      case 'tone':
-        if (!audioEngine.isToneSynthReady('tone')) return;
-        audioEngine.playToneSynth(
-          presetId as Parameters<typeof audioEngine.playToneSynth>[0],
-          event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity
-        );
-        break;
-
-      case 'advanced':
-        if (!audioEngine.isToneSynthReady('advanced')) return;
-        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, noteGain, event.trackId, midiVelocity);
-        break;
-
-      case 'sample':
-      default:
-        if (event.hasExplicitLock) {
-          audioEngine.playSample(
-            event.sampleId,
-            event.trackId,
-            event.time,
-            event.duration,
-            event.pitchSemitones,
-            noteGain,
-            midiVelocity,
-          );
-        } else {
-          audioEngine.playSample(
-            event.sampleId,
-            event.trackId,
-            event.time,
-            event.duration,
-            event.pitchSemitones,
-            noteGain,
-            midiVelocity,
-            `${event.noteId}-loop-${event.loopIteration ?? 0}`,
-          );
-        }
-        break;
-    }
+    const resolved: ResolvedNoteEvent = {
+      type: 'note',
+      trackId: event.trackId,
+      noteId: event.noteId,
+      sampleId: event.sampleId,
+      instrumentType,
+      presetId,
+      pitchSemitones: event.pitchSemitones,
+      when: audioTime(event.time),
+      duration: seconds(event.duration),
+      midiVelocity,
+      noteGain,
+      hasExplicitLock: event.hasExplicitLock ?? false,
+      loopIteration: event.loopIteration ?? 0,
+    };
+    dispatchResolvedNote(
+      resolved,
+      this.audioClock?.now() ?? audioTime(event.time),
+      audioMetrics,
+    );
   }
 
   // ─── Serialization ─────────────────────────────────────────────────────

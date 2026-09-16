@@ -13,11 +13,11 @@ import { bench, describe } from 'vitest';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { computeEnvelopeStart } from './envelope-anchor';
 import { pitchSemitonesToWorkletRatio } from './pitch-shift-range';
-import { computeReceiveLateness, measureAndReportLateness } from './scheduler-worklet-lateness';
 import { AudioMetricsCollector } from './metrics/audio-metrics';
 import { GrainPitchShifter } from './worklets/pitch-shift-engine';
 import { RingBuffer } from './metrics/ring-buffer';
 import { audioTime, serverTimeMs } from './audio-time';
+import { resolveDispatchTime } from './lateness-policy';
 
 describe('scheduler hot paths', () => {
   const baseInput = {
@@ -52,17 +52,13 @@ describe('scheduler hot paths', () => {
 
 describe('lateness/metrics hot paths', () => {
   const collector = new AudioMetricsCollector();
-  const sink = {
-    recordJitter: (ms: number) => collector.recordJitter(ms),
-    recordLateNote: () => collector.recordLateNote(),
-  };
 
-  bench('computeReceiveLateness', () => {
-    computeReceiveLateness({ eventTime: 5.0, currentTime: 5.05 });
+  bench('resolveDispatchTime (on-time)', () => {
+    resolveDispatchTime(audioTime(5.05), audioTime(5));
   });
 
-  bench('measureAndReportLateness (full path)', () => {
-    measureAndReportLateness(5.0, 5.05, sink);
+  bench('resolveDispatchTime (late clamp)', () => {
+    resolveDispatchTime(audioTime(4.95), audioTime(5));
   });
 
   bench('AudioMetricsCollector.recordJitter (with sampleRate=1)', () => {

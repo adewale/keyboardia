@@ -185,8 +185,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
 
       // No worklet-internal jitter emission: nextStepTime and intendedTime
       // are computed from the same formula, so the delta is ~0 by construction.
-      // Real jitter is measured on the main thread by the host (see
-      // measureAndReportLateness in scheduler-worklet-lateness.ts) when the
+      // Real lateness is measured by the main-thread dispatch policy when the
       // note event is received, which captures MessagePort transit latency.
 
       // Advance step (loop-region aware)
