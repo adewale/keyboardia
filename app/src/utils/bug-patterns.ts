@@ -130,7 +130,7 @@ this.effects = getEffectsChain();
 
 // GOOD: Fresh instance in current context
 this.effects = new ToneEffectsChain();
-await this.effects.initialize();
+await this.effects.initialize(audioGraph.getOutputInput(generation));
 
 // SAFEGUARD: Verify context match
 const toneContext = Tone.getContext().rawContext;

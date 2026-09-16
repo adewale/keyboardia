@@ -925,18 +925,18 @@ describe('voice stealing', () => {
     const voices = (engine as unknown as { voices: AdvancedSynthVoice[] }).voices;
     const triggers = voices.map(voice => vi.spyOn(voice, 'triggerAttackRelease'));
 
-    // Fill all eight allocator slots. Production audio time is mocked at zero,
-    // while the engine's strict scheduling cursor gives each voice a distinct
-    // start time; fake wall-clock advancement is deliberately irrelevant.
+    // Fill all eight allocator slots with scheduler-owned absolute times.
+    // Voice age comes from those event timestamps, never from a renderer-owned
+    // monotonic cursor or fake wall-clock advancement.
     for (let i = 0; i < 8; i++) {
-      engine.playNoteSemitone(i, 10);
+      engine.playNoteSemitone(i, 10, i / 100);
     }
     const orderedStartTimes = voices.map(voice => voice.getNoteStartTime());
     expect(orderedStartTimes).toEqual([...orderedStartTimes].sort((a, b) => a - b));
     expect(new Set(orderedStartTimes).size).toBe(voices.length);
     triggers.forEach(trigger => trigger.mockClear());
 
-    engine.playNoteSemitone(10, 10);
+    engine.playNoteSemitone(10, 10, 0.1);
 
     expect(triggers[0]).toHaveBeenCalledTimes(1);
     triggers.slice(1).forEach(trigger => expect(trigger).not.toHaveBeenCalled());

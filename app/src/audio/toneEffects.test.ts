@@ -168,10 +168,11 @@ vi.mock('tone', () => {
 
 describe('ToneEffectsChain', () => {
   let chain: ToneEffectsChain;
+  const outputDestination = {} as AudioNode;
 
   beforeEach(async () => {
     chain = new ToneEffectsChain();
-    await chain.initialize();
+    await chain.initialize(outputDestination);
   });
 
   afterEach(() => {
@@ -234,7 +235,8 @@ describe('ToneEffectsChain', () => {
       expect(reverb?.connect).toHaveBeenCalledWith(wetGain);
       expect(wetGain?.connect).toHaveBeenCalledWith(limiter);
       expect(limiter?.connect).toHaveBeenCalledWith(outputTrim);
-      expect(outputTrim?.toDestination).toHaveBeenCalled();
+      expect(outputTrim?.connect).toHaveBeenCalledWith(outputDestination);
+      expect(outputTrim?.toDestination).not.toHaveBeenCalled();
     });
   });
 
@@ -437,7 +439,7 @@ describe('ToneEffectsChain', () => {
 
     it('can be re-initialized after disposal', async () => {
       chain.dispose();
-      await chain.initialize();
+      await chain.initialize(outputDestination);
       expect(chain.isReady()).toBe(true);
     });
 
@@ -479,7 +481,7 @@ describe('ToneEffectsChain', () => {
       chain.setDelayTime('4n');
 
       chain.dispose();
-      await chain.initialize();
+      await chain.initialize(outputDestination);
 
       // State should be at defaults after re-initialization
       expect(chain.getState()).toEqual(DEFAULT_EFFECTS_STATE);

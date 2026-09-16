@@ -209,6 +209,8 @@ import { AdvancedSynthEngine } from './advancedSynth';
 import { ToneSynthManager } from './toneSynths';
 import * as Tone from 'tone';
 
+const outputDestination = {} as AudioNode;
+
 describe('AudioContext Safety', () => {
   beforeEach(() => {
     // Reset context for each test
@@ -224,7 +226,7 @@ describe('AudioContext Safety', () => {
   describe('ToneEffectsChain context consistency', () => {
     it('creates all nodes in the current context', async () => {
       const chain = new ToneEffectsChain();
-      await chain.initialize();
+      await chain.initialize(outputDestination);
 
       const input = chain.getInput() as unknown as { contextId: number };
       expect(input.contextId).toBe(currentMockContext?.id);
@@ -239,7 +241,7 @@ describe('AudioContext Safety', () => {
       currentMockContext = context1;
 
       const chain1 = new ToneEffectsChain();
-      await chain1.initialize();
+      await chain1.initialize(outputDestination);
       const input1 = chain1.getInput() as unknown as { contextId: number };
 
       // Simulate HMR - new context
@@ -248,7 +250,7 @@ describe('AudioContext Safety', () => {
       currentMockContext = context2;
 
       const chain2 = new ToneEffectsChain();
-      await chain2.initialize();
+      await chain2.initialize(outputDestination);
       const input2 = chain2.getInput() as unknown as { contextId: number };
 
       // Verify they have DIFFERENT context IDs
@@ -276,7 +278,7 @@ describe('AudioContext Safety', () => {
 
       // Correct pattern: fresh instances
       const effects = new ToneEffectsChain();
-      await effects.initialize();
+      await effects.initialize(outputDestination);
 
       const synths = new ToneSynthManager();
       await synths.initialize();
@@ -321,7 +323,7 @@ describe('AudioContext Safety', () => {
 
       // But if we create fresh effects in context 2...
       const freshEffects = new ToneEffectsChain();
-      await freshEffects.initialize();
+      await freshEffects.initialize(outputDestination);
       const effectsInput = freshEffects.getInput() as unknown as { contextId: number };
       expect(effectsInput.contextId).toBe(500);
 

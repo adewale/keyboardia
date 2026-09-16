@@ -54,6 +54,7 @@ import {
 } from './audio-runtime-readiness';
 import type { AudioTime } from './audio-time';
 import type { TimestampedParameterUpdate } from './parameter-automation';
+import { AudioGraphOwner } from './audio-graph-owner';
 
 export type AutomatableSynthParameter =
   | 'filterFrequency'
@@ -109,6 +110,7 @@ export class AudioEngine {
   private compressor: DynamicsCompressorNode | null = null;
   private makeupTrim: GainNode | null = null;
   private outputTrim: GainNode | null = null;
+  private audioGraph: AudioGraphOwner | null = null;
   private samples: Map<string, Sample> = new Map();
   private trackBusManager: TrackBusManager | null = null; // Phase 25: Unified audio bus
   /** Base faders may arrive from session state before AudioContext/buses exist. */
@@ -173,14 +175,40 @@ export class AudioEngine {
     });
   }
 
+  private assertRuntimeGeneration(
+    generation: number,
+    graph: AudioGraphOwner | null = this.audioGraph,
+  ): asserts graph is AudioGraphOwner {
+    if (!this.runtimeReadiness.isCurrent(generation)) {
+      throw new Error(`Stale audio runtime generation ${generation}`);
+    }
+    if (!graph || graph !== this.audioGraph) {
+      throw new Error(`Audio graph was replaced for runtime generation ${generation}`);
+    }
+    graph.assertCurrent(generation);
+  }
+
   private async createToneSynthForTrack(trackId: string): Promise<ToneSynthManager> {
-    if (!this.audioContext || !this.trackBusManager) {
+    const generation = this.runtimeReadiness.getState().generation;
+    const graph = this.audioGraph;
+    const trackBusManager = this.trackBusManager;
+    if (!this.audioContext || !trackBusManager) {
       throw new Error('Cannot create per-track tone synth: engine not initialized');
     }
+    this.assertRuntimeGeneration(generation, graph);
     const manager = new ToneSynthManager();
     await manager.initialize();
+    try {
+      this.assertRuntimeGeneration(generation, graph);
+      if (trackBusManager !== this.trackBusManager) {
+        throw new Error(`Track bus graph was replaced for runtime generation ${generation}`);
+      }
+    } catch (error) {
+      manager.dispose();
+      throw error;
+    }
     const output = manager.getOutput();
-    const busInput = this.trackBusManager.getBusInput(trackId);
+    const busInput = trackBusManager.getBusInput(trackId);
     if (output) {
       // Tone.Gain.connect accepts native AudioNodes via Tone's compat layer;
       // cast via the param type of connect() to satisfy the mixed-type API.
@@ -198,14 +226,27 @@ export class AudioEngine {
   }
 
   private async createAdvancedSynthForTrack(trackId: string): Promise<AdvancedSynthEngine> {
-    if (!this.audioContext || !this.trackBusManager) {
+    const generation = this.runtimeReadiness.getState().generation;
+    const graph = this.audioGraph;
+    const trackBusManager = this.trackBusManager;
+    if (!this.audioContext || !trackBusManager) {
       throw new Error('Cannot create per-track advanced synth: engine not initialized');
     }
+    this.assertRuntimeGeneration(generation, graph);
     const synth = new AdvancedSynthEngine();
     await synth.initialize();
+    try {
+      this.assertRuntimeGeneration(generation, graph);
+      if (trackBusManager !== this.trackBusManager) {
+        throw new Error(`Track bus graph was replaced for runtime generation ${generation}`);
+      }
+    } catch (error) {
+      synth.dispose();
+      throw error;
+    }
     synth.setTempo(this.tempo);
     const output = synth.getOutput();
-    const busInput = this.trackBusManager.getBusInput(trackId);
+    const busInput = trackBusManager.getBusInput(trackId);
     if (output) {
       output.connect(busInput as Parameters<typeof output.connect>[0]);
     }
@@ -241,11 +282,19 @@ export class AudioEngine {
    * merged_bug_002 — without this the first preview was silent and
    * leaked a phantom track bus + metering slot.
    */
-  private async ensurePreviewSynths(): Promise<void> {
+  private async ensurePreviewSynths(generation: number): Promise<void> {
+    const graph = this.audioGraph;
+    this.assertRuntimeGeneration(generation, graph);
     const effectsInput = this.toneEffects?.getInput();
     if (this.previewToneSynth === null) {
       const m = new ToneSynthManager();
       await m.initialize();
+      try {
+        this.assertRuntimeGeneration(generation, graph);
+      } catch (error) {
+        m.dispose();
+        throw error;
+      }
       const out = m.getOutput();
       if (out && effectsInput) {
         out.connect(effectsInput as Parameters<typeof out.connect>[0]);
@@ -255,6 +304,12 @@ export class AudioEngine {
     if (this.previewAdvancedSynth === null) {
       const a = new AdvancedSynthEngine();
       await a.initialize();
+      try {
+        this.assertRuntimeGeneration(generation, graph);
+      } catch (error) {
+        a.dispose();
+        throw error;
+      }
       a.setTempo(this.tempo);
       const ov = this.advancedOverrides;
       if (ov.filterFrequency !== undefined) a.setFilterFrequency(ov.filterFrequency);
@@ -302,7 +357,7 @@ export class AudioEngine {
     if (this.initializationPromise) return this.initializationPromise;
 
     const generation = this.runtimeReadiness.beginStart();
-    this.initializationPromise = this.initializeInternal()
+    this.initializationPromise = this.initializeInternal(generation)
       .then(() => {
         this.runtimeReadiness.markBaseReady(generation);
       })
@@ -316,11 +371,13 @@ export class AudioEngine {
     return this.initializationPromise;
   }
 
-  private async initializeInternal(): Promise<void> {
+  private async initializeInternal(generation: number): Promise<void> {
 
     // Create AudioContext (must be triggered by user gesture)
     // Use webkitAudioContext for older iOS Safari
     this.audioContext = new AudioContextClass();
+    this.audioGraph?.dispose();
+    this.audioGraph = new AudioGraphOwner(this.audioContext, generation);
 
     // Resume if suspended or interrupted (iOS-specific state)
     // iOS can put the context in 'interrupted' state
@@ -360,7 +417,7 @@ export class AudioEngine {
     this.masterGain.connect(this.compressor);
     this.compressor.connect(this.makeupTrim);
     this.makeupTrim.connect(this.outputTrim);
-    this.outputTrim.connect(this.audioContext.destination);
+    this.audioGraph.connect(this.outputTrim, generation);
 
     // Initialize synth engine
     synthEngine.initialize(this.audioContext, this.masterGain);
@@ -375,10 +432,11 @@ export class AudioEngine {
 
     // Load synthesized samples
     this.samples = await createSynthesizedSamples(this.audioContext);
+    this.assertRuntimeGeneration(generation);
 
     // Phase W: Initialize AudioWorklet modules (metering, etc.)
     // Non-blocking — worklets are optional enhancements
-    this.initializeWorklets().catch(err => {
+    this.initializeWorklets(generation).catch(err => {
       logger.audio.warn('AudioWorklet initialization failed (non-fatal):', err);
     });
 
@@ -457,8 +515,13 @@ export class AudioEngine {
       return this.toneInitPromise;
     }
 
+    const generation = this.runtimeReadiness.getState().generation;
+    const graph = this.audioGraph;
+    this.assertRuntimeGeneration(generation, graph);
+
     // Create and store the initialization promise
     this.toneInitPromise = (async () => {
+      let candidateEffects: ToneEffectsChain | null = null;
       try {
         // CRITICAL: Set Tone.js to use our existing AudioContext BEFORE starting
         // This ensures all Tone.js nodes are in the same context as our native nodes
@@ -477,6 +540,7 @@ export class AudioEngine {
 
         // Start Tone.js audio context (now using our context)
         await Tone.start();
+        this.assertRuntimeGeneration(generation, graph);
         logger.audio.log('Tone.js started, context state:', Tone.getContext().state);
 
         // SAFEGUARD: Verify Tone.js is using our AudioContext
@@ -494,6 +558,7 @@ export class AudioEngine {
           logger.audio.log('Attempting to force Tone.js context switch...');
           Tone.setContext(this.audioContext!);
           await Tone.start();
+          this.assertRuntimeGeneration(generation, graph);
           logger.audio.log('Tone.js context after force switch:', Tone.getContext().state);
           if (Tone.getContext().rawContext !== this.audioContext) {
             throw new Error(
@@ -503,9 +568,11 @@ export class AudioEngine {
         }
 
         // Initialize effects chain
-        this.toneEffects = new ToneEffectsChain();
-        await this.toneEffects.initialize();
-        this.toneEffects.setTempo(this.tempo);
+        candidateEffects = new ToneEffectsChain();
+        await candidateEffects.initialize(graph.getOutputInput(generation));
+        this.assertRuntimeGeneration(generation, graph);
+        candidateEffects.setTempo(this.tempo);
+        this.toneEffects = candidateEffects;
 
         // Connect master gain to effects chain input
         // Signal flow: masterGain -> toneEffects -> destination
@@ -553,12 +620,15 @@ export class AudioEngine {
         // Eagerly create the shared preview synths so SamplePicker hover
         // never gets a silent first note (merged_bug_002). Failures here
         // are non-fatal — preview just falls back to no-op.
-        await this.ensurePreviewSynths().catch((err) => {
+        await this.ensurePreviewSynths(generation).catch((err) => {
           logger.audio.warn('Preview synth init failed (previews will be silent):', err);
         });
 
         logger.audio.log('Tone.js infrastructure ready (per-track synths created on demand)');
       } catch (err) {
+        if (candidateEffects && candidateEffects !== this.toneEffects) {
+          candidateEffects.dispose();
+        }
         // Clear promise on error to allow retry
         this.toneInitPromise = null;
         logger.audio.error('Tone.js initialization error:', err);
@@ -573,7 +643,7 @@ export class AudioEngine {
    * Initialize AudioWorklet modules (metering, etc.)
    * Non-blocking — worklets are optional enhancements that fall back gracefully.
    */
-  private async initializeWorklets(): Promise<void> {
+  private async initializeWorklets(generation: number): Promise<void> {
     if (!this.audioContext || !supportsAudioWorklet(this.audioContext)) {
       logger.audio.log('AudioWorklet not supported, skipping worklet initialization');
       return;
@@ -582,6 +652,7 @@ export class AudioEngine {
     // Initialize metering worklet for per-track level analysis
     try {
       const loaded = await meteringHost.initialize(this.audioContext);
+      if (!this.runtimeReadiness.isCurrent(generation)) return;
       if (loaded) {
         logger.audio.log('Metering worklet initialized');
         // Retroactively connect any track buses created before the worklet loaded
@@ -594,6 +665,7 @@ export class AudioEngine {
     // Load pitch-shift worklet for high-quality pitch shifting
     try {
       this.pitchShiftLoaded = await loadWorkletModule(this.audioContext, pitchShiftWorkletUrl, 'pitch-shift-worklet');
+      if (!this.runtimeReadiness.isCurrent(generation)) return;
     } catch (err) {
       logger.audio.warn('Pitch-shift worklet failed to load:', err);
     }
@@ -606,6 +678,7 @@ export class AudioEngine {
     // Attempt worklet scheduler upgrade (behind feature flag, default: off)
     try {
       await upgradeToWorkletScheduler(this.audioContext);
+      if (!this.runtimeReadiness.isCurrent(generation)) return;
     } catch (err) {
       logger.audio.warn('Scheduler worklet upgrade failed:', err);
     }
@@ -706,6 +779,11 @@ export class AudioEngine {
     if (!context || (context.state as string) === 'closed') return false;
 
     const resumeAttempt = async (): Promise<boolean> => {
+      // The media-element route can only begin inside a user gesture. Calling
+      // this for every recovery is cheap and idempotent, and rejected attempts
+      // remain retryable on the next gesture.
+      this.audioGraph?.unlock();
+
       // Once Tone infrastructure exists, changing Tone's global context does
       // not migrate any effects or per-track nodes already constructed in the
       // old context. Fail closed instead of reporting native readiness while
@@ -982,12 +1060,16 @@ export class AudioEngine {
   /**
    * Check if Tone.js synths are ready for a specific preset type.
    */
-  isToneSynthReady(presetType: 'tone' | 'advanced'): boolean {
-    // Per-track synth instances are lazy-created through the registries.
-    // "Ready" here means the global Tone.js infrastructure is set up;
-    // actual track instances spin up on first play (or via preload).
-    void presetType;
-    return this.toneInitialized;
+  isToneSynthReady(presetType: 'tone' | 'advanced', trackId?: string): boolean {
+    if (!this.toneInitialized) return false;
+    // Callers without a track are diagnostics/previews and retain the global
+    // readiness meaning. Scheduled events must prove their exact renderer was
+    // prepared so a first note cannot disappear behind lazy construction.
+    if (!trackId) return true;
+    if (presetType === 'tone') {
+      return this.toneSynthRegistry.getIfReady(trackId)?.isReady() ?? false;
+    }
+    return this.advancedSynthRegistry.getIfReady(trackId)?.isReady() ?? false;
   }
 
   setTrackVolume(trackId: string, volume: number, effectiveAt?: AudioTime): void {
@@ -1994,6 +2076,7 @@ export class AudioEngine {
     this.compressor?.disconnect();
     this.makeupTrim?.disconnect();
     this.outputTrim?.disconnect();
+    this.audioGraph?.dispose();
 
     // Clear sample buffers
     this.samples.clear();
@@ -2010,6 +2093,7 @@ export class AudioEngine {
     this.compressor = null;
     this.makeupTrim = null;
     this.outputTrim = null;
+    this.audioGraph = null;
     this.toneInitialized = false;
     this.toneInitPromise = null;
     this.initializationPromise = null;

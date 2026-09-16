@@ -3,6 +3,7 @@ import { secondsToMilliseconds } from './audio-time';
 import {
   createInstrumentRendererRegistry,
   type InstrumentRendererRegistry,
+  type RendererScheduleResult,
 } from './instrument-renderer';
 import {
   DEFAULT_LATENESS_POLICY,
@@ -27,21 +28,36 @@ function getRendererRegistry(): InstrumentRendererRegistry {
 export interface DispatchMetricsSink {
   recordJitter(ms: number): void;
   recordLateNote(): void;
+  recordDroppedNote?(): void;
+  recordRendererUnavailable?(): void;
 }
+
+export type NoteDispatchResult = DispatchTimeDecision
+  | (Extract<RendererScheduleResult, { kind: 'renderer-unavailable' }> & {
+      lateness: import('./audio-time').Seconds;
+    });
 
 export function dispatchResolvedNote(
   event: ResolvedNoteEvent,
   currentTime: AudioTime,
   metrics?: DispatchMetricsSink,
   policy: LatenessPolicy = DEFAULT_LATENESS_POLICY,
-): DispatchTimeDecision {
+  registry?: InstrumentRendererRegistry,
+): NoteDispatchResult {
   const decision = resolveDispatchTime(event.when, currentTime, policy);
   metrics?.recordJitter(Math.abs(secondsToMilliseconds(decision.lateness)));
   if (decision.lateness > 0) metrics?.recordLateNote();
 
-  if (decision.kind === 'drop') return decision;
-  getRendererRegistry().schedule(
+  if (decision.kind === 'drop') {
+    metrics?.recordDroppedNote?.();
+    return decision;
+  }
+  const scheduleResult = (registry ?? getRendererRegistry()).schedule(
     decision.kind === 'on-time' ? event : { ...event, when: decision.time },
   );
+  if (scheduleResult.kind === 'renderer-unavailable') {
+    metrics?.recordRendererUnavailable?.();
+    return { ...scheduleResult, lateness: decision.lateness };
+  }
   return decision;
 }

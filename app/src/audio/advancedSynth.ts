@@ -741,8 +741,6 @@ export class AdvancedSynthEngine {
     oscMix?: number;
   } = {};
   private ready = false;
-  // Track last scheduled time to prevent "time must be greater than previous" errors
-  private lastScheduledTime = 0;
 
   // Diagnostic tracking
   private lastPlayAttempt = 0;
@@ -1115,8 +1113,7 @@ export class AdvancedSynthEngine {
       return;
     }
 
-    const startTime = absoluteToneStartTime(time, Tone.immediate(), this.lastScheduledTime);
-    this.lastScheduledTime = startTime;
+    const startTime = absoluteToneStartTime(time, Tone.immediate());
 
     // setPreset() applies definitions to every voice. Reapplying the same
     // preset here would disconnect/reconnect LFO AudioParams on the scheduler
@@ -1171,8 +1168,6 @@ export class AdvancedSynthEngine {
     for (const voice of this.voices) {
       voice.cancelPendingRelease();
     }
-    // Reset last scheduled time for clean restart
-    this.lastScheduledTime = 0;
     logger.audio.log('AdvancedSynthEngine: stopped all voices');
   }
 

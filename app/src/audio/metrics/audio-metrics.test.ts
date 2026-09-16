@@ -67,12 +67,29 @@ describe('AudioMetricsCollector', () => {
       collector.recordJitter(5);
       collector.recordInputLatency(10);
       collector.recordLateNote();
+      collector.recordDroppedNote();
+      collector.recordRendererUnavailable();
       collector.reset();
 
       const snap = collector.getSnapshot();
       expect(snap.scheduler.samples).toBe(0);
       expect(snap.inputLatency.samples).toBe(0);
       expect(snap.scheduler.lateNoteCount).toBe(0);
+      expect(snap.scheduler.droppedNoteCount).toBe(0);
+      expect(snap.scheduler.rendererUnavailableCount).toBe(0);
+    });
+  });
+
+  describe('correctness counters', () => {
+    it('counts policy drops and renderer readiness misses without downsampling', () => {
+      collector.setSampleRate(100);
+      collector.recordDroppedNote();
+      collector.recordRendererUnavailable();
+      collector.recordRendererUnavailable();
+
+      const snap = collector.getSnapshot();
+      expect(snap.scheduler.droppedNoteCount).toBe(1);
+      expect(snap.scheduler.rendererUnavailableCount).toBe(2);
     });
   });
 

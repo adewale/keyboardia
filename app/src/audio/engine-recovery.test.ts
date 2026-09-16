@@ -31,6 +31,12 @@ import { AudioEngine, waitForLiveAudioClock } from './engine';
 
 type RecoveryEngine = {
   audioContext: AudioContext | null;
+  audioGraph: {
+    assertCurrent(generation: number): void;
+    getOutputInput(generation: number): AudioNode;
+    unlock(): void;
+    dispose(): void;
+  } | null;
   toneInitialized: boolean;
   initializeTone(): Promise<void>;
   resumeAllAudioContexts(trigger: string): Promise<boolean>;
@@ -96,6 +102,12 @@ describe('audio-context recovery', () => {
 
     const engine = new AudioEngine() as unknown as RecoveryEngine;
     engine.audioContext = context;
+    engine.audioGraph = {
+      assertCurrent: vi.fn(),
+      getOutputInput: vi.fn(() => ({} as AudioNode)),
+      unlock: vi.fn(),
+      dispose: vi.fn(),
+    };
 
     await expect(engine.initializeTone()).rejects.toThrow(/context switch failed/);
     expect(Tone.setContext).toHaveBeenCalledTimes(2);

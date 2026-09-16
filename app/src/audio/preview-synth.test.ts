@@ -86,6 +86,9 @@ async function makePreparedEngine(): Promise<{ engine: AudioEngine; busLookups: 
   (engine as unknown as { audioContext: unknown }).audioContext = fakeCtx;
   (engine as unknown as { initialized: boolean }).initialized = true;
   (engine as unknown as { toneInitialized: boolean }).toneInitialized = true;
+  (engine as unknown as { audioGraph: unknown }).audioGraph = {
+    assertCurrent: vi.fn(), unlock: vi.fn(), dispose: vi.fn(),
+  };
   // toneEffects has a getInput() that the shared preview synth will connect to.
   const fakeEffectsInput = { connect: vi.fn(), disconnect: vi.fn() };
   (engine as unknown as { toneEffects: unknown }).toneEffects = {
@@ -102,7 +105,8 @@ async function makePreparedEngine(): Promise<{ engine: AudioEngine; busLookups: 
   // Pre-create the shared preview instances exactly the way initializeTone
   // would. The test owns this side-effect so we can assert engine behavior
   // without running the full Tone.js init.
-  await (engine as unknown as { ensurePreviewSynths: () => Promise<void> }).ensurePreviewSynths();
+  await (engine as unknown as { ensurePreviewSynths: (generation: number) => Promise<void> })
+    .ensurePreviewSynths(0);
   return { engine, busLookups };
 }
 
