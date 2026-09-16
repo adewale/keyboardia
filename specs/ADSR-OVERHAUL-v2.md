@@ -1437,8 +1437,8 @@ not belong in the initial JavaScript bundle—but “not JS” does not mean fre
 they increase the deployed site, offline/cache storage, selected-instrument
 transfer, background decode, and eviction pressure.
 
-The 2026-09-16 rebased production build loads 245,089 bytes (239.3 KiB) of
-gzipped JavaScript initially and contains 321,970 bytes across all JavaScript
+The 2026-09-16 rebased production build loads 224,734 bytes (219.5 KiB) of
+gzipped JavaScript initially and contains 323,236 bytes across all JavaScript
 chunks.
 It already exceeds the older `< 200KB` target in `specs/STATUS.md`. The editor is
 reached through the code-split StepSequencer path, and the UI should have a
