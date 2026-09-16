@@ -1,6 +1,6 @@
 # XY Control Reuse in Keyboardia
 
-**Status:** Accepted design input for `ADSR-OVERHAUL-v2`  
+**Status:** Accepted design input for `ADSR-OVERHAUL-v2`
 **Date:** 2026-08-22
 
 ## Decision

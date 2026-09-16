@@ -2,9 +2,9 @@
 
 **Status:** REBASED IMPLEMENTATION CANDIDATE — LOCAL CORE GATES PASS; FULL-STACK, SHAPE UI, AND PRODUCTION CUTOVER PENDING
 **Date:** 2026-09-16
-**Supersedes:** `specs/ADSR-OVERHAUL.md`  
+**Supersedes:** `specs/ADSR-OVERHAUL.md`
 **Protocol capability:** `track-envelope-v2`
-**Operational sample requirements:** `docs/SAMPLE-INTAKE-REQUIREMENTS.md`  
+**Operational sample requirements:** `docs/SAMPLE-INTAKE-REQUIREMENTS.md`
 **UI evidence:** `specs/research/ENVELOPE-UI-RESEARCH.md`
 **XY reuse evidence:** `specs/research/XY-CONTROL-REUSE.md`
 **Deferred export research:** `specs/research/EXPORT-FIDELITY-RESEARCH.md`

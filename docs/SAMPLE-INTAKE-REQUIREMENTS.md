@@ -1,6 +1,6 @@
 # Sample Intake and Envelope-Capability Requirements
 
-**Status:** Normative for new or replacement sampled instruments  
+**Status:** Normative for new or replacement sampled instruments
 **Last reviewed:** 2026-09-16
 **Related:** `app/sample-lab/README.md`, `app/sample-pipeline/README.md`,
 `specs/ADSR-OVERHAUL-v2.md`
