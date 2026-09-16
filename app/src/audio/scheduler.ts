@@ -30,6 +30,7 @@ import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { resolveHumanizedNoteDynamics } from './note-dynamics';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { getTrackStep, shouldTrackPlay, shouldTrackTrigger } from './track-step';
+import { audioTime, seconds, serverTimeMs } from './audio-time';
 
 // =============================================================================
 // Constants
@@ -166,9 +167,9 @@ export class Scheduler implements IScheduler {
     if (this.isMultiplayerMode && serverStartTime && this.getServerTime) {
       const state = getState();
       const { currentStep, nextStepTime } = computeJoinOffset({
-        audioStartTime: this.audioStartTime,
-        serverStartTime,
-        currentServerTime: this.getServerTime(),
+        audioStartTime: audioTime(this.audioStartTime),
+        serverStartTime: serverTimeMs(serverStartTime),
+        currentServerTime: serverTimeMs(this.getServerTime()),
         tempo: state.tempo,
         maxSteps: MAX_STEPS,
         loopStart: state.loopRegion?.start ?? 0,
@@ -310,7 +311,7 @@ export class Scheduler implements IScheduler {
       // Instead of: this.nextStepTime += stepDuration (accumulates floating-point errors)
       // We compute: nextStepTime = startTime + (stepCount * stepDuration)
       this.nextStepTime = calculateStepTime(
-        this.audioStartTime,
+        seconds(this.audioStartTime),
         this.totalStepsScheduled,
         state.tempo,
       );
@@ -332,7 +333,7 @@ export class Scheduler implements IScheduler {
     globalSwing: number,
     trackSwing: number
   ): number {
-    return time + calculateSwingDelay(trackStep, globalSwing, trackSwing, duration);
+    return time + calculateSwingDelay(trackStep, globalSwing, trackSwing, seconds(duration));
   }
 
   /**
@@ -495,7 +496,12 @@ export class Scheduler implements IScheduler {
       }
 
       // Calculate tied note duration
-      const tiedDuration = calculateTiedDuration(track, trackStep, trackStepCount, duration);
+      const tiedDuration = calculateTiedDuration(
+        track,
+        trackStep,
+        trackStepCount,
+        seconds(duration),
+      );
 
       // Track this note as active for tie detection in next step
       this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });

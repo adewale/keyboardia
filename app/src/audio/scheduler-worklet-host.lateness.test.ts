@@ -29,6 +29,7 @@ vi.mock('./engine', () => ({
 }));
 
 import { SchedulerWorkletHost } from './scheduler-worklet-host';
+import { audioContextClock, type AudioClock } from './audio-time';
 import { audioEngine } from './engine';
 import { audioMetrics } from './metrics/audio-metrics';
 import type { GridState } from '../types';
@@ -62,6 +63,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
       port: { postMessage: vi.fn(), onmessage: null },
     };
     (host as unknown as { audioContext: unknown }).audioContext = mockCtx;
+    (host as unknown as { audioClock: AudioClock }).audioClock = audioContextClock(mockCtx);
     host.start(makeState);
   });
 

@@ -19,6 +19,7 @@ import {
   STEPS_PER_BEAT,
 } from '../timing-calculations';
 import { resolveHumanizedNoteDynamics } from '../note-dynamics';
+import { seconds } from '../audio-time';
 
 interface NoteEvent {
   type: 'note';
@@ -195,7 +196,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
 
       this.totalStepsScheduled++;
       this.nextStepTime = calculateStepTime(
-        this.audioStartTime,
+        seconds(this.audioStartTime),
         this.totalStepsScheduled,
         state.tempo,
       );
@@ -239,7 +240,12 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
       }
 
       // Tied duration
-      const tiedDuration = calculateTiedDuration(track, trackStep, trackStepCount, duration);
+      const tiedDuration = calculateTiedDuration(
+        track,
+        trackStep,
+        trackStepCount,
+        seconds(duration),
+      );
 
       // Track active note
       this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
@@ -274,7 +280,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
     globalSwing: number,
     trackSwing: number
   ): number {
-    return time + calculateSwingDelay(trackStep, globalSwing, trackSwing, duration);
+    return time + calculateSwingDelay(trackStep, globalSwing, trackSwing, seconds(duration));
   }
 }
 

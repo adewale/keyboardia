@@ -8,6 +8,23 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
+import { audioTime, serverTimeMs } from './audio-time';
+
+function computeJoinOffsetFromNumbers(input: {
+  audioStartTime: number;
+  serverStartTime: number;
+  currentServerTime: number;
+  tempo: number;
+  maxSteps: number;
+  loopStart: number;
+}) {
+  return computeJoinOffset({
+    ...input,
+    audioStartTime: audioTime(input.audioStartTime),
+    serverStartTime: serverTimeMs(input.serverStartTime),
+    currentServerTime: serverTimeMs(input.currentServerTime),
+  });
+}
 
 const STEPS_PER_BEAT = 4;
 const MAX_STEPS = 64;
@@ -22,7 +39,7 @@ describe('computeJoinOffset', () => {
     // Joining 75ms in (mid-way through step 0): step 0 has already
     // started elsewhere; the next thing this peer can play is step 1
     // at audioStartTime + (125 - 75) = audioStartTime + 50ms.
-    const result = computeJoinOffset({
+    const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 1_000_000,
       currentServerTime: 1_000_075,
@@ -38,7 +55,7 @@ describe('computeJoinOffset', () => {
     // Joining exactly at step 2 boundary (250ms = 2 × 125ms).
     // currentStep=2 should play at the boundary, which is right now
     // (audioStartTime), not at audioStartTime + stepDuration.
-    const result = computeJoinOffset({
+    const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 1_000_000,
       currentServerTime: 1_000_250,
@@ -51,7 +68,7 @@ describe('computeJoinOffset', () => {
   });
 
   it('starts at step 0 when client joins at the server-start moment', () => {
-    const result = computeJoinOffset({
+    const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 1_000_000,
       currentServerTime: 1_000_000,
@@ -65,7 +82,7 @@ describe('computeJoinOffset', () => {
 
   it('returns loopStart fallback when the client is "ahead" of the server', () => {
     // Negative elapsed — treated as fresh start
-    const result = computeJoinOffset({
+    const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 1_000_100,
       currentServerTime: 1_000_000,
@@ -82,7 +99,7 @@ describe('computeJoinOffset', () => {
     const dur = stepDurationOf(tempo);
     // Exact-boundary case after one full loop + 5 steps.
     const elapsedMs = (MAX_STEPS + 5) * dur * 1000;
-    const result = computeJoinOffset({
+    const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 1_000_000,
       currentServerTime: 1_000_000 + elapsedMs,
@@ -101,7 +118,7 @@ describe('computeJoinOffset', () => {
     // Join 50ms into step (MAX_STEPS - 1) of the second loop. The next
     // step is step 0 of the next loop (wraps via mod).
     const elapsedMs = (MAX_STEPS + (MAX_STEPS - 1)) * dur * 1000 + 50;
-    const result = computeJoinOffset({
+    const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 0,
       currentServerTime: elapsedMs,
@@ -129,7 +146,7 @@ describe('computeJoinOffset', () => {
           })
         ),
         ({ tempo, elapsedMs, maxSteps, audioStartTime, loopStart }) => {
-          const result = computeJoinOffset({
+          const result = computeJoinOffsetFromNumbers({
             audioStartTime,
             serverStartTime: 0,
             currentServerTime: elapsedMs,
@@ -159,7 +176,7 @@ describe('computeJoinOffset', () => {
         }),
         ({ tempo, elapsedMs, audioStartTime }) => {
           const step = stepDurationOf(tempo);
-          const offset = computeJoinOffset({
+          const offset = computeJoinOffsetFromNumbers({
             audioStartTime,
             serverStartTime: 0,
             currentServerTime: elapsedMs,
@@ -193,7 +210,7 @@ describe('computeJoinOffset', () => {
         }),
         ({ tempo, elapsedMs, audioStartTime }) => {
           const stepDuration = stepDurationOf(tempo);
-          const result = computeJoinOffset({
+          const result = computeJoinOffsetFromNumbers({
             audioStartTime,
             serverStartTime: 0,
             currentServerTime: elapsedMs,
