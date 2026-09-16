@@ -163,27 +163,14 @@ export function StepSequencer() {
       const audioEngine = await requireAudioEngine('play');
       if (!isCurrent()) return;
 
-      // Ensure audio context is running (mobile Chrome workaround)
-      const isReady = await audioEngine.ensureAudioReady();
+      // One state-machine gate owns context resume, Tone startup, sample
+      // loading, and per-track renderer warming for this track snapshot.
+      const isReady = await audioEngine.prepareForPlayback(getState().tracks);
       if (!isCurrent()) return;
       if (!isReady) {
-        logger.audio.warn('Audio context not ready - try tapping again');
+        logger.audio.warn('Audio runtime not ready - try tapping again', audioEngine.getRuntimeState());
         return;
       }
-
-      // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
-      const hasToneTracks = getState().tracks.some(
-        t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
-      );
-      if (hasToneTracks && !audioEngine.isToneInitialized()) {
-        logger.audio.log('Initializing Tone.js synths before playback...');
-        await audioEngine.initializeTone();
-        if (!isCurrent()) return;
-      }
-
-      // Preload sampled instruments before the scheduler can request them.
-      await audioEngine.preloadInstrumentsForTracks(getState().tracks);
-      if (!isCurrent()) return;
 
       scheduler.setOnStepChange((step) => {
         if (isCurrent()) dispatch({ type: 'SET_CURRENT_STEP', step });

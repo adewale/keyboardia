@@ -90,14 +90,18 @@ export function useTrackPrewarm(state: GridState, isPlaying: boolean): void {
         );
       };
 
-      audioEngine.preloadInstrumentsForTracks(tracks).then(() => {
+      audioEngine.prepareForPlayback(tracks).then((ready) => {
         if (generation !== generationRef.current) return;
+        if (!ready) {
+          scheduleRetry();
+          return;
+        }
         const sampledReady = Array.from(sampledInstrumentIds).every(
           instrumentId => audioEngine.isSampledInstrumentReady(instrumentId),
         );
         if (!sampledReady) scheduleRetry();
       }).catch(() => {
-        // The preloader logs the underlying error. This hook owns retry timing
+        // The runtime logs the underlying error. This hook owns retry timing
         // because scheduler hot paths must remain free of loading side effects.
         scheduleRetry();
       });

@@ -19,7 +19,10 @@ const sampledReady = vi.fn<(instrumentId: string) => boolean>();
 
 vi.mock('./engine', () => ({
   audioEngine: {
-    preloadInstrumentsForTracks: (tracks: { id?: string; sampleId: string }[]) => preload(tracks),
+    prepareForPlayback: async (tracks: { id?: string; sampleId: string }[]) => {
+      await preload(tracks);
+      return true;
+    },
     isSampledInstrumentReady: (instrumentId: string) => sampledReady(instrumentId),
   },
 }));
