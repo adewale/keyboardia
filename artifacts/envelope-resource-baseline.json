@@ -67,18 +67,18 @@
       "notes": "Remeasured after rebasing onto current main. PR 87 changes Hammond loop metadata but adds no production audio file or byte."
     },
     "javascript": {
-      "allChunksGzipBytes": 323243,
+      "allChunksGzipBytes": 323172,
       "chunkBudgets": {
         "mainEntry": {
           "prefix": "index",
           "entry": true,
           "loading": "initial",
-          "gzipBytes": 154556
+          "gzipBytes": 154501
         },
         "stepSequencer": {
           "prefix": "StepSequencer",
           "loading": "lazy",
-          "gzipBytes": 38308
+          "gzipBytes": 38305
         },
         "sessionNotation": {
           "prefix": "session-notation-v24",

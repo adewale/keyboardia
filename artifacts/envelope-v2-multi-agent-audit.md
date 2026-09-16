@@ -127,9 +127,11 @@ audio bytes added by this PR. Evidence on the rebased implementation commit is:
 - 12 built-Worker integration files and 140 integration tests passed;
 - ten real-Worker multiplayer contracts passed, including atomic
   Gate→AR→release convergence and reload;
+- all 59 protected Stack A/Stack B/full-app/mobile-WebKit/colour identity
+  contracts passed after moving Copy Notation into the existing Invite menu;
 - app and Worker type checks, ESLint, test-quality analysis, production build,
   documentation/schema/inventory validation, and resource policy passed; and
-- the production build is 224,735 initial and 323,243 total gzip JavaScript
+- the production build is 224,680 initial and 323,172 total gzip JavaScript
   bytes. The PR remains inside the reviewed resource budget and adds no audio
   asset.
 

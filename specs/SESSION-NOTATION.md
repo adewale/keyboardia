@@ -13,7 +13,7 @@ The runtime-neutral parser and serializer accept v2.4, normalize supported v2.3
 envelope input, retain unknown annotations, and emit canonical v2.4. The app's
 rich JSON remains the full-fidelity session interchange; text intentionally
 omits effects, scale state, and other session-level data described below.
-The session toolbar's **Copy Notation** action serializes the current live state
+The session toolbar's **Invite → Copy Notation** action serializes the current live state
 through this implementation, reparses it as a safety check, and writes the
 canonical text to the clipboard. Its parser/serializer code is lazy-loaded so
 the syntax does not enter the Worker bundle or the initial sequencer chunk.
