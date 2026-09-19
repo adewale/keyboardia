@@ -618,7 +618,10 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --workers=2
-          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 210 28
+          # Five envelope editor/Web Audio tests are owned by the dedicated
+          # mock-backed lanes above, so the real-backend inventory review-skips
+          # them while still requiring every one to be discovered.
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 210 33
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -630,7 +633,9 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 163 58
+          # The same five mock-owned envelope tests remain visible as skips in
+          # WebKit; exact accounting prevents either suite from disappearing.
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 163 62
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
