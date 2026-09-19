@@ -6,3 +6,4 @@ e2e/mock-publish-contract.spec.ts
 e2e/motion-accessibility.spec.ts
 e2e/phase44-demo.spec.ts
 e2e/plock-editor.spec.ts
+e2e/tone-envelope-release.spec.ts
