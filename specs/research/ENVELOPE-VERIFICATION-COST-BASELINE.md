@@ -27,7 +27,7 @@ volume, dependencies, and intended cadence before making it a merge gate.
 | full-stack desktop smoke | 15 Chromium tests, 9.7 s test time; about 21 s including build and Worker startup | T1; must use the owned full-stack launcher, not Vite alone |
 | real two-browser envelope convergence | included in 10 multiplayer contracts, 18.9 s test time after build/startup | T1; built Worker, two independent contexts, atomic Gate→AR adaptation, remote release edit, and reload persistence |
 | full-stack mobile | 7 mobile-Safari-profile tests, 36.2 s test time | T1/T2; retain once per relevant PR, broader mobile matrices nightly |
-| `npm run test:e2e:collaboration:worker` | 73 serial Chromium tests, 2.3 min test time plus build/startup | T1/T2; expensive broad regression gate for shared state/UI changes and release candidates, not the inner edit loop |
+| `npm run test:e2e:collaboration:worker` | 77 serial Chromium tests, observed CI step time 3 min 19 s including build/startup | T1; complete checked-in Worker-required inventory for affected persistence/sync PRs, not the inner edit loop |
 | `npm run build` | pass; Vite phase 1.69–1.85 s after TypeScript | T0/T1 packaging gate; current pre-existing dynamic-import and >500 kB chunk warnings remain visible |
 | `npm run check:worker` | 2,027,601 JS bytes; 3,503,037 upload bytes; 949.73 KiB gzip | T0/T1 packaging gate; the measured envelope collaboration/MCP contract adds 65,966 upload bytes (1.92%) over PR 87's original head. The reviewed ratchet is 3,525,000 bytes, leaving 21,963 bytes; browser audio/UI/notation code remains excluded |
 | `npm run validate:envelope-resources` | 582 audio files, 42,914,625 encoded bytes, 323,172 bytes gzip JS | T0 resource gate remeasured after the current-main rebase; the PR adds zero audio bytes |
@@ -77,3 +77,15 @@ approval.
   failure and remain excluded. The Worker ratchet was deliberately raised by
   25,000 bytes after comparing the exact original-head and release bundles;
   the 21,963-byte remainder is a reviewed budget, not unbounded platform room.
+- CI implements the cadence mechanically. A conservative checked-in impact
+  inventory selects T1 profiles from the diff and sends unknown code paths to
+  every profile. The residual offline Chromium sweep, full real-backend
+  Chromium/WebKit/mobile matrix, duplicate macOS visual lane, and full
+  instrument/sample validators run on the nightly or manually requested T2
+  workflow. Before this split, the PR browser jobs alone consumed 44 min 44 s
+  of wall time (24 min 56 s mock plus 19 min 48 s real backend); browser
+  installation accounted for under one minute of that total.
+- Local pre-push follows the same shape: unit, focused PCM, real-Worker smoke,
+  and one mobile contract by default; `KEYBOARDIA_VERIFY_T2=1` appends the exact
+  complete Chromium and WebKit disposition contracts. Exact full-matrix counts
+  stay validated even when their execution is deferred.

@@ -982,6 +982,18 @@ Rules:
 - The six coarse slices in Section 10 require three independent audits each:
   18 reviews total, rather than imposing audit overhead on tiny mechanical PRs.
 
+Implementation status: CI now derives T1 profiles from the conservative
+checked-in `app/e2e/verification-impact.json` inventory. Documentation-only
+changes select no browser work; matching code paths select overlapping browser,
+Worker, audio, visual, and sample profiles; an unmatched code/configuration path
+selects all T1 profiles. Pull requests retain exact, zero-retry focused Chromium
+and real-Worker contracts. The residual offline Chromium sweep, complete
+real-backend Chromium/WebKit/mobile matrix, duplicate macOS visual lane, and
+full instrument/sample validators are T2 gates on the nightly schedule or a
+manual T2 dispatch. Default pre-push runs T0 plus focused T1; setting
+`KEYBOARDIA_VERIFY_T2=1` appends the same exact full Chromium and WebKit
+contracts. Deferral changes cadence, never pass/fail ownership.
+
 ## 9. User and agent surfaces
 
 ### 9.1 Track editor and XY pad
