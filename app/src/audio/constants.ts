@@ -158,9 +158,11 @@ export const MASTER_LIMITER_THRESHOLD_DB = -2;
 
 /**
  * Post-limiter safety margin. Tone.Limiter can overshoot its nominal threshold
- * on the user-reachable mixed-engine capacity fixture; a final linear trim
- * preserves the compressor response while keeping rendered samples below full
- * scale. This is gain staging, not a claim of true-peak limiting.
+ * on the user-reachable mixed-engine capacity fixture, and its peak response
+ * varies slightly between Chromium platforms. A final linear trim preserves
+ * the compressor response while keeping both the macOS and Linux capacity
+ * captures below full scale. This is gain staging, not a claim of true-peak
+ * limiting.
  */
 export const MASTER_OUTPUT_TRIM_DB = -2.25;
 export const MASTER_OUTPUT_TRIM = 10 ** (MASTER_OUTPUT_TRIM_DB / 20);

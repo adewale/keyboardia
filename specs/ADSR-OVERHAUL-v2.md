@@ -194,6 +194,8 @@ violated an authored or existing contract:
   differently;
 - resolver parity prevents the same session sounding different solely because
   main-thread or worklet scheduling was selected.
+- the owned final-output path retains measured sample- and true-peak headroom
+  for the 16-track capacity fixture across supported Chromium platforms.
 
 Those improvements are measured as timing-landmark error, tail-energy error,
 new clipping samples, stuck/late voice counts, and main/worklet or client-state
@@ -227,6 +229,11 @@ executable specification. In particular:
 - Sample attack must be anchored to audible output, not merely source start;
   the pitch worklet adds grain latency. Release tails need an explicit stop
   guard rather than an arbitrary timer.
+- A final-output trim calibrated on one machine can still cross full scale on
+  another browser platform because compressor peak response varies slightly.
+  Capacity gates MUST capture the owned user-output node, measure both sample
+  and oversampled true peak on CI, and include observed cross-platform margin;
+  changing a threshold to tolerate clipping is not an acceptable repair.
 - A control can render and sync yet still be a silent no-op for a particular
   instrument. Capability must be data, not an inference scattered through UI,
   audio, MCP, and analysis code.
