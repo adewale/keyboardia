@@ -72,8 +72,6 @@ describe('Mock-fidelity contract: AdvancedSynthEngine', () => {
     'setFilterResonance',
     'setLfoRate',
     'setLfoAmount',
-    'setAttack',
-    'setRelease',
     'setOscMix',
     'dispose',
   ] as const;

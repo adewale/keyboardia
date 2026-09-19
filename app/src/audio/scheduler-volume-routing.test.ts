@@ -123,7 +123,7 @@ describe('Scheduler volume routing (bug_010)', () => {
 
     playSample.mockClear();
     flushOneNote(scheduler, { trackVolume: 1, pLockVolume: 1, sampleId: 'hihat' });
-    expect(playSample.mock.calls[0]).toHaveLength(7);
+    expect(playSample.mock.calls[0][7]).toBeUndefined();
   });
 
   it('humanizes an unlocked note independently of track.volume', () => {

@@ -11,6 +11,7 @@
  */
 
 import { logger } from '../utils/logger';
+import { ENVELOPE_PARAMETER_DESCRIPTORS_V2 } from '../shared/envelope-contract-v2';
 
 /**
  * Available parameters that can be controlled by XY pad
@@ -21,8 +22,8 @@ export type XYPadParameter =
   | 'lfoRate'            // LFO frequency (0.1 - 20 Hz)
   | 'lfoAmount'          // LFO depth (0 - 1)
   | 'oscMix'             // Oscillator 1/2 mix (0 - 1)
-  | 'attack'             // Envelope attack (0.001 - 4s)
-  | 'release'            // Envelope release (0.001 - 8s)
+  | 'attack'             // Envelope attack (0 - 4s)
+  | 'release'            // Envelope release (0 - 8s)
   | 'reverbWet'          // Reverb mix (0 - 1)
   | 'delayWet'           // Delay mix (0 - 1)
   | 'delayFeedback'      // Delay feedback (0 - 0.95)
@@ -33,7 +34,7 @@ export type XYPadParameter =
 /**
  * Curve type for parameter scaling
  */
-export type XYCurveType = 'linear' | 'exponential';
+export type XYCurveType = 'linear' | 'exponential' | 'cubic';
 
 /**
  * Single axis mapping configuration
@@ -76,8 +77,18 @@ export const XY_PAD_PRESETS: Record<string, { name: string; mappings: XYPadMappi
   'envelope-shape': {
     name: 'Envelope Shape',
     mappings: [
-      { parameter: 'attack', axis: 'x', min: 0.001, max: 4, curve: 'exponential' },
-      { parameter: 'release', axis: 'y', min: 0.001, max: 8, curve: 'exponential' },
+      {
+        parameter: 'attack', axis: 'x',
+        min: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds.min,
+        max: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds.max,
+        curve: ENVELOPE_PARAMETER_DESCRIPTORS_V2.attack.seconds.taper,
+      },
+      {
+        parameter: 'release', axis: 'y',
+        min: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds.min,
+        max: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds.max,
+        curve: ENVELOPE_PARAMETER_DESCRIPTORS_V2.release.seconds.taper,
+      },
     ],
   },
   'reverb-control': {
@@ -118,6 +129,7 @@ function applyCurve(value: number, curve: XYCurveType): number {
     // Exponential curve for frequency-like parameters
     return Math.pow(value, 2);
   }
+  if (curve === 'cubic') return value ** 3;
   return value; // Linear
 }
 

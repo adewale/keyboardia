@@ -26,6 +26,7 @@ import {
 import type { Track, ParameterLock } from '../types';
 import { useDebug } from '../debug/DebugContext';
 import { logger } from '../utils/logger';
+import { TRACK_ENVELOPE_CAPABILITY, TRACK_ENVELOPE_V2_CAPABILITY } from '../shared/message-types';
 
 interface UseMultiplayerResult {
   status: ConnectionStatus;
@@ -34,6 +35,8 @@ interface UseMultiplayerResult {
   playerCount: number;
   error: string | null;
   isConnected: boolean;
+  /** V2 editing is available offline and after capability negotiation. */
+  supportsEnvelopeV2: boolean;
   clockOffset: number;
   clockRtt: number;
   // Phase 11: Cursors
@@ -45,6 +48,19 @@ interface UseMultiplayerResult {
   retryConnection: () => void;
   // Phase 22: Per-player playback tracking
   playingPlayerIds: Set<string>;
+}
+
+export function supportsEnvelopeV2ForConnection(
+  status: ConnectionStatus,
+  serverSupportsEnvelopeV2: boolean,
+): boolean {
+  // A connecting client has not necessarily received a capability-bearing
+  // snapshot yet. Fail closed on the initial connection, while still allowing
+  // a reconnect to a known-v2 Worker (the transport retains its last negotiated
+  // capabilities until an intentional disconnect).
+  return status === 'connected' || status === 'connecting'
+    ? serverSupportsEnvelopeV2
+    : true;
 }
 
 export function useMultiplayer(
@@ -240,6 +256,10 @@ export function useMultiplayer(
     playerCount: state.players.length,
     error: state.error,
     isConnected: state.status === 'connected',
+    supportsEnvelopeV2: supportsEnvelopeV2ForConnection(
+      state.status,
+      multiplayer.supportsCapability(TRACK_ENVELOPE_V2_CAPABILITY),
+    ),
     clockOffset,
     clockRtt,
     // Phase 11: Cursors
@@ -263,11 +283,36 @@ export function useMultiplayerDispatch(
 ): (action: GridAction) => void {
   return useCallback(
     (action: GridAction) => {
+      const connectionStatus = multiplayer.getState().status;
+      const isServerBound = isConnected
+        || connectionStatus === 'connected'
+        || connectionStatus === 'connecting';
+      const needsEnvelopeCapability = action.type === 'SET_TRACK_ENVELOPE'
+        || action.type === 'SET_TRACK_ENVELOPE_TIME_UNIT'
+        || action.type === 'SET_TRACK_GATE';
+      const needsEnvelopeV2Capability = action.type === 'SET_TRACK_ENVELOPE_V2'
+        || action.type === 'CONVERT_TRACK_ENVELOPE_UNITS_V2'
+        || action.type === 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2'
+        || action.type === 'SET_TRACK_GATE_V2'
+        || action.type === 'SET_ENVELOPE_LOCK_V2';
+      if (isServerBound && needsEnvelopeCapability
+          && !multiplayer.supportsCapability(TRACK_ENVELOPE_CAPABILITY)) {
+        logger.ws.warn('This connected server does not support track envelope edits yet');
+        return;
+      }
+      if (isServerBound && needsEnvelopeV2Capability
+          && !multiplayer.supportsCapability(TRACK_ENVELOPE_V2_CAPABILITY)) {
+        logger.ws.warn('This connected server does not support v2 envelope edits yet');
+        return;
+      }
+
       // Always dispatch locally first
       dispatch(action);
 
-      // Skip if not connected or if this is a remote action
-      if (!isConnected || ('isRemote' in action && action.isRemote)) {
+      // Remote actions have already come from the server. A connecting client,
+      // however, must pass locally-authored operations to MultiplayerConnection
+      // so its reconnect queue can replay them after the authoritative snapshot.
+      if (!isServerBound || ('isRemote' in action && action.isRemote)) {
         return;
       }
 

@@ -79,6 +79,13 @@ describe('Track/SessionTrack field parity', () => {
     'soloed',       // Added: was missing, caused hash mismatch bug
     'transpose',
     'stepCount',
+    'fmParams',
+    'envelope',
+    'envelopeTimeUnit',
+    'envelopeV2',
+    'samplePlaybackMode',
+    'gate',
+    'swing',
   ];
 
   // SessionTrack should have all the same fields (some may be optional for backwards compat)
@@ -96,6 +103,13 @@ describe('Track/SessionTrack field parity', () => {
     'soloed',       // Added: was missing, caused hash mismatch bug
     'transpose',
     'stepCount',
+    'fmParams',
+    'envelope',
+    'envelopeTimeUnit',
+    'envelopeV2',
+    'samplePlaybackMode',
+    'gate',
+    'swing',
   ];
 
   // Fields that are optional in SessionTrack but required in Track
@@ -104,6 +118,13 @@ describe('Track/SessionTrack field parity', () => {
     'soloed',     // Optional in SessionTrack, required in Track
     'stepCount',  // Optional in SessionTrack, required in Track
     'pan',        // Optional in both for legacy sessions; canonical default is center
+    'fmParams',
+    'envelope',
+    'envelopeTimeUnit',
+    'envelopeV2',
+    'samplePlaybackMode',
+    'gate',
+    'swing',
   ];
 
   it('SessionTrack should include all Track fields', () => {
@@ -141,8 +162,8 @@ describe('Track/SessionTrack field parity', () => {
   });
 
   it('should have matching field counts', () => {
-    expect(TRACK_FIELDS.length).toBe(11);  // Updated: removed playbackMode, added pan
-    expect(SESSION_TRACK_FIELDS.length).toBe(11);
+    expect(TRACK_FIELDS.length).toBe(18);
+    expect(SESSION_TRACK_FIELDS.length).toBe(18);
   });
 
   it('optional SessionTrack fields should be documented', () => {
@@ -216,12 +237,23 @@ describe('Cross-boundary canonical serialization', () => {
 
 describe('ParameterLock parity', () => {
   // Both should have the same structure (used in type check below)
-  const _PARAM_LOCK_FIELDS = ['pitch', 'volume'] as const;
+  const _PARAM_LOCK_FIELDS = [
+    'pitch', 'volume', 'tie', 'attack', 'decay', 'release',
+    'attackDuration', 'holdDuration', 'decayDuration', 'releaseDuration',
+  ] as const;
 
   it('ParameterLock should have expected fields', () => {
     // Type check - if these don't compile, the interfaces have drifted
-    const appLock: AppParameterLock = { pitch: 0, volume: 1 };
-    const workerLock: WorkerParameterLock = { pitch: 0, volume: 1 };
+    const appLock: AppParameterLock = {
+      pitch: 0, volume: 1, tie: true, attack: .1, decay: .2, release: .3,
+      attackDuration: { value: 1, unit: 'steps' },
+      holdDuration: { value: .2, unit: 'seconds' },
+    };
+    const workerLock: WorkerParameterLock = {
+      pitch: 0, volume: 1, tie: true, attack: .1, decay: .2, release: .3,
+      attackDuration: { value: 1, unit: 'steps' },
+      holdDuration: { value: .2, unit: 'seconds' },
+    };
 
     // Both should accept the same structure
     expect(Object.keys(appLock).sort()).toEqual(Object.keys(workerLock).sort());
@@ -314,6 +346,14 @@ describe('isStateMutatingBroadcast', () => {
       'set_effects',     // -> effects_changed
       'set_scale',       // -> scale_changed (Phase 29E)
       'set_fm_params',   // -> fm_params_changed
+      'set_track_envelope', // -> track_envelope_set
+      'set_track_envelope_time_unit', // -> track_envelope_time_unit_set
+      'set_track_gate', // -> track_gate_set
+      'set_track_envelope_v2', // -> track_envelope_v2_set
+      'convert_track_envelope_units_v2', // -> track_envelope_units_v2_converted
+      'set_track_sample_playback_mode_v2', // -> track_sample_playback_mode_v2_set
+      'set_track_gate_v2', // -> track_gate_v2_set
+      'set_envelope_lock_v2', // -> envelope_lock_v2_set
       'set_session_name', // -> session_name_changed
       // Phase 31F: Batch operations for multi-select
       'batch_clear_steps', // -> steps_cleared
@@ -377,6 +417,14 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_effects',
       'set_scale',             // Phase 29E: Key Assistant scale sync
       'set_fm_params',
+      'set_track_envelope',
+      'set_track_envelope_time_unit',
+      'set_track_gate',
+      'set_track_envelope_v2',
+      'convert_track_envelope_units_v2',
+      'set_track_sample_playback_mode_v2',
+      'set_track_gate_v2',
+      'set_envelope_lock_v2',
       'set_session_name',      // Session metadata sync
       // Phase 31F: Batch operations for multi-select
       'batch_clear_steps',
@@ -434,6 +482,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'batch_clear_steps',
       'batch_set_parameter_locks',
       'clear_track',
+      'convert_track_envelope_units_v2',
       'copy_sequence',      // Phase 26: Copy steps between tracks
       'delete_track',
       'euclidean_fill',     // Pattern operation: euclidean fill
@@ -445,6 +494,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'reverse_pattern',    // Pattern operation: reverse
       'rotate_pattern',     // Pattern operation: rotate
       'set_effects',
+      'set_envelope_lock_v2',
       'set_fm_params',
       'set_loop_region',    // Phase 31G: Loop selection
       'set_parameter_lock',
@@ -452,10 +502,16 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_session_name',   // Session metadata sync
       'set_swing',
       'set_tempo',
+      'set_track_envelope',
+      'set_track_envelope_time_unit',
+      'set_track_envelope_v2',
+      'set_track_gate',
+      'set_track_gate_v2',
       'set_track_instrument', // Change instrument (issue #63)
       'set_track_name',     // Track naming
       'set_track_pan',
       'set_track_sample',
+      'set_track_sample_playback_mode_v2',
       'set_track_step_count',
       'set_track_swing',      // Phase 31D: Per-track swing
       'set_track_transpose',

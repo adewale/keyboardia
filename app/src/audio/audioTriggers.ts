@@ -15,6 +15,7 @@
 
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
+import type { ResolvedEnvelopeV2, SamplePlaybackMode } from '../shared/envelope-contract-v2';
 
 // ============================================================================
 // User Gesture Classification
@@ -283,6 +284,9 @@ export interface PreviewOptions {
   pitch?: number;
   /** Duration in seconds (default: varies by type - 0.2 for synth, undefined for samples) */
   duration?: number;
+  /** Optional resolved draft used for envelope audition without persistence. */
+  resolvedEnvelope?: ResolvedEnvelopeV2;
+  playbackMode?: SamplePlaybackMode;
 }
 
 /**
@@ -318,7 +322,7 @@ export async function previewInstrument(
   trigger: AudioTrigger,
   options: PreviewOptions
 ): Promise<boolean> {
-  const { sampleId, previewId, pitch = 0, duration } = options;
+  const { sampleId, previewId, pitch = 0, duration, resolvedEnvelope, playbackMode = 'gate' } = options;
 
   const engine = tryGetEngineForPreview(trigger);
   if (!engine) return false;
@@ -327,8 +331,12 @@ export async function previewInstrument(
 
   // Route to appropriate playback method based on instrument type
   if (sampleId.startsWith('synth:')) {
+    if (!engine.isToneInitialized()) {
+      await engine.initializeTone();
+    }
+    if (!engine.isToneSynthReady('advanced')) return false;
     const preset = sampleId.replace('synth:', '');
-    engine.playSynthNote(previewId, preset, pitch, time, duration ?? 0.2);
+    engine.playSynthNote(previewId, preset, pitch, time, duration ?? 0.2, 1, undefined, undefined, undefined, resolvedEnvelope, !!resolvedEnvelope);
     return true;
   }
 
@@ -339,7 +347,7 @@ export async function previewInstrument(
     }
     if (engine.isToneSynthReady('tone')) {
       const preset = sampleId.replace('tone:', '') as Parameters<typeof engine.playToneSynth>[0];
-      engine.playToneSynth(preset, pitch, time, duration ?? 0.15);
+      engine.playToneSynth(preset, pitch, time, duration ?? 0.15, 1, undefined, undefined, undefined, resolvedEnvelope);
       return true;
     }
     return false;
@@ -352,7 +360,7 @@ export async function previewInstrument(
     }
     if (engine.isToneSynthReady('advanced')) {
       const preset = sampleId.replace('advanced:', '');
-      engine.playAdvancedSynth(preset, pitch, time, duration ?? 0.15);
+      engine.playAdvancedSynth(preset, pitch, time, duration ?? 0.15, 1, undefined, undefined, undefined, resolvedEnvelope);
       return true;
     }
     return false;
@@ -367,12 +375,12 @@ export async function previewInstrument(
     }
     // Convert pitch offset to MIDI note (60 = middle C)
     const midiNote = 60 + pitch;
-    engine.playSampledInstrument(instrument, previewId, midiNote, time, duration ?? 0.15);
+    engine.playSampledInstrument(instrument, previewId, midiNote, time, duration ?? 0.15, 1, undefined, undefined, undefined, playbackMode, resolvedEnvelope);
     return true;
   }
 
   // Default: basic sample (kick, snare, etc.)
-  engine.playSample(sampleId, previewId, time, duration, pitch);
+  engine.playSample(sampleId, previewId, time, duration, pitch, 1, undefined, undefined, undefined, resolvedEnvelope, playbackMode);
   return true;
 }
 

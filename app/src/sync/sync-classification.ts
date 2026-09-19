@@ -46,6 +46,14 @@ export const SYNCED_ACTIONS = new Set([
   'SET_EFFECTS',           // Global effects - shared (Phase 25)
   'SET_SCALE',             // Global setting - shared (Phase 29E: Key Assistant)
   'SET_FM_PARAMS',         // Track parameter - shared (Phase 24)
+  'SET_TRACK_ENVELOPE',    // Track amplitude envelope - shared
+  'SET_TRACK_ENVELOPE_TIME_UNIT', // Envelope time base - shared
+  'SET_TRACK_GATE',        // Note gate percentage - shared
+  'SET_TRACK_ENVELOPE_V2', // Rolling-safe discriminated envelope - shared
+  'CONVERT_TRACK_ENVELOPE_UNITS_V2', // Atomic typed-duration conversion - shared
+  'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2', // Sample note-off behavior - shared
+  'SET_TRACK_GATE_V2',     // Operation-id-backed v2 gate edit - shared
+  'SET_ENVELOPE_LOCK_V2',  // Typed per-onset envelope lock - shared
   'COPY_SEQUENCE',         // Grid edit - shared (Phase 26)
   'MOVE_SEQUENCE',         // Grid edit - shared (Phase 26)
   'SET_SESSION_NAME',      // Session metadata - shared (all players see same title)
@@ -102,6 +110,7 @@ export const INTERNAL_ACTIONS = new Set([
   'REMOTE_SOLO_SET',       // Echo prevention marker
   'SET_TRACK_STEPS',       // Internal for copy/move sync (server broadcasts steps directly)
   'REORDER_TRACK_BY_ID',   // Remote dispatch for track reorder (uses trackId for commutativity)
+  'REPLACE_TRACK_AUTHORITATIVE', // Server rejection/reconciliation snapshot
 ] as const);
 
 // Type helpers for strict typing
