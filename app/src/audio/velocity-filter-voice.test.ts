@@ -114,4 +114,36 @@ describe('per-voice velocity lowpass', () => {
       expect(gain.connectedTo).toContain(filter);
     }
   });
+
+  it('keeps body and release components on one filter until the managed voice completes', async () => {
+    const { ctx, instrument } = await loadInstrument({
+      samples: [{ note: 60, file: 'body.mp3', releaseGroup: 'keys' }],
+      releaseRegions: [{
+        file: 'release.mp3',
+        rootMidi: 60,
+        velocityMin: 0,
+        velocityMax: 127,
+        roundRobin: 0,
+        heldDecayDbPerSecond: 0,
+        gainDb: 0,
+        releaseGroup: 'keys',
+      }],
+    }, 4000);
+    const sourceStart = ctx.createdSources.length;
+    const gainStart = ctx.createdGains.length;
+
+    instrument.playNote('with-release', 60, 0, 0.25, 1, 40);
+
+    const sources = ctx.createdSources.slice(sourceStart);
+    const gains = ctx.createdGains.slice(gainStart);
+    const filter = ctx.createdBiquadFilters[0];
+    expect(sources.map(source => source.buffer?.label)).toEqual(['body.mp3', 'release.mp3']);
+    expect(gains).toHaveLength(2);
+    expect(gains.every(gain => gain.connectedTo.includes(filter))).toBe(true);
+
+    sources[0]?.fireEnded();
+    expect(filter.disconnected).toBe(false);
+    sources[1]?.fireEnded();
+    expect(filter.disconnected).toBe(true);
+  });
 });
