@@ -82,6 +82,11 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 71: A Seed Policy Must Reach Every Vitest Project](#lesson-71-a-seed-policy-must-reach-every-vitest-project)
 - [Lesson 72: A Resource ID Is Scoped to the Environment That Owns It](#lesson-72-a-resource-id-is-scoped-to-the-environment-that-owns-it)
 - [Lesson 73: A Timestamp Contract Is Incomplete Until Policy and Ownership Move With It](#lesson-73-a-timestamp-contract-is-incomplete-until-policy-and-ownership-move-with-it)
+- [Lesson 74: An Objective Comparison Needs a Shared Observable, Not a Shared Vibe](#lesson-74-an-objective-comparison-needs-a-shared-observable-not-a-shared-vibe)
+- [Lesson 75: A Shared Fixture Is Not a Paired Audio Experiment](#lesson-75-a-shared-fixture-is-not-a-paired-audio-experiment)
+- [Lesson 76: An Audio Route Does Not Guarantee Background Scheduling](#lesson-76-an-audio-route-does-not-guarantee-background-scheduling)
+- [Lesson 77: Rebase Behavior, Not Competing Authorities](#lesson-77-rebase-behavior-not-competing-authorities)
+- [Lesson 78: A Repeat Null Cannot Bound Randomized State](#lesson-78-a-repeat-null-cannot-bound-randomized-state)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5849,13 +5854,32 @@ The relative CSS reductions survived, but the absolute metrics, comparison
 commit, workflow inventory, and browser obligations changed. Evidence against
 the old merge base no longer described the PR GitHub would actually merge.
 
+PR #98 reproduced the same failure in executable metadata. After merging the
+current `main`, all 209 real-Worker Chromium tests passed, but the local
+pre-push contract still expected 19 skips while CI correctly expected 23. The
+duplicated counts had no consistency check, so the hook rejected a completely
+green lane only after spending 3.6 minutes running it. The E2E inventory
+validator now compares the local Chromium/WebKit disposition contracts with
+CI, and pre-push runs that check before launching either browser suite.
+
+The next rebase exposed a higher-order gap: upstream added three
+homepage-remix tests. CI and pre-push still agreed with each other, but both
+accounted for 232 Chromium results while Playwright now collected 235 (and 216
+versus 219 in WebKit). The validator now also lists each exact Playwright
+project under the gate's functional-only environment and requires the expected
+plus skipped counts to equal the collected total.
+
 ### The rule
 
 Rebase immediately before final visual approval and regenerate metrics,
 screenshots, changed-pixel masks, accessibility/behavior contracts, and any
 device evidence against that exact base/head pair. A later base movement
 invalidates approval until affected evidence is refreshed. Stacked PRs reduce
-review size; they do not make inherited evidence permanent.
+review size; they do not make inherited evidence permanent. When local and CI
+gates repeat an exact inventory, mechanically cross-check the copies before the
+expensive lane starts; a prose promise that they match is not a contract.
+Agreement between copies proves consistency, not correctness: bind repeated
+counts to the authoritative collector as well.
 
 ---
 
@@ -5963,14 +5987,26 @@ The subject was innocent all four times. Anti-pattern #14 (asserting
 through fault-masking layers) is usually written about production code; the
 test rig earns the same suspicion.
 
+PR #98 added a fifth form after merging the current base. On Linux, every one
+of 4,735 unit assertions passed, then Vitest 4 failed teardown because ten
+`onUserConsoleLog` RPCs from the long native-audio range render were still
+pending. The per-instrument messages duplicated a JSON receipt the test had
+already written. Removing that redundant worker console stream made the
+durable receipt the evidence and removed an asynchronous teardown dependency
+from the gate. The same run warned that Vitest 4 had removed the repository's
+`poolOptions` block; because its min/max values were `undefined`, deleting the
+dead configuration preserved behavior and restored a warning-free lane.
+
 ### The rule
 
 Before attributing a failure to the subject, rule out the harness: make
 reporters distinguish timeout from assertion, drain setup traffic before
 absence checks, keep sabotage and observation in separate working trees,
 and construct test states only through paths the production reducer could
-take. Green runs carry the mirror risk — a lane that can quietly do less
-work than it claims (Lesson 69).
+take. Long worker tests should write evidence to a receipt, not depend on
+console transport completing during environment teardown. Green runs carry
+the mirror risk — a lane that can quietly do less work than it claims
+(Lesson 69).
 
 ---
 
@@ -6163,7 +6199,7 @@ bundled module order reproduced the original failure.
 
 The audit also found that CI's reviewed Chromium and WebKit skip inventories
 had been refreshed without updating the equivalent pre-push assertions. The
-local contracts now use the same 209/24 and 162/57 pass/skip dispositions, so a
+local contracts now use the same 209/28 and 162/58 pass/skip dispositions, so a
 successful full browser run is accepted consistently in both places.
 
 The implementation also made the cost visible. Nominal units remain primitive
@@ -6188,3 +6224,441 @@ anchor before zero even though a scheduled event may never occur there.
 When the same test disposition contract exists in CI and local hooks, update
 both from one reviewed result set; a green suite must not fail only because one
 copy of its expected inventory drifted.
+
+---
+
+## Lesson 74: An Objective Comparison Needs a Shared Observable, Not a Shared Vibe
+
+**Date:** September 2026
+**Context:** Phase 44 / Tone Nets comparison ([#98](https://github.com/adewale/keyboardia/pull/98))
+
+### What we misunderstood
+
+The first Tone Nets analysis mixed three different things: measurable
+architecture, inferred acoustic consequences, and preference language. Counts
+such as “99% of zones have reverb send” and “100% of samples loop” were real;
+“wins”, “better”, and “sounds cohesive because” were conclusions the counts did
+not prove. We also treated Tone Nets' universal loops as a feature to copy
+before asking whether Keyboardia had the short-sample problem those loops solve.
+
+The same category error appeared inside Keyboardia. A sampled-first-use fixture
+was allowed to stand near prose about startup generally even though it did not
+execute cold Tone instruments, cold advanced instruments, or whole-engine
+construction. The implementation record eventually acknowledged those domains
+as open, but status text still outran the tested matrix.
+
+### Why the audit found it and the earlier work did not
+
+Our earlier tools were strongest at code-local invariants: graph edges, manifest
+mappings, transfer functions, and one production capture fixture. They had no
+cross-product master-bus clock and no explicit inventory of startup domains.
+That left room for a persuasive static reading to become a comparative verdict,
+and for one green fixture to be remembered as broader evidence than it was.
+
+The audit forced two questions the implementation work had not:
+
+1. What exact observable can both products expose without asking a listener?
+2. Which product paths have never executed under that observable?
+
+The answer was first user action to first master-bus PCM, repeated in fresh
+browser contexts. Once the domain was enumerated, the missing Tone, advanced,
+and whole-engine runs were obvious.
+
+The first implementation of that answer still had a shared-observer flaw. A
+`ScriptProcessorNode` reports on the main thread, so a long task can delay the
+callback until the input buffer containing the true onset has already been
+replaced. Mapping the late callback through `getOutputTimestamp()` cannot
+reconstruct a frame the observer never retained. The wrapper around
+`AudioNode.connect` also rebuilt optional arguments, changing the legal call
+`connect(destination, undefined, 1)` into output index 1. Finally, the frozen
+Tone Nets receipt covered the visible bundles and SoundFont but omitted its
+stylesheet, parser worker, synth worklet, runtime, rendering bundle, and
+background media.
+These were measurement-instrument failures, not product-performance results,
+and the second audit found them only because it attacked the oracle and receipt
+instead of accepting their outputs.
+
+The required CI lane then found one more category error. The sampled-first-use
+test treated a five-hit heard-output RMS spread as a warm-up verdict. Its failure
+was real, but the verdict was wrong. A retained zero-lead negative control failed
+at the pre-compressor source tap in 2/12 fresh contexts. In the selected exact
+first-256-frame window, frames 0–142 differed and frames 143–255 matched; the
+failed attack fit a 16-frame ramp instead of the intended 144-frame ramp, exactly
+one 128-frame render quantum lost. The first event's 3 ms de-click ramp had been
+scheduled at `currentTime` and could reach the audio thread partly in the past.
+This was a scheduling transient, not sample loading, voice initialization, or
+random gain. The pre-rebase repair added lead inside the sampled renderer. The
+later audio-time architecture made that renderer-local repair invalid because
+the central dispatcher had become the sole timestamp authority. Rebased
+calibration showed that 12 ms of central lead still left the first peak 1.35 dB
+low and 20 ms left 0.177 dB RMS spread. The shared policy now reserves 40 ms
+only for events inside the render deadline; events already farther ahead keep
+their absolute timestamp, and no renderer adds its own lead. Five fresh runs
+measured identical first/steady peaks, 0.027–0.032 dB source RMS spread, and
+79.4–84.7 ms action-to-audible. The test gates the causal source tap, retains
+the stateful master result as a diagnostic, and makes the latency cost explicit.
+
+### What tooling and verification were missing
+
+- An audio-thread first-PCM tap attached before application code constructs the
+  graph. The worklet retains the absolute render frame and only then maps it to
+  the page clock; a calibration schedules audio at 0.1 s, blocks the main thread
+  for more than 700 ms, and requires the original frame to survive. Readiness
+  must be proven against a known pre-emission application boundary, not inferred
+  from observed silence: Keyboardia holds its awaited scheduler-release boundary
+  until the tap is ready, and Tone Nets records readiness before its first
+  source-to-master connection. A 250 ms-late pulsed control misses the first
+  pulse, retains thousands of silent frames, and reports the second pulse 400 ms
+  late. That counterexample stays in the suite so a silent-prefix heuristic
+  cannot return unnoticed.
+- Instrumentation-transparency controls for every intercepted API overload,
+  including explicit `undefined` and `AudioParam` destinations.
+- A matrix that names every claimed cold-start domain instead of generalizing
+  from the easiest sampled-instrument fixture.
+- Frozen external inputs. The Tone Nets runner now verifies all ten executed
+  HTML, CSS, JavaScript/worker, SoundFont, and background-media assets before
+  collecting a number.
+- Repeated trials with raw observations, min/median/p95, environment, and
+  workload boundaries. At five trials p95 is the observed maximum, a descriptive
+  tail check rather than a population estimate; a single run is not a
+  comparison and five runs do not establish device-general performance.
+- A claim taxonomy separating internal metric movement, objective
+  cross-product difference, and listener preference.
+- Topology-based feasibility review. A per-instrument reverb scalar sounds like
+  metadata work until the graph reveals that every track has already mixed
+  before the only room send.
+- Failure observability for proposed adaptive quality. Late-note and long-task
+  counters exist; output underruns/dropouts and voice steals do not, so an
+  automatic tier currently cannot prove it helped rather than merely silenced
+  work.
+- Tap-specific causal assertions for audio hypotheses. A heard-output failure
+  can originate in source scheduling, master dynamics, or the recorder. The
+  fixture now retains both pre-compressor and final-output measurements, writes
+  the receipt before asserting, includes the exact first 256 causal source
+  frames, and its stress check spans fresh contexts so a render-quantum race
+  cannot hide behind one green run. The checked-in negative/guarded receipt
+  prevents a later green singleton from replacing the experimental record.
+- A mechanically checked requirement ledger. Each acceptance claim needs the
+  production path, fixture, precondition, measurement window, observable,
+  negative control, environment, and remaining limitation beside it. Test names
+  and prose headings are navigation; they are not evidence that those fields
+  match.
+- Cheap consistency checks before expensive lanes. Local pre-push and CI had
+  copied the same Chromium/WebKit pass/skip inventories, then drifted apart.
+  `validate:e2e-inventories` now compares those executable contracts before a
+  browser is launched (Lesson 65).
+- Exact CI-runtime replay for long worker tests, including clean process exit.
+  Passing all assertions was insufficient when Vitest 4 still had pending
+  console RPCs during teardown. Durable JSON receipts now carry the evidence;
+  best-effort worker console output no longer sits on the critical path
+  (Lesson 68).
+
+### Where the completion boundary was wrong
+
+We treated “the audited defects are fixed” as the end of the work. It was only
+the end of the first loop. Merging the current `main` changed the executable
+candidate and revealed that local pre-push expected 209 Chromium passes and 19
+skips while CI expected 209 and 23. The browser lane did all of its intended
+work, but the stale local copy rejected it only after the expensive run. Once
+the contracts were unified and checked up front, the exact Linux/Node 24 CI
+environment exposed a second problem: all 4,735 unit assertions passed, but the
+test process failed because ten worker-to-parent console messages were still in
+flight during teardown.
+
+Neither was a Phase 44 sound defect, but both invalidated “ready to merge.” The
+mistake was to define completion at the feature boundary instead of at the
+repository boundary. A change is complete only when the exact merge candidate
+executes the claimed work, preserves its evidence, exits cleanly in the required
+environments, and leaves local and CI gates enforcing the same contract.
+
+This also explains why the audit found problems the implementation pass did
+not. The implementation pass followed the feature narrative and asked whether
+the new code and named tests agreed. The audit changed the question: can an
+independent observer falsify the claim by attacking the domain inventory, the
+measurement instrument, the negative control, the merge base, or the test
+process itself? That adversarial review was not extra polish; it supplied the
+independent model that the implementation and its tests lacked.
+
+### The sustain-loop correction
+
+Tone Nets' mean sample fragment is 158 ms, so its 100% loop rate is necessary.
+Keyboardia's eight sustaining instrument libraries have native-root medians of
+3.90–9.70 seconds. Generic loop insertion would add click, phase, periodicity,
+and data-curation risks without a measured failure. Sustain loops were therefore
+**deliberately demoted, not forgotten**. The correct deliverable was the narrower
+user contract: `validate:sustain-ceiling` fails if the median native-root usable
+duration of a classified sustaining instrument drops below two seconds. That
+guards the capacity loops were meant to protect using Keyboardia's actual
+manifest-driven library, without claiming every transposed note or extreme tie.
+Add instrument-specific loops only when a requested-note render or real session
+demonstrates the need.
+
+### The rule
+
+**Before comparing products, write the observable, workload, domain, and claim
+level in one sentence.** If the products use different source material, do not
+turn spectral difference into quality. If a result covers one path, name that
+path in the result. If a competitor's mechanism solves a problem your measured
+data does not contain, guard the desired outcome instead of copying the
+mechanism.
+
+For performance comparisons, keep the external subject hash-pinned, retain all
+executed dependencies and all trials, report the environment and asymmetry,
+prove the observer under scheduler/main-thread stress, and make every
+unmeasured domain visible in the same ledger as the passes. Re-run that ledger
+against the exact merge candidate and required CI runtime. A green assertion
+count is necessary but not sufficient: the lane must execute the promised
+inventory, preserve its evidence, and exit cleanly.
+
+---
+
+## Lesson 75: A Shared Fixture Is Not a Paired Audio Experiment
+
+**Date:** September 2026
+**Context:** Phase 44 capacity/headroom gate after rebasing PR
+[#98](https://github.com/adewale/keyboardia/pull/98)
+
+### What happened
+
+The 16-track capacity test appeared controlled because both observations used
+the same session fixture. It nevertheless captured its dry and wet windows at
+different times while 16 live schedulers continued to render. The input samples
+were not paired. Source phase, sample position, and render-quantum placement
+varied between observations, so the computed difference included uncontrolled
+input variation as well as the room-state change.
+
+That design happened to remain within its 0.1 dB pumping budget during the
+earlier 48 kHz macOS work. Repetition later produced +0.103 dB locally, and the
+required 44.1 kHz Linux lane reported +1.373 dB. The Linux run also measured
++0.152 dBFS/+0.152 dBTP at the user output. The −1.75 dB output trim had enough
+margin for the observed Mac runs, not for the supported runtime matrix.
+
+The test did not run in the old pre-push real-Worker lane because its PCM taps
+are intentionally available only in the development build. CI owned the mock
+build that exposes those taps, so this required evidence was effectively
+CI-only even though the broader local browser suite was green.
+
+### The fix
+
+The capacity test now captures one real 16-track pre-compressor programme,
+stops the live scheduler, and replays those exact samples twice through the
+production master path—once dry and once wet. The room is downstream of the
+compressor, so a valid paired experiment should report no change in compressor
+gain reduction; three repeated 48 kHz runs measured exactly 0.000 dB. The
+production output trim is now −2.25 dB, with the repeated local true peaks below
+−0.76 dBTP. The required Linux lane remains the authority for the 44.1 kHz
+platform result.
+
+Pre-push now runs all six `capture-session.spec.ts` tests against the mock/Vite
+build and asserts the exact six-pass inventory. The inventory validator binds
+that declared count to Playwright's authoritative collector before the costly
+browser gates begin.
+
+### The rule
+
+**Changing one label is not the same as changing one variable.** A comparative
+audio test must replay the same captured input, use a deterministic source, or
+measure and pass a repeat-null that bounds input variation. Calibrate safety
+headroom across every supported sample-rate/platform lane, and never let a
+required evidence path exist only in remote CI because another local suite has
+a similar name.
+
+---
+
+## Lesson 76: An Audio Route Does Not Guarantee Background Scheduling
+
+**Date:** September 2026
+**Context:** Phase 44 physical-iPhone acceptance for PR
+[#98](https://github.com/adewale/keyboardia/pull/98)
+
+### What happened
+
+The Phase 44 media-element terminal solved the contract it was built for. In a
+2026-09-15 physical-iPhone test, the staged build remained audible with the
+ringer switch off across the iOS browsers tested. The same session exposed a
+different behavior: once a browser was backgrounded, it did not play every
+sequencer beat. macOS Safari exhibits the same product-level symptom, now
+tracked with the iOS case in
+[#115](https://github.com/adewale/keyboardia/issues/115).
+
+We had grouped several mobile-audio questions under one informal phrase—“works
+on iPhone”—even though they have different mechanisms and evidence:
+
+1. Can a user gesture unlock audio?
+2. Is the final output route audible in Silent Mode?
+3. Can playback recover after interruption or returning to the foreground?
+4. Does the sequencer deliver every beat while the page remains backgrounded?
+5. What latency does the physical output route add?
+
+The implementation and automated tests cover the first three at their stated
+boundaries. The physical report closes the second. It does not close the
+fourth or fifth. Sending audio through a media element changes the output
+category; it does not prove that a backgrounded web page continues to schedule
+notes at foreground cadence.
+
+### Why we did not catch the distinction earlier
+
+CI has no physical ringer switch and does not reproduce the lifecycle of a
+real backgrounded iPhone browser. More importantly, the original acceptance
+row combined “ringer-off audition” and “latency capture,” while background
+continuity appeared only as an architectural observation about Tone Nets. That
+made the manual test carry more implied scope than its observable could prove.
+
+The device model, iOS/browser versions, and objective output latency were not
+recorded in the 2026-09-15 report. The audibility result is useful, but its
+generalization is therefore limited and must stay labelled user-reported.
+
+### The rule
+
+**Specify mobile audio as separate route, lifecycle, cadence, and latency
+contracts.** A passing Silent Mode test says the route is audible. A successful
+resume says foreground recovery works. Neither says a backgrounded sequencer
+will deliver every beat. If continuous background playback becomes a product
+requirement, give it its own platform investigation, measurement, and release
+gate rather than expanding the meaning of the unlock test after the fact.
+
+---
+
+## Lesson 77: Rebase Behavior, Not Competing Authorities
+
+**Date:** September 2026
+
+**Context:** Rebasing Phase 44 / PR
+[#98](https://github.com/adewale/keyboardia/pull/98) after the audio timing and
+graph-ownership stack landed
+
+### What happened
+
+PR #98 and the new audio architecture had solved some of the same incidents at
+different layers. The old branch contained its own clock-liveness helper, a
+sampled-renderer lead calculation, direct assumptions about the mobile output
+route, and startup probes that wrapped Tone and preload internals. `main` now
+owned those concerns through `AudioEngine`, `AudioRuntimeReadiness`,
+`note-dispatcher`, and `AudioGraphOwner`.
+
+A conflict-free or type-correct rebase could therefore still be wrong. Keeping
+both implementations would create two policies; choosing `main` wholesale
+would silently drop Phase 44's evidence. The first mechanical rebase did both
+in different places: it left a dead duplicate clock helper and retained a
+renderer-local timestamp shift, while conflict resolution discarded the cold
+startup, sampled-first-use, room, and Media Session lifecycle regressions.
+It also exposed a provenance test that treated a historical mapping receipt as
+the current manifest owner, even though main had since introduced explicit
+remediation receipts, and a stale acoustic-guitar calibration table whose
+21.1–35.4% range contradicted the claimed 26–35% per-note contract.
+
+### What we misunderstood
+
+We treated the rebase as a file-integration problem. It was an authority-
+integration problem. The right unit was not “which version of this file wins?”
+but “which component is now allowed to decide time, readiness, routing, and
+lifecycle, and which behavior/evidence must be re-expressed through it?”
+
+We also assumed that moving the old 10.6875 ms sampled lead into the central
+policy would preserve its result. The browser falsified that assumption. On the
+rebased pipeline 12 ms still lost 1.35 dB of the first peak, and 20 ms still
+left 0.177 dB RMS spread. Only a repeated PCM measurement could calibrate the
+new end-to-end handoff rather than cargo-culting the old constant.
+
+### What tooling and verification were missing
+
+- An ownership ledger for cross-cutting concerns before resolving conflicts.
+  Every concern needs one named authority and zero fallback owners.
+- A post-rebase semantic diff against those invariants, not just a textual diff
+  or successful TypeScript build.
+- Dead-runtime-export validation. It immediately exposed the orphaned
+  `clock-liveness.ts` implementation.
+- Browser evidence that crosses the new boundary. The cold probe now arms at
+  `AudioRuntimeReadiness`; first-use timing is asserted after the central
+  dispatcher; mobile output is tested behind the graph owner.
+- Exact E2E inventory binding. The rebase temporarily claimed a six-test PCM
+  gate while collecting fewer tests and carried stale Chromium/WebKit skip
+  totals. Its first repair was still incomplete: the validator checked the
+  full-stack and local PCM contracts but not CI's mock-compatible, offline-
+  complement, or Worker-required result contracts. Restoring three PCM tests
+  therefore produced 90 real passes while the workflow still demanded 87;
+  every test passed, then the stale accounting assertion failed after 22
+  minutes. `validate:e2e-inventories` now collects each of those three CI spec
+  sets under its actual environment and rejects any pass-plus-skip mismatch
+  before browsers run.
+- A transition test for stopped → playing readiness. It exposed redundant
+  `useTrackPrewarm` work that immediately drove `ready → preparing` again after
+  the play-start gate had already prepared the same snapshot.
+- Provenance-chain assertions. A historical calibration hash must either match
+  the current manifest or link exactly to a later remediation receipt whose
+  output does; comparing every old receipt directly to the latest file rejects
+  legitimate, recorded evolution.
+- Mandatory execution of the expensive acoustic validator before declaring a
+  rebase complete. Targeted unit tests proved the filter graph shape but did
+  not render every calibrated note at both supported sample rates.
+
+### The fix
+
+The duplicate clock helper was deleted; engine recovery remains authoritative.
+The mobile terminal remains owned by `AudioGraphOwner`. Startup measurement
+wraps `prepareForPlayback`, not Tone/preload internals. Media Session lifecycle
+tests were rebuilt around the readiness-gated transport. The sampled-only time
+shift was removed, and the shared dispatcher now applies a measured 40 ms lead
+only to near-deadline events for every renderer. Five fresh sampled runs held
+peak spread to 0 dB and RMS spread to 0.027–0.032 dB. Five fresh contexts per
+cold path measured 261.2/261.5/307.0 ms medians for native, Tone, and advanced
+startup. The six-test PCM suite, room migration, capacity, and exact inventory
+gate all pass on the rebased candidate.
+The sample-pipeline contract now follows mapping calibration through any later
+remediation receipt to the current manifest, and the stale acoustic-guitar
+mapping hash was refreshed after its filter anchor moved out of the manifest.
+The checked-in acoustic-guitar anchor tables were regenerated with the
+production solver; all 281 note/rate combinations now span 29.4–30.7% and the
+26–35% repository gate passes.
+
+### The rule
+
+**Rebase behavior onto the new owner; never rebase an old owner beside it.**
+Before resolving overlapping files, name the sole authority for each invariant,
+list the behaviors and evidence that must survive, and require a negative or
+browser-level test at the new boundary. A compiler proves shapes. It does not
+prove that one clock, graph, readiness machine, or lifecycle command remains in
+charge.
+
+---
+
+## Lesson 78: A Repeat Null Cannot Bound Randomized State
+
+**Date:** September 2026
+
+**Context:** Phase 44 room verification after rebasing PR
+[#98](https://github.com/adewale/keyboardia/pull/98)
+
+### What happened
+
+The room test compared an explicit-dry render with a second dry render, then
+allowed the wet render's peak to rise by only that repeat difference plus 0.01
+dB. Three early runs happened to fit, so the contract was documented as if the
+dry repeat bounded the experiment.
+
+It did not. Tone's convolution reverb generates its impulse response from two
+fresh noise sources whenever a new audio graph is created. The dry repeat
+measured capture and graph variance; it said nothing about constructive phase
+between the dry signal and a newly randomized wet response. A later pre-push
+run failed at +0.0221 dB, and a 20-context calibration failed the old oracle in
+4 of 20 contexts even though all other room, loudness, pumping, and absolute
+headroom bounds passed.
+
+### The fix
+
+The test now gates the product requirement directly: wet true peak may rise by
+at most 0.05 dB over dry, which is less than 0.6% amplitude. Across 46 fresh
+contexts, the observed range was −0.0274 to +0.0221 dB, so the ceiling retains
+more than 2× margin over the largest increase without pretending the random
+effect is bit-stable. The dry repeat remains useful for the legacy-versus-dry
+comparison, where both paths really do share the same effect state. The paired
+16-track replay separately proves zero added compressor pumping and enforces an
+absolute heard-output ceiling of 0 dBTP.
+
+### The rule
+
+**A control run only bounds variables it actually shares with the subject.**
+Inventory random seeds, generated impulse responses, round-robin selection,
+and other per-instance state before calling a comparison paired. Either make
+that state deterministic or calibrate it across fresh instances and gate the
+real safety limit with explicit margin.

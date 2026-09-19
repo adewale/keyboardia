@@ -31,6 +31,8 @@ import {
   type ChokeableVoice,
 } from './choke-groups';
 import { DEFAULT_MIDI_VELOCITY } from './velocity';
+import { velocitySampleCutoff, VELOCITY_FILTER_Q } from './velocity-sample-filter';
+import { velocityFilterAnchorHz } from './velocity-filter-calibration';
 import { isDrumInstrument } from '../shared/instrument-classification';
 import {
   compensatedSampleStartOffset,
@@ -294,15 +296,28 @@ export class SampledInstrument {
   private baseUrl: string;
   private instrumentId: string;  // For cache key generation
   private chokeRegistry: ChokeGroupRegistry;
+  private velocityAnchorForNote: (
+    instrumentId: string,
+    midiNote: number,
+    sampleRate: number,
+  ) => number | undefined;
 
   constructor(
     instrumentId: string,
     baseUrl: string = '/instruments',
-    deps: { chokeRegistry?: ChokeGroupRegistry } = {}
+    deps: {
+      chokeRegistry?: ChokeGroupRegistry;
+      velocityAnchorForNote?: (
+        instrumentId: string,
+        midiNote: number,
+        sampleRate: number,
+      ) => number | undefined;
+    } = {}
   ) {
     this.instrumentId = instrumentId;
     this.baseUrl = `${baseUrl}/${instrumentId}`;
     this.chokeRegistry = deps.chokeRegistry ?? sampledInstrumentChokeRegistry;
+    this.velocityAnchorForNote = deps.velocityAnchorForNote ?? velocityFilterAnchorHz;
   }
 
   /**
@@ -722,6 +737,44 @@ export class SampledInstrument {
       this.manifest.gainDb ?? 0,
     ));
 
+    // Phase 44 Change 2: one lowpass per voice, shared by every layer-blend
+    // component, only when the sample-rate-specific calibration table has an
+    // anchor for this requested note AND velocity is below the bypass
+    // threshold. Bypass creates no node at all so the default-velocity graph
+    // stays byte-identical.
+    const selectedSourceNote = sampleInfos[0]?.sample.note ?? adjustedMidiNote;
+    const manifestNotes = this.manifest.samples
+      .filter(mapping => (mapping.articulation ?? 'default') === articulation)
+      .map(mapping => mapping.note);
+    const expectedSourceNote = nearestSampleNote(
+      manifestNotes.length > 0 ? manifestNotes : this.manifest.samples.map(mapping => mapping.note),
+      adjustedMidiNote,
+    );
+    // The exhaustive per-requested-note table is valid only when progressive
+    // loading selected the same root as the complete manifest. If the calibrated
+    // root is not loaded yet, bypass instead of applying another sample's
+    // transfer calibration. Background completion restores the normal path.
+    const calibrationNote = selectedSourceNote === expectedSourceNote
+      ? adjustedMidiNote
+      : undefined;
+    const velocityCutoffHz = velocitySampleCutoff(
+      calibrationNote === undefined
+        ? undefined
+        : this.velocityAnchorForNote(this.instrumentId, calibrationNote, this.audioContext.sampleRate),
+      velocity,
+      adjustedMidiNote,
+      adjustedMidiNote,
+    );
+    let velocityFilter: BiquadFilterNode | null = null;
+    if (velocityCutoffHz !== null) {
+      velocityFilter = this.audioContext.createBiquadFilter();
+      velocityFilter.type = 'lowpass';
+      velocityFilter.frequency.value = velocityCutoffHz;
+      velocityFilter.Q.value = VELOCITY_FILTER_Q;
+      velocityFilter.connect(dest);
+    }
+    const voiceDestination = velocityFilter ?? dest;
+
     for (const sampleInfo of sampleInfos) {
       const source = this.audioContext.createBufferSource();
       source.buffer = sampleInfo.sample.buffer;
@@ -738,7 +791,7 @@ export class SampledInstrument {
         * dbToGain(sampleInfo.sample.gainDb)
         * sampleInfo.weight;
       source.connect(gainNode);
-      gainNode.connect(dest);
+      gainNode.connect(voiceDestination);
       gainNode.gain.setValueAtTime(0, schedule.startTime);
       gainNode.gain.linearRampToValueAtTime(effectiveVolume, schedule.attackEnd);
 
@@ -794,8 +847,11 @@ export class SampledInstrument {
         source.disconnect();
         gains[index].disconnect();
         ended++;
-        if (ended === sources.length && chokeGroup !== undefined && voice) {
-          this.chokeRegistry.remove(chokeGroup, voice);
+        if (ended === sources.length) {
+          velocityFilter?.disconnect();
+          if (chokeGroup !== undefined && voice) {
+            this.chokeRegistry.remove(chokeGroup, voice);
+          }
         }
       };
     });

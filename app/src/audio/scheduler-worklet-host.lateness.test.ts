@@ -34,6 +34,7 @@ import { audioEngine } from './engine';
 import { audioMetrics } from './metrics/audio-metrics';
 import type { GridState } from '../types';
 import { resolveNoteDynamics } from './note-dynamics';
+import { LATE_NOTE_CONTROL_LEAD } from './lateness-policy';
 
 function makeState(): GridState {
   return {
@@ -110,7 +111,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
     const call = vi.mocked(audioEngine.playSample).mock.calls[0];
     expect(call?.[0]).toBe('sample:kick');
     expect(call?.[1]).toBe('t1');
-    expect(call?.[2]).toBeCloseTo(10.201, 10);
+    expect(call?.[2]).toBeCloseTo(10.2 + LATE_NOTE_CONTROL_LEAD, 10);
     expect(call?.slice(3)).toEqual([0.1, 0, 1, 90, 'n1-loop-0']);
   });
 

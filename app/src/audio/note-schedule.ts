@@ -55,7 +55,9 @@ export interface NoteSchedule {
 }
 
 export function computeNoteSchedule(input: NoteScheduleInput): NoteSchedule {
-  // Web Audio refuses to start sources in the past; clamp late notes to now.
+  // Web Audio refuses to start sources in the past. Normally the central
+  // dispatcher has already resolved lateness and supplied a future timestamp;
+  // this clamp remains only for preview and legacy direct-call compatibility.
   const startTime = Math.max(input.eventTime, input.currentTime);
   const attackEnd = startTime + ATTACK_FADE_SEC;
 

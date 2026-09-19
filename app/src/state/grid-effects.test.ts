@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { GridState, EffectsState, GridAction } from '../types';
 import { DEFAULT_TEMPO, DEFAULT_SWING } from '../types';
+import { NEW_SESSION_EFFECTS_STATE } from '../shared/effects-defaults';
 
 /**
  * Verification Tests for Grid Reducer Effects Integration
@@ -32,7 +33,7 @@ function testReducer(state: GridState, action: GridAction): GridState {
         tracks: [],
         tempo: DEFAULT_TEMPO,
         swing: DEFAULT_SWING,
-        effects: DEFAULT_EFFECTS_STATE,
+        effects: NEW_SESSION_EFFECTS_STATE,
         isPlaying: false,
         currentStep: -1,
       };
@@ -133,7 +134,7 @@ describe('Section 9.5.1: Effects State Surface', () => {
   });
 
   describe('RESET_STATE action', () => {
-    it('resets effects to defaults', () => {
+    it('resets effects to the new-session room', () => {
       const state: GridState = {
         ...createInitialState(),
         effects: {
@@ -146,7 +147,7 @@ describe('Section 9.5.1: Effects State Surface', () => {
 
       const newState = testReducer(state, { type: 'RESET_STATE' });
 
-      expect(newState.effects).toEqual(DEFAULT_EFFECTS_STATE);
+      expect(newState.effects).toEqual(NEW_SESSION_EFFECTS_STATE);
     });
   });
 

@@ -430,6 +430,22 @@ export function useSession(
         swing: 0,
         version: 1,
       });
+      const gridState = sessionToGridState(session);
+      if (gridState.tracks && gridState.tempo !== undefined && gridState.swing !== undefined) {
+        const loaded: LoadedSessionState = {
+          tracks: gridState.tracks,
+          tempo: gridState.tempo,
+          swing: gridState.swing,
+          effects: gridState.effects,
+          scale: gridState.scale,
+          loopRegion: gridState.loopRegion ?? null,
+        };
+        expectedStateHashRef.current = JSON.stringify(loaded);
+        loadingStateRef.current = 'applying';
+        loadState(loaded);
+      } else {
+        loadingStateRef.current = 'ready';
+      }
       updateUrlWithSession(session.id);
       setSessionName(null);  // Reset session name to empty (fix: was missing)
       setRemixedFrom(null);
@@ -442,7 +458,7 @@ export function useSession(
       logger.session.error('Failed to create session:', error);
       setStatus('error');
     }
-  }, [persistBeforeTransition, resetState]);
+  }, [loadState, persistBeforeTransition, resetState]);
 
   // Flush captured writes on teardown. The write retains its original session
   // ID, so cleanup can never target a later session.

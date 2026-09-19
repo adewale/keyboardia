@@ -1,6 +1,7 @@
 # Audio timing architecture
 
-**Status:** implementation complete on the `codex/audio-time-*` stacked branches; awaiting review and merge.
+**Status:** implemented on `main` through PR #114. PR #98 was rebased onto
+these authorities on 2026-09-19; its integration notes are below.
 
 This specification turns the timing and lifecycle recommendations from the
 Tone.js reference analysis into Keyboardia invariants. The analysis is design
@@ -77,9 +78,10 @@ The implementation audit found and completed these logically coupled tasks:
   execution did not expose.
 - Corrected the Tone capture tap to the owned output trim instead of the global
   Tone destination.
-- Adapted PR #98's mobile media-element output behind the common terminal. Its
-  unrelated velocity, default-reverb, MediaSession, and evidence changes were
-  deliberately not cherry-picked.
+- Adapted PR #98's mobile media-element output behind the common terminal. At
+  the time, its unrelated velocity, default-reverb, Media Session, and evidence
+  changes were deliberately not cherry-picked; the later PR #98 rebase carries
+  those behaviors without restoring its obsolete graph/readiness owners.
 - Adapted PR #87's resolved-event idea without importing its broad envelope,
   persistence, UI, sample, or evidence changes. PR #102's generated-instrument
   sound work is independent and supplied no timing code needed by this stack.
@@ -158,9 +160,11 @@ heap receipt.
 - **PR #87:** only the resolved-event architectural idea is incorporated.
   Envelope-v2 product work remains separate and must rebase onto the final
   timing stack rather than overwrite its engine/scheduler changes.
-- **PR #98:** the mobile media-element adapter is incorporated behind the new
-  graph owner. The remainder must be split or rebased; merging the old engine
-  wholesale would restore competing graph/readiness policy.
+- **PR #98:** the mobile media-element adapter is incorporated behind the graph
+  owner. The remaining Phase 44 work has now been rebased: duplicate clock
+  liveness and renderer-local timestamp policy were removed, while velocity,
+  room, Media Session, sustain, and objective-evidence work was adapted to the
+  common authorities.
 - **PR #102:** generated-instrument quality work remains separate. Because it
   changes `engine.ts`, `toneSynths.ts`, and audio evidence, it must rebase and
   rerun timing plus sound-quality gates if continued.
@@ -174,6 +178,26 @@ heap receipt.
   remain separate work; this stack does not close the issue.
 - **Other open PRs (#58, #61, #84, #85):** no production-audio overlap was
   found; their merge behavior is unchanged by this stack.
+
+## PR #98 rebase addendum (2026-09-19)
+
+The rebase preserved the architecture's ownership rules:
+
+- `AudioGraphOwner` is the only output-terminal owner.
+- `AudioEngine.resumeAllAudioContexts` is the only clock-liveness owner.
+- `AudioRuntimeReadiness.prepareForPlayback` is the preparation boundary.
+- `note-dispatcher.ts` is the only authority allowed to change a note time.
+
+The sampled-first-use regression showed that “not late” is weaker than “safe
+for the render-thread handoff.” `resolveDispatchTime` therefore preserves an
+event only when it is at least 40 ms ahead; near-deadline and tolerably late
+events are clamped once at the shared dispatcher. This changes no renderer
+contract: every renderer still receives and preserves one authoritative
+`AudioTime`. Five fresh sampled runs measured identical first/steady peaks and
+0.027–0.032 dB source RMS spread. The cold startup probe now arms at the
+readiness boundary rather than wrapping Tone or preload internals. Full numbers
+and commands are in
+[`PHASE-44-REBASE-RECEIPT-2026-09-19.md`](./research/PHASE-44-REBASE-RECEIPT-2026-09-19.md).
 
 ## Completion criteria
 

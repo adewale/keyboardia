@@ -31,6 +31,7 @@ import {
   isBassInstrument,
   isKickInstrument,
   shouldKeepInstrumentCentered,
+  SUSTAINING_INSTRUMENT_IDS,
 } from './instrument-classification';
 import { INSTRUMENT_CATEGORIES } from '../components/sample-constants';
 
@@ -194,5 +195,24 @@ describe('mix-role classification', () => {
     expect(isBassInstrument('advanced:sub-bass')).toBe(true);
     expect(shouldKeepInstrumentCentered('sampled:finger-bass')).toBe(true);
     expect(shouldKeepInstrumentCentered('sampled:acoustic-snare')).toBe(false);
+  });
+});
+
+describe('SUSTAINING_INSTRUMENT_IDS (Phase 44 §4)', () => {
+  it('classifies exactly the eight held-note instruments and keeps plucked ones out', () => {
+    for (const id of [
+      'sampled:piano', 'sampled:string-section', 'sampled:french-horn',
+      'sampled:alto-sax', 'sampled:hammond-organ', 'sampled:vibraphone',
+      'sampled:clean-guitar', 'sampled:finger-bass',
+    ]) {
+      expect(SUSTAINING_INSTRUMENT_IDS.has(id), id).toBe(true);
+    }
+    expect(SUSTAINING_INSTRUMENT_IDS.size).toBe(8);
+    // Plucked: decaying to silence is correct, not a defect.
+    expect(SUSTAINING_INSTRUMENT_IDS.has('sampled:acoustic-guitar')).toBe(false);
+    expect(SUSTAINING_INSTRUMENT_IDS.has('sampled:slap-bass')).toBe(false);
+    // Drums and synths are not sample-length-bound in the same way.
+    expect(SUSTAINING_INSTRUMENT_IDS.has('sampled:acoustic-kick')).toBe(false);
+    expect(SUSTAINING_INSTRUMENT_IDS.has('synth:pad')).toBe(false);
   });
 });

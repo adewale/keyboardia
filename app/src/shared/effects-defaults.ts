@@ -13,6 +13,25 @@ export const DEFAULT_EFFECTS_STATE: EffectsState = {
 };
 
 /**
+ * Effects a session is born with (Phase 44 Change 3): a small bass-protected
+ * room (the send is high-passed with a short predelay — see toneEffects.ts).
+ * 0.15 is the value specs/SOUND-QUALITY-PARITY-PLAN.md:508 specified.
+ *
+ * Only the `new-session` policy below reads this. DEFAULT_EFFECTS_STATE above
+ * stays the dry baseline the UI and audio chain initialize from before a
+ * session loads, so pre-load rendering and the Stack A identity catalogue are
+ * unchanged; legacy sessions that never stored effects keep the dry
+ * LEGACY_MISSING_EFFECTS_STATE below so saved music is not reinterpreted.
+ */
+export const NEW_SESSION_EFFECTS_STATE: EffectsState = {
+  bypass: false,
+  reverb: { decay: 2.0, wet: 0.15 },
+  delay: { time: '8n', feedback: 0.3, wet: 0 },
+  chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
+  distortion: { amount: 0.4, wet: 0 },
+};
+
+/**
  * Migration value for sessions written before effects were persisted.
  *
  * Missing effects historically meant the dry signal path. Hydrating one of
@@ -35,7 +54,7 @@ export function normalizeSessionEffects(
   missingPolicy: MissingEffectsPolicy,
 ): EffectsState {
   const fallback = missingPolicy === 'new-session'
-    ? DEFAULT_EFFECTS_STATE
+    ? NEW_SESSION_EFFECTS_STATE
     : LEGACY_MISSING_EFFECTS_STATE;
   const source = effects ?? fallback;
   return {

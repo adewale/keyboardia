@@ -95,9 +95,14 @@ Sound doesn't play on mobile browsers (iOS Safari, Chrome on iOS) even though th
 
 ### 1. iOS Mute Switch (Most Common!)
 
-The **physical mute switch** on the left side of iPhone silences Web Audio API sounds but allows animations to continue. This is the most common cause of "no sound on mobile."
+The **physical mute switch** on the left side of iPhone can silence audio sent
+directly to the Web Audio destination while animations continue. This was the
+most common cause of "no sound on mobile" before the Phase 44 output change.
 
-**Solution:** Check that the mute switch doesn't show orange.
+**Current solution:** Both Phase 44 final graphs use a hidden media element as
+their mobile terminal. A user-reported physical-iPhone test on 2026-09-15 was
+audible with the ringer switch off across the iOS browsers tested. On an older
+build, checking that the switch does not show orange remains a diagnostic.
 
 ### 2. Browser Autoplay Policy
 
@@ -111,6 +116,15 @@ iOS Safari can put the AudioContext in an "interrupted" state (not just "suspend
 - The app goes to background
 - A phone call comes in
 - Siri activates
+
+Background execution is a separate contract from audibility. The 2026-09-15
+physical test reported missed beats while iOS browsers were backgrounded, and
+macOS Safari exhibits the same product-level symptom. The media-element output
+route does not guarantee that the page scheduler or audio graph will keep
+delivering every beat in that state. Continuous background sequencing is a
+known unsupported limitation tracked in
+[#115](https://github.com/adewale/keyboardia/issues/115), not a failed
+ringer-switch unlock.
 
 **Solution:** Check for both `suspended` and `interrupted` states:
 

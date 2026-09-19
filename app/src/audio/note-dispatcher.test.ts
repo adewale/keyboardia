@@ -38,7 +38,7 @@ describe('dispatchResolvedNote', () => {
     renderer.create.mockReturnValue({ schedule: renderer.schedule });
     renderer.schedule.mockReturnValue({ kind: 'scheduled' });
 
-    dispatchResolvedNote(event, audioTime(10));
+    dispatchResolvedNote(event, audioTime(9.9));
 
     expect(renderer.create).toHaveBeenCalledTimes(1);
     expect(renderer.schedule).toHaveBeenCalledWith(event);
@@ -81,5 +81,18 @@ describe('dispatchResolvedNote', () => {
     expect(result.kind).toBe('drop');
     expect(metrics.recordDroppedNote).toHaveBeenCalledOnce();
     expect(registry.schedule).not.toHaveBeenCalled();
+  });
+
+  it('applies the render-thread handoff lead once at the shared dispatcher', () => {
+    const registry: InstrumentRendererRegistry = {
+      schedule: vi.fn<InstrumentRendererRegistry['schedule']>(() => ({ kind: 'scheduled' })),
+    };
+
+    const result = dispatchResolvedNote(event, audioTime(10.05), undefined, undefined, registry);
+
+    expect(result.kind).toBe('late-clamped');
+    const scheduled = vi.mocked(registry.schedule).mock.calls[0]?.[0];
+    expect(scheduled).toMatchObject({ ...event, when: expect.any(Number) });
+    expect(scheduled?.when).toBeCloseTo(10.09, 10);
   });
 });
