@@ -3,6 +3,7 @@ import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';
 import { SCHEDULE_AHEAD_SEC } from '../src/audio/scheduler-types';
 import { MAX_STEPS, MIDI_VELOCITY_MAX } from '../src/shared/constants';
 import { INSTRUMENT_GROUPS } from '../src/shared/instrument-catalog';
+import { getEnvelopeCapability } from '../src/shared/envelope-capabilities';
 import { MAX_TRACKS } from '../src/types';
 import type { BrowserIdentity } from './instrument-quality-matrix';
 
@@ -24,6 +25,7 @@ export const LIVE_ACTIVE_STEP_OFFSET_SECONDS = 0.5;
 // Keep this explicit in the receipt so an unrelated note duration cannot earn
 // credit merely because it produced non-silent output.
 export const LIVE_NOTE_DURATION_SECONDS = 0.1125;
+export const LIVE_STEP_DURATION_SECONDS = 60 / LIVE_TEMPO / 4;
 // The fixture's explicit full-volume lock resolves to the top MIDI layer.
 export const LIVE_MIDI_VELOCITY = MIDI_VELOCITY_MAX;
 export const LIVE_NOTE_GAIN = 1;
@@ -103,7 +105,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 6,
     noteGainSlot: 5,
     variationKeySlot: 7,
-    argumentCount: 7,
+    argumentCount: 11,
   },
   playSynthNote: {
     trackIdSlot: 6,
@@ -115,7 +117,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 7,
     noteGainSlot: 5,
     variationKeySlot: null,
-    argumentCount: 8,
+    argumentCount: 11,
   },
   playSampledInstrument: {
     trackIdSlot: 6,
@@ -127,7 +129,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 7,
     noteGainSlot: 5,
     variationKeySlot: null,
-    argumentCount: 8,
+    argumentCount: 11,
   },
   playToneSynth: {
     trackIdSlot: 5,
@@ -139,7 +141,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 6,
     noteGainSlot: 4,
     variationKeySlot: null,
-    argumentCount: 7,
+    argumentCount: 10,
   },
   playAdvancedSynth: {
     trackIdSlot: 5,
@@ -151,7 +153,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 6,
     noteGainSlot: 4,
     variationKeySlot: null,
-    argumentCount: 7,
+    argumentCount: 10,
   },
 } as const satisfies Record<LiveDispatchMethod, LiveEngineDispatchLayout>);
 
@@ -186,6 +188,16 @@ export interface LiveInstrumentSpec {
   pitch: number;
 }
 
+export function expectedLiveNoteDurationSeconds(
+  spec: Pick<LiveInstrumentSpec, 'sampleId'>,
+): number {
+  const capability = getEnvelopeCapability(spec.sampleId);
+  const ignoresNoteOff = capability.defaultPlaybackMode === 'trigger'
+    || capability.defaultModel === 'ad'
+    || capability.defaultModel === 'ahd';
+  return ignoresNoteOff ? LIVE_STEP_DURATION_SECONDS : LIVE_NOTE_DURATION_SECONDS;
+}
+
 export function expectedLiveEngineDispatchIdentity(
   spec: LiveInstrumentSpec,
   trackId: string,
@@ -200,7 +212,7 @@ export function expectedLiveEngineDispatchIdentity(
     musicalPitch: sampled ? SCHEDULER_BASE_MIDI_NOTE + spec.pitch : spec.pitch,
     midiVelocity: LIVE_MIDI_VELOCITY,
     noteGain: LIVE_NOTE_GAIN,
-    durationSeconds: LIVE_NOTE_DURATION_SECONDS,
+    durationSeconds: expectedLiveNoteDurationSeconds(spec),
     argumentCount: LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD[method].argumentCount,
     variationKey: null,
   };

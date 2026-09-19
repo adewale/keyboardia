@@ -19,6 +19,22 @@ import { parseInstrumentId } from './instrument-types';
 import { NOTE_NAMES } from '../music/music-theory';
 import { TONE_SOURCE_GAIN_DB, dbToGain } from './source-calibration';
 import { absoluteToneStartTime } from './tone-schedule';
+import type { TrackEnvelope } from '../shared/sync-types';
+import { DEFAULT_TRACK_ENVELOPE } from '../shared/envelope';
+
+/** Validate renderer-ready seconds without reapplying legacy authoring maxima. */
+function rendererEnvelope(envelope: TrackEnvelope): TrackEnvelope {
+  const finiteNonNegative = (value: number, fallback: number) =>
+    Number.isFinite(value) ? Math.max(0, value) : fallback;
+  return {
+    attack: finiteNonNegative(envelope.attack, DEFAULT_TRACK_ENVELOPE.attack),
+    decay: finiteNonNegative(envelope.decay, DEFAULT_TRACK_ENVELOPE.decay),
+    sustain: Number.isFinite(envelope.sustain)
+      ? Math.min(1, Math.max(0, envelope.sustain))
+      : DEFAULT_TRACK_ENVELOPE.sustain,
+    release: finiteNonNegative(envelope.release, DEFAULT_TRACK_ENVELOPE.release),
+  };
+}
 
 /**
  * Synth type identifiers used in sample IDs
@@ -260,10 +276,12 @@ export const TONE_SYNTH_PRESETS: Record<ToneSynthType, ToneSynthPreset> = {
 export class ToneSynthManager {
   private synths: Map<BaseSynthType, Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.PluckSynth | Tone.DuoSynth> = new Map();
   private output: Tone.Gain | null = null;
-  private pluckGain: Tone.Gain | null = null;
   private sourceGains: Map<BaseSynthType, Tone.Gain> = new Map();
+  private pluckEnvelope: Tone.AmplitudeEnvelope | null = null;
   private activePresets: Map<BaseSynthType, ToneSynthType> = new Map();
   private fmOverride: { harmonicity: number; modulationIndex: number } | null = null;
+  private envelopeOverride: TrackEnvelope | null = null;
+  private appliedEnvelopeSignatures = new Map<BaseSynthType, string>();
   private ready = false;
 
   /**
@@ -306,9 +324,19 @@ export class ToneSynthManager {
       if (this.output) {
         const sourceGain = new Tone.Gain(1);
         synth.connect(sourceGain);
-        sourceGain.connect(this.output);
         this.sourceGains.set(type, sourceGain);
-        if (type === 'pluck') this.pluckGain = sourceGain;
+        if (type === 'pluck') {
+          this.pluckEnvelope = new Tone.AmplitudeEnvelope({
+            ...DEFAULT_TRACK_ENVELOPE,
+            attackCurve: 'linear',
+            decayCurve: 'linear',
+            releaseCurve: 'exponential',
+          });
+          sourceGain.connect(this.pluckEnvelope);
+          this.pluckEnvelope.connect(this.output);
+        } else {
+          sourceGain.connect(this.output);
+        }
       }
       this.synths.set(type, synth);
     }
@@ -338,6 +366,51 @@ export class ToneSynthManager {
     }
   }
 
+  private configWithEnvelope(
+    preset: ToneSynthPreset,
+    noteEnvelope?: TrackEnvelope,
+  ): Record<string, unknown> {
+    const envelope = noteEnvelope ?? this.envelopeOverride;
+    if (!envelope || preset.type === 'pluck') return preset.config;
+    const value = rendererEnvelope(envelope);
+    const canonical = {
+      ...value,
+      attackCurve: 'linear',
+      decayCurve: 'linear',
+      releaseCurve: 'exponential',
+    };
+    if (preset.type === 'duo') {
+      const voice0 = (preset.config.voice0 ?? {}) as Record<string, unknown>;
+      const voice1 = (preset.config.voice1 ?? {}) as Record<string, unknown>;
+      return {
+        ...preset.config,
+        voice0: { ...voice0, envelope: canonical },
+        voice1: { ...voice1, envelope: canonical },
+      };
+    }
+    return { ...preset.config, envelope: canonical };
+  }
+
+  private applyPresetConfig(
+    synth: Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.PluckSynth | Tone.DuoSynth,
+    presetName: ToneSynthType,
+    preset: ToneSynthPreset,
+    noteEnvelope?: TrackEnvelope,
+  ): void {
+    const envelope = noteEnvelope ?? this.envelopeOverride;
+    const signature = envelope ? JSON.stringify(rendererEnvelope(envelope)) : 'preset';
+    if (this.activePresets.get(preset.type) === presetName
+        && this.appliedEnvelopeSignatures.get(preset.type) === signature) return;
+
+    synth.set(this.configWithEnvelope(preset, envelope ?? undefined));
+    this.activePresets.set(preset.type, presetName);
+    this.appliedEnvelopeSignatures.set(preset.type, signature);
+    if (preset.type === 'fm' && this.fmOverride && synth instanceof Tone.FMSynth) {
+      synth.harmonicity.value = this.fmOverride.harmonicity;
+      synth.modulationIndex.value = this.fmOverride.modulationIndex;
+    }
+  }
+
   /**
    * Play a note with the specified preset
    * @param volume Volume multiplier from P-lock (0-1, default 1)
@@ -347,7 +420,8 @@ export class ToneSynthManager {
     note: string | number,
     duration: string | number,
     time: number,
-    volume: number = 1
+    volume: number = 1,
+    noteEnvelope?: TrackEnvelope,
   ): void {
     if (!this.ready) {
       logger.audio.warn('ToneSynthManager not ready');
@@ -364,14 +438,7 @@ export class ToneSynthManager {
 
     // Presets describe instrument changes, not note events. Reapplying on every
     // note erased live FM controls immediately before the attack.
-    if (this.activePresets.get(preset.type) !== presetName) {
-      synth.set(preset.config);
-      this.activePresets.set(preset.type, presetName);
-      if (preset.type === 'fm' && this.fmOverride && synth instanceof Tone.FMSynth) {
-        synth.harmonicity.value = this.fmOverride.harmonicity;
-        synth.modulationIndex.value = this.fmOverride.modulationIndex;
-      }
-    }
+    this.applyPresetConfig(synth, presetName, preset, noteEnvelope);
 
     // Convert note if it's a semitone number
     const noteValue = typeof note === 'number' ? this.semitoneToNoteName(note) : note;
@@ -385,7 +452,17 @@ export class ToneSynthManager {
     // Volume P-lock is passed as velocity (4th param of triggerAttackRelease)
     try {
       if (preset.type === 'pluck') {
-        this.pluckGain?.gain.setValueAtTime(volume * dbToGain(TONE_SOURCE_GAIN_DB[presetName]), startTime);
+        const envelope = rendererEnvelope(noteEnvelope ?? this.envelopeOverride ?? DEFAULT_TRACK_ENVELOPE);
+        if (this.pluckEnvelope) {
+          this.pluckEnvelope.attack = envelope.attack;
+          this.pluckEnvelope.decay = envelope.decay;
+          this.pluckEnvelope.sustain = envelope.sustain;
+          this.pluckEnvelope.release = envelope.release;
+          this.pluckEnvelope.attackCurve = 'linear';
+          this.pluckEnvelope.decayCurve = 'linear';
+          this.pluckEnvelope.releaseCurve = 'exponential';
+          this.pluckEnvelope.triggerAttackRelease(duration, startTime, volume);
+        }
         (synth as Tone.PluckSynth).triggerAttack(noteValue, startTime);
       } else {
         (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
@@ -405,9 +482,10 @@ export class ToneSynthManager {
     duration: string | number,
     time: number,
     volume: number = 1,
+    noteEnvelope?: TrackEnvelope,
   ): void {
     const noteName = this.semitoneToNoteName(semitone);
-    this.playNote(presetName, noteName, duration, time, volume);
+    this.playNote(presetName, noteName, duration, time, volume, noteEnvelope);
   }
 
   /**
@@ -428,6 +506,16 @@ export class ToneSynthManager {
       synth.harmonicity.value = harmonicity;
       synth.modulationIndex.value = modulationIndex;
       logger.audio.log(`FM params set: harmonicity=${harmonicity}, modIndex=${modulationIndex}`);
+    }
+  }
+
+  /** Apply or clear the authored per-track amplitude envelope. */
+  setEnvelope(envelope: TrackEnvelope | null): void {
+    this.envelopeOverride = envelope ? rendererEnvelope(envelope) : null;
+    this.appliedEnvelopeSignatures.clear();
+    for (const [type, synth] of this.synths) {
+      const presetName = this.activePresets.get(type);
+      if (presetName) this.applyPresetConfig(synth, presetName, TONE_SYNTH_PRESETS[presetName]);
     }
   }
 
@@ -506,13 +594,16 @@ export class ToneSynthManager {
     }
     this.synths.clear();
     this.activePresets.clear();
+    this.appliedEnvelopeSignatures.clear();
     this.fmOverride = null;
+    this.envelopeOverride = null;
 
     for (const gain of this.sourceGains.values()) {
       gain.dispose();
     }
     this.sourceGains.clear();
-    this.pluckGain = null;
+    this.pluckEnvelope?.dispose();
+    this.pluckEnvelope = null;
 
     // Dispose output
     this.output?.dispose();

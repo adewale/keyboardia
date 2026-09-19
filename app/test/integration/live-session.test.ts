@@ -71,6 +71,52 @@ it('DO: can access internal state via runInDurableObject', async () => {
   });
 });
 
+it('DO: counts automatic state repairs for structured WebSocket telemetry', async () => {
+  const sessionId = 'test-repair-telemetry';
+  const id = (env as unknown as Env).LIVE_SESSIONS.idFromName(sessionId);
+  const stub = (env as unknown as Env).LIVE_SESSIONS.get(id);
+  const initResponse = await stub.fetch(`http://placeholder/api/sessions/${sessionId}/debug`);
+  await initResponse.text();
+
+  await runInDurableObject(stub, async (instance: unknown) => {
+    const obj = instance as {
+      state: { tempo: number } | null;
+      pendingStateRepairCount: number;
+      validateAndRepairState(context: string): void;
+    };
+    expect(obj.state).not.toBeNull();
+    obj.state!.tempo = 999;
+
+    obj.validateAndRepairState('repairTelemetryTest');
+
+    expect(obj.state!.tempo).toBeLessThan(999);
+    expect(obj.pendingStateRepairCount).toBeGreaterThan(0);
+  });
+
+  const connectResponse = await stub.fetch(
+    `http://placeholder/api/sessions/${sessionId}?playerId=repair-observer`,
+    { headers: { Upgrade: 'websocket' } },
+  );
+  expect(connectResponse.status).toBe(101);
+  connectResponse.webSocket!.accept();
+
+  await runInDurableObject(stub, async (instance: unknown) => {
+    const observations = Array.from((instance as {
+      playerObservability: Map<WebSocket, {
+        stateRepairCount: number;
+        warnings: Array<{ recoveryAction: string }>;
+      }>;
+    }).playerObservability.values());
+    expect(observations).toHaveLength(1);
+    expect(observations[0]?.stateRepairCount).toBeGreaterThan(0);
+    expect(observations[0]?.warnings).toContainEqual(expect.objectContaining({
+      recoveryAction: 'auto_repaired',
+    }));
+  });
+
+  connectResponse.webSocket!.close(1000, 'test done');
+});
+
 // Note: Isolated storage is disabled because our worker uses waitUntil()
 // for fire-and-forget logging. Tests share storage and must be designed accordingly.
 

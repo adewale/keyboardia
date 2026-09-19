@@ -68,6 +68,15 @@ function createTestGridState(): GridState {
         soloed: false,
         transpose: 0,
         stepCount: 16,
+        envelopeV2: {
+          model: 'adsr',
+          attack: { value: .05, unit: 'seconds' },
+          decay: { value: .2, unit: 'seconds' },
+          sustain: .6,
+          release: { value: .4, unit: 'seconds' },
+        },
+        samplePlaybackMode: 'trigger',
+        gate: 10,
       },
       {
         id: 'track-2',
@@ -417,6 +426,40 @@ describe('Reducer-Mutation Equivalence', () => {
         trackId: 'track-1',
         fmParams: { harmonicity: 2, modulationIndex: 5 },
       },
+      {
+        type: 'SET_TRACK_ENVELOPE',
+        trackId: 'track-1',
+        envelope: { attack: .1, decay: .2, sustain: .7, release: .4 },
+      },
+      { type: 'SET_TRACK_ENVELOPE_TIME_UNIT', trackId: 'track-1', unit: 'steps' },
+      { type: 'SET_TRACK_GATE', trackId: 'track-1', gate: 75 },
+      {
+        type: 'SET_TRACK_ENVELOPE_V2',
+        trackId: 'track-1',
+        envelope: { model: 'ad', attack: { value: .1, unit: 'seconds' }, decay: { value: 2, unit: 'steps' } },
+        operationId: 'operation-1',
+      },
+      {
+        type: 'CONVERT_TRACK_ENVELOPE_UNITS_V2',
+        trackId: 'track-1',
+        targetUnit: 'steps',
+        operationId: 'operation-2',
+      },
+      {
+        type: 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2',
+        trackId: 'track-1',
+        mode: 'loop',
+        operationId: 'operation-3',
+      },
+      { type: 'SET_TRACK_GATE_V2', trackId: 'track-1', gate: 61, operationId: 'operation-4' },
+      {
+        type: 'SET_ENVELOPE_LOCK_V2',
+        trackId: 'track-1',
+        step: 3,
+        stage: 'release',
+        duration: { value: 3, unit: 'steps' },
+        operationId: 'operation-5',
+      },
     ] satisfies GridAction[])('$type: gridReducer and applyMutation are equivalent', action => {
       const gridState = createTestGridState();
       const reducerResult = gridReducer(gridState, action);
@@ -426,6 +469,29 @@ describe('Reducer-Mutation Equivalence', () => {
       const sessionState = gridStateToSessionState(gridState);
       const mutationResult = applyMutation(sessionState, message as ClientMessageBase);
       expectEquivalentAndChanged(gridStateToSessionState(reducerResult), mutationResult, sessionState);
+    });
+
+    it('CONVERT_TRACK_ENVELOPE_UNITS_V2 enforces the target-unit bounds in production state', () => {
+      const gridState = createTestGridState();
+      gridState.tempo = 60;
+      gridState.tracks[0].envelopeV2 = {
+        model: 'ar',
+        attack: { value: 48, unit: 'steps' },
+        release: { value: 96, unit: 'steps' },
+      };
+      const action: GridAction = {
+        type: 'CONVERT_TRACK_ENVELOPE_UNITS_V2',
+        trackId: 'track-1',
+        targetUnit: 'seconds',
+        operationId: 'bounded-conversion',
+      };
+
+      const result = gridReducer(gridState, action);
+      expect(result.tracks[0].envelopeV2).toEqual({
+        model: 'ar',
+        attack: { value: 4, unit: 'seconds' },
+        release: { value: 8, unit: 'seconds' },
+      });
     });
   });
 
@@ -586,6 +652,14 @@ describe('Reducer-Mutation Equivalence', () => {
         'SET_EFFECTS',
         'SET_SCALE',
         'SET_FM_PARAMS',
+        'SET_TRACK_ENVELOPE',
+        'SET_TRACK_ENVELOPE_TIME_UNIT',
+        'SET_TRACK_GATE',
+        'SET_TRACK_ENVELOPE_V2',
+        'CONVERT_TRACK_ENVELOPE_UNITS_V2',
+        'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2',
+        'SET_TRACK_GATE_V2',
+        'SET_ENVELOPE_LOCK_V2',
         'CLEAR_TRACK',
         'DELETE_TRACK',
         'SET_PARAMETER_LOCK',

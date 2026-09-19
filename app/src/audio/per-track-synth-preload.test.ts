@@ -18,6 +18,7 @@ vi.mock('./toneSynths', async () => {
     async initialize(): Promise<void> {}
     getOutput(): { connect: () => void } { return { connect: () => {} }; }
     setFMParams(): void {}
+    setEnvelope(): void {}
     getFMParams(): null { return null; }
     semitoneToNoteName(s: number): string { return `n${s}`; }
     getPresetNames(): string[] { return []; }
@@ -35,6 +36,7 @@ vi.mock('./advancedSynth', async () => {
     isReady(): boolean { return true; }
     getOutput(): { connect: () => void } { return { connect: () => {} }; }
     setTempo(): void {}
+    setEnvelope(): void {}
     setPreset(name: string): void { advancedPresetSelections.push(name); }
     playNoteSemitone(): void {}
     getDiagnostics(): unknown { return { activeVoices: 0 }; }
@@ -42,8 +44,6 @@ vi.mock('./advancedSynth', async () => {
     setFilterResonance(): void {}
     setLfoRate(): void {}
     setLfoAmount(): void {}
-    setAttack(): void {}
-    setRelease(): void {}
     setOscMix(): void {}
     dispose(): void {}
   }

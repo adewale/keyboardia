@@ -113,8 +113,8 @@ describe('XYPadController', () => {
     it('exposes the full documented ADSR attack and release ranges', () => {
       controller.loadPreset('envelope-shape');
       expect(controller.getMappings()).toEqual([
-        { parameter: 'attack', axis: 'x', min: 0.001, max: 4, curve: 'exponential' },
-        { parameter: 'release', axis: 'y', min: 0.001, max: 8, curve: 'exponential' },
+        { parameter: 'attack', axis: 'x', min: 0, max: 4, curve: 'cubic' },
+        { parameter: 'release', axis: 'y', min: 0, max: 8, curve: 'cubic' },
       ]);
     });
   });
@@ -345,7 +345,7 @@ describe('XY_PAD_PRESETS', () => {
   it('all mappings have valid curve', () => {
     for (const preset of Object.values(XY_PAD_PRESETS)) {
       for (const mapping of preset.mappings) {
-        expect(['linear', 'exponential']).toContain(mapping.curve);
+        expect(['linear', 'exponential', 'cubic']).toContain(mapping.curve);
       }
     }
   });

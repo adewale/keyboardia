@@ -1,11 +1,14 @@
 #!/bin/sh
 
-# Pre-push hook: Five-phase testing (plus phase-zero validation)
-# Phase 1: Unit tests (fast, ~11s)
+# Pre-push hook: T0 plus focused T1 by default.
+# Phase 1: Unit tests
 # Phase 2: Dev-only PCM/audio evidence (Chromium mock build)
-# Phase 3: Full functional E2E test (Chromium, including real Web Audio)
-# Phase 4: Broad desktop WebKit contract
-# Phase 5: Mobile Safari test (iPhone viewport + touch)
+# Phase 3: Real-Worker desktop smoke
+# Phase 4: Mobile Safari contract
+#
+# Set KEYBOARDIA_VERIFY_T2=1 to append the complete Chromium and WebKit
+# functional matrices. CI runs those broad contracts nightly, so ordinary
+# pushes do not repeatedly pay their cost.
 #
 # The full-stack runner owns its Wrangler process. This keeps the backend
 # lifecycle deterministic and applies the local-only session-create allowance
@@ -75,6 +78,11 @@ else
     exit 1
 fi
 
+# Fail before launching browsers if a spec, backend ownership entry, or exact
+# disposition contract has drifted. This also checks that CI and optional local
+# T2 runs still own the same complete matrices.
+npm run validate:e2e-inventories
+
 # Phase 1: Unit Tests (runs first, no backend required)
 echo "----------------------------------------"
 echo "Phase 1: Unit Tests (~11s)"
@@ -127,27 +135,27 @@ else
     exit 1
 fi
 
-# Phase 3: Full Chromium test (comprehensive functional and audio contracts)
+# Phase 3: Real-Worker desktop smoke
 echo "----------------------------------------"
-echo "Phase 3: Full E2E Test (Chromium)"
+echo "Phase 3: Real-Worker Smoke (Chromium)"
 echo "----------------------------------------"
 echo ""
 
-FULL_START=$(date +%s)
+SMOKE_START=$(date +%s)
 
 # Screenshot contracts have runner-specific baselines and a dedicated CI lane;
 # the functional gate must not generate or bless developer-machine snapshots.
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 209 28; then
-    FULL_END=$(date +%s)
-    FULL_DURATION=$((FULL_END - FULL_START))
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-smoke.json npm run test:e2e:full-stack:smoke && node scripts/assert-playwright-stats.mjs test-results/prepush-smoke.json 15 0; then
+    SMOKE_END=$(date +%s)
+    SMOKE_DURATION=$((SMOKE_END - SMOKE_START))
     echo ""
-    echo "✅ Full test passed! (${FULL_DURATION}s)"
+    echo "✅ Real-Worker smoke passed! (${SMOKE_DURATION}s)"
     echo ""
 else
     echo ""
-    echo "❌ Full test FAILED"
+    echo "❌ Real-Worker smoke FAILED"
     echo ""
-    echo "Some Chromium functional or real-audio tests failed."
+    echo "Some focused Chromium functional or real-audio tests failed."
     echo "Review the failures above."
     echo "Fix the issues above before pushing."
     echo "To skip: git push --no-verify"
@@ -155,31 +163,9 @@ else
     exit 1
 fi
 
-# Phase 4: Broad desktop WebKit test (UI, collaboration, and layout contracts)
+# Phase 4: Mobile Safari Test (iPhone viewport + touch interactions)
 echo "----------------------------------------"
-echo "Phase 4: Full WebKit Test"
-echo "----------------------------------------"
-echo ""
-
-WEBKIT_START=$(date +%s)
-
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 162 58; then
-    WEBKIT_END=$(date +%s)
-    WEBKIT_DURATION=$((WEBKIT_END - WEBKIT_START))
-    echo ""
-    echo "✅ Full WebKit test passed! (${WEBKIT_DURATION}s)"
-    echo ""
-else
-    echo ""
-    echo "❌ Full WebKit test FAILED"
-    echo ""
-    echo "Fix the cross-browser failure before pushing."
-    exit 1
-fi
-
-# Phase 5: Mobile Safari Test (iPhone viewport + touch interactions)
-echo "----------------------------------------"
-echo "Phase 5: Mobile Safari (iPhone)"
+echo "Phase 4: Mobile Safari (iPhone)"
 echo "----------------------------------------"
 echo ""
 
@@ -198,11 +184,50 @@ else
     echo "Mobile-specific tests failed."
     echo "Review the failures above."
     echo "To skip: git push --no-verify"
-    echo ""
     exit 1
 fi
 
-TOTAL_DURATION=$((UNIT_DURATION + PCM_DURATION + FULL_DURATION + WEBKIT_DURATION + MOBILE_DURATION))
+T2_DURATION=0
+if [ "${KEYBOARDIA_VERIFY_T2:-0}" = "1" ]; then
+    echo "----------------------------------------"
+    echo "Phase 5: T2 Full Chromium Matrix"
+    echo "----------------------------------------"
+    echo ""
+
+    FULL_START=$(date +%s)
+    if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8794 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 210 33; then
+        FULL_END=$(date +%s)
+        FULL_DURATION=$((FULL_END - FULL_START))
+    else
+        echo "❌ T2 Chromium matrix FAILED"
+        exit 1
+    fi
+
+    echo "----------------------------------------"
+    echo "Phase 6: T2 Full WebKit Matrix"
+    echo "----------------------------------------"
+    echo ""
+
+    WEBKIT_START=$(date +%s)
+    if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 163 63; then
+        WEBKIT_END=$(date +%s)
+        WEBKIT_DURATION=$((WEBKIT_END - WEBKIT_START))
+        T2_DURATION=$((FULL_DURATION + WEBKIT_DURATION))
+    else
+        echo "❌ T2 WebKit matrix FAILED"
+        exit 1
+    fi
+
+    echo ""
+    echo "✅ T2 browser matrices passed! (${T2_DURATION}s)"
+    echo ""
+else
+    echo "ℹ️  Broad Chromium/WebKit matrices are deferred to nightly T2."
+    echo "   Run locally with KEYBOARDIA_VERIFY_T2=1 git push."
+    echo ""
+fi
+
+TOTAL_DURATION=$((UNIT_DURATION + PCM_DURATION + SMOKE_DURATION + MOBILE_DURATION + T2_DURATION))
 
 echo "========================================"
 echo "  ✅ All tests passed! (${TOTAL_DURATION}s)"

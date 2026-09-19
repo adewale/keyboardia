@@ -18,6 +18,14 @@ export interface ParameterLock {
   pitch?: number;  // Semitones offset from original (-24 to +24)
   volume?: number; // 0-1, multiplier on track volume
   tie?: boolean;   // Continue note from previous step (no new attack)
+  attack?: number; // Per-note envelope attack override
+  decay?: number;  // Per-note envelope decay override
+  release?: number;// Per-note envelope release override
+  /** Canonical v2 typed durations. Legacy numeric A/D/R remain readable during rolling deploys. */
+  attackDuration?: import('./envelope-contract-v2').EnvelopeDuration;
+  holdDuration?: import('./envelope-contract-v2').EnvelopeDuration;
+  decayDuration?: import('./envelope-contract-v2').EnvelopeDuration;
+  releaseDuration?: import('./envelope-contract-v2').EnvelopeDuration;
 }
 
 /**
@@ -28,6 +36,31 @@ export interface FMParams {
   harmonicity: number;      // 0.5 to 10 - frequency ratio of modulator to carrier
   modulationIndex: number;  // 0 to 20 - intensity of frequency modulation
 }
+
+/**
+ * Per-track amplitude-envelope override.
+ *
+ * The field is optional on a track: absence means "use the instrument preset".
+ * Values on the wire are always normalized through shared/envelope.ts before
+ * they enter session state.
+ */
+export interface TrackEnvelope {
+  attack: number;   // Seconds, 0-4
+  decay: number;    // Seconds, 0-4
+  sustain: number;  // Linear level, 0-1
+  release: number;  // Seconds, 0-8
+}
+
+export type EnvelopeTimeUnit = 'seconds' | 'steps';
+
+export type {
+  EnvelopeDuration,
+  EnvelopeDurationUnit,
+  EnvelopeModel,
+  EnvelopeStageName,
+  SamplePlaybackMode,
+  TrackEnvelopeV2,
+} from './envelope-contract-v2';
 
 /**
  * Effects state for audio processing.

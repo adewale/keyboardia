@@ -57,7 +57,7 @@ describe('procedural sample envelope', () => {
 
     engine.playSample('snare', 'track-1', 2, 0.12);
 
-    expect(automationOrder).toEqual(['value:0', 'set:0', 'ramp:1']);
+    expect(automationOrder).toEqual(['value:0', 'set:0.0001', 'ramp:1']);
     expect(source.start).toHaveBeenCalledWith(2);
   });
 });

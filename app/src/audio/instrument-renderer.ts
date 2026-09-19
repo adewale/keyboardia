@@ -57,6 +57,9 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.trackId,
           event.midiVelocity,
+          event.envelopeLock,
+          event.resolvedEnvelope,
+          event.authoredEnvelope ?? false,
         );
         return SCHEDULED;
       },
@@ -73,6 +76,9 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.trackId,
           event.midiVelocity,
+          event.envelopeLock,
+          event.playbackMode,
+          event.resolvedEnvelope,
         );
         return SCHEDULED;
       },
@@ -88,6 +94,9 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.trackId,
           event.midiVelocity,
+          event.envelopeLock,
+          event.resolvedEnvelope,
+          event.authoredEnvelope ?? false,
         );
         return SCHEDULED;
       },
@@ -103,6 +112,9 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.trackId,
           event.midiVelocity,
+          event.envelopeLock,
+          event.resolvedEnvelope,
+          event.authoredEnvelope ?? false,
         );
         return SCHEDULED;
       },
@@ -118,13 +130,23 @@ export function createInstrumentRendererRegistry(
           event.noteGain,
           event.midiVelocity,
         ] as const;
-        if (event.hasExplicitLock) {
-          engine.playSample(...baseArguments);
-        } else {
+        const variationKey = event.hasExplicitLock
+          ? undefined
+          : `${event.noteId}-loop-${event.loopIteration}`;
+        if (event.envelopeLock !== undefined
+            || event.resolvedEnvelope !== undefined
+            || event.playbackMode !== undefined) {
           engine.playSample(
             ...baseArguments,
-            `${event.noteId}-loop-${event.loopIteration}`,
+            variationKey,
+            event.envelopeLock,
+            event.resolvedEnvelope,
+            event.playbackMode,
           );
+        } else if (variationKey !== undefined) {
+          engine.playSample(...baseArguments, variationKey);
+        } else {
+          engine.playSample(...baseArguments);
         }
         return SCHEDULED;
       },

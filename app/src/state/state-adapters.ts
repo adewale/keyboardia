@@ -67,6 +67,11 @@ function trackToSessionTrack(track: Track): SessionTrack {
     transpose: track.transpose,
     stepCount: track.stepCount,
     fmParams: track.fmParams,
+    envelope: track.envelope,
+    envelopeTimeUnit: track.envelopeTimeUnit,
+    envelopeV2: track.envelopeV2,
+    samplePlaybackMode: track.samplePlaybackMode,
+    gate: track.gate,
     swing: track.swing,
   };
 }
@@ -104,6 +109,11 @@ export function applySessionToGridState(
       transpose: sessionTrack.transpose,
       stepCount: sessionTrack.stepCount ?? DEFAULT_STEP_COUNT,
       fmParams: sessionTrack.fmParams,
+      envelope: sessionTrack.envelope,
+      envelopeTimeUnit: sessionTrack.envelopeTimeUnit,
+      envelopeV2: sessionTrack.envelopeV2,
+      samplePlaybackMode: sessionTrack.samplePlaybackMode,
+      gate: sessionTrack.gate,
       swing: sessionTrack.swing,
     };
   });

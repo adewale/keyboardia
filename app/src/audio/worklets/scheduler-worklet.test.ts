@@ -112,7 +112,38 @@ describe('production scheduler worklet', () => {
 
     expect(notes).toHaveLength(1);
     expect(notes[0]?.time).toBeCloseTo(0.03125, 8);
-    expect(notes[0]?.duration).toBeCloseTo(0.225, 8);
+    // Finite sample trigger playback owns its natural/AHD lifetime, so gate
+    // percentage does not shorten the complete two-step tied span.
+    expect(notes[0]?.duration).toBeCloseTo(0.25, 8);
+  });
+
+  it('serializes gate duration and envelope locks into note events', () => {
+    const processor = new Processor();
+    const steps = new Array(128).fill(false) as boolean[];
+    const parameterLocks = new Array(128).fill(null) as ({ attack?: number; decay?: number; release?: number } | null)[];
+    steps[0] = true;
+    parameterLocks[0] = { attack: 0, decay: .5, release: 2 };
+    start(processor, state({
+      tracks: [{
+        id: 'envelope-track',
+        sampleId: 'synth:lead',
+        steps,
+        stepCount: 16,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        swing: 0,
+        gate: 50,
+        parameterLocks,
+      }],
+    }));
+
+    processor.process();
+    const note = processor.port.postMessage.mock.calls
+      .map(([event]) => event as { type: string; duration?: number; envelopeLock?: unknown })
+      .find(event => event.type === 'note');
+    expect(note?.duration).toBeCloseTo(.0625, 8);
+    expect(note?.envelopeLock).toEqual({ attack: 0, decay: .5, release: 2 });
   });
 
   it('carries stable MIDI velocity and loop-varying deterministic note gain', () => {
