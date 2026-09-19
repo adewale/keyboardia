@@ -6572,8 +6572,14 @@ new end-to-end handoff rather than cargo-culting the old constant.
   dispatcher; mobile output is tested behind the graph owner.
 - Exact E2E inventory binding. The rebase temporarily claimed a six-test PCM
   gate while collecting fewer tests and carried stale Chromium/WebKit skip
-  totals. `validate:e2e-inventories` now rejects that mismatch before browsers
-  run.
+  totals. Its first repair was still incomplete: the validator checked the
+  full-stack and local PCM contracts but not CI's mock-compatible, offline-
+  complement, or Worker-required result contracts. Restoring three PCM tests
+  therefore produced 90 real passes while the workflow still demanded 87;
+  every test passed, then the stale accounting assertion failed after 22
+  minutes. `validate:e2e-inventories` now collects each of those three CI spec
+  sets under its actual environment and rejects any pass-plus-skip mismatch
+  before browsers run.
 - A transition test for stopped → playing readiness. It exposed redundant
   `useTrackPrewarm` work that immediately drove `ready → preparing` again after
   the play-start gate had already prepared the same snapshot.

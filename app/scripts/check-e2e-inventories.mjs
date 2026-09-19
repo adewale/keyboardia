@@ -92,6 +92,34 @@ const dispositionContracts = [
     local: readDispositionContract(prePushPath, 'prepush-webkit.json'),
   },
 ];
+const mockLaneContracts = [
+  {
+    label: 'Mock-compatible Chromium',
+    specs: mockSpecs,
+    resultFile: 'blocking-results.json',
+    env: { USE_MOCK_API: '1', E2E_FUNCTIONAL_ONLY: '', CI: 'true' },
+  },
+  {
+    label: 'Remaining offline Chromium',
+    specs: allSpecs.filter(path => !mockSpecs.includes(path)).sort(),
+    resultFile: 'offline-results.json',
+    env: { USE_MOCK_API: '1', E2E_FUNCTIONAL_ONLY: '1', CI: 'true' },
+  },
+  {
+    label: 'Worker-required Chromium',
+    specs: workerSpecs,
+    resultFile: 'worker-results.json',
+    env: {
+      USE_MOCK_API: '',
+      E2E_FUNCTIONAL_ONLY: '',
+      CI: 'true',
+      PLAYWRIGHT_BASE_URL: 'http://localhost:8787',
+    },
+  },
+].map(contract => ({
+  ...contract,
+  disposition: readDispositionContract(workflowPath, contract.resultFile),
+}));
 const pcmContract = {
   spec: 'e2e/capture-session.spec.ts',
   ...readDispositionContract(prePushPath, 'prepush-pcm.json'),
@@ -162,6 +190,30 @@ for (const contract of dispositionContracts) {
   }
 }
 
+for (const contract of mockLaneContracts) {
+  const collected = spawnSync(playwright, [
+    'test', ...contract.specs, '--project=chromium', '--list',
+  ], {
+    cwd: appRoot,
+    encoding: 'utf8',
+    env: { ...process.env, ...contract.env },
+  });
+  if (collected.status !== 0) {
+    throw new Error(`Unable to collect ${contract.label} disposition total:\n`
+      + `${collected.stderr || collected.stdout}`);
+  }
+  const totalMatch = collected.stdout.match(/Total:\s+(\d+)\s+tests?\b/);
+  if (!totalMatch) {
+    throw new Error(`Unable to parse ${contract.label} disposition total:\n${collected.stdout}`);
+  }
+  const collectedTotal = Number(totalMatch[1]);
+  const contractedTotal = contract.disposition.expected + contract.disposition.skipped;
+  if (contractedTotal !== collectedTotal) {
+    throw new Error(`${contract.label} disposition contract accounts for ${contractedTotal} results, `
+      + `but Playwright collects ${collectedTotal} with the gate's exact spec set and environment`);
+  }
+}
+
 const pcmListed = spawnSync(playwright, [
   'test', pcmContract.spec, '--project=chromium', '--list',
 ], {
@@ -183,4 +235,4 @@ if (pcmCollectedTotal !== pcmContractedTotal) {
     + `but Playwright collects ${pcmCollectedTotal} from ${pcmContract.spec}`);
 }
 
-console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests, ${dispositionContracts.length} local/CI disposition contracts, ${pcmCollectedTotal}-test local PCM contract`);
+console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests, ${dispositionContracts.length} local/CI full-stack disposition contracts, ${mockLaneContracts.length} CI mock-lane disposition contracts, ${pcmCollectedTotal}-test local PCM contract`);
