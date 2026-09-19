@@ -24,7 +24,7 @@ import {
   dbToGain,
   type LoopSpec,
 } from './sample-selection';
-import { computeNoteSchedule, realtimeNoteLeadTime, RELEASE_FLOOR_GAIN } from './note-schedule';
+import { computeNoteSchedule, RELEASE_FLOOR_GAIN } from './note-schedule';
 import {
   sampledInstrumentChokeRegistry,
   type ChokeGroupRegistry,
@@ -727,15 +727,6 @@ export class SampledInstrument {
     const schedule = computeNoteSchedule({
       eventTime: time,
       currentTime: this.audioContext.currentTime,
-      // AudioParam events scheduled at currentTime may cross multiple
-      // render-thread boundaries, collapsing the 3 ms de-click ramp on the
-      // first hit. Four 128-frame quanta plus one frame is still below the
-      // browser fixture's 20 ms onset bound at supported sample rates.
-      // Offline rendering has no live control-message boundary and keeps the
-      // exact requested schedule used by deterministic render tests.
-      minimumLeadTime: isOfflineContext
-        ? 0
-        : realtimeNoteLeadTime(this.audioContext.sampleRate),
       duration,
       releaseTime: this.manifest.releaseTime,
     });
@@ -747,9 +738,10 @@ export class SampledInstrument {
     ));
 
     // Phase 44 Change 2: one lowpass per voice, shared by every layer-blend
-    // component, only when the manifest declares an anchor AND the velocity
-    // is below the bypass threshold. Bypass creates no node at all so the
-    // default-velocity graph stays byte-identical.
+    // component, only when the sample-rate-specific calibration table has an
+    // anchor for this requested note AND velocity is below the bypass
+    // threshold. Bypass creates no node at all so the default-velocity graph
+    // stays byte-identical.
     const selectedSourceNote = sampleInfos[0]?.sample.note ?? adjustedMidiNote;
     const manifestNotes = this.manifest.samples
       .filter(mapping => (mapping.articulation ?? 'default') === articulation)

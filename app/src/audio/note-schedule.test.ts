@@ -4,7 +4,6 @@ import {
   computeNoteSchedule,
   ATTACK_FADE_SEC,
   MIN_NOTE_DURATION_SEC,
-  realtimeNoteLeadTime,
   RELEASE_TAIL_GUARD_SEC,
 } from './note-schedule';
 
@@ -23,22 +22,6 @@ describe('computeNoteSchedule', () => {
   it('clamps to currentTime when the event is late (Web Audio cannot start in the past)', () => {
     const s = computeNoteSchedule({ eventTime: 1, currentTime: 2, releaseTime: 0.5 });
     expect(s.startTime).toBe(2);
-  });
-
-  it('reserves requested real-time lead so the render thread receives the attack ramp', () => {
-    const s = computeNoteSchedule({
-      eventTime: 1,
-      currentTime: 2,
-      minimumLeadTime: 0.003,
-      releaseTime: 0.5,
-    });
-    expect(s.startTime).toBe(2.003);
-    expect(s.attackEnd).toBe(2.003 + ATTACK_FADE_SEC);
-  });
-
-  it('budgets four render quanta for real-time control handoff', () => {
-    expect(realtimeNoteLeadTime(48_000)).toBe(513 / 48_000);
-    expect(realtimeNoteLeadTime(192_000)).toBe(ATTACK_FADE_SEC);
   });
 
   it('places the declick attack right after the start', () => {

@@ -51,7 +51,11 @@ export function useTrackPrewarm(state: GridState, isPlaying: boolean): void {
     if (!isPlaying) {
       generationRef.current += 1;
       cancelPendingRetry();
-      lastSignatureRef.current = null;
+      // Play-start readiness already prepares this exact snapshot. Remember
+      // it while stopped so the subsequent isPlaying transition does not
+      // immediately drive ready → preparing a second time. Membership edits
+      // made during playback still change the signature and prewarm normally.
+      lastSignatureRef.current = prewarmSignature(state);
       return;
     }
 

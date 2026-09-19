@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { audioTime, seconds } from './audio-time';
-import { resolveDispatchTime, type LatenessPolicy } from './lateness-policy';
+import {
+  DEFAULT_LATENESS_POLICY,
+  LATE_NOTE_CONTROL_LEAD,
+  resolveDispatchTime,
+  type LatenessPolicy,
+} from './lateness-policy';
 
 const policy: LatenessPolicy = {
   tolerance: seconds(0.1),
@@ -8,6 +13,11 @@ const policy: LatenessPolicy = {
 };
 
 describe('resolveDispatchTime', () => {
+  it('keeps the render-thread handoff lead in the central default policy', () => {
+    expect(LATE_NOTE_CONTROL_LEAD).toBe(0.04);
+    expect(DEFAULT_LATENESS_POLICY.minimumLead).toBe(LATE_NOTE_CONTROL_LEAD);
+  });
+
   it('preserves an on-time absolute AudioTime', () => {
     const result = resolveDispatchTime(audioTime(10.2), audioTime(10), policy);
     expect(result.kind).toBe('on-time');
@@ -20,6 +30,13 @@ describe('resolveDispatchTime', () => {
     expect(result.kind).toBe('late-clamped');
     expect('time' in result && result.time).toBe(10.001);
     expect(result.lateness).toBeCloseTo(0.05, 10);
+  });
+
+  it('clamps a nominally on-time event that misses the render-thread lead budget', () => {
+    const result = resolveDispatchTime(audioTime(10.0005), audioTime(10), policy);
+    expect(result.kind).toBe('late-clamped');
+    expect('time' in result && result.time).toBe(10.001);
+    expect(result.lateness).toBeCloseTo(-0.0005, 10);
   });
 
   it('drops stale events instead of producing a catch-up burst', () => {

@@ -2,7 +2,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { MediaElementOutput, needsMediaElementOutput } from './mobile-media-output';
 import { installMediaSessionActionHandlers, setMediaSessionPlaybackState } from './media-session';
-import { waitForClockAdvance, CLOCK_LIVENESS_TIMEOUT_MS } from './clock-liveness';
 
 const IOS_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15';
 const ANDROID_UA = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36';
@@ -139,31 +138,5 @@ describe('setMediaSessionPlaybackState', () => {
     cleanup();
     expect(setActionHandler).toHaveBeenCalledWith('play', null);
     expect(setActionHandler).toHaveBeenCalledWith('pause', null);
-  });
-});
-
-describe('waitForClockAdvance', () => {
-  it('rejects a previously advanced clock that is now frozen', async () => {
-    expect(await waitForClockAdvance({ currentTime: 1.5 }, 30)).toBe(false);
-  });
-
-  it('accepts a non-zero clock only after it advances again', async () => {
-    const context = { currentTime: 1.5 };
-    const wait = waitForClockAdvance(context);
-    setTimeout(() => { context.currentTime = 1.51; }, 20);
-    expect(await wait).toBe(true);
-  });
-
-  it('resolves true once a parked clock starts moving', async () => {
-    const context = { currentTime: 0 };
-    const wait = waitForClockAdvance(context);
-    setTimeout(() => { context.currentTime = 0.01; }, 20);
-    expect(await wait).toBe(true);
-  });
-
-  it('gives up after the bounded budget on a clock that never moves', async () => {
-    const started = Date.now();
-    expect(await waitForClockAdvance({ currentTime: 0 }, 60)).toBe(false);
-    expect(Date.now() - started).toBeLessThan(CLOCK_LIVENESS_TIMEOUT_MS + 200);
   });
 });

@@ -16,8 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   at or above the default velocity render through a byte-identical graph.
 - Mobile output routed through a hidden media element so the iOS ringer
   switch no longer silences playback, including the Tone-effects route;
-  `navigator.mediaSession` transport actions/state; a bounded clock-liveness
-  gate after context resume.
+  `navigator.mediaSession` transport actions/state. The route is owned by the
+  shared audio graph, and existing engine readiness owns bounded clock recovery.
 - Sustain ceiling guard (`validate:sustain-ceiling`) pinning every sustaining
   instrument's measured sample length above the longest 16-step tied note.
 - "Whisper to Roar" demo session exercising the velocity filter, kit
@@ -26,6 +26,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 **Changed:**
 - New sessions default to a bass-protected reverb at wet 0.15; sessions that
   never stored effects keep rendering dry.
+- Near-deadline note events now receive one measured 40 ms render-thread
+  handoff budget at the shared dispatcher; individual renderers do not shift
+  authoritative timestamps.
+
+**Known limitations:**
+- Backgrounded iOS browsers and macOS Safari can miss sequencer beats. This is
+  separate from ringer-off audibility and is tracked in issue #115.
 
 ### Sound quality parity (August 2026)
 

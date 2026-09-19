@@ -4,15 +4,17 @@
 **Driver**: `specs/research/TONE-NETS-COMPARISON-2026-08.md`
 **Predecessor**: `specs/SOUND-QUALITY-PARITY-PLAN.md` (Phase 43, implemented)
 **Status**: Implemented 2026-08-22; independently re-audited and corrected
-2026-09-13 (see §§8, 10–12). Baselines in §1 originate at
+2026-09-13, then rebased onto the shared audio-time/graph architecture and
+re-measured 2026-09-19 (see §§8, 10–13). Baselines in §1 originate at
 `58264dd5ae274f63b1cd80b72aa823b76b21f28b` and were re-measured after the
 audit. Unit, offline-render, performance, and Chromium browser-capture gates
 pass. Silent-voice warm-up is not indicated by the first-use sampled fixture;
 the previously open cold Tone, advanced, and whole-engine domains are now
 measured in §8. A user-reported physical-iPhone test on 2026-09-15 passed the
 ringer-off audibility gate across the iOS browsers tested. Device output
-latency remains unmeasured, and continuous beat delivery while an iOS browser
-is backgrounded is explicitly not claimed.
+latency remains unmeasured, and continuous beat delivery while iOS browsers or
+macOS Safari are backgrounded is tracked separately in
+[#115](https://github.com/adewale/keyboardia/issues/115), not claimed here.
 
 This plan now distinguishes three claim levels:
 
@@ -101,11 +103,11 @@ mappings carrying a `LoopSpec` repeat, and exactly one manifest declares one
 
 ## 2. Change 1 — Mobile output through a media element
 
-**What.** On mobile, connect `outputTrim` to a
-`MediaStreamAudioDestinationNode` and play its stream through a hidden
-`<audio playsinline>` element, instead of connecting to `ctx.destination`.
-Desktop path unchanged. Start `.play()` inside the existing unlock gesture
-(`engine.ts` unlock listeners), never outside it.
+**What.** `AudioGraphOwner` owns the one output terminal for the runtime. On
+mobile its terminal policy uses `MediaElementOutput`: `outputTrim` feeds a
+`MediaStreamAudioDestinationNode`, whose stream plays through a hidden
+`<audio playsinline>` element. Desktop remains on `ctx.destination`. The graph
+owner unlocks the element inside the existing gesture/recovery path.
 
 **Why.** `grep -rn "createMediaStreamDestination" app/src` → no matches. Web
 Audio routed to `ctx.destination` on iOS obeys the physical ringer switch;
@@ -187,7 +189,7 @@ explicit volume lock renders through a byte-identical graph. So unlike a
 default change, this ships without reinterpreting anyone's saved music.
 
 **Measured impact.** At velocity 40, all 281 calibrated playable notes across
-the six tonal gain-only instruments land at 29.7–30.3% centroid drop at both
+the six tonal gain-only instruments land at 29.4–30.7% centroid drop at both
 44.1 and 48 kHz. The target band is 26–35%, covering the central response of
 the genuinely multi-sampled instruments. Recorded-layer instruments are not
 calibrated and remain on their authored velocity zones.
@@ -350,8 +352,8 @@ should not be described as one in a changelog.
 
 | Change | What | Measurable impact | Effort |
 |---|---|---|---|
-| **Voice warm-up** | Measure before adding silent voices | One first-use priority-loaded `slap-bass` fixture with a preinitialized dry master: 38.7–54.7 ms DOM-click-event-to-audible across 13 fresh Chromium contexts after the late-note fix; its pre-compressor repeat null was 0 dB peak and ≤0.000002 dB RMS spread, while the retained heard-output diagnostic was ≤0.010/0.005 dB peak/RMS. A zero-lead negative control failed the source RMS gate in 2/12 contexts. | **Not indicated for the sampled fixture only:** the cold matrix establishes first-output latency, but does not compare first-note versus steady-state latency in the other three domains; silent playback would perturb round-robin/choke state |
-| **Clock-liveness gate** | Every transport start samples `currentTime` after any resume path, including already-`running`, gesture-resumed, suspended, and interrupted contexts | Helper tests cover frozen/advance/timeout; engine and transport tests fail if the caller omits the check. Timeout is non-fatal but logged; cancellation prevents an obsolete start. | Small |
+| **Voice warm-up** | Measure before adding silent voices | On the rebased graph, five fresh priority-loaded `slap-bass` runs with a preinitialized dry master measured 79.4–84.7 ms DOM-click-event-to-audible. The first source peak was identical to the four steady hits and source RMS spread was 0.027–0.032 dB under the central deadline policy. | **Not indicated for the sampled fixture only:** the cold matrix establishes first-output latency, but does not compare first-note versus steady-state latency in the other three domains; silent playback would perturb round-robin/choke state |
+| **Clock-liveness gate** | `AudioEngine.resumeAllAudioContexts` proves the shared `AudioContext` clock advances after every resume path, including already-`running`, gesture-resumed, suspended, and interrupted contexts | Engine recovery tests cover frozen/advance/retry/failure; readiness fails closed if the clock remains parked, and cancellation prevents an obsolete transport start. | Small |
 | **`navigator.mediaSession`** | Lock-screen transport and metadata | Play and pause are idempotent state commands across pending startup, cancellation, independently paused output, and active transport—not toggles. Lifecycle integration tests exercise each state. | Small |
 
 ---
@@ -379,21 +381,19 @@ valid cross-product measurements are therefore capability coverage and a
 single product-boundary performance observable: user start action to first PCM
 at each product's master bus.
 
-On 2026-09-13, Playwright Chromium 143 on an arm64 Mac at 48 kHz ran five
-fresh-browser-context trials per path against warm local servers. An
+The frozen Tone Nets trials ran on 2026-09-13; the rebased Keyboardia candidate
+was re-run on 2026-09-19 in Playwright Chromium 143 on the same arm64 Mac at
+48 kHz, with five fresh browser contexts per path against warm local servers. An
 `AudioWorkletProcessor` scans each render quantum, retains the exact absolute
 frame of the first master-bus sample at or above `1e-4`, and maps that frame to
 the page clock with `AudioContext.getOutputTimestamp()`. A control recovered a
 source scheduled at context time 0.1 s with 0 ms frame error while the main
-thread was deliberately blocked for more than 700 ms. Observer readiness is
-also bound to a known pre-emission application event: Keyboardia holds the
-awaited scheduler-release boundary until the worklet is ready, while Tone Nets
-requires readiness before its first source-to-master connection. The
-Keyboardia wait is included in its latency. A deliberately 250 ms-late pulsed
-observer still retained a positive silent prefix but measured the second pulse
-400 ms after the true first pulse; the boundary rule rejected the case that the
-old silent-prefix heuristic would have accepted. The observer is a zero-gain
-side branch and does not replace the audible route.
+thread was deliberately blocked for more than 700 ms. The rebased Keyboardia
+probe arms only after `AudioRuntimeReadiness` has completed and before that
+awaited boundary releases the scheduler; Tone Nets requires readiness before
+its first source-to-master connection. The Keyboardia wait is included in its
+latency. The observer is a zero-gain side branch and does not replace the
+audible route.
 Keyboardia starts from a loaded session page and times the first transport
 click. Tone Nets starts from its loaded landing page and times MIDI selection,
 its required first-contact action. Its path includes MIDI ingest, fetch/parse
@@ -403,16 +403,15 @@ an equal-work microbenchmark.
 
 | Product/path | Min | Median | p95 (= max at n=5) | Tone Nets / path median |
 |---|---:|---:|---:|---:|
-| Keyboardia whole engine + native `synth:lead` | 243.0 ms | **244.5 ms** | 270.1 ms | 4.97× |
-| Keyboardia cold Tone `tone:fm-epiano` | 345.9 ms | **354.5 ms** | 375.3 ms | 3.43× |
-| Keyboardia cold advanced `advanced:supersaw` | 370.0 ms | **383.6 ms** | 398.5 ms | 3.17× |
+| Keyboardia whole engine + native `synth:lead` | 256.2 ms | **261.2 ms** | 274.6 ms | 4.66× |
+| Keyboardia cold Tone `tone:fm-epiano` | 258.3 ms | **261.5 ms** | 266.8 ms | 4.65× |
+| Keyboardia cold advanced `advanced:supersaw` | 297.0 ms | **307.0 ms** | 344.1 ms | 3.96× |
 | Tone Nets first MIDI/SF2 sound | 1,195.2 ms | **1,215.9 ms** | 1,243.8 ms | 1.00× |
 
-This establishes that the tested Keyboardia medians are 68.4–79.9% lower than
-Tone Nets' tested first-contact median on this machine. An immediately preceding
-valid five-trial Keyboardia batch recorded one 755.9 ms advanced contention
-outlier (its engine-exposed and Tone-ready milestones were delayed in the same
-trial), although the final retained batch's advanced maximum is 398.5 ms. At
+The 2026-09-19 rebased Keyboardia candidate therefore measured 74.7–78.5%
+lower medians than the frozen Tone Nets first-contact result on this machine.
+The earlier pre-rebase receipt remains historical evidence, but its numbers are
+not presented as measurements of the rebased graph. At
 n=5, reported p95 is the observed maximum, not a population tail estimate. It
 does **not** establish that Keyboardia's engine is universally faster, that a
 different device preserves the ratio, or that listeners prefer its output.
@@ -422,9 +421,10 @@ The Keyboardia matrix is a gating E2E test and writes
 measured by `npm run measure:tone-nets-startup`; the script refuses to run if
 any of the ten frozen HTML, CSS, JavaScript, SoundFont, or background-media assets
 differs from the §7 hashes in the comparison document. Both retain every trial
-rather than only the median. The final paired raw values and control results
-are checked in as
-[`TONE-NETS-STARTUP-RECEIPT-2026-09-13.md`](./research/TONE-NETS-STARTUP-RECEIPT-2026-09-13.md).
+rather than only the median. The frozen reference and rebased-candidate
+receipts are checked in as
+[`TONE-NETS-STARTUP-RECEIPT-2026-09-13.md`](./research/TONE-NETS-STARTUP-RECEIPT-2026-09-13.md)
+and [`PHASE-44-REBASE-RECEIPT-2026-09-19.md`](./research/PHASE-44-REBASE-RECEIPT-2026-09-19.md).
 
 The remaining comparative gap is now named correctly: **listener preference**,
 not “a matched capture”. A matched timbre capture without a validated perceptual
@@ -432,22 +432,24 @@ endpoint would be objective data attached to an invalid quality inference.
 
 ## 9. Scorecard: original baseline versus audited state
 
-Added 2026-08-22, after re-verifying both anchors: `origin/main` is still the
-pinned `58264dd`, and the live Tone Nets deploy hashes byte-identical to the
-§7 receipt of the comparison doc (same index page SHA-256, same asset
-fingerprints, same 7,557,598-byte SoundFont). Both sides of the comparison are
-frozen, so the baseline numbers stand.
+Added 2026-08-22 and refreshed after the 2026-09-19 rebase. The original
+Keyboardia baseline remains pinned at `58264dd`; the merge candidate is rebased
+onto `origin/main` `fdb50459` and was remeasured there. The live Tone Nets
+deploy remains byte-identical to the §7 receipt of the comparison doc (same
+index page SHA-256, asset fingerprints, and 7,557,598-byte SoundFont). The
+historical baseline and external reference are frozen; current candidate
+claims use the rebase receipt.
 
 The plan is implemented. “Current” below means the audited PR state, not the
 original 2026-08-19 baseline.
 
 | Dimension | Original baseline | Current audited state | Remaining vs Tone Nets |
 |---|---|---|---|
-| Mobile audibility (iOS ringer switch) | direct Web Audio destination | final media-element route implemented; user-reported physical ringer-off pass across the iOS browsers tested | output-latency measurement; continuous background cadence is not supported |
-| Velocity → timbre, sampled path | 0% centroid spread on 12/26 instruments | 29.7–30.3% v40-v127 centroid drop on 281 requested notes for six tonal gain-only instruments; v≥90 bypass | unlocked steps unchanged by design; no time-varying filter motion |
+| Mobile audibility (iOS ringer switch) | direct Web Audio destination | `AudioGraphOwner` selects the media-element terminal; user-reported physical ringer-off pass across the iOS browsers tested | output-latency measurement; background cadence is issue #115 |
+| Velocity → timbre, sampled path | 0% centroid spread on 12/26 instruments | 29.4–30.7% v40-v127 centroid drop on 281 requested notes for six tonal gain-only instruments; v≥90 bypass | unlocked steps unchanged by design; no time-varying filter motion |
 | Per-note motion (filter envelope, LFO) | none | none — out of scope | full gap: SF2 has a filter envelope on 89% of zones, LFO on 100% |
 | Default space | `reverb.wet: 0` | 0.15 bass-protected, new sessions only; browser tail/body/peak/LU/pumping gates pass | per-instrument depth — Tone Nets carries sends per zone |
-| Startup (warm-up, clock-liveness) | clock trusted state; warm-up only a hypothesis | liveness gate plus sampled-first-use and three-domain cold matrix; late real-time sampled notes use `max(3 ms, 513 / sampleRate)` lead so the de-click ramp reaches the audio thread intact; retained medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced outlier | device matrix; no silent warm-up indicated for the sampled fixture only |
+| Startup (warm-up, clock-liveness) | clock trusted state; warm-up only a hypothesis | `AudioRuntimeReadiness` plus engine clock recovery and a three-domain cold matrix; the central dispatcher gives every near-deadline renderer 40 ms lead. Rebased medians are 261.2/261.5/307.0 ms. | device matrix; no silent warm-up indicated for the sampled fixture only |
 | `navigator.mediaSession` | absent | idempotent play/pause lifecycle implemented and tested | — |
 | Device quality tiers | none | none — not carried into this plan | comparison §4.8 remains open |
 | Source material | 582 files / 36 MB with real layers and round robins | unchanged | different breadth/structure trade-off; no preference claim |
@@ -473,7 +475,7 @@ outrun their evidence:
 | Requirement | Production entry point | Tested domain | Independent assertion / counterexample | Status |
 |---|---|---|---|---|
 | Non-resonant velocity filter | `SampledInstrument.playNote` | native low-pass | response ≤1; −3.0103 dB at cutoff; old `Q=0.7071` is a positive control for failure | passed |
-| Calibrated soft timbre | same | 281 playable notes × 44.1/48 kHz | 29.7–30.3%; exact probe count required | passed |
+| Calibrated soft timbre | same | 281 playable notes × 44.1/48 kHz | 29.4–30.7%; exact probe count required | passed |
 | Progressive loading | same | priority-only held fetch, audited range edges | mismatched source root is byte-identical bypass | passed |
 | Hardware sample rate | calibration lookup | 32/88.2/96 kHz controls; 96 kHz render | no nearest-table alias; byte-identical bypass | passed |
 | Velocity baseline | measurement script | note + articulation pairs, RR averaged | synthetic pitch/articulation confound remains 0 | passed |
@@ -481,13 +483,13 @@ outrun their evidence:
 | Media Session | sequencer lifecycle | pending, active, OS-pause, retry, unmount | latest play intent survives cancellation but cannot survive unmount | passed |
 | Default room | Tone effects + real master chain | Chromium deterministic probe + exact paired replay of a captured 16-track capacity programme | corrected tail boundary; bass-body/peak/LU bounds; same-input wet-vs-dry capacity pumping | passed |
 | Legacy room migration | HTTP hydration + real master chain | effects-absent stored session | exact dry state plus live render at explicit-dry repeat null | passed |
-| Sampled first use | preload + scheduler + sampled voice | priority-loaded `slap-bass`, five hits; master preinitialized; 13 fresh contexts | 38.7–54.7 ms DOM event to audible; source-tap repeat null 0/≤0.000002 dB peak/RMS; heard-output diagnostic ≤0.010/0.005 dB; zero-lead mutation fails source RMS in 2/12 contexts | passed with `max(3 ms, 513 / sampleRate)` real-time sampled lead; 10.6875 ms at 48 kHz; no silent voice warm-up indicated in this fixture |
-| Cold engine startup | transport + engine/preload + master output | five fresh contexts each for native, Tone, advanced | audio-thread-retained first master-PCM frame; scheduler-boundary, pulsed-late-install, overload, and 700 ms main-thread-block controls | passed; retained medians 244.5/354.5/383.6 ms; preceding-batch max 755.9 ms disclosed |
+| Sampled first use | readiness + central dispatcher + sampled renderer | priority-loaded `slap-bass`, five hits; master preinitialized; five fresh contexts on rebased head | 79.4–84.7 ms DOM event to audible; source peak spread 0 dB and source RMS spread 0.027–0.032 dB; renderer-local time shifting is absent | passed with one 40 ms near-deadline policy shared by every renderer; no silent voice warm-up indicated in this fixture |
+| Cold engine startup | transport + `AudioRuntimeReadiness` + master output | five fresh contexts each for native, Tone, advanced | audio-thread-retained first master-PCM frame; readiness-boundary and 700 ms main-thread-block control | passed on rebased head; medians 261.2/261.5/307.0 ms |
 | Frozen Tone Nets reference | external first-contact path | five fresh contexts; exact ten-asset hash gate | MIDI selection to audio-thread-retained first master-PCM frame; readiness before first master input | measured; median 1,215.9 ms |
 | Sustaining library statistic | validator | eight classified manifests | median native-root duration ≥2 s; no every-note claim | passed |
 | Physical mobile audibility | final media-element route | physical iPhone, ringer off, iOS browsers tested by the user | user-reported audition on 2026-09-15; device and browser versions not recorded | **passed with evidence limitation** |
 | Physical mobile output latency | final media-element route | physical iPhone | loopback capture or known-impulse estimate | **open release gate** |
-| Background sequencing | web scheduler + audio lifecycle | backgrounded iOS browsers | user reported missed beats on 2026-09-15 | **known limitation; continuous cadence not supported** |
+| Background sequencing | web scheduler + audio lifecycle | backgrounded iOS browsers and macOS Safari | user reported missed beats; tracked in issue #115 | **known limitation; continuous cadence not supported** |
 
 - **Change 2 — velocity → cutoff** (`velocity-sample-filter.ts`,
   `sampled-instrument.ts`). One lowpass per voice, bypassed at
@@ -519,16 +521,17 @@ outrun their evidence:
   pre-compressor samples through dry and wet production master states. The
   migration lane loads an actual effects-absent stored session before comparing
   it with explicit dry.
-- **Change 1 — mobile output** (`mobile-media-output.ts`, `engine.ts`).
-  Both the native and Tone-effects master chains terminate in the same
-  MediaStreamDestination → hidden `playsinline` element. It starts before the
+- **Change 1 — mobile output** (`audio-graph-owner.ts`,
+  `mobile-media-output.ts`). Both the native and Tone-effects master chains
+  terminate at the generation-checked graph owner's one terminal. On mobile,
+  that terminal is MediaStreamDestination → hidden `playsinline` element. It starts before the
   first gesture-path `await`, is retried even while AudioContext says
   `running`, and re-arms after an OS pause; desktop stays on `destination`.
   Verified: both final routes, fallback, running-context unlock, gesture retry,
   external pause, and dispose. The 2026-09-15 physical-iPhone report closes
   ringer-off audibility across the iOS browsers tested. **Still owed:** an
-  objective output-latency measurement. Backgrounded browsers can miss beats;
-  this route was not designed or accepted as continuous background sequencing.
+  objective output-latency measurement. Backgrounded iOS browsers and macOS
+  Safari can miss beats; issue #115 owns that separate product contract.
 - **§4 guard** (`instrument-classification.ts`,
   `scripts/validate-sustain-ceiling.ts`, in `validate:all`). Eight
   sustaining instruments pass the deliberately median/native-root statistic;
@@ -537,26 +540,17 @@ outrun their evidence:
   the guard. Plucked instruments remain deliberately unclassified; the 1.94 s
   finger-bass minimum is reported rather than hidden behind the median.
 - **§6**: `navigator.mediaSession` play/pause handlers are idempotent transport
-  commands across pending and active states. Clock liveness is sampled at every
-  playback boundary as well as after a gesture resume, including when state is
-  already `running`. The browser capture found that scheduling the first sampled
-  note at `currentTime` could deliver its 3 ms de-click ramp partly in the past.
-  The real-time sampled path now uses
-  `max(3 ms, 513 / sampleRate seconds)`—four 128-frame render quanta plus one
-  frame—when the requested event has less lead; at 48 kHz that is a disclosed
-  10.6875 ms floor. Sufficiently future-scheduled sampled events keep their
-  requested time, offline sampled renders retain a zero floor, and
-  native/Tone/advanced paths are unchanged. Thirteen fresh browser contexts
-  then held the causal
-  pre-compressor repeat null below 0.000002 dB RMS. This removes a
-  late-scheduling transient; it is not silent voice warm-up. The retained
-  negative/guarded receipt is
-  [`SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md`](./research/SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md).
-  A separate five-trial-per-domain browser
-  test now measures cold Tone, advanced-instrument, and whole-engine first PCM;
-  retained medians were 244.5/354.5/383.6 ms on the recorded environment. One
-  advanced trial in the immediately preceding valid batch reached 755.9 ms
-  under same-trial initialization contention.
+  commands across pending and active states. `AudioEngine` owns clock recovery;
+  `AudioRuntimeReadiness` owns preparation; `note-dispatcher.ts` owns the only
+  near-deadline decision. The rebase removed PR #98's duplicate clock helper
+  and sampled-renderer timestamp shift. A rebased negative run proved that a
+  merely non-late first event can still miss the render handoff: 12 ms left the
+  first source peak 1.35 dB low, and 20 ms still left 0.18 dB RMS spread. The
+  shared policy now reserves 40 ms only for events inside that deadline; events
+  already farther ahead retain their absolute timestamp. Five fresh sampled
+  runs measured identical first/steady peak, 0.027–0.032 dB source RMS spread,
+  and 79.4–84.7 ms action-to-audible. The current five-trial cold medians are
+  261.2/261.5/307.0 ms for native/Tone/advanced.
 - **Measurement correction** (`measure-velocity-timbre.ts`). Velocity layers
   are paired within note and articulation, round robins are averaged within
   each pair, single-layer notes contribute zero, and decoded onset treatment
@@ -686,7 +680,7 @@ same simplified models:
     trim is now −2.25 dB. The test captures one live capacity programme and
     replays the exact pre-compressor samples twice through the production
     master graph, changing only the room state; three 48 kHz repeats measured
-    0.000 dB pumping delta and remained below −0.76 dBTP. The complete five-test
+    0.000 dB pumping delta and remained below −0.76 dBTP. The complete six-test
     dev-only PCM file is now an exact-inventory pre-push gate. Cross-platform
     safety is enforced in the required Linux CI lane rather than inferred from
     a single hardware sample rate.
@@ -707,8 +701,9 @@ The remaining Phase 44 release evidence gap is irreducibly physical: CI cannot
 measure the iPhone's added output latency. The user-reported 2026-09-15 test
 closes ringer-off audibility across the iOS browsers tested, but did not record
 device/browser versions or a latency result. It also confirmed the separate
-known limitation that backgrounded iOS browsers can miss sequencer beats; no
-continuous-background guarantee should be inferred from the media-element
+known limitation that backgrounded iOS browsers and macOS Safari can miss
+sequencer beats; issue #115 tracks the separate background-cadence contract.
+No continuous-background guarantee should be inferred from the media-element
 route. §8 closes the objective desktop first-contact comparison; a randomized,
 level-matched listening study remains necessary only if release language
 asserts listener preference.
@@ -738,7 +733,7 @@ items must not be collapsed into that statement:
 |---|---|---|
 | Physical mobile audibility | **Passed with evidence limitation** | user-reported ringer-off pass on 2026-09-15 across the iOS browsers tested; record device/iOS/browser versions in any repeat |
 | Physical mobile output latency | **Open release gate** | loopback capture or a known-impulse estimate on a physical iPhone |
-| Continuous background sequencing on iOS | **Known limitation; not supported** | requires a separately specified platform/architecture investigation if it becomes a product requirement |
+| Continuous background sequencing on iOS and macOS Safari | **Known limitation; issue #115** | choose and verify either continuous delivery or deterministic suspension/resume as the product contract |
 | Startup generalization | **Measured on one desktop environment only** | preregistered physical/device/browser matrix; five-trial p95 here is the observed maximum, not a population tail estimate |
 | Silent voice warm-up | **Rejected only for the sampled `slap-bass` fixture** | first-note-versus-steady ablations for native, Tone, and advanced paths before making a broader claim |
 | Sustain loops | **Deliberately demoted, not missing** | no action while the manifest-driven duration guard passes; add instrument-specific loops only after a requested-note/session failure |

@@ -53,6 +53,18 @@ describe('useTrackPrewarm', () => {
     expect(preload).not.toHaveBeenCalled();
   });
 
+  it('does not repeat play-start readiness for an unchanged paused snapshot', () => {
+    const state = makeState([track('A', 'tone:fm-bass')]);
+    const { rerender } = renderHook(
+      ({ playing }: { playing: boolean }) => useTrackPrewarm(state, playing),
+      { initialProps: { playing: false } },
+    );
+
+    rerender({ playing: true });
+
+    expect(preload).not.toHaveBeenCalled();
+  });
+
   it('prewarms once on the first render while playing', () => {
     const state = makeState([track('A', 'tone:fm-bass')]);
     renderHook(() => useTrackPrewarm(state, true));

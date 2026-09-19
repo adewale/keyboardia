@@ -10,9 +10,9 @@ import { VELOCITY_FILTER_BYPASS_VELOCITY } from './velocity-sample-filter';
 
 /**
  * Structural contract for the Phase 44 per-voice velocity lowpass: the graph
- * gains a filter node only when the manifest declares an anchor AND the note
- * is below the bypass velocity, and the bypassed graph is node-for-node the
- * same as a manifest without the field.
+ * gains a filter node only when the calibration table resolves an anchor AND
+ * the note is below the bypass velocity, and the bypassed graph is
+ * node-for-node the same as a note without a calibration entry.
  */
 
 let instrumentCounter = 0;

@@ -85,6 +85,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 74: An Objective Comparison Needs a Shared Observable, Not a Shared Vibe](#lesson-74-an-objective-comparison-needs-a-shared-observable-not-a-shared-vibe)
 - [Lesson 75: A Shared Fixture Is Not a Paired Audio Experiment](#lesson-75-a-shared-fixture-is-not-a-paired-audio-experiment)
 - [Lesson 76: An Audio Route Does Not Guarantee Background Scheduling](#lesson-76-an-audio-route-does-not-guarantee-background-scheduling)
+- [Lesson 77: Rebase Behavior, Not Competing Authorities](#lesson-77-rebase-behavior-not-competing-authorities)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -6197,7 +6198,7 @@ bundled module order reproduced the original failure.
 
 The audit also found that CI's reviewed Chromium and WebKit skip inventories
 had been refreshed without updating the equivalent pre-push assertions. The
-local contracts now use the same 209/24 and 162/57 pass/skip dispositions, so a
+local contracts now use the same 209/28 and 162/58 pass/skip dispositions, so a
 successful full browser run is accepted consistently in both places.
 
 The implementation also made the cost visible. Nominal units remain primitive
@@ -6284,13 +6285,17 @@ first-256-frame window, frames 0–142 differed and frames 143–255 matched; th
 failed attack fit a 16-frame ramp instead of the intended 144-frame ramp, exactly
 one 128-frame render quantum lost. The first event's 3 ms de-click ramp had been
 scheduled at `currentTime` and could reach the audio thread partly in the past.
-This was a late-scheduling transient, not sample loading, voice initialization,
-or random gain. The real-time sampled path now uses
-`max(3 ms, 513 / sampleRate seconds)` lead when an event arrives too near its
-deadline—10.6875 ms at 48 kHz—while sufficiently future events, offline sampled
-renders, and the other three engines retain their timing. All 13 guarded fresh
-contexts passed. The test now gates the causal source tap, retains the stateful
-master result only as a diagnostic, and makes the bounded latency cost explicit.
+This was a scheduling transient, not sample loading, voice initialization, or
+random gain. The pre-rebase repair added lead inside the sampled renderer. The
+later audio-time architecture made that renderer-local repair invalid because
+the central dispatcher had become the sole timestamp authority. Rebased
+calibration showed that 12 ms of central lead still left the first peak 1.35 dB
+low and 20 ms left 0.177 dB RMS spread. The shared policy now reserves 40 ms
+only for events inside the render deadline; events already farther ahead keep
+their absolute timestamp, and no renderer adds its own lead. Five fresh runs
+measured identical first/steady peaks, 0.027–0.032 dB source RMS spread, and
+79.4–84.7 ms action-to-audible. The test gates the causal source tap, retains
+the stateful master result as a diagnostic, and makes the latency cost explicit.
 
 ### What tooling and verification were missing
 
@@ -6443,8 +6448,8 @@ production output trim is now −2.25 dB, with the repeated local true peaks bel
 −0.76 dBTP. The required Linux lane remains the authority for the 44.1 kHz
 platform result.
 
-Pre-push now runs all five `capture-session.spec.ts` tests against the mock/Vite
-build and asserts the exact five-pass inventory. The inventory validator binds
+Pre-push now runs all six `capture-session.spec.ts` tests against the mock/Vite
+build and asserts the exact six-pass inventory. The inventory validator binds
 that declared count to Playwright's authoritative collector before the costly
 browser gates begin.
 
@@ -6471,7 +6476,9 @@ The Phase 44 media-element terminal solved the contract it was built for. In a
 2026-09-15 physical-iPhone test, the staged build remained audible with the
 ringer switch off across the iOS browsers tested. The same session exposed a
 different behavior: once a browser was backgrounded, it did not play every
-sequencer beat.
+sequencer beat. macOS Safari exhibits the same product-level symptom, now
+tracked with the iOS case in
+[#115](https://github.com/adewale/keyboardia/issues/115).
 
 We had grouped several mobile-audio questions under one informal phrase—“works
 on iPhone”—even though they have different mechanisms and evidence:
@@ -6508,3 +6515,100 @@ resume says foreground recovery works. Neither says a backgrounded sequencer
 will deliver every beat. If continuous background playback becomes a product
 requirement, give it its own platform investigation, measurement, and release
 gate rather than expanding the meaning of the unlock test after the fact.
+
+---
+
+## Lesson 77: Rebase Behavior, Not Competing Authorities
+
+**Date:** September 2026
+
+**Context:** Rebasing Phase 44 / PR
+[#98](https://github.com/adewale/keyboardia/pull/98) after the audio timing and
+graph-ownership stack landed
+
+### What happened
+
+PR #98 and the new audio architecture had solved some of the same incidents at
+different layers. The old branch contained its own clock-liveness helper, a
+sampled-renderer lead calculation, direct assumptions about the mobile output
+route, and startup probes that wrapped Tone and preload internals. `main` now
+owned those concerns through `AudioEngine`, `AudioRuntimeReadiness`,
+`note-dispatcher`, and `AudioGraphOwner`.
+
+A conflict-free or type-correct rebase could therefore still be wrong. Keeping
+both implementations would create two policies; choosing `main` wholesale
+would silently drop Phase 44's evidence. The first mechanical rebase did both
+in different places: it left a dead duplicate clock helper and retained a
+renderer-local timestamp shift, while conflict resolution discarded the cold
+startup, sampled-first-use, room, and Media Session lifecycle regressions.
+It also exposed a provenance test that treated a historical mapping receipt as
+the current manifest owner, even though main had since introduced explicit
+remediation receipts, and a stale acoustic-guitar calibration table whose
+21.1–35.4% range contradicted the claimed 26–35% per-note contract.
+
+### What we misunderstood
+
+We treated the rebase as a file-integration problem. It was an authority-
+integration problem. The right unit was not “which version of this file wins?”
+but “which component is now allowed to decide time, readiness, routing, and
+lifecycle, and which behavior/evidence must be re-expressed through it?”
+
+We also assumed that moving the old 10.6875 ms sampled lead into the central
+policy would preserve its result. The browser falsified that assumption. On the
+rebased pipeline 12 ms still lost 1.35 dB of the first peak, and 20 ms still
+left 0.177 dB RMS spread. Only a repeated PCM measurement could calibrate the
+new end-to-end handoff rather than cargo-culting the old constant.
+
+### What tooling and verification were missing
+
+- An ownership ledger for cross-cutting concerns before resolving conflicts.
+  Every concern needs one named authority and zero fallback owners.
+- A post-rebase semantic diff against those invariants, not just a textual diff
+  or successful TypeScript build.
+- Dead-runtime-export validation. It immediately exposed the orphaned
+  `clock-liveness.ts` implementation.
+- Browser evidence that crosses the new boundary. The cold probe now arms at
+  `AudioRuntimeReadiness`; first-use timing is asserted after the central
+  dispatcher; mobile output is tested behind the graph owner.
+- Exact E2E inventory binding. The rebase temporarily claimed a six-test PCM
+  gate while collecting fewer tests and carried stale Chromium/WebKit skip
+  totals. `validate:e2e-inventories` now rejects that mismatch before browsers
+  run.
+- A transition test for stopped → playing readiness. It exposed redundant
+  `useTrackPrewarm` work that immediately drove `ready → preparing` again after
+  the play-start gate had already prepared the same snapshot.
+- Provenance-chain assertions. A historical calibration hash must either match
+  the current manifest or link exactly to a later remediation receipt whose
+  output does; comparing every old receipt directly to the latest file rejects
+  legitimate, recorded evolution.
+- Mandatory execution of the expensive acoustic validator before declaring a
+  rebase complete. Targeted unit tests proved the filter graph shape but did
+  not render every calibrated note at both supported sample rates.
+
+### The fix
+
+The duplicate clock helper was deleted; engine recovery remains authoritative.
+The mobile terminal remains owned by `AudioGraphOwner`. Startup measurement
+wraps `prepareForPlayback`, not Tone/preload internals. Media Session lifecycle
+tests were rebuilt around the readiness-gated transport. The sampled-only time
+shift was removed, and the shared dispatcher now applies a measured 40 ms lead
+only to near-deadline events for every renderer. Five fresh sampled runs held
+peak spread to 0 dB and RMS spread to 0.027–0.032 dB. Five fresh contexts per
+cold path measured 261.2/261.5/307.0 ms medians for native, Tone, and advanced
+startup. The six-test PCM suite, room migration, capacity, and exact inventory
+gate all pass on the rebased candidate.
+The sample-pipeline contract now follows mapping calibration through any later
+remediation receipt to the current manifest, and the stale acoustic-guitar
+mapping hash was refreshed after its filter anchor moved out of the manifest.
+The checked-in acoustic-guitar anchor tables were regenerated with the
+production solver; all 281 note/rate combinations now span 29.4–30.7% and the
+26–35% repository gate passes.
+
+### The rule
+
+**Rebase behavior onto the new owner; never rebase an old owner beside it.**
+Before resolving overlapping files, name the sole authority for each invariant,
+list the behaviors and evidence that must survive, and require a negative or
+browser-level test at the new boundary. A compiler proves shapes. It does not
+prove that one clock, graph, readiness machine, or lifecycle command remains in
+charge.

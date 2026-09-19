@@ -9,7 +9,6 @@ import {
 } from './__fakes__/FakeWebAudio';
 import {
   ATTACK_FADE_SEC,
-  realtimeNoteLeadTime,
   RELEASE_FLOOR_GAIN,
   RELEASE_TAIL_GUARD_SEC,
 } from './note-schedule';
@@ -116,16 +115,13 @@ describe('playNote scheduling (P1)', () => {
     ]);
   });
 
-  it('moves late real-time notes far enough ahead to preserve the attack ramp', async () => {
+  it('clamps late notes to currentTime instead of throwing', async () => {
     const { ctx, instrument } = await loadInstrument({ manifest: SINGLE_SAMPLE });
     ctx.currentTime = 2.0;
 
     instrument.playNote('n1', 60, 1.5, 0.25, 1);
 
-    expect(ctx.lastSource.startCalls[0].when).toBeCloseTo(
-      2 + realtimeNoteLeadTime(ctx.sampleRate),
-      10,
-    );
+    expect(ctx.lastSource.startCalls[0].when).toBe(2.0);
   });
 
   it('anchors the release envelope to the scheduled start, not the wall clock', async () => {

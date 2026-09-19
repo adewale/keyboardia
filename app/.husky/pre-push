@@ -109,8 +109,8 @@ PCM_START=$(date +%s)
 
 # The synchronized PCM taps are deliberately omitted from production Worker
 # bundles. The real-backend lanes therefore skip this file, so run its complete
-# five-test contract against the mock/Vite build instead of leaving it CI-only.
-if USE_MOCK_API=1 E2E_FUNCTIONAL_ONLY=1 CI=true E2E_PORT=5176 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-pcm.json npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0 && node scripts/assert-playwright-stats.mjs test-results/prepush-pcm.json 5 0; then
+# six-test contract against the mock/Vite build instead of leaving it CI-only.
+if USE_MOCK_API=1 E2E_FUNCTIONAL_ONLY=1 CI=true E2E_PORT=5176 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-pcm.json npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0 && node scripts/assert-playwright-stats.mjs test-results/prepush-pcm.json 6 0; then
     PCM_END=$(date +%s)
     PCM_DURATION=$((PCM_END - PCM_START))
     echo ""
@@ -120,7 +120,7 @@ else
     echo ""
     echo "❌ PCM capture tests FAILED"
     echo ""
-    echo "The dev-only audio evidence or its exact five-test inventory failed."
+    echo "The dev-only audio evidence or its exact six-test inventory failed."
     echo "Fix the issue before pushing."
     echo "To skip: git push --no-verify"
     echo ""
@@ -137,7 +137,7 @@ FULL_START=$(date +%s)
 
 # Screenshot contracts have runner-specific baselines and a dedicated CI lane;
 # the functional gate must not generate or bless developer-machine snapshots.
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 209 26; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 209 28; then
     FULL_END=$(date +%s)
     FULL_DURATION=$((FULL_END - FULL_START))
     echo ""
@@ -163,7 +163,7 @@ echo ""
 
 WEBKIT_START=$(date +%s)
 
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 162 57; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 162 58; then
     WEBKIT_END=$(date +%s)
     WEBKIT_DURATION=$((WEBKIT_END - WEBKIT_START))
     echo ""

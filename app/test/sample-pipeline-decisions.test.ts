@@ -41,10 +41,20 @@ const sha256File = (filename: string): string => createHash('sha256').update(fs.
 const sorted = (values: readonly string[]): string[] => [...values].sort((left, right) => left.localeCompare(right));
 
 describe('exact-hash human rejection decisions', () => {
-  it('binds every mapping-calibration receipt to its current production manifest', () => {
+  it('binds every mapping calibration through any later remediation to the current manifest', () => {
     for (const calibration of mappingCalibrationReceipt.instruments) {
       const manifestPath = path.resolve('public/instruments', calibration.id, 'manifest.json');
-      expect(sha256File(manifestPath), calibration.id).toBe(calibration.manifestSha256);
+      const remediation = remediationCalibrationReceipt.instruments.find(
+        entry => entry.id === calibration.id,
+      );
+      if (remediation) {
+        expect(remediation.previousManifestSha256, calibration.id).toBe(
+          calibration.manifestSha256,
+        );
+      }
+      expect(sha256File(manifestPath), calibration.id).toBe(
+        remediation?.manifestSha256 ?? calibration.manifestSha256,
+      );
     }
   });
 

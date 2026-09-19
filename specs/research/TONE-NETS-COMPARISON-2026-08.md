@@ -54,7 +54,7 @@ not a winner:
   remains unmeasured, and backgrounded browsers can miss beats; neither is
   inferred from the architecture.
 - **Startup** — §8 measures first master PCM rather than inferring speed from
-  initialization code. The tested Keyboardia medians are 244.5–383.6 ms; the
+  initialization code. The rebased Keyboardia medians are 261.2–307.0 ms; the
   frozen Tone Nets first-MIDI median is 1,215.9 ms under its heavier required
   first-contact workload.
 - **Timing responsibility** — Keyboardia has a worklet scheduler and live
@@ -495,10 +495,12 @@ both product harnesses still recovered the exact 0.1 s audio frame (0 ms error).
 Connect-overload controls also cover explicit `undefined` and `AudioParam`
 destinations so instrumentation cannot alter legal production graph calls.
 Observer readiness is bound to an application event that precedes emission:
-Keyboardia's awaited preload hook holds the scheduler-release boundary until
-the worklet is ready, and Tone Nets' worklet is ready before the first upstream
-source connects to its master gain. The Keyboardia wait is included in the
-reported latency, making that result conservative by the observer setup wait.
+the rebased Keyboardia probe arms after the shared
+`AudioRuntimeReadiness.prepareForPlayback` work and before that awaited
+boundary releases the scheduler, while Tone Nets' worklet is ready before the
+first upstream source connects to its master gain. The Keyboardia wait is
+included in the reported latency, making that result conservative by the
+observer setup wait.
 A 250 ms-late pulsed control retained thousands of silent frames yet observed
 the second pulse 400 ms after the true first pulse. The old silent-prefix rule
 would have accepted it; the application-boundary rule rejected it. The
@@ -510,21 +512,21 @@ landing page.
 
 | Product/path | Min | Median | p95 (= max at n=5) |
 |---|---:|---:|---:|
-| Keyboardia whole engine + native `synth:lead` | 243.0 ms | **244.5 ms** | 270.1 ms |
-| Keyboardia cold Tone `tone:fm-epiano` | 345.9 ms | **354.5 ms** | 375.3 ms |
-| Keyboardia cold advanced `advanced:supersaw` | 370.0 ms | **383.6 ms** | 398.5 ms |
+| Keyboardia whole engine + native `synth:lead` | 256.2 ms | **261.2 ms** | 274.6 ms |
+| Keyboardia cold Tone `tone:fm-epiano` | 258.3 ms | **261.5 ms** | 266.8 ms |
+| Keyboardia cold advanced `advanced:supersaw` | 297.0 ms | **307.0 ms** | 344.1 ms |
 | Tone Nets first MIDI/SF2 sound | 1,195.2 ms | **1,215.9 ms** | 1,243.8 ms |
 
-The Keyboardia medians are respectively 79.9%, 70.8%, and 68.4% lower than
+The Keyboardia medians are respectively 78.5%, 78.5%, and 74.7% lower than
 the Tone Nets median on this machine. This is a product-boundary first-contact
 measurement, not an equal-work engine microbenchmark: Tone Nets' action includes
 MIDI ingest, a 7.56 MB SoundFont fetch/parse, fixed stabilization waits, worklet
 creation, and silent warm-up notes. Keyboardia's action includes engine/Tone
 construction and instrument preload from an already-loaded session page.
-An immediately preceding valid Keyboardia batch recorded one 755.9 ms advanced
-trial while its engine-exposed and Tone-ready milestones were also delayed; the
-final retained batch's advanced maximum is 398.5 ms. At n=5, p95 equals the
-observed maximum and neither batch is a population tail estimate.
+At n=5, p95 equals the observed maximum and is not a population tail estimate.
+The former 244.5/354.5/383.6 ms candidate is retained in the 2026-09-13
+receipt as historical pre-rebase evidence, not as evidence for the merge
+candidate.
 
 The persistent guards are:
 
@@ -541,18 +543,21 @@ npm run measure:tone-nets-startup -- --url http://127.0.0.1:4175/ --trials 5
 Both reports retain all trials. The E2E fails if any Keyboardia path emits no
 master PCM, exceeds five seconds, or does not create a real audio context. The
 Tone Nets tool fails before launching Chromium if any frozen asset differs.
-The final paired raw values and oracle controls are preserved in
-[`TONE-NETS-STARTUP-RECEIPT-2026-09-13.md`](./TONE-NETS-STARTUP-RECEIPT-2026-09-13.md).
+The frozen Tone Nets values and the rebased Keyboardia evidence are preserved
+separately in
+[`TONE-NETS-STARTUP-RECEIPT-2026-09-13.md`](./TONE-NETS-STARTUP-RECEIPT-2026-09-13.md)
+and
+[`PHASE-44-REBASE-RECEIPT-2026-09-19.md`](./PHASE-44-REBASE-RECEIPT-2026-09-19.md).
 
 ### 8.2 What objectively improved in Phase 44
 
 | Contract | Before | Audited Phase 44 state | Residual gap |
 |---|---|---|---|
-| Sampled velocity timbre | 12/26 instruments gain-only | six tonal gain-only instruments now show 29.7–30.3% v40-v127 centroid reduction over all 281 audited requested notes at 44.1/48 kHz | unlocked/v≥90 notes bypass; no sampled per-note motion |
+| Sampled velocity timbre | 12/26 instruments gain-only | six tonal gain-only instruments now show 29.4–30.7% v40-v127 centroid reduction over all 281 audited requested notes at 44.1/48 kHz | unlocked/v≥90 notes bypass; no sampled per-note motion |
 | New-session space | global reverb 0 | 0.15 room; tail +19.7–24.8 dB, bass body within ±0.109 dB, peak/LU bounded, and 0.000 dB compressor delta when the exact captured 16-track input is replayed dry/wet | one global depth |
-| Cold startup evidence | sampled first-use fixture only | retained native/Tone/advanced medians 244.5/354.5/383.6 ms; a preceding valid batch exposed one 755.9 ms advanced contention outlier | physical-device matrix/generalization |
-| First sampled onset consistency | first note could schedule its de-click ramp at `currentTime`, allowing the render thread to enter mid-ramp | real-time sampled lead `max(3 ms, 513 / sampleRate)`; a zero-lead mutation failed source RMS in 2/12 contexts, while 13/13 guarded contexts measured 38.7–54.7 ms click-to-audible and a 0/≤0.000002 dB source peak/RMS repeat null | the floor costs 10.6875 ms at 48 kHz for an event with insufficient lead; other sampled instruments and physical devices remain unmeasured |
-| Mobile output | direct Web Audio destination | both final graphs terminate through the mobile media-element route; user-reported physical ringer-off pass across the iOS browsers tested | device output latency unmeasured; continuous background cadence not supported |
+| Cold startup evidence | sampled first-use fixture only | rebased native/Tone/advanced medians 261.2/261.5/307.0 ms through the shared readiness boundary | physical-device matrix/generalization |
+| First sampled onset consistency | first note could schedule its de-click ramp at `currentTime`, allowing the render thread to enter mid-ramp | one central 40 ms near-deadline policy; five fresh contexts measured 79.4–84.7 ms click-to-audible, 0 dB source peak spread, and 0.027–0.032 dB source RMS spread | bounded latency applies to every near-deadline renderer; other sampled instruments and physical devices remain unmeasured |
+| Mobile output | direct Web Audio destination | `AudioGraphOwner` terminates through the mobile media-element route; user-reported physical ringer-off pass across the iOS browsers tested | device output latency unmeasured; continuous background cadence on iOS browsers and macOS Safari is [issue #115](https://github.com/adewale/keyboardia/issues/115) |
 | Sustain safety | loop metadata existed but was mostly absent | eight sustaining manifests have a ≥2 s median native-root regression guard | intentionally no every-note/extreme-tie guarantee |
 
 ### 8.3 Why sustain loops were demoted
@@ -579,16 +584,19 @@ shortfall; 32-second extreme ties and every transposed note are not claimed.
 
 The sampled first-use investigation also separated warm-up from late
 scheduling. A silent priming note cannot repair automation placed partly in the
-past. Keyboardia now reserves `max(3 ms, 513 / sampleRate seconds)`—four
-128-frame render quanta plus one frame—for a real-time sampled note requested
-with insufficient lead. That floor is 10.6875 ms at 48 kHz and 11.6327 ms at
-44.1 kHz. Sufficiently future-scheduled sampled notes keep their requested
-time, offline sampled renders pass a zero floor, and the native, Tone, and
-advanced paths are untouched. This is a bounded scheduling correction with a
-disclosed latency cost, not evidence for pre-playing voices. The 12-context
-negative control, 13-context guarded control, and exact source-prefix frames
-are retained in
-[`SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md`](./SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md).
+past. The pre-rebase renderer-local floor proved to be the wrong ownership
+model after `note-dispatcher` became the timestamp authority: retaining it
+would let two layers rewrite the same event time. Keyboardia now gives every
+near-deadline renderer one measured 40 ms lead in the central lateness policy;
+safely future-scheduled events keep their requested timestamp. Calibration on
+the rebased path showed that 12 ms still lost 1.35 dB of the first peak and
+20 ms left 0.177 dB RMS spread. Five fresh contexts at 40 ms held source peak
+spread to 0 dB and RMS spread to 0.027–0.032 dB. This is a bounded scheduling
+correction with a disclosed latency cost, not evidence for pre-playing voices.
+The old negative control remains in
+[`SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md`](./SAMPLED-FIRST-USE-RECEIPT-2026-09-13.md),
+and the current evidence is in
+[`PHASE-44-REBASE-RECEIPT-2026-09-19.md`](./PHASE-44-REBASE-RECEIPT-2026-09-19.md).
 
 - **Per-note sampled filter envelopes:** viable as opt-in manifest metadata and
   automation of the existing lowpass. Global use would break the deliberate

@@ -118,10 +118,12 @@ iOS Safari can put the AudioContext in an "interrupted" state (not just "suspend
 - Siri activates
 
 Background execution is a separate contract from audibility. The 2026-09-15
-physical test reported missed beats while iOS browsers were backgrounded. The
-media-element output route does not guarantee that the page scheduler or audio
-graph will keep delivering every beat in that state. Continuous background
-sequencing is therefore a known unsupported limitation, not a failed
+physical test reported missed beats while iOS browsers were backgrounded, and
+macOS Safari exhibits the same product-level symptom. The media-element output
+route does not guarantee that the page scheduler or audio graph will keep
+delivering every beat in that state. Continuous background sequencing is a
+known unsupported limitation tracked in
+[#115](https://github.com/adewale/keyboardia/issues/115), not a failed
 ringer-switch unlock.
 
 **Solution:** Check for both `suspended` and `interrupted` states:
