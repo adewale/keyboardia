@@ -457,7 +457,9 @@ jobs:
           # by the real-Worker Linux visual lane. populated-visual.spec.ts is
           # deterministic mock-backed evidence and remains in this lane.
           npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 90 72
+          # The Worker-owned envelope convergence contract remains discovered
+          # here as an intentional skip and runs in the real collaboration lane.
+          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 90 73
         env:
           USE_MOCK_API: '1'
           E2E_FUNCTIONAL_ONLY: '1'
