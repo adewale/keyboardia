@@ -434,7 +434,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 7,
         noteGainSlot: 5,
         variationKeySlot: null,
-        argumentCount: 8,
+        argumentCount: 11,
       },
       playSampledInstrument: {
         trackIdSlot: 6,
@@ -446,7 +446,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 7,
         noteGainSlot: 5,
         variationKeySlot: null,
-        argumentCount: 8,
+        argumentCount: 11,
       },
       playToneSynth: {
         trackIdSlot: 5,
@@ -458,7 +458,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 6,
         noteGainSlot: 4,
         variationKeySlot: null,
-        argumentCount: 7,
+        argumentCount: 10,
       },
       playAdvancedSynth: {
         trackIdSlot: 5,
@@ -470,7 +470,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 6,
         noteGainSlot: 4,
         variationKeySlot: null,
-        argumentCount: 7,
+        argumentCount: 10,
       },
     });
     const receipt = validReceipt();
@@ -495,7 +495,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocity: 127,
         noteGain: 1,
         durationSeconds: LIVE_NOTE_DURATION_SECONDS,
-        argumentCount: type === 'sampled' || type === 'synth' ? 8 : 7,
+        argumentCount: LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD[expected.method].argumentCount,
         variationKey: null,
       });
     }

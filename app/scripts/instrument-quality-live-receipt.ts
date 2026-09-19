@@ -115,7 +115,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 7,
     noteGainSlot: 5,
     variationKeySlot: null,
-    argumentCount: 8,
+    argumentCount: 11,
   },
   playSampledInstrument: {
     trackIdSlot: 6,
@@ -127,7 +127,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 7,
     noteGainSlot: 5,
     variationKeySlot: null,
-    argumentCount: 8,
+    argumentCount: 11,
   },
   playToneSynth: {
     trackIdSlot: 5,
@@ -139,7 +139,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 6,
     noteGainSlot: 4,
     variationKeySlot: null,
-    argumentCount: 7,
+    argumentCount: 10,
   },
   playAdvancedSynth: {
     trackIdSlot: 5,
@@ -151,7 +151,7 @@ export const LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD = Object.freeze({
     midiVelocitySlot: 6,
     noteGainSlot: 4,
     variationKeySlot: null,
-    argumentCount: 7,
+    argumentCount: 10,
   },
 } as const satisfies Record<LiveDispatchMethod, LiveEngineDispatchLayout>);
 
