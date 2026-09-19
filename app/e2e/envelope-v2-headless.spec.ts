@@ -64,11 +64,13 @@ test.describe('Envelope v2 headless correctness profile', () => {
       return module.audioEngine.trackEnvelopeV2Overrides?.get('headless-pad') ?? null;
     })).toEqual(envelope);
 
+    await page.getByRole('button', { name: /Invite/ }).click();
     const copyNotation = page.getByRole('button', { name: 'Copy Notation' });
     await expect(copyNotation).toBeEnabled();
     await copyNotation.click();
-    await expect(page.getByRole('button', { name: 'Notation Copied!' })).toBeVisible();
-    const notation = await page.evaluate(() => navigator.clipboard.readText());
+    const readNotation = () => page.evaluate(() => navigator.clipboard.readText());
+    await expect.poll(readNotation).toContain('[amp:adsr,10ms,2st,0.7,300ms]');
+    const notation = await readNotation();
     expect(notation).toContain('[amp:adsr,10ms,2st,0.7,300ms]');
     expect(notation).toContain('[gate:75%]');
     expect(notation).toContain('[lock:1,release,300ms]');
