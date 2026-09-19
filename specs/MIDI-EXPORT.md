@@ -761,7 +761,7 @@ MIDI files are extremely compact (<100KB for complex sessions). Browser memory l
 
 Keyboardia's audio engine uses one unified output path:
 
-`track bus → masterGain(−3 dB) → compressor → makeup trim → effects → limiter(−1 dB) → output trim(−1 dB) → Tone.Destination (Volume → Gain) → raw AudioContext destination`
+`track bus → masterGain(unity) → compressor → makeup trim → effects → limiter(−2 dB) → output trim(−2 dB) → Tone.Destination (Volume → Gain) → raw AudioContext destination`
 
 When effects are enabled, Tone.js nodes (distortion, chorus, delay, reverb, limiter) introduce small processing delays (a few milliseconds per node, totaling <10ms).
 
