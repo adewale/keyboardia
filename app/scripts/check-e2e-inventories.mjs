@@ -71,6 +71,15 @@ const mandatoryWorkerSpecs = [
   'e2e/session-api-contract.spec.ts',
   'e2e/track-reorder.spec.ts',
 ];
+// These contracts have dedicated mock-backed lanes in CI. Keep them out of
+// the broad offline lane here exactly as the workflow's `offline_specs`
+// construction does, otherwise the disposition validator counts tests the
+// lane never executes.
+const dedicatedEnvelopeSpecs = new Set([
+  'e2e/envelope-v2.spec.ts',
+  'e2e/envelope-v2-headless.spec.ts',
+  'e2e/tone-envelope-release.spec.ts',
+]);
 const missingWorkerCoverage = [...new Set([...realBackendGuards, ...mandatoryWorkerSpecs])]
   .filter(path => !workerSpecs.includes(path));
 const overlappingBackends = mockSpecs.filter(path => workerSpecs.includes(path));
@@ -101,7 +110,9 @@ const mockLaneContracts = [
   },
   {
     label: 'Remaining offline Chromium',
-    specs: allSpecs.filter(path => !mockSpecs.includes(path)).sort(),
+    specs: allSpecs
+      .filter(path => !mockSpecs.includes(path) && !dedicatedEnvelopeSpecs.has(path))
+      .sort(),
     resultFile: 'offline-results.json',
     env: { USE_MOCK_API: '1', E2E_FUNCTIONAL_ONLY: '1', CI: 'true' },
   },

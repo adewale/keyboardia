@@ -639,7 +639,7 @@ jobs:
           npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
           # The same five mock-owned envelope tests remain visible as skips in
           # WebKit; exact accounting prevents either suite from disappearing.
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 163 62
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 163 63
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
