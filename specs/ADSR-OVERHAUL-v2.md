@@ -992,7 +992,9 @@ real-backend Chromium/WebKit/mobile matrix, duplicate macOS visual lane, and
 full instrument/sample validators are T2 gates on the nightly schedule or a
 manual T2 dispatch. Default pre-push runs T0 plus focused T1; setting
 `KEYBOARDIA_VERIFY_T2=1` appends the same exact full Chromium and WebKit
-contracts. Deferral changes cadence, never pass/fail ownership.
+contracts. Deferral changes cadence, never pass/fail ownership. The first
+exact-head run reduced the two browser jobs from 44 min 44 s to 7 min 52 s of
+runner time (82.5%) while retaining 157 zero-retry T1 browser results.
 
 ## 9. User and agent surfaces
 
