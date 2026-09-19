@@ -308,24 +308,27 @@ guessing it:
 |---|---|---|
 | `bandRmsDb`, full band | from 300 ms after the last authored burst | measurably above the current dry floor |
 | `bandRmsDb`, below 275 Hz | 0.15–0.55 s bass-program body | **within ±0.3 dB of dry** — proves the HPF protects the bass body |
-| `truePeakDbfs` at `userOutput` | whole capture | no increase beyond the explicit-dry live-repeat floor + 0.01 dB numerical margin |
+| `truePeakDbfs` at `userOutput` | whole capture | **≤ 0.05 dB increase over dry**; the separate 16-track gate must remain ≤ 0 dBTP |
 | `loudnessKMax` | whole capture | **≤ 1 LU** change |
 | `pumpingProfile` on an exact replay of the captured 16-track pre-compressor programme | same synchronized programme replayed once dry and once wet | no new pumping — reverb energy is downstream and must not drive the compressor |
 
 The production-browser probes now supply the thresholds and evidence across
-the audit reruns: full-band tail +19.7 to +24.8 dB and high-band tail +23.6 to
-+29.1 dB from the corrected 300 ms boundary, bass-body low band within
-±0.109 dB, wet true peak within 0.013 dB of dry, maximum K-weighted loudness
-within 0.055 LU. The capacity gate captures a real 16-track pre-compressor
-programme once, stops the scheduler, and replays those exact samples through
-the production master path under dry and wet room states. Three repeated
-48 kHz runs produced a 0.000 dB compressor-attenuation delta, matching the
-graph topology: the room branches after the compressor and cannot causally
-change its gain reduction. Exact peak ordering in the separate live room probe
-varies below its repeat floor, so that gate allows the measured floor plus
-0.01 dB instead of claiming bit-stability. The committed assertions retain
-useful margin around those observations rather than comparing against an
-offline reverb proxy.
+the audit reruns. A 46-fresh-context calibration on the rebased path measured
+full-band tail +18.1 to +24.3 dB and high-band tail +21.8 to +28.7 dB from the
+corrected 300 ms boundary, bass-body low band within ±0.134 dB, wet-minus-dry
+true peak from −0.0274 to +0.0221 dB, and maximum K-weighted loudness change
+within ±0.082 LU. Tone generates each convolution impulse response from fresh
+noise, so an explicit-dry repeat measures capture variance but cannot bound the
+wet impulse response's constructive phase. The peak gate is therefore an
+explicit +0.05 dB ceiling—less than 0.6% added amplitude and more than twice
+the largest observed increase—not a statistically invalid dry-repeat oracle.
+The capacity gate captures a real 16-track pre-compressor programme once,
+stops the scheduler, and replays those exact samples through the production
+master path under dry and wet room states. Three repeated 48 kHz runs produced
+a 0.000 dB compressor-attenuation delta, matching the graph topology: the room
+branches after the compressor and cannot causally change its gain reduction.
+The committed assertions retain useful margin around those observations
+rather than comparing against an offline reverb proxy.
 
 **The migration is the hard part, not the DSP.** Changing a default
 reinterprets every session that never stored effects. `normalizeSessionEffects`

@@ -81,6 +81,15 @@ The final six-test run measured:
 - pumping delta: 0.000 dB;
 - 16-track heard-output true peak: −0.921 dBTP.
 
+A later stability audit created 46 fresh audio graphs because Tone's
+convolution impulse response is generated from new noise for every graph. The
+room probe measured full-band tail +18.1 to +24.3 dB, bass-body change within
+±0.134 dB, wet-minus-dry true-peak change from −0.0274 to +0.0221 dB, and
+loudness change within ±0.082 LU. This falsified the original use of one
+explicit-dry repeat as a bound on wet peak phase. The corrected gate allows at
+most +0.05 dB (<0.6% amplitude), more than twice the largest observed increase,
+while the separate 16-track capacity gate continues to enforce ≤ 0 dBTP.
+
 ## Velocity-filter calibration
 
 The full repository validator initially rejected the rebased candidate because

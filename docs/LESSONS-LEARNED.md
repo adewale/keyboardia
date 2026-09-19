@@ -86,6 +86,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 75: A Shared Fixture Is Not a Paired Audio Experiment](#lesson-75-a-shared-fixture-is-not-a-paired-audio-experiment)
 - [Lesson 76: An Audio Route Does Not Guarantee Background Scheduling](#lesson-76-an-audio-route-does-not-guarantee-background-scheduling)
 - [Lesson 77: Rebase Behavior, Not Competing Authorities](#lesson-77-rebase-behavior-not-competing-authorities)
+- [Lesson 78: A Repeat Null Cannot Bound Randomized State](#lesson-78-a-repeat-null-cannot-bound-randomized-state)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -6618,3 +6619,46 @@ list the behaviors and evidence that must survive, and require a negative or
 browser-level test at the new boundary. A compiler proves shapes. It does not
 prove that one clock, graph, readiness machine, or lifecycle command remains in
 charge.
+
+---
+
+## Lesson 78: A Repeat Null Cannot Bound Randomized State
+
+**Date:** September 2026
+
+**Context:** Phase 44 room verification after rebasing PR
+[#98](https://github.com/adewale/keyboardia/pull/98)
+
+### What happened
+
+The room test compared an explicit-dry render with a second dry render, then
+allowed the wet render's peak to rise by only that repeat difference plus 0.01
+dB. Three early runs happened to fit, so the contract was documented as if the
+dry repeat bounded the experiment.
+
+It did not. Tone's convolution reverb generates its impulse response from two
+fresh noise sources whenever a new audio graph is created. The dry repeat
+measured capture and graph variance; it said nothing about constructive phase
+between the dry signal and a newly randomized wet response. A later pre-push
+run failed at +0.0221 dB, and a 20-context calibration failed the old oracle in
+4 of 20 contexts even though all other room, loudness, pumping, and absolute
+headroom bounds passed.
+
+### The fix
+
+The test now gates the product requirement directly: wet true peak may rise by
+at most 0.05 dB over dry, which is less than 0.6% amplitude. Across 46 fresh
+contexts, the observed range was −0.0274 to +0.0221 dB, so the ceiling retains
+more than 2× margin over the largest increase without pretending the random
+effect is bit-stable. The dry repeat remains useful for the legacy-versus-dry
+comparison, where both paths really do share the same effect state. The paired
+16-track replay separately proves zero added compressor pumping and enforces an
+absolute heard-output ceiling of 0 dBTP.
+
+### The rule
+
+**A control run only bounds variables it actually shares with the subject.**
+Inventory random seeds, generated impulse responses, round-robin selection,
+and other per-instance state before calling a comparison paired. Either make
+that state deterministic or calibrate it across fresh instances and gate the
+real safety limit with explicit margin.
