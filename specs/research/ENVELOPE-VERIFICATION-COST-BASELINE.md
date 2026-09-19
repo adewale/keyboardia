@@ -85,6 +85,12 @@ approval.
   workflow. Before this split, the PR browser jobs alone consumed 44 min 44 s
   of wall time (24 min 56 s mock plus 19 min 48 s real backend); browser
   installation accounted for under one minute of that total.
+- The first exact-head T1 run after the split completed those same named browser
+  jobs in 7 min 52 s of runner time (3 min 44 s mock plus 4 min 8 s real
+  Worker): 36 min 52 s, or 82.5%, less per affected PR. The run still gated the
+  75-test mock manifest, five focused envelope/audio browser tests, and the
+  77-test real-Worker inventory. This is a cadence saving, not deleted evidence:
+  the residual Chromium, WebKit, mobile, macOS, and catalogue work moved to T2.
 - Local pre-push follows the same shape: unit, focused PCM, real-Worker smoke,
   and one mobile contract by default; `KEYBOARDIA_VERIFY_T2=1` appends the exact
   complete Chromium and WebKit disposition contracts. Exact full-matrix counts
