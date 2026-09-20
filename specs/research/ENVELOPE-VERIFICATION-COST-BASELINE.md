@@ -22,7 +22,7 @@ volume, dependencies, and intended cadence before making it a merge gate.
 | selected-file ESLint | clean | T0; run on each touched TypeScript file |
 | `npm run typecheck` | pass | T0; app-neutral compile contract |
 | `npm run typecheck:worker` | pass | T0; worker/runtime boundary compile contract |
-| `npm run test:unit:quiet` | 313 files passed, 1 skipped; 5,132 passed, 1 skipped; `*.render.test.ts` are deliberately excluded and run once by their named render owners; observed local duration about 70.5 s | T0 PR gate on the present runner; revisit if CI p95 exceeds the budget |
+| `npm run test:unit:quiet` | 313 files passed, 1 skipped; 5,132 passed, 1 skipped; `*.render.test.ts` are deliberately excluded and run once by their named render owners; observed clean-tree Vitest duration 72.81 s | T0 PR gate on the present runner; revisit if CI p95 exceeds the budget |
 | `npm run validate:test-quality` | 375 antipattern files and 380 collected test files, zero exceptions; about 46 s | T0 PR gate; AST/module-graph analysis dominates its cost |
 | `npm run test:integration:built` | 12 files, 140 tests, 7.55 s | T1 worker/MCP/session boundary gate; requires a local listener |
 | full-stack desktop smoke | 15 Chromium tests, 10.1 s test time; 22.8 s including build and Worker startup | T1; must use the owned full-stack launcher, not Vite alone |
