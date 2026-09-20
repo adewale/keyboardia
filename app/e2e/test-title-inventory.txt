@@ -55,6 +55,10 @@ drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should correctly h
 drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should handle multiple paint operations in sequence
 drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should maintain consistent state after rapid paint operations
 drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should not leave paint mode stuck after interrupted drag
+envelope-v2-headless.spec.ts › Envelope v2 headless correctness profile › preserves notation and runtime audio state while editor exposure is disabled
+envelope-v2.spec.ts › Envelope v2 browser contract › edits a finite-sample AHD envelope with one committed exact value
+envelope-v2.spec.ts › Envelope v2 browser contract › keeps portrait consumption-only and exposes the same editor after rotating
+envelope-v2.spec.ts › Envelope v2 browser contract › renders loop-capable sample and oscillator models from the shared capability table
 feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Ctrl+Click to toggle step selection
 feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Shift+Click to extend selection
 feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can drag to paint multiple steps
@@ -149,6 +153,7 @@ multiplayer.spec.ts › Multiplayer input validation › invalid tempo values ar
 multiplayer.spec.ts › Multiplayer real-time sync › add track syncs to other client
 multiplayer.spec.ts › Multiplayer real-time sync › mute/solo remain local (do not sync)
 multiplayer.spec.ts › Multiplayer real-time sync › pan reaches the engine after a local edit, remote sync, and reload
+multiplayer.spec.ts › Multiplayer real-time sync › sample envelope mode and release converge atomically and survive reload
 multiplayer.spec.ts › Multiplayer real-time sync › scale unlock syncs to the other client and survives reload
 multiplayer.spec.ts › Multiplayer real-time sync › step toggle syncs between clients
 multiplayer.spec.ts › Multiplayer real-time sync › tempo change syncs between clients

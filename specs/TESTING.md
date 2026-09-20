@@ -26,6 +26,16 @@ Prefer the narrowest controllable seam that still executes production code:
   is introduced without Worker coverage. `e2e/test-title-inventory.txt` also
   commits every exact Chromium file/suite/title identity, so replacing or
   silently dropping a test requires an explicit inventory review.
+- Browser cadence is explicit too. `e2e/verification-impact.json` maps changed
+  code and configuration to T1 browser, Worker, audio, visual, and sample
+  profiles. `scripts/select-verification-scope.mjs` computes the profile set
+  from the PR diff; an unmatched non-documentation path fails safe by selecting
+  every T1 profile. Documentation/evidence-only changes select none.
+- Pull requests run focused T1 Chromium and real-Worker contracts. The complete
+  residual Chromium suite, full real-backend Chromium/WebKit/mobile matrices,
+  macOS visual duplicate, and catalogue/sample validation run nightly as T2 or
+  through the manual `CI` workflow with `verification_tier=t2`. T2 failures are
+  gating failures of the default branch; amortization never means advisory.
 - Reporter statistics are release contracts, not summaries. Required mock and
   Worker lanes reject any skipped, flaky, or unexpected result; the remaining
   offline lane ratchets its reviewed pass/skip totals so a new skip cannot turn
@@ -745,6 +755,9 @@ npm run test:e2e:collaboration:worker
 
 # Full browser stack with the real Worker and WebSockets
 npm run test:e2e:full-stack
+
+# Local pre-push defaults to T0 plus focused T1. Append the broad T2 matrices:
+KEYBOARDIA_VERIFY_T2=1 git push
 
 # Watch mode during development
 npm run test:unit -- --watch

@@ -75,8 +75,8 @@ describe('computeNoteSchedule', () => {
           } else {
             expect(duration).toBeUndefined();
           }
-        }
-      )
+        },
+      ),
     );
   });
 });

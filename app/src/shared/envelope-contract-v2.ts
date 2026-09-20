@@ -425,6 +425,35 @@ export function convertTrackEnvelopeUnitsWithReportV2(
   return { envelope: converted, clampedStages };
 }
 
+/** Timed stages carried by a model, shared by authoring and capability checks. */
+export function activeEnvelopeStages(model: EnvelopeModel): readonly EnvelopeStageName[] {
+  switch (model) {
+    case 'ad': return ['attack', 'decay'];
+    case 'ahd': return ['attack', 'hold', 'decay'];
+    case 'ar': return ['attack', 'release'];
+    case 'adsr': return ['attack', 'decay', 'release'];
+  }
+}
+
+/** Deterministic compatibility projection for legacy four-number read surfaces. */
+export function resolvedEnvelopeV2ToLegacy(
+  envelope: ResolvedEnvelopeV2,
+): LegacyTrackEnvelopeV23 {
+  return {
+    attack: envelope.attackSeconds,
+    decay: envelope.decaySeconds ?? 0,
+    sustain: envelope.sustain ?? (envelope.model === 'ar' ? 1 : 0),
+    release: envelope.releaseSeconds ?? 0,
+  };
+}
+
+export function trackEnvelopeV2ToLegacySeconds(
+  envelope: TrackEnvelopeV2,
+  bpm: number,
+): LegacyTrackEnvelopeV23 {
+  return resolvedEnvelopeV2ToLegacy(resolveEnvelopeV2(envelope, bpm));
+}
+
 export function resolveEnvelopeV2(
   envelope: TrackEnvelopeV2,
   bpm: number,
