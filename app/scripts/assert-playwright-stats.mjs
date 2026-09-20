@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 const [resultsFile, expectedArg, skippedArg, inventoryArg] = process.argv.slice(2);
 if (!resultsFile || expectedArg === undefined || skippedArg === undefined) {
   throw new Error(
-    'Usage: node scripts/assert-playwright-stats.mjs <results.json> <expected|inventory> <skipped> [inventory.txt]',
+    'Usage: node scripts/assert-playwright-stats.mjs <results.json> <expected|inventory> <skipped> [inventory.txt]\n'
+      + '   or: node scripts/assert-playwright-stats.mjs <results.json> lane <lane-name> [inventory.txt]',
   );
 }
 const inventoryFile = inventoryArg
@@ -13,8 +14,20 @@ const inventoryFile = inventoryArg
 const reviewed = new Set(readFileSync(inventoryFile, 'utf8')
   .split(/\r?\n/).map((line) => line.trim()).filter(Boolean));
 const report = JSON.parse(readFileSync(resolve(resultsFile), 'utf8'));
-const expected = expectedArg === 'inventory' ? reviewed.size : Number(expectedArg);
-const contract = { expected, skipped: Number(skippedArg), flaky: 0, unexpected: 0 };
+let disposition;
+if (expectedArg === 'lane') {
+  const laneContracts = JSON.parse(readFileSync(
+    new URL('../e2e/lane-contracts.json', import.meta.url), 'utf8',
+  ));
+  disposition = laneContracts.lanes?.[skippedArg];
+  if (!disposition) throw new Error(`Unknown Playwright lane: ${skippedArg}`);
+} else {
+  disposition = {
+    expected: expectedArg === 'inventory' ? reviewed.size : Number(expectedArg),
+    skipped: Number(skippedArg),
+  };
+}
+const contract = { ...disposition, flaky: 0, unexpected: 0 };
 const actual = Object.fromEntries(Object.keys(contract).map((key) => [key, report.stats?.[key] ?? 0]));
 if (JSON.stringify(actual) !== JSON.stringify(contract)) {
   throw new Error(`Playwright disposition contract failed: ${JSON.stringify({ contract, actual })}`);

@@ -1,211 +1,56 @@
 #!/bin/sh
 
-# Pre-push hook: Five-phase testing (plus phase-zero validation)
-# Phase 1: Unit tests (fast, ~11s)
-# Phase 2: Dev-only PCM/audio evidence (Chromium mock build)
-# Phase 3: Full functional E2E test (Chromium, including real Web Audio)
-# Phase 4: Broad desktop WebKit contract
-# Phase 5: Mobile Safari test (iPhone viewport + touch)
-#
-# The full-stack runner owns its Wrangler process. This keeps the backend
-# lifecycle deterministic and applies the local-only session-create allowance
-# required by a suite that deliberately creates more sessions per minute than
-# a person. Production retains the conservative rate limit.
-#
-# ─── Pipe-inheritance guard ────────────────────────────────────────────
-# When git is invoked under a pipe (CI runners, tmux captures, tool
-# harnesses like Claude Code) rather than a real terminal, the push will
-# hang indefinitely if any process spawned by this hook outlives the hook
-# while still holding git's stdout/stderr pipe open. Playwright's browser
-# helpers are the likely culprit — they frequently get reparented to PID 1
-# after their npm ancestor exits. Git blocks waiting for EOF on its pipe;
-# the orphan never closes it.
-#
-# Detection: `[ -t 1 ]` returns false only when fd1 is not a terminal, i.e.
-# git is being piped. In that case we redirect everything to a log file
-# BEFORE spawning tests, so orphans inherit a log-file fd, not git's pipe.
-# Contents are dumped to /dev/tty at exit when one is available, giving
-# the user the same visibility they'd get in an interactive shell.
-#
-# See docs/LESSONS-LEARNED.md lesson on "pre-push hook pipe-inheritance".
+# Fast by default: deterministic static contracts plus the unit suite.
+# Opt into browser confidence with KEYBOARDIA_VERIFY_T1=1, or the complete
+# cross-browser release matrix with KEYBOARDIA_VERIFY_T2=1 (which includes T1).
+
+# Browser helpers can inherit git's stdout pipe after their npm parent exits,
+# leaving a non-interactive push waiting forever for EOF. Redirect such runs to
+# a stable diagnostic log before any child process starts.
 if [ ! -t 1 ] || [ ! -t 2 ]; then
-    # Fixed path so failures can always be inspected with `cat <path>`;
-    # a per-run mktemp would be cleaner but its name is lost to git's
-    # swallowed stderr, making post-mortem awkward.
     PREPUSH_LOG=/tmp/keyboardia-last-prepush.log
     rm -f "$PREPUSH_LOG"
     exec </dev/null >"$PREPUSH_LOG" 2>&1
-    # The tty guard must attempt a real open: `[ -w /dev/tty ]` only checks
-    # permission bits and passes in containers where /dev/tty exists but
-    # opening it fails with ENXIO ("No such device or address"). That failed
-    # redirect then aborts the EXIT trap under `set -e` and fails the whole
-    # hook AFTER all tests passed. The subshell `( : > /dev/tty )` probes an
-    # actual open without that risk.
     trap 'if ( : > /dev/tty ) 2>/dev/null; then cat "$PREPUSH_LOG" > /dev/tty || :; fi' EXIT
 fi
 
 set -e
-
 cd app
 
-echo ""
-echo "========================================"
-echo "  PRE-PUSH: Test Suite"
-echo "========================================"
-echo ""
+echo "PRE-PUSH T0: manifests, E2E inventories, and unit tests"
+npm run validate:manifests
+npm run validate:e2e-inventories
+npm run test:unit
 
-# Phase 0: Manifest Validation (instant, catches silent failure bugs)
-echo "----------------------------------------"
-echo "Phase 0: Manifest Validation"
-echo "----------------------------------------"
-echo ""
+if [ "${KEYBOARDIA_VERIFY_T1:-0}" = "1" ] || [ "${KEYBOARDIA_VERIFY_T2:-0}" = "1" ]; then
+    echo "PRE-PUSH T1: targeted browser confidence"
 
-if npx tsx scripts/validate-manifests.ts; then
-    echo ""
-    echo "✅ All manifests valid!"
-    echo ""
-else
-    echo ""
-    echo "❌ Manifest validation FAILED"
-    echo ""
-    echo "Fix the issues above before pushing."
-    echo "Instruments with invalid manifests will be SILENT."
-    echo "To skip: git push --no-verify"
-    echo ""
-    exit 1
+    USE_MOCK_API=1 E2E_FUNCTIONAL_ONLY=1 CI=true E2E_PORT=5176 \
+      PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-pcm.json \
+      npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0
+    node scripts/assert-playwright-stats.mjs test-results/prepush-pcm.json lane pcm
+
+    E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-worker-smoke.json \
+      npm run test:e2e:full-stack:smoke
+    node scripts/assert-playwright-stats.mjs test-results/prepush-worker-smoke.json lane worker-smoke
+
+    E2E_WORKER_PORT=8792 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-mobile-safari.json \
+      npm run test:e2e:full-stack -- e2e/mobile-iphone.spec.ts --project=mobile-safari
+    node scripts/assert-playwright-stats.mjs test-results/prepush-mobile-safari.json lane mobile-safari
 fi
 
-# Phase 1: Unit Tests (runs first, no backend required)
-echo "----------------------------------------"
-echo "Phase 1: Unit Tests (~11s)"
-echo "----------------------------------------"
-echo ""
+if [ "${KEYBOARDIA_VERIFY_T2:-0}" = "1" ]; then
+    echo "PRE-PUSH T2: complete desktop browser matrix"
 
-UNIT_START=$(date +%s)
+    E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 \
+      PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json \
+      npm run test:e2e:full-stack -- --project=chromium --workers=2
+    node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json lane real-chromium
 
-if npm run test:unit; then
-    UNIT_END=$(date +%s)
-    UNIT_DURATION=$((UNIT_END - UNIT_START))
-    echo ""
-    echo "✅ Unit tests passed! (${UNIT_DURATION}s)"
-    echo ""
-else
-    echo ""
-    echo "❌ Unit tests FAILED"
-    echo ""
-    echo "Fix the issues above before pushing."
-    echo "To skip: git push --no-verify"
-    echo ""
-    exit 1
+    E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8794 \
+      PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json \
+      npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
+    node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json lane real-webkit
 fi
 
-# Phase 2: Dev-only PCM/audio evidence
-echo "----------------------------------------"
-echo "Phase 2: PCM Capture Tests (Chromium)"
-echo "----------------------------------------"
-echo ""
-
-PCM_START=$(date +%s)
-
-# The synchronized PCM taps are deliberately omitted from production Worker
-# bundles. The real-backend lanes therefore skip this file, so run its complete
-# six-test contract against the mock/Vite build instead of leaving it CI-only.
-if USE_MOCK_API=1 E2E_FUNCTIONAL_ONLY=1 CI=true E2E_PORT=5176 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-pcm.json npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0 && node scripts/assert-playwright-stats.mjs test-results/prepush-pcm.json 6 0; then
-    PCM_END=$(date +%s)
-    PCM_DURATION=$((PCM_END - PCM_START))
-    echo ""
-    echo "✅ PCM capture tests passed! (${PCM_DURATION}s)"
-    echo ""
-else
-    echo ""
-    echo "❌ PCM capture tests FAILED"
-    echo ""
-    echo "The dev-only audio evidence or its exact six-test inventory failed."
-    echo "Fix the issue before pushing."
-    echo "To skip: git push --no-verify"
-    echo ""
-    exit 1
-fi
-
-# Phase 3: Full Chromium test (comprehensive functional and audio contracts)
-echo "----------------------------------------"
-echo "Phase 3: Full E2E Test (Chromium)"
-echo "----------------------------------------"
-echo ""
-
-FULL_START=$(date +%s)
-
-# Screenshot contracts have runner-specific baselines and a dedicated CI lane;
-# the functional gate must not generate or bless developer-machine snapshots.
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json npm run test:e2e:full-stack -- --project=chromium --workers=2 && node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json 209 29; then
-    FULL_END=$(date +%s)
-    FULL_DURATION=$((FULL_END - FULL_START))
-    echo ""
-    echo "✅ Full test passed! (${FULL_DURATION}s)"
-    echo ""
-else
-    echo ""
-    echo "❌ Full test FAILED"
-    echo ""
-    echo "Some Chromium functional or real-audio tests failed."
-    echo "Review the failures above."
-    echo "Fix the issues above before pushing."
-    echo "To skip: git push --no-verify"
-    echo ""
-    exit 1
-fi
-
-# Phase 4: Broad desktop WebKit test (UI, collaboration, and layout contracts)
-echo "----------------------------------------"
-echo "Phase 4: Full WebKit Test"
-echo "----------------------------------------"
-echo ""
-
-WEBKIT_START=$(date +%s)
-
-if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1 && node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json 162 59; then
-    WEBKIT_END=$(date +%s)
-    WEBKIT_DURATION=$((WEBKIT_END - WEBKIT_START))
-    echo ""
-    echo "✅ Full WebKit test passed! (${WEBKIT_DURATION}s)"
-    echo ""
-else
-    echo ""
-    echo "❌ Full WebKit test FAILED"
-    echo ""
-    echo "Fix the cross-browser failure before pushing."
-    exit 1
-fi
-
-# Phase 5: Mobile Safari Test (iPhone viewport + touch interactions)
-echo "----------------------------------------"
-echo "Phase 5: Mobile Safari (iPhone)"
-echo "----------------------------------------"
-echo ""
-
-MOBILE_START=$(date +%s)
-
-if PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-mobile-safari.json E2E_WORKER_PORT=8792 npm run test:e2e:full-stack -- e2e/mobile-iphone.spec.ts --project=mobile-safari && node scripts/assert-playwright-stats.mjs test-results/prepush-mobile-safari.json 7 0; then
-    MOBILE_END=$(date +%s)
-    MOBILE_DURATION=$((MOBILE_END - MOBILE_START))
-    echo ""
-    echo "✅ Mobile Safari test passed! (${MOBILE_DURATION}s)"
-    echo ""
-else
-    echo ""
-    echo "❌ Mobile Safari test FAILED"
-    echo ""
-    echo "Mobile-specific tests failed."
-    echo "Review the failures above."
-    echo "To skip: git push --no-verify"
-    echo ""
-    exit 1
-fi
-
-TOTAL_DURATION=$((UNIT_DURATION + PCM_DURATION + FULL_DURATION + WEBKIT_DURATION + MOBILE_DURATION))
-
-echo "========================================"
-echo "  ✅ All tests passed! (${TOTAL_DURATION}s)"
-echo "  Pushing to remote..."
-echo "========================================"
-echo ""
+echo "PRE-PUSH verification passed"

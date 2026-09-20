@@ -1,0 +1,98 @@
+{
+  "schemaVersion": 1,
+  "description": "Conservative change-impact inventory for T1 verification. Unmatched code or configuration changes select every T1 profile; documentation and retained evidence do not select browser work.",
+  "ignoredPrefixes": [
+    "artifacts/",
+    "docs/",
+    "specs/"
+  ],
+  "ignoredFiles": [
+    ".gitignore",
+    "LICENSE",
+    "README.md"
+  ],
+  "profiles": {
+    "browser": {
+      "prefixes": [
+        "app/e2e/",
+        "app/src/"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/playwright.config.ts",
+        "app/vite.config.ts"
+      ]
+    },
+    "worker": {
+      "prefixes": [
+        "app/e2e/",
+        "app/src/hooks/",
+        "app/src/shared/",
+        "app/src/state/",
+        "app/src/sync/",
+        "app/src/worker/",
+        "app/test/integration/"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/tsconfig.worker.json",
+        "app/wrangler.jsonc"
+      ]
+    },
+    "audio": {
+      "prefixes": [
+        "app/e2e/",
+        "app/src/audio/",
+        "app/src/shared/envelope",
+        "app/src/test/envelope",
+        "app/src/test/pcm"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/playwright.config.ts",
+        "app/vite.config.ts"
+      ]
+    },
+    "visual": {
+      "prefixes": [
+        "app/e2e/",
+        "app/src/components/"
+      ],
+      "files": [
+        "app/src/App.tsx",
+        "app/src/index.css",
+        "app/playwright.config.ts",
+        "app/vite.config.ts"
+      ]
+    },
+    "samples": {
+      "prefixes": [
+        "app/public/instruments/",
+        "app/sample-lab/",
+        "app/sample-pipeline/",
+        "app/src/audio/sample",
+        "app/src/audio/instrument",
+        "app/test/sample",
+        "app/scripts/sample",
+        "app/scripts/validate-sample"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json"
+      ]
+    }
+  },
+  "selectAllFiles": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/ruff.yml",
+    "app/.husky/pre-push",
+    "app/e2e/lane-contracts.json",
+    "app/e2e/verification-impact.json",
+    "app/scripts/assert-playwright-stats.mjs",
+    "app/scripts/check-e2e-inventories.mjs",
+    "app/scripts/select-verification-scope.mjs"
+  ]
+}

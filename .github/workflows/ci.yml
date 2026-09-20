@@ -9,11 +9,55 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    - cron: '17 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      verification_tier:
+        description: Verification depth
+        required: true
+        default: t2
+        type: choice
+        options:
+          - t1
+          - t2
 
 env:
   NODE_VERSION: '24'
 
 jobs:
+  verification-scope:
+    name: Verification Scope
+    runs-on: ubuntu-latest
+    outputs:
+      browser: ${{ steps.scope.outputs.browser }}
+      worker: ${{ steps.scope.outputs.worker }}
+      audio: ${{ steps.scope.outputs.audio }}
+      visual: ${{ steps.scope.outputs.visual }}
+      samples: ${{ steps.scope.outputs.samples }}
+      full: ${{ steps.scope.outputs.full }}
+    steps:
+      - name: Checkout repository with merge-base history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Select verification profiles
+        id: scope
+        working-directory: ./app
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            node scripts/select-verification-scope.mjs \
+              --base "${{ github.event.pull_request.base.sha }}" \
+              --head "${{ github.event.pull_request.head.sha }}" \
+              --github-output "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.verification_tier }}" == "t1" ]]; then
+            node scripts/select-verification-scope.mjs --tier t1 --github-output "$GITHUB_OUTPUT"
+          else
+            node scripts/select-verification-scope.mjs --tier t2 --github-output "$GITHUB_OUTPUT"
+          fi
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
@@ -111,7 +155,8 @@ jobs:
 
   stack-a-identity:
     name: Stack A Identity
-    if: github.event_name == 'pull_request'
+    needs: verification-scope
+    if: github.event_name == 'pull_request' && (needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
@@ -169,6 +214,8 @@ jobs:
 
   integration-tests:
     name: Integration Tests
+    needs: verification-scope
+    if: needs.verification-scope.outputs.worker == 'true' || needs.verification-scope.outputs.full == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -276,6 +323,8 @@ jobs:
 
   instrument-validation:
     name: Instrument Validation
+    needs: verification-scope
+    if: needs.verification-scope.outputs.samples == 'true' || needs.verification-scope.outputs.full == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 45
     defaults:
@@ -331,19 +380,20 @@ jobs:
           E2E_WEBKIT_AUDIO_PROBE: '1'
           CI: 'true'
 
-  # E2E is split into three jobs by what each one needs, replacing a single
+  # E2E is split by runtime and dependency, replacing a single
   # `continue-on-error: true` job whose comment read "E2E tests are advisory -
   # many require real backend". Exempting all 35 spec files because some of them
   # need a backend meant no E2E failure could ever break the build, and the
   # backend-dependent specs still never ran anywhere in CI.
   #
-  #   e2e-tests          mock API, gating     — the everyday regression net
-  #   e2e-real-backend   wrangler dev, gating — the complete production path
-  #   e2e-visual         screenshots, gating  — runner-owned Linux baselines
+  #   T1 pull requests   affected smoke/Worker/visual contracts
+  #   T2 main/scheduled  parallel offline, Chromium, WebKit, mobile, and visual
   #
   # See docs/TEST-AUDIT-2026-07.md for the audit and lane ownership rationale.
   e2e-tests:
     name: E2E Tests (mock API)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.browser == 'true' || needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
     runs-on: ubuntu-latest
     defaults:
@@ -376,11 +426,8 @@ jobs:
         run: |
           required_specs=()
           while IFS= read -r spec; do required_specs+=("$spec"); done < e2e/mock-compatible-files.txt
-          test "${#required_specs[@]}" -eq 9
-          discovered=$(npx playwright test "${required_specs[@]}" --project=chromium --list | sed -n 's/^Total: \([0-9][0-9]*\) tests.*/\1/p')
-          test "$discovered" = "76"
           npx playwright test "${required_specs[@]}" --project=chromium --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json 76 0
+          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json lane mock-required
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -388,33 +435,18 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/blocking-results.json'
           PLAYWRIGHT_HTML_REPORT: 'playwright-report-blocking'
 
-      # PR #65 moved real collaboration coverage to the Worker-backed contract
-      # below. Every remaining offline Chromium spec is therefore blocking too.
-      - name: Run remaining offline E2E tests (Chromium)
-        id: offline
-        shell: bash
+      - name: Run dev-only PCM capture contract
+        if: needs.verification-scope.outputs.audio == 'true' && needs.verification-scope.outputs.full != 'true'
         run: |
-          offline_specs=()
-          while IFS= read -r spec; do offline_specs+=("$spec"); done < <(
-            comm -23 \
-              <(find e2e -type f -name '*.spec.ts' | sort) \
-              <(sort e2e/mock-compatible-files.txt)
-          )
-          # The three real-audio matrix specs are CPU-bound. Serial execution
-          # avoids timeout inflation while keeping every test first-attempt-only.
-          #
-          # visual.spec.ts is excluded via E2E_FUNCTIONAL_ONLY below and owned
-          # by the real-Worker Linux visual lane. populated-visual.spec.ts is
-          # deterministic mock-backed evidence and remains in this lane.
-          npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/offline-results.json 90 72
+          npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/pcm-results.json lane pcm
         env:
           USE_MOCK_API: '1'
           E2E_FUNCTIONAL_ONLY: '1'
           CI: 'true'
-          PLAYWRIGHT_OUTPUT_DIR: 'test-results/offline-artifacts'
-          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/offline-results.json'
-          PLAYWRIGHT_HTML_REPORT: 'playwright-report-offline'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/pcm-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/pcm-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-pcm'
 
       - name: Summarize Playwright results
         if: always()
@@ -426,7 +458,6 @@ jobs:
             ? JSON.parse(fs.readFileSync(path, 'utf8')).stats
             : null;
           const blocking = readStats('test-results/blocking-results.json');
-          const offline = readStats('test-results/offline-results.json');
           const rows = (label, stats) => stats ? [
             `#### ${label}`,
             `- Passed: ${stats.expected}`,
@@ -439,28 +470,9 @@ jobs:
             '',
             ...rows('Blocking (zero retries)', blocking),
             '',
-            ...rows('Remaining offline (zero retries)', offline),
-            '',
           ].join('\n');
           fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
           NODE
-
-      # The offline run above cannot exercise the WebSocket-connected path:
-      # waitForCollaborationReady is a no-op when USE_MOCK_API=1, because that
-      # backend has no WebSocket server. This step runs the session contract
-      # and every spec containing a useMockAPI skip against a real Worker, in
-      # one wrangler session. The inventory check above prevents a new guarded
-      # spec from silently remaining in the mock-only lane.
-      - name: Run collaboration contract against real Worker
-        shell: bash
-        run: |
-          npm run test:e2e:collaboration:worker
-          node scripts/assert-playwright-stats.mjs test-results/worker-results.json 76 0
-        env:
-          CI: 'true'
-          PLAYWRIGHT_OUTPUT_DIR: 'test-results/worker-artifacts'
-          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/worker-results.json'
-          PLAYWRIGHT_HTML_REPORT: 'playwright-report-worker'
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
@@ -469,13 +481,122 @@ jobs:
           name: playwright-report
           path: |
             app/playwright-report-blocking/
-            app/playwright-report-offline/
-            app/playwright-report-worker/
+            app/playwright-report-pcm/
+            app/test-results/
+          retention-days: 7
+
+  e2e-offline-functional:
+    name: E2E Tests (offline functional)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run offline functional E2E tests
+        shell: bash
+        run: |
+          comm -23 \
+            <(find e2e -type f -name '*.spec.ts' | sort) \
+            <(sort e2e/mock-compatible-files.txt) > "$RUNNER_TEMP/non-mock-specs.txt"
+          comm -23 \
+            "$RUNNER_TEMP/non-mock-specs.txt" \
+            <(sort e2e/audio-matrix-files.txt) > "$RUNNER_TEMP/offline-functional-specs.txt"
+          functional_specs=()
+          while IFS= read -r spec; do functional_specs+=("$spec"); done < "$RUNNER_TEMP/offline-functional-specs.txt"
+          npx playwright test "${functional_specs[@]}" --project=chromium --workers=2 --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/offline-functional-results.json lane offline-functional
+        env:
+          USE_MOCK_API: '1'
+          E2E_FUNCTIONAL_ONLY: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/offline-functional-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/offline-functional-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-offline-functional'
+
+      - name: Upload offline functional diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-offline-functional
+          path: |
+            app/playwright-report-offline-functional/
+            app/test-results/
+          retention-days: 7
+
+  e2e-offline-audio:
+    name: E2E Tests (offline audio)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run CPU-bound audio matrix
+        shell: bash
+        run: |
+          audio_specs=()
+          while IFS= read -r spec; do audio_specs+=("$spec"); done < e2e/audio-matrix-files.txt
+          npx playwright test "${audio_specs[@]}" --project=chromium --workers=1 --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/offline-audio-results.json lane offline-audio
+        env:
+          USE_MOCK_API: '1'
+          E2E_FUNCTIONAL_ONLY: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/offline-audio-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/offline-audio-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-offline-audio'
+
+      - name: Upload offline audio diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-offline-audio
+          path: |
+            app/playwright-report-offline-audio/
             app/test-results/
           retention-days: 7
 
   visual-tests-macos:
     name: Visual Tests (macOS)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 30
     runs-on: macos-14
     defaults:
@@ -502,7 +623,7 @@ jobs:
         shell: bash
         run: |
           npx playwright test e2e/populated-visual.spec.ts --project=chromium --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/visual-results.json 3 0
+          node scripts/assert-playwright-stats.mjs test-results/visual-results.json lane visual-macos
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -522,6 +643,8 @@ jobs:
 
   e2e-real-backend:
     name: E2E Tests (real backend)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.worker == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
     runs-on: ubuntu-latest
     defaults:
@@ -541,19 +664,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium webkit
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
 
       # 12 spec files still carry `test.skip(useMockAPI, ...)` — the multiplayer,
       # session-persistence, race-condition and publish flows. Under USE_MOCK_API
       # every one of them skips, so they run in no other CI job.
-      #
-      # This complements the `test:e2e:collaboration:worker` step in e2e-tests:
-      # that runs the collaboration contract subset against a real Worker; this
-      # runs the complete functional Chromium suite against the same production
-      # path. The first audit runs proved Wrangler stable here, so failures gate.
-      # Chromium and WebKit run as separate contracts below so browser-specific
-      # failures and result inventories remain attributable.
       #
       # --workers=2 matters too: every worker shares one wrangler dev instance.
       # Running the default worker count against it produced a wave of
@@ -563,10 +679,11 @@ jobs:
       # them out here prevents Linux pixel diffs from being reported as backend
       # failures, which previously hid ten failed tests behind continue-on-error.
       - name: Run functional E2E tests against wrangler dev
+        if: needs.verification-scope.outputs.full == 'true'
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --workers=2
-          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json 209 29
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json lane real-chromium
         env:
           CI: 'true'
           E2E_FUNCTIONAL_ONLY: '1'
@@ -574,17 +691,17 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/real-backend-results.json'
           PLAYWRIGHT_HTML_REPORT: 'playwright-report-real-backend'
 
-      - name: Run broad WebKit contract against wrangler dev
+      - name: Run affected collaboration contract against real Worker
+        if: needs.verification-scope.outputs.full != 'true'
         shell: bash
         run: |
-          npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json 162 59
+          npm run test:e2e:collaboration:worker
+          node scripts/assert-playwright-stats.mjs test-results/worker-results.json lane worker
         env:
           CI: 'true'
-          E2E_FUNCTIONAL_ONLY: '1'
-          PLAYWRIGHT_OUTPUT_DIR: 'test-results/webkit-artifacts'
-          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/webkit-results.json'
-          PLAYWRIGHT_HTML_REPORT: 'playwright-report-webkit'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/worker-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/worker-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-worker'
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
@@ -593,13 +710,75 @@ jobs:
           name: playwright-report-real-backend
           path: |
             app/playwright-report-real-backend/
-            app/playwright-report-webkit/
+            app/playwright-report-worker/
             app/test-results/real-backend-results.json
+            app/test-results/worker-results.json
+          retention-days: 7
+
+  e2e-real-backend-webkit:
+    name: E2E Tests (real backend, WebKit)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: Run broad WebKit contract against wrangler dev
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json lane real-webkit
+        env:
+          CI: 'true'
+          E2E_FUNCTIONAL_ONLY: '1'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/webkit-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/webkit-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-webkit'
+
+      - name: Run Mobile Safari contract against wrangler dev
+        run: |
+          npm run test:e2e:full-stack -- e2e/mobile-iphone.spec.ts --project=mobile-safari
+          node scripts/assert-playwright-stats.mjs test-results/mobile-safari-results.json lane mobile-safari
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/mobile-safari-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/mobile-safari-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-mobile-safari'
+
+      - name: Upload WebKit diagnostics
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-real-backend-webkit
+          path: |
+            app/playwright-report-webkit/
+            app/playwright-report-mobile-safari/
             app/test-results/webkit-results.json
+            app/test-results/mobile-safari-results.json
           retention-days: 7
 
   e2e-visual:
     name: E2E Visual Regression
+    needs: verification-scope
+    if: needs.verification-scope.outputs.visual == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
     runs-on: ubuntu-latest
     defaults:
@@ -640,7 +819,7 @@ jobs:
         shell: bash
         run: |
           npm run test:e2e:full-stack -- --project=chromium --grep @visual --workers=1
-          node scripts/assert-playwright-stats.mjs test-results/visual-results.json 11 0
+          node scripts/assert-playwright-stats.mjs test-results/visual-results.json lane visual-linux
         env:
           CI: 'true'
           PLAYWRIGHT_OUTPUT_DIR: 'test-results/visual-artifacts'
