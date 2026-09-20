@@ -738,8 +738,10 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install Playwright WebKit
-        run: npx playwright install --with-deps webkit
+      # mobile-android.spec.ts applies the Pixel 7 device at file scope, whose
+      # default browser type is Chromium even when collected by this project.
+      - name: Install Playwright WebKit and device-required Chromium
+        run: npx playwright install --with-deps webkit chromium
 
       - name: Run broad WebKit contract against wrangler dev
         shell: bash
