@@ -54,10 +54,13 @@ Worker therefore advertise v2 only. Tolerant v1 import/projection remains for
 sessions created while reviewing the PR, but it is not a permanent public
 capability or a reason to duplicate new behavior.
 
-The exact rebased revision passes 75 semantic, 276 renderer-correctness, 231
-rolling-state, and 13 PCM tests; all 5,157 unit tests; 140 built integration
-tests; five focused envelope browser contracts; and the 15-test full-stack
-Worker smoke lane. TypeScript, production build, worker bundle, lint,
+The exact rebased revision passes 75 semantic, 271 headless-correctness, 231
+rolling-state, 13 envelope PCM, and 20 general renderer tests; 5,132 broad
+non-render unit tests; 140 built integration tests; five focused envelope
+browser contracts; and the 15-test full-stack Worker smoke lane. Together the
+non-render and owned-render lanes retain all 5,157 distinct unit tests without
+executing native renders under broad parallel contention. TypeScript,
+production build, worker bundle, lint,
 documentation/resource, sync, dead-export, and test-inventory validators also
 pass. The complete impact-selected Worker inventory and CI jobs must still pass
 on the pushed head. Real advanced-renderer PCM equivalence, human listening,
@@ -927,6 +930,7 @@ npm run typecheck
 npm run typecheck:worker
 npm run lint
 npm run test:unit
+npm run test:audio-render
 npm run validate:sync
 npm run validate:test-quality
 npm run build
@@ -948,6 +952,15 @@ Slice A adds stable scripts named `test:envelope:semantic`,
 slices MUST use those names in CI. CI fails if a discovered test is unrun, a
 fake has no real contract subject, generated schemas are stale, or a production
 export is dead.
+
+Native `OfflineAudioContext` render files MUST have exactly one authoritative
+lane. They are excluded from the broadly parallel unit collector: general
+audio renders belong to `test:audio-render`, while the envelope renderer canary
+belongs to `test:envelope:pcm`. A focused correctness lane MUST reference the
+same production behavior through non-render tests rather than executing the PCM
+file again. Pre-push and CI both run those owners explicitly. This prevents
+native-audio resource contention, avoids paying for the same evidence up to
+four times, and makes a failure name the contract that owns it.
 
 All required validators MUST run in the restricted local/CI runner without
 opening a privileged listener or IPC socket. Slice A replaces the current

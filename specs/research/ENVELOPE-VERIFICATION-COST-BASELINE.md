@@ -11,9 +11,10 @@ volume, dependencies, and intended cadence before making it a merge gate.
 | Gate | Measured result | Cost/use |
 |---|---|---|
 | `npm run test:envelope:semantic` | 6 files, 75 tests, observed rebased Vitest duration 0.20 s | T0; run on every local envelope change and PR |
-| `npm run test:envelope:pcm` | 4 files, 12 tests, observed Vitest duration about 1.24 s; real 48 kHz offline renders include native/translated-configuration comparisons for both fixed canaries, plus release, manifest, metric, and migration checks | T1 structural candidate/canary gate; the actual advanced renderer Cartesian render remains T2/T3 |
+| `npm run test:envelope:pcm` | 4 files, 13 tests, observed Vitest duration 0.75 s; real 48 kHz offline renders include native/translated-configuration comparisons for both fixed canaries, plus release, manifest, metric, and migration checks | T1 structural candidate/canary gate; authoritative owner of the envelope native-render file; the actual advanced renderer Cartesian render remains T2/T3 |
 | `npm run test:envelope:rolling` | 9 files, 231 tests, observed rebased Vitest duration 0.48 s | T0/T1; pre-v1/v1/v2 state, reducers, transport, hash, and protocol capability |
-| `npm run test:envelope:correctness` | 8 files, 276 tests, observed rebased Vitest duration 0.80 s | T0; flag-off preservation, exact engine/sample release, audio-clock cleanup, and publish/remix state |
+| `npm run test:envelope:correctness` | 7 files, 271 tests, observed Vitest duration 0.87 s; headless correctness without native PCM duplication | T0; flag-off preservation, exact engine/sample release, audio-clock cleanup, and publish/remix state |
+| `npm run test:audio-render` | 5 files, 20 tests, observed Vitest duration 4.73 s | T1; authoritative owner of the general native-render files; excludes the envelope canary owned by `test:envelope:pcm` |
 | `npm run test:e2e:envelope` | 3 Chromium tests, 5.3 s on the rebased head | T1; deterministic WebSocket-free mode explicitly disables multiplayer, then covers one finite AHD edit, loop/sample capability, and portrait-to-landscape behavior |
 | `npm run test:e2e:envelope:correctness` | 2 Chromium tests, 3.1 s on the rebased head | T1; flag-off headless runtime/notation evidence plus real Tone OfflineAudioContext tail-energy evidence |
 | `npm run validate:envelope-docs` | 4 synchronized documents, 7 executable examples, about 0.2 s | T0; parses and serializes the documented notation against the runtime contract; no browser or network |
@@ -21,7 +22,7 @@ volume, dependencies, and intended cadence before making it a merge gate.
 | selected-file ESLint | clean | T0; run on each touched TypeScript file |
 | `npm run typecheck` | pass | T0; app-neutral compile contract |
 | `npm run typecheck:worker` | pass | T0; worker/runtime boundary compile contract |
-| `npm run test:unit:quiet` | 319 files passed, 1 skipped; 5,157 passed, 1 skipped; observed Vitest duration 72.09 s | T0 PR gate on the present runner; revisit if CI p95 exceeds the budget |
+| `npm run test:unit:quiet` | 313 files passed, 1 skipped; 5,132 passed, 1 skipped; `*.render.test.ts` are deliberately excluded and run once by their named render owners; observed local duration about 70.5 s | T0 PR gate on the present runner; revisit if CI p95 exceeds the budget |
 | `npm run validate:test-quality` | 375 antipattern files and 380 collected test files, zero exceptions; about 46 s | T0 PR gate; AST/module-graph analysis dominates its cost |
 | `npm run test:integration:built` | 12 files, 140 tests, 7.55 s | T1 worker/MCP/session boundary gate; requires a local listener |
 | full-stack desktop smoke | 15 Chromium tests, 10.1 s test time; 22.8 s including build and Worker startup | T1; must use the owned full-stack launcher, not Vite alone |
@@ -35,8 +36,16 @@ volume, dependencies, and intended cadence before making it a merge gate.
 
 `test:unit:quiet` uses `--silent=passed-only`. It suppresses console output
 from passing tests while retaining the test list, slow-test timings, failures,
-and final counts. The default `test:unit` command remains unchanged for local
-debugging.
+and final counts. Both general unit commands exclude native render files.
+`test:audio-render` owns the five general renderer files and
+`test:envelope:pcm` owns the envelope render canary; pre-push and CI invoke both
+owners. Before this correction, the envelope renderer ran four times in one CI
+job (unit, audio-render, PCM, and correctness), and its general-unit execution
+could lose one of two sequential native renders under full-suite contention.
+Retries or wider PCM tolerances would have hidden that lane-design defect.
+The unrun-test validator now asks the real unit, general-render, and
+envelope-PCM collectors separately, verifies their package-script contract,
+and requires every native render file to have exactly one owner.
 
 ## Remaining unmeasured gate
 

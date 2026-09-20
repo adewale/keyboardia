@@ -2,7 +2,7 @@
 
 # Pre-push hook: T0 plus focused T1 by default.
 # Phase 1: Unit tests
-# Phase 2: Dev-only PCM/audio evidence (Chromium mock build)
+# Phase 2: Owned offline renders plus dev-only PCM/audio evidence
 # Phase 3: Real-Worker desktop smoke
 # Phase 4: Mobile Safari contract
 #
@@ -107,28 +107,32 @@ else
     exit 1
 fi
 
-# Phase 2: Dev-only PCM/audio evidence
+# Phase 2: Owned offline renders plus dev-only PCM/audio evidence
 echo "----------------------------------------"
-echo "Phase 2: PCM Capture Tests (Chromium)"
+echo "Phase 2: Offline Renders + PCM Capture"
 echo "----------------------------------------"
 echo ""
 
 PCM_START=$(date +%s)
 
+# Native OfflineAudioContext tests have dedicated ownership rather than running
+# under the broadly parallel unit collector. Run each owner before launching
+# the browser capture contract.
+#
 # The synchronized PCM taps are deliberately omitted from production Worker
 # bundles. The real-backend lanes therefore skip this file, so run its complete
 # six-test contract against the mock/Vite build instead of leaving it CI-only.
-if USE_MOCK_API=1 E2E_FUNCTIONAL_ONLY=1 CI=true E2E_PORT=5176 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-pcm.json npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0 && node scripts/assert-playwright-stats.mjs test-results/prepush-pcm.json 6 0; then
+if npm run test:audio-render && npm run test:envelope:pcm && USE_MOCK_API=1 E2E_FUNCTIONAL_ONLY=1 CI=true E2E_PORT=5176 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-pcm.json npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0 && node scripts/assert-playwright-stats.mjs test-results/prepush-pcm.json 6 0; then
     PCM_END=$(date +%s)
     PCM_DURATION=$((PCM_END - PCM_START))
     echo ""
-    echo "✅ PCM capture tests passed! (${PCM_DURATION}s)"
+    echo "✅ Offline render and PCM capture tests passed! (${PCM_DURATION}s)"
     echo ""
 else
     echo ""
-    echo "❌ PCM capture tests FAILED"
+    echo "❌ Offline render or PCM capture tests FAILED"
     echo ""
-    echo "The dev-only audio evidence or its exact six-test inventory failed."
+    echo "An owned render lane, dev-only audio evidence, or its exact inventory failed."
     echo "Fix the issue before pushing."
     echo "To skip: git push --no-verify"
     echo ""

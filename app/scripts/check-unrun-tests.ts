@@ -15,7 +15,7 @@
  * Run: npx tsx scripts/check-unrun-tests.ts
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
 import { findUnrunTestFiles } from './test-quality-analyzers';
 
@@ -54,14 +54,53 @@ const onDisk = ['src', 'test', 'e2e', 'identity', 'scripts']
 // `vitest list --filesOnly` prints an absolute path, or `[project] relative`
 // when the config names a project — the integration tier does. Normalise both
 // against the directory the runner was invoked from.
-const vitestFiles = (cwd: string) =>
-  run('npx', ['vitest', 'list', '--filesOnly'], cwd)
+const vitestFiles = (cwd: string, filters: string[] = []) =>
+  run('npx', ['vitest', 'list', '--filesOnly', ...filters], cwd)
     .split('\n')
     .filter((line) => /\.(test|spec)\.tsx?$/.test(line))
     .map((line) => line.trim().replace(/^\[[^\]]*\]\s*/, ''))
     .map((file) => path.relative(process.cwd(), path.resolve(cwd, file)));
 
-const unit = vitestFiles(process.cwd());
+const packageJson = JSON.parse(readFileSync('package.json', 'utf8')) as {
+  scripts?: Record<string, string>;
+};
+const scripts = packageJson.scripts ?? {};
+const renderGlob = 'src/audio/*.render.test.ts';
+const envelopeRender = 'src/audio/synth-envelope.render.test.ts';
+const envelopePcmFilters = [
+  'src/audio/envelope-pcm-manifest.test.ts',
+  'src/audio/pcm-metrics.test.ts',
+  'src/audio/synth-renderer-migration.test.ts',
+  envelopeRender,
+];
+
+// Keep native OfflineAudioContext files out of broad parallel collection and
+// prove that every such file has exactly one named owner. Checking the package
+// scripts as well as the collector output prevents this inventory from passing
+// against a theoretical lane that CI and pre-push do not actually invoke.
+const ownershipErrors: string[] = [];
+if (!scripts['test:unit']?.includes(`--exclude '${renderGlob}'`)) {
+  ownershipErrors.push(`test:unit must exclude '${renderGlob}'`);
+}
+if (!scripts['test:audio-render']?.includes(renderGlob)
+  || !scripts['test:audio-render']?.includes(`--exclude ${envelopeRender}`)) {
+  ownershipErrors.push('test:audio-render must own general renders and exclude the envelope canary');
+}
+if (!envelopePcmFilters.every((file) => scripts['test:envelope:pcm']?.includes(file))) {
+  ownershipErrors.push('test:envelope:pcm must own its four declared files');
+}
+if (scripts['test:envelope:correctness']?.includes(envelopeRender)) {
+  ownershipErrors.push('test:envelope:correctness must not duplicate the envelope PCM render');
+}
+if (ownershipErrors.length) {
+  throw new Error(`Invalid native-render lane ownership:\n- ${ownershipErrors.join('\n- ')}`);
+}
+
+const unit = vitestFiles(process.cwd(), ['--exclude', renderGlob]);
+const nativeRenderFiles = onDisk.filter((file) => /^src\/audio\/.*\.render\.test\.ts$/.test(file));
+const generalRenderFilters = nativeRenderFiles.filter((file) => file !== envelopeRender);
+const audioRender = vitestFiles(process.cwd(), generalRenderFilters);
+const envelopePcm = vitestFiles(process.cwd(), envelopePcmFilters);
 const integration = vitestFiles(path.join(process.cwd(), 'test/integration'));
 
 const e2e = run('npx', ['playwright', 'test', '--list', '--reporter=json'])
@@ -79,7 +118,30 @@ const identity = run(
     path.isAbsolute(file) ? path.relative(process.cwd(), file) : path.join('identity', file)
   ));
 
-const collected = [...new Set([...unit, ...integration, ...e2e, ...identity])];
+const collected = [...new Set([
+  ...unit,
+  ...audioRender,
+  ...envelopePcm,
+  ...integration,
+  ...e2e,
+  ...identity,
+])];
+
+const nativeRenderOwners = new Map(nativeRenderFiles.map((file) => [file, 0]));
+for (const file of [...unit, ...audioRender, ...envelopePcm]) {
+  if (nativeRenderOwners.has(file)) {
+    nativeRenderOwners.set(file, nativeRenderOwners.get(file)! + 1);
+  }
+}
+const invalidRenderOwners = [...nativeRenderOwners]
+  .filter(([, ownerCount]) => ownerCount !== 1);
+if (invalidRenderOwners.length) {
+  throw new Error(
+    `Native render tests require exactly one owner:\n${invalidRenderOwners
+      .map(([file, ownerCount]) => `- ${file}: ${ownerCount}`)
+      .join('\n')}`,
+  );
+}
 
 if (!collected.length) {
   console.error('❌ No lane reported collecting anything — the runners did not answer.');

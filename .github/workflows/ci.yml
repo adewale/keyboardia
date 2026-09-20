@@ -148,6 +148,9 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+      # General unit collection excludes *.render.test.ts. Native Web Audio
+      # renders contend under broad Vitest parallelism and have exact owners:
+      # the general audio lane below, or the envelope PCM lane for its canary.
       - name: Run required offline audio renders
         run: npm run test:audio-render
 
