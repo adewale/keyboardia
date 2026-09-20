@@ -6,7 +6,6 @@ import {
   ENVELOPE_PARAMETER_DESCRIPTORS_V2,
   SUSTAIN_PARAMETER_DESCRIPTOR_V2,
   TRACK_GATE_PARAMETER_DESCRIPTOR_V2,
-  TRACK_GATE_RANGE_V2,
 } from '../src/shared/envelope-contract-v2.ts';
 import { ENVELOPE_NOTATION_EXAMPLE_SESSIONS } from '../src/shared/__fixtures__/envelope-notation-examples.ts';
 import {
@@ -50,7 +49,7 @@ for (const [stage, units] of Object.entries(ENVELOPE_DURATION_RANGES_V2)) {
 requireText(
   'public syntax',
   sources.publicSyntax,
-  `| gate | ${TRACK_GATE_RANGE_V2.min}-${TRACK_GATE_RANGE_V2.max}% | Final tied segment |`,
+  `| gate | ${TRACK_GATE_PARAMETER_DESCRIPTOR_V2.min}-${TRACK_GATE_PARAMETER_DESCRIPTOR_V2.max}% | Final tied segment |`,
 );
 for (const row of [
   '| `x` | `steps[i] = true` |',

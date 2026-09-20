@@ -5,7 +5,7 @@ import {
   DEFAULT_TRACK_ENVELOPE_V2,
   ENVELOPE_DURATION_RANGES_V2,
   ENVELOPE_PARAMETER_DESCRIPTORS_V2,
-  TRACK_GATE_RANGE_V2,
+  TRACK_GATE_PARAMETER_DESCRIPTOR_V2,
   activeEnvelopeStages,
   clampEnvelopeDurationV2,
   durationToSeconds,
@@ -405,7 +405,10 @@ export function EnvelopeEditor({
     setGateGestureActive(true);
   };
   const previewGate = (next: number) => {
-    const clamped = Math.min(TRACK_GATE_RANGE_V2.max, Math.max(TRACK_GATE_RANGE_V2.min, next));
+    const clamped = Math.min(
+      TRACK_GATE_PARAMETER_DESCRIPTOR_V2.max,
+      Math.max(TRACK_GATE_PARAMETER_DESCRIPTOR_V2.min, next),
+    );
     setDraftGate(clamped);
     gateRef.current = clamped;
   };
@@ -698,8 +701,8 @@ export function EnvelopeEditor({
               id={gateId}
               aria-describedby={!gateActive ? gateInactiveId : undefined}
               type="range"
-              min={TRACK_GATE_RANGE_V2.min}
-              max={TRACK_GATE_RANGE_V2.max}
+              min={TRACK_GATE_PARAMETER_DESCRIPTOR_V2.min}
+              max={TRACK_GATE_PARAMETER_DESCRIPTOR_V2.max}
               value={visibleGate}
               disabled={controlsDisabled || !gateActive}
               onPointerDown={beginGateGesture}

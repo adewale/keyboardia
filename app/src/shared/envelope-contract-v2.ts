@@ -130,10 +130,6 @@ export const SUSTAIN_PARAMETER_DESCRIPTOR_V2: EnvelopeParameterDescriptorV2<'lin
 export const TRACK_GATE_PARAMETER_DESCRIPTOR_V2: EnvelopeParameterDescriptorV2<'percent'> = {
   min: 0, max: 100, default: 90, taper: 'linear', unit: 'percent',
 };
-export const TRACK_GATE_RANGE_V2 = {
-  min: TRACK_GATE_PARAMETER_DESCRIPTOR_V2.min,
-  max: TRACK_GATE_PARAMETER_DESCRIPTOR_V2.max,
-} as const;
 
 export const DEFAULT_TRACK_ENVELOPE_V2: TrackEnvelopeV2 = {
   model: 'adsr',
@@ -427,6 +423,35 @@ export function convertTrackEnvelopeUnitsWithReportV2(
       break;
   }
   return { envelope: converted, clampedStages };
+}
+
+/** Timed stages carried by a model, shared by authoring and capability checks. */
+export function activeEnvelopeStages(model: EnvelopeModel): readonly EnvelopeStageName[] {
+  switch (model) {
+    case 'ad': return ['attack', 'decay'];
+    case 'ahd': return ['attack', 'hold', 'decay'];
+    case 'ar': return ['attack', 'release'];
+    case 'adsr': return ['attack', 'decay', 'release'];
+  }
+}
+
+/** Deterministic compatibility projection for legacy four-number read surfaces. */
+export function resolvedEnvelopeV2ToLegacy(
+  envelope: ResolvedEnvelopeV2,
+): LegacyTrackEnvelopeV23 {
+  return {
+    attack: envelope.attackSeconds,
+    decay: envelope.decaySeconds ?? 0,
+    sustain: envelope.sustain ?? (envelope.model === 'ar' ? 1 : 0),
+    release: envelope.releaseSeconds ?? 0,
+  };
+}
+
+export function trackEnvelopeV2ToLegacySeconds(
+  envelope: TrackEnvelopeV2,
+  bpm: number,
+): LegacyTrackEnvelopeV23 {
+  return resolvedEnvelopeV2ToLegacy(resolveEnvelopeV2(envelope, bpm));
 }
 
 export function resolveEnvelopeV2(

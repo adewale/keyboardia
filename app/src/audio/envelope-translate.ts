@@ -4,6 +4,7 @@
  */
 import type { TrackEnvelope } from '../shared/sync-types';
 import type { ResolvedEnvelopeV2 } from '../shared/envelope-contract-v2';
+import { resolvedEnvelopeV2ToLegacy as projectResolvedEnvelopeV2ToLegacy } from '../shared/envelope-contract-v2';
 import { clampTrackEnvelope } from '../shared/envelope';
 
 export type EnvelopeTimeUnit = 'seconds' | 'steps';
@@ -13,12 +14,7 @@ export type EnvelopeNoteLock = Partial<Pick<TrackEnvelope, 'attack' | 'decay' | 
 export function resolvedEnvelopeV2ToLegacy(
   envelope: ResolvedEnvelopeV2,
 ): TrackEnvelope {
-  return {
-    attack: envelope.attackSeconds,
-    decay: envelope.decaySeconds ?? 0,
-    sustain: envelope.sustain ?? (envelope.model === 'ar' ? 1 : 0),
-    release: envelope.releaseSeconds ?? 0,
-  };
+  return projectResolvedEnvelopeV2ToLegacy(envelope);
 }
 
 export interface ToneEnvelopeSchedule {
