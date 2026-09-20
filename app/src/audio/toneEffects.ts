@@ -89,7 +89,7 @@ export function musicalTimeToSeconds(notation: string, bpm: number): number {
  * - Chorus adds stereo width
  * - Delay creates rhythmic echoes
  * - Reverb adds space (applied last for natural sound)
- * - Limiter conditions transients; a final -1 dB trim supplies measured
+ * - Limiter conditions transients; a final -2 dB trim supplies measured
  *   sample-peak headroom on the 16-track product-capacity fixture
  */
 

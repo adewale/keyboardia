@@ -1,4 +1,4 @@
-import type { GridState, Sample } from '../types';
+import type { GridState, Sample, TrackEnvelope } from '../types';
 import { createSynthesizedSamples, selectSampleBuffer } from './samples';
 import {
   synthEngine,
@@ -18,6 +18,7 @@ import {
   isAdvancedSynth,
   getAdvancedSynthPresetId,
   ADVANCED_SYNTH_PRESETS,
+  getUnifiedAdvancedSynthPreset,
 } from './advancedSynth';
 import {
   sampledInstrumentRegistry,
@@ -59,6 +60,26 @@ export type AutomatableSynthParameter =
   | 'filterResonance'
   | 'lfoRate'
   | 'oscMix';
+import {
+  effectiveAudioEnvelope,
+  resolvedEnvelopeV2ToLegacy,
+  resolvedEnvelopeV2ToToneSchedule,
+  translateTrackEnvelope,
+  type EnvelopeNoteLock,
+  type EnvelopeTimeUnit,
+} from './envelope-translate';
+import { ENVELOPE_EPSILON } from './sample-voice';
+import { getEffectiveTrackEnvelopeV2, getPresetTrackEnvelope } from '../shared/envelope';
+import { RELEASE_TAIL_GUARD_SEC } from './note-schedule';
+import { isSynthRendererApproved } from './synth-renderer-migration';
+import { scheduleAudioClockCleanup } from './audio-clock-cleanup';
+import {
+  isTrackEnvelopeV2,
+  resolveEnvelopeV2,
+  type ResolvedEnvelopeV2,
+  type SamplePlaybackMode,
+  type TrackEnvelopeV2,
+} from '../shared/envelope-contract-v2';
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -161,6 +182,31 @@ export class AudioEngine {
     string,
     { harmonicity: number; modulationIndex: number }
   >();
+  private trackEnvelopeOverrides = new Map<string, TrackEnvelope>();
+  /** Active canonical v2 overrides retained for managed sample renderers. */
+  private trackEnvelopeV2Overrides = new Map<string, TrackEnvelopeV2>();
+  private trackEnvelopeTimeUnits = new Map<string, EnvelopeTimeUnit>();
+  private trackGateOverrides = new Set<string>();
+
+  private resolveNoteEnvelope(
+    sampleId: string,
+    trackId: string | undefined,
+    noteLock?: EnvelopeNoteLock,
+    resolvedEnvelope?: ResolvedEnvelopeV2,
+  ): TrackEnvelope | undefined {
+    if (resolvedEnvelope) return resolvedEnvelopeV2ToLegacy(resolvedEnvelope);
+    if (!noteLock || !trackId) return undefined;
+    const unit = this.trackEnvelopeTimeUnits.get(trackId) ?? 'seconds';
+    const base = this.trackEnvelopeOverrides.get(trackId)
+      ?? translateTrackEnvelope(
+        getPresetTrackEnvelope(sampleId) ?? { attack: .003, decay: 0, sustain: 1, release: .1 },
+        this.tempo,
+        // Preset definitions are always authored in seconds. The selected
+        // unit governs explicit track values and per-step locks only.
+        'seconds',
+      );
+    return effectiveAudioEnvelope(base, this.tempo, unit, noteLock);
+  }
 
   constructor() {
     this.toneSynthRegistry = new TrackSynthRegistry<ToneSynthManager>({
@@ -219,6 +265,7 @@ export class AudioEngine {
         fmOverride.modulationIndex,
       );
     }
+    manager.setEnvelope(this.trackEnvelopeOverrides.get(trackId) ?? null);
     logger.audio.log(`Created ToneSynthManager for track ${trackId}`);
     return manager;
   }
@@ -256,6 +303,7 @@ export class AudioEngine {
     if (ov.attack !== undefined) synth.setAttack(ov.attack);
     if (ov.release !== undefined) synth.setRelease(ov.release);
     if (ov.oscMix !== undefined) synth.setOscMix(ov.oscMix);
+    synth.setEnvelope(this.trackEnvelopeOverrides.get(trackId) ?? null);
     logger.audio.log(`Created AdvancedSynthEngine for track ${trackId}`);
     return synth;
   }
@@ -893,27 +941,79 @@ export class AudioEngine {
     volume: number = 1,
     trackId?: string,
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
+    noteEnvelopeLock?: EnvelopeNoteLock,
+    resolvedEnvelope?: ResolvedEnvelopeV2,
+    authoredEnvelope: boolean = resolvedEnvelope !== undefined,
   ): void {
     const quarantine = getSampledInstrumentQuarantine(presetName);
     if (quarantine) {
       logger.audio.error(`[QUARANTINED] ${presetName}: ${quarantine.reason}. Choose ${quarantine.replacement} explicitly.`);
       return;
     }
-    const preset = SYNTH_PRESETS[presetName];
-    if (!preset) {
+    if (!SYNTH_PRESETS[presetName]) {
       logger.audio.warn(`playSynthNote: Unknown preset "${presetName}", falling back to "lead"`);
     }
-    const actualPreset = preset || SYNTH_PRESETS.lead;
-    const frequency = semitoneToFrequency(semitone);
+    const actualPresetName = SYNTH_PRESETS[presetName] ? presetName : 'lead';
 
-    logger.audio.log(`playSynthNote: noteId=${noteId}, preset=${presetName}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, vol=${volume}`);
+    logger.audio.log(`playSynthNote: noteId=${noteId}, preset=${actualPresetName}, time=${time.toFixed(3)}, vol=${volume}`);
 
-    // Phase 25: Route through TrackBusManager if trackId provided
-    const destination = trackId && this.trackBusManager
-      ? this.trackBusManager.getBusInput(trackId)
+    if (isSynthRendererApproved(actualPresetName)) {
+      this.playAdvancedSynth(
+        `native:${actualPresetName}`,
+        semitone,
+        time,
+        duration ?? 0.3,
+        volume,
+        trackId,
+        midiVelocity,
+        noteEnvelopeLock,
+        resolvedEnvelope,
+      );
+      return;
+    }
+
+    const preset = SYNTH_PRESETS[actualPresetName];
+    const useAuthoredEnvelope = authoredEnvelope
+      || noteEnvelopeLock !== undefined
+      || (trackId !== undefined && this.trackEnvelopeV2Overrides.has(trackId));
+    const envelope = this.resolveNoteEnvelope(
+      `synth:${actualPresetName}`,
+      trackId,
+      noteEnvelopeLock,
+      useAuthoredEnvelope ? resolvedEnvelope : undefined,
+    ) ?? (trackId ? this.trackEnvelopeOverrides.get(trackId) : undefined);
+    const params = envelope ? { ...preset, ...envelope } : preset;
+    const destination = trackId
+      ? this.trackBusManager?.getBusInput(trackId)
       : undefined;
-
-    synthEngine.playNote(noteId, frequency, actualPreset, time, duration, volume, destination, midiVelocity);
+    const canonicalEnvelope = resolvedEnvelope?.model === 'adsr'
+      && useAuthoredEnvelope
+      ? resolvedEnvelope
+      : undefined;
+    if (canonicalEnvelope) {
+      synthEngine.playNote(
+        noteId,
+        semitoneToFrequency(semitone),
+        params,
+        time,
+        duration,
+        volume,
+        destination,
+        midiVelocity,
+        canonicalEnvelope,
+      );
+    } else {
+      synthEngine.playNote(
+        noteId,
+        semitoneToFrequency(semitone),
+        params,
+        time,
+        duration,
+        volume,
+        destination,
+        midiVelocity,
+      );
+    }
   }
 
   /**
@@ -1135,6 +1235,39 @@ export class AudioEngine {
         // effect without dropping a note during asynchronous reconstruction.
         this.toneSynthRegistry.getIfReady(track.id)?.resetFMParams();
       }
+
+      const envelopeV2Report = track.envelopeV2
+        ? getEffectiveTrackEnvelopeV2(track)
+        : null;
+      const nextEnvelope = envelopeV2Report
+        ? resolvedEnvelopeV2ToLegacy(resolveEnvelopeV2(envelopeV2Report.effective, state.tempo))
+        : track.envelope
+          ? translateTrackEnvelope(track.envelope, state.tempo, track.envelopeTimeUnit)
+          : undefined;
+      if (envelopeV2Report) {
+        this.trackEnvelopeV2Overrides.set(track.id, envelopeV2Report.effective);
+      } else {
+        this.trackEnvelopeV2Overrides.delete(track.id);
+      }
+      const currentEnvelope = this.trackEnvelopeOverrides.get(track.id);
+      this.trackEnvelopeTimeUnits.set(track.id, track.envelopeTimeUnit ?? 'seconds');
+      if (track.gate === undefined) this.trackGateOverrides.delete(track.id);
+      else this.trackGateOverrides.add(track.id);
+      if (nextEnvelope) {
+        const changed = !currentEnvelope
+          || currentEnvelope.attack !== nextEnvelope.attack
+          || currentEnvelope.decay !== nextEnvelope.decay
+          || currentEnvelope.sustain !== nextEnvelope.sustain
+          || currentEnvelope.release !== nextEnvelope.release;
+        if (changed) {
+          this.trackEnvelopeOverrides.set(track.id, nextEnvelope);
+          this.toneSynthRegistry.getIfReady(track.id)?.setEnvelope(nextEnvelope);
+          this.advancedSynthRegistry.getIfReady(track.id)?.setEnvelope(nextEnvelope);
+        }
+      } else if (this.trackEnvelopeOverrides.delete(track.id)) {
+        this.toneSynthRegistry.getIfReady(track.id)?.setEnvelope(null);
+        this.advancedSynthRegistry.getIfReady(track.id)?.setEnvelope(null);
+      }
     }
     for (const trackId of this.syncedTrackIds) {
       if (!currentIds.has(trackId)) this.removeTrackGain(trackId);
@@ -1155,7 +1288,7 @@ export class AudioEngine {
    * @param sampleId - ID of the sample to play
    * @param trackId - ID of the track (for gain control)
    * @param time - AudioContext time to start playback
-   * @param duration - Step duration in seconds (unused, kept for API compatibility)
+   * @param duration - Articulated note duration in seconds when envelope/gate state is authored
    * @param pitchSemitones - Pitch shift in semitones (0 = original, 12 = octave up)
    * @param volume - Volume multiplier (0-1)
    */
@@ -1168,6 +1301,9 @@ export class AudioEngine {
     volume: number = 1,
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
     variationKey?: string,
+    noteEnvelopeLock?: EnvelopeNoteLock,
+    resolvedEnvelope?: ResolvedEnvelopeV2,
+    playbackMode: SamplePlaybackMode = 'gate',
   ): void {
     // Procedural/user samples currently have no velocity-to-timbre mapping.
     // Keep the explicit contract so one can be added without coupling gain.
@@ -1262,9 +1398,30 @@ export class AudioEngine {
     const currentTime = this.audioContext.currentTime;
     const actualStartTime = Math.max(time, currentTime);
     const envStart = computeEnvelopeStart({ eventTime: time, currentTime, pitchLatencySec });
-    envGain.gain.setValueAtTime(0, envStart);
     const calibratedVolume = volume * (sample.playbackGain ?? 1);
-    envGain.gain.linearRampToValueAtTime(calibratedVolume, envStart + FADE_TIME);
+    const trackEnvelope = this.trackEnvelopeOverrides.get(trackId);
+    const envelope = this.resolveNoteEnvelope(sampleId, trackId, noteEnvelopeLock, resolvedEnvelope)
+      ?? trackEnvelope;
+    const articulate = envelope !== undefined
+      || noteEnvelopeLock !== undefined
+      || this.trackGateOverrides.has(trackId);
+    const attack = envelope?.attack ?? FADE_TIME;
+    envGain.gain.setValueAtTime(ENVELOPE_EPSILON, envStart);
+    const attackEnd = envStart + attack;
+    const releaseStart = playbackMode !== 'trigger' && articulate && duration !== undefined
+      ? envStart + Math.max(0, duration)
+      : undefined;
+    const releaseDuringAttack = releaseStart !== undefined && releaseStart < attackEnd;
+    if (releaseDuringAttack && releaseStart !== undefined) {
+      const progress = attack <= 0 ? 1 : (releaseStart - envStart) / attack;
+      const boundedProgress = Math.min(1, Math.max(0, progress));
+      envGain.gain.linearRampToValueAtTime(
+        ENVELOPE_EPSILON + (calibratedVolume - ENVELOPE_EPSILON) * boundedProgress,
+        releaseStart,
+      );
+    } else {
+      envGain.gain.linearRampToValueAtTime(calibratedVolume, attackEnd);
+    }
     envGain.connect(trackInput);
 
     // For recordings, try playing immediately to test
@@ -1273,6 +1430,31 @@ export class AudioEngine {
     }
 
     source.start(actualStartTime);
+
+    if (playbackMode === 'trigger'
+      && resolvedEnvelope
+      && (resolvedEnvelope.model === 'ad' || resolvedEnvelope.model === 'ahd')
+      && resolvedEnvelope.decaySeconds !== undefined) {
+      const hold = resolvedEnvelope.model === 'ahd'
+        ? Math.max(0, resolvedEnvelope.holdSeconds ?? 0)
+        : 0;
+      const decayStart = attackEnd + hold;
+      if (hold > 0) envGain.gain.setValueAtTime(volume, decayStart);
+      const decayEnd = decayStart + Math.max(0, resolvedEnvelope.decaySeconds);
+      envGain.gain.linearRampToValueAtTime(ENVELOPE_EPSILON, decayEnd);
+      source.stop(decayEnd + RELEASE_TAIL_GUARD_SEC);
+    }
+
+    if (releaseStart !== undefined) {
+      if (!releaseDuringAttack) envGain.gain.setValueAtTime(volume, releaseStart);
+      const release = envelope?.release ?? .1;
+      if (release > 0) {
+        envGain.gain.exponentialRampToValueAtTime(ENVELOPE_EPSILON, releaseStart + release);
+      } else {
+        envGain.gain.setValueAtTime(ENVELOPE_EPSILON, releaseStart);
+      }
+      source.stop(releaseStart + release + RELEASE_TAIL_GUARD_SEC);
+    }
 
     // Memory leak fix: disconnect nodes when playback ends. When the pitch
     // worklet is engaged, buffered grains keep emitting for one latency
@@ -1285,10 +1467,12 @@ export class AudioEngine {
         envGain.disconnect();
       };
       if (pitchLatencySec > 0) {
-        setTimeout(cleanup, Math.ceil(pitchLatencySec * 1000) + 10);
-      } else {
-        cleanup();
-      }
+        scheduleAudioClockCleanup(
+          this.audioContext!,
+          this.audioContext!.currentTime + pitchLatencySec + RELEASE_TAIL_GUARD_SEC,
+          cleanup,
+        );
+      } else cleanup();
     };
   }
 
@@ -1324,6 +1508,10 @@ export class AudioEngine {
     this.pendingTrackPans.delete(trackId);
     this.syncedTrackIds.delete(trackId);
     this.trackFMOverrides.delete(trackId);
+    this.trackEnvelopeOverrides.delete(trackId);
+    this.trackEnvelopeV2Overrides.delete(trackId);
+    this.trackEnvelopeTimeUnits.delete(trackId);
+    this.trackGateOverrides.delete(trackId);
     this.toneSynthRegistry.remove(trackId);
     this.advancedSynthRegistry.remove(trackId);
     if (this.trackBusManager) {
@@ -1355,6 +1543,14 @@ export class AudioEngine {
     return this.audioContext?.currentTime ?? 0;
   }
 
+  /** Intended audible delay for the only renderer path that buffers a grain. */
+  getAudibleOutputLatencySeconds(sampleId: string, pitchSemitones: number): number {
+    if (sampleId.includes(':')
+      || Math.abs(pitchSemitones) <= 6
+      || !this.pitchShiftLoaded
+      || !this.audioContext) return 0;
+    return PITCH_SHIFT_GRAIN_SIZE / this.audioContext.sampleRate;
+  }
   getSampleIds(): string[] {
     return Array.from(this.samples.keys());
   }
@@ -1600,6 +1796,9 @@ export class AudioEngine {
     volume: number = 1,
     trackId?: string,
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
+    noteEnvelopeLock?: EnvelopeNoteLock,
+    resolvedEnvelope?: ResolvedEnvelopeV2,
+    authoredEnvelope: boolean = resolvedEnvelope !== undefined,
   ): void {
     // Tone presets currently use the canonical note gain only.
     void midiVelocity;
@@ -1635,7 +1834,21 @@ export class AudioEngine {
     }
 
     const noteName = synth.semitoneToNoteName(semitone);
-    synth.playNote(presetName, noteName, duration, time, volume);
+    const useAuthoredEnvelope = authoredEnvelope
+      || noteEnvelopeLock !== undefined
+      || (trackId !== undefined && this.trackEnvelopeV2Overrides.has(trackId));
+    const toneSchedule = useAuthoredEnvelope && resolvedEnvelope
+      ? resolvedEnvelopeV2ToToneSchedule(resolvedEnvelope, duration)
+      : null;
+    synth.playNote(
+      presetName,
+      noteName,
+      toneSchedule?.duration ?? duration,
+      time,
+      volume,
+      toneSchedule?.envelope
+        ?? this.resolveNoteEnvelope(`tone:${presetName}`, trackId, noteEnvelopeLock),
+    );
   }
 
   /**
@@ -1688,6 +1901,9 @@ export class AudioEngine {
     volume: number = 1,
     trackId?: string,
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
+    noteEnvelopeLock?: EnvelopeNoteLock,
+    resolvedEnvelope?: ResolvedEnvelopeV2,
+    authoredEnvelope: boolean = resolvedEnvelope !== undefined,
   ): void {
     if (!this.toneInitialized) {
       logger.audio.error('playAdvancedSynth BLOCKED: Tone.js not initialized', {
@@ -1725,14 +1941,32 @@ export class AudioEngine {
       return;
     }
 
-    const preset = ADVANCED_SYNTH_PRESETS[presetName];
+    const preset = getUnifiedAdvancedSynthPreset(presetName);
     if (!preset) {
       logger.audio.warn(`Unknown advanced synth preset: ${presetName}`);
       return;
     }
 
     synth.setPreset(presetName);
-    synth.playNoteSemitone(semitone, duration, time, volume, midiVelocity);
+    const sampleId = presetName.startsWith('native:')
+      ? `synth:${presetName.slice('native:'.length)}`
+      : `advanced:${presetName}`;
+    const useAuthoredEnvelope = authoredEnvelope
+      || noteEnvelopeLock !== undefined
+      || (trackId !== undefined && this.trackEnvelopeV2Overrides.has(trackId));
+    synth.playNoteSemitone(
+      semitone,
+      duration,
+      time,
+      volume,
+      midiVelocity,
+      this.resolveNoteEnvelope(
+        sampleId,
+        trackId,
+        noteEnvelopeLock,
+        useAuthoredEnvelope ? resolvedEnvelope : undefined,
+      ),
+    );
   }
 
   /**
@@ -1952,7 +2186,10 @@ export class AudioEngine {
     duration: number = 0.3,
     volume: number = 1,
     trackId?: string,
-    velocity: number = DEFAULT_MIDI_VELOCITY
+    velocity: number = DEFAULT_MIDI_VELOCITY,
+    noteEnvelopeLock?: EnvelopeNoteLock,
+    playbackMode: SamplePlaybackMode = 'gate',
+    resolvedEnvelope?: ResolvedEnvelopeV2,
   ): void {
     const quarantine = getSampledInstrumentQuarantine(instrumentId);
     if (quarantine) {
@@ -1975,7 +2212,44 @@ export class AudioEngine {
       ? this.trackBusManager.getBusInput(trackId)
       : undefined;
 
-    instrument.playNote(noteId, midiNote, time, duration, volume, velocity, destination);
+    const envelope = resolvedEnvelope
+      ?? (trackId ? this.trackEnvelopeV2Overrides.get(trackId) : undefined)
+      ?? this.resolveNoteEnvelope(`sampled:${instrumentId}`, trackId, noteEnvelopeLock)
+      ?? (trackId ? this.trackEnvelopeOverrides.get(trackId) : undefined);
+    // Preserve test/third-party legacy adapters while production instruments
+    // consume the explicit managed-voice contract.
+    if (typeof instrument.playVoice === 'function') {
+      instrument.playVoice({
+        id: noteId,
+        midiNote,
+        time,
+        duration,
+        volume,
+        velocity,
+        destination,
+        articulation: 'default',
+        envelope,
+        mode: playbackMode,
+        tempoBpm: this.tempo,
+      });
+    } else {
+      const legacyEnvelope = isTrackEnvelopeV2(envelope)
+        ? resolvedEnvelopeV2ToLegacy(resolveEnvelopeV2(envelope, this.tempo))
+        : envelope && 'attackSeconds' in envelope
+          ? resolvedEnvelopeV2ToLegacy(envelope)
+          : envelope;
+      instrument.playNote(
+        noteId,
+        midiNote,
+        time,
+        duration,
+        volume,
+        velocity,
+        destination,
+        'default',
+        legacyEnvelope,
+      );
+    }
   }
 
   /**
@@ -2090,6 +2364,10 @@ export class AudioEngine {
     this.toneEffects = null;
     this.advancedOverrides = {};
     this.trackFMOverrides.clear();
+    this.trackEnvelopeOverrides.clear();
+    this.trackEnvelopeV2Overrides.clear();
+    this.trackEnvelopeTimeUnits.clear();
+    this.trackGateOverrides.clear();
     this.pendingTrackVolumes.clear();
     this.pendingTrackPans.clear();
     this.syncedTrackIds.clear();

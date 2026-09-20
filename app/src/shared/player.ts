@@ -21,6 +21,8 @@ export interface PlayerInfo {
   colorIndex: number;  // Index into color array for consistent styling
   animal: string;      // Animal name like 'Fox'
   name: string;        // Full name like 'Red Fox'
+  /** Wire features this client can safely receive during rolling deploys. */
+  capabilities?: string[];
 }
 
 /**

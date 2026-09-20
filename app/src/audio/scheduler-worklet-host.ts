@@ -17,6 +17,8 @@ import { audioMetrics } from './metrics/audio-metrics';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { resolveNoteDynamics } from './note-dynamics';
 import { logger } from '../utils/logger';
+import { DEFAULT_TRACK_GATE } from '../shared/envelope';
+import type { ResolvedNoteEventV2 } from './resolved-note-event-v2';
 import schedulerWorkletUrl from './worklets/scheduler.worklet.ts?worker&url';
 import {
   audioContextClock,
@@ -31,21 +33,12 @@ import { PresentationClock } from './presentation-clock';
 
 // ─── Event types from the worklet ────────────────────────────────────────
 
-interface NoteEvent {
-  type: 'note';
-  trackId: string;
-  noteId: string;
-  sampleId: string;
-  pitchSemitones: number;
-  time: number;
-  duration: number;
+type NoteEvent = ResolvedNoteEventV2 & {
   midiVelocity?: number;
   noteGain?: number;
   hasExplicitLock?: boolean;
   loopIteration?: number;
-  /** Legacy event compatibility for a host/worklet rolling update. */
-  volumeMultiplier?: number;
-}
+};
 
 interface StepEvent {
   type: 'step';
@@ -73,6 +66,7 @@ export class SchedulerWorkletHost implements IScheduler {
   private readonly presentationClock = new PresentationClock({
     now: () => this.audioClock?.now() ?? audioTime(0),
   });
+  private playbackEpoch = 0;
 
   // Callbacks
   private onStepChange: ((step: number) => void) | null = null;
@@ -143,6 +137,7 @@ export class SchedulerWorkletHost implements IScheduler {
 
     this.isRunning = true;
     setMediaSessionPlaybackState('playing');
+    this.playbackEpoch += 1;
 
     const state = getState();
     const workletState = this.serializeState(state);
@@ -174,6 +169,7 @@ export class SchedulerWorkletHost implements IScheduler {
       initialStep,
       initialNextStepTime,
       multiplayer: this.multiplayerConfig.enabled,
+      playbackEpoch: this.playbackEpoch,
     });
 
     logger.audio.log('SchedulerWorkletHost started');
@@ -273,6 +269,10 @@ export class SchedulerWorkletHost implements IScheduler {
       noteGain,
       hasExplicitLock: event.hasExplicitLock ?? false,
       loopIteration: event.loopIteration ?? 0,
+      playbackMode: event.playbackMode,
+      resolvedEnvelope: event.resolvedEnvelope,
+      authoredEnvelope: event.authoredEnvelope,
+      envelopeLock: event.envelopeLock,
     };
     dispatchResolvedNote(
       resolved,
@@ -284,6 +284,9 @@ export class SchedulerWorkletHost implements IScheduler {
   // ─── Serialization ─────────────────────────────────────────────────────
 
   private serializeState(state: GridState): WorkletSchedulerState {
+    const latencyProbe = (audioEngine as typeof audioEngine & {
+      getAudibleOutputLatencySeconds?: (sampleId: string, pitchSemitones: number) => number;
+    }).getAudibleOutputLatencySeconds;
     return {
       tempo: state.tempo,
       swing: state.swing,
@@ -299,12 +302,24 @@ export class SchedulerWorkletHost implements IScheduler {
         soloed: t.soloed,
         transpose: t.transpose ?? 0,
         swing: t.swing ?? 0,
+        gate: t.gate ?? DEFAULT_TRACK_GATE,
+        envelopeTimeUnit: t.envelopeTimeUnit ?? 'seconds',
+        envelopeV2: t.envelopeV2,
+        samplePlaybackMode: t.samplePlaybackMode,
+        largePitchShiftLatencySeconds: latencyProbe?.call(audioEngine, t.sampleId, 7) ?? 0,
         parameterLocks: t.parameterLocks.map((pl): WorkletPLock | null => {
           if (!pl) return null;
           return {
             pitch: pl.pitch,
             volume: pl.volume,
             tie: pl.tie,
+            attack: pl.attack,
+            decay: pl.decay,
+            release: pl.release,
+            attackDuration: pl.attackDuration,
+            holdDuration: pl.holdDuration,
+            decayDuration: pl.decayDuration,
+            releaseDuration: pl.releaseDuration,
           };
         }),
       })),

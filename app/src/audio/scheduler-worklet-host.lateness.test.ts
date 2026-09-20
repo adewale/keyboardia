@@ -138,7 +138,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
     );
 
     dispatchTo(host, sampleNoteEvent(10.1, 1));
-    expect(vi.mocked(audioEngine.playSample).mock.calls.at(-1)).toHaveLength(7);
+    expect(vi.mocked(audioEngine.playSample).mock.calls.at(-1)?.[7]).toBeUndefined();
   });
 
   it.each([
@@ -155,6 +155,9 @@ describe('SchedulerWorkletHost lateness metrics', () => {
       1,
       't1',
       90,
+      undefined,
+      undefined,
+      false,
     );
   });
 

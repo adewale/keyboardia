@@ -66,16 +66,12 @@ describe('FakeAdvancedSynthEngine', () => {
     fake.setFilterResonance(2.4);
     fake.setLfoRate(6);
     fake.setLfoAmount(0.4);
-    fake.setAttack(0.05);
-    fake.setRelease(1.2);
     fake.setOscMix(0.6);
 
     expect(fake.setFilterFrequencyCalls).toEqual([1500]);
     expect(fake.setFilterResonanceCalls).toEqual([2.4]);
     expect(fake.setLfoRateCalls).toEqual([6]);
     expect(fake.setLfoAmountCalls).toEqual([0.4]);
-    expect(fake.setAttackCalls).toEqual([0.05]);
-    expect(fake.setReleaseCalls).toEqual([1.2]);
     expect(fake.setOscMixCalls).toEqual([0.6]);
   });
 

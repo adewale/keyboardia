@@ -27,9 +27,12 @@ import {
   normalizeSynthAttackSeconds,
   normalizeSynthReleaseSeconds,
   peakSafeOscillatorMix,
+  SYNTH_PRESETS,
+  type SynthParams,
 } from './synth';
 import { absoluteToneStartTime } from './tone-schedule';
 import { audioTime, type AudioTime } from './audio-time';
+import type { TrackEnvelope } from '../shared/sync-types';
 
 const MIN_ADVANCED_FILTER_FREQUENCY = 20;
 const MAX_ADVANCED_FILTER_FREQUENCY = 20_000;
@@ -103,6 +106,8 @@ export interface LFOConfig {
  */
 export interface AdvancedSynthPreset {
   name: string;
+  /** Fixed source trim retained when a native preset is structurally migrated. */
+  outputGainDb?: number;
   oscillator1: OscillatorConfig;
   oscillator2: OscillatorConfig;
   amplitudeEnvelope: ADSREnvelope;
@@ -212,6 +217,67 @@ export const ADVANCED_SYNTH_PRESETS: Record<string, AdvancedSynthPreset> = {
     noiseLevel: 0,
   },
 };
+
+/**
+ * Lossless structural migration of the legacy `synth:*` catalogue into the
+ * Tone voice graph. IDs are namespaced so similarly named advanced patches
+ * cannot collide with published session IDs.
+ */
+export function migrateNativeSynthPreset(id: string, preset: SynthParams): AdvancedSynthPreset {
+  const mix = preset.osc2?.mix ?? 0;
+  return {
+    name: id,
+    outputGainDb: preset.outputGainDb,
+    oscillator1: {
+      waveform: preset.waveform,
+      level: preset.osc2 ? 1 - mix : 1,
+      detune: 0,
+      coarseDetune: 0,
+    },
+    oscillator2: {
+      waveform: preset.osc2?.waveform ?? preset.waveform,
+      level: preset.osc2 ? mix : 0,
+      detune: preset.osc2?.detune ?? 0,
+      coarseDetune: preset.osc2?.coarse ?? 0,
+    },
+    amplitudeEnvelope: {
+      attack: preset.attack,
+      decay: preset.decay,
+      sustain: preset.sustain,
+      release: preset.release,
+    },
+    filter: {
+      frequency: preset.filterCutoff,
+      resonance: preset.filterResonance,
+      type: 'lowpass',
+      envelopeAmount: preset.filterEnv?.amount ?? 0,
+    },
+    filterEnvelope: {
+      attack: preset.filterEnv?.attack ?? preset.attack,
+      decay: preset.filterEnv?.decay ?? preset.decay,
+      sustain: preset.filterEnv?.sustain ?? 1,
+      release: preset.release,
+    },
+    lfo: {
+      frequency: preset.lfo?.rate ?? 0,
+      waveform: preset.lfo?.waveform ?? 'sine',
+      destination: preset.lfo?.destination ?? 'filter',
+      amount: preset.lfo?.depth ?? 0,
+      sync: false,
+    },
+    noiseLevel: 0,
+  };
+}
+
+export const NATIVE_ADVANCED_SYNTH_PRESETS: Record<string, AdvancedSynthPreset> =
+  Object.fromEntries(Object.entries(SYNTH_PRESETS).map(([id, preset]) => [
+    `native:${id}`,
+    migrateNativeSynthPreset(id, preset),
+  ]));
+
+export function getUnifiedAdvancedSynthPreset(presetId: string): AdvancedSynthPreset | undefined {
+  return ADVANCED_SYNTH_PRESETS[presetId] ?? NATIVE_ADVANCED_SYNTH_PRESETS[presetId];
+}
 
 /**
  * Advanced synth preset type
@@ -738,6 +804,7 @@ export class AdvancedSynthEngine {
     lfoAmount?: number;
     attack?: number;
     release?: number;
+    envelope?: TrackEnvelope;
     oscMix?: number;
   } = {};
   private ready = false;
@@ -885,7 +952,7 @@ export class AdvancedSynthEngine {
    * Set the current preset
    */
   setPreset(presetId: string): void {
-    const preset = ADVANCED_SYNTH_PRESETS[presetId];
+    const preset = getUnifiedAdvancedSynthPreset(presetId);
     if (!preset) {
       logger.audio.warn(`Unknown preset: ${presetId}`);
       return;
@@ -896,7 +963,12 @@ export class AdvancedSynthEngine {
     const activeVoices = this.voices.filter(v => v.isActive()).length;
     this.currentPreset = preset;
     this.currentPresetId = presetId;
-    if (this.output) this.output.gain.value = dbToGain(ADVANCED_SOURCE_GAIN_DB[presetId as keyof typeof ADVANCED_SOURCE_GAIN_DB]);
+    if (this.output) {
+      const gainDb = preset.outputGainDb
+        ?? ADVANCED_SOURCE_GAIN_DB[presetId as keyof typeof ADVANCED_SOURCE_GAIN_DB]
+        ?? 0;
+      this.output.gain.value = dbToGain(gainDb);
+    }
 
     // Apply the instrument definition, then restore live control overrides.
     for (const voice of this.voices) voice.applyPreset(preset);
@@ -909,7 +981,7 @@ export class AdvancedSynthEngine {
    * Get available preset names
    */
   getPresetNames(): string[] {
-    return Object.keys(ADVANCED_SYNTH_PRESETS);
+    return [...Object.keys(ADVANCED_SYNTH_PRESETS), ...Object.keys(NATIVE_ADVANCED_SYNTH_PRESETS)];
   }
 
   /**
@@ -941,24 +1013,40 @@ export class AdvancedSynthEngine {
     }
   }
 
-  private applyOverridesToVoices(): void {
+  private applyOverridesToVoice(voice: AdvancedSynthVoice): void {
     const ov = this.overrides;
     const effectiveAt = audioTime(Tone.immediate());
-    for (const voice of this.voices) {
-      if (ov.filterFrequency !== undefined) voice.setFilterFrequency(ov.filterFrequency, effectiveAt);
-      if (ov.filterResonance !== undefined && voice['filter']) {
-        slewAudioParam(voice['filter'].Q, ov.filterResonance, effectiveAt);
-      }
-      if (ov.lfoRate !== undefined) voice.setLfoRate(ov.lfoRate, effectiveAt);
-      if (ov.lfoAmount !== undefined) this.applyLfoAmount(voice, ov.lfoAmount);
-      if (ov.attack !== undefined && voice['ampEnvelope']) voice['ampEnvelope'].attack = ov.attack;
-      if (ov.release !== undefined && voice['ampEnvelope']) voice['ampEnvelope'].release = ov.release;
-      if (ov.oscMix !== undefined) {
-        const [osc1Level, osc2Level] = peakSafeOscillatorMix(ov.oscMix);
-        if (voice['osc1Gain']) slewAudioParam(voice['osc1Gain'].gain, osc1Level, effectiveAt);
-        if (voice['osc2Gain']) slewAudioParam(voice['osc2Gain'].gain, osc2Level, effectiveAt);
-      }
+    if (ov.filterFrequency !== undefined) voice.setFilterFrequency(ov.filterFrequency, effectiveAt);
+    if (ov.filterResonance !== undefined && voice['filter']) {
+      slewAudioParam(voice['filter'].Q, ov.filterResonance, effectiveAt);
     }
+    if (ov.lfoRate !== undefined) voice.setLfoRate(ov.lfoRate, effectiveAt);
+    if (ov.lfoAmount !== undefined) this.applyLfoAmount(voice, ov.lfoAmount);
+    this.applyAmplitudeEnvelope(voice, ov.envelope);
+    if (ov.oscMix !== undefined) {
+      const [osc1Level, osc2Level] = peakSafeOscillatorMix(ov.oscMix);
+      if (voice['osc1Gain']) slewAudioParam(voice['osc1Gain'].gain, osc1Level, effectiveAt);
+      if (voice['osc2Gain']) slewAudioParam(voice['osc2Gain'].gain, osc2Level, effectiveAt);
+    }
+  }
+
+  private applyAmplitudeEnvelope(voice: AdvancedSynthVoice, noteEnvelope?: TrackEnvelope): void {
+    const target = voice['ampEnvelope'];
+    if (!target || !this.currentPreset) return;
+    const base = noteEnvelope ?? this.overrides.envelope ?? this.currentPreset.amplitudeEnvelope;
+    // Resolved per-note seconds have already crossed the authored-state
+    // validation boundary; adapter code must not clamp them to legacy limits.
+    target.attack = this.overrides.attack ?? Math.max(0, base.attack);
+    target.decay = Math.max(0, base.decay);
+    target.sustain = Math.min(1, Math.max(0, base.sustain));
+    target.release = this.overrides.release ?? Math.max(0, base.release);
+    target.attackCurve = 'linear';
+    target.decayCurve = 'linear';
+    target.releaseCurve = 'exponential';
+  }
+
+  private applyOverridesToVoices(): void {
+    for (const voice of this.voices) this.applyOverridesToVoice(voice);
   }
 
   setTempo(bpm: number): void {
@@ -1025,6 +1113,14 @@ export class AdvancedSynthEngine {
     }
   }
 
+  /** Apply or clear the authored per-track envelope override. */
+  setEnvelope(envelope: TrackEnvelope | null): void {
+    this.overrides.envelope = envelope ?? undefined;
+    for (const voice of this.voices) {
+      this.applyAmplitudeEnvelope(voice);
+    }
+  }
+
   /**
    * Set oscillator mix (osc1 level vs osc2 level) across all voices.
    * 0 = only osc1, 1 = only osc2, 0.5 = equal mix.
@@ -1077,9 +1173,10 @@ export class AdvancedSynthEngine {
     time?: number,
     volume: number = 1,
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
+    noteEnvelope?: TrackEnvelope,
   ): void {
     const frequency = semitoneToFrequency(semitone);
-    this.playNoteFrequency(frequency, duration, time, volume, midiVelocity);
+    this.playNoteFrequency(frequency, duration, time, volume, midiVelocity, noteEnvelope);
   }
 
   /**
@@ -1092,6 +1189,7 @@ export class AdvancedSynthEngine {
     time?: number,
     volume: number = 1,
     midiVelocity: number = DEFAULT_MIDI_VELOCITY,
+    noteEnvelope?: TrackEnvelope,
   ): void {
     // Track all play attempts for diagnostics
     this.playAttempts++;
@@ -1120,6 +1218,7 @@ export class AdvancedSynthEngine {
     // hot path. Keep graph mutation out of note dispatch; per-note velocity is
     // the only state that belongs here.
     if (this.currentPreset) {
+      this.applyAmplitudeEnvelope(voice, noteEnvelope);
       const baseCutoff = this.overrides.filterFrequency ?? this.currentPreset.filter.frequency;
       // Velocity is note state, not a live UI control. Bind it to the same raw
       // AudioContext timestamp as the attack so Tone lookahead cannot make a

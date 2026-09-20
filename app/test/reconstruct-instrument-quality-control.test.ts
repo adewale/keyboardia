@@ -91,7 +91,7 @@ function liveFixture(): LiveQualityReport {
         controlDispatchAudioFrame: 40_800,
         dispatchAudioFrame: 40_800,
         durationSeconds: LIVE_NOTE_DURATION_SECONDS,
-        argumentCount: 8,
+        argumentCount: 11,
         variationKey: null,
       }],
     }],

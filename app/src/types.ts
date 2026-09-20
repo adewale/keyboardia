@@ -1,6 +1,12 @@
 // Re-export shared sync types (canonical definitions in shared/sync-types.ts)
-export type { ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
-import type { ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
+export type {
+  ParameterLock, FMParams, TrackEnvelope, EnvelopeTimeUnit, EffectsState, ScaleState,
+  EnvelopeDuration, EnvelopeDurationUnit, EnvelopeStageName, SamplePlaybackMode, TrackEnvelopeV2,
+} from './shared/sync-types';
+import type {
+  ParameterLock, FMParams, TrackEnvelope, EnvelopeTimeUnit, EffectsState, ScaleState,
+  EnvelopeDuration, EnvelopeDurationUnit, EnvelopeStageName, SamplePlaybackMode, TrackEnvelopeV2,
+} from './shared/sync-types';
 import { VALID_STEP_COUNTS } from './shared/sync-types';
 
 // Re-export shared constants (canonical definitions in shared/constants.ts)
@@ -92,6 +98,11 @@ export interface Track {
   transpose: number; // Semitones offset for entire track (-24 to +24), default 0
   stepCount: number; // How many steps before loop (1-128), default 16
   fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
+  envelope?: TrackEnvelope; // Optional amplitude envelope override; absent = preset
+  envelopeTimeUnit?: EnvelopeTimeUnit;
+  envelopeV2?: TrackEnvelopeV2;
+  samplePlaybackMode?: SamplePlaybackMode;
+  gate?: number;
   swing?: number; // Phase 31D: Per-track swing (0-100), default 0 = uses global swing only
 }
 
@@ -148,6 +159,15 @@ export type GridAction =
   | ({ type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number } & BaseAction)
   | ({ type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number } & BaseAction)
   | ({ type: 'SET_FM_PARAMS'; trackId: string; fmParams: FMParams } & BaseAction)
+  | ({ type: 'SET_TRACK_ENVELOPE'; trackId: string; envelope?: TrackEnvelope } & BaseAction)
+  | ({ type: 'SET_TRACK_ENVELOPE_TIME_UNIT'; trackId: string; unit: EnvelopeTimeUnit } & BaseAction)
+  | ({ type: 'SET_TRACK_GATE'; trackId: string; gate: number } & BaseAction)
+  | ({ type: 'SET_TRACK_ENVELOPE_V2'; trackId: string; envelope?: TrackEnvelopeV2; operationId: string } & BaseAction)
+  | ({ type: 'CONVERT_TRACK_ENVELOPE_UNITS_V2'; trackId: string; targetUnit: EnvelopeDurationUnit; operationId: string } & BaseAction)
+  | ({ type: 'SET_TRACK_SAMPLE_PLAYBACK_MODE_V2'; trackId: string; mode?: SamplePlaybackMode; operationId: string } & BaseAction)
+  | ({ type: 'SET_TRACK_GATE_V2'; trackId: string; gate: number; operationId: string } & BaseAction)
+  | ({ type: 'SET_ENVELOPE_LOCK_V2'; trackId: string; step: number; stage: EnvelopeStageName; duration?: EnvelopeDuration; operationId: string } & BaseAction)
+  | ({ type: 'REPLACE_TRACK_AUTHORITATIVE'; track: Track } & BaseAction)
   | ({ type: 'SET_EFFECTS'; effects: EffectsState } & BaseAction)
   | ({ type: 'TOGGLE_MUTE'; trackId: string } & BaseAction)
   | ({ type: 'TOGGLE_SOLO'; trackId: string } & BaseAction)

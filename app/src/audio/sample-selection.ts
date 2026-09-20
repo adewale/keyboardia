@@ -121,6 +121,22 @@ export interface LoopSpec {
   start: number;
   /** Loop end in seconds (> start). Undefined = loop to buffer end. */
   end?: number;
+  /** Requested equal-power crossfade width; current Web Audio loop playback supports zero only. */
+  crossfadeFrames?: number;
+  direction?: 'forward';
+}
+
+export interface SustainLoopFrames {
+  startFrame: number;
+  endFrame: number;
+  crossfadeFrames: number;
+  direction: 'forward';
+}
+
+export interface ZeroCrossfadeLoopApproval {
+  status: string;
+  crossfadeFrames: number;
+  note: string;
 }
 
 /**
@@ -133,8 +149,49 @@ export function validatedLoop(mapping: {
   loop?: boolean;
   loopStart?: number;
   loopEnd?: number;
-}): LoopSpec | null {
+  sustainLoop?: SustainLoopFrames;
+}, decoded?: { length: number; sampleRate: number }, authoredSampleRate?: number,
+approval?: ZeroCrossfadeLoopApproval): LoopSpec | null {
   if (mapping.loop !== true) return null;
+
+  if (mapping.sustainLoop !== undefined) {
+    const loop = mapping.sustainLoop;
+    const frameRate = authoredSampleRate ?? decoded?.sampleRate;
+    if (!decoded
+      || !Number.isFinite(decoded.sampleRate)
+      || decoded.sampleRate <= 0
+      || !Number.isInteger(decoded.length)
+      || decoded.length < 0
+      || frameRate === undefined
+      || !Number.isFinite(frameRate)
+      || frameRate <= 0
+      || !Number.isInteger(loop.startFrame)
+      || !Number.isInteger(loop.endFrame)
+      || !Number.isInteger(loop.crossfadeFrames)
+      || loop.startFrame < 0
+      || loop.endFrame <= loop.startFrame
+      || loop.crossfadeFrames < 0
+      || loop.crossfadeFrames * 2 >= loop.endFrame - loop.startFrame
+      || loop.direction !== 'forward') return null;
+    if (loop.crossfadeFrames === 0
+        && (!approval
+          || approval.crossfadeFrames !== 0
+          || approval.status.trim().length === 0
+          || approval.note.trim().length === 0)) return null;
+    const startSeconds = loop.startFrame / frameRate;
+    const endSeconds = loop.endFrame / frameRate;
+    const decodedDurationSeconds = decoded.length / decoded.sampleRate;
+    // AudioBuffer is resampled to the AudioContext rate by decodeAudioData.
+    // Frame metadata stays in the manifest's authored rate, so compare in
+    // seconds and scale any future runtime crossfade width to decoded frames.
+    if (endSeconds > decodedDurationSeconds) return null;
+    return {
+      start: startSeconds,
+      end: endSeconds,
+      crossfadeFrames: Math.round(loop.crossfadeFrames * decoded.sampleRate / frameRate),
+      direction: 'forward',
+    };
+  }
 
   const start = mapping.loopStart ?? 0;
   if (!Number.isFinite(start) || start < 0) return null;

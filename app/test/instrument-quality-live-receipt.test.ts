@@ -34,11 +34,13 @@ import {
   LIVE_SILENCE_PEAK_THRESHOLD,
   LIVE_SILENCE_RMS_THRESHOLD,
   LIVE_STEP_COUNT,
+  LIVE_STEP_DURATION_SECONDS,
   LIVE_TEMPO,
   LIVE_TRIAL_MODE,
   LIVE_UNMUTE_SETTLE_SECONDS,
   expectedLiveEngineDispatchIdentity,
   expectedLiveInstrumentSpecs,
+  expectedLiveNoteDurationSeconds,
   isLiveRoutingSilent,
   validateLiveQualityReport,
   type LiveQualityReport,
@@ -422,7 +424,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 6,
         noteGainSlot: 5,
         variationKeySlot: 7,
-        argumentCount: 7,
+        argumentCount: 11,
       },
       playSynthNote: {
         trackIdSlot: 6,
@@ -434,7 +436,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 7,
         noteGainSlot: 5,
         variationKeySlot: null,
-        argumentCount: 8,
+        argumentCount: 11,
       },
       playSampledInstrument: {
         trackIdSlot: 6,
@@ -446,7 +448,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 7,
         noteGainSlot: 5,
         variationKeySlot: null,
-        argumentCount: 8,
+        argumentCount: 11,
       },
       playToneSynth: {
         trackIdSlot: 5,
@@ -458,7 +460,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 6,
         noteGainSlot: 4,
         variationKeySlot: null,
-        argumentCount: 7,
+        argumentCount: 10,
       },
       playAdvancedSynth: {
         trackIdSlot: 5,
@@ -470,7 +472,7 @@ describe('live instrument-quality receipt', () => {
         midiVelocitySlot: 6,
         noteGainSlot: 4,
         variationKeySlot: null,
-        argumentCount: 7,
+        argumentCount: 10,
       },
     });
     const receipt = validReceipt();
@@ -494,11 +496,18 @@ describe('live instrument-quality receipt', () => {
           : result!.pitch,
         midiVelocity: 127,
         noteGain: 1,
-        durationSeconds: LIVE_NOTE_DURATION_SECONDS,
-        argumentCount: type === 'sampled' || type === 'synth' ? 8 : 7,
+        durationSeconds: expectedLiveNoteDurationSeconds(result!),
+        argumentCount: LIVE_ENGINE_DISPATCH_LAYOUT_BY_METHOD[expected.method].argumentCount,
         variationKey: null,
       });
     }
+
+    const finiteSample = receipt.instruments.find(candidate => candidate.sampleId === 'bass');
+    const hammond = receipt.instruments.find(candidate => candidate.sampleId === 'sampled:hammond-organ');
+    const transientTone = receipt.instruments.find(candidate => candidate.sampleId === 'tone:membrane-kick');
+    expect(expectedLiveNoteDurationSeconds(finiteSample!)).toBe(LIVE_STEP_DURATION_SECONDS);
+    expect(expectedLiveNoteDurationSeconds(hammond!)).toBe(LIVE_NOTE_DURATION_SECONDS);
+    expect(expectedLiveNoteDurationSeconds(transientTone!)).toBe(LIVE_STEP_DURATION_SECONDS);
 
     expect(validateLiveQualityReport(receipt, SUBJECT)).toBe(receipt);
   });

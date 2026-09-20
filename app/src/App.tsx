@@ -181,6 +181,7 @@ export function SessionControls({ children, focusHeadingOnMount = false }: Sessi
   // Multiplayer connection
   const {
     isConnected,
+    supportsEnvelopeV2 = true,
     players,
     playerId,
     playerCount,
@@ -215,6 +216,7 @@ export function SessionControls({ children, focusHeadingOnMount = false }: Sessi
 
   const multiplayerContextValue: MultiplayerContextValue = {
     isConnected,
+    supportsEnvelopeV2,
     playerCount,
     dispatch: multiplayerDispatch,
     handleMuteChange,

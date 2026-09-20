@@ -35,8 +35,9 @@ export interface SynthParamSink {
   setFilterResonance: (value: number) => void;
   setLfoRate: (value: number) => void;
   setLfoAmount: (value: number) => void;
-  setAttack: (value: number) => void;
-  setRelease: (value: number) => void;
+  /** Legacy bridge hooks. Authored ADSR is persisted through TrackEnvelope. */
+  setAttack?: (value: number) => void;
+  setRelease?: (value: number) => void;
   setOscMix: (value: number) => void;
 }
 
@@ -99,8 +100,8 @@ export function applySynthParam(
     case 'filterResonance': engine.setFilterResonance(value); break;
     case 'lfoRate':         engine.setLfoRate(value); break;
     case 'lfoAmount':       engine.setLfoAmount(value); break;
-    case 'attack':          engine.setAttack(value); break;
-    case 'release':         engine.setRelease(value); break;
+    case 'attack':          engine.setAttack?.(value); break;
+    case 'release':         engine.setRelease?.(value); break;
     case 'oscMix':          engine.setOscMix(value); break;
     default:
       if (!isEffectParam(parameter)) {

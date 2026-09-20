@@ -1,16 +1,4 @@
-/**
- * Pure timing maths for sampled-note playback.
- *
- * Fix for P1 (SAMPLE-AUDIT-2026-06): playNote used to call
- * `source.start()` with no time, so sampled notes fired the moment the
- * lookahead loop dispatched them — up to 100ms early, with tick jitter,
- * and swing (which works by offsetting the scheduled time) silently did
- * nothing for sampled tracks.
- *
- * playNote derives every Web Audio scheduling call from this one total
- * function, so the ordering invariants proved in the property tests
- * hold for the real audio graph.
- */
+/** Shared stop guard for real synth and managed-sample voice schedules. */
 
 /** Linear attack ramp applied at note start to prevent clicks. */
 export const ATTACK_FADE_SEC = 0.003;
@@ -19,7 +7,7 @@ export const ATTACK_FADE_SEC = 0.003;
 export const MIN_NOTE_DURATION_SEC = 0.1;
 
 /** Floor reached by the exponential release before a short linear fade to zero. */
-export const RELEASE_FLOOR_GAIN = 0.001;
+export const RELEASE_FLOOR_GAIN = 0.0001;
 
 /** Audible-silence ramp after the release floor before source disposal. */
 export const RELEASE_TAIL_GUARD_SEC = 0.03;

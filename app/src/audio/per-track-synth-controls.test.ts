@@ -10,6 +10,7 @@ import { audioTime } from './audio-time';
 type NumberSetter = ReturnType<typeof vi.fn<(v: number) => void>>;
 type TimedNumberSetter = ReturnType<typeof vi.fn<(v: number, at?: number) => void>>;
 interface SpyAdvanced {
+  setEnvelope: ReturnType<typeof vi.fn<(value: unknown) => void>>;
   setTempo: NumberSetter;
   setFilterFrequency: TimedNumberSetter;
   setFilterResonance: TimedNumberSetter;
@@ -20,6 +21,7 @@ interface SpyAdvanced {
   setOscMix: TimedNumberSetter;
 }
 interface SpyTone {
+  setEnvelope: ReturnType<typeof vi.fn<(value: unknown) => void>>;
   setFMParams: ReturnType<typeof vi.fn<(h: number, m: number) => void>>;
   resetFMParams: ReturnType<typeof vi.fn<() => void>>;
   getFMParams: ReturnType<typeof vi.fn<() => { harmonicity: number; modulationIndex: number } | null>>;
@@ -36,6 +38,7 @@ vi.mock('./toneSynths', async () => {
     private spies: SpyTone;
     constructor() {
       this.spies = {
+        setEnvelope: vi.fn<(value: unknown) => void>(),
         setFMParams: vi.fn<(h: number, m: number) => void>((h, m) => {
           this.fm = { harmonicity: h, modulationIndex: m };
         }),
@@ -48,6 +51,7 @@ vi.mock('./toneSynths', async () => {
     async initialize(): Promise<void> {}
     getOutput(): { connect: () => void; disconnect: () => void } { return { connect: () => {}, disconnect: () => {} }; }
     setFMParams(h: number, m: number): void { this.spies.setFMParams(h, m); }
+    setEnvelope(value: unknown): void { this.spies.setEnvelope(value); }
     resetFMParams(): void { this.spies.resetFMParams(); }
     getFMParams(): { harmonicity: number; modulationIndex: number } | null { return this.spies.getFMParams(); }
     semitoneToNoteName(s: number): string { return `n${s}`; }
@@ -64,6 +68,7 @@ vi.mock('./advancedSynth', async () => {
     private spies: SpyAdvanced;
     constructor() {
       this.spies = {
+        setEnvelope: vi.fn<(value: unknown) => void>(),
         setTempo: vi.fn<(v: number) => void>(),
         setFilterFrequency: vi.fn<(v: number, at?: number) => void>(),
         setFilterResonance: vi.fn<(v: number, at?: number) => void>(),
@@ -79,6 +84,7 @@ vi.mock('./advancedSynth', async () => {
     isReady(): boolean { return true; }
     getOutput(): { connect: () => void; disconnect: () => void } { return { connect: () => {}, disconnect: () => {} }; }
     setTempo(v: number): void { this.spies.setTempo(v); }
+    setEnvelope(value: unknown): void { this.spies.setEnvelope(value); }
     setPreset(): void {}
     playNoteSemitone(): void {}
     getDiagnostics(): unknown { return { activeVoices: 0 }; }
@@ -189,6 +195,42 @@ describe('Phase 3: global controls fan out + overrides', () => {
     expect(advancedInstances[1].setTempo).toHaveBeenCalledWith(90);
   });
 
+  it('translates canonical mixed-unit envelopeV2 state before a synth renderer is created', async () => {
+    const engine = new AudioEngine();
+    stubEngineInternals(engine);
+    engine.syncGridAudioState({
+      tempo: 120,
+      tracks: [{
+        id: 'v2-track',
+        name: 'v2-track',
+        sampleId: 'advanced:supersaw',
+        steps: [],
+        parameterLocks: [],
+        volume: 1,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        stepCount: 16,
+        envelope: { attack: 4, decay: 4, sustain: 1, release: 8 },
+        envelopeV2: {
+          model: 'adsr',
+          attack: { value: 2, unit: 'steps' },
+          decay: { value: 0.05, unit: 'seconds' },
+          sustain: 0.4,
+          release: { value: 4, unit: 'steps' },
+        },
+      }],
+    });
+
+    await engine.warmAdvancedSynthForTrack('v2-track');
+    expect(advancedInstances[0].setEnvelope).toHaveBeenLastCalledWith({
+      attack: 0.25,
+      decay: 0.05,
+      sustain: 0.4,
+      release: 0.5,
+    });
+  });
+
   it('setFilterFrequency applies to every currently-registered track', async () => {
     const engine = new AudioEngine();
     stubEngineInternals(engine);
@@ -225,8 +267,6 @@ describe('Phase 3: global controls fan out + overrides', () => {
     ['setFilterResonance', 'setFilterResonance', 2.5],
     ['setLfoRate', 'setLfoRate', 7],
     ['setLfoAmount', 'setLfoAmount', 0.5],
-    ['setAttack', 'setAttack', 0.3],
-    ['setRelease', 'setRelease', 0.8],
     ['setOscMix', 'setOscMix', 0.7],
   ] as const)('%s fans out to all tracks', async (method, spyName, value) => {
     const engine = new AudioEngine();

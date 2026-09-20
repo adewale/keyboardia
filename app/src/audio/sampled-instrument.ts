@@ -24,11 +24,10 @@ import {
   dbToGain,
   type LoopSpec,
 } from './sample-selection';
-import { computeNoteSchedule, RELEASE_FLOOR_GAIN } from './note-schedule';
+import { isEnvelopeModelCompatibleWithPlayback } from '../shared/envelope-capabilities';
 import {
   sampledInstrumentChokeRegistry,
   type ChokeGroupRegistry,
-  type ChokeableVoice,
 } from './choke-groups';
 import { DEFAULT_MIDI_VELOCITY } from './velocity';
 import { velocitySampleCutoff, VELOCITY_FILTER_Q } from './velocity-sample-filter';
@@ -42,6 +41,20 @@ import {
   MAX_CONCURRENT_BACKGROUND_SAMPLE_LOADS,
   MAX_CONCURRENT_SAMPLE_LOADS,
 } from './sample-load-policy';
+import type { TrackEnvelope } from '../shared/sync-types';
+import {
+  isTrackEnvelopeV2,
+  resolveEnvelopeV2,
+  type ResolvedEnvelopeV2,
+  type SamplePlaybackMode,
+  type TrackEnvelopeV2,
+} from '../shared/envelope-contract-v2';
+import {
+  ManagedSampleVoice,
+  type SampleVoiceComponent,
+  type SampleVoiceEnvelope,
+  type SampleVoiceHandle,
+} from './sample-voice';
 
 /** Bound aggregate request/decode pressure across every deep sample library. */
 let activeSampleLoads = 0;
@@ -56,6 +69,17 @@ class BackgroundSampleLoadPreempted extends Error {
     super('Background sample load yielded to foreground readiness');
     this.name = 'BackgroundSampleLoadPreempted';
   }
+}
+
+/** Stable FNV-1a selection so collaborators resolve the same RR layer. */
+function stableSelectionIndex(key: string, variantCount: number): number {
+  if (variantCount <= 1) return 0;
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < key.length; index++) {
+    hash ^= key.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0) % variantCount;
 }
 
 /**
@@ -216,6 +240,27 @@ export interface InstrumentManifest {
   velocityCrossfade?: number;
   /** Notes whose complete layer/RR sets must decode before playback is ready. */
   priorityNotes?: number[];
+  /** Sample rate of the pinned decoded assets used to author frame metadata. */
+  decodedSampleRate?: number;
+  /** Evidence note required when zero-frame legacy loops are retained. */
+  loopApproval?: {
+    status: string;
+    crossfadeFrames: number;
+    note: string;
+  };
+  /** Optional separately recorded note-off regions, grouped by `releaseGroup`. */
+  releaseRegions?: ReleaseRegion[];
+}
+
+export interface ReleaseRegion {
+  file: string;
+  rootMidi: number;
+  velocityMin: number;
+  velocityMax: number;
+  roundRobin: number;
+  heldDecayDbPerSecond: number;
+  gainDb: number;
+  releaseGroup: string;
 }
 
 export interface SampleMapping {
@@ -228,6 +273,8 @@ export interface SampleMapping {
   loop?: boolean;          // Sustain loop: repeat [loopStart, loopEnd) while held
   loopStart?: number;      // Loop start in seconds (default 0)
   loopEnd?: number;        // Loop end in seconds (default: buffer end)
+  sustainLoop?: import('./sample-selection').SustainLoopFrames;
+  releaseGroup?: string;
   gainDb?: number;         // Non-destructive sample-specific loudness trim
   tuneCents?: number;      // Signed playback correction in cents
   startOffset?: number;    // Non-destructive start trim for individual files
@@ -255,6 +302,39 @@ interface LoadedSample {
   roundRobinGroup?: string;
   roundRobinIndex?: number;
   articulation: string;
+  releaseGroup?: string;
+}
+
+interface LoadedReleaseRegion extends ReleaseRegion {
+  buffer: AudioBuffer;
+  cacheKey: string;
+}
+
+export type SampleEnvelopeInput = TrackEnvelope | TrackEnvelopeV2 | ResolvedEnvelopeV2;
+
+export interface PlaySampleVoiceOptions {
+  id: string;
+  midiNote: number;
+  time: number;
+  /** Scheduler note-off duration. Ignored by trigger playback. */
+  duration?: number;
+  mode: SamplePlaybackMode;
+  volume?: number;
+  velocity?: number;
+  destination?: AudioNode;
+  articulation?: string;
+  envelope?: SampleEnvelopeInput;
+  tempoBpm?: number;
+  /** Preserve the pre-v2 positional wrapper's sequential RR behavior. */
+  legacyRoundRobin?: boolean;
+}
+
+function isResolvedEnvelopeV2(value: SampleEnvelopeInput | undefined): value is ResolvedEnvelopeV2 {
+  return !!value
+    && typeof value === 'object'
+    && 'model' in value
+    && 'attackSeconds' in value
+    && typeof value.attackSeconds === 'number';
 }
 
 export type SampleLoadState = 'idle' | 'loading' | 'priority-ready' | 'complete' | 'degraded';
@@ -291,6 +371,10 @@ export class SampledInstrument {
   private loadState: SampleLoadState = 'idle';
   private loadFailures: SampleLoadFailure[] = [];
   private roundRobinCursors = new Map<string, number>();
+  private releaseRegions: LoadedReleaseRegion[] = [];
+  private activeVoices = new Map<string, { voice: ManagedSampleVoice; ordinal: number }>();
+  private voiceOrdinal = 0;
+  private readonly maxVoices: number;
   private cacheReferenceOwners = 0;
   private lifecycleGeneration = 0;
   private baseUrl: string;
@@ -307,6 +391,7 @@ export class SampledInstrument {
     baseUrl: string = '/instruments',
     deps: {
       chokeRegistry?: ChokeGroupRegistry;
+      maxVoices?: number;
       velocityAnchorForNote?: (
         instrumentId: string,
         midiNote: number,
@@ -318,6 +403,9 @@ export class SampledInstrument {
     this.baseUrl = `${baseUrl}/${instrumentId}`;
     this.chokeRegistry = deps.chokeRegistry ?? sampledInstrumentChokeRegistry;
     this.velocityAnchorForNote = deps.velocityAnchorForNote ?? velocityFilterAnchorHz;
+    this.maxVoices = Number.isInteger(deps.maxVoices) && (deps.maxVoices ?? 0) > 0
+      ? deps.maxVoices!
+      : 32;
   }
 
   /**
@@ -364,6 +452,10 @@ export class SampledInstrument {
       if (generation !== this.lifecycleGeneration) return false;
       const message = error instanceof Error ? error.message : String(error);
       this.loadFailures.push({ file: 'manifest.json', message, priority: true });
+      // A failure after priority samples decode (for example invalid loop or
+      // release metadata) must not leave the instrument playable through a
+      // stale `isLoaded=true` set by the primary loading phase.
+      this.isLoaded = false;
       this.loadState = 'degraded';
       logger.audio.error('Failed to load sampled instrument:', error);
       return false;
@@ -396,15 +488,24 @@ export class SampledInstrument {
     logger.audio.log(`Loaded manifest for ${this.manifest.name}: ${this.manifest.samples.length} samples`);
 
     // Check if using sprite mode or individual files.
+    let primaryReady = false;
     if (this.manifest.sprite) {
       await this.loadSprite(generation);
       if (generation !== this.lifecycleGeneration) return;
-      this.isLoaded = true;
       this.loadState = 'complete';
+      primaryReady = true;
     } else {
-      await this.loadIndividualFiles(generation);
+      primaryReady = await this.loadIndividualFiles(generation);
       if (generation !== this.lifecycleGeneration) return;
     }
+
+    // Do not advertise a playable instrument until optional release regions
+    // have also decoded and passed metadata validation. Primary loading returns
+    // readiness as a local value so no caller can observe a transient true.
+    this.isLoaded = false;
+    await this.loadReleaseRegions(generation);
+    if (generation !== this.lifecycleGeneration) return;
+    this.isLoaded = primaryReady;
 
     logger.audio.log(`Instrument ${this.manifest?.name} load state: ${this.loadState}`);
   }
@@ -440,12 +541,18 @@ export class SampledInstrument {
         duration: mapping.duration,
         velocityMin: mapping.velocityMin ?? 0,
         velocityMax: mapping.velocityMax ?? 127,
-        loop: validatedLoop(mapping),
+        loop: validatedLoop(
+          mapping,
+          this.spriteBuffer,
+          this.manifest?.decodedSampleRate,
+          this.manifest?.loopApproval,
+        ),
         gainDb: Number.isFinite(mapping.gainDb) ? mapping.gainDb ?? 0 : 0,
         tuneCents: Number.isFinite(mapping.tuneCents) ? mapping.tuneCents ?? 0 : 0,
         roundRobinGroup: mapping.roundRobinGroup,
         roundRobinIndex: mapping.roundRobinIndex,
         articulation: mapping.articulation ?? 'default',
+        releaseGroup: mapping.releaseGroup,
       };
       // Add to velocity layer array for this note
       const existing = this.samples.get(mapping.note) || [];
@@ -458,7 +565,7 @@ export class SampledInstrument {
    * Load a complete priority set before enabling playback. Every velocity and
    * round-robin variant at each priority note is part of that set.
    */
-  private async loadIndividualFiles(generation: number): Promise<void> {
+  private async loadIndividualFiles(generation: number): Promise<boolean> {
     const manifest = this.manifest!;
     if (manifest.samples.length === 0) throw new Error('Instrument manifest has no samples');
     const availableNotes = [...new Set(manifest.samples.map(mapping => mapping.note))];
@@ -477,16 +584,16 @@ export class SampledInstrument {
       if (result.status === 'fulfilled') this.installLoadedSample(result.value);
       else this.recordLoadFailure(mapping, result.reason, true);
     });
-    if (generation !== this.lifecycleGeneration) return;
+    if (generation !== this.lifecycleGeneration) return false;
 
     const priorityFailed = priorityResults.some(result => result.status === 'rejected');
-    this.isLoaded = !priorityFailed;
     if (priorityFailed) this.loadState = 'degraded';
     else this.loadState = backgroundMappings.length === 0 ? 'complete' : 'priority-ready';
 
     if (backgroundMappings.length > 0) {
       this.backgroundLoadingPromise = this.loadRemainingSamples(backgroundMappings, generation);
     }
+    return !priorityFailed;
   }
 
   private installLoadedSample(sample: LoadedSample): void {
@@ -596,12 +703,18 @@ export class SampledInstrument {
       duration: end !== undefined ? end - (start ?? 0) : undefined,
       velocityMin: mapping.velocityMin ?? 0,
       velocityMax: mapping.velocityMax ?? 127,
-      loop: validatedLoop(mapping),
+      loop: validatedLoop(
+        mapping,
+        buffer,
+        this.manifest?.decodedSampleRate,
+        this.manifest?.loopApproval,
+      ),
       gainDb: Number.isFinite(mapping.gainDb) ? mapping.gainDb ?? 0 : 0,
       tuneCents: Number.isFinite(mapping.tuneCents) ? mapping.tuneCents ?? 0 : 0,
       roundRobinGroup: mapping.roundRobinGroup,
       roundRobinIndex: mapping.roundRobinIndex,
       articulation: mapping.articulation ?? 'default',
+      releaseGroup: mapping.releaseGroup,
     };
   }
 
@@ -664,28 +777,226 @@ export class SampledInstrument {
     return this.loadedSampleFromMapping(mapping, await bufferPromise, cacheKey);
   }
 
-  /**
-   * Play a note at the given MIDI pitch.
-   *
-   * @param noteId - Unique ID for this note (for stopping)
-   * @param midiNote - MIDI note number (60 = middle C)
-   * @param time - AudioContext time to start
-   * @param duration - Note duration in seconds (undefined = sustained until stop)
-   * @param volume - Note volume (0-1)
-   * @param velocity - MIDI velocity (0-127), used for velocity layer selection
-   * @param destinationOverride - Optional destination node (e.g., track bus input for metering)
-   */
-  playNote(
-    _noteId: string, // Reserved for future stop functionality
+  private async loadReleaseRegions(generation: number): Promise<void> {
+    const declared = this.manifest?.releaseRegions ?? [];
+    this.releaseRegions = [];
+    if (declared.length === 0) return;
+
+    for (let index = 0; index < declared.length; index++) {
+      const region = declared[index]!;
+      if (!region.file
+        || !region.releaseGroup
+        || !Number.isInteger(region.rootMidi)
+        || region.rootMidi < 0
+        || region.rootMidi > 127
+        || !Number.isInteger(region.velocityMin)
+        || !Number.isInteger(region.velocityMax)
+        || region.velocityMin < 0
+        || region.velocityMax > 127
+        || region.velocityMax < region.velocityMin
+        || !Number.isInteger(region.roundRobin)
+        || region.roundRobin < 0
+        || !Number.isFinite(region.heldDecayDbPerSecond)
+        || region.heldDecayDbPerSecond < 0
+        || !Number.isFinite(region.gainDb)) {
+        throw new Error(`Invalid release region metadata for ${region.file || '(missing file)'}`);
+      }
+      const overlaps = declared.slice(0, index).some(previous =>
+        previous.releaseGroup === region.releaseGroup
+        && previous.rootMidi === region.rootMidi
+        && previous.roundRobin === region.roundRobin
+        && previous.velocityMin <= region.velocityMax
+        && region.velocityMin <= previous.velocityMax
+      );
+      if (overlaps) {
+        throw new Error(
+          `Ambiguous release region ${region.releaseGroup}:${region.rootMidi}:rr${region.roundRobin}`,
+        );
+      }
+    }
+
+    const loaded = await Promise.all(declared.map(async region => {
+      const cacheKey = `${this.instrumentId}:release:${region.file}`;
+      let buffer = sampleCache.get(cacheKey);
+      if (!buffer) {
+        let bufferPromise = this.inFlightBuffers.get(cacheKey);
+        if (!bufferPromise) {
+          bufferPromise = withSampleLoadSlot(async () => {
+            const response = await fetch(`${this.baseUrl}/${region.file}`);
+            if (!response.ok) throw new Error(`Failed to load release region ${region.file}: ${response.status}`);
+            const context = this.audioContext;
+            if (!context) throw new Error('SampledInstrument was disposed during release-region loading');
+            const decoded = await context.decodeAudioData(await response.arrayBuffer());
+            if (generation !== this.lifecycleGeneration) throw new Error('Release-region load superseded by a newer lifecycle');
+            sampleCache.set(cacheKey, decoded);
+            return decoded;
+          }, true);
+          this.inFlightBuffers.set(cacheKey, bufferPromise);
+          const clear = (): void => {
+            if (this.inFlightBuffers.get(cacheKey) === bufferPromise) this.inFlightBuffers.delete(cacheKey);
+          };
+          void bufferPromise.then(clear, clear);
+        }
+        buffer = await bufferPromise;
+      }
+      if (generation !== this.lifecycleGeneration) throw new Error('Release-region load superseded by a newer lifecycle');
+      for (let owner = 0; owner < this.cacheReferenceOwners; owner++) sampleCache.acquire(cacheKey);
+      return { ...region, buffer, cacheKey } satisfies LoadedReleaseRegion;
+    }));
+    this.releaseRegions = loaded.sort((a, b) =>
+      a.releaseGroup.localeCompare(b.releaseGroup)
+      || a.rootMidi - b.rootMidi
+      || a.velocityMin - b.velocityMin
+      || a.roundRobin - b.roundRobin
+    );
+  }
+
+  private resolvedVoiceEnvelope(
+    mode: SamplePlaybackMode,
+    envelope: SampleEnvelopeInput | undefined,
+    tempoBpm: number,
+  ): SampleVoiceEnvelope {
+    const fallbackAttack = 0.003;
+    const fallbackRelease = Math.max(0, this.manifest?.releaseTime ?? 0.1);
+    const resolved = isResolvedEnvelopeV2(envelope)
+      ? envelope
+      : isTrackEnvelopeV2(envelope)
+        ? resolveEnvelopeV2(envelope, tempoBpm)
+        : null;
+    if (resolved) {
+      if (mode === 'trigger') {
+        if (resolved.model === 'ad' || resolved.model === 'ahd') return resolved;
+        return { model: 'ahd', attackSeconds: resolved.attackSeconds };
+      }
+      if (mode === 'gate') {
+        return {
+          model: 'ar',
+          attackSeconds: resolved.attackSeconds,
+          releaseSeconds: resolved.releaseSeconds ?? fallbackRelease,
+        };
+      }
+      return resolved.model === 'adsr'
+        ? resolved
+        : {
+            model: 'adsr',
+            attackSeconds: resolved.attackSeconds,
+            decaySeconds: resolved.decaySeconds ?? 0,
+            sustain: 1,
+            releaseSeconds: resolved.releaseSeconds ?? fallbackRelease,
+          };
+    }
+
+    const legacyEnvelope = envelope as TrackEnvelope | undefined;
+
+    if (mode === 'trigger') {
+      return legacyEnvelope
+        ? {
+            model: 'ahd',
+            attackSeconds: Math.max(0, legacyEnvelope.attack),
+            holdSeconds: 0,
+            decaySeconds: Math.max(0, legacyEnvelope.decay),
+          }
+        : { model: 'ahd', attackSeconds: fallbackAttack };
+    }
+    if (mode === 'gate') {
+      return {
+        model: 'ar',
+        attackSeconds: Math.max(0, legacyEnvelope?.attack ?? fallbackAttack),
+        releaseSeconds: Math.max(0, legacyEnvelope?.release ?? fallbackRelease),
+      };
+    }
+    return {
+      model: 'adsr',
+      attackSeconds: Math.max(0, legacyEnvelope?.attack ?? fallbackAttack),
+      decaySeconds: Math.max(0, legacyEnvelope?.decay ?? 0),
+      sustain: Math.min(1, Math.max(0, legacyEnvelope?.sustain ?? 1)),
+      releaseSeconds: Math.max(0, legacyEnvelope?.release ?? fallbackRelease),
+    };
+  }
+
+  private selectReleaseRegion(
+    releaseGroup: string,
     midiNote: number,
-    time: number,
-    duration?: number,
-    volume: number = 1,
-    velocity: number = DEFAULT_MIDI_VELOCITY,
-    destinationOverride?: AudioNode,
-    articulation: string = 'default',
-  ): AudioBufferSourceNode | null {
-    const dest = destinationOverride ?? this.destination;
+    velocity: number,
+    selectionKey: string,
+  ): LoadedReleaseRegion | null {
+    const velocityMatches = this.releaseRegions.filter(region =>
+      region.releaseGroup === releaseGroup
+      && velocity >= region.velocityMin
+      && velocity <= region.velocityMax
+    );
+    if (velocityMatches.length === 0) return null;
+    const root = nearestSampleNote(velocityMatches.map(region => region.rootMidi), midiNote);
+    if (root === undefined) return null;
+    const variants = velocityMatches
+      .filter(region => region.rootMidi === root)
+      .sort((a, b) => a.roundRobin - b.roundRobin);
+    return variants[stableSelectionIndex(
+      `${selectionKey}:release:${releaseGroup}:${root}:${variants[0]?.velocityMin}-${variants[0]?.velocityMax}`,
+      variants.length,
+    )] ?? null;
+  }
+
+  private createReleaseComponents(
+    groups: readonly string[],
+    midiNote: number,
+    velocity: number,
+    volume: number,
+    instrumentGain: number,
+    destination: AudioNode,
+    when: number,
+    heldSeconds: number,
+    selectionKey: string,
+  ): SampleVoiceComponent[] {
+    const context = this.audioContext;
+    if (!context) return [];
+    return groups.flatMap(group => {
+      const region = this.selectReleaseRegion(group, midiNote, velocity, selectionKey);
+      if (!region) return [];
+      const source = context.createBufferSource();
+      source.buffer = region.buffer;
+      source.playbackRate.value = 2 ** ((midiNote - region.rootMidi) / 12);
+      const gain = context.createGain();
+      const heldTrimDb = region.gainDb - region.heldDecayDbPerSecond * heldSeconds;
+      const peak = volume * instrumentGain * dbToGain(heldTrimDb);
+      source.connect(gain);
+      gain.connect(destination);
+      const naturalEndSeconds = when + region.buffer.duration / source.playbackRate.value;
+      return [{ source, gain, peak, naturalEndSeconds, start: () => source.start(when) }];
+    });
+  }
+
+  private reapCompletedVoices(now: number): void {
+    for (const [voiceId, entry] of this.activeVoices) {
+      if (entry.voice.state === 'complete'
+        || (entry.voice.completionSeconds !== null && entry.voice.completionSeconds <= now)) {
+        this.activeVoices.delete(voiceId);
+      }
+    }
+  }
+
+  private prepareVoiceSlot(id: string, when: number): void {
+    this.reapCompletedVoices(this.audioContext?.currentTime ?? when);
+    const duplicate = this.activeVoices.get(id);
+    if (duplicate) {
+      duplicate.voice.stop(when);
+      this.activeVoices.delete(id);
+    }
+    while (this.activeVoices.size >= this.maxVoices) {
+      const oldest = [...this.activeVoices.entries()].sort((a, b) =>
+        a[1].voice.startedAtSeconds - b[1].voice.startedAtSeconds
+        || a[1].ordinal - b[1].ordinal
+        || a[0].localeCompare(b[0])
+      )[0];
+      if (!oldest) break;
+      oldest[1].voice.stop(when);
+      this.activeVoices.delete(oldest[0]);
+    }
+  }
+
+  /** Create a managed v2 sample voice with explicit playback semantics. */
+  playVoice(options: PlaySampleVoiceOptions): SampleVoiceHandle | null {
+    const dest = options.destination ?? this.destination;
     if (!this.audioContext || !dest || !this.isLoaded || !this.manifest) {
       return null;
     }
@@ -693,12 +1004,12 @@ export class SampledInstrument {
     // Apply playbackNote translation for drum/percussion instruments
     // The scheduler sends midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones (60 + offset)
     // For drums with playbackNote set, we translate to: playbackNote + pitchSemitones
-    let adjustedMidiNote = midiNote;
+    let adjustedMidiNote = options.midiNote;
     if (this.manifest.playbackNote !== undefined) {
-      const pitchOffset = midiNote - SCHEDULER_BASE_MIDI_NOTE;
+      const pitchOffset = options.midiNote - SCHEDULER_BASE_MIDI_NOTE;
       adjustedMidiNote = this.manifest.playbackNote + pitchOffset;
       logger.audio.log(
-        `[PLAYBACK_NOTE] ${this.instrumentId}: scheduler note ${midiNote} → adjusted note ${adjustedMidiNote} (playbackNote=${this.manifest.playbackNote}, offset=${pitchOffset})`
+        `[PLAYBACK_NOTE] ${this.instrumentId}: scheduler note ${options.midiNote} → adjusted note ${adjustedMidiNote} (playbackNote=${this.manifest.playbackNote}, offset=${pitchOffset})`
       );
     }
 
@@ -721,22 +1032,50 @@ export class SampledInstrument {
       void this.audioContext.resume().catch(() => {});
     }
 
-    const sampleInfos = this.findNearestSamples(adjustedMidiNote, velocity, articulation);
+    const velocity = options.velocity ?? DEFAULT_MIDI_VELOCITY;
+    const sampleInfos = this.findNearestSamples(
+      adjustedMidiNote,
+      velocity,
+      options.articulation ?? 'default',
+      options.legacyRoundRobin ? undefined : options.id,
+    );
     if (sampleInfos.length === 0) return null;
-
-    const schedule = computeNoteSchedule({
-      eventTime: time,
-      currentTime: this.audioContext.currentTime,
-      duration,
-      releaseTime: this.manifest.releaseTime,
-    });
-    const sources: AudioBufferSourceNode[] = [];
-    const gains: GainNode[] = [];
+    const loopCapable = sampleInfos.every(info =>
+      info.sample.loop !== null
+      && (info.sample.loop.crossfadeFrames ?? 0) === 0
+    );
+    const actualMode: SamplePlaybackMode = options.mode === 'loop' && !loopCapable
+      ? 'gate'
+      : options.mode;
+    const startTime = Math.max(options.time, this.audioContext.currentTime);
+    const authoredResolvedEnvelope = isResolvedEnvelopeV2(options.envelope)
+      ? options.envelope
+      : isTrackEnvelopeV2(options.envelope)
+        ? resolveEnvelopeV2(options.envelope, options.tempoBpm ?? 120)
+        : null;
+    if (authoredResolvedEnvelope
+        && !isEnvelopeModelCompatibleWithPlayback(authoredResolvedEnvelope.model, actualMode)) {
+      logger.audio.warn(
+        `Skipping ${this.instrumentId} voice ${options.id}: ${authoredResolvedEnvelope.model.toUpperCase()} is incompatible with ${actualMode} playback`,
+      );
+      return null;
+    }
+    const envelope = this.resolvedVoiceEnvelope(
+      actualMode,
+      options.envelope,
+      options.tempoBpm ?? 120,
+    );
     const instrumentGain = dbToGain(sampledInstrumentOutputGainDb(
       this.instrumentId,
       this.manifest.gainDb ?? 0,
     ));
+    const volume = Math.min(1, Math.max(0, options.volume ?? 1));
+    const articulation = options.articulation ?? 'default';
+    const releaseGroups = [...new Set(
+      sampleInfos.map(info => info.sample.releaseGroup).filter((group): group is string => !!group),
+    )];
 
+    this.prepareVoiceSlot(options.id, startTime);
     // Phase 44 Change 2: one lowpass per voice, shared by every layer-blend
     // component, only when the sample-rate-specific calibration table has an
     // anchor for this requested note AND velocity is below the bypass
@@ -774,12 +1113,35 @@ export class SampledInstrument {
       velocityFilter.connect(dest);
     }
     const voiceDestination = velocityFilter ?? dest;
+    const chokeGroup = this.manifest.chokeGroup;
+    const voice = new ManagedSampleVoice({
+      id: options.id,
+      mode: actualMode,
+      startedAtSeconds: startTime,
+      envelope,
+      onRelease: (when, heldSeconds) => this.createReleaseComponents(
+        releaseGroups,
+        adjustedMidiNote,
+        velocity,
+        volume,
+        instrumentGain,
+        voiceDestination,
+        when,
+        heldSeconds,
+        options.id,
+      ),
+      onComplete: () => {
+        velocityFilter?.disconnect();
+        if (this.activeVoices.get(options.id)?.voice === voice) this.activeVoices.delete(options.id);
+        if (chokeGroup !== undefined) this.chokeRegistry.remove(chokeGroup, voice);
+      },
+    });
 
     for (const sampleInfo of sampleInfos) {
       const source = this.audioContext.createBufferSource();
       source.buffer = sampleInfo.sample.buffer;
       source.playbackRate.value = sampleInfo.pitchRatio;
-      if (sampleInfo.sample.loop && duration !== undefined) {
+      if (actualMode === 'loop' && sampleInfo.sample.loop) {
         source.loop = true;
         source.loopStart = sampleInfo.sample.loop.start;
         if (sampleInfo.sample.loop.end !== undefined) source.loopEnd = sampleInfo.sample.loop.end;
@@ -792,70 +1154,68 @@ export class SampledInstrument {
         * sampleInfo.weight;
       source.connect(gainNode);
       gainNode.connect(voiceDestination);
-      gainNode.gain.setValueAtTime(0, schedule.startTime);
-      gainNode.gain.linearRampToValueAtTime(effectiveVolume, schedule.attackEnd);
-
-      if (sampleInfo.sample.offset !== undefined && sampleInfo.sample.duration !== undefined) {
-        source.start(schedule.startTime, sampleInfo.sample.offset, sampleInfo.sample.duration);
-      } else if (sampleInfo.sample.offset !== undefined) {
-        source.start(schedule.startTime, sampleInfo.sample.offset);
-      } else {
-        source.start(schedule.startTime);
-      }
-
-      if (schedule.release) {
-        gainNode.gain.setValueAtTime(effectiveVolume, schedule.release.start);
-        gainNode.gain.exponentialRampToValueAtTime(RELEASE_FLOOR_GAIN, schedule.release.end);
-        // Finish at exact digital silence before disposal. The previous hard
-        // stop stepped directly from -60 dB to zero and could truncate a long
-        // resonant source at a non-zero sample value.
-        gainNode.gain.linearRampToValueAtTime(0, schedule.release.stopTime);
-        source.stop(schedule.release.stopTime);
-      }
-      sources.push(source);
-      gains.push(gainNode);
+      const playableDuration = (sampleInfo.sample.duration
+        ?? Math.max(0, sampleInfo.sample.buffer.duration - (sampleInfo.sample.offset ?? 0)))
+        / Math.max(0.0001, sampleInfo.pitchRatio);
+      voice.addPrimaryComponent({
+        source,
+        gain: gainNode,
+        peak: effectiveVolume,
+        ...(actualMode === 'loop' ? {} : { naturalEndSeconds: startTime + playableDuration }),
+        start: () => {
+          if (sampleInfo.sample.offset !== undefined && sampleInfo.sample.duration !== undefined) {
+            source.start(startTime, sampleInfo.sample.offset, sampleInfo.sample.duration);
+          } else if (sampleInfo.sample.offset !== undefined) {
+            source.start(startTime, sampleInfo.sample.offset);
+          } else {
+            source.start(startTime);
+          }
+        },
+      });
     }
 
-    const chokeGroup = this.manifest.chokeGroup;
-    let voice: ChokeableVoice | null = null;
     if (chokeGroup !== undefined) {
-      voice = {
-        gain: {
-          cancelScheduledValues: (when: number) => {
-            gains.forEach(gain => gain.gain.cancelScheduledValues(when));
-          },
-          setTargetAtTime: (value: number, when: number, timeConstant: number) => {
-            gains.forEach(gain => gain.gain.setTargetAtTime(value, when, timeConstant));
-          },
-        },
-        stop: (when: number) => {
-          for (const source of sources) {
-            try {
-              source.stop(when);
-            } catch {
-              // A naturally ended blend component is already stopped.
-            }
-          }
-        },
-      };
-      this.chokeRegistry.cutAndRegister(chokeGroup, voice, schedule.startTime);
+      this.chokeRegistry.cutAndRegister(chokeGroup, voice, startTime);
     }
+    this.activeVoices.set(options.id, { voice, ordinal: this.voiceOrdinal++ });
+    if (actualMode !== 'trigger' && options.duration !== undefined) {
+      voice.gate(startTime + Math.max(0, options.duration));
+    }
+    return voice;
+  }
 
-    let ended = 0;
-    sources.forEach((source, index) => {
-      source.onended = () => {
-        source.disconnect();
-        gains[index].disconnect();
-        ended++;
-        if (ended === sources.length) {
-          velocityFilter?.disconnect();
-          if (chokeGroup !== undefined && voice) {
-            this.chokeRegistry.remove(chokeGroup, voice);
-          }
-        }
-      };
+  /**
+   * Legacy positional compatibility wrapper. Its historical behavior is gated
+   * AR playback; v2 callers should use `playVoice` with an explicit mode.
+   */
+  playNote(
+    noteId: string,
+    midiNote: number,
+    time: number,
+    duration?: number,
+    volume: number = 1,
+    velocity: number = DEFAULT_MIDI_VELOCITY,
+    destinationOverride?: AudioNode,
+    articulation: string = 'default',
+    envelope?: TrackEnvelope,
+  ): AudioBufferSourceNode | null {
+    const voice = this.playVoice({
+      id: noteId,
+      midiNote,
+      time,
+      duration,
+      volume,
+      velocity,
+      destination: destinationOverride,
+      articulation,
+      envelope,
+      // Historical playNote enabled a validated loop only for finite notes.
+      // Requesting loop here preserves that behavior; playVoice truthfully
+      // degrades non-loop mappings back to gate.
+      mode: duration === undefined ? 'gate' : 'loop',
+      legacyRoundRobin: true,
     });
-    return sources[0];
+    return voice instanceof ManagedSampleVoice ? voice.primarySource : null;
   }
 
   /** Select velocity groups, then one deterministic RR variant per group. */
@@ -863,6 +1223,7 @@ export class SampledInstrument {
     midiNote: number,
     velocity: number = DEFAULT_MIDI_VELOCITY,
     requestedArticulation: string = 'default',
+    selectionKey?: string,
   ): Array<{
     sample: LoadedSample;
     pitchRatio: number;
@@ -889,10 +1250,14 @@ export class SampledInstrument {
         : group.layers.filter(layer => layer.roundRobinGroup === rrGroup);
       if (variants.length === 0) return [];
       const key = `${nearestNote}:${variants[0].velocityMin}-${variants[0].velocityMax}:${articulation ?? 'default'}:${rrGroup ?? 'single'}`;
-      const cursor = this.roundRobinCursors.get(key) ?? 0;
+      const cursor = selectionKey === undefined
+        ? (this.roundRobinCursors.get(key) ?? 0)
+        : stableSelectionIndex(`${selectionKey}:${key}`, variants.length);
       const sample = selectRoundRobinVariant(variants, cursor);
       if (!sample) return [];
-      if (variants.length > 1) this.roundRobinCursors.set(key, cursor + 1);
+      if (selectionKey === undefined && variants.length > 1) {
+        this.roundRobinCursors.set(key, cursor + 1);
+      }
       const semitoneOffset = midiNote - nearestNote;
       const pitchRatio = Math.pow(2, semitoneOffset / 12 + sample.tuneCents / 1200);
       return [{ sample, pitchRatio, weight: group.weight }];
@@ -904,6 +1269,23 @@ export class SampledInstrument {
    */
   isReady(): boolean {
     return this.isLoaded;
+  }
+
+  getActiveVoiceCount(): number {
+    this.reapCompletedVoices(this.audioContext?.currentTime ?? 0);
+    return this.activeVoices.size;
+  }
+
+  getVoice(id: string): SampleVoiceHandle | null {
+    return this.activeVoices.get(id)?.voice ?? null;
+  }
+
+  releaseVoice(id: string, when: number): boolean {
+    return this.activeVoices.get(id)?.voice.release(when) ?? false;
+  }
+
+  stopVoice(id: string, when: number): void {
+    this.activeVoices.get(id)?.voice.stop(when);
   }
 
   getLoadState(): SampleLoadState {
@@ -1026,6 +1408,10 @@ export class SampledInstrument {
         sampleCount++;
       }
     }
+    for (const region of this.releaseRegions) {
+      sampleCache.acquire(region.cacheKey);
+      sampleCount++;
+    }
     logger.audio.log(`[CACHE] Acquired owner ${this.cacheReferenceOwners} for ${this.instrumentId}: ${sampleCount} samples`);
   }
 
@@ -1043,6 +1429,10 @@ export class SampledInstrument {
         sampleCount++;
       }
     }
+    for (const region of this.releaseRegions) {
+      sampleCache.release(region.cacheKey);
+      sampleCount++;
+    }
     logger.audio.log(`[CACHE] Released owner for ${this.instrumentId}: ${sampleCount} samples; owners=${this.cacheReferenceOwners}`);
   }
 
@@ -1053,6 +1443,9 @@ export class SampledInstrument {
   dispose(): void {
     // Invalidate every in-flight fetch/decode before releasing owned cache entries.
     this.lifecycleGeneration++;
+    const stopAt = this.audioContext?.currentTime ?? 0;
+    for (const { voice } of this.activeVoices.values()) voice.stop(stopAt);
+    this.activeVoices.clear();
     while (this.cacheReferenceOwners > 0) this.releaseCacheReferences();
 
     // Clear all loaded samples
@@ -1063,6 +1456,8 @@ export class SampledInstrument {
     this.loadState = 'idle';
     this.loadFailures = [];
     this.roundRobinCursors.clear();
+    this.releaseRegions = [];
+    this.voiceOrdinal = 0;
     this.cacheReferenceOwners = 0;
     this.loadingPromise = null;
     this.backgroundLoadingPromise = null;

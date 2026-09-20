@@ -219,6 +219,7 @@ session-race.spec.ts › Session Loading Race Condition › edits made after loa
 session-race.spec.ts › Session Loading Race Condition › loaded session data persists after initial load
 session-race.spec.ts › Session Loading Race Condition › new session can be created and edited without data loss
 session-race.spec.ts › Session Loading Race Condition › session data survives rapid page refresh
+tone-envelope-release.spec.ts › Tone envelope audible release contract › renders the shared 300ms release and authored zero in real Chromium Web Audio
 track-reorder.spec.ts › Track reorder browser contract › cancels outside the track list without reordering or leaking visual state
 track-reorder.spec.ts › Track reorder browser contract › does not initiate a drag from the track name
 track-reorder.spec.ts › Track reorder browser contract › exposes one accessible drag handle per track
