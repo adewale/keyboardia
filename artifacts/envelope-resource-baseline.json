@@ -59,26 +59,26 @@
     }
   },
   "release": {
-    "capturedAt": "2026-09-16",
+    "capturedAt": "2026-09-20",
     "productionAudio": {
       "encodedBytes": 42914625,
       "audioFileCount": 582,
       "catalogueSha256": "5bd9e4bba8f1ce6ee1c17a142f792478ffa2fac859e376e4c50a3ad72042f7f2",
-      "notes": "Remeasured after rebasing onto current main. PR 87 changes Hammond loop metadata but adds no production audio file or byte."
+      "notes": "Remeasured after rebasing onto the envelope-v2 foundation merged by PR 116. PR 87 adds no production audio file or byte."
     },
     "javascript": {
-      "allChunksGzipBytes": 323172,
+      "allChunksGzipBytes": 326402,
       "chunkBudgets": {
         "mainEntry": {
           "prefix": "index",
           "entry": true,
           "loading": "initial",
-          "gzipBytes": 154501
+          "gzipBytes": 157546
         },
         "stepSequencer": {
           "prefix": "StepSequencer",
           "loading": "lazy",
-          "gzipBytes": 38305
+          "gzipBytes": 38467
         },
         "sessionNotation": {
           "prefix": "session-notation-v24",
@@ -95,13 +95,13 @@
     "worker": {
       "baseJavaScriptBytes": 1963063,
       "baseUploadBytes": 3437071,
-      "javascriptBytes": 2027601,
-      "uploadBytes": 3503037,
-      "uploadDeltaBytes": 65966,
-      "uploadDeltaPercent": 1.92,
+      "javascriptBytes": 2030400,
+      "uploadBytes": 3505836,
+      "uploadDeltaBytes": 68765,
+      "uploadDeltaPercent": 2.0,
       "maxUploadBytes": 3525000,
-      "headroomBytes": 21963,
-      "notes": "Measured against PR 87's original head. Growth is the envelope collaboration and MCP contract plus its published skill; browser notation, UI, and audio runtimes remain outside the Worker graph."
+      "headroomBytes": 19164,
+      "notes": "Measured against PR 87's original head after rebasing onto PR 116. Growth is the envelope MCP contract plus its published skill; browser notation, UI, and audio runtimes remain outside the Worker graph."
     }
   },
   "budgets": {

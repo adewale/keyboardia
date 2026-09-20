@@ -1,7 +1,7 @@
 # ADSR Overhaul v2 — Executable Specification
 
-**Status:** REBASED IMPLEMENTATION CANDIDATE — LOCAL CORE GATES PASS; FULL-STACK, SHAPE UI, AND PRODUCTION CUTOVER PENDING
-**Date:** 2026-09-16
+**Status:** REBASED AUTHORING CANDIDATE — CORE CORRECTNESS IS ON MAIN; SHAPE UI AND PRODUCTION CUTOVER REMAIN
+**Date:** 2026-09-20
 **Supersedes:** `specs/ADSR-OVERHAUL.md`
 **Protocol capability:** `track-envelope-v2`
 **Operational sample requirements:** `docs/SAMPLE-INTAKE-REQUIREMENTS.md`
@@ -22,19 +22,22 @@ The words **MUST**, **MUST NOT**, **SHOULD**, and **MAY** are normative.
 
 ## Implementation ledger
 
-PR 87 was rebased onto the current audio architecture on 2026-09-16. Its v2
-resolver now feeds the project's centralized `ResolvedNoteEvent` dispatcher and
-instrument-renderer registry, uses nominal audio-clock types, retains absolute
-Tone scheduling, and participates in the shared readiness, presentation-clock,
-timestamped-automation, and owned-audio-graph lifecycles. The older parallel
-scheduler-to-renderer switch was removed during the rebase.
+Main gained the envelope-v2 runtime correctness foundation through PR 116 on
+2026-09-19. PR 87 was rebased onto merge commit `d7cf7cde` on 2026-09-20 and no
+longer owns parallel copies of the state, sync, scheduler, adapter, or managed
+sample-voice implementation. The shared resolver on main feeds the centralized
+`ResolvedNoteEvent` dispatcher and instrument-renderer registry, uses nominal
+audio-clock types, retains absolute Tone scheduling, and participates in the
+shared readiness, presentation-clock, timestamped-automation, and owned-audio-
+graph lifecycles.
 
-The shared v2 contract crosses production state, validation, sync, persistence,
-hashing, reconnect, MCP, notation, main/worklet scheduling, synth adapters, and
-managed sample voices. The capability-aware exact editor, selected-track XY
-batch transactions, unchanged MIDI boundary, examples, and resource/cost
-collectors are present. This is an implementation candidate, not proof that all
-release profiles are complete.
+PR 87 now builds the authoring and product layers on that foundation: the
+capability-aware exact editor, selected-track XY batch transactions, MCP and
+notation v2.4 surfaces, examples, documentation, and cost-aware verification.
+Its only shared-contract additions are neutral queries/projections required by
+those consumers; the renderer-facing legacy projection delegates to the same
+shared primitive. This is an authoring integration candidate, not proof that
+every release profile is complete.
 
 The post-rebase audit corrected several material defects: early note-off now
 retains the in-progress native attack ramp; renderer adapters no longer clamp a
@@ -51,13 +54,15 @@ Worker therefore advertise v2 only. Tolerant v1 import/projection remains for
 sessions created while reviewing the PR, but it is not a permanent public
 capability or a reason to duplicate new behavior.
 
-The focused local gates currently pass (75 semantic, 276 renderer-correctness,
-232 rolling-state, and 13 PCM tests, plus TypeScript, production build,
-documentation/resource validators, and ten real-Worker two-browser multiplayer
-contracts). Full unit, built integration, broader browser accessibility, and
-mobile gates must still rerun on the rebased revision before merge. Real advanced-renderer
-PCM equivalence, human listening, canary telemetry, and one release cycle remain
-external evidence; configuration mirrors and mocks are not substitutes.
+The exact rebased revision passes 75 semantic, 276 renderer-correctness, 231
+rolling-state, and 13 PCM tests; all 5,157 unit tests; 140 built integration
+tests; five focused envelope browser contracts; and the 15-test full-stack
+Worker smoke lane. TypeScript, production build, worker bundle, lint,
+documentation/resource, sync, dead-export, and test-inventory validators also
+pass. The complete impact-selected Worker inventory and CI jobs must still pass
+on the pushed head. Real advanced-renderer PCM equivalence, human listening,
+canary telemetry, and one release cycle remain external evidence; configuration
+mirrors and mocks are not substitutes.
 
 The 2026-08-22 product-design review found that the delivered editor still jumps
 from a compact summary to expert envelope terminology. Slice D therefore has a
@@ -84,7 +89,7 @@ records for the exact head commit. A report records observed retries, artifact
 bytes, configured runner price, and actual human-review minutes; an assumed
 retry budget is not an observed cost.
 
-### Original-goal status at 2026-09-16
+### Original-goal status at 2026-09-20
 
 These statuses distinguish implemented architecture from production audio
 promotion. **Achieved** means the locally executable code and its direct
@@ -1447,9 +1452,10 @@ more than a universal cosmetic ADSR.
   more expressive but risks discontinuities and automation churn. v2 snapshots
   tempo for the entire voice at note-on; the new tempo applies to later voices.
 
-The measured 2026-09-16 current-main catalogue is 42,914,625 encoded bytes
-(40.93 MiB) across 582 files, with a content-addressed catalogue hash. PR 87
-adds loop metadata but zero sample files and zero sample bytes. Decoded-memory
+The measured 2026-09-20 catalogue is 42,914,625 encoded bytes (40.93 MiB)
+across 582 files, with a content-addressed catalogue hash. The loop metadata is
+now part of main's correctness foundation; PR 87 adds zero sample files and zero
+sample bytes. Decoded-memory
 cost is measured per
 intake packet because channel count, sample rate, duration, and cache residency
 make a catalogue-wide estimate misleading. These files are copied as static
@@ -1458,8 +1464,8 @@ not belong in the initial JavaScript bundle—but “not JS” does not mean fre
 they increase the deployed site, offline/cache storage, selected-instrument
 transfer, background decode, and eviction pressure.
 
-The 2026-09-16 rebased production build loads 224,680 bytes (219.4 KiB) of
-gzipped JavaScript initially and contains 323,172 bytes across all JavaScript
+The 2026-09-20 rebased production build loads 227,725 bytes (222.4 KiB) of
+gzipped JavaScript initially and contains 326,402 bytes across all JavaScript
 chunks.
 It already exceeds the older `< 200KB` target in `specs/STATUS.md`. The editor is
 reached through the code-split StepSequencer path, and the UI should have a
@@ -1469,10 +1475,10 @@ if sample audio enters the module graph, a new chart/knob dependency appears,
 the editor breaks that lazy boundary, or any chunk grows without a reviewed
 attribution and budget disposition.
 
-The Worker upload is 3,503,037 bytes, 65,966 bytes (1.92%) above PR 87's
+The Worker upload is 3,505,836 bytes, 68,765 bytes (2.00%) above PR 87's
 original head. That increase is the versioned envelope collaboration and MCP
 contract plus its published agent skill, not browser audio, UI, or notation
-runtime. The reviewed upload ratchet is 3,525,000 bytes, leaving 21,963 bytes;
+runtime. The reviewed upload ratchet is 3,525,000 bytes, leaving 19,164 bytes;
 future Worker work must reduce/split code or explicitly re-budget it.
 
 Each promoted instrument therefore needs explicit limits for encoded bytes,
@@ -1533,11 +1539,13 @@ the smaller implementation and asset set.
 
 ## 14. Implementation blockers and release gates
 
-The rebase closes the largest architectural blocker by routing v2 through the
-project's current audio primitives instead of maintaining a parallel dispatcher.
-It does not close every ship blocker. Full-stack rebased evidence, an independent
-advanced-renderer subject, the musical middle layer, and honest asset support
-remain. Global ephemeral synth XY mappings also look more durable than they are.
+PR 116 closed the largest architectural blocker by landing v2 on the project's
+current audio primitives instead of maintaining a parallel dispatcher. This
+rebase makes PR 87 consume that foundation and removes duplicated runtime
+ownership from its review surface. It does not close every ship blocker. An
+independent advanced-renderer subject, the musical middle layer, and honest
+asset support remain. Global ephemeral synth XY mappings also look more durable
+than they are.
 The app can stage v2 state, exact editing, notation, and truthful sample behavior
 without silently rerouting every existing synth preset or importing unapproved
 audio, but no release profile is promoted until its explicit gates below pass.
