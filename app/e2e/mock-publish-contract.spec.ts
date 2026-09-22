@@ -1,5 +1,6 @@
 import { test, expect, getBaseUrl, useMockAPI, waitForAppReady } from './global-setup';
 import { NEW_SESSION_EFFECTS_STATE } from '../src/shared/effects-defaults';
+import { createPopulatedSessionWithRetry } from './test-utils';
 
 test.describe('mock publish contract', () => {
   test.skip(!useMockAPI, 'This contract targets the local mock API');
@@ -113,6 +114,60 @@ test.describe('mock publish contract', () => {
     expect(republishResponse.status()).toBe(400);
   });
 
+  test('published sessions stay read-only while scrolling and transport remain usable @blocking', async ({ page, request }) => {
+    const base = getBaseUrl();
+    const source = await createPopulatedSessionWithRetry(request);
+    const publishResponse = await request.post(`${base}/api/sessions/${source.id}/publish`);
+    expect(publishResponse.status()).toBe(201);
+    const published = await publishResponse.json();
+
+    await page.setViewportSize({ width: 900, height: 600 });
+    await page.goto(`${base}/s/${published.id}`);
+    await waitForAppReady(page);
+    await expect(page.locator('.published-badge')).toBeVisible();
+
+    const firstStep = page.locator('.track-row').first().locator('.step-cell').first();
+    await expect(firstStep).toHaveClass(/active/);
+    const stepBox = await firstStep.boundingBox();
+    expect(stepBox, 'published step should have a layout box').not.toBeNull();
+    await page.mouse.click(stepBox!.x + stepBox!.width / 2, stepBox!.y + stepBox!.height / 2);
+    await expect(firstStep).toHaveClass(/active/);
+
+    const tempo = page.locator('#tempo');
+    const swing = page.locator('#swing');
+    await expect(tempo).toHaveValue('120');
+    await expect(swing).toHaveValue('0');
+    for (const control of [tempo, swing]) {
+      const box = await control.boundingBox();
+      expect(box, 'published transport control should have a layout box').not.toBeNull();
+      await page.mouse.click(box!.x + box!.width * 0.75, box!.y + box!.height / 2);
+      await page.keyboard.press('ArrowUp');
+    }
+    await expect(tempo).toHaveValue('120');
+    await expect(swing).toHaveValue('0');
+
+    const playButton = page.locator('.play-button');
+    await playButton.click();
+    await expect(playButton).toHaveClass(/playing/);
+    await playButton.click();
+    await expect(playButton).not.toHaveClass(/playing/);
+
+    const tracks = page.locator('.tracks');
+    const scrollRange = await tracks.evaluate(element => element.scrollWidth - element.clientWidth);
+    expect(scrollRange).toBeGreaterThan(0);
+    const tracksBox = await tracks.boundingBox();
+    expect(tracksBox, 'published tracks should have a layout box').not.toBeNull();
+    const tracksOwnHitTesting = await page.evaluate(({ x, y }) => (
+      document.elementFromPoint(x, y)?.closest('.tracks') !== null
+    ), {
+      x: tracksBox!.x + tracksBox!.width / 2,
+      y: tracksBox!.y + 20,
+    });
+    expect(tracksOwnHitTesting).toBe(true);
+    await tracks.evaluate(element => element.scrollBy({ left: 500 }));
+    await expect.poll(() => tracks.evaluate(element => element.scrollLeft)).toBeGreaterThan(0);
+  });
+
   test('replays and REST-persists effects and scale through the client @blocking', async ({ page, request }) => {
     const base = getBaseUrl();
     const state = {
@@ -220,12 +275,50 @@ test.describe('mock publish contract', () => {
       data: { state: { tracks: [], tempo: 120, swing: 0, version: 1 } },
     });
     const created = await createdResponse.json();
+
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, 'clipboard', {
+        configurable: true,
+        value: {
+          writeText: async (value: string) => {
+            (window as unknown as { __copiedShareUrl__?: string }).__copiedShareUrl__ = value;
+          },
+        },
+      });
+    });
+
+    let releasePut!: () => void;
+    const putGate = new Promise<void>(resolve => { releasePut = resolve; });
+    let markPutSeen!: () => void;
+    const putSeen = new Promise<void>(resolve => { markPutSeen = resolve; });
+    let heldPut = false;
+    await page.route(`**/api/sessions/${created.id}`, async route => {
+      if (route.request().method() === 'PUT' && !heldPut) {
+        heldPut = true;
+        markPutSeen();
+        await putGate;
+      }
+      await route.continue();
+    });
+
     await page.goto(`${base}/s/${created.id}`);
     await waitForAppReady(page);
 
     await page.locator('#tempo').fill('124');
     await page.getByRole('button', { name: /Invite/ }).click();
     await page.getByRole('button', { name: 'Copy Link' }).click();
+
+    await putSeen;
+    await expect(page.getByRole('button', { name: /Invite/ })).toBeDisabled();
+    expect(await page.evaluate(() => (
+      (window as unknown as { __copiedShareUrl__?: string }).__copiedShareUrl__
+    ))).toBeUndefined();
+    releasePut();
+
+    await expect(page.getByRole('button', { name: /Copied!/ })).toBeVisible();
+    expect(await page.evaluate(() => (
+      (window as unknown as { __copiedShareUrl__?: string }).__copiedShareUrl__
+    ))).toBe(`${base}/s/${created.id}`);
 
     await expect.poll(async () => {
       const stored = await request.get(`${base}/api/sessions/${created.id}`).then(response => response.json());

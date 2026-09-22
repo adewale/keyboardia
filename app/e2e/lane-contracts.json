@@ -1,13 +1,13 @@
 {
   "schemaVersion": 1,
   "lanes": {
-    "mock-required": { "expected": 76, "skipped": 0 },
-    "offline-functional": { "expected": 87, "skipped": 72 },
+    "mock-required": { "expected": 77, "skipped": 0 },
+    "offline-functional": { "expected": 85, "skipped": 72 },
     "offline-audio": { "expected": 3, "skipped": 0 },
     "worker": { "expected": 76, "skipped": 0 },
     "worker-smoke": { "expected": 15, "skipped": 0 },
-    "real-chromium": { "expected": 209, "skipped": 29 },
-    "real-webkit": { "expected": 162, "skipped": 59 },
+    "real-chromium": { "expected": 207, "skipped": 30 },
+    "real-webkit": { "expected": 161, "skipped": 59 },
     "visual-linux": { "expected": 11, "skipped": 0 },
     "visual-macos": { "expected": 3, "skipped": 0 },
     "pcm": { "expected": 6, "skipped": 0 },

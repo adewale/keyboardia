@@ -28,23 +28,11 @@ describe('C4_FREQUENCY', () => {
 });
 
 describe('NOTE_NAMES', () => {
-  it('has 12 note names (chromatic scale)', () => {
-    expect(NOTE_NAMES).toHaveLength(12);
-  });
-
-  it('starts with C', () => {
-    expect(NOTE_NAMES[0]).toBe('C');
-  });
-
-  it('contains all chromatic notes', () => {
-    expect(NOTE_NAMES).toContain('C');
-    expect(NOTE_NAMES).toContain('C#');
-    expect(NOTE_NAMES).toContain('D');
-    expect(NOTE_NAMES).toContain('E');
-    expect(NOTE_NAMES).toContain('F');
-    expect(NOTE_NAMES).toContain('G');
-    expect(NOTE_NAMES).toContain('A');
-    expect(NOTE_NAMES).toContain('B');
+  it('defines the chromatic scale in semitone order from C', () => {
+    expect(NOTE_NAMES).toEqual([
+      'C', 'C#', 'D', 'D#', 'E', 'F',
+      'F#', 'G', 'G#', 'A', 'A#', 'B',
+    ]);
   });
 });
 

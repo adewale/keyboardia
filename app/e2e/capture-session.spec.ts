@@ -756,7 +756,12 @@ test('captures sampled first-use timing through the central dispatch policy', as
       user: Array.from(capture.taps.userOutput.channels[0]),
     };
   });
-  await page.waitForTimeout(100);
+  await page.waitForFunction(async () => {
+    const armed = await (window as unknown as {
+      __captureMasterArmed__?: Promise<{ startFrame: number; frameCount: number }>;
+    }).__captureMasterArmed__;
+    return Boolean(armed && armed.startFrame >= 0 && armed.frameCount > 0);
+  }, undefined, { timeout: 30_000 });
   const playButton = page
     .locator('[data-testid="play-button"]')
     .or(page.getByRole('button', { name: /play/i }))

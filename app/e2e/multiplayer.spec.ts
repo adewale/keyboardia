@@ -318,29 +318,61 @@ test.describe('Multiplayer connection resilience', () => {
     const sessionId = result.id;
 
     const context = await createE2EContext(browser, browserName);
+    await context.addInitScript(() => {
+      const NativeWebSocket = window.WebSocket;
+      class TrackedWebSocket extends NativeWebSocket {
+        constructor(url: string | URL, protocols?: string | string[]) {
+          super(url, protocols);
+          const globals = window as unknown as { __testWebSockets__?: WebSocket[] };
+          (globals.__testWebSockets__ ??= []).push(this);
+        }
+      }
+      window.WebSocket = TrackedWebSocket;
+    });
     const page = await context.newPage();
+    try {
+      await page.goto(`${baseUrl}/s/${sessionId}`);
+      await waitForAppReady(page);
+      await expect(page.locator('.connection-status--connected')).toBeVisible();
 
-    // Load session using proper waits
-    await page.goto(`${baseUrl}/s/${sessionId}`);
-    await waitForAppReady(page);
+      const socketCount = await page.evaluate(() => (
+        (window as unknown as { __testWebSockets__?: WebSocket[] }).__testWebSockets__?.length ?? 0
+      ));
+      expect(socketCount).toBeGreaterThan(0);
+      const reconnected = page.waitForFunction((previousCount) => {
+        const sockets = (window as unknown as { __testWebSockets__?: WebSocket[] })
+          .__testWebSockets__ ?? [];
+        return sockets.length > previousCount
+          && sockets[sockets.length - 1].readyState === WebSocket.OPEN;
+      }, socketCount, { timeout: 10_000 });
+      await page.evaluate((socketIndex) => {
+        const socket = (window as unknown as { __testWebSockets__?: WebSocket[] })
+          .__testWebSockets__?.[socketIndex];
+        if (!socket) throw new Error('Test did not observe the collaboration WebSocket');
+        socket.close(4000, 'test disconnect');
+      }, socketCount - 1);
+      await page.waitForFunction((socketIndex) => (
+        (window as unknown as { __testWebSockets__?: WebSocket[] })
+          .__testWebSockets__?.[socketIndex]?.readyState === WebSocket.CLOSED
+      ), socketCount - 1, { timeout: 10_000 });
+      await reconnected;
 
-    // Simulate network going offline briefly
-    await context.setOffline(true);
-    // Brief offline period
-    await page.waitForTimeout(1000);
+      await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10_000 });
 
-    // Come back online
-    await context.setOffline(false);
-    // Wait for reconnection
-    await page.waitForLoadState('networkidle');
-
-    // Should still be able to interact
-    const step0 = page.locator('.step-cell').first();
-    await expect(step0).toBeVisible({ timeout: 5000 });
-    await step0.click();
-    await expect(step0).toHaveClass(/active/, { timeout: 5000 });
-
-    await context.close();
+      // Mutate only after the reconnection signal is observable; otherwise a
+      // local optimistic update could make a broken reconnect look healthy.
+      const step0 = page.locator('.step-cell').first();
+      await expect(step0).toBeVisible({ timeout: 5000 });
+      await step0.click();
+      await expect(step0).toHaveClass(/active/, { timeout: 5000 });
+      await expect.poll(async () => {
+        const stored = await request.get(`${baseUrl}/api/sessions/${sessionId}`);
+        if (!stored.ok()) return null;
+        return (await stored.json()).state.tracks[0].steps[0];
+      }, { timeout: 12_000 }).toBe(true);
+    } finally {
+      await context.close();
+    }
   });
 });
 

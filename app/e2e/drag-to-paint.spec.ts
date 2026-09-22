@@ -469,47 +469,6 @@ test.describe('Drag-to-Paint: Pointer Behavior', () => {
     // Step 3 should still be inactive (not painted)
     await sequencer.expectStepInactive(trackIndex, 3);
   });
-
-  // BUG FIXED: setPointerCapture removed. See 'pointer-capture-multi-element' bug pattern.
-  test('should use smooth mouse movement for reliable painting', async ({ page }) => {
-    const sequencer = new SequencerPage(page);
-    const trackIndex = 0;
-    const steps = sequencer.getSteps(trackIndex);
-
-    // Get bounding boxes for steps 0 and 7
-    const step0 = steps.nth(0);
-    const step7 = steps.nth(7);
-    await step0.waitFor({ state: 'visible' });
-    await step7.waitFor({ state: 'visible' });
-
-    const box0 = await step0.boundingBox();
-    const box7 = await step7.boundingBox();
-    if (!box0 || !box7) throw new Error('Could not get bounding boxes');
-
-    // Perform smooth drag with multiple intermediate steps
-    await page.mouse.move(box0.x + box0.width / 2, box0.y + box0.height / 2);
-    await page.mouse.down();
-
-    // Move through each step with smooth motion
-    for (let i = 1; i <= 7; i++) {
-      const stepBox = await steps.nth(i).boundingBox();
-      if (stepBox) {
-        await page.mouse.move(
-          stepBox.x + stepBox.width / 2,
-          stepBox.y + stepBox.height / 2,
-          { steps: 3 } // Use 3 intermediate steps for smoother motion
-        );
-      }
-    }
-
-    await page.mouse.up();
-    await waitForDragComplete(page);
-
-    // All 8 steps should be active
-    for (let i = 0; i <= 7; i++) {
-      await sequencer.expectStepActive(trackIndex, i);
-    }
-  });
 });
 
 test.describe('Drag-to-Paint: State Consistency', () => {

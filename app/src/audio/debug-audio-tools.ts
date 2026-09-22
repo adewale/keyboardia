@@ -13,7 +13,11 @@
 
 import { logger } from '../utils/logger';
 import type { AudioEngine } from './engine';
-import { MasterCaptureRecorder, type MasterCapture } from './capture-recorder';
+import {
+  MasterCaptureRecorder,
+  type MasterCapture,
+  type MasterCaptureArm,
+} from './capture-recorder';
 
 const masterCaptureRecorder = new MasterCaptureRecorder();
 
@@ -26,6 +30,7 @@ declare global {
     __monitorFMParams__: (trackId?: string) => FMMonitorResult;
     __startVolumeMetering__: (trackId?: string) => () => void;
     __captureMaster__?: (seconds: number) => Promise<MasterCapture>;
+    __captureMasterArmed__?: Promise<MasterCaptureArm>;
   }
 }
 
@@ -327,7 +332,11 @@ export function initAudioDebugTools(): void {
         throw new Error('Initialize audio and Tone effects with a real play click before capture');
       }
       await masterCaptureRecorder.initialize(context);
-      return masterCaptureRecorder.capture(taps, seconds);
+      let resolveArmed!: (arm: MasterCaptureArm) => void;
+      window.__captureMasterArmed__ = new Promise(resolve => {
+        resolveArmed = resolve;
+      });
+      return masterCaptureRecorder.capture(taps, seconds, 0.05, resolveArmed);
     };
   }
 

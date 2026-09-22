@@ -10,6 +10,11 @@ class FakePort {
   postMessage = vi.fn((message: { type: string; startFrame?: number; frameCount?: number }) => {
     if (message.type !== 'arm') return;
     queueMicrotask(() => {
+      this.onmessage?.({ data: {
+        type: 'armed',
+        startFrame: message.startFrame,
+        frameCount: message.frameCount,
+      } } as MessageEvent);
       const taps = Array.from({ length: 3 }, (_, tap) => [
         Float32Array.from({ length: message.frameCount! }, () => tap + 1).buffer,
       ]);
@@ -62,12 +67,15 @@ describe('MasterCaptureRecorder', () => {
     } as unknown as AudioContext;
     const recorder = new MasterCaptureRecorder();
     await recorder.initialize(context);
+    const onArmed = vi.fn();
     const capture = await recorder.capture({
       preCompressor: node(context),
       postMakeup: node(context),
       userOutput: node(context),
-    }, 0.01, 0);
+    }, 0.01, 0, onArmed);
 
+    expect(onArmed).toHaveBeenCalledOnce();
+    expect(onArmed).toHaveBeenCalledWith({ startFrame: capture.startFrame, frameCount: 480 });
     expect(capture.startFrame % 128).toBe(0);
     expect(capture.frameCount).toBe(480);
     expect(capture.maxRenderFrameDrift).toBe(0);

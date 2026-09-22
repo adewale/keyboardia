@@ -48,7 +48,6 @@ drag-to-paint.spec.ts › Drag-to-Paint: Mixed Patterns › should paint over in
 drag-to-paint.spec.ts › Drag-to-Paint: Modifier Keys › should NOT paint when Ctrl+clicking (selection mode)
 drag-to-paint.spec.ts › Drag-to-Paint: Modifier Keys › should NOT start painting when Shift+clicking (p-lock mode)
 drag-to-paint.spec.ts › Drag-to-Paint: Pointer Behavior › should end paint mode when pointer released outside grid
-drag-to-paint.spec.ts › Drag-to-Paint: Pointer Behavior › should use smooth mouse movement for reliable painting
 drag-to-paint.spec.ts › Drag-to-Paint: Reverse Direction › should erase when dragging right to left from active step
 drag-to-paint.spec.ts › Drag-to-Paint: Reverse Direction › should paint when dragging right to left
 drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should correctly handle paint then erase on overlapping region
@@ -80,7 +79,6 @@ keyboard.spec.ts › Keyboard Shortcuts › Space starts and stops playback
 landscape-alignment.spec.ts › Landscape Mobile Alignment › M/S buttons and step cells should have same height in landscape
 landscape-alignment.spec.ts › Landscape Mobile Alignment › M/S buttons should be vertically aligned with step grid cells
 landscape-alignment.spec.ts › Landscape Mobile Alignment › all track rows should have consistent vertical alignment
-landscape-alignment.spec.ts › Landscape Mobile Alignment › screenshot comparison - visual alignment check
 landscape-alignment.spec.ts › Modern Device Landscape Alignment › Samsung Galaxy S24: M/S buttons should be vertically aligned with step grid
 landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 14: M/S buttons should be vertically aligned with step grid
 landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 15 Pro Max: M/S buttons should be vertically aligned with step grid
@@ -89,8 +87,8 @@ midi-export-download.spec.ts › exports a valid MIDI download through the real 
 mixer-layout.spec.ts › Mixer Panel Layout › VU meter stays within mixer channel bounds
 mixer-layout.spec.ts › Mixer Panel Layout › fader has non-zero height in each channel
 mixer-layout.spec.ts › Mixer Panel Layout › mixer channel elements scroll together with page
-mobile-android.spec.ts › Android Mobile › app works on Android
-mobile-iphone.spec.ts › Mobile Layout (iPhone) › app is usable on mobile viewport
+mobile-android.spec.ts › Android Mobile › pages through a populated pattern on Android
+mobile-iphone.spec.ts › Mobile Layout (iPhone) › a long pattern stays usable through its final page
 mobile-iphone.spec.ts › Mobile Layout (iPhone) › populated portrait tracks fit without horizontal overflow
 mobile-iphone.spec.ts › Mobile Layout (iPhone) › portrait mode hides editing controls and directs users to rotate
 mobile-iphone.spec.ts › Mobile Layout (iPhone) › touch targets are adequate size
@@ -140,6 +138,7 @@ mock-publish-contract.spec.ts › mock publish contract › flushes pending stat
 mock-publish-contract.spec.ts › mock publish contract › loads the seeded Holby example with ten tracks @blocking
 mock-publish-contract.spec.ts › mock publish contract › preserves named extended session state when publishing @blocking
 mock-publish-contract.spec.ts › mock publish contract › preserves remix lineage and increments the source count @blocking
+mock-publish-contract.spec.ts › mock publish contract › published sessions stay read-only while scrolling and transport remain usable @blocking
 mock-publish-contract.spec.ts › mock publish contract › publishes the latest edit made while a transition flush is in flight @blocking
 mock-publish-contract.spec.ts › mock publish contract › replays and REST-persists effects and scale through the client @blocking
 motion-accessibility.spec.ts › shared motion accessibility › removes production transitions and animations for reduced motion @blocking

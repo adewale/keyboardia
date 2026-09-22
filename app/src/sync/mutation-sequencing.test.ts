@@ -23,26 +23,6 @@ import { describe, it, expect } from 'vitest';
 // We'll test the actual implementation once it exists
 
 describe('Option C: Server-side sequencing', () => {
-  describe('TrackedMutation interface', () => {
-    it('should have confirmedAtServerSeq field', () => {
-      // This test verifies the type was updated
-      // Import will fail until type is added
-      const mutation = {
-        seq: 1,
-        type: 'toggle_step',
-        trackId: 't1',
-        step: 0,
-        intendedValue: true,
-        sentAt: Date.now(),
-        sentAtServerTime: Date.now(),
-        state: 'confirmed' as const,
-        confirmedAtServerSeq: 100, // NEW FIELD
-      };
-
-      expect(mutation.confirmedAtServerSeq).toBe(100);
-    });
-  });
-
   describe('confirmMutation with serverSeq', () => {
     it('should store confirmedAtServerSeq when mutation is confirmed', () => {
       // Setup: Create a mock multiplayer instance with a pending mutation

@@ -22,6 +22,11 @@ export interface MasterCapture {
   taps: Record<MasterCaptureTapName, CapturedTap>;
 }
 
+export interface MasterCaptureArm {
+  startFrame: number;
+  frameCount: number;
+}
+
 interface CaptureChunkMessage {
   type: 'chunk';
   absoluteFrame: number;
@@ -78,6 +83,7 @@ export class MasterCaptureRecorder {
     nodes: MasterCaptureTapNodes,
     seconds: number,
     leadSeconds = 0.05,
+    onArmed?: (arm: MasterCaptureArm) => void,
   ): Promise<MasterCapture> {
     if (!this.context) {
       const context = nodes.preCompressor.context as AudioContext;
@@ -103,6 +109,13 @@ export class MasterCaptureRecorder {
       }, (seconds + leadSeconds + 5) * 1_000);
 
       this.node!.port.onmessage = (event: MessageEvent<CaptureMessage>) => {
+        if (event.data.type === 'armed') {
+          onArmed?.({
+            startFrame: event.data.startFrame,
+            frameCount: event.data.frameCount,
+          });
+          return;
+        }
         if (event.data.type === 'chunk') {
           chunks.push(event.data);
           return;

@@ -6662,3 +6662,69 @@ Inventory random seeds, generated impulse responses, round-robin selection,
 and other per-instance state before calling a comparison paired. Either make
 that state deterministic or calibrate it across fresh instances and gate the
 real safety limit with explicit margin.
+
+---
+
+## Lesson 79: A Test Needs a Production Subject and an Observable Failure
+
+**Date:** September 2026
+
+**Context:** Test-quality audit and verification simplification in PR #117
+
+### What happened
+
+The suite had grown tests faster than it retired weak ones. Nine “performance”
+tests timed locally defined toy functions with fake clocks, a type-shape test
+constructed its own object and inspected it, a coverage test printed arithmetic
+about allowlists, and screenshot-only checks passed when files were written.
+Several CSS tests searched source text for selectors while the real requirement
+was that a published session could scroll and play without becoming editable.
+Other browser tests used fixed sleeps after persistence, synchronization, or
+capture setup even though each boundary exposed state that could be observed.
+
+Every check looked test-like, but some had no production subject and others
+could pass while the advertised behavior was broken. They added runtime,
+inventory maintenance, and false confidence without adding a distinct failure
+signal.
+
+### What we misunderstood
+
+We treated assertion count and scenario count as coverage. Coverage is only
+useful when a test names production behavior, drives the relevant boundary,
+and observes the consequence that matters. Source-shape assertions are not a
+substitute for browser behavior. A timeout is not evidence that a save, peer,
+reconnect, or worklet is ready. A benchmark of code declared inside the test is
+not a benchmark of the product.
+
+We also let one claim fragment into several partial checks. “The chromatic
+notes are correct” became length, first-item, and incomplete membership tests;
+none proved exact order. Consolidating that contract into one exact array made
+it both shorter and stronger.
+
+### The fix
+
+The 17 strongest removal candidates were deleted or consolidated. The fake
+benchmarks, runtime type tautology, output-only coverage report, redundant
+drag/screenshot checks, and duplicate CSS assertion are gone. Published-session
+coverage now drives a real immutable snapshot and proves hit-tested editing is
+blocked, tempo and swing stay fixed, playback still toggles, and horizontal
+scrolling works. Mobile smoke checks now open owned populated fixtures and
+complete visible paging journeys.
+
+Persistence and multiplayer tests now poll exact API or receiver state before
+reload or the next mutation. Reconnection waits for an observable disconnect
+and subsequent connected state. PCM capture exposes and awaits the worklet's
+real `armed` acknowledgement instead of sleeping 100 ms. Delays that model the
+input itself, such as 50 ms rapid-click cadence, remain because they are part
+of the scenario rather than a readiness guess. The exact E2E title and lane
+contracts were updated with the same change and now account for 248 tests.
+
+### The rule
+
+**Keep a test only when breaking production behavior would make its named
+observable fail.** Prefer one exact assertion at the closest public boundary;
+construct unrelated prerequisites directly; wait on state, responses, or
+acknowledgements; and reserve fixed time for behavior whose definition really
+includes time. When several tests prove fragments of one invariant, consolidate
+them. When a test owns neither production code nor a distinct failure signal,
+remove it.

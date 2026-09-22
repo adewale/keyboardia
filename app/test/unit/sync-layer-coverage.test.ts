@@ -399,36 +399,6 @@ describe('Sync Layer Properties', () => {
 });
 
 // ============================================================================
-// Summary Statistics
-// ============================================================================
-
-describe('Sync Coverage Summary', () => {
-  it('reports coverage statistics', () => {
-    const totalSynced = SYNCED_ACTIONS.size;
-    const nonStandard = NON_STANDARD_SYNC_ACTIONS.size;
-    const unimplemented = KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS.size;
-    const implemented = totalSynced - nonStandard - unimplemented;
-
-    const coverage = ((implemented / totalSynced) * 100).toFixed(1);
-
-    console.log(`
-╔════════════════════════════════════════╗
-║       SYNC LAYER COVERAGE REPORT       ║
-╠════════════════════════════════════════╣
-║ Total SYNCED_ACTIONS:        ${String(totalSynced).padStart(8)} ║
-║ Standard sync (actionToMessage):${String(implemented).padStart(5)} ║
-║ Non-standard sync patterns:  ${String(nonStandard).padStart(8)} ║
-║ UNIMPLEMENTED (bugs):        ${String(unimplemented).padStart(8)} ║
-╠════════════════════════════════════════╣
-║ Coverage: ${coverage}%${' '.repeat(25 - coverage.length)}║
-╚════════════════════════════════════════╝
-    `);
-
-    expect(implemented).toBeGreaterThan(0);
-  });
-});
-
-// ============================================================================
 // Round-trip: does the server actually act on the message?
 //
 // Claim 4 in this file's header — "client -> server -> client produces correct

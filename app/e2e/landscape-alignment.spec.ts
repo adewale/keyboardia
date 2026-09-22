@@ -223,33 +223,6 @@ test.describe('Landscape Mobile Alignment', () => {
     expect(stepCellBox!.height).toBeGreaterThanOrEqual(EXPECTED_HEIGHT - HEIGHT_TOLERANCE);
     expect(stepCellBox!.height).toBeLessThanOrEqual(EXPECTED_HEIGHT + HEIGHT_TOLERANCE);
   });
-
-  test('screenshot comparison - visual alignment check', async ({ page }) => {
-    await addTrack(page, /808 Kick/);
-    await addTrack(page, /808 Snare/);
-
-    // Wait for tracks to be ready
-    await expect(page.locator('.track-row')).toHaveCount(2, { timeout: 5000 });
-
-    // Take a detailed screenshot of the track area
-    const tracksContainer = page.locator('.tracks, .sequencer-content').first();
-    await expect(tracksContainer).toBeVisible();
-
-    await tracksContainer.screenshot({
-      path: 'test-results/landscape-tracks-alignment.png'
-    });
-
-    // Also capture full viewport for context
-    await page.screenshot({
-      path: 'test-results/landscape-full-viewport.png',
-      fullPage: false
-    });
-
-    // Verify the test ran successfully by checking elements exist
-    await expect(page.locator('.mute-button').first()).toBeVisible();
-    await expect(page.locator('.solo-button').first()).toBeVisible();
-    await expect(page.locator('.step-cell').first()).toBeVisible();
-  });
 });
 
 test.describe('Modern Device Landscape Alignment', () => {
