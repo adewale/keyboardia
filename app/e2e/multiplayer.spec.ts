@@ -15,7 +15,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { BrowserContext, Page } from '@playwright/test';
+import { BrowserContext, Page, type WebSocketRoute } from '@playwright/test';
 import { test, expect, getBaseUrl, waitForAppReady, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 import { createE2EContext } from './browser-context';
@@ -318,16 +318,9 @@ test.describe('Multiplayer connection resilience', () => {
     const sessionId = result.id;
 
     const context = await createE2EContext(browser, browserName);
-    await context.addInitScript(() => {
-      const NativeWebSocket = window.WebSocket;
-      class TrackedWebSocket extends NativeWebSocket {
-        constructor(url: string | URL, protocols?: string | string[]) {
-          super(url, protocols);
-          const globals = window as unknown as { __testWebSockets__?: WebSocket[] };
-          (globals.__testWebSockets__ ??= []).push(this);
-        }
-      }
-      window.WebSocket = TrackedWebSocket;
+    const routedSockets: Array<{ client: WebSocketRoute; server: WebSocketRoute }> = [];
+    await context.routeWebSocket(/\/api\/sessions\/[^/]+\/ws(?:\?.*)?$/, (client) => {
+      routedSockets.push({ client, server: client.connectToServer() });
     });
     const page = await context.newPage();
     try {
@@ -335,27 +328,17 @@ test.describe('Multiplayer connection resilience', () => {
       await waitForAppReady(page);
       await expect(page.locator('.connection-status--connected')).toBeVisible();
 
-      const socketCount = await page.evaluate(() => (
-        (window as unknown as { __testWebSockets__?: WebSocket[] }).__testWebSockets__?.length ?? 0
-      ));
-      expect(socketCount).toBeGreaterThan(0);
-      const reconnected = page.waitForFunction((previousCount) => {
-        const sockets = (window as unknown as { __testWebSockets__?: WebSocket[] })
-          .__testWebSockets__ ?? [];
-        return sockets.length > previousCount
-          && sockets[sockets.length - 1].readyState === WebSocket.OPEN;
-      }, socketCount, { timeout: 10_000 });
-      await page.evaluate((socketIndex) => {
-        const socket = (window as unknown as { __testWebSockets__?: WebSocket[] })
-          .__testWebSockets__?.[socketIndex];
-        if (!socket) throw new Error('Test did not observe the collaboration WebSocket');
-        socket.close(4000, 'test disconnect');
-      }, socketCount - 1);
-      await page.waitForFunction((socketIndex) => (
-        (window as unknown as { __testWebSockets__?: WebSocket[] })
-          .__testWebSockets__?.[socketIndex]?.readyState === WebSocket.CLOSED
-      ), socketCount - 1, { timeout: 10_000 });
-      await reconnected;
+      await expect.poll(() => routedSockets.length).toBeGreaterThan(0);
+      const socketCount = routedSockets.length;
+      const initialSocket = routedSockets[socketCount - 1];
+      if (!initialSocket) throw new Error('Test did not observe the collaboration WebSocket');
+
+      // Close the routed browser side with an abnormal code. Playwright makes
+      // delivery of the close event deterministic while the app still handles
+      // it through the production client's abnormal-close reconnection path.
+      await initialSocket.client.close({ code: 1011, reason: 'test disconnect' });
+      await expect.poll(() => routedSockets.length, { timeout: 10_000 })
+        .toBeGreaterThan(socketCount);
 
       await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10_000 });
 
