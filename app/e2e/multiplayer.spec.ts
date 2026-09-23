@@ -15,7 +15,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { BrowserContext, Page } from '@playwright/test';
+import { BrowserContext, Page, type WebSocketRoute } from '@playwright/test';
 import { test, expect, getBaseUrl, waitForAppReady, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 import { createE2EContext } from './browser-context';
@@ -318,29 +318,44 @@ test.describe('Multiplayer connection resilience', () => {
     const sessionId = result.id;
 
     const context = await createE2EContext(browser, browserName);
+    const routedSockets: Array<{ client: WebSocketRoute; server: WebSocketRoute }> = [];
+    await context.routeWebSocket(/\/api\/sessions\/[^/]+\/ws(?:\?.*)?$/, (client) => {
+      routedSockets.push({ client, server: client.connectToServer() });
+    });
     const page = await context.newPage();
+    try {
+      await page.goto(`${baseUrl}/s/${sessionId}`);
+      await waitForAppReady(page);
+      await expect(page.locator('.connection-status--connected')).toBeVisible();
 
-    // Load session using proper waits
-    await page.goto(`${baseUrl}/s/${sessionId}`);
-    await waitForAppReady(page);
+      await expect.poll(() => routedSockets.length).toBeGreaterThan(0);
+      const socketCount = routedSockets.length;
+      const initialSocket = routedSockets[socketCount - 1];
+      if (!initialSocket) throw new Error('Test did not observe the collaboration WebSocket');
 
-    // Simulate network going offline briefly
-    await context.setOffline(true);
-    // Brief offline period
-    await page.waitForTimeout(1000);
+      // Close the routed browser side with an abnormal code. Playwright makes
+      // delivery of the close event deterministic while the app still handles
+      // it through the production client's abnormal-close reconnection path.
+      await initialSocket.client.close({ code: 1011, reason: 'test disconnect' });
+      await expect.poll(() => routedSockets.length, { timeout: 10_000 })
+        .toBeGreaterThan(socketCount);
 
-    // Come back online
-    await context.setOffline(false);
-    // Wait for reconnection
-    await page.waitForLoadState('networkidle');
+      await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10_000 });
 
-    // Should still be able to interact
-    const step0 = page.locator('.step-cell').first();
-    await expect(step0).toBeVisible({ timeout: 5000 });
-    await step0.click();
-    await expect(step0).toHaveClass(/active/, { timeout: 5000 });
-
-    await context.close();
+      // Mutate only after the reconnection signal is observable; otherwise a
+      // local optimistic update could make a broken reconnect look healthy.
+      const step0 = page.locator('.step-cell').first();
+      await expect(step0).toBeVisible({ timeout: 5000 });
+      await step0.click();
+      await expect(step0).toHaveClass(/active/, { timeout: 5000 });
+      await expect.poll(async () => {
+        const stored = await request.get(`${baseUrl}/api/sessions/${sessionId}`);
+        if (!stored.ok()) return null;
+        return (await stored.json()).state.tracks[0].steps[0];
+      }, { timeout: 12_000 }).toBe(true);
+    } finally {
+      await context.close();
+    }
   });
 });
 

@@ -95,6 +95,35 @@ async function getActiveStepIndices(page: Page, trackIndex = 0): Promise<number[
   return activeIndices;
 }
 
+async function expectConnected(page: Page) {
+  await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10_000 });
+}
+
+async function expectActiveStepIndices(
+  page: Page,
+  expected: number[],
+  trackIndex = 0,
+) {
+  await expect.poll(
+    () => getActiveStepIndices(page, trackIndex),
+    { timeout: 10_000 },
+  ).toEqual(expected);
+}
+
+async function getPersistedActiveStepIndices(
+  request: APIRequestContext,
+  sessionId: string,
+): Promise<number[] | null> {
+  const response = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
+  if (!response.ok()) return null;
+  const session = await response.json();
+  const track = session.state?.tracks?.[0];
+  if (!track) return null;
+  return track.steps
+    .slice(0, track.stepCount)
+    .flatMap((active: boolean, index: number) => active ? [index] : []);
+}
+
 // ============================================================================
 // SECTION 1: Core Mutation Operations
 // ============================================================================
@@ -132,8 +161,10 @@ test.describe('Core mutations (delegated to applyMutation)', () => {
     await step2.click();
     await expect(step2).toHaveClass(/active/);
 
-    // Wait for sync
-    await page.waitForTimeout(500);
+    await expect.poll(
+      () => getPersistedActiveStepIndices(request, id),
+      { timeout: 12_000 },
+    ).toEqual([0, 2, 4, 8, 12]);
 
     // Refresh
     await page.reload();
@@ -252,10 +283,14 @@ test.describe('Pattern operations (single client)', () => {
     await openPatternTools(page);
     const rotateRight = page.locator('.pattern-tool-btn[title="Rotate pattern right (wrap)"]');
     await rotateRight.click();
-    await page.waitForTimeout(500);
 
     const afterRotate = await getActiveStepIndices(page);
     expect(afterRotate).toEqual([1, 5, 9, 13]);
+
+    await expect.poll(
+      () => getPersistedActiveStepIndices(request, id),
+      { timeout: 12_000 },
+    ).toEqual([1, 5, 9, 13]);
 
     // Refresh
     await page.reload();
@@ -336,118 +371,92 @@ test.describe('Pattern operations sync in multiplayer', () => {
   test('rotate pattern syncs to other client', async ({ request }) => {
     const { id } = await createTestSession(request);
 
-    // Load both clients
-    await page1.goto(`${API_BASE}/s/${id}`);
-    await page1.waitForLoadState('networkidle');
-    await page1.waitForTimeout(1500);
-
-    await page2.goto(`${API_BASE}/s/${id}`);
-    await page2.waitForLoadState('networkidle');
-    await page2.waitForTimeout(1500);
+    await Promise.all([
+      page1.goto(`${API_BASE}/s/${id}`),
+      page2.goto(`${API_BASE}/s/${id}`),
+    ]);
+    await Promise.all([expectConnected(page1), expectConnected(page2)]);
 
     // Verify both start with same pattern
-    const initial1 = await getActiveStepIndices(page1);
-    const initial2 = await getActiveStepIndices(page2);
-    expect(initial1).toEqual([0, 4, 8, 12]);
-    expect(initial2).toEqual([0, 4, 8, 12]);
+    await Promise.all([
+      expectActiveStepIndices(page1, [0, 4, 8, 12]),
+      expectActiveStepIndices(page2, [0, 4, 8, 12]),
+    ]);
 
     // Client 1 rotates right
     await openPatternTools(page1);
     const rotateRight = page1.locator('.pattern-tool-btn[title="Rotate pattern right (wrap)"]');
     await rotateRight.click();
 
-    // Wait for sync
-    await page1.waitForTimeout(1000);
-
-    // Verify client 1 changed
-    const after1 = await getActiveStepIndices(page1);
-    expect(after1).toEqual([1, 5, 9, 13]);
-
     // Verify client 2 received the sync (THIS WAS BROKEN BEFORE PHASE 2)
-    await page2.waitForTimeout(500);
-    const after2 = await getActiveStepIndices(page2);
-    expect(after2).toEqual([1, 5, 9, 13]);
+    await Promise.all([
+      expectActiveStepIndices(page1, [1, 5, 9, 13]),
+      expectActiveStepIndices(page2, [1, 5, 9, 13]),
+    ]);
   });
 
   test('invert pattern syncs to other client', async ({ request }) => {
     const { id } = await createTestSession(request);
 
-    await page1.goto(`${API_BASE}/s/${id}`);
-    await page1.waitForLoadState('networkidle');
-    await page1.waitForTimeout(1500);
-
-    await page2.goto(`${API_BASE}/s/${id}`);
-    await page2.waitForLoadState('networkidle');
-    await page2.waitForTimeout(1500);
+    await Promise.all([
+      page1.goto(`${API_BASE}/s/${id}`),
+      page2.goto(`${API_BASE}/s/${id}`),
+    ]);
+    await Promise.all([expectConnected(page1), expectConnected(page2)]);
 
     // Client 1 inverts
     await openPatternTools(page1);
     const invert = page1.locator('.pattern-tool-btn[title="Invert pattern (toggle all steps)"]');
     await invert.click();
 
-    await page1.waitForTimeout(1000);
-
-    // Verify both clients have inverted pattern
-    const after1 = await getActiveStepIndices(page1);
-    const after2 = await getActiveStepIndices(page2);
-
-    expect(after1.length).toBe(12);
-    expect(after2.length).toBe(12);
-    expect(after1).toEqual(after2);
+    const inverted = [1, 2, 3, 5, 6, 7, 9, 10, 11, 13, 14, 15];
+    await Promise.all([
+      expectActiveStepIndices(page1, inverted),
+      expectActiveStepIndices(page2, inverted),
+    ]);
   });
 
   test('reverse pattern syncs to other client', async ({ request }) => {
     const { id } = await createTestSession(request);
 
-    await page1.goto(`${API_BASE}/s/${id}`);
-    await page1.waitForLoadState('networkidle');
-    await page1.waitForTimeout(1500);
-
-    await page2.goto(`${API_BASE}/s/${id}`);
-    await page2.waitForLoadState('networkidle');
-    await page2.waitForTimeout(1500);
+    await Promise.all([
+      page1.goto(`${API_BASE}/s/${id}`),
+      page2.goto(`${API_BASE}/s/${id}`),
+    ]);
+    await Promise.all([expectConnected(page1), expectConnected(page2)]);
 
     // Client 1 reverses
     await openPatternTools(page1);
     const reverse = page1.locator('.pattern-tool-btn[title="Reverse pattern"]');
     await reverse.click();
 
-    await page1.waitForTimeout(1000);
-
-    // Verify both clients have reversed pattern
-    const after1 = await getActiveStepIndices(page1);
-    const after2 = await getActiveStepIndices(page2);
-
-    expect(after1.sort((a, b) => a - b)).toEqual([3, 7, 11, 15]);
-    expect(after2.sort((a, b) => a - b)).toEqual([3, 7, 11, 15]);
+    await Promise.all([
+      expectActiveStepIndices(page1, [3, 7, 11, 15]),
+      expectActiveStepIndices(page2, [3, 7, 11, 15]),
+    ]);
   });
 
   test('multiple pattern operations sync correctly', async ({ request }) => {
     const { id } = await createTestSession(request);
 
-    await page1.goto(`${API_BASE}/s/${id}`);
-    await page1.waitForLoadState('networkidle');
-    await page1.waitForTimeout(1500);
-
-    await page2.goto(`${API_BASE}/s/${id}`);
-    await page2.waitForLoadState('networkidle');
-    await page2.waitForTimeout(1500);
+    await Promise.all([
+      page1.goto(`${API_BASE}/s/${id}`),
+      page2.goto(`${API_BASE}/s/${id}`),
+    ]);
+    await Promise.all([expectConnected(page1), expectConnected(page2)]);
 
     await openPatternTools(page1);
 
     // Client 1: rotate right twice
     const rotateRight = page1.locator('.pattern-tool-btn[title="Rotate pattern right (wrap)"]');
     await rotateRight.click();
-    await page1.waitForTimeout(500);
+    await expectActiveStepIndices(page1, [1, 5, 9, 13]);
     await rotateRight.click();
-    await page1.waitForTimeout(1000);
 
-    // Should be [2, 6, 10, 14]
-    const after1 = await getActiveStepIndices(page1);
-    const after2 = await getActiveStepIndices(page2);
-
-    expect(after1).toEqual([2, 6, 10, 14]);
-    expect(after2).toEqual([2, 6, 10, 14]);
+    await Promise.all([
+      expectActiveStepIndices(page1, [2, 6, 10, 14]),
+      expectActiveStepIndices(page2, [2, 6, 10, 14]),
+    ]);
   });
 });
 
@@ -497,28 +506,34 @@ test.describe('Selection invalidation after pattern operations', () => {
 // ============================================================================
 
 test.describe('Track operations', () => {
-  test('add track appears and syncs', async ({ page, request }) => {
+  test('add track appears and syncs', async ({ browser, browserName, request }) => {
     const { id } = await createTestSession(request);
-    await page.goto(`${API_BASE}/s/${id}`);
-    await page.waitForLoadState('networkidle');
-    // Wait for WebSocket connection to ensure state is fully synced
-    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    const senderContext = await createE2EContext(browser, browserName);
+    const receiverContext = await createE2EContext(browser, browserName);
+    try {
+      const sender = await senderContext.newPage();
+      const receiver = await receiverContext.newPage();
+      await Promise.all([
+        sender.goto(`${API_BASE}/s/${id}`),
+        receiver.goto(`${API_BASE}/s/${id}`),
+      ]);
+      await Promise.all([expectConnected(sender), expectConnected(receiver)]);
+      await Promise.all([
+        expect(sender.locator('.track-row')).toHaveCount(1),
+        expect(receiver.locator('.track-row')).toHaveCount(1),
+      ]);
 
-    // Start with 1 track
-    const tracksBefore = await page.locator('.track-row').count();
-    expect(tracksBefore).toBe(1);
-
-    // Add a track by clicking an instrument button in the picker
-    // The instrument picker should be visible after loading
-    const instrumentBtn = page.getByRole('button', { name: /808 Snare/ }).first();
-    if (await instrumentBtn.isVisible({ timeout: 2000 })) {
+      const instrumentBtn = sender.getByRole('button', { name: /808 Snare/ }).first();
+      await expect(instrumentBtn).toBeVisible();
       await instrumentBtn.click();
-      await page.waitForTimeout(500);
+      await Promise.all([
+        expect(sender.locator('.track-row')).toHaveCount(2),
+        expect(receiver.locator('.track-row')).toHaveCount(2),
+      ]);
+    } finally {
+      await senderContext.close();
+      await receiverContext.close();
     }
-
-    // Should now have 2 tracks
-    const tracksAfter = await page.locator('.track-row').count();
-    expect(tracksAfter).toBe(2);
   });
 
   test('clear track removes all steps', async ({ page, request }) => {
@@ -592,11 +607,12 @@ test.describe('Edge cases', () => {
       await page.waitForTimeout(50); // Small delay between clicks
     }
 
-    await page.waitForTimeout(500);
-
-    // All 8 steps should be active
-    const activeSteps = await getActiveStepIndices(page);
-    expect(activeSteps).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    const expected = [0, 1, 2, 3, 4, 5, 6, 7];
+    await expectActiveStepIndices(page, expected);
+    await expect.poll(
+      () => getPersistedActiveStepIndices(request, id),
+      { timeout: 12_000 },
+    ).toEqual(expected);
 
     // Verify persistence
     await page.reload();
@@ -604,8 +620,7 @@ test.describe('Edge cases', () => {
     // Wait for WebSocket connection to ensure state is fully synced
     await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
-    const afterRefresh = await getActiveStepIndices(page);
-    expect(afterRefresh).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    await expectActiveStepIndices(page, expected);
   });
 
   test('pattern operations on empty track', async ({ page, request }) => {

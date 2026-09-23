@@ -8,29 +8,29 @@
  */
 
 import { test, expect, devices, waitForAppReady } from './global-setup';
+import { createPopulatedSessionWithRetry } from './test-utils';
 
-// Device configuration must be at top level
-test.use(devices['Pixel 7']);
+// Keep the Pixel viewport, user agent, and touch model without replacing the
+// selected Playwright project's browser. The full device descriptor includes
+// `defaultBrowserType: chromium`, which made this test launch Chromium even
+// when the release matrix collected it as part of the WebKit project.
+const { defaultBrowserType: _projectBrowserOverride, ...pixel7 } = devices['Pixel 7'];
+test.use(pixel7);
 
 test.describe('Android Mobile', () => {
-  test('app works on Android', async ({ page }) => {
-    await page.goto('/');
+  test('pages through a populated pattern on Android', async ({ page, request }) => {
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
 
-    const mainContent = page.locator('.App, main, #root').first();
-    await expect(mainContent).toBeVisible();
-
-    const stepCell = page.locator('.step-cell').first();
-    if (await stepCell.isVisible()) {
-      await stepCell.tap();
-
-      await expect.poll(async () => {
-        const [className, pressed] = await Promise.all([
-          stepCell.getAttribute('class'),
-          stepCell.getAttribute('aria-pressed'),
-        ]);
-        return className?.split(/\s+/).includes('active') || pressed === 'true';
-      }, { timeout: 1000 }).toBe(true);
-    }
+    await expect(page.locator('.portrait-track-row')).toHaveCount(10);
+    const secondPage = page.getByRole('button', { name: 'View steps 9-16' });
+    await secondPage.tap();
+    await expect(secondPage).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.portrait-step-number')).toHaveText([
+      '9', '10', '11', '12', '13', '14', '15', '16',
+    ]);
+    await expect(page.locator('.portrait-track-row').first().locator('.portrait-step-cell').first())
+      .toHaveClass(/active/);
   });
 });

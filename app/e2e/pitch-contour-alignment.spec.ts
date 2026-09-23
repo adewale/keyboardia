@@ -32,29 +32,42 @@ test.describe('PitchContour alignment', () => {
     await page.setViewportSize({ width: 1280, height: 800 });
   });
 
-  test('CSS dimensions match JavaScript constants (CRITICAL regression test)', async ({ page }) => {
+  test('CSS dimensions match JavaScript constants (CRITICAL regression test)', async ({
+    page,
+    request,
+  }) => {
     /**
      * This test extracts actual CSS values at runtime and compares to expected values.
      * If CSS changes, this test will fail and alert developers to update JS constants in:
      * - src/components/ChromaticGrid.tsx (cellWidth constant)
      * - src/components/PitchContour.test.ts (CELL_WIDTH constant)
      */
-    await page.goto('/');
+    // Seed the state this assertion needs directly. Going through the landing
+    // page and instrument picker made an unrelated session-creation click part
+    // of this CSS contract and occasionally left WebKit on the landing page.
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'css-dimensions-track',
+          name: 'CSS Dimensions',
+          sampleId: 'sampled:808-kick',
+          steps: Array(128).fill(false),
+          parameterLocks: Array(128).fill(null),
+          volume: 0.7,
+          pan: 0,
+          muted: false,
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    });
+    await page.goto(`/s/${sessionId}`);
 
-    // Click "Start Session" to enter sequencer
-    const startButton = page.locator('button:has-text("Start Session")');
-    if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await startButton.click();
-      await page.waitForURL(/\/s\//, { timeout: 10000 });
-    }
-
-    // Wait for WebSocket connection before adding tracks
+    // Wait for the seeded track to finish loading and synchronizing.
     await waitForCollaborationReady(page);
-
-    // Add a track to get step cells (button has star prefix like "★ 808 Kick")
-    const addTrackButton = page.getByRole('button', { name: /808 Kick/i });
-    await expect(addTrackButton).toBeVisible({ timeout: 5000 });
-    await addTrackButton.click();
 
     // Wait for track row and step cells to appear (may take a moment for track to render)
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 10000 });

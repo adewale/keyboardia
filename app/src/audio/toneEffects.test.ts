@@ -521,26 +521,3 @@ describe('DEFAULT_EFFECTS_STATE', () => {
     expect(DEFAULT_EFFECTS_STATE.distortion.amount).toBeLessThanOrEqual(1);
   });
 });
-
-describe('EffectsState type', () => {
-  it('matches the spec format for session state', () => {
-    const state: EffectsState = {
-      reverb: { decay: 2.5, wet: 0.4 },
-      delay: { time: '8n', feedback: 0.3, wet: 0.25 },
-      chorus: { frequency: 1.5, depth: 0.5, wet: 0.2 },
-      distortion: { amount: 0.3, wet: 0.15 },
-    };
-
-    // Verify all required fields are present
-    expect(state.reverb).toHaveProperty('decay');
-    expect(state.reverb).toHaveProperty('wet');
-    expect(state.delay).toHaveProperty('time');
-    expect(state.delay).toHaveProperty('feedback');
-    expect(state.delay).toHaveProperty('wet');
-    expect(state.chorus).toHaveProperty('frequency');
-    expect(state.chorus).toHaveProperty('depth');
-    expect(state.chorus).toHaveProperty('wet');
-    expect(state.distortion).toHaveProperty('amount');
-    expect(state.distortion).toHaveProperty('wet');
-  });
-});

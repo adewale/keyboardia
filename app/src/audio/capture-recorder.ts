@@ -22,6 +22,11 @@ export interface MasterCapture {
   taps: Record<MasterCaptureTapName, CapturedTap>;
 }
 
+export interface MasterCaptureArm {
+  startFrame: number;
+  frameCount: number;
+}
+
 interface CaptureChunkMessage {
   type: 'chunk';
   absoluteFrame: number;
@@ -78,6 +83,7 @@ export class MasterCaptureRecorder {
     nodes: MasterCaptureTapNodes,
     seconds: number,
     leadSeconds = 0.05,
+    onArmed?: (arm: MasterCaptureArm) => void,
   ): Promise<MasterCapture> {
     if (!this.context) {
       const context = nodes.preCompressor.context as AudioContext;
@@ -94,6 +100,7 @@ export class MasterCaptureRecorder {
     const requestedStart = Math.ceil((this.context.currentTime + leadSeconds) * this.context.sampleRate);
     const startFrame = Math.ceil(requestedStart / 128) * 128;
     const chunks: CaptureChunkMessage[] = [];
+    let armedRange: MasterCaptureArm | null = null;
 
     return new Promise<MasterCapture>((resolve, reject) => {
       const timeout = window.setTimeout(() => {
@@ -103,6 +110,14 @@ export class MasterCaptureRecorder {
       }, (seconds + leadSeconds + 5) * 1_000);
 
       this.node!.port.onmessage = (event: MessageEvent<CaptureMessage>) => {
+        if (event.data.type === 'armed') {
+          armedRange = {
+            startFrame: event.data.startFrame,
+            frameCount: event.data.frameCount,
+          };
+          onArmed?.(armedRange);
+          return;
+        }
         if (event.data.type === 'chunk') {
           chunks.push(event.data);
           return;
@@ -110,14 +125,29 @@ export class MasterCaptureRecorder {
         if (event.data.type !== 'done') return;
         window.clearTimeout(timeout);
         this.disconnectTaps();
-        if (event.data.reason !== 'complete' || event.data.capturedFrames !== frameCount) {
+        if (!armedRange) {
+          reject(new Error('Master capture completed before acknowledging its armed frame range'));
+          return;
+        }
+        if (event.data.startFrame !== armedRange.startFrame
+          || event.data.frameCount !== armedRange.frameCount) {
+          reject(new Error('Master capture completion does not match its acknowledged frame range'));
+          return;
+        }
+        if (event.data.reason !== 'complete'
+          || event.data.capturedFrames !== armedRange.frameCount) {
           reject(new Error(
-            `Incomplete master capture: ${event.data.capturedFrames}/${frameCount} frames (${event.data.reason})`,
+            `Incomplete master capture: ${event.data.capturedFrames}/${armedRange.frameCount} frames (${event.data.reason})`,
           ));
           return;
         }
         try {
-          resolve(assembleCapture(this.context!.sampleRate, startFrame, frameCount, chunks));
+          resolve(assembleCapture(
+            this.context!.sampleRate,
+            armedRange.startFrame,
+            armedRange.frameCount,
+            chunks,
+          ));
         } catch (error) {
           reject(error);
         }

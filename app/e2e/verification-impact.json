@@ -1,0 +1,133 @@
+{
+  "schemaVersion": 1,
+  "description": "Conservative change-impact inventory for T1 verification. Unmatched code or configuration changes select every T1 profile; documentation and retained evidence do not select browser work.",
+  "ignoredPrefixes": [
+    "artifacts/",
+    "docs/",
+    "specs/"
+  ],
+  "ignoredFiles": [
+    ".gitignore",
+    "LICENSE",
+    "README.md"
+  ],
+  "profiles": {
+    "browser": {
+      "prefixes": [
+        "app/e2e/",
+        "app/src/"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/playwright.config.ts",
+        "app/vite.config.ts"
+      ]
+    },
+    "worker": {
+      "prefixes": [
+        "app/e2e/",
+        "app/src/context/",
+        "app/src/hooks/",
+        "app/src/music/",
+        "app/src/shared/",
+        "app/src/state/",
+        "app/src/sync/",
+        "app/src/worker/",
+        "app/test/integration/"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/src/App.tsx",
+        "app/tsconfig.worker.json",
+        "app/wrangler.jsonc"
+      ]
+    },
+    "audio": {
+      "prefixes": [
+        "app/e2e/",
+        "app/src/audio/",
+        "app/src/shared/envelope",
+        "app/src/test/envelope",
+        "app/src/test/pcm"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/playwright.config.ts",
+        "app/vite.config.ts"
+      ]
+    },
+    "visual": {
+      "prefixes": [
+        "app/e2e/",
+        "app/src/components/",
+        "app/src/debug/",
+        "app/src/stack-a-catalog/"
+      ],
+      "files": [
+        "app/src/App.css",
+        "app/src/App.tsx",
+        "app/src/index.css",
+        "app/src/motion.css",
+        "app/playwright.config.ts",
+        "app/vite.config.ts"
+      ]
+    },
+    "samples": {
+      "prefixes": [
+        "app/public/instruments/",
+        "app/sample-lab/",
+        "app/sample-pipeline/",
+        "app/src/audio/sample",
+        "app/src/audio/instrument",
+        "app/test/sample",
+        "app/scripts/sample",
+        "app/scripts/validate-sample"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/src/audio/audio-time.ts",
+        "app/src/audio/constants.ts",
+        "app/src/audio/parameter-automation.ts",
+        "app/src/audio/velocity-sample-filter.ts",
+        "app/src/audio/velocity-filter-anchors-48000.json",
+        "app/src/audio/velocity-filter-anchors.json",
+        "app/src/shared/constants.ts",
+        "app/src/shared/instrument-catalog.ts",
+        "app/src/shared/instrument-classification.ts",
+        "app/src/test/audio-measures.ts"
+      ]
+    },
+    "mobile": {
+      "prefixes": [
+        "app/e2e/mobile-",
+        "app/src/components/Orientation",
+        "app/src/components/Portrait"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/playwright.config.ts",
+        "app/src/App.css",
+        "app/src/App.tsx",
+        "app/src/index.css",
+        "app/src/motion.css"
+      ]
+    }
+  },
+  "selectAllFiles": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/ruff.yml",
+    "app/.husky/pre-push",
+    "app/e2e/lane-contracts.json",
+    "app/e2e/lane-identities.json",
+    "app/e2e/verification-impact.json",
+    "app/scripts/assert-playwright-stats.mjs",
+    "app/scripts/check-e2e-inventories.mjs",
+    "app/scripts/playwright-contract-identities.mjs",
+    "app/scripts/select-verification-scope.mjs"
+  ]
+}

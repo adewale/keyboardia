@@ -449,7 +449,6 @@ test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', 
       __captureMaster__: (seconds: number) => Promise<Capture>;
     }).__captureMaster__;
     const capture = await captureMaster(0.75);
-    const repeatCapture = await captureMaster(0.75);
     const summaries = Object.fromEntries(Object.entries(capture.taps).map(([name, tap]) => {
       const channel = tap.channels[0];
       let peak = 0;
@@ -470,42 +469,12 @@ test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', 
         rms: Math.sqrt(energy / Math.max(1, sampleCount)),
       }];
     }));
-    const repeatSource = capture.taps.preCompressor.channels[0];
-    const repeatTarget = repeatCapture.taps.preCompressor.channels[0];
-    const strongestFrame = (data: Float32Array) => {
-      let strongest = 0;
-      for (let frame = 1; frame < data.length; frame++) {
-        if (Math.abs(data[frame]) > Math.abs(data[strongest])) strongest = frame;
-      }
-      return strongest;
-    };
-    const repeatSourceStart = strongestFrame(repeatSource);
-    const repeatTargetStart = strongestFrame(repeatTarget);
-    const repeatAlignmentFrames = repeatTargetStart - repeatSourceStart;
-    const repeatFrames = Math.min(
-      repeatSource.length - repeatSourceStart,
-      repeatTarget.length - repeatTargetStart,
-      Math.round(0.5 * capture.sampleRate),
-    );
-    let sourceEnergy = 0;
-    let residualEnergy = 0;
-    for (let frame = 0; frame < repeatFrames; frame++) {
-      const sourceValue = repeatSource[repeatSourceStart + frame];
-      const targetValue = repeatTarget[repeatTargetStart + frame];
-      sourceEnergy += sourceValue ** 2;
-      residualEnergy += (sourceValue - targetValue) ** 2;
-    }
-    const sameBuildRepeatNullResidualDb = 10 * Math.log10(
-      Math.max(residualEnergy, 1e-24) / Math.max(sourceEnergy, 1e-24),
-    );
     return {
       sampleRate: capture.sampleRate,
       startFrame: capture.startFrame,
       frameCount: capture.frameCount,
       maxRenderFrameDrift: capture.maxRenderFrameDrift,
       summaries,
-      sameBuildRepeatNullResidualDb,
-      repeatAlignmentFrames,
     };
   });
 
@@ -548,10 +517,57 @@ test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', 
     const globals = window as unknown as {
       __audioEngine__: Engine;
       __captureMaster__: (seconds: number) => Promise<Capture>;
+      __captureMasterArmed__?: Promise<{ startFrame: number; frameCount: number }>;
     };
     const context = globals.__audioEngine__.getAudioContext();
     const masterInput = globals.__audioEngine__.masterGain;
     if (!context || !masterInput) throw new Error('Master input unavailable for calibration');
+
+    // The transport pattern is not a stable null fixture: adjacent captures
+    // can begin on different kick/hat phases. Drive the same sample-aligned
+    // buffer twice through the real pre-compressor tap instead, so a repeat
+    // mismatch measures capture integrity rather than sequencer phase.
+    const repeatBuffer = context.createBuffer(
+      1,
+      Math.round(0.1 * context.sampleRate),
+      context.sampleRate,
+    );
+    const repeatPcm = repeatBuffer.getChannelData(0);
+    for (let frame = 0; frame < repeatPcm.length; frame++) {
+      repeatPcm[frame] = 0.03 * Math.sin(2 * Math.PI * 997 * frame / context.sampleRate);
+    }
+    const captureRepeatProbe = async () => {
+      const capturePromise = globals.__captureMaster__(0.3);
+      await new Promise(resolve => setTimeout(resolve, 0));
+      const armedPromise = globals.__captureMasterArmed__;
+      if (!armedPromise) throw new Error('Master capture did not publish its armed range');
+      const armed = await armedPromise;
+      const source = context.createBufferSource();
+      source.buffer = repeatBuffer;
+      source.connect(masterInput);
+      const sourceStartFrame = Math.ceil(
+        (context.currentTime + 0.05) * context.sampleRate / 128,
+      ) * 128;
+      source.start(sourceStartFrame / context.sampleRate);
+      const captured = await capturePromise;
+      const captureOffset = sourceStartFrame - armed.startFrame;
+      if (captureOffset < 0 || captureOffset + repeatPcm.length > captured.frameCount) {
+        throw new Error('Repeat probe lies outside its acknowledged capture range');
+      }
+      return captured.taps.preCompressor.channels[0]
+        .slice(captureOffset, captureOffset + repeatPcm.length);
+    };
+    const repeatSource = await captureRepeatProbe();
+    const repeatTarget = await captureRepeatProbe();
+    let repeatSourceEnergy = 0;
+    let repeatResidualEnergy = 0;
+    for (let frame = 0; frame < repeatSource.length; frame++) {
+      repeatSourceEnergy += repeatSource[frame] ** 2;
+      repeatResidualEnergy += (repeatSource[frame] - repeatTarget[frame]) ** 2;
+    }
+    const sameBuildRepeatNullResidualDb = 10 * Math.log10(
+      Math.max(repeatResidualEnergy, 1e-24) / Math.max(repeatSourceEnergy, 1e-24),
+    );
 
     const now = context.currentTime;
     const impulseBuffer = context.createBuffer(1, 1, context.sampleRate);
@@ -674,6 +690,8 @@ test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', 
       ...post.slice(capacityStart + latencyFrames, capacityEnd + latencyFrames).map(Math.abs),
     );
     return {
+      sameBuildRepeatNullResidualDb,
+      repeatAlignmentFrames: 0,
       latencyFrames,
       throughGainDb,
       maxAttenuationDb,
@@ -685,7 +703,7 @@ test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', 
   });
 
   console.log('master capture calibration', calibration);
-  expect(result.sameBuildRepeatNullResidualDb).toBeLessThanOrEqual(-60);
+  expect(calibration.sameBuildRepeatNullResidualDb).toBeLessThanOrEqual(-60);
   expect(Math.abs(calibration.throughGainDb)).toBeLessThanOrEqual(0.1);
   expect(calibration.latencyFrames).toBeLessThan(result.sampleRate * 0.02);
   expect(calibration.maxAttenuationDb).toBeLessThanOrEqual(4);
@@ -698,6 +716,8 @@ test('captures synchronized pre-compressor, post-makeup, and heard-output PCM', 
       schemaVersion: 1,
       fixture: 'two-track deterministic capture probe plus controlled master-chain canary',
       ...result,
+      sameBuildRepeatNullResidualDb: calibration.sameBuildRepeatNullResidualDb,
+      repeatAlignmentFrames: calibration.repeatAlignmentFrames,
       calibration,
     }, null, 2) + '\n',
   );
@@ -756,7 +776,12 @@ test('captures sampled first-use timing through the central dispatch policy', as
       user: Array.from(capture.taps.userOutput.channels[0]),
     };
   });
-  await page.waitForTimeout(100);
+  await page.waitForFunction(async () => {
+    const armed = await (window as unknown as {
+      __captureMasterArmed__?: Promise<{ startFrame: number; frameCount: number }>;
+    }).__captureMasterArmed__;
+    return Boolean(armed && armed.startFrame >= 0 && armed.frameCount > 0);
+  }, undefined, { timeout: 30_000 });
   const playButton = page
     .locator('[data-testid="play-button"]')
     .or(page.getByRole('button', { name: /play/i }))

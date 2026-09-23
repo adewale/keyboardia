@@ -28,9 +28,20 @@ test.describe('Mobile Layout (iPhone)', () => {
     await waitForAppReady(page);
   });
 
-  test('app is usable on mobile viewport', async ({ page }) => {
-    const mainContent = page.locator('.App, main, #root').first();
-    await expect(mainContent).toBeVisible();
+  test('a long pattern stays usable through its final page', async ({ page, request }) => {
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
+    await waitForAppReady(page);
+    await expect(page.locator('.portrait-track-row')).toHaveCount(10);
+
+    const finalPage = page.getByRole('button', { name: 'View steps 25-27' });
+    await finalPage.tap();
+    await expect(finalPage).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.portrait-step-number')).toHaveText([
+      '25', '26', '27', '', '', '', '', '',
+    ]);
+    await expect(page.locator('.portrait-track-row').first().locator('.portrait-step-cell').first())
+      .toHaveClass(/active/);
 
     const bodyWidth = await page.evaluate(() => document.body.scrollWidth);
     const viewportWidth = await page.evaluate(() => window.innerWidth);

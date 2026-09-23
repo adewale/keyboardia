@@ -25,7 +25,17 @@ import {
 } from '../../src/sync/sync-classification';
 import { actionToMessage } from '../../src/sync/multiplayer';
 import { applyMutation } from '../../src/shared/state-mutations';
-import type { GridAction, Track, ParameterLock, EffectsState, ScaleState, FMParams } from '../../src/types';
+import { gridReducer } from '../../src/state/grid';
+import { gridStateToSessionState } from '../../src/state/state-adapters';
+import type {
+  GridAction,
+  GridState,
+  Track,
+  ParameterLock,
+  EffectsState,
+  ScaleState,
+  FMParams,
+} from '../../src/types';
 import type { SessionState } from '../../src/shared/state';
 import type { ClientMessageBase as _ClientMessageBase } from '../../src/shared/message-types';
 
@@ -399,36 +409,6 @@ describe('Sync Layer Properties', () => {
 });
 
 // ============================================================================
-// Summary Statistics
-// ============================================================================
-
-describe('Sync Coverage Summary', () => {
-  it('reports coverage statistics', () => {
-    const totalSynced = SYNCED_ACTIONS.size;
-    const nonStandard = NON_STANDARD_SYNC_ACTIONS.size;
-    const unimplemented = KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS.size;
-    const implemented = totalSynced - nonStandard - unimplemented;
-
-    const coverage = ((implemented / totalSynced) * 100).toFixed(1);
-
-    console.log(`
-╔════════════════════════════════════════╗
-║       SYNC LAYER COVERAGE REPORT       ║
-╠════════════════════════════════════════╣
-║ Total SYNCED_ACTIONS:        ${String(totalSynced).padStart(8)} ║
-║ Standard sync (actionToMessage):${String(implemented).padStart(5)} ║
-║ Non-standard sync patterns:  ${String(nonStandard).padStart(8)} ║
-║ UNIMPLEMENTED (bugs):        ${String(unimplemented).padStart(8)} ║
-╠════════════════════════════════════════╣
-║ Coverage: ${coverage}%${' '.repeat(25 - coverage.length)}║
-╚════════════════════════════════════════╝
-    `);
-
-    expect(implemented).toBeGreaterThan(0);
-  });
-});
-
-// ============================================================================
 // Round-trip: does the server actually act on the message?
 //
 // Claim 4 in this file's header — "client -> server -> client produces correct
@@ -438,9 +418,10 @@ describe('Sync Coverage Summary', () => {
 //
 // This is the exact bug class the header cites: Phase 31B listed pattern
 // operations in SYNCED_ACTIONS, nothing wired them up, and the gap shipped. An
-// action can produce a perfectly well-formed message that applyMutation does
-// not handle, and every other test in this file still passes — SL-001 only
-// asks that the message is non-null.
+// action can produce a perfectly well-formed message with the wrong field or
+// target and every other test in this file still passes — SL-001 only asks
+// that the message is non-null. The oracle below compares the complete remote
+// result with the local reducer's result, including all unrelated state.
 // ============================================================================
 
 /** A session with enough shape for any mutation to have something to act on. */
@@ -491,6 +472,88 @@ function roundTripState(): SessionState {
   } as SessionState;
 }
 
+const ROOT_FIELDS_BY_ACTION: Record<string, string[]> = {
+  SET_TEMPO: ['tempo'],
+  SET_SWING: ['swing'],
+  SET_EFFECTS: ['effects'],
+  SET_SCALE: ['scale'],
+};
+
+const TRACK_FIELDS_BY_ACTION: Record<string, string[]> = {
+  TOGGLE_STEP: ['steps'],
+  SET_PARAMETER_LOCK: ['parameterLocks'],
+  CLEAR_TRACK: ['steps', 'parameterLocks'],
+  SET_TRACK_INSTRUMENT: [
+    'sampleId', 'name', 'fmParams', 'envelope', 'envelopeTimeUnit',
+    'envelopeV2', 'samplePlaybackMode', 'gate',
+  ],
+  SET_TRACK_SAMPLE: [
+    'sampleId', 'name', 'fmParams', 'envelope', 'envelopeTimeUnit',
+    'envelopeV2', 'samplePlaybackMode', 'gate',
+  ],
+  SET_TRACK_VOLUME: ['volume'],
+  SET_TRACK_PAN: ['pan'],
+  SET_TRACK_TRANSPOSE: ['transpose'],
+  SET_TRACK_STEP_COUNT: ['stepCount'],
+  SET_TRACK_SWING: ['swing'],
+  SET_TRACK_NAME: ['name'],
+  SET_FM_PARAMS: ['fmParams'],
+  SET_TRACK_ENVELOPE: ['envelope'],
+  SET_TRACK_ENVELOPE_TIME_UNIT: ['envelopeTimeUnit'],
+  SET_TRACK_GATE: ['gate'],
+  SET_TRACK_ENVELOPE_V2: ['envelopeV2'],
+  CONVERT_TRACK_ENVELOPE_UNITS_V2: ['envelopeV2'],
+  SET_TRACK_SAMPLE_PLAYBACK_MODE_V2: ['samplePlaybackMode', 'envelopeV2'],
+  SET_TRACK_GATE_V2: ['gate'],
+  SET_ENVELOPE_LOCK_V2: ['parameterLocks'],
+  ROTATE_PATTERN: ['steps', 'parameterLocks'],
+  INVERT_PATTERN: ['steps', 'parameterLocks'],
+  REVERSE_PATTERN: ['steps', 'parameterLocks'],
+  MIRROR_PATTERN: ['steps', 'parameterLocks'],
+  EUCLIDEAN_FILL: ['steps', 'parameterLocks'],
+};
+
+function withoutFields<T>(value: T, fields: readonly string[]): T {
+  const copy = structuredClone(value);
+  const record = copy as Record<string, unknown>;
+  for (const field of fields) delete record[field];
+  return copy;
+}
+
+function expectUnrelatedStateUnchanged(
+  actionType: string,
+  before: SessionState,
+  after: SessionState,
+): void {
+  const rootFields = ROOT_FIELDS_BY_ACTION[actionType] ?? [];
+  if (rootFields.length > 0) {
+    expect(withoutFields(after, rootFields)).toStrictEqual(withoutFields(before, rootFields));
+    return;
+  }
+
+  const beforeWithoutTracks = withoutFields(before, ['tracks']);
+  const afterWithoutTracks = withoutFields(after, ['tracks']);
+  expect(afterWithoutTracks).toStrictEqual(beforeWithoutTracks);
+
+  if (actionType === 'DELETE_TRACK') {
+    expect(after.tracks).toStrictEqual(before.tracks.filter(track => track.id !== 'test-track-1'));
+    return;
+  }
+
+  const allowedByTrack = new Map<string, string[]>();
+  if (actionType === 'COPY_SEQUENCE') {
+    allowedByTrack.set('test-track-2', ['steps', 'parameterLocks', 'stepCount']);
+  } else if (actionType === 'MOVE_SEQUENCE') {
+    allowedByTrack.set('test-track-1', ['steps', 'parameterLocks']);
+    allowedByTrack.set('test-track-2', ['steps', 'parameterLocks', 'stepCount']);
+  } else {
+    allowedByTrack.set('test-track-1', TRACK_FIELDS_BY_ACTION[actionType] ?? []);
+  }
+
+  expect(after.tracks.map(track => withoutFields(track, allowedByTrack.get(track.id) ?? [])))
+    .toStrictEqual(before.tracks.map(track => withoutFields(track, allowedByTrack.get(track.id) ?? [])));
+}
+
 describe('SYNCED_ACTIONS reach the shared mutation', () => {
   /**
    * Actions whose message deliberately leaves SessionState alone.
@@ -513,17 +576,27 @@ describe('SYNCED_ACTIONS reach the shared mutation', () => {
 
   for (const actionType of routed) {
     it(`${actionType}: applyMutation acts on the message it produces`, () => {
-      const message = actionToMessage(createMockAction(actionType));
+      const action = createMockAction(actionType);
+      const message = actionToMessage(action);
       expect(message, `${actionType} produced no message`).not.toBeNull();
 
       const before = roundTripState();
-      const after = applyMutation(roundTripState(), message as never);
+      const after = applyMutation(structuredClone(before), message as never);
+      const localBefore = {
+        ...structuredClone(before),
+        isPlaying: false,
+        currentStep: -1,
+      } as GridState;
+      const expected = JSON.parse(JSON.stringify(
+        gridStateToSessionState(gridReducer(localBefore, action)),
+      )) as SessionState;
 
       expect(
         after,
-        `${actionType} produced message "${(message as { type?: string })?.type}" and applyMutation ` +
-          'left the state byte-identical — the action is listed as synced but the server ignores it',
-      ).not.toEqual(before);
+        `${actionType} produced message "${(message as { type?: string })?.type}" but the remote ` +
+          'mutation did not reproduce the complete local result',
+      ).toStrictEqual(expected);
+      expectUnrelatedStateUnchanged(actionType, before, after);
     });
   }
 });

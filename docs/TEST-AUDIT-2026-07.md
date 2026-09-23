@@ -1578,3 +1578,79 @@ on one side and an edit on the other is exactly the case three-way merge cannot
 see**, and the only things that catch it are checks that resolve symbols rather
 than compare text: the typechecker, and an export-reachability gate that fails
 closed.
+
+## §24 — Selection is only correct when it reaches the owning assertion
+
+The post-implementation audit found a second class of false green: every
+individual check worked, but the path from a changed file to that check was
+incomplete.
+
+- `git diff --name-only --diff-filter=ACMR` erased deletions and the old side of
+  renames before the impact selector saw them.
+- The generic `app/src/` browser prefix marked a file as “matched”, disabling
+  the fail-safe for files that also belonged to Worker or visual contracts.
+- Selecting `browser` still ran only the curated mock manifest; a changed
+  non-mock or mobile spec could therefore select a green job that never
+  collected it.
+- Lane totals allowed one test to replace another as long as the count stayed
+  constant.
+
+The repaired contract follows the chain end to end: name-status collection
+keeps deletions and both rename paths; ownership overlaps are explicit; browser,
+audio, and mobile profiles activate the lanes that collect those tests; and
+each lane records its exact project/file/title identities in a reviewable
+manifest as well as its result dispositions. A selector unit test now creates a real temporary
+Git history, because testing only the pure path matcher would repeat the
+original blind spot at the process boundary.
+
+A later multi-agent review found one remaining version of the same error:
+`instrument-classification.ts` matched the broad browser and Worker prefixes,
+so the unmatched-path fallback never noticed that the sample validators import
+it directly. The fix is now structural rather than another one-off allowlist
+review. The verification-impact gate walks the exact entrypoints for each CI
+validator profile and their complete local runtime-import graphs. It resolves
+repository-local path aliases with the scripts project's real TypeScript
+configuration and combines imports with declared filesystem inputs, covering
+manifests, samples, calibration tables, receipts, and source files read as
+text. Sample and Worker validators have separate ownership profiles, so the
+lightweight sync source contract runs with Worker verification instead of
+forcing the sample toolchain onto every sync change. Missing inputs, unresolved
+relative imports, and unanalyzable dynamic imports fail closed; negative
+regressions remove both an imported owner and a declared-input owner to prove
+the gate detects either gap. Declared inputs must also be Git-tracked, so an
+ignored local build artifact cannot make validation pass locally and fail in a
+clean CI checkout.
+
+The original exact-lane contract stored only SHA-256 digests. Those were strict
+but opaque: a reviewer could see that a hash changed without seeing which test
+moved, and failures reported two unrelated hexadecimal strings. The committed
+`lane-identities.json` now stores one sorted `project :: file › suite › test`
+line per result. Both collection-time and result-time gates report exact missing
+and unexpected identities, while dispositions remain compact in
+`lane-contracts.json`.
+
+The first current-head T2 run exposed one more ownership error: six real-time
+PCM captures were collected inside the two-worker “functional” bucket. PCM now
+has its own one-worker job in both T1 and T2, and the functional lane's exact
+identity contract excludes it. Isolation then made a subtler defect repeatable
+on hosted runners: the null test compared two adjacent pieces of a live
+kick/hat pattern, so capture phase—not capture integrity—decided whether it
+passed. It now injects the same sample-aligned buffer twice and compares those
+captures. Classification is therefore about resource requirements as well as
+filenames, and deterministic timing claims require a deterministic stimulus.
+
+Two smaller findings are the same lesson at runtime scale. An AudioWorklet may
+acknowledge a later start frame than the main thread requested, so assembly must
+use the acknowledged range rather than the request. And “state changed” is not
+an oracle for synchronization: the wrong track or field also changes state.
+The sync round-trip now compares the complete remote result with the local
+result and independently proves that fields outside the action's ownership did
+not move.
+
+The final T2 run also showed that a collected project name is not proof of the
+browser that ran. Playwright's Pixel device descriptor carries
+`defaultBrowserType: chromium`; applying it at file scope silently made the
+Android test launch Chromium from the WebKit lane. The test now applies only
+the device's viewport, user agent, and touch options, leaving browser ownership
+to the project. A lane contract must therefore verify both its test identities
+and any configuration capable of changing their execution target.

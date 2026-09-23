@@ -172,8 +172,10 @@ test.describe('Session Loading Race Condition', () => {
     await expect(firstStep).toBeVisible({ timeout: 5000 });
     await firstStep.click();
 
-    // Wait for debounced save (5s debounce + margin) - intentional timing for save test
-    await page.waitForTimeout(6000);
+    await expect.poll(async () => {
+      const sessionData = await getSessionWithRetry(request, sessionId);
+      return sessionData.state.tracks[0].steps[0];
+    }, { timeout: 12_000 }).toBe(true);
 
     // Reload and verify the edit persisted
     await page.reload();
@@ -187,9 +189,8 @@ test.describe('Session Loading Race Condition', () => {
 
     expect(isActive).toBe(true);
 
-    // Also verify via API with retry for KV consistency
-    const sessionData = await getSessionWithRetry(request, sessionId);
-    expect(sessionData.state.tracks[0].steps[0]).toBe(true);
+    // The API assertion above proves the reload reads persisted state rather
+    // than winning a race against the debounced save.
   });
 
   test('new session can be created and edited without data loss', async ({ page, request }) => {
@@ -237,13 +238,15 @@ test.describe('Session Loading Race Condition', () => {
     const firstStep = page.locator('.step-cell').first();
     await expect(firstStep).toBeVisible({ timeout: 5000 });
     await firstStep.click();
-    // Wait for debounced save - intentional timing for save test
-    await page.waitForTimeout(6000);
 
-    // Verify via API
-    const verifyRes = await request.get(`${baseUrl}/api/sessions/${sessionId}`);
-    expect(verifyRes.ok(), `session verification returned ${verifyRes.status()}`).toBe(true);
-    const verifiedSession = await verifyRes.json();
-    expect(verifiedSession.state.tracks.length).toBeGreaterThanOrEqual(1);
+    await expect.poll(async () => {
+      const verifyRes = await request.get(`${baseUrl}/api/sessions/${sessionId}`);
+      if (!verifyRes.ok()) return null;
+      const verifiedSession = await verifyRes.json();
+      return {
+        trackCount: verifiedSession.state.tracks.length,
+        firstStep: verifiedSession.state.tracks[0]?.steps[0],
+      };
+    }, { timeout: 12_000 }).toEqual({ trackCount: 1, firstStep: true });
   });
 });
