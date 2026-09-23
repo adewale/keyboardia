@@ -20,6 +20,8 @@
  */
 
 import { execSync } from 'child_process';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const colors = {
   reset: '\x1b[0m',
@@ -40,71 +42,112 @@ interface ValidatorResult {
   error?: string;
 }
 
+export interface ValidatorCommand {
+  entrypoint: string;
+  args?: readonly string[];
+}
+
+export interface ValidatorDefinition {
+  name: string;
+  commands: readonly ValidatorCommand[];
+  description: string;
+}
+
 function diagnosticTail(value: string, maximumCharacters = 4_000): string {
   const trimmed = value.trim();
   if (trimmed.length <= maximumCharacters) return trimmed;
   return `[earlier output omitted]\n${trimmed.slice(-maximumCharacters)}`;
 }
 
-const VALIDATORS = [
+export const VALIDATORS = [
   {
     name: 'Manifest Validation',
-    script: 'npx tsx scripts/validate-manifests.ts',
+    commands: [{ entrypoint: 'scripts/validate-manifests.ts' }],
     description: 'Checks manifests, sample files, and registry completeness',
   },
   {
     name: 'Playable Range Validation',
-    script: 'npx tsx scripts/validate-playable-ranges.ts',
+    commands: [{ entrypoint: 'scripts/validate-playable-ranges.ts' }],
     description: 'Ensures default note (C4) is within playable range',
   },
   {
     name: 'Sample Quality Audit',
-    script: 'npx tsx scripts/validate-sample-quality.ts --strict',
+    commands: [{
+      entrypoint: 'scripts/validate-sample-quality.ts',
+      args: ['--strict'],
+    }],
     description: 'Decodes samples and blocks every unwaived pitch, onset, level, loop, phase, and clipping finding',
   },
   {
     name: 'Enrichment/Curation Receipt',
-    script: 'node --import tsx scripts/promote-complete-sample-enrichment.ts --verify-only',
+    commands: [{
+      entrypoint: 'scripts/promote-complete-sample-enrichment.ts',
+      args: ['--verify-only'],
+    }],
     description: 'Checks shipped and archived sample hashes, curated mappings, source revisions, and license profile',
   },
   {
     name: 'Sustain Ceiling Guard',
-    script: 'npx tsx scripts/validate-sustain-ceiling.ts',
+    commands: [{ entrypoint: 'scripts/validate-sustain-ceiling.ts' }],
     description: 'Ensures sustaining instruments hold past the longest 16-step tied note',
   },
   {
     name: 'Velocity Filter Calibration',
-    script: 'npx tsx scripts/validate-velocity-filter-calibration.ts && npx tsx scripts/simulate-velocity-filter.ts --sample-rate 44100 && npx tsx scripts/simulate-velocity-filter.ts --sample-rate 48000',
+    commands: [
+      { entrypoint: 'scripts/validate-velocity-filter-calibration.ts' },
+      {
+        entrypoint: 'scripts/simulate-velocity-filter.ts',
+        args: ['--sample-rate', '44100'],
+      },
+      {
+        entrypoint: 'scripts/simulate-velocity-filter.ts',
+        args: ['--sample-rate', '48000'],
+      },
+    ],
     description: 'Binds calibration to every playable note and checks the 26-35% timbre target on production mappings',
   },
   {
     name: 'Release Time Validation',
-    script: 'npx tsx scripts/validate-release-times.ts',
+    commands: [{ entrypoint: 'scripts/validate-release-times.ts' }],
     description: 'Validates release time consistency across instruments',
   },
   {
     name: 'Sample Load Budget Validation',
-    script: 'npx tsx scripts/validate-sample-load-budgets.ts',
+    commands: [{ entrypoint: 'scripts/validate-sample-load-budgets.ts' }],
     description: 'Checks priority and background payload sizes against the static transfer budget',
   },
   {
     name: 'Sync Checklist Validation',
-    script: 'npx tsx scripts/validate-sync-checklist.ts',
+    commands: [{ entrypoint: 'scripts/validate-sync-checklist.ts' }],
     description: 'Ensures multiplayer sync implementation is complete',
   },
-];
+] as const satisfies readonly ValidatorDefinition[];
 
-function runValidator(validator: { name: string; script: string }): ValidatorResult {
+export function validatorEntrypoints(): string[] {
+  return [...new Set(VALIDATORS.flatMap(validator =>
+    validator.commands.map(command => command.entrypoint)))].sort();
+}
+
+function displayCommand(command: ValidatorCommand): string {
+  return ['node', '--import', 'tsx', command.entrypoint, ...(command.args ?? [])].join(' ');
+}
+
+function validatorScript(validator: ValidatorDefinition): string {
+  return validator.commands.map(displayCommand).join(' && ');
+}
+
+function runValidator(validator: ValidatorDefinition): ValidatorResult {
   const start = Date.now();
+  const script = validatorScript(validator);
   try {
-    const output = execSync(validator.script, {
+    const output = execSync(script, {
       cwd: process.cwd(),
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
     return {
       name: validator.name,
-      script: validator.script,
+      script,
       passed: true,
       duration: Date.now() - start,
       output,
@@ -113,7 +156,7 @@ function runValidator(validator: { name: string; script: string }): ValidatorRes
     const error = e as { stdout?: string; stderr?: string; message?: string };
     return {
       name: validator.name,
-      script: validator.script,
+      script,
       passed: false,
       duration: Date.now() - start,
       output: error.stdout,
@@ -176,4 +219,6 @@ function main(): void {
   process.exit(0);
 }
 
-main();
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main();
+}

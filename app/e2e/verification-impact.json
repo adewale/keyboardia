@@ -88,7 +88,15 @@
       ],
       "files": [
         "app/package-lock.json",
-        "app/package.json"
+        "app/package.json",
+        "app/src/audio/audio-time.ts",
+        "app/src/audio/constants.ts",
+        "app/src/audio/parameter-automation.ts",
+        "app/src/audio/velocity-sample-filter.ts",
+        "app/src/shared/constants.ts",
+        "app/src/shared/instrument-catalog.ts",
+        "app/src/shared/instrument-classification.ts",
+        "app/src/test/audio-measures.ts"
       ]
     },
     "mobile": {

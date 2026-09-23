@@ -1603,6 +1603,17 @@ as its result dispositions. A selector unit test now creates a real temporary
 Git history, because testing only the pure path matcher would repeat the
 original blind spot at the process boundary.
 
+A later multi-agent review found one remaining version of the same error:
+`instrument-classification.ts` matched the broad browser and Worker prefixes,
+so the unmatched-path fallback never noticed that the sample validators import
+it directly. The fix is now structural rather than another one-off allowlist
+review. `validate:all` exposes the exact entrypoints it executes, and the
+verification-impact gate walks their complete local runtime-import graph. Every
+reachable module must select Instrument Validation; unresolved relative imports
+fail closed, and a negative regression test removes a known owner to prove the
+gate detects the gap. Adding a validator dependency can therefore no longer
+silently create a green T1 run that omits its owning assertion.
+
 The first current-head T2 run exposed one more ownership error: six real-time
 PCM captures were collected inside the two-worker “functional” bucket. PCM now
 has its own one-worker job in both T1 and T2, and the functional lane's exact

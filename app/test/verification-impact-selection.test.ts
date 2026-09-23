@@ -8,8 +8,14 @@ import {
   readChangedPaths,
   selectVerificationScope,
 } from '../scripts/select-verification-scope.mjs';
+import {
+  collectValidatorImportGraph,
+  findValidatorOwnershipGaps,
+  type VerificationImpactInventory,
+} from '../scripts/verification-impact-graph';
 
 const temporaryRepositories: string[] = [];
+const validatorGraph = collectValidatorImportGraph();
 
 afterEach(() => {
   for (const repository of temporaryRepositories.splice(0)) {
@@ -58,6 +64,9 @@ describe('cost-aware verification impact selection', () => {
   it.each([
     ['app/src/music/music-theory.ts', { browser: true, worker: true }],
     ['app/src/context/MultiplayerContext.tsx', { browser: true, worker: true }],
+    ['app/src/shared/instrument-classification.ts', {
+      browser: true, worker: true, samples: true,
+    }],
     ['app/src/App.tsx', { browser: true, worker: true, visual: true, mobile: true }],
     ['app/src/App.css', { browser: true, visual: true, mobile: true }],
     ['app/e2e/mobile-iphone.spec.ts', {
@@ -65,6 +74,30 @@ describe('cost-aware verification impact selection', () => {
     }],
   ])('selects every owning profile for %s', (path, expected) => {
     expect(selectVerificationScope([path], inventory).selected).toMatchObject(expected);
+  });
+
+  it('selects Instrument Validation for every transitive validate:all dependency', () => {
+    expect(validatorGraph.entrypoints).toContain('app/scripts/validate-sustain-ceiling.ts');
+    expect(validatorGraph.modules).toContain('app/src/shared/instrument-classification.ts');
+    expect(findValidatorOwnershipGaps(
+      inventory as VerificationImpactInventory,
+      validatorGraph,
+    )).toEqual([]);
+  });
+
+  it('fails closed when a transitive validator dependency loses sample ownership', () => {
+    const brokenInventory = structuredClone(inventory) as VerificationImpactInventory;
+    brokenInventory.profiles.samples.files = brokenInventory.profiles.samples.files
+      .filter(path => path !== 'app/src/shared/instrument-classification.ts');
+
+    const gaps = findValidatorOwnershipGaps(brokenInventory, validatorGraph);
+    expect(gaps).toContainEqual({
+      dependency: 'app/src/shared/instrument-classification.ts',
+      importPath: [
+        'app/scripts/validate-sustain-ceiling.ts',
+        'app/src/shared/instrument-classification.ts',
+      ],
+    });
   });
 
   it('includes deletions and both sides of renames from the real git diff', () => {
