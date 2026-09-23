@@ -10,8 +10,12 @@
 import { test, expect, devices, waitForAppReady } from './global-setup';
 import { createPopulatedSessionWithRetry } from './test-utils';
 
-// Device configuration must be at top level
-test.use(devices['Pixel 7']);
+// Keep the Pixel viewport, user agent, and touch model without replacing the
+// selected Playwright project's browser. The full device descriptor includes
+// `defaultBrowserType: chromium`, which made this test launch Chromium even
+// when the release matrix collected it as part of the WebKit project.
+const { defaultBrowserType: _projectBrowserOverride, ...pixel7 } = devices['Pixel 7'];
+test.use(pixel7);
 
 test.describe('Android Mobile', () => {
   test('pages through a populated pattern on Android', async ({ page, request }) => {

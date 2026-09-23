@@ -1620,3 +1620,11 @@ an oracle for synchronization: the wrong track or field also changes state.
 The sync round-trip now compares the complete remote result with the local
 result and independently proves that fields outside the action's ownership did
 not move.
+
+The final T2 run also showed that a collected project name is not proof of the
+browser that ran. Playwright's Pixel device descriptor carries
+`defaultBrowserType: chromium`; applying it at file scope silently made the
+Android test launch Chromium from the WebKit lane. The test now applies only
+the device's viewport, user agent, and touch options, leaving browser ownership
+to the project. A lane contract must therefore verify both its test identities
+and any configuration capable of changing their execution target.
