@@ -35,6 +35,7 @@ jobs:
       audio: ${{ steps.scope.outputs.audio }}
       visual: ${{ steps.scope.outputs.visual }}
       samples: ${{ steps.scope.outputs.samples }}
+      mobile: ${{ steps.scope.outputs.mobile }}
       full: ${{ steps.scope.outputs.full }}
     steps:
       - name: Checkout repository with merge-base history
@@ -386,7 +387,7 @@ jobs:
   # need a backend meant no E2E failure could ever break the build, and the
   # backend-dependent specs still never ran anywhere in CI.
   #
-  #   T1 pull requests   affected smoke/Worker/visual contracts
+  #   T1 pull requests   affected functional/audio/Worker/mobile/visual contracts
   #   T2 main/scheduled  parallel offline, Chromium, WebKit, mobile, and visual
   #
   # See docs/TEST-AUDIT-2026-07.md for the audit and lane ownership rationale.
@@ -488,7 +489,7 @@ jobs:
   e2e-offline-functional:
     name: E2E Tests (offline functional)
     needs: verification-scope
-    if: needs.verification-scope.outputs.full == 'true'
+    if: needs.verification-scope.outputs.browser == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
     runs-on: ubuntu-latest
     defaults:
@@ -545,7 +546,7 @@ jobs:
   e2e-offline-audio:
     name: E2E Tests (offline audio)
     needs: verification-scope
-    if: needs.verification-scope.outputs.full == 'true'
+    if: needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
     runs-on: ubuntu-latest
     defaults:
@@ -738,10 +739,8 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # mobile-android.spec.ts applies the Pixel 7 device at file scope, whose
-      # default browser type is Chromium even when collected by this project.
-      - name: Install Playwright WebKit and device-required Chromium
-        run: npx playwright install --with-deps webkit chromium
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
 
       - name: Run broad WebKit contract against wrangler dev
         shell: bash
@@ -755,6 +754,42 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/webkit-results.json'
           PLAYWRIGHT_HTML_REPORT: 'playwright-report-webkit'
 
+      - name: Upload WebKit diagnostics
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-real-backend-webkit
+          path: |
+            app/playwright-report-webkit/
+            app/test-results/webkit-results.json
+          retention-days: 7
+
+  e2e-mobile-safari:
+    name: E2E Tests (Mobile Safari)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.mobile == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+
       - name: Run Mobile Safari contract against wrangler dev
         run: |
           npm run test:e2e:full-stack -- e2e/mobile-iphone.spec.ts --project=mobile-safari
@@ -765,15 +800,13 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/mobile-safari-results.json'
           PLAYWRIGHT_HTML_REPORT: 'playwright-report-mobile-safari'
 
-      - name: Upload WebKit diagnostics
+      - name: Upload Mobile Safari diagnostics
         uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: playwright-report-real-backend-webkit
+          name: playwright-report-mobile-safari
           path: |
-            app/playwright-report-webkit/
             app/playwright-report-mobile-safari/
-            app/test-results/webkit-results.json
             app/test-results/mobile-safari-results.json
           retention-days: 7
 

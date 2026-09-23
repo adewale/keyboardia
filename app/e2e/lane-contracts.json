@@ -1,16 +1,16 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "lanes": {
-    "mock-required": { "expected": 77, "skipped": 0 },
-    "offline-functional": { "expected": 85, "skipped": 72 },
-    "offline-audio": { "expected": 3, "skipped": 0 },
-    "worker": { "expected": 76, "skipped": 0 },
-    "worker-smoke": { "expected": 15, "skipped": 0 },
-    "real-chromium": { "expected": 207, "skipped": 30 },
-    "real-webkit": { "expected": 161, "skipped": 59 },
-    "visual-linux": { "expected": 11, "skipped": 0 },
-    "visual-macos": { "expected": 3, "skipped": 0 },
-    "pcm": { "expected": 6, "skipped": 0 },
-    "mobile-safari": { "expected": 7, "skipped": 0 }
+    "mock-required": { "expected": 77, "skipped": 0, "identitySha256": "9d1bf2ffa0704dd9ef6c7678b89b5f00bd6ac7ab4478ccfab98289b77bd74ac3" },
+    "offline-functional": { "expected": 85, "skipped": 72, "identitySha256": "305d24cc02e89e8be47382506b581c5b69728a72c21e3e8498ae18d405ca04cb" },
+    "offline-audio": { "expected": 3, "skipped": 0, "identitySha256": "53cfff9cbd940373139bacfb63ca17e27fad1a6d4195bfe1bea06b73db80a8a9" },
+    "worker": { "expected": 76, "skipped": 0, "identitySha256": "11682e89ea8bbb552b75afdab654b79055ae0396659fd0df08c14dcb96d01f1a" },
+    "worker-smoke": { "expected": 15, "skipped": 0, "identitySha256": "499b5743ea7c8191adccc167737a5591c9533bd779c6bd569ef094faff5d88ba" },
+    "real-chromium": { "expected": 207, "skipped": 30, "identitySha256": "e95a710ae030c7cff5fc0a5804b3ce6f6d1bb48bcedae1432b28c8fccf87a27e" },
+    "real-webkit": { "expected": 161, "skipped": 59, "identitySha256": "20abac54ffa24c0c4e12be096c2ca82beed64d728cb7224dab49ef1ca83b5322" },
+    "visual-linux": { "expected": 11, "skipped": 0, "identitySha256": "5234b443c607525ccc41e6244cf33dfeaa811394cdcade24341274e0607109b8" },
+    "visual-macos": { "expected": 3, "skipped": 0, "identitySha256": "f1931768801a8b69f607aab554d102ee47ea6c570ba0c5e419dc290aac6d99a0" },
+    "pcm": { "expected": 6, "skipped": 0, "identitySha256": "5c7e92eb707022879e409f7c4444cc8a48195db5f803f227895b638596540be2" },
+    "mobile-safari": { "expected": 7, "skipped": 0, "identitySha256": "ff660353863430172b48c36e56b5825d1baeb7ca58be2acb7b135424199ee792" }
   }
 }

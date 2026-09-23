@@ -2,6 +2,10 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  hashPlaywrightIdentities,
+  parsePlaywrightListIdentities,
+} from './playwright-contract-identities.mjs';
 
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
 const e2eRoot = resolve(appRoot, 'e2e');
@@ -66,7 +70,7 @@ const overlappingBackends = mockSpecs.filter(path => workerSpecs.includes(path))
 const misplacedAudioSpecs = audioSpecs.filter(path => mockSpecs.includes(path));
 
 const laneFile = JSON.parse(readFileSync(resolve(e2eRoot, 'lane-contracts.json'), 'utf8'));
-if (laneFile.schemaVersion !== 1 || !laneFile.lanes) {
+if (laneFile.schemaVersion !== 2 || !laneFile.lanes) {
   throw new Error('lane-contracts.json has an unsupported schema');
 }
 
@@ -156,10 +160,9 @@ const listed = spawnSync(playwright, ['test', '--project=chromium', '--list'], {
 if (listed.status !== 0) {
   throw new Error(`Unable to collect Playwright inventory:\n${listed.stderr || listed.stdout}`);
 }
-const discoveredTitles = listed.stdout.split(/\r?\n/).flatMap(line => {
-  const match = line.match(/^\s+\[chromium\]\s+›\s+([^:]+\.spec\.ts):\d+:\d+\s+›\s+(.+)$/);
-  return match ? [`${match[1]} › ${match[2]}`] : [];
-}).sort();
+const discoveredTitles = parsePlaywrightListIdentities(listed.stdout)
+  .map(identity => identity.split('\0')[1])
+  .sort();
 const expectedTitles = readFileSync(resolve(e2eRoot, 'test-title-inventory.txt'), 'utf8')
   .split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 if (JSON.stringify(discoveredTitles) !== JSON.stringify(expectedTitles)) {
@@ -205,16 +208,23 @@ for (const [name, definition] of Object.entries(laneDefinitions)) {
     throw new Error(`Unable to collect ${definition.label} disposition total:\n`
       + `${collected.stderr || collected.stdout}`);
   }
-  const totalMatch = collected.stdout.match(/Total:\s+(\d+)\s+tests?\b/);
-  if (!totalMatch) {
-    throw new Error(`Unable to parse ${definition.label} disposition total:\n${collected.stdout}`);
+  const identities = parsePlaywrightListIdentities(collected.stdout);
+  if (new Set(identities).size !== identities.length) {
+    throw new Error(`${definition.label} collects duplicate project/test identities`);
   }
-  const collectedTotal = Number(totalMatch[1]);
+  const collectedTotal = identities.length;
   const contract = laneFile.lanes[name];
   const contractedTotal = contract.expected + contract.skipped;
   if (contractedTotal !== collectedTotal) {
     throw new Error(`${definition.label} contract accounts for ${contractedTotal} results, `
       + `but Playwright collects ${collectedTotal} with the lane's exact project, files, and environment`);
+  }
+  const identitySha256 = hashPlaywrightIdentities(identities);
+  if (contract.identitySha256 !== identitySha256) {
+    throw new Error(`${definition.label} exact identity contract changed: ${JSON.stringify({
+      expected: contract.identitySha256,
+      actual: identitySha256,
+    })}`);
   }
 }
 

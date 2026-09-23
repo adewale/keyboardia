@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
 const repoRoot = resolve(appRoot, '..');
 const inventoryPath = resolve(appRoot, 'e2e/verification-impact.json');
-const profileNames = ['browser', 'worker', 'audio', 'visual', 'samples'];
+const profileNames = ['browser', 'worker', 'audio', 'visual', 'samples', 'mobile'];
 
 export function selectVerificationScope(paths, inventory) {
   const normalized = [...new Set(paths.map(path => path.trim()).filter(Boolean))].sort();
@@ -46,14 +46,36 @@ export function selectVerificationScope(paths, inventory) {
   return { paths: normalized, selected, reasons };
 }
 
-function readChangedPaths(base, head) {
+export function parseChangedPaths(nameStatusOutput) {
+  const fields = nameStatusOutput.split('\0');
+  if (fields.at(-1) === '') fields.pop();
+  const paths = [];
+
+  for (let index = 0; index < fields.length;) {
+    const status = fields[index++];
+    const firstPath = fields[index++];
+    if (!status || !firstPath) {
+      throw new Error('Unable to parse git diff --name-status output');
+    }
+    paths.push(firstPath);
+    if (status.startsWith('R') || status.startsWith('C')) {
+      const secondPath = fields[index++];
+      if (!secondPath) throw new Error(`Missing destination path for git status ${status}`);
+      paths.push(secondPath);
+    }
+  }
+
+  return paths;
+}
+
+export function readChangedPaths(base, head, cwd = repoRoot) {
   const diff = spawnSync('git', [
-    'diff', '--name-only', '--diff-filter=ACMR', `${base}...${head}`,
-  ], { cwd: repoRoot, encoding: 'utf8' });
+    'diff', '--name-status', '-z', '--find-renames', `${base}...${head}`,
+  ], { cwd, encoding: 'utf8' });
   if (diff.status !== 0) {
     throw new Error(`Unable to compute verification impact:\n${diff.stderr || diff.stdout}`);
   }
-  return diff.stdout.split(/\r?\n/).filter(Boolean);
+  return parseChangedPaths(diff.stdout);
 }
 
 function emit(scope, outputPath) {

@@ -5,14 +5,17 @@ const { loadWorkletModule } = vi.hoisted(() => ({ loadWorkletModule: vi.fn(async
 vi.mock('./worklet-support', () => ({ loadWorkletModule }));
 vi.mock('./worklets/capture.worklet.ts?worker&url', () => ({ default: '/capture-worklet.js' }));
 
+let armedStartFrameOffset = 0;
+
 class FakePort {
   onmessage: ((event: MessageEvent) => void) | null = null;
   postMessage = vi.fn((message: { type: string; startFrame?: number; frameCount?: number }) => {
     if (message.type !== 'arm') return;
     queueMicrotask(() => {
+      const armedStartFrame = message.startFrame! + armedStartFrameOffset;
       this.onmessage?.({ data: {
         type: 'armed',
-        startFrame: message.startFrame,
+        startFrame: armedStartFrame,
         frameCount: message.frameCount,
       } } as MessageEvent);
       const taps = Array.from({ length: 3 }, (_, tap) => [
@@ -20,8 +23,8 @@ class FakePort {
       ]);
       this.onmessage?.({ data: {
         type: 'chunk',
-        absoluteFrame: message.startFrame,
-        renderFrame: message.startFrame,
+        absoluteFrame: armedStartFrame,
+        renderFrame: armedStartFrame,
         captureOffset: 0,
         frameCount: message.frameCount,
         taps,
@@ -29,7 +32,7 @@ class FakePort {
       this.onmessage?.({ data: {
         type: 'done',
         reason: 'complete',
-        startFrame: message.startFrame,
+        startFrame: armedStartFrame,
         frameCount: message.frameCount,
         capturedFrames: message.frameCount,
       } } as MessageEvent);
@@ -53,6 +56,7 @@ function node(context: AudioContext): AudioNode {
 
 describe('MasterCaptureRecorder', () => {
   beforeEach(() => {
+    armedStartFrameOffset = 0;
     vi.stubGlobal('AudioWorkletNode', FakeWorkletNode);
   });
 
@@ -85,5 +89,30 @@ describe('MasterCaptureRecorder', () => {
     expect(capture.taps.preCompressor.channels[0][0]).toBe(1);
     expect(capture.taps.postMakeup.channels[0][0]).toBe(2);
     expect(capture.taps.userOutput.channels[0][0]).toBe(3);
+  });
+
+  it('assembles against the frame range acknowledged by a late worklet arm', async () => {
+    armedStartFrameOffset = 256;
+    const { MasterCaptureRecorder } = await import('./capture-recorder');
+    const context = {
+      sampleRate: 48_000,
+      currentTime: 1,
+      audioWorklet: { addModule: vi.fn() },
+      destination: {},
+      createGain: () => ({ gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() }),
+    } as unknown as AudioContext;
+    const recorder = new MasterCaptureRecorder();
+    await recorder.initialize(context);
+    const onArmed = vi.fn();
+
+    const capture = await recorder.capture({
+      preCompressor: node(context),
+      postMakeup: node(context),
+      userOutput: node(context),
+    }, 0.01, 0, onArmed);
+
+    expect(capture.startFrame).toBe(48_256);
+    expect(onArmed).toHaveBeenCalledWith({ startFrame: 48_256, frameCount: 480 });
+    expect(capture.taps.userOutput.channels[0]).toHaveLength(480);
   });
 });

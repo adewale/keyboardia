@@ -27,7 +27,9 @@
     "worker": {
       "prefixes": [
         "app/e2e/",
+        "app/src/context/",
         "app/src/hooks/",
+        "app/src/music/",
         "app/src/shared/",
         "app/src/state/",
         "app/src/sync/",
@@ -37,6 +39,7 @@
       "files": [
         "app/package-lock.json",
         "app/package.json",
+        "app/src/App.tsx",
         "app/tsconfig.worker.json",
         "app/wrangler.jsonc"
       ]
@@ -59,11 +62,15 @@
     "visual": {
       "prefixes": [
         "app/e2e/",
-        "app/src/components/"
+        "app/src/components/",
+        "app/src/debug/",
+        "app/src/stack-a-catalog/"
       ],
       "files": [
+        "app/src/App.css",
         "app/src/App.tsx",
         "app/src/index.css",
+        "app/src/motion.css",
         "app/playwright.config.ts",
         "app/vite.config.ts"
       ]
@@ -83,6 +90,22 @@
         "app/package-lock.json",
         "app/package.json"
       ]
+    },
+    "mobile": {
+      "prefixes": [
+        "app/e2e/mobile-",
+        "app/src/components/Orientation",
+        "app/src/components/Portrait"
+      ],
+      "files": [
+        "app/package-lock.json",
+        "app/package.json",
+        "app/playwright.config.ts",
+        "app/src/App.css",
+        "app/src/App.tsx",
+        "app/src/index.css",
+        "app/src/motion.css"
+      ]
     }
   },
   "selectAllFiles": [
@@ -93,6 +116,7 @@
     "app/e2e/verification-impact.json",
     "app/scripts/assert-playwright-stats.mjs",
     "app/scripts/check-e2e-inventories.mjs",
+    "app/scripts/playwright-contract-identities.mjs",
     "app/scripts/select-verification-scope.mjs"
   ]
 }

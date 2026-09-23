@@ -1,6 +1,21 @@
-import { describe, expect, it } from 'vitest';
+import { execFileSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
 import inventory from '../e2e/verification-impact.json';
-import { selectVerificationScope } from '../scripts/select-verification-scope.mjs';
+import {
+  readChangedPaths,
+  selectVerificationScope,
+} from '../scripts/select-verification-scope.mjs';
+
+const temporaryRepositories: string[] = [];
+
+afterEach(() => {
+  for (const repository of temporaryRepositories.splice(0)) {
+    rmSync(repository, { recursive: true, force: true });
+  }
+});
 
 describe('cost-aware verification impact selection', () => {
   it('does not spend browser minutes for documentation-only changes', () => {
@@ -15,6 +30,7 @@ describe('cost-aware verification impact selection', () => {
       audio: false,
       visual: false,
       samples: false,
+      mobile: false,
     });
   });
 
@@ -29,13 +45,56 @@ describe('cost-aware verification impact selection', () => {
   it('selects every T1 profile for an unclassified code path', () => {
     const result = selectVerificationScope(['tooling/new-runtime-check.ts'], inventory);
 
-    expect(Object.values(result.selected)).toEqual([true, true, true, true, true]);
+    expect(Object.values(result.selected)).toEqual([true, true, true, true, true, true]);
     expect(result.reasons[0]).toContain('unmatched path');
   });
 
   it('selects every T1 profile when the policy itself changes', () => {
     const result = selectVerificationScope(['.github/workflows/ci.yml'], inventory);
 
-    expect(Object.values(result.selected)).toEqual([true, true, true, true, true]);
+    expect(Object.values(result.selected)).toEqual([true, true, true, true, true, true]);
+  });
+
+  it.each([
+    ['app/src/music/music-theory.ts', { browser: true, worker: true }],
+    ['app/src/context/MultiplayerContext.tsx', { browser: true, worker: true }],
+    ['app/src/App.tsx', { browser: true, worker: true, visual: true, mobile: true }],
+    ['app/src/App.css', { browser: true, visual: true, mobile: true }],
+    ['app/e2e/mobile-iphone.spec.ts', {
+      browser: true, worker: true, audio: true, visual: true, mobile: true,
+    }],
+  ])('selects every owning profile for %s', (path, expected) => {
+    expect(selectVerificationScope([path], inventory).selected).toMatchObject(expected);
+  });
+
+  it('includes deletions and both sides of renames from the real git diff', () => {
+    const repository = mkdtempSync(join(tmpdir(), 'verification-impact-'));
+    temporaryRepositories.push(repository);
+    const git = (...args: string[]) => execFileSync('git', args, {
+      cwd: repository,
+      encoding: 'utf8',
+    }).trim();
+
+    git('init', '--quiet');
+    git('config', 'user.name', 'Verification Test');
+    git('config', 'user.email', 'verification@example.test');
+    mkdirSync(join(repository, 'app/src'), { recursive: true });
+    writeFileSync(join(repository, 'app/src/deleted.ts'), 'export const deleted = true;\n');
+    writeFileSync(join(repository, 'app/src/old-name.ts'), 'export const renamed = true;\n');
+    git('add', '.');
+    git('commit', '--quiet', '-m', 'base');
+    const base = git('rev-parse', 'HEAD');
+
+    rmSync(join(repository, 'app/src/deleted.ts'));
+    renameSync(join(repository, 'app/src/old-name.ts'), join(repository, 'app/src/new-name.ts'));
+    git('add', '-A');
+    git('commit', '--quiet', '-m', 'change');
+    const head = git('rev-parse', 'HEAD');
+
+    expect(readChangedPaths(base, head, repository).sort()).toEqual([
+      'app/src/deleted.ts',
+      'app/src/new-name.ts',
+      'app/src/old-name.ts',
+    ]);
   });
 });
