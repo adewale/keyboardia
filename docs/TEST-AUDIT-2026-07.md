@@ -1604,11 +1604,14 @@ Git history, because testing only the pure path matcher would repeat the
 original blind spot at the process boundary.
 
 The first current-head T2 run exposed one more ownership error: six real-time
-PCM captures were collected inside the two-worker “functional” bucket. Two
-failed under that mixed workload even though the same zero-retry contract was
-stable when serialized. PCM now has its own one-worker job in both T1 and T2;
-the functional lane's exact identity contract excludes it. Classification is
-therefore about resource and determinism requirements as well as filenames.
+PCM captures were collected inside the two-worker “functional” bucket. PCM now
+has its own one-worker job in both T1 and T2, and the functional lane's exact
+identity contract excludes it. Isolation then made a subtler defect repeatable
+on hosted runners: the null test compared two adjacent pieces of a live
+kick/hat pattern, so capture phase—not capture integrity—decided whether it
+passed. It now injects the same sample-aligned buffer twice and compares those
+captures. Classification is therefore about resource requirements as well as
+filenames, and deterministic timing claims require a deterministic stimulus.
 
 Two smaller findings are the same lesson at runtime scale. An AudioWorklet may
 acknowledge a later start frame than the main thread requested, so assembly must
