@@ -1603,6 +1603,13 @@ as its result dispositions. A selector unit test now creates a real temporary
 Git history, because testing only the pure path matcher would repeat the
 original blind spot at the process boundary.
 
+The first current-head T2 run exposed one more ownership error: six real-time
+PCM captures were collected inside the two-worker “functional” bucket. Two
+failed under that mixed workload even though the same zero-retry contract was
+stable when serialized. PCM now has its own one-worker job in both T1 and T2;
+the functional lane's exact identity contract excludes it. Classification is
+therefore about resource and determinism requirements as well as filenames.
+
 Two smaller findings are the same lesson at runtime scale. An AudioWorklet may
 acknowledge a later start frame than the main thread requested, so assembly must
 use the acknowledged range rather than the request. And “state changed” is not

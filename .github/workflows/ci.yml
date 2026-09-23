@@ -436,19 +436,6 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/blocking-results.json'
           PLAYWRIGHT_HTML_REPORT: 'playwright-report-blocking'
 
-      - name: Run dev-only PCM capture contract
-        if: needs.verification-scope.outputs.audio == 'true' && needs.verification-scope.outputs.full != 'true'
-        run: |
-          npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0
-          node scripts/assert-playwright-stats.mjs test-results/pcm-results.json lane pcm
-        env:
-          USE_MOCK_API: '1'
-          E2E_FUNCTIONAL_ONLY: '1'
-          CI: 'true'
-          PLAYWRIGHT_OUTPUT_DIR: 'test-results/pcm-artifacts'
-          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/pcm-results.json'
-          PLAYWRIGHT_HTML_REPORT: 'playwright-report-pcm'
-
       - name: Summarize Playwright results
         if: always()
         shell: bash
@@ -482,7 +469,6 @@ jobs:
           name: playwright-report
           path: |
             app/playwright-report-blocking/
-            app/playwright-report-pcm/
             app/test-results/
           retention-days: 7
 
@@ -520,7 +506,10 @@ jobs:
             <(sort e2e/mock-compatible-files.txt) > "$RUNNER_TEMP/non-mock-specs.txt"
           comm -23 \
             "$RUNNER_TEMP/non-mock-specs.txt" \
-            <(sort e2e/audio-matrix-files.txt) > "$RUNNER_TEMP/offline-functional-specs.txt"
+            <(sort e2e/audio-matrix-files.txt) > "$RUNNER_TEMP/offline-functional-with-pcm-specs.txt"
+          comm -23 \
+            "$RUNNER_TEMP/offline-functional-with-pcm-specs.txt" \
+            <(printf '%s\n' 'e2e/capture-session.spec.ts') > "$RUNNER_TEMP/offline-functional-specs.txt"
           functional_specs=()
           while IFS= read -r spec; do functional_specs+=("$spec"); done < "$RUNNER_TEMP/offline-functional-specs.txt"
           npx playwright test "${functional_specs[@]}" --project=chromium --workers=2 --retries=0
@@ -592,6 +581,57 @@ jobs:
           path: |
             app/playwright-report-offline-audio/
             app/test-results/
+          retention-days: 7
+
+  e2e-pcm:
+    name: E2E Tests (PCM capture)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # PCM capture owns real-time browser audio and is deliberately isolated
+      # from the two-worker functional lane. Sharing that process caused
+      # missed sampled hits and non-repeatable null residuals under CI load.
+      - name: Run dev-only PCM capture contract
+        run: |
+          npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/pcm-results.json lane pcm
+        env:
+          USE_MOCK_API: '1'
+          E2E_FUNCTIONAL_ONLY: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/pcm-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/pcm-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-pcm'
+
+      - name: Upload PCM diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-pcm
+          path: |
+            app/playwright-report-pcm/
+            app/test-results/pcm-results.json
           retention-days: 7
 
   visual-tests-macos:

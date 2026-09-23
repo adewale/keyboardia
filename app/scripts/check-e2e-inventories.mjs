@@ -49,9 +49,12 @@ function listTypeScript(directory) {
 const mockSpecs = readManifest('mock-compatible-files.txt');
 const workerSpecs = readManifest('worker-required-files.txt');
 const audioSpecs = readManifest('audio-matrix-files.txt');
+const pcmSpecs = ['e2e/capture-session.spec.ts'];
 const allSpecs = listSpecs(e2eRoot).sort();
 const offlineFunctionalSpecs = allSpecs
-  .filter(path => !mockSpecs.includes(path) && !audioSpecs.includes(path));
+  .filter(path => !mockSpecs.includes(path)
+    && !audioSpecs.includes(path)
+    && !pcmSpecs.includes(path));
 const unguardedContexts = listTypeScript(e2eRoot)
   .filter(path => relative(e2eRoot, path).replaceAll('\\', '/') !== 'browser-context.ts')
   .filter(path => /\bbrowser\s*\.\s*newContext\s*\(/.test(readFileSync(path, 'utf8')))
@@ -137,7 +140,7 @@ const laneDefinitions = {
   },
   pcm: {
     label: 'PCM capture',
-    specs: ['e2e/capture-session.spec.ts'],
+    specs: pcmSpecs,
     project: 'chromium',
     env: { USE_MOCK_API: '1', E2E_FUNCTIONAL_ONLY: '1', CI: 'true' },
   },
