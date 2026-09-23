@@ -59,6 +59,7 @@ not own panel lifecycle or feature-specific state.
 | `↻` beside Rotate to edit | Device rotation hint | Lucide `RotateCw` plus the existing label |
 | `+`, `−` in icon controls | Increment/decrement | Lucide `Plus`/`Minus` |
 | `✂` beside Auto-Slice | Slice | Lucide `Scissors` plus the existing label |
+| `⠿` | Track drag handle | Lucide `GripVertical` |
 | Copy Link, Show QR Code | Share-menu recognition | Lucide `Link`/`QrCode` plus the existing labels |
 
 The following remain text or existing domain marks because no replacement is a
