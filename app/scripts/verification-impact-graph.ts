@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -23,6 +24,26 @@ const RESOURCE_EXTENSIONS = new Set([
   '.wav', '.webp', '.woff', '.woff2',
 ]);
 const TYPESCRIPT_CONFIG_PATH = resolve(APP_ROOT, 'tsconfig.scripts.json');
+let trackedPaths: Set<string> | undefined;
+
+function repositoryTrackedPaths(): Set<string> {
+  trackedPaths ??= new Set(execFileSync('git', ['ls-files', '-z'], {
+    cwd: REPOSITORY_ROOT,
+    encoding: 'utf8',
+  }).split('\0').filter(Boolean));
+  return trackedPaths;
+}
+
+/** Return whether a validator input is present in a clean repository checkout. */
+export function isTrackedValidatorInput(path: string, directory = path.endsWith('/')): boolean {
+  const normalized = path.replaceAll('\\', '/').replace(/^\.\//, '').replace(/\/$/, '');
+  const tracked = repositoryTrackedPaths();
+  if (!directory) return tracked.has(normalized);
+  for (const candidate of tracked) {
+    if (candidate.startsWith(`${normalized}/`)) return true;
+  }
+  return false;
+}
 
 function compilerOptions(): ts.CompilerOptions {
   const config = ts.readConfigFile(TYPESCRIPT_CONFIG_PATH, ts.sys.readFile);
@@ -254,7 +275,14 @@ export function collectValidatorImportGraph(profile: ValidatorProfile): Validato
         `${declared.entrypoint} declares missing runtime input: ${declared.input}`,
       );
     }
-    const input = `${repositoryPath(absoluteInput)}${statSync(absoluteInput).isDirectory() ? '/' : ''}`;
+    const inputPath = repositoryPath(absoluteInput);
+    const isDirectory = statSync(absoluteInput).isDirectory();
+    if (!isTrackedValidatorInput(inputPath, isDirectory)) {
+      throw new Error(
+        `${declared.entrypoint} declares runtime input absent from a clean checkout: ${declared.input}`,
+      );
+    }
+    const input = `${inputPath}${isDirectory ? '/' : ''}`;
     inputs.add(input);
     addEdge({
       importer: repositoryPath(resolve(APP_ROOT, declared.entrypoint)),

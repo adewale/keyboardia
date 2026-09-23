@@ -77,7 +77,6 @@
     },
     "samples": {
       "prefixes": [
-        "app/public/__sample-pipeline/",
         "app/public/instruments/",
         "app/sample-lab/",
         "app/sample-pipeline/",

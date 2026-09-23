@@ -12,6 +12,7 @@ import {
 import {
   collectValidatorImportGraph,
   findValidatorOwnershipGaps,
+  isTrackedValidatorInput,
   resolveValidatorRuntimeSpecifier,
   type VerificationImpactInventory,
 } from '../scripts/verification-impact-graph';
@@ -129,6 +130,11 @@ describe('cost-aware verification impact selection', () => {
         'app/src/audio/velocity-filter-anchors.json',
       ],
     });
+  });
+
+  it('accepts only declared inputs that exist in a clean checkout', () => {
+    expect(isTrackedValidatorInput('app/public/instruments/', true)).toBe(true);
+    expect(isTrackedValidatorInput('app/.ignored-validator-input')).toBe(false);
   });
 
   it('resolves repository-local path aliases while ignoring external packages', () => {

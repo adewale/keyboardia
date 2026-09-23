@@ -1617,7 +1617,9 @@ lightweight sync source contract runs with Worker verification instead of
 forcing the sample toolchain onto every sync change. Missing inputs, unresolved
 relative imports, and unanalyzable dynamic imports fail closed; negative
 regressions remove both an imported owner and a declared-input owner to prove
-the gate detects either gap.
+the gate detects either gap. Declared inputs must also be Git-tracked, so an
+ignored local build artifact cannot make validation pass locally and fail in a
+clean CI checkout.
 
 The original exact-lane contract stored only SHA-256 digests. Those were strict
 but opaque: a reviewer could see that a hash changed without seeing which test

@@ -6735,4 +6735,7 @@ canonical test identities as readable data and compare sets with explicit
 missing/unexpected output. For validator ownership, imports are only half the
 runtime graph: resolve local aliases with the real TypeScript configuration and
 declare filesystem inputs that code reads without importing. Bind each such
-dependency to the profile that actually runs its validator.
+dependency to the profile that actually runs its validator, and require every
+declared input to exist in a clean Git checkout. Local ignored artifacts are
+not valid CI dependencies even when they happen to exist on a developer's
+machine.

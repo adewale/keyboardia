@@ -101,7 +101,6 @@ export const VALIDATORS = [
       args: ['--verify-only'],
       inputs: [
         'public/instruments/',
-        'public/__sample-pipeline/',
         'sample-pipeline/enrichment/',
         'sample-pipeline/remediation-receipts/',
       ],
