@@ -12,16 +12,24 @@ const appRoot = fileURLToPath(new URL('../', import.meta.url));
 const inventory = JSON.parse(
   readFileSync(resolve(appRoot, 'e2e/verification-impact.json'), 'utf8'),
 ) as VerificationImpactInventory;
-const graph = collectValidatorImportGraph();
-const gaps = findValidatorOwnershipGaps(inventory, graph);
+const profiles = ['samples', 'worker'] as const;
+const graphs = profiles.map(profile => collectValidatorImportGraph(profile));
+const gaps = graphs.flatMap(graph => findValidatorOwnershipGaps(
+  inventory,
+  graph.profile,
+  graph,
+));
 
 if (gaps.length > 0) {
-  console.error('Instrument Validation would be skipped for validator dependencies:');
+  console.error('A validator profile would be skipped for its runtime dependencies:');
   for (const gap of gaps) console.error(`  ${gap.importPath.join(' -> ')}`);
   process.exit(1);
 }
 
-console.log(
-  `Validator impact ownership covers ${graph.modules.length} transitive modules from `
-    + `${graph.entrypoints.length} validate:all entrypoints.`,
-);
+for (const graph of graphs) {
+  console.log(
+    `Validator impact ownership covers ${graph.modules.length} transitive modules and `
+      + `${graph.inputs.length} declared runtime inputs from ${graph.entrypoints.length} `
+      + `${graph.profile} entrypoints.`,
+  );
+}

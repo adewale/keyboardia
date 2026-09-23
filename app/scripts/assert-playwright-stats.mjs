@@ -2,7 +2,9 @@ import { resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 import {
   collectPlaywrightReportIdentities,
-  hashPlaywrightIdentities,
+  diffPlaywrightIdentities,
+  formatPlaywrightIdentityDiff,
+  playwrightIdentitiesFromManifestLines,
 } from './playwright-contract-identities.mjs';
 
 const [resultsFile, expectedArg, skippedArg, inventoryArg] = process.argv.slice(2);
@@ -24,7 +26,7 @@ if (expectedArg === 'lane') {
   const laneContracts = JSON.parse(readFileSync(
     new URL('../e2e/lane-contracts.json', import.meta.url), 'utf8',
   ));
-  if (laneContracts.schemaVersion !== 2) {
+  if (laneContracts.schemaVersion !== 3) {
     throw new Error('lane-contracts.json has an unsupported schema');
   }
   laneName = skippedArg;
@@ -58,16 +60,19 @@ const unknown = observed.map((entry) => entry.split('\0')[1]).filter((identity) 
 if (unknown.length > 0) throw new Error(`Playwright report contains unreviewed tests:\n${unknown.join('\n')}`);
 if (new Set(observed).size !== observed.length) throw new Error('Playwright report contains duplicate project/test identities');
 if (laneName) {
-  if (typeof disposition.identitySha256 !== 'string') {
-    throw new Error(`Playwright lane ${laneName} has no exact identity contract`);
+  const identityManifest = JSON.parse(readFileSync(
+    new URL('../e2e/lane-identities.json', import.meta.url), 'utf8',
+  ));
+  if (identityManifest.schemaVersion !== 1 || !identityManifest.lanes) {
+    throw new Error('lane-identities.json has an unsupported schema');
   }
-  const identitySha256 = hashPlaywrightIdentities(observed);
-  if (identitySha256 !== disposition.identitySha256) {
-    throw new Error(`Playwright lane identity contract failed: ${JSON.stringify({
-      lane: laneName,
-      expected: disposition.identitySha256,
-      actual: identitySha256,
-    })}`);
+  const expectedIdentities = playwrightIdentitiesFromManifestLines(identityManifest.lanes[laneName]);
+  const identityDiff = diffPlaywrightIdentities(expectedIdentities, observed);
+  if (identityDiff.missing.length > 0 || identityDiff.unexpected.length > 0) {
+    throw new Error(
+      `Playwright lane ${laneName} identity contract failed:\n`
+      + formatPlaywrightIdentityDiff(identityDiff),
+    );
   }
 }
 

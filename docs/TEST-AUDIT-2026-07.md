@@ -1598,8 +1598,8 @@ incomplete.
 The repaired contract follows the chain end to end: name-status collection
 keeps deletions and both rename paths; ownership overlaps are explicit; browser,
 audio, and mobile profiles activate the lanes that collect those tests; and
-each lane records the hash of its exact project/file/title identities as well
-as its result dispositions. A selector unit test now creates a real temporary
+each lane records its exact project/file/title identities in a reviewable
+manifest as well as its result dispositions. A selector unit test now creates a real temporary
 Git history, because testing only the pure path matcher would repeat the
 original blind spot at the process boundary.
 
@@ -1607,12 +1607,25 @@ A later multi-agent review found one remaining version of the same error:
 `instrument-classification.ts` matched the broad browser and Worker prefixes,
 so the unmatched-path fallback never noticed that the sample validators import
 it directly. The fix is now structural rather than another one-off allowlist
-review. `validate:all` exposes the exact entrypoints it executes, and the
-verification-impact gate walks their complete local runtime-import graph. Every
-reachable module must select Instrument Validation; unresolved relative imports
-fail closed, and a negative regression test removes a known owner to prove the
-gate detects the gap. Adding a validator dependency can therefore no longer
-silently create a green T1 run that omits its owning assertion.
+review. The verification-impact gate walks the exact entrypoints for each CI
+validator profile and their complete local runtime-import graphs. It resolves
+repository-local path aliases with the scripts project's real TypeScript
+configuration and combines imports with declared filesystem inputs, covering
+manifests, samples, calibration tables, receipts, and source files read as
+text. Sample and Worker validators have separate ownership profiles, so the
+lightweight sync source contract runs with Worker verification instead of
+forcing the sample toolchain onto every sync change. Missing inputs, unresolved
+relative imports, and unanalyzable dynamic imports fail closed; negative
+regressions remove both an imported owner and a declared-input owner to prove
+the gate detects either gap.
+
+The original exact-lane contract stored only SHA-256 digests. Those were strict
+but opaque: a reviewer could see that a hash changed without seeing which test
+moved, and failures reported two unrelated hexadecimal strings. The committed
+`lane-identities.json` now stores one sorted `project :: file › suite › test`
+line per result. Both collection-time and result-time gates report exact missing
+and unexpected identities, while dispositions remain compact in
+`lane-contracts.json`.
 
 The first current-head T2 run exposed one more ownership error: six real-time
 PCM captures were collected inside the two-worker “functional” bucket. PCM now

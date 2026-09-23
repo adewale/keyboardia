@@ -1,8 +1,9 @@
 import { execFileSync } from 'node:child_process';
 import { mkdtempSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import ts from 'typescript';
 import inventory from '../e2e/verification-impact.json';
 import {
   readChangedPaths,
@@ -11,11 +12,13 @@ import {
 import {
   collectValidatorImportGraph,
   findValidatorOwnershipGaps,
+  resolveValidatorRuntimeSpecifier,
   type VerificationImpactInventory,
 } from '../scripts/verification-impact-graph';
 
 const temporaryRepositories: string[] = [];
-const validatorGraph = collectValidatorImportGraph();
+const sampleValidatorGraph = collectValidatorImportGraph('samples');
+const workerValidatorGraph = collectValidatorImportGraph('worker');
 
 afterEach(() => {
   for (const repository of temporaryRepositories.splice(0)) {
@@ -76,12 +79,22 @@ describe('cost-aware verification impact selection', () => {
     expect(selectVerificationScope([path], inventory).selected).toMatchObject(expected);
   });
 
-  it('selects Instrument Validation for every transitive validate:all dependency', () => {
-    expect(validatorGraph.entrypoints).toContain('app/scripts/validate-sustain-ceiling.ts');
-    expect(validatorGraph.modules).toContain('app/src/shared/instrument-classification.ts');
+  it('selects each validator profile for all imported and declared runtime dependencies', () => {
+    expect(sampleValidatorGraph.entrypoints).toContain('app/scripts/validate-sustain-ceiling.ts');
+    expect(sampleValidatorGraph.modules).toContain('app/src/shared/instrument-classification.ts');
+    expect(sampleValidatorGraph.inputs).toContain('app/public/instruments/');
+    expect(sampleValidatorGraph.inputs).toContain('app/src/audio/velocity-filter-anchors.json');
+    expect(workerValidatorGraph.entrypoints).toEqual(['app/scripts/validate-sync-checklist.ts']);
+    expect(workerValidatorGraph.inputs).toContain('app/src/worker/types.ts');
     expect(findValidatorOwnershipGaps(
       inventory as VerificationImpactInventory,
-      validatorGraph,
+      'samples',
+      sampleValidatorGraph,
+    )).toEqual([]);
+    expect(findValidatorOwnershipGaps(
+      inventory as VerificationImpactInventory,
+      'worker',
+      workerValidatorGraph,
     )).toEqual([]);
   });
 
@@ -90,7 +103,7 @@ describe('cost-aware verification impact selection', () => {
     brokenInventory.profiles.samples.files = brokenInventory.profiles.samples.files
       .filter(path => path !== 'app/src/shared/instrument-classification.ts');
 
-    const gaps = findValidatorOwnershipGaps(brokenInventory, validatorGraph);
+    const gaps = findValidatorOwnershipGaps(brokenInventory, 'samples', sampleValidatorGraph);
     expect(gaps).toContainEqual({
       dependency: 'app/src/shared/instrument-classification.ts',
       importPath: [
@@ -98,6 +111,42 @@ describe('cost-aware verification impact selection', () => {
         'app/src/shared/instrument-classification.ts',
       ],
     });
+  });
+
+  it('fails closed when a declared filesystem input loses profile ownership', () => {
+    const brokenInventory = structuredClone(inventory) as VerificationImpactInventory;
+    brokenInventory.profiles.samples.files = brokenInventory.profiles.samples.files
+      .filter(path => path !== 'app/src/audio/velocity-filter-anchors.json');
+
+    expect(findValidatorOwnershipGaps(
+      brokenInventory,
+      'samples',
+      sampleValidatorGraph,
+    )).toContainEqual({
+      dependency: 'app/src/audio/velocity-filter-anchors.json',
+      importPath: [
+        'app/scripts/simulate-velocity-filter.ts',
+        'app/src/audio/velocity-filter-anchors.json',
+      ],
+    });
+  });
+
+  it('resolves repository-local path aliases while ignoring external packages', () => {
+    const importer = resolve('scripts/validate-sustain-ceiling.ts');
+    const compilerOptions: ts.CompilerOptions = {
+      baseUrl: process.cwd(),
+      module: ts.ModuleKind.ESNext,
+      moduleResolution: ts.ModuleResolutionKind.Bundler,
+      paths: { '@validator/*': ['src/shared/*'] },
+      target: ts.ScriptTarget.ESNext,
+    };
+
+    expect(resolveValidatorRuntimeSpecifier(
+      importer,
+      '@validator/instrument-classification',
+      compilerOptions,
+    )).toBe('app/src/shared/instrument-classification.ts');
+    expect(resolveValidatorRuntimeSpecifier(importer, 'typescript', compilerOptions)).toBeNull();
   });
 
   it('includes deletions and both sides of renames from the real git diff', () => {

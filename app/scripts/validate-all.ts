@@ -45,10 +45,15 @@ interface ValidatorResult {
 export interface ValidatorCommand {
   entrypoint: string;
   args?: readonly string[];
+  /** Runtime inputs read through the filesystem rather than imported as modules. */
+  inputs?: readonly string[];
 }
+
+export type ValidatorProfile = 'samples' | 'worker';
 
 export interface ValidatorDefinition {
   name: string;
+  profile: ValidatorProfile;
   commands: readonly ValidatorCommand[];
   description: string;
 }
@@ -62,70 +67,134 @@ function diagnosticTail(value: string, maximumCharacters = 4_000): string {
 export const VALIDATORS = [
   {
     name: 'Manifest Validation',
-    commands: [{ entrypoint: 'scripts/validate-manifests.ts' }],
+    profile: 'samples',
+    commands: [{
+      entrypoint: 'scripts/validate-manifests.ts',
+      inputs: ['public/instruments/', 'src/audio/sampled-instrument.ts'],
+    }],
     description: 'Checks manifests, sample files, and registry completeness',
   },
   {
     name: 'Playable Range Validation',
-    commands: [{ entrypoint: 'scripts/validate-playable-ranges.ts' }],
+    profile: 'samples',
+    commands: [{
+      entrypoint: 'scripts/validate-playable-ranges.ts',
+      inputs: ['public/instruments/'],
+    }],
     description: 'Ensures default note (C4) is within playable range',
   },
   {
     name: 'Sample Quality Audit',
+    profile: 'samples',
     commands: [{
       entrypoint: 'scripts/validate-sample-quality.ts',
       args: ['--strict'],
+      inputs: ['public/instruments/', 'scripts/sample-quality-baseline.json'],
     }],
     description: 'Decodes samples and blocks every unwaived pitch, onset, level, loop, phase, and clipping finding',
   },
   {
     name: 'Enrichment/Curation Receipt',
+    profile: 'samples',
     commands: [{
       entrypoint: 'scripts/promote-complete-sample-enrichment.ts',
       args: ['--verify-only'],
+      inputs: [
+        'public/instruments/',
+        'public/__sample-pipeline/',
+        'sample-pipeline/enrichment/',
+        'sample-pipeline/remediation-receipts/',
+      ],
     }],
     description: 'Checks shipped and archived sample hashes, curated mappings, source revisions, and license profile',
   },
   {
     name: 'Sustain Ceiling Guard',
-    commands: [{ entrypoint: 'scripts/validate-sustain-ceiling.ts' }],
+    profile: 'samples',
+    commands: [{
+      entrypoint: 'scripts/validate-sustain-ceiling.ts',
+      inputs: ['public/instruments/'],
+    }],
     description: 'Ensures sustaining instruments hold past the longest 16-step tied note',
   },
   {
     name: 'Velocity Filter Calibration',
+    profile: 'samples',
     commands: [
-      { entrypoint: 'scripts/validate-velocity-filter-calibration.ts' },
+      {
+        entrypoint: 'scripts/validate-velocity-filter-calibration.ts',
+        inputs: [
+          'public/instruments/',
+          'src/audio/velocity-filter-anchors.json',
+          'src/audio/velocity-filter-anchors-48000.json',
+        ],
+      },
       {
         entrypoint: 'scripts/simulate-velocity-filter.ts',
         args: ['--sample-rate', '44100'],
+        inputs: ['public/instruments/', 'src/audio/velocity-filter-anchors.json'],
       },
       {
         entrypoint: 'scripts/simulate-velocity-filter.ts',
         args: ['--sample-rate', '48000'],
+        inputs: ['public/instruments/', 'src/audio/velocity-filter-anchors-48000.json'],
       },
     ],
     description: 'Binds calibration to every playable note and checks the 26-35% timbre target on production mappings',
   },
   {
     name: 'Release Time Validation',
-    commands: [{ entrypoint: 'scripts/validate-release-times.ts' }],
+    profile: 'samples',
+    commands: [{
+      entrypoint: 'scripts/validate-release-times.ts',
+      inputs: ['public/instruments/'],
+    }],
     description: 'Validates release time consistency across instruments',
   },
   {
     name: 'Sample Load Budget Validation',
-    commands: [{ entrypoint: 'scripts/validate-sample-load-budgets.ts' }],
+    profile: 'samples',
+    commands: [{
+      entrypoint: 'scripts/validate-sample-load-budgets.ts',
+      inputs: ['public/instruments/'],
+    }],
     description: 'Checks priority and background payload sizes against the static transfer budget',
   },
   {
     name: 'Sync Checklist Validation',
-    commands: [{ entrypoint: 'scripts/validate-sync-checklist.ts' }],
+    profile: 'worker',
+    commands: [{
+      entrypoint: 'scripts/validate-sync-checklist.ts',
+      inputs: [
+        'src/shared/message-types.ts',
+        'src/shared/messages.ts',
+        'src/sync/multiplayer.ts',
+        'src/worker/live-session.ts',
+        'src/worker/types.ts',
+      ],
+    }],
     description: 'Ensures multiplayer sync implementation is complete',
   },
 ] as const satisfies readonly ValidatorDefinition[];
 
-export function validatorEntrypoints(): string[] {
-  return [...new Set(VALIDATORS.flatMap(validator =>
+export function validatorsForProfile(profile?: ValidatorProfile): readonly ValidatorDefinition[] {
+  return profile ? VALIDATORS.filter(validator => validator.profile === profile) : VALIDATORS;
+}
+
+export function validatorEntrypoints(profile?: ValidatorProfile): string[] {
+  return [...new Set(validatorsForProfile(profile).flatMap(validator =>
     validator.commands.map(command => command.entrypoint)))].sort();
+}
+
+export interface ValidatorDeclaredInput {
+  entrypoint: string;
+  input: string;
+}
+
+export function validatorDeclaredInputs(profile?: ValidatorProfile): ValidatorDeclaredInput[] {
+  return validatorsForProfile(profile).flatMap(validator =>
+    validator.commands.flatMap(command =>
+      (command.inputs ?? []).map(input => ({ entrypoint: command.entrypoint, input }))));
 }
 
 function displayCommand(command: ValidatorCommand): string {
@@ -166,13 +235,22 @@ function runValidator(validator: ValidatorDefinition): ValidatorResult {
 }
 
 function main(): void {
+  const profileIndex = process.argv.indexOf('--profile');
+  const requestedProfile = profileIndex >= 0 ? process.argv[profileIndex + 1] : undefined;
+  if (profileIndex >= 0 && requestedProfile === undefined) {
+    throw new Error('--profile requires samples or worker');
+  }
+  if (requestedProfile !== undefined && requestedProfile !== 'samples' && requestedProfile !== 'worker') {
+    throw new Error('--profile must be samples or worker');
+  }
+  const validators = validatorsForProfile(requestedProfile);
   console.log(`\n${colors.bold}🔍 UNIFIED SYSTEM INTEGRITY VALIDATOR${colors.reset}\n`);
-  console.log(`${colors.dim}Running all validators to ensure system integrity${colors.reset}\n`);
+  console.log(`${colors.dim}Running ${requestedProfile ?? 'all'} validators to ensure system integrity${colors.reset}\n`);
   console.log('═'.repeat(70) + '\n');
 
   const results: ValidatorResult[] = [];
 
-  for (const validator of VALIDATORS) {
+  for (const validator of validators) {
     console.log(`${colors.cyan}▶${colors.reset} ${validator.name}`);
     console.log(`  ${colors.dim}${validator.description}${colors.reset}`);
 

@@ -242,6 +242,9 @@ jobs:
         run: npm ci
         working-directory: ./app/test/integration
 
+      - name: Validate synchronization source contract
+        run: npm run validate:sync
+
       - name: Run integration tests
         run: npm run test:integration:built
 
@@ -365,8 +368,8 @@ jobs:
         env:
           RUN_REAL_SAMPLE_PIPELINE: '1'
 
-      - name: Run all validators
-        run: npm run validate:all
+      - name: Run all instrument validators
+        run: npm run validate:instruments
 
       - name: Verify browser sample decode
         run: npx playwright test e2e/sample-browser-decode.spec.ts --project=chromium --retries=0

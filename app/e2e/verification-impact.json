@@ -77,6 +77,7 @@
     },
     "samples": {
       "prefixes": [
+        "app/public/__sample-pipeline/",
         "app/public/instruments/",
         "app/sample-lab/",
         "app/sample-pipeline/",
@@ -93,6 +94,8 @@
         "app/src/audio/constants.ts",
         "app/src/audio/parameter-automation.ts",
         "app/src/audio/velocity-sample-filter.ts",
+        "app/src/audio/velocity-filter-anchors-48000.json",
+        "app/src/audio/velocity-filter-anchors.json",
         "app/src/shared/constants.ts",
         "app/src/shared/instrument-catalog.ts",
         "app/src/shared/instrument-classification.ts",
@@ -121,6 +124,7 @@
     ".github/workflows/ruff.yml",
     "app/.husky/pre-push",
     "app/e2e/lane-contracts.json",
+    "app/e2e/lane-identities.json",
     "app/e2e/verification-impact.json",
     "app/scripts/assert-playwright-stats.mjs",
     "app/scripts/check-e2e-inventories.mjs",

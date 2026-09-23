@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
-  hashPlaywrightIdentities,
+  diffPlaywrightIdentities,
+  formatPlaywrightIdentityDiff,
   parsePlaywrightListIdentities,
+  playwrightIdentitiesFromManifestLines,
+  playwrightIdentityManifestLines,
 } from '../scripts/playwright-contract-identities.mjs';
 
 describe('Playwright lane identity contracts', () => {
@@ -19,10 +22,23 @@ describe('Playwright lane identity contracts', () => {
     ]);
   });
 
-  it('changes the contract when a test identity is silently substituted', () => {
+  it('reports the exact contract change when a test identity is silently substituted', () => {
     const original = parsePlaywrightListIdentities(listing);
     const substituted = original.map(identity => identity.replace('second contract', 'replacement'));
+    const diff = diffPlaywrightIdentities(original, substituted);
 
-    expect(hashPlaywrightIdentities(substituted)).not.toBe(hashPlaywrightIdentities(original));
+    expect(formatPlaywrightIdentityDiff(diff)).toBe([
+      'Missing expected identities:',
+      '  - chromium :: example.spec.ts › Example › second contract',
+      'Unexpected identities:',
+      '  + chromium :: example.spec.ts › Example › replacement',
+    ].join('\n'));
+  });
+
+  it('round-trips the reviewable project and title lines', () => {
+    const identities = parsePlaywrightListIdentities(listing);
+
+    expect(playwrightIdentitiesFromManifestLines(playwrightIdentityManifestLines(identities)))
+      .toEqual(identities);
   });
 });

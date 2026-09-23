@@ -6728,3 +6728,11 @@ acknowledgements; and reserve fixed time for behavior whose definition really
 includes time. When several tests prove fragments of one invariant, consolidate
 them. When a test owns neither production code nor a distinct failure signal,
 remove it.
+
+Exactness also needs to be reviewable. A digest can prove that a lane changed,
+but it cannot show a reviewer what moved or give a useful failure diff. Store
+canonical test identities as readable data and compare sets with explicit
+missing/unexpected output. For validator ownership, imports are only half the
+runtime graph: resolve local aliases with the real TypeScript configuration and
+declare filesystem inputs that code reads without importing. Bind each such
+dependency to the profile that actually runs its validator.

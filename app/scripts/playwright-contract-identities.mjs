@@ -1,5 +1,7 @@
-import { createHash } from 'node:crypto';
 import { basename } from 'node:path';
+
+const IDENTITY_SEPARATOR = '\0';
+const MANIFEST_SEPARATOR = ' :: ';
 
 export function parsePlaywrightListIdentities(output) {
   return output.split(/\r?\n/).flatMap((line) => {
@@ -27,6 +29,60 @@ export function collectPlaywrightReportIdentities(report) {
   return observed;
 }
 
-export function hashPlaywrightIdentities(identities) {
-  return createHash('sha256').update([...identities].sort().join('\n')).digest('hex');
+export function playwrightIdentityManifestLines(identities) {
+  return [...identities].sort().map((identity) => {
+    const separator = identity.indexOf(IDENTITY_SEPARATOR);
+    if (separator < 1 || separator === identity.length - 1) {
+      throw new Error(`Invalid Playwright identity: ${JSON.stringify(identity)}`);
+    }
+    return `${identity.slice(0, separator)}${MANIFEST_SEPARATOR}${identity.slice(separator + 1)}`;
+  });
+}
+
+export function playwrightIdentitiesFromManifestLines(lines) {
+  if (!Array.isArray(lines)) throw new Error('Playwright identity manifest must contain an array');
+  const identities = lines.map((line) => {
+    if (typeof line !== 'string') {
+      throw new Error(`Invalid Playwright identity line: ${JSON.stringify(line)}`);
+    }
+    const separator = line.indexOf(MANIFEST_SEPARATOR);
+    if (separator < 1 || separator === line.length - MANIFEST_SEPARATOR.length) {
+      throw new Error(`Invalid Playwright identity line: ${JSON.stringify(line)}`);
+    }
+    return `${line.slice(0, separator)}${IDENTITY_SEPARATOR}${line.slice(separator + MANIFEST_SEPARATOR.length)}`;
+  });
+  const canonical = [...identities].sort();
+  if (new Set(canonical).size !== canonical.length) {
+    throw new Error('Playwright identity manifest contains duplicates');
+  }
+  if (JSON.stringify(identities) !== JSON.stringify(canonical)) {
+    throw new Error('Playwright identity manifest must be sorted');
+  }
+  return identities;
+}
+
+export function diffPlaywrightIdentities(expected, actual) {
+  const expectedSet = new Set(expected);
+  const actualSet = new Set(actual);
+  return {
+    missing: [...expectedSet].filter(identity => !actualSet.has(identity)).sort(),
+    unexpected: [...actualSet].filter(identity => !expectedSet.has(identity)).sort(),
+  };
+}
+
+export function formatPlaywrightIdentity(identity) {
+  return identity.replace(IDENTITY_SEPARATOR, MANIFEST_SEPARATOR);
+}
+
+export function formatPlaywrightIdentityDiff(diff) {
+  const lines = [];
+  if (diff.missing.length > 0) {
+    lines.push('Missing expected identities:');
+    lines.push(...diff.missing.map(identity => `  - ${formatPlaywrightIdentity(identity)}`));
+  }
+  if (diff.unexpected.length > 0) {
+    lines.push('Unexpected identities:');
+    lines.push(...diff.unexpected.map(identity => `  + ${formatPlaywrightIdentity(identity)}`));
+  }
+  return lines.join('\n');
 }

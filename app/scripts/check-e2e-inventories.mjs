@@ -1,14 +1,19 @@
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  hashPlaywrightIdentities,
+  diffPlaywrightIdentities,
+  formatPlaywrightIdentityDiff,
   parsePlaywrightListIdentities,
+  playwrightIdentitiesFromManifestLines,
+  playwrightIdentityManifestLines,
 } from './playwright-contract-identities.mjs';
 
 const appRoot = fileURLToPath(new URL('../', import.meta.url));
 const e2eRoot = resolve(appRoot, 'e2e');
+const laneIdentityPath = resolve(e2eRoot, 'lane-identities.json');
+const writeLaneIdentities = process.argv.includes('--write-lane-identities');
 
 function readManifest(name) {
   const entries = readFileSync(resolve(e2eRoot, name), 'utf8')
@@ -73,8 +78,15 @@ const overlappingBackends = mockSpecs.filter(path => workerSpecs.includes(path))
 const misplacedAudioSpecs = audioSpecs.filter(path => mockSpecs.includes(path));
 
 const laneFile = JSON.parse(readFileSync(resolve(e2eRoot, 'lane-contracts.json'), 'utf8'));
-if (laneFile.schemaVersion !== 2 || !laneFile.lanes) {
+if (laneFile.schemaVersion !== 3 || !laneFile.lanes) {
   throw new Error('lane-contracts.json has an unsupported schema');
+}
+const laneIdentityFile = writeLaneIdentities
+  ? null
+  : JSON.parse(readFileSync(laneIdentityPath, 'utf8'));
+if (laneIdentityFile
+  && (laneIdentityFile.schemaVersion !== 1 || !laneIdentityFile.lanes)) {
+  throw new Error('lane-identities.json has an unsupported schema');
 }
 
 const laneDefinitions = {
@@ -196,7 +208,14 @@ const definedLanes = Object.keys(laneDefinitions).sort();
 if (JSON.stringify(configuredLanes) !== JSON.stringify(definedLanes)) {
   throw new Error(`Lane contract and collector definitions differ: ${JSON.stringify({ configuredLanes, definedLanes })}`);
 }
+if (laneIdentityFile) {
+  const identityLanes = Object.keys(laneIdentityFile.lanes).sort();
+  if (JSON.stringify(identityLanes) !== JSON.stringify(definedLanes)) {
+    throw new Error(`Lane identity and collector definitions differ: ${JSON.stringify({ identityLanes, definedLanes })}`);
+  }
+}
 
+const collectedLaneIdentities = {};
 for (const [name, definition] of Object.entries(laneDefinitions)) {
   const args = ['test', ...definition.specs, `--project=${definition.project}`];
   if (definition.noDeps) args.push('--no-deps');
@@ -211,10 +230,11 @@ for (const [name, definition] of Object.entries(laneDefinitions)) {
     throw new Error(`Unable to collect ${definition.label} disposition total:\n`
       + `${collected.stderr || collected.stdout}`);
   }
-  const identities = parsePlaywrightListIdentities(collected.stdout);
+  const identities = parsePlaywrightListIdentities(collected.stdout).sort();
   if (new Set(identities).size !== identities.length) {
     throw new Error(`${definition.label} collects duplicate project/test identities`);
   }
+  collectedLaneIdentities[name] = identities;
   const collectedTotal = identities.length;
   const contract = laneFile.lanes[name];
   const contractedTotal = contract.expected + contract.skipped;
@@ -222,13 +242,27 @@ for (const [name, definition] of Object.entries(laneDefinitions)) {
     throw new Error(`${definition.label} contract accounts for ${contractedTotal} results, `
       + `but Playwright collects ${collectedTotal} with the lane's exact project, files, and environment`);
   }
-  const identitySha256 = hashPlaywrightIdentities(identities);
-  if (contract.identitySha256 !== identitySha256) {
-    throw new Error(`${definition.label} exact identity contract changed: ${JSON.stringify({
-      expected: contract.identitySha256,
-      actual: identitySha256,
-    })}`);
+  if (laneIdentityFile) {
+    const expectedIdentities = playwrightIdentitiesFromManifestLines(laneIdentityFile.lanes[name]);
+    const identityDiff = diffPlaywrightIdentities(expectedIdentities, identities);
+    if (identityDiff.missing.length > 0 || identityDiff.unexpected.length > 0) {
+      throw new Error(
+        `${definition.label} exact identity contract changed:\n`
+        + formatPlaywrightIdentityDiff(identityDiff),
+      );
+    }
   }
+}
+
+if (writeLaneIdentities) {
+  const lanes = Object.fromEntries(Object.entries(collectedLaneIdentities)
+    .map(([name, identities]) => [name, playwrightIdentityManifestLines(identities)]));
+  writeFileSync(laneIdentityPath, `${JSON.stringify({
+    schemaVersion: 1,
+    description: 'Reviewable project, file, and full-title identities collected by each Playwright lane.',
+    lanes,
+  }, null, 2)}\n`);
+  console.log(`Updated ${relative(appRoot, laneIdentityPath)} with exact identities for ${configuredLanes.length} lanes`);
 }
 
 console.log(`E2E inventories valid: ${mockSpecs.length} mock-required, ${workerSpecs.length} Worker-required, ${audioSpecs.length} CPU-bound audio specs, ${allSpecs.length} total specs, ${expectedTitles.length} exact tests, ${configuredLanes.length} centralized lane contracts`);

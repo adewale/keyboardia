@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, statSync } from 'node:fs';
 import { dirname, extname, isAbsolute, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import ts from 'typescript';
@@ -6,7 +6,11 @@ import {
   selectVerificationScope,
   type VerificationImpactInventory,
 } from './select-verification-scope.mjs';
-import { validatorEntrypoints } from './validate-all';
+import {
+  validatorDeclaredInputs,
+  validatorEntrypoints,
+  type ValidatorProfile,
+} from './validate-all';
 
 export type { VerificationImpactInventory } from './select-verification-scope.mjs';
 
@@ -18,13 +22,29 @@ const RESOURCE_EXTENSIONS = new Set([
   '.md', '.mp3', '.ogg', '.otf', '.png', '.sass', '.scss', '.svg', '.ttf', '.wasm',
   '.wav', '.webp', '.woff', '.woff2',
 ]);
-const COMPILER_OPTIONS: ts.CompilerOptions = {
-  allowImportingTsExtensions: true,
-  module: ts.ModuleKind.ESNext,
-  moduleResolution: ts.ModuleResolutionKind.Bundler,
-  resolveJsonModule: true,
-  target: ts.ScriptTarget.ESNext,
-};
+const TYPESCRIPT_CONFIG_PATH = resolve(APP_ROOT, 'tsconfig.scripts.json');
+
+function compilerOptions(): ts.CompilerOptions {
+  const config = ts.readConfigFile(TYPESCRIPT_CONFIG_PATH, ts.sys.readFile);
+  if (config.error) {
+    throw new Error(ts.flattenDiagnosticMessageText(config.error.messageText, '\n'));
+  }
+  const parsed = ts.parseJsonConfigFileContent(
+    config.config,
+    ts.sys,
+    APP_ROOT,
+    undefined,
+    TYPESCRIPT_CONFIG_PATH,
+  );
+  if (parsed.errors.length > 0) {
+    throw new Error(parsed.errors
+      .map(error => ts.flattenDiagnosticMessageText(error.messageText, '\n'))
+      .join('\n'));
+  }
+  return parsed.options;
+}
+
+const COMPILER_OPTIONS = compilerOptions();
 
 export interface ValidatorImportEdge {
   importer: string;
@@ -32,8 +52,10 @@ export interface ValidatorImportEdge {
 }
 
 export interface ValidatorImportGraph {
+  profile: ValidatorProfile;
   entrypoints: string[];
   modules: string[];
+  inputs: string[];
   edges: ValidatorImportEdge[];
 }
 
@@ -48,6 +70,14 @@ function repositoryPath(absolutePath: string): string {
     throw new Error(`Validator dependency escapes the repository: ${absolutePath}`);
   }
   return path;
+}
+
+function isRepositoryDependency(absolutePath: string): boolean {
+  const path = relative(REPOSITORY_ROOT, absolutePath).replaceAll('\\', '/');
+  return path !== '..'
+    && !path.startsWith('../')
+    && !isAbsolute(path)
+    && !path.split('/').includes('node_modules');
 }
 
 interface RuntimeImport {
@@ -139,6 +169,7 @@ interface ResolvedRuntimeImport {
 function resolveRuntimeImport(
   importerPath: string,
   reference: RuntimeImport,
+  options = COMPILER_OPTIONS,
 ): ResolvedRuntimeImport | null {
   if (reference.expression) {
     throw new Error(
@@ -146,9 +177,9 @@ function resolveRuntimeImport(
         + reference.expression,
     );
   }
-  if (!reference.specifier.startsWith('.')) return null;
   const sourceSpecifier = reference.specifier.split(/[?#]/, 1)[0];
-  if (RESOURCE_EXTENSIONS.has(extname(sourceSpecifier).toLowerCase())) {
+  const isRelativeSpecifier = sourceSpecifier.startsWith('.');
+  if (isRelativeSpecifier && RESOURCE_EXTENSIONS.has(extname(sourceSpecifier).toLowerCase())) {
     const resourcePath = resolve(dirname(importerPath), sourceSpecifier);
     if (!existsSync(resourcePath)) {
       throw new Error(
@@ -160,30 +191,76 @@ function resolveRuntimeImport(
   const result = ts.resolveModuleName(
     sourceSpecifier,
     importerPath,
-    COMPILER_OPTIONS,
+    options,
     ts.sys,
   );
   const importedPath = result.resolvedModule?.resolvedFileName;
-  if (!importedPath || !CODE_EXTENSIONS.has(extname(importedPath).toLowerCase())) {
+  if (!importedPath) {
+    if (!isRelativeSpecifier) return null;
     throw new Error(
       `Unable to resolve validator import ${reference.specifier} from ${repositoryPath(importerPath)}`,
     );
   }
-  return { path: resolve(importedPath), traverse: true };
+  const absoluteImportedPath = resolve(importedPath);
+  if (!isRepositoryDependency(absoluteImportedPath)) return null;
+  const importedExtension = extname(absoluteImportedPath).toLowerCase();
+  if (RESOURCE_EXTENSIONS.has(importedExtension)) {
+    return { path: absoluteImportedPath, traverse: false };
+  }
+  if (!CODE_EXTENSIONS.has(importedExtension)) {
+    throw new Error(
+      `Unsupported local validator dependency ${reference.specifier} from ${repositoryPath(importerPath)}`,
+    );
+  }
+  return { path: absoluteImportedPath, traverse: true };
+}
+
+/** Resolve one runtime specifier for focused alias and boundary regression tests. */
+export function resolveValidatorRuntimeSpecifier(
+  importerPath: string,
+  specifier: string,
+  options: ts.CompilerOptions = COMPILER_OPTIONS,
+): string | null {
+  const imported = resolveRuntimeImport(importerPath, { specifier }, options);
+  return imported ? repositoryPath(imported.path) : null;
 }
 
 /**
  * Walk every local runtime import reachable from the exact commands run by
- * validate:all. Any unresolved relative import fails closed rather than making
- * the ownership graph silently incomplete.
+ * a CI validator profile. Local aliases are resolved with the scripts project's
+ * TypeScript configuration. Any unresolved relative import or missing declared
+ * filesystem input fails closed rather than making ownership silently incomplete.
  */
-export function collectValidatorImportGraph(): ValidatorImportGraph {
-  const entrypoints = validatorEntrypoints()
+export function collectValidatorImportGraph(profile: ValidatorProfile): ValidatorImportGraph {
+  const entrypoints = validatorEntrypoints(profile)
     .map(entrypoint => repositoryPath(resolve(APP_ROOT, entrypoint)));
   const queue = entrypoints.map(entrypoint => resolve(REPOSITORY_ROOT, entrypoint));
   const discovered = new Set(queue);
+  const inputs = new Set<string>();
   const visitedCode = new Set<string>();
   const edges: ValidatorImportEdge[] = [];
+  const edgeKeys = new Set<string>();
+  const addEdge = (edge: ValidatorImportEdge): void => {
+    const key = `${edge.importer}\0${edge.imported}`;
+    if (edgeKeys.has(key)) return;
+    edgeKeys.add(key);
+    edges.push(edge);
+  };
+
+  for (const declared of validatorDeclaredInputs(profile)) {
+    const absoluteInput = resolve(APP_ROOT, declared.input);
+    if (!existsSync(absoluteInput)) {
+      throw new Error(
+        `${declared.entrypoint} declares missing runtime input: ${declared.input}`,
+      );
+    }
+    const input = `${repositoryPath(absoluteInput)}${statSync(absoluteInput).isDirectory() ? '/' : ''}`;
+    inputs.add(input);
+    addEdge({
+      importer: repositoryPath(resolve(APP_ROOT, declared.entrypoint)),
+      imported: input,
+    });
+  }
 
   while (queue.length > 0) {
     const importerPath = queue.shift()!;
@@ -202,17 +279,16 @@ export function collectValidatorImportGraph(): ValidatorImportGraph {
         importer: repositoryPath(importerPath),
         imported: repositoryPath(imported.path),
       };
-      if (!edges.some(existing =>
-        existing.importer === edge.importer && existing.imported === edge.imported)) {
-        edges.push(edge);
-      }
+      addEdge(edge);
       if (imported.traverse) queue.push(imported.path);
     }
   }
 
   return {
+    profile,
     entrypoints: entrypoints.sort(),
     modules: [...discovered].map(repositoryPath).sort(),
+    inputs: [...inputs].sort(),
     edges: edges.sort((a, b) =>
       `${a.importer}:${a.imported}`.localeCompare(`${b.importer}:${b.imported}`)),
   };
@@ -238,9 +314,10 @@ function importPathTo(dependency: string, graph: ValidatorImportGraph): string[]
 /** Return validator dependencies for which T1 would skip Instrument Validation. */
 export function findValidatorOwnershipGaps(
   inventory: VerificationImpactInventory,
-  graph = collectValidatorImportGraph(),
+  profile: ValidatorProfile,
+  graph = collectValidatorImportGraph(profile),
 ): ValidatorOwnershipGap[] {
-  return graph.modules
-    .filter(dependency => !selectVerificationScope([dependency], inventory).selected.samples)
+  return [...graph.modules, ...graph.inputs]
+    .filter(dependency => !selectVerificationScope([dependency], inventory).selected[profile])
     .map(dependency => ({ dependency, importPath: importPathTo(dependency, graph) }));
 }
