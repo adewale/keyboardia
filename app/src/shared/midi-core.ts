@@ -10,7 +10,7 @@
  * - Velocity is percentage (0-100) for midi-writer-js, not MIDI value (0-127)
  * - Program numbers are 0-indexed in MIDI, but spec uses 1-indexed GM numbers
  * - Note pitch clamped to 0-127 to prevent wrap-around
- * - Swing applies only to off-beat steps (1, 3, 5, 7...)
+ * - Swing applies only to off-beat steps (1, 3, 5, 7...) of each track's own loop
  */
 
 import MidiWriter from 'midi-writer-js';
@@ -230,14 +230,20 @@ export function getVelocity(pLock: ParameterLock | null): number {
 /**
  * Converts step index to MIDI ticks, applying swing to off-beat steps.
  *
- * @param step - Global step index (0-based)
+ * Whether a step is swung depends on its position in its own track's loop,
+ * as in playback (`calculateSwingDelay`). For an odd-length track the two
+ * differ from the second pass on: a 5-step track's second pass starts at file
+ * step 5, which is the track's step 0 and stays on the beat.
+ *
+ * @param step - Step index from the start of the file (0-based)
  * @param swing - Swing amount (0-100)
+ * @param trackStep - The step's position in its track's loop; defaults to `step`
  */
-export function stepToTicks(step: number, swing: number): number {
+export function stepToTicks(step: number, swing: number, trackStep = step): number {
   const baseTicks = step * TICKS_PER_STEP;
 
-  // Apply swing only to off-beat steps (1, 3, 5, 7...)
-  if (step % 2 === 1 && swing > 0) {
+  // Apply swing only to the track's off-beat steps (1, 3, 5, 7...)
+  if (trackStep % 2 === 1 && swing > 0) {
     // Swing offset: 0-50% of a step (0-16 ticks at 100% swing)
     const swingOffset = (swing / 100) * TICKS_PER_STEP * 0.5;
     return Math.round(baseTicks + swingOffset);
@@ -405,7 +411,7 @@ export function encodeMidi(
           continue;
         }
 
-        const startTick = stepToTicks(absoluteStep, state.swing);
+        const startTick = stepToTicks(absoluteStep, state.swing, step);
         const velocity = getVelocity(pLock);
         const pitch = isDrum
           ? getDrumNote(keyboardiaTrack)

@@ -8,11 +8,15 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import fc from 'fast-check';
 import { parseMidi } from 'midi-file';
 import type { MidiData } from 'midi-file';
 import {
   exportToMidi,
 } from './midiExport';
+import { calculateSwingDelay } from './timing-calculations';
+import { seconds } from './audio-time';
+import { STEP_COUNT_OPTIONS } from '../types';
 import {
   TICKS_PER_STEP,
   BASE_NOTE,
@@ -341,6 +345,65 @@ describe('MIDI Note Timing', () => {
     expect(notes[0].startTick).toBe(0);
     expect(notes[1].startTick).toBe(2 * TICKS_PER_STEP);
     expect(notes[2].startTick).toBe(4 * TICKS_PER_STEP);
+  });
+
+  it('swings an odd-length track by its own step position on every pass', () => {
+    // Against a 2-step loop, a 5-step loop plays twice (LCM 10). Its second
+    // pass starts at file step 5, which is the track's step 0: on the beat.
+    const fiveSteps = Array(128).fill(false);
+    fiveSteps[0] = true;
+    fiveSteps[1] = true;
+    const pulseSteps = Array(128).fill(false);
+    pulseSteps[0] = true;
+    const state = createState({
+      tracks: [
+        createTrack({ id: 'five', steps: fiveSteps, stepCount: 5 }),
+        createTrack({ id: 'pulse', sampleId: 'snare', steps: pulseSteps, stepCount: 2 }),
+      ],
+      swing: 100,
+    });
+    const notes = extractNoteEvents(parseMidiData(exportToMidi(state)._midiData))
+      .filter(note => note.note === DRUM_NOTE_MAP.kick);
+
+    expect(notes.map(note => note.startTick)).toEqual([
+      0,
+      TICKS_PER_STEP + 16,
+      5 * TICKS_PER_STEP,
+      6 * TICKS_PER_STEP + 16,
+    ]);
+  });
+
+  it('swings the same steps as playback for every allowed track length', () => {
+    fc.assert(
+      fc.property(
+        fc.constantFrom(...STEP_COUNT_OPTIONS),
+        fc.integer({ min: 0, max: 100 }),
+        (stepCount, swing) => {
+          // The 2-step pulse makes every odd-length track play two passes.
+          const steps = Array.from({ length: 128 }, (_, i) => i < stepCount);
+          const pulseSteps = Array(128).fill(false);
+          pulseSteps[0] = true;
+          const state = createState({
+            tracks: [
+              createTrack({ id: 'subject', steps, stepCount }),
+              createTrack({ id: 'pulse', sampleId: 'snare', steps: pulseSteps, stepCount: 2 }),
+            ],
+            swing,
+          });
+          const ticks = extractNoteEvents(parseMidiData(exportToMidi(state)._midiData))
+            .filter(note => note.note === DRUM_NOTE_MAP.kick)
+            .map(note => note.startTick);
+
+          // Playback's swing, measured in ticks instead of seconds.
+          const playbackTicks = ticks.map((_, fileStep) => Math.round(
+            fileStep * TICKS_PER_STEP
+              + calculateSwingDelay(fileStep % stepCount, swing / 100, 0, seconds(TICKS_PER_STEP)),
+          ));
+          expect(ticks).toEqual(playbackTicks);
+        },
+      ),
+      { numRuns: 100 },
+    );
   });
 
   it('exports tied steps as one extended note rather than reattacks', () => {
