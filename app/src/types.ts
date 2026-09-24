@@ -66,7 +66,7 @@ export interface GridState {
   effects?: EffectsState; // Phase 25: Audio effects state (optional for backwards compatibility)
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant (optional for backwards compatibility)
   isPlaying: boolean;
-  currentStep: number; // Global step counter (0-127 for 8x multiplier)
+  currentStep: number; // Global step counter; wraps only inside a loop region. Tracks read it modulo their own length
   // Phase 31F: Multi-select state (local only, not synced)
   selection?: SelectionState | null;
   // Phase 31G: Loop region state (synced to multiplayer)

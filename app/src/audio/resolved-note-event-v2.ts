@@ -136,7 +136,6 @@ export interface ResolveNoteEventInputV2 {
   anySoloed: boolean;
   activeNote?: ActiveNoteCursorV2;
   loopRegion?: { start: number; end: number } | null;
-  maxSteps: number;
   defaultStepCount: number;
   defaultGatePercent?: number;
   defaultPlaybackMode?: SamplePlaybackMode;
@@ -166,15 +165,15 @@ function trackStepAt(globalStep: number, stepCount: number): number {
   return ((globalStep % stepCount) + stepCount) % stepCount;
 }
 
+/** Mirrors `advanceStep`: the global counter wraps only inside a loop region. */
 function nextGlobalStep(
   globalStep: number,
   loopRegion: ResolveNoteEventInputV2['loopRegion'],
-  maxSteps: number,
 ): number {
   if (loopRegion) {
     return globalStep >= loopRegion.end ? loopRegion.start : globalStep + 1;
   }
-  return (globalStep + 1) % Math.max(1, maxSteps);
+  return globalStep + 1;
 }
 
 function countTiedSteps(
@@ -182,18 +181,17 @@ function countTiedSteps(
   globalStep: number,
   stepCount: number,
   loopRegion: ResolveNoteEventInputV2['loopRegion'],
-  maxSteps: number,
 ): number {
   let tiedSteps = 1;
   let cursor = globalStep;
   const cycleSteps = loopRegion
     ? Math.max(1, loopRegion.end - loopRegion.start + 1)
-    : Math.max(1, Math.min(stepCount, maxSteps));
+    : Math.max(1, stepCount);
 
   // Bound a cyclic all-tied pattern to one effective playback cycle. The
   // cursor expires at this boundary so the next cycle emits a fresh onset.
   while (tiedSteps < cycleSteps) {
-    cursor = nextGlobalStep(cursor, loopRegion, maxSteps);
+    cursor = nextGlobalStep(cursor, loopRegion);
     const nextTrackStep = trackStepAt(cursor, stepCount);
     const lock = track.parameterLocks[nextTrackStep];
     if (track.steps[nextTrackStep] !== true || lock?.tie !== true) break;
@@ -329,7 +327,6 @@ export function resolveNoteEventV2(input: ResolveNoteEventInputV2): NoteEventRes
     input.globalStep,
     stepCount,
     input.loopRegion,
-    input.maxSteps,
   );
   const gatePercent = bounded(
     finiteOr(track.gate, input.defaultGatePercent ?? DEFAULT_TRACK_GATE),

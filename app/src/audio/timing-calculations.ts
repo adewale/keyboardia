@@ -31,16 +31,6 @@ export const STEPS_PER_BEAT = 4;
 export const SWING_DELAY_FACTOR = 0.5;
 
 /**
- * Maximum steps in a pattern (8 bars at 16th note resolution)
- *
- * NOTE: Intentionally duplicated from types.ts and worker/invariants.ts.
- * This module is pure and cannot import from those modules without
- * introducing unwanted dependencies. Parity is verified by tests in
- * worker/types.test.ts.
- */
-export const MAX_STEPS = 128;
-
-/**
  * Calculate step duration in seconds.
  *
  * @param tempo - Tempo in BPM (60-180)
@@ -104,7 +94,12 @@ export function calculateStepTime(
 }
 
 /**
- * Advance step within loop region or full pattern.
+ * Advance the global step counter.
+ *
+ * Inside a loop region the counter wraps at the region's end. Without one it
+ * never wraps: each track reads its position as `globalStep % stepCount`, so
+ * every track loops at its own length for as long as playback runs. (A wrap at
+ * 128 used to cut short every track whose length does not divide 128.)
  *
  * @param currentStep - Current step index
  * @param loopRegion - Optional loop region {start, end}
@@ -116,13 +111,9 @@ export function calculateStepTime(
 export function advanceStep(
   currentStep: number,
   loopRegion: { start: number; end: number } | null,
-  maxSteps = MAX_STEPS
 ): number {
-  if (loopRegion) {
-    if (currentStep >= loopRegion.end) {
-      return loopRegion.start;
-    }
-    return currentStep + 1;
+  if (loopRegion && currentStep >= loopRegion.end) {
+    return loopRegion.start;
   }
-  return (currentStep + 1) % maxSteps;
+  return currentStep + 1;
 }

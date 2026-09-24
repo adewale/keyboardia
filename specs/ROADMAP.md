@@ -279,7 +279,7 @@ interface Track {
 **How it works:**
 - Each track shows its actual number of steps (with horizontal scrolling if needed)
 - Step count **dropdown** in track controls (26 options for polyrhythmic patterns)
-- Global counter runs 0-127 (MAX_STEPS = 128)
+- Global counter counts up for as long as playback runs; it wraps only inside a loop region
 - Each track calculates position: `globalStep % track.stepCount`
 - Playhead per track shows that track's position
 

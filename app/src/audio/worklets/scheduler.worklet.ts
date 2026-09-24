@@ -190,7 +190,7 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
 
       // Advance step (loop-region aware)
       const previousStep = this.currentStep;
-      this.currentStep = advanceStep(this.currentStep, state.loopRegion, state.maxSteps);
+      this.currentStep = advanceStep(this.currentStep, state.loopRegion);
       if (this.currentStep <= previousStep) this.loopIteration++;
 
       this.totalStepsScheduled++;
@@ -224,7 +224,6 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
         anySoloed,
         activeNote: this.activeNotes.get(track.id),
         loopRegion: state.loopRegion,
-        maxSteps: state.maxSteps,
         defaultStepCount: state.defaultStepCount,
         defaultPlaybackMode: 'gate',
         tempoBpm: state.tempo,

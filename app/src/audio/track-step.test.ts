@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { Track } from '../types';
 import { MAX_STEPS, STEPS_PER_PAGE } from '../types';
 import { getTrackStep, shouldTrackTrigger } from './track-step';
+import { advanceStep } from './timing-calculations';
 
 
 
@@ -202,20 +203,17 @@ describe('Polyrhythmic Track Behavior', () => {
       expect(MAX_STEPS).toBe(128);
     });
 
-    it('global counter wraps at MAX_STEPS', () => {
-      // This simulates the scheduler behavior
-      let currentStep = 0;
-      const stepsVisited: number[] = [];
-
-      // Run for 256 steps (2 full cycles)
-      for (let i = 0; i < 256; i++) {
-        stepsVisited.push(currentStep);
-        currentStep = (currentStep + 1) % MAX_STEPS;
+    it('global counter keeps counting without a loop region, so no track loop is cut short', () => {
+      // A wrap at MAX_STEPS cut short every track whose length does not
+      // divide 128: a 10-step track played steps 0-7 and started again.
+      let globalStep = 0;
+      const tenStepPositions: number[] = [];
+      for (let i = 0; i < 3 * MAX_STEPS; i++) {
+        tenStepPositions.push(getTrackStep(globalStep, 10));
+        globalStep = advanceStep(globalStep, null);
       }
 
-      // Should visit 0-127 twice
-      expect(stepsVisited.slice(0, 128)).toEqual(Array.from({ length: 128 }, (_, i) => i));
-      expect(stepsVisited.slice(128, 256)).toEqual(Array.from({ length: 128 }, (_, i) => i));
+      expect(tenStepPositions).toEqual(Array.from({ length: 3 * MAX_STEPS }, (_, i) => i % 10));
     });
   });
 

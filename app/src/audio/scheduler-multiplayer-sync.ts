@@ -32,9 +32,12 @@ export interface JoinOffsetInput {
   /** Server wall-clock (ms) right now. */
   currentServerTime: ServerTimeMs;
   tempo: number;
-  maxSteps: number;
-  /** Step to fall back to when the client is at/before serverStartTime. */
-  loopStart: number;
+  /**
+   * The room's loop region. The room's playhead started at its start (or at
+   * step 0 without one) and wraps only inside it; without one it counts up
+   * forever, as the schedulers' `advanceStep` does.
+   */
+  loopRegion: { start: number; end: number } | null;
 }
 
 export interface JoinOffsetResult {
@@ -46,15 +49,22 @@ function stepDurationSec(tempo: number): Seconds {
   return seconds(1 / ((tempo / 60) * STEPS_PER_BEAT));
 }
 
+/** The room's global step after `stepsElapsed` whole steps of playback. */
+function roomStepAfter(stepsElapsed: number, loopRegion: JoinOffsetInput['loopRegion']): number {
+  if (!loopRegion) return stepsElapsed;
+  // Defensive: validated regions have 0 <= start <= end, but the result must
+  // stay inside the region even if one does not.
+  const start = Math.max(0, loopRegion.start);
+  const length = Math.max(1, loopRegion.end - start + 1);
+  return start + (stepsElapsed % length);
+}
+
 export function computeJoinOffset(input: JoinOffsetInput): JoinOffsetResult {
   const elapsedMs = differenceInMilliseconds(input.currentServerTime, input.serverStartTime);
-  // Defensive clamp: real callers keep loopStart < maxSteps, but the
-  // invariant "currentStep ∈ [0, maxSteps)" must hold unconditionally.
-  const safeLoopStart = Math.max(0, Math.min(input.loopStart, input.maxSteps - 1));
 
   if (elapsedMs <= 0) {
     return {
-      currentStep: safeLoopStart,
+      currentStep: roomStepAfter(0, input.loopRegion),
       nextStepTime: input.audioStartTime,
     };
   }
@@ -74,11 +84,10 @@ export function computeJoinOffset(input: JoinOffsetInput): JoinOffsetResult {
   let stepToSchedule: number;
   let nextStepTime: AudioTime;
   if (remainderMs === 0) {
-    stepToSchedule = ((elapsedSteps % input.maxSteps) + input.maxSteps) % input.maxSteps;
+    stepToSchedule = roomStepAfter(elapsedSteps, input.loopRegion);
     nextStepTime = input.audioStartTime;
   } else {
-    const next = elapsedSteps + 1;
-    stepToSchedule = ((next % input.maxSteps) + input.maxSteps) % input.maxSteps;
+    stepToSchedule = roomStepAfter(elapsedSteps + 1, input.loopRegion);
     const remainderSec = millisecondsToSeconds(milliseconds(remainderMs));
     nextStepTime = addAudioTime(input.audioStartTime, seconds(stepDuration - remainderSec));
   }

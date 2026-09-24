@@ -838,18 +838,18 @@ const handlePointerMove = (e: PointerEvent) => {
     category: 'timing',
     severity: 'medium',
     description:
-      'When comparing currentStep (which cycles 0-127) against a UI element index for a ' +
-      'component with stepCount < 128, the comparison must use modulo wrapping. Without it, ' +
+      'When comparing currentStep (which counts past every track length; it wraps only inside ' +
+      'a loop region) against a UI element index, the comparison must use modulo wrapping. Without it, ' +
       'the UI element (e.g., playhead highlight) disappears when currentStep exceeds stepCount.',
     symptoms: [
       'Playhead/highlight disappears after first loop through shorter pattern',
       'UI indicator works for steps 0-N but not N+1 onwards',
-      'Feature works with 128-step tracks but fails with 16/32/64-step tracks',
+      'Feature works on the first pass of a pattern but not after it',
       'Visual indicator only shows on first pattern cycle',
     ],
     rootCause:
-      'The global scheduler currentStep cycles through 0-127 (MAX_STEPS). When a track or ' +
-      'component has fewer steps (e.g., 16), the UI comparison `currentStep === i` fails ' +
+      'The global scheduler currentStep keeps counting up unless a loop region is set. For any ' +
+      'track or component (e.g., 16 steps), the UI comparison `currentStep === i` fails ' +
       'when currentStep >= stepCount. For example, with a 16-step track at currentStep=16, ' +
       '`16 === 0` is false, so step 0 is not highlighted even though it should be playing.',
     detection: {

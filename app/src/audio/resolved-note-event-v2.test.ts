@@ -40,7 +40,6 @@ function input(
     globalSwing: 0,
     anySoloed: false,
     loopRegion: null,
-    maxSteps: 128,
     defaultStepCount: 16,
     ...overrides,
   };
@@ -249,7 +248,6 @@ describe('ResolvedNoteEvent v2 production resolver', () => {
       globalSwing: 0.2,
       anySoloed: false,
       loopRegion: null,
-      maxSteps: 128,
       defaultStepCount: 16,
     } as const;
 

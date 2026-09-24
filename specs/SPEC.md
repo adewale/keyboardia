@@ -149,7 +149,7 @@ Lead (128 steps):   [1][2][3]...[128] → loops 1× (full verse/chorus)
 ```
 
 **How it works:**
-- Global step counter runs from 0-127 (MAX_STEPS = 128)
+- Global step counter counts up for as long as playback runs; it wraps only inside a loop region. (It used to wrap at 128, which cut short every track whose length does not divide 128.)
 - Each track uses modulo to find its current position: `globalStep % trackStepCount`
 - A 16-step track plays its full pattern 8 times while a 128-step track plays once
 - The playhead on each track shows its own position, not the global position

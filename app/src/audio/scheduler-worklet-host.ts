@@ -8,7 +8,7 @@
 
 import type { GridState } from '../types';
 import type { IScheduler, WorkletSchedulerState, WorkletTrack, WorkletPLock } from './scheduler-types';
-import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../shared/constants';
+import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { audioEngine } from './engine';
 import { setMediaSessionPlaybackState } from './media-session';
 import { parseInstrumentId, type InstrumentType } from './instrument-types';
@@ -154,8 +154,7 @@ export class SchedulerWorkletHost implements IScheduler {
         serverStartTime: serverTimeMs(serverStartTime),
         currentServerTime: serverTimeMs(this.multiplayerConfig.getServerTime()),
         tempo: state.tempo,
-        maxSteps: MAX_STEPS,
-        loopStart: state.loopRegion?.start ?? 0,
+        loopRegion: state.loopRegion ?? null,
       });
       initialStep = offset.currentStep;
       initialNextStepTime = offset.nextStepTime;
@@ -291,7 +290,6 @@ export class SchedulerWorkletHost implements IScheduler {
       tempo: state.tempo,
       swing: state.swing,
       loopRegion: state.loopRegion ?? null,
-      maxSteps: MAX_STEPS,
       defaultStepCount: DEFAULT_STEP_COUNT,
       tracks: state.tracks.map((t): WorkletTrack => ({
         id: t.id,

@@ -1,5 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { WorkletSchedulerState } from '../scheduler-types';
+import { STEP_COUNT_OPTIONS } from '../../types';
 
 interface PortHarness {
   onmessage: ((event: MessageEvent) => void) | null;
@@ -28,7 +29,6 @@ function state(overrides: Partial<WorkletSchedulerState> = {}): WorkletScheduler
     swing: 0,
     tracks: [],
     loopRegion: null,
-    maxSteps: 128,
     defaultStepCount: 16,
     ...overrides,
   };
@@ -80,6 +80,54 @@ describe('production scheduler worklet', () => {
       .map((event) => event.step);
 
     expect(steps).toEqual([4, 5]);
+  });
+
+  it('plays every allowed track length whole across former 128-step wraps', () => {
+    // Without a loop region the global step used to wrap at 128, cutting
+    // short every track whose length does not divide 128. A track whose only
+    // active step is its first must sound once per stepCount steps.
+    const tempo = 180;
+    const stepDuration = 60 / tempo / 4;
+    const totalSteps = 3 * 128 + 40;
+    const processor = new Processor();
+    start(processor, state({
+      tempo,
+      tracks: STEP_COUNT_OPTIONS.map(stepCount => ({
+        id: `len-${stepCount}`,
+        sampleId: 'kick',
+        steps: Array.from({ length: 128 }, (_, i) => i === 0),
+        stepCount,
+        muted: false,
+        soloed: false,
+        transpose: 0,
+        swing: 0,
+        parameterLocks: new Array(128).fill(null),
+      })),
+    }));
+
+    for (let t = 0; t <= totalSteps * stepDuration; t += 0.01) {
+      vi.stubGlobal('currentTime', t);
+      processor.process();
+    }
+
+    const onsets = new Map<string, number[]>();
+    for (const [event] of processor.port.postMessage.mock.calls) {
+      const note = event as { type: string; trackId?: string; time?: number };
+      if (note.type !== 'note' || note.trackId === undefined || note.time === undefined) continue;
+      onsets.set(note.trackId, [...(onsets.get(note.trackId) ?? []), note.time]);
+    }
+    for (const stepCount of STEP_COUNT_OPTIONS) {
+      const times = onsets.get(`len-${stepCount}`) ?? [];
+      expect(times.length, `${stepCount}-step track onsets`).toBeGreaterThanOrEqual(
+        Math.floor(totalSteps / stepCount),
+      );
+      for (let i = 1; i < times.length; i++) {
+        expect(
+          times[i] - times[i - 1],
+          `${stepCount}-step track, gap before onset ${i}`,
+        ).toBeCloseTo(stepCount * stepDuration, 6);
+      }
+    }
   });
 
   it('emits production swing and tied-note timing', () => {

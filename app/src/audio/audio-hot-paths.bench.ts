@@ -84,8 +84,7 @@ describe('scheduler hot paths', () => {
     serverStartTime: serverTimeMs(1_000_000),
     currentServerTime: serverTimeMs(1_000_500),
     tempo: 120,
-    maxSteps: 64,
-    loopStart: 0,
+    loopRegion: null,
   };
 
   bench('computeJoinOffset (mid-step branch)', () => {

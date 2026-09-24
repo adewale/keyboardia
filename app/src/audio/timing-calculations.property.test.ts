@@ -13,7 +13,6 @@ import {
   calculateStepTime,
   advanceStep,
   STEPS_PER_BEAT,
-  MAX_STEPS,
 } from './timing-calculations';
 import { arbTempo, arbSwing } from '../test/arbitraries';
 import { seconds } from './audio-time';
@@ -211,18 +210,17 @@ describe('advanceStep properties', () => {
     );
   });
 
-  it('without loop region, wraps at MAX_STEPS', () => {
+  it('without loop region, counts up and never wraps', () => {
     fc.assert(
-      fc.property(fc.integer({ min: 0, max: MAX_STEPS - 1 }), (current) => {
-        const next = advanceStep(current, null);
-        expect(next).toBe((current + 1) % MAX_STEPS);
+      fc.property(fc.integer({ min: 0, max: Number.MAX_SAFE_INTEGER - 1 }), (current) => {
+        expect(advanceStep(current, null)).toBe(current + 1);
       }),
       { numRuns: 200 }
     );
   });
 
-  it('at MAX_STEPS - 1 without loop, wraps to 0', () => {
-    const next = advanceStep(MAX_STEPS - 1, null);
-    expect(next).toBe(0);
+  it('without loop region, passes step 127 instead of wrapping at 128', () => {
+    // A wrap at 128 cut short every track whose length does not divide 128.
+    expect(advanceStep(127, null)).toBe(128);
   });
 });

@@ -76,7 +76,6 @@ export interface WorkletSchedulerState {
   swing: number;
   tracks: WorkletTrack[];
   loopRegion: { start: number; end: number } | null;
-  maxSteps: number;
   defaultStepCount: number;
 }
 

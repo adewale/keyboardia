@@ -15,8 +15,7 @@ function computeJoinOffsetFromNumbers(input: {
   serverStartTime: number;
   currentServerTime: number;
   tempo: number;
-  maxSteps: number;
-  loopStart: number;
+  loopRegion: { start: number; end: number } | null;
 }) {
   return computeJoinOffset({
     ...input,
@@ -27,7 +26,8 @@ function computeJoinOffsetFromNumbers(input: {
 }
 
 const STEPS_PER_BEAT = 4;
-const MAX_STEPS = 64;
+const LOOP_STEPS = 64;
+const FULL_LOOP = { start: 0, end: LOOP_STEPS - 1 };
 
 function stepDurationOf(tempo: number): number {
   return 1 / ((tempo / 60) * STEPS_PER_BEAT);
@@ -44,8 +44,7 @@ describe('computeJoinOffset', () => {
       serverStartTime: 1_000_000,
       currentServerTime: 1_000_075,
       tempo: 120,
-      maxSteps: 64,
-      loopStart: 0,
+      loopRegion: null,
     });
     expect(result.currentStep).toBe(1);
     expect(result.nextStepTime).toBeCloseTo(10.05, 5);
@@ -60,8 +59,7 @@ describe('computeJoinOffset', () => {
       serverStartTime: 1_000_000,
       currentServerTime: 1_000_250,
       tempo: 120,
-      maxSteps: 64,
-      loopStart: 0,
+      loopRegion: null,
     });
     expect(result.currentStep).toBe(2);
     expect(result.nextStepTime).toBe(10.0);
@@ -73,92 +71,129 @@ describe('computeJoinOffset', () => {
       serverStartTime: 1_000_000,
       currentServerTime: 1_000_000,
       tempo: 120,
-      maxSteps: MAX_STEPS,
-      loopStart: 0,
+      loopRegion: null,
     });
     expect(result.currentStep).toBe(0);
     expect(result.nextStepTime).toBe(10.0);
   });
 
-  it('returns loopStart fallback when the client is "ahead" of the server', () => {
+  it('returns the loop region start when the client is "ahead" of the server', () => {
     // Negative elapsed — treated as fresh start
     const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 1_000_100,
       currentServerTime: 1_000_000,
       tempo: 120,
-      maxSteps: MAX_STEPS,
-      loopStart: 3,
+      loopRegion: { start: 3, end: 10 },
     });
     expect(result.currentStep).toBe(3);
     expect(result.nextStepTime).toBe(10.0);
   });
 
-  it('wraps around when elapsed time exceeds a full loop', () => {
+  it('keeps counting past 128 steps without a loop region', () => {
+    // Tracks read the global step modulo their own length, so a joiner must
+    // land on the room's unwrapped step: a wrap at 128 would put a 10-step
+    // track at step 5 of its loop instead of step 3.
     const tempo = 120;
     const dur = stepDurationOf(tempo);
-    // Exact-boundary case after one full loop + 5 steps.
-    const elapsedMs = (MAX_STEPS + 5) * dur * 1000;
+    const elapsedMs = (128 + 5) * dur * 1000;
     const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 1_000_000,
       currentServerTime: 1_000_000 + elapsedMs,
       tempo,
-      maxSteps: MAX_STEPS,
-      loopStart: 0,
+      loopRegion: null,
     });
-    // Boundary case: stepToSchedule = (MAX_STEPS + 5) % MAX_STEPS = 5
-    expect(result.currentStep).toBe(5);
+    expect(result.currentStep).toBe(133);
+    expect(result.nextStepTime).toBe(10.0);
+  });
+
+  it('wraps inside the loop region, counting from its start', () => {
+    const tempo = 120;
+    const dur = stepDurationOf(tempo);
+    // Exact-boundary case after one pass of an 8-step region + 5 steps.
+    const elapsedMs = (8 + 5) * dur * 1000;
+    const result = computeJoinOffsetFromNumbers({
+      audioStartTime: 10.0,
+      serverStartTime: 1_000_000,
+      currentServerTime: 1_000_000 + elapsedMs,
+      tempo,
+      loopRegion: { start: 4, end: 11 },
+    });
+    expect(result.currentStep).toBe(4 + 5);
     expect(result.nextStepTime).toBe(10.0);
   });
 
   it('mid-step join in a later loop wraps the +1 step around correctly', () => {
     const tempo = 120;
     const dur = stepDurationOf(tempo);
-    // Join 50ms into step (MAX_STEPS - 1) of the second loop. The next
-    // step is step 0 of the next loop (wraps via mod).
-    const elapsedMs = (MAX_STEPS + (MAX_STEPS - 1)) * dur * 1000 + 50;
+    // Join 50ms into the region's last step on its second pass. The next
+    // step is the region's first.
+    const elapsedMs = (LOOP_STEPS + (LOOP_STEPS - 1)) * dur * 1000 + 50;
     const result = computeJoinOffsetFromNumbers({
       audioStartTime: 10.0,
       serverStartTime: 0,
       currentServerTime: elapsedMs,
       tempo,
-      maxSteps: MAX_STEPS,
-      loopStart: 0,
+      loopRegion: FULL_LOOP,
     });
     expect(result.currentStep).toBe(0);
   });
 
-  // Property: currentStep is always within [0, maxSteps) whenever server time
-  // is at or after server start. Includes the edge case where loopStart is
-  // supplied out of range (defensive clamp).
-  it('always produces currentStep in [0, maxSteps) for non-negative elapsed', () => {
+  // Property: with a loop region, currentStep always lies inside it whenever
+  // server time is at or after server start. Includes a region whose end is
+  // below its start (defensive).
+  it('always produces currentStep inside the loop region for non-negative elapsed', () => {
     fc.assert(
       fc.property(
-        fc.integer({ min: 1, max: 512 }).chain(maxSteps =>
-          fc.record({
-            tempo: fc.double({ min: 30, max: 300, noNaN: true, noDefaultInfinity: true }),
-            elapsedMs: fc.double({ min: 0, max: 1e9, noNaN: true, noDefaultInfinity: true }),
-            maxSteps: fc.constant(maxSteps),
-            audioStartTime: fc.double({ min: 0, max: 1e6, noNaN: true, noDefaultInfinity: true }),
-            // Include out-of-range loopStart to exercise the defensive clamp.
-            loopStart: fc.integer({ min: 0, max: Math.max(0, maxSteps * 2) }),
-          })
-        ),
-        ({ tempo, elapsedMs, maxSteps, audioStartTime, loopStart }) => {
+        fc.record({
+          tempo: fc.double({ min: 30, max: 300, noNaN: true, noDefaultInfinity: true }),
+          elapsedMs: fc.double({ min: 0, max: 1e9, noNaN: true, noDefaultInfinity: true }),
+          audioStartTime: fc.double({ min: 0, max: 1e6, noNaN: true, noDefaultInfinity: true }),
+          start: fc.integer({ min: 0, max: 127 }),
+          end: fc.integer({ min: 0, max: 127 }),
+        }),
+        ({ tempo, elapsedMs, audioStartTime, start, end }) => {
           const result = computeJoinOffsetFromNumbers({
             audioStartTime,
             serverStartTime: 0,
             currentServerTime: elapsedMs,
             tempo,
-            maxSteps,
-            loopStart,
+            loopRegion: { start, end },
           });
-          expect(result.currentStep).toBeGreaterThanOrEqual(0);
-          expect(result.currentStep).toBeLessThan(maxSteps);
+          expect(result.currentStep).toBeGreaterThanOrEqual(start);
+          expect(result.currentStep).toBeLessThanOrEqual(Math.max(start, end));
         }
       ),
       { numRuns: 300, seed: 0x4a4d5051 }
+    );
+  });
+
+  // Property: without a loop region, the step a joiner schedules is the one
+  // the room reaches at the joiner's nextStepTime. The room plays step s at
+  // s × stepDuration after server start.
+  it('without a loop region, schedules the step the room plays at nextStepTime', () => {
+    fc.assert(
+      fc.property(
+        fc.record({
+          tempo: fc.double({ min: 30, max: 300, noNaN: true, noDefaultInfinity: true }),
+          elapsedMs: fc.double({ min: 0, max: 1e7, noNaN: true, noDefaultInfinity: true }),
+          audioStartTime: fc.double({ min: 0, max: 1e3, noNaN: true, noDefaultInfinity: true }),
+        }),
+        ({ tempo, elapsedMs, audioStartTime }) => {
+          const result = computeJoinOffsetFromNumbers({
+            audioStartTime,
+            serverStartTime: 0,
+            currentServerTime: elapsedMs,
+            tempo,
+            loopRegion: null,
+          });
+          const roomTimeOfStep = result.currentStep * stepDurationOf(tempo);
+          const roomTimeAtNextStep = elapsedMs / 1000 + (result.nextStepTime - audioStartTime);
+          expect(roomTimeOfStep).toBeCloseTo(roomTimeAtNextStep, 5);
+        }
+      ),
+      { numRuns: 300, seed: 0x4a4d5053 }
     );
   });
 
@@ -181,8 +216,7 @@ describe('computeJoinOffset', () => {
             serverStartTime: 0,
             currentServerTime: elapsedMs,
             tempo,
-            maxSteps: MAX_STEPS,
-            loopStart: 0,
+            loopRegion: null,
           });
           // The simulated "next 3 step times" the worklet would emit
           // after applying the fix from review #2 (anchor audioStartTime
@@ -215,8 +249,7 @@ describe('computeJoinOffset', () => {
             serverStartTime: 0,
             currentServerTime: elapsedMs,
             tempo,
-            maxSteps: MAX_STEPS,
-            loopStart: 0,
+            loopRegion: null,
           });
           expect(result.nextStepTime).toBeGreaterThanOrEqual(audioStartTime - 1e-9);
           expect(result.nextStepTime).toBeLessThanOrEqual(audioStartTime + stepDuration + 1e-9);

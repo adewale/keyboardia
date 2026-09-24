@@ -1,5 +1,5 @@
 import type { GridState } from '../types';
-import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../types';
+import { DEFAULT_STEP_COUNT } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
 import { registerHmrDispose } from '../utils/hmr';
@@ -55,7 +55,9 @@ const LOOKAHEAD_MS = 25; // How often to check (ms)
 export class Scheduler implements IScheduler {
   private timerId: number | null = null;
   private nextStepTime: number = 0;
-  private currentStep: number = 0; // Global step counter (0-63 for 4 bars)
+  // Global step counter. It wraps only inside a loop region; otherwise it counts
+  // up for as long as playback runs, and each track reads it modulo its own length.
+  private currentStep: number = 0;
   private isRunning: boolean = false;
   private onStepChange: ((step: number) => void) | null = null;
   private onBeat: ((beat: number) => void) | null = null; // Phase 31A: Beat callback for metronome pulse
@@ -162,8 +164,7 @@ export class Scheduler implements IScheduler {
         serverStartTime: serverTimeMs(serverStartTime),
         currentServerTime: serverTimeMs(this.getServerTime()),
         tempo: state.tempo,
-        maxSteps: MAX_STEPS,
-        loopStart: state.loopRegion?.start ?? 0,
+        loopRegion: state.loopRegion ?? null,
       });
       this.currentStep = currentStep;
       this.nextStepTime = nextStepTime;
@@ -283,7 +284,7 @@ export class Scheduler implements IScheduler {
       // Phase 31G: Advance to next step - respect loop region if set
       // If loopRegion is defined, playhead stays within [start, end]
       const previousStep = this.currentStep;
-      this.currentStep = advanceStep(this.currentStep, state.loopRegion ?? null, MAX_STEPS);
+      this.currentStep = advanceStep(this.currentStep, state.loopRegion ?? null);
       if (this.currentStep <= previousStep) this.loopIteration++;
       this.totalStepsScheduled++;
 
@@ -367,7 +368,6 @@ export class Scheduler implements IScheduler {
         anySoloed,
         activeNote: this.activeNotes.get(track.id),
         loopRegion: state.loopRegion ?? null,
-        maxSteps: MAX_STEPS,
         defaultStepCount: DEFAULT_STEP_COUNT,
         defaultGatePercent: DEFAULT_TRACK_GATE,
         defaultPlaybackMode: getEnvelopeCapability(track.sampleId).defaultPlaybackMode ?? 'gate',
