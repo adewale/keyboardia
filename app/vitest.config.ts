@@ -1,5 +1,34 @@
 import { defineConfig } from 'vitest/config';
 
+// Three lanes. `vitest run` with no --project runs all of them, so running
+// Vitest directly still runs everything; the npm scripts and CI select one
+// lane each, and CI's Unit Tests job runs all three on every PR and push.
+//
+// `unit` is the fast product lane (T0 and the pre-push hook). Two kinds of
+// suite used to dominate it: 15 of 317 files took ~92% of its CPU time, and
+// the global timeout was raised from 5 s to 20 s to 30 s to absorb them.
+// - `audio-render`: renders through the native node-web-audio-api
+//   OfflineAudioContext with real sample decode. CPU-bound by nature.
+// - `verification-tooling`: tests of this repository's own verification
+//   machinery (evidence receipts, instrument-quality matrix and audit, the
+//   runtime-boundary scanner, the test-quality analyzers, the eval manifest),
+//   each costing tens of seconds of CPU.
+// Move a file between lanes only with a measurement. Product behaviour tests
+// belong in `unit`.
+const AUDIO_RENDER_TESTS = [
+  'src/audio/**/*.render.test.ts',
+  'src/audio/instrument-range-render.test.ts',
+];
+
+const VERIFICATION_TOOLING_TESTS = [
+  'test/eval-receipt.test.ts',
+  'test/instrument-quality-audit.test.ts',
+  'test/instrument-quality-matrix.test.ts',
+  'test/runtime-boundary-scanner.test.ts',
+  'test/skill-eval-manifest.test.ts',
+  'test/unit/test-quality-analyzers.test.ts',
+];
+
 export default defineConfig({
   test: {
     exclude: [
@@ -8,25 +37,10 @@ export default defineConfig({
       // Exclude integration tests - they use a separate vitest config with workers pool
       'test/integration/**',
     ],
-    // Include product tests plus pure deployment-check classifiers whose
-    // failure modes must remain in the ordinary unit-test gate.
-    include: [
-      'src/**/*.test.ts',
-      'src/**/*.test.tsx',
-      'test/**/*.test.ts',
-      'scripts/mcp-bot-protection-classifier.test.ts',
-    ],
     // Pin fast-check's seed so property runs are reproducible instead of
     // exploring a different random slice of the input space every run.
     // Override with FC_SEED=<n>. See src/test/setup-fast-check.ts.
     setupFiles: ['./src/test/setup-fast-check.ts'],
-    // The 5s vitest default assumes a fast developer machine. The heaviest
-    // tests here are CPU-bound (offline audio decode/render, production-graph
-    // AST scans) and measure 2-13s in isolation on a 4-core runner; with
-    // maxThreads using every core, full-suite contention pushes them past 5s
-    // nondeterministically. 30s keeps hang detection while removing
-    // machine-speed flakes.
-    testTimeout: 30_000,
     // pool: 'threads' is the default; we keep isolation on so module-
     // level state doesn't leak between files. `vmThreads` is faster but
     // requires every test to be isolation-safe — given how many of our
@@ -66,5 +80,40 @@ export default defineConfig({
         lines: 75,
       },
     },
+    projects: [
+      {
+        extends: true,
+        test: {
+          name: 'unit',
+          // Product tests plus pure deployment-check classifiers whose
+          // failure modes must remain in the ordinary unit-test gate.
+          include: [
+            'src/**/*.test.ts',
+            'src/**/*.test.tsx',
+            'test/**/*.test.ts',
+            'scripts/mcp-bot-protection-classifier.test.ts',
+          ],
+          exclude: [...AUDIO_RENDER_TESTS, ...VERIFICATION_TOOLING_TESTS],
+          testTimeout: 30_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'audio-render',
+          include: AUDIO_RENDER_TESTS,
+          // Renders that need longer declare it per test (60-180 s).
+          testTimeout: 30_000,
+        },
+      },
+      {
+        extends: true,
+        test: {
+          name: 'verification-tooling',
+          include: VERIFICATION_TOOLING_TESTS,
+          testTimeout: 30_000,
+        },
+      },
+    ],
   },
 });

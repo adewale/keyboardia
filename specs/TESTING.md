@@ -722,13 +722,20 @@ app/
 ### Running Tests
 
 ```bash
-# Unit tests only
+# Unit tests only (the fast product lane; T0 and the pre-push hook)
 npm run test:unit
+
+# Offline audio renders through the native renderer (CPU-heavy)
+npm run test:audio-render
+
+# Tests of the verification tooling itself: evidence receipts, the
+# instrument-quality matrix and audit, scanners, analyzers, eval manifest
+npm run test:verification-tooling
 
 # Integration tests (Workers runtime)
 npm run test:integration
 
-# All tests
+# All of the above
 npm run test:all
 
 # E2E tests

@@ -118,9 +118,11 @@ app/
 
 ```bash
 cd app
-npm run test:unit          # Unit tests (vitest)
+npm run test:unit          # Unit tests (vitest, fast product lane)
+npm run test:audio-render  # Offline audio renders (native Web Audio)
+npm run test:verification-tooling  # Tests of the verification tooling itself
 npm run test:integration   # Integration tests (Cloudflare Workers)
-npm run test:all           # All tests
+npm run test:all           # All of the above
 npm run analyze:bugs       # Static bug pattern analysis
 ```
 

@@ -148,11 +148,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Three Vitest lanes (see app/vitest.config.ts). They are split so the
+      # fast unit lane has its own budget; every lane still runs on every
+      # PR and push, in this required job.
       - name: Run unit tests
         run: npm run test:unit
 
       - name: Run required offline audio renders
         run: npm run test:audio-render
+
+      - name: Run verification-tooling tests
+        run: npm run test:verification-tooling
 
   stack-a-identity:
     name: Stack A Identity
