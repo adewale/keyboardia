@@ -276,8 +276,11 @@ jobs:
       - name: Run the eval pipeline offline
         run: node evals/run-benchmark.mjs --agent stub --repeats 1 --quiet --out "$RUNNER_TEMP/stub-run.json"
 
-      - name: Verify committed eval receipts
-        run: node evals/verify-receipts.mjs
+      # There is deliberately no "verify committed eval receipts" step.
+      # Receipts are uploaded as run artifacts, not committed
+      # (evals/receipts/README.md), so that step verified zero files on every
+      # run and passed. verify-receipts.mjs now fails on an empty set; run it
+      # against a downloaded receipt when a release gate needs one.
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
