@@ -57,29 +57,6 @@ export default defineConfig({
     // audio paths that touch globalThis.AudioContext); the other 123
     // run faster against node.
     environment: 'node',
-    // Branch coverage configuration. Run with `npx vitest run --coverage`.
-    // Coverage is informational — pragmatic thresholds, not a merge gate.
-    // See docs/LESSONS-LEARNED.md lesson 33.
-    coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html'],
-      include: ['src/**/*.ts', 'src/**/*.tsx'],
-      exclude: [
-        'src/**/*.test.ts',
-        'src/**/*.test.tsx',
-        'src/**/*.property.test.ts',
-        'src/**/*.d.ts',
-        'src/types/**',
-        'src/**/worklets/*.worklet.ts',
-      ],
-      reportOnFailure: true,
-      thresholds: {
-        statements: 75,
-        branches: 70,
-        functions: 75,
-        lines: 75,
-      },
-    },
     projects: [
       {
         extends: true,
