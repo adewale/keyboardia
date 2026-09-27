@@ -4,13 +4,13 @@ on:
   pull_request:
     paths:
       - 'app/scripts/**/*.py'
-      - 'pyproject.toml'
+      - 'ruff.toml'
       - '.github/workflows/ruff.yml'
   push:
     branches: [main]
     paths:
       - 'app/scripts/**/*.py'
-      - 'pyproject.toml'
+      - 'ruff.toml'
       - '.github/workflows/ruff.yml'
 
 permissions:
