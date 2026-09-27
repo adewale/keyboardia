@@ -113,6 +113,28 @@ describe('test anti-pattern analyzer', () => {
     expect(rules(source)).toContain('vacuous-property-guard');
   });
 
+  it('finds dynamic imports whose load failure is swallowed into a skip', () => {
+    const source = `
+      const webAudio = await import('node-web-audio-api').catch(() => null);
+      const optional = await import('./optional').catch(error => { report(error); });
+      describe.skipIf(!webAudio)('renders', () => {
+        it('renders', async () => { expect(await render(webAudio)).toBe(1); });
+      });
+    `;
+    expect(rules(source).filter((rule) => rule === 'swallowed-import-failure')).toHaveLength(2);
+  });
+
+  it('accepts dynamic imports that rethrow their load failure', () => {
+    const source = `
+      const webAudio = await import('node-web-audio-api').catch((error) => {
+        throw new Error('node-web-audio-api is required', { cause: error });
+      });
+      const other = await import('./other').catch(error => { throw error; });
+      it('renders', async () => { expect(await render(webAudio, other)).toBe(1); });
+    `;
+    expect(rules(source)).not.toContain('swallowed-import-failure');
+  });
+
   it('finds bare property guards and test definitions that execute no rows', () => {
     const source = `
       it('property', () => fc.assert(fc.property(valueArb, value => {
