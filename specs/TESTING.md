@@ -841,7 +841,7 @@ The full-stack launcher rejects an occupied port, tags health with a per-run
 nonce, races readiness against early Worker exit, enforces a 30-minute wall
 timeout, and terminates the detached process group on completion or signal.
 
-Unit tests retain Vitest's five-second global timeout. A measured slow property or render test may declare a local timeout in that test only. Do not reintroduce probabilistic WebSocket doubles as “chaos” evidence; named faults need a deterministic seam or a real Worker contract with an assertion proving the fault occurred.
+The `unit` Vitest lane runs under a 15-second global timeout (`app/vitest.config.ts` records the measurement behind it); `audio-render` and `verification-tooling` keep 30 seconds. A measured slow property or render test may declare a local timeout in that test only, and raising a lane's global timeout is a review event, not a fix. Do not reintroduce probabilistic WebSocket doubles as “chaos” evidence; named faults need a deterministic seam or a real Worker contract with an assertion proving the fault occurred.
 
 ---
 

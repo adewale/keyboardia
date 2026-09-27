@@ -71,7 +71,13 @@ export default defineConfig({
             'scripts/mcp-bot-protection-classifier.test.ts',
           ],
           exclude: [...AUDIO_RENDER_TESTS, ...VERIFICATION_TOOLING_TESTS],
-          testTimeout: 30_000,
+          // Measured before lowering from 30 s (September 2026): on the CI
+          // runner the slowest unit test relying on this global took 3.5 s,
+          // even with the heavy lanes still running beside it; on a shared
+          // 4-core machine at load average 14-20 the slowest took 10.9 s.
+          // Tests that need more declare it locally (sync-convergence and one
+          // canonicalHash property do). Raising this is a review event.
+          testTimeout: 15_000,
         },
       },
       {
