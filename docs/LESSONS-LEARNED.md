@@ -60,7 +60,7 @@ Debugging war stories and insights from building Keyboardia.
 
 ### E2E Testing
 - [Lesson 15: E2E Tests Must Use Correct API Response Structure](#lesson-15-e2e-tests-must-use-correct-api-response-structure)
-- [Lesson 16: CI Tests Need Retry Logic for API Resilience](#lesson-16-ci-tests-need-retry-logic-for-api-resilience)
+- [Lesson 16: CI Tests Need Retry Logic for API Resilience](#lesson-16-ci-tests-need-retry-logic-for-api-resilience) (superseded)
 - [Lesson 17: Test Scripts Must Match Server Message Structure](#lesson-17-test-scripts-must-match-server-message-structure)
 - [Lesson 18: KV Save Debouncing Can Cause Test Timing Issues](#lesson-18-kv-save-debouncing-can-cause-test-timing-issues)
 - [Lesson 41: Upgrading vitest-pool-workers (v3→v4 Plugin Migration + Browser-Condition Trap)](#lesson-41-upgrading-vitest-pool-workers--the-v3v4-plugin-migration-and-a-browser-condition-trap)
@@ -3254,6 +3254,19 @@ But tests were assuming `tracks` was at the top level: `sessionData.tracks` inst
 ---
 
 ## Lesson 16: CI Tests Need Retry Logic for API Resilience
+
+> **Superseded (September 2026). Do not follow the Prevention list below.**
+> Retrying every failed API call hides backend bugs underneath Playwright's
+> `retries: 0` / `flaky: 0` lane contracts: with the old helper, a session
+> create that returned 500 once and then succeeded produced a green,
+> non-flaky result. The helpers in `app/e2e/test-utils.ts` now retry only
+> thrown transport errors and HTTP 429, fail on the first 5xx or other
+> non-2xx response, and record every retry as an `api-retry` test annotation
+> that `scripts/assert-playwright-stats.mjs` reports for each lane. No test
+> lane talks to the production API any more (the CI-only Vite proxy to the
+> production Worker was removed), so the rate-limit and cold-start rationale
+> below no longer applies. Never add retries, skips, or `continue-on-error`
+> to make a lane green.
 
 **Date:** 2024-12-18
 **Severity:** Medium - caused flaky CI
