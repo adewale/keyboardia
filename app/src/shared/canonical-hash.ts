@@ -18,10 +18,10 @@
  * - effects: Audio routing is local
  */
 
-import { DEFAULT_STEP_COUNT } from '../shared/constants';
-import type { ScaleState, TrackEnvelope, EnvelopeTimeUnit, FMParams } from '../shared/sync-types';
-import { normalizeSessionScale } from '../shared/scale-defaults';
-import type { SamplePlaybackMode, TrackEnvelopeV2 } from '../shared/envelope-contract-v2';
+import { DEFAULT_STEP_COUNT } from './constants';
+import type { ScaleState, TrackEnvelope, EnvelopeTimeUnit, FMParams } from './sync-types';
+import { normalizeSessionScale } from './scale-defaults';
+import type { SamplePlaybackMode, TrackEnvelopeV2 } from './envelope-contract-v2';
 
 // Minimal track type for hash input
 interface TrackForHash {

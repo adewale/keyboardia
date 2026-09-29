@@ -52,7 +52,6 @@
     "validate:release-times": "tsx scripts/validate-release-times.ts",
     "validate:sample-load-budgets": "tsx scripts/validate-sample-load-budgets.ts",
     "validate:sustain-ceiling": "tsx scripts/validate-sustain-ceiling.ts",
-    "validate:playable-ranges": "tsx scripts/validate-playable-ranges.ts",
     "validate:velocity": "tsx scripts/validate-velocity-layers.ts",
     "validate:velocity-filter": "tsx scripts/validate-velocity-filter-calibration.ts && tsx scripts/simulate-velocity-filter.ts --sample-rate 44100 && tsx scripts/simulate-velocity-filter.ts --sample-rate 48000",
     "validate:sample-quality": "tsx scripts/validate-sample-quality.ts --strict",

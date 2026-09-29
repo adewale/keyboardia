@@ -110,10 +110,10 @@ describe('Regression: exports from recent work ARE used', () => {
     expect(imported).toBe(true);
   });
 
-  it('hashState is imported by useSyncExternalState and useSession', () => {
+  it('hashState has production consumers', () => {
     const imported = isImportedBy(
       'hashState',
-      'canonicalHash.ts',
+      'canonical-hash.ts',
       'dead-code-audit.test.ts'
     );
     expect(imported).toBe(true);

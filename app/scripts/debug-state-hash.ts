@@ -10,23 +10,10 @@
  *   npx tsx scripts/debug-state-hash.ts <session-id> --local
  */
 
+import { hashState } from '../src/shared/canonical-hash';
+
 const PROD_SERVER = 'https://keyboardia.adewale-883.workers.dev';
 const LOCAL_SERVER = 'http://localhost:8787';
-
-/**
- * Hash function - identical to both client and server implementations
- * (from src/sync/multiplayer.ts and src/worker/logging.ts)
- */
-function hashState(state: unknown): string {
-  const str = JSON.stringify(state);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
 
 interface Track {
   id: string;

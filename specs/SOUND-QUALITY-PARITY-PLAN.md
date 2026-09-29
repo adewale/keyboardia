@@ -615,8 +615,8 @@ Headphones, fixed volume, loop 4 bars, listen **only to the hi-hats**.
 - **Corrected from v1:** `golden-mutations.test.ts:28,71,108` imports
   `DEFAULT_SCALE_STATE` directly — the flip changes its golden base
   states; update or pin them in the same change. `canonicalHash` currently
-  excludes `scale` (`canonicalHash.ts:43,121`), as does the server twin in
-  `worker/logging.ts`; that is a sync-detection gap, not evidence that hash
+  excludes `scale` in the historical client and Worker copies; that was a
+  sync-detection gap, not evidence that hash
   parity is unaffected. Add normalized scale state to both canonical forms
   and extend the completeness/parity tests so clients that diverge only in
   root, scale, or lock cannot report the same state hash. The remaining

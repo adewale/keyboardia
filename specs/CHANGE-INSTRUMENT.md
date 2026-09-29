@@ -114,7 +114,7 @@ Rationale:
 - Clearing is the only option that makes the result a function of
   `(track, sampleId)` alone, which is what lets the client and server converge
   from a `{ trackId, sampleId }` broadcast. `fmParams` is **excluded from the
-  state hash** (`canonicalizeTrack` in `worker/logging.ts`), so a divergence here
+  state hash** (`canonicalizeTrack` in `shared/canonical-hash.ts`), so a divergence here
   would never be caught by the periodic hash check. One shared implementation is
   the only defense.
 

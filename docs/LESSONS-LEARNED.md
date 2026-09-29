@@ -3589,7 +3589,7 @@ When a codebase has good async architecture in one subsystem (AudioWorklets for 
 | Component | Problem | Impact |
 |-----------|---------|--------|
 | `Waveform.tsx` | Nested loop over entire `AudioBuffer` on every render | UI jank on large samples |
-| `canonicalHash.ts` | `JSON.stringify` on full state every sync update | Main-thread stall during multiplayer |
+| `canonical-hash.ts` | `JSON.stringify` on full state every sync update | Main-thread stall during multiplayer |
 | `CursorOverlay.tsx` | `setInterval(500ms)` forcing React re-renders for fade animation | Unnecessary render cycles |
 | `useSyncExternalState.ts` | `JSON.stringify` comparison on every prop change | Scales poorly with state size |
 | `patternOps.ts:euclidean()` | `JSON.stringify` for group comparison inside while loop | O(n*m) serialization |
@@ -4397,7 +4397,7 @@ commit; this section documents the outcomes.
    Pre-existing `metrics/*` modules account for the remaining
    survivors and can be tightened in a separate pass.
 
-2. **Purpose-built fakes for the heavy collaborators** — done.
+2. **Purpose-built fakes for the heavy collaborators** — historical outcome.
    `src/audio/__fakes__/FakeToneSynthManager.ts` and
    `FakeAdvancedSynthEngine.ts` each end with a compile-time guard
    line `const _surfaceCheck: <RealClass>Surface = new Fake...();`
@@ -4410,6 +4410,12 @@ commit; this section documents the outcomes.
    guard only protects tests that inject a fake, and dozens of suites
    still use `vi.mock` on these modules. It comes out when that
    migration lands, not before.
+
+   **September 2026 audit:** that migration never happened. The two fakes had
+   no consumers outside their self-tests, so their compile-time checks guarded
+   only unused test infrastructure. They and their self-tests were removed;
+   `mock-fidelity.test.ts` remains the live contract for the module mocks the
+   suite actually uses.
 
 3. **Characterization tests for legacy audio paths** — done.
    `src/audio/engine-legacy-paths.characterization.test.ts`
@@ -4428,10 +4434,9 @@ These are still open:
 - **Tighten `metrics/percentile.ts` and `metrics/ring-buffer.ts`** to
   reach >90% mutation score. Currently 88% and 84%.
 - **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
-  call sites** in remaining test files to use the typed fakes or dependency
-  injection. The migration is the real fix; until it lands,
-  `mock-fidelity.test.ts` is the only thing catching drift in those mocks,
-  so it stays.
+  call sites** to production interfaces through real dependency injection.
+  Until that seam exists, `mock-fidelity.test.ts` remains the central contract
+  that catches drift in those mocks.
 - **Characterization tests for `playSample`** — the most complex
   legacy method (pitch-shift worklet branching, envelope ramping,
   source.start, onended cleanup). Skipped here because much of its
@@ -4511,6 +4516,12 @@ Why this matters beyond cleanup: tests now express *intent*, not
 reads as "a track that fires every quarter note"; the previous
 `{ ...track, steps: [true, false, false, false, true, ...] }`
 required counting positions to read.
+
+**September 2026 audit:** only two scheduler tests adopted the builders.
+`aTrackWithPLock`, the boundary catalogues, and the builder self-tests had no
+production-boundary consumers. The module now keeps only `aState` and
+`aTrackWithSteps`, with `aTrack` private. A reusable helper earns its place
+through independent callers, not through tests of the helper itself.
 
 ### 2. Documentation-code sync test (Tier 2 — registry exists)
 
@@ -6739,3 +6750,62 @@ dependency to the profile that actually runs its validator, and require every
 declared input to exist in a clean Git checkout. Local ignored artifacts are
 not valid CI dependencies even when they happen to exist on a developer's
 machine.
+
+---
+
+## Lesson 80: Duplication Usually Means Ownership Is Unclear
+
+**Date:** 29 September 2026
+
+**Context:** Test audit and repository-wide clone analysis after PR #117
+
+### What happened
+
+The suite was green, collected every test file, and passed its test-quality
+gates. It still contained two property-style range suites whose decisive logic
+lived inside the tests, two purpose-built audio fakes used only by their own
+self-tests, and a fixture catalogue whose unused exports were protected only
+by fixture self-tests. A scrollbar E2E test also returned successfully when a
+64-step grid did not overflow or when a track disappeared after scrolling.
+
+The broader clone scan found the same ownership problem in production and
+tooling. Client and Worker each carried a full copy of state canonicalization;
+a debug script carried a third copy of the hash function. A standalone
+playable-range validator repeated checks already owned by the comprehensive
+manifest validator. Five session write paths repeated the same KV persistence
+and quota-error translation.
+
+### What we misunderstood
+
+Names such as “property test”, “fake”, “fixture”, and “validator” made code look
+institutional even when it had no independent consumer. Tests of a test helper
+do not establish that product tests need the helper. Two implementations plus
+a parity test do not make a cross-runtime contract safer when both copies are
+expected to remain byte-identical; they create two places that can drift and a
+test that compares duplicated logic. An early return is a skip even when the
+test runner reports the case as passed.
+
+### The fix
+
+The range model suites, unused fakes, fixture self-tests, and unused fixture
+exports were removed. The real sampled-instrument simulation and mutation
+owner tests retain the useful capabilities. The scrollbar test now requires
+overflow and requires both track cells to remain measurable after scrolling.
+
+State canonicalization now has one owner in
+`src/shared/canonical-hash.ts`, imported by both browser and Worker code. The
+duplicate Worker implementation, parity-only tests, and debug-script hash were
+removed. Playable-range validation remains in `validate-manifests.ts`, and
+session writes share one `persistSession` function. The dead-export gate now
+checks exports under `__fixtures__` and `__fakes__` without treating those
+support modules as entry points.
+
+### The rule
+
+**Give one module ownership of each invariant, and make every abstraction prove
+it has independent consumers.** When duplicate code must evolve identically,
+move it to a shared owner. Keep separate implementations only when independence
+is itself the protection, with an oracle that can distinguish their failures.
+For tests, require a production subject and a failure observable at that
+subject's boundary. For browser tests, every missing prerequisite named by the
+scenario must fail explicitly.

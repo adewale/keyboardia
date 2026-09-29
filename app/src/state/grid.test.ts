@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Track, GridState, GridAction } from '../types';
 import { gridReducer } from './grid';
-import { canonicalizeForHash, hashState } from '../sync/canonicalHash';
+import { canonicalizeForHash, hashState } from '../shared/canonical-hash';
 import { applyMutation } from '../shared/state-mutations';
 import type { SessionState } from '../shared/state';
 import { MAX_STEPS, STEPS_PER_PAGE, MAX_TRACKS, STEP_COUNT_OPTIONS } from '../types';

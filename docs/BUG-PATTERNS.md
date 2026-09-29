@@ -40,7 +40,7 @@ When adding a new field to a type that crosses a serialization boundary:
 - [ ] **Same optionality**: If client has `field: T`, server should too (not `field?: T`)
 - [ ] **Update parity tests**: Add the field to `TRACK_FIELDS` and `SESSION_TRACK_FIELDS` in `types.test.ts`
 - [ ] **Single normalization point**: Add defaults in ONE place, not scattered
-- [ ] **Cross-boundary test**: Add a test that verifies both sides produce identical serialization
+- [ ] **Shared boundary owner**: Put normalization in a shared module imported by both runtimes
 - [ ] **Document the default**: If field can be missing in stored data, document where/how it's defaulted
 
 ### Code Locations
@@ -51,7 +51,7 @@ When adding a new field to a type that crosses a serialization boundary:
 
 **Parity test**: `src/worker/types.test.ts`
 
-**Canonical normalization**: `src/sync/canonicalHash.ts` (client), `src/worker/logging.ts` (server)
+**Canonical normalization**: `src/shared/canonical-hash.ts` (shared by client and Worker)
 
 ### Example Fix
 

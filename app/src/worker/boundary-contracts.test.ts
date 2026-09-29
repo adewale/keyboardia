@@ -1,8 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { Track, ParameterLock as AppParameterLock } from '../types';
 import type { SessionTrack, ParameterLock as WorkerParameterLock } from './types';
-import { canonicalizeForHash } from './logging';
-import { canonicalizeForHash as clientCanonicalizeForHash } from '../sync/canonicalHash';
+import { canonicalizeForHash } from '../shared/canonical-hash';
 
 // =============================================================================
 // COMPILE-TIME TYPE PARITY ENFORCEMENT
@@ -177,37 +176,9 @@ describe('Track/SessionTrack field parity', () => {
 });
 
 /**
- * Cross-boundary serialization tests
- * These verify that client and server produce identical canonical output
- * for the same logical state, preventing hash mismatch bugs.
+ * Canonical serialization defaults used by both runtime boundaries.
  */
-describe('Cross-boundary canonical serialization', () => {
-  it('client and server canonicalizeForHash should produce identical output', () => {
-    // State with optional fields missing (as server might have from KV)
-    const serverState = {
-      tracks: [{
-        id: 'track-1',
-        name: 'Test',
-        sampleId: 'kick',
-        steps: [true, false, false, false],
-        parameterLocks: [null, null, null, null],
-        volume: 1,
-        muted: false,
-        // soloed: undefined (missing)
-        transpose: 0,
-        // stepCount: undefined (missing)
-      }],
-      tempo: 120,
-      swing: 0,
-    };
-
-    const serverCanonical = canonicalizeForHash(serverState);
-    const clientCanonical = clientCanonicalizeForHash(serverState);
-
-    // Both should produce identical JSON
-    expect(JSON.stringify(serverCanonical)).toBe(JSON.stringify(clientCanonical));
-  });
-
+describe('Canonical serialization defaults', () => {
   it('canonicalization should normalize optional fields to explicit values', () => {
     const stateWithMissingFields = {
       tracks: [{

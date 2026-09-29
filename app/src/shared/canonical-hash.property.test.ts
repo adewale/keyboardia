@@ -7,7 +7,7 @@
 
 import fc from 'fast-check';
 import { describe, it, expect } from 'vitest';
-import { canonicalizeForHash, hashState } from './canonicalHash';
+import { canonicalizeForHash, hashState } from './canonical-hash';
 import { arbSessionStateForHash, arbTrackForHash } from '../test/arbitraries';
 
 describe('canonicalHash - Property-Based Tests', () => {

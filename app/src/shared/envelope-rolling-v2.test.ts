@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canonicalizeForHash, hashState } from '../sync/canonicalHash';
+import { canonicalizeForHash, hashState } from './canonical-hash';
 import { validateParameterLock, validateStateInvariants, repairStateInvariants } from '../worker/invariants';
 import { validateSessionState } from '../worker/validation';
 import { applyMutation } from './state-mutations';

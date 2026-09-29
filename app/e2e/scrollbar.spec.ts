@@ -160,10 +160,10 @@ test.describe('Scrollbar behavior', () => {
       canScroll: el.scrollWidth > el.clientWidth,
     }));
 
-    if (!scrollInfo.canScroll) {
-      console.log('No overflow detected, skipping scroll verification');
-      return;
-    }
+    expect(
+      scrollInfo.canScroll,
+      `64-step grid should overflow horizontally (${scrollInfo.scrollWidth}px content in ${scrollInfo.clientWidth}px viewport)`,
+    ).toBe(true);
 
     await tracksContainer.evaluate((el) => {
       el.scrollLeft = 200;
@@ -174,8 +174,10 @@ test.describe('Scrollbar behavior', () => {
     const newFirstBox = await firstTrackFirstStep.boundingBox();
     const newLastBox = await lastTrackFirstStep.boundingBox();
 
+    expect(newFirstBox, 'first track disappeared after horizontal scroll').not.toBeNull();
+    expect(newLastBox, 'last track disappeared after horizontal scroll').not.toBeNull();
     if (!newFirstBox || !newLastBox) {
-      return;
+      throw new Error('track step cells must remain measurable after horizontal scroll');
     }
 
     // Both should have moved by the same amount

@@ -36,10 +36,7 @@ import { guardMcpRequest, mcpCorsHeaders, validateMcpOrigin } from './mcp-guard'
 import { handleAgentSkillsRequest } from './agent-skills';
 
 // State hashing utilities (still needed for debug endpoints)
-import {
-  hashState,
-  canonicalizeForHash,
-} from './logging';
+import { hashState, canonicalizeForHash } from '../shared/canonical-hash';
 
 // Social Media Preview
 import { injectSocialMeta, type SessionMeta } from './social-preview';

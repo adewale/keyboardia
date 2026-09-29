@@ -30,8 +30,9 @@ function filesBelow(root: string): string[] {
   });
 }
 
-const isTest = (file: string) =>
-  /^(?:test|e2e)\/|(?:\.test|\.spec)\.tsx?$|__fixtures__|__fakes__|(^|\/)src\/test\//.test(file);
+const isRunnableTest = (file: string) =>
+  /^(?:test|e2e)\/|(?:\.test|\.spec)\.tsx?$|(^|\/)src\/test\//.test(file);
+const isTestSupport = (file: string) => /__fixtures__|__fakes__/.test(file);
 const excluded = (file: string) =>
   /\.d\.ts$|-evals\.ts$/.test(file);
 
@@ -43,13 +44,14 @@ const units: SourceUnit[] = sourceFiles
   .filter((file) => !file.split(path.sep).includes('node_modules'))
   .filter((file) => /\.tsx?$/.test(file))
   .map((file) => {
-    const test = isTest(file);
+    const test = isRunnableTest(file);
+    const testSupport = isTestSupport(file);
     const build = file.startsWith(`scripts${path.sep}`) || !file.includes(path.sep);
     return {
       file,
       source: readFileSync(file, 'utf8'),
       isTest: test,
-      role: test ? 'test' : build ? 'build' : 'runtime',
+      role: test || testSupport ? 'test' : build ? 'build' : 'runtime',
       isEntry: test || build || [
         'src/main.tsx',
         'src/stack-a-catalog/main.tsx',
@@ -58,8 +60,12 @@ const units: SourceUnit[] = sourceFiles
     } satisfies SourceUnit;
   });
 const reachability = analyzeExportReachability(units, excluded);
+const testSupportFiles = new Set(units
+  .filter((unit) => unit.role === 'test' && !unit.isTest)
+  .map((unit) => unit.file));
 const findings = reachability.filter((finding) =>
-  finding.status === 'test-only' || finding.status === 'unreferenced');
+  finding.status === 'unreferenced'
+  || (finding.status === 'test-only' && !testSupportFiles.has(finding.file)));
 const runtimeCount = reachability.filter((finding) => finding.status === 'runtime').length;
 const buildOnly = reachability.filter((finding) => finding.status === 'build-only');
 
@@ -82,7 +88,7 @@ show('TESTED BUT UNREACHABLE', findings.filter((finding) => finding.status === '
 show('EXPORTED BUT UNIMPORTED', findings.filter((finding) => finding.status === 'unreferenced'),
   ' — no consumer at all. Un-export, or delete.');
 if (!findings.length) {
-  console.log(`\n✅ No dead runtime exports (${runtimeCount} runtime, ${buildOnly.length} build-only).`);
+  console.log(`\n✅ No dead runtime exports or test-support exports (${runtimeCount} runtime, ${buildOnly.length} build-only).`);
 } else {
   console.log(`\n${findings.length} dead runtime export finding(s).`);
   process.exit(1);

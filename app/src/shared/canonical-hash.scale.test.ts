@@ -2,8 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   canonicalizeForHash as canonicalizeClient,
   hashState,
-} from './canonicalHash';
-import { canonicalizeForHash as canonicalizeWorker } from '../worker/logging';
+} from './canonical-hash';
 
 const base = { tracks: [], tempo: 120, swing: 0 };
 
@@ -29,13 +28,4 @@ describe('scale canonical hashing', () => {
     expect(new Set(hashes).size).toBe(variants.length);
   });
 
-  it('keeps client and worker canonical forms byte-identical', () => {
-    const state = {
-      ...base,
-      scale: { root: 'F#', scaleId: 'dorian', locked: true },
-    };
-    expect(JSON.stringify(canonicalizeClient(state))).toBe(
-      JSON.stringify(canonicalizeWorker(state)),
-    );
-  });
 });

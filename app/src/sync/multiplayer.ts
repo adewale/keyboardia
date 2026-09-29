@@ -26,7 +26,7 @@ import type {
 import { sessionTrackToTrack, sessionTracksToTracks, DEFAULT_STEP_COUNT } from '../types';
 import { logger } from '../utils/logger';
 import { dispatchToastEvent } from '../utils/toastEvents';
-import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
+import { canonicalizeForHash, hashState, type StateForHash } from '../shared/canonical-hash';
 import { calculateBackoffDelay } from '../utils/retry';
 import { createAuthoritativeHandler, createRemoteHandler } from './handler-factory';
 import { createConnectionStormDetector, type ConnectionStormDetector } from '../utils/connection-storm';

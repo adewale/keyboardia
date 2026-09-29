@@ -37,7 +37,7 @@ import {
 } from '../shared/message-types';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { getSession, updateSession, updateSessionName } from './sessions';
-import { hashState, canonicalizeForHash } from './logging';
+import { hashState, canonicalizeForHash } from '../shared/canonical-hash';
 import { createInitialSessionState } from '../shared/session-defaults';
 import { normalizeSessionScale } from '../shared/scale-defaults';
 // Observability 2.0: Wide events

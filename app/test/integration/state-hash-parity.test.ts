@@ -14,11 +14,7 @@
 
 import { SELF } from 'cloudflare:test';
 import { it, expect, describe } from 'vitest';
-import { canonicalizeForHash, hashState } from '../../src/sync/canonicalHash';
-
-// Import server-side canonicalization for comparison
-// Note: This import works because we're in the Cloudflare test environment
-import { canonicalizeForHash as serverCanonicalizeForHash, hashState as serverHashState } from '../../src/worker/logging';
+import { canonicalizeForHash, hashState } from '../../src/shared/canonical-hash';
 
 interface SessionResponse {
   id: string;
@@ -37,134 +33,6 @@ interface SessionResponse {
   tempo: number;
   swing: number;
 }
-
-describe('State Hash Parity: Client/Server Match', () => {
-  /**
-   * Test that client and server hash functions produce identical output
-   * for the same normalized state.
-   */
-  it('client and server produce identical hash for same state', () => {
-    const state = {
-      tracks: [
-        {
-          id: 'track-1',
-          name: 'Kick',
-          sampleId: 'kick',
-          steps: [true, false, false, false, true, false, false, false],
-          parameterLocks: Array(8).fill(null),
-          volume: 0.8,
-          muted: false,
-          soloed: false,
-          transpose: 0,
-          stepCount: 8,
-        },
-      ],
-      tempo: 120,
-      swing: 0,
-    };
-
-    const clientCanonical = canonicalizeForHash(state);
-    const serverCanonical = serverCanonicalizeForHash(state);
-
-    // Canonical forms should be identical
-    expect(JSON.stringify(clientCanonical)).toBe(JSON.stringify(serverCanonical));
-
-    // Hashes should be identical
-    const clientHash = hashState(clientCanonical);
-    const serverHash = serverHashState(serverCanonical);
-    expect(clientHash).toBe(serverHash);
-  });
-
-  /**
-   * Test that optional fields with undefined values are normalized consistently.
-   * This was the root cause of the hash mismatch bug.
-   */
-  it('handles undefined optional fields consistently', () => {
-    // Client state with undefined optional fields
-    const clientState = {
-      tracks: [
-        {
-          id: 'track-1',
-          name: 'Test',
-          sampleId: 'kick',
-          steps: [true, false],
-          parameterLocks: [null, null],
-          volume: 1,
-          muted: false,
-          // soloed: undefined (missing)
-          transpose: 0,
-          // stepCount: undefined (missing)
-        },
-      ],
-      tempo: 120,
-      swing: 0,
-    };
-
-    // Server state with explicit defaults
-    const serverState = {
-      tracks: [
-        {
-          id: 'track-1',
-          name: 'Test',
-          sampleId: 'kick',
-          steps: [true, false],
-          parameterLocks: [null, null],
-          volume: 1,
-          muted: false,
-          soloed: false, // explicit false
-          transpose: 0,
-          stepCount: 16, // explicit default
-        },
-      ],
-      tempo: 120,
-      swing: 0,
-    };
-
-    // After canonicalization, both should produce identical output
-    const clientCanonical = canonicalizeForHash(clientState as Parameters<typeof canonicalizeForHash>[0]);
-    const serverCanonical = serverCanonicalizeForHash(serverState);
-
-    expect(JSON.stringify(clientCanonical)).toBe(JSON.stringify(serverCanonical));
-    expect(hashState(clientCanonical)).toBe(serverHashState(serverCanonical));
-  });
-
-  /**
-   * Test that array length normalization works correctly.
-   */
-  it('normalizes array lengths to stepCount', () => {
-    // State with mismatched array lengths
-    const state = {
-      tracks: [
-        {
-          id: 'track-1',
-          name: 'Test',
-          sampleId: 'kick',
-          steps: [true, false, true], // 3 elements
-          parameterLocks: [null], // 1 element
-          volume: 1,
-          muted: false,
-          soloed: false,
-          transpose: 0,
-          stepCount: 4, // normalize to 4
-        },
-      ],
-      tempo: 120,
-      swing: 0,
-    };
-
-    const clientCanonical = canonicalizeForHash(state);
-    const serverCanonical = serverCanonicalizeForHash(state);
-
-    // Both should normalize to 4 elements
-    expect(clientCanonical.tracks[0].steps).toHaveLength(4);
-    expect(clientCanonical.tracks[0].parameterLocks).toHaveLength(4);
-    expect(serverCanonical.tracks[0].steps).toHaveLength(4);
-    expect(serverCanonical.tracks[0].parameterLocks).toHaveLength(4);
-
-    // And produce identical hashes
-    expect(hashState(clientCanonical)).toBe(serverHashState(serverCanonical));
-  });
-});
 
 describe('State Hash Parity: Round-Trip via API', () => {
   /**

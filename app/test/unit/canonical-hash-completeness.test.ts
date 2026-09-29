@@ -1,7 +1,7 @@
 /**
  * Canonical Hash Completeness Tests
  *
- * Verifies that the canonicalHash module correctly includes/excludes track properties.
+ * Verifies that the canonical-hash module correctly includes/excludes track properties.
  * This prevents sync gaps where a developer adds a new synced track property but
  * forgets to include it in the hash computation.
  *
@@ -12,11 +12,11 @@
  *
  * If a new track property is added that should sync:
  * 1. Add it to the SYNCED_TRACK_PROPERTIES list
- * 2. If the test fails, it means canonicalHash.ts needs to include the property
+ * 2. If the test fails, it means canonical-hash.ts needs to include the property
  */
 
 import { describe, it, expect } from 'vitest';
-import { canonicalizeForHash, hashState, type StateForHash } from '../../src/sync/canonicalHash';
+import { canonicalizeForHash, hashState, type StateForHash } from '../../src/shared/canonical-hash';
 
 // =============================================================================
 // Test Helpers

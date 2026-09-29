@@ -255,7 +255,7 @@ interface SessionTrack {
 
 **How we enforce:**
 - Compile-time parity tests in `types.test.ts`
-- Canonical normalization in `canonicalHash.ts`
+- Canonical normalization in `src/shared/canonical-hash.ts`
 - Shared types in `src/shared/sync-types.ts` (planned)
 
 **Code locations:**

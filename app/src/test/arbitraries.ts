@@ -82,7 +82,7 @@ export const arbScaleId = fc.constantFrom(...Object.keys(SCALES)) as fc.Arbitrar
  */
 export const arbPitch = fc.integer({ min: -60, max: 72 });
 
-/** Pitch in the chromatic grid's +/-24 playable contract (playable-range-pbt.test.ts). */
+/** Pitch in the chromatic grid's +/-24 contract. */
 export const arbPlayablePitch = fc.integer({ min: -24, max: 24 });
 
 /**

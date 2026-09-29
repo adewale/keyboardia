@@ -358,7 +358,7 @@ At this scale:
 
 ## 4. Where Costs Come From
 
-> **Note:** The KV write counts in this section are derived from code analysis of `src/worker/sessions.ts` and `src/worker/logging.ts`.
+> **Note:** The KV write counts in this section are derived from code analysis of `src/worker/sessions.ts` and `src/worker/live-session.ts`.
 
 ### 4.1 Cost Drivers (Ranked by Impact)
 
@@ -961,7 +961,7 @@ Use `wrangler tail` for real-time monitoring.
 - Architecture: `/specs/ARCHITECTURE.md`
 - Observability: `/specs/OBSERVABILITY.md`
 - Durable Objects Cost Analysis: `/specs/research/DURABLE-OBJECTS-COSTS.md`
-- Logging Implementation: `/app/src/worker/logging.ts`
+- Observability Implementation: `/app/src/worker/observability.ts`
 
 ---
 

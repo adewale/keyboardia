@@ -9,14 +9,11 @@
  * This is the "mock-reality drift" antipattern from the
  * testing-best-practices skill.
  *
- * Why this survives the move to production-boundary testing: the typed
- * fakes in `__fakes__/` give a compile-time surface guarantee, but only to
- * call sites that inject them. Dozens of test files still reach for
- * `vi.mock('./toneSynths')` and friends, and an ad-hoc module mock has no
- * such guarantee. This file is the only thing that fails when one of those
- * mocks describes a method the real class no longer has. Delete it once
- * every `vi.mock` of these three modules has migrated to the fakes — not
- * before, or the drift it catches becomes invisible again.
+ * Dozens of test files still reach for `vi.mock('./toneSynths')` and friends,
+ * and an ad-hoc module mock has no compile-time surface guarantee. This file
+ * is the central contract that fails when one of those mocks describes a
+ * method the real class no longer has. Keep it until those call sites use
+ * production interfaces through real injection seams.
  *
  * The method lists are harvested from those `vi.mock` call sites. When a
  * new mock method is added, add it here too. If the real class drops or

@@ -277,7 +277,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 | File | Purpose |
 |------|---------|
-| `src/worker/logging.ts` | Structured logging, metrics tracking |
+| `src/shared/canonical-hash.ts` | Shared client/Worker state normalization and hashing |
 | `src/debug/DebugContext.tsx` | React context for debug state |
 | `src/debug/DebugOverlay.tsx` | Debug panel UI component |
 | `src/debug/DebugOverlay.css` | Debug panel styles |

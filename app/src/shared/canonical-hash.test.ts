@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { canonicalizeForHash, hashState } from './canonicalHash';
+import { canonicalizeForHash, hashState } from './canonical-hash';
 
 // =============================================================================
 // UNIT TESTS: canonicalizeForHash function
