@@ -366,7 +366,10 @@ fc.assert(fc.property(
 
 **Location:** `app/src/shared/canonical-hash.ts`
 
-**The Bug:** Line 654 has `hash = hash & hash` which is a no-op (should be `hash | 0`).
+**Implementation note:** `hash = hash & hash` performs JavaScript's 32-bit
+integer coercion, although `hash | 0` expresses the intent more clearly. The
+two forms are equivalent; the properties below protect determinism and output
+stability rather than treating the spelling as a behavioral bug.
 
 **Properties:**
 ```typescript

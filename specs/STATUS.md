@@ -277,6 +277,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 | File | Purpose |
 |------|---------|
+| `src/worker/observability.ts` | Worker wide-event schemas, context, metrics, and emission |
 | `src/shared/canonical-hash.ts` | Shared client/Worker state normalization and hashing |
 | `src/debug/DebugContext.tsx` | React context for debug state |
 | `src/debug/DebugOverlay.tsx` | Debug panel UI component |

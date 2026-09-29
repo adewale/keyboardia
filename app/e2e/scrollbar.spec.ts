@@ -286,10 +286,14 @@ test.describe('Scrollbar behavior', () => {
       const firstTrackStepBox = await firstTrackSteps.nth(stepIndex).boundingBox();
       const secondTrackStepBox = await secondTrackSteps.nth(stepIndex).boundingBox();
 
-      if (firstTrackStepBox && secondTrackStepBox) {
-        // X positions should be the same (within tolerance for subpixel rendering)
-        expect(Math.abs(firstTrackStepBox.x - secondTrackStepBox.x)).toBeLessThan(3);
+      expect(firstTrackStepBox, `first track step ${stepIndex} should be measurable`).not.toBeNull();
+      expect(secondTrackStepBox, `second track step ${stepIndex} should be measurable`).not.toBeNull();
+      if (!firstTrackStepBox || !secondTrackStepBox) {
+        throw new Error(`step ${stepIndex} must exist in both tracks`);
       }
+
+      // X positions should be the same (within tolerance for subpixel rendering)
+      expect(Math.abs(firstTrackStepBox.x - secondTrackStepBox.x)).toBeLessThan(3);
     }
   });
 });

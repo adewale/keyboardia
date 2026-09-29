@@ -2884,7 +2884,7 @@ npm install --save-dev fast-check
 // test/property/sync-invariants.test.ts
 import fc from 'fast-check';
 import { applyMutation } from '../src/shared/state-mutations';
-import { canonicalHash } from '../src/sync/canonicalHash';
+import { canonicalizeForHash, hashState } from '../src/shared/canonical-hash';
 
 // Arbitrary for all mutation types
 const mutationArb = fc.oneof(
@@ -2910,13 +2910,14 @@ describe('Sync Invariants', () => {
   });
 
   // Property 2: Hash consistency
-  it('canonicalHash produces same result for equivalent states', () => {
+  it('canonical hash produces same result for equivalent states', () => {
     fc.assert(fc.property(
       fc.array(mutationArb, { minLength: 1, maxLength: 50 }),
       (mutations) => {
         const state1 = mutations.reduce(applyMutation, initialState());
         const state2 = mutations.reduce(applyMutation, initialState());
-        return canonicalHash(state1) === canonicalHash(state2);
+        return hashState(canonicalizeForHash(state1))
+          === hashState(canonicalizeForHash(state2));
       }
     ));
   });

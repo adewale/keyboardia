@@ -90,6 +90,6 @@ show('EXPORTED BUT UNIMPORTED', findings.filter((finding) => finding.status === 
 if (!findings.length) {
   console.log(`\n✅ No dead runtime exports or test-support exports (${runtimeCount} runtime, ${buildOnly.length} build-only).`);
 } else {
-  console.log(`\n${findings.length} dead runtime export finding(s).`);
+  console.log(`\n${findings.length} dead runtime or test-support export finding(s).`);
   process.exit(1);
 }

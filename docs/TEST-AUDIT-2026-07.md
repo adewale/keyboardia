@@ -444,7 +444,7 @@ fc.pre(!canonicalEqual(clientPreSnapshot, serverFinal));
 Collapse SC-005b and SC-005c into this parameterised property — as written they
 are the `point = 0` and `point = length` boundaries of the same thing, which
 `fc.nat()` already covers. Delete SC-001c (it tests `canonicalEqual`'s
-reflexivity; if that's wanted, it belongs in `canonicalHash.property.test.ts`
+reflexivity; if that's wanted, it belongs in `canonical-hash.property.test.ts`
 asserting reflexivity explicitly).
 
 *Verification:* re-apply the `applyMutation` no-op sabotage. SC-005 must fail.

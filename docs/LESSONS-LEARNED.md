@@ -4399,17 +4399,10 @@ commit; this section documents the outcomes.
 
 2. **Purpose-built fakes for the heavy collaborators** — historical outcome.
    `src/audio/__fakes__/FakeToneSynthManager.ts` and
-   `FakeAdvancedSynthEngine.ts` each end with a compile-time guard
-   line `const _surfaceCheck: <RealClass>Surface = new Fake...();`
-   that fails to type-check if a method on the real class is renamed.
-   This replaces the runtime `mock-fidelity.test.ts` for those two
-   classes — the type system catches drift earlier and more
-   precisely. README in `__fakes__/README.md` documents the pattern
-   for adding more fakes. The runtime `mock-fidelity.test.ts` is
-   retained for the call sites the fakes do not reach: a compile-time
-   guard only protects tests that inject a fake, and dozens of suites
-   still use `vi.mock` on these modules. It comes out when that
-   migration lands, not before.
+   `FakeAdvancedSynthEngine.ts` once ended with compile-time surface guards,
+   and `__fakes__/README.md` documented that pattern. Those guards could catch
+   drift only for tests that injected the fakes; the live suites continued to
+   use `vi.mock`, with `mock-fidelity.test.ts` as their runtime contract.
 
    **September 2026 audit:** that migration never happened. The two fakes had
    no consumers outside their self-tests, so their compile-time checks guarded

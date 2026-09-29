@@ -21,8 +21,7 @@ Highest-value work from the baseline audit:
 ## Commands / checks run
 
 ```bash
-cd app && npm run validate:manifests          # pass: 27/27
-cd app && npm run validate:manifests          # includes playable-range checks
+cd app && npm run validate:manifests          # pass: 27/27; includes playable-range checks
 cd app && npm run validate:release-times      # 21 OK, 6 unknown recommendation classes
 cd app && npm run analyze:velocity            # flags 5 high-priority single-layer instruments
 cd app && npm run audit:range:render          # pass: offline render, no rendered-silent notes

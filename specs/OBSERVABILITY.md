@@ -371,6 +371,7 @@ npm run dev:multiplayer abc123-def456-...
 
 | File | Purpose |
 |------|---------|
+| `app/src/worker/observability.ts` | Worker wide-event schemas, context, metrics, and emission |
 | `app/src/shared/canonical-hash.ts` | Shared client/Worker state normalization and hashing |
 | `app/src/worker/index.ts` | Debug endpoint handlers |
 | `app/src/debug/DebugContext.tsx` | Client-side debug state |

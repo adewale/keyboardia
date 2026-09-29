@@ -704,7 +704,7 @@ app/
 │   │
 │   └── worker/
 │       ├── types.test.ts         # Type parity tests
-│       └── logging.test.ts       # Logging utility tests
+│       └── observability.test.ts # Wide-event and metrics utility tests
 │
 ├── test/integration/
 │   ├── collaboration-contract.test.ts # Real Worker/DO/WebSocket collaboration
