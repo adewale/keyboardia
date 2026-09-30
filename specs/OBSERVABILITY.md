@@ -446,9 +446,12 @@ Diagnoses client/server state hash mismatches.
 ```bash
 npx tsx scripts/debug-state-hash.ts <session-id>
 npx tsx scripts/debug-state-hash.ts <session-id> --local
+npx tsx scripts/debug-state-hash.ts <session-id> --reported-hash=<hash>
 ```
 
-**Features:** Fetches session, computes hash, compares field-by-field for differences.
+**Features:** Fetches persisted state, prints raw and canonical field inventories,
+computes every browser and Worker capability projection, and identifies which
+projection matches a reported hash.
 
 #### compare-sessions.ts
 

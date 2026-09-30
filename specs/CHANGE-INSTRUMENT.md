@@ -113,10 +113,10 @@ Rationale:
   seen in the UI for the whole intervening period.
 - Clearing is the only option that makes the result a function of
   `(track, sampleId)` alone, which is what lets the client and server converge
-  from a `{ trackId, sampleId }` broadcast. `fmParams` is **excluded from the
-  state hash** (`canonicalizeTrack` in `shared/canonical-hash.ts`), so a divergence here
-  would never be caught by the periodic hash check. One shared implementation is
-  the only defense.
+  from a `{ trackId, sampleId }` broadcast. `fmParams` is included in the
+  canonical state hash (`canonicalizeTrack` in `shared/canonical-hash.ts`), so
+  the periodic check detects a divergence. The shared implementation still
+  prevents drift at the operation boundary instead of waiting for recovery.
 
 The policy lives in one exported function, `carryOverEngineState`, so it has a
 single test target and a single place to change if a future preset family gains
@@ -247,16 +247,19 @@ Each of these was identified in the existing code before implementation.
    reconciler is state-driven for this reason.
 5. **Stale FM parameters bleeding into a new preset**, and re-appearing after a
    round trip through a non-FM instrument. See section 4.
-6. **`fmParams` is invisible to the state-hash check**, so any client/server
-   divergence in the engine-state policy would be undetectable. Solved by one
-   implementation, plus a test that asserts the DO result equals the pure result.
+6. **Client/server engine-state policy drift.** `fmParams` is included in the
+   state hash, so a divergence is detectable. One implementation prevents the
+   divergence, and a test asserts that the DO result equals the pure result.
 7. **Track-list reordering by accident.** Replacing a track object in place is
    required; delete-and-recreate would move the track to the end and lose its ID.
    The operation maps over `tracks` and never appends.
 8. **Published sessions.** A new mutating message type that was not added to
-   `MUTATING_MESSAGE_TYPES` would be treated as read-only and allowed through on
-   an immutable session. The type is in the set, and `types.test.ts` enforces
-   that every entry is blocked.
+   the mutation map could otherwise be treated as read-only and allowed through
+   on an immutable session. `shared/messages.ts` exhaustively classifies every
+   client message, and the Worker rejects anything outside the read-only set on
+   immutable sessions. The unit suites verify classification and transport
+   mapping; `collaboration-contract.test.ts` exercises the published-session
+   rejection through the real Worker boundary.
 9. **Losing a rejected edit's state.** Returning a fresh object on the error
    path would let a caller assign it and drop concurrent edits. `setTrackInstrument`
    returns the original reference on rejection.
@@ -332,10 +335,10 @@ production code, per `specs/TESTING.md`.
 
 **Reducer / manifest** — existing suites, extended
 - `sync-classification.test.ts`, `sync-layer-coverage.test.ts`,
-  `mutation-types.test.ts`, `message-types.test.ts`, `worker/types.test.ts`:
-  the new action, message, and broadcast are classified, mapped, handled, and
-  blocked on published sessions
-- `npm run validate:sync` covers the new type's seven-point checklist
+  and the exhaustive classification in `shared/messages.ts`: the new action,
+  message, and broadcast are classified, mapped, and handled
+- `npm run validate:sync` checks every entry in the production mutation map
+  across Worker dispatch, browser dispatch, handlers, and action conversion
 - `sync-convergence.property.test.ts` picks the mutation up through
   `arbitraries.ts`, so commutativity and convergence are exercised
 
@@ -346,6 +349,7 @@ production code, per `specs/TESTING.md`.
   survive
 - an invalid `sampleId` and an unknown `trackId` produce no broadcast and no
   state change
+- a published session rejects the instrument mutation and preserves state
 - the compatibility name is ignored, engine state is cleaned, and a no-op is
   acknowledged without a durable write
 - a published session rejects the message

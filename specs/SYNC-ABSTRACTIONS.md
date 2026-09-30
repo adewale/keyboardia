@@ -1,5 +1,11 @@
 # Sync Abstractions Specification
 
+> **Status: historical proposal.** The repository now uses shared message types,
+> the typed `MESSAGE_TO_STATE_BROADCAST` owner, exhaustive client-message
+> classification, and `scripts/validate-sync-checklist.ts` for runtime wiring.
+> The problem statement and implementation sketches below record the design path
+> and should not be read as the current architecture.
+
 ## Problem Statement
 
 Adding a new multiplayer-synced feature requires manual updates to **7 different locations** across 4 files, creating a high risk of bugs when any step is missed. The current architecture has:
@@ -43,6 +49,14 @@ EDIT: src/worker/types.ts           # Import from shared
 ```
 
 ### Implementation
+
+> **Current implementation (September 2026):** The sketch below records the
+> original proposal. The shipped validator imports
+> `MESSAGE_TO_STATE_BROADCAST`, validates all 38 production mutations, and
+> checks standard action conversion plus the named sender and hook for each
+> dedicated route. Client-message classification is exhaustive at compile time;
+> do not reintroduce copied mutation or broadcast inventories.
+
 ```typescript
 // src/shared/sync-types.ts
 export interface FMParams {

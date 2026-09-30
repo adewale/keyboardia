@@ -157,6 +157,7 @@ export const VALIDATORS = [
       inputs: [
         'src/shared/message-types.ts',
         'src/shared/messages.ts',
+        'src/hooks/useMultiplayer.ts',
         'src/sync/multiplayer.ts',
         'src/worker/live-session.ts',
         'src/worker/types.ts',

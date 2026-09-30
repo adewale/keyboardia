@@ -2,44 +2,29 @@
 /**
  * Debug State Hash Mismatch
  *
- * This script helps diagnose why client and server state hashes don't match.
- * It fetches a session from the API and compares the hash computation.
+ * Fetches persisted session state, canonicalizes it with the same production
+ * code used by the browser and Worker, and prints every negotiated hash shape.
  *
  * Usage:
  *   npx tsx scripts/debug-state-hash.ts <session-id>
  *   npx tsx scripts/debug-state-hash.ts <session-id> --local
+ *   npx tsx scripts/debug-state-hash.ts <session-id> --reported-hash=<hash>
  */
 
-import { hashState } from '../src/shared/canonical-hash';
+import {
+  canonicalizeForHash,
+  hashState,
+  projectCanonicalStateForClientHashCapability,
+  projectCanonicalStateForServerHashCapability,
+  type StateForHash,
+} from '../src/shared/canonical-hash';
+import { projectCanonicalStateForEnvelopeV2Capability } from '../src/shared/rolling-envelope-state-v2';
+import type { Session, SessionTrack } from '../src/shared/state';
+import * as path from 'path';
+import { fileURLToPath } from 'url';
 
 const PROD_SERVER = 'https://keyboardia.adewale-883.workers.dev';
 const LOCAL_SERVER = 'http://localhost:8787';
-
-interface Track {
-  id: string;
-  name: string;
-  sampleId: string;
-  steps: boolean[];
-  parameterLocks: (unknown | null)[];
-  volume: number;
-  muted: boolean;
-  soloed?: boolean;
-  transpose: number;
-  stepCount?: number;
-}
-
-interface SessionState {
-  tracks: Track[];
-  tempo: number;
-  swing: number;
-  effects?: unknown;
-  version?: number;
-}
-
-interface Session {
-  id: string;
-  state: SessionState;
-}
 
 async function getSession(baseUrl: string, sessionId: string): Promise<Session | null> {
   try {
@@ -51,260 +36,148 @@ async function getSession(baseUrl: string, sessionId: string): Promise<Session |
   }
 }
 
-function analyzeTrackStructure(track: Track, index: number): void {
+function describeRawTrack(track: SessionTrack, index: number): void {
   console.log(`\n  Track ${index}: ${track.id} (${track.name})`);
-  console.log(`    steps.length: ${track.steps.length}`);
-  console.log(`    parameterLocks.length: ${track.parameterLocks.length}`);
-  console.log(`    soloed: ${track.soloed} (type: ${typeof track.soloed})`);
-  console.log(`    stepCount: ${track.stepCount} (type: ${typeof track.stepCount})`);
-  console.log(`    muted: ${track.muted}`);
-  console.log(`    volume: ${track.volume}`);
-  console.log(`    transpose: ${track.transpose}`);
+  console.log(`    instrument: ${track.sampleId}`);
+  console.log(`    raw stepCount: ${String(track.stepCount)}`);
+  console.log(`    raw steps/locks: ${track.steps.length}/${track.parameterLocks.length}`);
+  console.log(`    raw optional authored fields: ${[
+    track.fmParams !== undefined && 'fmParams',
+    track.envelope !== undefined && 'envelope',
+    track.envelopeTimeUnit !== undefined && 'envelopeTimeUnit',
+    track.envelopeV2 !== undefined && 'envelopeV2',
+    track.samplePlaybackMode !== undefined && 'samplePlaybackMode',
+    track.gate !== undefined && 'gate',
+    track.swing !== undefined && 'swing',
+    track.pan !== undefined && 'pan',
+  ].filter(Boolean).join(', ') || 'none'}`);
+  console.log(`    local-only fields: muted=${track.muted}, soloed=${String(track.soloed)}`);
+}
 
-  // Check for undefined fields that might cause JSON differences
-  const trackKeys = Object.keys(track);
-  const expectedKeys = ['id', 'name', 'sampleId', 'steps', 'parameterLocks', 'volume', 'muted', 'soloed', 'transpose', 'stepCount'];
-  const missingKeys = expectedKeys.filter(k => !trackKeys.includes(k));
-  const extraKeys = trackKeys.filter(k => !expectedKeys.includes(k));
+export interface NegotiatedHashCandidate {
+  label: string;
+  hash: string;
+  jsonLength: number;
+}
 
-  if (missingKeys.length > 0) {
-    console.log(`    ⚠️  Missing keys: ${missingKeys.join(', ')}`);
+/** Compute every capability combination accepted by the browser and Worker. */
+export function computeNegotiatedHashCandidates(
+  state: StateForHash,
+): NegotiatedHashCandidate[] {
+  const canonical = canonicalizeForHash(state);
+  const candidates: Array<{ label: string; shape: object }> = [];
+
+  for (const [stateLabel, supportsStateHashV2] of [
+    ['state-hash-v2', true],
+    ['legacy state hash', false],
+  ] as const) {
+    const hashVersionState = projectCanonicalStateForClientHashCapability(
+      canonical,
+      supportsStateHashV2,
+    );
+    for (const [envelopeLabel, supportsEnvelopeV2] of [
+      ['track-envelope-v2', true],
+      ['pre-envelope', false],
+    ] as const) {
+      candidates.push({
+        label: `browser calculation: ${stateLabel}, ${envelopeLabel}`,
+        shape: projectCanonicalStateForEnvelopeV2Capability(
+          hashVersionState,
+          supportsEnvelopeV2,
+        ),
+      });
+    }
   }
-  if (extraKeys.length > 0) {
-    console.log(`    ⚠️  Extra keys: ${extraKeys.join(', ')}`);
+
+  for (const [stateLabel, supportsStateHashV2] of [
+    ['state-hash-v2', true],
+    ['legacy state hash', false],
+  ] as const) {
+    const hashVersionState = projectCanonicalStateForServerHashCapability(
+      canonical,
+      supportsStateHashV2,
+    );
+    for (const envelopeTier of ['v2', 'v1', 'pre-envelope'] as const) {
+      candidates.push({
+        label: `Worker calculation: ${stateLabel}, envelope ${envelopeTier}`,
+        shape: projectCanonicalStateForEnvelopeV2Capability(hashVersionState, envelopeTier),
+      });
+    }
   }
+
+  return candidates.map(({ label, shape }) => ({
+    label,
+    hash: hashState(shape),
+    jsonLength: JSON.stringify(shape).length,
+  }));
 }
 
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const sessionId = args.find(a => !a.startsWith('--'));
+  const sessionId = args.find((arg) => !arg.startsWith('--'));
   const useLocal = args.includes('--local');
+  const reportedHash = args
+    .find((arg) => arg.startsWith('--reported-hash='))
+    ?.slice('--reported-hash='.length);
 
   if (!sessionId) {
-    console.log('Usage: npx tsx scripts/debug-state-hash.ts <session-id> [--local]');
+    console.log(
+      'Usage: npx tsx scripts/debug-state-hash.ts <session-id> [--local] [--reported-hash=<hash>]',
+    );
     process.exit(1);
   }
 
   const baseUrl = useLocal ? LOCAL_SERVER : PROD_SERVER;
-  console.log(`\n🔍 Debugging State Hash Mismatch`);
-  console.log(`   Server: ${baseUrl}`);
-  console.log(`   Session: ${sessionId}`);
+  console.log('\nState hash diagnosis');
+  console.log(`  Server: ${baseUrl}`);
+  console.log(`  Session: ${sessionId}`);
 
   const session = await getSession(baseUrl, sessionId);
   if (!session) {
-    console.log('❌ Session not found');
+    console.error('Session not found');
     process.exit(1);
   }
 
-  console.log('\n' + '='.repeat(70));
-  console.log('SESSION STATE ANALYSIS');
-  console.log('='.repeat(70));
-
-  console.log(`\nTop-level fields:`);
-  console.log(`  tempo: ${session.state.tempo}`);
-  console.log(`  swing: ${session.state.swing}`);
-  console.log(`  tracks: ${session.state.tracks.length} track(s)`);
+  console.log('\nPersisted state');
+  console.log(`  tempo/swing: ${session.state.tempo}/${session.state.swing}`);
+  console.log(`  tracks: ${session.state.tracks.length}`);
   console.log(`  version: ${session.state.version} (excluded from hash)`);
-  console.log(`  effects: ${session.state.effects ? 'present' : 'undefined'}`);
+  console.log(`  effects: ${session.state.effects === undefined ? 'defaulted during canonicalization' : 'authored'}`);
+  console.log(`  scale: ${session.state.scale === undefined ? 'defaulted during canonicalization' : 'authored'}`);
+  console.log(`  loopRegion: ${session.state.loopRegion === undefined ? 'defaulted to null' : JSON.stringify(session.state.loopRegion)}`);
+  session.state.tracks.forEach(describeRawTrack);
 
-  console.log('\n' + '-'.repeat(70));
-  console.log('TRACK STRUCTURE ANALYSIS');
-  console.log('-'.repeat(70));
+  const canonical = canonicalizeForHash(session.state);
+  const hashes = computeNegotiatedHashCandidates(session.state);
 
-  session.state.tracks.forEach((track, i) => {
-    analyzeTrackStructure(track, i);
+  console.log('\nCanonical track shapes');
+  canonical.tracks.forEach((track, index) => {
+    console.log(`\n  Track ${index}: ${track.id}`);
+    console.log(`    canonical stepCount: ${track.stepCount}`);
+    console.log(`    canonical steps/locks: ${track.steps.length}/${track.parameterLocks.length}`);
+    console.log(`    hashed fields: ${Object.keys(track).join(', ')}`);
   });
 
-  console.log('\n' + '-'.repeat(70));
-  console.log('HASH COMPUTATION COMPARISON');
-  console.log('-'.repeat(70));
-
-  // Server hashes this (from live-session.ts handleStateHash):
-  const serverHashInput = {
-    tracks: session.state.tracks,
-    tempo: session.state.tempo,
-    swing: session.state.swing,
-  };
-
-  // The client (App.tsx getStateForHash) hashes the same three fields, so
-  // hashing them again from this same source would be identical by
-  // construction. The comparison that can actually differ is against the
-  // normalized client input built below, where optional fields are defaulted.
-
-  console.log(`\nServer hash input (JSON):`);
-  const serverJson = JSON.stringify(serverHashInput);
-  console.log(`  Length: ${serverJson.length} chars`);
-  console.log(`  Hash: ${hashState(serverHashInput)}`);
-
-  // Simulate what client would have if fields are normalized
-  const normalizedTracks = session.state.tracks.map(track => ({
-    ...track,
-    // Ensure all optional fields have explicit values
-    soloed: track.soloed ?? false,
-    stepCount: track.stepCount ?? 16,
-  }));
-
-  const normalizedClientInput = {
-    tracks: normalizedTracks,
-    tempo: session.state.tempo,
-    swing: session.state.swing,
-  };
-
-  console.log(`\nNormalized client hash input (with defaults):`);
-  const normalizedJson = JSON.stringify(normalizedClientInput);
-  console.log(`  Length: ${normalizedJson.length} chars`);
-  console.log(`  Hash: ${hashState(normalizedClientInput)}`);
-
-  // Check if JSON differs
-  if (serverJson !== normalizedJson) {
-    console.log(`\n⚠️  JSON DIFFERS!`);
-
-    // Find the difference
-    const serverParsed = JSON.parse(serverJson);
-    const clientParsed = JSON.parse(normalizedJson);
-
-    // Compare track by track
-    for (let i = 0; i < Math.max(serverParsed.tracks.length, clientParsed.tracks.length); i++) {
-      const serverTrack = JSON.stringify(serverParsed.tracks[i] || {});
-      const clientTrack = JSON.stringify(clientParsed.tracks[i] || {});
-
-      if (serverTrack !== clientTrack) {
-        console.log(`\n  Track ${i} differs:`);
-        console.log(`    Server: ${serverTrack.substring(0, 200)}...`);
-        console.log(`    Client: ${clientTrack.substring(0, 200)}...`);
-
-        // Find specific field differences
-        const sTrack = serverParsed.tracks[i] || {};
-        const cTrack = clientParsed.tracks[i] || {};
-        const allKeys = new Set([...Object.keys(sTrack), ...Object.keys(cTrack)]);
-
-        for (const key of allKeys) {
-          const sVal = JSON.stringify(sTrack[key]);
-          const cVal = JSON.stringify(cTrack[key]);
-          if (sVal !== cVal) {
-            console.log(`      Field '${key}': server=${sVal}, client=${cVal}`);
-          }
-        }
-      }
-    }
-  } else {
-    console.log(`\n✅ JSON matches after normalization`);
+  console.log('\nNegotiated hashes');
+  for (const result of hashes) {
+    console.log(`  ${result.hash}  ${result.label} (${result.jsonLength} JSON chars)`);
   }
 
-  // Check for array length mismatches (likely cause)
-  console.log('\n' + '-'.repeat(70));
-  console.log('ARRAY LENGTH ANALYSIS');
-  console.log('-'.repeat(70));
-
-  for (const track of session.state.tracks) {
-    const stepsLen = track.steps.length;
-    const locksLen = track.parameterLocks.length;
-
-    if (stepsLen !== 128 || locksLen !== 128) {
-      console.log(`\n  ⚠️  Track ${track.id}: steps=${stepsLen}, parameterLocks=${locksLen}`);
-      console.log(`      Expected: 128 for both arrays`);
-      console.log(`      This could cause hash mismatch if client has 128 but server has ${stepsLen}`);
+  if (reportedHash) {
+    const matches = hashes.filter(({ hash }) => hash === reportedHash);
+    console.log(`\nReported hash: ${reportedHash}`);
+    if (matches.length === 0) {
+      console.log('  No negotiated projection of the persisted state matches.');
+      console.log('  Inspect live client state for an authored-state divergence.');
+    } else {
+      for (const match of matches) console.log(`  Matches: ${match.label}`);
     }
   }
-
-  // Simulate client with 128-element arrays
-  console.log('\n' + '-'.repeat(70));
-  console.log('SIMULATED CLIENT STATE (128-element arrays)');
-  console.log('-'.repeat(70));
-
-  const clientSimulatedTracks = session.state.tracks.map(track => {
-    // Client reducer initializes tracks with 128 steps
-    const steps = [...track.steps];
-    const parameterLocks = [...track.parameterLocks];
-
-    while (steps.length < 128) steps.push(false);
-    while (parameterLocks.length < 128) parameterLocks.push(null);
-
-    return {
-      ...track,
-      steps,
-      parameterLocks,
-      soloed: track.soloed ?? false,
-      stepCount: track.stepCount ?? 16,
-    };
-  });
-
-  const clientSimulatedInput = {
-    tracks: clientSimulatedTracks,
-    tempo: session.state.tempo,
-    swing: session.state.swing,
-  };
-
-  const clientSimulatedJson = JSON.stringify(clientSimulatedInput);
-  console.log(`\n  Simulated client JSON length: ${clientSimulatedJson.length} chars`);
-  console.log(`  Simulated client hash: ${hashState(clientSimulatedInput)}`);
-
-  console.log(`\n  Server hash: ${hashState(serverHashInput)}`);
-
-  if (hashState(clientSimulatedInput) === hashState(serverHashInput)) {
-    console.log(`\n  ✅ Hashes match after client simulation!`);
-  } else {
-    console.log(`\n  ❌ Hashes still differ - there's another cause`);
-
-    // Detailed byte-by-byte comparison
-    console.log('\n' + '-'.repeat(70));
-    console.log('DETAILED JSON COMPARISON');
-    console.log('-'.repeat(70));
-
-    // Find first difference
-    for (let i = 0; i < Math.max(serverJson.length, clientSimulatedJson.length); i++) {
-      if (serverJson[i] !== clientSimulatedJson[i]) {
-        const start = Math.max(0, i - 50);
-        const end = Math.min(Math.max(serverJson.length, clientSimulatedJson.length), i + 50);
-        console.log(`\n  First difference at position ${i}:`);
-        console.log(`  Server context: ...${serverJson.substring(start, end)}...`);
-        console.log(`  Client context: ...${clientSimulatedJson.substring(start, end)}...`);
-        console.log(`  Server char: '${serverJson[i]}' (${serverJson.charCodeAt(i)})`);
-        console.log(`  Client char: '${clientSimulatedJson[i]}' (${clientSimulatedJson.charCodeAt(i)})`);
-        break;
-      }
-    }
-  }
-
-  console.log('\n' + '='.repeat(70));
-  console.log('SUMMARY');
-  console.log('='.repeat(70));
-
-  const issues: string[] = [];
-
-  // Check for optional field issues
-  for (const track of session.state.tracks) {
-    if (track.soloed === undefined) {
-      issues.push(`Track ${track.id}: 'soloed' is undefined (server) but boolean (client)`);
-    }
-    if (track.stepCount === undefined) {
-      issues.push(`Track ${track.id}: 'stepCount' is undefined (server) but number (client)`);
-    }
-    if (track.steps.length !== 128) {
-      issues.push(`Track ${track.id}: steps.length is ${track.steps.length} (server) but 128 (client)`);
-    }
-    if (track.parameterLocks.length !== 128) {
-      issues.push(`Track ${track.id}: parameterLocks.length is ${track.parameterLocks.length} (server) but 128 (client)`);
-    }
-  }
-
-  if (issues.length > 0) {
-    console.log('\n❌ POTENTIAL CAUSES OF HASH MISMATCH:');
-    issues.forEach((issue, i) => {
-      console.log(`   ${i + 1}. ${issue}`);
-    });
-    console.log('\n💡 RECOMMENDATION:');
-    console.log('   The server and client track structures need normalization before hashing.');
-    console.log('   Options:');
-    console.log('   1. Server: Ensure all optional fields have explicit values before hashing');
-    console.log('   2. Client: Hash only the fields that server sends (exclude undefined fields)');
-    console.log('   3. Both: Use a canonical JSON serialization that handles undefined consistently');
-  } else {
-    console.log('\n✅ No obvious structural issues found');
-    console.log('   The mismatch may be due to runtime state differences, not structural issues.');
-  }
-
-  console.log('\n');
 }
 
-main().catch(console.error);
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  main().catch((error: unknown) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
+}

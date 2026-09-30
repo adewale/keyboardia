@@ -40,9 +40,9 @@ quality framework in [adewale/testing-best-practices](https://github.com/adewale
 
 The suite is in good shape structurally — it already has property-based tests,
 Stryker mutation testing, golden-master tests, and a mock-fidelity sentinel
-(`src/audio/mock-fidelity.test.ts`) that catches known mock methods disappearing
-from production classes. The findings below are concentrated pockets, not
-systemic rot.
+(`src/audio/mock-fidelity.test.ts`) that discovers mocked audio methods and
+catches them disappearing from production classes. The findings below are
+concentrated pockets, not systemic rot.
 
 ## Method
 

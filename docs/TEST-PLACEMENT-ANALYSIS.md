@@ -182,7 +182,7 @@ Finding 1 would damage them:
 - **`e2e/visual.spec.ts`** — screenshot comparison has no cheaper tier.
 - **`e2e/multiplayer.spec.ts`** — two independent browser contexts over a real WebSocket. Cannot be faked.
 - **`e2e/session-api-contract.spec.ts`** — deliberately runs the *same* contract against whichever backend Playwright starts, mock or real Worker. That is mock-fidelity testing at the HTTP boundary, and it is a genuinely good design.
-- **`src/audio/mock-fidelity.test.ts`** — a partial sentinel that checks known mocked methods against real prototypes. It is useful drift protection, but typed doubles at each injection point are still needed before it can claim completeness.
+- **`src/audio/mock-fidelity.test.ts`** — discovers methods supplied by audio module mocks and checks them against real prototypes. It catches name drift automatically; typed doubles at each injection point are still needed for signature compatibility.
 - **`test/integration/eviction-recovery.test.ts`** — hibernation, cold wake, KV flush against a real Durable Object. Exactly what the integration tier is for.
 
 ---

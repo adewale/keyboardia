@@ -4407,9 +4407,10 @@ commit; this section documents the outcomes.
    **September 2026 audit:** that migration never happened. The two fakes had
    no consumers outside their self-tests, so their compile-time checks guarded
    only unused test infrastructure. They and their self-tests were removed;
-   `mock-fidelity.test.ts` remains because it catches known mocked methods
-   disappearing from real prototypes. It does not discover new mock methods,
-   so it must not be treated as a complete mock contract.
+   `mock-fidelity.test.ts` now discovers methods from every audio module mock
+   and checks them against the real prototypes. A new mocked method enters the
+   contract automatically. This is still a name-level check; it does not prove
+   signature compatibility.
 
 3. **Characterization tests for legacy audio paths** — done.
    `src/audio/engine-legacy-paths.characterization.test.ts`
@@ -4429,9 +4430,9 @@ These are still open:
   reach >90% mutation score. Currently 88% and 84%.
 - **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
   call sites** to production interfaces through real dependency injection.
-  Until that seam exists, `mock-fidelity.test.ts` remains useful partial drift
-  protection. Type each replacement at its injection point so the compiler
-  checks the actual double rather than a separate inventory.
+  Until that seam exists, `mock-fidelity.test.ts` discovers name drift across
+  the current audio doubles. Type each replacement at its injection point so
+  the compiler also checks signatures.
 - **Characterization tests for `playSample`** — the most complex
   legacy method (pitch-shift worklet branching, envelope ramping,
   source.start, onended cleanup). Skipped here because much of its
@@ -6789,8 +6790,9 @@ overflow and requires both track cells to remain measurable after scrolling.
 
 State canonicalization now has one owner in
 `src/shared/canonical-hash.ts`, imported by both browser and Worker code. The
-duplicate Worker implementation, parity-only tests, and debug-script hash were
-removed. Playable-range validation remains in `validate-manifests.ts`, and
+duplicate Worker implementation, parity-only tests, and debug-script hash
+implementation were removed. Playable-range validation remains in
+`validate-manifests.ts`, and
 session writes share one `persistSession` function. The dead-export gate now
 checks exports under `__fixtures__` and `__fakes__` without treating those
 support modules as entry points.
@@ -6837,11 +6839,10 @@ helper also does not prove that live callers supply the complete state. Repeatin
 determinism, output-shape, and boundary-value assertions hundreds of times added
 runtime while leaving the missing-field regression untouched.
 
-The same limitation appeared in the audio mock-fidelity sentinel and the older
-dead-code audit: neither could discover that its own inventory was incomplete.
-The mock sentinel still checks its listed methods against real prototypes, so it
-remains useful partial protection. The dead-code check duplicated a stronger
-graph-based validator and could be removed.
+The same limitation initially appeared in the audio mock-fidelity sentinel and
+the older dead-code audit: neither could discover that its own inventory was
+incomplete. The dead-code check duplicated a stronger graph-based validator and
+could be removed.
 
 ### The fix
 
@@ -6863,8 +6864,17 @@ update, including every optional authored track field. Four focused randomized
 properties replace 19 overlapping property tests. The source-grep dead-code
 test was removed in favor of the graph validator, and duplicated mutation and
 broadcast inventories were removed in favor of the typed
-`MESSAGE_TO_STATE_BROADCAST` owner. The mock-fidelity sentinel remains until
-typed dependency injection can make the actual doubles compiler checked.
+`MESSAGE_TO_STATE_BROADCAST` owner. The sync checklist imports that production
+map and checks all 38 mutations instead of maintaining a 20-item copy. Standard
+actions must reach `actionToMessage`; the four dedicated routes must name their
+sender, emit the mapped payload, and remain connected to their UI hook. Exact
+payload tests replace the former tests that only asserted an exception was in
+its own exception set. The `ClientMessageBase` union is exhaustively partitioned
+between the mutation map and the read-only list, so a new message cannot remain
+silently unclassified. The mock-fidelity sentinel parses the audio test doubles
+and checks every discovered method name against the real prototype. Typed
+dependency injection remains the next step because it can also enforce
+signatures.
 
 ### The rule
 
