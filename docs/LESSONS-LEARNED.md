@@ -87,6 +87,10 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 76: An Audio Route Does Not Guarantee Background Scheduling](#lesson-76-an-audio-route-does-not-guarantee-background-scheduling)
 - [Lesson 77: Rebase Behavior, Not Competing Authorities](#lesson-77-rebase-behavior-not-competing-authorities)
 - [Lesson 78: A Repeat Null Cannot Bound Randomized State](#lesson-78-a-repeat-null-cannot-bound-randomized-state)
+- [Lesson 79: A Test Needs a Production Subject and an Observable Failure](#lesson-79-a-test-needs-a-production-subject-and-an-observable-failure)
+- [Lesson 80: Duplication Usually Means Ownership Is Unclear](#lesson-80-duplication-usually-means-ownership-is-unclear)
+- [Lesson 81: A Completeness Test Must Discover What It Claims to Cover](#lesson-81-a-completeness-test-must-discover-what-it-claims-to-cover)
+- [Lesson 82: A Quality Gate Must Fail Closed on What It Cannot See](#lesson-82-a-quality-gate-must-fail-closed-on-what-it-cannot-see)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -6883,3 +6887,64 @@ that feeds the behavior.** Use exhaustive type mappings or runtime discovery so
 new model fields force a decision. Keep one boundary test for delivery and a
 small set of generative invariants for broad inputs. A separately maintained
 inventory is documentation, not a completeness oracle.
+
+---
+
+## Lesson 82: A Quality Gate Must Fail Closed on What It Cannot See
+
+**Date:** 30 September 2026
+
+**Context:** Final multi-agent review of the test-audit changes in PR #124
+
+### What happened
+
+The first revision replaced a copied synchronization inventory with the
+production broadcast map, but the validator still checked only 20 of 38
+mutations. Its dedicated-route checks proved that four messages belonged to an
+exception set; they did not prove that each sender emitted the right payload,
+was called by the intended hook callback, or remained in the hook's returned
+API. All of those checks could pass while a user action stopped synchronizing.
+
+The audio mock-fidelity sentinel had the same shape. It inspected selected mock
+forms and locations, but an opaque factory, a spread singleton, a function-valued
+class property, or a mock in another test root could fall outside its model and
+silently escape comparison. The hash diagnostic also carried an obsolete local
+simulation instead of exercising the negotiated production projectors.
+
+### What we misunderstood
+
+Deriving some data from a production owner does not make the rest of a checker's
+scope exhaustive. Static analysis is trustworthy only when unsupported syntax
+is an error; otherwise every construct the analyzer does not understand becomes
+an undocumented exemption. A diagnostic script that reimplements the behavior
+it explains can drift while the real path remains correct or broken in a
+different way.
+
+The gate itself therefore needs negative evidence. A green run proves little
+unless representative broken inputs make it fail at every boundary it claims
+to guard: discovery, classification, payload construction, call-site wiring,
+and public exposure.
+
+### The fix
+
+The synchronization validator now derives all 38 mutation routes from the
+production map. The client-message union is exhaustively partitioned between
+mutating and read-only messages, and dedicated senders are checked from their
+exact payload through the named `useMultiplayerSync` callback to the returned
+consumer API. Validator tests remove or move each link and require a failure.
+
+The mock-fidelity analyzer now scans all relevant unit and component test roots,
+resolves relative module identities, discovers prototype methods and
+function-valued class properties, and reports unsupported factories, computed
+members, spreads, and non-enumerable replacements as errors. Fixture tests prove
+both supported discovery and fail-closed rejection. The hash diagnostic imports
+the production canonicalizer and directional projectors and enumerates every
+accepted state-hash and envelope capability combination.
+
+### The rule
+
+**A quality gate must derive its universe from the owner, prove the complete
+path it names, and reject anything it cannot analyze.** Give the gate negative
+fixtures that break discovery, classification, wiring, and output independently.
+Diagnostics should compose production transformations rather than copy them.
+Treat an unsupported construct as a decision to make, never as an implicit pass.
