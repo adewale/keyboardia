@@ -1190,12 +1190,7 @@ async function handleApiRequest(
     }
 
     // Use canonicalizeForHash for consistent comparison between client and server
-    const canonicalState = canonicalizeForHash({
-      tracks: session.state.tracks,
-      tempo: session.state.tempo,
-      swing: session.state.swing,
-      scale: session.state.scale,
-    });
+    const canonicalState = canonicalizeForHash(session.state);
     const serverStateHash = hashState(canonicalState);
 
     // Client hashes are reported via WebSocket

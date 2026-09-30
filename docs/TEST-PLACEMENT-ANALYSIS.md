@@ -182,7 +182,7 @@ Finding 1 would damage them:
 - **`e2e/visual.spec.ts`** — screenshot comparison has no cheaper tier.
 - **`e2e/multiplayer.spec.ts`** — two independent browser contexts over a real WebSocket. Cannot be faked.
 - **`e2e/session-api-contract.spec.ts`** — deliberately runs the *same* contract against whichever backend Playwright starts, mock or real Worker. That is mock-fidelity testing at the HTTP boundary, and it is a genuinely good design.
-- **`src/audio/mock-fidelity.test.ts`** — asserts every method the unit-test mocks stub actually exists on the real class. Cheap insurance against mock drift, correctly at unit level.
+- **`src/audio/mock-fidelity.test.ts`** — a partial sentinel that checks known mocked methods against real prototypes. It is useful drift protection, but typed doubles at each injection point are still needed before it can claim completeness.
 - **`test/integration/eviction-recovery.test.ts`** — hibernation, cold wake, KV flush against a real Durable Object. Exactly what the integration tier is for.
 
 ---
@@ -296,6 +296,11 @@ integration files import `cloudflare:test`.
 genuinely benefits from running against the real runtime, so it is a candidate
 for *upgrading* back rather than staying in unit permanently. Moving it down was
 the honest description of what it does today.
+
+**September 2026 follow-up:** `canonical-hash-completeness` moved again to
+`src/shared/canonical-hash.completeness.test.ts`. Its exhaustive
+`satisfies Record<keyof ...>` policy must be included by `tsconfig.app.json` so
+the compiler, as well as Vitest, enforces additions to the shared state model.
 
 ### 4. The rule is written down
 

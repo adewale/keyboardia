@@ -702,8 +702,11 @@ app/
 │   │   ├── multiplayer.test.ts   # WebSocket client unit tests
 │   │   └── multiplayer-transport.test.ts # Real client with transport faults
 │   │
+│   ├── shared/
+│   │   └── canonical-hash.completeness.test.ts # Exhaustive shared-state hash policy
+│   │
 │   └── worker/
-│       ├── types.test.ts         # Type parity tests
+│       ├── cursor-position-validation.test.ts # Cursor boundary validation
 │       └── observability.test.ts # Wide-event and metrics utility tests
 │
 ├── test/integration/

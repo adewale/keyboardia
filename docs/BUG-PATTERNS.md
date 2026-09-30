@@ -38,18 +38,16 @@ When serialized:
 When adding a new field to a type that crosses a serialization boundary:
 
 - [ ] **Same optionality**: If client has `field: T`, server should too (not `field?: T`)
-- [ ] **Update parity tests**: Add the field to `TRACK_FIELDS` and `SESSION_TRACK_FIELDS` in `types.test.ts`
+- [ ] **Classify hash behavior**: Add the field to the exhaustive policy in `src/shared/canonical-hash.completeness.test.ts`
 - [ ] **Single normalization point**: Add defaults in ONE place, not scattered
 - [ ] **Shared boundary owner**: Put normalization in a shared module imported by both runtimes
 - [ ] **Document the default**: If field can be missing in stored data, document where/how it's defaulted
 
 ### Code Locations
 
-**Type definitions**:
-- Client: `src/types.ts` → `Track`
-- Server: `src/worker/types.ts` → `SessionTrack`
+**Shared boundary schema**: `src/shared/state.ts` → `SessionState` and `SessionTrack`
 
-**Parity test**: `src/worker/types.test.ts`
+**Hash policy**: `src/shared/canonical-hash.completeness.test.ts`
 
 **Canonical normalization**: `src/shared/canonical-hash.ts` (shared by client and Worker)
 

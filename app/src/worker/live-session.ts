@@ -31,13 +31,18 @@ import type {
 } from './types';
 import { READONLY_MESSAGE_TYPES, isStateMutatingBroadcast, VALID_STEP_COUNTS_SET } from './types';
 import {
-  TRACK_ENVELOPE_CAPABILITIES,
+  STATE_HASH_V2_CAPABILITY,
+  SYNC_CAPABILITIES,
   TRACK_ENVELOPE_CAPABILITY,
   TRACK_ENVELOPE_V2_CAPABILITY,
 } from '../shared/message-types';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { getSession, updateSession, updateSessionName } from './sessions';
-import { hashState, canonicalizeForHash } from '../shared/canonical-hash';
+import {
+  hashState,
+  canonicalizeForHash,
+  projectCanonicalStateForServerHashCapability,
+} from '../shared/canonical-hash';
 import { createInitialSessionState } from '../shared/session-defaults';
 import { normalizeSessionScale } from '../shared/scale-defaults';
 // Observability 2.0: Wide events
@@ -570,7 +575,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
             state: this.state,
             players: Array.from(this.players.values()),
             playerId: 'rest-api',
-            capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
+            capabilities: [...SYNC_CAPABILITIES],
             immutable: this.immutable,
           });
         }
@@ -692,7 +697,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           state: this.state,
           players: Array.from(this.players.values()),
           playerId: 'rest-api', // Identify as REST API update
-          capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
+          capabilities: [...SYNC_CAPABILITIES],
           immutable: this.immutable,
           snapshotTimestamp: Date.now(),
           serverSeq: this.serverSeq,
@@ -913,7 +918,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           state: this.state!,
           players: Array.from(this.players.values()),
           playerId,
-          capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
+          capabilities: [...SYNC_CAPABILITIES],
           immutable: this.immutable,  // Phase 21: Include immutable flag for frontend
           snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
           serverSeq: this.serverSeq,  // Phase 26: For selective mutation clearing
@@ -2834,23 +2839,20 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   ): void {
     if (!this.state) return;
 
-    // Hash only comparable fields (exclude version, which client doesn't track)
-    // Use canonicalizeForHash to normalize state before hashing for consistent
-    // comparison between client and server (handles optional fields and array lengths)
-    const comparableState = {
-      tracks: this.state.tracks,
-      tempo: this.state.tempo,
-      swing: this.state.swing,
-      scale: this.state.scale,
-    };
-    const canonicalState = canonicalizeForHash(comparableState);
+    // canonicalizeForHash owns the shared/local field boundary. Passing the
+    // complete session prevents a newly synced field from being omitted here.
+    const canonicalState = canonicalizeForHash(this.state);
+    const hashVersionState = projectCanonicalStateForServerHashCapability(
+      canonicalState,
+      player.capabilities?.includes(STATE_HASH_V2_CAPABILITY) ?? false,
+    );
     const envelopeHashTier = player.capabilities?.includes(TRACK_ENVELOPE_V2_CAPABILITY)
       ? 'v2'
       : player.capabilities?.includes(TRACK_ENVELOPE_CAPABILITY)
         ? 'v1'
         : 'pre-envelope';
     const comparableCanonicalState = projectCanonicalStateForEnvelopeV2Capability(
-      canonicalState,
+      hashVersionState,
       envelopeHashTier,
     );
     const serverHash = hashState(comparableCanonicalState);
@@ -2913,7 +2915,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       state: this.state,
       players,
       playerId: player.id,
-      capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
+      capabilities: [...SYNC_CAPABILITIES],
       immutable: this.immutable,  // Phase 21: Include immutable flag
       snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
       serverSeq: this.serverSeq,  // Phase 26: For selective mutation clearing
@@ -3062,7 +3064,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
             state: this.state!,
             players: Array.from(this.players.values()),
             playerId: player.id,
-            capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
+            capabilities: [...SYNC_CAPABILITIES],
             immutable: this.immutable,
             snapshotTimestamp: Date.now(),
             serverSeq: this.serverSeq,
@@ -3078,7 +3080,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
             state: this.state!,
             players: Array.from(this.players.values()),
             playerId: player.id,
-            capabilities: [...TRACK_ENVELOPE_CAPABILITIES],
+            capabilities: [...SYNC_CAPABILITIES],
             immutable: this.immutable,
             snapshotTimestamp: Date.now(),
             serverSeq: this.serverSeq,

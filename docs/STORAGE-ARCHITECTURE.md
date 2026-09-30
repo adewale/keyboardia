@@ -367,7 +367,7 @@ gap to close, not a fact to accept.
 | Concurrent multi-client WS writes into one DO | The product is multiplayer | `test/integration/overlap-fuzz.test.ts` (seq conservation + convergence) |
 | 25 ms lookahead scheduler re-reading mutable grid state mid-flight | Drift-free audio under live collaboration | `src/audio/scheduler-mutation-race.test.ts` (virtual-time race lane) |
 | 16-voice polyphony with voice stealing | Mobile CPU budget | engine diagnostics; no conservation ledger yet — accepted gap |
-| Tone.js and raw Web Audio mixed in one graph | Breadth of instruments | `src/audio/mock-fidelity.test.ts`; render lanes (`*.render.test.ts`) |
+| Tone.js and raw Web Audio mixed in one graph | Breadth of instruments | `e2e/capture-session.spec.ts` (production master capture, including a 16-track mixed-engine session) |
 
 ---
 

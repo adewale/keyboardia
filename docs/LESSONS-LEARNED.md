@@ -4402,13 +4402,14 @@ commit; this section documents the outcomes.
    `FakeAdvancedSynthEngine.ts` once ended with compile-time surface guards,
    and `__fakes__/README.md` documented that pattern. Those guards could catch
    drift only for tests that injected the fakes; the live suites continued to
-   use `vi.mock`, with `mock-fidelity.test.ts` as their runtime contract.
+   use `vi.mock`, with `mock-fidelity.test.ts` as a partial runtime sentinel.
 
    **September 2026 audit:** that migration never happened. The two fakes had
    no consumers outside their self-tests, so their compile-time checks guarded
    only unused test infrastructure. They and their self-tests were removed;
-   `mock-fidelity.test.ts` remains the live contract for the module mocks the
-   suite actually uses.
+   `mock-fidelity.test.ts` remains because it catches known mocked methods
+   disappearing from real prototypes. It does not discover new mock methods,
+   so it must not be treated as a complete mock contract.
 
 3. **Characterization tests for legacy audio paths** — done.
    `src/audio/engine-legacy-paths.characterization.test.ts`
@@ -4428,8 +4429,9 @@ These are still open:
   reach >90% mutation score. Currently 88% and 84%.
 - **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
   call sites** to production interfaces through real dependency injection.
-  Until that seam exists, `mock-fidelity.test.ts` remains the central contract
-  that catches drift in those mocks.
+  Until that seam exists, `mock-fidelity.test.ts` remains useful partial drift
+  protection. Type each replacement at its injection point so the compiler
+  checks the actual double rather than a separate inventory.
 - **Characterization tests for `playSample`** — the most complex
   legacy method (pitch-shift worklet branching, envelope ramping,
   source.start, onended cleanup). Skipped here because much of its
@@ -6802,3 +6804,72 @@ is itself the protection, with an oracle that can distinguish their failures.
 For tests, require a production subject and a failure observable at that
 subject's boundary. For browser tests, every missing prerequisite named by the
 scenario must fail explicitly.
+
+---
+
+## Lesson 81: A Completeness Test Must Discover What It Claims to Cover
+
+**Date:** 30 September 2026
+
+**Context:** Effectiveness review of the canonical state-hash tests in PR #124
+
+### What happened
+
+The suite had a file named `canonical-hash-completeness.test.ts`, separate scale
+tests, hundreds of randomized hash assertions, client/server parity tests, and
+green integration coverage. The advertised completeness test still listed only
+part of `SessionTrack` by hand. It omitted six authored sound fields and the
+deprecated field that should be explicitly ignored. At session level it checked
+only tempo and swing.
+
+That gap hid real behavior. Effects and the loop region were persisted and
+multiplayer-synchronized but absent from the hash. Scale was in the canonical
+function, but the browser's live hash callback projected only tracks, tempo, and
+swing, so an authored scale never reached it. Client/server parity tests called
+the same shared helper directly and therefore could not observe the browser's
+incomplete projection.
+
+### What we misunderstood
+
+A test name and a long list of cases do not make coverage exhaustive. A copied
+inventory stays green when the source model gains a field. Testing a canonical
+helper also does not prove that live callers supply the complete state. Repeating
+determinism, output-shape, and boundary-value assertions hundreds of times added
+runtime while leaving the missing-field regression untouched.
+
+The same limitation appeared in the audio mock-fidelity sentinel and the older
+dead-code audit: neither could discover that its own inventory was incomplete.
+The mock sentinel still checks its listed methods against real prototypes, so it
+remains useful partial protection. The dead-code check duplicated a stronger
+graph-based validator and could be removed.
+
+### The fix
+
+The hash input type now derives from `SessionState` and `SessionTrack`, and live
+browser and Worker callers pass their full state to the canonical owner instead
+of maintaining local projections. Effects, scale, and loop region are normalized
+and hashed. A negotiated `state-hash-v2` capability preserves rolling deploys.
+The legacy projection is directional: a new browser keeps authored scale for an
+old Worker, while a new Worker substitutes the legacy missing-scale value for an
+old browser that never supplied scale to its live hash.
+
+The completeness suite now uses
+`satisfies Record<keyof SessionTrack, ...>` and
+`satisfies Record<keyof SessionState, ...>`. Adding a model field fails type
+checking until the test classifies it as hash-significant or deliberately
+ignored, then mutates real state and observes the production hash. The API
+integration owner round-trips the complete hashed state through create and
+update, including every optional authored track field. Four focused randomized
+properties replace 19 overlapping property tests. The source-grep dead-code
+test was removed in favor of the graph validator, and duplicated mutation and
+broadcast inventories were removed in favor of the typed
+`MESSAGE_TO_STATE_BROADCAST` owner. The mock-fidelity sentinel remains until
+typed dependency injection can make the actual doubles compiler checked.
+
+### The rule
+
+**Make completeness depend on the source of truth, and exercise the live path
+that feeds the behavior.** Use exhaustive type mappings or runtime discovery so
+new model fields force a decision. Keep one boundary test for delivery and a
+small set of generative invariants for broad inputs. A separately maintained
+inventory is documentation, not a completeness oracle.

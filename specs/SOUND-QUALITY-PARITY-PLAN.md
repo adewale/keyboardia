@@ -955,8 +955,10 @@ list run by pre-commit and `validate:all`; it has already drifted
 (`set_track_swing`, `set_track_name`, `euclidean_fill` are missing from
 it), so the validator remains green when an entry is absent — add pan
 explicitly.
-`boundary-contracts.test.ts` (eight hardcoded lists),
-`canonical-hash-completeness.test.ts` (exists to fail on unhashed synced
+`shared/messages.ts` (one typed message-to-broadcast map derives both mutation
+sets) plus `test/unit/sync-classification.test.ts` (checks real action-to-message
+producers against those sets),
+`src/shared/canonical-hash.completeness.test.ts` (exists to fail on unhashed synced
 props — both pan and Phase 43.2's normalized scale must change the shared
 canonical hash),
 `state-hash-parity.test.ts` (API round trips), `sync-layer-coverage.test.ts:38-61`,
