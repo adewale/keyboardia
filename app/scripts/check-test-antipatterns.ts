@@ -3,8 +3,9 @@
  * Guard against always-green and zero-oracle test patterns.
  *
  * The analysis lives in a pure, fixture-tested module. Keeping this file as a
- * small CLI wrapper means the checker itself is covered by the ordinary unit
- * gate rather than becoming another untested regex program.
+ * small CLI wrapper means the checker itself is covered by the
+ * verification-tooling Vitest lane rather than becoming another untested
+ * regex program.
  *
  * Run: npx tsx scripts/check-test-antipatterns.ts
  */

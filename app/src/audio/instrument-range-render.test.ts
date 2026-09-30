@@ -107,13 +107,22 @@ describe.skipIf(!webAudio)('instrument range — headless offline render (layer 
       );
       await inst.ensureLoaded();
 
-      // Progressive loading streams velocity layers in the background; wait for
-      // them so "silent" reflects range, not an unfinished load.
+      // Progressive loading streams velocity layers in the background; wait
+      // until every note root has a sample, or until the background load has
+      // settled without one, so "silent" reflects range rather than an
+      // unfinished load. The wait ends on loader state, not elapsed time: a
+      // 20 s wall-clock deadline here used to fall through silently and
+      // render whatever had decoded by then.
       const distinctNotes = new Set(manifest.samples.map(s => s.note)).size;
-      const deadline = Date.now() + 20_000;
-      while (inst.getSampleNotes().length < distinctNotes && Date.now() < deadline) {
+      let settled = false;
+      void inst.waitForBackgroundLoad().then(
+        () => { settled = true; },
+        () => { settled = true; },
+      );
+      while (inst.getSampleNotes().length < distinctNotes && !settled) {
         await new Promise(r => setTimeout(r, 20));
       }
+      expect(inst.getSampleNotes(), `${manifest.id} loaded note roots`).toHaveLength(distinctNotes);
 
       const sourceCreated: boolean[] = [];
       for (let i = 0; i < count; i++) {
