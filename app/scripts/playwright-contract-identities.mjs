@@ -29,6 +29,36 @@ export function collectPlaywrightReportIdentities(report) {
   return observed;
 }
 
+/**
+ * Runtime annotations of one type, per executed attempt, as
+ * `project :: file › title — description` lines. The E2E API helpers record
+ * each retry they perform as an `api-retry` annotation, because those retries
+ * happen below the reporter's `flaky` accounting.
+ */
+export function collectPlaywrightAnnotations(report, type) {
+  const found = [];
+  const walk = (suites) => {
+    for (const suite of suites ?? []) {
+      for (const spec of suite.specs ?? []) {
+        for (const test of spec.tests ?? []) {
+          for (const result of test.results ?? []) {
+            for (const annotation of result.annotations ?? []) {
+              if (annotation.type !== type) continue;
+              found.push(
+                `${test.projectName}${MANIFEST_SEPARATOR}${basename(spec.file)} › ${spec.title}`
+                + ` — ${annotation.description ?? ''}`,
+              );
+            }
+          }
+        }
+      }
+      walk(suite.suites);
+    }
+  };
+  walk(report.suites);
+  return found;
+}
+
 export function playwrightIdentityManifestLines(identities) {
   return [...identities].sort().map((identity) => {
     const separator = identity.indexOf(IDENTITY_SEPARATOR);

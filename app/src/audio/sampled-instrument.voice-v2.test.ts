@@ -8,6 +8,7 @@ import {
   makeSampleFetchStub,
 } from './__fakes__/FakeWebAudio';
 import { RELEASE_TAIL_GUARD_SEC } from './note-schedule';
+import { requireOfflineAudio } from '../test/session-render';
 
 let instrumentOrdinal = 0;
 
@@ -339,11 +340,10 @@ describe('managed SampledInstrument v2 voices', () => {
   });
 });
 
-const webAudio = await import('node-web-audio-api').catch(() => null);
-
-describe.skipIf(!webAudio)('ManagedSampleVoice real Web Audio contract', () => {
+describe('ManagedSampleVoice real Web Audio contract', () => {
   it('renders a 300ms AR release and completes from the audio clock', async () => {
-    const { OfflineAudioContext } = webAudio!;
+    // Fail, never skip, when the native renderer cannot load.
+    const { OfflineAudioContext } = await requireOfflineAudio();
     const sampleRate = 48_000;
     const context = new OfflineAudioContext(1, sampleRate * 0.7, sampleRate);
     const source = context.createBufferSource();

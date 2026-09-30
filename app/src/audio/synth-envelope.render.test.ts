@@ -7,8 +7,11 @@ import {
   ENVELOPE_PCM_TOLERANCES,
 } from '../test/envelope-pcm-manifest';
 import { comparePcmMetrics, measurePcm } from '../test/pcm-metrics';
+import { requireOfflineAudio } from '../test/session-render';
 
-const webAudio = await import('node-web-audio-api').catch(() => null);
+// This file runs in the required offline-audio lane. Every render goes through
+// requireOfflineAudio(), so a native renderer that cannot load fails the lane
+// instead of skipping it.
 const SAMPLE_RATE = ENVELOPE_PCM_SAMPLE_RATE;
 
 function rms(data: Float32Array, startSeconds: number, endSeconds: number): number {
@@ -56,7 +59,7 @@ function candidateAsNativeParams(preset: AdvancedSynthPreset): SynthParams {
 }
 
 async function renderPreset(params: SynthParams): Promise<Float32Array> {
-  const { OfflineAudioContext } = webAudio!;
+  const { OfflineAudioContext } = await requireOfflineAudio();
   const context = new OfflineAudioContext(1, SAMPLE_RATE * 2, SAMPLE_RATE);
   const output = context.createGain();
   output.connect(context.destination);
@@ -66,7 +69,7 @@ async function renderPreset(params: SynthParams): Promise<Float32Array> {
   return (await context.startRendering()).getChannelData(0);
 }
 
-describe.skipIf(!webAudio)('native synth envelope — offline PCM regression', () => {
+describe('native synth envelope — offline PCM regression', () => {
   it.each(ENVELOPE_PCM_FIXED_CANARIES)(
     'compares the %s native baseline with its translated candidate configuration',
     async presetId => {
@@ -89,7 +92,7 @@ describe.skipIf(!webAudio)('native synth envelope — offline PCM regression', (
   );
 
   it('keeps audible energy after note-off and decays through the configured release', async () => {
-    const { OfflineAudioContext } = webAudio!;
+    const { OfflineAudioContext } = await requireOfflineAudio();
     const context = new OfflineAudioContext(1, SAMPLE_RATE * 2, SAMPLE_RATE);
     const output = context.createGain();
     output.connect(context.destination);
@@ -121,7 +124,7 @@ describe.skipIf(!webAudio)('native synth envelope — offline PCM regression', (
   });
 
   it('renders authored v2 ADSR with the exact release endpoint and guard', async () => {
-    const { OfflineAudioContext } = webAudio!;
+    const { OfflineAudioContext } = await requireOfflineAudio();
     const context = new OfflineAudioContext(1, SAMPLE_RATE / 2, SAMPLE_RATE);
     const output = context.createGain();
     output.connect(context.destination);
@@ -155,7 +158,7 @@ describe.skipIf(!webAudio)('native synth envelope — offline PCM regression', (
   });
 
   it('releases from the current attack level for exactly 300ms without a wall timer', async () => {
-    const { OfflineAudioContext } = webAudio!;
+    const { OfflineAudioContext } = await requireOfflineAudio();
     const context = new OfflineAudioContext(1, SAMPLE_RATE * 0.8, SAMPLE_RATE);
     const output = context.createGain();
     output.connect(context.destination);

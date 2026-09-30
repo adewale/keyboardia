@@ -11,10 +11,11 @@ run report. Retain the artifact for at least as long as the release it gates.
 The receipt is immutable evidence for those exact bytes, not for later edits.
 
 `node evals/verify-receipts.mjs PATH...` verifies downloaded receipts offline.
-With no paths it verifies any explicitly committed `*.json` receipts, if
-present. A blocked audit is valid negative evidence: verification reconstructs
-its counts, findings, and readiness instead of rejecting the blocker merely for
-existing.
+With no paths it verifies committed `*.json` receipts in this directory. It
+exits non-zero when it finds no receipt at all, because verifying nothing is
+not a pass; CI therefore has no committed-receipt step. A blocked audit is
+valid negative evidence: verification reconstructs its counts, findings, and
+readiness instead of rejecting the blocker merely for existing.
 
 The patched harness's `hidden` selector grades and audits holdout plus holdback
 as one release population. The importer also accepts repeated report pairs for

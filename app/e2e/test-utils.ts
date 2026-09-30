@@ -21,21 +21,23 @@
  *    ```
  *    Always access `response.state.tracks`, NOT `response.tracks`.
  *
- * 2. **Retry Logic**
- *    CI environments may experience:
- *    - Rate limiting on the production API
- *    - Durable Object cold starts
- *    - KV eventual consistency delays
- *    Use `createSessionWithRetry` and `getSessionWithRetry` for resilience.
+ * 2. **Retry policy**
+ *    The helpers retry only failures that say nothing about the backend's
+ *    correctness: a thrown transport error (connection refused or reset,
+ *    request timeout) and HTTP 429. Every other non-2xx response, including
+ *    5xx, fails the calling test on the first attempt. These retries happen
+ *    below Playwright's `retries: 0` / `flaky: 0` accounting, so each one is
+ *    recorded as an `api-retry` annotation on the running test and logged;
+ *    `scripts/assert-playwright-stats.mjs` prints the count for every lane.
+ *    Never widen this to 5xx: a backend that fails intermittently is a bug the
+ *    suite must report, not absorb. (This supersedes LESSONS-LEARNED Lesson 16.)
  *
- *    All retries use exponential backoff with jitter to prevent
- *    thundering herd problems.
+ *    Backoff uses exponential delay with jitter (src/utils/retry.ts).
  *
- * @see docs/LESSONS-LEARNED.md - Lessons 6, 15, 16
- * @see src/utils/retry.ts for the centralized retry implementation
+ * @see docs/LESSONS-LEARNED.md - Lessons 6, 15, 16 (superseded)
  */
 
-import type { APIRequestContext } from '@playwright/test';
+import { test, type APIRequestContext, type APIResponse } from '@playwright/test';
 import { MAX_STEPS } from '../src/shared/constants';
 import { calculateBackoffDelay } from '../src/utils/retry';
 
@@ -80,11 +82,61 @@ export interface SessionResponse {
   sizeBytes?: number;
 }
 
+/** Annotation type recorded on the running test for every helper-level retry. */
+export const API_RETRY_ANNOTATION = 'api-retry';
+
 /**
- * Create a session with retry logic for intermittent API failures.
+ * Only rate limiting is retryable at the HTTP level. A 5xx or validation 4xx is
+ * a real answer from the backend and must fail the test that received it.
+ */
+export function isRetryableApiStatus(status: number): boolean {
+  return status === 429;
+}
+
+function recordApiRetry(description: string): void {
+  console.warn(`[TEST] ${description}`);
+  test.info().annotations.push({ type: API_RETRY_ANNOTATION, description });
+}
+
+/**
+ * Send one API request, retrying only thrown transport errors and HTTP 429.
+ * Returns the first response that is not a 429 (which may still be non-2xx),
+ * or the final 429; rethrows the final transport error.
+ */
+async function sendWithTransportRetry(
+  label: string,
+  send: () => Promise<APIResponse>,
+  maxAttempts: number,
+): Promise<APIResponse> {
+  for (let attempt = 1; ; attempt++) {
+    let reason: string;
+    try {
+      const response = await send();
+      if (!isRetryableApiStatus(response.status()) || attempt >= maxAttempts) return response;
+      reason = `HTTP ${response.status()}`;
+    } catch (error) {
+      if (attempt >= maxAttempts) throw error;
+      reason = error instanceof Error ? error.message : String(error);
+    }
+    const delay = calculateBackoffDelay(attempt - 1);
+    recordApiRetry(`${label} attempt ${attempt} failed (${reason}); retrying in ${delay}ms`);
+    await sleep(delay);
+  }
+}
+
+async function describeFailure(label: string, response: APIResponse): Promise<Error> {
+  const body = await response.text().catch(() => '');
+  return new Error(
+    `${label} failed: ${response.status()} ${response.statusText()}`
+    + (body ? ` — ${body.slice(0, 500)}` : ''),
+  );
+}
+
+/**
+ * Create a session, retrying only transport errors and HTTP 429.
  *
- * CI environments may experience rate limiting, cold starts, or network issues.
- * This helper retries with exponential backoff and jitter.
+ * Any other non-2xx response (including 5xx) fails immediately with the status
+ * and response body. Each retry is recorded as an `api-retry` annotation.
  *
  * @example
  * ```typescript
@@ -99,7 +151,7 @@ export interface SessionResponse {
 export async function createSessionWithRetry(
   request: APIRequestContext,
   data: Record<string, unknown>,
-  maxRetries = 3
+  maxAttempts = 3
 ): Promise<{ id: string }> {
   const tracks = data.tracks;
   if (Array.isArray(tracks)) {
@@ -122,28 +174,13 @@ export async function createSessionWithRetry(
     }
   }
 
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    try {
-      const res = await request.post(`${API_BASE}/api/sessions`, { data });
-      if (res.ok()) {
-        return res.json();
-      }
-      lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-    }
-    // Don't sleep after the last attempt
-    if (attempt < maxRetries - 1) {
-      const delay = calculateBackoffDelay(attempt);
-      console.log(
-        `[TEST] Session create attempt ${attempt + 1} failed: ` +
-        `${lastError.message}; retrying in ${delay}ms...`,
-      );
-      await new Promise((r) => setTimeout(r, delay));
-    }
-  }
-  throw lastError ?? new Error('Session create failed after retries');
+  const response = await sendWithTransportRetry(
+    'Session create',
+    () => request.post(`${API_BASE}/api/sessions`, { data }),
+    maxAttempts,
+  );
+  if (!response.ok()) throw await describeFailure('Session create', response);
+  return response.json();
 }
 
 /**
@@ -196,11 +233,12 @@ export function createPopulatedSessionWithRetry(
 }
 
 /**
- * Get a session with retry logic for KV eventual consistency.
+ * Read a session, retrying transport errors and HTTP 429 only.
  *
- * Cloudflare KV has eventual consistency, so data may not be immediately
- * available after writes. This helper retries with exponential backoff
- * and jitter until data is present.
+ * A non-2xx response (404, 5xx, ...) fails immediately. A 200 whose state has
+ * no tracks is re-read with backoff (recorded as an `api-retry` annotation) in
+ * case a write is still propagating; after the last attempt the final response
+ * is returned for the caller to assert on.
  *
  * @example
  * ```typescript
@@ -212,35 +250,22 @@ export function createPopulatedSessionWithRetry(
 export async function getSessionWithRetry(
   request: APIRequestContext,
   sessionId: string,
-  maxRetries = 3
+  maxAttempts = 3
 ): Promise<SessionResponse> {
-  let lastResponse: SessionResponse | null = null;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const res = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
-    if (!res.ok()) {
-      console.log(`[TEST] Session get attempt ${attempt + 1} failed: ${res.status()}`);
-      if (attempt < maxRetries - 1) {
-        const delay = calculateBackoffDelay(attempt);
-        await new Promise((r) => setTimeout(r, delay));
-      }
-      continue;
-    }
-    lastResponse = await res.json();
-    // Check if state.tracks is populated (KV may return partial data during propagation)
-    if (lastResponse.state?.tracks && lastResponse.state.tracks.length > 0) {
-      return lastResponse;
-    }
-    if (attempt < maxRetries - 1) {
-      const delay = calculateBackoffDelay(attempt);
-      console.log(`[TEST] Retry ${attempt + 1}: tracks undefined or empty, waiting ${delay}ms for KV consistency...`);
-      await new Promise((r) => setTimeout(r, delay));
-    }
+  const label = `Session ${sessionId} read`;
+  for (let attempt = 1; ; attempt++) {
+    const response = await sendWithTransportRetry(
+      label,
+      () => request.get(`${API_BASE}/api/sessions/${sessionId}`),
+      maxAttempts,
+    );
+    if (!response.ok()) throw await describeFailure(label, response);
+    const session = await response.json() as SessionResponse;
+    if ((session.state?.tracks?.length ?? 0) > 0 || attempt >= maxAttempts) return session;
+    const delay = calculateBackoffDelay(attempt - 1);
+    recordApiRetry(`${label} attempt ${attempt} returned no tracks; re-reading in ${delay}ms`);
+    await sleep(delay);
   }
-  if (lastResponse) {
-    console.log('[TEST] Session data after retries:', JSON.stringify(lastResponse, null, 2));
-    return lastResponse;
-  }
-  throw new Error(`Session ${sessionId} not found after ${maxRetries} retries`);
 }
 
 /**

@@ -13,7 +13,7 @@ A bug has been fixed. Now perform a comprehensive post-fix analysis to find simi
 
 3. **Run the post-fix analysis tool**:
    ```bash
-   cd /Users/ade/Documents/projects/tunejs_implementation/keyboardia/app && npx tsx scripts/post-fix-analysis.ts \
+   cd "$(git rev-parse --show-toplevel)/app" && npx tsx scripts/post-fix-analysis.ts \
      --pattern "PATTERN_HERE" \
      --risky-context "CONTEXT_HERE" \
      --file "FIXED_FILE" \

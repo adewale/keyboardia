@@ -772,8 +772,11 @@ npm run validate:test-quality        # all four
 
 `validate:test-antipatterns` **fails the build**. It reports assertions
 nullified by `.catch(() => {})`, runtime self-skips (`test.skip(true, ...)`),
+dynamic imports whose load failure is swallowed
+(`await import('node-web-audio-api').catch(() => null)` feeding a `skipIf`),
 tautologies (`expect(true).toBe(true)`), self-comparisons, and tests with no
-assertion at all. Matching runs over comment-stripped source, so describing one
+assertion at all. Use `requireOfflineAudio()` (`src/test/session-render.ts`)
+for native audio: it fails with a clear message instead of skipping. Matching runs over comment-stripped source, so describing one
 of these patterns in a comment is not reported as an instance of it.
 
 `validate:test-links` **fails the build** on three kinds of test that are not

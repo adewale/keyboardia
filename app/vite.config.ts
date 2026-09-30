@@ -22,15 +22,18 @@ import type { SessionState } from './src/shared/state'
  * To test multiplayer features, you MUST use the real backend:
  *   1. Run: npm run build && npx wrangler dev
  *   2. Then: npm run dev (in another terminal)
+ *
+ * There is no remote fallback, in CI or anywhere else: a dev server or a test
+ * run must never reach a deployed Worker. Without a local Worker, every /api
+ * request fails with a 502 that says how to start one. (CI browser lanes use
+ * USE_MOCK_API=1, or PLAYWRIGHT_BASE_URL pointing at a Worker they own.)
  */
 const USE_MOCK_API = process.env.USE_MOCK_API === '1';
 const WRANGLER_PORT = process.env.WRANGLER_PORT || '8787';
 const WRANGLER_URL = `http://localhost:${WRANGLER_PORT}`;
-
-// In CI, proxy to production since wrangler isn't running
-const PROXY_TARGET = process.env.CI
-  ? 'https://keyboardia.adewale-883.workers.dev'
-  : WRANGLER_URL;
+const NO_LOCAL_WORKER =
+  `No local Worker is answering at ${WRANGLER_URL}. Start one with `
+  + '`npm run build && npx wrangler dev`, or set USE_MOCK_API=1 for the in-memory API.';
 
 interface MockSession {
   id: string;
@@ -551,25 +554,22 @@ export default defineConfig({
     },
   },
   server: {
-    // Proxy to wrangler dev for real backend (unless using mock)
-    // In CI, proxies to production instead
+    // Proxy to a local wrangler dev Worker for the real backend (unless using
+    // the mock). This never targets a deployed Worker; see the note above.
     proxy: USE_MOCK_API ? undefined : {
       // Proxy all API requests to backend
       '/api': {
-        target: PROXY_TARGET,
+        target: WRANGLER_URL,
         changeOrigin: true,
         // Handle WebSocket upgrades for multiplayer
         ws: true,
-        // Rewrite for HTTPS in CI (WebSocket upgrade)
-        secure: process.env.CI ? true : false,
-        // Log proxy errors but don't fail
         configure: (proxy) => {
-          proxy.on('error', (err) => {
-            if (process.env.CI) {
-              console.error(`\n❌ Proxy error to production: ${err.message}`);
-            } else {
-              console.error(`\n❌ Proxy error: ${err.message}`);
-              console.error('   Is wrangler dev running? Start it with: npx wrangler dev\n');
+          // Runs before Vite's own error handler, so callers get this 502 and
+          // explanation instead of a bare 500.
+          proxy.on('error', (err, _req, res) => {
+            console.error(`\n❌ Proxy error: ${err.message}\n   ${NO_LOCAL_WORKER}\n`);
+            if ('writeHead' in res && !res.headersSent && !res.writableEnded) {
+              res.writeHead(502, { 'Content-Type': 'text/plain' }).end(NO_LOCAL_WORKER);
             }
           });
           proxy.on('proxyReqWs', (_proxyReq, _req, socket) => {

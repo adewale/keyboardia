@@ -45,8 +45,19 @@ function receiptFiles(paths) {
 
 const requested = process.argv.slice(2);
 const paths = requested.length > 0 ? requested : [resolve(evalsDir, 'receipts')];
+const files = receiptFiles(paths);
+// Verifying nothing is not a pass. Receipts are not committed (see
+// receipts/README.md), so a run with no arguments or an empty download
+// directory must fail rather than exit 0 having checked nothing.
+if (files.length === 0) {
+  process.stderr.write(
+    `No receipt files found in ${paths.join(', ')}; nothing was verified.\n`
+    + 'Usage: node evals/verify-receipts.mjs <receipt.json | directory>...\n',
+  );
+  process.exit(1);
+}
 let failed = false;
-for (const path of receiptFiles(paths)) {
+for (const path of files) {
   let receipt;
   try {
     receipt = JSON.parse(readFileSync(path, 'utf8'));

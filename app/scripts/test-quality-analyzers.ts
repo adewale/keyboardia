@@ -332,6 +332,18 @@ export function scanTestSource(file: string, source: string): TestFinding[] {
         add('nullified-assertion', node);
       }
 
+      // `await import('native-addon').catch(() => null)` turns a dependency
+      // that failed to load into a value the file then skips or no-ops on, so
+      // a required lane can pass having exercised nothing. Rethrowing with
+      // context is fine; swallowing is not.
+      if (propertyName(node.expression) === 'catch'
+        && ts.isPropertyAccessExpression(node.expression)
+        && ts.isCallExpression(node.expression.expression)
+        && node.expression.expression.expression.kind === ts.SyntaxKind.ImportKeyword
+        && !callbackAlwaysThrows(node.arguments[0])) {
+        add('swallowed-import-failure', node);
+      }
+
       if (ts.isPropertyAccessExpression(node.expression)
         && node.expression.name.text === 'skip'
         && testCallee(node.expression.expression).test
