@@ -26,7 +26,12 @@ import type {
 import { sessionTrackToTrack, sessionTracksToTracks, DEFAULT_STEP_COUNT } from '../types';
 import { logger } from '../utils/logger';
 import { dispatchToastEvent } from '../utils/toastEvents';
-import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
+import {
+  canonicalizeForHash,
+  hashState,
+  projectCanonicalStateForClientHashCapability,
+  type StateForHash,
+} from '../shared/canonical-hash';
 import { calculateBackoffDelay } from '../utils/retry';
 import { createAuthoritativeHandler, createRemoteHandler } from './handler-factory';
 import { createConnectionStormDetector, type ConnectionStormDetector } from '../utils/connection-storm';
@@ -119,7 +124,11 @@ export interface MultiplayerState {
 
 // Import shared message constants (canonical definitions in src/shared/messages.ts)
 import { isStateMutatingMessage, assertNever } from '../shared/messages';
-import { TRACK_ENVELOPE_CAPABILITIES, TRACK_ENVELOPE_V2_CAPABILITY } from '../shared/message-types';
+import {
+  STATE_HASH_V2_CAPABILITY,
+  SYNC_CAPABILITIES,
+  TRACK_ENVELOPE_V2_CAPABILITY,
+} from '../shared/message-types';
 
 // Phase 26: Re-export mutation tracking types from standalone module
 export type { TrackedMutation, MutationStats } from './mutation-tracker';
@@ -1079,7 +1088,7 @@ export class MultiplayerConnection {
     const playerId = getOrCreatePlayerId(this.sessionId);
     const query = new URLSearchParams({
       playerId,
-      capabilities: TRACK_ENVELOPE_CAPABILITIES.join(','),
+      capabilities: SYNC_CAPABILITIES.join(','),
     });
     const wsUrl = `${protocol}//${window.location.host}/api/sessions/${this.sessionId}/ws?${query}`;
 
@@ -1195,14 +1204,23 @@ export class MultiplayerConnection {
     }
 
     const state = this.getStateForHash() as StateForHash;
-    const canonicalState = canonicalizeForHash(state);
-    const comparableCanonicalState = projectCanonicalStateForEnvelopeV2Capability(
-      canonicalState,
-      this.supportsCapability(TRACK_ENVELOPE_V2_CAPABILITY),
-    );
-    const hash = hashState(comparableCanonicalState);
+    const hash = this.computeComparableStateHash(state);
     logger.ws.log(`Sending state hash: ${hash}`);
     this.send({ type: 'state_hash', hash });
+  }
+
+  /** Compute the exact negotiated hash shape used on the wire. */
+  private computeComparableStateHash(state: StateForHash): string {
+    const canonicalState = canonicalizeForHash(state);
+    const hashVersionState = projectCanonicalStateForClientHashCapability(
+      canonicalState,
+      this.supportsCapability(STATE_HASH_V2_CAPABILITY),
+    );
+    const comparableCanonicalState = projectCanonicalStateForEnvelopeV2Capability(
+      hashVersionState,
+      this.supportsCapability(TRACK_ENVELOPE_V2_CAPABILITY),
+    );
+    return hashState(comparableCanonicalState);
   }
 
   private handleClose(event: CloseEvent): void {
@@ -2269,14 +2287,16 @@ export class MultiplayerConnection {
     // This helps identify which field(s) are causing the divergence
     if (this.getStateForHash) {
       const state = this.getStateForHash() as StateForHash;
-      const canonicalState = canonicalizeForHash(state);
-      const localHash = hashState(canonicalState);
+      const localHash = this.computeComparableStateHash(state);
       logger.ws.warn('[MISMATCH DETAIL]', {
         localHash,
         serverHash,
         trackCount: state.tracks.length,
         tempo: state.tempo,
         swing: state.swing,
+        effects: state.effects,
+        scale: state.scale,
+        loopRegion: state.loopRegion,
         trackSummary: state.tracks.map(t => ({
           id: t.id.slice(0, 8),
           stepCount: t.stepCount ?? DEFAULT_STEP_COUNT,

@@ -364,9 +364,12 @@ fc.assert(fc.property(
 
 #### 4.1.4 Canonical Hash Determinism
 
-**Location:** `app/src/sync/canonicalHash.ts`
+**Location:** `app/src/shared/canonical-hash.ts`
 
-**The Bug:** Line 654 has `hash = hash & hash` which is a no-op (should be `hash | 0`).
+**Implementation note:** `hash = hash & hash` performs JavaScript's 32-bit
+integer coercion, although `hash | 0` expresses the intent more clearly. The
+two forms are equivalent; the properties below protect determinism and output
+stability rather than treating the spelling as a behavioral bug.
 
 **Properties:**
 ```typescript
@@ -1000,7 +1003,7 @@ When a property fails:
 | MT-004 | snapToScale minimal | No closer scale note exists |
 | MT-005 | Negative pitch handling | Correct modulo for negatives |
 
-### A.3 Sync Module (`mutation-tracker.ts`, `canonicalHash.ts`)
+### A.3 Sync Module (`mutation-tracker.ts`, `shared/canonical-hash.ts`)
 
 | Property ID | Description | Implementation |
 |------------|-------------|----------------|
@@ -2007,7 +2010,7 @@ This section documents critical lessons learned during a deep audit of the PBT i
 |-----------|------------------------|
 | `timing-calculations.property.test.ts` | ✅ YES |
 | `scheduler.property.test.ts` | ❌ **NO** - had inline duplicates |
-| `canonicalHash.property.test.ts` | ✅ YES |
+| `canonical-hash.property.test.ts` | ✅ YES |
 | `mutation-tracker.property.test.ts` | ✅ YES |
 | `mutation-tracker.model.test.ts` | ✅ YES |
 | `validators.property.test.ts` | ✅ YES |
@@ -2635,7 +2638,7 @@ Any configuration that can reduce a lane's work below its committed default
 | `SyncHealth` model | Adopt | `src/sync/sync-health.property.test.ts` MB-003 checks sequence, reset, and recovery decisions after every operation. |
 | Grid reducer model | Reject | 27 of 28 synchronized actions delegate to the shared reducer. A second full reducer would duplicate production logic; comparing the two routes was already proven tautological. `test/unit/reducer-mutation-equivalence.test.ts` and `test/unit/sync-layer-coverage.test.ts` instead witness the independent action-mapping and state-adapter seams (`docs/TEST-AUDIT-2026-07.md` §22). |
 | Step-count boundaries 3/128 | Adopt | Both values are in `src/test/arbitraries.ts` `arbStepCount`; PR-003 forces both into every maximum-size generated session. |
-| Pitch boundaries -24/0/+24 | Adopt | `src/shared/playable-range-pbt.test.ts`, `src/music/scale-entry.property.test.ts`, and the explicit boundary triples in `src/audio/pitch-shift-range.test.ts`. |
+| Pitch boundaries -24/0/+24 | Adopt | `src/audio/instrument-range-simulation.test.ts` drives the real sampled-instrument playback boundary, while `src/music/scale-entry.property.test.ts` and the explicit boundary triples in `src/audio/pitch-shift-range.test.ts` cover scale entry and pitch shifting. |
 | Tempo MIN/MAX and out-of-range values | Adopt | `src/sync/tempo-sync.test.ts` PB-001 generates 20..300 against the 60..180 clamp and SV-004 pins both exact boundaries. |
 | Large collections | Adopt | PR-003 generates 2,048 step values per case in a 16-track × 128-step state. Larger collections would exceed the public session contract rather than exercise a supported input. |
 

@@ -7,10 +7,15 @@
  * ARCHITECTURAL PRINCIPLE: Single source of truth for what requires write access.
  * - All mutation checks reference this set (not hardcoded lists)
  * - Adding a new mutation type? Add it here -> automatically blocked on published sessions
- * - Tests verify ALL types in this set are properly blocked
+ * - Type checking requires every client message to be classified exactly once
  *
  * IMPORTANT: Changes here affect both client and server. Run full test suite.
  */
+
+import type { ClientMessageBase, ServerMessageBase } from './message-types';
+
+type ClientMessageType = ClientMessageBase['type'];
+type ServerMessageType = ServerMessageBase['type'];
 
 /**
  * Message types that mutate session state.
@@ -63,7 +68,7 @@ export const MESSAGE_TO_STATE_BROADCAST = {
   mirror_pattern: 'pattern_mirrored',
   euclidean_fill: 'euclidean_filled',
   set_track_name: 'track_name_set',
-} as const;
+} as const satisfies Partial<Record<ClientMessageType, ServerMessageType>>;
 
 export type MutatingMessageType = keyof typeof MESSAGE_TO_STATE_BROADCAST;
 export type StateMutatingBroadcastType =
@@ -82,7 +87,7 @@ export const MUTATING_MESSAGE_TYPES = new Set<MutatingMessageType>(
  * affect the sender's local mix, not shared state. Each user can control
  * their own listening experience even on published sessions.
  */
-export const READONLY_MESSAGE_TYPES = new Set([
+const READONLY_MESSAGE_TYPE_LIST = [
   'play',
   'stop',
   'state_hash',
@@ -91,7 +96,24 @@ export const READONLY_MESSAGE_TYPES = new Set([
   'cursor_move',
   'mute_track',   // Local only - "My Ears, My Control"
   'solo_track',   // Local only - "My Ears, My Control"
-] as const);
+] as const satisfies readonly ClientMessageType[];
+
+export type ReadonlyMessageType = typeof READONLY_MESSAGE_TYPE_LIST[number];
+
+export const READONLY_MESSAGE_TYPES = new Set<ReadonlyMessageType>(READONLY_MESSAGE_TYPE_LIST);
+
+// Keep the protocol fail-closed: every client message must be classified
+// exactly once. Adding a new message without choosing mutating or read-only,
+// or putting it in both sets, fails type-checking here.
+type MissingClassification = Exclude<
+  ClientMessageType,
+  MutatingMessageType | ReadonlyMessageType
+>;
+type ConflictingClassification = Extract<MutatingMessageType, ReadonlyMessageType>;
+const _allClientMessagesClassified: Record<MissingClassification, never> = {};
+const _classificationsAreDisjoint: Record<ConflictingClassification, never> = {};
+void _allClientMessagesClassified;
+void _classificationsAreDisjoint;
 
 /**
  * Server broadcast message types that mutate session state.
@@ -107,9 +129,6 @@ export const READONLY_MESSAGE_TYPES = new Set([
 export const STATE_MUTATING_BROADCASTS = new Set<StateMutatingBroadcastType>(
   [...Object.values(MESSAGE_TO_STATE_BROADCAST), 'track_instrument_set'],
 );
-
-/** Type for readonly message type strings */
-export type ReadonlyMessageType = typeof READONLY_MESSAGE_TYPES extends Set<infer T> ? T : never;
 
 /** Check if a message type mutates session state */
 export function isStateMutatingMessage(type: string): boolean {

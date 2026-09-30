@@ -11,48 +11,37 @@
  *   - Truncated if longer than stepCount
  *   - Padded with defaults (false/null) if shorter
  *
- * Excluded from hash (local-only state per "My Ears, My Control" philosophy):
+ * Excluded from hash:
  * - muted: Each user controls their own mix
  * - soloed: Each user controls their own focus
+ * - playbackMode: Deprecated compatibility field; playback uses samplePlaybackMode
  * - version: Internal bookkeeping
- * - effects: Audio routing is local
  */
 
-import { DEFAULT_STEP_COUNT } from '../shared/constants';
-import type { ScaleState, TrackEnvelope, EnvelopeTimeUnit, FMParams } from '../shared/sync-types';
-import { normalizeSessionScale } from '../shared/scale-defaults';
-import type { SamplePlaybackMode, TrackEnvelopeV2 } from '../shared/envelope-contract-v2';
+import { DEFAULT_STEP_COUNT } from './constants';
+import type {
+  EffectsState,
+  ScaleState,
+  TrackEnvelope,
+  EnvelopeTimeUnit,
+  FMParams,
+} from './sync-types';
+import type { SessionState, SessionTrack } from './state';
+import { normalizeSessionEffects } from './effects-defaults';
+import { LEGACY_MISSING_SCALE_STATE, normalizeSessionScale } from './scale-defaults';
+import type { SamplePlaybackMode, TrackEnvelopeV2 } from './envelope-contract-v2';
 
-// Minimal track type for hash input
-interface TrackForHash {
-  id: string;
-  name: string;
-  sampleId: string;
-  steps: boolean[];
+// Keep the hash input tied to the shared session schema. Parameter locks stay
+// deliberately permissive because canonical hashing preserves unknown fields
+// sent by clients from a newer rolling deployment.
+type TrackForHash = Omit<SessionTrack, 'parameterLocks'> & {
   parameterLocks: (unknown | null)[];
-  volume: number;
-  pan?: number;
-  muted: boolean;
-  soloed?: boolean;
-  transpose: number;
-  stepCount?: number;
-  swing?: number;  // Phase 31D: Per-track swing (0-100)
-  fmParams?: FMParams;
-  envelope?: TrackEnvelope;
-  envelopeTimeUnit?: EnvelopeTimeUnit;
-  envelopeV2?: TrackEnvelopeV2;
-  samplePlaybackMode?: SamplePlaybackMode;
-  gate?: number;
-}
+};
 
-export interface StateForHash {
+export type StateForHash = Omit<SessionState, 'tracks' | 'version'> & {
   tracks: TrackForHash[];
-  tempo: number;
-  swing: number;
   version?: number;
-  effects?: unknown;
-  scale?: ScaleState;
-}
+};
 
 interface CanonicalTrack {
   id: string;
@@ -79,7 +68,9 @@ interface CanonicalState {
   tracks: CanonicalTrack[];
   tempo: number;
   swing: number;
+  effects: EffectsState;
   scale: ScaleState;
+  loopRegion: { start: number; end: number } | null;
 }
 
 /**
@@ -142,16 +133,59 @@ function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
  * Canonicalize session state for consistent hashing.
  *
  * This ensures that client and server produce identical hashes by:
- * 1. Setting explicit defaults for optional fields (soloed, stepCount)
+ * 1. Setting explicit defaults for optional authored fields
  * 2. Normalizing array lengths to stepCount
- * 3. Excluding non-essential fields (version, effects)
+ * 3. Excluding local or bookkeeping fields (mute, solo, deprecated
+ *    playbackMode, and version)
  */
 export function canonicalizeForHash(state: StateForHash): CanonicalState {
   return {
     tracks: state.tracks.map(canonicalizeTrack),
     tempo: state.tempo,
     swing: state.swing,
+    effects: normalizeSessionEffects(state.effects, 'legacy-session'),
     scale: normalizeSessionScale(state.scale, 'legacy-session'),
+    loopRegion: state.loopRegion ?? null,
+  };
+}
+
+type LegacyHashState<T> = Omit<T, 'effects' | 'loopRegion'>;
+
+function projectLegacyHashState<T extends object>(canonicalState: T): LegacyHashState<T> {
+  const legacyState = { ...canonicalState } as Record<string, unknown>;
+  delete legacyState.effects;
+  delete legacyState.loopRegion;
+  return legacyState as LegacyHashState<T>;
+}
+
+/**
+ * Match the hash shape a pre-v2 Worker expects from a current browser.
+ *
+ * Old Workers already hashed scale when clients supplied it, so the browser
+ * retains the authored scale while omitting fields added in hash v2.
+ */
+export function projectCanonicalStateForClientHashCapability<T extends object>(
+  canonicalState: T,
+  supportsStateHashV2: boolean,
+): T | LegacyHashState<T> {
+  return supportsStateHashV2 ? canonicalState : projectLegacyHashState(canonicalState);
+}
+
+/**
+ * Match the hash shape a pre-v2 browser sends to a current Worker.
+ *
+ * Old browsers omitted scale from their live-state projection. Canonicalizing
+ * that missing field produced LEGACY_MISSING_SCALE_STATE, so the Worker must
+ * substitute that value when the client has not negotiated hash v2.
+ */
+export function projectCanonicalStateForServerHashCapability<T extends { scale: ScaleState }>(
+  canonicalState: T,
+  supportsStateHashV2: boolean,
+): T | LegacyHashState<T> {
+  if (supportsStateHashV2) return canonicalState;
+  return {
+    ...projectLegacyHashState(canonicalState),
+    scale: { ...LEGACY_MISSING_SCALE_STATE },
   };
 }
 

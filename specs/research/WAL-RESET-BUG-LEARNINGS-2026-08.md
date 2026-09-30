@@ -146,7 +146,7 @@ The repo is further along than most codebases on L2–L4's *mechanisms*:
 |---|---|---|
 | Structural invariant validation after every mutation, with production logging | `app/src/worker/invariants.ts:339,366` (`validateStateInvariants`, `logInvariantStatus`); called from `validateAndRepairState` in `app/src/worker/live-session.ts:2630` | L2 |
 | Auto-repair with logged repair list | `repairStateInvariants` (`app/src/worker/invariants.ts:389`), applied at `live-session.ts:2640` | L2/L5 |
-| Client/server canonical state hash — our `integrity_check` across the network boundary | `app/src/sync/canonicalHash.ts`; born from the production hash-mismatch incident (`docs/LESSONS-LEARNED.md` Lesson 14) | L2/L3 |
+| Client/server canonical state hash — our `integrity_check` across the network boundary | `app/src/shared/canonical-hash.ts`; born from the production hash-mismatch incident (`docs/LESSONS-LEARNED.md` Lesson 14) | L2/L3 |
 | Property-based testing culture (fast-check) | `app/package.json:134`; `app/src/worker/validation.property.test.ts`; Lesson 26 | L2 |
 | Real-DO testing discipline — "Do not create a second in-memory implementation of `LiveSessionDurableObject`" | `specs/TESTING.md` boundary rule | L1 (prerequisite) |
 | Seeded lifecycle fuzz over the real stack: random sequences of WS mutations, REST writes, hibernation, eviction, reconnects, with read-your-writes and KV-convergence asserted after every op, replayable by seed | `app/test/integration/state-machine-fuzz.test.ts`; wake paths covered deterministically in `eviction-recovery.test.ts` | L1 (partial), L7 |

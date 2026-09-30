@@ -36,10 +36,7 @@ import { guardMcpRequest, mcpCorsHeaders, validateMcpOrigin } from './mcp-guard'
 import { handleAgentSkillsRequest } from './agent-skills';
 
 // State hashing utilities (still needed for debug endpoints)
-import {
-  hashState,
-  canonicalizeForHash,
-} from './logging';
+import { hashState, canonicalizeForHash } from '../shared/canonical-hash';
 
 // Social Media Preview
 import { injectSocialMeta, type SessionMeta } from './social-preview';
@@ -1193,12 +1190,7 @@ async function handleApiRequest(
     }
 
     // Use canonicalizeForHash for consistent comparison between client and server
-    const canonicalState = canonicalizeForHash({
-      tracks: session.state.tracks,
-      tempo: session.state.tempo,
-      swing: session.state.swing,
-      scale: session.state.scale,
-    });
+    const canonicalState = canonicalizeForHash(session.state);
     const serverStateHash = hashState(canonicalState);
 
     // Client hashes are reported via WebSocket

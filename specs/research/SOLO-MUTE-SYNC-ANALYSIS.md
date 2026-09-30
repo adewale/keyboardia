@@ -1,10 +1,19 @@
 # Solo/Mute Sync Analysis: "My Ears, My Control"
 
+> **Resolved:** This is a historical analysis. As of September 2026,
+> `src/shared/canonical-hash.ts` is the single browser/Worker hash owner and
+> explicitly excludes mute and solo state. Snapshot recovery preserves the
+> local values. The problem and proposed edits below describe the former
+> implementation.
+
 ## Executive Summary
 
-This research document analyzes whether Solo and Mute actions should sync between users in Keyboardia's collaborative music sequencer. The current implementation intends for these to be "local-only" (each user controls their own audio mix), but there is an **architectural inconsistency** where hash verification and snapshot recovery can inadvertently override local mute/solo state.
+This research document recorded the decision that Solo and Mute actions should
+remain local to each user in Keyboardia's collaborative music sequencer. At the
+time of the analysis, hash verification and snapshot recovery could override
+local mute/solo state; the resolution banner above records the implemented fix.
 
-**Recommendation: Keep Local-Only, But Fix the Hash Inconsistency**
+**Implemented resolution: Keep Local-Only and exclude it from shared hashes**
 
 ---
 
@@ -133,11 +142,11 @@ From `src/worker/live-session.ts` (lines 628-654), the server uses handler facto
 
 ## 2. Architectural Inconsistency Found
 
-### 2.1 The Problem
+### 2.1 The Historical Problem (Resolved)
 
-The hash verification system **includes mute/solo state**, which can cause unintended state sync:
+The former hash verification system **included mute/solo state**, which could cause unintended state sync:
 
-From `src/sync/canonicalHash.ts` (lines 83-105):
+From the former `src/sync/canonicalHash.ts` implementation:
 
 ```typescript
 function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
@@ -290,7 +299,7 @@ In collaborative video editors (like Frame.io review tools), playback controls a
 1. **Exclude mute/solo from hash calculation**
 
 ```typescript
-// In src/sync/canonicalHash.ts
+// In the former src/sync/canonicalHash.ts
 function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
   return {
     // ... other fields
@@ -390,7 +399,7 @@ When enabled, user's mute/solo mirrors the session creator. This would be opt-in
 | `src/types.ts` | 41-54, 82-85 | Track interface, mute/solo actions |
 | `src/state/grid.tsx` | 98-129, 283-297 | Reducer handlers |
 | `src/sync/multiplayer.ts` | 1641-1654, 2092-2105 | Local-only handling |
-| `src/sync/canonicalHash.ts` | 83-105 | Hash calculation (BUG) |
+| `src/shared/canonical-hash.ts` | Shared hash calculation; mute/solo are excluded (resolved) |
 | `src/worker/live-session.ts` | 628-654 | Server handlers |
 | `src/shared/messages.ts` | 22-39 | MUTATING_MESSAGE_TYPES |
 | `e2e/multiplayer.spec.ts` | 182-208 | Local-only test |

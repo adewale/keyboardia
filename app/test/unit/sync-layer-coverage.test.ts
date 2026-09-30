@@ -227,24 +227,9 @@ const NON_STANDARD_SYNC_ACTIONS = new Set([
   'DELETE_SELECTED_STEPS',
   'APPLY_TO_SELECTION',
 
-  // These use handleTrackReorder, handleSetLoopRegion directly
-  // TODO: Should these go through actionToMessage instead?
+  // Track reorder sends a track ID after the drag result is resolved.
   'REORDER_TRACKS',
   // Note: REORDER_TRACK_BY_ID is in INTERNAL_ACTIONS, not SYNCED_ACTIONS
-  'SET_LOOP_REGION',
-]);
-
-/**
- * Actions that are known to be unimplemented.
- *
- * CRITICAL: This set should be EMPTY in a healthy codebase.
- * If this set has entries, tests will pass but users will lose data!
- *
- * When fixing a bug, remove it from this set and implement the sync.
- */
-const KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS = new Set<string>([
-  // All pattern operations and SET_TRACK_NAME now have proper sync implementation.
-  // Fixed in Phase 33 (2026-01-04).
 ]);
 
 // ============================================================================
@@ -256,23 +241,8 @@ describe('Sync Layer Coverage', () => {
     // Test each synced action individually for clear error messages
     for (const actionType of SYNCED_ACTIONS) {
       if (NON_STANDARD_SYNC_ACTIONS.has(actionType)) {
-        it(`${actionType}: uses non-standard sync (documented exception)`, () => {
-          // These are valid but use different sync patterns
-          // The test documents that we know about them
-          expect(NON_STANDARD_SYNC_ACTIONS.has(actionType)).toBe(true);
-        });
-        continue;
-      }
-
-      if (KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS.has(actionType)) {
-        it.fails(`${actionType}: KNOWN BUG - sync not implemented`, () => {
-          // This test is expected to fail!
-          // When you implement the sync, remove from KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS
-          // and this test will start passing.
-          const action = createMockAction(actionType);
-          const message = actionToMessage(action);
-          expect(message).not.toBeNull();
-        });
+        // dedicated-sync-senders.test.ts owns their payload behavior, while
+        // validate-sync-checklist verifies each sender remains wired to its hook.
         continue;
       }
 
@@ -321,33 +291,6 @@ describe('Sync Layer Coverage', () => {
     }
   });
 
-  describe('Known unimplemented actions tracking', () => {
-    it('KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS is documented', () => {
-      // This test documents which synced actions are known to be broken.
-      // When this set becomes empty, we've fixed all the bugs!
-      console.log(
-        `\n⚠️  KNOWN SYNC BUGS: ${KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS.size} actions listed in SYNCED_ACTIONS but not implemented:\n` +
-        `   ${[...KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS].join(', ')}\n` +
-        `   These will cause data loss in multiplayer!\n`
-      );
-
-      // Fail if there are too many unimplemented actions
-      // This prevents the list from growing unbounded
-      expect(
-        KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS.size,
-        'Too many unimplemented synced actions. Fix some before adding more!'
-      ).toBeLessThanOrEqual(10);
-    });
-
-    it('NON_STANDARD_SYNC_ACTIONS is minimal', () => {
-      // Every non-standard sync is a potential bug source
-      // Keep this list small and well-documented
-      expect(
-        NON_STANDARD_SYNC_ACTIONS.size,
-        'Too many non-standard sync patterns. Consolidate to actionToMessage() where possible.'
-      ).toBeLessThanOrEqual(5);
-    });
-  });
 });
 
 // ============================================================================
@@ -358,7 +301,7 @@ describe('Sync Layer Properties', () => {
   // Arbitrary for synced action types
   const arbSyncedActionType = fc.constantFrom(
     ...([...SYNCED_ACTIONS].filter(
-      a => !NON_STANDARD_SYNC_ACTIONS.has(a) && !KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS.has(a)
+      a => !NON_STANDARD_SYNC_ACTIONS.has(a)
     ))
   );
 
@@ -477,6 +420,7 @@ const ROOT_FIELDS_BY_ACTION: Record<string, string[]> = {
   SET_SWING: ['swing'],
   SET_EFFECTS: ['effects'],
   SET_SCALE: ['scale'],
+  SET_LOOP_REGION: ['loopRegion'],
 };
 
 const TRACK_FIELDS_BY_ACTION: Record<string, string[]> = {
@@ -565,7 +509,6 @@ describe('SYNCED_ACTIONS reach the shared mutation', () => {
 
   const routed = [...SYNCED_ACTIONS].filter(
     (action) => !NON_STANDARD_SYNC_ACTIONS.has(action)
-      && !KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS.has(action)
       && !NO_SESSION_STATE_EFFECT.has(action),
   );
 

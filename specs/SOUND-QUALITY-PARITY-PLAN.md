@@ -614,12 +614,11 @@ Headphones, fixed volume, loop 4 bars, listen **only to the hi-hats**.
   expected softer/darker layer independently of the gain-law assertion.
 - **Corrected from v1:** `golden-mutations.test.ts:28,71,108` imports
   `DEFAULT_SCALE_STATE` directly — the flip changes its golden base
-  states; update or pin them in the same change. `canonicalHash` currently
-  excludes `scale` (`canonicalHash.ts:43,121`), as does the server twin in
-  `worker/logging.ts`; that is a sync-detection gap, not evidence that hash
-  parity is unaffected. Add normalized scale state to both canonical forms
-  and extend the completeness/parity tests so clients that diverge only in
-  root, scale, or lock cannot report the same state hash. The remaining
+  states; update or pin them in the same change. The former client and Worker
+  hash copies excluded `scale`, creating a sync-detection gap. This is now
+  resolved in `src/shared/canonical-hash.ts`: the shared canonical form
+  normalizes scale, the completeness tests require it, and API round-trip
+  tests cover the runtime boundary. The remaining
   `locked:false` test inventory is:
   `StepSequencer.playback-lifecycle.test.tsx:26`,
   `useSession.transitions.test.tsx:67`,
@@ -956,11 +955,13 @@ list run by pre-commit and `validate:all`; it has already drifted
 (`set_track_swing`, `set_track_name`, `euclidean_fill` are missing from
 it), so the validator remains green when an entry is absent — add pan
 explicitly.
-`boundary-contracts.test.ts` (eight hardcoded lists),
-`canonical-hash-completeness.test.ts` (exists to fail on unhashed synced
-props — both pan and Phase 43.2's normalized scale must change
-`canonicalHash`),
-`state-hash-parity.test.ts`, `sync-layer-coverage.test.ts:38-61`,
+`shared/messages.ts` (one typed message-to-broadcast map derives both mutation
+sets) plus `test/unit/sync-classification.test.ts` (checks real action-to-message
+producers against those sets),
+`src/shared/canonical-hash.completeness.test.ts` (exists to fail on unhashed synced
+props — both pan and Phase 43.2's normalized scale must change the shared
+canonical hash),
+`state-hash-parity.test.ts` (API round trips), `sync-layer-coverage.test.ts:38-61`,
 `reducer-mutation-equivalence.test.ts`, `mutation-tracking.test.ts`,
 `arbitraries.ts:157-160,196-204,438-445` (without `arbTrack` + action
 arbitraries generating pan, `sync-convergence.property.test.ts` proves

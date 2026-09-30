@@ -23,6 +23,19 @@ function isKVQuotaError(error: unknown): boolean {
   return error instanceof Error && error.message.includes('limit exceeded');
 }
 
+async function persistSession(env: Env, session: Session): Promise<SessionResult<Session>> {
+  try {
+    await env.SESSIONS.put(`session:${session.id}`, JSON.stringify(session));
+    return { success: true, data: session };
+  } catch (error) {
+    return {
+      success: false,
+      quotaExceeded: isKVQuotaError(error),
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
 /**
  * Calculate seconds until midnight UTC (when quota resets)
  */
@@ -76,17 +89,7 @@ export async function createSession(
     state: createInitialSessionState(options?.initialState),
   };
 
-  try {
-    await env.SESSIONS.put(`session:${id}`, JSON.stringify(session));
-    return { success: true, data: session };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      success: false,
-      quotaExceeded: isKVQuotaError(error),
-      error: message,
-    };
-  }
+  return persistSession(env, session);
 }
 
 /**
@@ -144,17 +147,7 @@ export async function updateSession(
     state: { ...state, version: CURRENT_VERSION },
   };
 
-  try {
-    await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
-    return { success: true, data: updated };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      success: false,
-      quotaExceeded: isKVQuotaError(error),
-      error: message,
-    };
-  }
+  return persistSession(env, updated);
 }
 
 /**
@@ -205,17 +198,7 @@ export async function remixSessionFromState(
     // Ignore errors on remix count update
   });
 
-  try {
-    await env.SESSIONS.put(`session:${id}`, JSON.stringify(remixed));
-    return { success: true, data: remixed };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      success: false,
-      quotaExceeded: isKVQuotaError(error),
-      error: message,
-    };
-  }
+  return persistSession(env, remixed);
 }
 
 /**
@@ -240,17 +223,7 @@ export async function updateSessionName(
     updatedAt: Date.now(),
   };
 
-  try {
-    await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
-    return { success: true, data: updated };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      success: false,
-      quotaExceeded: isKVQuotaError(error),
-      error: message,
-    };
-  }
+  return persistSession(env, updated);
 }
 
 /**
@@ -300,15 +273,5 @@ export async function publishSessionFromState(
     },
   };
 
-  try {
-    await env.SESSIONS.put(`session:${id}`, JSON.stringify(published));
-    return { success: true, data: published };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return {
-      success: false,
-      quotaExceeded: isKVQuotaError(error),
-      error: message,
-    };
-  }
+  return persistSession(env, published);
 }

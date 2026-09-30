@@ -39,7 +39,7 @@ import {
   type EvictionRecoveryOp,
   type EvictionRecoverySchedule,
 } from './known-failures';
-import { TRACK_ENVELOPE_CAPABILITIES } from '../../src/shared/message-types';
+import { SYNC_CAPABILITIES } from '../../src/shared/message-types';
 
 interface Env {
   SESSIONS: KVNamespace;
@@ -107,7 +107,7 @@ it('replays a rejected v2 operation ID instead of applying it after state change
     stub,
     sessionId,
     'stable-envelope-player',
-    TRACK_ENVELOPE_CAPABILITIES,
+    SYNC_CAPABILITIES,
   );
   const inbox = listen(ws);
   await inbox.waitFor((message) => message.type === 'snapshot', 'snapshot');

@@ -824,9 +824,9 @@ it('refuses an instrument change on a published session', async () => {
 });
 
 it('applies the same result through the Durable Object as the shared operation', async () => {
-  // The engine-state policy is invisible to the sync state hash, so a
-  // divergence between the server and the browser reducer would never be
-  // caught by the periodic hash check. This pins them together directly.
+  // The shared operation prevents divergence at the mutation boundary; the
+  // periodic hash is a later recovery mechanism, not a substitute for applying
+  // the same engine-state policy on both sides.
   const before = workedOnTrack();
   (before as SessionTrack & { fmParams?: unknown }).fmParams = {
     harmonicity: 9,

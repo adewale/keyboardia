@@ -2,116 +2,63 @@
 /**
  * Sync Checklist Validator
  *
- * Validates that all multiplayer sync checklist items are complete for each
- * message type. This helps prevent bugs where a new synced feature is added
- * but one of the required steps is missed.
- *
- * For each message type in MUTATING_MESSAGE_TYPES, checks:
- * 1. ClientMessageBase has the type in worker/types.ts
- * 2. ServerMessageBase has the corresponding broadcast type
- * 3. live-session.ts has a case in the switch statement
- * 4. live-session.ts has a handler method
- * 5. multiplayer.ts has a case in the switch statement
- * 6. multiplayer.ts has a handler method
- * 7. actionToMessage has a case (if applicable)
+ * Validates the runtime wiring for every message in the production
+ * MESSAGE_TO_STATE_BROADCAST map. Message classification itself is enforced
+ * exhaustively by TypeScript in shared/messages.ts; this script checks that
+ * each classified mutation reaches the Worker, the browser, and (where the
+ * action has enough context) actionToMessage.
  *
  * Usage:
- *   npx tsx scripts/validate-sync-checklist.ts
- *
- * Add to package.json:
- *   "validate:sync": "npx tsx scripts/validate-sync-checklist.ts"
+ *   npm run validate:sync
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
+import {
+  MESSAGE_TO_STATE_BROADCAST,
+  type MutatingMessageType,
+} from '../src/shared/messages';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// ============================================================================
-// Configuration
-// ============================================================================
+const MUTATING_ENTRIES = Object.entries(MESSAGE_TO_STATE_BROADCAST) as Array<
+  [MutatingMessageType, (typeof MESSAGE_TO_STATE_BROADCAST)[MutatingMessageType]]
+>;
 
-/**
- * All mutating message types that require sync implementation.
- * Keep in sync with MUTATING_MESSAGE_TYPES in worker/types.ts
- */
-const MUTATING_TYPES = [
-  'toggle_step',
-  'set_tempo',
-  'set_swing',
-  'mute_track',
-  'solo_track',
-  'set_parameter_lock',
-  'add_track',
-  'delete_track',
-  'clear_track',
-  'set_track_instrument',
-  'set_track_sample',
-  'set_track_volume',
-  'set_track_pan',
-  'set_track_transpose',
-  'set_track_step_count',
-  'set_track_swing',
-  'set_track_name',
-  'set_effects',
-  'set_fm_params',
-  'euclidean_fill',
-] as const;
+interface DedicatedSendRoute {
+  actionType: string;
+  sender: string;
+  hook: string;
+}
 
-/**
- * Mapping from client message type to server broadcast type.
- * Some types have special naming conventions.
- */
-const CLIENT_TO_SERVER_MAP: Record<string, string> = {
-  toggle_step: 'step_toggled',
-  set_tempo: 'tempo_changed',
-  set_swing: 'swing_changed',
-  mute_track: 'track_muted',
-  solo_track: 'track_soloed',
-  set_parameter_lock: 'parameter_lock_set',
-  add_track: 'track_added',
-  delete_track: 'track_deleted',
-  clear_track: 'track_cleared',
-  set_track_instrument: 'track_sample_set', // rollout-compatible response
-  set_track_sample: 'track_sample_set',
-  set_track_volume: 'track_volume_set',
-  set_track_pan: 'track_pan_set',
-  set_track_transpose: 'track_transpose_set',
-  set_track_step_count: 'track_step_count_set',
-  set_track_swing: 'track_swing_set',
-  set_track_name: 'track_name_set',
-  set_effects: 'effects_changed',
-  set_fm_params: 'fm_params_changed',
-  euclidean_fill: 'euclidean_filled',
-};
+/** Mutations whose Grid action cannot be converted directly to a wire message. */
+const DEDICATED_SEND_ROUTES = {
+  add_track: {
+    actionType: 'ADD_TRACK',
+    sender: 'sendAddTrack',
+    hook: 'handleTrackAdded',
+  },
+  batch_clear_steps: {
+    actionType: 'DELETE_SELECTED_STEPS',
+    sender: 'sendBatchClearSteps',
+    hook: 'handleBatchClearSteps',
+  },
+  batch_set_parameter_locks: {
+    actionType: 'APPLY_TO_SELECTION',
+    sender: 'sendBatchSetParameterLocks',
+    hook: 'handleBatchSetParameterLocks',
+  },
+  reorder_tracks: {
+    actionType: 'REORDER_TRACKS',
+    sender: 'sendReorderTracks',
+    hook: 'handleTrackReorder',
+  },
+} as const satisfies Partial<Record<MutatingMessageType, DedicatedSendRoute>>;
 
-/**
- * Message types that don't need actionToMessage handling.
- * These are sent via special functions or handled differently.
- */
-const SKIP_ACTION_TO_MESSAGE = new Set([
-  'toggle_step', // Uses TOGGLE_STEP action which needs special handling
-  'mute_track', // Mute is local-only (not synced)
-  'solo_track', // Solo is local-only (not synced)
-  'add_track', // Uses sendAddTrack() helper
-]);
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * Known acronyms that should stay uppercase in PascalCase
- */
 const ACRONYMS = new Set(['fm', 'kv', 'id', 'ws', 'do']);
 
-/**
- * Convert snake_case to PascalCase
- * e.g., "set_track_volume" -> "SetTrackVolume"
- * Handles known acronyms: "set_fm_params" -> "SetFMParams"
- */
 function toPascalCase(snakeCase: string): string {
   return snakeCase
     .split('_')
@@ -123,52 +70,59 @@ function toPascalCase(snakeCase: string): string {
     .join('');
 }
 
-/**
- * Convert snake_case to SCREAMING_SNAKE_CASE
- * e.g., "set_track_volume" -> "SET_TRACK_VOLUME"
- */
 function toScreamingSnake(snakeCase: string): string {
   return snakeCase.toUpperCase();
 }
 
-// ============================================================================
-// Validation Logic
-// ============================================================================
-
-interface ValidationResult {
-  errors: string[];
-  warnings: string[];
+function sourceSection(source: string, startMarker: string): string | null {
+  const start = source.indexOf(startMarker);
+  if (start === -1) return null;
+  const nextExport = source.indexOf('\nexport ', start + startMarker.length);
+  return source.slice(start, nextExport === -1 ? undefined : nextExport);
 }
 
+function callbackSection(owner: string, callbackName: string): string | null {
+  const marker = `const ${callbackName} = useCallback`;
+  const start = owner.indexOf(marker);
+  if (start === -1) return null;
+  const nextCallback = owner.indexOf('\n  const handle', start + marker.length);
+  const returnBlock = owner.indexOf('\n\n  return {', start + marker.length);
+  const ends = [nextCallback, returnBlock].filter((index) => index !== -1);
+  return owner.slice(start, ends.length > 0 ? Math.min(...ends) : undefined);
+}
+
+function returnedApiSection(owner: string): string | null {
+  const start = owner.indexOf('\n  return {');
+  if (start === -1) return null;
+  const end = owner.indexOf('\n  };', start);
+  return owner.slice(start, end === -1 ? undefined : end);
+}
+
+export interface ValidationResult {
+  errors: string[];
+}
+
+/**
+ * Check source wiring while keeping the production map as the only message
+ * inventory. Source inspection is intentional here: this gate catches a
+ * missing dispatch branch or handler before an end-to-end scenario happens to
+ * exercise that particular operation.
+ */
 export function validateChecklist(
-  workerTypes: string,
   liveSession: string,
-  multiplayer: string
+  multiplayer: string,
+  useMultiplayer: string,
 ): ValidationResult {
   const errors: string[] = [];
-  const warnings: string[] = [];
+  const syncHookOwner = sourceSection(useMultiplayer, 'export function useMultiplayerSync');
+  const returnedSyncApi = syncHookOwner && returnedApiSection(syncHookOwner);
 
-  for (const msgType of MUTATING_TYPES) {
-    const serverType = CLIENT_TO_SERVER_MAP[msgType];
-
-    // Check 1: ClientMessageBase has the type
-    if (!workerTypes.includes(`type: '${msgType}'`)) {
-      errors.push(`[worker/types.ts] Missing ClientMessageBase: type: '${msgType}'`);
-    }
-
-    // Check 2: ServerMessageBase has the broadcast type
-    if (serverType && !workerTypes.includes(`type: '${serverType}'`)) {
-      errors.push(`[worker/types.ts] Missing ServerMessageBase: type: '${serverType}'`);
-    }
-
-    // Check 3: Server switch case
+  for (const [msgType, serverType] of MUTATING_ENTRIES) {
     if (!liveSession.includes(`case '${msgType}':`)) {
       errors.push(`[live-session.ts] Missing switch case: case '${msgType}':`);
     }
 
-    // Check 4: Server handler method
     const serverHandler = `handle${toPascalCase(msgType)}`;
-    // Check for method definition (handles both regular and arrow function styles)
     const hasServerHandler =
       liveSession.includes(`${serverHandler}(`) ||
       liveSession.includes(`${serverHandler} =`);
@@ -176,102 +130,96 @@ export function validateChecklist(
       errors.push(`[live-session.ts] Missing handler method: ${serverHandler}`);
     }
 
-    // Check 5: Client switch case (for server broadcast type)
-    if (serverType && !multiplayer.includes(`case '${serverType}':`)) {
+    if (!multiplayer.includes(`case '${serverType}':`)) {
       errors.push(`[multiplayer.ts] Missing switch case: case '${serverType}':`);
     }
 
-    // Check 6: Client handler method
-    if (serverType) {
-      const clientHandler = `handle${toPascalCase(serverType)}`;
-      const hasClientHandler =
-        multiplayer.includes(`${clientHandler}(`) ||
-        multiplayer.includes(`${clientHandler} =`);
-      if (!hasClientHandler) {
-        errors.push(`[multiplayer.ts] Missing handler method: ${clientHandler}`);
-      }
+    const clientHandler = `handle${toPascalCase(serverType)}`;
+    const hasClientHandler =
+      multiplayer.includes(`${clientHandler}(`) ||
+      multiplayer.includes(`${clientHandler} =`);
+    if (!hasClientHandler) {
+      errors.push(`[multiplayer.ts] Missing handler method: ${clientHandler}`);
     }
 
-    // Check 7: actionToMessage case (if applicable)
-    if (!SKIP_ACTION_TO_MESSAGE.has(msgType)) {
-      const actionType = toScreamingSnake(msgType);
-      // Look for the action type in actionToMessage function
-      if (!multiplayer.includes(`case '${actionType}':`)) {
-        warnings.push(
-          `[multiplayer.ts] actionToMessage may be missing case '${actionType}':` +
-            ` (check if this action type needs sync)`
+    const dedicatedRoute = DEDICATED_SEND_ROUTES[
+      msgType as keyof typeof DEDICATED_SEND_ROUTES
+    ] as DedicatedSendRoute | undefined;
+    if (dedicatedRoute) {
+      if (!multiplayer.includes(`case '${dedicatedRoute.actionType}':`)) {
+        errors.push(
+          `[multiplayer.ts] Missing dedicated action case: case '${dedicatedRoute.actionType}':`,
         );
       }
+
+      const functionStart = multiplayer.indexOf(`export function ${dedicatedRoute.sender}`);
+      if (functionStart === -1) {
+        errors.push(`[multiplayer.ts] Missing dedicated sender: ${dedicatedRoute.sender}`);
+      } else {
+        const nextFunction = multiplayer.indexOf('\nexport function ', functionStart + 1);
+        const functionSource = multiplayer.slice(
+          functionStart,
+          nextFunction === -1 ? undefined : nextFunction,
+        );
+        if (!functionSource.includes(`type: '${msgType}'`)) {
+          errors.push(
+            `[multiplayer.ts] ${dedicatedRoute.sender} does not send type: '${msgType}'`,
+          );
+        }
+      }
+
+      const hookSource = syncHookOwner && callbackSection(syncHookOwner, dedicatedRoute.hook);
+      if (!hookSource) {
+        errors.push(`[useMultiplayer.ts] Missing dedicated hook: ${dedicatedRoute.hook}`);
+      } else if (!hookSource.includes(`${dedicatedRoute.sender}(`)) {
+        errors.push(
+          `[useMultiplayer.ts] ${dedicatedRoute.hook} does not call ${dedicatedRoute.sender}`,
+        );
+      }
+      if (!returnedSyncApi || !new RegExp(`\\b${dedicatedRoute.hook}\\b`).test(returnedSyncApi)) {
+        errors.push(`[useMultiplayer.ts] Dedicated hook is not returned: ${dedicatedRoute.hook}`);
+      }
+    } else {
+      const actionType = toScreamingSnake(msgType);
+      if (!multiplayer.includes(`case '${actionType}':`)) {
+        errors.push(`[multiplayer.ts] Missing actionToMessage case: case '${actionType}':`);
+      }
     }
   }
 
-  // Bonus: Check that MUTATING_MESSAGE_TYPES in types.ts matches our list
-  for (const msgType of MUTATING_TYPES) {
-    if (!workerTypes.includes(`'${msgType}'`)) {
-      warnings.push(
-        `[worker/types.ts] '${msgType}' may be missing from MUTATING_MESSAGE_TYPES set`
-      );
-    }
-  }
-
-  return { errors, warnings };
+  return { errors };
 }
-
-// ============================================================================
-// Main
-// ============================================================================
 
 function main(): void {
   const srcDir = path.join(__dirname, '..', 'src');
 
-  // Read source files
-  let workerTypes: string;
   let liveSession: string;
   let multiplayer: string;
-
+  let useMultiplayer: string;
   try {
-    // Read worker/types.ts and shared files since types were consolidated
-    const workerTypesContent = fs.readFileSync(path.join(srcDir, 'worker', 'types.ts'), 'utf-8');
-    const sharedTypesContent = fs.readFileSync(path.join(srcDir, 'shared', 'message-types.ts'), 'utf-8');
-    const sharedMessagesContent = fs.readFileSync(path.join(srcDir, 'shared', 'messages.ts'), 'utf-8');
-    // Combine them so validation finds type definitions in any of these files
-    workerTypes = workerTypesContent + '\n' + sharedTypesContent + '\n' + sharedMessagesContent;
     liveSession = fs.readFileSync(path.join(srcDir, 'worker', 'live-session.ts'), 'utf-8');
     multiplayer = fs.readFileSync(path.join(srcDir, 'sync', 'multiplayer.ts'), 'utf-8');
+    useMultiplayer = fs.readFileSync(path.join(srcDir, 'hooks', 'useMultiplayer.ts'), 'utf-8');
   } catch (err) {
     console.error('Error reading source files:', err);
     process.exit(1);
   }
 
-  // Run validation
-  const { errors, warnings } = validateChecklist(workerTypes, liveSession, multiplayer);
+  const { errors } = validateChecklist(liveSession, multiplayer, useMultiplayer);
 
-  // Output results
   console.log('\n=== Sync Checklist Validation ===\n');
-
-  if (warnings.length > 0) {
-    console.log(`Warnings (${warnings.length}):`);
-    for (const warning of warnings) {
-      console.log(`  - ${warning}`);
-    }
-    console.log('');
-  }
-
   if (errors.length > 0) {
     console.error(`Errors (${errors.length}):`);
-    for (const error of errors) {
-      console.error(`  - ${error}`);
-    }
-    console.log('');
-    console.error('Sync checklist validation FAILED');
+    for (const error of errors) console.error(`  - ${error}`);
+    console.error('\nSync checklist validation FAILED');
     process.exit(1);
   }
 
   console.log('Sync checklist validation PASSED');
-  console.log(`  - ${MUTATING_TYPES.length} message types validated`);
-  console.log(`  - ${warnings.length} warnings`);
-  console.log(`  - 0 errors`);
+  console.log(`  - ${MUTATING_ENTRIES.length} message types validated`);
+  console.log('  - 0 errors');
 }
 
-// Run the validation
-main();
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+  main();
+}

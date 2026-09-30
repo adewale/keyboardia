@@ -7,12 +7,11 @@
  *
  * Validators included:
  * 1. Manifests - Sample files, SAMPLED_INSTRUMENTS, INSTRUMENT_CATEGORIES (UI)
- * 2. Playable Ranges - Ensures default note (C4) is playable
- * 3. Sample Quality - Decodes samples and emits objective quality metrics,
+ * 2. Sample Quality - Decodes samples and emits objective quality metrics,
  *    including active-RMS velocity layer ordering
- * 4. Release Times - Validates release time consistency
- * 5. Sync Checklist - Ensures multiplayer sync implementation is complete
- * 6. Sample Load Budgets - Bounds transfer size before runtime network/decode verification
+ * 3. Release Times - Validates release time consistency
+ * 4. Sync Checklist - Ensures multiplayer sync implementation is complete
+ * 5. Sample Load Budgets - Bounds transfer size before runtime network/decode verification
  *
  * Usage:
  *   npx tsx scripts/validate-all.ts
@@ -72,16 +71,7 @@ export const VALIDATORS = [
       entrypoint: 'scripts/validate-manifests.ts',
       inputs: ['public/instruments/', 'src/audio/sampled-instrument.ts'],
     }],
-    description: 'Checks manifests, sample files, and registry completeness',
-  },
-  {
-    name: 'Playable Range Validation',
-    profile: 'samples',
-    commands: [{
-      entrypoint: 'scripts/validate-playable-ranges.ts',
-      inputs: ['public/instruments/'],
-    }],
-    description: 'Ensures default note (C4) is within playable range',
+    description: 'Checks manifests, sample files, registry completeness, and playable ranges',
   },
   {
     name: 'Sample Quality Audit',
@@ -167,6 +157,7 @@ export const VALIDATORS = [
       inputs: [
         'src/shared/message-types.ts',
         'src/shared/messages.ts',
+        'src/hooks/useMultiplayer.ts',
         'src/sync/multiplayer.ts',
         'src/worker/live-session.ts',
         'src/worker/types.ts',

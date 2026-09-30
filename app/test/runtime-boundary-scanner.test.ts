@@ -94,14 +94,14 @@ describe('runtime boundary scanner', () => {
   it('rejects resolved code imports that terminate outside the production graph', () => {
     const graph = scanProductionGraph(SRC_ROOT, {
       sourceOverrides: new Map([
-        ['shared/constants.ts', "import './copy-paste-range.test.ts';"],
+        ['shared/constants.ts', "import './canonical-hash.test.ts';"],
       ]),
     });
 
     expect(graph.excludedInternalImports).toContainEqual({
       importer: 'shared/constants.ts',
-      imported: 'shared/copy-paste-range.test.ts',
-      specifier: './copy-paste-range.test.ts',
+      imported: 'shared/canonical-hash.test.ts',
+      specifier: './canonical-hash.test.ts',
     });
   });
 
