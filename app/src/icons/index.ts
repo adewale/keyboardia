@@ -14,6 +14,7 @@ export { default as ChevronRight } from 'lucide-react/dist/esm/icons/chevron-rig
 export { default as ChevronUp } from 'lucide-react/dist/esm/icons/chevron-up.mjs';
 export { default as Close } from 'lucide-react/dist/esm/icons/x.mjs';
 export { default as CopyLink } from 'lucide-react/dist/esm/icons/link.mjs';
+export { default as DragHandle } from 'lucide-react/dist/esm/icons/grip-vertical.mjs';
 export { default as FxActive } from 'lucide-react/dist/esm/icons/power.mjs';
 export { default as FxBypass } from 'lucide-react/dist/esm/icons/power-off.mjs';
 export { default as Minus } from 'lucide-react/dist/esm/icons/minus.mjs';

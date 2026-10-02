@@ -163,8 +163,6 @@
   cursor: grab;
   transition: opacity 0.15s ease, color 0.15s ease;
   user-select: none;
-  font-size: 12px;
-  letter-spacing: -1px;
 }
 
 .track-drag-handle:hover {
