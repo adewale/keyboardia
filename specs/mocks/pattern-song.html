@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pattern &amp; Song — UI Mocks v4</title>
+<style>
+  /* ---------- Page chrome tokens (theme-aware) ---------- */
+  :root {
+    --ground: #eef0f3;
+    --panel: #ffffff;
+    --ink: #1b1f24;
+    --muted: #59626e;
+    --line: #d5dae1;
+    --brand: #e85a30;
+    --loop: #2f8fd0;
+    --capture: #9b59b6;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --loop: #4aa3dd; }
+  }
+  :root[data-theme="light"] { --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1; --loop: #2f8fd0; }
+  :root[data-theme="dark"] { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --loop: #4aa3dd; }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); line-height: 1.55; margin: 0; padding: 48px 24px 96px; }
+  .pg-wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+
+  /* ---------- Header ---------- */
+  .pg-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); font-weight: 600; }
+  .pg-header { display: flex; flex-direction: column; gap: 12px; max-width: 880px; }
+  .pg-header h1 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.02em; margin: 0; line-height: 1.1; text-wrap: balance; }
+  .pg-header h1 .accent { color: var(--brand); }
+  .pg-lede { font-size: 17px; color: var(--muted); margin: 0; max-width: 64ch; }
+  .pg-lede strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Concept cards ---------- */
+  .pg-principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .pg-principle { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .pg-principle .k { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--loop); font-weight: 600; }
+  .pg-principle p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .pg-principle p b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Mock sections ---------- */
+  .pg-section { display: flex; flex-direction: column; gap: 18px; }
+  .pg-section > h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0; display: flex; align-items: baseline; gap: 12px; }
+  .pg-section > h2 .dim { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.06em; }
+  .pg-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+  @media (max-width: 960px) { .pg-body { grid-template-columns: minmax(0, 1fr); } }
+  .pg-frame-scroll { overflow-x: auto; padding-bottom: 6px; }
+
+  .device { background: #060607; border-radius: 18px; padding: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.07); width: fit-content; }
+  .device.phone { border-radius: 26px; padding: 12px; }
+
+  .pg-notes { display: flex; flex-direction: column; gap: 10px; }
+  .pg-note { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 13.5px; color: var(--muted); }
+  .pg-note b { color: var(--ink); font-weight: 600; }
+  .pg-note .n { width: 20px; height: 20px; border-radius: 50%; background: var(--loop); color: #fff; font-family: var(--mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
+  .pg-note.cap .n { background: var(--capture); }
+
+  .badge { width: 16px; height: 16px; border-radius: 50%; background: var(--loop); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; display: inline-block; flex: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.55); }
+  .badge.cap { background: var(--capture); }
+
+  /* ---------- Keyboardia mock screens (always dark, per DESIGN-LANGUAGE.md) ---------- */
+  .kb-screen {
+    --kb-bg: #121212; --kb-surface: #1e1e1e; --kb-raised: #2a2a2a; --kb-border: #3a3a3a;
+    --kb-text: rgba(255,255,255,0.87); --kb-muted: rgba(255,255,255,0.6); --kb-dim: rgba(255,255,255,0.38);
+    --kb-accent: #e85a30; --kb-blue: #3498db; --kb-purple: #9b59b6; --kb-green: #1db954;
+    --kb-teal: #4ecdc4; --kb-pink: #e91e63; --kb-orange: #e67e22; --kb-yellow: #f1c40f;
+    background: var(--kb-bg); color: var(--kb-text); border-radius: 8px; overflow: hidden;
+    font-family: var(--sans); font-size: 12px;
+  }
+  .kb-desktop { width: 1080px; }
+  .kb-portrait { width: 375px; }
+  .kb-landscape { width: 740px; }
+
+  /* Transport */
+  .kb-transport { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: #1a1a1a; border-bottom: 1px solid #2c2c2c; }
+  .kb-play { width: 34px; height: 34px; border-radius: 50%; background: var(--kb-green); display: flex; align-items: center; justify-content: center; color: #06130a; font-size: 13px; flex: none; }
+  .kb-scope { display: flex; border: 1px solid var(--kb-border); border-radius: 6px; overflow: hidden; }
+  .kb-scope span { padding: 7px 12px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--kb-dim); background: #202020; }
+  .kb-scope span.on { background: rgba(29,185,84,0.15); color: #baf0cd; }
+  .kb-lcd { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px; background: #252525; border: 1px solid var(--kb-border); border-radius: 6px; padding: 5px 10px; }
+  .kb-lcd small { font-weight: 500; font-size: 9px; color: var(--kb-muted); letter-spacing: 0.1em; display: block; }
+  .kb-chip-btn { font-size: 11px; font-weight: 600; color: var(--kb-muted); border: 1px solid var(--kb-border); border-radius: 6px; padding: 6px 10px; background: #202020; }
+  .kb-session { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .kb-session .name { font-weight: 600; font-size: 13px; }
+  .kb-avatars { display: flex; }
+  .kb-av { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1a1a1a; margin-left: -6px; font-size: 10px; font-weight: 700; color: #0b0b0b; display: flex; align-items: center; justify-content: center; }
+
+  /* Pattern slots row */
+  .kb-structure { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--kb-surface); border-bottom: 1px solid #2c2c2c; flex-wrap: wrap; }
+  .kb-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; color: var(--kb-dim); font-weight: 600; }
+  .kb-slots { display: flex; gap: 5px; }
+  .kb-slot {
+    min-width: 44px; height: 36px; border-radius: 6px; border: 1px solid var(--kb-border);
+    background: var(--kb-raised); color: var(--kb-muted);
+    font-family: var(--mono); font-size: 13px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 6px; position: relative;
+  }
+  .kb-slot.current { background: rgba(232,90,48,0.16); border-color: var(--kb-accent); color: #ffd9c9; }
+  .kb-slot.current::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--kb-accent); }
+  .kb-slot .prog { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--kb-accent); border-radius: 1px; }
+  .kb-slot.cued { border-color: var(--kb-blue); color: #cfe8f8; animation: kb-cue 1.1s ease-in-out infinite; }
+  .kb-slot.cued .next { font-size: 7.5px; letter-spacing: 0.1em; color: var(--kb-blue); font-weight: 800; }
+  @keyframes kb-cue { 0%,100% { box-shadow: 0 0 0 0 rgba(52,152,219,0);} 50% { box-shadow: 0 0 8px 1px rgba(52,152,219,0.5);} }
+  @media (prefers-reduced-motion: reduce) { .kb-slot.cued { animation: none; box-shadow: 0 0 6px 1px rgba(52,152,219,0.4); } }
+  .kb-slot.ghost { border-style: dashed; color: var(--kb-dim); }
+  .kb-tools { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .kb-tool { font-size: 10.5px; font-weight: 700; padding: 5px 9px; border-radius: 5px; border: 1px solid rgba(155,89,182,0.5); color: #e4c9f2; background: rgba(155,89,182,0.12); }
+
+  /* Song order list */
+  .kb-song { margin: 10px 14px 2px; border: 1px solid #2c2c2c; border-radius: 6px; background: #181818; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; max-width: 380px; position: relative; }
+  .kb-song .kb-label { margin-bottom: 2px; }
+  .kb-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--kb-border); border-radius: 5px; background: var(--kb-raised); padding: 4px 8px; }
+  .kb-row .num { font-family: var(--mono); font-size: 10px; color: var(--kb-dim); width: 12px; font-weight: 700; }
+  .kb-row .pat { font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--kb-text); width: 22px; }
+  .kb-row .thumb { display: flex; flex-direction: column; gap: 1px; flex: none; }
+  .kb-row .thumb .r { display: flex; gap: 1px; height: 3px; }
+  .kb-row .thumb .c { width: 3px; border-radius: 1px; background: #262626; }
+  .kb-row .thumb .c.on { background: #b04a2c; }
+  .kb-row .reps { font-family: var(--mono); font-size: 11px; color: var(--kb-muted); margin-left: auto; border: 1px solid var(--kb-border); border-radius: 4px; padding: 2px 7px; }
+  .kb-row .grip { color: var(--kb-dim); font-size: 9px; letter-spacing: 1px; }
+  .kb-row.playing { border-color: var(--kb-accent); }
+  .kb-row.playing .num { color: var(--kb-accent); }
+  .kb-row.playing .reps { color: #ffd9c9; border-color: rgba(232,90,48,0.5); }
+  .kb-row.add { border-style: dashed; color: var(--kb-dim); justify-content: center; font-size: 13px; background: transparent; }
+
+  /* Status row */
+  .kb-status { display: flex; align-items: center; gap: 10px; margin: 8px 14px 0; font-size: 11.5px; color: var(--kb-muted); }
+  .kb-status .pill { display: flex; align-items: center; gap: 6px; border: 1px solid var(--kb-border); border-radius: 20px; padding: 4px 10px; background: var(--kb-surface); font-weight: 600; }
+  .kb-status .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--kb-accent); }
+  .kb-status .pill b { color: var(--kb-text); font-family: var(--mono); }
+
+  /* Track rows */
+  .kb-tracks { padding: 8px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .kb-track { display: flex; align-items: center; gap: 10px; background: var(--kb-surface); border-radius: 8px; padding: 7px 10px; }
+  /* Adopted: the name tick — category color beside the name, never on the row edge */
+  .kb-track.drums, .kb-p-track.drums { --cat: var(--kb-orange); }
+  .kb-track.bass, .kb-p-track.bass { --cat: var(--kb-purple); }
+  .kb-track.leads, .kb-p-track.leads { --cat: var(--kb-pink); }
+  .kb-tctl { display: flex; align-items: center; gap: 6px; width: 176px; flex: none; }
+  .kb-tname { font-weight: 600; font-size: 12.5px; width: 44px; position: relative; padding-left: 10px; }
+  .kb-tname::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--cat, transparent); }
+  .kb-mini-btn { width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--kb-border); background: var(--kb-raised); color: var(--kb-muted); font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+  .kb-cycle { font-family: var(--mono); font-size: 9.5px; color: var(--kb-teal); font-weight: 600; border: 1px solid rgba(78,205,196,0.35); border-radius: 4px; padding: 2px 5px; white-space: nowrap; }
+  .kb-steps { display: flex; gap: 3px; align-items: center; min-width: 0; }
+  .kb-step { width: 13px; height: 26px; border-radius: 3px; background: var(--kb-raised); border: 1px solid var(--kb-border); flex: none; }
+  .kb-step.on { background: var(--kb-accent); border-color: #f07048; box-shadow: 0 0 6px rgba(232,90,48,0.35); }
+  .kb-step.ph { outline: 2px solid #ffffff; outline-offset: -1px; }
+  .kb-gap { width: 8px; flex: none; }
+
+  /* Portrait */
+  .kb-p-slots { display: flex; gap: 6px; padding: 10px 12px; background: var(--kb-surface); border-bottom: 1px solid #2c2c2c; }
+  .kb-p-slots .kb-slot { flex: 1; height: 48px; font-size: 14px; }
+  .kb-p-track { background: var(--kb-surface); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 7px; }
+  .kb-p-head { display: flex; align-items: center; gap: 8px; }
+  .kb-p-head .kb-tname { width: auto; font-size: 13px; }
+  .kb-p-head .status { margin-left: auto; display: flex; gap: 5px; align-items: center; }
+  .kb-p-stepwrap { position: relative; overflow: hidden; }
+  .kb-p-steps { display: flex; gap: 4px; }
+  .kb-p-steps .kb-step { width: 38px; height: 38px; border-radius: 8px; }
+  .kb-p-fade { position: absolute; top: 0; right: 0; bottom: 0; width: 34px; background: linear-gradient(90deg, transparent, #121212); pointer-events: none; }
+  .kb-p-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #1a1a1a; border-top: 1px solid #2c2c2c; }
+  .kb-p-bar .kb-lcd { margin-left: auto; }
+
+  /* Landscape */
+  .kb-landscape .kb-structure { padding: 8px 12px; }
+  .kb-landscape .kb-tracks { padding: 6px 12px 12px; }
+  .kb-landscape .kb-step { width: 14px; height: 22px; }
+  .kb-landscape .kb-slot { height: 30px; min-width: 38px; font-size: 12px; }
+
+  /* Interaction table */
+  .pg-table-wrap { overflow-x: auto; }
+  table.pg-table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
+  .pg-table th { text-align: left; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 10px 14px; border-bottom: 2px solid var(--line); }
+  .pg-table td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .pg-table td:first-child { font-weight: 600; white-space: nowrap; }
+  .pg-table .mono { font-family: var(--mono); font-size: 12.5px; }
+
+  .pg-foot { font-size: 13px; color: var(--muted); max-width: 72ch; }
+  .pg-foot code { font-family: var(--mono); font-size: 12px; }
+</style>
+
+<div class="pg-wrap">
+
+  <header class="pg-header">
+    <span class="pg-eyebrow">Keyboardia · design spec v4 · the classic Pattern/Song model, 1980→today</span>
+    <h1>Pattern &amp; <span class="accent">Song</span></h1>
+    <p class="pg-lede">
+      v3 was conceptually overloaded — split-zone chips, view≠play, chain braces, scenes. Forty-five years of
+      drum machines and trackers converged on something far simpler: <strong>two concepts</strong> (a pattern
+      you compose, a song that is an ordered list of patterns) and <strong>one question</strong> (does Play
+      play the pattern or the song?). The TR-808's Compose mode, the LinnDrum and MPC's Song, and the tracker
+      order list <span style="font-family:var(--mono)">00 01 00 02</span> are all this model. The famous
+      confusions — the TB-303's hidden modes, Elektron's unsaved chains, Circuit's scene ladder — are all
+      departures from it. v4 adopts the classic model outright: <strong>the grid always shows what's
+      sounding</strong>, slots switch patterns (cued at the loop boundary, like a 1980 pattern button),
+      and the song is a list you edit like a list.
+    </p>
+  </header>
+
+  <div class="pg-principles">
+    <div class="pg-principle"><span class="k">Concept 1 · Pattern</span>
+      <p><b>A short loop you compose.</b> Slots 1–8, whole-grid snapshots. Exactly one is current — synced, shown, heard, edited by everyone. Tap a slot to switch; while playing it <b>cues</b> and lands at the loop end, blinking until it does.</p></div>
+    <div class="pg-principle"><span class="k">Concept 2 · Song</span>
+      <p><b>An ordered list of patterns.</b> Rows of <b>pattern × repeats</b>, exactly a tracker's order list. Add, reorder, repeat, delete. No chains, no braces, no scenes — the list is the arrangement.</p></div>
+    <div class="pg-principle"><span class="k">One question</span>
+      <p><b>What does Play play?</b> PATTERN loops the current slot; SONG plays the list top to bottom, deterministically. The 808's mode dial, reborn as a two-position toggle beside Play.</p></div>
+    <div class="pg-principle"><span class="k">One invariant</span>
+      <p><b>What you see is what you hear.</b> The grid always shows the sounding pattern — in SONG scope it follows the list. No view/play split, no ghost playheads, no second cursor. Multiplayer keeps its existing rule: everyone sees and hears the same thing.</p></div>
+  </div>
+
+  <!-- ================= DESKTOP ================= -->
+  <section class="pg-section">
+    <h2>Desktop <span class="dim">≥1024px · SONG scope · the list is playing</span></h2>
+    <div class="pg-body">
+      <div class="pg-frame-scroll"><div class="device"><div class="kb-screen kb-desktop">
+
+        <div class="kb-transport">
+          <div class="kb-play">▶</div>
+          <div class="kb-scope"><span>PATTERN</span><span class="on">SONG</span></div>
+          <div class="kb-lcd">118<small>BPM</small></div>
+          <div class="kb-lcd">12%<small>SWING</small></div>
+          <span class="kb-chip-btn">FX ▾</span>
+          <span class="kb-chip-btn">A min ▾</span>
+          <div class="kb-session">
+            <span class="name">tuesday groove</span>
+            <div class="kb-avatars">
+              <div class="kb-av" style="background:#43A047">F</div>
+              <div class="kb-av" style="background:#1E88E5">P</div>
+              <div class="kb-av" style="background:#FDD835">C</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kb-structure">
+          <span class="kb-label">PATTERN</span>
+          <div class="kb-slots">
+            <div class="kb-slot">1</div>
+            <div class="kb-slot current">2<span class="prog" style="width:62%"></span></div>
+            <div class="kb-slot">3</div>
+            <div class="kb-slot ghost">+</div>
+          </div>
+          <span class="badge">1</span>
+          <div class="kb-tools">
+            <span class="kb-tool">⧉ Duplicate</span>
+            <span class="kb-tool">✂ Split</span>
+            <span class="badge cap" style="align-self:center">4</span>
+          </div>
+        </div>
+
+        <div class="kb-song" id="song-desktop">
+          <span class="kb-label">SONG</span>
+          <span class="badge" style="position:absolute; right:-7px; top:-7px;">2</span>
+        </div>
+
+        <div class="kb-status">
+          <span class="pill"><span class="dot"></span> Song row <b>2/4</b> · P2 · rep <b>2/2</b> → next row: P1</span>
+          <span class="badge">3</span>
+        </div>
+
+        <div class="kb-tracks" id="desktop-tracks"></div>
+
+      </div></div></div>
+
+      <div class="pg-notes">
+        <div class="pg-note"><span class="n">1</span><span><b>One slot, one action.</b> Slots are plain buttons (keys <span style="font-family:var(--mono)">1–8</span>): tap to switch patterns — instantly when stopped, cued to the loop end while playing. Current = orange with the loop's progress bar. No split zones, no view-vs-queue halves.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>The song is a vertical order list</b> — the tracker's <span style="font-family:var(--mono)">00 01 00 02</span>, humanized: each row is a pattern (with its real thumbnail) × a repeat count. Drag to reorder, tap ×N to change repeats. The playing row is highlighted. This replaces v3's chain strip and loop braces entirely.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>The grid follows the sound.</b> In SONG scope the grid always shows the pattern that's sounding (P2, playhead live) — tracker "follow" behavior. Editing during song playback edits what you hear, exactly like today's app.</span></div>
+        <div class="pg-note cap"><span class="n">4</span><span><b>Two verbs, both historical:</b> ⧉ Duplicate = every drum machine's pattern copy (make a variation, then switch). ✂ Split = the migration tool — explodes a legacy 64/128-step pattern into slots + a song that plays back identically.</span></div>
+        <div class="pg-note"><span class="n">5</span><span><b>Want to woodshed one section?</b> Flip the scope to PATTERN on that slot — that's "loop a section while composing," no braces required.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOBILE PORTRAIT ================= -->
+  <section class="pg-section">
+    <h2>Mobile portrait <span class="dim">&lt;768px · PATTERN scope · tap a slot to cue</span></h2>
+    <div class="pg-body">
+      <div class="pg-frame-scroll"><div class="device phone"><div class="kb-screen kb-portrait">
+
+        <div class="kb-transport">
+          <div class="kb-play">▶</div>
+          <div class="kb-scope"><span class="on">PATTERN</span><span>SONG</span></div>
+          <div class="kb-avatars" style="margin-left:auto">
+            <div class="kb-av" style="background:#43A047">F</div>
+            <div class="kb-av" style="background:#1E88E5">P</div>
+          </div>
+        </div>
+
+        <div class="kb-p-slots">
+          <div class="kb-slot current">1<span class="prog" style="width:62%"></span></div>
+          <div class="kb-slot">2</div>
+          <div class="kb-slot cued">3 <span class="next">NEXT</span></div>
+          <div class="kb-slot ghost">+</div>
+          <span class="badge" style="align-self:center">1</span>
+        </div>
+
+        <div class="kb-tracks" id="portrait-tracks"></div>
+
+        <div class="kb-p-bar">
+          <span class="kb-chip-btn" style="color:#cfe8f8; border-color:var(--kb-blue)">P3 in 6 steps</span>
+          <span class="badge">2</span>
+          <div class="kb-lcd">118<small>BPM</small></div>
+        </div>
+
+      </div></div></div>
+
+      <div class="pg-notes">
+        <div class="pg-note"><span class="n">1</span><span><b>Tap a slot, it cues.</b> P3 blinks with a NEXT tag until the loop ends — the 808/MPC pattern-button behavior on 48px targets. Tap it again to cancel. That cue is the model's <em>only</em> transient state.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>The countdown pill</b> makes the quantized landing legible ("P3 in 6 steps"). Same pill shows song-row changes in SONG scope.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>No song editor in portrait</b> — listening and steering only, per the portrait simplification spec. The scope toggle still works: a published session with a song opens in SONG and just… plays the piece.</span></div>
+        <div class="pg-note"><span class="n">4</span><span><b>Grid = sounding pattern, always</b> — one playhead, no ghosts, nothing to reconcile. Portrait in v3 already worked this way; v4 makes it the whole product's rule.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOBILE LANDSCAPE ================= -->
+  <section class="pg-section">
+    <h2>Mobile landscape <span class="dim">creation mode · PATTERN scope</span></h2>
+    <div class="pg-body">
+      <div class="pg-frame-scroll"><div class="device phone"><div class="kb-screen kb-landscape">
+
+        <div class="kb-transport">
+          <div class="kb-play" style="width:28px;height:28px">▶</div>
+          <div class="kb-scope"><span class="on">PATTERN</span><span>SONG</span></div>
+          <div class="kb-lcd">118<small>BPM</small></div>
+          <span class="kb-label">PATTERN</span>
+          <div class="kb-slots">
+            <div class="kb-slot current">2<span class="prog" style="width:38%"></span></div>
+            <div class="kb-slot">1</div>
+            <div class="kb-slot">3</div>
+            <div class="kb-slot ghost">+</div>
+          </div>
+          <span class="badge">1</span>
+        </div>
+
+        <div class="kb-tracks" id="landscape-tracks"></div>
+
+      </div></div></div>
+
+      <div class="pg-notes">
+        <div class="pg-note"><span class="n">1</span><span><b>Identical grammar, smaller chrome.</b> The slots and scope toggle are the same controls as desktop — semantic buttons, so nothing depends on geometry or gesture vocabulary. Editing lands on what you hear.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>SONG scope on landscape</b> swaps the slot row for the order list in a bottom sheet — list editing works at touch sizes because it's a list, not a brace-on-a-strip.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>A one-pattern session shows no slots at all</b> — just today's Keyboardia. The row appears when Duplicate creates slot 2. Progressive disclosure, as ever.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INTERACTION MODEL ================= -->
+  <section class="pg-section">
+    <h2>Interaction model <span class="dim">two concepts · one question · one transient</span></h2>
+    <div class="pg-table-wrap">
+    <table class="pg-table">
+      <tr><th>Intent</th><th>Verb</th><th>Desktop</th><th>Mobile</th><th>Precedent</th></tr>
+      <tr><td>"Just listen"</td><td>SONG scope — the list plays end-to-end, deterministically</td><td>Scope toggle · <span class="mono">P</span></td><td>Default for published sessions with a song</td><td>MPC Song, tracker play</td></tr>
+      <tr><td>"Loop this groove"</td><td>PATTERN scope — current slot repeats</td><td>Scope toggle</td><td>Scope toggle</td><td>808 pattern play</td></tr>
+      <tr><td>"Switch grooves"</td><td>Tap a slot — cues, lands at loop end</td><td>Slot · <span class="mono">1–8</span></td><td>Tap slot (48px)</td><td>808/MPC pattern buttons</td></tr>
+      <tr><td>"Work on one section"</td><td>PATTERN scope on that slot</td><td>Slot + scope</td><td>Slot + scope</td><td>Every drum machine ever</td></tr>
+      <tr><td>"Arrange the song"</td><td>Edit the order list: add row, ×N repeats, drag, delete</td><td>Song panel</td><td>Landscape bottom sheet</td><td>Tracker order list, Digitakt song rows</td></tr>
+      <tr><td>"Make a variation"</td><td>⧉ Duplicate → edit the copy → switch</td><td><span class="mono">D</span></td><td>Track sheet</td><td>Pattern copy, universal</td></tr>
+      <tr><td>"My 128-step song"</td><td>✂ Split legacy pattern into slots + song (lossless)</td><td>Once per legacy pattern</td><td>—</td><td>—</td></tr>
+      <tr><td>"Stutter, live"</td><td><b>Cut</b> — compose it (ratchets / a pattern); everyone hears it, every time</td><td>—</td><td>—</td><td>Playback-first</td></tr>
+      <tr><td>Published session</td><td colspan="4">Play, scope, and slot-cueing stay live (listening); structure edits toast "Published — Remix to edit."</td></tr>
+    </table>
+    </div>
+    <p class="pg-foot">
+      Engine: <code>currentPatternId</code> is shared synced state (like tempo); playback position is
+      <code>(songRow, repeat, step)</code>; cue landings and row advances derive from one shared
+      <code>patternBoundary()</code> helper (the postmortem's single-source-of-truth rule). Playback is
+      deterministic end-to-end. What v4 deletes from v3: view≠play, split-zone chips, the chain strip,
+      loop braces, scenes, triple chip states — each one mapped to a documented historical confusion
+      (TB-303 hidden modes; Elektron's unsaved chains, resolved only by real Song Mode in OS 1.30;
+      Circuit's per-track-patterns→scenes ladder). See PATTERN-MODE.md §1 for the sourced history.
+    </p>
+  </section>
+
+</div>
+
+<script>
+  // Shared kit (instrument/voice is session-level; patterns carry only note data)
+  const KIT = [
+    { name: 'Kick', cat: 'drums' },
+    { name: 'Bass', cat: 'bass' },
+    { name: 'Lead', cat: 'leads' },
+  ];
+
+  // Pattern note data (slots P1..P3), length 32, seen whole
+  const PATTERNS = {
+    P1: { len: 32, rows: [
+      { count: 16, steps: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0] },
+      { count: 32, steps: [1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,0,0, 1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,1,0] },
+      { count: 32, steps: [0,0,1,0, 0,0,0,1, 0,0,1,0, 0,0,0,0, 1,0,0,0, 0,1,0,0, 1,0,0,0, 0,0,1,0] },
+    ]},
+    P2: { len: 32, rows: [
+      { count: 16, steps: [1,0,0,0, 1,0,0,1, 1,0,0,0, 1,0,1,0] },
+      { count: 32, steps: [1,0,1,0, 0,0,1,0, 1,0,0,0, 1,0,1,0, 1,0,1,0, 0,0,1,0, 1,0,0,1, 0,1,0,0] },
+      { count: 32, steps: [0,0,1,0, 1,0,0,0, 0,1,0,0, 0,0,1,1, 0,0,1,0, 1,0,0,0, 0,1,0,0, 1,0,0,0] },
+    ]},
+    P3: { len: 32, rows: [
+      { count: 16, steps: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,1] },
+      { count: 32, steps: [1,1,0,0, 1,0,0,0, 1,1,0,0, 1,0,0,0, 1,1,0,0, 1,0,0,0, 1,1,0,0, 1,0,1,0] },
+      { count: 32, steps: [1,0,0,1, 0,0,1,0, 0,1,0,0, 1,0,0,0, 0,0,1,0, 0,1,0,0, 1,0,0,1, 0,0,1,0] },
+    ]},
+  };
+
+  const SONG = [
+    { pat: 'P1', reps: 2 },
+    { pat: 'P2', reps: 2, playing: true },
+    { pat: 'P1', reps: 2 },
+    { pat: 'P3', reps: 4 },
+  ];
+
+  function renderTrackRow(kitTrack, rowData, patLen, opts) {
+    const { playheadStep = -1, maxCells = patLen } = opts || {};
+    const row = document.createElement('div');
+    row.className = 'kb-track ' + kitTrack.cat;
+    const cycles = patLen / rowData.count;
+    const ctl = document.createElement('div');
+    ctl.className = 'kb-tctl';
+    ctl.innerHTML = '<span class="kb-tname">' + kitTrack.name + '</span>'
+      + '<span class="kb-mini-btn">M</span><span class="kb-mini-btn">S</span><span class="kb-mini-btn">♪</span>'
+      + (cycles > 1 ? '<span class="kb-cycle" title="Cycles ' + cycles + '× per pattern">↻' + cycles + '</span>' : '');
+    row.appendChild(ctl);
+
+    const steps = document.createElement('div');
+    steps.className = 'kb-steps';
+    for (let i = 0; i < Math.min(patLen, maxCells); i++) {
+      if (i > 0 && i % 16 === 0) {
+        const gap = document.createElement('span'); gap.className = 'kb-gap'; steps.appendChild(gap);
+      }
+      const c = document.createElement('span');
+      c.className = 'kb-step' + (rowData.steps[i % rowData.count] ? ' on' : '');
+      if (playheadStep >= 0 && i === playheadStep % patLen) c.className += ' ph';
+      steps.appendChild(c);
+    }
+    row.appendChild(steps);
+    return row;
+  }
+
+  // Desktop: SONG scope — grid shows the SOUNDING pattern (P2) with playhead
+  const dt = document.getElementById('desktop-tracks');
+  KIT.forEach((t, i) => dt.appendChild(renderTrackRow(t, PATTERNS.P2.rows[i], PATTERNS.P2.len, { playheadStep: 20 })));
+
+  // Song order list with content-bearing row thumbnails (32 steps -> 16 cols via OR of pairs)
+  const songEl = document.getElementById('song-desktop');
+  SONG.forEach((entry, idx) => {
+    const p = PATTERNS[entry.pat];
+    const el = document.createElement('div');
+    el.className = 'kb-row' + (entry.playing ? ' playing' : '');
+    const thumb = document.createElement('div');
+    thumb.className = 'thumb';
+    p.rows.forEach(rowData => {
+      const r = document.createElement('div');
+      r.className = 'r';
+      for (let col = 0; col < 16; col++) {
+        const a = rowData.steps[(col * 2) % rowData.count];
+        const b = rowData.steps[(col * 2 + 1) % rowData.count];
+        const c = document.createElement('span');
+        c.className = 'c' + ((a || b) ? ' on' : '');
+        r.appendChild(c);
+      }
+      thumb.appendChild(r);
+    });
+    el.innerHTML = '<span class="grip">⋮⋮</span><span class="num">' + (idx + 1) + '</span><span class="pat">' + entry.pat + '</span>';
+    el.appendChild(thumb);
+    const reps = document.createElement('span');
+    reps.className = 'reps';
+    reps.textContent = '×' + entry.reps + (entry.playing ? ' · 2/2' : '');
+    el.appendChild(reps);
+    songEl.appendChild(el);
+  });
+  const add = document.createElement('div');
+  add.className = 'kb-row add';
+  add.textContent = '+';
+  songEl.appendChild(add);
+
+  // Portrait: PATTERN scope — current P1, playhead, P3 cued (chrome above)
+  const PH = 20;
+  const pt = document.getElementById('portrait-tracks');
+  KIT.forEach((t, i) => {
+    const rowData = PATTERNS.P1.rows[i];
+    const card = document.createElement('div');
+    card.className = 'kb-p-track ' + t.cat;
+    const cycles = PATTERNS.P1.len / rowData.count;
+    const head = document.createElement('div');
+    head.className = 'kb-p-head';
+    head.innerHTML = '<span class="kb-tname">' + t.name + '</span>'
+      + (cycles > 1 ? '<span class="kb-cycle">↻' + cycles + '</span>' : '')
+      + '<span class="status"><span class="kb-mini-btn">M</span><span class="kb-mini-btn">S</span></span>';
+    card.appendChild(head);
+    const wrap = document.createElement('div');
+    wrap.className = 'kb-p-stepwrap';
+    const row = document.createElement('div');
+    row.className = 'kb-p-steps';
+    for (let i2 = 16; i2 < 24; i2++) {
+      const c = document.createElement('span');
+      c.className = 'kb-step' + (rowData.steps[i2 % rowData.count] ? ' on' : '') + (i2 === PH ? ' ph' : '');
+      row.appendChild(c);
+    }
+    wrap.appendChild(row);
+    const fade = document.createElement('div');
+    fade.className = 'kb-p-fade';
+    wrap.appendChild(fade);
+    card.appendChild(wrap);
+    pt.appendChild(card);
+  });
+
+  // Landscape: PATTERN scope — current P2, playhead, two tracks
+  const lt = document.getElementById('landscape-tracks');
+  [0, 2].forEach(i => lt.appendChild(renderTrackRow(KIT[i], PATTERNS.P2.rows[i], PATTERNS.P2.len, { playheadStep: 12 })));
+</script>
+
+</html>
