@@ -1,5 +1,9 @@
 # Sonnet-first Keyboardia skill evaluation — 2026-07-29
 
+> Historical rationale and status. For the current frozen identities, exact
+> commands, stop rules, and completion contract, use
+> `specs/EVAL-SONNET-V11-HANDOFF.md`.
+
 ## Decision
 
 Keep the evaluation follow-up in draft until it contains valid model evidence.
