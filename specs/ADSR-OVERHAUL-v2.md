@@ -52,8 +52,23 @@ promotion is authorized by an authoring rebase.
 Build, lint, focused editor (3 tests) and editor-disabled (1 test) contracts pass.
 The resource validator confirms unchanged audio assets: 582 files, 42,914,625
 encoded bytes. Current exact lane discovery contains 253 identities and 13
-centralized lane contracts. Full committed-tree tests and pushed-head CI remain
-gates; the dated counts below must not be reused as current results.
+centralized lane contracts. The committed product/test revision `c1cd891c`
+passes 5,072 unit tests (one existing environment-gated skip), 131 built Worker
+integration tests, 77 real local Worker browser tests, and 77 strict mock browser
+tests with zero skips and exact identity validation. The adapter's stale
+canonical-hash import was first caught by a full-suite red run, then corrected
+to use main's shared module. Sync validation covers all 38 mutation routes;
+unrun/dead-export checks also pass. Pushed-head CI remains a gate; dated counts
+below are historical.
+
+Same-toolchain builds against main measure initial JS gzip 227,479 → 227,841 B
+(+362 B / 0.16%), all JS gzip 313,121 → 326,516 B (+13,395 B / 4.28%), and lazy
+sequencer/editor gzip 29,787 → 38,467 B (+8,680 B / 29.14%). Notation adds a
+separate lazy 4,337 B gzip chunk. Worker dry-run reports 2,030,691 JS bytes and
+3,506,127 uploaded bytes, within the explicit bundle ratchet. Both builds retain
+the existing large-main-chunk warning. Unchanged audio content means no added
+sample payload; browser heap/decoded-memory deltas and CI p50/p95 are not
+measured, and are not claimed as improvements.
 
 ### Historical implementation and evidence (2026-09-20)
 

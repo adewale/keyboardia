@@ -1,5 +1,13 @@
 # Envelope Verification Cost Baseline
 
+**Historical baseline notice (2026-10-03):** the measurements and named
+shortcuts below describe the earlier PR #87 revision, not its latest-main
+rebase. Current ownership is documented in `specs/ADSR-OVERHAUL-v2.md`:
+main's unit/audio-render framework is preserved; PR #123 separately proposes
+non-overlapping heavy lanes. Removed `test:envelope:*` / `test:unit:quiet`
+shortcuts are not executable current commands. CI cost-distribution evidence
+must be collected again at the pushed head; old timings are not new receipts.
+
 **Captured:** 2026-08-03; refreshed 2026-09-20
 **Scope:** local development runner; use as an order-of-magnitude baseline,
 not a CI service-level guarantee.
@@ -104,12 +112,3 @@ approval.
   and one mobile contract by default; `KEYBOARDIA_VERIFY_T2=1` appends the exact
   complete Chromium and WebKit disposition contracts. Exact full-matrix counts
   stay validated even when their execution is deferred.
-# Historical baseline notice (2026-10-03)
-
-The measurements and named shortcuts below describe the earlier PR #87
-revision, not its latest-main rebase. Current ownership is documented in
-`specs/ADSR-OVERHAUL-v2.md`: main's unit/audio-render framework is preserved;
-PR #123 separately proposes non-overlapping heavy lanes. Removed
-`test:envelope:*` / `test:unit:quiet` shortcuts are not executable current
-commands. CI cost-distribution evidence must be collected again at the pushed
-head; these old timings must not be presented as new measurements.
