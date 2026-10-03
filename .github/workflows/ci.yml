@@ -128,6 +128,9 @@ jobs:
       - name: Check every test file is run by a lane
         run: npm run validate:unrun-tests
 
+      - name: Validate envelope documentation and executable examples
+        run: npm run validate:envelope-docs
+
   unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
@@ -322,6 +325,9 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Validate envelope resource budgets
+        run: npm run validate:envelope-resources
+
       - name: Type-check and dry-run the Worker bundle
         run: npm run check:worker
 
@@ -439,6 +445,26 @@ jobs:
           PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/blocking-results.json'
           PLAYWRIGHT_HTML_REPORT: 'playwright-report-blocking'
 
+      - name: Run envelope editor contract
+        run: |
+          npm run test:e2e:envelope
+          node scripts/assert-playwright-stats.mjs test-results/envelope-results.json lane envelope-editor
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/envelope-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/envelope-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-envelope'
+
+      - name: Run envelope editor-disabled contract
+        run: |
+          npm run test:e2e:envelope:correctness
+          node scripts/assert-playwright-stats.mjs test-results/envelope-headless-results.json lane envelope-headless
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/envelope-headless-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/envelope-headless-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-envelope-headless'
+
       - name: Summarize Playwright results
         if: always()
         shell: bash
@@ -472,6 +498,8 @@ jobs:
           name: playwright-report
           path: |
             app/playwright-report-blocking/
+            app/playwright-report-envelope/
+            app/playwright-report-envelope-headless/
             app/test-results/
           retention-days: 7
 
@@ -512,7 +540,7 @@ jobs:
             <(sort e2e/audio-matrix-files.txt) > "$RUNNER_TEMP/offline-functional-with-pcm-specs.txt"
           comm -23 \
             "$RUNNER_TEMP/offline-functional-with-pcm-specs.txt" \
-            <(printf '%s\n' 'e2e/capture-session.spec.ts') > "$RUNNER_TEMP/offline-functional-specs.txt"
+            <(printf '%s\n' 'e2e/capture-session.spec.ts' 'e2e/envelope-v2-headless.spec.ts' 'e2e/envelope-v2.spec.ts') > "$RUNNER_TEMP/offline-functional-specs.txt"
           functional_specs=()
           while IFS= read -r spec; do functional_specs+=("$spec"); done < "$RUNNER_TEMP/offline-functional-specs.txt"
           npx playwright test "${functional_specs[@]}" --project=chromium --workers=2 --retries=0

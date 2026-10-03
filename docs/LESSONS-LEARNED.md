@@ -6948,3 +6948,27 @@ path it names, and reject anything it cannot analyze.** Give the gate negative
 fixtures that break discovery, classification, wiring, and output independently.
 Diagnostics should compose production transformations rather than copy them.
 Treat an unsupported construct as a decision to make, never as an implicit pass.
+
+---
+
+## Lesson 83: Rebase the Ownership Model, Not Just the Conflict Markers
+
+**Date:** 3 October 2026
+
+PR #87's authoring branch carried an older verification selector, pre-push
+policy, native-render split, and test counts. Main had since merged PRs #117
+and #124, and pending PR #123 proposed a more complete heavy-lane split that
+also catches the differently named instrument-range render. Replaying all
+branch tooling would replace newer owners with stale parallel authorities.
+
+The reconsidered candidate keeps main's verification and audio runtime intact,
+adds only authoring-specific contracts, regenerates exact lane identities, and
+marks old counts and screenshots as historical. Runtime correctness, exact
+editing, beginner Shape UI, and evidence-gated renderer promotion are distinct
+outcomes; a green authoring build does not complete the latter two.
+
+The rule: resolve a rebase against current ownership and pending related work.
+Name the remaining work and its owner, remeasure the final tree, and never
+reuse an earlier commit's receipts as evidence for the new head. Tests that
+require clean evidence subjects must run after committing, not with their
+clean-tree gate disabled to accommodate an in-progress merge.

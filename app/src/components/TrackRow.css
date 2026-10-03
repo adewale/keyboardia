@@ -843,6 +843,7 @@
 /* Inline Parameter Lock Editor */
 .plock-inline {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 16px;
   padding: 8px 12px;
@@ -850,6 +851,23 @@
   border-radius: 6px;
   margin-top: 6px;
   width: 100%;
+}
+
+.plock-envelope-control input[type='number'] {
+  width: 74px;
+}
+
+.plock-envelope-control select {
+  max-width: 82px;
+}
+
+.plock-legacy {
+  display: block;
+  color: var(--color-text-muted);
+  font-size: 8px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .plock-step {

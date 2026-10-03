@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import {
+  activeEnvelopeStages,
   clampTrackEnvelopeV2,
   convertTrackEnvelopeUnitsWithReportV2,
   durationToSeconds,
   legacyTrackEnvelopeToV2,
   resolveEnvelopeV2,
+  trackEnvelopeV2ToLegacySeconds,
   validateTrackEnvelopeV2,
   type TrackEnvelopeV2,
 } from './envelope-contract-v2';
@@ -74,7 +76,14 @@ describe('envelope v2 semantic contract', () => {
     }
   });
 
-  it('converts v2.3 detached-unit ADSR to the canonical representation', () => {
+  it('declares only stages that can affect each model', () => {
+    expect(activeEnvelopeStages('ad')).toEqual(['attack', 'decay']);
+    expect(activeEnvelopeStages('ahd')).toEqual(['attack', 'hold', 'decay']);
+    expect(activeEnvelopeStages('ar')).toEqual(['attack', 'release']);
+    expect(activeEnvelopeStages('adsr')).toEqual(['attack', 'decay', 'release']);
+  });
+
+  it('normalizes v2.3 detached-unit ADSR without changing audible time', () => {
     const canonical = legacyTrackEnvelopeToV2({
       attack: 2,
       decay: 4,
@@ -87,6 +96,12 @@ describe('envelope v2 semantic contract', () => {
       decay: { value: 4, unit: 'steps' },
       sustain: 0.75,
       release: { value: 8, unit: 'steps' },
+    });
+    expect(trackEnvelopeV2ToLegacySeconds(canonical, 120)).toEqual({
+      attack: 0.25,
+      decay: 0.5,
+      sustain: 0.75,
+      release: 1,
     });
   });
 

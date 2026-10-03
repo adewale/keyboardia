@@ -85,9 +85,42 @@ Before shipping, also require:
 
 ## Current queue
 
-The committed catalog captures nine candidate sets, 25 listening anchors, 51 full-set audit files, and fourteen permissive-license discovery sources.
+The committed catalog captures six candidate sets, 21 listening anchors, 43
+full-set audit files, and 20 permissive-license discovery sources.
 
 - The local `acoustic-guitar`, `alto-sax`, and `french-horn` rebuilds are **decision-ready for human review**: they have zero hard defects, full-set browser decode evidence, and low/mid/high A/B anchors. Their 70 review flags remain visible and must be dispositioned rather than silently waived.
-- Meatbass, Growlybass, Green Gretsch, FreePats, and Greg Sullivan remain **reviewable smoke previews**, not promotion-ready, because they have only one or two distinct pitch anchors.
+- Growlybass, Green Gretsch, and FreePats Classical remain **reviewable smoke
+  previews**, not promotion-ready, because they have only one or two distinct
+  pitch anchors. Meatbass and Greg Sullivan are discovery sources without a
+  committed candidate set yet.
 
 This intentionally corrects the earlier page, which made representative files look more conclusive than they were.
+
+## ADSR-capability TODO
+
+These are research and vertical-slice opportunities, not pre-approved sample
+promotions. Every item must satisfy
+[`docs/SAMPLE-INTAKE-REQUIREMENTS.md`](../../docs/SAMPLE-INTAKE-REQUIREMENTS.md)
+and keep a new instrument/articulation ID when its musical identity differs.
+
+- [ ] Prove looped sampled ADSR against the 13 already-shipped Hammond regions;
+  this should add manifest/runtime evidence, not more Hammond audio.
+- [ ] Curate a narrow Black & Green clean-guitar release-trigger slice covering
+  representative low/mid/high pitches, velocities, held durations, and RRs.
+- [ ] Compare Greg Sullivan Pianet T as the keyboard release-trigger vertical
+  slice; keep CP80/Wurlitzer natural-decay material classified as AHD.
+- [ ] Build a separately named Meatbass upright-arco loop experiment from the
+  source's authored sustain loops; do not replace `finger-bass`.
+- [ ] Evaluate a separately named sustained Growlybass/Swagbass variant with
+  real release layers; do not replace the current short `slap-bass` identity.
+- [ ] Add FreePats VCSL tenor sax to source discovery and test its published
+  infinite-sustain loops through the real Web Audio loop path.
+- [ ] Split VSCO horn/string and Weresax articulation candidates before any
+  loop authoring; “sustain” filenames alone are not loop evidence.
+- [ ] Run a web-budget feasibility spike for a curated Salamander subset with
+  hammer/key release, resonance, and pedal noise; include CC-BY attribution,
+  encoded payload, decoded memory, polyphony, and iOS cache results.
+- [ ] Evaluate bowed VCSL vibraphone as a separate articulation while keeping
+  struck mallets on natural AHD playback.
+- [ ] Enrich drum and mallet sources through velocity, RR, choke, and mute
+  behavior without presenting those improvements as full ADSR.

@@ -37,6 +37,8 @@ interface TrackDrawerProps {
   isPitchExpanded: boolean;
   isVelocityExpanded: boolean;
   arePatternToolsVisible: boolean;
+  isEnvelopeVisible?: boolean;
+  envelopeLabel?: string;
   // Callbacks
   onTransposeChange: (transpose: number) => void;
   onStepCountChange: (stepCount: number) => void;
@@ -44,6 +46,7 @@ interface TrackDrawerProps {
   onExpandPitch?: () => void;
   onExpandVelocity?: () => void;
   onShowPatternTools?: () => void;
+  onShowEnvelope?: () => void;
   /** Change instrument (issue #63): absent when the session cannot be edited. */
   onChangeInstrument?: (opener: HTMLButtonElement) => void;
   /** Display name of the track's current instrument, for the button's label. */
@@ -71,12 +74,15 @@ export const TrackDrawer = memo(function TrackDrawer({
   isPitchExpanded,
   isVelocityExpanded,
   arePatternToolsVisible,
+  isEnvelopeVisible,
+  envelopeLabel = 'Envelope',
   onTransposeChange,
   onStepCountChange,
   onVolumeChange: _onVolumeChange, // Reserved for future volume slider
   onExpandPitch,
   onExpandVelocity,
   onShowPatternTools,
+  onShowEnvelope,
   onChangeInstrument,
   instrumentName,
   isInstrumentPickerVisible,
@@ -225,6 +231,19 @@ export const TrackDrawer = memo(function TrackDrawer({
             aria-expanded={arePatternToolsVisible}
           >
             Pattern
+          </button>
+        )}
+
+        {onShowEnvelope && (
+          <button
+            className={`drawer-icon-btn ${isEnvelopeVisible ? 'active' : ''}`}
+            onClick={onShowEnvelope}
+            title="Amplitude envelope"
+            aria-label="Amplitude envelope"
+            aria-expanded={isEnvelopeVisible}
+            aria-controls={isEnvelopeVisible ? `envelope-panel-${trackId}` : undefined}
+          >
+            {envelopeLabel}
           </button>
         )}
 

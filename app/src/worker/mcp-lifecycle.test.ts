@@ -176,6 +176,23 @@ describe('describeUnsupportedMidiFeatures', () => {
       .toMatchObject({ per_track_swing: ['kick'] });
   });
 
+  it('reports canonical envelopes, playback mode, and typed locks as lossy', () => {
+    const expressive = track('lead', 'synth:lead', [0], {
+      envelopeV2: {
+        model: 'adsr', attack: { value: 0.1, unit: 'seconds' },
+        decay: { value: 1, unit: 'steps' }, sustain: 0.7,
+        release: { value: 0.4, unit: 'seconds' },
+      },
+      samplePlaybackMode: 'gate',
+    });
+    expressive.parameterLocks[0] = {
+      releaseDuration: { value: 2, unit: 'steps' },
+    };
+
+    expect(features(session([expressive])))
+      .toMatchObject({ amplitude_envelope: ['lead'] });
+  });
+
   it('reports track mix levels, which never become velocity', () => {
     expect(features(session([track('kick', 'kick', [0], { volume: 0.4 })])))
       .toMatchObject({ track_volume: ['kick'] });

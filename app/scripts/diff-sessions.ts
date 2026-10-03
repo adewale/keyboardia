@@ -143,9 +143,20 @@ function formatTies(plocks: (ParameterLock | null)[], stepCount: number): string
   return tieIndices.length > 0 ? tieIndices.join(',') : null;
 }
 
+function formatEnvelopeLocks(
+  plocks: (ParameterLock | null)[],
+  stepCount: number,
+  field: 'attack' | 'decay' | 'release',
+): string | null {
+  const values = Array.from({ length: stepCount }, (_, index) => plocks[index]?.[field]);
+  return values.some(value => value !== undefined)
+    ? values.map(value => value === undefined ? '-' : value).join(',')
+    : null;
+}
+
 /**
  * Convert track to text notation format:
- * TrackName: x---x---x---x--- [sample:kick, transpose:0]
+ * TrackName: x---x---x---x--- [sample:kick] [transpose:0]
  */
 function trackToNotation(track: SessionTrack): string {
   const stepCount = track.stepCount ?? 16;
@@ -168,7 +179,20 @@ function trackToNotation(track: SessionTrack): string {
   const ties = formatTies(track.parameterLocks, stepCount);
   if (ties) meta.push(`ties:${ties}`);
 
-  return `${track.name}: ${pattern} [${meta.join(', ')}]`;
+  if (track.envelope) {
+    const { attack, decay, sustain, release } = track.envelope;
+    meta.push(`env:${attack},${decay},${sustain},${release}`);
+  }
+  if (track.envelopeTimeUnit === 'steps') meta.push('envUnit:steps');
+  if (track.gate !== undefined) meta.push(`gate:${track.gate}`);
+  for (const field of ['attack', 'decay', 'release'] as const) {
+    const values = formatEnvelopeLocks(track.parameterLocks, stepCount, field);
+    if (values) meta.push(`${field}s:${values}`);
+  }
+
+  // One bracket per key keeps comma-valued fields (env, p-lock vectors)
+  // unambiguous for a future parser.
+  return `${track.name}: ${pattern} ${meta.map(entry => `[${entry}]`).join(' ')}`;
 }
 
 /**
