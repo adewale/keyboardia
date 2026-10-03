@@ -146,6 +146,15 @@ export function getPresetTrackEnvelope(sampleId: string): TrackEnvelope | null {
   return envelope ? { ...envelope } : null;
 }
 
+/** Legacy four-number read view retained for old clients and compatibility UI. */
+export function getEffectiveTrackEnvelope(
+  track: { sampleId: string; envelope?: TrackEnvelope },
+): TrackEnvelope {
+  return clampTrackEnvelope(
+    track.envelope ?? getPresetTrackEnvelope(track.sampleId) ?? DEFAULT_TRACK_ENVELOPE,
+  );
+}
+
 function seconds(value: number): { value: number; unit: 'seconds' } {
   return { value, unit: 'seconds' };
 }

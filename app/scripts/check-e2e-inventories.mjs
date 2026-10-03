@@ -55,11 +55,13 @@ const mockSpecs = readManifest('mock-compatible-files.txt');
 const workerSpecs = readManifest('worker-required-files.txt');
 const audioSpecs = readManifest('audio-matrix-files.txt');
 const pcmSpecs = ['e2e/capture-session.spec.ts'];
+const envelopeSpecs = ['e2e/envelope-v2.spec.ts', 'e2e/envelope-v2-headless.spec.ts'];
 const allSpecs = listSpecs(e2eRoot).sort();
 const offlineFunctionalSpecs = allSpecs
   .filter(path => !mockSpecs.includes(path)
     && !audioSpecs.includes(path)
-    && !pcmSpecs.includes(path));
+    && !pcmSpecs.includes(path)
+    && !envelopeSpecs.includes(path));
 const unguardedContexts = listTypeScript(e2eRoot)
   .filter(path => relative(e2eRoot, path).replaceAll('\\', '/') !== 'browser-context.ts')
   .filter(path => /\bbrowser\s*\.\s*newContext\s*\(/.test(readFileSync(path, 'utf8')))
@@ -90,6 +92,18 @@ if (laneIdentityFile
 }
 
 const laneDefinitions = {
+  'envelope-editor': {
+    label: 'Envelope editor Chromium',
+    specs: ['e2e/envelope-v2.spec.ts'],
+    project: 'chromium',
+    env: { USE_MOCK_API: '1', VITE_FEATURE_MULTIPLAYER: 'false', VITE_FEATURE_ENVELOPE_V2: 'true', CI: 'true' },
+  },
+  'envelope-headless': {
+    label: 'Envelope editor-disabled Chromium',
+    specs: ['e2e/envelope-v2-headless.spec.ts'],
+    project: 'chromium',
+    env: { USE_MOCK_API: '1', VITE_FEATURE_MULTIPLAYER: 'false', VITE_FEATURE_ENVELOPE_V2: 'false', CI: 'true' },
+  },
   'mock-required': {
     label: 'Mock-compatible Chromium',
     specs: mockSpecs,

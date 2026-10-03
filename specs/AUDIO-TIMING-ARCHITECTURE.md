@@ -1,7 +1,12 @@
 # Audio timing architecture
 
-**Status:** implemented on `main` through PR #114. PR #98 was rebased onto
-these authorities on 2026-09-19; its integration notes are below.
+**Status (2026-10-03):** the timing refactoring stack through PR #114 is merged.
+PR #98's integration and PR #116's envelope-runtime foundation are also merged;
+PRs #117 and #124 strengthen verification and hashing without replacing the
+timing authorities. PR #87 is an authoring candidate rebased onto `b80311eb`,
+not unfinished work in this timing stack. The historical receipts below retain
+their original dates and subjects. Issue #115 (Safari background drops) remains
+open and is not evidence that the type/dispatch/readiness refactorings are absent.
 
 This specification turns the timing and lifecycle recommendations from the
 Tone.js reference analysis into Keyboardia invariants. The analysis is design
@@ -157,9 +162,11 @@ heap receipt.
 - **PR #100:** this stack is based on its merged head and preserves its retained
   receipts. The stack completes its absolute-timestamp direction without
   rewriting historical evidence.
-- **PR #87:** only the resolved-event architectural idea is incorporated.
-  Envelope-v2 product work remains separate and must rebase onto the final
-  timing stack rather than overwrite its engine/scheduler changes.
+- **PR #87:** the runtime foundation is merged separately in PR #116. The
+  2026-10-03 authoring rebase preserves main's scheduler, readiness, automation,
+  graph, canonical hash, and verification authorities. Exact UI, XY, MCP and
+  notation remain reviewable authoring work; beginner Shape UI and renderer
+  promotion are separate unfinished ADSR outcomes, not missing timing types.
 - **PR #98:** the mobile media-element adapter is incorporated behind the graph
   owner. The remaining Phase 44 work has now been rebased: duplicate clock
   liveness and renderer-local timestamp policy were removed, while velocity,
@@ -168,6 +175,9 @@ heap receipt.
 - **PR #102:** generated-instrument quality work remains separate. Because it
   changes `engine.ts`, `toneSynths.ts`, and audio evidence, it must rebase and
   rerun timing plus sound-quality gates if continued.
+- **PRs #122 and #123:** pending verification-audit fixes and heavy-suite lane
+  separation remain separately owned. PR #87 must not import its older
+  verification selector, pre-push policy, or competing native-render lane split.
 - **Issue #106:** authenticated source-sample remediation is unaffected. These
   refactorings neither repair nor weaken its sample-content requirements.
 - **Issue #92:** future pitched-pattern, scale, swing, and provenance work can

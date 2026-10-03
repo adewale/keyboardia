@@ -22,6 +22,8 @@ Production is never a build directory. Normal runs write to ignored `public/__sa
 - Playwright Chromium and WebKit (`npx playwright install chromium webkit`)
 - Immutable WAV, FLAC, AIFF, or AIFC masters outside `public/instruments`
 - A curated Sample Lab source record whose file-level rights permit raw redistribution
+- A completed [`docs/SAMPLE-INTAKE-REQUIREMENTS.md`](../../docs/SAMPLE-INTAKE-REQUIREMENTS.md)
+  packet for any new/replacement instrument or new loop/release capability
 
 ## Commands
 

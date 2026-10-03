@@ -4,7 +4,10 @@ import { join, resolve } from 'node:path';
 
 const bundleDirectory = resolve(process.argv[2] ?? '.wrangler/worker-check');
 const MAX_JAVASCRIPT_BYTES = 2_050_000;
-const MAX_UPLOAD_BYTES = 3_500_000;
+// The envelope foundation plus PR 87's MCP surface moved the measured upload
+// from 3,437,071 to 3,505,836 bytes. Retain only 19,164 bytes of reviewed
+// headroom rather than silently inheriting a broad platform limit.
+const MAX_UPLOAD_BYTES = 3_525_000;
 
 const files = readdirSync(bundleDirectory)
   .map((name) => join(bundleDirectory, name))
