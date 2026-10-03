@@ -267,6 +267,20 @@ describe('dry PCM instrument matrix', () => {
     const badMetric = copy();
     badMetric.results[0].metrics.dcOffsetDbfs = Number.NaN;
     expect(() => verify(badMetric)).toThrow(/must be finite/);
+    // Receipt metrics that cross a gate must carry that gate's finding. These
+    // structural checks run before any PCM recomputation, so they are cheap.
+    const gateMetrics: Array<Partial<typeof report.results[number]['metrics']>> = [
+      { truePeakDbtp: 0.5 },
+      { flatTopRuns: 4 },
+      { dcOffsetDbfs: -10 },
+      { peakDbfs: null, rmsDbfs: null },
+    ];
+    for (const metrics of gateMetrics) {
+      const missingFinding = copy();
+      Object.assign(missingFinding.results[0].metrics, metrics);
+      expect(() => verify(missingFinding), JSON.stringify(metrics))
+        .toThrow(/fatal findings do not match measured gate metrics/);
+    }
     expect(() => validateDryPcmMatrixReport(report, [profile], {
       pcmArtifactRoot: sharedPcmRoot,
       expectedBinding: {
