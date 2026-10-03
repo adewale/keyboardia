@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Session } from '../shared/state';
-import { canonicalizeForHash, hashState } from '../sync/canonicalHash';
+import { canonicalizeForHash, hashState } from '../shared/canonical-hash';
 import { createDurableObjectSessionAdapter } from './mcp';
 import { RATE_LIMIT_DEFAULTS } from './rate-limit';
 import { SessionAllocatorDurableObject } from './session-allocator';
