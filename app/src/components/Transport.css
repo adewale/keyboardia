@@ -328,6 +328,15 @@
   cursor: pointer;
 }
 
+.xy-envelope-inactive {
+  display: block;
+  max-width: 160px;
+  margin-top: 6px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
 /* Old MASTER Bypass Column styles removed - now in header */
 
 .fx-controls {

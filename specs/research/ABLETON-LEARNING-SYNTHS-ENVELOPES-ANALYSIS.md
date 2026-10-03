@@ -7,6 +7,11 @@ Companion to [ABLETON-LEARNING-MUSIC-ANALYSIS.md](./ABLETON-LEARNING-MUSIC-ANALY
 site's actual content data and JS bundle, so it also confirms several things the
 earlier document marked "unconfirmed").
 
+The recommendations here are folded into
+[ADSR-OVERHAUL.md](../ADSR-OVERHAUL.md), the inside-out audit of Keyboardia's
+own envelope handling — the two documents reached the same conclusions from
+opposite directions and validate each other.
+
 Pages analyzed:
 
 - `/en/playground`

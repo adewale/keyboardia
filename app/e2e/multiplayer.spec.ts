@@ -202,6 +202,45 @@ test.describe('Multiplayer real-time sync', () => {
     )).toBe(-0.2);
   });
 
+  test('sample envelope mode and release converge atomically and survive reload', async () => {
+    await Promise.all([
+      page1.goto(`${baseUrl}/s/${sessionId}`),
+      page2.goto(`${baseUrl}/s/${sessionId}`),
+    ]);
+    await Promise.all([waitForAppReady(page1), waitForAppReady(page2)]);
+
+    const openEditor = async (page: Page) => {
+      const row = page.locator('.track-row-wrapper').first();
+      await row.getByRole('button', { name: 'Pattern tools' }).click();
+      await row.getByRole('button', { name: 'Amplitude envelope' }).click();
+      return row.getByRole('region', { name: 'Amplitude envelope' });
+    };
+    const [editor1, editor2] = await Promise.all([openEditor(page1), openEditor(page2)]);
+
+    await expect(editor1.getByRole('radio', { name: 'Trigger' })).toBeChecked();
+    await expect(editor2.getByRole('radio', { name: 'Trigger' })).toBeChecked();
+    await editor1.getByRole('radio', { name: 'Gate' }).check();
+
+    await expect(editor1.getByRole('combobox', { name: 'Envelope model' })).toHaveValue('ar');
+    await expect(editor2.getByRole('radio', { name: 'Gate' })).toBeChecked({ timeout: 5000 });
+    await expect(editor2.getByRole('combobox', { name: 'Envelope model' })).toHaveValue('ar');
+
+    const release1 = editor1.getByRole('spinbutton', { name: 'Release exact value' });
+    const release2 = editor2.getByRole('spinbutton', { name: 'Release exact value' });
+    await release1.fill('350');
+    await release1.press('Enter');
+    await expect(release2).toHaveValue('350', { timeout: 5000 });
+
+    await page2.waitForTimeout(500);
+    await page2.reload();
+    await waitForAppReady(page2);
+    const reloadedEditor = await openEditor(page2);
+    await expect(reloadedEditor.getByRole('radio', { name: 'Gate' })).toBeChecked();
+    await expect(reloadedEditor.getByRole('combobox', { name: 'Envelope model' })).toHaveValue('ar');
+    await expect(reloadedEditor.getByRole('spinbutton', { name: 'Release exact value' }))
+      .toHaveValue('350');
+  });
+
   test('scale unlock syncs to the other client and survives reload', async () => {
     await Promise.all([
       page1.goto(`${baseUrl}/s/${sessionId}`),

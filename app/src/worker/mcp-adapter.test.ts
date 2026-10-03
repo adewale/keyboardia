@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Session } from '../shared/state';
+import { canonicalizeForHash, hashState } from '../sync/canonicalHash';
 import { createDurableObjectSessionAdapter } from './mcp';
 import { RATE_LIMIT_DEFAULTS } from './rate-limit';
 import { SessionAllocatorDurableObject } from './session-allocator';
@@ -288,6 +289,58 @@ describe('the Durable Object session adapter', () => {
     expect(published.immutable).toBe(true);
     expect(published.remixedFrom).toBe(source.id);
     expect((JSON.parse(kv.get(`session:${source.id}`)!) as Session).immutable).toBe(false);
+  });
+
+  it('publishes and remixes the complete authored envelope state without projection loss', async () => {
+    const { env, kv } = fakeEnv();
+    const adapter = createDurableObjectSessionAdapter(env, BASE_URL);
+    const source = await adapter.createSession({ idempotencyKey: KEY, tempo: 120 });
+    const stored = JSON.parse(kv.get(`session:${source.id}`)!) as Session;
+    stored.state.tracks = [{
+      id: 'expressive-pad',
+      name: 'Expressive Pad',
+      sampleId: 'advanced:warm-pad',
+      steps: Array.from({ length: 128 }, (_, index) => index === 0 || index === 4),
+      parameterLocks: [
+        {
+          attackDuration: { value: 1, unit: 'steps' },
+          releaseDuration: { value: 0.3, unit: 'seconds' },
+        },
+        ...Array(127).fill(null),
+      ],
+      volume: 0.8,
+      muted: false,
+      soloed: false,
+      transpose: 0,
+      stepCount: 16,
+      gate: 75,
+      envelopeV2: {
+        model: 'adsr',
+        attack: { value: 0.01, unit: 'seconds' },
+        decay: { value: 2, unit: 'steps' },
+        sustain: 0.7,
+        release: { value: 0.3, unit: 'seconds' },
+      },
+    }];
+    kv.set(`session:${source.id}`, JSON.stringify(stored));
+    const expectedState = structuredClone(stored.state);
+    const expectedHash = hashState(canonicalizeForHash(expectedState));
+
+    const published = await adapter.publishSession(source.id);
+    const remix = await adapter.remixSession(source.id);
+
+    for (const copy of [published, remix]) {
+      expect(copy.state).toEqual(expectedState);
+      expect(hashState(canonicalizeForHash(copy.state))).toBe(expectedHash);
+      expect(copy.state.tracks[0]).toMatchObject({
+        gate: 75,
+        envelopeV2: expectedState.tracks[0]!.envelopeV2,
+        parameterLocks: expectedState.tracks[0]!.parameterLocks,
+      });
+    }
+    expect(published.immutable).toBe(true);
+    expect(remix.immutable).toBe(false);
+    expect((JSON.parse(kv.get(`session:${source.id}`)!) as Session).state).toEqual(expectedState);
   });
 
   it('refuses to publish an already-published session', async () => {
