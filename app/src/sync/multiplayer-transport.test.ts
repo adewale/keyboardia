@@ -9,7 +9,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MultiplayerConnection, type WebSocketFactory } from './multiplayer';
 import type { GridAction } from '../types';
-import { TRACK_ENVELOPE_CAPABILITIES, TRACK_ENVELOPE_CAPABILITY } from '../shared/message-types';
+import {
+  STATE_HASH_V2_CAPABILITY,
+  SYNC_CAPABILITIES,
+  TRACK_ENVELOPE_CAPABILITY,
+  TRACK_ENVELOPE_V2_CAPABILITY,
+} from '../shared/message-types';
 
 class ControlledWebSocket {
   readonly url: string;
@@ -52,7 +57,7 @@ class ControlledWebSocket {
   }
 }
 
-function snapshot(tempo = 120, capabilities: string[] = [...TRACK_ENVELOPE_CAPABILITIES]) {
+function snapshot(tempo = 120, capabilities: string[] = [...SYNC_CAPABILITIES]) {
   return {
     type: 'snapshot',
     state: {
@@ -100,7 +105,7 @@ describe('MultiplayerConnection with transport faults', () => {
   it('queues an edit while connecting and replays it only after the authoritative snapshot', () => {
     connection.connect('00000000-0000-0000-0000-000000000001', dispatch);
     expect(new URL(sockets[0].url).searchParams.get('capabilities'))
-      .toBe(TRACK_ENVELOPE_CAPABILITIES.join(','));
+      .toBe(SYNC_CAPABILITIES.join(','));
     connection.send({ type: 'set_tempo', tempo: 132 });
 
     expect(sockets).toHaveLength(1);
@@ -233,7 +238,7 @@ describe('MultiplayerConnection with transport faults', () => {
     window.removeEventListener('show-toast', showToast);
   });
 
-  it('projects hashes to the pre-v2 shape when connected to an older server', () => {
+  it('projects hashes to the pre-envelope-v2 shape when connected to an older server', () => {
     const hashState = {
       tracks: [{
         id: 'track-1', name: 'Kick', sampleId: 'kick', steps: [true],
@@ -260,7 +265,7 @@ describe('MultiplayerConnection with transport faults', () => {
       () => hashState,
     );
     sockets[0].open();
-    sockets[0].receive(snapshot(120, [TRACK_ENVELOPE_CAPABILITY]));
+    sockets[0].receive(snapshot(120, [STATE_HASH_V2_CAPABILITY, TRACK_ENVELOPE_CAPABILITY]));
     vi.advanceTimersByTime(30_000);
 
     const hashMessage = sockets[0].sent
@@ -269,13 +274,56 @@ describe('MultiplayerConnection with transport faults', () => {
     expect(hashMessage?.hash).toBeDefined();
 
     // A v2-capable snapshot changes the projected shape and therefore the hash.
-    sockets[0].receive(snapshot(120, [...TRACK_ENVELOPE_CAPABILITIES]));
+    sockets[0].receive(snapshot(120, [...SYNC_CAPABILITIES]));
     vi.advanceTimersByTime(30_000);
     const hashes = sockets[0].sent
       .map(raw => JSON.parse(raw) as { type: string; hash?: string })
       .filter(message => message.type === 'state_hash')
       .map(message => message.hash);
     expect(hashes.at(-1)).not.toBe(hashes[0]);
+  });
+
+  it('negotiates effects and loop-region coverage in the state hash', () => {
+    const sharedState = {
+      tracks: [],
+      tempo: 120,
+      swing: 0,
+      effects: {
+        bypass: false,
+        reverb: { decay: 2, wet: 0.4 },
+        delay: { time: '8n', feedback: 0.3, wet: 0 },
+        chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
+        distortion: { amount: 0.4, wet: 0 },
+      },
+      scale: { root: 'D', scaleId: 'major', locked: true },
+      loopRegion: { start: 2, end: 6 },
+    };
+    connection.connect(
+      '00000000-0000-0000-0000-000000000001',
+      dispatch,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      () => sharedState,
+    );
+    sockets[0].open();
+
+    // The older server receives its legacy shape during a rolling deploy.
+    sockets[0].receive(snapshot(120, [TRACK_ENVELOPE_V2_CAPABILITY]));
+    vi.advanceTimersByTime(30_000);
+
+    // Once both peers advertise state-hash-v2, shared session fields enter the hash.
+    sockets[0].receive(snapshot(120, [...SYNC_CAPABILITIES]));
+    vi.advanceTimersByTime(30_000);
+    const hashes = sockets[0].sent
+      .map(raw => JSON.parse(raw) as { type: string; hash?: string })
+      .filter(message => message.type === 'state_hash')
+      .map(message => message.hash);
+
+    expect(hashes).toHaveLength(2);
+    expect(hashes[1]).not.toBe(hashes[0]);
   });
 
   it('reconnects the real client after a dropped socket and applies the new snapshot', async () => {

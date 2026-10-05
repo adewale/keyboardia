@@ -254,14 +254,14 @@ interface SessionTrack {
 - Bugs are silent and hard to diagnose
 
 **How we enforce:**
-- Compile-time parity tests in `types.test.ts`
-- Canonical normalization in `canonicalHash.ts`
-- Shared types in `src/shared/sync-types.ts` (planned)
+- Shared session types in `src/shared/state.ts`
+- An exhaustive `Record<keyof ...>` hash policy in `src/shared/canonical-hash.completeness.test.ts`
+- Canonical normalization in `src/shared/canonical-hash.ts`
 
 **Code locations:**
-- `src/types.ts` - Client types
-- `src/worker/types.ts` - Server types
-- `src/state/grid.test.ts` - Parity tests
+- `src/shared/state.ts` - Shared session boundary types
+- `src/state/state-adapters.ts` - UI/session conversion
+- `src/shared/canonical-hash.completeness.test.ts` - Exhaustive hash classification
 
 ---
 

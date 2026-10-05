@@ -134,7 +134,6 @@ node --import tsx scripts/validate-sample-quality.ts --strict
 node --import tsx scripts/promote-complete-sample-enrichment.ts --verify-only
 node --import tsx scripts/validate-manifests.ts
 node --import tsx scripts/validate-release-times.ts
-node --import tsx scripts/validate-playable-ranges.ts
 USE_MOCK_API=1 E2E_SERIAL=1 npx playwright test e2e/capture-session.spec.ts --project=chromium
 ```
 

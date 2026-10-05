@@ -39,9 +39,10 @@ quality framework in [adewale/testing-best-practices](https://github.com/adewale
 | Unit suite wall clock | 39.3s | 41.5s (+2.2s for the seed setup file) |
 
 The suite is in good shape structurally — it already has property-based tests,
-Stryker mutation testing, golden-master tests, and a mock-fidelity contract test
-(`src/audio/mock-fidelity.test.ts`) that explicitly cites the mock-reality-drift
-anti-pattern. The findings below are concentrated pockets, not systemic rot.
+Stryker mutation testing, golden-master tests, and a mock-fidelity sentinel
+(`src/audio/mock-fidelity.test.ts`) that discovers mocked audio methods and
+catches them disappearing from production classes. The findings below are
+concentrated pockets, not systemic rot.
 
 ## Method
 
@@ -175,6 +176,10 @@ report header is present (a pre-mask assertion) and runs the script once in
 `beforeAll` instead of three times — 1.8s → 1.1s. `dead-code-audit` distinguishes
 grep exit 1 (no matches: a real answer) from any other exit (the search broke:
 throw).
+
+**September 2026 disposition.** The graph-based dead-export validator later
+became the single owner for this invariant, so `dead-code-audit.test.ts` was
+removed instead of maintaining a second source-grep implementation.
 
 ---
 
@@ -444,7 +449,7 @@ fc.pre(!canonicalEqual(clientPreSnapshot, serverFinal));
 Collapse SC-005b and SC-005c into this parameterised property — as written they
 are the `point = 0` and `point = length` boundaries of the same thing, which
 `fc.nat()` already covers. Delete SC-001c (it tests `canonicalEqual`'s
-reflexivity; if that's wanted, it belongs in `canonicalHash.property.test.ts`
+reflexivity; if that's wanted, it belongs in `canonical-hash.property.test.ts`
 asserting reflexivity explicitly).
 
 *Verification:* re-apply the `applyMutation` no-op sabotage. SC-005 must fail.

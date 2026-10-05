@@ -375,6 +375,17 @@ describe('quality gate CLIs', () => {
     expect(result.stdout).toContain('EXPORTED BUT UNIMPORTED (1)');
   });
 
+  it('fails the dead-export command on unused test-support exports', () => {
+    const result = runChecker('check-dead-exports.ts', {
+      'src/main.ts': 'void 0;',
+      'src/audio/__fakes__/unused.ts': 'export class UnusedFake {}',
+    });
+
+    expect(result.status, result.stderr).toBe(1);
+    expect(result.stdout).toContain('EXPORTED BUT UNIMPORTED (1)');
+    expect(result.stdout).toContain('UnusedFake');
+  });
+
   it('passes the dead-export command on a clean fixture', () => {
     const result = runChecker('check-dead-exports.ts', {
       'src/main.ts': 'void 0;',

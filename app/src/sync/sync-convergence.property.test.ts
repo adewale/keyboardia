@@ -24,7 +24,7 @@ import {
   createDefaultTrack,
 } from '../shared/state-mutations';
 import { createInitialSessionState } from '../shared/session-defaults';
-import { canonicalizeForHash } from './canonicalHash';
+import { canonicalizeForHash } from '../shared/canonical-hash';
 import { MAX_TEMPO } from '../shared/constants';
 import {
   arbSessionState,

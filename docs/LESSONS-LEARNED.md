@@ -87,6 +87,10 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 76: An Audio Route Does Not Guarantee Background Scheduling](#lesson-76-an-audio-route-does-not-guarantee-background-scheduling)
 - [Lesson 77: Rebase Behavior, Not Competing Authorities](#lesson-77-rebase-behavior-not-competing-authorities)
 - [Lesson 78: A Repeat Null Cannot Bound Randomized State](#lesson-78-a-repeat-null-cannot-bound-randomized-state)
+- [Lesson 79: A Test Needs a Production Subject and an Observable Failure](#lesson-79-a-test-needs-a-production-subject-and-an-observable-failure)
+- [Lesson 80: Duplication Usually Means Ownership Is Unclear](#lesson-80-duplication-usually-means-ownership-is-unclear)
+- [Lesson 81: A Completeness Test Must Discover What It Claims to Cover](#lesson-81-a-completeness-test-must-discover-what-it-claims-to-cover)
+- [Lesson 82: A Quality Gate Must Fail Closed on What It Cannot See](#lesson-82-a-quality-gate-must-fail-closed-on-what-it-cannot-see)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -3602,7 +3606,7 @@ When a codebase has good async architecture in one subsystem (AudioWorklets for 
 | Component | Problem | Impact |
 |-----------|---------|--------|
 | `Waveform.tsx` | Nested loop over entire `AudioBuffer` on every render | UI jank on large samples |
-| `canonicalHash.ts` | `JSON.stringify` on full state every sync update | Main-thread stall during multiplayer |
+| `canonical-hash.ts` | `JSON.stringify` on full state every sync update | Main-thread stall during multiplayer |
 | `CursorOverlay.tsx` | `setInterval(500ms)` forcing React re-renders for fade animation | Unnecessary render cycles |
 | `useSyncExternalState.ts` | `JSON.stringify` comparison on every prop change | Scales poorly with state size |
 | `patternOps.ts:euclidean()` | `JSON.stringify` for group comparison inside while loop | O(n*m) serialization |
@@ -4410,19 +4414,20 @@ commit; this section documents the outcomes.
    Pre-existing `metrics/*` modules account for the remaining
    survivors and can be tightened in a separate pass.
 
-2. **Purpose-built fakes for the heavy collaborators** — done.
+2. **Purpose-built fakes for the heavy collaborators** — historical outcome.
    `src/audio/__fakes__/FakeToneSynthManager.ts` and
-   `FakeAdvancedSynthEngine.ts` each end with a compile-time guard
-   line `const _surfaceCheck: <RealClass>Surface = new Fake...();`
-   that fails to type-check if a method on the real class is renamed.
-   This replaces the runtime `mock-fidelity.test.ts` for those two
-   classes — the type system catches drift earlier and more
-   precisely. README in `__fakes__/README.md` documents the pattern
-   for adding more fakes. The runtime `mock-fidelity.test.ts` is
-   retained for the call sites the fakes do not reach: a compile-time
-   guard only protects tests that inject a fake, and dozens of suites
-   still use `vi.mock` on these modules. It comes out when that
-   migration lands, not before.
+   `FakeAdvancedSynthEngine.ts` once ended with compile-time surface guards,
+   and `__fakes__/README.md` documented that pattern. Those guards could catch
+   drift only for tests that injected the fakes; the live suites continued to
+   use `vi.mock`, with `mock-fidelity.test.ts` as a partial runtime sentinel.
+
+   **September 2026 audit:** that migration never happened. The two fakes had
+   no consumers outside their self-tests, so their compile-time checks guarded
+   only unused test infrastructure. They and their self-tests were removed;
+   `mock-fidelity.test.ts` now discovers methods from every audio module mock
+   and checks them against the real prototypes. A new mocked method enters the
+   contract automatically. This is still a name-level check; it does not prove
+   signature compatibility.
 
 3. **Characterization tests for legacy audio paths** — done.
    `src/audio/engine-legacy-paths.characterization.test.ts`
@@ -4454,10 +4459,10 @@ These are still open:
   stays a manual tool (`break: null`, no schedule); see
   `app/stryker.config.mjs`.
 - **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
-  call sites** in remaining test files to use the typed fakes or dependency
-  injection. The migration is the real fix; until it lands,
-  `mock-fidelity.test.ts` is the only thing catching drift in those mocks,
-  so it stays.
+  call sites** to production interfaces through real dependency injection.
+  Until that seam exists, `mock-fidelity.test.ts` discovers name drift across
+  the current audio doubles. Type each replacement at its injection point so
+  the compiler also checks signatures.
 - **Characterization tests for `playSample`** — the most complex
   legacy method (pitch-shift worklet branching, envelope ramping,
   source.start, onended cleanup). Skipped here because much of its
@@ -4537,6 +4542,12 @@ Why this matters beyond cleanup: tests now express *intent*, not
 reads as "a track that fires every quarter note"; the previous
 `{ ...track, steps: [true, false, false, false, true, ...] }`
 required counting positions to read.
+
+**September 2026 audit:** only two scheduler tests adopted the builders.
+`aTrackWithPLock`, the boundary catalogues, and the builder self-tests had no
+production-boundary consumers. The module now keeps only `aState` and
+`aTrackWithSteps`, with `aTrack` private. A reusable helper earns its place
+through independent callers, not through tests of the helper itself.
 
 ### 2. Documentation-code sync test (Tier 2 — registry exists)
 
@@ -6765,3 +6776,201 @@ dependency to the profile that actually runs its validator, and require every
 declared input to exist in a clean Git checkout. Local ignored artifacts are
 not valid CI dependencies even when they happen to exist on a developer's
 machine.
+
+---
+
+## Lesson 80: Duplication Usually Means Ownership Is Unclear
+
+**Date:** 29 September 2026
+
+**Context:** Test audit and repository-wide clone analysis after PR #117
+
+### What happened
+
+The suite was green, collected every test file, and passed its test-quality
+gates. It still contained two property-style range suites whose decisive logic
+lived inside the tests, two purpose-built audio fakes used only by their own
+self-tests, and a fixture catalogue whose unused exports were protected only
+by fixture self-tests. A scrollbar E2E test also returned successfully when a
+64-step grid did not overflow or when a track disappeared after scrolling.
+
+The broader clone scan found the same ownership problem in production and
+tooling. Client and Worker each carried a full copy of state canonicalization;
+a debug script carried a third copy of the hash function. A standalone
+playable-range validator repeated checks already owned by the comprehensive
+manifest validator. Five session write paths repeated the same KV persistence
+and quota-error translation.
+
+### What we misunderstood
+
+Names such as “property test”, “fake”, “fixture”, and “validator” made code look
+institutional even when it had no independent consumer. Tests of a test helper
+do not establish that product tests need the helper. Two implementations plus
+a parity test do not make a cross-runtime contract safer when both copies are
+expected to remain byte-identical; they create two places that can drift and a
+test that compares duplicated logic. An early return is a skip even when the
+test runner reports the case as passed.
+
+### The fix
+
+The range model suites, unused fakes, fixture self-tests, and unused fixture
+exports were removed. The real sampled-instrument simulation and mutation
+owner tests retain the useful capabilities. The scrollbar test now requires
+overflow and requires both track cells to remain measurable after scrolling.
+
+State canonicalization now has one owner in
+`src/shared/canonical-hash.ts`, imported by both browser and Worker code. The
+duplicate Worker implementation, parity-only tests, and debug-script hash
+implementation were removed. Playable-range validation remains in
+`validate-manifests.ts`, and
+session writes share one `persistSession` function. The dead-export gate now
+checks exports under `__fixtures__` and `__fakes__` without treating those
+support modules as entry points.
+
+### The rule
+
+**Give one module ownership of each invariant, and make every abstraction prove
+it has independent consumers.** When duplicate code must evolve identically,
+move it to a shared owner. Keep separate implementations only when independence
+is itself the protection, with an oracle that can distinguish their failures.
+For tests, require a production subject and a failure observable at that
+subject's boundary. For browser tests, every missing prerequisite named by the
+scenario must fail explicitly.
+
+---
+
+## Lesson 81: A Completeness Test Must Discover What It Claims to Cover
+
+**Date:** 30 September 2026
+
+**Context:** Effectiveness review of the canonical state-hash tests in PR #124
+
+### What happened
+
+The suite had a file named `canonical-hash-completeness.test.ts`, separate scale
+tests, hundreds of randomized hash assertions, client/server parity tests, and
+green integration coverage. The advertised completeness test still listed only
+part of `SessionTrack` by hand. It omitted six authored sound fields and the
+deprecated field that should be explicitly ignored. At session level it checked
+only tempo and swing.
+
+That gap hid real behavior. Effects and the loop region were persisted and
+multiplayer-synchronized but absent from the hash. Scale was in the canonical
+function, but the browser's live hash callback projected only tracks, tempo, and
+swing, so an authored scale never reached it. Client/server parity tests called
+the same shared helper directly and therefore could not observe the browser's
+incomplete projection.
+
+### What we misunderstood
+
+A test name and a long list of cases do not make coverage exhaustive. A copied
+inventory stays green when the source model gains a field. Testing a canonical
+helper also does not prove that live callers supply the complete state. Repeating
+determinism, output-shape, and boundary-value assertions hundreds of times added
+runtime while leaving the missing-field regression untouched.
+
+The same limitation initially appeared in the audio mock-fidelity sentinel and
+the older dead-code audit: neither could discover that its own inventory was
+incomplete. The dead-code check duplicated a stronger graph-based validator and
+could be removed.
+
+### The fix
+
+The hash input type now derives from `SessionState` and `SessionTrack`, and live
+browser and Worker callers pass their full state to the canonical owner instead
+of maintaining local projections. Effects, scale, and loop region are normalized
+and hashed. A negotiated `state-hash-v2` capability preserves rolling deploys.
+The legacy projection is directional: a new browser keeps authored scale for an
+old Worker, while a new Worker substitutes the legacy missing-scale value for an
+old browser that never supplied scale to its live hash.
+
+The completeness suite now uses
+`satisfies Record<keyof SessionTrack, ...>` and
+`satisfies Record<keyof SessionState, ...>`. Adding a model field fails type
+checking until the test classifies it as hash-significant or deliberately
+ignored, then mutates real state and observes the production hash. The API
+integration owner round-trips the complete hashed state through create and
+update, including every optional authored track field. Four focused randomized
+properties replace 19 overlapping property tests. The source-grep dead-code
+test was removed in favor of the graph validator, and duplicated mutation and
+broadcast inventories were removed in favor of the typed
+`MESSAGE_TO_STATE_BROADCAST` owner. The sync checklist imports that production
+map and checks all 38 mutations instead of maintaining a 20-item copy. Standard
+actions must reach `actionToMessage`; the four dedicated routes must name their
+sender, emit the mapped payload, and remain connected to their UI hook. Exact
+payload tests replace the former tests that only asserted an exception was in
+its own exception set. The `ClientMessageBase` union is exhaustively partitioned
+between the mutation map and the read-only list, so a new message cannot remain
+silently unclassified. The mock-fidelity sentinel parses the audio test doubles
+and checks every discovered method name against the real prototype. Typed
+dependency injection remains the next step because it can also enforce
+signatures.
+
+### The rule
+
+**Make completeness depend on the source of truth, and exercise the live path
+that feeds the behavior.** Use exhaustive type mappings or runtime discovery so
+new model fields force a decision. Keep one boundary test for delivery and a
+small set of generative invariants for broad inputs. A separately maintained
+inventory is documentation, not a completeness oracle.
+
+---
+
+## Lesson 82: A Quality Gate Must Fail Closed on What It Cannot See
+
+**Date:** 30 September 2026
+
+**Context:** Final multi-agent review of the test-audit changes in PR #124
+
+### What happened
+
+The first revision replaced a copied synchronization inventory with the
+production broadcast map, but the validator still checked only 20 of 38
+mutations. Its dedicated-route checks proved that four messages belonged to an
+exception set; they did not prove that each sender emitted the right payload,
+was called by the intended hook callback, or remained in the hook's returned
+API. All of those checks could pass while a user action stopped synchronizing.
+
+The audio mock-fidelity sentinel had the same shape. It inspected selected mock
+forms and locations, but an opaque factory, a spread singleton, a function-valued
+class property, or a mock in another test root could fall outside its model and
+silently escape comparison. The hash diagnostic also carried an obsolete local
+simulation instead of exercising the negotiated production projectors.
+
+### What we misunderstood
+
+Deriving some data from a production owner does not make the rest of a checker's
+scope exhaustive. Static analysis is trustworthy only when unsupported syntax
+is an error; otherwise every construct the analyzer does not understand becomes
+an undocumented exemption. A diagnostic script that reimplements the behavior
+it explains can drift while the real path remains correct or broken in a
+different way.
+
+The gate itself therefore needs negative evidence. A green run proves little
+unless representative broken inputs make it fail at every boundary it claims
+to guard: discovery, classification, payload construction, call-site wiring,
+and public exposure.
+
+### The fix
+
+The synchronization validator now derives all 38 mutation routes from the
+production map. The client-message union is exhaustively partitioned between
+mutating and read-only messages, and dedicated senders are checked from their
+exact payload through the named `useMultiplayerSync` callback to the returned
+consumer API. Validator tests remove or move each link and require a failure.
+
+The mock-fidelity analyzer now scans all relevant unit and component test roots,
+resolves relative module identities, discovers prototype methods and
+function-valued class properties, and reports unsupported factories, computed
+members, spreads, and non-enumerable replacements as errors. Fixture tests prove
+both supported discovery and fail-closed rejection. The hash diagnostic imports
+the production canonicalizer and directional projectors and enumerates every
+accepted state-hash and envelope capability combination.
+
+### The rule
+
+**A quality gate must derive its universe from the owner, prove the complete
+path it names, and reject anything it cannot analyze.** Give the gate negative
+fixtures that break discovery, classification, wiring, and output independently.
+Diagnostics should compose production transformations rather than copy them.
+Treat an unsupported construct as a decision to make, never as an implicit pass.

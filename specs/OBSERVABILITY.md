@@ -371,7 +371,8 @@ npm run dev:multiplayer abc123-def456-...
 
 | File | Purpose |
 |------|---------|
-| `app/src/worker/logging.ts` | WebSocket logging types and functions |
+| `app/src/worker/observability.ts` | Worker wide-event schemas, context, metrics, and emission |
+| `app/src/shared/canonical-hash.ts` | Shared client/Worker state normalization and hashing |
 | `app/src/worker/index.ts` | Debug endpoint handlers |
 | `app/src/debug/DebugContext.tsx` | Client-side debug state |
 | `app/src/debug/DebugOverlay.tsx` | Debug overlay UI |
@@ -445,9 +446,12 @@ Diagnoses client/server state hash mismatches.
 ```bash
 npx tsx scripts/debug-state-hash.ts <session-id>
 npx tsx scripts/debug-state-hash.ts <session-id> --local
+npx tsx scripts/debug-state-hash.ts <session-id> --reported-hash=<hash>
 ```
 
-**Features:** Fetches session, computes hash, compares field-by-field for differences.
+**Features:** Fetches persisted state, prints raw and canonical field inventories,
+computes every browser and Worker capability projection, and identifies which
+projection matches a reported hash.
 
 #### compare-sessions.ts
 
@@ -534,8 +538,8 @@ npm run analyze:bugs -- --pattern unstable-callback-in-effect
 ### Unit Tests
 
 ```bash
-# WebSocket logging tests (17 tests)
-npm test -- --run src/worker/logging.test.ts
+# Shared canonical state hashing tests
+npm test -- --run src/shared/canonical-hash.test.ts
 
 # Real collaboration contract
 npm run test:integration -- collaboration-contract.test.ts

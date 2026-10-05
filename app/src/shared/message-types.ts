@@ -26,6 +26,15 @@ export const TRACK_ENVELOPE_CAPABILITIES = [
   TRACK_ENVELOPE_V2_CAPABILITY,
 ] as const;
 
+/** Negotiated hash shape that covers effects and the loop region. */
+export const STATE_HASH_V2_CAPABILITY = 'state-hash-v2';
+
+/** Capabilities advertised by the current browser and Worker. */
+export const SYNC_CAPABILITIES = [
+  ...TRACK_ENVELOPE_CAPABILITIES,
+  STATE_HASH_V2_CAPABILITY,
+] as const;
+
 // ============================================================================
 // Sequence Number Support (Phase 13B)
 // ============================================================================

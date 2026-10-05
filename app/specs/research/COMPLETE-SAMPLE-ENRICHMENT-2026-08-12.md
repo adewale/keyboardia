@@ -70,7 +70,6 @@ Run:
 ```sh
 npm run samples:enrichment:verify
 node --import tsx scripts/validate-manifests.ts
-node --import tsx scripts/validate-playable-ranges.ts
 node --import tsx scripts/validate-sample-quality.ts
 node --import tsx scripts/validate-velocity-layers.ts
 npm test

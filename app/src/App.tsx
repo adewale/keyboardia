@@ -165,16 +165,16 @@ export function SessionControls({ children, focusHeadingOnMount = false }: Sessi
     setToasts(prev => [...prev, toast]);
   }, []);
 
-  // Phase 12 Polish: State getter for hash verification
-  // Returns state in the same shape as server's SessionState (tracks, tempo, swing, version)
-  // Note: version is maintained by server, client doesn't track it, so we omit it
-  // The hash function will produce consistent results as long as tracks/tempo/swing match
+  // Phase 12 Polish: State getter for hash verification.
+  // Keep the whole grid state in the ref and let canonicalizeForHash select the
+  // shared fields. A hand-written projection can silently omit a newly synced
+  // field, which would make divergence in that field invisible to hash checks.
   //
   // IMPORTANT: Uses ref pattern to maintain stable callback reference.
   // Without this, the callback changes on every state update, causing the useMultiplayer
   // useEffect to re-run and disconnect/reconnect the WebSocket (connection storm bug).
-  const stateForHashRef = useRef({ tracks: state.tracks, tempo: state.tempo, swing: state.swing });
-  stateForHashRef.current = { tracks: state.tracks, tempo: state.tempo, swing: state.swing };
+  const stateForHashRef = useRef(state);
+  stateForHashRef.current = state;
 
   const getStateForHash = useCallback(() => stateForHashRef.current, []);
 

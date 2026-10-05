@@ -406,7 +406,7 @@ function validateManifest(
     const { min, max } = manifest.playableRange;
     if (manifest.baseNote < min || manifest.baseNote > max) {
       errors.push({
-        type: 'warning',
+        type: 'critical',
         code: 'BASENOTE_OUTSIDE_RANGE',
         message: `baseNote ${manifest.baseNote} (${midiToNoteName(manifest.baseNote)}) is outside playableRange [${min}, ${max}]`,
       });

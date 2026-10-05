@@ -82,7 +82,7 @@ export const arbScaleId = fc.constantFrom(...Object.keys(SCALES)) as fc.Arbitrar
  */
 export const arbPitch = fc.integer({ min: -60, max: 72 });
 
-/** Pitch in the chromatic grid's +/-24 playable contract (playable-range-pbt.test.ts). */
+/** Pitch in the chromatic grid's +/-24 contract. */
 export const arbPlayablePitch = fc.integer({ min: -24, max: 24 });
 
 /**
@@ -258,15 +258,6 @@ export const arbLoopRegion = fc
 /** Optional loop region */
 export const arbOptionalLoopRegion = fc.option(arbLoopRegion, { nil: null });
 
-/** Session state for hashing */
-export const arbSessionStateForHash = fc.record({
-  tracks: fc.array(arbTrackForHash, { minLength: 0, maxLength: 16 }),
-  tempo: arbTempo,
-  swing: arbSwing,
-  loopRegion: arbOptionalLoopRegion,
-  version: fc.option(fc.nat(), { nil: undefined }),
-});
-
 // =============================================================================
 // Mutation Tracker Arbitraries
 // =============================================================================
@@ -435,6 +426,17 @@ export const arbScaleState: fc.Arbitrary<ScaleState> = fc.record({
   root: arbNoteName,
   scaleId: arbScaleId,
   locked: fc.boolean(),
+});
+
+/** Complete session state accepted by canonical hashing. */
+export const arbSessionStateForHash = fc.record({
+  tracks: fc.array(arbTrackForHash, { minLength: 0, maxLength: 16 }),
+  tempo: arbTempo,
+  swing: arbSwing,
+  effects: fc.option(arbEffectsState, { nil: undefined }),
+  scale: fc.option(arbScaleState, { nil: undefined }),
+  loopRegion: arbOptionalLoopRegion,
+  version: fc.option(fc.nat(), { nil: undefined }),
 });
 
 /** FM params for testing (uses arbFloat32 helper) */
