@@ -1,0 +1,706 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboardia Piano Roll</title>
+<style>
+  /* Layout: the Keyboardia sequencer (transport, loop ruler, four track rows on the 39px step pitch) with
+     the row diet applied to the control column and the proposed editor dock pinned under the grid.
+     Single dark theme by choice: these are the app's own tokens. */
+  :root {
+    --bg: #121212; --surface: #1e1e1e; --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
+    --border: #3a3a3a; --border-light: #4a4a4a; --border-hover: #555555;
+    --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
+    --accent: #e85a30; --accent-hi: #f07048; --accent-text: #ff8a65;
+    --success: #1db954; --info: #3498db; --info-text: #5eb3ea; --info-region: rgba(74,158,206,.3); --warning: #ffc107;
+    --purple: #8e44ad; --purple-text: #c58ad6; --purple-muted: rgba(155,89,182,.15);
+    --cat-keys: #e85a30; --cat-bass: #9b59b6; --cat-drums: #4ecdc4;
+    --playhead: #ffffff;
+    --key-white: #c9c5bc; --key-white-hi: #ddd9d0; --key-black: #131211; --key-black-hi: #2a2826; --key-label: #3f3c37;
+    --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+    --step-w: 36px; --step-pitch: 39px;
+    /* Row diet (AFFORDANCES C-4): grip · name · M · S · badge · ♪ · lane = 300px + 6 gaps + 16px padding */
+    --track-left-width: 340px;
+    --row-h: 18px; --dock-grid-h: 252px;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .page-wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 56px; display: flex; flex-direction: column; gap: 18px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+  h1 { font-size: 22px; font-weight: 600; margin: 2px 0 4px; letter-spacing: -.01em; text-wrap: balance; }
+  h2 { font-size: 15px; font-weight: 600; margin: 10px 0 8px; }
+  .lede { color: var(--muted); max-width: 72ch; margin: 0; }
+  button { font: inherit; }
+  button:focus-visible { outline: 2px solid var(--accent-text); outline-offset: 2px; }
+
+  /* ===== App shell ===== */
+  .sequencer { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .transport { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 4px 8px; }
+  .play-button { width: 56px; height: 56px; border: none; border-radius: 50%; background: var(--success); color: #000; font-size: 22px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .play-button::before { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.15); border-radius: 50%; transform: scaleX(0); transform-origin: left center; transition: transform 250ms ease-out; }
+  .play-button:hover::before { transform: scaleX(1); }
+  .play-button.playing { background: var(--accent); }
+  .bpm { display: flex; flex-direction: column; line-height: 1.1; }
+  .bpm b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bpm span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid #6c6c76; color: var(--text); font-size: 13px; cursor: pointer; }
+  .pill .caret { color: var(--muted); font-size: 10px; }
+  .pill[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.15); }
+  .transport .spacer { flex: 1; }
+  .session-name { color: var(--muted); font-size: 13px; }
+  .hint { font-size: 12px; color: var(--dim); }
+
+  /* ===== The scroller: horizontal as today, plus vertical so the dock can pin to its bottom ===== */
+  .tracks { overflow: auto; max-height: 78vh; min-height: 440px; position: relative; scrollbar-color: var(--surface-4) var(--surface-2); }
+  .tracks::-webkit-scrollbar { height: 8px; width: 8px; }
+  .tracks::-webkit-scrollbar-track { background: var(--surface-2); border-radius: 4px; }
+  .tracks::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
+  .tracks-inner { display: inline-flex; flex-direction: column; gap: 2px; min-width: 100%; min-height: 100%; }
+  .tracks-inner .rows { display: flex; flex-direction: column; gap: 2px; }
+  .tracks-inner .fill { flex: 1; }
+
+  /* ===== Loop ruler (ported LoopRuler behaviour, grid aligned) ===== */
+  .ruler-row { display: flex; gap: 8px; margin-bottom: 6px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-bottom: 2px; }
+  .ruler-spacer { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--bg); display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; color: var(--dim); }
+  .loop-ruler { position: relative; height: 24px; width: calc(32 * var(--step-pitch) - 3px); background: var(--surface-2); border-radius: 4px; cursor: crosshair; user-select: none; touch-action: none; }
+  .loop-ruler:hover, .loop-ruler.has-loop { background: var(--surface-3); }
+  .loop-ruler.dragging { cursor: ew-resize; }
+  .ruler-marker { position: absolute; top: 0; height: 100%; pointer-events: none; }
+  .ruler-marker.beat { width: 1px; background: var(--border-light); opacity: .6; }
+  .ruler-marker.pg { width: 2px; background: var(--border-light); }
+  .marker-label { position: absolute; top: 3px; left: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ruler-marker.pg .marker-label { color: var(--muted); font-weight: 600; }
+  .loop-region { position: absolute; top: 2px; bottom: 2px; background: var(--info-region); border-radius: 2px; pointer-events: none; }
+  .loop-region.preview { background: rgba(74,158,206,.2); border: 1px dashed var(--info); }
+  .loop-bracket { position: absolute; top: 0; bottom: 0; width: 4px; background: var(--info); }
+  .loop-bracket.start { left: 0; border-radius: 2px 0 0 2px; }
+  .loop-bracket.end { right: 0; border-radius: 0 2px 2px 0; }
+  .shift-click-marker { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warning); animation: marker-pulse 1s ease-in-out infinite; }
+  @keyframes marker-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+  .ruler-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--playhead); pointer-events: none; z-index: 2; display: none; }
+  .loop-ruler.playing .ruler-playhead { display: block; }
+
+  /* ===== Track rows, on the row diet ===== */
+  .track-row-wrapper { display: flex; flex-direction: column; border-radius: 4px; }
+  .track-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-radius: 4px; min-width: max-content; position: relative; }
+  .track-left {
+    display: grid;
+    grid-template-columns: [drag] 20px [name] 100px [mute] 36px [solo] 36px [badge] 36px [pitch-view] 36px [velocity] 36px;
+    column-gap: 4px; align-items: center; padding: 0 8px; position: sticky; left: 0; z-index: 3; background: var(--surface);
+    box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); height: 44px; width: var(--track-left-width); min-width: var(--track-left-width);
+  }
+  .track-row-wrapper.docked .track-row { box-shadow: inset 0 0 0 2px var(--accent); }
+  .track-row-wrapper.docked .track-left { box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent), 4px 0 8px -4px rgba(0,0,0,.2); }
+  .drag-handle { grid-column: drag; color: var(--dim); font-size: 14px; letter-spacing: -2px; cursor: grab; text-align: center; }
+  .track-name { grid-column: name; height: 36px; display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; padding: 0 4px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 4px; }
+  .track-name:hover { background: rgba(255,255,255,.05); }
+  .track-name .tick { width: 3px; height: 14px; border-radius: 2px; background: var(--cat); flex: 0 0 auto; }
+  .track-name .tr { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--info-text); }
+  .tl-btn { height: 36px; border: 1px solid var(--border-hover); border-radius: 4px; background: transparent; color: var(--muted); font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .tl-btn:hover { border-color: var(--muted); }
+  .mute-button { grid-column: mute; } .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: #fff; }
+  .solo-button { grid-column: solo; }
+  .badge { grid-column: badge; height: 24px; border-radius: 4px; background: var(--purple-muted); color: var(--purple-text); font-family: var(--font-mono); font-size: 10px; display: inline-flex; align-items: center; justify-content: center; }
+  .badge.drum { background: rgba(255,255,255,.06); color: var(--muted); }
+  .expand-toggle { grid-column: pitch-view; width: 36px; height: 36px; border: 1px solid var(--surface-4); border-radius: 4px; background: var(--surface-2); color: var(--muted); font-size: 14px; cursor: pointer; transition: background 150ms ease; }
+  .expand-toggle.active { background: var(--accent); border-color: var(--accent-hi); color: var(--bg); }
+  .velocity-toggle { grid-column: velocity; width: 36px; height: 36px; border: 1px solid var(--surface-4); border-radius: 4px; background: var(--surface-2); color: var(--muted); font-size: 12px; cursor: pointer; }
+  .steps { flex: 1; min-width: 0; }
+  .step-grid { display: flex; gap: 3px; }
+  .step-cell { width: var(--step-w); height: 36px; border: 2px solid var(--border); border-radius: 4px; background: var(--surface-2); cursor: pointer; position: relative; flex: 0 0 auto; padding: 0; }
+  .step-cell:hover { background: var(--surface-3); border-color: var(--border-light); }
+  .step-cell.beat-start { border-left-color: var(--border-light); border-left-width: 3px; }
+  .step-cell.active { background: var(--accent); border-color: var(--accent-hi); }
+  .step-cell.active:hover { background: var(--accent-hi); }
+  .step-cell.playing { border-color: var(--playhead); border-width: 3px; }
+  .step-cell.selected { border-color: var(--info); box-shadow: 0 0 0 2px rgba(74,158,206,.4); }
+  .step-cell .contour { position: absolute; left: 5px; right: 5px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.8); pointer-events: none; }
+  .step-cell.tie .contour { left: -5px; border-radius: 0 2px 2px 0; }
+  .step-cell.pulse { animation: cell-pulse 150ms ease-out; }
+  @keyframes cell-pulse { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .track-row.muted { opacity: .5; }
+
+  /* ===== The dock ===== */
+  .dock { position: sticky; bottom: 0; z-index: 6; display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease-out; margin-top: 6px; }
+  .dock.open { grid-template-rows: 1fr; }
+  .dock.tall { --dock-grid-h: 432px; }
+  .dock-inner { min-height: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--border-light); border-bottom: 0; border-radius: 8px 8px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,.45); display: flex; flex-direction: column; min-width: max-content; }
+  .dock-head { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--border); position: sticky; left: 0; background: var(--surface); z-index: 2; }
+  .chips { display: inline-flex; gap: 2px; background: var(--surface-2); border-radius: 6px; padding: 2px; }
+  .chip { padding: 5px 11px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chip:hover { color: var(--text); background: rgba(255,255,255,.05); }
+  .chip.active { background: var(--accent); color: var(--bg); }
+  .chip .tick { width: 3px; height: 12px; border-radius: 2px; background: var(--cat); }
+  .chip.active .tick { background: var(--bg); }
+  .dock-title { font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+  .dock-title b { color: var(--text); font-weight: 600; }
+  .dock-head .right { margin-left: auto; display: inline-flex; gap: 6px; }
+  .dock-head .ib { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+  .dock-head .ib:hover { color: var(--text); border-color: var(--border-light); }
+  .dock-body { display: flex; gap: 8px; }
+  .dock-left { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--surface); display: grid; grid-template-columns: 1fr 18px 96px; height: var(--dock-grid-h); overflow: hidden; border-right: 1px solid var(--border); transition: height 200ms ease-out; }
+  .pane { padding: 10px 10px; overflow: auto; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; border-right: 1px solid var(--border); }
+  .pane b { color: var(--text); font-weight: 600; font-size: 13px; }
+  .pane .rowc { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+  .pane .k { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; margin-right: 2px; flex-basis: 100%; }
+  .cbtn { height: 26px; padding: 0 9px; border: 1px solid var(--border-hover); border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cbtn.sym { padding: 0 8px; font-weight: 600; }
+  .cbtn[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.12); }
+  .cbtn.ghost-toggle i { width: 10px; height: 10px; border-radius: 2px; border: 1px dashed var(--gc); display: inline-block; }
+  .cbtn.ghost-toggle[aria-pressed="true"] i { background: var(--gc); border-style: solid; }
+  .cbtn.quiet { color: var(--muted); border-color: var(--border); background: transparent; }
+  .pane input[type=range] { width: 110px; accent-color: var(--accent); }
+  .pane .empty { color: var(--dim); font-style: italic; }
+  .range-rail { position: relative; will-change: transform; }
+  .range-rail .bracket { position: absolute; left: 7px; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--info-text), rgba(94,179,234,.35)); }
+  .range-rail .bracket::before, .range-rail .bracket::after { content: ''; position: absolute; left: -2px; width: 7px; height: 2px; background: var(--info-text); border-radius: 1px; }
+  .range-rail .bracket::before { top: 0; } .range-rail .bracket::after { bottom: 0; }
+  .keycol { position: relative; background: #0f0e0d; will-change: transform; }
+  .key { position: absolute; left: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--key-label); cursor: pointer; user-select: none; transition: background 70ms ease, transform 70ms ease; }
+  .key.white { width: 100%; z-index: 1; background: linear-gradient(90deg, #bab6ad 0%, var(--key-white) 45%, #d3cfc6 100%); border-bottom: 1px solid #0f0e0d; border-radius: 0 2px 2px 0; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset -3px 0 3px rgba(0,0,0,.07); }
+  .key.black { width: 58%; z-index: 2; color: rgba(255,255,255,.7); background: linear-gradient(90deg, #2a2826 0%, var(--key-black) 60%, #060606 100%); border-radius: 0 3px 3px 0; box-shadow: 2px 2px 5px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(0,0,0,.8); }
+  .key.white.c .lbl { color: #25231f; font-weight: 600; }
+  .key .lbl { opacity: 0; }
+  .key.c .lbl, .key.hover .lbl, .key.pressed .lbl { opacity: 1; }
+  .key.white:hover, .key.white.hover { background: var(--key-white-hi); }
+  .key.black:hover, .key.black.hover { background: var(--key-black-hi); }
+  .key.pressed { background: var(--accent) !important; transform: translateX(2px); }
+  .key.pressed .lbl { color: #fff !important; }
+  .key.white.root .lbl { color: #1f6fa8; } .key.white.fifth .lbl { color: #7a3a9a; } .key.black.fifth .lbl { color: var(--purple-text); }
+  .key.out { filter: brightness(.45); } .key.scale-out { filter: brightness(.55); } .key.out.scale-out { filter: brightness(.35); }
+
+  .dock-scroll { height: var(--dock-grid-h); overflow-y: auto; overflow-x: hidden; scrollbar-color: var(--border-light) var(--surface); scroll-behavior: smooth; transition: height 200ms ease-out; }
+  .dock-scroll::-webkit-scrollbar { width: 8px; }
+  .dock-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .grid { position: relative; overflow: hidden; }
+  .row { position: absolute; left: 0; right: 0; }
+  .row.black { background: rgba(0,0,0,.22); }
+  .row.c { border-top: 1px solid rgba(255,255,255,.16); }
+  .row.root { background: rgba(94,179,234,.07); } .row.fifth { background: rgba(197,138,214,.05); }
+  .row.out { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.045) 0 1px, transparent 1px 7px); }
+  .row.scale-out { background: rgba(0,0,0,.42); }
+  .lines { position: absolute; inset: 0; pointer-events: none; background-image:
+      repeating-linear-gradient(to right, rgba(255,255,255,.22) 0 1px, transparent 1px 624px),
+      repeating-linear-gradient(to right, rgba(255,255,255,.10) 0 1px, transparent 1px 156px),
+      repeating-linear-gradient(to right, rgba(255,255,255,.045) 0 1px, transparent 1px 39px),
+      repeating-linear-gradient(to bottom, rgba(255,255,255,.035) 0 1px, transparent 1px 18px); }
+  .loop-shade { position: absolute; top: 0; bottom: 0; background: rgba(0,0,0,.35); pointer-events: none; display: none; }
+  .grid.has-loop .loop-shade { display: block; }
+  .hl-row, .hl-col, .sel-col { position: absolute; pointer-events: none; opacity: 0; }
+  .hl-row { left: 0; right: 0; background: rgba(255,255,255,.035); }
+  .hl-col { top: 0; bottom: 0; width: var(--step-w); background: rgba(255,255,255,.035); }
+  .sel-col { top: 0; bottom: 0; width: var(--step-w); background: rgba(74,158,206,.12); box-shadow: inset 0 0 0 1px rgba(74,158,206,.5); }
+  .grid.hovering .hl-row, .grid.hovering .hl-col { opacity: 1; }
+  .sel-col.on { opacity: 1; }
+  .ghost { position: absolute; pointer-events: none; opacity: 0; border-radius: 3px; border: 1px dashed rgba(232,90,48,.8); background: rgba(232,90,48,.18); }
+  .grid.hovering.empty .ghost { opacity: 1; }
+  .notes { position: absolute; inset: 0; transition: opacity 120ms ease; }
+  .notes.fading { opacity: 0; }
+  .notes .note { position: absolute; border-radius: 3px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 0 10px var(--glow); background-image: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 55%); display: flex; align-items: center; padding-left: 6px; font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,.85); overflow: hidden; white-space: nowrap; }
+  .notes .note::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 6px; background: rgba(255,255,255,.14); border-radius: 0 3px 3px 0; }
+  .notes .note.playing { box-shadow: 0 0 0 2px var(--playhead), 0 0 14px rgba(255,255,255,.45); filter: brightness(1.25); }
+  .notes .note.dragging { opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.5), 0 6px 18px rgba(0,0,0,.5); }
+  .ghosts { position: absolute; inset: 0; pointer-events: none; transition: opacity 120ms ease; }
+  .ghosts .gnote { position: absolute; border-radius: 3px; border: 1px dashed var(--gc); background: color-mix(in srgb, var(--gc) 14%, transparent); }
+  .playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--playhead); box-shadow: 0 0 8px rgba(255,255,255,.6); pointer-events: none; opacity: 0; z-index: 3; }
+  .wash { position: absolute; top: 0; bottom: 0; left: 0; width: var(--step-w); background: rgba(255,255,255,.045); pointer-events: none; opacity: 0; }
+  .grid.playing .playhead, .grid.playing .wash { opacity: 1; }
+  .hit { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+  .tip { position: absolute; pointer-events: none; z-index: 4; opacity: 0; background: var(--surface-3); color: var(--text); border: 1px solid var(--border-light); border-radius: 5px; padding: 2px 7px; font-family: var(--font-mono); font-size: 10px; white-space: nowrap; transform: translate(10px, -26px); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+  .grid.hovering .tip { opacity: 1; }
+  .tip b { color: var(--accent-text); font-weight: 500; }
+
+  /* ===== Notes below the mock ===== */
+  .notes-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px 24px; margin: 0; padding: 0; list-style: none; }
+  .notes-list li { font-size: 13px; color: var(--muted); }
+  .notes-list li b { color: var(--text); font-weight: 600; }
+  .try { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; max-width: 72ch; }
+  .links { font-size: 13px; color: var(--muted); }
+
+  @media (max-width: 640px) { h1 { font-size: 19px; } .play-button { width: 44px; height: 44px; } .tracks { max-height: 70vh; } }
+  @media (prefers-reduced-motion: reduce) {
+    .dock, .dock-left, .dock-scroll, .notes, .ghosts, .key, .play-button::before, .expand-toggle { transition: none; }
+    .step-cell.pulse, .shift-click-marker { animation: none; }
+    .dock-scroll { scroll-behavior: auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div>
+    <div class="eyebrow">Keyboardia · Pitch panel · Editor dock prototype</div>
+    <h1>Piano roll dock</h1>
+    <p class="lede">The sequencer with the row diet applied and the proposed editor dock under the grid. Press ♪ on Lead or Bass, or click a track name, to dock that track. Shift+click a step for its Step pane. Rows never move; the dock shows one track and ghosts the other. Everything is wired to a small synth. The dock starts open here so the page shows its working state; in the app it opens only on request.</p>
+  </div>
+
+  <section class="sequencer" id="sequencer" aria-label="Sequencer">
+    <div class="transport">
+      <button class="play-button" id="playBtn" type="button" aria-label="Play"><span id="playIcon">&#9654;</span></button>
+      <div class="bpm"><b>120</b><span>BPM</span></div>
+      <button class="pill" type="button" title="Scale selector, as in the transport today">Scale: C major <span class="caret">&#9660;</span></button>
+      <button class="pill" id="scaleBtn" type="button" aria-pressed="false" title="Lock the dock to the scale">Lock to scale</button>
+      <span class="spacer"></span>
+      <span class="hint">Esc closes the dock</span>
+      <span class="session-name">keys-and-piano · 4 tracks</span>
+    </div>
+    <div class="tracks" id="tracks">
+      <div class="tracks-inner" id="inner"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the prototype demonstrates</h2>
+    <ul class="notes-list">
+      <li><b>Rows stay contiguous.</b> Lead, Bass, Kick and Hat never gain a panel between them. The dock takes its space from the bottom of the scroller and pins there while the tracks scroll above it.</li>
+      <li><b>One scroller.</b> The ruler, every row and the dock share the horizontal scroll, so step 9 is the same x everywhere. The dock's control panel and keyboard are sticky to the left like the control column.</li>
+      <li><b>Row diet.</b> The control column keeps grip, name, mute, solo, badge, ♪ and the lane toggle at 340px. Transpose shows as a small readout in the name slot; it and step count, instrument, pattern tools and actions live in the dock's Track pane.</li>
+      <li><b>Row and dock are tied three ways.</b> The docked row gets an accent outline, its ♪ turns orange, and on open its cells pulse once. The dock's tab carries the same name and category tick.</li>
+      <li><b>Switching is a crossfade, not a layout change.</b> Press the other track's ♪ or tab: notes fade over 120ms, ghosts swap, the pitch scroll eases to the new notes. Nothing above moves.</li>
+      <li><b>Ghost notes answer "two rolls at once".</b> The other melodic track is drawn dashed in its category colour. Toggle it in the Notes pane.</li>
+      <li><b>Three panes, one grid, two heights.</b> Notes is the roll. Step shows the selected step's lock and highlights its column. Track holds transpose, steps, instrument, pattern tools and actions. The grid never disappears. The ⇕ button toggles the compact and tall detents.</li>
+      <li><b>Pitch contour in the cells.</b> Melodic rows show where each note sits, so the melody stays readable while the dock shows another track.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Try it</h2>
+    <ol class="try">
+      <li>Press Play. Playheads run on the ruler, the cells and the dock from one clock.</li>
+      <li>Press ♪ on Bass and watch the crossfade and the outline move. Press ♪ on Lead to come back.</li>
+      <li>Drag across empty dock cells to paint, drag a bar up or down to re-pitch, drag its right edge to lengthen it. The row above updates on the same frame.</li>
+      <li>Shift+click a Lead cell. The dock switches to the Step pane for that step; change its pitch or tie there.</li>
+      <li>Open the Track pane and change transpose. Every bar shifts, and the readout in the row follows.</li>
+      <li>Toggle the tall detent with ⇕. Turn on "Lock to scale" and drop a note on a dimmed row. Press Escape to close the dock.</li>
+    </ol>
+    <p class="links">Companion pages: the ranked layout research with the two-rolls test, and the design brief with the layer stack, storyboard and roadmap impact. In the repository both live under <code>specs/</code>.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const STEPS = 32, STEP_W = 36, GAP = 3, PITCH = STEP_W + GAP;
+  const MIDI_MAX = 84, MIDI_MIN = 36; // C6 .. C2
+  const ROWS = MIDI_MAX - MIDI_MIN + 1, H = 18, BASE_MIDI = 60;
+  const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const BLACK = new Set([1,3,6,8,10]), MAJOR = new Set([0,2,4,5,7,9,11]);
+  const BPM = 120, SPB = 60 / BPM / 4, MIN_LOOP_LENGTH = 2;
+  const isBlack = m => BLACK.has(((m % 12) + 12) % 12);
+  const pc = m => ((m % 12) + 12) % 12;
+  const noteName = m => NOTE_NAMES[pc(m)] + (Math.floor(m / 12) - 1);
+  const el = (cls, parent, tag) => { const d = document.createElement(tag || 'div'); if (cls) d.className = cls; if (parent) parent.appendChild(d); return d; };
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- tracks: steps + parameter locks, as in the app ----------
+  function mk(id, name, kind, inst, badge, cat, transpose, range) {
+    return { id, name, kind, inst, badge, cat, transpose: transpose || 0, range, steps: new Array(STEPS).fill(false), locks: new Array(STEPS).fill(null), pattern: null, bars: [] };
+  }
+  const lead = mk('lead', 'Lead', 'melodic', 'FM Bell', 'FM', 'var(--cat-keys)', 0, { min: 50, max: 84, optMin: 55, optMax: 79 });
+  const bass = mk('bass', 'Bass', 'melodic', 'Sub', 'SMP', 'var(--cat-bass)', -12, { min: 36, max: 64, optMin: 38, optMax: 55 });
+  const kick = mk('kick', 'Kick', 'drum', '808 Kick', 'SMP', 'var(--cat-drums)');
+  const hat = mk('hat', 'Hat', 'drum', 'Closed Hat', 'SMP', 'var(--cat-drums)');
+  [[0,60,.9],[2,64,.7],[3,67,.8],[4,67,.8,1],[5,67,.8,1],[7,69,.6],[8,72,.95],[9,72,.95,1],[11,71,.5],[12,67,.75],[13,67,.75,1],[14,64,.6],[15,62,.55],
+   [16,60,.9],[17,60,.9,1],[18,60,.9,1],[20,64,.7],[21,65,.65],[22,67,.85],[23,67,.85,1],[24,69,.7],[26,67,.6],[27,64,.8],[28,62,.7],[29,62,.7,1],[30,60,.9],[31,60,.9,1]]
+    .forEach(([s, m, v, t]) => { lead.steps[s] = true; lead.locks[s] = { pitch: m - BASE_MIDI, volume: v, tie: !!t }; });
+  [[0,48,.9],[1,48,.9,1],[3,48,.7],[6,43,.8],[7,43,.8,1],[8,48,.9],[9,48,.9,1],[11,50,.6],[14,43,.8],[15,45,.6],
+   [16,48,.9],[17,48,.9,1],[19,48,.7],[22,41,.8],[23,41,.8,1],[24,45,.9],[25,45,.9,1],[27,47,.6],[30,48,.9],[31,48,.9,1]]
+    .forEach(([s, m, v, t]) => { bass.steps[s] = true; bass.locks[s] = { pitch: m - BASE_MIDI - bass.transpose, volume: v, tie: !!t }; });
+  kick.pattern = new Array(STEPS).fill(false).map((_, i) => i % 4 === 0 || i === 14 || i === 30);
+  hat.pattern = new Array(STEPS).fill(false).map((_, i) => i % 2 === 0);
+  const tracks = [lead, bass, kick, hat];
+  const melodic = tracks.filter(t => t.kind === 'melodic');
+
+  const stepMidi = (t, i) => t.steps[i] ? BASE_MIDI + t.transpose + ((t.locks[i] && t.locks[i].pitch) || 0) : null;
+  const stepVel = (t, i) => (t.locks[i] && typeof t.locks[i].volume === 'number') ? t.locks[i].volume : 0.8;
+  function computeBars(t) {
+    const bars = []; let cur = null;
+    for (let i = 0; i < STEPS; i++) {
+      if (!t.steps[i]) { cur = null; continue; }
+      if (cur && t.locks[i] && t.locks[i].tie) { cur.len++; continue; }
+      cur = { start: i, len: 1, midi: stepMidi(t, i), vel: stepVel(t, i) }; bars.push(cur);
+    }
+    t.bars = bars; return bars;
+  }
+  melodic.forEach(computeBars);
+  const barAt = (t, step, midi) => t.bars.find(b => b.midi === midi && step >= b.start && step < b.start + b.len);
+  let scaleLocked = false;
+  const inScale = m => !scaleLocked || MAJOR.has(pc(m));
+  function snapToScale(m) { if (inScale(m)) return m; for (let d = 1; d < 7; d++) { if (m - d >= MIDI_MIN && MAJOR.has(pc(m - d))) return m - d; if (m + d <= MIDI_MAX && MAJOR.has(pc(m + d))) return m + d; } return m; }
+  function placeNote(t, step, midi, vel) { t.steps[step] = true; t.locks[step] = { pitch: midi - BASE_MIDI - t.transpose, volume: vel == null ? 0.8 : vel, tie: false }; }
+  function clearBar(t, b) { for (let i = b.start; i < b.start + b.len; i++) { t.steps[i] = false; t.locks[i] = null; } }
+  let loop = null;
+
+  // ---------- audio ----------
+  let ac = null, master = null, noiseBuf = null;
+  function ensureAudio() {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = 0.24;
+      const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; master.connect(comp); comp.connect(ac.destination);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.1, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ac.state === 'suspended') ac.resume();
+  }
+  function playVoice(t, midi, vel, when, dur) {
+    const f = 440 * Math.pow(2, (midi - 69) / 12), isBass = t.id === 'bass';
+    const o1 = ac.createOscillator(); o1.type = isBass ? 'sine' : 'triangle'; o1.frequency.value = f;
+    const o2 = ac.createOscillator(); o2.type = isBass ? 'triangle' : 'sine'; o2.frequency.value = isBass ? f : f * 2; o2.detune.value = 4;
+    const g2 = ac.createGain(); g2.gain.value = isBass ? 0.5 : 0.3;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = isBass ? 500 + vel * 600 : 1400 + vel * 3200; lp.Q.value = 0.7;
+    const g = ac.createGain(); const peak = (0.15 + vel * 0.85) * (isBass ? 1.3 : 1);
+    g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(peak, when + 0.008);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak * 0.55, 0.0005), when + 0.16); g.gain.setTargetAtTime(0.0001, when + dur, 0.035);
+    o1.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); g.connect(master);
+    o1.start(when); o2.start(when); o1.stop(when + dur + 0.4); o2.stop(when + dur + 0.4);
+  }
+  function playKick(when) { const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150, when); o.frequency.exponentialRampToValueAtTime(45, when + 0.12); const g = ac.createGain(); g.gain.setValueAtTime(0.9, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.3); o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.35); }
+  function playHat(when, accent) { const s = ac.createBufferSource(); s.buffer = noiseBuf; const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000; const g = ac.createGain(); g.gain.setValueAtTime(accent ? 0.25 : 0.12, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.05); s.connect(hp); hp.connect(g); g.connect(master); s.start(when); s.stop(when + 0.06); }
+  function audition(t, midi, vel) { ensureAudio(); playVoice(t, midi, vel == null ? 0.8 : vel, ac.currentTime, 0.18); }
+
+  // ---------- transport ----------
+  let playing = false, startTime = 0, nextTick = 0, nextTime = 0, timer = null, raf = null;
+  const stepAt = n => loop ? loop.start + (n % (loop.end - loop.start + 1)) : n % STEPS;
+  function schedule() {
+    while (nextTime < ac.currentTime + 0.12) {
+      const s = stepAt(nextTick);
+      melodic.forEach(t => { if (t.muted) return; const b = t.bars.find(x => x.start === s); if (b) playVoice(t, b.midi, b.vel, nextTime, b.len * SPB * 0.96); });
+      if (kick.pattern[s] && !kick.muted) playKick(nextTime);
+      if (hat.pattern[s] && !hat.muted) playHat(nextTime, s % 4 === 0);
+      nextTick++; nextTime += SPB;
+    }
+  }
+  const playBtn = document.getElementById('playBtn'), playIcon = document.getElementById('playIcon');
+  function startPlayback() {
+    ensureAudio(); playing = true; startTime = ac.currentTime + 0.06; nextTick = 0; nextTime = startTime;
+    timer = setInterval(schedule, 25); playIcon.innerHTML = '&#9632;'; playBtn.classList.add('playing'); playBtn.setAttribute('aria-label', 'Stop');
+    ui.grid.classList.add('playing'); ui.ruler.classList.add('playing'); raf = requestAnimationFrame(tick);
+  }
+  function stopPlayback() {
+    playing = false; clearInterval(timer); cancelAnimationFrame(raf);
+    playIcon.innerHTML = '&#9654;'; playBtn.classList.remove('playing'); playBtn.setAttribute('aria-label', 'Play');
+    ui.grid.classList.remove('playing'); ui.ruler.classList.remove('playing'); setPlayingStep(-1);
+  }
+  let lastPlayingStep = -1;
+  function setPlayingStep(s) {
+    if (s === lastPlayingStep) return; lastPlayingStep = s;
+    tracks.forEach(t => t.cells.forEach((c, i) => c.classList.toggle('playing', i === s)));
+    ui.noteEls.forEach(n => { const b = n._bar; n.classList.toggle('playing', s >= b.start && s < b.start + b.len); });
+  }
+  function tick() {
+    if (!playing) return;
+    const t = Math.max(0, ac.currentTime - startTime) / SPB;
+    const stepF = loop ? loop.start + (t % (loop.end - loop.start + 1)) : t % STEPS;
+    const s = Math.floor(stepF);
+    ui.playhead.style.transform = 'translateX(' + (stepF * PITCH).toFixed(2) + 'px)';
+    ui.wash.style.transform = 'translateX(' + (s * PITCH) + 'px)';
+    ui.rulerPlayhead.style.transform = 'translateX(' + (stepF * PITCH).toFixed(2) + 'px)';
+    setPlayingStep(s); raf = requestAnimationFrame(tick);
+  }
+  playBtn.addEventListener('click', () => playing ? stopPlayback() : startPlayback());
+
+  // ---------- dock state (local, never synced) ----------
+  const dock = { open: false, track: null, pane: 'notes', ghosts: { lead: true, bass: true }, selectedStep: null, tall: false };
+  const ui = { noteEls: [], keyEls: new Map() };
+  const inner = document.getElementById('inner');
+  const tracksEl = document.getElementById('tracks');
+
+  function rowClasses(midi, t) {
+    const c = [isBlack(midi) ? 'black' : 'white'];
+    if (pc(midi) === 0) c.push('c', 'root'); else if (pc(midi) === 7) c.push('fifth');
+    const r = (t || lead).range; if (midi < r.min || midi > r.max) c.push('out');
+    if (!inScale(midi)) c.push('scale-out');
+    return c.join(' ');
+  }
+  function velColor(v) { const lo = [96, 40, 26], hi = [232, 90, 48]; return 'rgb(' + lo.map((a, i) => Math.round(a + (hi[i] - a) * v)).join(',') + ')'; }
+  const trLabel = t => (t.transpose >= 0 ? '+' : '') + t.transpose;
+
+  // ---------- ruler ----------
+  function renderRuler(parent) {
+    const rowEl = el('ruler-row', parent);
+    el('ruler-spacer', rowEl).textContent = 'Loop';
+    const ruler = el('loop-ruler', rowEl); ruler.setAttribute('role', 'slider'); ruler.setAttribute('aria-label', 'Loop region');
+    const markers = el('ruler-markers', ruler);
+    for (let s = 0; s < STEPS; s += 4) { const page = s % 16 === 0; const m = el('ruler-marker ' + (page ? 'pg' : 'beat'), markers); m.style.left = (s * PITCH) + 'px'; el('marker-label', m).textContent = page ? String(s / 16 + 1) : (Math.floor(s / 16) + 1) + '.' + ((s % 16) / 4 + 1); }
+    const region = el('loop-region', ruler); region.style.display = 'none'; el('loop-bracket start', region); el('loop-bracket end', region);
+    const shiftMarker = el('shift-click-marker', ruler); shiftMarker.style.display = 'none';
+    ui.ruler = ruler; ui.rulerPlayhead = el('ruler-playhead', ruler);
+    let dragStart = null, dragEnd = null, shiftStart = null;
+    const xToStep = x => Math.min(STEPS - 1, Math.max(0, Math.floor((x - ruler.getBoundingClientRect().left) / PITCH)));
+    const showRegion = (r, preview) => {
+      if (!r) { region.style.display = 'none'; ruler.classList.remove('has-loop'); ruler.title = 'Drag to set loop region'; return; }
+      region.style.display = ''; region.classList.toggle('preview', !!preview); region.style.left = (r.start * PITCH) + 'px'; region.style.width = ((r.end - r.start + 1) * PITCH - GAP) + 'px';
+      ruler.classList.add('has-loop'); ruler.title = 'Loop: steps ' + (r.start + 1) + '-' + (r.end + 1) + ' (double-click to clear)';
+    };
+    const setLoop = r => { loop = r; showRegion(r); if (ui.shadeLoop) ui.shadeLoop(); };
+    ruler.title = 'Drag to set loop region';
+    ruler.addEventListener('pointerdown', e => {
+      const s = xToStep(e.clientX);
+      if (e.shiftKey) { if (shiftStart === null) { shiftStart = s; shiftMarker.style.display = ''; shiftMarker.style.left = (s * PITCH) + 'px'; } else { setLoop({ start: Math.min(shiftStart, s), end: Math.max(shiftStart, s) }); shiftStart = null; shiftMarker.style.display = 'none'; } return; }
+      shiftStart = null; shiftMarker.style.display = 'none'; dragStart = dragEnd = s; ruler.classList.add('dragging'); try { ruler.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    ruler.addEventListener('pointermove', e => { if (dragStart === null) return; dragEnd = xToStep(e.clientX); showRegion({ start: Math.min(dragStart, dragEnd), end: Math.max(dragStart, dragEnd) }, true); });
+    ruler.addEventListener('pointerup', () => { ruler.classList.remove('dragging'); if (dragStart !== null && dragEnd !== null) { const start = Math.min(dragStart, dragEnd), end = Math.max(dragStart, dragEnd); if (end - start + 1 >= MIN_LOOP_LENGTH) setLoop({ start, end }); else showRegion(loop); } dragStart = dragEnd = null; });
+    ruler.addEventListener('dblclick', () => { setLoop(null); shiftStart = null; shiftMarker.style.display = 'none'; });
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') { shiftStart = null; shiftMarker.style.display = 'none'; } });
+  }
+
+  // ---------- track rows ----------
+  function renderTrackRow(parent, t) {
+    const wrap = el('track-row-wrapper', parent); t.wrap = wrap;
+    const row = el('track-row', wrap);
+    const left = el('track-left', row);
+    el('drag-handle', left).textContent = '⋮⋮';
+    const name = el('track-name', left); t.nameEl = name;
+    name.innerHTML = '<span class="tick" style="--cat:' + t.cat + '"></span>' + t.name + (t.kind === 'melodic' ? '<span class="tr"></span>' : '');
+    name.title = t.kind === 'melodic' ? 'Open ' + t.name + ' in the dock' : t.name;
+    const m = el('tl-btn mute-button', left, 'button'); m.textContent = 'M'; m.addEventListener('click', () => { t.muted = !t.muted; m.classList.toggle('active', t.muted); row.classList.toggle('muted', t.muted); });
+    el('tl-btn solo-button', left, 'button').textContent = 'S';
+    const badge = el('badge' + (t.kind === 'melodic' ? '' : ' drum'), left); badge.textContent = t.badge;
+    const ex = el('expand-toggle', left, 'button'); ex.innerHTML = '&#9835;'; ex.title = 'Piano roll'; t.toggleEl = ex;
+    if (t.kind !== 'melodic') ex.style.visibility = 'hidden'; else { ex.addEventListener('click', () => (dock.open && dock.track === t) ? closeDock() : openDock(t, 'notes')); name.addEventListener('click', () => openDock(t, 'notes')); }
+    el('velocity-toggle', left, 'button').textContent = 'V';
+    const stepsEl = el('steps', row); const grid = el('step-grid', stepsEl);
+    t.cells = [];
+    for (let i = 0; i < STEPS; i++) {
+      const c = el('step-cell' + (i % 4 === 0 ? ' beat-start' : ''), grid, 'button'); c.title = 'Step ' + (i + 1) + (t.kind === 'melodic' ? ' · Shift+click for the Step pane' : '');
+      c.addEventListener('click', e => {
+        if (t.kind !== 'melodic') { t.pattern[i] = !t.pattern[i]; syncRow(t); return; }
+        if (e.shiftKey) { if (t.steps[i]) selectStep(t, i); return; }
+        if (t.steps[i]) { t.steps[i] = false; t.locks[i] = null; } else placeNote(t, i, BASE_MIDI + t.transpose, 0.8);
+        trackChanged(t);
+      });
+      t.cells.push(c);
+    }
+    syncRow(t);
+  }
+  function syncRow(t) {
+    if (t.kind !== 'melodic') { t.cells.forEach((c, i) => c.classList.toggle('active', !!t.pattern[i])); return; }
+    computeBars(t);
+    const trEl = t.nameEl.querySelector('.tr'); if (trEl) trEl.textContent = t.transpose === 0 ? '' : trLabel(t);
+    const midis = t.bars.map(b => b.midi); const lo = Math.min.apply(null, midis), hi = Math.max.apply(null, midis);
+    t.cells.forEach((c, i) => {
+      const on = !!t.steps[i]; c.classList.toggle('active', on); c.classList.toggle('tie', on && !!(t.locks[i] && t.locks[i].tie));
+      c.classList.toggle('selected', dock.open && dock.track === t && dock.pane === 'step' && dock.selectedStep === i);
+      let mark = c.querySelector('.contour');
+      if (on) { if (!mark) mark = el('contour', c); const m = stepMidi(t, i); const f = hi === lo ? 0.5 : (m - lo) / (hi - lo); mark.style.top = (24 - f * 20) + 'px'; }
+      else if (mark) mark.remove();
+    });
+  }
+  function trackChanged(t) { syncRow(t); if (dock.open) { if (dock.track === t) drawNotes(false); drawGhosts(); if (dock.pane === 'step') renderPane(); } }
+
+  // ---------- dock ----------
+  function renderDock(parent) {
+    const d = el('dock', parent); ui.dock = d;
+    const innerD = el('dock-inner', d);
+    const head = el('dock-head', innerD);
+    const tabs = el('chips', head);
+    melodic.forEach(t => { const c = el('chip', tabs, 'button'); c.innerHTML = '<span class="tick" style="--cat:' + t.cat + '"></span>' + t.name; c.addEventListener('click', () => openDock(t, dock.pane)); t.tabEl = c; });
+    const panes = el('chips', head); ui.paneChips = {};
+    [['notes', 'Notes'], ['step', 'Step'], ['track', 'Track']].forEach(([k, label]) => { const c = el('chip', panes, 'button'); c.textContent = label; c.addEventListener('click', () => { dock.pane = k; renderPane(); }); ui.paneChips[k] = c; });
+    ui.title = el('dock-title', head);
+    const right = el('right', head);
+    const detent = el('ib', right, 'button'); detent.innerHTML = '&#8661; Tall'; detent.title = 'Toggle compact / tall';
+    detent.addEventListener('click', () => { dock.tall = !dock.tall; d.classList.toggle('tall', dock.tall); detent.innerHTML = dock.tall ? '&#8661; Compact' : '&#8661; Tall'; setTimeout(() => { if (dock.track) centreOn(dock.track, true); }, 210); });
+    const close = el('ib', right, 'button'); close.innerHTML = '&#10005;'; close.title = 'Close (Esc)'; close.addEventListener('click', closeDock);
+    const body = el('dock-body', innerD);
+    const left = el('dock-left', body);
+    ui.pane = el('pane', left);
+    const rail = el('range-rail', left); rail.style.height = (ROWS * H) + 'px'; ui.bracket = el('bracket', rail);
+    const keycol = el('keycol', left); keycol.style.height = (ROWS * H) + 'px';
+    const WHITE_SPAN = { 0: [0, 1.5], 2: [-0.5, 1.5], 4: [-0.5, 1], 5: [0, 1.5], 7: [-0.5, 1.5], 9: [-0.5, 1.5], 11: [-0.5, 1] };
+    const order = []; for (let m = MIDI_MIN; m <= MIDI_MAX; m++) order.push(m);
+    order.sort((a, b) => (isBlack(a) ? 1 : 0) - (isBlack(b) ? 1 : 0));
+    ui.keyList = [];
+    order.forEach(midi => {
+      const k = el('key', keycol); let top, height;
+      if (isBlack(midi)) { top = (MIDI_MAX - midi) * H; height = H; }
+      else { const span = WHITE_SPAN[pc(midi)], rb = midi - MIDI_MIN; top = Math.max(0, (ROWS - (rb + span[1])) * H); height = Math.min(ROWS * H, (ROWS - (rb + span[0])) * H) - top; }
+      k.style.top = top + 'px'; k.style.height = height + 'px'; k.innerHTML = '<span class="lbl">' + noteName(midi) + '</span>'; k.title = noteName(midi);
+      k.addEventListener('pointerdown', () => { if (dock.track) audition(dock.track, midi, 0.85); k.classList.add('pressed'); setTimeout(() => k.classList.remove('pressed'), 160); });
+      ui.keyEls.set(midi, k); ui.keyList.push([midi, k]);
+    });
+    const scroll = el('dock-scroll', body); ui.scroll = scroll;
+    const grid = el('grid', scroll); grid.style.width = (STEPS * PITCH) + 'px'; grid.style.height = (ROWS * H) + 'px'; ui.grid = grid;
+    ui.rowEls = []; for (let i = 0; i < ROWS; i++) { const r = el('row', grid); r.style.top = (i * H) + 'px'; r.style.height = H + 'px'; ui.rowEls.push(r); }
+    el('lines', grid);
+    ui.shadeL = el('loop-shade', grid); ui.shadeR = el('loop-shade', grid);
+    ui.hlRow = el('hl-row', grid); ui.hlRow.style.height = H + 'px'; ui.hlCol = el('hl-col', grid); ui.selCol = el('sel-col', grid);
+    ui.ghostsLayer = el('ghosts', grid); ui.notesLayer = el('notes', grid);
+    ui.ghost = el('ghost', grid); ui.ghost.style.height = (H - 4) + 'px'; ui.ghost.style.width = STEP_W + 'px';
+    ui.wash = el('wash', grid); ui.playhead = el('playhead', grid); const hit = el('hit', grid); ui.tip = el('tip', grid);
+    scroll.addEventListener('scroll', () => { const y = -scroll.scrollTop + 'px'; rail.style.transform = 'translateY(' + y + ')'; keycol.style.transform = 'translateY(' + y + ')'; });
+    ui.shadeLoop = () => { grid.classList.toggle('has-loop', !!loop); if (!loop) return; ui.shadeL.style.left = '0'; ui.shadeL.style.width = (loop.start * PITCH) + 'px'; ui.shadeR.style.left = ((loop.end + 1) * PITCH - GAP) + 'px'; ui.shadeR.style.right = '0'; };
+    bindHit(hit, grid);
+    // The head is sticky-left inside a max-content dock; size it to the scroller so its close button stays on screen.
+    ui.head = head;
+    const fitHead = () => { head.style.width = tracksEl.clientWidth + 'px'; };
+    if (window.ResizeObserver) new ResizeObserver(fitHead).observe(tracksEl); else window.addEventListener('resize', fitHead);
+    fitHead();
+  }
+  function applyClasses() {
+    const t = dock.track || lead;
+    ui.rowEls.forEach((r, i) => r.className = 'row ' + rowClasses(MIDI_MAX - i, t));
+    ui.keyList.forEach(([midi, k]) => { const hov = k.classList.contains('hover'); k.className = 'key ' + rowClasses(midi, t) + (hov ? ' hover' : ''); });
+    ui.bracket.style.top = ((MIDI_MAX - t.range.optMax) * H + 2) + 'px'; ui.bracket.style.height = ((t.range.optMax - t.range.optMin + 1) * H - 4) + 'px';
+    ui.bracket.title = 'Best range for ' + t.inst + ': ' + noteName(t.range.optMin) + ' to ' + noteName(t.range.optMax);
+  }
+  function drawNotes(fade) {
+    const t = dock.track; if (!t) return;
+    const layer = ui.notesLayer;
+    const paint = () => {
+      computeBars(t); layer.innerHTML = ''; ui.noteEls = [];
+      t.bars.forEach(b => {
+        const n = el('note', layer); n.style.left = (b.start * PITCH) + 'px'; n.style.width = (b.len * PITCH - GAP) + 'px';
+        n.style.top = ((MIDI_MAX - b.midi) * H + 2) + 'px'; n.style.height = (H - 4) + 'px'; n.style.background = velColor(b.vel);
+        n.style.setProperty('--glow', 'rgba(232,90,48,' + (0.15 + b.vel * 0.45).toFixed(2) + ')'); if (b.len >= 2) n.textContent = noteName(b.midi); n._bar = b; ui.noteEls.push(n);
+      });
+      syncRow(t);
+    };
+    if (fade && !reduced) { layer.classList.add('fading'); setTimeout(() => { paint(); layer.classList.remove('fading'); }, 120); } else paint();
+  }
+  function drawGhosts() {
+    const layer = ui.ghostsLayer; layer.innerHTML = '';
+    melodic.forEach(o => {
+      if (o === dock.track || !dock.ghosts[o.id]) return;
+      computeBars(o);
+      o.bars.forEach(b => { const g = el('gnote', layer); g.style.setProperty('--gc', o.cat); g.style.left = (b.start * PITCH) + 'px'; g.style.width = (b.len * PITCH - GAP) + 'px'; g.style.top = ((MIDI_MAX - b.midi) * H + 3) + 'px'; g.style.height = (H - 6) + 'px'; g.title = o.name + ' · ' + noteName(b.midi); });
+    });
+  }
+  function centreOn(t, smooth) {
+    if (!t.bars.length) return;
+    const mids = t.bars.map(b => b.midi); const mid = (Math.min.apply(null, mids) + Math.max.apply(null, mids)) / 2;
+    const top = Math.max(0, (MIDI_MAX - mid) * H - ui.scroll.clientHeight / 2);
+    if (smooth && !reduced) ui.scroll.scrollTo({ top, behavior: 'smooth' }); else { ui.scroll.style.scrollBehavior = 'auto'; ui.scroll.scrollTop = top; ui.scroll.style.scrollBehavior = ''; }
+    ui.scroll.dispatchEvent(new Event('scroll'));
+  }
+  function openDock(t, pane) {
+    const switching = dock.open && dock.track !== t, wasOpen = dock.open;
+    dock.open = true; dock.track = t; dock.pane = pane || dock.pane; if (dock.pane === 'step' && dock.selectedStep === null) dock.pane = 'notes';
+    melodic.forEach(o => { o.wrap.classList.toggle('docked', o === t); o.toggleEl.classList.toggle('active', o === t); o.tabEl.classList.toggle('active', o === t); });
+    ui.dock.classList.add('open');
+    applyClasses(); drawNotes(switching); drawGhosts(); renderPane();
+    if (!wasOpen) { t.cells.forEach(c => { if (c.classList.contains('active')) { c.classList.remove('pulse'); void c.offsetWidth; c.classList.add('pulse'); } }); }
+    if (!wasOpen) { setTimeout(() => centreOn(t, false), 0); setTimeout(() => { tracksEl.scrollTop = tracksEl.scrollHeight; }, 210); } else centreOn(t, true);
+  }
+  function closeDock() {
+    if (!dock.open) return;
+    dock.open = false; ui.dock.classList.remove('open');
+    melodic.forEach(o => { o.wrap.classList.remove('docked'); o.toggleEl.classList.remove('active'); o.tabEl.classList.remove('active'); syncRow(o); });
+    ui.selCol.classList.remove('on');
+  }
+  function selectStep(t, i) { dock.selectedStep = i; openDock(t, 'step'); }
+  function renderPane() {
+    const t = dock.track; if (!t) return;
+    Object.keys(ui.paneChips).forEach(k => ui.paneChips[k].classList.toggle('active', dock.pane === k));
+    ui.title.innerHTML = '<b>' + t.name + '</b> · ' + t.inst + (dock.pane === 'step' && dock.selectedStep !== null ? ' · step ' + (dock.selectedStep + 1) : '');
+    const p = ui.pane; p.innerHTML = '';
+    const sel = dock.selectedStep;
+    ui.selCol.classList.toggle('on', dock.pane === 'step' && sel !== null); if (sel !== null) ui.selCol.style.left = (sel * PITCH) + 'px';
+    syncRow(t);
+    if (dock.pane === 'notes') {
+      p.innerHTML = '<b>Notes</b>';
+      const g = el('rowc', p); g.innerHTML = '<span class="k">Ghosts</span>';
+      melodic.forEach(o => { if (o === t) return; const b = el('cbtn ghost-toggle', g, 'button'); b.style.setProperty('--gc', o.cat); b.setAttribute('aria-pressed', String(!!dock.ghosts[o.id])); b.innerHTML = '<i></i>' + o.name; b.addEventListener('click', () => { dock.ghosts[o.id] = !dock.ghosts[o.id]; b.setAttribute('aria-pressed', String(dock.ghosts[o.id])); drawGhosts(); }); });
+      const r2 = el('rowc', p); r2.innerHTML = '<span class="k">Range</span><span>' + noteName(t.range.optMin) + ' to ' + noteName(t.range.optMax) + ' best</span>';
+      const r3 = el('rowc', p); r3.innerHTML = '<span class="k">Default velocity</span><input id="defVel" type="range" min="10" max="127" value="102">';
+      const r4 = el('rowc', p); const fit = el('cbtn quiet', r4, 'button'); fit.textContent = 'Fit to notes'; fit.addEventListener('click', () => centreOn(t, true));
+    } else if (dock.pane === 'step') {
+      if (sel === null || !t.steps[sel]) { p.innerHTML = '<b>Step</b><span class="empty">Shift+click an active cell in the ' + t.name + ' row to edit its lock.</span>'; return; }
+      const lock = t.locks[sel] || (t.locks[sel] = { pitch: 0, volume: 0.8, tie: false });
+      p.innerHTML = '<b>Step ' + (sel + 1) + '</b>';
+      const pr = el('rowc', p); pr.innerHTML = '<span class="k">Pitch</span>';
+      const minus = el('cbtn sym', pr, 'button'); minus.textContent = '−';
+      const val = el('cbtn', pr, 'span'); val.textContent = noteName(stepMidi(t, sel)) + ' (' + (lock.pitch >= 0 ? '+' : '') + lock.pitch + ')';
+      const plus = el('cbtn sym', pr, 'button'); plus.textContent = '+';
+      const bump = d => { lock.pitch += d; trackChanged(t); audition(t, stepMidi(t, sel), stepVel(t, sel)); renderPane(); };
+      minus.addEventListener('click', () => bump(-1)); plus.addEventListener('click', () => bump(1));
+      const vr = el('rowc', p); vr.innerHTML = '<span class="k">Volume</span>';
+      const slider = el('', vr, 'input'); slider.type = 'range'; slider.min = 0; slider.max = 127; slider.value = Math.round(stepVel(t, sel) * 127);
+      const vv = el('', vr, 'span'); vv.textContent = slider.value;
+      slider.addEventListener('input', () => { lock.volume = slider.value / 127; vv.textContent = slider.value; trackChanged(t); });
+      const tr = el('rowc', p); tr.innerHTML = '<span class="k">Tie</span>';
+      const tie = el('cbtn', tr, 'button'); tie.textContent = lock.tie ? 'Tied to previous' : 'New attack'; tie.setAttribute('aria-pressed', String(!!lock.tie));
+      tie.addEventListener('click', () => { lock.tie = !lock.tie; trackChanged(t); renderPane(); });
+      const er = el('rowc', p); er.innerHTML = '<span class="k">Envelope</span>' + ['Attack', 'Decay', 'Release'].map(s => '<span class="cbtn quiet">' + s + ' · track</span>').join('');
+      const cl = el('rowc', p); const clr = el('cbtn quiet', cl, 'button'); clr.textContent = 'Clear lock'; clr.addEventListener('click', () => { t.locks[sel] = { pitch: 0, volume: 0.8, tie: false }; trackChanged(t); renderPane(); });
+    } else {
+      p.innerHTML = '<b>' + t.name + ' track</b>';
+      const tr = el('rowc', p); tr.innerHTML = '<span class="k">Transpose</span>';
+      const minus = el('cbtn sym', tr, 'button'); minus.textContent = '−';
+      const val = el('cbtn', tr, 'span'); val.textContent = trLabel(t);
+      const plus = el('cbtn sym', tr, 'button'); plus.textContent = '+';
+      const setT = d => { t.transpose += d; trackChanged(t); renderPane(); centreOn(t, true); };
+      minus.addEventListener('click', () => setT(-1)); plus.addEventListener('click', () => setT(1));
+      const sr = el('rowc', p); sr.innerHTML = '<span class="k">Steps · Instrument</span><span class="cbtn">32 <span class="caret">&#9660;</span></span><span class="cbtn">' + t.inst + ' <span class="caret">&#9660;</span></span>';
+      const pr = el('rowc', p); pr.innerHTML = '<span class="k">Pattern tools</span><span class="cbtn quiet">Rotate</span><span class="cbtn quiet">Invert</span><span class="cbtn quiet">Euclid</span>';
+      const ar = el('rowc', p); ar.innerHTML = '<span class="k">Actions</span><span class="cbtn quiet">Copy</span><span class="cbtn quiet">Clear</span><span class="cbtn quiet">Delete</span>';
+    }
+  }
+
+  // ---------- pointer interaction on the dock grid ----------
+  function bindHit(hit, grid) {
+    const pos = e => { const r = grid.getBoundingClientRect(); const x = Math.min(Math.max(0, e.clientX - r.left), STEPS * PITCH - 1); const y = Math.min(Math.max(0, e.clientY - r.top), ROWS * H - 1); return { x, y, step: Math.floor(x / PITCH), midi: MIDI_MAX - Math.floor(y / H) }; };
+    const nearRightEdge = (p, b) => p.x > (b.start + b.len) * PITCH - GAP - 9;
+    let drag = null, hoverMidi = null;
+    const showHover = p => {
+      const t = dock.track; if (!t) return; const b = barAt(t, p.step, p.midi);
+      grid.classList.add('hovering'); grid.classList.toggle('empty', !b);
+      ui.hlRow.style.top = ((MIDI_MAX - p.midi) * H) + 'px'; ui.hlCol.style.left = (p.step * PITCH) + 'px';
+      ui.ghost.style.left = (p.step * PITCH) + 'px'; ui.ghost.style.top = ((MIDI_MAX - p.midi) * H + 2) + 'px'; ui.ghost.style.opacity = inScale(p.midi) ? '' : '0';
+      ui.tip.style.left = p.x + 'px'; ui.tip.style.top = p.y + 'px';
+      ui.tip.innerHTML = b ? '<b>' + noteName(b.midi) + '</b> · ' + b.len + (b.len === 1 ? ' step' : ' steps') + ' · vel ' + Math.round(b.vel * 127) : '<b>' + noteName(p.midi) + '</b> · step ' + (p.step + 1) + (p.midi < t.range.min ? ' · below the instrument' : '');
+      hit.style.cursor = b ? (nearRightEdge(p, b) ? 'ew-resize' : 'grab') : 'crosshair';
+      if (hoverMidi !== p.midi) { if (hoverMidi != null && ui.keyEls.get(hoverMidi)) ui.keyEls.get(hoverMidi).classList.remove('hover'); hoverMidi = p.midi; if (ui.keyEls.get(p.midi)) ui.keyEls.get(p.midi).classList.add('hover'); }
+    };
+    const hideHover = () => { grid.classList.remove('hovering'); if (hoverMidi != null && ui.keyEls.get(hoverMidi)) ui.keyEls.get(hoverMidi).classList.remove('hover'); hoverMidi = null; };
+    const markDragging = () => { const n = ui.noteEls.find(x => x._bar === drag.bar); if (n) n.classList.add('dragging'); };
+    hit.addEventListener('pointermove', e => { const p = pos(e); if (!drag) showHover(p); else dragMove(p); });
+    hit.addEventListener('pointerleave', () => { if (!drag) hideHover(); });
+    hit.addEventListener('pointerdown', e => {
+      const t = dock.track; if (!t) return; e.preventDefault(); hit.setPointerCapture(e.pointerId);
+      const p = pos(e), b = barAt(t, p.step, p.midi);
+      if (b && e.shiftKey) { selectStep(t, b.start); return; }
+      if (b) { drag = nearRightEdge(p, b) ? { kind: 'resize', bar: b } : { kind: 'move', bar: b, midi: b.midi, moved: false }; markDragging(); }
+      else { const m = snapToScale(p.midi); const dv = document.getElementById('defVel'); const vel = dv ? dv.value / 127 : 0.8; placeNote(t, p.step, m, vel); audition(t, m, vel); drag = { kind: 'paint', lastStep: p.step, midi: m, vel }; drawNotes(false); drawGhosts(); }
+      showHover(p);
+    });
+    function dragMove(p) {
+      const t = dock.track;
+      if (drag.kind === 'paint') {
+        const m = snapToScale(p.midi);
+        if (p.step !== drag.lastStep || m !== drag.midi) { const from = Math.min(drag.lastStep, p.step), to = Math.max(drag.lastStep, p.step); for (let s = from; s <= to; s++) placeNote(t, s, m, drag.vel); if (m !== drag.midi) audition(t, m, drag.vel); drag.lastStep = p.step; drag.midi = m; drawNotes(false); }
+      } else if (drag.kind === 'move') {
+        const m = snapToScale(p.midi);
+        if (m !== drag.midi) { const b = drag.bar; for (let s = b.start; s < b.start + b.len; s++) t.locks[s] = Object.assign({}, t.locks[s], { pitch: m - BASE_MIDI - t.transpose }); drag.midi = m; drag.moved = true; audition(t, m, b.vel); drawNotes(false); drag.bar = barAt(t, b.start, m) || drag.bar; markDragging(); }
+      } else if (drag.kind === 'resize') {
+        const b = drag.bar; const newLen = Math.min(STEPS - b.start, Math.max(1, p.step - b.start + 1));
+        if (newLen !== b.len) { for (let s = b.start + 1; s < b.start + Math.max(newLen, b.len); s++) { if (s < b.start + newLen) { t.steps[s] = true; t.locks[s] = { pitch: b.midi - BASE_MIDI - t.transpose, volume: b.vel, tie: true }; } else { t.steps[s] = false; t.locks[s] = null; } } drawNotes(false); drag.bar = barAt(t, b.start, b.midi) || b; markDragging(); }
+      }
+      showHover(p);
+    }
+    hit.addEventListener('pointerup', e => { if (!drag) return; if (drag.kind === 'move' && !drag.moved) { clearBar(dock.track, drag.bar); drawNotes(false); } drag = null; showHover(pos(e)); });
+    hit.addEventListener('pointercancel', () => { drag = null; hideHover(); });
+  }
+
+  // ---------- build ----------
+  renderRuler(inner);
+  const rowsEl = el('rows', inner);
+  tracks.forEach(t => renderTrackRow(rowsEl, t));
+  el('fill', inner);
+  renderDock(inner);
+  applyClasses();
+  const scaleBtn = document.getElementById('scaleBtn');
+  scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); applyClasses(); });
+  window.addEventListener('keydown', e => { if (e.key === 'Escape' && dock.open) closeDock(); });
+  // The page opens with Lead docked so its first frame shows the working state. In the app the dock opens only on request.
+  openDock(lead, 'notes');
+})();
+</script>
+
+</body>
+</html>

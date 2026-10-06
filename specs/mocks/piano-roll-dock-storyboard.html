@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Roll Dock Brief</title>
+<style>
+  /* Layout: a design brief. A decision, a layer stack, a scenario storyboard, then consequences and a
+     build order. Keyboardia's own dark tokens, single theme by choice. */
+  :root {
+    --bg: #121212; --surface: #1e1e1e; --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
+    --border: #3a3a3a; --border-light: #4a4a4a;
+    --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
+    --accent: #e85a30; --accent-text: #ff8a65; --info: #3498db; --info-text: #5eb3ea; --success: #1db954; --warning: #ffc107; --error-text: #ff7b7b; --purple-text: #c58ad6;
+    --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; display: flex; flex-direction: column; gap: 30px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+  h1 { font-size: 24px; font-weight: 600; margin: 2px 0 6px; letter-spacing: -.01em; text-wrap: balance; }
+  h2 { font-size: 17px; font-weight: 600; margin: 0 0 10px; padding-top: 6px; border-top: 1px solid var(--border); padding-top: 14px; }
+  h3 { font-size: 14px; font-weight: 600; margin: 14px 0 6px; }
+  p { margin: 0 0 10px; max-width: 78ch; }
+  .lede { color: var(--muted); }
+  a { color: var(--info-text); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--text); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+  ul, ol { margin: 0 0 10px; padding-left: 20px; max-width: 80ch; }
+  li { margin-bottom: 4px; }
+  li b, p b { color: var(--text); font-weight: 600; }
+  .muted { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .tablewrap { overflow-x: auto; margin-bottom: 10px; }
+  .callout { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 10px 14px; margin: 10px 0 14px; max-width: 80ch; }
+  .callout.info { border-left-color: var(--info); }
+  .callout.warn { border-left-color: var(--warning); }
+  .tag { display: inline-block; font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--surface-3); color: var(--muted); margin-right: 4px; white-space: nowrap; }
+  .tag.must { background: rgba(232,90,48,.18); color: var(--accent-text); }
+  .tag.open { background: rgba(255,193,7,.15); color: var(--warning); }
+
+  /* Layer stack diagram */
+  .stack { display: grid; grid-template-columns: 1fr; gap: 6px; max-width: 720px; margin: 8px 0 14px; }
+  .layer { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+  .layer .z { font-family: var(--font-mono); font-size: 12px; color: var(--accent-text); }
+  .layer .what { font-size: 13px; }
+  .layer .what b { display: block; font-weight: 600; }
+  .layer .what span { color: var(--muted); }
+  .layer.dock { border-color: rgba(232,90,48,.6); }
+
+  /* Scenario storyboard */
+  .scene { display: grid; grid-template-columns: 180px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .scene:last-child { border-bottom: 0; }
+  .scene .name { font-weight: 600; font-size: 13px; }
+  .scene .name small { display: block; font-weight: 400; color: var(--dim); font-family: var(--font-mono); font-size: 11px; margin-top: 2px; }
+  .scene .body { font-size: 13px; color: var(--muted); display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 16px; }
+  .scene .body div b { display: block; color: var(--text); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+
+  @media (max-width: 640px) { .scene { grid-template-columns: 1fr; } .layer { grid-template-columns: 44px 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div>
+    <div class="eyebrow">Keyboardia · Pitch panel · Design brief</div>
+    <h1>Piano roll dock</h1>
+    <p class="lede">The decision from the layout research, worked through: how the dock layers over the grid, what moves and what stays still in each scenario, which gestures it answers to, how it is documented in this project's own format, and what it changes for the other per-track panels, mobile, large pieces and the open work on GitHub.</p>
+  </div>
+
+  <section>
+    <h2>1. Decision</h2>
+    <p>The note editor leaves the track list. One <b>editor dock</b> sits under the sea of cells, inside the same horizontal scroller, pinned to the bottom of the viewport while the tracks scroll above it. It shows one track at a time, chosen by the track's pitch toggle, its name, or a tab in the dock. Other melodic tracks appear as ghost notes. The 512px control column becomes the dock's own control panel with a narrow keyboard against the grid. Rows never gain or lose a panel between them.</p>
+    <p>Three things pinned this choice: the per-track roll fails the two-rolls-open test, every reference tool keeps editors out of the track list, and the dock leaves the track row's width untouched, which keeps clear of lesson 62.</p>
+    <div class="callout info"><b>Reconciling with the affordance spec on the roadmap branch.</b> <code>specs/AFFORDANCES.md</code> in <a href="https://github.com/adewale/keyboardia/pull/61">adewale/keyboardia#61</a> (unmerged since July) adopts "inline expansion below the row" as the one disclosure mechanism (C-1) and plans property lanes rendered as grid rows (N3). The dock amends C-1, not N3: lanes that are rows of cells stay inline because they tessellate; editors, which are not rows of cells, go to the dock. The dock is the generalised <code>ParameterLockEditor</code> that C-1 wanted to keep, moved from "below its row" to "below the grid" so that two of them can never stack. That amendment should be written into AFFORDANCES before either lands.</div>
+  </section>
+
+  <section>
+    <h2>2. Layering</h2>
+    <p>Every surface gets a named layer so that stacking is a decision, not an accident of DOM order. Today's sticky control column is at z 3 and overlays at 100; the dock slots between.</p>
+    <div class="stack">
+      <div class="layer"><span class="z">z 0</span><div class="what"><b>Grid surface</b><span>Track rows, step cells, page dividers. The only layer that scrolls in both axes.</span></div></div>
+      <div class="layer"><span class="z">z 1</span><div class="what"><b>In-row lanes</b><span>Pitch contour marks inside melodic cells, velocity lane rows (AFFORDANCES N3). Rows of cells, same column grid, tessellate.</span></div></div>
+      <div class="layer"><span class="z">z 2</span><div class="what"><b>Row state</b><span>Playing outline, remote-change flash, selection, and the new <em>docked</em> outline on the track the dock is editing.</span></div></div>
+      <div class="layer"><span class="z">z 3</span><div class="what"><b>Sticky chrome, left</b><span>Control column and the ruler spacer. Unchanged.</span></div></div>
+      <div class="layer"><span class="z">z 5</span><div class="what"><b>Sticky chrome, top</b><span>Loop ruler, moved into the scroller on the step pitch (per the loop ruler postmortem's "in-grid or content-bearing" rule).</span></div></div>
+      <div class="layer dock"><span class="z">z 6</span><div class="what"><b>Editor dock</b><span>Sticky to the scroller's bottom edge. Its control panel is sticky-left at z 7 inside it. Holds three panes: Notes, Step, Track.</span></div></div>
+      <div class="layer"><span class="z">z 8</span><div class="what"><b>Transient, inside the dock</b><span>Ghost note under the pointer, hover crosshair, drag preview, tooltip chip. Pointer-events none.</span></div></div>
+      <div class="layer"><span class="z">z 10</span><div class="what"><b>Playheads</b><span>One line in the ruler, one across the dock grid, plus the existing per-cell outline. Driven by the scheduler's position, never animated with CSS.</span></div></div>
+      <div class="layer"><span class="z">z 100</span><div class="what"><b>Global overlays</b><span>QR, shortcuts, the planned bottom sheet (C-7). Never used for the roll.</span></div></div>
+    </div>
+    <h3>Rules the layers encode</h3>
+    <ul>
+      <li><b>Only the dock's height changes layout.</b> Opening it takes space from the bottom of the scroller. Nothing between two track rows ever changes size.</li>
+      <li><b>One scroller.</b> The dock shares <code>.tracks</code> horizontal scroll, so step N is at the same x in the ruler, every row and the dock. Vertical scroll of the dock's pitch range is the dock's own.</li>
+      <li><b>State lives on the row edge, class lives on the name.</b> The docked outline is a state, so it uses the row edge the affordance spec reserved for state, in accent orange, not the track's category colour.</li>
+      <li><b>Transient layers never take pointer events.</b> One hit layer in the dock computes step and pitch from coordinates, as the prototype does.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. What happens, scenario by scenario</h2>
+    <p class="muted">Durations reuse the app's existing timings: 200ms ease-out is the <code>.panel-animation-container</code> grid-rows transition; 150ms is the remote-change flash. Under <code>prefers-reduced-motion</code> every transition below becomes a cut.</p>
+
+    <div class="scene"><div class="name">Open from a row<small>♪ toggle, or click the name</small></div><div class="body">
+      <div><b>Moves</b>The dock grows from 0 to its height over 200ms. Tracks above are pushed up only if the viewport cannot hold both; otherwise nothing above moves.</div>
+      <div><b>Stays</b>Every row, every cell, the ruler, the control column.</div>
+      <div><b>How you know</b>The row gets the docked outline and its ♪ turns orange at the same instant. The dock title and tab carry the same name and category tick. The row's pitch contour marks pulse once (150ms, the flash grammar) to tie row and dock together.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Switch track<small>another ♪, name, or dock tab</small></div><div class="body">
+      <div><b>Moves</b>Notes crossfade over 120ms. The previous track's notes become ghosts, the new track's ghosts become solid. The keyboard stays; the dock's pitch scroll eases to centre on the new notes.</div>
+      <div><b>Stays</b>Dock height, dock position, the grid above, all columns.</div>
+      <div><b>How you know</b>The docked outline jumps rows. The tab chip changes. The control panel's title and transpose value change. No layout shift, so your eye stays on the beat you were looking at.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Close<small>♪ again, Escape, or the dock's close</small></div><div class="body">
+      <div><b>Moves</b>Dock collapses over 200ms. Scroll position of the tracks is preserved.</div>
+      <div><b>Stays</b>Everything else.</div>
+      <div><b>How you know</b>Outline and orange toggle clear together. Escape only closes the dock when focus is inside it, so it does not fight the copy-mode Escape.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Playing<small>transport running</small></div><div class="body">
+      <div><b>Moves</b>Three playheads from one clock: the ruler line, the dock line, the per-cell outline. The sounding bar gets a white outline and no transform.</div>
+      <div><b>Stays</b>Nothing scrolls on its own. There is no auto-scroll today and the dock does not add one.</div>
+      <div><b>How you know</b>Playheads are vertically aligned because they share the step pitch. If the docked track is shorter than the longest track, its playhead wraps where its row's cells wrap.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Draw<small>click, drag to paint, drag to re-pitch, drag the right edge</small></div><div class="body">
+      <div><b>Moves</b>The bar follows the pointer. The row's cells above update on the same frame: a new step turns orange, a lengthened note writes ties.</div>
+      <div><b>Stays</b>Dock, grid, keyboard.</div>
+      <div><b>How you know</b>A dashed ghost bar shows where a note will land before you commit. The cursor changes at a bar's right edge. Each new pitch auditions. Snapping under scale lock is visible because the ghost sits on the row it will snap to.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Select a step<small>Shift+click or long-press a cell</small></div><div class="body">
+      <div><b>Moves</b>The dock switches to the Step pane for that step: pitch, volume, tie, and the envelope stages from <a href="https://github.com/adewale/keyboardia/pull/87">#87</a>. If the dock was closed it opens (200ms).</div>
+      <div><b>Stays</b>The grid. Today's inline p-lock strip no longer appears between rows.</div>
+      <div><b>How you know</b>The selected cell keeps today's blue selection ring. The Step pane header names the step and track. The Notes pane highlights the same step's column so you can switch panes without losing the place.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Remote edit<small>a collaborator changes the docked track</small></div><div class="body">
+      <div><b>Moves</b>The affected bar flashes with that player's colour for 150ms, the same <code>useRemoteChanges</code> grammar the cells use.</div>
+      <div><b>Stays</b>Your dock, your selection, your drag. Dock state is local, like every panel today.</div>
+      <div><b>How you know</b>The flash is in the dock and in the row cell at once. Cursor overlay stays on the grid; it does not map into the dock.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Reorder, delete, add<small>drag a row, delete the docked track, add a track</small></div><div class="body">
+      <div><b>Moves</b>Rows move as they do today. Deleting the docked track closes the dock (200ms). Adding a melodic track does not open it.</div>
+      <div><b>Stays</b>Row width and the drop geometry, which is the point of leaving the control column alone.</div>
+      <div><b>How you know</b>The docked outline travels with its row during a drag.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Published session<small>read-only</small></div><div class="body">
+      <div><b>Moves</b>Dock opens and plays. Keys still audition.</div>
+      <div><b>Stays</b>No ghost bar, no drag cursors, no Step pane edits.</div>
+      <div><b>How you know</b>The dock takes the same scrim the published grid uses, which it does not today because panels sit outside <code>.published .track-row</code>.</div>
+    </div></div>
+  </section>
+
+  <section>
+    <h2>4. Affordances, in the house vocabulary</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Gesture</th><th>On</th><th>Result</th><th>Vocabulary</th></tr></thead>
+      <tbody>
+        <tr><td>Click</td><td>♪ on a row, track name, dock tab</td><td>Dock shows that track</td><td>Chip row (N1): one of N, current glows</td></tr>
+        <tr><td>Click / drag</td><td>Empty dock cell</td><td>Place a note / paint a run</td><td>Tap = act; drag-to-paint, already flag-gated on cells</td></tr>
+        <tr><td>Drag vertical</td><td>A bar</td><td>Re-pitch, audition each pitch</td><td>Drag-to-adjust, self-contained control, pointer capture allowed (C-11)</td></tr>
+        <tr><td>Drag right edge</td><td>A bar</td><td>Lengthen, writes ties</td><td>Same</td></tr>
+        <tr><td>Click</td><td>A bar</td><td>Remove</td><td>Tap = act (matches the chromatic grid)</td></tr>
+        <tr><td>Shift+click / long-press</td><td>A bar or a cell</td><td>Step pane for that step</td><td>Universal disclose (N4)</td></tr>
+        <tr><td>Click</td><td>A key</td><td>Audition</td><td>Tap = act</td></tr>
+        <tr><td>Click</td><td>Ghost toggle per other track</td><td>Show or hide that track's ghosts</td><td>Toggle button</td></tr>
+        <tr><td>Escape</td><td>Focus inside dock</td><td>Close</td><td>One meaning per key (C-8)</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">Nothing here adds a gesture to the app. Every row is an existing gesture applied to a new noun, which is the affordance spec's test for admitting a feature.</p>
+  </section>
+
+  <section>
+    <h2>5. How to document it</h2>
+    <p>The project has a working format for exactly this kind of decision, visible on the roadmap branch: a spec in <code>specs/</code>, static HTML mocks in <code>specs/mocks/</code>, a postmortem-style lessons file when a surface is replaced, and a lesson in <code>docs/LESSONS-LEARNED.md</code> when a constraint is discovered. Follow it.</p>
+    <ol>
+      <li><b><code>specs/PIANO-ROLL-DOCK.md</code></b>, status Proposal, with the headings the other UI specs use: The Problem, The Proposal, Visual Representation, Interaction Design, UI Philosophy Alignment table, What We Remove, Multiplayer Considerations, Implementation Phases, Alternatives Considered, Visual baseline safety, Non-goals, Open Questions, References. The research page and this brief become its content. The six ranked arrangements and the two-rolls test go under Alternatives Considered, with the modal recorded under "Decided against", as <a href="https://github.com/adewale/keyboardia/issues/121">#121</a> does.</li>
+      <li><b><code>specs/mocks/piano-roll-dock.html</code></b>: the interactive prototype, checked in as the roadmap branch checks in its storyboards. Specs cite mocks by file; the mock is the single source for geometry numbers.</li>
+      <li><b>Constraints as a table with a source each.</b> Column alignment, row rhythm, tessellation, lesson 62, shared scroller, mobile modes, published mode, 64KB message cap if dock state ever syncs. One row per constraint, one file:line or lesson number per row, so a later reader can check whether it still holds.</li>
+      <li><b>Trade-offs as a ledger, not prose.</b> What the dock gives up (the roll is not under its row; one editable track at a time) against what it buys, each with the scenario that exposed it. Future readers argue with ledgers; they ignore paragraphs.</li>
+      <li><b>Amend <code>AFFORDANCES.md</code></b> C-1 and C-4 in the same change, so the two specs cannot disagree.</li>
+      <li><b>A lesson</b> when the build teaches one. The loop ruler's "in-grid or content-bearing" rule is the model; the first candidate here is "an editor is not a lane: lanes tessellate, editors dock".</li>
+      <li><b>PR template</b> already asks What changed / Why / Verification / Risk. Risk should name the reorder suite and the visual baselines explicitly.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>6. Consequences</h2>
+
+    <h3>6.1 The other panels and drawers</h3>
+    <p>A track row today can stack seven surfaces below it, each with its own <code>useState</code> and no accordion: the landscape TrackDrawer, the instrument picker, PatternToolsPanel, VelocityLane, the legacy InlineDrawer, an always-on FM panel, the pitch panel, and the ParameterLockEditor strip. <a href="https://github.com/adewale/keyboardia/pull/87">#87</a> adds an envelope editor to the strip. This is the sprawl the affordance spec counted as nine reveal mechanisms. The dock is the chance to tidy it, and the tidy has a rule: <b>rows of cells stay inline, everything else docks.</b></p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Surface today</th><th>Becomes</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Pitch panel (ChromaticGrid, PianoRoll)</td><td>Dock, Notes pane</td><td>The decision</td></tr>
+        <tr><td>ParameterLockEditor strip, envelope editor (#87)</td><td>Dock, Step pane</td><td>Same noun (a step), same place; the strip between rows goes away</td></tr>
+        <tr><td>PatternToolsPanel, FM params, instrument picker, transpose, step count, copy/clear/delete</td><td>Dock, Track pane</td><td>Track-level controls, which the affordance spec's C-4 wanted out of the row; the dock is where C-4's disclosure lands instead of a strip</td></tr>
+        <tr><td>VelocityLane</td><td>Stays inline as a property lane (N3)</td><td>It is a row of cells on the column grid; it tessellates</td></tr>
+        <tr><td>Pitch contour marks</td><td>New, inside melodic cells</td><td>The FL Studio preview; keeps the melody readable when the dock shows another track</td></tr>
+        <tr><td>TrackDrawer (landscape), InlineDrawer (legacy)</td><td>TrackDrawer becomes the Track pane on landscape; InlineDrawer deleted</td><td>The survey found InlineDrawer unreachable now that portrait renders no rows</td></tr>
+      </tbody>
+    </table></div>
+    <p>The row diet itself (C-4: keep grip, name, mute, solo, lane toggle, key badge) is a separate decision because it changes the column width and so trips lesson 62. The dock makes it optional rather than necessary, since the keyboard no longer depends on the column.</p>
+
+    <h3>6.2 Mobile</h3>
+    <ul>
+      <li><b>Portrait</b> is consumption. No rows render, so no dock. Unchanged.</li>
+      <li><b>Landscape</b> is where the dock fixes a real gap. The TrackDrawer's pitch, velocity and pattern buttons change state today, but CSS force-hides every panel container, so nothing opens. The mobile spec's feature matrix promises the chromatic grid in landscape. A bottom dock at roughly 45% of the height, with a 56px keyboard and the Notes pane, delivers it. 44px targets in the dock's control panel, 36px cells as the landscape grid already uses.</li>
+      <li><b>The landscape scroll model is the constraint.</b> Below 768px each row's step area scrolls on its own, so the dock cannot align with every row. It aligns with the docked row only, by syncing the two scrollers. That should be stated in the spec as a known difference from desktop rather than hidden.</li>
+      <li><b>Tablet</b> is desktop above 768 wide and 500 tall, so the desktop dock applies.</li>
+    </ul>
+
+    <h3>6.3 Very complex pieces</h3>
+    <ul>
+      <li><b>Sixteen tracks, 128 steps.</b> The dock renders one track as bars, not 4,600 buttons, so it is cheaper than today's roll. Sixteen rows at 46px plus a 300px dock exceeds most viewports; the tracks scroll under the sticky dock, which is the DAW behaviour.</li>
+      <li><b>Polymeter.</b> Rows end at different widths. The dock's grid is the docked track's length, with the same page dividers. Ghost notes from a track of a different length repeat modulo that length, drawn lighter, so the ghost is truthful about what will sound (the loop ruler postmortem's "truthful per-track rendering").</li>
+      <li><b>Many melodic tracks.</b> Ghosts are per-track toggles, on by default for the two nearest melodic tracks and off beyond that, so a sixteen-track piece does not become a thicket.</li>
+      <li><b>Any length (<a href="https://github.com/adewale/keyboardia/issues/119">#119</a>)</b> changes nothing in the dock except that page dividers stop coinciding with track ends.</li>
+      <li><b>Patterns and song mode (<a href="https://github.com/adewale/keyboardia/issues/121">#121</a>).</b> The dock edits the current pattern. A queued switch re-renders the dock at the boundary. Song playback is a sequence of such re-renders. The dock should display the pattern name in its title from day one so that the field exists when patterns do.</li>
+    </ul>
+
+    <h3>6.4 Multiplayer and data</h3>
+    <ul>
+      <li>Dock state (which track, which pane, ghost toggles, pitch scroll) is local, as every panel is today. It never syncs, so the 64KB message cap is untouched.</li>
+      <li>Every edit the dock makes is an existing mutation: toggle step, set parameter lock. The MCP note surface in <a href="https://github.com/adewale/keyboardia/issues/92">#92</a> should share those operations, so an agent-written melody and a dock-drawn melody are the same data.</li>
+      <li>The <code>focus</code> slice already exists in the store with no UI dispatching it. "Docked track" can be that slice, which keeps the reducer honest without adding a new one.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>7. Roadmap impact</h2>
+    <h3>Open pull requests</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>PR</th><th>What it touches</th><th>Effect of the dock</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/adewale/keyboardia/pull/87">#87</a> envelope v2 authoring</td><td>Adds EnvelopeEditor into the ParameterLockEditor strip, plus TrackRow, Transport, XYPad</td><td>Merge first. The dock's Step pane then moves the strip wholesale, envelope included. Building the dock on top of an unmerged 100-file PR is the worse order.</td></tr>
+        <tr><td><a href="https://github.com/adewale/keyboardia/pull/61">#61</a> affordances, evolution roadmap, pattern mode, mocks</td><td>Specs only, unmerged since July</td><td>Directly affected: C-1 and C-4 need the amendment in section 1. Merge it with that amendment, or land the dock spec referencing it. Do not leave the two disagreeing.</td></tr>
+        <tr><td><a href="https://github.com/adewale/keyboardia/pull/85">#85</a> and <a href="https://github.com/adewale/keyboardia/pull/58">#58</a> grip and gear glyphs</td><td>Control column icons</td><td>Compatible. The column is untouched by the dock.</td></tr>
+        <tr><td><a href="https://github.com/adewale/keyboardia/pull/122">#122</a>, <a href="https://github.com/adewale/keyboardia/pull/102">#102</a>, <a href="https://github.com/adewale/keyboardia/pull/84">#84</a></td><td>Verification, audio, evals</td><td>Unrelated.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Open issues</h3>
+    <ul>
+      <li><a href="https://github.com/adewale/keyboardia/issues/92">#92</a> MCP pitched notes: the dock is its UI counterpart; share the domain operation.</li>
+      <li><a href="https://github.com/adewale/keyboardia/issues/119">#119</a> any track length and <a href="https://github.com/adewale/keyboardia/issues/121">#121</a> song mode: covered in 6.3; neither blocks the dock, the dock should not block them.</li>
+      <li><a href="https://github.com/adewale/keyboardia/issues/118">#118</a> step-count labels: the Track pane will show the step count control, so settle the label wording first.</li>
+    </ul>
+    <h3>Branches</h3>
+    <ul>
+      <li><b>Live and relevant:</b> <code>claude/adsr-handling-1fbpmm</code> (#87), <code>claude/keyboardia-evolution-roadmap-oap6n8</code> (#61), <code>claude/keyboardia-take-five-8brx26</code> (tracks run free; two commits unmerged, and the dock's playhead wrap assumes it).</li>
+      <li><b>Stale research branches</b> from January to July that are hundreds of commits behind main (promotion strategy, security analysis, deep project review, sample lab and others). None touch the track row. They should be pruned or archived in a separate pass so that the dock's branch list is readable.</li>
+    </ul>
+    <h3>Tests to write or update</h3>
+    <ul>
+      <li>There is no piano roll e2e spec today. The dock gets one: open, switch, close, draw, select step, ghost toggle, published read-only.</li>
+      <li><code>scrollbar.spec.ts</code> (single scrollbar, columns aligned) and <code>pitch-contour-alignment.spec.ts</code> extend to the dock.</li>
+      <li><code>plock-editor.spec.ts</code> and <code>chromatic-grid.spec.ts</code> change home: the editor is in the dock.</li>
+      <li><code>mobile-orientation.spec.ts</code> gains the landscape dock, including the inert-when-closed check.</li>
+      <li>Visual baselines: sequencer-grid, track-row-with-steps and the Holby populated set change. Run the manual baseline workflow once per stage, review the diff as a human.</li>
+      <li>The reorder-during-playback case exists only as a unit test. Keep it green at every stage even though the column is untouched.</li>
+    </ul>
+    <h3>Build order</h3>
+    <ol>
+      <li><b>Spec and mocks</b> in the repo, AFFORDANCES amended. No code.</li>
+      <li><b>Dock shell.</b> Move the existing ChromaticGrid and PianoRoll into a dock under the grid with track tabs. Row outline, open and close animation, Escape. No visual redesign of the roll yet. This is the stage that proves tessellation and alignment.</li>
+      <li><b>New roll rendering.</b> Bars, ties, velocity brightness, the proportioned keyboard, the ruler in the scroller, drag editing. The prototype is the reference.</li>
+      <li><b>Ghost notes and pitch contour marks.</b> The multi-track payoff.</li>
+      <li><b>Step pane.</b> Absorb the ParameterLockEditor strip and #87's envelope editor.</li>
+      <li><b>Track pane.</b> Absorb pattern tools, FM params, instrument, transpose, step count, actions. Decide the row diet separately, with lesson 62's gate.</li>
+      <li><b>Landscape dock.</b> Deletes the dead InlineDrawer path, makes the TrackDrawer's buttons do something.</li>
+    </ol>
+    <p class="muted">Each stage is a shippable PR with its own baseline run. Stages 2 and 3 can swap if the visual redesign is wanted sooner, at the cost of redesigning inside the old placement first.</p>
+  </section>
+
+  <section>
+    <h2>8. Open questions</h2>
+    <ul>
+      <li><span class="tag open">open</span> Does the dock open automatically when a melodic track is added, or only on request? The spec's "one screen" principle says only on request; first-sound-in-30-seconds says open it.</li>
+      <li><span class="tag open">open</span> Dock height: fixed, or a drag handle with two detents? Two detents (compact, tall) is the fewest states that cover a 16-row piece.</li>
+      <li><span class="tag open">open</span> Should the docked track be remembered per session in local storage, as the chromatic grid spec asks about view-mode persistence?</li>
+      <li><span class="tag open">open</span> Whether the row diet (C-4) ships with the dock or after it, which is really a question of when to fix the drag and auto-scroll interaction.</li>
+    </ul>
+  </section>
+</div>
+
+</body>
+</html>
