@@ -1,0 +1,532 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Roll Layout Options</title>
+<style>
+  /* Layout: a research brief. Constraints first, then one card per arrangement with a scaled static
+     mock of the sequencer on the left and the ranking rationale on the right. Keyboardia's own dark
+     tokens, single theme by choice. */
+  :root {
+    --bg: #121212; --surface: #1e1e1e; --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
+    --border: #3a3a3a; --border-light: #4a4a4a; --border-hover: #555555;
+    --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
+    --accent: #e85a30; --accent-hi: #f07048; --accent-text: #ff8a65;
+    --info: #3498db; --info-text: #5eb3ea; --success: #1db954; --warning: #ffc107; --error-text: #ff7b7b;
+    --purple-text: #c58ad6; --purple-muted: rgba(155,89,182,.15);
+    --key-white: #c9c5bc; --key-black: #131211;
+    --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; display: flex; flex-direction: column; gap: 28px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+  h1 { font-size: 22px; font-weight: 600; margin: 2px 0 4px; letter-spacing: -.01em; text-wrap: balance; }
+  h2 { font-size: 16px; font-weight: 600; margin: 0 0 10px; }
+  h3 { font-size: 14px; font-weight: 600; margin: 0; }
+  p { margin: 0; }
+  .lede { color: var(--muted); max-width: 70ch; }
+  a { color: var(--info-text); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  td:first-child { white-space: nowrap; font-weight: 500; }
+  .tablewrap { overflow-x: auto; }
+  .constraints { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px 24px; margin: 0; padding: 0; list-style: none; }
+  .constraints li { font-size: 13px; color: var(--muted); }
+  .constraints b { color: var(--text); font-weight: 600; }
+
+  /* Option cards */
+  .options { display: flex; flex-direction: column; gap: 18px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 16px; display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 18px; }
+  .card.top { border-color: rgba(232,90,48,.6); }
+  .card-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+  .rank { font-family: var(--font-mono); font-size: 11px; color: var(--bg); background: var(--accent); padding: 2px 7px; border-radius: 4px; font-weight: 600; }
+  .card.low .rank { background: var(--surface-4); color: var(--text); }
+  .precedent { font-size: 12px; color: var(--dim); }
+  .mockframe { overflow-x: auto; background: var(--bg); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+  .scores { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; font-size: 12px; align-items: center; margin: 0 0 10px; }
+  .scores span { color: var(--muted); }
+  .dots { display: inline-flex; gap: 3px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: var(--surface-4); display: block; }
+  .dots i.on { background: var(--success); }
+  .dots.warn i.on { background: var(--warning); }
+  .dots.bad i.on { background: var(--error-text); }
+  .pros, .cons { margin: 0; padding-left: 16px; font-size: 13px; color: var(--muted); }
+  .pros li::marker { color: var(--success); }
+  .cons li::marker { color: var(--error-text); }
+  .side h4 { font-size: 11px; text-transform: uppercase; letter-spacing: .05em; color: var(--dim); margin: 10px 0 4px; font-weight: 500; }
+  .side .why { font-size: 13px; color: var(--text); }
+
+  /* ===== Static mock primitives (scaled with zoom) ===== */
+  .m { zoom: .7; width: max-content; font-family: var(--font-ui); display: flex; flex-direction: column; gap: 2px; }
+  .m-ruler { display: flex; gap: 8px; margin-bottom: 4px; }
+  .m-ruler .sp { display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 13px; color: var(--dim); }
+  .m-ruler .bar { height: 24px; background: var(--surface-2); border-radius: 4px; position: relative; }
+  .m-ruler .bar i { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--border-light); }
+  .m-ruler .bar i.pg { width: 2px; }
+  .m-ruler .bar b { position: absolute; top: 3px; font-family: var(--font-mono); font-size: 11px; color: var(--muted); font-weight: 600; }
+  .m-row { display: flex; align-items: center; gap: 8px; height: 44px; }
+  .m-row.tall { height: 60px; }
+  .m-head { height: 44px; background: var(--surface); display: flex; align-items: center; gap: 4px; padding: 0 8px; flex: 0 0 auto; box-shadow: 4px 0 8px -4px rgba(0,0,0,.3); }
+  .m-row.tall .m-head { height: 60px; flex-wrap: wrap; align-content: center; row-gap: 4px; }
+  .m-head.right { box-shadow: -4px 0 8px -4px rgba(0,0,0,.3); }
+  .c { height: 36px; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: var(--muted); flex: 0 0 auto; }
+  .c.drag { width: 20px; color: var(--dim); font-size: 14px; letter-spacing: -2px; }
+  .c.name { width: 100px; justify-content: flex-start; padding-left: 4px; color: var(--text); font-weight: 500; font-size: 14px; }
+  .c.name.sm { width: 84px; }
+  .c.btn { width: 36px; border: 1px solid var(--border-hover); }
+  .c.dd { width: 60px; border: 1px solid #6c6c76; background: var(--surface-2); color: var(--text); font-weight: 500; gap: 6px; }
+  .c.dd::after { content: '\25BC'; font-size: 8px; color: var(--muted); }
+  .c.badge { width: 36px; height: 24px; background: var(--purple-muted); color: var(--purple-text); font-family: var(--font-mono); font-size: 10px; font-weight: 500; }
+  .c.tog { width: 36px; border: 1px solid var(--surface-4); background: var(--surface-2); }
+  .c.tog.on { background: var(--accent); border-color: var(--accent-hi); color: var(--bg); }
+  .c.chip { height: 20px; padding: 0 7px; font-size: 11px; border: 1px solid var(--border-hover); border-radius: 3px; background: var(--surface-2); font-weight: 500; }
+  .c.chip.on { background: var(--accent); color: var(--bg); border-color: var(--accent-hi); }
+  .c.sm { height: 32px; } .c.btn.sm, .c.tog.sm { width: 32px; }
+  .m-steps { display: flex; gap: 3px; }
+  .s { width: 36px; height: 36px; border: 2px solid var(--border); border-radius: 4px; background: var(--surface-2); flex: 0 0 auto; position: relative; }
+  .s.b { border-left-width: 3px; border-left-color: var(--border-light); }
+  .s.on { background: var(--accent); border-color: var(--accent-hi); }
+  .s.on.hi { box-shadow: inset 0 0 0 2px rgba(255,255,255,.35); }
+  .s.on .pv { position: absolute; left: 4px; right: 4px; height: 3px; background: rgba(255,255,255,.75); border-radius: 2px; }
+  .m-panel { display: flex; gap: 8px; background: var(--surface); border: 1px solid var(--border); border-radius: 0 0 8px 8px; }
+  .m-panel.dock { border-radius: 8px; margin-top: 8px; border-color: var(--border-light); }
+  .m-kb { position: relative; background: var(--key-white); flex: 0 0 auto; overflow: hidden; border-right: 1px solid var(--border); }
+  .m-kb i { position: absolute; left: 0; width: 58%; height: 13px; background: var(--key-black); border-radius: 0 3px 3px 0; box-shadow: 2px 1px 3px rgba(0,0,0,.5); }
+  .m-kb u { position: absolute; left: 0; right: 0; height: 1px; background: #0f0e0d; }
+  .m-kbwrap { display: flex; flex: 0 0 auto; }
+  .m-ctl { display: flex; flex-direction: column; gap: 6px; padding: 10px; justify-content: flex-start; font-size: 12px; color: var(--muted); }
+  .m-ctl b { color: var(--text); font-size: 13px; }
+  .m-ctl .rowc { display: flex; gap: 4px; flex-wrap: wrap; }
+  .m-grid { position: relative; background: var(--bg); background-image: repeating-linear-gradient(to right, rgba(255,255,255,.1) 0 1px, transparent 1px 156px), repeating-linear-gradient(to right, rgba(255,255,255,.045) 0 1px, transparent 1px 39px), repeating-linear-gradient(to bottom, rgba(0,0,0,.25) 0 14px, transparent 14px 28px); }
+  .m-grid .n { position: absolute; height: 10px; border-radius: 3px; background: var(--accent); box-shadow: 0 0 6px rgba(232,90,48,.5); }
+  .m-drawer { display: flex; gap: 6px; align-items: center; height: 40px; padding: 0 8px; background: var(--surface); border-top: 1px solid var(--border); width: max-content; }
+  .m-drawer .c.chip { height: 26px; font-size: 12px; }
+  .m-note { font-size: 12px; color: var(--dim); font-style: italic; padding: 2px 0 0 4px; }
+  .m-tabs { display: flex; gap: 2px; background: var(--surface-2); border-radius: 6px; padding: 2px; width: max-content; margin-bottom: 6px; }
+  .m-tabs .c.chip { height: 28px; font-size: 13px; border: 0; background: transparent; }
+  .m-tabs .c.chip.on { background: var(--accent); }
+  .brace { position: relative; }
+  .ann { position: absolute; font-family: var(--font-mono); font-size: 11px; color: var(--info-text); background: rgba(52,152,219,.12); border: 1px dashed var(--info); border-radius: 4px; padding: 2px 6px; white-space: nowrap; pointer-events: none; }
+
+  .m-grid .n.ghost { background: transparent; border: 1px dashed rgba(197,138,214,.9); box-shadow: none; }
+  .m-grid .n.bass { background: #8e44ad; box-shadow: 0 0 6px rgba(155,89,182,.5); }
+  .m-dockhead { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .m-dockhead .c.chip { height: 24px; font-size: 12px; }
+  .m-dockhead .lbl { color: var(--dim); font-size: 12px; margin-left: auto; }
+  .m-lane { display: flex; gap: 8px; border-top: 1px solid var(--border); }
+  .m-lane .m-ctl { padding: 6px 10px; }
+  .m-rowhl { outline: 2px solid rgba(232,90,48,.7); outline-offset: -2px; border-radius: 4px; }
+  .m-rowhl.bass { outline-color: rgba(155,89,182,.8); }
+  .m-stage { position: relative; }
+  .m-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+  .m-modal { position: absolute; left: 160px; top: 24px; background: var(--surface); border: 1px solid var(--border-light); border-radius: 10px; box-shadow: 0 20px 60px rgba(0,0,0,.6); overflow: hidden; }
+  .m-modal .m-dockhead { background: var(--surface-2); }
+  .m-modal .x { margin-left: auto; color: var(--muted); font-size: 16px; }
+  .s.on.b2 { background: #8e44ad; border-color: #a569bd; }
+
+  @media (max-width: 860px) { .card { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div>
+    <div class="eyebrow">Keyboardia · Pitch panel · Layout research</div>
+    <h1>Piano roll layout options</h1>
+    <p class="lede">How sequencers and DAWs place track controls, the step grid and the note editor relative to each other, what that implies for Keyboardia's control column, and six arrangements ranked against alignment, row rhythm and tessellation. Each mock shows the Lead track with its roll open and the Kick and Hat tracks below it.</p>
+  </div>
+
+  <section>
+    <h2>What other tools do</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Tool</th><th>Track controls</th><th>Where the note editor lives</th><th>Lesson for Keyboardia</th></tr></thead>
+      <tbody>
+        <tr><td>Ableton Live</td><td>Narrow headers in Session and Arrangement; Arrangement headers sit on the right of the timeline.</td><td>Separate Clip View below. Its left side holds the Clip and Notes boxes (name, transpose, loop); the piano ruler is a narrow strip against the note grid.</td><td>The editor's own controls fill the space to the left of the keys. Headers never widen for the editor.</td></tr>
+        <tr><td>Bitwig Studio</td><td>Track headers resize; small ones show fewer controls, wider ones offer more.</td><td>Detail Editor panel below the arranger; Inspector panel on the side follows the selection.</td><td>Headers can be responsive. Per-track parameters live in an inspector, not in the row.</td></tr>
+        <tr><td>FL Studio</td><td>Channel Rack: one short button row per channel (mute, pan, volume, mixer target, name) beside the 16 step buttons.</td><td>Separate Piano Roll window. The step area can instead show a piano roll preview of the channel's notes.</td><td>Keep the row short, show the melody as a preview inside the step area, edit elsewhere.</td></tr>
+        <tr><td>Reaper</td><td>Resizable track control panel on the left.</td><td>MIDI editor can open inline inside the arrange view or as a floating window.</td><td>Inline editing is viable, but the editor is drawn inside the lane, not by widening the header.</td></tr>
+        <tr><td>Maschine</td><td>Group with 16 sound slots listed at left of the Pattern Editor.</td><td>Same editor, two modes: Group view shows every sound's events; Keyboard view shows one sound's pitches.</td><td>Focus mode is a mode switch of the same panel, not a second panel.</td></tr>
+        <tr><td>Hydrogen</td><td>Instrument list at left of the pattern editor (name, mute, solo).</td><td>Pattern editor switches between Drum view and Piano view for the selected instrument.</td><td>Same as Maschine: pitch editing replaces the all-instrument view, it does not sit under one row.</td></tr>
+        <tr><td>Song Maker, Learning Music</td><td>No track headers. Instrument choice is a bottom bar or a small label.</td><td>The grid is the whole page.</td><td>Controls are not row furniture. The grid wins the space.</td></tr>
+      </tbody>
+    </table></div>
+    <p class="lede" style="margin-top:10px; font-size:13px">Two patterns cover every tool above. Either the editor is a separate pane with its own keyboard and its own controls to the left of it, or the editor replaces the all-track grid for one instrument. No tool widens the track header to make room for the editor, which is what Keyboardia does today, and none inserts an editor between two track rows.</p>
+  </section>
+
+  <section>
+    <h2>Constraints the arrangement has to respect</h2>
+    <ul class="constraints">
+      <li><b>Column alignment.</b> Every step column, in every row and in the roll, sits on the same 39px pitch so that the same beat is the same x position everywhere. The roll's left edge is therefore pinned to the control column's right edge, and the keyboard is exactly as wide as that column.</li>
+      <li><b>Row rhythm.</b> Track rows repeat at one height. The eye scans down a column to see which instruments hit a beat together. Anything inserted between rows that is not a row of cells breaks the scan.</li>
+      <li><b>Tessellation.</b> Rows are the same width and height and butt against each other, so the grid reads as one surface. A drawer under one track, and equally a 400px roll under one track, splits that surface in two.</li>
+      <li><b>Row width is load-bearing.</b> Changing the control column's width moves the drop target for drag-reorder during playback, which the project's lesson 62 records as fragile. Moving width between left and right of the row keeps the total, which is a different proposition from changing it.</li>
+      <li><b>Discoverability.</b> Transpose and step count are the two controls people reach for while composing. Hiding them costs more than hiding pattern tools or the instrument picker.</li>
+      <li><b>Shared horizontal scroll.</b> All rows and the editor scroll together, and sticky columns on the left (or right) must be children of that one scroller.</li>
+    </ul>
+  </section>
+
+  <section class="options">
+    <h2>Arrangements, ranked</h2>
+    <div id="cards"></div>
+  </section>
+
+  <section>
+    <h2>Test: two rolls open at the same time</h2>
+    <p class="lede" style="margin-bottom:12px">Four tracks: Lead and Bass are melodic, Kick and Hat are drums. The person has opened the roll for Lead and then for Bass. Each mock shows what the screen holds at that moment. Today's design is the "hidden layer beneath each instrument" model: every track carries its own collapsed roll. A modal is included for completeness.</p>
+    <div class="options" id="multi"></div>
+  </section>
+
+  <section>
+    <h2>Sources</h2>
+    <ul class="constraints" style="grid-template-columns: 1fr">
+      <li><a href="https://www.ableton.com/en/live-manual/12/clip-view">Ableton Live manual, Clip View</a> and <a href="https://www.ableton.com/en/live-manual/11/editing-midi-notes-and-velocities/">Editing MIDI notes</a></li>
+      <li><a href="https://www.bitwig.com/userguide/latest/the_arrange_view_and_tracks">Bitwig user guide, Arrange view and tracks</a> and <a href="https://www.bitwig.com/userguide/latest/meet_inspector_panel">Inspector panel</a></li>
+      <li><a href="https://www.image-line.com/fl-studio-learning/fl-studio-online-manual/html/channelrack.htm">FL Studio manual, Channel Rack</a></li>
+      <li><a href="https://www.audeobox.com/learn/reaper/reaper-midi-editor-guide/">Reaper MIDI editor guide (inline and floating editor)</a></li>
+      <li><a href="https://docs.native-instruments.com/online-guides/maschine-software-manual/en/basic-concepts">Maschine software manual, basic concepts (Group view and Keyboard view)</a></li>
+      <li><a href="https://hydrogen-music.org/documentation/manual/manual_en_chunked/ch09s04.html">Hydrogen manual, Piano Roll Editor</a></li>
+      <li><a href="https://wbgsv0a.gigazine.net/gsc_news/en/20180302-chrome-music-lab-song-maker">Chrome Music Lab Song Maker walkthrough</a></li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const STEPS = 12, PITCH = 39, GAP = 3;
+  const lead = [1,0,1,1,1,1,0,1,1,1,0,1], leadTie = [0,0,0,0,1,1,0,0,0,1,0,0];
+  const kick = [1,0,0,0,1,0,0,0,1,0,0,0,], hat = [1,0,1,0,1,0,1,0,1,0,1,0];
+  const notes = [[0,1,6],[2,1,4],[3,3,3],[7,1,2],[8,2,0],[11,1,1]]; // step, len, rowIndex (0 top)
+  const el = (cls, parent, html) => { const d = document.createElement('div'); d.className = cls; if (html != null) d.innerHTML = html; if (parent) parent.appendChild(d); return d; };
+
+  const CTRL = {
+    drag: () => '<span class="c drag">⋮⋮</span>',
+    name: (n, sm) => '<span class="c name' + (sm ? ' sm' : '') + '">' + n + '</span>',
+    M: sm => '<span class="c btn' + (sm ? ' sm' : '') + '">M</span>',
+    S: sm => '<span class="c btn' + (sm ? ' sm' : '') + '">S</span>',
+    tr: () => '<span class="c dd">+0</span>',
+    badge: () => '<span class="c badge">FM</span>',
+    steps: () => '<span class="c dd">32</span>',
+    pv: (on, sm) => '<span class="c tog' + (on ? ' on' : '') + (sm ? ' sm' : '') + '">♫</span>',
+    V: sm => '<span class="c tog' + (sm ? ' sm' : '') + '">V</span>',
+    tools: sm => '<span class="c tog' + (sm ? ' sm' : '') + '">⋯</span>',
+    chip: (t, on) => '<span class="c chip' + (on ? ' on' : '') + '">' + t + '</span>',
+  };
+
+  function stepsHtml(pat, tie, preview) {
+    let h = '';
+    for (let i = 0; i < STEPS; i++) {
+      const on = pat[i];
+      h += '<span class="s' + (i % 4 === 0 ? ' b' : '') + (on ? ' on' : '') + (on && tie && tie[i] ? ' hi' : '') + '">'
+        + (on && preview ? '<i class="pv" style="top:' + (6 + (preview[i] || 0) * 5) + 'px"></i>' : '') + '</span>';
+    }
+    return h;
+  }
+  function keyboard(w, rows, rowH) {
+    const kb = el('m-kb'); kb.style.width = w + 'px'; kb.style.height = (rows * rowH) + 'px';
+    const black = [1,3,6,8,10];
+    for (let r = 0; r < rows; r++) {
+      const pc = (rows - 1 - r + 0) % 12; // bottom row = C
+      if (black.includes(pc)) { const i = el('', kb); i.className = ''; i.style.cssText = 'position:absolute;left:0;width:58%;height:' + (rowH - 1) + 'px;top:' + (r * rowH) + 'px;background:var(--key-black);border-radius:0 3px 3px 0;box-shadow:2px 1px 3px rgba(0,0,0,.5)'; }
+      else if (pc === 4 || pc === 11 || pc === 0) { const u = el('', kb); u.style.cssText = 'position:absolute;left:0;right:0;height:1px;top:' + (r * rowH + rowH - 1) + 'px;background:#0f0e0d'; }
+    }
+    return kb;
+  }
+  function grid(rows, rowH, cols) {
+    const g = el('m-grid'); g.style.width = (cols * PITCH) + 'px'; g.style.height = (rows * rowH) + 'px';
+    notes.forEach(([s, len, r]) => { if (s + len > cols) return; const n = el('n', g); n.style.left = (s * PITCH) + 'px'; n.style.width = (len * PITCH - GAP) + 'px'; n.style.top = (r * rowH + 2) + 'px'; });
+    return g;
+  }
+  function ruler(parent, leftW, cols, rightW) {
+    const r = el('m-ruler', parent);
+    const sp = el('sp', r, 'Loop'); sp.style.width = leftW + 'px';
+    const bar = el('bar', r); bar.style.width = (cols * PITCH - GAP) + 'px';
+    for (let s = 0; s < cols; s += 4) { const i = el(s % 16 === 0 ? 'pg' : '', bar); i.style.left = (s * PITCH) + 'px'; if (s % 16 === 0) { const b = el('', bar, String(s / 16 + 1)); b.tagName; b.className = ''; b.style.cssText = 'position:absolute;top:3px;left:' + (s * PITCH + 5) + 'px;font-family:var(--font-mono);font-size:11px;color:var(--muted);font-weight:600'; } }
+    if (rightW) { const sp2 = el('sp', r); sp2.style.width = rightW + 'px'; }
+  }
+  function row(parent, leftW, headHtml, pat, tie, opts) {
+    opts = opts || {};
+    const r = el('m-row' + (opts.tall ? ' tall' : ''), parent);
+    const h = el('m-head', r, headHtml); h.style.width = leftW + 'px';
+    el('m-steps', r, stepsHtml(pat, tie, opts.preview));
+    if (opts.rightHtml) { const rh = el('m-head right', r, opts.rightHtml); rh.style.width = opts.rightW + 'px'; }
+    return r;
+  }
+  function panel(parent, leftW, kbW, rows, rowH, cols, ctlHtml, dock) {
+    const p = el('m-panel' + (dock ? ' dock' : ''), parent);
+    const left = el('m-kbwrap', p); left.style.width = leftW + 'px';
+    if (ctlHtml) { const c = el('m-ctl', left, ctlHtml); c.style.width = (leftW - kbW) + 'px'; }
+    left.appendChild(keyboard(kbW, rows, rowH));
+    p.appendChild(grid(rows, rowH, cols));
+    return p;
+  }
+
+  const fullHead = (name, pvOn) => CTRL.drag() + CTRL.name(name) + CTRL.M() + CTRL.S() + CTRL.tr() + CTRL.badge() + CTRL.steps() + CTRL.pv(pvOn) + CTRL.V() + CTRL.tools();
+  const drumFullHead = name => CTRL.drag() + CTRL.name(name) + CTRL.M() + CTRL.S() + '<span class="c dd" style="visibility:hidden"></span><span class="c badge" style="background:rgba(255,255,255,.06);color:var(--muted)">SMP</span>' + CTRL.steps() + '<span class="c tog" style="visibility:hidden"></span>' + CTRL.V() + CTRL.tools();
+  const shortHead = (name, pvOn) => CTRL.drag() + CTRL.name(name, true) + CTRL.M(true) + CTRL.S(true) + CTRL.pv(pvOn, true);
+  const ROWS = 10, RH = 14, COLS = 12;
+
+  const options = [
+    {
+      rank: 1, title: 'Editor dock below the grid, controls to the left of the keys', precedent: 'Ableton Clip View, Bitwig Detail Editor, FL Studio Channel Rack preview',
+      scores: { align: 3, rhythm: 3, tess: 3, kb: 3, risk: 3, disc: 3 },
+      why: 'The roll leaves the track list. Rows stay contiguous, the sea of cells is never split, and the 512px column becomes the editor’s own control panel with a 96px keyboard against the grid. The melodic row keeps a pitch-contour preview inside its cells, so the melody is still readable in the grid. Nothing about the row column changes, so lesson 62 is untouched. How this differs from today: the shipped roll is one panel per track, inserted between that track and the next, with the keyboard filling the column. The dock is one panel for the whole sequencer, after the last row, showing the selected track, with the column holding the editor\u2019s controls. With a single melodic track at the bottom the two look alike. The difference appears the moment two rolls are open, which the test below explores.',
+      pros: ['Column, rhythm and tessellation all intact', 'Keyboard at a real piano-roll proportion', 'Transpose, scale lock, octave and velocity sit where the Clip View puts them', 'No change to track-left width'],
+      cons: ['The roll is no longer under its track; a highlight on the row and the dock’s title tie them together', 'Needs a vertical budget: dock height plus the grid'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 512, COLS);
+        row(m, 512, fullHead('Lead', true), lead, leadTie, { preview: [2,0,1,0,0,0,0,3,4,4,0,2] });
+        row(m, 512, drumFullHead('Kick'), kick);
+        row(m, 512, drumFullHead('Hat'), hat);
+        panel(m, 512, 96, ROWS, RH, COLS, '<b>Lead · FM Bell</b><div class="rowc">' + CTRL.chip('Transpose − +0 +') + CTRL.chip('Steps 32') + '</div><div class="rowc">' + CTRL.chip('Lock to C major') + CTRL.chip('Octave − +') + '</div><div class="rowc">' + CTRL.chip('Velocity 80') + CTRL.chip('Fit to notes') + '</div>', true);
+        el('m-note', m, 'Rows touch. The dock is pinned under the grid and shares its horizontal scroll; the row with the open editor is highlighted.');
+      }
+    },
+    {
+      rank: 2, title: 'Split the controls across the row: identity left, parameters right', precedent: 'Ableton Arrangement (headers on the right), Reaper mixer strip, Keyboardia’s existing track-right column',
+      scores: { align: 3, rhythm: 2, tess: 2, kb: 2, risk: 2, disc: 3 },
+      why: 'Drag, name, mute, solo and the pitch toggle stay on the left at 224px. Transpose, step count, velocity, instrument and tools move to a sticky column on the right of the steps. The row’s total width does not change, so the drag drop-centre from lesson 62 stays put. Every row is still identical, so the grid tessellates. The inline roll still splits Lead from Kick, as it does today.',
+      pros: ['All ten controls stay visible on every row', 'Row width unchanged', 'Keyboard drops from 512px to 224px with no drawer'],
+      cons: ['Two sticky columns to maintain, and the right one is off screen on narrow windows', 'Inline roll still breaks the vertical scan while it is open'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 224, COLS, 284);
+        const right = CTRL.tr() + CTRL.badge() + CTRL.steps() + CTRL.V() + CTRL.tools();
+        const rightD = '<span class="c dd" style="visibility:hidden"></span><span class="c badge" style="background:rgba(255,255,255,.06);color:var(--muted)">SMP</span>' + CTRL.steps() + CTRL.V() + CTRL.tools();
+        row(m, 224, shortHead('Lead', true), lead, leadTie, { rightHtml: right, rightW: 284 });
+        panel(m, 224, 224, ROWS, RH, COLS, null, false);
+        row(m, 224, shortHead('Kick', false), kick, null, { rightHtml: rightD, rightW: 284 });
+        row(m, 224, shortHead('Hat', false), hat, null, { rightHtml: rightD, rightW: 284 });
+        el('m-note', m, 'Right column is sticky to the scroller’s right edge. Row width is unchanged: 224 + 284 = 508.');
+      }
+    },
+    {
+      rank: 3, title: 'Responsive column: shrink every header while any roll is open', precedent: 'Bitwig resizable track headers, Maschine Keyboard view as a mode',
+      scores: { align: 3, rhythm: 2, tess: 2, kb: 2, risk: 1, disc: 2 },
+      why: 'Opening a pitch panel is a mode. In that mode all rows collapse to drag, name, mute, solo and the pitch toggle, so the column and the keyboard are 224px; closing the roll restores the full row. Rows always match each other, so tessellation holds, but the column width changes with the mode, which is exactly the lesson 62 hazard unless reorder is disabled while a roll is open.',
+      pros: ['Full controls when composing patterns, small keyboard when editing pitch', 'No new UI surface', 'Rows stay identical to each other'],
+      cons: ['Width change on toggle hits the drag/auto-scroll fragility', 'Controls disappear while editing pitch, including transpose', 'Layout jump when the mode flips'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 224, COLS);
+        row(m, 224, shortHead('Lead', true), lead, leadTie);
+        panel(m, 224, 224, ROWS, RH, COLS, null, false);
+        row(m, 224, shortHead('Kick', false), kick);
+        row(m, 224, shortHead('Hat', false), hat);
+        el('m-note', m, 'All headers are in the collapsed state because a roll is open. Closing it returns the ten-control row.');
+      }
+    },
+    {
+      rank: 4, title: 'Two-line header: identity on line one, parameters as chips on line two', precedent: 'FL Studio channel buttons (dense controls beside each channel), hardware track strips',
+      scores: { align: 3, rhythm: 2, tess: 3, kb: 2, risk: 1, disc: 3 },
+      why: 'Every control stays in the row, stacked into two lines inside a 230px column. Rows grow from 44px to about 60px, uniformly, so the grid still tessellates and the scan still works, but the whole sequencer gets taller and the cells sit in more surrounding surface. The column width changes, so lesson 62 applies.',
+      pros: ['Nothing hidden, nothing moved off the row', 'Grid still contiguous', 'Keyboard 230px'],
+      cons: ['Row height up by a third across every track', 'Column width change hits lesson 62', '20px chips are small targets'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 230, COLS);
+        const two = (name, pvOn, melodic) => CTRL.drag() + CTRL.name(name, true) + CTRL.M(true) + CTRL.S(true)
+          + '<span style="flex-basis:100%;height:0"></span>'
+          + (melodic ? CTRL.chip('+0') + CTRL.chip('32') + CTRL.chip('♫', pvOn) : CTRL.chip('32')) + CTRL.chip('V') + CTRL.chip('⋯');
+        row(m, 230, two('Lead', true, true), lead, leadTie, { tall: true });
+        panel(m, 230, 230, ROWS, RH, COLS, null, false);
+        row(m, 230, two('Kick', false, false), kick, null, { tall: true });
+        row(m, 230, two('Hat', false, false), hat, null, { tall: true });
+        el('m-note', m, 'Rows are 60px tall. Step cells stay 36px.');
+      }
+    },
+    {
+      rank: 5, title: 'Compact row with a per-track drawer', precedent: 'Keyboardia’s own landscape mobile layout and TrackDrawer',
+      scores: { align: 3, rhythm: 1, tess: 1, kb: 2, risk: 1, disc: 2 },
+      why: 'The arrangement in the main prototype. The column shrinks to 224px and the hidden controls appear in a strip under the track. That strip is a row without cells, so it breaks the vertical scan from Lead to Kick, and on a track without the roll open it is the only thing between two rows of cells. It also changes the column width, so lesson 62 applies.',
+      pros: ['Reuses a shipped component and pattern', 'Small keyboard'],
+      cons: ['Drawer strip breaks row rhythm and splits the grid', 'Width change hits lesson 62', 'Transpose and step count one click away'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 224, COLS);
+        row(m, 224, shortHead('Lead', true), lead, leadTie);
+        el('m-drawer', m, CTRL.chip('Transpose − +0 +') + CTRL.chip('Steps 32') + CTRL.chip('Instrument FM Bell') + CTRL.chip('Velocity lane') + CTRL.chip('Pattern tools'));
+        panel(m, 224, 224, ROWS, RH, COLS, null, false);
+        row(m, 224, shortHead('Kick', false), kick);
+        row(m, 224, shortHead('Hat', false), hat);
+        el('m-note', m, 'The drawer is a 40px strip with no cells between Lead and the roll, and would sit between Kick and Hat if Kick’s drawer were open.');
+      }
+    },
+    {
+      rank: 6, title: 'Keyboard view: the roll replaces the grid for one track', precedent: 'Maschine Keyboard view, Hydrogen Piano view, most hardware grooveboxes',
+      scores: { align: 2, rhythm: 0, tess: 0, kb: 3, risk: 2, disc: 2 },
+      why: 'The all-track grid and the roll become two modes of the same area, switched by a track tab strip. The keyboard can be any width because nothing has to align with other rows. But the whole point of Keyboardia’s sea of cells is seeing every instrument against the same beats, and this mode hides the other tracks entirely while you edit pitch.',
+      pros: ['Keyboard width is free', 'Simplest geometry', 'Familiar from hardware'],
+      cons: ['Other tracks vanish while editing', 'Breaks the one-screen philosophy the spec scored views on', 'Mode switching for every pitch edit'],
+      build(root) {
+        const m = el('m', root);
+        el('m-tabs', m, CTRL.chip('Lead', true) + CTRL.chip('Kick') + CTRL.chip('Hat') + CTRL.chip('All tracks'));
+        ruler(m, 96, COLS);
+        panel(m, 96, 96, ROWS + 4, RH, COLS, null, false);
+        el('m-note', m, 'Only the selected track is visible. Kick and Hat are behind their tabs.');
+      }
+    },
+  ];
+
+  // ===== Multi-open test =====
+  const bass = [1,0,0,1,0,0,1,0,1,0,0,1], bassTie = [0,0,0,0,0,0,0,0,0,0,0,0];
+  const leadNotes = notes;
+  const bassNotes = [[0,2,8],[3,2,7],[6,1,9],[8,2,8],[11,1,6]];
+  function grid2(rows, rowH, cols, sets) {
+    const g = el('m-grid'); g.style.width = (cols * PITCH) + 'px'; g.style.height = (rows * rowH) + 'px';
+    sets.forEach(set => set.notes.forEach(([st, len, r]) => { if (st + len > cols) return; const n = el('n ' + (set.cls || ''), g); n.style.left = (st * PITCH) + 'px'; n.style.width = (len * PITCH - GAP) + 'px'; n.style.top = ((r - (set.shift || 0)) * rowH + 2) + 'px'; }));
+    return g;
+  }
+  function lane(parent, leftW, kbW, rows, rowH, cols, ctlHtml, sets) {
+    const p = el('m-lane', parent);
+    const left = el('m-kbwrap', p); left.style.width = leftW + 'px';
+    if (ctlHtml) { const c = el('m-ctl', left, ctlHtml); c.style.width = (leftW - kbW) + 'px'; }
+    left.appendChild(keyboard(kbW, rows, rowH));
+    p.appendChild(grid2(rows, rowH, cols, sets));
+    return p;
+  }
+  const bassHead = pvOn => CTRL.drag() + CTRL.name('Bass') + CTRL.M() + CTRL.S() + CTRL.tr() + '<span class="c badge" style="background:rgba(255,255,255,.06);color:var(--muted)">SMP</span>' + CTRL.steps() + CTRL.pv(pvOn) + CTRL.V() + CTRL.tools();
+  const leadPrev = [2,0,1,0,0,0,0,3,4,4,0,2], bassPrev = [1,0,0,2,0,0,3,0,2,0,0,1];
+
+  const multi = [
+    {
+      rank: 1, title: 'One dock, track tabs, ghost notes for the other melodic tracks', precedent: 'Ghost notes in Ableton, Logic and FL Studio; Bitwig multi-track note editing',
+      scores: { contig: 3, compare: 3, kb: 3, vert: 3, find: 2 },
+      why: 'Opening Bass while Lead is open switches the dock to Bass and keeps Lead visible as dashed ghost notes in the same grid. That is how every DAW lets you write a bassline against a lead: one keyboard, one grid, both parts. The rows above never move, and both melodic rows show their pitch contour in the cells.',
+      pros: ['Grid stays one surface however many rolls are open', 'Two parts compared in the same pitch space', 'Vertical cost is one dock, always'],
+      cons: ['Only one track is editable at a time', 'Which row the dock is editing must be obvious: tab plus row highlight'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 512, COLS);
+        row(m, 512, fullHead('Lead', false), lead, leadTie, { preview: leadPrev });
+        row(m, 512, bassHead(true), bass, null, { preview: bassPrev }).classList.add('m-rowhl', 'bass');
+        row(m, 512, drumFullHead('Kick'), kick);
+        row(m, 512, drumFullHead('Hat'), hat);
+        const d = el('m-panel dock', m); d.style.flexDirection = 'column'; d.style.gap = '0';
+        el('m-dockhead', d, CTRL.chip('Lead') + CTRL.chip('Bass', true) + '<span class="lbl">Ghost: Lead</span>');
+        lane(d, 512, 96, ROWS, RH, COLS, '<b>Bass \u00B7 Sub</b><div class="rowc">' + CTRL.chip('Transpose \u2212 \u221212 +') + CTRL.chip('Steps 32') + '</div><div class="rowc">' + CTRL.chip('Lock to C major') + CTRL.chip('Ghost notes: Lead') + '</div>', [{ notes: leadNotes, cls: 'ghost' }, { notes: bassNotes, cls: 'bass' }]);
+        el('m-note', m, 'Bass is being edited; Lead shows as dashed ghosts. Clicking the Lead tab or the Lead row swaps them.');
+      }
+    },
+    {
+      rank: 2, title: 'One dock with stacked lanes, each fitted to its own pitch range', precedent: 'Logic multi-track piano roll, Reaper lanes',
+      scores: { contig: 3, compare: 2, kb: 3, vert: 2, find: 3 },
+      why: 'Each open track gets a lane inside the dock, with its own small keyboard and only the octave or so it uses. Both are editable at once and the rows above stay contiguous. Compared with ghost notes you lose the shared pitch axis, so an octave relationship between the parts is harder to see, and each extra open track adds a lane.',
+      pros: ['Both parts editable simultaneously', 'Rows above untouched', 'Each lane is only as tall as its notes need'],
+      cons: ['Parts are in separate pitch spaces', 'Three or four open lanes get tall', 'Two keyboards to read'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 512, COLS);
+        row(m, 512, fullHead('Lead', true), lead, leadTie, { preview: leadPrev }).classList.add('m-rowhl');
+        row(m, 512, bassHead(true), bass, null, { preview: bassPrev }).classList.add('m-rowhl', 'bass');
+        row(m, 512, drumFullHead('Kick'), kick);
+        row(m, 512, drumFullHead('Hat'), hat);
+        const d = el('m-panel dock', m); d.style.flexDirection = 'column'; d.style.gap = '0';
+        lane(d, 512, 96, 7, RH, COLS, '<b>Lead \u00B7 FM Bell</b><div class="rowc">' + CTRL.chip('+0') + CTRL.chip('32') + CTRL.chip('C4 to A4') + '</div>', [{ notes: leadNotes }]);
+        lane(d, 512, 96, 5, RH, COLS, '<b>Bass \u00B7 Sub</b><div class="rowc">' + CTRL.chip('\u221212') + CTRL.chip('32') + CTRL.chip('C2 to F2') + '</div>', [{ notes: bassNotes, cls: 'bass', shift: 5 }]);
+        el('m-note', m, 'Two lanes, 7 and 5 rows, each fitted to the notes it holds.');
+      }
+    },
+    {
+      rank: 3, title: 'Per-track rolls as today, but fitted to the notes they hold', precedent: 'Keyboardia today plus a fit-to-notes range, as FL Studio\u2019s preview does',
+      scores: { contig: 1, compare: 1, kb: 1, vert: 2, find: 3 },
+      why: 'Keeps the hidden-layer-beneath-each-instrument model, but a roll opens at the height of the pitch range in use (plus a row either side) instead of three octaves, with a handle to expand. Two open rolls then cost about 100px each rather than 400, and each stays under its own track. The grid is still split, twice, and the keyboard is still the column width.',
+      pros: ['Smallest change to the shipped model', 'Roll is always next to its track', 'Multi-open becomes affordable'],
+      cons: ['Grid split once per open roll', 'Parts cannot be compared in one pitch space', 'Keyboard width unchanged'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 512, COLS);
+        row(m, 512, fullHead('Lead', true), lead, leadTie);
+        panel(m, 512, 512, 7, RH, COLS, null, false);
+        row(m, 512, bassHead(true), bass, null);
+        const p2 = el('m-panel', m); const w2 = el('m-kbwrap', p2); w2.style.width = '512px'; w2.appendChild(keyboard(512, 5, RH)); p2.appendChild(grid2(5, RH, COLS, [{ notes: bassNotes, cls: 'bass', shift: 5 }]));
+        row(m, 512, drumFullHead('Kick'), kick);
+        row(m, 512, drumFullHead('Hat'), hat);
+        el('m-note', m, 'Two rolls, 7 and 5 rows tall, each under its own track. Kick and Hat are pushed down by both.');
+      }
+    },
+    {
+      rank: 4, title: 'Per-track rolls as shipped: full three octaves under each track', precedent: 'Keyboardia today',
+      scores: { contig: 0, compare: 0, kb: 0, vert: 0, find: 3 },
+      why: 'Each open roll inserts a 400px panel between its track and the next. With Lead and Bass open, Kick and Hat are two panels away from Lead, and the beats they share are no longer on one screen. Nothing relates the two melodies to each other.',
+      pros: ['Each roll is exactly where its track is'],
+      cons: ['Two open rolls push the drums off screen', 'Parts in unrelated pitch spaces, far apart', 'Keyboard fills the column twice'],
+      build(root) {
+        const m = el('m', root);
+        ruler(m, 512, COLS);
+        row(m, 512, fullHead('Lead', true), lead, leadTie);
+        panel(m, 512, 512, 14, RH, COLS, null, false);
+        row(m, 512, bassHead(true), bass, null);
+        const p2 = el('m-panel', m); const w2 = el('m-kbwrap', p2); w2.style.width = '512px'; w2.appendChild(keyboard(512, 14, RH)); p2.appendChild(grid2(14, RH, COLS, [{ notes: bassNotes, cls: 'bass', shift: -3 }]));
+        row(m, 512, drumFullHead('Kick'), kick);
+        row(m, 512, drumFullHead('Hat'), hat);
+        el('m-note', m, 'Rolls drawn at 14 rows here; the shipped panel is 36 rows and 400px tall, so the real gap is larger than shown.');
+      }
+    },
+    {
+      rank: 5, title: 'Modal or floating window', precedent: 'FL Studio floating Piano Roll window, Reaper floating MIDI editor',
+      scores: { contig: 3, compare: 1, kb: 3, vert: 3, find: 2 },
+      why: 'The roll opens in a window over the sequencer. The grid underneath is intact but covered, which fails the reason the roll exists in Keyboardia: writing a part while seeing what the other instruments do on the same beats. A floating, non-modal window can be dragged aside, but the step columns no longer align with anything, so the beat you are editing has to be read from a ruler instead of from the kick below it. Two windows at once is a window-management task.',
+      pros: ['Any keyboard size', 'No layout change to the grid', 'Familiar from desktop DAWs'],
+      cons: ['Covers the grid or breaks column alignment', 'Two rolls means two windows to arrange', 'Against the one-screen, modes-visible principles in the spec'],
+      build(root) {
+        const m = el('m', root);
+        const stage = el('m-stage', m);
+        const inner = el('', stage); inner.style.cssText = 'display:flex;flex-direction:column;gap:2px';
+        ruler(inner, 512, COLS);
+        row(inner, 512, fullHead('Lead', true), lead, leadTie);
+        row(inner, 512, bassHead(true), bass, null);
+        row(inner, 512, drumFullHead('Kick'), kick);
+        row(inner, 512, drumFullHead('Hat'), hat);
+        el('m-scrim', stage);
+        const w = el('m-modal', stage);
+        el('m-dockhead', w, '<b>Lead \u00B7 Piano roll</b>' + CTRL.chip('Lead', true) + CTRL.chip('Bass') + '<span class="x">\u2715</span>');
+        const body = el('', w); body.style.display = 'flex'; body.appendChild(keyboard(96, 8, RH)); body.appendChild(grid2(8, RH, 10, [{ notes: leadNotes }]));
+        el('m-note', m, 'The window covers the rows it would need to align with.');
+      }
+    },
+  ];
+  const mlabels = { contig: 'Grid stays contiguous', compare: 'Compare two parts', kb: 'Keyboard size', vert: 'Vertical cost', find: 'Roll next to its track' };
+  const mroot = document.getElementById('multi');
+  multi.sort((a, b) => a.rank - b.rank).forEach(o => {
+    const card = el('card' + (o.rank === 1 ? ' top' : '') + (o.rank >= 4 ? ' low' : ''), mroot);
+    const main = el('', card);
+    el('card-head', main, '<span class="rank">#' + o.rank + '</span><h3>' + o.title + '</h3><span class="precedent">' + o.precedent + '</span>');
+    const frame = el('mockframe', main); o.build(frame);
+    const side = el('side', card);
+    const sc = el('scores', side);
+    Object.keys(mlabels).forEach(k => {
+      const v = o.scores[k];
+      sc.insertAdjacentHTML('beforeend', '<span>' + mlabels[k] + '</span><span class="dots' + (v <= 1 ? ' bad' : v === 2 ? ' warn' : '') + '">' + [0,1,2].map(i => '<i class="' + (i < v ? 'on' : '') + '"></i>').join('') + '</span>');
+    });
+    el('why', side, o.why);
+    side.insertAdjacentHTML('beforeend', '<h4>For</h4><ul class="pros">' + o.pros.map(p => '<li>' + p + '</li>').join('') + '</ul><h4>Against</h4><ul class="cons">' + o.cons.map(c => '<li>' + c + '</li>').join('') + '</ul>');
+  });
+
+  const labels = { align: 'Column alignment', rhythm: 'Row rhythm', tess: 'Tessellation', kb: 'Keyboard size', risk: 'Engineering risk', disc: 'Discoverability' };
+  const cards = document.getElementById('cards');
+  options.sort((a, b) => a.rank - b.rank).forEach(o => {
+    const card = el('card' + (o.rank === 1 ? ' top' : '') + (o.rank >= 5 ? ' low' : ''), cards);
+    const main = el('', card);
+    el('card-head', main, '<span class="rank">#' + o.rank + '</span><h3>' + o.title + '</h3><span class="precedent">' + o.precedent + '</span>');
+    const frame = el('mockframe', main); o.build(frame);
+    const side = el('side', card);
+    const sc = el('scores', side);
+    Object.keys(labels).forEach(k => {
+      const v = o.scores[k];
+      sc.insertAdjacentHTML('beforeend', '<span>' + labels[k] + '</span><span class="dots' + (v <= 1 ? ' bad' : v === 2 ? ' warn' : '') + '">' + [0,1,2].map(i => '<i class="' + (i < v ? 'on' : '') + '"></i>').join('') + '</span>');
+    });
+    el('why', side, o.why);
+    side.insertAdjacentHTML('beforeend', '<h4>For</h4><ul class="pros">' + o.pros.map(p => '<li>' + p + '</li>').join('') + '</ul><h4>Against</h4><ul class="cons">' + o.cons.map(c => '<li>' + c + '</li>').join('') + '</ul>');
+  });
+})();
+</script>
+
+</body>
+</html>
