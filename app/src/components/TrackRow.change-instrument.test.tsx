@@ -138,12 +138,6 @@ describe('TrackRow change instrument', () => {
     expect(toggle.classList.contains('active')).toBe(true);
   });
 
-  it('leaves the unreachable mobile drawer without an instrument row', () => {
-    renderRow({ onSetInstrument: vi.fn() });
-    fireEvent.click(document.querySelector('.mobile-edit-panel')!);
-    expect(screen.queryByTestId('drawer-change-instrument-track-1')).toBeNull();
-  });
-
   it('a landscape name asks the dock for this track\'s Track pane', () => {
     const onToggleTrackPane = vi.fn();
     const onOpenDock = vi.fn();

@@ -28,8 +28,7 @@
 }
 
 .action-btn.paste,
-.drawer-action-btn-compact.primary,
-.drawer-action-btn.primary {
+.drawer-action-btn-compact.primary {
   animation: kb-paste-in var(--motion-fast-duration) var(--motion-ease-out);
 }
 
@@ -63,8 +62,7 @@
 @media (prefers-reduced-motion: reduce) {
   .plock-inline,
   .action-btn.paste,
-  .drawer-action-btn-compact.primary,
-  .drawer-action-btn.primary {
+  .drawer-action-btn-compact.primary {
     animation: none;
   }
 

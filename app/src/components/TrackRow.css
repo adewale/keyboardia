@@ -23,16 +23,6 @@
   border-radius: 4px;
 }
 
-/* Mobile: Track header (name only) - hidden on desktop */
-.track-header-mobile {
-  display: none;
-}
-
-/* Mobile: Edit panel toggle - hidden on desktop */
-.mobile-edit-panel {
-  display: none;
-}
-
 /*
  * TRACK ROW LAYOUT
  *
@@ -157,13 +147,8 @@
 /* Group containers removed - CSS Grid on .track-left handles alignment */
 /* .track-transpose-group kept for connected border styling */
 
-/* Mobile: Swim Lanes layout
- * - Horizontal scrolling tracks
- * - Tap track name to expand inline drawer
- * - No overflow menu - track name is the trigger
- *
- * LESSON FOR DESKTOP: The inline drawer pattern keeps context better
- * than modal dialogs. Could be backported for p-lock editing.
+/* Under 768px wide (mobile landscape; portrait renders no rows):
+ * horizontally scrolling rows. The landscape section below refines these.
  */
 @media (max-width: 768px) {
   .track-row {
@@ -198,7 +183,7 @@
     flex-shrink: 0;
   }
 
-  /* Track name - tappable to open drawer */
+  /* Track name - tappable (landscape: opens the dock's Track pane) */
   .track-name {
     flex: 0 0 auto;
     min-width: 60px;
@@ -236,152 +221,6 @@
 
   .steps::-webkit-scrollbar {
     display: none;
-  }
-
-  /* Hint that track name is tappable */
-  .track-row::after {
-    content: '';
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 0;
-    height: 0;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 5px solid var(--color-surface-active);
-    opacity: 0;
-    transition: opacity 0.15s;
-    pointer-events: none;
-  }
-
-  /* Show expand hint when drawer is closed */
-  .track-row-wrapper:not(:has(.inline-drawer)) .track-row::after {
-    opacity: 1;
-  }
-}
-
-/* Mobile Portrait: Read-mostly layout
- * Design:
- *   [Track Name + badges]         <- header row
- *   [Steps grid - full width]     <- swipeable steps
- *   [▼ tap to edit]               <- expandable panel trigger
- *   [Drawer with all controls]    <- expands on tap
- */
-@media (max-width: 480px) and (orientation: portrait) {
-  /* Show mobile-specific track header */
-  .track-header-mobile {
-    display: flex;
-    align-items: center;
-    padding: 8px 0 4px 0;
-  }
-
-  .track-name-mobile {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--color-text);
-    text-transform: capitalize;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .track-header-mobile.muted .track-name-mobile {
-    opacity: 0.5;
-  }
-
-  .track-header-mobile.soloed .track-name-mobile {
-    color: var(--color-yellow-text);
-  }
-
-  .track-type-badge {
-    font-size: 12px;
-    color: var(--color-purple-text);
-  }
-
-  .track-status-badge {
-    font-size: 10px;
-    font-weight: bold;
-    padding: 2px 5px;
-    border-radius: 3px;
-    margin-left: 4px;
-  }
-
-  .track-status-badge.muted {
-    background: var(--color-error);
-    color: var(--color-on-bright);
-  }
-
-  .track-status-badge.soloed {
-    background: var(--color-yellow);
-    color: var(--color-bg);
-  }
-
-  /* Hide ALL desktop track row controls */
-  .track-row {
-    display: block;
-    padding: 0;
-    border-bottom: none;
-  }
-
-  .track-row .mute-button,
-  .track-row .solo-button,
-  .track-row .track-name,
-  .track-row .transpose-control,
-  .track-row .step-count-select,
-  .track-row .expand-toggle,
-  .track-row .expand-placeholder,
-  .track-row .track-actions {
-    display: none !important;
-  }
-
-  /* Steps container - full width, swipeable */
-  .track-row .steps {
-    display: flex;
-    width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 4px 0;
-    /* Add right padding so last cell is partially cut off */
-    padding-right: 24px;
-    margin-right: -12px;
-    scroll-snap-type: x proximity;
-  }
-
-  .track-row .steps::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Remove arrow hint from track-row */
-  .track-row::after {
-    display: none;
-  }
-
-  /* Show mobile edit panel trigger */
-  .mobile-edit-panel {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-surface-elevated);
-    cursor: pointer;
-    transition: background 0.1s ease;
-  }
-
-  .mobile-edit-panel:active {
-    background: rgba(255, 255, 255, 0.05);
-  }
-
-  .mobile-edit-hint {
-    font-size: 11px;
-    color: var(--color-text-muted);
-    letter-spacing: 0.5px;
-  }
-
-  .mobile-edit-panel.expanded .mobile-edit-hint {
-    color: var(--color-text-muted);
   }
 }
 
@@ -781,7 +620,7 @@
   padding-right: 12px;
 }
 
-/* Mobile: Hide track actions - controls available via drawer/menu */
+/* Mobile: Hide track actions - they are in the dock's Track pane */
 @media (max-width: 768px) {
   .track-actions {
     display: none;
@@ -862,74 +701,6 @@
   overflow: visible;
 }
 
-/* Mobile pattern tools in drawer */
-.drawer-pattern-tools {
-  display: flex;
-  gap: 6px;
-}
-
-.drawer-pattern-btn {
-  width: auto;
-  min-width: 44px;
-  height: 44px;
-  padding: 0 8px;
-  border: 1px solid var(--color-surface-active);
-  border-radius: 6px;
-  background: var(--color-surface);
-  color: var(--color-text-muted);
-  font-size: 11px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.drawer-pattern-btn:hover:not(:disabled) {
-  background: var(--color-surface-hover);
-  border-color: var(--color-purple);
-  color: var(--color-purple-text);
-}
-
-.drawer-pattern-btn:active:not(:disabled) {
-  transform: scale(0.95);
-}
-
-.drawer-pattern-btn:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
-}
-
-.drawer-euclidean-slider {
-  flex: 1;
-  height: 6px;
-  -webkit-appearance: none;
-  appearance: none;
-  background: linear-gradient(90deg, var(--color-surface-active) 0%, var(--color-teal) 100%);
-  border-radius: 3px;
-  outline: none;
-  cursor: pointer;
-}
-
-.drawer-euclidean-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  background: var(--color-teal);
-  cursor: pointer;
-}
-
-.drawer-euclidean-slider::-moz-range-thumb {
-  width: 18px;
-  height: 18px;
-  border: none;
-  border-radius: 50%;
-  background: var(--color-teal);
-  cursor: pointer;
-}
-
 /* ===== Phase 31C: Category Color Coding ===== */
 
 /* Category colour is no longer a row edge: it is the 3px tick on line one of
@@ -965,16 +736,6 @@
 /* Track row wrapper - compact layout */
 .step-sequencer[data-orientation="landscape"] .track-row-wrapper {
   margin-bottom: 2px;
-}
-
-/* Hide mobile header (name row) - use inline name instead */
-.step-sequencer[data-orientation="landscape"] .track-header-mobile {
-  display: none !important;
-}
-
-/* Hide mobile edit panel - using TrackDrawer instead */
-.step-sequencer[data-orientation="landscape"] .mobile-edit-panel {
-  display: none !important;
 }
 
 /* Track row - simple flex layout for landscape. The 48px control block sets
@@ -1093,11 +854,6 @@
   display: none;
 }
 
-/* Inline drawer (existing) - hide in landscape, use TrackDrawer instead */
-.step-sequencer[data-orientation="landscape"] .inline-drawer {
-  display: none !important;
-}
-
 /* ===== Change Instrument (issue #63) ===== */
 
 /*
@@ -1143,26 +899,6 @@
 
 .instrument-toggle.active {
   background: var(--color-accent-muted);
-  border-color: var(--color-accent);
-  color: var(--color-accent-text);
-}
-
-/* Instrument row button in the mobile inline drawer */
-.drawer-instrument-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 6px 10px;
-  border: 1px solid var(--color-surface-active);
-  border-radius: 4px;
-  background: var(--color-surface-elevated);
-  color: var(--color-text);
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.drawer-instrument-btn.active {
   border-color: var(--color-accent);
   color: var(--color-accent-text);
 }

@@ -201,7 +201,7 @@ describe('two-line control block', () => {
   });
 
   it('no longer renders the transpose, step-count or pattern-tools controls in the row', () => {
-    const { container } = renderRow({ onSetTranspose: vi.fn(), onSetStepCount: vi.fn() });
+    const { container } = renderRow();
     const left = container.querySelector('.track-left')!;
 
     expect(left.querySelector('.track-pitch-step-group')).toBeNull();

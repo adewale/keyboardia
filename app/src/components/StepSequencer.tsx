@@ -1044,17 +1044,8 @@ export function StepSequencer() {
                   onStartCopy={() => handleStartCopy(track.id)}
                   onCopyTo={() => handleCopyTo(track.id)}
                   onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
-                  onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
-                  onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
-                  onSetVolume={(volume) => handleSetVolume(track.id, volume)}
                   scale={state.scale}
-                  onRotatePattern={(direction) => handleRotatePattern(track.id, direction)}
-                  onInvertPattern={() => handleInvertPattern(track.id)}
-                  onReversePattern={() => handleReversePattern(track.id)}
-                  onMirrorPattern={() => handleMirrorPattern(track.id)}
-                  onEuclideanFill={(hits) => handleEuclideanFill(track.id, hits)}
                   onSetName={(name) => handleSetName(track.id, name)}
-                  onSetTrackSwing={(swing) => handleSetTrackSwing(track.id, swing)}
                   onSetInstrument={isPublished
                     ? undefined
                     : (sampleId) => handleSetInstrument(track.id, sampleId)}

@@ -1,17 +1,14 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Track, ParameterLock, ScaleState, LoopRegion } from '../types';
-import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
+import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { computeStepContours } from './step-contour';
-import { Add, ChevronDown, ChevronUp, Minus } from '../icons';
 import { PitchContour } from './ChromaticGrid';
 import { EDITOR_DOCK_ID } from './editor-dock-state';
 import { DOCK_INSTRUMENT_PICKER_ID } from './DockPanes';
 import { VelocityLane } from './VelocityLane';
-import { InlineDrawer } from './InlineDrawer';
 import { TrackNameEditor } from './TrackNameEditor';
 import { previewInstrument } from '../audio/audioTriggers';
-import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import {
   getInstrumentCategory,
@@ -28,7 +25,6 @@ import './TrackRow.css';
 // so the production stylesheet order does not change (lesson 63).
 import './ChromaticGrid.css';
 import './VelocityLane.css';
-import './InlineDrawer.css';
 // The transpose and step-count dropdowns moved to the dock's Track pane; their
 // styles (and the shared dropdown recipe, first) stay imported here so the
 // production stylesheet order does not depend on when the dock loads
@@ -75,19 +71,9 @@ interface TrackRowProps {
   onStartCopy: () => void;
   onCopyTo: () => void;
   onSetParameterLock?: (step: number, lock: ParameterLock | null) => void;
-  onSetTranspose?: (transpose: number) => void;
-  onSetStepCount?: (stepCount: number) => void;
-  onSetVolume?: (volume: number) => void;
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
-  // Phase 31B: Pattern manipulation
-  onRotatePattern?: (direction: 'left' | 'right') => void;
-  onInvertPattern?: () => void;
-  onReversePattern?: () => void;
-  onMirrorPattern?: () => void;
-  onEuclideanFill?: (hits: number) => void;
   // Phase 31D: Editing conveniences
   onSetName?: (name: string) => void;
-  onSetTrackSwing?: (swing: number) => void;
   /**
    * Change instrument (issue #63). Absent for a published session, which is
    * what hides the control — the same mechanism that hides Delete. The badge
@@ -162,17 +148,8 @@ export const TrackRow = React.memo(function TrackRow({
   onStartCopy,
   onCopyTo,
   onSetParameterLock,
-  onSetTranspose,
-  onSetStepCount,
-  onSetVolume,
   scale,
-  onRotatePattern,
-  onInvertPattern,
-  onReversePattern,
-  onMirrorPattern,
-  onEuclideanFill,
   onSetName,
-  onSetTrackSwing,
   onSetInstrument,
   isInstrumentPickerOpen: isDockInstrumentPickerOpen = false,
   onToggleInstrumentPicker,
@@ -198,19 +175,12 @@ export const TrackRow = React.memo(function TrackRow({
 }: TrackRowProps) {
   // Phase 31G: Velocity lane visibility
   const [isVelocityExpanded, setIsVelocityExpanded] = useState(false);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
   // NOTE: Track name editing state moved to TrackNameEditor component
   // Phase 31G FIX: Track if pointerdown originated on drag handle
   // HTML5 DnD e.target is always the [draggable] element, not the clicked child
   const dragHandleClickedRef = useRef(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const remoteChanges = useRemoteChanges();
-
-  // Phase 31B: Calculate active step count for Euclidean slider
-  const activeStepCount = useMemo(() => {
-    const stepCount = track.stepCount ?? STEPS_PER_PAGE;
-    return track.steps.slice(0, stepCount).filter(Boolean).length;
-  }, [track.steps, track.stepCount]);
 
   // Check if this is a melodic track (can use chromatic/keyboard view)
   const isMelodicTrack = !isDrumInstrument(track.sampleId);
@@ -279,33 +249,6 @@ export const TrackRow = React.memo(function TrackRow({
     const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
     return Array.from({ length: trackStepCount }, (_, i) => () => handleStepSelect(i));
   }, [track.stepCount, handleStepSelect]);
-
-  const handleTransposeChange = useCallback(async (transpose: number) => {
-    if (!onSetTranspose) return;
-
-    // Guard against NaN (can happen with undefined track.transpose from old sessions)
-    const safeTranspose = Number.isFinite(transpose) ? transpose : 0;
-    onSetTranspose(safeTranspose);
-
-    // Preview sound (only if audio already loaded - don't block for button click)
-    await previewInstrument('preview_transpose', {
-      sampleId: track.sampleId,
-      previewId: `preview-${track.id}`,
-      pitch: safeTranspose,
-    });
-  }, [onSetTranspose, track.sampleId, track.id]);
-
-  // Phase 25: Handle track volume changes
-  const handleTrackVolumeChange = useCallback((volume: number) => {
-    if (!onSetVolume) return;
-    onSetVolume(clamp(volume, 0, 1));
-  }, [onSetVolume]);
-
-  // Phase 31D: Handle per-track swing changes
-  const handleTrackSwingChange = useCallback((trackSwing: number) => {
-    if (!onSetTrackSwing) return;
-    onSetTrackSwing(clamp(trackSwing, 0, 100));
-  }, [onSetTrackSwing]);
 
   // Change instrument (issue #63): the badge opens the picker in the dock.
   const canChangeInstrument = !!onSetInstrument && !readOnly;
@@ -453,16 +396,6 @@ export const TrackRow = React.memo(function TrackRow({
       onDrop={handleDrop}
       onDragEnd={handleDragEndEvent}
     >
-      {/* Mobile: Track header row with name only */}
-      <div className={`track-header-mobile ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''}`}>
-        <span className="track-name-mobile">
-          {track.name}
-          {isMelodicTrack && <span className="track-type-badge">♪</span>}
-          {track.muted && <span className="track-status-badge muted">M</span>}
-          {track.soloed && <span className="track-status-badge soloed">S</span>}
-        </span>
-      </div>
-
       <div
         className={`track-row ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}
         data-category={instrumentCategory}
@@ -705,257 +638,6 @@ export const TrackRow = React.memo(function TrackRow({
         </div>
       </div>
 
-      {/* Mobile: Edit panel toggle (always visible, expands on tap) */}
-      <div
-        className={`mobile-edit-panel ${isMenuOpen ? 'expanded' : ''}`}
-        onClick={() => setIsMenuOpen(!isMenuOpen)}
-        onKeyDown={(event) => {
-          if (event.key === 'Enter' || event.key === ' ') {
-            event.preventDefault();
-            setIsMenuOpen(!isMenuOpen);
-          }
-        }}
-        role="button"
-        tabIndex={0}
-        aria-expanded={isMenuOpen}
-        // InlineDrawer unmounts while closed; aria-controls must reference an
-        // element that exists.
-        aria-controls={isMenuOpen ? `inline-drawer-${track.id}` : undefined}
-      >
-        <span className="mobile-edit-hint">
-          {isMenuOpen
-            ? <><ChevronUp size={12} aria-hidden="true" /> collapse</>
-            : <><ChevronDown size={12} aria-hidden="true" /> tap to edit</>}
-        </span>
-      </div>
-
-      {/* Inline drawer - expands below track row (mobile swim lanes pattern) */}
-      <InlineDrawer
-        id={`inline-drawer-${track.id}`}
-        isOpen={isMenuOpen}
-        onClose={() => setIsMenuOpen(false)}
-      >
-        {/* Row 1: Mute/Solo buttons */}
-        <div className="drawer-row">
-          <span className="drawer-label">Track</span>
-          <div className="drawer-toggle-group">
-            <button
-              className={`drawer-toggle-btn ${track.muted ? 'active muted' : ''}`}
-              onClick={onToggleMute}
-              title="Mute track"
-              aria-label="Mute track"
-              aria-pressed={track.muted}
-            >
-              M
-            </button>
-            <button
-              className={`drawer-toggle-btn ${track.soloed ? 'active soloed' : ''}`}
-              onClick={onToggleSolo}
-              title="Solo track"
-              aria-label="Solo track"
-              aria-pressed={track.soloed}
-            >
-              S
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2: Transpose */}
-        <div className="drawer-row">
-          <span className="drawer-label">Transpose</span>
-          <div className="drawer-stepper">
-            <button
-              className="drawer-stepper-btn"
-              onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
-              disabled={(track.transpose ?? 0) <= -24}
-              aria-label="Transpose down"
-            >
-              <Minus size={14} aria-hidden="true" />
-            </button>
-            <span className={`drawer-stepper-value ${(track.transpose ?? 0) !== 0 ? 'active' : ''}`}>
-              {(track.transpose ?? 0) > 0 ? '+' : ''}{track.transpose ?? 0}
-            </span>
-            <button
-              className="drawer-stepper-btn"
-              onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
-              disabled={(track.transpose ?? 0) >= 24}
-              aria-label="Transpose up"
-            >
-              <Add size={14} aria-hidden="true" />
-            </button>
-          </div>
-        </div>
-
-        {/* Row 3: Step count */}
-        <div className="drawer-row">
-          <span className="drawer-label">Steps</span>
-          <select
-            className="drawer-select"
-            value={track.stepCount ?? STEPS_PER_PAGE}
-            onChange={(e) => onSetStepCount?.(Number(e.target.value))}
-          >
-            {STEP_COUNT_OPTIONS.map((count) => (
-              <option key={count} value={count}>
-                {count}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Row 4: Volume */}
-        <div className="drawer-row">
-          <span className="drawer-label">Volume</span>
-          <div className="drawer-slider-group">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={Math.round((track.volume ?? 1) * 100)}
-              onChange={(e) => handleTrackVolumeChange(Number(e.target.value) / 100)}
-              className="drawer-volume-slider"
-            />
-            <span className="drawer-slider-value">{Math.round((track.volume ?? 1) * 100)}%</span>
-          </div>
-        </div>
-
-        {/* Phase 31D: Per-track swing */}
-        <div className="drawer-row">
-          <span className="drawer-label">Swing</span>
-          <div className="drawer-slider-group">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={track.swing ?? 0}
-              onChange={(e) => handleTrackSwingChange(Number(e.target.value))}
-              className="drawer-swing-slider"
-            />
-            <span className="drawer-slider-value">
-              {`${track.swing ?? 0}%`}
-            </span>
-          </div>
-        </div>
-
-        <div className="drawer-divider" />
-
-        {/* Phase 31B: Pattern Tools in mobile drawer */}
-        <div className="drawer-row">
-          <span className="drawer-label">Pattern</span>
-          <div className="drawer-pattern-tools">
-            <button
-              className="drawer-pattern-btn"
-              onClick={() => onRotatePattern?.('left')}
-              title="Rotate left"
-              aria-label="Rotate pattern left"
-              disabled={!hasSteps}
-            >
-              ←
-            </button>
-            <button
-              className="drawer-pattern-btn"
-              onClick={() => onRotatePattern?.('right')}
-              title="Rotate right"
-              aria-label="Rotate pattern right"
-              disabled={!hasSteps}
-            >
-              →
-            </button>
-            <button
-              className="drawer-pattern-btn"
-              onClick={() => onInvertPattern?.()}
-              title="Invert"
-              aria-label="Invert pattern"
-            >
-              Invert
-            </button>
-            <button
-              className="drawer-pattern-btn"
-              onClick={() => onReversePattern?.()}
-              title="Reverse"
-              aria-label="Reverse pattern"
-              disabled={!hasSteps}
-            >
-              Reverse
-            </button>
-            <button
-              className="drawer-pattern-btn"
-              onClick={() => onMirrorPattern?.()}
-              title="Smart Mirror"
-              aria-label="Smart mirror pattern"
-              disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
-            >
-              Mirror
-            </button>
-          </div>
-        </div>
-
-        {/* Phase 31B: Euclidean slider in mobile drawer */}
-        <div className="drawer-row">
-          <span className="drawer-label">Euclidean</span>
-          <div className="drawer-slider-group">
-            <input
-              type="range"
-              className="drawer-euclidean-slider"
-              min="0"
-              max={track.stepCount ?? STEPS_PER_PAGE}
-              value={activeStepCount}
-              onChange={(e) => onEuclideanFill?.(Number(e.target.value))}
-            />
-            <span className="drawer-slider-value">{activeStepCount}/{track.stepCount ?? STEPS_PER_PAGE}</span>
-          </div>
-        </div>
-
-        <div className="drawer-divider" />
-
-        {/* Actions */}
-        <div className="drawer-actions">
-          {isCopyTarget ? (
-            <button
-              className="drawer-action-btn primary"
-              onClick={() => {
-                onCopyTo();
-                setIsMenuOpen(false);
-              }}
-            >
-              Paste
-            </button>
-          ) : (
-            <>
-              <button
-                className="drawer-action-btn"
-                onClick={() => {
-                  onStartCopy();
-                  setIsMenuOpen(false);
-                }}
-                disabled={!hasSteps}
-              >
-                Copy
-              </button>
-              <button
-                className="drawer-action-btn"
-                onClick={() => {
-                  onClear();
-                  setIsMenuOpen(false);
-                }}
-                disabled={!hasSteps}
-              >
-                Clear
-              </button>
-              {canDelete && (
-                <button
-                  className="drawer-action-btn destructive"
-                  onClick={() => {
-                    onDelete();
-                    setIsMenuOpen(false);
-                  }}
-                >
-                  Delete
-                </button>
-              )}
-            </>
-          )}
-        </div>
-      </InlineDrawer>
     </div>
   );
 });
