@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import type { Track, ParameterLock, FMParams, ScaleState, LoopRegion } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
+import { computeStepContours } from './step-contour';
 import { Add, ChevronDown, ChevronUp, Minus } from '../icons';
 import { PitchContour } from './ChromaticGrid';
 import { EDITOR_DOCK_ID } from './editor-dock-state';
@@ -233,6 +234,14 @@ export const TrackRow = React.memo(function TrackRow({
       return null;
     });
   }, [isMelodicTrack, track.steps, track.parameterLocks, track.transpose, track.sampleId, track.stepCount]);
+
+  // Pitch contour marks: each active melodic step's pitch within the track's
+  // own active range. Drum tracks get none.
+  const { steps, parameterLocks, transpose, stepCount } = track;
+  const stepContours = useMemo(() => {
+    if (!isMelodicTrack) return null;
+    return computeStepContours({ steps, parameterLocks, transpose, stepCount });
+  }, [isMelodicTrack, steps, parameterLocks, transpose, stepCount]);
 
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
@@ -715,6 +724,7 @@ export const TrackRow = React.memo(function TrackRow({
                   parameterLock={track.parameterLocks[index]}
                   disabled={readOnly}
                   rangeWarning={rangeWarnings?.[index] ?? null}
+                  contour={stepContours?.[index] ?? null}
                   swing={swing}
                   selected={selectedStep === index || (selectedSteps?.has(index) ?? false)}
                   isAnchor={selectionAnchor === index}

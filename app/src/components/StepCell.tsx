@@ -1,5 +1,6 @@
 import { memo, useCallback } from 'react';
 import type { ParameterLock } from '../types';
+import type { StepContour } from './step-contour';
 import { useLongPress } from '../hooks/useLongPress';
 import './StepCell.css';
 
@@ -17,6 +18,7 @@ interface StepCellProps {
   isPageEnd?: boolean; // True if this is the last step of a 16-step page
   flashColor?: string | null; // Phase 11: Remote change attribution color
   rangeWarning?: 'out-of-range' | 'suboptimal-range' | null; // Phase 31H: Range warning for pitch
+  contour?: StepContour | null; // Pitch contour mark: melodic tracks only, null on inactive steps
   onClick: () => void;
   onSelect: () => void;
   // Phase 31F: Multi-select support
@@ -27,7 +29,7 @@ interface StepCellProps {
   onPaintEnter?: () => void; // Called on pointer enter during painting
 }
 
-export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, isAnchor, hasSelection, disabled = false, dimmed, isPageEnd, flashColor, rangeWarning, onClick, onSelect, onSelectToggle, onSelectExtend, onPaintStart, onPaintEnter }: StepCellProps) {
+export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, isAnchor, hasSelection, disabled = false, dimmed, isPageEnd, flashColor, rangeWarning, contour = null, onClick, onSelect, onSelectToggle, onSelectExtend, onPaintStart, onPaintEnter }: StepCellProps) {
   // Highlight every 4th step (beat boundaries)
   const isBeatStart = stepIndex % 4 === 0;
   const isSwungStep = stepIndex % 2 === 1; // Odd steps get swung
@@ -35,6 +37,13 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
   const hasPitchLock = parameterLock?.pitch !== undefined && parameterLock.pitch !== 0;
   const hasVolumeLock = parameterLock?.volume !== undefined && parameterLock.volume !== 1;
   const hasTie = parameterLock?.tie === true; // Phase 29B: Tied notes
+  // The contour mark carries the pitch (its height) and the tie (its left
+  // extension), so on a cell that shows one the pitch and tie badges give way
+  // to it. The volume badge stays and the mark stops short of it.
+  const showContour = active && contour !== null;
+  const showTieBadge = hasTie && !showContour;
+  const showPitchBadge = hasPitchLock && !showContour;
+  const showBadges = showTieBadge || showPitchBadge || hasVolumeLock;
 
   // Build tooltip text for hover discovery
   const buildTooltip = (): string | undefined => {
@@ -184,15 +193,29 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
         />
       )}
 
+      {/* Pitch contour mark: height is the pitch within the track's range */}
+      {showContour && (
+        <span
+          className={[
+            'step-contour',
+            contour.tied && 'tied',
+            hasVolumeLock && 'beside-badges',
+          ].filter(Boolean).join(' ')}
+          data-testid="step-contour"
+          aria-hidden="true"
+          style={{ '--contour-fraction': contour.fraction } as React.CSSProperties}
+        />
+      )}
+
       {/* Parameter lock badges - color coded */}
-      {hasLock && (
+      {showBadges && (
         <div className="lock-badges">
-          {hasTie && (
+          {showTieBadge && (
             <span className="lock-badge tie" title="Tied: continues from previous step">
               ⌒
             </span>
           )}
-          {hasPitchLock && (
+          {showPitchBadge && (
             <span className="lock-badge pitch" title={`Pitch: ${parameterLock.pitch! > 0 ? '+' : ''}${parameterLock.pitch}`}>
               {parameterLock.pitch! > 0 ? '↑' : '↓'}
             </span>

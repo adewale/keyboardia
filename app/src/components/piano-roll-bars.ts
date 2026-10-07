@@ -62,7 +62,10 @@ export function noteName(midi: number): string {
 /** Row index from the top (0 = MIDI_MAX). */
 export const rowOf = (midi: number): number => MIDI_MAX - midi;
 
-export function trackLength(track: Track): number {
+/** The fields of a track that its note bars are computed from. */
+export type BarSource = Pick<Track, 'steps' | 'parameterLocks' | 'transpose' | 'stepCount'>;
+
+export function trackLength(track: Pick<Track, 'stepCount'>): number {
   return track.stepCount ?? STEPS_PER_PAGE;
 }
 
@@ -76,7 +79,7 @@ export function pitchLockFor(track: Track, midi: number): number {
  * it only when it is active, the previous step is active, and its own lock
  * carries `tie: true`.
  */
-export function computeBars(track: Track, length: number = trackLength(track)): NoteBar[] {
+export function computeBars(track: BarSource, length: number = trackLength(track)): NoteBar[] {
   const bars: NoteBar[] = [];
   let current: NoteBar | null = null;
   for (let i = 0; i < length; i++) {

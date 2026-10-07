@@ -187,6 +187,42 @@
   background: rgba(255, 255, 255, 0.25);
 }
 
+/* Pitch contour mark (melodic tracks): a 3px bar whose height is the step's
+   pitch within the track's own active range. Positioned against the padding
+   box, so the mapping scales with the cell: on a 36px cell (32px inside the
+   border) the top runs from 24px at the lowest pitch to 4px at the highest,
+   and the 44px and 48px mobile cells keep the same 4px top and 5px bottom
+   margins. --contour-fraction is set per cell, 0 = lowest, 1 = highest. */
+.step-cell .step-contour {
+  position: absolute;
+  left: 5px;
+  right: 5px;
+  top: calc((100% - 8px) - var(--contour-fraction, 0.5) * (100% - 12px));
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.8);
+  pointer-events: none;
+}
+
+/* A tied step continues the held note: the mark runs through the cell's left
+   border and the 3px gap to meet the previous cell, with square left corners,
+   so the note reads as one line. -7px = 4px tie border + 3px gap. */
+.step-cell .step-contour.tied {
+  left: -7px;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Landscape rows space cells 2px apart. */
+.step-sequencer[data-orientation="landscape"] .step-cell .step-contour.tied {
+  left: -6px;
+}
+
+/* Stop short of the volume badge in the top-right corner (12px + 1px inset
+   + 2px clearance) so the mark never runs under it. */
+.step-cell .step-contour.beside-badges {
+  right: 15px;
+}
+
 /* Phase 31C: Inactive steps within track - reduce visual noise */
 .step-cell:not(.active):not(.dimmed) {
   opacity: 0.65;
@@ -267,6 +303,8 @@
   top: 2px;
   left: 2px;
   transform: none;
+  /* Stay above the pitch contour mark, which can cross this corner. */
+  z-index: 1;
 }
 
 /* Suboptimal range - notes that work but may not sound ideal */
