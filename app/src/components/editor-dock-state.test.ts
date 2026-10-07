@@ -18,7 +18,7 @@ import {
 describe('editor dock state', () => {
   it('starts closed with nothing docked', () => {
     expect(DOCK_CLOSED).toEqual({
-      open: false, trackId: null, viewMode: 'chromatic', detent: 'compact', ghostVisibility: {},
+      open: false, trackId: null, viewMode: 'piano-roll', detent: 'compact', ghostVisibility: {},
     });
     expect(isTrackDocked(DOCK_CLOSED, 'lead')).toBe(false);
   });
@@ -47,11 +47,11 @@ describe('editor dock state', () => {
   });
 
   it('keeps the track and view mode across close so the dock can collapse with content', () => {
-    const open = setDockViewMode(openDock(DOCK_CLOSED, 'lead'), 'piano-roll');
+    const open = setDockViewMode(openDock(DOCK_CLOSED, 'lead'), 'chromatic');
     const closed = closeDock(open);
-    expect(closed).toMatchObject({ open: false, trackId: 'lead', viewMode: 'piano-roll' });
+    expect(closed).toMatchObject({ open: false, trackId: 'lead', viewMode: 'chromatic' });
     expect(closeDock(closed)).toBe(closed);
-    expect(openDock(closed, 'lead')).toMatchObject({ open: true, viewMode: 'piano-roll' });
+    expect(openDock(closed, 'lead')).toMatchObject({ open: true, viewMode: 'chromatic' });
   });
 
   it('forgets a deleted docked track and ignores other deletions', () => {

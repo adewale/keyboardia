@@ -818,17 +818,6 @@ export function StepSequencer() {
         </div>
       </div>
 
-      {/* Phase 31G: Loop ruler above grid - set loop regions by dragging */}
-      {features.loopRuler && (
-        <LoopRuler
-          totalSteps={longestTrackStepCount}
-          loopRegion={state.loopRegion ?? null}
-          onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
-          currentStep={state.currentStep}
-          isPlaying={state.isPlaying}
-        />
-      )}
-
       {/* Phase 31A: Progress bar above grid - shows playback position */}
       <div
         className={`progress-bar-container ${state.isPlaying ? 'visible' : ''}`}
@@ -864,6 +853,17 @@ export function StepSequencer() {
       <div className="sequencer-content">
         <div className="tracks" ref={tracksRef}>
           <div className="tracks-inner">
+            {/* Phase 31G: Loop ruler - set loop regions by dragging. The first
+                row of the scroller, sticky to its top, on the cells' step pitch. */}
+            {features.loopRuler && (
+              <LoopRuler
+                totalSteps={longestTrackStepCount}
+                loopRegion={state.loopRegion ?? null}
+                onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
+                currentStep={state.currentStep}
+                isPlaying={state.isPlaying}
+              />
+            )}
             {/* Phase 34: Show skeletons during session loading to prevent CLS */}
             {multiplayer?.sessionStatus === 'loading' && state.tracks.length === 0 && (
               <>

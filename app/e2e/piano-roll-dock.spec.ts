@@ -88,7 +88,9 @@ test.describe('Piano roll dock', () => {
 
     await pitchToggle(page, 'Lead').click();
     await expectDocked(page, 'Lead');
-    await expect(dock(page).locator('.dock-body .chromatic-grid')).toBeVisible();
+    // Piano Roll is the default view.
+    await expect(dock(page).locator('.dock-body .piano-roll-editor')).toBeVisible();
+    await expect(dock(page).getByRole('button', { name: 'Piano Roll' })).toHaveAttribute('aria-pressed', 'true');
     // No pitch panel is left in any row.
     await expect(page.locator('.track-row-wrapper .chromatic-grid, .track-row-wrapper .piano-roll-editor')).toHaveCount(0);
 
@@ -111,7 +113,10 @@ test.describe('Piano roll dock', () => {
     await dock(page).locator('.dock-track-tab', { hasText: 'Lead' }).click();
     await expectDocked(page, 'Lead');
 
-    // The view mode tabs moved with the panel.
+    // The view mode tabs moved with the panel; Grid stays available.
+    await dock(page).getByRole('button', { name: 'Grid', exact: true }).click();
+    await expect(dock(page).locator('.dock-body .chromatic-grid')).toBeVisible();
+    await expect(dock(page).locator('.dock-body .piano-roll-editor')).toHaveCount(0);
     await dock(page).getByRole('button', { name: 'Piano Roll' }).click();
     await expect(dock(page).locator('.dock-body .piano-roll-editor')).toBeVisible();
     await expect(dock(page).locator('.dock-body .chromatic-grid')).toHaveCount(0);
@@ -143,6 +148,7 @@ test.describe('Piano roll dock', () => {
     await openSession(page, request, threeTracks);
     await pitchToggle(page, 'Lead').click();
     await expectDocked(page, 'Lead');
+    await dock(page).getByRole('button', { name: 'Grid', exact: true }).click();
     await expect(dock(page).locator('.chromatic-cell').first()).toBeVisible();
 
     const layout = await page.evaluate(() => {
@@ -155,7 +161,9 @@ test.describe('Piano roll dock', () => {
         wrapper.nextElementSibling?.classList.contains('track-row-wrapper') ?? false);
       return {
         lastIsDock: children[children.length - 1]?.id === 'editor-dock',
-        dockAfterRows: children.indexOf(document.getElementById('editor-dock')!) === wrappers.length,
+        // The loop ruler row comes first, then the rows, then the dock.
+        dockAfterRows: children.indexOf(document.getElementById('editor-dock')!)
+          === children.indexOf(wrappers[wrappers.length - 1]) + 1,
         between,
         gaps,
       };
@@ -195,7 +203,7 @@ test.describe('Piano roll dock', () => {
 
     await pitchToggle(page, 'Lead 0').click();
     await expectDocked(page, 'Lead 0');
-    await expect(dock(page).locator('.chromatic-grid')).toBeVisible();
+    await expect(dock(page).locator('.piano-roll-editor')).toBeVisible();
 
     // Wait for the open transition, then compare the dock's bottom edge with
     // the scroller's visible bottom edge (its padding box, above the scrollbar).
@@ -214,6 +222,15 @@ test.describe('Piano roll dock', () => {
     ]);
     expect(head!.x).toBeGreaterThanOrEqual(scroller!.x - 1);
     expect(head!.x + head!.width).toBeLessThanOrEqual(scroller!.x + scroller!.width + 1);
+
+    // The loop ruler pins to the top of the same scroller while rows pass under it.
+    await tracks.evaluate(el => { el.scrollTop = 200; });
+    await expect.poll(() => tracks.evaluate(el => el.scrollTop)).toBe(200);
+    const [rulerTop, scrollerTop] = await Promise.all([
+      page.locator('.ruler-row').evaluate(el => el.getBoundingClientRect().top),
+      tracks.evaluate(el => el.getBoundingClientRect().top + el.clientTop),
+    ]);
+    expect(Math.abs(rulerTop - scrollerTop)).toBeLessThanOrEqual(1);
   });
 
   test('a track name docks a melodic track; adding or deleting tracks behaves', async ({ page, request }) => {
@@ -362,5 +379,78 @@ test.describe('Piano roll dock', () => {
     const [leftAfter, headAfter] = await Promise.all([left.boundingBox(), head.boundingBox()]);
     expect(Math.abs(leftAfter!.x - leftBefore!.x)).toBeLessThan(1);
     expect(Math.abs(headAfter!.x - headBefore!.x)).toBeLessThan(1);
+  });
+
+  test('puts the loop ruler on the step pitch: page 2 is step 17 in the rows and the dock', async ({ page, request }) => {
+    const wide = [
+      track('lead', 'Lead', 'synth:lead', [0, 16], 32),
+      track('kick', 'Kick', 'kick', [0, 8], 32),
+    ];
+    await openSession(page, request, wide);
+    await openRoll(page, 'Lead');
+
+    const tracks = page.locator('.tracks');
+    const ruler = page.locator('.loop-ruler');
+    const pageTwo = ruler.locator('.ruler-marker.page[data-step="16"]');
+    await expect(pageTwo.locator('.marker-label')).toHaveText('2');
+    await expect(ruler.locator('.ruler-marker.beat[data-step="4"] .marker-label')).toHaveText('1.2');
+    await expect(ruler.locator('.ruler-marker.beat[data-step="28"] .marker-label')).toHaveText('2.4');
+
+    // The ruler is the first row inside the scroller, not a strip above it.
+    const placement = await page.evaluate(() => {
+      const inner = document.querySelector('.tracks-inner')!;
+      return inner.firstElementChild?.classList.contains('ruler-row') ?? false;
+    });
+    expect(placement).toBe(true);
+
+    const leadCell = row(page, 'Lead').locator('.step-cell').nth(16);
+    const dockNote = dock(page).locator('.piano-roll-editor .note[data-start="16"]');
+    const dockGrid = dock(page).locator('.piano-roll-editor .dock-scroll > :first-child');
+    const expectPageTwoAligned = async () => {
+      const [markerBox, cellBox, noteBox, gridBox] = await Promise.all([
+        pageTwo.boundingBox(), leadCell.boundingBox(), dockNote.boundingBox(), dockGrid.boundingBox(),
+      ]);
+      if (!markerBox || !cellBox || !noteBox || !gridBox) throw new Error('page 2 must be measurable everywhere');
+      expect(Math.abs(markerBox.x - cellBox.x)).toBeLessThan(1);
+      expect(Math.abs(markerBox.x - noteBox.x)).toBeLessThan(1);
+      // The dock grid's 17th column starts 16 step pitches into the grid.
+      expect(Math.abs(markerBox.x - (gridBox.x + 16 * 39))).toBeLessThan(1);
+    };
+    await expectPageTwoAligned();
+
+    // The strip ends where the last cell ends.
+    const [rulerBox, lastCell, firstCell] = await Promise.all([
+      ruler.boundingBox(),
+      row(page, 'Lead').locator('.step-cell').nth(31).boundingBox(),
+      row(page, 'Lead').locator('.step-cell').nth(0).boundingBox(),
+    ]);
+    expect(Math.abs(rulerBox!.x - firstCell!.x)).toBeLessThan(1);
+    expect(Math.abs(rulerBox!.x + rulerBox!.width - (lastCell!.x + lastCell!.width))).toBeLessThan(1);
+
+    // Dragging steps 17-20 sets a region whose edges are those cells' edges.
+    const y = rulerBox!.y + rulerBox!.height / 2;
+    const cellX = async (step: number) => (await row(page, 'Lead').locator('.step-cell').nth(step).boundingBox())!;
+    const [from, to] = [await cellX(16), await cellX(19)];
+    await page.mouse.move(from.x + 10, y);
+    await page.mouse.down();
+    await page.mouse.move(to.x + 10, y, { steps: 4 });
+    await page.mouse.up();
+    await expect(ruler).toHaveClass(/\bhas-loop\b/);
+    await expect(ruler).toHaveAttribute('title', 'Loop: steps 17-20 (double-click to clear)');
+    const regionBox = await ruler.locator('.loop-region').boundingBox();
+    expect(Math.abs(regionBox!.x - from.x)).toBeLessThan(1);
+    expect(Math.abs(regionBox!.x + regionBox!.width - (to.x + to.width))).toBeLessThan(1);
+
+    // Horizontal scroll moves the strip with the cells; the spacer stays pinned.
+    const spacer = page.locator('.ruler-spacer');
+    const spacerBefore = await spacer.boundingBox();
+    await tracks.evaluate(el => { el.scrollLeft = 200; });
+    await expect.poll(() => tracks.evaluate(el => el.scrollLeft)).toBe(200);
+    await expectPageTwoAligned();
+    const spacerAfter = await spacer.boundingBox();
+    expect(Math.abs(spacerAfter!.x - spacerBefore!.x)).toBeLessThan(1);
+
+    await ruler.dblclick({ position: { x: 700, y: 12 } });
+    await expect(ruler).not.toHaveClass(/\bhas-loop\b/);
   });
 });

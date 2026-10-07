@@ -6,6 +6,22 @@ import './LoopRuler.css';
 // Minimum drag distance in steps to create a loop (prevents accidental 1-step loops from clicks)
 const MIN_LOOP_LENGTH = 2;
 
+/**
+ * The step pitch: a 36px cell plus the 3px gap between cells. The ruler sits
+ * on the same pitch as the track rows and the dock, so step N's marker is at
+ * the x of step N's cell. CSS reads the same value from --ruler-step-pitch.
+ */
+const STEP_PITCH_PX = 39;
+
+/** The pitch the stylesheet is using (it widens with the cells on narrow screens). */
+function readStepPitch(el: HTMLElement): number {
+  const value = parseFloat(getComputedStyle(el).getPropertyValue('--ruler-step-pitch'));
+  return Number.isFinite(value) && value > 0 ? value : STEP_PITCH_PX;
+}
+
+/** Position on the step pitch, as a CSS length. */
+const atStep = (step: number) => `calc(${step} * var(--ruler-step-pitch))`;
+
 interface LoopRulerProps {
   totalSteps: number; // Longest track's step count
   loopRegion: LoopRegion | null;
@@ -17,10 +33,16 @@ interface LoopRulerProps {
 /**
  * Phase 31G: Loop Selection Ruler
  *
- * Timeline ruler above the grid that allows users to define a loop region.
+ * Timeline ruler that allows users to define a loop region.
  * - Drag to select range
  * - Double-click to clear
  * - Shift+click two points to define start/end
+ *
+ * It renders as the first row of .tracks-inner, inside the one horizontal
+ * scroller it shares with the rows and the dock (specs/PIANO-ROLL-DOCK.md):
+ * a sticky-left spacer as wide as the rows' control column, the rows' 8px gap,
+ * then the strip on the 39px step pitch. Every mark, the region and the
+ * playhead are in px on that pitch, so they line up with the cells below.
  */
 export const LoopRuler = memo(function LoopRuler({
   totalSteps,
@@ -39,8 +61,7 @@ export const LoopRuler = memo(function LoopRuler({
     if (!rulerRef.current) return 0;
     const rect = rulerRef.current.getBoundingClientRect();
     const relativeX = clientX - rect.left;
-    const stepWidth = rect.width / totalSteps;
-    const step = Math.floor(relativeX / stepWidth);
+    const step = Math.floor(relativeX / readStepPitch(rulerRef.current));
     return clamp(step, 0, totalSteps - 1);
   }, [totalSteps]);
 
@@ -130,99 +151,101 @@ export const LoopRuler = memo(function LoopRuler({
     ? { start: Math.min(dragStart, dragEnd), end: Math.max(dragStart, dragEnd) }
     : loopRegion;
 
-  // Calculate region position as percentages
-  const regionStart = displayRegion ? (displayRegion.start / totalSteps) * 100 : 0;
-  const regionWidth = displayRegion
-    ? ((displayRegion.end - displayRegion.start + 1) / totalSteps) * 100
-    : 0;
+  // Playhead step, or -1 when stopped
+  const playheadStep = isPlaying && currentStep >= 0 ? currentStep % totalSteps : -1;
 
-  // Calculate playhead position as percentage
-  const playheadPosition = isPlaying && currentStep >= 0
-    ? ((currentStep % totalSteps) / totalSteps) * 100
-    : -1;
-
-  // Generate step markers (every 4 steps for beat boundaries, every 16 for pages)
+  // Step markers: a beat marker every 4 steps labelled bar.beat ("1.2"), and a
+  // page marker every 16 labelled with the page number.
   const markers: React.ReactNode[] = [];
-  for (let i = 0; i < totalSteps; i++) {
+  for (let i = 0; i < totalSteps; i += 4) {
+    const page = Math.floor(i / 16) + 1;
     if (i % 16 === 0) {
-      // Page marker
       markers.push(
         <div
           key={i}
           className="ruler-marker page"
-          style={{ left: `${(i / totalSteps) * 100}%` }}
-          title={`Page ${Math.floor(i / 16) + 1}`}
+          data-step={i}
+          style={{ left: atStep(i) }}
+          title={`Page ${page}`}
         >
-          <span className="marker-label">{Math.floor(i / 16) + 1}</span>
+          <span className="marker-label">{page}</span>
         </div>
       );
-    } else if (i % 4 === 0) {
-      // Beat marker
+    } else {
       markers.push(
         <div
           key={i}
           className="ruler-marker beat"
-          style={{ left: `${(i / totalSteps) * 100}%` }}
-        />
+          data-step={i}
+          style={{ left: atStep(i) }}
+        >
+          <span className="marker-label">{`${page}.${(i % 16) / 4 + 1}`}</span>
+        </div>
       );
     }
   }
 
   return (
-    <div
-      className={`loop-ruler ${displayRegion ? 'has-loop' : ''} ${dragStart !== null ? 'dragging' : ''}`}
-      ref={rulerRef}
-      onPointerDown={handlePointerDown}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onDoubleClick={handleDoubleClick}
-      title={loopRegion
-        ? `Loop: steps ${loopRegion.start + 1}-${loopRegion.end + 1} (double-click to clear)`
-        : 'Drag to set loop region'
-      }
-      role="slider"
-      aria-valuemin={1}
-      aria-valuemax={totalSteps}
-      aria-valuenow={loopRegion ? loopRegion.end - loopRegion.start + 1 : totalSteps}
-      aria-label="Loop region"
-    >
-      {/* Step markers */}
-      <div className="ruler-markers">
-        {markers}
-      </div>
-
-      {/* Loop region highlight */}
-      {displayRegion && (
-        <div
-          className={`loop-region ${dragStart !== null ? 'preview' : ''}`}
-          style={{
-            left: `${regionStart}%`,
-            width: `${regionWidth}%`,
-          }}
-        >
-          {/* Start bracket */}
-          <div className="loop-bracket start" />
-          {/* End bracket */}
-          <div className="loop-bracket end" />
+    <div className="ruler-row">
+      {/* Sticky-left spacer, as wide as the rows' control column */}
+      <div className="ruler-spacer" aria-hidden="true">Loop</div>
+      <div
+        className={`loop-ruler ${displayRegion ? 'has-loop' : ''} ${dragStart !== null ? 'dragging' : ''}`}
+        style={{ '--ruler-steps': totalSteps } as React.CSSProperties}
+        ref={rulerRef}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onDoubleClick={handleDoubleClick}
+        title={loopRegion
+          ? `Loop: steps ${loopRegion.start + 1}-${loopRegion.end + 1} (double-click to clear)`
+          : 'Drag to set loop region'
+        }
+        role="slider"
+        aria-valuemin={1}
+        aria-valuemax={totalSteps}
+        aria-valuenow={loopRegion ? loopRegion.end - loopRegion.start + 1 : totalSteps}
+        aria-label="Loop region"
+      >
+        {/* Step markers */}
+        <div className="ruler-markers">
+          {markers}
         </div>
-      )}
 
-      {/* Shift+click pending marker */}
-      {shiftClickStart !== null && (
-        <div
-          className="shift-click-marker"
-          style={{ left: `${(shiftClickStart / totalSteps) * 100}%` }}
-          title="Shift+click another point to complete loop"
-        />
-      )}
+        {/* Loop region highlight */}
+        {displayRegion && (
+          <div
+            className={`loop-region ${dragStart !== null ? 'preview' : ''}`}
+            style={{
+              left: atStep(displayRegion.start),
+              // Ends at the last cell's right edge, not the gap after it
+              width: `calc(${displayRegion.end - displayRegion.start + 1} * var(--ruler-step-pitch) - var(--ruler-step-gap))`,
+            }}
+          >
+            {/* Start bracket */}
+            <div className="loop-bracket start" />
+            {/* End bracket */}
+            <div className="loop-bracket end" />
+          </div>
+        )}
 
-      {/* Playhead position indicator */}
-      {playheadPosition >= 0 && (
-        <div
-          className="ruler-playhead"
-          style={{ left: `${playheadPosition}%` }}
-        />
-      )}
+        {/* Shift+click pending marker */}
+        {shiftClickStart !== null && (
+          <div
+            className="shift-click-marker"
+            style={{ left: atStep(shiftClickStart) }}
+            title="Shift+click another point to complete loop"
+          />
+        )}
+
+        {/* Playhead position indicator */}
+        {playheadStep >= 0 && (
+          <div
+            className="ruler-playhead"
+            style={{ left: atStep(playheadStep) }}
+          />
+        )}
+      </div>
     </div>
   );
 });

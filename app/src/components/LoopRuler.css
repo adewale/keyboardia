@@ -1,9 +1,55 @@
-/* Phase 31G: Loop Selection Ruler */
+/* Phase 31G: Loop Selection Ruler
+ *
+ * The ruler is the first row of .tracks-inner, inside the one horizontal
+ * scroller it shares with the track rows and the editor dock
+ * (specs/PIANO-ROLL-DOCK.md). It is sticky to the top of that scroller, its
+ * spacer is sticky to the left like the rows' control column, and the strip
+ * sits on the rows' step pitch so every mark lands on a cell edge.
+ */
+
+/* Row: spacer + 8px gap (the .track-row gap) + strip */
+.ruler-row {
+  /* 36px cell + 3px gap, the pitch of .steps; LoopRuler.tsx reads it back */
+  --ruler-step-pitch: 39px;
+  --ruler-step-gap: 3px;
+
+  display: flex;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  /* Above the rows' sticky .track-left (3); the dock pins to the bottom (6) */
+  z-index: 5;
+  /* Opaque, so rows scrolling up pass under it */
+  background: var(--color-surface);
+  padding-bottom: 6px;
+}
+
+/* Spacer: exactly the control column's width, pinned left */
+.ruler-spacer {
+  width: var(--track-left-width);
+  min-width: var(--track-left-width);
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .loop-ruler {
+  /* The strip ends at the last cell's right edge, like the rows' cells */
+  width: calc(var(--ruler-steps, 16) * var(--ruler-step-pitch) - var(--ruler-step-gap));
+  flex-shrink: 0;
   height: 24px;
   background: var(--color-surface-elevated);
   border-radius: 4px;
-  margin-bottom: 8px;
   position: relative;
   cursor: crosshair;
   user-select: none;
@@ -21,7 +67,8 @@
   pointer-events: none;
 }
 
-/* Individual markers */
+/* Individual markers: the line is a pseudo-element so its opacity does not
+   fade the label */
 .ruler-marker {
   position: absolute;
   top: 0;
@@ -29,26 +76,44 @@
   pointer-events: none;
 }
 
+.ruler-marker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+}
+
 /* Beat marker (every 4 steps) */
-.ruler-marker.beat {
+.ruler-marker.beat::before {
   width: 1px;
   background: var(--color-border);
   opacity: 0.3;
 }
 
 /* Page marker (every 16 steps) */
-.ruler-marker.page {
+.ruler-marker.page::before {
   width: 2px;
   background: var(--color-border-light);
   opacity: 0.6;
 }
 
-.ruler-marker.page .marker-label {
+/* Labels: bar.beat on beat markers, the page number on page markers */
+.marker-label {
   position: absolute;
   top: 2px;
   left: 4px;
   font-size: 10px;
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ruler-marker.beat .marker-label {
+  opacity: 0.7;
+}
+
+.ruler-marker.page .marker-label {
   font-weight: 500;
 }
 
@@ -129,13 +194,18 @@
   }
 }
 
-/* Mobile: slightly taller for easier touch */
+/* Mobile: slightly taller for easier touch, and on the wider cells' pitch
+   (44px cells, StepCell.css) so marks still land on cell edges */
 @media (max-width: 768px) {
+  .ruler-row {
+    --ruler-step-pitch: 47px;
+  }
+
   .loop-ruler {
     height: 32px;
   }
 
-  .ruler-marker.page .marker-label {
+  .marker-label {
     font-size: 11px;
     top: 6px;
   }

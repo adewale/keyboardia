@@ -1,4 +1,4 @@
-import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
+import { test, expect, getBaseUrl, useMockAPI, type Page } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
@@ -20,6 +20,11 @@ test.skip(useMockAPI, 'Chromatic grid tests require real backend for session API
  * Key requirement: Notes at non-key-interval pitches (like -8, -9, -10, -11)
  * must be visible and never hidden (Guardrail #1).
  */
+
+/** The dock opens on Piano Roll; these tests exercise its Grid view. */
+async function showGridView(page: Page) {
+  await page.locator('#editor-dock').getByRole('button', { name: 'Grid', exact: true }).click();
+}
 
 /**
  * Create a test session with notes at non-key-interval pitches
@@ -91,6 +96,7 @@ test.describe('Chromatic Grid Redesign', () => {
     // Click the pitch toggle to expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
+    await showGridView(page);
 
     // Wait for chromatic grid to appear
     const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
@@ -115,6 +121,7 @@ test.describe('Chromatic Grid Redesign', () => {
     // Click the pitch toggle to expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
+    await showGridView(page);
 
     // Wait for chromatic grid to appear
     const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
@@ -141,6 +148,7 @@ test.describe('Chromatic Grid Redesign', () => {
     // Click the pitch toggle to expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
+    await showGridView(page);
 
     // Wait for chromatic grid to appear
     const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
@@ -170,6 +178,7 @@ test.describe('Chromatic Grid Redesign', () => {
     // Click the pitch toggle to expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
+    await showGridView(page);
 
     const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
@@ -198,6 +207,7 @@ test.describe('Chromatic Grid Redesign', () => {
     // Click the pitch toggle to expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
+    await showGridView(page);
 
     await expect(page.locator('#editor-dock .chromatic-grid')).toBeVisible({ timeout: 5000 });
 
@@ -279,6 +289,7 @@ test.describe('Chromatic Grid Scale Lock', () => {
     // Click the pitch toggle to expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
+    await showGridView(page);
 
     // Wait for chromatic grid to appear
     const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
@@ -301,6 +312,7 @@ test.describe('Chromatic Grid Scale Lock', () => {
     // Expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
+    await showGridView(page);
 
     const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
@@ -328,6 +340,7 @@ test.describe('Chromatic Grid Scale Lock', () => {
     // Expand chromatic grid first
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
+    await showGridView(page);
 
     const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
@@ -379,6 +392,7 @@ test.describe('Fresh Session Scale Guardrail', () => {
 
     await page.locator('.expand-toggle').first().click();
     await expect(page.locator('#editor-dock')).toHaveClass(/\bopen\b/);
+    await showGridView(page);
     const rows = page.locator('#editor-dock .chromatic-row');
     await expect(rows.first()).toBeVisible();
     for (let index = 0; index < 5; index++) {

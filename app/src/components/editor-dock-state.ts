@@ -38,7 +38,8 @@ export interface DockState {
 export const DOCK_CLOSED: DockState = {
   open: false,
   trackId: null,
-  viewMode: 'chromatic',
+  // Piano Roll is the default view; Grid (the legacy ChromaticGrid) stays one tab away.
+  viewMode: 'piano-roll',
   detent: 'compact',
   ghostVisibility: {},
 };
