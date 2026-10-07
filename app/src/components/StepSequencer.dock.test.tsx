@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Editor dock (specs/PIANO-ROLL-DOCK.md, phases 2, 6 and 7): StepSequencer
+ * Editor dock (specs/PIANO-ROLL-DOCK.md, phases 2, 6, 7 and 8): StepSequencer
  * owns which track is docked and which pane shows. These tests drive the real EditorDock through stubbed rows
  * and rolls, so they pin the state machine and the prop wiring, not layout
  * (jsdom has none; e2e/piano-roll-dock.spec.ts measures the real thing).
@@ -12,6 +12,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({
   dispatch: vi.fn(),
   isPublished: false,
+  orientation: 'desktop' as 'desktop' | 'landscape' | 'portrait',
   state: {
     tracks: [] as Track[], tempo: 120, swing: 0,
     effects: {
@@ -33,7 +34,7 @@ vi.mock('../state/grid', () => ({
 vi.mock('../context/MultiplayerContext', () => ({
   useMultiplayerContext: () => (mocks.isPublished ? { isPublished: true, cursors: new Map() } : null),
 }));
-vi.mock('../hooks/useDisplayMode', () => ({ useOrientationMode: () => 'desktop' }));
+vi.mock('../hooks/useDisplayMode', () => ({ useOrientationMode: () => mocks.orientation }));
 vi.mock('../hooks/useKeyboard', () => ({ useKeyboard: () => undefined }));
 vi.mock('../audio/useSchedulerStateSync', () => ({ useSchedulerStateSync: () => undefined }));
 vi.mock('../audio/useTrackPrewarm', () => ({ useTrackPrewarm: () => undefined }));
@@ -61,6 +62,9 @@ vi.mock('./LoopRuler', () => ({ LoopRuler: () => null }));
 vi.mock('./KeyboardShortcutsPanel', () => ({ KeyboardShortcutsPanel: () => null }));
 vi.mock('./CursorOverlay', () => ({ CursorOverlay: () => null }));
 vi.mock('./TrackSkeleton', () => ({ TrackSkeleton: () => null }));
+vi.mock('./OrientationHint', () => ({ OrientationHint: () => null }));
+vi.mock('./PortraitHeader', () => ({ PortraitHeader: () => null }));
+vi.mock('./PortraitGrid', () => ({ PortraitGrid: () => null }));
 
 interface StubRowProps {
   track: Track;
@@ -72,6 +76,8 @@ interface StubRowProps {
   onSelectDockStep?: (step: number) => void;
   isInstrumentPickerOpen?: boolean;
   onToggleInstrumentPicker?: (opener: HTMLElement) => void;
+  isTrackPaneDocked?: boolean;
+  onToggleTrackPane?: () => void;
 }
 
 // A row reduced to the dock contract: the wrapper class, the pitch toggle
@@ -80,7 +86,7 @@ interface StubRowProps {
 vi.mock('./TrackRow', () => ({
   TrackRow: ({
     track, isDocked, onToggleDock, onOpenDock, onDelete, dockSelectedStep, onSelectDockStep,
-    isInstrumentPickerOpen, onToggleInstrumentPicker,
+    isInstrumentPickerOpen, onToggleInstrumentPicker, isTrackPaneDocked, onToggleTrackPane,
   }: StubRowProps) => (
     <div
       className={`track-row-wrapper${isDocked ? ' docked' : ''}`}
@@ -98,6 +104,7 @@ vi.mock('./TrackRow', () => ({
         </button>
       )}
       <span className="track-name" tabIndex={0} onClick={onOpenDock}>name {track.name}</span>
+      <button aria-expanded={isTrackPaneDocked} onClick={onToggleTrackPane}>landscape name {track.name}</button>
       <button
         aria-expanded={isInstrumentPickerOpen}
         onClick={(event) => onToggleInstrumentPicker?.(event.currentTarget)}
@@ -183,6 +190,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.clearAllMocks();
   mocks.isPublished = false;
+  mocks.orientation = 'desktop';
   mocks.state.tracks = [lead, kick, bass];
   mocks.state.loopRegion = null;
 });
@@ -688,5 +696,71 @@ describe('StepSequencer editor dock panes', () => {
     expect(within(tools()).queryByTestId('dock-change-instrument-lead')).toBeNull();
     expect(within(tools()).getByText(getInstrumentName('synth:lead'))).toBeTruthy();
     expect(mocks.dispatch).not.toHaveBeenCalled();
+  });
+});
+
+describe('StepSequencer editor dock in landscape', () => {
+  beforeEach(() => {
+    mocks.orientation = 'landscape';
+  });
+
+  it('a track name opens the Track pane, another name switches, the same name closes', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('landscape name Lead'));
+    expect(isOpen()).toBe(true);
+    expect(dockEl().getAttribute('data-pane')).toBe('track');
+    expect(dockedRows()).toEqual(['row-lead']);
+    expect(screen.getByText('landscape name Lead').getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.click(screen.getByText('landscape name Kick'));
+    expect(dockEl().getAttribute('data-pane')).toBe('track');
+    expect(dockedRows()).toEqual(['row-kick']);
+    expect(screen.getByText('landscape name Lead').getAttribute('aria-expanded')).toBe('false');
+
+    fireEvent.click(screen.getByText('landscape name Kick'));
+    expect(isOpen()).toBe(false);
+  });
+
+  it('the name moves an open Notes dock to the Track pane rather than closing it', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    expect(dockEl().getAttribute('data-pane')).toBe('notes');
+    expect(screen.getByText('landscape name Lead').getAttribute('aria-expanded')).toBe('false');
+    fireEvent.click(screen.getByText('landscape name Lead'));
+    expect(isOpen()).toBe(true);
+    expect(dockEl().getAttribute('data-pane')).toBe('track');
+  });
+
+  it('has one height: no detent toggle', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    expect(screen.getByTestId('piano-roll')).toBeTruthy();
+    expect(within(dockEl()).queryByRole('button', { name: /Tall|Compact/ })).toBeNull();
+  });
+
+  it('keeps the dock and its picker across a rotation from desktop', () => {
+    mocks.orientation = 'desktop';
+    const { rerender } = render(<StepSequencer />);
+    fireEvent.click(screen.getByText('badge Lead'));
+    expect(dockEl().querySelector('#dock-instrument-picker')).not.toBeNull();
+
+    mocks.orientation = 'landscape';
+    rerender(<StepSequencer />);
+    expect(isOpen()).toBe(true);
+    expect(dockEl().querySelector('#dock-instrument-picker')).not.toBeNull();
+  });
+
+  it('closes in portrait, which renders no rows and no dock, and stays closed on return', () => {
+    const { rerender } = render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    expect(isOpen()).toBe(true);
+
+    mocks.orientation = 'portrait';
+    rerender(<StepSequencer />);
+    expect(screen.queryByTestId('editor-dock')).toBeNull();
+
+    mocks.orientation = 'landscape';
+    rerender(<StepSequencer />);
+    expect(isOpen()).toBe(false);
   });
 });

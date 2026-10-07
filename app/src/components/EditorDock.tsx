@@ -11,7 +11,11 @@
  * - Track: transpose, steps, instrument, pattern tools, FM, actions (phase 7).
  *
  * Every track can be docked; a drum track has no pitch, so its Notes chip is
- * disabled and the roll area says so. Which track, pane and step are docked
+ * disabled and the roll area says so.
+ *
+ * In mobile landscape (phase 8) the same dock is a bottom sheet about 45% of
+ * the viewport tall (EditorDock.css): header and toolbar share one strip of
+ * 44px targets and the roll scrolls on its own, synced with the docked row. Which track, pane and step are docked
  * lives in StepSequencer (see editor-dock-state.ts); this component only
  * renders them and reports intent.
  */
@@ -21,6 +25,7 @@ import type { LoopRegion, ParameterLock, ScaleState, Track } from '../types';
 import { ChromaticGrid } from './ChromaticGrid';
 import { PianoRollEditor } from './PianoRollEditor';
 import { DockStepPane, DockTrackPane, type DockTrackActions } from './DockPanes';
+import { syncHorizontalScroll } from './scroll-sync';
 import { getInstrumentCategory, getInstrumentCategoryColor, getInstrumentName } from './sample-constants';
 import { EDITOR_DOCK_ID, type DockDetent, type DockPane, type DockViewMode } from './editor-dock-state';
 import { isDrumInstrument } from '../shared/instrument-classification';
@@ -72,6 +77,11 @@ interface EditorDockProps {
   readOnly?: boolean;
   /** The `.tracks` scroller, used to size the sticky header and toolbar to its visible width. */
   scrollerRef: RefObject<HTMLElement | null>;
+  /**
+   * Mobile landscape: the dock is a bottom sheet over the page rather than
+   * the pinned bottom of `.tracks`, and its roll scrolls with the docked row.
+   */
+  landscape?: boolean;
   onSelectTrack: (trackId: string) => void;
   onSetPane: (pane: DockPane) => void;
   /** Shift+click or long-press on a bar in the roll. */
@@ -110,6 +120,7 @@ export const EditorDock = memo(function EditorDock({
   scale,
   readOnly = false,
   scrollerRef,
+  landscape = false,
   onSelectTrack,
   onSetPane,
   onSelectStep,
@@ -127,6 +138,7 @@ export const EditorDock = memo(function EditorDock({
   const dockRef = useRef<HTMLDivElement>(null);
   const headRef = useRef<HTMLDivElement>(null);
   const toolsRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
   // Keep the roll mounted while the dock collapses, then unmount it so a
   // closed dock does not re-render a hidden grid on every playback step.
@@ -144,6 +156,10 @@ export const EditorDock = memo(function EditorDock({
   // to the bottom of .tracks, so a roll taller than the room under the header
   // and toolbar would push the header above the scroller. --dock-roll-max
   // caps the roll's height to the scroller's largest scrollport less both.
+  //
+  // In landscape the dock is fixed to the bottom of the viewport instead, so
+  // it is placed over the scroller's visible box: its keyboard then starts on
+  // the rows' left edge and its step columns can line up with the docked row.
   useEffect(() => {
     const scroller = scrollerRef.current;
     const dockElement = dockRef.current;
@@ -151,6 +167,17 @@ export const EditorDock = memo(function EditorDock({
     const tools = toolsRef.current;
     if (!scroller || !dockElement || !head || !tools) return;
     const fit = () => {
+      if (landscape) {
+        head.style.width = '';
+        tools.style.width = '';
+        dockElement.style.removeProperty('--dock-roll-max');
+        const box = scroller.getBoundingClientRect();
+        dockElement.style.left = `${box.left + scroller.clientLeft}px`;
+        dockElement.style.width = `${scroller.clientWidth}px`;
+        return;
+      }
+      dockElement.style.left = '';
+      dockElement.style.width = '';
       const width = `${scroller.clientWidth}px`;
       head.style.width = width;
       tools.style.width = width;
@@ -165,16 +192,20 @@ export const EditorDock = memo(function EditorDock({
       }
     };
     fit();
+    // The scroller's left edge moves with the viewport, not only with its size.
+    window.addEventListener('resize', fit);
     if (typeof ResizeObserver === 'undefined') {
-      window.addEventListener('resize', fit);
       return () => window.removeEventListener('resize', fit);
     }
     const observer = new ResizeObserver(fit);
     observer.observe(scroller);
     observer.observe(head);
     observer.observe(tools);
-    return () => observer.disconnect();
-  }, [scrollerRef]);
+    return () => {
+      window.removeEventListener('resize', fit);
+      observer.disconnect();
+    };
+  }, [scrollerRef, landscape]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Escape' || !open) return;
@@ -198,6 +229,25 @@ export const EditorDock = memo(function EditorDock({
   }, [open, onDismissPane]);
 
   const trackId = track?.id;
+  const showBody = !collapsed && track !== null;
+
+  // Landscape only. On desktop the rows and the dock share one horizontal
+  // scroller (.tracks), so every row lines up with the roll. Below 768px wide,
+  // and in every landscape layout, each row's .steps scrolls on its own, so
+  // the dock cannot align with every row at once: it aligns with the docked
+  // row only, by syncing the roll's horizontal scroll with that row's .steps
+  // scroll in both directions. Both sit on the same step geometry with the
+  // same 134 + 8px offset, so equal scroll positions mean aligned columns.
+  useEffect(() => {
+    if (!landscape || !open || !showBody || !trackId) return;
+    const body = bodyRef.current;
+    const wrapper = Array.from(scrollerRef.current?.querySelectorAll<HTMLElement>('[data-track-id]') ?? [])
+      .find(element => element.dataset.trackId === trackId);
+    const steps = wrapper?.querySelector<HTMLElement>('.steps');
+    if (!body || !steps) return;
+    return syncHorizontalScroll(steps, body);
+  }, [landscape, open, showBody, trackId, scrollerRef]);
+
   const handleToggleStep = useCallback((step: number) => {
     if (trackId) onToggleStep(trackId, step);
   }, [trackId, onToggleStep]);
@@ -219,7 +269,6 @@ export const EditorDock = memo(function EditorDock({
 
   const hasPitch = track !== null && !isDrumInstrument(track.sampleId);
   const isRoll = viewMode === 'piano-roll';
-  const showBody = !collapsed && track !== null;
   const rollProps = track ? {
     track,
     currentStep,
@@ -359,8 +408,8 @@ export const EditorDock = memo(function EditorDock({
             {track && (
               <span className="dock-title">
                 <b>{track.name}</b>
-                <span aria-hidden="true">·</span>
-                <span>{getInstrumentName(track.sampleId)}</span>
+                <span className="dock-title-instrument" aria-hidden="true">·</span>
+                <span className="dock-title-instrument">{getInstrumentName(track.sampleId)}</span>
                 {pane === 'step' && selectedStep !== null && (
                   <>
                     <span aria-hidden="true">·</span>
@@ -370,7 +419,8 @@ export const EditorDock = memo(function EditorDock({
               </span>
             )}
             <div className="dock-head-end">
-              {isRoll && hasPitch && (
+              {/* Landscape has one height, about 45% of the viewport. */}
+              {isRoll && hasPitch && !landscape && (
                 <button
                   type="button"
                   className="dock-icon-button dock-detent"
@@ -395,7 +445,7 @@ export const EditorDock = memo(function EditorDock({
           <div className="dock-tools" ref={toolsRef}>
             {showBody && renderPane()}
           </div>
-          <div className="dock-body" data-view={hasPitch ? viewMode : 'none'}>
+          <div className="dock-body" ref={bodyRef} data-view={hasPitch ? viewMode : 'none'}>
             {showBody && !hasPitch && (
               <p className="dock-no-pitch">No pitch for drum tracks</p>
             )}

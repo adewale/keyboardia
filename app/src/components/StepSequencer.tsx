@@ -34,6 +34,7 @@ import {
   toggleDockDetent,
   toggleDockInstrumentPicker,
   toggleDockStep,
+  toggleDockTrackPane,
   toggleGhost,
   type DockPane,
   type DockState,
@@ -104,9 +105,6 @@ export function StepSequencer() {
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Landscape drawer accordion state: only one drawer open at a time
-  const [openDrawerTrackId, setOpenDrawerTrackId] = useState<string | null>(null);
-
   // Editor dock (specs/PIANO-ROLL-DOCK.md): which melodic track the dock under
   // the grid edits. Local UI state: never synced, never persisted, closed on
   // load, and opened only on request.
@@ -128,18 +126,6 @@ export function StepSequencer() {
   const handleTogglePitch = useCallback(() => {
     setIsPitchOpen(prev => !prev);
   }, []);
-
-  // Landscape drawer toggle: accordion behavior (tap to open, tap again to close)
-  const handleToggleLandscapeDrawer = useCallback((trackId: string) => {
-    setOpenDrawerTrackId(prev => prev === trackId ? null : trackId);
-  }, []);
-
-  // Close landscape drawer when leaving landscape mode
-  useEffect(() => {
-    if (orientationMode !== 'landscape') {
-      setOpenDrawerTrackId(null);
-    }
-  }, [orientationMode]);
 
   // Phase 36: Keyboard shortcuts help panel state (desktop only)
   const [isShortcutsPanelOpen, setIsShortcutsPanelOpen] = useState(false);
@@ -327,8 +313,6 @@ export function StepSequencer() {
   }, [dispatch]);
 
   const handleDeleteTrack = useCallback((trackId: string) => {
-    // Close landscape drawer if the deleted track had it open
-    setOpenDrawerTrackId(prev => prev === trackId ? null : prev);
     // Deleting the docked track closes the dock (a collaborator's delete is
     // caught by reconcileDock during render).
     setDock(prev => releaseDockedTrack(prev, trackId));
@@ -587,6 +571,12 @@ export function StepSequencer() {
     return !!track && !isDrumInstrument(track.sampleId);
   }, [getState]);
 
+  // A track name in landscape: that track's Track pane, which holds what the
+  // landscape drawer held (transpose, steps, instrument, pattern, actions).
+  const handleToggleDockTrackPane = useCallback((trackId: string) => {
+    commitDock(toggleDockTrackPane(getDock(), trackId, hasPitch(trackId)));
+  }, [commitDock, getDock, hasPitch]);
+
   // Shift+click or long-press on a step, in a row or in the roll: the Step
   // pane for that step; the same step again leaves the Step pane.
   const handleSelectDockStep = useCallback((trackId: string, step: number) => {
@@ -636,18 +626,13 @@ export function StepSequencer() {
     });
   }, [handleSetInstrument, focusRowControl]);
 
-  // Leaving desktop hides the dock (landscape gets its own in phase 8): close
-  // its instrument picker, and if focus was inside the dock, give it to the
-  // docked row's name before the dock stops rendering it.
+  // Portrait renders no rows and no dock: close it, so rotating back to
+  // landscape or desktop finds it closed, as it is on load. Landscape keeps
+  // the dock open (it is a bottom dock there) with its pane and picker.
   useLayoutEffect(() => {
-    if (orientationMode === 'desktop') return;
-    const dockElement = tracksRef.current?.querySelector(`#${EDITOR_DOCK_ID}`);
-    const { trackId } = getDock();
-    if (trackId && dockElement?.contains(document.activeElement)) {
-      rowWrapper(trackId)?.querySelector<HTMLElement>('.track-name')?.focus();
-    }
-    setDock(closeDockInstrumentPicker);
-  }, [orientationMode, getDock, rowWrapper]);
+    if (orientationMode !== 'portrait') return;
+    setDock(prev => closeDockInstrumentPicker(closeDock(prev)));
+  }, [orientationMode]);
 
   // Phase 36: Centralized keyboard handling via useKeyboard hook
   // Handles: Space (play/pause), Escape (cancel/clear), Delete (remove selection),
@@ -657,11 +642,9 @@ export function StepSequencer() {
       stablePlayPause();
     },
     onEscape: () => {
-      // Cancel copy mode OR close help panel OR close landscape drawer OR clear selection
+      // Close help panel OR cancel copy mode OR clear selection OR leave the Step pane
       if (isShortcutsPanelOpen) {
         setIsShortcutsPanelOpen(false);
-      } else if (openDrawerTrackId) {
-        setOpenDrawerTrackId(null);
       } else if (getCopySource()) {
         setCopySource(null);
       } else if ((getState().selection?.steps.size ?? 0) > 0) {
@@ -819,8 +802,9 @@ export function StepSequencer() {
 
   // Opening a closed dock pulses the docked row's active cells once (150ms),
   // so the eye finds the row the dock is editing, then brings the dock into
-  // the viewport if the page has it below the fold. No pulse and no smooth
-  // scroll under reduced motion.
+  // the viewport if the page has it below the fold (desktop: in landscape the
+  // dock is fixed to the viewport, see below). No pulse and no smooth scroll
+  // under reduced motion.
   useEffect(() => {
     if (!dockPulsePendingRef.current || !dock.open) return;
     dockPulsePendingRef.current = false;
@@ -834,12 +818,26 @@ export function StepSequencer() {
         cell.addEventListener('animationend', () => cell.classList.remove('pulse'), { once: true });
       });
     }
+    if (orientationMode === 'landscape') return;
     const reveal = setTimeout(() => {
       const dockElement = tracksRef.current?.querySelector<HTMLElement>(`#${EDITOR_DOCK_ID}`);
       dockElement?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
     }, reducedMotion ? 0 : DOCK_TRANSITION_MS);
     return () => clearTimeout(reveal);
-  }, [dock]);
+  }, [dock, orientationMode]);
+
+  // Landscape: the dock covers the bottom 45% of the viewport, so whenever it
+  // opens on a track or switches to another, that track's row is brought into
+  // view above it (EditorDock.css gives the docked row a matching scroll margin).
+  const landscapeDockedId = orientationMode === 'landscape' && isDockOpen ? dockedTrack.id : null;
+  useEffect(() => {
+    if (!landscapeDockedId) return;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    const reveal = setTimeout(() => {
+      rowWrapper(landscapeDockedId)?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
+    }, reducedMotion ? 0 : DOCK_TRANSITION_MS);
+    return () => clearTimeout(reveal);
+  }, [landscapeDockedId, rowWrapper]);
 
   return (
     <div
@@ -1038,8 +1036,6 @@ export function StepSequencer() {
                   isCopyTarget={!!isCopyTarget}
                   readOnly={isPublished}
                   orientationMode={orientationMode}
-                  isLandscapeDrawerOpen={openDrawerTrackId === track.id}
-                  onToggleLandscapeDrawer={() => handleToggleLandscapeDrawer(track.id)}
                   onToggleStep={(step) => handleToggleStep(track.id, step)}
                   onToggleMute={() => handleToggleMute(track.id)}
                   onToggleSolo={() => handleToggleSolo(track.id)}
@@ -1076,6 +1072,8 @@ export function StepSequencer() {
                   isDocked={isTrackDocked(reconciledDock, track.id)}
                   onToggleDock={() => handleToggleDock(track.id)}
                   onOpenDock={() => handleOpenDock(track.id)}
+                  isTrackPaneDocked={isTrackDocked(reconciledDock, track.id) && dockPane === 'track'}
+                  onToggleTrackPane={() => handleToggleDockTrackPane(track.id)}
                   dockSelectedStep={dockSelectedStep(reconciledDock, track.id)}
                   onSelectDockStep={(step) => handleSelectDockStep(track.id, step)}
                   isInstrumentPickerOpen={isDockInstrumentPickerOpen(reconciledDock, track.id)}
@@ -1102,6 +1100,7 @@ export function StepSequencer() {
               scale={state.scale}
               readOnly={isPublished}
               scrollerRef={tracksRef}
+              landscape={orientationMode === 'landscape'}
               onSelectTrack={handleOpenDock}
               onSetPane={handleSetDockPane}
               onSelectStep={handleSelectDockStep}

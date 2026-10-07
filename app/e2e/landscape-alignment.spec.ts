@@ -5,7 +5,8 @@
  * (specs/PIANO-ROLL-DOCK.md, Mobile): the same 134px column, line one
  * identical to desktop, and a 28px controls line holding M, S and the pitch
  * toggle, so the row is 48px. These tests measure that geometry, its
- * alignment with the step cells, and the name's shared left edge.
+ * alignment with the step cells, the step pitch the landscape dock shares,
+ * and the name's shared left edge.
  *
  * Run with: npx playwright test e2e/landscape-alignment.spec.ts
  */
@@ -98,6 +99,20 @@ test.describe('Landscape Mobile Alignment', () => {
     await expect(row.locator('.velocity-toggle')).toBeHidden();
   });
 
+  test('cells sit on the desktop step pitch, 8px after the column', async ({ page }) => {
+    await addTrack(page);
+
+    // The landscape dock's roll uses the desktop step geometry (36px cells on
+    // a 39px pitch, step edge at 134 + 8px), so the rows must too.
+    const row = page.locator('.track-row').first();
+    const column = await boxOf(row.locator('.track-left'));
+    const first = await boxOf(row.locator('.step-cell').nth(0));
+    const second = await boxOf(row.locator('.step-cell').nth(1));
+    expect(first.width).toBeCloseTo(36, 0);
+    expect(second.x - first.x).toBeCloseTo(39, 0);
+    expect(first.x - (column.x + column.width)).toBeCloseTo(8, 0);
+  });
+
   test('all track rows should have consistent vertical alignment', async ({ page }) => {
     await addTrack(page, /808 Kick/);
     await addTrack(page, /808 Snare/);
@@ -142,6 +157,10 @@ test.describe('Desktop and landscape share the control block', () => {
 
     await page.setViewportSize(IPHONE_14_LANDSCAPE);
     await expect(page.locator('.step-sequencer')).toHaveAttribute('data-orientation', 'landscape');
+    // Entering landscape plays a short scale-in on the sequencer; measure the
+    // settled layout, not a frame of the animation.
+    await page.locator('.step-sequencer').evaluate(element =>
+      Promise.all(element.getAnimations().map(animation => animation.finished)));
     const landscape = await nameOffset(page);
 
     expect(desktop.column.width).toBeCloseTo(COLUMN_WIDTH, 0);

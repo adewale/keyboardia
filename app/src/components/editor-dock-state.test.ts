@@ -21,6 +21,7 @@ import {
   toggleDockDetent,
   toggleDockInstrumentPicker,
   toggleDockStep,
+  toggleDockTrackPane,
   toggleGhost,
 } from './editor-dock-state';
 
@@ -62,6 +63,27 @@ describe('editor dock state', () => {
     expect(closed).toMatchObject({ open: false, trackId: 'lead', viewMode: 'chromatic' });
     expect(closeDock(closed)).toBe(closed);
     expect(openDock(closed, 'lead')).toMatchObject({ open: true, viewMode: 'chromatic' });
+  });
+
+  it('a landscape name tap shows that track\'s Track pane, and closes it on a second tap', () => {
+    const lead = toggleDockTrackPane(DOCK_CLOSED, 'lead', true);
+    expect(lead).toMatchObject({ open: true, trackId: 'lead', pane: 'track', instrumentPickerOpen: false });
+
+    // Another name switches the docked track and keeps the Track pane.
+    const bass = toggleDockTrackPane(lead, 'bass', true);
+    expect(bass).toMatchObject({ open: true, trackId: 'bass', pane: 'track' });
+
+    // The same name again closes the dock, as the drawer it replaces did.
+    expect(toggleDockTrackPane(bass, 'bass', true).open).toBe(false);
+
+    // From Notes (the ♪ toggle), the name moves to the Track pane rather than closing.
+    const notes = openDock(DOCK_CLOSED, 'lead');
+    expect(toggleDockTrackPane(notes, 'lead', true)).toMatchObject({ open: true, pane: 'track' });
+    // A drum docked on Notes is showing Track already, so its name closes it.
+    expect(toggleDockTrackPane(openDock(DOCK_CLOSED, 'kick'), 'kick', false).open).toBe(false);
+    // An open picker belongs to the previous visit; the pane opens without it.
+    const picker = toggleDockInstrumentPicker(DOCK_CLOSED, 'lead');
+    expect(toggleDockTrackPane(picker, 'bass', true)).toMatchObject({ trackId: 'bass', pane: 'track', instrumentPickerOpen: false });
   });
 
   it('forgets a deleted docked track and ignores other deletions', () => {

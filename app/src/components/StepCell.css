@@ -212,11 +212,6 @@
   border-radius: 0 2px 2px 0;
 }
 
-/* Landscape rows space cells 2px apart. */
-.step-sequencer[data-orientation="landscape"] .step-cell .step-contour.tied {
-  left: -6px;
-}
-
 /* Stop short of the volume badge in the top-right corner (12px + 1px inset
    + 2px clearance) so the mark never runs under it. */
 .step-cell .step-contour.beside-badges {

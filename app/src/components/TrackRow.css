@@ -949,11 +949,14 @@
    LANDSCAPE MOBILE - Compact Track Row Layout
 
    In landscape mobile mode, we restructure the track row for maximum grid visibility:
-   - Layout: the desktop two-line control block (134px) | Steps(1fr)
-   - Badge and lane toggle hidden (their content is in the TrackDrawer)
-   - Track name tap toggles drawer with chevron indicator
-   - M/S buttons work instantly without drawer interference
-   - Step grid shows 15-16 steps (vs 5-6 in old mobile)
+   - Layout: the desktop two-line control block (134px) | 8px | Steps(1fr),
+     so the step edge sits at 134 + 8px as on desktop
+   - Cells are 36px on the desktop's 39px step pitch, so the landscape dock's
+     roll (EditorDock.css) shares the rows' step geometry
+   - Badge and lane toggle hidden (their content is in the dock)
+   - Track name tap discloses the dock's Track pane, with a chevron indicator
+   - M/S buttons work instantly; ♪ opens the dock on Notes
+   - Each row's steps scroll on their own
    ========================================================================== */
 
 /* Landscape styles driven by JS orientation detection (data-orientation attribute)
@@ -979,7 +982,7 @@
 .step-sequencer[data-orientation="landscape"] .track-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   padding: 0;
   min-width: unset; /* Don't expand to fit content */
 }
@@ -997,9 +1000,9 @@
   box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
 }
 
-/* Badge and lane toggle are hidden: their content is in the dock, and until
-   the landscape dock lands, in the TrackDrawer. A drum row's empty pitch
-   slot has nothing after it to align. */
+/* Badge and lane toggle are hidden: their content is in the dock (the Track
+   pane's instrument control). A drum row's empty pitch slot has nothing after
+   it to align. */
 .step-sequencer[data-orientation="landscape"] .track-left .track-instrument-badge,
 .step-sequencer[data-orientation="landscape"] .track-left .track-control-slot,
 .step-sequencer[data-orientation="landscape"] .track-left .velocity-toggle {
@@ -1019,7 +1022,7 @@
   font-size: 14px;
 }
 
-/* Track name - tappable, opens the TrackDrawer; the chevron shows its state */
+/* Track name - tappable, discloses the dock's Track pane; the chevron shows its state */
 .step-sequencer[data-orientation="landscape"] .track-left .track-name {
   position: relative;
   padding-right: 14px;
@@ -1042,12 +1045,12 @@
   transition: transform 0.2s ease;
 }
 
-/* Rotate chevron when drawer is open */
-.step-sequencer[data-orientation="landscape"] .track-row-wrapper:has(.track-drawer) .track-name::after {
+/* Rotate the chevron while the dock shows this track's Track pane */
+.step-sequencer[data-orientation="landscape"] .track-left .track-name[aria-expanded="true"]::after {
   transform: translateY(-50%) rotate(180deg);
 }
 
-/* Track right - hide actions (moved to drawer) */
+/* Track right - hide actions (they are in the dock's Track pane) */
 .step-sequencer[data-orientation="landscape"] .track-right {
   display: none;
 }
@@ -1061,7 +1064,7 @@
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   padding: 0; /* No vertical padding - align with M/S buttons */
-  gap: 2px;
+  gap: 3px; /* 36 + 3 = the desktop's 39px step pitch (step-geometry.ts) */
 }
 
 .step-sequencer[data-orientation="landscape"] .track-row .steps::-webkit-scrollbar {
@@ -1085,10 +1088,9 @@
   border-width: 2px;
 }
 
-/* Hide expanded panels in landscape - too cramped. The instrument picker is
-   the exception: the landscape TrackDrawer opens it (see below). */
-.step-sequencer[data-orientation="landscape"] .panel-animation-container:not(.instrument-panel-container) {
-  display: none !important;
+/* Hide row panels (the velocity lane) in landscape - too cramped. */
+.step-sequencer[data-orientation="landscape"] .panel-animation-container {
+  display: none;
 }
 
 /* Inline drawer (existing) - hide in landscape, use TrackDrawer instead */
@@ -1103,7 +1105,8 @@
  * published or read-only row renders it as a plain label; an editable row
  * renders the change-instrument toggle in the same slot with the same face,
  * so both template variants are one width. Hidden in landscape by the rule in
- * the landscape section; that mode opens the same panel from the TrackDrawer.
+ * the landscape section; that mode opens the same picker from the dock's
+ * Track pane.
  */
 .track-instrument-badge {
   box-sizing: border-box;
@@ -1142,17 +1145,6 @@
   background: var(--color-accent-muted);
   border-color: var(--color-accent);
   color: var(--color-accent-text);
-}
-
-/*
- * The landscape picker panel (the desktop picker lives in the dock's Track
- * pane). Collapsed it is grid-template-rows: 0fr with overflow hidden, so an
- * unopened panel contributes zero height and the landscape layout is
- * unchanged.
- */
-.step-sequencer[data-orientation="landscape"] .sample-picker.variant-change {
-  /* 12px app + 8px sequencer padding on both sides of the scrollport. */
-  max-width: calc(100vw - 40px);
 }
 
 /* Instrument row button in the mobile inline drawer */

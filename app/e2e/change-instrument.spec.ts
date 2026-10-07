@@ -14,8 +14,8 @@ const API_BASE = getBaseUrl();
  * that the row they were working on survives the swap intact.
  *
  * On desktop the row's badge opens the picker in the editor dock's Track pane
- * (specs/PIANO-ROLL-DOCK.md, phase 7); landscape still opens it under the row
- * from the TrackDrawer.
+ * (specs/PIANO-ROLL-DOCK.md, phase 7). Landscape reaches the same picker in
+ * its bottom dock: the track name opens the Track pane (phase 8).
  *
  * See specs/CHANGE-INSTRUMENT.md.
  */
@@ -166,7 +166,7 @@ test.describe('Change instrument', () => {
     expect(box!.x + box!.width).toBeLessThanOrEqual(tracksBox!.x + tracksBox!.width + 1);
   });
 
-  test('restores focus after rotating while the picker is open @blocking', async ({ page, request }) => {
+  test('keeps the dock picker and its focus when rotating to landscape @blocking', async ({ page, request }) => {
     await page.setViewportSize({ width: 1000, height: 700 });
     const { id } = await createSessionWithRetry(request, sessionState());
     await page.goto(`${API_BASE}/s/${id}`);
@@ -176,11 +176,12 @@ test.describe('Change instrument', () => {
     const option = page.getByTestId('set-instrument-sampled:808-kick');
     await option.focus();
 
-    // Landscape hides the dock (its landscape form is phase 8), so focus
-    // moves to the docked row's name instead of vanishing with it.
+    // Landscape keeps the dock (as a bottom dock), its Track pane and the
+    // picker, so focus stays where it was.
     await page.setViewportSize({ width: 844, height: 390 });
     await expect(page.locator('.step-sequencer')).toHaveAttribute('data-orientation', 'landscape');
-    await expect(page.locator('.track-name').first()).toBeFocused();
+    await expect(page.locator('#dock-instrument-picker .sample-picker')).toBeVisible();
+    await expect(option).toBeFocused();
   });
 
   test('shows and dismisses the picker in modern mobile landscape @blocking', async ({ page, request }) => {
@@ -190,20 +191,30 @@ test.describe('Change instrument', () => {
     const trackName = page.locator('.track-name').first();
     await expect(trackName).toBeVisible({ timeout: 10000 });
 
+    // The name opens the dock's Track pane; its Instrument control opens the
+    // picker in place of the roll.
     await trackName.focus();
     await page.keyboard.press('Enter');
-    const sound = page.getByTestId('landscape-change-instrument-instrument-track');
+    const sound = page.getByTestId('dock-change-instrument-instrument-track');
     await expect(sound).toBeVisible();
     await sound.click();
 
-    const panel = page.locator('#instrument-panel-instrument-track');
-    const picker = panel.locator('.sample-picker');
+    const picker = page.locator('#dock-instrument-picker .sample-picker');
     await expect(picker).toBeVisible();
     await expect(picker.getByRole('button', { name: 'Drums' })).toBeVisible();
+    const [pickerBox, dockBox] = await Promise.all([
+      picker.boundingBox(),
+      page.getByTestId('editor-dock').boundingBox(),
+    ]);
+    expect(pickerBox!.x).toBeGreaterThanOrEqual(dockBox!.x - 1);
+    expect(pickerBox!.x + pickerBox!.width).toBeLessThanOrEqual(dockBox!.x + dockBox!.width + 1);
 
+    // Escape inside the dock closes it (this drum track has no Notes pane)
+    // and hands focus back to the row.
     await page.keyboard.press('Escape');
+    await expect(page.getByTestId('editor-dock')).not.toHaveClass(/\bopen\b/);
+    await expect(picker).toHaveCount(0);
     await expect(page.locator('.track-drawer')).toHaveCount(0);
-    await expect(panel).not.toHaveClass(/expanded/);
     await expect(trackName).toBeFocused();
   });
 });

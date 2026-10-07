@@ -9,9 +9,7 @@ import { EDITOR_DOCK_ID } from './editor-dock-state';
 import { DOCK_INSTRUMENT_PICKER_ID } from './DockPanes';
 import { VelocityLane } from './VelocityLane';
 import { InlineDrawer } from './InlineDrawer';
-import { TrackDrawer } from './TrackDrawer';
 import { TrackNameEditor } from './TrackNameEditor';
-import { SamplePicker } from './SamplePicker';
 import { previewInstrument } from '../audio/audioTriggers';
 import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
@@ -31,7 +29,6 @@ import './TrackRow.css';
 import './ChromaticGrid.css';
 import './VelocityLane.css';
 import './InlineDrawer.css';
-import './TrackDrawer.css';
 // The transpose and step-count dropdowns moved to the dock's Track pane; their
 // styles (and the shared dropdown recipe, first) stay imported here so the
 // production stylesheet order does not depend on when the dock loads
@@ -93,9 +90,9 @@ interface TrackRowProps {
   onSetTrackSwing?: (swing: number) => void;
   /**
    * Change instrument (issue #63). Absent for a published session, which is
-   * what hides the control — the same mechanism that hides Delete. On
-   * desktop the badge opens the picker in the dock (onToggleInstrumentPicker);
-   * the landscape TrackDrawer still opens one under the row until phase 8.
+   * what hides the control — the same mechanism that hides Delete. The badge
+   * opens the picker in the dock (onToggleInstrumentPicker); landscape hides
+   * the badge and reaches the same picker from the dock's Track pane.
    */
   onSetInstrument?: (sampleId: string) => void;
   /** True while the dock's Track pane shows this track's instrument picker. */
@@ -116,10 +113,7 @@ interface TrackRowProps {
   onDragOver?: () => void; // HIGH-2: Now uses track ID from callback closure
   onDragEnd?: (droppedTrackId?: string, targetTrackId?: string) => void; // BUG3-FIX: Pass both source and target IDs
   onDragLeave?: () => void; // BUG2-FIX: Clear target when cursor leaves track
-  // Landscape drawer support
   orientationMode?: 'portrait' | 'landscape' | 'desktop';
-  isLandscapeDrawerOpen?: boolean;
-  onToggleLandscapeDrawer?: () => void;
   /**
    * Editor dock (specs/PIANO-ROLL-DOCK.md). The pitch editor no longer opens
    * under the row: the row asks StepSequencer to dock it.
@@ -128,8 +122,15 @@ interface TrackRowProps {
   isDocked?: boolean;
   /** The pitch toggle: dock this track, or close the dock if it already shows it. */
   onToggleDock?: () => void;
-  /** Clicking a track's name: dock this track (never closes). */
+  /** Clicking a track's name on desktop: dock this track (never closes). */
   onOpenDock?: () => void;
+  /** True while the open dock shows this track's Track pane. */
+  isTrackPaneDocked?: boolean;
+  /**
+   * Tapping a track's name in landscape: the dock's Track pane for this
+   * track, or close it if it already shows (the landscape drawer's toggle).
+   */
+  onToggleTrackPane?: () => void;
   /**
    * The step the dock's Step pane edits on this track, or null. The cell
    * keeps its selection ring while the pane shows it.
@@ -187,29 +188,22 @@ export const TrackRow = React.memo(function TrackRow({
   onDragEnd,
   onDragLeave,
   orientationMode,
-  isLandscapeDrawerOpen,
-  onToggleLandscapeDrawer,
   isDocked = false,
   onToggleDock,
   onOpenDock,
+  isTrackPaneDocked = false,
+  onToggleTrackPane,
   dockSelectedStep = null,
   onSelectDockStep,
 }: TrackRowProps) {
   // Phase 31G: Velocity lane visibility
   const [isVelocityExpanded, setIsVelocityExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  // The landscape TrackDrawer's pattern tools button keeps its pressed state;
-  // the tools themselves are in the dock's Track pane, which landscape gets
-  // in phase 8.
-  const [showPatternTools, setShowPatternTools] = useState(false);
-  // Change instrument (issue #63): the landscape picker panel below this row.
-  const [showInstrumentPicker, setShowInstrumentPicker] = useState(false);
   // NOTE: Track name editing state moved to TrackNameEditor component
   // Phase 31G FIX: Track if pointerdown originated on drag handle
   // HTML5 DnD e.target is always the [draggable] element, not the clicked child
   const dragHandleClickedRef = useRef(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
-  const instrumentOpenerRef = useRef<HTMLElement | null>(null);
   const remoteChanges = useRemoteChanges();
 
   // Phase 31B: Calculate active step count for Euclidean slider
@@ -313,53 +307,9 @@ export const TrackRow = React.memo(function TrackRow({
     onSetTrackSwing(clamp(trackSwing, 0, 100));
   }, [onSetTrackSwing]);
 
-  // Change instrument (issue #63). On desktop the badge opens the picker in
-  // the dock. In landscape the TrackDrawer opens the panel under this row;
-  // committing there closes the picker and the drawer, so the person sees the
-  // result.
+  // Change instrument (issue #63): the badge opens the picker in the dock.
   const canChangeInstrument = !!onSetInstrument && !readOnly;
   const isLandscape = orientationMode === 'landscape';
-
-  const handleToggleInstrumentPicker = useCallback((opener?: HTMLElement) => {
-    setShowInstrumentPicker(open => {
-      if (!open && opener) instrumentOpenerRef.current = opener;
-      return !open;
-    });
-  }, []);
-
-  const handleSelectInstrument = useCallback((sampleId: string) => {
-    const opener = instrumentOpenerRef.current;
-    onSetInstrument?.(sampleId);
-    setShowInstrumentPicker(false);
-    setIsMenuOpen(false);
-    requestAnimationFrame(() => {
-      const focusIfVisible = (element: HTMLElement | null | undefined): boolean => {
-        if (!element?.isConnected) return false;
-        const style = window.getComputedStyle(element);
-        if (element.hidden || style.display === 'none' || style.visibility === 'hidden') {
-          return false;
-        }
-        element.focus();
-        return document.activeElement === element;
-      };
-      const landscapeOpener = Array.from(
-        document.querySelectorAll<HTMLElement>('[data-testid^="landscape-change-instrument-"]'),
-      ).find(element => element.dataset.testid === `landscape-change-instrument-${track.id}`);
-      const fallbackCandidates = [
-        opener,
-        landscapeOpener,
-        wrapperRef.current?.querySelector<HTMLElement>('.track-name'),
-      ];
-      for (const candidate of fallbackCandidates) {
-        if (focusIfVisible(candidate)) return;
-      }
-    });
-  }, [onSetInstrument, track.id]);
-
-  // Derived rather than stored, so a session that becomes read-only (or a row
-  // that leaves landscape) while the picker is open closes it without an
-  // effect that re-renders to catch up.
-  const isInstrumentPickerOpen = canChangeInstrument && isLandscape && showInstrumentPicker;
 
   const { handleStepsPointerMove, stepPaintStartHandlers, stepPaintEnterHandlers } = useDragToPaint({
     steps: track.steps,
@@ -482,16 +432,6 @@ export const TrackRow = React.memo(function TrackRow({
     onDragLeave?.();
   }, [onDragLeave]);
 
-  const handleCloseLandscapeDrawer = useCallback((reason: 'outside' | 'escape') => {
-    setShowInstrumentPicker(false);
-    onToggleLandscapeDrawer?.();
-    if (reason === 'escape') {
-      requestAnimationFrame(() => {
-        wrapperRef.current?.querySelector<HTMLElement>('.track-name')?.focus();
-      });
-    }
-  }, [onToggleLandscapeDrawer]);
-
   // LOW-1: Build class names including dragging state
   const wrapperClasses = [
     'track-row-wrapper',
@@ -557,11 +497,12 @@ export const TrackRow = React.memo(function TrackRow({
               canRename={!!onSetName}
               onSave={(name) => onSetName?.(name)}
               onPreview={handleNameClick}
-              onClickOverride={orientationMode === 'landscape' ? onToggleLandscapeDrawer : undefined}
-              disclosureExpanded={orientationMode === 'landscape' ? !!isLandscapeDrawerOpen : undefined}
-              // TrackDrawer unmounts while closed, so only point aria-controls at
-              // it while it actually exists.
-              disclosureControls={orientationMode === 'landscape' && isLandscapeDrawerOpen ? `track-drawer-${track.id}` : undefined}
+              // Landscape: the name discloses the dock's Track pane, which
+              // holds the controls the row has no room for. The dock is
+              // always in the document (inert while closed).
+              onClickOverride={isLandscape ? onToggleTrackPane : undefined}
+              disclosureExpanded={isLandscape ? isTrackPaneDocked : undefined}
+              disclosureControls={isLandscape ? EDITOR_DOCK_ID : undefined}
             />
             {transposeReadout && (
               <span
@@ -748,68 +689,6 @@ export const TrackRow = React.memo(function TrackRow({
         </div>
 
       </div>
-
-      {/* Landscape mobile: TrackDrawer with Copy/Clear/Delete (accordion pattern) */}
-      {orientationMode === 'landscape' && (
-        <TrackDrawer
-          isOpen={!!isLandscapeDrawerOpen}
-          onClose={handleCloseLandscapeDrawer}
-          trackId={track.id}
-          trackName={track.name}
-          transpose={track.transpose ?? 0}
-          stepCount={track.stepCount ?? STEPS_PER_PAGE}
-          volume={track.volume ?? 1}
-          isMelodicTrack={isMelodicTrack}
-          hasSteps={hasSteps}
-          isPitchExpanded={isDocked}
-          isVelocityExpanded={isVelocityExpanded}
-          arePatternToolsVisible={showPatternTools}
-          onTransposeChange={handleTransposeChange}
-          onStepCountChange={(stepCount) => onSetStepCount?.(stepCount)}
-          onVolumeChange={(volume) => onSetVolume?.(volume)}
-          onExpandPitch={isMelodicTrack ? onToggleDock : undefined}
-          onExpandVelocity={() => setIsVelocityExpanded(!isVelocityExpanded)}
-          onShowPatternTools={() => setShowPatternTools(!showPatternTools)}
-          instrumentName={getInstrumentName(track.sampleId)}
-          isInstrumentPickerVisible={isInstrumentPickerOpen}
-          onChangeInstrument={canChangeInstrument ? handleToggleInstrumentPicker : undefined}
-          onCopy={onStartCopy}
-          onClear={onClear}
-          onDelete={onDelete}
-          isCopyTarget={isCopyTarget}
-          onPaste={isCopyTarget ? onCopyTo : undefined}
-        />
-      )}
-
-      {/* Change instrument panel (issue #63), landscape only: the TrackDrawer's
-          Instrument button opens it under the row. Desktop opens the same
-          picker in the dock's Track pane. */}
-      {canChangeInstrument && isLandscape && (
-        <div
-          id={`instrument-panel-${track.id}`}
-          className={`panel-animation-container instrument-panel-container ${isInstrumentPickerOpen ? 'expanded' : ''}`}
-          aria-hidden={!isInstrumentPickerOpen}
-          inert={!isInstrumentPickerOpen}
-        >
-          <div className="panel-animation-content">
-            {/* Mounted only while open. A closed panel must not leave ~100
-                instrument buttons in the document: they would duplicate the
-                Add Track picker's accessible names, so any query for an
-                instrument by name would resolve into a zero-height panel
-                instead of the add-track control. It also keeps a session with
-                many tracks from rendering the whole catalog per track. */}
-            {isInstrumentPickerOpen && (
-              <SamplePicker
-                variant="change"
-                selectedSampleId={track.sampleId}
-                onSelectSample={handleSelectInstrument}
-                disabled={readOnly}
-                previewsDisabled={readOnly}
-              />
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Phase 31G: Velocity lane panel - a row of cells, so it stays inline */}
       <div

@@ -1,5 +1,5 @@
 /**
- * Editor dock state (specs/PIANO-ROLL-DOCK.md, phases 2, 6 and 7).
+ * Editor dock state (specs/PIANO-ROLL-DOCK.md, phases 2, 6, 7 and 8).
  *
  * Which track the dock edits, and which pane it shows, is local UI state:
  * never synced, never persisted, and closed on load. These are pure
@@ -90,6 +90,19 @@ export function toggleDock(state: DockState, trackId: string): DockState {
  */
 export function closeDock(state: DockState): DockState {
   return state.open ? { ...state, open: false, instrumentPickerOpen: false } : state;
+}
+
+/**
+ * A track name in landscape: show that track's Track pane (the controls the
+ * landscape drawer used to hold), or close the dock when it already shows it.
+ * A track without pitch (`notesAvailable` false) shows Track in place of
+ * Notes, so for a drum that counts as showing it.
+ */
+export function toggleDockTrackPane(state: DockState, trackId: string, notesAvailable: boolean): DockState {
+  if (isTrackDocked(state, trackId) && effectiveDockPane(state, notesAvailable) === 'track') {
+    return closeDock(state);
+  }
+  return { ...openDock(state, trackId), pane: 'track', instrumentPickerOpen: false };
 }
 
 /** Choose a pane. Leaving the Track pane closes its instrument picker. */

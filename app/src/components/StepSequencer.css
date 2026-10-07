@@ -356,11 +356,12 @@
 
    In landscape mode (detected by JS via useOrientationMode hook), we show:
    - Simplified Transport (hide Scale, FX, Mixer, Pitch, Unmute buttons)
-   - Full track grid with inline drawer pattern
+   - Full track grid, each row with the two-line control block
    - Expanded step count (15-16 steps visible vs 5-6 in old mobile)
 
-   The TrackDrawer component provides all track controls in an
-   accordion pattern - only one drawer open at a time.
+   The editor dock is the one disclosure surface: a bottom dock about 45% of
+   the viewport tall (EditorDock.css). A row's ♪ opens it on Notes; its name
+   opens the Track pane, which holds every control the row has no room for.
    ========================================================================== */
 
 /* ==========================================================================

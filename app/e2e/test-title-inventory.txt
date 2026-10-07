@@ -17,10 +17,10 @@ capture-session.spec.ts › keeps a user-reachable 16-track mixed-engine session
 capture-session.spec.ts › keeps the per-track ceiling at unity below threshold and contains overloads
 capture-session.spec.ts › measures cold Tone, advanced, and whole-engine readiness-to-first-PCM startup
 capture-session.spec.ts › proves the default-room bounds and a production-path legacy dry render
+change-instrument.spec.ts › Change instrument › keeps the dock picker and its focus when rotating to landscape @blocking
 change-instrument.spec.ts › Change instrument › keeps the picker inside the viewport after scrolling a long pattern @blocking
 change-instrument.spec.ts › Change instrument › offers no instrument control on a published session @blocking
 change-instrument.spec.ts › Change instrument › replaces a track sound while keeping its pattern, name, and position @blocking
-change-instrument.spec.ts › Change instrument › restores focus after rotating while the picker is open @blocking
 change-instrument.spec.ts › Change instrument › restores keyboard focus after choosing an instrument @blocking
 change-instrument.spec.ts › Change instrument › shows and dismisses the picker in modern mobile landscape @blocking
 chromatic-grid.spec.ts › Chromatic Grid Redesign › should add view-mode-all class for dimmed chromatic styling
@@ -79,6 +79,7 @@ keyboard.spec.ts › Keyboard Shortcuts › Space starts and stops playback
 landscape-alignment.spec.ts › Desktop and landscape share the control block › the name sits on the same left edge of a 134px column on both
 landscape-alignment.spec.ts › Landscape Mobile Alignment › M/S buttons are 28px-tall touch targets on the controls line
 landscape-alignment.spec.ts › Landscape Mobile Alignment › all track rows should have consistent vertical alignment
+landscape-alignment.spec.ts › Landscape Mobile Alignment › cells sit on the desktop step pitch, 8px after the column
 landscape-alignment.spec.ts › Landscape Mobile Alignment › the landscape control column is the 134px two-line block
 landscape-alignment.spec.ts › Modern Device Landscape Alignment › Samsung Galaxy S24: the control block is 134px and centred on the step grid
 landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 14: the control block is 134px and centred on the step grid
@@ -100,20 +101,23 @@ mobile-orientation.spec.ts › Accessibility › collapsed track panels are iner
 mobile-orientation.spec.ts › Accessibility › portrait grid exposes accessible playback and 44px page controls @blocking
 mobile-orientation.spec.ts › Accessibility › portrait header should have proper ARIA labels
 mobile-orientation.spec.ts › Accessibility › should respect prefers-reduced-motion @blocking
+mobile-orientation.spec.ts › Landscape editor dock › the dock's Track pane edits the docked track
+mobile-orientation.spec.ts › Landscape editor dock › the roll scrolls with the docked row in both directions, columns aligned @blocking
+mobile-orientation.spec.ts › Landscape editor dock › the ♪ toggle opens a bottom dock about 45% of the viewport tall, inert while closed @blocking
 mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › M/S buttons should toggle instantly without drawer
-mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › activating another track name should close first drawer (accordion)
-mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape drawer keeps the destructive action distinguishable without hover @blocking
-mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape drawer supports keyboard disclosure and Escape focus restoration @blocking
-mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape drawer uses non-overlapping 44px control targets @blocking
-mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › narrow landscape drawer scrolls every control into view and disables reduced motion @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › activating another track name moves the one dock to that track
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape dock keeps the destructive action distinguishable without hover @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape dock uses non-overlapping 44px control targets @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › landscape track name discloses the dock by keyboard and Escape restores focus @blocking
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › narrow landscape dock scrolls every control into view and disables reduced motion @blocking
 mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › partial portrait pages do not expose nonexistent steps @blocking
 mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › should hide complex transport elements in landscape
 mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › should show compact track rows with M/S and name
 mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › should show transport with play, BPM, and swing only
 mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › step editing should work - tap to toggle
 mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › step grid should show more cells than old mobile
-mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › tapping same track name again should close drawer
-mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › tapping track name should open drawer with Copy/Clear/Delete
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › tapping same track name again should close the dock
+mobile-orientation.spec.ts › Mobile Orientation - Landscape Mode › tapping track name should open the dock on its Track pane with Copy/Clear/Delete
 mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › orientation hint should be dismissible
 mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › page indicator dots should switch between step pages
 mobile-orientation.spec.ts › Mobile Orientation - Portrait Mode › portrait header should show share and QR buttons
