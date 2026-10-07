@@ -73,7 +73,7 @@
 
   <section>
     <h2>1. Decision</h2>
-    <p>The note editor leaves the track list. One <b>editor dock</b> sits under the sea of cells, inside the same horizontal scroller, pinned to the bottom of the viewport while the tracks scroll above it. It shows one track at a time, chosen by the track's pitch toggle, its name, or a tab in the dock. Other melodic tracks appear as ghost notes. The 512px control column becomes the dock's own control panel with a narrow keyboard against the grid. Rows never gain or lose a panel between them.</p>
+    <p>The note editor leaves the track list. One <b>editor dock</b> sits under the sea of cells, inside the same horizontal scroller, pinned to the bottom of the viewport while the tracks scroll above it. It shows one track at a time, chosen by the track's pitch toggle, its name, or a tab in the dock. Other melodic tracks appear as ghost notes. The control column collapses to a two-line block, 134px wide, and the dock's keyboard fills that same width, so keys and track names share one left edge. The dock's own controls sit in a toolbar under its header. Rows never gain or lose a panel between them.</p>
     <p>Three things pinned this choice: the per-track roll fails the two-rolls-open test, every reference tool keeps editors out of the track list, and the dock leaves the track row's width untouched, which keeps clear of lesson 62.</p>
     <div class="callout info"><b>Reconciling with the affordance spec on the roadmap branch.</b> <code>specs/AFFORDANCES.md</code> in <a href="https://github.com/adewale/keyboardia/pull/61">adewale/keyboardia#61</a> (unmerged since July) adopts "inline expansion below the row" as the one disclosure mechanism (C-1) and plans property lanes rendered as grid rows (N3). The dock amends C-1, not N3: lanes that are rows of cells stay inline because they tessellate; editors, which are not rows of cells, go to the dock. The dock is the generalised <code>ParameterLockEditor</code> that C-1 wanted to keep, moved from "below its row" to "below the grid" so that two of them can never stack. That amendment should be written into AFFORDANCES before either lands.</div>
   </section>
@@ -95,6 +95,7 @@
     <h3>Rules the layers encode</h3>
     <ul>
       <li><b>Only the dock's height changes layout.</b> Opening it takes space from the bottom of the scroller. Nothing between two track rows ever changes size.</li>
+      <li><b>One left edge.</b> Grip, names, the ruler spacer, the dock toolbar and the keyboard all start at x=0 of a 134px column; the dock grid starts where the step cells start.</li>
       <li><b>One scroller.</b> The dock shares <code>.tracks</code> horizontal scroll, so step N is at the same x in the ruler, every row and the dock. Vertical scroll of the dock's pitch range is the dock's own.</li>
       <li><b>State lives on the row edge, class lives on the name.</b> The docked outline is a state, so it uses the row edge the affordance spec reserved for state, in accent orange, not the track's category colour.</li>
       <li><b>Transient layers never take pointer events.</b> One hit layer in the dock computes step and pitch from coordinates, as the prototype does.</li>
@@ -209,7 +210,7 @@
         <tr><td>TrackDrawer (landscape), InlineDrawer (legacy)</td><td>TrackDrawer becomes the Track pane on landscape; InlineDrawer deleted</td><td>The survey found InlineDrawer unreachable now that portrait renders no rows</td></tr>
       </tbody>
     </table></div>
-    <p>The row diet itself (C-4: keep grip, name, mute, solo, lane toggle, key badge) is a separate decision because it changes the column width and so trips lesson 62. The dock makes it optional rather than necessary, since the keyboard no longer depends on the column.</p>
+    <p>The row diet ships with the dock as a <b>two-line control block</b>: identity on line one (category tick, name, transpose readout), state and disclosure on line two (mute, solo, then badge, pitch toggle, lane toggle). Two 18px lines fit inside the existing 44px row, so the column drops from 508px to 134px with no change to row height. The width change is the lesson 62 exposure, taken once, in the same phase as the dock shell.</p>
 
     <h3>6.2 Mobile</h3>
     <ul>
@@ -284,10 +285,10 @@
   <section>
     <h2>8. Open questions</h2>
     <ul>
-      <li><span class="tag open">open</span> Does the dock open automatically when a melodic track is added, or only on request? The spec's "one screen" principle says only on request; first-sound-in-30-seconds says open it.</li>
-      <li><span class="tag open">open</span> Dock height: fixed, or a drag handle with two detents? Two detents (compact, tall) is the fewest states that cover a 16-row piece.</li>
-      <li><span class="tag open">open</span> Should the docked track be remembered per session in local storage, as the chromatic grid spec asks about view-mode persistence?</li>
-      <li><span class="tag open">open</span> Whether the row diet (C-4) ships with the dock or after it, which is really a question of when to fix the drag and auto-scroll interaction.</li>
+      <li><span class="tag">decided</span> The dock opens only on request. Adding a melodic track does not open it.</li>
+      <li><span class="tag">decided</span> Two height detents, compact and tall.</li>
+      <li><span class="tag">decided</span> The docked track is not persisted.</li>
+      <li><span class="tag">decided</span> The row diet ships with the dock, as the two-line control block.</li>
     </ul>
   </section>
 </div>

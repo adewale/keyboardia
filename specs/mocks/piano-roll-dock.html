@@ -6,7 +6,7 @@
 <title>Keyboardia Piano Roll</title>
 <style>
   /* Layout: the Keyboardia sequencer (transport, loop ruler, four track rows on the 39px step pitch) with
-     the row diet applied to the control column and the proposed editor dock pinned under the grid.
+     the two-line control block and the proposed editor dock pinned under the grid.
      Single dark theme by choice: these are the app's own tokens. */
   :root {
     --bg: #121212; --surface: #1e1e1e; --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
@@ -21,8 +21,10 @@
     --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'SF Mono', Menlo, Consolas, monospace;
     --step-w: 36px; --step-pitch: 39px;
-    /* Row diet (AFFORDANCES C-4): grip · name · M · S · badge · ♪ · lane = 300px + 6 gaps + 16px padding */
-    --track-left-width: 340px;
+    /* Two-line control block: grip 16 + body 110 + padding 8 = 134px. Line 1: tick, name, transpose readout.
+       Line 2: M · S · badge · ♪ · lane. Two 18px lines fit inside the existing 44px row. */
+    --track-left-width: 134px;
+    --ctl-h: 18px;
     --row-h: 18px; --dock-grid-h: 252px;
     color-scheme: dark;
   }
@@ -88,26 +90,29 @@
   .track-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-radius: 4px; min-width: max-content; position: relative; }
   .track-left {
     display: grid;
-    grid-template-columns: [drag] 20px [name] 100px [mute] 36px [solo] 36px [badge] 36px [pitch-view] 36px [velocity] 36px;
-    column-gap: 4px; align-items: center; padding: 0 8px; position: sticky; left: 0; z-index: 3; background: var(--surface);
+    grid-template-columns: [drag] 16px [body] 110px;
+    grid-template-rows: [identity] var(--ctl-h) [controls] var(--ctl-h);
+    column-gap: 4px; row-gap: 2px; align-content: center; padding: 0 4px; position: sticky; left: 0; z-index: 3; background: var(--surface);
     box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); height: 44px; width: var(--track-left-width); min-width: var(--track-left-width);
   }
   .track-row-wrapper.docked .track-row { box-shadow: inset 0 0 0 2px var(--accent); }
   .track-row-wrapper.docked .track-left { box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent), 4px 0 8px -4px rgba(0,0,0,.2); }
-  .drag-handle { grid-column: drag; color: var(--dim); font-size: 14px; letter-spacing: -2px; cursor: grab; text-align: center; }
-  .track-name { grid-column: name; height: 36px; display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 500; padding: 0 4px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 4px; }
+  .drag-handle { grid-column: drag; grid-row: identity / span 2; align-self: center; color: var(--dim); font-size: 14px; letter-spacing: -2px; cursor: grab; text-align: center; }
+  .track-name { grid-column: body; grid-row: identity; height: var(--ctl-h); display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 0 2px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 3px; }
   .track-name:hover { background: rgba(255,255,255,.05); }
-  .track-name .tick { width: 3px; height: 14px; border-radius: 2px; background: var(--cat); flex: 0 0 auto; }
+  .track-name .tick { width: 3px; height: 12px; border-radius: 2px; background: var(--cat); flex: 0 0 auto; }
   .track-name .tr { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--info-text); }
-  .tl-btn { height: 36px; border: 1px solid var(--border-hover); border-radius: 4px; background: transparent; color: var(--muted); font-size: 11px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+  .line2 { grid-column: body; grid-row: controls; display: flex; gap: 2px; align-items: center; padding-left: 2px; }
+  .line2 .group { display: inline-flex; gap: 2px; }
+  .line2 .group + .group { margin-left: 4px; }
+  .tl-btn { height: var(--ctl-h); width: 20px; border: 1px solid var(--border-hover); border-radius: 3px; background: transparent; color: var(--muted); font-size: 10px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
   .tl-btn:hover { border-color: var(--muted); }
-  .mute-button { grid-column: mute; } .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: #fff; }
-  .solo-button { grid-column: solo; }
-  .badge { grid-column: badge; height: 24px; border-radius: 4px; background: var(--purple-muted); color: var(--purple-text); font-family: var(--font-mono); font-size: 10px; display: inline-flex; align-items: center; justify-content: center; }
+  .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: #fff; }
+  .badge { height: var(--ctl-h); width: 26px; border-radius: 3px; background: var(--purple-muted); color: var(--purple-text); font-family: var(--font-mono); font-size: 9px; display: inline-flex; align-items: center; justify-content: center; }
   .badge.drum { background: rgba(255,255,255,.06); color: var(--muted); }
-  .expand-toggle { grid-column: pitch-view; width: 36px; height: 36px; border: 1px solid var(--surface-4); border-radius: 4px; background: var(--surface-2); color: var(--muted); font-size: 14px; cursor: pointer; transition: background 150ms ease; }
+  .expand-toggle { width: 20px; height: var(--ctl-h); border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 12px; cursor: pointer; transition: background 150ms ease; padding: 0; }
   .expand-toggle.active { background: var(--accent); border-color: var(--accent-hi); color: var(--bg); }
-  .velocity-toggle { grid-column: velocity; width: 36px; height: 36px; border: 1px solid var(--surface-4); border-radius: 4px; background: var(--surface-2); color: var(--muted); font-size: 12px; cursor: pointer; }
+  .velocity-toggle { width: 20px; height: var(--ctl-h); border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; cursor: pointer; padding: 0; }
   .steps { flex: 1; min-width: 0; }
   .step-grid { display: flex; gap: 3px; }
   .step-cell { width: var(--step-w); height: 36px; border: 2px solid var(--border); border-radius: 4px; background: var(--surface-2); cursor: pointer; position: relative; flex: 0 0 auto; padding: 0; }
@@ -141,11 +146,12 @@
   .dock-head .ib { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
   .dock-head .ib:hover { color: var(--text); border-color: var(--border-light); }
   .dock-body { display: flex; gap: 8px; }
-  .dock-left { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--surface); display: grid; grid-template-columns: 1fr 18px 96px; height: var(--dock-grid-h); overflow: hidden; border-right: 1px solid var(--border); transition: height 200ms ease-out; }
-  .pane { padding: 10px 10px; overflow: auto; font-size: 12px; color: var(--muted); display: flex; flex-direction: column; gap: 8px; border-right: 1px solid var(--border); }
-  .pane b { color: var(--text); font-weight: 600; font-size: 13px; }
-  .pane .rowc { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-  .pane .k { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; margin-right: 2px; flex-basis: 100%; }
+  .dock-left { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--surface); display: grid; grid-template-columns: 18px 1fr; height: var(--dock-grid-h); overflow: hidden; border-right: 1px solid var(--border); transition: height 200ms ease-out; }
+  .dock-tools { position: sticky; left: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .pane { padding: 6px 10px; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; min-height: 40px; }
+  .pane b { display: none; }
+  .pane .rowc { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+  .pane .k { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; margin-right: 2px; }
   .cbtn { height: 26px; padding: 0 9px; border: 1px solid var(--border-hover); border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .cbtn.sym { padding: 0 8px; font-weight: 600; }
   .cbtn[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.12); }
@@ -153,7 +159,7 @@
   .cbtn.ghost-toggle[aria-pressed="true"] i { background: var(--gc); border-style: solid; }
   .cbtn.quiet { color: var(--muted); border-color: var(--border); background: transparent; }
   .pane input[type=range] { width: 110px; accent-color: var(--accent); }
-  .pane .empty { color: var(--dim); font-style: italic; }
+  .pane .empty { color: var(--dim); }
   .range-rail { position: relative; will-change: transform; }
   .range-rail .bracket { position: absolute; left: 7px; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--info-text), rgba(94,179,234,.35)); }
   .range-rail .bracket::before, .range-rail .bracket::after { content: ''; position: absolute; left: -2px; width: 7px; height: 2px; background: var(--info-text); border-radius: 1px; }
@@ -234,7 +240,7 @@
   <div>
     <div class="eyebrow">Keyboardia · Pitch panel · Editor dock prototype</div>
     <h1>Piano roll dock</h1>
-    <p class="lede">The sequencer with the row diet applied and the proposed editor dock under the grid. Press ♪ on Lead or Bass, or click a track name, to dock that track. Shift+click a step for its Step pane. Rows never move; the dock shows one track and ghosts the other. Everything is wired to a small synth. The dock starts open here so the page shows its working state; in the app it opens only on request.</p>
+    <p class="lede">The sequencer with the two-line control block and the proposed editor dock under the grid. The keyboard starts on the same left edge as the track names. Press ♪ on Lead or Bass, or click a track name, to dock that track. Shift+click a step for its Step pane. Rows never move; the dock shows one track and ghosts the other. Everything is wired to a small synth. The dock starts open here so the page shows its working state; in the app it opens only on request.</p>
   </div>
 
   <section class="sequencer" id="sequencer" aria-label="Sequencer">
@@ -257,11 +263,12 @@
     <ul class="notes-list">
       <li><b>Rows stay contiguous.</b> Lead, Bass, Kick and Hat never gain a panel between them. The dock takes its space from the bottom of the scroller and pins there while the tracks scroll above it.</li>
       <li><b>One scroller.</b> The ruler, every row and the dock share the horizontal scroll, so step 9 is the same x everywhere. The dock's control panel and keyboard are sticky to the left like the control column.</li>
-      <li><b>Row diet.</b> The control column keeps grip, name, mute, solo, badge, ♪ and the lane toggle at 340px. Transpose shows as a small readout in the name slot; it and step count, instrument, pattern tools and actions live in the dock's Track pane.</li>
+      <li><b>Two-line control block, 134px.</b> Line one is identity: category tick, name, transpose readout. Line two is state and disclosure: mute and solo, then badge, ♪ and the lane toggle. Two 18px lines fit the existing 44px row, so nothing grows. Step count, instrument, pattern tools and actions live in the dock's Track pane.</li>
+      <li><b>One left edge.</b> The grip, the names, the ruler's spacer, the dock toolbar and the keyboard all start on the same line, and the dock grid starts where the step cells start.</li>
       <li><b>Row and dock are tied three ways.</b> The docked row gets an accent outline, its ♪ turns orange, and on open its cells pulse once. The dock's tab carries the same name and category tick.</li>
       <li><b>Switching is a crossfade, not a layout change.</b> Press the other track's ♪ or tab: notes fade over 120ms, ghosts swap, the pitch scroll eases to the new notes. Nothing above moves.</li>
       <li><b>Ghost notes answer "two rolls at once".</b> The other melodic track is drawn dashed in its category colour. Toggle it in the Notes pane.</li>
-      <li><b>Three panes, one grid, two heights.</b> Notes is the roll. Step shows the selected step's lock and highlights its column. Track holds transpose, steps, instrument, pattern tools and actions. The grid never disappears. The ⇕ button toggles the compact and tall detents.</li>
+      <li><b>Three panes as one toolbar, one grid, two heights.</b> Notes, Step and Track swap the toolbar under the dock header. Step highlights the selected step's column. Track holds transpose, steps, instrument, pattern tools and actions. The grid never disappears. The ⇕ button toggles the compact and tall detents.</li>
       <li><b>Pitch contour in the cells.</b> Melodic rows show where each note sits, so the melody stays readable while the dock shows another track.</li>
     </ul>
   </section>
@@ -458,12 +465,14 @@
     const name = el('track-name', left); t.nameEl = name;
     name.innerHTML = '<span class="tick" style="--cat:' + t.cat + '"></span>' + t.name + (t.kind === 'melodic' ? '<span class="tr"></span>' : '');
     name.title = t.kind === 'melodic' ? 'Open ' + t.name + ' in the dock' : t.name;
-    const m = el('tl-btn mute-button', left, 'button'); m.textContent = 'M'; m.addEventListener('click', () => { t.muted = !t.muted; m.classList.toggle('active', t.muted); row.classList.toggle('muted', t.muted); });
-    el('tl-btn solo-button', left, 'button').textContent = 'S';
-    const badge = el('badge' + (t.kind === 'melodic' ? '' : ' drum'), left); badge.textContent = t.badge;
-    const ex = el('expand-toggle', left, 'button'); ex.innerHTML = '&#9835;'; ex.title = 'Piano roll'; t.toggleEl = ex;
+    const line2 = el('line2', left);
+    const state = el('group', line2), disclose = el('group', line2);
+    const m = el('tl-btn mute-button', state, 'button'); m.textContent = 'M'; m.title = 'Mute'; m.addEventListener('click', () => { t.muted = !t.muted; m.classList.toggle('active', t.muted); row.classList.toggle('muted', t.muted); });
+    const so = el('tl-btn solo-button', state, 'button'); so.textContent = 'S'; so.title = 'Solo';
+    const badge = el('badge' + (t.kind === 'melodic' ? '' : ' drum'), disclose); badge.textContent = t.badge; badge.title = t.inst;
+    const ex = el('expand-toggle', disclose, 'button'); ex.innerHTML = '&#9835;'; ex.title = 'Piano roll'; t.toggleEl = ex;
     if (t.kind !== 'melodic') ex.style.visibility = 'hidden'; else { ex.addEventListener('click', () => (dock.open && dock.track === t) ? closeDock() : openDock(t, 'notes')); name.addEventListener('click', () => openDock(t, 'notes')); }
-    el('velocity-toggle', left, 'button').textContent = 'V';
+    const v = el('velocity-toggle', disclose, 'button'); v.textContent = 'V'; v.title = 'Velocity lane';
     const stepsEl = el('steps', row); const grid = el('step-grid', stepsEl);
     t.cells = [];
     for (let i = 0; i < STEPS; i++) {
@@ -507,9 +516,10 @@
     const detent = el('ib', right, 'button'); detent.innerHTML = '&#8661; Tall'; detent.title = 'Toggle compact / tall';
     detent.addEventListener('click', () => { dock.tall = !dock.tall; d.classList.toggle('tall', dock.tall); detent.innerHTML = dock.tall ? '&#8661; Compact' : '&#8661; Tall'; setTimeout(() => { if (dock.track) centreOn(dock.track, true); }, 210); });
     const close = el('ib', right, 'button'); close.innerHTML = '&#10005;'; close.title = 'Close (Esc)'; close.addEventListener('click', closeDock);
+    const tools = el('dock-tools', innerD);
+    ui.pane = el('pane', tools);
     const body = el('dock-body', innerD);
     const left = el('dock-left', body);
-    ui.pane = el('pane', left);
     const rail = el('range-rail', left); rail.style.height = (ROWS * H) + 'px'; ui.bracket = el('bracket', rail);
     const keycol = el('keycol', left); keycol.style.height = (ROWS * H) + 'px';
     const WHITE_SPAN = { 0: [0, 1.5], 2: [-0.5, 1.5], 4: [-0.5, 1], 5: [0, 1.5], 7: [-0.5, 1.5], 9: [-0.5, 1.5], 11: [-0.5, 1] };
@@ -538,7 +548,7 @@
     bindHit(hit, grid);
     // The head is sticky-left inside a max-content dock; size it to the scroller so its close button stays on screen.
     ui.head = head;
-    const fitHead = () => { head.style.width = tracksEl.clientWidth + 'px'; };
+    const fitHead = () => { head.style.width = tracksEl.clientWidth + 'px'; tools.style.width = tracksEl.clientWidth + 'px'; };
     if (window.ResizeObserver) new ResizeObserver(fitHead).observe(tracksEl); else window.addEventListener('resize', fitHead);
     fitHead();
   }
