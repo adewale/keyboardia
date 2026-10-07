@@ -125,17 +125,6 @@
   margin-bottom: 8px;
 }
 
-/* One step pitch in the one scroller (specs/PIANO-ROLL-DOCK.md): on desktop
-   every column inside .tracks (row cells, the loop ruler's marks, the dock's
-   roll and grid) sits at step * 39px. The page-end gap after every 16th cell
-   would push step 17 off the ruler's page-2 mark and the roll's 17th column,
-   so on desktop the page boundary is drawn by the ruler's page marker and the
-   roll's 16-step line instead. Mobile keeps its per-row scrollers and gaps. */
-.step-sequencer[data-orientation="desktop"] .tracks .step-cell.page-end,
-.step-sequencer[data-orientation="desktop"] .tracks .chromatic-cell.page-end {
-  margin-right: 0;
-}
-
 /* Inner container that expands to fit widest track */
 .tracks-inner {
   display: inline-flex;

@@ -1,26 +1,41 @@
-import { memo, useCallback, useRef, useState, useEffect } from 'react';
+import { memo, useCallback, useRef, useState, useEffect, useSyncExternalStore } from 'react';
 import type { LoopRegion } from '../types';
 import { clamp } from '../shared/validation';
+import {
+  DESKTOP_STEP_GEOMETRY,
+  MOBILE_STEP_GEOMETRY,
+  gridWidth,
+  spanWidth,
+  stepToX,
+  xToStep,
+  type StepGeometry,
+} from './step-geometry';
 import './LoopRuler.css';
 
 // Minimum drag distance in steps to create a loop (prevents accidental 1-step loops from clicks)
 const MIN_LOOP_LENGTH = 2;
 
-/**
- * The step pitch: a 36px cell plus the 3px gap between cells. The ruler sits
- * on the same pitch as the track rows and the dock, so step N's marker is at
- * the x of step N's cell. CSS reads the same value from --ruler-step-pitch.
- */
-const STEP_PITCH_PX = 39;
+/** The cells widen to 44px under this width (StepCell.css); the ruler follows. */
+const NARROW_QUERY = '(max-width: 768px)';
 
-/** The pitch the stylesheet is using (it widens with the cells on narrow screens). */
-function readStepPitch(el: HTMLElement): number {
-  const value = parseFloat(getComputedStyle(el).getPropertyValue('--ruler-step-pitch'));
-  return Number.isFinite(value) && value > 0 ? value : STEP_PITCH_PX;
+function subscribeNarrow(onChange: () => void): () => void {
+  if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') return () => {};
+  const query = window.matchMedia(NARROW_QUERY);
+  query.addEventListener?.('change', onChange);
+  return () => query.removeEventListener?.('change', onChange);
 }
 
-/** Position on the step pitch, as a CSS length. */
-const atStep = (step: number) => `calc(${step} * var(--ruler-step-pitch))`;
+function isNarrow(): boolean {
+  return typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia(NARROW_QUERY).matches;
+}
+
+/** The rows' step geometry at the current viewport width. */
+function useStepGeometry(): StepGeometry {
+  const narrow = useSyncExternalStore(subscribeNarrow, isNarrow, () => false);
+  return narrow ? MOBILE_STEP_GEOMETRY : DESKTOP_STEP_GEOMETRY;
+}
 
 interface LoopRulerProps {
   totalSteps: number; // Longest track's step count
@@ -41,8 +56,9 @@ interface LoopRulerProps {
  * It renders as the first row of .tracks-inner, inside the one horizontal
  * scroller it shares with the rows and the dock (specs/PIANO-ROLL-DOCK.md):
  * a sticky-left spacer as wide as the rows' control column, the rows' 8px gap,
- * then the strip on the 39px step pitch. Every mark, the region and the
- * playhead are in px on that pitch, so they line up with the cells below.
+ * then the strip. Every mark, the region and the playhead are placed with
+ * stepToX (step-geometry.ts): the 39px step pitch plus the 8px page gap after
+ * every 16 steps, so they line up with the cells below.
  */
 export const LoopRuler = memo(function LoopRuler({
   totalSteps,
@@ -55,15 +71,16 @@ export const LoopRuler = memo(function LoopRuler({
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragEnd, setDragEnd] = useState<number | null>(null);
   const [shiftClickStart, setShiftClickStart] = useState<number | null>(null);
+  const geometry = useStepGeometry();
+  const atStep = (step: number) => stepToX(step, geometry);
 
   // Convert client X position to step index
   const clientXToStep = useCallback((clientX: number): number => {
     if (!rulerRef.current) return 0;
     const rect = rulerRef.current.getBoundingClientRect();
     const relativeX = clientX - rect.left;
-    const step = Math.floor(relativeX / readStepPitch(rulerRef.current));
-    return clamp(step, 0, totalSteps - 1);
-  }, [totalSteps]);
+    return clamp(xToStep(relativeX, geometry), 0, totalSteps - 1);
+  }, [totalSteps, geometry]);
 
   // Handle pointer down - start drag or Shift+click
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
@@ -191,7 +208,7 @@ export const LoopRuler = memo(function LoopRuler({
       <div className="ruler-spacer" aria-hidden="true">Loop</div>
       <div
         className={`loop-ruler ${displayRegion ? 'has-loop' : ''} ${dragStart !== null ? 'dragging' : ''}`}
-        style={{ '--ruler-steps': totalSteps } as React.CSSProperties}
+        style={{ width: gridWidth(totalSteps, geometry) }}
         ref={rulerRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
@@ -218,8 +235,8 @@ export const LoopRuler = memo(function LoopRuler({
             className={`loop-region ${dragStart !== null ? 'preview' : ''}`}
             style={{
               left: atStep(displayRegion.start),
-              // Ends at the last cell's right edge, not the gap after it
-              width: `calc(${displayRegion.end - displayRegion.start + 1} * var(--ruler-step-pitch) - var(--ruler-step-gap))`,
+              // Ends at the last cell's right edge, spanning any page gap inside
+              width: spanWidth(displayRegion.start, displayRegion.end - displayRegion.start + 1, geometry),
             }}
           >
             {/* Start bracket */}

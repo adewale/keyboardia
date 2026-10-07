@@ -4,7 +4,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MAX_STEPS } from '../shared/constants';
 import type { ParameterLock, Track } from '../types';
 import { previewInstrument } from '../audio/audioTriggers';
-import { MIDI_MAX, ROW_H, STEP_PITCH } from './piano-roll-bars';
+import { MIDI_MAX, ROW_H } from './piano-roll-bars';
+import { DESKTOP_STEP_GEOMETRY, stepToX } from './step-geometry';
 import { PianoRollEditor, type PianoRollEditorProps } from './PianoRollEditor';
 
 vi.mock('../audio/audioTriggers', () => ({
@@ -40,8 +41,9 @@ function makeTrack(
 
 // jsdom lays nothing out, so the hit layer's rect sits at the origin and
 // client coordinates are grid coordinates.
+const xOf = (step: number) => stepToX(step, DESKTOP_STEP_GEOMETRY);
 const at = (step: number, midi: number, dx = 10) => ({
-  clientX: step * STEP_PITCH + dx,
+  clientX: xOf(step) + dx,
   clientY: (MIDI_MAX - midi) * ROW_H + 9,
   button: 0,
   pointerId: 1,
@@ -97,10 +99,58 @@ describe('PianoRollEditor rendering', () => {
     expect(notes[1].textContent).toBe('');
   });
 
+  it('puts page 2 after the 8px page gap and stretches a bar across it', () => {
+    const track = makeTrack('lead', [
+      [14, null],
+      [15, { tie: true }],
+      [16, { tie: true }],
+      [17, { tie: true }],
+      [20, null],
+      [12, null],
+      [13, { tie: true }],
+    ], { stepCount: 32 });
+    const { container } = setup({ track });
+    const note = (start: number) => container.querySelector<HTMLElement>(`.note[data-start="${start}"]`)!;
+    expect(note(20).style.left).toBe(`${20 * 39 + 8}px`);
+    // 14..17 crosses the boundary: it spans the page gap.
+    expect(note(14).style.left).toBe(`${14 * 39}px`);
+    expect(note(14).style.width).toBe(`${4 * 39 - 3 + 8}px`);
+    // 12..13 stays inside page 1.
+    expect(note(12).style.width).toBe(`${2 * 39 - 3}px`);
+  });
+
+  it('draws one line per step boundary in three weights and a band over each page gap', () => {
+    const { container } = setup({ track: makeTrack('lead', [], { stepCount: 48 }) });
+    const lines = Array.from(container.querySelectorAll<HTMLElement>('.lines .vline'));
+    expect(lines).toHaveLength(48);
+    const weight = (el: HTMLElement) => ['bar', 'beat', 'step'].find(w => el.classList.contains(w));
+    expect(lines.slice(0, 5).map(weight)).toEqual(['bar', 'step', 'step', 'step', 'beat']);
+    expect(lines.filter(l => l.classList.contains('bar')).map(l => l.dataset.step)).toEqual(['0', '16', '32']);
+    expect(lines.filter(l => l.classList.contains('beat'))).toHaveLength(9);
+    expect(lines[16].style.left).toBe(`${16 * 39 + 8}px`);
+    expect(lines[33].style.left).toBe(`${33 * 39 + 16}px`);
+
+    const gaps = Array.from(container.querySelectorAll<HTMLElement>('.lines .page-gap'));
+    expect(gaps.map(g => g.dataset.step)).toEqual(['16', '32']);
+    expect(gaps[0].style.left).toBe(`${16 * 39}px`);
+    expect(gaps[0].style.width).toBe('8px');
+    expect(gaps[1].style.left).toBe(`${32 * 39 + 8}px`);
+  });
+
+  it('maps a pointer in the page gap to the last step of the page before', () => {
+    const { hit, onToggleStep } = setup({ track: makeTrack('lead', [], { stepCount: 32 }) });
+    fireEvent.pointerDown(hit, { ...at(0, 60), clientX: 15 * 39 + 36 + 5 });
+    fireEvent.pointerUp(hit, { ...at(0, 60), clientX: 15 * 39 + 36 + 5 });
+    expect(onToggleStep).toHaveBeenLastCalledWith(15);
+    click(hit, 16, 60, { clientX: 16 * 39 + 8 });
+    expect(onToggleStep).toHaveBeenLastCalledWith(16);
+  });
+
   it('sizes the grid to the track length and renders C2..C6 rows', () => {
     const { container } = setup({ track: makeTrack('lead', [], { stepCount: 32 }) });
     const grid = container.querySelector<HTMLElement>('.grid')!;
-    expect(grid.style.width).toBe(`${32 * 39}px`);
+    // First cell's left edge to the last cell's right edge, with one page gap.
+    expect(grid.style.width).toBe(`${32 * 39 - 3 + 8}px`);
     expect(container.querySelectorAll('.grid .row')).toHaveLength(49);
     expect(container.querySelectorAll('.keycol .key')).toHaveLength(49);
   });
@@ -119,6 +169,7 @@ describe('PianoRollEditor rendering', () => {
     expect(ghosts.every(g => g.dataset.ghostTrack === 'bass')).toBe(true);
     expect(ghosts[0].style.height).toBe('12px');
     expect(ghosts[1].style.left).toBe(`${8 * 39}px`);
+    expect(ghosts[1].style.width).toBe('36px');
     expect(ghosts[1].classList.contains('repeat')).toBe(true);
   });
 
@@ -130,6 +181,7 @@ describe('PianoRollEditor rendering', () => {
 
     const { container } = setup({ track, currentStep: 17 }); // wraps to step 1
     expect(container.querySelector<HTMLElement>('.playhead')!.style.left).toBe('39px');
+    expect(container.querySelector<HTMLElement>('.wash')!.style.left).toBe('39px');
     const notes = container.querySelectorAll('.note');
     expect(notes[0].classList.contains('playing')).toBe(true);
     expect(notes[1].classList.contains('playing')).toBe(false);
@@ -149,6 +201,22 @@ describe('PianoRollEditor rendering', () => {
     expect(shades).toHaveLength(2);
     expect(shades[0].style.width).toBe(`${4 * 39}px`);
     expect(shades[1].style.left).toBe(`${8 * 39 - 3}px`);
+  });
+
+  it('places columns, shading and the playhead on page 2 after the page gap', () => {
+    const track = makeTrack('lead', [[18, null]], { stepCount: 32 });
+    const { container, hit } = setup({ track, selectedStep: 17, loopRegion: { start: 16, end: 19 }, currentStep: 18 });
+    expect(container.querySelector<HTMLElement>('.sel-col')!.style.left).toBe(`${17 * 39 + 8}px`);
+    const shades = container.querySelectorAll<HTMLElement>('.loop-shade');
+    expect(shades[0].style.width).toBe(`${16 * 39 + 8}px`);
+    expect(shades[1].style.left).toBe(`${20 * 39 + 8 - 3}px`);
+    expect(container.querySelector<HTMLElement>('.playhead')!.style.left).toBe(`${18 * 39 + 8}px`);
+    expect(container.querySelector<HTMLElement>('.wash')!.style.left).toBe(`${18 * 39 + 8}px`);
+
+    fireEvent.pointerMove(hit, at(21, 64));
+    expect(container.querySelector<HTMLElement>('.hl-col')!.style.left).toBe(`${21 * 39 + 8}px`);
+    expect(container.querySelector<HTMLElement>('.grid .ghost')!.style.left).toBe(`${21 * 39 + 8}px`);
+    expect(container.querySelector('.tip')!.textContent).toBe('E4 · step 22');
   });
 
   it('applies the tall detent as a class', () => {

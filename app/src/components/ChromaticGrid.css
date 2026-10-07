@@ -236,9 +236,10 @@
   100% { transform: scale(1); }
 }
 
-/* Page separator */
+/* Page separator: the same 8px page gap as the step cells (StepCell.css),
+   so the dock's Grid columns stay on the row columns (step-geometry.ts) */
 .chromatic-cell.page-end {
-  margin-right: 6px;
+  margin-right: 8px;
 }
 
 /* Pitch contour overlay for collapsed view */

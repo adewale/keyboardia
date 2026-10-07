@@ -9,6 +9,7 @@
 
 import { test, expect, getBaseUrl, waitForCollaborationReady, type Page } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
+import { DESKTOP_STEP_GEOMETRY, stepToX } from '../src/components/step-geometry';
 
 const API_BASE = getBaseUrl();
 const DESKTOP = { width: 1280, height: 800 };
@@ -382,17 +383,19 @@ test.describe('Piano roll dock', () => {
   });
 
   test('puts the loop ruler on the step pitch: page 2 is step 17 in the rows and the dock', async ({ page, request }) => {
+    // Three pages, so two page gaps: page 2 starts at step 17, page 3 at step 33.
     const wide = [
-      track('lead', 'Lead', 'synth:lead', [0, 16], 32),
-      track('kick', 'Kick', 'kick', [0, 8], 32),
+      track('lead', 'Lead', 'synth:lead', [0, 16, 32], 48),
+      track('kick', 'Kick', 'kick', [0, 8], 48),
     ];
     await openSession(page, request, wide);
     await openRoll(page, 'Lead');
 
     const tracks = page.locator('.tracks');
     const ruler = page.locator('.loop-ruler');
-    const pageTwo = ruler.locator('.ruler-marker.page[data-step="16"]');
-    await expect(pageTwo.locator('.marker-label')).toHaveText('2');
+    const pageMarker = (step: number) => ruler.locator(`.ruler-marker.page[data-step="${step}"]`);
+    await expect(pageMarker(16).locator('.marker-label')).toHaveText('2');
+    await expect(pageMarker(32).locator('.marker-label')).toHaveText('3');
     await expect(ruler.locator('.ruler-marker.beat[data-step="4"] .marker-label')).toHaveText('1.2');
     await expect(ruler.locator('.ruler-marker.beat[data-step="28"] .marker-label')).toHaveText('2.4');
 
@@ -403,25 +406,35 @@ test.describe('Piano roll dock', () => {
     });
     expect(placement).toBe(true);
 
-    const leadCell = row(page, 'Lead').locator('.step-cell').nth(16);
-    const dockNote = dock(page).locator('.piano-roll-editor .note[data-start="16"]');
     const dockGrid = dock(page).locator('.piano-roll-editor .dock-scroll > :first-child');
-    const expectPageTwoAligned = async () => {
-      const [markerBox, cellBox, noteBox, gridBox] = await Promise.all([
-        pageTwo.boundingBox(), leadCell.boundingBox(), dockNote.boundingBox(), dockGrid.boundingBox(),
+    const expectPagesAligned = async () => {
+      for (const step of [16, 32]) {
+        const [markerBox, cellBox, noteBox, gridBox] = await Promise.all([
+          pageMarker(step).boundingBox(),
+          row(page, 'Lead').locator('.step-cell').nth(step).boundingBox(),
+          dock(page).locator(`.piano-roll-editor .note[data-start="${step}"]`).boundingBox(),
+          dockGrid.boundingBox(),
+        ]);
+        if (!markerBox || !cellBox || !noteBox || !gridBox) throw new Error(`step ${step + 1} must be measurable everywhere`);
+        // The rows keep their page gap; the ruler and the roll honour it.
+        expect(Math.abs(markerBox.x - cellBox.x), `ruler page mark at step ${step + 1}`).toBeLessThan(1);
+        expect(Math.abs(markerBox.x - noteBox.x), `roll note at step ${step + 1}`).toBeLessThan(1);
+        // The roll's column for this step: step pitches plus one page gap per page.
+        expect(Math.abs(markerBox.x - (gridBox.x + stepToX(step, DESKTOP_STEP_GEOMETRY))), `roll column ${step + 1}`).toBeLessThan(1);
+      }
+      // The page gap is really there in the rows: 8px more than the 3px cell gap.
+      const [last, first] = await Promise.all([
+        row(page, 'Lead').locator('.step-cell').nth(15).boundingBox(),
+        row(page, 'Lead').locator('.step-cell').nth(16).boundingBox(),
       ]);
-      if (!markerBox || !cellBox || !noteBox || !gridBox) throw new Error('page 2 must be measurable everywhere');
-      expect(Math.abs(markerBox.x - cellBox.x)).toBeLessThan(1);
-      expect(Math.abs(markerBox.x - noteBox.x)).toBeLessThan(1);
-      // The dock grid's 17th column starts 16 step pitches into the grid.
-      expect(Math.abs(markerBox.x - (gridBox.x + 16 * 39))).toBeLessThan(1);
+      expect(Math.round(first!.x - (last!.x + last!.width))).toBe(3 + 8);
     };
-    await expectPageTwoAligned();
+    await expectPagesAligned();
 
     // The strip ends where the last cell ends.
     const [rulerBox, lastCell, firstCell] = await Promise.all([
       ruler.boundingBox(),
-      row(page, 'Lead').locator('.step-cell').nth(31).boundingBox(),
+      row(page, 'Lead').locator('.step-cell').nth(47).boundingBox(),
       row(page, 'Lead').locator('.step-cell').nth(0).boundingBox(),
     ]);
     expect(Math.abs(rulerBox!.x - firstCell!.x)).toBeLessThan(1);
@@ -446,7 +459,7 @@ test.describe('Piano roll dock', () => {
     const spacerBefore = await spacer.boundingBox();
     await tracks.evaluate(el => { el.scrollLeft = 200; });
     await expect.poll(() => tracks.evaluate(el => el.scrollLeft)).toBe(200);
-    await expectPageTwoAligned();
+    await expectPagesAligned();
     const spacerAfter = await spacer.boundingBox();
     expect(Math.abs(spacerAfter!.x - spacerBefore!.x)).toBeLessThan(1);
 

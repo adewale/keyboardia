@@ -6,14 +6,14 @@
  * selector is scoped under .piano-roll-editor so the short layer names
  * (.row, .note, .key, .tip) never leak into the rest of the app.
  *
- * Geometry: 18px pitch rows, 36px cells on a 39px step pitch, grid viewport
- * 252px (compact) or 432px (tall).
+ * Geometry: 18px pitch rows, 36px cells on a 39px step pitch with the rows'
+ * 8px page gap after every 16 steps (step-geometry.ts), grid viewport 252px
+ * (compact) or 432px (tall). Every horizontal position is set inline.
  */
 
 .piano-roll-editor {
   --dock-grid-h: 252px;
   --pre-step-w: 36px;
-  --pre-step-pitch: 39px;
   --pre-row-h: 18px;
 
   display: flex;
@@ -192,16 +192,34 @@
 }
 .piano-roll-editor .row.scale-out { background: rgba(0, 0, 0, 0.42); }
 
-/* Line hierarchy: bar (16 steps) 22%, beat (4 steps) 10%, step 4.5%, row 3.5% */
+/* Line hierarchy: bar (16 steps) 22%, beat (4 steps) 10%, step 4.5%, row 3.5%.
+   Row lines are uniform, so they stay a gradient; the page gap makes the step
+   pitch non-uniform, so each column line is an element at its cell's left edge. */
 .piano-roll-editor .lines {
   position: absolute;
   inset: 0;
   pointer-events: none;
   background-image:
-    repeating-linear-gradient(to right, rgba(255, 255, 255, 0.22) 0 1px, transparent 1px calc(16 * var(--pre-step-pitch))),
-    repeating-linear-gradient(to right, rgba(255, 255, 255, 0.1) 0 1px, transparent 1px calc(4 * var(--pre-step-pitch))),
-    repeating-linear-gradient(to right, rgba(255, 255, 255, 0.045) 0 1px, transparent 1px var(--pre-step-pitch)),
     repeating-linear-gradient(to bottom, rgba(255, 255, 255, 0.035) 0 1px, transparent 1px var(--pre-row-h));
+}
+
+.piano-roll-editor .vline {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+
+.piano-roll-editor .vline.step { background: rgba(255, 255, 255, 0.045); }
+.piano-roll-editor .vline.beat { background: rgba(255, 255, 255, 0.1); }
+.piano-roll-editor .vline.bar { background: rgba(255, 255, 255, 0.22); }
+
+/* The page gap reads as a boundary, as the 8px page gap does between cells */
+.piano-roll-editor .page-gap {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--color-bg) 70%, transparent);
 }
 
 .piano-roll-editor .loop-shade {

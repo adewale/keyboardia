@@ -2,7 +2,8 @@
  * Piano roll dock: the Notes pane's roll.
  *
  * Draws one track as note bars (ties merged, velocity as brightness) on a
- * C2..C6 pitch grid that sits on the 39px step pitch, with a proportioned
+ * C2..C6 pitch grid that sits on the rows' step geometry (39px pitch, 8px
+ * page gap after every 16 steps; step-geometry.ts), with a proportioned
  * keyboard and a best-range rail in the left column, ghost notes from other
  * melodic tracks, and a single hit layer that turns pointer coordinates into
  * {step, midi} for placing, painting, re-pitching, resizing and removing.
@@ -23,8 +24,6 @@ import {
   MIDI_MIN,
   ROW_COUNT,
   ROW_H,
-  STEP_GAP,
-  STEP_PITCH,
   barAt,
   computeBars,
   ghostBars,
@@ -41,6 +40,14 @@ import {
   velocityGlow,
   type NoteBar,
 } from './piano-roll-bars';
+import {
+  DESKTOP_STEP_GEOMETRY,
+  cellWidth,
+  gridWidth as stepsWidth,
+  spanWidth,
+  stepToX,
+  xToStep,
+} from './step-geometry';
 import './PianoRollEditor.css';
 
 export interface PianoRollEditorProps {
@@ -68,6 +75,34 @@ const LONG_PRESS_MS = 400;
 const KEY_PRESS_MS = 160;
 
 const GRID_HEIGHT = ROW_COUNT * ROW_H;
+
+/** The roll's 36px cells sit on the desktop rows' geometry. */
+const GEOMETRY = DESKTOP_STEP_GEOMETRY;
+const CELL_W = cellWidth(GEOMETRY);
+/** Left edge of a step's column in the grid, in px. */
+const xOf = (step: number): number => stepToX(step, GEOMETRY);
+
+type LineWeight = 'bar' | 'beat' | 'step';
+
+/**
+ * The grid's vertical lines, one at each cell's left edge, and a band over
+ * each page gap. Explicit elements rather than a repeating gradient, because
+ * the page gap makes the step pitch non-uniform.
+ */
+function columnLines(length: number) {
+  const lines: Array<{ step: number; left: number; weight: LineWeight }> = [];
+  const pageGaps: Array<{ step: number; left: number }> = [];
+  for (let step = 0; step < length; step++) {
+    const left = xOf(step);
+    const weight: LineWeight = step % GEOMETRY.stepsPerPage === 0 ? 'bar' : step % 4 === 0 ? 'beat' : 'step';
+    lines.push({ step, left, weight });
+    if (step > 0 && step % GEOMETRY.stepsPerPage === 0) {
+      // The page gap sits just before the boundary's bar line.
+      pageGaps.push({ step, left: left - GEOMETRY.pageGap });
+    }
+  }
+  return { lines, pageGaps };
+}
 
 const ALL_MIDI: number[] = Array.from({ length: ROW_COUNT }, (_, i) => MIDI_MAX - i);
 // White keys first so black keys, drawn later, sit above them.
@@ -117,7 +152,8 @@ export const PianoRollEditor = memo(function PianoRollEditor({
   onSelectStep,
 }: PianoRollEditorProps) {
   const length = trackLength(track);
-  const gridWidth = length * STEP_PITCH;
+  const gridWidth = stepsWidth(length, GEOMETRY);
+  const columns = useMemo(() => columnLines(length), [length]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const railRef = useRef<HTMLDivElement>(null);
@@ -221,11 +257,12 @@ export const PianoRollEditor = memo(function PianoRollEditor({
     const rect = e.currentTarget.getBoundingClientRect();
     const x = Math.min(Math.max(0, e.clientX - rect.left), gridWidth - 1);
     const y = Math.min(Math.max(0, e.clientY - rect.top), GRID_HEIGHT - 1);
-    return { x, step: Math.floor(x / STEP_PITCH), midi: MIDI_MAX - Math.floor(y / ROW_H) };
+    const step = Math.min(length - 1, Math.max(0, xToStep(x, GEOMETRY)));
+    return { x, step, midi: MIDI_MAX - Math.floor(y / ROW_H) };
   };
 
   const nearRightEdge = (x: number, bar: NoteBar) =>
-    x > (bar.start + bar.len) * STEP_PITCH - STEP_GAP - RESIZE_ZONE_PX;
+    x > xOf(bar.start) + spanWidth(bar.start, bar.len, GEOMETRY) - RESIZE_ZONE_PX;
 
   const updateHover = (step: number, midi: number, x: number) => {
     const bar = barAt(bars, step, midi);
@@ -502,20 +539,27 @@ export const PianoRollEditor = memo(function PianoRollEditor({
           {ALL_MIDI.map((midi, i) => (
             <div key={midi} className={`row ${rowClassList.get(midi)}`} style={{ top: i * ROW_H, height: ROW_H }} />
           ))}
-          <div className="lines" />
+          <div className="lines">
+            {columns.pageGaps.map(g => (
+              <div key={`gap-${g.step}`} className="page-gap" data-step={g.step} style={{ left: g.left, width: GEOMETRY.pageGap }} />
+            ))}
+            {columns.lines.map(l => (
+              <div key={l.step} className={`vline ${l.weight}`} data-step={l.step} style={{ left: l.left }} />
+            ))}
+          </div>
           {loopRegion && (
             <>
-              <div className="loop-shade" style={{ left: 0, width: loopStart * STEP_PITCH }} />
-              <div className="loop-shade" style={{ left: (loopEnd + 1) * STEP_PITCH - STEP_GAP, right: 0 }} />
+              <div className="loop-shade" style={{ left: 0, width: xOf(loopStart) }} />
+              <div className="loop-shade" style={{ left: xOf(loopEnd) + CELL_W, right: 0 }} />
             </>
           )}
           {hover && (
             <>
               <div className="hl-row" style={{ top: rowOf(hover.midi) * ROW_H, height: ROW_H }} />
-              <div className="hl-col" style={{ left: hover.step * STEP_PITCH }} />
+              <div className="hl-col" style={{ left: xOf(hover.step) }} />
             </>
           )}
-          {showSelected && <div className="sel-col on" style={{ left: selectedStep * STEP_PITCH }} />}
+          {showSelected && <div className="sel-col on" style={{ left: xOf(selectedStep) }} />}
 
           <div className="ghosts">
             {ghosts.map(g => g.bars.map((b, i) => (
@@ -526,8 +570,8 @@ export const PianoRollEditor = memo(function PianoRollEditor({
                 title={`${g.name} · ${noteName(b.midi)}`}
                 style={{
                   '--gc': g.color,
-                  left: b.start * STEP_PITCH,
-                  width: b.len * STEP_PITCH - STEP_GAP,
+                  left: xOf(b.start),
+                  width: spanWidth(b.start, b.len, GEOMETRY),
                   top: rowOf(b.midi) * ROW_H + 3,
                   height: ROW_H - 6,
                 } as CSSProperties}
@@ -552,8 +596,8 @@ export const PianoRollEditor = memo(function PianoRollEditor({
                   data-midi={b.midi}
                   style={{
                     '--glow': velocityGlow(b.vel),
-                    left: b.start * STEP_PITCH,
-                    width: b.len * STEP_PITCH - STEP_GAP,
+                    left: xOf(b.start),
+                    width: spanWidth(b.start, b.len, GEOMETRY),
                     top: rowOf(b.midi) * ROW_H + 2,
                     height: ROW_H - 4,
                     background: velocityColor(b.vel),
@@ -566,13 +610,13 @@ export const PianoRollEditor = memo(function PianoRollEditor({
           </div>
 
           {showHoverGhost && hover && (
-            <div className="ghost" style={{ left: hover.step * STEP_PITCH, top: rowOf(hover.midi) * ROW_H + 2 }} />
+            <div className="ghost" style={{ left: xOf(hover.step), top: rowOf(hover.midi) * ROW_H + 2 }} />
           )}
 
           {showPlayhead && (
             <>
-              <div className="wash" style={{ left: playingStep * STEP_PITCH }} />
-              <div className="playhead" style={{ left: playingStep * STEP_PITCH }} />
+              <div className="wash" style={{ left: xOf(playingStep) }} />
+              <div className="playhead" style={{ left: xOf(playingStep) }} />
             </>
           )}
 
@@ -587,7 +631,7 @@ export const PianoRollEditor = memo(function PianoRollEditor({
           />
 
           {hover && (
-            <div className="tip" style={{ left: hover.step * STEP_PITCH + STEP_PITCH / 2, top: rowOf(hover.midi) * ROW_H + ROW_H / 2 }}>
+            <div className="tip" style={{ left: xOf(hover.step) + GEOMETRY.stepPitch / 2, top: rowOf(hover.midi) * ROW_H + ROW_H / 2 }}>
               <b>{tipName}</b>{tipText}
             </div>
           )}

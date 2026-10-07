@@ -5,6 +5,9 @@
  * A bar is a run of active steps where every step after the first carries
  * `tie: true`; its pitch and velocity come from the first step's lock.
  *
+ * Horizontal geometry (step pitch and page gap) lives in step-geometry.ts,
+ * shared with the loop ruler.
+ *
  * @see specs/PIANO-ROLL-DOCK.md (Visual Representation)
  * @see specs/mocks/piano-roll-dock.html (computeBars, rowClasses, velColor)
  */
@@ -27,12 +30,6 @@ export const MIDI_MIN = 36;
 export const ROW_COUNT = MIDI_MAX - MIDI_MIN + 1;
 /** Pitch row height in px. */
 export const ROW_H = 18;
-/** Step cell width in px; matches StepCell. */
-export const STEP_W = 36;
-/** Gap between step cells in px. */
-export const STEP_GAP = 3;
-/** Step pitch in px: one cell plus one gap. */
-export const STEP_PITCH = STEP_W + STEP_GAP;
 /** MIDI note a step plays with no transpose and no pitch lock (C4). */
 export const BASE_MIDI = 60;
 /** Volume a step plays at when its lock carries none. */
