@@ -23,6 +23,7 @@ const mocks = vi.hoisted(() => ({
     },
     scale: { root: 'C', scaleId: 'minor-pentatonic', locked: false },
     isPlaying: false, currentStep: -1,
+    loopRegion: null as { start: number; end: number } | null,
   },
 }));
 
@@ -88,18 +89,32 @@ interface StubRollProps {
   currentStep: number;
   anySoloed: boolean;
   scale?: { root: string };
+  ghostTracks?: Array<{ track: Track; color: string; visible: boolean }>;
+  detent?: 'compact' | 'tall';
+  loopRegion?: { start: number; end: number } | null;
+  readOnly?: boolean;
+  onSelectStep?: (step: number) => void;
   onToggleStep?: (step: number) => void;
   onSetParameterLock: (step: number, lock: { pitch: number } | null) => void;
 }
 
 function stubRoll(kind: string) {
-  return ({ track, currentStep, anySoloed, scale, onToggleStep, onSetParameterLock }: StubRollProps) => (
+  return ({
+    track, currentStep, anySoloed, scale, ghostTracks, detent, loopRegion, readOnly, onSelectStep,
+    onToggleStep, onSetParameterLock,
+  }: StubRollProps) => (
     <div
       data-testid={kind}
       data-track={track.id}
       data-current-step={currentStep}
       data-any-soloed={String(anySoloed)}
       data-scale-root={scale?.root}
+      data-ghosts={ghostTracks?.map(g => `${g.track.id}:${g.visible ? 'on' : 'off'}`).join(' ')}
+      data-ghost-colors={ghostTracks?.map(g => g.color).join(' ')}
+      data-detent={detent}
+      data-loop={loopRegion ? `${loopRegion.start}-${loopRegion.end}` : undefined}
+      data-read-only={readOnly === undefined ? undefined : String(readOnly)}
+      data-selects={String(onSelectStep !== undefined)}
     >
       <button onClick={() => onToggleStep?.(3)}>toggle step 3</button>
       <button onClick={() => onSetParameterLock(3, { pitch: 7 })}>lock step 3</button>
@@ -108,7 +123,7 @@ function stubRoll(kind: string) {
 }
 
 vi.mock('./ChromaticGrid', () => ({ ChromaticGrid: stubRoll('chromatic-grid'), PitchContour: () => null }));
-vi.mock('./PianoRoll', () => ({ PianoRoll: stubRoll('piano-roll') }));
+vi.mock('./PianoRollEditor', () => ({ PianoRollEditor: stubRoll('piano-roll') }));
 
 import { StepSequencer } from './StepSequencer';
 
@@ -123,6 +138,8 @@ function makeTrack(id: string, name: string, sampleId: string): Track {
 const lead = makeTrack('lead', 'Lead', 'synth:lead');
 const bass = makeTrack('bass', 'Bass', 'synth:bass');
 const kick = makeTrack('kick', 'Kick', 'kick');
+const pad = makeTrack('pad', 'Pad', 'synth:pad');
+const keys = makeTrack('keys', 'Keys', 'synth:rhodes');
 
 const dockEl = () => screen.getByTestId('editor-dock');
 const isOpen = () => dockEl().classList.contains('open');
@@ -134,6 +151,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mocks.isPublished = false;
   mocks.state.tracks = [lead, kick, bass];
+  mocks.state.loopRegion = null;
 });
 
 afterEach(() => {
@@ -317,5 +335,82 @@ describe('StepSequencer editor dock', () => {
     fireEvent.click(within(roll).getByText('lock step 3'));
     expect(mocks.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'TOGGLE_STEP' }));
     expect(mocks.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_PARAMETER_LOCK' }));
+  });
+
+  it('renders the new roll for the Piano Roll view with the detent, loop region and no step selection', () => {
+    mocks.state.loopRegion = { start: 2, end: 5 };
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    // Grid view has no detent or ghost controls.
+    expect(within(dockEl()).queryByRole('button', { name: 'Tall' })).toBeNull();
+    expect(screen.queryByRole('group', { name: 'Ghost notes' })).toBeNull();
+
+    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
+    const roll = screen.getByTestId('piano-roll');
+    expect(roll.getAttribute('data-detent')).toBe('compact');
+    expect(roll.getAttribute('data-loop')).toBe('2-5');
+    expect(roll.getAttribute('data-read-only')).toBe('false');
+    // The Step pane is a later phase: the roll gets no step selection yet.
+    expect(roll.getAttribute('data-selects')).toBe('false');
+  });
+
+  it('toggles the detent from the dock header and keeps it across close and switch', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
+
+    const tall = within(dockEl()).getByRole('button', { name: 'Tall' });
+    expect(tall.getAttribute('aria-pressed')).toBe('false');
+    fireEvent.click(tall);
+    expect(screen.getByTestId('piano-roll').getAttribute('data-detent')).toBe('tall');
+    const compact = within(dockEl()).getByRole('button', { name: 'Compact' });
+    expect(compact.getAttribute('aria-pressed')).toBe('true');
+
+    fireEvent.click(screen.getByText('pitch Bass'));
+    expect(screen.getByTestId('piano-roll').getAttribute('data-detent')).toBe('tall');
+    fireEvent.click(compact);
+    expect(screen.getByTestId('piano-roll').getAttribute('data-detent')).toBe('compact');
+  });
+
+  it('ghosts every other melodic track, the two nearest on by default, each a toggle', () => {
+    mocks.state.tracks = [lead, kick, bass, pad, keys];
+    const view = render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
+
+    const roll = () => screen.getByTestId('piano-roll');
+    expect(roll().getAttribute('data-ghosts')).toBe('bass:on pad:on keys:off');
+    expect(roll().getAttribute('data-ghost-colors')).toBe(
+      'var(--color-bass, #9b59b6) var(--color-pads, #2ecc71) var(--color-keys, #3498db)',
+    );
+
+    const chips = within(screen.getByRole('group', { name: 'Ghost notes' })).getAllByRole('button');
+    expect(chips.map(chip => chip.textContent)).toEqual(['Bass', 'Pad', 'Keys']);
+    expect(chips.map(chip => chip.getAttribute('aria-pressed'))).toEqual(['true', 'true', 'false']);
+
+    fireEvent.click(chips[2]);
+    fireEvent.click(chips[0]);
+    expect(roll().getAttribute('data-ghosts')).toBe('bass:off pad:on keys:on');
+
+    // Docking another track keeps the choices; Lead has no choice, so it
+    // follows the nearest-two rule from Pad.
+    fireEvent.click(screen.getByText('pitch Pad'));
+    expect(roll().getAttribute('data-ghosts')).toBe('lead:off bass:off keys:on');
+
+    // A melodic track added later follows the rule too.
+    const organ = makeTrack('organ', 'Organ', 'synth:rhodes');
+    mocks.state.tracks = [lead, kick, bass, pad, organ, keys];
+    view.rerender(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    expect(isOpen()).toBe(true);
+    expect(roll().getAttribute('data-ghosts')).toBe('bass:off pad:on organ:off keys:on');
+  });
+
+  it('passes read-only to the new roll in a published session', () => {
+    mocks.isPublished = true;
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
+    expect(screen.getByTestId('piano-roll').getAttribute('data-read-only')).toBe('true');
   });
 });

@@ -21,8 +21,11 @@ import {
   openDock,
   reconcileDock,
   releaseDockedTrack,
+  resolveGhostVisibility,
   setDockViewMode,
   toggleDock,
+  toggleDockDetent,
+  toggleGhost,
   type DockState,
   type DockViewMode,
 } from './editor-dock-state';
@@ -532,6 +535,10 @@ export function StepSequencer() {
     }
   }, [getDock]);
 
+  const handleToggleDockDetent = useCallback(() => {
+    setDock(toggleDockDetent);
+  }, []);
+
   const handleSetDockViewMode = useCallback((viewMode: DockViewMode) => {
     setDock(prev => setDockViewMode(prev, viewMode));
   }, []);
@@ -656,12 +663,20 @@ export function StepSequencer() {
     () => state.tracks.filter(t => !isDrumInstrument(t.sampleId)),
     [state.tracks],
   );
-  const reconciledDock = reconcileDock(dock, new Set(melodicTracks.map(t => t.id)));
+  const melodicTrackIds = useMemo(() => melodicTracks.map(t => t.id), [melodicTracks]);
+  const reconciledDock = reconcileDock(dock, new Set(melodicTrackIds));
   if (reconciledDock !== dock) setDock(reconciledDock);
   const dockedTrack = reconciledDock.trackId
     ? melodicTracks.find(t => t.id === reconciledDock.trackId) ?? null
     : null;
   const isDockOpen = reconciledDock.open && dockedTrack !== null;
+  const ghostVisibility = useMemo(
+    () => resolveGhostVisibility(reconciledDock, melodicTrackIds),
+    [reconciledDock, melodicTrackIds],
+  );
+  const handleToggleGhost = useCallback((ghostId: string) => {
+    setDock(prev => toggleGhost(prev, ghostId, melodicTrackIds));
+  }, [melodicTrackIds]);
 
   // Opening a closed dock pulses the docked row's active cells once (150ms),
   // so the eye finds the row the dock is editing, then brings the dock into
@@ -932,6 +947,9 @@ export function StepSequencer() {
               track={dockedTrack}
               melodicTracks={melodicTracks}
               viewMode={reconciledDock.viewMode}
+              detent={reconciledDock.detent}
+              ghostVisibility={ghostVisibility}
+              loopRegion={state.loopRegion ?? null}
               currentStep={state.isPlaying ? state.currentStep : -1}
               anySoloed={anySoloed}
               scale={state.scale}
@@ -939,6 +957,8 @@ export function StepSequencer() {
               scrollerRef={tracksRef}
               onSelectTrack={handleOpenDock}
               onSetViewMode={handleSetDockViewMode}
+              onToggleDetent={handleToggleDockDetent}
+              onToggleGhost={handleToggleGhost}
               onClose={handleCloseDock}
               onToggleStep={handleToggleStep}
               onSetParameterLock={handleSetParameterLock}

@@ -69,7 +69,7 @@ describe('TrackRow and the editor dock', () => {
     const { container } = renderRow();
 
     expect(container.querySelector('.chromatic-grid')).toBeNull();
-    expect(container.querySelector('.piano-roll')).toBeNull();
+    expect(container.querySelector('.piano-roll-editor')).toBeNull();
     expect(container.querySelector('.pitch-view-header')).toBeNull();
     expect(container.querySelector('[id^="pitch-panel-"]')).toBeNull();
     // Pattern tools and velocity lane keep their inline panels.

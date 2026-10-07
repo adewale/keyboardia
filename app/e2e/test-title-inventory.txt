@@ -179,11 +179,15 @@ phase3-refactoring.spec.ts › Selection invalidation after pattern operations �
 phase3-refactoring.spec.ts › Track operations › add track appears and syncs
 phase3-refactoring.spec.ts › Track operations › clear track removes all steps
 phase44-demo.spec.ts › Whisper to Roar is served at its documented session route
+piano-roll-dock.spec.ts › Piano roll dock › a ghost chip shows and hides the other melodic track as ghost bars
+piano-roll-dock.spec.ts › Piano roll dock › a tall dock keeps its header inside the scroller on a short viewport
 piano-roll-dock.spec.ts › Piano roll dock › a track name docks a melodic track; adding or deleting tracks behaves
 piano-roll-dock.spec.ts › Piano roll dock › closes from the docked row toggle, the close button, and Escape inside the dock
 piano-roll-dock.spec.ts › Piano roll dock › is closed on load and opens from a row pitch toggle
 piano-roll-dock.spec.ts › Piano roll dock › keeps rows contiguous and the dock columns on the row columns
+piano-roll-dock.spec.ts › Piano roll dock › keeps the roll columns on the row columns and the keyboard pinned while scrolling
 piano-roll-dock.spec.ts › Piano roll dock › pins to the bottom of the track scroller while tracks scroll above it
+piano-roll-dock.spec.ts › Piano roll dock › renders the piano roll editor and toggles its detent
 piano-roll-dock.spec.ts › Piano roll dock › switches track from another row toggle and from a dock tab
 pitch-contour-alignment.spec.ts › PitchContour alignment › CSS dimensions match JavaScript constants (CRITICAL regression test)
 pitch-contour-alignment.spec.ts › PitchContour alignment › SVG contour dots align with step cells for session with pitch variation

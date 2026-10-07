@@ -81,7 +81,7 @@ function prefersReducedMotion(): boolean {
     && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
-/** Copy of `lock` with its pitch set; 0 is stored as no pitch, as PianoRoll does. */
+/** Copy of `lock` with its pitch set; 0 is stored as no pitch, as the previous roll did. */
 function withPitch(lock: ParameterLock | null | undefined, pitch: number): ParameterLock | null {
   const next: ParameterLock = { ...(lock ?? {}) };
   if (pitch === 0) delete next.pitch;
@@ -139,7 +139,7 @@ export const PianoRollEditor = memo(function PianoRollEditor({
     [track.sampleId, scale],
   );
 
-  // Playhead visibility follows PianoRoll: hidden on silent tracks.
+  // Playhead visibility follows the previous roll: hidden on silent tracks.
   const isAudible = anySoloed ? track.soloed : !track.muted;
   const playingStep = currentStep >= 0 ? currentStep % length : -1;
   const showPlayhead = playingStep >= 0 && (!HIDE_PLAYHEAD_ON_SILENT_TRACKS || isAudible);

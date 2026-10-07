@@ -27,10 +27,9 @@ import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
 import { features } from '../config/features';
 import { useDragToPaint } from './useDragToPaint';
 import './TrackRow.css';
-// ChromaticGrid and PianoRoll now render in the EditorDock; their styles stay
-// imported here so the production stylesheet order does not change (lesson 63).
+// ChromaticGrid now renders in the EditorDock; its styles stay imported here
+// so the production stylesheet order does not change (lesson 63).
 import './ChromaticGrid.css';
-import './PianoRoll.css';
 import './VelocityLane.css';
 import './InlineDrawer.css';
 import './TrackDrawer.css';

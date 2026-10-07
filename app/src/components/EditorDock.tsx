@@ -3,19 +3,19 @@
  *
  * One pitch editor under the sea of cells, inside the same horizontal scroller
  * as the track rows and pinned to that scroller's bottom edge. It shows one
- * melodic track at a time through the existing ChromaticGrid or PianoRoll,
- * whose props are wired exactly as TrackRow wired them before the move.
+ * melodic track at a time, as the PianoRollEditor (bars, ghosts of the other
+ * melodic tracks, two detents) or the legacy ChromaticGrid.
  *
  * Which track is docked lives in StepSequencer (see editor-dock-state.ts);
  * this component only renders it and reports intent.
  */
 
-import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent, type RefObject } from 'react';
-import type { ParameterLock, ScaleState, Track } from '../types';
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from 'react';
+import type { LoopRegion, ParameterLock, ScaleState, Track } from '../types';
 import { ChromaticGrid } from './ChromaticGrid';
-import { PianoRoll } from './PianoRoll';
-import { getInstrumentCategory, getInstrumentName } from './sample-constants';
-import { EDITOR_DOCK_ID, type DockViewMode } from './editor-dock-state';
+import { PianoRollEditor } from './PianoRollEditor';
+import { getInstrumentCategory, getInstrumentCategoryColor, getInstrumentName } from './sample-constants';
+import { EDITOR_DOCK_ID, type DockDetent, type DockViewMode } from './editor-dock-state';
 import { Close } from '../icons';
 import './EditorDock.css';
 
@@ -24,6 +24,12 @@ export const DOCK_TRANSITION_MS = 200;
 
 const noop = () => {};
 
+/**
+ * Space kept between the dock's top edge and the scroller's: the dock's top
+ * border plus a little slack, so a tall roll never pushes the header out.
+ */
+const DOCK_HEAD_SLACK_PX = 4;
+
 interface EditorDockProps {
   open: boolean;
   /** The docked track. Still passed while closing so the content collapses with the dock. */
@@ -31,6 +37,10 @@ interface EditorDockProps {
   /** Every melodic track, in row order, for the dock's track tabs. */
   melodicTracks: Track[];
   viewMode: DockViewMode;
+  detent: DockDetent;
+  /** Resolved ghost visibility for every other melodic track, by track id. */
+  ghostVisibility: Record<string, boolean>;
+  loopRegion?: LoopRegion | null;
   currentStep: number;
   anySoloed: boolean;
   scale?: ScaleState;
@@ -40,6 +50,8 @@ interface EditorDockProps {
   scrollerRef: RefObject<HTMLElement | null>;
   onSelectTrack: (trackId: string) => void;
   onSetViewMode: (viewMode: DockViewMode) => void;
+  onToggleDetent: () => void;
+  onToggleGhost: (trackId: string) => void;
   /** `restoreFocus` is true when focus was inside the dock (close button, Escape). */
   onClose: (options: { restoreFocus: boolean }) => void;
   onToggleStep: (trackId: string, step: number) => void;
@@ -51,6 +63,9 @@ export const EditorDock = memo(function EditorDock({
   track,
   melodicTracks,
   viewMode,
+  detent,
+  ghostVisibility,
+  loopRegion = null,
   currentStep,
   anySoloed,
   scale,
@@ -58,10 +73,13 @@ export const EditorDock = memo(function EditorDock({
   scrollerRef,
   onSelectTrack,
   onSetViewMode,
+  onToggleDetent,
+  onToggleGhost,
   onClose,
   onToggleStep,
   onSetParameterLock,
 }: EditorDockProps) {
+  const dockRef = useRef<HTMLDivElement>(null);
   const headRef = useRef<HTMLDivElement>(null);
 
   // Keep the roll mounted while the dock collapses, then unmount it so a
@@ -76,12 +94,26 @@ export const EditorDock = memo(function EditorDock({
 
   // The header is sticky-left inside a dock as wide as the grid; size it to
   // the scroller's visible width so the close button stays on screen.
+  // The roll is the dock's only vertical scroller and the dock pins to the
+  // bottom of .tracks, so a roll taller than the room under the header would
+  // push the header above the scroller. --dock-roll-max caps the roll's
+  // height to the scroller's largest scrollport less the header.
   useEffect(() => {
     const scroller = scrollerRef.current;
+    const dockElement = dockRef.current;
     const head = headRef.current;
-    if (!scroller || !head) return;
+    if (!scroller || !dockElement || !head) return;
     const fit = () => {
       head.style.width = `${scroller.clientWidth}px`;
+      const maxHeight = parseFloat(getComputedStyle(scroller).maxHeight);
+      if (Number.isFinite(maxHeight)) {
+        // Borders and a horizontal scrollbar are not part of the scrollport.
+        const chrome = scroller.offsetHeight - scroller.clientHeight;
+        const room = maxHeight - chrome - head.offsetHeight - DOCK_HEAD_SLACK_PX;
+        dockElement.style.setProperty('--dock-roll-max', `${Math.max(0, Math.floor(room))}px`);
+      } else {
+        dockElement.style.removeProperty('--dock-roll-max');
+      }
     };
     fit();
     if (typeof ResizeObserver === 'undefined') {
@@ -90,6 +122,7 @@ export const EditorDock = memo(function EditorDock({
     }
     const observer = new ResizeObserver(fit);
     observer.observe(scroller);
+    observer.observe(head);
     return () => observer.disconnect();
   }, [scrollerRef]);
 
@@ -110,6 +143,16 @@ export const EditorDock = memo(function EditorDock({
     if (trackId) onSetParameterLock(trackId, step, lock);
   }, [trackId, onSetParameterLock]);
 
+  // Every other melodic track, as ghost notes in its category colour.
+  const ghostTracks = useMemo(() => melodicTracks
+    .filter(other => other.id !== trackId)
+    .map(other => ({
+      track: other,
+      color: getInstrumentCategoryColor(other.sampleId),
+      visible: ghostVisibility[other.id] ?? false,
+    })), [melodicTracks, trackId, ghostVisibility]);
+
+  const isRoll = viewMode === 'piano-roll';
   const showBody = !collapsed && track !== null;
   const rollProps = track ? {
     track,
@@ -122,6 +165,7 @@ export const EditorDock = memo(function EditorDock({
 
   return (
     <div
+      ref={dockRef}
       id={EDITOR_DOCK_ID}
       className={`dock${open ? ' open' : ''}${readOnly ? ' read-only' : ''}`}
       data-testid="editor-dock"
@@ -179,20 +223,59 @@ export const EditorDock = memo(function EditorDock({
                 <span>{getInstrumentName(track.sampleId)}</span>
               </span>
             )}
-            <button
-              type="button"
-              className="dock-close"
-              onClick={() => onClose({ restoreFocus: true })}
-              title="Close (Esc)"
-              aria-label="Close pitch editor"
-            >
-              <Close size={14} aria-hidden="true" />
-            </button>
+            {isRoll && ghostTracks.length > 0 && (
+              <div className="dock-chips dock-ghost-toggles" role="group" aria-label="Ghost notes">
+                {ghostTracks.map(ghost => (
+                  <button
+                    key={ghost.track.id}
+                    type="button"
+                    className="dock-chip dock-ghost-toggle"
+                    style={{ '--gc': ghost.color } as CSSProperties}
+                    aria-pressed={ghost.visible}
+                    title={`${ghost.visible ? 'Hide' : 'Show'} ${ghost.track.name} as ghost notes`}
+                    onClick={() => onToggleGhost(ghost.track.id)}
+                  >
+                    <span className="dock-ghost-swatch" aria-hidden="true" />
+                    {ghost.track.name}
+                  </button>
+                ))}
+              </div>
+            )}
+            <div className="dock-head-end">
+              {isRoll && (
+                <button
+                  type="button"
+                  className="dock-icon-button dock-detent"
+                  aria-pressed={detent === 'tall'}
+                  onClick={onToggleDetent}
+                  title="Toggle compact / tall"
+                >
+                  <span aria-hidden="true">⇕</span> {detent === 'tall' ? 'Compact' : 'Tall'}
+                </button>
+              )}
+              <button
+                type="button"
+                className="dock-icon-button dock-close"
+                onClick={() => onClose({ restoreFocus: true })}
+                title="Close (Esc)"
+                aria-label="Close pitch editor"
+              >
+                <Close size={14} aria-hidden="true" />
+              </button>
+            </div>
           </div>
-          <div className="dock-body">
-            {showBody && rollProps && (viewMode === 'chromatic'
-              ? <ChromaticGrid {...rollProps} />
-              : <PianoRoll {...rollProps} />)}
+          <div className="dock-body" data-view={viewMode}>
+            {showBody && rollProps && (isRoll
+              ? (
+                <PianoRollEditor
+                  {...rollProps}
+                  ghostTracks={ghostTracks}
+                  loopRegion={loopRegion}
+                  detent={detent}
+                  readOnly={readOnly}
+                />
+              )
+              : <ChromaticGrid {...rollProps} />)}
           </div>
         </div>
       </div>

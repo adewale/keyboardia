@@ -13,7 +13,7 @@ import { createSessionWithRetry } from './test-utils';
 const API_BASE = getBaseUrl();
 const DESKTOP = { width: 1280, height: 800 };
 
-function track(id: string, name: string, sampleId: string, activeSteps: number[] = [0, 4]) {
+function track(id: string, name: string, sampleId: string, activeSteps: number[] = [0, 4], stepCount = 16) {
   const steps = Array(128).fill(false);
   for (const step of activeSteps) steps[step] = true;
   return {
@@ -26,7 +26,7 @@ function track(id: string, name: string, sampleId: string, activeSteps: number[]
     muted: false,
     soloed: false,
     transpose: 0,
-    stepCount: 16,
+    stepCount,
   };
 }
 
@@ -61,8 +61,19 @@ async function expectClosed(page: Page) {
   await expect(page.locator('.track-row-wrapper.docked')).toHaveCount(0);
   await expect(page.locator('.expand-toggle.expanded')).toHaveCount(0);
   // The roll unmounts once the dock has collapsed.
-  await expect(dock(page).locator('.chromatic-grid, .piano-roll')).toHaveCount(0);
+  await expect(dock(page).locator('.chromatic-grid, .piano-roll-editor')).toHaveCount(0);
 }
+
+async function openRoll(page: Page, name: string) {
+  await pitchToggle(page, name).click();
+  await expectDocked(page, name);
+  await dock(page).getByRole('button', { name: 'Piano Roll' }).click();
+  await expect(dock(page).locator('.piano-roll-editor')).toBeVisible();
+}
+
+/** Height of the roll's grid viewport, once the detent transition settles. */
+const rollHeight = (page: Page) => dock(page).locator('.piano-roll-editor .dock-scroll')
+  .evaluate(el => Math.round(el.getBoundingClientRect().height));
 
 const threeTracks = [
   track('lead', 'Lead', 'synth:lead'),
@@ -79,7 +90,7 @@ test.describe('Piano roll dock', () => {
     await expectDocked(page, 'Lead');
     await expect(dock(page).locator('.dock-body .chromatic-grid')).toBeVisible();
     // No pitch panel is left in any row.
-    await expect(page.locator('.track-row-wrapper .chromatic-grid, .track-row-wrapper .piano-roll')).toHaveCount(0);
+    await expect(page.locator('.track-row-wrapper .chromatic-grid, .track-row-wrapper .piano-roll-editor')).toHaveCount(0);
 
     // The docked outline is drawn: an inset accent ring on the row.
     const shadow = await row(page, 'Lead').locator('.track-row').evaluate(el => getComputedStyle(el).boxShadow);
@@ -102,7 +113,7 @@ test.describe('Piano roll dock', () => {
 
     // The view mode tabs moved with the panel.
     await dock(page).getByRole('button', { name: 'Piano Roll' }).click();
-    await expect(dock(page).locator('.dock-body .piano-roll')).toBeVisible();
+    await expect(dock(page).locator('.dock-body .piano-roll-editor')).toBeVisible();
     await expect(dock(page).locator('.dock-body .chromatic-grid')).toHaveCount(0);
   });
 
@@ -218,5 +229,138 @@ test.describe('Piano roll dock', () => {
     await row(page, 'Bass').getByRole('button', { name: 'Delete' }).click();
     await expect(page.locator('.track-row-wrapper')).toHaveCount(1);
     await expectClosed(page);
+  });
+
+  test('renders the piano roll editor and toggles its detent', async ({ page, request }) => {
+    await openSession(page, request, threeTracks);
+    await openRoll(page, 'Lead');
+
+    const roll = dock(page).locator('.piano-roll-editor');
+    await expect(roll).not.toHaveClass(/piano-roll-editor--tall/);
+    await expect(dock(page).locator('.piano-roll-editor .note')).toHaveCount(2);
+    await expect.poll(() => rollHeight(page)).toBe(252);
+
+    const tall = dock(page).getByRole('button', { name: 'Tall' });
+    await expect(tall).toHaveAttribute('aria-pressed', 'false');
+    await tall.click();
+    await expect(roll).toHaveClass(/piano-roll-editor--tall/);
+    await expect.poll(() => rollHeight(page)).toBe(432);
+    const compact = dock(page).getByRole('button', { name: 'Compact' });
+    await expect(compact).toHaveAttribute('aria-pressed', 'true');
+
+    // The roll's grid is the dock's only vertical scroller.
+    const scrollers = await dock(page).evaluate(el => Array.from(el.querySelectorAll('*'))
+      .filter(node => ['auto', 'scroll'].includes(getComputedStyle(node).overflowY))
+      .map(node => node.getAttribute('class')));
+    expect(scrollers).toEqual(['dock-scroll']);
+
+    await compact.click();
+    await expect(roll).not.toHaveClass(/piano-roll-editor--tall/);
+    await expect.poll(() => rollHeight(page)).toBe(252);
+  });
+
+  test('a tall dock keeps its header inside the scroller on a short viewport', async ({ page, request }) => {
+    const many = Array.from({ length: 12 }, (_, index) => index % 2 === 0
+      ? track(`lead-${index}`, `Lead ${index}`, 'synth:lead')
+      : track(`kick-${index}`, `Kick ${index}`, 'kick'));
+    await openSession(page, request, many);
+    await page.setViewportSize({ width: 1280, height: 560 });
+    await openRoll(page, 'Lead 0');
+    await dock(page).getByRole('button', { name: 'Tall' }).click();
+    await expect(dock(page).locator('.piano-roll-editor')).toHaveClass(/piano-roll-editor--tall/);
+
+    // The scroller is shorter than header + 432px, so the grid is clamped.
+    await expect.poll(() => rollHeight(page)).toBeLessThan(432);
+    const tracks = page.locator('.tracks');
+    await expect.poll(async () => {
+      const [head, top] = await Promise.all([
+        dock(page).locator('.dock-head').boundingBox(),
+        tracks.evaluate(el => el.getBoundingClientRect().top + el.clientTop),
+      ]);
+      return head ? head.y - top : -Infinity;
+    }).toBeGreaterThanOrEqual(-1);
+  });
+
+  test('a ghost chip shows and hides the other melodic track as ghost bars', async ({ page, request }) => {
+    const tracks = [
+      track('lead', 'Lead', 'synth:lead'),
+      track('kick', 'Kick', 'kick', [0, 8]),
+      track('bass', 'Bass', 'synth:bass', [2, 6]),
+      track('pad', 'Pad', 'synth:pad', [1]),
+      track('keys', 'Keys', 'synth:rhodes', [3, 5, 7]),
+    ];
+    await openSession(page, request, tracks);
+    await openRoll(page, 'Lead');
+
+    const chips = dock(page).getByRole('group', { name: 'Ghost notes' }).getByRole('button');
+    await expect(chips).toHaveText(['Bass', 'Pad', 'Keys']);
+    // The two nearest melodic tracks show by default; Keys is further away.
+    await expect(chips.nth(0)).toHaveAttribute('aria-pressed', 'true');
+    await expect(chips.nth(1)).toHaveAttribute('aria-pressed', 'true');
+    await expect(chips.nth(2)).toHaveAttribute('aria-pressed', 'false');
+    const ghosts = (id?: string) => dock(page).locator(id ? `.gnote[data-ghost-track="${id}"]` : '.gnote');
+    await expect(ghosts('bass')).toHaveCount(2);
+    await expect(ghosts('pad')).toHaveCount(1);
+    await expect(ghosts()).toHaveCount(3);
+
+    await chips.nth(0).click();
+    await expect(chips.nth(0)).toHaveAttribute('aria-pressed', 'false');
+    await expect(ghosts('bass')).toHaveCount(0);
+    await expect(ghosts()).toHaveCount(1);
+
+    await chips.nth(2).click();
+    await expect(ghosts('keys')).toHaveCount(3);
+    await expect(ghosts()).toHaveCount(4);
+
+    // Ghosts wear their track's category colour as a dashed border.
+    const border = await ghosts('pad').first().evaluate(el => getComputedStyle(el).borderTopStyle);
+    expect(border).toBe('dashed');
+  });
+
+  test('keeps the roll columns on the row columns and the keyboard pinned while scrolling', async ({ page, request }) => {
+    const wide = [
+      track('lead', 'Lead', 'synth:lead', [0, 4, 8, 40], 64),
+      track('kick', 'Kick', 'kick', [0, 8], 64),
+    ];
+    await openSession(page, request, wide);
+    await openRoll(page, 'Lead');
+
+    const tracks = page.locator('.tracks');
+    const canScroll = await tracks.evaluate(el => el.scrollWidth > el.clientWidth);
+    expect(canScroll).toBe(true);
+
+    const leadCells = row(page, 'Lead').locator('.step-cell');
+    const kickCells = row(page, 'Kick').locator('.step-cell');
+    const note = (start: number) => dock(page).locator(`.piano-roll-editor .note[data-start="${start}"]`);
+
+    const expectAligned = async () => {
+      for (const step of [0, 4, 8]) {
+        const [leadBox, kickBox, noteBox] = await Promise.all([
+          leadCells.nth(step).boundingBox(),
+          kickCells.nth(step).boundingBox(),
+          note(step).boundingBox(),
+        ]);
+        expect(leadBox, `lead step ${step} should be measurable`).not.toBeNull();
+        expect(kickBox, `kick step ${step} should be measurable`).not.toBeNull();
+        expect(noteBox, `dock note ${step} should be measurable`).not.toBeNull();
+        if (!leadBox || !kickBox || !noteBox) throw new Error(`step ${step} must exist in rows and dock`);
+        expect(Math.abs(leadBox.x - kickBox.x)).toBeLessThan(3);
+        expect(Math.abs(leadBox.x - noteBox.x)).toBeLessThan(3);
+      }
+    };
+
+    await expectAligned();
+    const left = dock(page).locator('.piano-roll-editor__left');
+    const head = dock(page).locator('.dock-head');
+    const [leftBefore, headBefore] = await Promise.all([left.boundingBox(), head.boundingBox()]);
+
+    await tracks.evaluate(el => { el.scrollLeft = 300; });
+    await expect.poll(() => tracks.evaluate(el => el.scrollLeft)).toBe(300);
+
+    await expectAligned();
+    // The keyboard column and the dock header are sticky-left: they stay put.
+    const [leftAfter, headAfter] = await Promise.all([left.boundingBox(), head.boundingBox()]);
+    expect(Math.abs(leftAfter!.x - leftBefore!.x)).toBeLessThan(1);
+    expect(Math.abs(headAfter!.x - headBefore!.x)).toBeLessThan(1);
   });
 });

@@ -902,7 +902,7 @@ export function getPlayheadIndex(currentStep: number, maxStepCount: number): num
       'src/components/PitchOverview.tsx',    // Bug location (now fixed)
       'src/components/TrackRow.tsx',          // Correct implementation
       'src/components/ChromaticGrid.tsx',     // Correct implementation
-      'src/components/PianoRoll.tsx',         // Correct implementation
+      'src/components/PianoRollEditor.tsx',   // Correct implementation
       'src/utils/playhead.ts',                // Utility (to be created)
     ],
     testFile: 'src/utils/playhead.property.test.ts',

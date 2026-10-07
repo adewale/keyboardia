@@ -96,7 +96,7 @@
 }
 
 .dock-chip:focus-visible,
-.dock-close:focus-visible {
+.dock-icon-button:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 1px;
 }
@@ -136,8 +136,34 @@
   font-weight: 600;
 }
 
-.dock-close {
+/* Ghost toggles: a dashed swatch in the other track's category colour,
+   filled while that track's ghosts show. */
+.dock-ghost-toggle[aria-pressed="true"] {
+  color: var(--color-text);
+  background: var(--color-surface-active);
+}
+
+.dock-ghost-swatch {
+  width: 10px;
+  height: 10px;
+  box-sizing: border-box;
+  border-radius: 2px;
+  border: 1px dashed var(--gc);
+  flex: 0 0 auto;
+}
+
+.dock-ghost-toggle[aria-pressed="true"] .dock-ghost-swatch {
+  background: var(--gc);
+  border-style: solid;
+}
+
+.dock-head-end {
   margin-left: auto;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.dock-icon-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -148,20 +174,36 @@
   border-radius: 4px;
   background: transparent;
   color: var(--color-text-muted);
+  font-size: 12px;
+  gap: 4px;
+  white-space: nowrap;
   cursor: pointer;
 }
 
-.dock-close:hover {
+.dock-icon-button:hover {
   color: var(--color-text);
   border-color: var(--color-border-light);
 }
 
 /*
- * Body: the existing roll, unchanged. Its height is capped so the pinned dock
- * never outgrows the scroller (a sticky element taller than its scrollport
- * would hide its own header); the roll scrolls vertically inside it.
+ * Body. The piano roll's own grid viewport (.dock-scroll) is the dock's only
+ * vertical scroller: the body does not scroll, so it is not a scroll
+ * container, and the roll's sticky-left keyboard and the sticky header stick
+ * to .tracks during horizontal scroll. The roll's detent height is clamped to
+ * --dock-roll-max (set by EditorDock from the scroller's largest scrollport)
+ * so a tall dock never pushes its own header out of the scroller.
  */
-.dock-body {
+.dock-body .piano-roll-editor__left,
+.dock-body .piano-roll-editor .dock-scroll {
+  max-height: var(--dock-roll-max, none);
+}
+
+/*
+ * The legacy Grid view has no scroller of its own, so the body caps it and
+ * scrolls it (a sticky element taller than its scrollport would hide its own
+ * header).
+ */
+.dock-body[data-view="chromatic"] {
   max-height: min(50vh, 440px);
   overflow-x: hidden;
   overflow-y: auto;
