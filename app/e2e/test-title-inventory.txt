@@ -200,8 +200,8 @@ piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › a drum tra
 piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › a published session shows the panes read-only
 piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › the Track pane holds the row controls and stays on screen while the grid scrolls
 piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › the step-count control in the Track pane changes the docked track
-pitch-contour-alignment.spec.ts › PitchContour alignment › CSS dimensions match JavaScript constants (CRITICAL regression test)
-pitch-contour-alignment.spec.ts › PitchContour alignment › SVG contour dots align with step cells for session with pitch variation
+pitch-contour-alignment.spec.ts › Pitch contour alignment › CSS dimensions match JavaScript constants (CRITICAL regression test)
+pitch-contour-alignment.spec.ts › Pitch contour alignment › contour marks sit inside active melodic cells and nothing is drawn under the row
 playback.spec.ts › Playback stability › playhead position updates correctly during playback
 playback.spec.ts › Playback stability › should have smooth playhead movement with different step counts
 playback.spec.ts › Playback stability › should not flicker during playback - step changes are monotonic

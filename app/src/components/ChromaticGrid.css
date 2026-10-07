@@ -242,33 +242,6 @@
   margin-right: 8px;
 }
 
-/* Pitch contour overlay for collapsed view */
-.pitch-contour {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  transform: translateY(-50%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-.contour-line {
-  fill: none;
-  stroke: rgba(52, 152, 219, 0.6);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-.contour-dot {
-  fill: rgba(52, 152, 219, 0.8);
-}
-
-.contour-dot.playing {
-  fill: var(--color-blue);
-  r: 4;
-}
-
 /* Expand toggle button */
 .expand-toggle {
   width: 24px;
@@ -301,11 +274,6 @@
 .expand-toggle.expanded:hover {
   background: var(--color-cyan-muted);
   filter: brightness(1.1);
-}
-
-/* Steps container needs relative positioning for contour overlay */
-.steps-with-contour {
-  position: relative;
 }
 
 /* ==========================================================================

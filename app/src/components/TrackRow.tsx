@@ -3,7 +3,6 @@ import type { Track, ParameterLock, ScaleState, LoopRegion } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { computeStepContours } from './step-contour';
-import { PitchContour } from './ChromaticGrid';
 import { EDITOR_DOCK_ID } from './editor-dock-state';
 import { DOCK_INSTRUMENT_PICKER_ID } from './DockPanes';
 import { VelocityLane } from './VelocityLane';
@@ -532,7 +531,7 @@ export const TrackRow = React.memo(function TrackRow({
 
         {/* MIDDLE: Step grid - scrolls horizontally */}
         <div
-          className={`steps ${isMelodicTrack && !isDocked ? 'steps-with-contour' : ''}`}
+          className="steps"
           onPointerMove={handleStepsPointerMove}
         >
           {(() => {
@@ -576,10 +575,6 @@ export const TrackRow = React.memo(function TrackRow({
               );
             });
           })()}
-          {/* Pitch contour overlay for collapsed synth tracks */}
-          {isMelodicTrack && !isDocked && (
-            <PitchContour track={track} currentStep={currentStep} anySoloed={anySoloed} />
-          )}
         </div>
 
         {/* RIGHT STICKY: Action buttons that stay fixed during horizontal scroll */}

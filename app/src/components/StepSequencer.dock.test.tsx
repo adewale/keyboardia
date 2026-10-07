@@ -159,7 +159,7 @@ function stubRoll(kind: string) {
   );
 }
 
-vi.mock('./ChromaticGrid', () => ({ ChromaticGrid: stubRoll('chromatic-grid'), PitchContour: () => null }));
+vi.mock('./ChromaticGrid', () => ({ ChromaticGrid: stubRoll('chromatic-grid') }));
 vi.mock('./PianoRollEditor', () => ({ PianoRollEditor: stubRoll('piano-roll') }));
 
 import { StepSequencer } from './StepSequencer';

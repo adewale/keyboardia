@@ -40,7 +40,7 @@ function makeTrack(notes: Array<[number, ParameterLock | null]>, overrides: Part
   };
 }
 
-function renderRow(track: Track) {
+function renderRow(track: Track, overrides: Partial<React.ComponentProps<typeof TrackRow>> = {}) {
   return render(
     <TrackRow
       track={track}
@@ -61,6 +61,7 @@ function renderRow(track: Track) {
       onStartCopy={vi.fn()}
       onCopyTo={vi.fn()}
       onSetParameterLock={vi.fn()}
+      {...overrides}
     />
   );
 }
@@ -87,6 +88,19 @@ describe('TrackRow pitch contour marks', () => {
     expect(contourAt(container, 9)!.classList.contains('tied')).toBe(true);
     expect(contourAt(container, 8)!.classList.contains('tied')).toBe(false);
     expect(contourAt(container, 1)).toBeNull();
+  });
+
+  it('draws nothing under the row: the marks are the only contour, docked or not', () => {
+    const track = makeTrack([[0, { pitch: -12 }], [4, { pitch: 12 }]]);
+    for (const isDocked of [false, true]) {
+      const { container, unmount } = renderRow(track, { isDocked });
+      const steps = container.querySelector('.steps')!;
+      // Only cells in the steps container: no SVG overlay over or under them.
+      expect(Array.from(steps.children).every(child => child.classList.contains('step-cell'))).toBe(true);
+      expect(container.querySelector('svg.pitch-contour, .contour-dot')).toBeNull();
+      expect(container.querySelectorAll('[data-testid="step-contour"]')).toHaveLength(2);
+      unmount();
+    }
   });
 
   it('places a single-pitch melodic track in the middle', () => {

@@ -124,21 +124,19 @@ describe('TrackRow and the editor dock', () => {
     expect(onToggleDock).toHaveBeenCalledOnce();
   });
 
-  it('shows the docked state: outline class, expanded toggle, no contour', () => {
+  it('shows the docked state: outline class, expanded toggle', () => {
     const { container } = renderRow({ isDocked: true });
 
     expect(container.querySelector('.track-row-wrapper')?.classList.contains('docked')).toBe(true);
     const toggle = screen.getByRole('button', { name: 'Close pitch editor' });
     expect(toggle.classList.contains('expanded')).toBe(true);
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
-    expect(container.querySelector('.steps')?.classList.contains('steps-with-contour')).toBe(false);
   });
 
-  it('is not docked by default and keeps its pitch contour', () => {
+  it('is not docked by default', () => {
     const { container } = renderRow();
 
     expect(container.querySelector('.track-row-wrapper')?.classList.contains('docked')).toBe(false);
-    expect(container.querySelector('.steps')?.classList.contains('steps-with-contour')).toBe(true);
   });
 
   it('docks a melodic track when its name is clicked', () => {
