@@ -91,6 +91,37 @@ describe('LoopRuler', () => {
     expect(onSetLoopRegion).not.toHaveBeenCalled();
   });
 
+  it('drops a cancelled drag without committing it or touching the committed region', () => {
+    const { ruler, onSetLoopRegion } = setup({ loopRegion: { start: 4, end: 7 } });
+    const region = () => ruler.querySelector<HTMLElement>('.loop-region')!;
+    const committedLeft = region().style.left;
+    fireEvent.pointerDown(ruler, { clientX: xOf(16), pointerId: 1 });
+    fireEvent.pointerMove(ruler, { clientX: xOf(19), pointerId: 1 });
+    expect(region().classList.contains('preview')).toBe(true);
+
+    // Another pointer's cancel leaves this drag alone.
+    fireEvent.pointerCancel(ruler, { clientX: xOf(19), pointerId: 2 });
+    expect(ruler.classList.contains('dragging')).toBe(true);
+
+    fireEvent.pointerCancel(ruler, { clientX: xOf(19), pointerId: 1 });
+    expect(ruler.classList.contains('dragging')).toBe(false);
+    expect(region().classList.contains('preview')).toBe(false);
+    expect(region().style.left).toBe(committedLeft);
+    fireEvent.pointerUp(ruler, { clientX: xOf(19), pointerId: 1 });
+    expect(onSetLoopRegion).not.toHaveBeenCalled();
+  });
+
+  it('drops the drag when the strip loses pointer capture', () => {
+    const { ruler, onSetLoopRegion } = setup();
+    fireEvent.pointerDown(ruler, { clientX: xOf(16), pointerId: 1 });
+    fireEvent.pointerMove(ruler, { clientX: xOf(19), pointerId: 1 });
+    fireEvent.lostPointerCapture(ruler, { pointerId: 1 });
+    expect(ruler.classList.contains('dragging')).toBe(false);
+    expect(ruler.querySelector('.loop-region')).toBeNull();
+    fireEvent.pointerUp(ruler, { clientX: xOf(19), pointerId: 1 });
+    expect(onSetLoopRegion).not.toHaveBeenCalled();
+  });
+
   it('gives the page gap to the last step of the page before it', () => {
     const { ruler, onSetLoopRegion } = setup();
     // 2px into the page gap after step 16's cell: still step index 15.

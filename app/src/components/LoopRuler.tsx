@@ -71,6 +71,8 @@ export const LoopRuler = memo(function LoopRuler({
   const [dragStart, setDragStart] = useState<number | null>(null);
   const [dragEnd, setDragEnd] = useState<number | null>(null);
   const [shiftClickStart, setShiftClickStart] = useState<number | null>(null);
+  // The pointer that owns the drag, so another pointer's cancel leaves it be.
+  const dragPointerRef = useRef<number | null>(null);
   const geometry = useStepGeometry();
   const atStep = (step: number) => stepToX(step, geometry);
 
@@ -108,9 +110,11 @@ export const LoopRuler = memo(function LoopRuler({
     setDragStart(step);
     setDragEnd(step);
 
-    // Capture pointer for reliable drag
+    // Capture on the strip itself, which outlives the drag (a marker under
+    // the pointer may not), so losing capture means the drag was interrupted.
+    dragPointerRef.current = e.pointerId;
     try {
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      e.currentTarget.setPointerCapture(e.pointerId);
     } catch {
       // Ignore if capture fails
     }
@@ -127,10 +131,11 @@ export const LoopRuler = memo(function LoopRuler({
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
     // Release pointer capture
     try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
       // Ignore if release fails
     }
+    dragPointerRef.current = null;
 
     if (dragStart !== null && dragEnd !== null) {
       const start = Math.min(dragStart, dragEnd);
@@ -145,6 +150,15 @@ export const LoopRuler = memo(function LoopRuler({
     setDragStart(null);
     setDragEnd(null);
   }, [dragStart, dragEnd, onSetLoopRegion]);
+
+  // Handle an interrupted drag (touch cancelled, capture lost): drop the
+  // preview without committing it. A committed region is left as it was.
+  const handlePointerCancel = useCallback((e: React.PointerEvent) => {
+    if (dragPointerRef.current === null || dragPointerRef.current !== e.pointerId) return;
+    dragPointerRef.current = null;
+    setDragStart(null);
+    setDragEnd(null);
+  }, []);
 
   // Handle double-click - clear loop
   const handleDoubleClick = useCallback(() => {
@@ -213,6 +227,8 @@ export const LoopRuler = memo(function LoopRuler({
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerCancel}
+        onLostPointerCapture={handlePointerCancel}
         onDoubleClick={handleDoubleClick}
         title={loopRegion
           ? `Loop: steps ${loopRegion.start + 1}-${loopRegion.end + 1} (double-click to clear)`
