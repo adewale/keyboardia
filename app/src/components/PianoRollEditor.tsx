@@ -223,6 +223,33 @@ export const PianoRollEditor = memo(function PianoRollEditor({
     syncKeyboard();
   }, [track.id, centreMidi, syncKeyboard]);
 
+  // Touch: the hit layer takes every gesture on the grid (touch-action: none)
+  // for placing and dragging notes, so the grid cannot be swiped to another
+  // octave. A vertical swipe on the keyboard column scrolls it instead; on a
+  // phone in landscape there is no other way to reach the rows out of view.
+  const keySwipeRef = useRef<{ pointerId: number; startY: number; startTop: number } | null>(null);
+
+  const handleKeysPointerDown = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    const scroller = scrollRef.current;
+    if (e.pointerType !== 'touch' || !scroller) return;
+    keySwipeRef.current = { pointerId: e.pointerId, startY: e.clientY, startTop: scroller.scrollTop };
+    // Follow the finger, not the smooth-scroll animation.
+    scroller.style.scrollBehavior = 'auto';
+  }, []);
+
+  const handleKeysPointerMove = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    const swipe = keySwipeRef.current;
+    const scroller = scrollRef.current;
+    if (!swipe || swipe.pointerId !== e.pointerId || !scroller) return;
+    scroller.scrollTop = swipe.startTop - (e.clientY - swipe.startY);
+  }, []);
+
+  const handleKeysPointerEnd = useCallback((e: ReactPointerEvent<HTMLDivElement>) => {
+    if (keySwipeRef.current?.pointerId !== e.pointerId) return;
+    keySwipeRef.current = null;
+    if (scrollRef.current) scrollRef.current.style.scrollBehavior = '';
+  }, []);
+
   useEffect(() => () => {
     if (longPressRef.current) clearTimeout(longPressRef.current);
     if (keyPressTimerRef.current) clearTimeout(keyPressTimerRef.current);
@@ -495,7 +522,13 @@ export const PianoRollEditor = memo(function PianoRollEditor({
 
   return (
     <div className={rootClass} role="group" aria-label={`Piano roll: ${track.name}`}>
-      <div className="piano-roll-editor__left">
+      <div
+        className="piano-roll-editor__left"
+        onPointerDown={handleKeysPointerDown}
+        onPointerMove={handleKeysPointerMove}
+        onPointerUp={handleKeysPointerEnd}
+        onPointerCancel={handleKeysPointerEnd}
+      >
         <div className="range-rail" ref={railRef} style={{ height: GRID_HEIGHT }}>
           {hasBracket && (
             <div

@@ -333,6 +333,27 @@ describe('PianoRollEditor editing', () => {
     expect(previewInstrument).toHaveBeenCalledWith('preview_pitch', expect.objectContaining({ pitch: 4, duration: 0.18 }));
   });
 
+  it('a touch swipe on the keyboard scrolls the roll, which the hit layer cannot', () => {
+    const { container, onToggleStep } = setup();
+    const scroller = container.querySelector<HTMLElement>('.dock-scroll')!;
+    scroller.scrollTop = 300;
+    const keys = container.querySelector<HTMLElement>('.piano-roll-editor__left')!;
+    const key = container.querySelector<HTMLElement>('.key[data-midi="60"]')!;
+    const touch = { pointerId: 7, pointerType: 'touch' };
+    fireEvent.pointerDown(key, { ...touch, clientY: 200 });
+    fireEvent.pointerMove(key, { ...touch, clientY: 120 });
+    expect(scroller.scrollTop).toBe(380);
+    fireEvent.pointerMove(keys, { ...touch, clientY: 260 });
+    expect(scroller.scrollTop).toBe(240);
+    fireEvent.pointerUp(key, { ...touch, clientY: 260 });
+    // The swipe has ended: later moves and a mouse drag do not scroll.
+    fireEvent.pointerMove(key, { ...touch, clientY: 0 });
+    fireEvent.pointerDown(key, { pointerId: 1, pointerType: 'mouse', clientY: 200 });
+    fireEvent.pointerMove(key, { pointerId: 1, pointerType: 'mouse', clientY: 100 });
+    expect(scroller.scrollTop).toBe(240);
+    expect(onToggleStep).not.toHaveBeenCalled();
+  });
+
   it('snaps a placement to the scale under scale lock', () => {
     const { hit, onSetParameterLock, container } = setup({
       scale: { root: 'C', scaleId: 'major', locked: true },

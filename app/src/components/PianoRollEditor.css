@@ -43,6 +43,9 @@
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   transition: height 200ms ease-out;
+  /* A vertical swipe here scrolls the roll (PianoRollEditor.tsx); sideways
+     pans still scroll the landscape dock body. */
+  touch-action: pan-x;
 }
 
 .piano-roll-editor .range-rail {
