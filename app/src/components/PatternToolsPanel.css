@@ -1,0 +1,180 @@
+/*
+ * PatternToolsPanel: rotate, invert, reverse, mirror, Euclidean fill and
+ * per-track swing. It renders in the editor dock's Track toolbar
+ * (EditorDock.css), which owns the surface and the horizontal pinning.
+ */
+
+.pattern-tools-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  min-width: 0;
+}
+
+.pattern-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pattern-tools-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 4px;
+}
+
+.pattern-tool-btn {
+  width: auto;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 6px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pattern-tool-btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-purple);
+  color: var(--color-purple-text);
+}
+
+.pattern-tool-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.pattern-tool-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/*
+ * Euclidean and Swing groups - CSS Grid for label/slider/value alignment
+ * Grid columns: [label] auto | [slider] 110px | [value] auto, the toolbar's
+ * slider width.
+ */
+.euclidean-group,
+.swing-group {
+  display: grid;
+  grid-template-columns: [label] auto [slider] 110px [value] auto;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Grid column assignments for slider groups */
+.euclidean-group .pattern-tools-label,
+.swing-group .pattern-tools-label {
+  grid-column: label;
+}
+
+.euclidean-slider,
+.track-swing-slider {
+  grid-column: slider;
+}
+
+.euclidean-value,
+.swing-value {
+  grid-column: value;
+}
+
+.euclidean-slider {
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, var(--color-surface-active) 0%, var(--color-teal) 100%);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.euclidean-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-teal);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.euclidean-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 6px var(--color-teal-muted);
+}
+
+.euclidean-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-teal);
+  cursor: pointer;
+}
+
+.euclidean-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-teal-text);
+  font-family: monospace;
+  min-width: 35px;
+}
+
+/* Phase 31D: Per-track swing slider styling */
+.track-swing-slider {
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, var(--color-surface-active) 0%, var(--color-cyan) 100%);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.track-swing-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.track-swing-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 6px var(--color-cyan-muted);
+}
+
+.track-swing-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  cursor: pointer;
+}
+
+.swing-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-cyan-text);
+  font-family: monospace;
+  min-width: 32px; /* Reduced: no longer needs to fit "Global" */
+}
+
+.pattern-tools-panel input:disabled {
+  cursor: default;
+  opacity: 0.6;
+}

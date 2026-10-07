@@ -1,17 +1,16 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Track, ParameterLock, FMParams, ScaleState, LoopRegion } from '../types';
+import type { Track, ParameterLock, ScaleState, LoopRegion } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { computeStepContours } from './step-contour';
 import { Add, ChevronDown, ChevronUp, Minus } from '../icons';
 import { PitchContour } from './ChromaticGrid';
 import { EDITOR_DOCK_ID } from './editor-dock-state';
+import { DOCK_INSTRUMENT_PICKER_ID } from './DockPanes';
 import { VelocityLane } from './VelocityLane';
 import { InlineDrawer } from './InlineDrawer';
 import { TrackDrawer } from './TrackDrawer';
-import { ParameterLockEditor } from './ParameterLockEditor';
 import { TrackNameEditor } from './TrackNameEditor';
-import { PatternToolsPanel } from './PatternToolsPanel';
 import { SamplePicker } from './SamplePicker';
 import { previewInstrument } from '../audio/audioTriggers';
 import { clamp } from '../shared/validation';
@@ -33,18 +32,13 @@ import './ChromaticGrid.css';
 import './VelocityLane.css';
 import './InlineDrawer.css';
 import './TrackDrawer.css';
-// The transpose and step-count dropdowns left the row with the two-line
-// control block; their styles stay imported here so the production stylesheet
-// order does not change before the dock's Track pane takes them (lesson 63).
+// The transpose and step-count dropdowns moved to the dock's Track pane; their
+// styles (and the shared dropdown recipe, first) stay imported here so the
+// production stylesheet order does not depend on when the dock loads
+// (lesson 63).
+import './Dropdown.css';
 import './StepCountDropdown.css';
 import './TransposeDropdown.css';
-
-/**
- * Check if an instrument is an FM synth (has harmonicity/modulationIndex params)
- */
-function isFMSynth(sampleId: string): boolean {
-  return sampleId.startsWith('tone:fm-');
-}
 
 /**
  * The short engine label on line two of the control block: what kind of
@@ -64,15 +58,6 @@ function formatTransposeReadout(transpose: number): string | null {
   if (!Number.isFinite(transpose) || transpose === 0) return null;
   return transpose > 0 ? `+${transpose}` : `${transpose}`;
 }
-
-/**
- * Default FM params for each FM preset (based on toneSynths.ts presets)
- */
-const FM_PRESET_DEFAULTS: Record<string, FMParams> = {
-  'tone:fm-epiano': { harmonicity: 3.01, modulationIndex: 10 },
-  'tone:fm-bass': { harmonicity: 2, modulationIndex: 8 },
-  'tone:fm-bell': { harmonicity: 5.01, modulationIndex: 14 },
-};
 
 interface TrackRowProps {
   track: Track;
@@ -95,7 +80,6 @@ interface TrackRowProps {
   onSetParameterLock?: (step: number, lock: ParameterLock | null) => void;
   onSetTranspose?: (transpose: number) => void;
   onSetStepCount?: (stepCount: number) => void;
-  onSetFMParams?: (fmParams: FMParams) => void;
   onSetVolume?: (volume: number) => void;
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
   // Phase 31B: Pattern manipulation
@@ -109,9 +93,15 @@ interface TrackRowProps {
   onSetTrackSwing?: (swing: number) => void;
   /**
    * Change instrument (issue #63). Absent for a published session, which is
-   * what hides the control — the same mechanism that hides Delete.
+   * what hides the control — the same mechanism that hides Delete. On
+   * desktop the badge opens the picker in the dock (onToggleInstrumentPicker);
+   * the landscape TrackDrawer still opens one under the row until phase 8.
    */
   onSetInstrument?: (sampleId: string) => void;
+  /** True while the dock's Track pane shows this track's instrument picker. */
+  isInstrumentPickerOpen?: boolean;
+  /** The badge: open (or close) this track's instrument picker in the dock. */
+  onToggleInstrumentPicker?: (opener: HTMLElement) => void;
   // Phase 31F: Multi-select support
   selectedSteps?: Set<number>; // Set of selected step indices for this track
   selectionAnchor?: number | null; // Anchor step for Shift+extend
@@ -138,8 +128,15 @@ interface TrackRowProps {
   isDocked?: boolean;
   /** The pitch toggle: dock this track, or close the dock if it already shows it. */
   onToggleDock?: () => void;
-  /** Clicking a melodic track's name: dock this track (never closes). */
+  /** Clicking a track's name: dock this track (never closes). */
   onOpenDock?: () => void;
+  /**
+   * The step the dock's Step pane edits on this track, or null. The cell
+   * keeps its selection ring while the pane shows it.
+   */
+  dockSelectedStep?: number | null;
+  /** Shift+click or long-press on an active cell: the dock's Step pane for it. */
+  onSelectDockStep?: (step: number) => void;
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -166,7 +163,6 @@ export const TrackRow = React.memo(function TrackRow({
   onSetParameterLock,
   onSetTranspose,
   onSetStepCount,
-  onSetFMParams,
   onSetVolume,
   scale,
   onRotatePattern,
@@ -177,6 +173,8 @@ export const TrackRow = React.memo(function TrackRow({
   onSetName,
   onSetTrackSwing,
   onSetInstrument,
+  isInstrumentPickerOpen: isDockInstrumentPickerOpen = false,
+  onToggleInstrumentPicker,
   selectedSteps,
   selectionAnchor,
   hasSelection,
@@ -194,13 +192,17 @@ export const TrackRow = React.memo(function TrackRow({
   isDocked = false,
   onToggleDock,
   onOpenDock,
+  dockSelectedStep = null,
+  onSelectDockStep,
 }: TrackRowProps) {
-  const [selectedStep, setSelectedStep] = useState<number | null>(null);
   // Phase 31G: Velocity lane visibility
   const [isVelocityExpanded, setIsVelocityExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  // The landscape TrackDrawer's pattern tools button keeps its pressed state;
+  // the tools themselves are in the dock's Track pane, which landscape gets
+  // in phase 8.
   const [showPatternTools, setShowPatternTools] = useState(false);
-  // Change instrument (issue #63): the picker panel below this row.
+  // Change instrument (issue #63): the landscape picker panel below this row.
   const [showInstrumentPicker, setShowInstrumentPicker] = useState(false);
   // NOTE: Track name editing state moved to TrackNameEditor component
   // Phase 31G FIX: Track if pointerdown originated on drag handle
@@ -267,15 +269,11 @@ export const TrackRow = React.memo(function TrackRow({
     return computeStepContours({ steps, parameterLocks, transpose, stepCount });
   }, [isMelodicTrack, steps, parameterLocks, transpose, stepCount]);
 
-  // Get current p-lock for selected step
-  const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
-
-  // NOTE: Click-outside handling for p-lock editor moved to ParameterLockEditor component
-
+  // Shift+click or long-press on an active cell asks for the dock's Step pane.
   const handleStepSelect = useCallback((step: number) => {
     if (!track.steps[step]) return;
-    setSelectedStep(prev => prev === step ? null : step);
-  }, [track.steps]);
+    onSelectDockStep?.(step);
+  }, [track.steps, onSelectDockStep]);
 
   // Memoized step click handlers to prevent StepCell re-renders
   const stepClickHandlers = useMemo(() => {
@@ -287,60 +285,6 @@ export const TrackRow = React.memo(function TrackRow({
     const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
     return Array.from({ length: trackStepCount }, (_, i) => () => handleStepSelect(i));
   }, [track.stepCount, handleStepSelect]);
-
-  const handlePitchChange = useCallback(async (pitch: number) => {
-    if (selectedStep === null || !onSetParameterLock) return;
-    const currentLock = track.parameterLocks[selectedStep];
-    onSetParameterLock(selectedStep, { ...currentLock, pitch: pitch === 0 ? undefined : pitch });
-
-    // Preview sound (only if audio already loaded - don't block for slider)
-    await previewInstrument('preview_pitch', {
-      sampleId: track.sampleId,
-      previewId: `preview-${track.id}`,
-      pitch,
-    });
-  }, [selectedStep, track.parameterLocks, track.sampleId, track.id, onSetParameterLock]);
-
-  const handleVolumeChange = useCallback((volume: number) => {
-    if (selectedStep === null || !onSetParameterLock) return;
-    const currentLock = track.parameterLocks[selectedStep];
-    onSetParameterLock(selectedStep, { ...currentLock, volume: volume === 1 ? undefined : volume });
-  }, [selectedStep, track.parameterLocks, onSetParameterLock]);
-
-  const dismissParameterLockEditor = useCallback((restoreFocus: boolean) => {
-    const stepToRestore = selectedStep;
-    setSelectedStep(null);
-
-    // Clear is an editor-owned action, so its caller explicitly requests
-    // restoration. Do not infer this from activeElement: Safari may blur a
-    // button before dispatching click.
-    if (restoreFocus && stepToRestore !== null) {
-      requestAnimationFrame(() => {
-        wrapperRef.current
-          ?.querySelector<HTMLButtonElement>(`[data-step-index="${stepToRestore}"]`)
-          ?.focus();
-      });
-    }
-  }, [selectedStep]);
-
-  const handleDismissParameterLockEditor = useCallback(() => {
-    // Outside pointer dismissal must leave focus on the newly selected control.
-    dismissParameterLockEditor(false);
-  }, [dismissParameterLockEditor]);
-
-  const handleClearLock = useCallback(() => {
-    if (selectedStep === null || !onSetParameterLock) return;
-    onSetParameterLock(selectedStep, null);
-    dismissParameterLockEditor(true);
-  }, [selectedStep, onSetParameterLock, dismissParameterLockEditor]);
-
-  // Phase 29B: Handle tie toggle
-  const handleTieToggle = useCallback(() => {
-    if (selectedStep === null || !onSetParameterLock) return;
-    const currentLock = track.parameterLocks[selectedStep];
-    const newTie = !currentLock?.tie;
-    onSetParameterLock(selectedStep, { ...currentLock, tie: newTie || undefined });
-  }, [selectedStep, track.parameterLocks, onSetParameterLock]);
 
   const handleTransposeChange = useCallback(async (transpose: number) => {
     if (!onSetTranspose) return;
@@ -357,24 +301,6 @@ export const TrackRow = React.memo(function TrackRow({
     });
   }, [onSetTranspose, track.sampleId, track.id]);
 
-  // Get current FM params (use preset defaults if not set)
-  const currentFMParams = useMemo(() => {
-    return track.fmParams ?? FM_PRESET_DEFAULTS[track.sampleId] ?? { harmonicity: 3, modulationIndex: 10 };
-  }, [track.fmParams, track.sampleId]);
-
-  const handleHarmonicityChange = useCallback((harmonicity: number) => {
-    if (!onSetFMParams) return;
-    onSetFMParams({ ...currentFMParams, harmonicity });
-  }, [onSetFMParams, currentFMParams]);
-
-  const handleModulationIndexChange = useCallback((modulationIndex: number) => {
-    if (!onSetFMParams) return;
-    onSetFMParams({ ...currentFMParams, modulationIndex });
-  }, [onSetFMParams, currentFMParams]);
-
-  // Check if this is an FM synth track
-  const showFMControls = isFMSynth(track.sampleId);
-
   // Phase 25: Handle track volume changes
   const handleTrackVolumeChange = useCallback((volume: number) => {
     if (!onSetVolume) return;
@@ -387,9 +313,12 @@ export const TrackRow = React.memo(function TrackRow({
     onSetTrackSwing(clamp(trackSwing, 0, 100));
   }, [onSetTrackSwing]);
 
-  // Change instrument (issue #63). Committing closes the picker and every
-  // drawer that could have opened it, so the person sees the result.
+  // Change instrument (issue #63). On desktop the badge opens the picker in
+  // the dock. In landscape the TrackDrawer opens the panel under this row;
+  // committing there closes the picker and the drawer, so the person sees the
+  // result.
   const canChangeInstrument = !!onSetInstrument && !readOnly;
+  const isLandscape = orientationMode === 'landscape';
 
   const handleToggleInstrumentPicker = useCallback((opener?: HTMLElement) => {
     setShowInstrumentPicker(open => {
@@ -419,7 +348,6 @@ export const TrackRow = React.memo(function TrackRow({
       const fallbackCandidates = [
         opener,
         landscapeOpener,
-        wrapperRef.current?.querySelector<HTMLElement>('.instrument-toggle'),
         wrapperRef.current?.querySelector<HTMLElement>('.track-name'),
       ];
       for (const candidate of fallbackCandidates) {
@@ -428,9 +356,10 @@ export const TrackRow = React.memo(function TrackRow({
     });
   }, [onSetInstrument, track.id]);
 
-  // Derived rather than stored, so a session that becomes read-only while the
-  // picker is open closes it without an effect that re-renders to catch up.
-  const isInstrumentPickerOpen = canChangeInstrument && showInstrumentPicker;
+  // Derived rather than stored, so a session that becomes read-only (or a row
+  // that leaves landscape) while the picker is open closes it without an
+  // effect that re-renders to catch up.
+  const isInstrumentPickerOpen = canChangeInstrument && isLandscape && showInstrumentPicker;
 
   const { handleStepsPointerMove, stepPaintStartHandlers, stepPaintEnterHandlers } = useDragToPaint({
     steps: track.steps,
@@ -467,11 +396,12 @@ export const TrackRow = React.memo(function TrackRow({
     });
   }, [track.sampleId, track.id, track.transpose]);
 
-  // Editor dock: clicking a melodic track's name previews it and docks it.
+  // Editor dock: clicking a track's name previews it and docks it. A drum
+  // track docks too: its Step and Track panes apply, only Notes does not.
   const handleNameClick = useCallback(() => {
     void handleNamePreview();
-    if (isMelodicTrack) onOpenDock?.();
-  }, [handleNamePreview, isMelodicTrack, onOpenDock]);
+    onOpenDock?.();
+  }, [handleNamePreview, onOpenDock]);
 
   // Phase 31G: Drag handlers for track reordering
   // HIGH-2: Use track.id instead of trackIndex for stable references
@@ -574,6 +504,7 @@ export const TrackRow = React.memo(function TrackRow({
     <div
       className={wrapperClasses}
       ref={wrapperRef}
+      data-track-id={track.id}
       draggable
       onDragStart={handleDragStart}
       onDragEnter={handleDragEnter}
@@ -673,12 +604,12 @@ export const TrackRow = React.memo(function TrackRow({
                   toggle (issue #63) here, so both variants are one width. */}
               {canChangeInstrument ? (
                 <button
-                  className={`instrument-toggle track-instrument-badge${isMelodicTrack ? '' : ' unpitched'}${isInstrumentPickerOpen ? ' active' : ''}`}
-                  onClick={(event) => handleToggleInstrumentPicker(event.currentTarget)}
+                  className={`instrument-toggle track-instrument-badge${isMelodicTrack ? '' : ' unpitched'}${isDockInstrumentPickerOpen ? ' active' : ''}`}
+                  onClick={(event) => onToggleInstrumentPicker?.(event.currentTarget)}
                   title={`Change instrument (currently ${getInstrumentName(track.sampleId)})`}
                   aria-label="Change instrument"
-                  aria-expanded={isInstrumentPickerOpen}
-                  aria-controls={isInstrumentPickerOpen ? `instrument-panel-${track.id}` : undefined}
+                  aria-expanded={isDockInstrumentPickerOpen}
+                  aria-controls={isDockInstrumentPickerOpen ? DOCK_INSTRUMENT_PICKER_ID : undefined}
                   data-testid={`change-instrument-${track.id}`}
                 >
                   {instrumentBadge}
@@ -755,7 +686,7 @@ export const TrackRow = React.memo(function TrackRow({
                   rangeWarning={rangeWarnings?.[index] ?? null}
                   contour={stepContours?.[index] ?? null}
                   swing={swing}
-                  selected={selectedStep === index || (selectedSteps?.has(index) ?? false)}
+                  selected={dockSelectedStep === index || (selectedSteps?.has(index) ?? false)}
                   isAnchor={selectionAnchor === index}
                   hasSelection={hasSelection}
                   dimmed={isOutOfLoop}
@@ -850,11 +781,10 @@ export const TrackRow = React.memo(function TrackRow({
         />
       )}
 
-      {/* Change instrument panel (issue #63) - appears below the track row.
-          Shared by desktop (♪ toggle), the mobile drawer's Instrument row, and
-          the landscape TrackDrawer's Instrument button, so all three surfaces
-          browse one picker over one catalog. */}
-      {canChangeInstrument && (
+      {/* Change instrument panel (issue #63), landscape only: the TrackDrawer's
+          Instrument button opens it under the row. Desktop opens the same
+          picker in the dock's Track pane. */}
+      {canChangeInstrument && isLandscape && (
         <div
           id={`instrument-panel-${track.id}`}
           className={`panel-animation-container instrument-panel-container ${isInstrumentPickerOpen ? 'expanded' : ''}`}
@@ -881,30 +811,7 @@ export const TrackRow = React.memo(function TrackRow({
         </div>
       )}
 
-      {/* Phase 31B: Pattern tools panel - appears below track row when toggled */}
-      <div
-        id={`pattern-tools-panel-${track.id}`}
-        className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}
-        aria-hidden={!showPatternTools}
-        inert={!showPatternTools}
-      >
-        <div className="panel-animation-content">
-          <PatternToolsPanel
-            hasSteps={hasSteps}
-            stepCount={track.stepCount ?? STEPS_PER_PAGE}
-            activeStepCount={activeStepCount}
-            swing={track.swing ?? 0}
-            onRotate={onRotatePattern}
-            onInvert={onInvertPattern}
-            onReverse={onReversePattern}
-            onMirror={onMirrorPattern}
-            onEuclideanFill={onEuclideanFill}
-            onSwingChange={onSetTrackSwing}
-          />
-        </div>
-      </div>
-
-      {/* Phase 31G: Velocity lane panel - appears below pattern tools when toggled */}
+      {/* Phase 31G: Velocity lane panel - a row of cells, so it stays inline */}
       <div
         id={`velocity-panel-${track.id}`}
         className={`panel-animation-container ${isVelocityExpanded ? 'expanded' : ''}`}
@@ -973,25 +880,6 @@ export const TrackRow = React.memo(function TrackRow({
             </button>
           </div>
         </div>
-
-        {/* Change instrument (issue #63) - opens the shared picker panel */}
-        {canChangeInstrument && (
-          <div className="drawer-row">
-            <span className="drawer-label">Instrument</span>
-            <button
-              className={`drawer-instrument-btn ${isInstrumentPickerOpen ? 'active' : ''}`}
-              onClick={(event) => handleToggleInstrumentPicker(event.currentTarget)}
-              aria-expanded={isInstrumentPickerOpen}
-              aria-controls={isInstrumentPickerOpen ? `instrument-panel-${track.id}` : undefined}
-              data-testid={`drawer-change-instrument-${track.id}`}
-            >
-              {getInstrumentName(track.sampleId)}
-              {isInstrumentPickerOpen
-                ? <ChevronUp size={12} aria-hidden="true" />
-                : <ChevronDown size={12} aria-hidden="true" />}
-            </button>
-          </div>
-        )}
 
         {/* Row 2: Transpose */}
         <div className="drawer-row">
@@ -1189,53 +1077,6 @@ export const TrackRow = React.memo(function TrackRow({
           )}
         </div>
       </InlineDrawer>
-
-      {/* FM Synthesis controls - shown for FM synth tracks */}
-      {showFMControls && onSetFMParams && (
-        <div className="fm-controls-panel">
-          <div className="fm-control">
-            <span className="fm-label">Harmonicity</span>
-            <input
-              type="range"
-              min="0.5"
-              max="10"
-              step="0.1"
-              value={currentFMParams.harmonicity}
-              onChange={(e) => handleHarmonicityChange(Number(e.target.value))}
-              className="fm-slider"
-            />
-            <span className="fm-value">{currentFMParams.harmonicity.toFixed(1)}×</span>
-          </div>
-          <div className="fm-control">
-            <span className="fm-label">Mod Index</span>
-            <input
-              type="range"
-              min="0"
-              max="20"
-              step="0.5"
-              value={currentFMParams.modulationIndex}
-              onChange={(e) => handleModulationIndexChange(Number(e.target.value))}
-              className="fm-slider"
-            />
-            <span className="fm-value">{currentFMParams.modulationIndex.toFixed(1)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Inline parameter lock editor - appears when step selected */}
-      {selectedStep !== null && track.steps[selectedStep] && (
-        <ParameterLockEditor
-          step={selectedStep}
-          lock={selectedLock}
-          onPitchChange={handlePitchChange}
-          onVolumeChange={handleVolumeChange}
-          onTieToggle={handleTieToggle}
-          onClearLock={handleClearLock}
-          onDismiss={handleDismissParameterLockEditor}
-          sampleId={track.sampleId}
-          transpose={track.transpose ?? 0}
-        />
-      )}
     </div>
   );
 });

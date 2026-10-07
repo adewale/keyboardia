@@ -1,5 +1,5 @@
 /*
- * Editor dock (specs/PIANO-ROLL-DOCK.md, phase 2).
+ * Editor dock (specs/PIANO-ROLL-DOCK.md, phases 2, 6 and 7).
  *
  * The dock is the last child of .tracks-inner, so it shares the rows'
  * horizontal scroller (one scrollbar, step columns aligned) and pins to the
@@ -95,6 +95,17 @@
   color: var(--color-bg);
 }
 
+/* The Notes chip on a drum track: there is no pitch to show. */
+.dock-chip:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dock-chip:disabled:hover {
+  color: var(--color-text-muted);
+  background: transparent;
+}
+
 .dock-chip:focus-visible,
 .dock-icon-button:focus-visible {
   outline: 2px solid var(--color-accent);
@@ -186,6 +197,156 @@
 }
 
 /*
+ * Toolbar: one strip under the header that swaps content with the pane
+ * (Notes, Step, Track). Sticky-left and sized to the scroller's visible width
+ * like the header, so its controls stay on screen while the grid scrolls.
+ * It wraps instead of scrolling: the roll is the dock's only vertical
+ * scroller.
+ */
+.dock-tools {
+  position: sticky;
+  left: 0;
+  z-index: 7;
+  box-sizing: border-box;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.dock-pane {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.dock-tool-group {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.dock-tool-label {
+  margin-right: 2px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dock-tool-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 9px;
+  border: 1px solid var(--color-border-hover);
+  border-radius: 4px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dock-tool-button:hover:not(:disabled) {
+  border-color: var(--color-border-light);
+  background: var(--color-surface-hover);
+}
+
+.dock-tool-button:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+.dock-tool-button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.dock-tool-button.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent-text);
+}
+
+.dock-tool-button.paste {
+  border-color: var(--color-success);
+  color: var(--color-success-text);
+}
+
+.dock-tool-button.destructive:hover:not(:disabled) {
+  border-color: var(--color-error);
+  color: var(--color-error-text);
+}
+
+.dock-tool-readout {
+  color: var(--color-text);
+}
+
+.dock-pane-hint {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+/* FM parameters in the Track pane, on the app's palette. */
+.dock-fm-controls .fm-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dock-fm-controls .fm-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-purple-text);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.dock-fm-controls .fm-slider {
+  width: 110px;
+  accent-color: var(--color-purple);
+  cursor: pointer;
+}
+
+.dock-fm-controls .fm-value {
+  min-width: 36px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--color-purple-text);
+  text-align: right;
+}
+
+.dock-fm-controls .fm-slider:disabled {
+  cursor: default;
+}
+
+/* The Track pane's instrument picker, under its toolbar row. */
+.dock-instrument-picker {
+  padding: 0 10px 8px;
+}
+
+.dock-instrument-picker .sample-picker.variant-change {
+  max-width: none;
+}
+
+/* A drum track docks for Step and Track; its roll area says why it is empty. */
+.dock-no-pitch {
+  margin: 0;
+  padding: 12px 10px;
+  position: sticky;
+  left: 0;
+  width: max-content;
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+/*
  * Body. The piano roll's own grid viewport (.dock-scroll) is the dock's only
  * vertical scroller: the body does not scroll, so it is not a scroll
  * container, and the roll's sticky-left keyboard and the sticky header stick
@@ -220,7 +381,7 @@
   filter: saturate(0.85);
 }
 
-.dock.read-only .dock-body :is(button, [role="button"]) {
+.dock.read-only :is(.dock-body, .dock-tools) :is(button, [role="button"]) {
   cursor: default;
 }
 

@@ -191,18 +191,26 @@ piano-roll-dock.spec.ts › Piano roll dock › pins to the bottom of the track 
 piano-roll-dock.spec.ts › Piano roll dock › puts the loop ruler on the step pitch: page 2 is step 17 in the rows and the dock
 piano-roll-dock.spec.ts › Piano roll dock › renders the piano roll editor and toggles its detent
 piano-roll-dock.spec.ts › Piano roll dock › switches track from another row toggle and from a dock tab
+piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › Shift+click on a bar opens the Step pane and highlights its column under every pane
+piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › a drum track docks from Shift+click with Step, no Notes and no roll
+piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › a published session shows the panes read-only
+piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › the Track pane holds the row controls and stays on screen while the grid scrolls
+piano-roll-dock.spec.ts › Piano roll dock: Step and Track panes › the step-count control in the Track pane changes the docked track
 pitch-contour-alignment.spec.ts › PitchContour alignment › CSS dimensions match JavaScript constants (CRITICAL regression test)
 pitch-contour-alignment.spec.ts › PitchContour alignment › SVG contour dots align with step cells for session with pitch variation
 playback.spec.ts › Playback stability › playhead position updates correctly during playback
 playback.spec.ts › Playback stability › should have smooth playhead movement with different step counts
 playback.spec.ts › Playback stability › should not flicker during playback - step changes are monotonic
+plock-editor.spec.ts › P-lock editor › Escape inside the dock steps back to Notes, then closes
+plock-editor.spec.ts › P-lock editor › Escape on the grid leaves the Step pane
+plock-editor.spec.ts › P-lock editor › a step on another track switches the dock to that track
 plock-editor.spec.ts › P-lock editor › clear action is named and restores focus to the invoking step @blocking
-plock-editor.spec.ts › P-lock editor › outside dismissal does not steal focus back to the invoking step @blocking
 plock-editor.spec.ts › P-lock editor › p-lock changes should persist and show in tooltip
-plock-editor.spec.ts › P-lock editor › should close p-lock editor when clicking outside
 plock-editor.spec.ts › P-lock editor › should close p-lock editor when clicking same step again
-plock-editor.spec.ts › P-lock editor › should open p-lock editor on Shift+click of active step
+plock-editor.spec.ts › P-lock editor › should open the Step pane on Shift+click of an active step
 plock-editor.spec.ts › P-lock editor › should switch p-lock editor to different step on Shift+click
+plock-editor.spec.ts › P-lock editor › stays open on a click elsewhere; Escape leaves it
+plock-editor.spec.ts › P-lock editor › the Notes chip leaves the Step pane without stealing focus back to the step @blocking
 populated-visual.spec.ts › Deterministic populated-session visuals › Holby landscape editing view
 populated-visual.spec.ts › Deterministic populated-session visuals › Holby pitch overview exposes correctly named octaves
 populated-visual.spec.ts › Deterministic populated-session visuals › Holby portrait consumption view

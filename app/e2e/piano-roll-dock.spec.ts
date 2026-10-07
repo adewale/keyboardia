@@ -108,8 +108,8 @@ test.describe('Piano roll dock', () => {
     await pitchToggle(page, 'Bass').click();
     await expectDocked(page, 'Bass');
 
-    // Tabs list the melodic tracks only.
-    await expect(dock(page).locator('.dock-track-tab')).toHaveText(['Lead', 'Bass']);
+    // Tabs list every track: Step and Track apply to drums too.
+    await expect(dock(page).locator('.dock-track-tab')).toHaveText(['Lead', 'Kick', 'Bass']);
     await dock(page).locator('.dock-track-tab', { hasText: 'Lead' }).click();
     await expectDocked(page, 'Lead');
 
@@ -452,5 +452,121 @@ test.describe('Piano roll dock', () => {
 
     await ruler.dblclick({ position: { x: 700, y: 12 } });
     await expect(ruler).not.toHaveClass(/\bhas-loop\b/);
+  });
+});
+
+test.describe('Piano roll dock: Step and Track panes', () => {
+  const paneChip = (page: Page, name: string) => dock(page)
+    .getByRole('group', { name: 'Dock pane' })
+    .getByRole('button', { name, exact: true });
+  const tools = (page: Page) => dock(page).locator('.dock-tools');
+
+  test('Shift+click on a bar opens the Step pane and highlights its column under every pane', async ({ page, request }) => {
+    await openSession(page, request, threeTracks);
+    await openRoll(page, 'Lead');
+    await expect(paneChip(page, 'Notes')).toHaveAttribute('aria-pressed', 'true');
+
+    // Bars take no pointer events (one hit layer computes step and pitch), so
+    // click through the bar at its position.
+    await dock(page).locator('.piano-roll-editor .note[data-start="4"]').click({ modifiers: ['Shift'], force: true });
+    await expect(dock(page)).toHaveAttribute('data-pane', 'step');
+    await expect(tools(page).locator('.plock-step')).toHaveText('Step 5');
+    await expect(dock(page).locator('.piano-roll-editor .sel-col')).toBeVisible();
+    // The row cell carries the same selection.
+    await expect(row(page, 'Lead').locator('.step-cell').nth(4)).toHaveClass(/\bselected\b/);
+
+    // The roll stays visible under the Track pane.
+    await paneChip(page, 'Track').click();
+    await expect(dock(page).locator('.piano-roll-editor')).toBeVisible();
+    await expect(row(page, 'Lead').locator('.step-cell.selected')).toHaveCount(0);
+  });
+
+  test('a drum track docks from Shift+click with Step, no Notes and no roll', async ({ page, request }) => {
+    await openSession(page, request, threeTracks);
+    await row(page, 'Kick').locator('.step-cell').nth(8).click({ modifiers: ['Shift'] });
+
+    await expect(dock(page)).toHaveClass(/\bopen\b/);
+    await expect(dock(page).locator('.dock-title b')).toHaveText('Kick');
+    await expect(dock(page)).toHaveAttribute('data-pane', 'step');
+    await expect(paneChip(page, 'Notes')).toBeDisabled();
+    await expect(dock(page).locator('.dock-no-pitch')).toHaveText('No pitch for drum tracks');
+    await expect(dock(page).locator('.piano-roll-editor, .chromatic-grid')).toHaveCount(0);
+    // The ♪ toggle stays melodic-only.
+    await expect(row(page, 'Kick').locator('.expand-toggle')).toHaveCount(0);
+
+    await paneChip(page, 'Track').click();
+    await expect(tools(page).getByText('Transpose')).toHaveCount(0);
+    await tools(page).getByRole('button', { name: 'Rotate pattern right' }).click();
+    await expect(row(page, 'Kick').locator('.step-cell.active')).toHaveCount(2);
+    await expect(row(page, 'Kick').locator('.step-cell').nth(1)).toHaveClass(/\bactive\b/);
+    await expect(row(page, 'Kick').locator('.step-cell').nth(9)).toHaveClass(/\bactive\b/);
+  });
+
+  test('the Track pane holds the row controls and stays on screen while the grid scrolls', async ({ page, request }) => {
+    const wide = [
+      track('lead', 'Lead', 'synth:lead', [0, 4, 8, 40], 64),
+      track('bell', 'Bell', 'tone:fm-bell', [2], 64),
+    ];
+    await openSession(page, request, wide);
+    await pitchToggle(page, 'Lead').click();
+    await expectDocked(page, 'Lead');
+    await paneChip(page, 'Track').click();
+
+    // Transpose, steps and instrument reuse the existing controls.
+    await expect(tools(page).locator('.transpose-trigger')).toBeVisible();
+    await expect(tools(page).locator('.step-count-trigger')).toBeVisible();
+    await expect(tools(page).getByTestId('dock-change-instrument-lead')).toBeVisible();
+    await expect(tools(page).locator('.pattern-tools-panel')).toBeVisible();
+    await expect(tools(page).getByRole('group', { name: 'Track actions' }).getByRole('button')).toHaveText(['Copy', 'Clear', 'Delete']);
+    // FM parameters only for an FM track.
+    await expect(tools(page).locator('.fm-slider')).toHaveCount(0);
+    await dock(page).locator('.dock-track-tab', { hasText: 'Bell' }).click();
+    await expect(tools(page).locator('.fm-slider')).toHaveCount(2);
+    // No panel opened between the rows.
+    await expect(page.locator('.track-row-wrapper .pattern-tools-panel, .track-row-wrapper .fm-controls-panel')).toHaveCount(0);
+
+    // The toolbar is sticky-left and sized to the scroller, like the header.
+    const tracks = page.locator('.tracks');
+    const before = await tools(page).boundingBox();
+    await tracks.evaluate(el => { el.scrollLeft = 400; });
+    await expect.poll(() => tracks.evaluate(el => el.scrollLeft)).toBe(400);
+    const [after, scroller] = await Promise.all([tools(page).boundingBox(), tracks.boundingBox()]);
+    expect(Math.abs(after!.x - before!.x)).toBeLessThan(1);
+    expect(after!.x).toBeGreaterThanOrEqual(scroller!.x - 1);
+    expect(after!.x + after!.width).toBeLessThanOrEqual(scroller!.x + scroller!.width + 1);
+  });
+
+  test('the step-count control in the Track pane changes the docked track', async ({ page, request }) => {
+    await openSession(page, request, threeTracks);
+    await pitchToggle(page, 'Bass').click();
+    await expectDocked(page, 'Bass');
+    await paneChip(page, 'Track').click();
+
+    await tools(page).locator('.step-count-trigger').click();
+    await page.getByRole('option', { name: /^32\b/ }).click();
+    await expect(row(page, 'Bass').locator('.step-cell')).toHaveCount(32);
+    await expect(row(page, 'Lead').locator('.step-cell')).toHaveCount(16);
+  });
+
+  test('a published session shows the panes read-only', async ({ page, request }) => {
+    await page.setViewportSize(DESKTOP);
+    const { id } = await createSessionWithRetry(request, { tracks: threeTracks, tempo: 120, swing: 0, version: 1 });
+    const published = await request.post(`${API_BASE}/api/sessions/${id}/publish`);
+    expect(published.status()).toBe(201);
+    const { id: publishedId } = await published.json();
+    await page.goto(`${API_BASE}/s/${publishedId}`);
+    await expect(page.locator('.track-row-wrapper')).toHaveCount(3, { timeout: 10000 });
+
+    await pitchToggle(page, 'Lead').click();
+    await expect(dock(page)).toHaveClass(/\bread-only\b/);
+    await paneChip(page, 'Track').click();
+    const controls = tools(page).locator('button, input');
+    expect(await controls.count()).toBeGreaterThan(5);
+    for (const control of await controls.all()) await expect(control).toBeDisabled();
+    // The instrument is a readout: no picker in a published session.
+    await expect(tools(page).getByTestId('dock-change-instrument-lead')).toHaveCount(0);
+
+    await paneChip(page, 'Step').click();
+    await expect(tools(page).locator('.dock-pane-hint')).toBeVisible();
   });
 });

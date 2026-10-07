@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 /**
- * Editor dock (specs/PIANO-ROLL-DOCK.md, phase 2): the row no longer owns a
- * pitch panel. Its pitch toggle and name ask StepSequencer to dock the track,
- * and the row shows the docked state it is given.
+ * Editor dock (specs/PIANO-ROLL-DOCK.md, phases 2, 6 and 7): the row no longer
+ * owns a pitch panel, a p-lock strip, pattern tools or an FM panel. Its pitch
+ * toggle, name and step cells ask StepSequencer to dock the track, and the row
+ * shows the docked state it is given.
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -72,8 +73,39 @@ describe('TrackRow and the editor dock', () => {
     expect(container.querySelector('.piano-roll-editor')).toBeNull();
     expect(container.querySelector('.pitch-view-header')).toBeNull();
     expect(container.querySelector('[id^="pitch-panel-"]')).toBeNull();
-    // Pattern tools and velocity lane keep their inline panels.
-    expect(container.querySelectorAll('.panel-animation-container')).toHaveLength(2);
+    // Pattern tools, the FM panel and the p-lock strip moved to the dock; the
+    // velocity lane, a row of cells, keeps its inline panel.
+    expect(container.querySelector('.pattern-tools-panel')).toBeNull();
+    expect(container.querySelector('.fm-controls-panel, .fm-slider')).toBeNull();
+    expect(container.querySelector('.plock-inline')).toBeNull();
+    expect(container.querySelectorAll('.panel-animation-container')).toHaveLength(1);
+    expect(container.querySelector('.panel-animation-container')?.id).toBe('velocity-panel-lead');
+  });
+
+  it('renders no FM panel under an FM track', () => {
+    const { container } = renderRow({ track: makeTrack({ sampleId: 'tone:fm-bass' }) });
+    expect(container.querySelector('.fm-controls-panel, .fm-slider')).toBeNull();
+  });
+
+  it('asks for the Step pane on Shift+click of an active cell, and opens no strip', () => {
+    const onSelectDockStep = vi.fn();
+    const { container } = renderRow({ onSelectDockStep });
+    const cells = container.querySelectorAll<HTMLElement>('.step-cell');
+
+    fireEvent.pointerDown(cells[4], { button: 0, shiftKey: true, pointerId: 1 });
+    expect(onSelectDockStep).toHaveBeenCalledWith(4);
+    expect(container.querySelector('.plock-inline')).toBeNull();
+
+    // An inactive cell has no lock to edit.
+    fireEvent.pointerDown(cells[1], { button: 0, shiftKey: true, pointerId: 1 });
+    expect(onSelectDockStep).toHaveBeenCalledTimes(1);
+  });
+
+  it('rings the step the dock is editing', () => {
+    const { container } = renderRow({ dockSelectedStep: 4 });
+    const selected = Array.from(container.querySelectorAll('.step-cell.selected'))
+      .map(cell => cell.getAttribute('data-step-index'));
+    expect(selected).toEqual(['4']);
   });
 
   it('asks to toggle the dock from the pitch toggle', () => {
@@ -120,7 +152,7 @@ describe('TrackRow and the editor dock', () => {
     expect(onOpenDock).toHaveBeenCalledOnce();
   });
 
-  it('never docks a drum track', () => {
+  it('docks a drum track from its name, but gives it no pitch toggle', () => {
     vi.useFakeTimers();
     const onOpenDock = vi.fn();
     const { container } = renderRow({ track: makeTrack({ id: 'kick', name: 'Kick', sampleId: 'kick' }), onOpenDock });
@@ -128,6 +160,6 @@ describe('TrackRow and the editor dock', () => {
     expect(screen.queryByRole('button', { name: 'Open pitch editor' })).toBeNull();
     fireEvent.click(container.querySelector('.track-name')!);
     act(() => { vi.advanceTimersByTime(250); });
-    expect(onOpenDock).not.toHaveBeenCalled();
+    expect(onOpenDock).toHaveBeenCalledOnce();
   });
 });

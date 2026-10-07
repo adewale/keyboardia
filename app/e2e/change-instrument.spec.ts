@@ -13,6 +13,10 @@ const API_BASE = getBaseUrl();
  * a person can reach the control, that the picker commits a catalog ID, and
  * that the row they were working on survives the swap intact.
  *
+ * On desktop the row's badge opens the picker in the editor dock's Track pane
+ * (specs/PIANO-ROLL-DOCK.md, phase 7); landscape still opens it under the row
+ * from the TrackDrawer.
+ *
  * See specs/CHANGE-INSTRUMENT.md.
  */
 
@@ -68,8 +72,12 @@ test.describe('Change instrument', () => {
 
     // The picker is generated from the canonical catalog — the same catalog
     // that fills Add Track and the MCP instrument enum.
-    const picker = page.locator('#instrument-panel-instrument-track .sample-picker');
+    const picker = page.locator('#dock-instrument-picker .sample-picker');
     await expect(picker.getByText('Change Instrument')).toBeVisible();
+    // The picker is in the dock's Track pane, not between rows.
+    const dock = page.getByTestId('editor-dock');
+    await expect(dock).toHaveAttribute('data-pane', 'track');
+    await expect(page.locator('.track-row-wrapper .sample-picker')).toHaveCount(0);
     await expect(picker.getByTestId('set-instrument-kick'))
       .toHaveAttribute('aria-current', 'true');
 
@@ -141,7 +149,7 @@ test.describe('Change instrument', () => {
     await expect(toggle).toBeVisible();
     await toggle.click();
 
-    const picker = page.locator('#instrument-panel-instrument-track .sample-picker');
+    const picker = page.locator('#dock-instrument-picker .sample-picker');
     await expect(picker.getByRole('button', { name: 'Drums' })).toBeVisible();
     await expect.poll(async () => {
       const box = await picker.boundingBox();
@@ -168,10 +176,10 @@ test.describe('Change instrument', () => {
     const option = page.getByTestId('set-instrument-sampled:808-kick');
     await option.focus();
 
+    // Landscape hides the dock (its landscape form is phase 8), so focus
+    // moves to the docked row's name instead of vanishing with it.
     await page.setViewportSize({ width: 844, height: 390 });
     await expect(page.locator('.step-sequencer')).toHaveAttribute('data-orientation', 'landscape');
-    await page.keyboard.press('Enter');
-
     await expect(page.locator('.track-name').first()).toBeFocused();
   });
 

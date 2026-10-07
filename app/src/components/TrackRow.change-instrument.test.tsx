@@ -2,10 +2,10 @@
 /**
  * Change Instrument (issue #63): the track row's entry points.
  *
- * Desktop, the mobile inline drawer, and the landscape TrackDrawer must all
- * open the SAME picker panel over the SAME catalog. The InlineDrawer seam is
- * retained for TrackRow's responsive contract, while the product's narrow
- * portrait mode intentionally substitutes the read-only PortraitGrid.
+ * On desktop the row's badge asks the editor dock to show the picker in its
+ * Track pane (specs/PIANO-ROLL-DOCK.md, phase 7; StepSequencer.dock.test.tsx
+ * covers the dock side). The landscape TrackDrawer still opens the same
+ * SamplePicker under the row until the landscape dock lands (phase 8).
  *
  * See specs/CHANGE-INSTRUMENT.md §7.
  */
@@ -61,6 +61,15 @@ function renderRow(overrides: Partial<React.ComponentProps<typeof TrackRow>> = {
   );
 }
 
+function renderLandscapeRow(overrides: Partial<React.ComponentProps<typeof TrackRow>> = {}) {
+  return renderRow({
+    orientationMode: 'landscape',
+    isLandscapeDrawerOpen: true,
+    onToggleLandscapeDrawer: vi.fn(),
+    ...overrides,
+  });
+}
+
 describe('TrackRow change instrument', () => {
   it('offers no instrument control without an onSetInstrument handler', () => {
     // This is how a published session hides it: StepSequencer withholds the
@@ -79,16 +88,14 @@ describe('TrackRow change instrument', () => {
     expect(document.querySelector('.instrument-panel-container')).toBeNull();
   });
 
-  it('keeps the picker panel collapsed until the toggle is used', () => {
-    renderRow({ onSetInstrument: vi.fn() });
+  it('keeps the landscape picker panel collapsed until the drawer opens it', () => {
+    renderLandscapeRow({ onSetInstrument: vi.fn() });
 
     const panel = document.querySelector('.instrument-panel-container')!;
     // Collapsed means zero-height and inert, not merely hidden: the landscape
     // visual baseline depends on it contributing no layout.
     expect(panel.className).not.toContain('expanded');
     expect(panel.getAttribute('aria-hidden')).toBe('true');
-    expect(screen.getByTestId('change-instrument-track-1').getAttribute('aria-expanded'))
-      .toBe('false');
 
     // The catalog itself is not in the document while closed. Leaving it there
     // duplicates the Add Track picker's accessible names, so a query for an
@@ -98,6 +105,12 @@ describe('TrackRow change instrument', () => {
     expect(screen.queryByText('Change Instrument')).toBeNull();
     expect(screen.queryByTestId('set-instrument-kick')).toBeNull();
     expect(document.querySelectorAll('.instrument-btn')).toHaveLength(0);
+  });
+
+  it('renders no picker under a desktop row: the dock owns it', () => {
+    renderRow({ onSetInstrument: vi.fn() });
+    expect(document.querySelector('.instrument-panel-container')).toBeNull();
+    expect(document.querySelector('.sample-picker')).toBeNull();
   });
 
   it('puts the desktop toggle in the badge slot of the placed controls line', () => {
@@ -120,33 +133,32 @@ describe('TrackRow change instrument', () => {
     expect(group.parentElement?.parentElement?.classList.contains('track-left')).toBe(true);
   });
 
-  it('opens the picker from the desktop toggle and marks the current instrument', () => {
-    renderRow({ onSetInstrument: vi.fn() });
+  it('asks the dock for the picker from the desktop badge', () => {
+    const onToggleInstrumentPicker = vi.fn();
+    renderRow({ onSetInstrument: vi.fn(), onToggleInstrumentPicker });
 
-    fireEvent.click(screen.getByTestId('change-instrument-track-1'));
-
-    const panel = document.querySelector('.instrument-panel-container')!;
-    expect(panel.className).toContain('expanded');
-    expect(screen.getByText('Change Instrument')).toBeTruthy();
-    expect(screen.getByTestId('set-instrument-tone:fm-bass').className).toContain('current');
+    const toggle = screen.getByTestId('change-instrument-track-1');
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(toggle.hasAttribute('aria-controls')).toBe(false);
+    fireEvent.click(toggle);
+    expect(onToggleInstrumentPicker).toHaveBeenCalledWith(toggle);
+    // Nothing opens under the row.
+    expect(document.querySelector('.sample-picker')).toBeNull();
   });
 
-  it('opens the same panel from the mobile drawer row', () => {
+  it('shows the dock picker state on the badge', () => {
+    renderRow({ onSetInstrument: vi.fn(), onToggleInstrumentPicker: vi.fn(), isInstrumentPickerOpen: true });
+
+    const toggle = screen.getByTestId('change-instrument-track-1');
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-controls')).toBe('dock-instrument-picker');
+    expect(toggle.classList.contains('active')).toBe(true);
+  });
+
+  it('leaves the unreachable mobile drawer without an instrument row', () => {
     renderRow({ onSetInstrument: vi.fn() });
-
-    // The inline drawer is unmounted until the "tap to edit" strip opens it.
     fireEvent.click(document.querySelector('.mobile-edit-panel')!);
-
-    const drawerButton = screen.getByTestId('drawer-change-instrument-track-1');
-    // The drawer row shows what the track plays now, so a person does not have
-    // to open the picker to find out.
-    expect(drawerButton.textContent).toContain('FM Bass');
-
-    fireEvent.click(drawerButton);
-
-    const panel = document.querySelector('.instrument-panel-container')!;
-    expect(panel.className).toContain('expanded');
-    expect(drawerButton.getAttribute('aria-controls')).toBe('instrument-panel-track-1');
+    expect(screen.queryByTestId('drawer-change-instrument-track-1')).toBeNull();
   });
 
   it('opens the same panel from the landscape drawer', () => {
@@ -182,11 +194,11 @@ describe('TrackRow change instrument', () => {
       .not.toContain('expanded');
   });
 
-  it('commits the chosen instrument and closes the picker', () => {
+  it('commits the chosen instrument and closes the landscape picker', () => {
     const onSetInstrument = vi.fn();
-    renderRow({ onSetInstrument });
+    renderLandscapeRow({ onSetInstrument });
 
-    fireEvent.click(screen.getByTestId('change-instrument-track-1'));
+    fireEvent.click(screen.getByTestId('landscape-change-instrument-track-1'));
     fireEvent.click(screen.getByTestId('set-instrument-sampled:808-kick'));
 
     expect(onSetInstrument).toHaveBeenCalledWith('sampled:808-kick');
@@ -197,23 +209,23 @@ describe('TrackRow change instrument', () => {
       .not.toContain('expanded');
   });
 
-  it('restores focus to the opener after keyboard-style selection', async () => {
-    renderRow({ onSetInstrument: vi.fn() });
-    const toggle = screen.getByTestId('change-instrument-track-1');
-    fireEvent.click(toggle);
+  it('restores focus to the landscape opener after keyboard-style selection', async () => {
+    renderLandscapeRow({ onSetInstrument: vi.fn() });
+    const opener = screen.getByTestId('landscape-change-instrument-track-1');
+    fireEvent.click(opener);
     const option = screen.getByTestId('set-instrument-sampled:808-kick');
     option.focus();
 
     fireEvent.click(option);
 
-    await waitFor(() => expect(document.activeElement).toBe(toggle));
+    await waitFor(() => expect(document.activeElement).toBe(opener));
   });
 
   it('falls back to the visible track name when the opener becomes hidden', async () => {
-    renderRow({ onSetInstrument: vi.fn() });
-    const toggle = screen.getByTestId('change-instrument-track-1');
-    fireEvent.click(toggle);
-    toggle.style.display = 'none';
+    renderLandscapeRow({ onSetInstrument: vi.fn() });
+    const opener = screen.getByTestId('landscape-change-instrument-track-1');
+    fireEvent.click(opener);
+    opener.style.display = 'none';
 
     fireEvent.click(screen.getByTestId('set-instrument-sampled:808-kick'));
 
@@ -224,9 +236,9 @@ describe('TrackRow change instrument', () => {
 
   it('does not rename the track when the instrument changes', () => {
     const onSetName = vi.fn();
-    renderRow({ onSetInstrument: vi.fn(), onSetName });
+    renderLandscapeRow({ onSetInstrument: vi.fn(), onSetName });
 
-    fireEvent.click(screen.getByTestId('change-instrument-track-1'));
+    fireEvent.click(screen.getByTestId('landscape-change-instrument-track-1'));
     fireEvent.click(screen.getByTestId('set-instrument-sampled:808-kick'));
 
     expect(onSetName).not.toHaveBeenCalled();

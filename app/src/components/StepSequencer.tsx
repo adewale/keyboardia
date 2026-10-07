@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useMemo } from 'react';
 import { clamp } from '../shared/validation';
 import type { ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
 import { useGrid } from '../state/grid';
@@ -13,19 +13,29 @@ import { useTrackInstrumentReconcile } from '../audio/useTrackInstrumentReconcil
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
 import { EditorDock, DOCK_TRANSITION_MS } from './EditorDock';
+import type { DockTrackActions } from './DockPanes';
 import {
   DOCK_CLOSED,
   EDITOR_DOCK_ID,
   closeDock,
+  closeDockInstrumentPicker,
+  dismissDockPane,
+  dockSelectedStep,
+  effectiveDockPane,
+  isDockInstrumentPickerOpen,
   isTrackDocked,
   openDock,
   reconcileDock,
   releaseDockedTrack,
   resolveGhostVisibility,
+  setDockPane,
   setDockViewMode,
   toggleDock,
   toggleDockDetent,
+  toggleDockInstrumentPicker,
+  toggleDockStep,
   toggleGhost,
+  type DockPane,
   type DockState,
   type DockViewMode,
 } from './editor-dock-state';
@@ -56,6 +66,21 @@ import './TransportBar.css';
 import './MixerPanel.css';
 import './PortraitHeader.css';
 import './PortraitGrid.css';
+
+/**
+ * Focus the first candidate that is in the document and rendered; returns
+ * whether one took focus.
+ */
+function focusFirstVisible(candidates: ReadonlyArray<HTMLElement | null | undefined>): boolean {
+  for (const element of candidates) {
+    if (!element?.isConnected || element.hidden) continue;
+    const style = window.getComputedStyle(element);
+    if (style.display === 'none' || style.visibility === 'hidden') continue;
+    element.focus();
+    if (document.activeElement === element) return true;
+  }
+  return false;
+}
 
 export function StepSequencer() {
   const { state, dispatch: gridDispatch } = useGrid();
@@ -508,32 +533,46 @@ export function StepSequencer() {
   // Editor dock handlers. Reading the committed dock state (rather than a
   // functional update) keeps the "was it closed?" check out of the updater,
   // which StrictMode may run twice.
-  const handleOpenDock = useCallback((trackId: string) => {
-    const current = getDock();
-    if (!current.open) dockPulsePendingRef.current = true;
-    setDock(openDock(current, trackId));
-  }, [getDock]);
-
-  const handleToggleDock = useCallback((trackId: string) => {
-    const current = getDock();
-    const next = toggleDock(current, trackId);
-    if (!current.open && next.open) dockPulsePendingRef.current = true;
+  const commitDock = useCallback((next: DockState) => {
+    if (!getDock().open && next.open) dockPulsePendingRef.current = true;
     setDock(next);
   }, [getDock]);
+
+  const rowWrapper = useCallback((trackId: string) => (
+    Array.from(tracksRef.current?.querySelectorAll<HTMLElement>('[data-track-id]') ?? [])
+      .find(element => element.dataset.trackId === trackId)
+  ), []);
+
+  // Focus a control on a track's row once the dock has rendered: the dock is
+  // about to become inert, or the control that had focus has unmounted.
+  const focusRowControl = useCallback((trackId: string, selectors: string[]) => {
+    requestAnimationFrame(() => {
+      const wrapper = rowWrapper(trackId);
+      focusFirstVisible(selectors.map(selector => wrapper?.querySelector<HTMLElement>(selector)));
+    });
+  }, [rowWrapper]);
+
+  const handleOpenDock = useCallback((trackId: string) => {
+    commitDock(openDock(getDock(), trackId));
+  }, [commitDock, getDock]);
+
+  const handleToggleDock = useCallback((trackId: string) => {
+    commitDock(toggleDock(getDock(), trackId));
+  }, [commitDock, getDock]);
 
   const handleCloseDock = useCallback(({ restoreFocus }: { restoreFocus: boolean }) => {
     const { trackId } = getDock();
     setDock(closeDock);
     // Focus was inside the dock, which is about to become inert: hand it back
-    // to the pitch toggle of the row the dock was editing.
+    // to the row the dock was editing (its pitch toggle, or a drum's name).
     if (restoreFocus && trackId) {
-      requestAnimationFrame(() => {
-        Array.from(tracksRef.current?.querySelectorAll<HTMLElement>('[data-dock-toggle]') ?? [])
-          .find(toggle => toggle.dataset.dockToggle === trackId)
-          ?.focus();
-      });
+      focusRowControl(trackId, ['[data-dock-toggle]', '.track-name']);
     }
-  }, [getDock]);
+  }, [getDock, focusRowControl]);
+
+  const handleSetDockPane = useCallback((pane: DockPane) => {
+    setDock(prev => setDockPane(prev, pane));
+  }, []);
 
   const handleToggleDockDetent = useCallback(() => {
     setDock(toggleDockDetent);
@@ -543,6 +582,72 @@ export function StepSequencer() {
     setDock(prev => setDockViewMode(prev, viewMode));
   }, []);
 
+  const hasPitch = useCallback((trackId: string | null) => {
+    const track = trackId ? getState().tracks.find(t => t.id === trackId) : undefined;
+    return !!track && !isDrumInstrument(track.sampleId);
+  }, [getState]);
+
+  // Shift+click or long-press on a step, in a row or in the roll: the Step
+  // pane for that step; the same step again leaves the Step pane.
+  const handleSelectDockStep = useCallback((trackId: string, step: number) => {
+    commitDock(toggleDockStep(getDock(), trackId, step, hasPitch(trackId)));
+  }, [commitDock, getDock, hasPitch]);
+
+  // Escape inside the dock (or on the grid while the Step pane shows): back
+  // to Notes, or close the dock from Notes or for a track without pitch.
+  const handleDismissDockPane = useCallback(() => {
+    const current = getDock();
+    const next = dismissDockPane(current, hasPitch(current.trackId));
+    if (!next.open && current.open) {
+      handleCloseDock({ restoreFocus: tracksRef.current?.querySelector(`#${EDITOR_DOCK_ID}`)?.contains(document.activeElement) ?? false });
+      return;
+    }
+    setDock(next);
+  }, [getDock, hasPitch, handleCloseDock]);
+
+  // The Step pane's Clear lock: clear, leave the pane, and hand focus back to
+  // the step that was being edited (the old strip's contract).
+  const handleClearStepLock = useCallback((trackId: string, step: number) => {
+    dispatch({ type: 'SET_PARAMETER_LOCK', trackId, step, lock: null });
+    setDock(prev => dismissDockPane(prev, hasPitch(trackId)));
+    focusRowControl(trackId, [`[data-step-index="${step}"]`]);
+  }, [dispatch, hasPitch, focusRowControl]);
+
+  // Change instrument (issue #63) from the row's badge or the Track pane's
+  // Instrument button: both open the one picker in the dock.
+  const instrumentOpenerRef = useRef<HTMLElement | null>(null);
+  const handleToggleInstrumentPicker = useCallback((trackId: string, opener?: HTMLElement) => {
+    const current = getDock();
+    if (opener && !isDockInstrumentPickerOpen(current, trackId)) instrumentOpenerRef.current = opener;
+    commitDock(toggleDockInstrumentPicker(current, trackId));
+  }, [commitDock, getDock]);
+
+  const handleChooseInstrument = useCallback((trackId: string, sampleId: string) => {
+    handleSetInstrument(trackId, sampleId);
+    setDock(closeDockInstrumentPicker);
+    // Committing closes the picker so the person sees the result; focus goes
+    // back to whatever opened it, or the Track pane's button, or the name.
+    const opener = instrumentOpenerRef.current;
+    instrumentOpenerRef.current = null;
+    requestAnimationFrame(() => {
+      const dockButton = tracksRef.current?.querySelector<HTMLElement>(`#${EDITOR_DOCK_ID} .dock-instrument-button`);
+      if (focusFirstVisible([opener, dockButton])) return;
+      focusRowControl(trackId, ['.track-name']);
+    });
+  }, [handleSetInstrument, focusRowControl]);
+
+  // Leaving desktop hides the dock (landscape gets its own in phase 8): close
+  // its instrument picker, and if focus was inside the dock, give it to the
+  // docked row's name before the dock stops rendering it.
+  useLayoutEffect(() => {
+    if (orientationMode === 'desktop') return;
+    const dockElement = tracksRef.current?.querySelector(`#${EDITOR_DOCK_ID}`);
+    const { trackId } = getDock();
+    if (trackId && dockElement?.contains(document.activeElement)) {
+      rowWrapper(trackId)?.querySelector<HTMLElement>('.track-name')?.focus();
+    }
+    setDock(closeDockInstrumentPicker);
+  }, [orientationMode, getDock, rowWrapper]);
 
   // Phase 36: Centralized keyboard handling via useKeyboard hook
   // Handles: Space (play/pause), Escape (cancel/clear), Delete (remove selection),
@@ -561,6 +666,10 @@ export function StepSequencer() {
         setCopySource(null);
       } else if ((getState().selection?.steps.size ?? 0) > 0) {
         dispatch({ type: 'CLEAR_SELECTION' });
+      } else if (getDock().open && getDock().pane === 'step') {
+        // The Step pane replaced the strip under the row, which closed on an
+        // outside click; Escape on the grid leaves it instead.
+        handleDismissDockPane();
       }
     },
     onDelete: () => {
@@ -657,19 +766,25 @@ export function StepSequencer() {
   // Phase 21: Check if session is published (read-only)
   const isPublished = multiplayer?.isPublished ?? false;
 
-  // Editor dock: only melodic tracks can be docked. A docked track that is
-  // deleted (here or by a collaborator) or stops being melodic closes the dock.
+  // Editor dock: every track can be docked (Step and Track apply to drums
+  // too); only melodic tracks have Notes and ghosts. A docked track that is
+  // deleted, here or by a collaborator, closes the dock.
   const melodicTracks = useMemo(
     () => state.tracks.filter(t => !isDrumInstrument(t.sampleId)),
     [state.tracks],
   );
   const melodicTrackIds = useMemo(() => melodicTracks.map(t => t.id), [melodicTracks]);
-  const reconciledDock = reconcileDock(dock, new Set(melodicTrackIds));
+  const trackIds = useMemo(() => new Set(state.tracks.map(t => t.id)), [state.tracks]);
+  const reconciledDock = reconcileDock(dock, trackIds);
   if (reconciledDock !== dock) setDock(reconciledDock);
   const dockedTrack = reconciledDock.trackId
-    ? melodicTracks.find(t => t.id === reconciledDock.trackId) ?? null
+    ? state.tracks.find(t => t.id === reconciledDock.trackId) ?? null
     : null;
   const isDockOpen = reconciledDock.open && dockedTrack !== null;
+  const dockPane = effectiveDockPane(
+    reconciledDock,
+    dockedTrack !== null && !isDrumInstrument(dockedTrack.sampleId),
+  );
   const ghostVisibility = useMemo(
     () => resolveGhostVisibility(reconciledDock, melodicTrackIds),
     [reconciledDock, melodicTrackIds],
@@ -677,6 +792,30 @@ export function StepSequencer() {
   const handleToggleGhost = useCallback((ghostId: string) => {
     setDock(prev => toggleGhost(prev, ghostId, melodicTrackIds));
   }, [melodicTrackIds]);
+
+  // The Track pane's edits, by track id. A published session gets none that
+  // change state: its controls render disabled and the picker is absent.
+  const dockTrackActions = useMemo<DockTrackActions>(() => ({
+    onSetTranspose: handleSetTranspose,
+    onSetStepCount: handleSetStepCount,
+    onSetInstrument: isPublished ? undefined : handleChooseInstrument,
+    onSetFMParams: handleSetFMParams,
+    onRotatePattern: handleRotatePattern,
+    onInvertPattern: handleInvertPattern,
+    onReversePattern: handleReversePattern,
+    onMirrorPattern: handleMirrorPattern,
+    onEuclideanFill: handleEuclideanFill,
+    onSetTrackSwing: handleSetTrackSwing,
+    onStartCopy: handleStartCopy,
+    onCopyTo: handleCopyTo,
+    onClearTrack: handleClearTrack,
+    onDeleteTrack: handleDeleteTrack,
+  }), [
+    isPublished, handleSetTranspose, handleSetStepCount, handleChooseInstrument, handleSetFMParams,
+    handleRotatePattern, handleInvertPattern, handleReversePattern, handleMirrorPattern,
+    handleEuclideanFill, handleSetTrackSwing, handleStartCopy, handleCopyTo, handleClearTrack,
+    handleDeleteTrack,
+  ]);
 
   // Opening a closed dock pulses the docked row's active cells once (150ms),
   // so the eye finds the row the dock is editing, then brings the dock into
@@ -911,7 +1050,6 @@ export function StepSequencer() {
                   onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
                   onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
                   onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
-                  onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
                   onSetVolume={(volume) => handleSetVolume(track.id, volume)}
                   scale={state.scale}
                   onRotatePattern={(direction) => handleRotatePattern(track.id, direction)}
@@ -938,6 +1076,10 @@ export function StepSequencer() {
                   isDocked={isTrackDocked(reconciledDock, track.id)}
                   onToggleDock={() => handleToggleDock(track.id)}
                   onOpenDock={() => handleOpenDock(track.id)}
+                  dockSelectedStep={dockSelectedStep(reconciledDock, track.id)}
+                  onSelectDockStep={(step) => handleSelectDockStep(track.id, step)}
+                  isInstrumentPickerOpen={isDockInstrumentPickerOpen(reconciledDock, track.id)}
+                  onToggleInstrumentPicker={(opener) => handleToggleInstrumentPicker(track.id, opener)}
                 />
               );
             })}
@@ -945,7 +1087,12 @@ export function StepSequencer() {
             <EditorDock
               open={isDockOpen}
               track={dockedTrack}
+              tracks={state.tracks}
               melodicTracks={melodicTracks}
+              pane={dockPane}
+              selectedStep={reconciledDock.selectedStep}
+              instrumentPickerOpen={reconciledDock.instrumentPickerOpen}
+              copySourceId={copySource}
               viewMode={reconciledDock.viewMode}
               detent={reconciledDock.detent}
               ghostVisibility={ghostVisibility}
@@ -956,12 +1103,18 @@ export function StepSequencer() {
               readOnly={isPublished}
               scrollerRef={tracksRef}
               onSelectTrack={handleOpenDock}
+              onSetPane={handleSetDockPane}
+              onSelectStep={handleSelectDockStep}
               onSetViewMode={handleSetDockViewMode}
               onToggleDetent={handleToggleDockDetent}
               onToggleGhost={handleToggleGhost}
               onClose={handleCloseDock}
+              onDismissPane={handleDismissDockPane}
               onToggleStep={handleToggleStep}
               onSetParameterLock={handleSetParameterLock}
+              onClearStepLock={handleClearStepLock}
+              trackActions={dockTrackActions}
+              onToggleInstrumentPicker={handleToggleInstrumentPicker}
             />
           </div>
         </div>

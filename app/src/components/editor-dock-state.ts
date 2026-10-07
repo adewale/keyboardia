@@ -1,9 +1,10 @@
 /**
- * Editor dock state (specs/PIANO-ROLL-DOCK.md, phase 2).
+ * Editor dock state (specs/PIANO-ROLL-DOCK.md, phases 2, 6 and 7).
  *
- * Which track the dock edits is local UI state: never synced, never persisted,
- * and closed on load. These are pure transitions so StepSequencer and its
- * tests share one definition of "open", "switch", "toggle" and "close".
+ * Which track the dock edits, and which pane it shows, is local UI state:
+ * never synced, never persisted, and closed on load. These are pure
+ * transitions so StepSequencer and its tests share one definition of "open",
+ * "switch", "toggle", "select a step" and "close".
  */
 
 /** DOM id of the dock, for the pitch toggles' aria-controls. */
@@ -13,6 +14,13 @@ export type DockViewMode = 'chromatic' | 'piano-roll';
 
 /** The roll's two heights: a 252px or a 432px grid viewport. */
 export type DockDetent = 'compact' | 'tall';
+
+/**
+ * The dock's three panes over one grid: Notes (the roll's own controls), Step
+ * (the selected step's lock) and Track (transpose, steps, instrument, pattern
+ * tools, FM, actions).
+ */
+export type DockPane = 'notes' | 'step' | 'track';
 
 /** How many melodic tracks nearest the docked one show as ghosts by default. */
 export const GHOST_DEFAULT_COUNT = 2;
@@ -33,6 +41,15 @@ export interface DockState {
    * the docked track in row order.
    */
   ghostVisibility: Record<string, boolean>;
+  /**
+   * The pane the person chose. A track with no pitch (drums) cannot show
+   * Notes, so it shows Track instead; see effectiveDockPane.
+   */
+  pane: DockPane;
+  /** The step the Step pane edits, on the docked track. */
+  selectedStep: number | null;
+  /** The Track pane's instrument picker, for the docked track. */
+  instrumentPickerOpen: boolean;
 }
 
 export const DOCK_CLOSED: DockState = {
@@ -42,12 +59,22 @@ export const DOCK_CLOSED: DockState = {
   viewMode: 'piano-roll',
   detent: 'compact',
   ghostVisibility: {},
+  pane: 'notes',
+  selectedStep: null,
+  instrumentPickerOpen: false,
 };
 
-/** Show `trackId` in the dock, opening it if needed. */
+/**
+ * Show `trackId` in the dock, opening it if needed. A fresh open starts on the
+ * Notes pane; switching track keeps the pane (and the selected step's column)
+ * but closes the instrument picker, which belongs to the previous track.
+ */
 export function openDock(state: DockState, trackId: string): DockState {
   if (state.open && state.trackId === trackId) return state;
-  return { ...state, open: true, trackId };
+  if (!state.open) {
+    return { ...state, open: true, trackId, pane: 'notes', selectedStep: null, instrumentPickerOpen: false };
+  }
+  return { ...state, trackId, instrumentPickerOpen: false };
 }
 
 /** The pitch toggle: dock this track, or close if it is already docked. */
@@ -57,8 +84,85 @@ export function toggleDock(state: DockState, trackId: string): DockState {
     : openDock(state, trackId);
 }
 
+/**
+ * Close the dock. The track, pane and step stay so the content collapses with
+ * the dock; the next open starts on Notes.
+ */
 export function closeDock(state: DockState): DockState {
-  return state.open ? { ...state, open: false } : state;
+  return state.open ? { ...state, open: false, instrumentPickerOpen: false } : state;
+}
+
+/** Choose a pane. Leaving the Track pane closes its instrument picker. */
+export function setDockPane(state: DockState, pane: DockPane): DockState {
+  if (state.pane === pane) return state;
+  return { ...state, pane, instrumentPickerOpen: pane === 'track' && state.instrumentPickerOpen };
+}
+
+/**
+ * The pane the dock shows: the chosen one, except that a track without pitch
+ * (`notesAvailable` false) shows Track in place of Notes.
+ */
+export function effectiveDockPane(state: DockState, notesAvailable: boolean): DockPane {
+  return state.pane === 'notes' && !notesAvailable ? 'track' : state.pane;
+}
+
+/**
+ * Shift+click or long-press on a step: open the dock on that track with the
+ * Step pane for that step.
+ */
+export function selectDockStep(state: DockState, trackId: string, step: number): DockState {
+  const opened = openDock(state, trackId);
+  if (opened.pane === 'step' && opened.selectedStep === step) return opened;
+  return { ...opened, pane: 'step', selectedStep: step, instrumentPickerOpen: false };
+}
+
+/** The step the open dock's Step pane edits on `trackId`, or null. */
+export function dockSelectedStep(state: DockState, trackId: string): number | null {
+  return state.open && state.trackId === trackId && state.pane === 'step' ? state.selectedStep : null;
+}
+
+/**
+ * Leave the current pane (Escape, or selecting the edited step again): back
+ * to Notes, or close the dock when Notes is already showing or the track has
+ * no pitch to show there.
+ */
+export function dismissDockPane(state: DockState, notesAvailable: boolean): DockState {
+  if (!state.open) return state;
+  if (state.pane !== 'notes' && notesAvailable) {
+    return { ...state, pane: 'notes', instrumentPickerOpen: false };
+  }
+  return closeDock(state);
+}
+
+/**
+ * Shift+click on a step: select it, or, when it is already the step being
+ * edited, leave the Step pane (the old strip's toggle).
+ */
+export function toggleDockStep(state: DockState, trackId: string, step: number, notesAvailable: boolean): DockState {
+  return dockSelectedStep(state, trackId) === step
+    ? dismissDockPane(state, notesAvailable)
+    : selectDockStep(state, trackId, step);
+}
+
+/**
+ * The instrument control (the row's badge or the Track pane's Instrument
+ * button): open the dock on that track's Track pane with the picker showing,
+ * or close the picker when it already shows for that track.
+ */
+export function toggleDockInstrumentPicker(state: DockState, trackId: string): DockState {
+  if (isDockInstrumentPickerOpen(state, trackId)) {
+    return { ...state, instrumentPickerOpen: false };
+  }
+  return { ...openDock(state, trackId), pane: 'track', instrumentPickerOpen: true };
+}
+
+export function closeDockInstrumentPicker(state: DockState): DockState {
+  return state.instrumentPickerOpen ? { ...state, instrumentPickerOpen: false } : state;
+}
+
+/** True when the open dock shows `trackId`'s instrument picker. */
+export function isDockInstrumentPickerOpen(state: DockState, trackId: string): boolean {
+  return state.open && state.trackId === trackId && state.pane === 'track' && state.instrumentPickerOpen;
 }
 
 export function setDockViewMode(state: DockState, viewMode: DockViewMode): DockState {
@@ -112,8 +216,9 @@ export function toggleGhost(state: DockState, ghostId: string, melodicIds: reado
 
 /**
  * Drop the docked track when it can no longer be docked (deleted locally or
- * remotely, or its instrument is no longer melodic). Returns the same object
- * when nothing changes so callers can compare by identity.
+ * remotely). Every track is dockable, since Step and Track apply to drums too.
+ * Returns the same object when nothing changes so callers can compare by
+ * identity.
  */
 export function reconcileDock(state: DockState, dockableTrackIds: ReadonlySet<string>): DockState {
   if (state.trackId === null || dockableTrackIds.has(state.trackId)) return state;

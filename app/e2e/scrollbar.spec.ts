@@ -190,10 +190,9 @@ test.describe('Scrollbar behavior', () => {
     expect(firstTrackDelta).toBeGreaterThan(0);
   });
 
-  // The two-line control block (specs/PIANO-ROLL-DOCK.md phase 3) removed the
-  // desktop pattern tools toggle; the dock's Track pane brings it back in
-  // phase 7. Until then the panel cannot be opened on desktop.
-  test.fixme('pattern tools panel should stay visible when scrolling horizontally', async ({ page, request }, testInfo) => {
+  // Pattern tools live in the editor dock's Track pane (specs/PIANO-ROLL-DOCK.md
+  // phase 7); the dock's toolbar is sticky-left inside the one scroller.
+  test('pattern tools panel should stay visible when scrolling horizontally', async ({ page, request }, testInfo) => {
     // Skip on mobile - pattern tools panel is hidden on mobile
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - pattern tools panel hidden on mobile');
 
@@ -208,15 +207,15 @@ test.describe('Scrollbar behavior', () => {
     await page.setViewportSize({ width: 1024, height: 768 });
     await waitForAnimation(page);
 
-    // Open pattern tools panel
-    const patternToolsToggle = page.locator('.pattern-tools-toggle').first();
-    await expect(patternToolsToggle).toBeVisible({ timeout: 5000 });
-
-    await patternToolsToggle.click();
+    // Open pattern tools: dock the first track from its name, then its Track pane
+    await page.locator('.track-row-wrapper').first().locator('.track-name').click();
+    const dock = page.getByTestId('editor-dock');
+    await expect(dock).toHaveClass(/\bopen\b/);
+    await dock.getByRole('group', { name: 'Dock pane' }).getByRole('button', { name: 'Track', exact: true }).click();
     await waitForAnimation(page);
 
-    const patternToolsPanel = page.locator('.pattern-tools-panel').first();
-    await expect(patternToolsPanel, 'toggle should open the pattern tools panel')
+    const patternToolsPanel = dock.locator('.pattern-tools-panel');
+    await expect(patternToolsPanel, 'the Track pane should show the pattern tools')
       .toBeVisible({ timeout: 5000 });
 
     // Get initial position of the pattern tools panel

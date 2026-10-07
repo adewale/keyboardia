@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
- * Editor dock (specs/PIANO-ROLL-DOCK.md, phase 2): StepSequencer owns which
- * track is docked. These tests drive the real EditorDock through stubbed rows
+ * Editor dock (specs/PIANO-ROLL-DOCK.md, phases 2, 6 and 7): StepSequencer
+ * owns which track is docked and which pane shows. These tests drive the real EditorDock through stubbed rows
  * and rolls, so they pin the state machine and the prop wiring, not layout
  * (jsdom has none; e2e/piano-roll-dock.spec.ts measures the real thing).
  */
@@ -41,10 +41,14 @@ vi.mock('../audio/useTrackInstrumentReconcile', () => ({ useTrackInstrumentRecon
 vi.mock('../audio/scheduler', () => ({ scheduler: {
   start: vi.fn(), stop: vi.fn(), setOnStepChange: vi.fn(), setOnBeat: vi.fn(),
 } }));
-vi.mock('../audio/audioTriggers', () => ({
+vi.mock('../audio/audioTriggers', async (importOriginal) => ({
+  ...await importOriginal<typeof import('../audio/audioTriggers')>(),
   signalMusicIntent: vi.fn(),
   requireAudioEngine: vi.fn(),
+  previewInstrument: vi.fn(async () => undefined),
+  tryGetEngineForPreview: vi.fn(() => null),
 }));
+vi.mock('../audio/prepare-instrument', () => ({ prepareInstrument: vi.fn() }));
 vi.mock('../audio/media-session', () => ({ installMediaSessionActionHandlers: () => () => {} }));
 vi.mock('../audio/engine', () => ({
   audioEngine: { removeTrackGain: vi.fn(), setFMParams: vi.fn(), setTrackVolume: vi.fn() },
@@ -64,21 +68,44 @@ interface StubRowProps {
   onToggleDock?: () => void;
   onOpenDock?: () => void;
   onDelete: () => void;
+  dockSelectedStep?: number | null;
+  onSelectDockStep?: (step: number) => void;
+  isInstrumentPickerOpen?: boolean;
+  onToggleInstrumentPicker?: (opener: HTMLElement) => void;
 }
 
-// A row reduced to the dock contract: the wrapper class, the pitch toggle,
-// the name, and delete.
+// A row reduced to the dock contract: the wrapper class, the pitch toggle
+// (melodic rows only), the name, the badge, step 0's cell and its Shift+click,
+// and delete.
 vi.mock('./TrackRow', () => ({
-  TrackRow: ({ track, isDocked, onToggleDock, onOpenDock, onDelete }: StubRowProps) => (
-    <div className={`track-row-wrapper${isDocked ? ' docked' : ''}`} data-testid={`row-${track.id}`}>
+  TrackRow: ({
+    track, isDocked, onToggleDock, onOpenDock, onDelete, dockSelectedStep, onSelectDockStep,
+    isInstrumentPickerOpen, onToggleInstrumentPicker,
+  }: StubRowProps) => (
+    <div
+      className={`track-row-wrapper${isDocked ? ' docked' : ''}`}
+      data-testid={`row-${track.id}`}
+      data-track-id={track.id}
+      data-selected-step={dockSelectedStep ?? ''}
+    >
+      {!track.sampleId.startsWith('kick') && (
+        <button
+          className={`expand-toggle${isDocked ? ' expanded' : ''}`}
+          data-dock-toggle={track.id}
+          onClick={onToggleDock}
+        >
+          pitch {track.name}
+        </button>
+      )}
+      <span className="track-name" tabIndex={0} onClick={onOpenDock}>name {track.name}</span>
       <button
-        className={`expand-toggle${isDocked ? ' expanded' : ''}`}
-        data-dock-toggle={track.id}
-        onClick={onToggleDock}
+        aria-expanded={isInstrumentPickerOpen}
+        onClick={(event) => onToggleInstrumentPicker?.(event.currentTarget)}
       >
-        pitch {track.name}
+        badge {track.name}
       </button>
-      <span onClick={onOpenDock}>name {track.name}</span>
+      <button data-step-index={0}>cell {track.name} 0</button>
+      <button onClick={() => onSelectDockStep?.(0)}>shift-click {track.name} 0</button>
       <button onClick={onDelete}>delete {track.name}</button>
     </div>
   ),
@@ -93,6 +120,7 @@ interface StubRollProps {
   detent?: 'compact' | 'tall';
   loopRegion?: { start: number; end: number } | null;
   readOnly?: boolean;
+  selectedStep?: number | null;
   onSelectStep?: (step: number) => void;
   onToggleStep?: (step: number) => void;
   onSetParameterLock: (step: number, lock: { pitch: number } | null) => void;
@@ -100,8 +128,8 @@ interface StubRollProps {
 
 function stubRoll(kind: string) {
   return ({
-    track, currentStep, anySoloed, scale, ghostTracks, detent, loopRegion, readOnly, onSelectStep,
-    onToggleStep, onSetParameterLock,
+    track, currentStep, anySoloed, scale, ghostTracks, detent, loopRegion, readOnly, selectedStep,
+    onSelectStep, onToggleStep, onSetParameterLock,
   }: StubRollProps) => (
     <div
       data-testid={kind}
@@ -115,7 +143,9 @@ function stubRoll(kind: string) {
       data-loop={loopRegion ? `${loopRegion.start}-${loopRegion.end}` : undefined}
       data-read-only={readOnly === undefined ? undefined : String(readOnly)}
       data-selects={String(onSelectStep !== undefined)}
+      data-selected-step={selectedStep ?? ''}
     >
+      <button onClick={() => onSelectStep?.(6)}>shift-click bar 6</button>
       <button onClick={() => onToggleStep?.(3)}>toggle step 3</button>
       <button onClick={() => onSetParameterLock(3, { pitch: 7 })}>lock step 3</button>
     </div>
@@ -126,11 +156,14 @@ vi.mock('./ChromaticGrid', () => ({ ChromaticGrid: stubRoll('chromatic-grid'), P
 vi.mock('./PianoRollEditor', () => ({ PianoRollEditor: stubRoll('piano-roll') }));
 
 import { StepSequencer } from './StepSequencer';
+import { getInstrumentName } from './sample-constants';
 
 function makeTrack(id: string, name: string, sampleId: string): Track {
+  const steps = Array(128).fill(false);
+  steps[0] = true;
   return {
     id, name, sampleId,
-    steps: Array(128).fill(false), parameterLocks: Array(128).fill(null),
+    steps, parameterLocks: Array(128).fill(null),
     volume: 1, muted: false, soloed: false, transpose: 0, stepCount: 16,
   };
 }
@@ -189,13 +222,14 @@ describe('StepSequencer editor dock', () => {
     expect(within(dockEl()).getByText('Lead', { selector: 'b' })).toBeTruthy();
   });
 
-  it('offers a tab per melodic track only', () => {
+  it('offers a tab per track, drums included', () => {
     render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Lead'));
 
     const tabs = within(screen.getByRole('group', { name: 'Docked track' })).getAllByRole('button');
-    expect(tabs.map(tab => tab.textContent)).toEqual(['Lead', 'Bass']);
+    expect(tabs.map(tab => tab.textContent)).toEqual(['Lead', 'Kick', 'Bass']);
     expect(tabs[0].getAttribute('aria-pressed')).toBe('true');
+    expect(tabs.map(tab => tab.getAttribute('data-category'))).toEqual(['leads', 'drums', 'bass']);
   });
 
   it('switches track from another row, from a dock tab and from a name', () => {
@@ -347,7 +381,7 @@ describe('StepSequencer editor dock', () => {
     expect(mocks.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_PARAMETER_LOCK' }));
   });
 
-  it('renders the new roll for the Piano Roll view with the detent, loop region and no step selection', () => {
+  it('renders the new roll for the Piano Roll view with the detent, loop region and step selection', () => {
     mocks.state.loopRegion = { start: 2, end: 5 };
     render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Lead'));
@@ -356,8 +390,9 @@ describe('StepSequencer editor dock', () => {
     expect(roll.getAttribute('data-detent')).toBe('compact');
     expect(roll.getAttribute('data-loop')).toBe('2-5');
     expect(roll.getAttribute('data-read-only')).toBe('false');
-    // The Step pane is a later phase: the roll gets no step selection yet.
-    expect(roll.getAttribute('data-selects')).toBe('false');
+    // Shift+click on a bar selects its step; nothing is selected on Notes.
+    expect(roll.getAttribute('data-selects')).toBe('true');
+    expect(roll.getAttribute('data-selected-step')).toBe('');
     expect(within(dockEl()).getByRole('button', { name: 'Tall' })).toBeTruthy();
 
     // Grid view has no detent or ghost controls.
@@ -424,5 +459,234 @@ describe('StepSequencer editor dock', () => {
     fireEvent.click(screen.getByText('pitch Lead'));
     fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
     expect(screen.getByTestId('piano-roll').getAttribute('data-read-only')).toBe('true');
+  });
+});
+
+const paneChip = (name: string) => within(screen.getByRole('group', { name: 'Dock pane' }))
+  .getByRole('button', { name });
+const pane = () => dockEl().getAttribute('data-pane');
+const tools = () => dockEl().querySelector<HTMLElement>('.dock-tools')!;
+
+describe('StepSequencer editor dock panes', () => {
+  it('opens on Notes, with the roll controls in the toolbar and the roll under every pane', () => {
+    mocks.state.tracks = [lead, kick, bass];
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+
+    expect(pane()).toBe('notes');
+    expect(paneChip('Notes').getAttribute('aria-pressed')).toBe('true');
+    expect(within(tools()).getByRole('button', { name: 'Piano Roll' })).toBeTruthy();
+    expect(within(tools()).getByRole('group', { name: 'Ghost notes' })).toBeTruthy();
+
+    fireEvent.click(paneChip('Track'));
+    expect(pane()).toBe('track');
+    expect(screen.getByTestId('piano-roll').getAttribute('data-track')).toBe('lead');
+    fireEvent.click(paneChip('Step'));
+    expect(pane()).toBe('step');
+    expect(screen.getByTestId('piano-roll')).toBeTruthy();
+    expect(within(tools()).getByText(/Shift\+click an active cell in the Lead row/)).toBeTruthy();
+  });
+
+  it('Shift+click on a cell opens the Step pane for it and rings the cell and the roll column', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('shift-click Bass 0'));
+
+    expect(isOpen()).toBe(true);
+    expect(pane()).toBe('step');
+    expect(dockedRows()).toEqual(['row-bass']);
+    expect(screen.getByTestId('row-bass').getAttribute('data-selected-step')).toBe('0');
+    expect(screen.getByTestId('row-lead').getAttribute('data-selected-step')).toBe('');
+    expect(screen.getByTestId('piano-roll').getAttribute('data-selected-step')).toBe('0');
+    expect(within(dockEl()).getByText('step 1')).toBeTruthy();
+    expect(within(tools()).getByText('Step 1')).toBeTruthy();
+
+    // Another pane keeps the step but drops the ring.
+    fireEvent.click(paneChip('Track'));
+    expect(screen.getByTestId('row-bass').getAttribute('data-selected-step')).toBe('');
+    expect(screen.getByTestId('piano-roll').getAttribute('data-selected-step')).toBe('');
+  });
+
+  it('Shift+click on a bar in the roll selects that step', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    fireEvent.click(screen.getByText('shift-click bar 6'));
+
+    expect(pane()).toBe('step');
+    expect(screen.getByTestId('piano-roll').getAttribute('data-selected-step')).toBe('6');
+    // Step 7 is inactive, so the pane says how to pick an active one.
+    expect(within(tools()).getByText(/Shift\+click an active cell/)).toBeTruthy();
+  });
+
+  it('edits the selected step with the lock editor, addressed by track and step', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('shift-click Bass 0'));
+
+    fireEvent.change(within(tools()).getByRole('slider', { name: 'Pitch' }), { target: { value: '-2' } });
+    expect(mocks.dispatch).toHaveBeenCalledWith({
+      type: 'SET_PARAMETER_LOCK', trackId: 'bass', step: 0, lock: { pitch: -2 },
+    });
+    fireEvent.change(within(tools()).getByRole('slider', { name: 'Volume' }), { target: { value: '50' } });
+    expect(mocks.dispatch).toHaveBeenCalledWith({
+      type: 'SET_PARAMETER_LOCK', trackId: 'bass', step: 0, lock: { volume: 0.5 },
+    });
+  });
+
+  it('leaves the Step pane on the same step again, Escape, or the Notes chip', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('shift-click Lead 0'));
+    expect(pane()).toBe('step');
+    fireEvent.click(screen.getByText('shift-click Lead 0'));
+    expect(isOpen()).toBe(true);
+    expect(pane()).toBe('notes');
+
+    fireEvent.click(screen.getByText('shift-click Lead 0'));
+    fireEvent.keyDown(within(tools()).getByRole('slider', { name: 'Pitch' }), { key: 'Escape' });
+    expect(isOpen()).toBe(true);
+    expect(pane()).toBe('notes');
+    // A second Escape, from Notes, closes the dock.
+    fireEvent.keyDown(paneChip('Notes'), { key: 'Escape' });
+    expect(isOpen()).toBe(false);
+
+    fireEvent.click(screen.getByText('shift-click Lead 0'));
+    fireEvent.click(paneChip('Notes'));
+    expect(pane()).toBe('notes');
+  });
+
+  it('Clear lock clears, leaves the pane and hands focus back to the step', () => {
+    const locked = { ...bass, parameterLocks: bass.parameterLocks.map((lock, i) => (i === 0 ? { pitch: 3 } : lock)) };
+    mocks.state.tracks = [lead, kick, locked];
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('shift-click Bass 0'));
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Clear lock' }));
+
+    expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'SET_PARAMETER_LOCK', trackId: 'bass', step: 0, lock: null });
+    expect(pane()).toBe('notes');
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(document.activeElement).toBe(screen.getByText('cell Bass 0'));
+  });
+
+  it('docks a drum track from Shift+click: Step pane, no Notes, no roll', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('shift-click Kick 0'));
+
+    expect(isOpen()).toBe(true);
+    expect(dockedRows()).toEqual(['row-kick']);
+    expect(pane()).toBe('step');
+    expect(within(tools()).getByRole('slider', { name: 'Pitch' })).toBeTruthy();
+    expect(paneChip('Notes').hasAttribute('disabled')).toBe(true);
+    expect(within(dockEl()).getByText('No pitch for drum tracks')).toBeTruthy();
+    expect(screen.queryByTestId('piano-roll')).toBeNull();
+    expect(within(dockEl()).queryByRole('button', { name: 'Tall' })).toBeNull();
+
+    // Escape from a drum's Step pane closes the dock: there is no Notes.
+    const pitch = within(tools()).getByRole('slider', { name: 'Pitch' });
+    pitch.focus();
+    fireEvent.keyDown(pitch, { key: 'Escape' });
+    expect(isOpen()).toBe(false);
+    act(() => { vi.advanceTimersByTime(50); });
+    // A drum row has no pitch toggle, so focus goes to its name.
+    expect(document.activeElement).toBe(screen.getByText('name Kick'));
+  });
+
+  it('shows Track for a drum track docked from its name', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('name Kick'));
+
+    expect(pane()).toBe('track');
+    expect(paneChip('Track').getAttribute('aria-pressed')).toBe('true');
+    // A drum has no transpose; it has steps, instrument, pattern tools and actions.
+    expect(within(tools()).queryByText('Transpose')).toBeNull();
+    expect(within(tools()).getByText('Steps')).toBeTruthy();
+    expect(within(tools()).getByRole('button', { name: 'Rotate pattern right' })).toBeTruthy();
+
+    // Docking a melodic track from a tab returns to its Notes.
+    fireEvent.click(within(screen.getByRole('group', { name: 'Docked track' })).getByRole('button', { name: 'Lead' }));
+    expect(pane()).toBe('notes');
+  });
+
+  it('wires the Track pane to the docked track: transpose, steps, pattern tools, actions', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Bass'));
+    fireEvent.click(paneChip('Track'));
+
+    expect(within(tools()).getByText('Transpose')).toBeTruthy();
+    expect(within(tools()).getByTitle('Transpose: 0 semitones')).toBeTruthy();
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Rotate pattern right' }));
+    expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'ROTATE_PATTERN', trackId: 'bass', direction: 'right' });
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Invert pattern' }));
+    expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'INVERT_PATTERN', trackId: 'bass' });
+    fireEvent.change(within(tools()).getByRole('slider', { name: 'Euclidean hits' }), { target: { value: '4' } });
+    expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'EUCLIDEAN_FILL', trackId: 'bass', hits: 4 });
+
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Clear' }));
+    expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'CLEAR_TRACK', trackId: 'bass' });
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Delete' }));
+    expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'DELETE_TRACK', trackId: 'bass' });
+    expect(isOpen()).toBe(false);
+  });
+
+  it('shows FM parameters for an FM track only', () => {
+    const fm = makeTrack('fm', 'Bell', 'tone:fm-bell');
+    mocks.state.tracks = [lead, fm];
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    fireEvent.click(paneChip('Track'));
+    expect(within(tools()).queryByText('Harmonicity')).toBeNull();
+
+    fireEvent.click(screen.getByText('pitch Bell'));
+    fireEvent.change(within(tools()).getByRole('slider', { name: /Harmonicity/ }), { target: { value: '4' } });
+    expect(mocks.dispatch).toHaveBeenCalledWith({
+      type: 'SET_FM_PARAMS', trackId: 'fm', fmParams: { harmonicity: 4, modulationIndex: 14 },
+    });
+  });
+
+  it('opens the instrument picker in the Track pane from the row badge and commits a choice', () => {
+    render(<StepSequencer />);
+    const badge = screen.getByText('badge Kick');
+    fireEvent.click(badge);
+
+    expect(isOpen()).toBe(true);
+    expect(pane()).toBe('track');
+    expect(badge.getAttribute('aria-expanded')).toBe('true');
+    const picker = dockEl().querySelector('#dock-instrument-picker')!;
+    expect(within(picker as HTMLElement).getByTestId('set-instrument-kick').getAttribute('aria-current')).toBe('true');
+    const instrumentButton = within(tools()).getByTestId('dock-change-instrument-kick');
+    expect(instrumentButton.getAttribute('aria-expanded')).toBe('true');
+
+    fireEvent.click(within(picker as HTMLElement).getByTestId('set-instrument-sampled:808-kick'));
+    expect(mocks.dispatch).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'SET_TRACK_INSTRUMENT', trackId: 'kick', sampleId: 'sampled:808-kick',
+    }));
+    expect(dockEl().querySelector('#dock-instrument-picker')).toBeNull();
+    expect(badge.getAttribute('aria-expanded')).toBe('false');
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(document.activeElement).toBe(badge);
+
+    // The badge again opens it; the badge once more closes it, keeping the dock.
+    fireEvent.click(badge);
+    expect(dockEl().querySelector('#dock-instrument-picker')).not.toBeNull();
+    fireEvent.click(badge);
+    expect(dockEl().querySelector('#dock-instrument-picker')).toBeNull();
+    expect(isOpen()).toBe(true);
+  });
+
+  it('renders every pane read-only in a published session', () => {
+    mocks.isPublished = true;
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+    fireEvent.click(screen.getByText('shift-click bar 6'));
+    fireEvent.click(paneChip('Step'));
+    fireEvent.click(screen.getByText('shift-click Lead 0'));
+    expect(within(tools()).getByRole('slider', { name: 'Pitch' }).hasAttribute('disabled')).toBe(true);
+
+    fireEvent.click(paneChip('Track'));
+    const controls = within(tools()).getAllByRole('button')
+      .concat(within(tools()).getAllByRole('slider'));
+    expect(controls.length).toBeGreaterThan(5);
+    for (const control of controls) expect(control.hasAttribute('disabled')).toBe(true);
+    // No instrument picker: the instrument is a readout.
+    expect(within(tools()).queryByTestId('dock-change-instrument-lead')).toBeNull();
+    expect(within(tools()).getByText(getInstrumentName('synth:lead'))).toBeTruthy();
+    expect(mocks.dispatch).not.toHaveBeenCalled();
   });
 });
