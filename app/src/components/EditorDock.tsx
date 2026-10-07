@@ -6,7 +6,7 @@
  * at a time: a header (track tabs, pane chips, title), a toolbar for the
  * active pane, and the roll, which stays visible under every pane.
  *
- * - Notes: the roll's own controls (Grid / Piano Roll, ghost toggles).
+ * - Notes: the roll's own controls (ghost toggles).
  * - Step: the selected step's lock (phase 6).
  * - Track: transpose, steps, instrument, pattern tools, FM, actions (phase 7).
  *
@@ -22,12 +22,11 @@
 
 import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type RefObject } from 'react';
 import type { LoopRegion, ParameterLock, ScaleState, Track } from '../types';
-import { ChromaticGrid } from './ChromaticGrid';
 import { PianoRollEditor } from './PianoRollEditor';
 import { DockStepPane, DockTrackPane, type DockTrackActions } from './DockPanes';
 import { syncHorizontalScroll } from './scroll-sync';
 import { getInstrumentCategory, getInstrumentCategoryColor, getInstrumentName } from './sample-constants';
-import { EDITOR_DOCK_ID, type DockDetent, type DockPane, type DockViewMode } from './editor-dock-state';
+import { EDITOR_DOCK_ID, type DockDetent, type DockPane } from './editor-dock-state';
 import { isDrumInstrument } from '../shared/instrument-classification';
 import { Close } from '../icons';
 import './EditorDock.css';
@@ -65,7 +64,6 @@ interface EditorDockProps {
   instrumentPickerOpen: boolean;
   /** The track a copy started from, so the Track pane offers Paste elsewhere. */
   copySourceId: string | null;
-  viewMode: DockViewMode;
   detent: DockDetent;
   /** Resolved ghost visibility for every other melodic track, by track id. */
   ghostVisibility: Record<string, boolean>;
@@ -86,7 +84,6 @@ interface EditorDockProps {
   onSetPane: (pane: DockPane) => void;
   /** Shift+click or long-press on a bar in the roll. */
   onSelectStep: (trackId: string, step: number) => void;
-  onSetViewMode: (viewMode: DockViewMode) => void;
   onToggleDetent: () => void;
   onToggleGhost: (trackId: string) => void;
   /** `restoreFocus` is true when focus was inside the dock (close button). */
@@ -111,7 +108,6 @@ export const EditorDock = memo(function EditorDock({
   selectedStep,
   instrumentPickerOpen,
   copySourceId,
-  viewMode,
   detent,
   ghostVisibility,
   loopRegion = null,
@@ -124,7 +120,6 @@ export const EditorDock = memo(function EditorDock({
   onSelectTrack,
   onSetPane,
   onSelectStep,
-  onSetViewMode,
   onToggleDetent,
   onToggleGhost,
   onClose,
@@ -268,15 +263,6 @@ export const EditorDock = memo(function EditorDock({
     })), [melodicTracks, trackId, ghostVisibility]);
 
   const hasPitch = track !== null && !isDrumInstrument(track.sampleId);
-  const isRoll = viewMode === 'piano-roll';
-  const rollProps = track ? {
-    track,
-    currentStep,
-    anySoloed,
-    scale,
-    onSetParameterLock: readOnly ? noop : handleSetParameterLock,
-    onToggleStep: readOnly ? noop : handleToggleStep,
-  } : null;
 
   const renderPane = () => {
     if (!track) return null;
@@ -307,27 +293,7 @@ export const EditorDock = memo(function EditorDock({
     }
     return (
       <div className="dock-pane dock-pane-notes">
-        <div className="dock-chips dock-view-tabs" role="group" aria-label="Pitch view">
-          <button
-            type="button"
-            className={`dock-chip dock-view-tab${viewMode === 'chromatic' ? ' active' : ''}`}
-            aria-pressed={viewMode === 'chromatic'}
-            onClick={() => onSetViewMode('chromatic')}
-            title="Chromatic Grid - compact pitch offset view"
-          >
-            Grid
-          </button>
-          <button
-            type="button"
-            className={`dock-chip dock-view-tab${viewMode === 'piano-roll' ? ' active' : ''}`}
-            aria-pressed={viewMode === 'piano-roll'}
-            onClick={() => onSetViewMode('piano-roll')}
-            title="Piano Roll - full MIDI note view"
-          >
-            Piano Roll
-          </button>
-        </div>
-        {isRoll && ghostTracks.length > 0 && (
+        {ghostTracks.length > 0 ? (
           <div className="dock-tool-group">
             <span className="dock-tool-label" aria-hidden="true">Ghosts</span>
             <div className="dock-chips dock-ghost-toggles" role="group" aria-label="Ghost notes">
@@ -347,6 +313,12 @@ export const EditorDock = memo(function EditorDock({
               ))}
             </div>
           </div>
+        ) : (
+          <p className="dock-pane-hint">
+            {readOnly
+              ? 'Read-only: the roll plays but takes no edits.'
+              : 'Click to place a note, drag to paint; Shift+click or long-press a note for its step.'}
+          </p>
         )}
       </div>
     );
@@ -420,7 +392,7 @@ export const EditorDock = memo(function EditorDock({
             )}
             <div className="dock-head-end">
               {/* Landscape has one height, about 45% of the viewport. */}
-              {isRoll && hasPitch && !landscape && (
+              {hasPitch && !landscape && (
                 <button
                   type="button"
                   className="dock-icon-button dock-detent"
@@ -445,23 +417,26 @@ export const EditorDock = memo(function EditorDock({
           <div className="dock-tools" ref={toolsRef}>
             {showBody && renderPane()}
           </div>
-          <div className="dock-body" ref={bodyRef} data-view={hasPitch ? viewMode : 'none'}>
+          <div className="dock-body" ref={bodyRef}>
             {showBody && !hasPitch && (
               <p className="dock-no-pitch">No pitch for drum tracks</p>
             )}
-            {showBody && hasPitch && rollProps && (isRoll
-              ? (
-                <PianoRollEditor
-                  {...rollProps}
-                  ghostTracks={ghostTracks}
-                  loopRegion={loopRegion}
-                  detent={detent}
-                  readOnly={readOnly}
-                  selectedStep={pane === 'step' ? selectedStep : null}
-                  onSelectStep={handleSelectStep}
-                />
-              )
-              : <ChromaticGrid {...rollProps} />)}
+            {showBody && hasPitch && track && (
+              <PianoRollEditor
+                track={track}
+                currentStep={currentStep}
+                anySoloed={anySoloed}
+                scale={scale}
+                onSetParameterLock={readOnly ? noop : handleSetParameterLock}
+                onToggleStep={readOnly ? noop : handleToggleStep}
+                ghostTracks={ghostTracks}
+                loopRegion={loopRegion}
+                detent={detent}
+                readOnly={readOnly}
+                selectedStep={pane === 'step' ? selectedStep : null}
+                onSelectStep={handleSelectStep}
+              />
+            )}
           </div>
         </div>
       </div>

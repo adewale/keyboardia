@@ -345,6 +345,42 @@ describe('PianoRollEditor editing', () => {
   });
 });
 
+describe('PianoRollEditor scale lock', () => {
+  // Moved from the retired ChromaticGrid: scale lock constrains new notes but
+  // never hides or traps a note already off the scale.
+  it('keeps an old out-of-scale note visible and removable while new notes snap into the scale', () => {
+    const track = makeTrack('lead', [[0, { pitch: 1 }]]); // C#4, off C minor pentatonic
+    const { hit, container, onToggleStep, onSetParameterLock } = setup({
+      track,
+      scale: { root: 'C', scaleId: 'minor-pentatonic', locked: true },
+    });
+
+    // The note is drawn on its own row, which is marked out of scale.
+    expect(container.querySelector('.note[data-start="0"]')!.getAttribute('data-midi')).toBe('61');
+    expect(container.querySelector('.key[data-midi="61"]')!.classList.contains('scale-out')).toBe(true);
+
+    // A new note on that row lands on the nearest in-scale pitch (C4).
+    click(hit, 1, 61);
+    expect(onToggleStep).toHaveBeenCalledWith(1);
+    expect(onSetParameterLock).not.toHaveBeenCalledWith(1, { pitch: 1 });
+
+    // Tapping the old note removes it.
+    onToggleStep.mockClear();
+    click(hit, 0, 61);
+    expect(onToggleStep).toHaveBeenCalledWith(0);
+  });
+
+  it('marks the root and fifth rows and keys for the session key', () => {
+    const { container } = setup({ scale: { root: 'D', scaleId: 'major', locked: false } });
+    const key = (midi: number) => container.querySelector(`.key[data-midi="${midi}"]`)!;
+    expect(key(62).classList.contains('root')).toBe(true); // D4
+    expect(key(69).classList.contains('fifth')).toBe(true); // A4
+    expect(key(60).classList.contains('root')).toBe(false);
+    // Unlocked: no row is out of scale.
+    expect(container.querySelector('.row.scale-out')).toBeNull();
+  });
+});
+
 describe('PianoRollEditor hover', () => {
   it('shows the crosshair, the hover ghost, the key highlight and a tooltip', () => {
     const { hit, container } = setup();

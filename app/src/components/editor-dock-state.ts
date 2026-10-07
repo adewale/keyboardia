@@ -10,8 +10,6 @@
 /** DOM id of the dock, for the pitch toggles' aria-controls. */
 export const EDITOR_DOCK_ID = 'editor-dock';
 
-export type DockViewMode = 'chromatic' | 'piano-roll';
-
 /** The roll's two heights: a 252px or a 432px grid viewport. */
 export type DockDetent = 'compact' | 'tall';
 
@@ -32,7 +30,6 @@ export interface DockState {
    * content still rendered; cleared when that track goes away.
    */
   trackId: string | null;
-  viewMode: DockViewMode;
   detent: DockDetent;
   /**
    * Ghost toggles the person has pressed, keyed by the ghost's track id. A
@@ -55,8 +52,6 @@ export interface DockState {
 export const DOCK_CLOSED: DockState = {
   open: false,
   trackId: null,
-  // Piano Roll is the default view; Grid (the legacy ChromaticGrid) stays one tab away.
-  viewMode: 'piano-roll',
   detent: 'compact',
   ghostVisibility: {},
   pane: 'notes',
@@ -176,10 +171,6 @@ export function closeDockInstrumentPicker(state: DockState): DockState {
 /** True when the open dock shows `trackId`'s instrument picker. */
 export function isDockInstrumentPickerOpen(state: DockState, trackId: string): boolean {
   return state.open && state.trackId === trackId && state.pane === 'track' && state.instrumentPickerOpen;
-}
-
-export function setDockViewMode(state: DockState, viewMode: DockViewMode): DockState {
-  return state.viewMode === viewMode ? state : { ...state, viewMode };
 }
 
 export function setDockDetent(state: DockState, detent: DockDetent): DockState {

@@ -159,7 +159,6 @@ function stubRoll(kind: string) {
   );
 }
 
-vi.mock('./ChromaticGrid', () => ({ ChromaticGrid: stubRoll('chromatic-grid') }));
 vi.mock('./PianoRollEditor', () => ({ PianoRollEditor: stubRoll('piano-roll') }));
 
 import { StepSequencer } from './StepSequencer';
@@ -208,7 +207,6 @@ describe('StepSequencer editor dock', () => {
     expect(dockEl().getAttribute('aria-hidden')).toBe('true');
     expect(dockEl().hasAttribute('inert')).toBe(true);
     expect(screen.queryByTestId('piano-roll')).toBeNull();
-    expect(screen.queryByTestId('chromatic-grid')).toBeNull();
     expect(dockedRows()).toEqual([]);
     // The dock is the last child of .tracks-inner: rows stay contiguous.
     const inner = document.querySelector('.tracks-inner')!;
@@ -222,10 +220,10 @@ describe('StepSequencer editor dock', () => {
     expect(isOpen()).toBe(true);
     expect(dockEl().getAttribute('aria-hidden')).toBe('false');
     expect(dockEl().hasAttribute('inert')).toBe(false);
-    // Piano Roll is the dock's default view.
+    // The roll is the Notes pane: there is no other view to choose.
     expect(screen.getByTestId('piano-roll').getAttribute('data-track')).toBe('lead');
-    expect(screen.queryByTestId('chromatic-grid')).toBeNull();
-    expect(within(dockEl()).getByRole('button', { name: 'Piano Roll' }).getAttribute('aria-pressed')).toBe('true');
+    expect(within(dockEl()).queryByRole('button', { name: 'Grid' })).toBeNull();
+    expect(within(dockEl()).queryByRole('button', { name: 'Piano Roll' })).toBeNull();
     expect(dockedRows()).toEqual(['row-lead']);
     expect(within(dockEl()).getByText('Lead', { selector: 'b' })).toBeTruthy();
   });
@@ -275,7 +273,7 @@ describe('StepSequencer editor dock', () => {
     fireEvent.click(screen.getByText('pitch Lead'));
     const windowEscape = vi.fn();
     window.addEventListener('keydown', windowEscape);
-    fireEvent.keyDown(within(dockEl()).getByRole('button', { name: 'Grid' }), { key: 'Escape' });
+    fireEvent.keyDown(paneChip('Notes'), { key: 'Escape' });
     window.removeEventListener('keydown', windowEscape);
     expect(isOpen()).toBe(false);
     // Handled inside the dock, so the global Escape (copy mode, selection) does not also run.
@@ -299,22 +297,6 @@ describe('StepSequencer editor dock', () => {
     act(() => { vi.advanceTimersByTime(50); });
 
     expect(document.activeElement).toBe(screen.getByText('pitch Lead'));
-  });
-
-  it('switches between Grid and Piano Roll and keeps the choice across tracks', () => {
-    render(<StepSequencer />);
-    fireEvent.click(screen.getByText('pitch Lead'));
-    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Grid' }));
-
-    expect(screen.queryByTestId('piano-roll')).toBeNull();
-    expect(screen.getByTestId('chromatic-grid').getAttribute('data-track')).toBe('lead');
-
-    fireEvent.click(screen.getByText('pitch Bass'));
-    expect(screen.getByTestId('chromatic-grid').getAttribute('data-track')).toBe('bass');
-
-    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
-    expect(screen.queryByTestId('chromatic-grid')).toBeNull();
-    expect(screen.getByTestId('piano-roll').getAttribute('data-track')).toBe('bass');
   });
 
   it('wires the roll exactly as the row did: toggle step and parameter lock for the docked track', () => {
@@ -378,18 +360,17 @@ describe('StepSequencer editor dock', () => {
     mocks.isPublished = true;
     render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Lead'));
-    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Grid' }));
 
     expect(isOpen()).toBe(true);
     expect(dockEl().classList.contains('read-only')).toBe(true);
-    const roll = screen.getByTestId('chromatic-grid');
+    const roll = screen.getByTestId('piano-roll');
     fireEvent.click(within(roll).getByText('toggle step 3'));
     fireEvent.click(within(roll).getByText('lock step 3'));
     expect(mocks.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'TOGGLE_STEP' }));
     expect(mocks.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_PARAMETER_LOCK' }));
   });
 
-  it('renders the new roll for the Piano Roll view with the detent, loop region and step selection', () => {
+  it('renders the roll with the detent, loop region and step selection', () => {
     mocks.state.loopRegion = { start: 2, end: 5 };
     render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Lead'));
@@ -402,17 +383,11 @@ describe('StepSequencer editor dock', () => {
     expect(roll.getAttribute('data-selects')).toBe('true');
     expect(roll.getAttribute('data-selected-step')).toBe('');
     expect(within(dockEl()).getByRole('button', { name: 'Tall' })).toBeTruthy();
-
-    // Grid view has no detent or ghost controls.
-    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Grid' }));
-    expect(within(dockEl()).queryByRole('button', { name: 'Tall' })).toBeNull();
-    expect(screen.queryByRole('group', { name: 'Ghost notes' })).toBeNull();
   });
 
   it('toggles the detent from the dock header and keeps it across close and switch', () => {
     render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Lead'));
-    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
 
     const tall = within(dockEl()).getByRole('button', { name: 'Tall' });
     expect(tall.getAttribute('aria-pressed')).toBe('false');
@@ -431,7 +406,6 @@ describe('StepSequencer editor dock', () => {
     mocks.state.tracks = [lead, kick, bass, pad, keys];
     const view = render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Lead'));
-    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
 
     const roll = () => screen.getByTestId('piano-roll');
     expect(roll().getAttribute('data-ghosts')).toBe('bass:on pad:on keys:off');
@@ -465,7 +439,6 @@ describe('StepSequencer editor dock', () => {
     mocks.isPublished = true;
     render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Lead'));
-    fireEvent.click(within(dockEl()).getByRole('button', { name: 'Piano Roll' }));
     expect(screen.getByTestId('piano-roll').getAttribute('data-read-only')).toBe('true');
   });
 });
@@ -483,7 +456,6 @@ describe('StepSequencer editor dock panes', () => {
 
     expect(pane()).toBe('notes');
     expect(paneChip('Notes').getAttribute('aria-pressed')).toBe('true');
-    expect(within(tools()).getByRole('button', { name: 'Piano Roll' })).toBeTruthy();
     expect(within(tools()).getByRole('group', { name: 'Ghost notes' })).toBeTruthy();
 
     fireEvent.click(paneChip('Track'));
@@ -493,6 +465,15 @@ describe('StepSequencer editor dock panes', () => {
     expect(pane()).toBe('step');
     expect(screen.getByTestId('piano-roll')).toBeTruthy();
     expect(within(tools()).getByText(/Shift\+click an active cell in the Lead row/)).toBeTruthy();
+  });
+
+  it('shows how to edit the roll on Notes when there is no other melodic track to ghost', () => {
+    mocks.state.tracks = [lead, kick];
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Lead'));
+
+    expect(within(tools()).queryByRole('group', { name: 'Ghost notes' })).toBeNull();
+    expect(within(tools()).getByText(/Click to place a note/)).toBeTruthy();
   });
 
   it('Shift+click on a cell opens the Step pane for it and rings the cell and the roll column', () => {

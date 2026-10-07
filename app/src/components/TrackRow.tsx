@@ -20,9 +20,6 @@ import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
 import { features } from '../config/features';
 import { useDragToPaint } from './useDragToPaint';
 import './TrackRow.css';
-// ChromaticGrid now renders in the EditorDock; its styles stay imported here
-// so the production stylesheet order does not change (lesson 63).
-import './ChromaticGrid.css';
 import './VelocityLane.css';
 // The transpose and step-count dropdowns moved to the dock's Track pane; their
 // styles (and the shared dropdown recipe, first) stay imported here so the

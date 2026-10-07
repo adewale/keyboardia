@@ -1,6 +1,8 @@
 /**
- * Editor dock, phase 2 (specs/PIANO-ROLL-DOCK.md): the per-track pitch panel
- * moves out of the rows into one dock under the grid, inside the same scroller.
+ * Editor dock (specs/PIANO-ROLL-DOCK.md): the per-track pitch panel moves out
+ * of the rows into one dock under the grid, inside the same scroller, and its
+ * roll is the Notes pane (the Grid view is gone; its scale-lock, key and range
+ * coverage lives at the end of this file).
  *
  * jsdom has no layout, so the unit tests pin the state machine and wiring;
  * this spec measures what only a browser can show: the dock pins to the
@@ -62,13 +64,12 @@ async function expectClosed(page: Page) {
   await expect(page.locator('.track-row-wrapper.docked')).toHaveCount(0);
   await expect(page.locator('.expand-toggle.expanded')).toHaveCount(0);
   // The roll unmounts once the dock has collapsed.
-  await expect(dock(page).locator('.chromatic-grid, .piano-roll-editor')).toHaveCount(0);
+  await expect(dock(page).locator('.piano-roll-editor')).toHaveCount(0);
 }
 
 async function openRoll(page: Page, name: string) {
   await pitchToggle(page, name).click();
   await expectDocked(page, name);
-  await dock(page).getByRole('button', { name: 'Piano Roll' }).click();
   await expect(dock(page).locator('.piano-roll-editor')).toBeVisible();
 }
 
@@ -89,11 +90,11 @@ test.describe('Piano roll dock', () => {
 
     await pitchToggle(page, 'Lead').click();
     await expectDocked(page, 'Lead');
-    // Piano Roll is the default view.
+    // The roll is the Notes pane; there is no other view to choose.
     await expect(dock(page).locator('.dock-body .piano-roll-editor')).toBeVisible();
-    await expect(dock(page).getByRole('button', { name: 'Piano Roll' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(dock(page).getByRole('button', { name: /^(Grid|Piano Roll)$/ })).toHaveCount(0);
     // No pitch panel is left in any row.
-    await expect(page.locator('.track-row-wrapper .chromatic-grid, .track-row-wrapper .piano-roll-editor')).toHaveCount(0);
+    await expect(page.locator('.track-row-wrapper .piano-roll-editor')).toHaveCount(0);
 
     // The docked outline is drawn: an inset accent ring on the row.
     const shadow = await row(page, 'Lead').locator('.track-row').evaluate(el => getComputedStyle(el).boxShadow);
@@ -113,14 +114,7 @@ test.describe('Piano roll dock', () => {
     await expect(dock(page).locator('.dock-track-tab')).toHaveText(['Lead', 'Kick', 'Bass']);
     await dock(page).locator('.dock-track-tab', { hasText: 'Lead' }).click();
     await expectDocked(page, 'Lead');
-
-    // The view mode tabs moved with the panel; Grid stays available.
-    await dock(page).getByRole('button', { name: 'Grid', exact: true }).click();
-    await expect(dock(page).locator('.dock-body .chromatic-grid')).toBeVisible();
-    await expect(dock(page).locator('.dock-body .piano-roll-editor')).toHaveCount(0);
-    await dock(page).getByRole('button', { name: 'Piano Roll' }).click();
     await expect(dock(page).locator('.dock-body .piano-roll-editor')).toBeVisible();
-    await expect(dock(page).locator('.dock-body .chromatic-grid')).toHaveCount(0);
   });
 
   test('closes from the docked row toggle, the close button, and Escape inside the dock', async ({ page, request }) => {
@@ -140,7 +134,7 @@ test.describe('Piano roll dock', () => {
 
     await pitchToggle(page, 'Lead').click();
     await expectDocked(page, 'Lead');
-    await dock(page).getByRole('button', { name: 'Grid' }).focus();
+    await dock(page).getByRole('group', { name: 'Dock pane' }).getByRole('button', { name: 'Notes' }).focus();
     await page.keyboard.press('Escape');
     await expectClosed(page);
   });
@@ -149,8 +143,7 @@ test.describe('Piano roll dock', () => {
     await openSession(page, request, threeTracks);
     await pitchToggle(page, 'Lead').click();
     await expectDocked(page, 'Lead');
-    await dock(page).getByRole('button', { name: 'Grid', exact: true }).click();
-    await expect(dock(page).locator('.chromatic-cell').first()).toBeVisible();
+    await expect(dock(page).locator('.piano-roll-editor .note').first()).toBeVisible();
 
     const layout = await page.evaluate(() => {
       const inner = document.querySelector('.tracks-inner')!;
@@ -175,15 +168,14 @@ test.describe('Piano roll dock', () => {
     expect(layout.between.every(Boolean)).toBe(true);
     for (const gap of layout.gaps) expect(gap).toBeLessThanOrEqual(4);
 
-    // The dock grid shares the rows' horizontal scroller and step pitch.
+    // The roll shares the rows' horizontal scroller and step pitch.
     const rowCells = row(page, 'Lead').locator('.step-cell');
-    const dockRow = dock(page).locator('.chromatic-row').first();
+    const grid = dock(page).locator('.piano-roll-editor .dock-scroll > :first-child');
     for (const step of [0, 4, 8]) {
-      const rowBox = await rowCells.nth(step).boundingBox();
-      const dockBox = await dockRow.locator('.chromatic-cell').nth(step).boundingBox();
+      const [rowBox, gridBox] = await Promise.all([rowCells.nth(step).boundingBox(), grid.boundingBox()]);
       expect(rowBox).not.toBeNull();
-      expect(dockBox).not.toBeNull();
-      expect(Math.abs(rowBox!.x - dockBox!.x)).toBeLessThan(3);
+      expect(gridBox).not.toBeNull();
+      expect(Math.abs(rowBox!.x - (gridBox!.x + stepToX(step, DESKTOP_STEP_GEOMETRY)))).toBeLessThan(1);
     }
   });
 
@@ -503,7 +495,7 @@ test.describe('Piano roll dock: Step and Track panes', () => {
     await expect(dock(page)).toHaveAttribute('data-pane', 'step');
     await expect(paneChip(page, 'Notes')).toBeDisabled();
     await expect(dock(page).locator('.dock-no-pitch')).toHaveText('No pitch for drum tracks');
-    await expect(dock(page).locator('.piano-roll-editor, .chromatic-grid')).toHaveCount(0);
+    await expect(dock(page).locator('.piano-roll-editor')).toHaveCount(0);
     // The ♪ toggle stays melodic-only.
     await expect(row(page, 'Kick').locator('.expand-toggle')).toHaveCount(0);
 
@@ -581,5 +573,122 @@ test.describe('Piano roll dock: Step and Track panes', () => {
 
     await paneChip(page, 'Step').click();
     await expect(tools(page).locator('.dock-pane-hint')).toBeVisible();
+  });
+});
+
+/**
+ * Pitch guardrails, moved from the retired chromatic-grid.spec.ts: scale lock
+ * constrains new notes but never hides a note, the key's root and fifth are
+ * marked, pitches beyond the instrument stay visible and are marked, and a
+ * click places a note.
+ */
+test.describe('Piano roll dock: scale, key and range', () => {
+  function pianoTrack(locks: Array<[number, number]>) {
+    const steps = Array(128).fill(false);
+    const parameterLocks = Array(128).fill(null);
+    for (const [step, pitch] of locks) {
+      steps[step] = true;
+      parameterLocks[step] = { pitch };
+    }
+    return {
+      id: 'piano', name: 'Piano', sampleId: 'sampled:piano', steps, parameterLocks,
+      volume: 1, muted: false, soloed: false, transpose: 0, stepCount: 16,
+    };
+  }
+
+  async function openPianoSession(
+    page: Page,
+    request: Parameters<typeof createSessionWithRetry>[0],
+    locks: Array<[number, number]>,
+    scale?: { root: string; scaleId: string; locked: boolean },
+  ) {
+    await page.setViewportSize(DESKTOP);
+    const { id } = await createSessionWithRetry(request, {
+      tracks: [pianoTrack(locks)],
+      tempo: 120,
+      swing: 0,
+      ...(scale ? { scale } : {}),
+      version: 1,
+    });
+    await page.goto(`${API_BASE}/s/${id}`);
+    await expect(page.locator('.track-row-wrapper')).toHaveCount(1, { timeout: 10000 });
+    await waitForCollaborationReady(page);
+    await openRoll(page, 'Piano');
+  }
+
+  const key = (page: Page, midi: number) => dock(page).locator(`.piano-roll-editor .key[data-midi="${midi}"]`);
+  const note = (page: Page, start: number) => dock(page).locator(`.piano-roll-editor .note[data-start="${start}"]`);
+
+  /** Click the roll at a step and pitch, scrolling that pitch row into view first. */
+  async function clickRoll(page: Page, step: number, midi: number) {
+    const scroller = dock(page).locator('.piano-roll-editor .dock-scroll');
+    await scroller.evaluate((element, top) => { element.scrollTop = top; }, (84 - midi) * 18 - 60);
+    const grid = await dock(page).locator('.piano-roll-editor .dock-scroll > :first-child').boundingBox();
+    if (!grid) throw new Error('the roll grid must be measurable');
+    await page.mouse.click(grid.x + stepToX(step, DESKTOP_STEP_GEOMETRY) + 12, grid.y + (84 - midi) * 18 + 9);
+  }
+
+  test('shows notes at any pitch, key intervals or not (guardrail #1)', async ({ page, request }) => {
+    await openPianoSession(page, request, [[0, -8], [1, -9], [2, -10], [3, -11]]);
+    for (const [step, pitch] of [[0, -8], [1, -9], [2, -10], [3, -11]]) {
+      await expect(note(page, step)).toHaveAttribute('data-midi', String(60 + pitch));
+    }
+  });
+
+  test('scale lock marks out-of-scale rows, keeps old notes, snaps new ones', async ({ page, request }) => {
+    await openPianoSession(page, request, [[0, 0], [1, 1], [2, 3], [3, 7]], {
+      root: 'C', scaleId: 'major', locked: true,
+    });
+    await expect(page.locator('.scale-selector')).toHaveClass(/locked/);
+
+    // C# and D# are out of C major: their rows are marked, their notes stay.
+    await expect(key(page, 61)).toHaveClass(/\bscale-out\b/);
+    await expect(key(page, 63)).toHaveClass(/\bscale-out\b/);
+    await expect(key(page, 60)).not.toHaveClass(/\bscale-out\b/);
+    await expect(note(page, 1)).toHaveAttribute('data-midi', '61');
+    await expect(note(page, 2)).toHaveAttribute('data-midi', '63');
+
+    // Click-to-place: a click on the C# row lands on C, the nearest in-scale pitch.
+    await clickRoll(page, 6, 61);
+    await expect(note(page, 6)).toHaveAttribute('data-midi', '60');
+    await expect(row(page, 'Piano').locator('.step-cell').nth(6)).toHaveClass(/\bactive\b/);
+
+    // Unlocking clears the marks; locking again restores them.
+    await page.locator('.scale-lock-btn').click();
+    await expect(key(page, 61)).not.toHaveClass(/\bscale-out\b/);
+    await page.locator('.scale-lock-btn').click();
+    await expect(key(page, 61)).toHaveClass(/\bscale-out\b/);
+  });
+
+  test('marks the root and fifth of the session key', async ({ page, request }) => {
+    await openPianoSession(page, request, [[0, 0]], { root: 'D', scaleId: 'major', locked: false });
+    await expect(key(page, 62)).toHaveClass(/\broot\b/);
+    await expect(key(page, 69)).toHaveClass(/\bfifth\b/);
+    await expect(key(page, 60)).not.toHaveClass(/\broot\b/);
+  });
+
+  test('keeps a note beyond the instrument visible and marks its row', async ({ page, request }) => {
+    // The piano sample plays up to MIDI 78; MIDI 80 is beyond it.
+    await openPianoSession(page, request, [[0, 20], [1, 0]]);
+    await expect(note(page, 0)).toHaveAttribute('data-midi', '80');
+    await expect(key(page, 80)).toHaveClass(/\bout\b/);
+    await expect(key(page, 60)).not.toHaveClass(/\bout\b/);
+    // The row's cell carries the same warning.
+    await expect(row(page, 'Piano').locator('.step-cell').nth(0)).toHaveClass(/out-of-range/);
+  });
+
+  test('five clicks on a fresh session stay inside C minor pentatonic', async ({ page, request }) => {
+    await openPianoSession(page, request, []);
+    await expect(page.locator('.scale-selector')).toHaveClass(/locked/);
+    await expect(page.locator('.scale-root-select')).toHaveValue('C');
+    await expect(page.locator('.scale-type-select')).toHaveValue('minor-pentatonic');
+
+    const targets: Array<[number, number]> = [[0, 61], [1, 64], [2, 66], [3, 69], [4, 71]];
+    for (const [step, midi] of targets) await clickRoll(page, step, midi);
+    for (const [step] of targets) {
+      const midi = Number(await note(page, step).getAttribute('data-midi'));
+      expect([0, 3, 5, 7, 10]).toContain(((midi - 60) % 12 + 12) % 12);
+    }
+    await expect(row(page, 'Piano').locator('.step-cell.active')).toHaveCount(5);
   });
 });

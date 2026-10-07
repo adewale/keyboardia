@@ -361,23 +361,6 @@
   max-height: var(--dock-roll-max, none);
 }
 
-/*
- * The legacy Grid view has no scroller of its own, so the body caps it and
- * scrolls it (a sticky element taller than its scrollport would hide its own
- * header).
- */
-.dock-body[data-view="chromatic"] {
-  max-height: min(50vh, 440px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-surface-active) var(--color-surface);
-}
-
-.dock-body > .chromatic-grid {
-  margin-top: 0;
-}
-
 /* Published session: the dock opens and plays, but takes the read-only scrim. */
 .dock.read-only .dock-body {
   filter: saturate(0.85);

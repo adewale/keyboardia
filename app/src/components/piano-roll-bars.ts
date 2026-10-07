@@ -14,13 +14,12 @@
 import type { Track, ScaleState } from '../types';
 import { STEPS_PER_PAGE } from '../types';
 import {
-  isInScale,
   isRoot,
   isFifth,
   NOTE_NAMES,
   type NoteName,
-  type ScaleId,
 } from '../music/music-theory';
+import { canEnterPitchWithScaleLock } from '../music/scale-entry';
 import { isInRange } from '../audio/instrument-ranges';
 
 /** Highest pitch row (C6). */
@@ -131,8 +130,7 @@ export function barAt(bars: readonly NoteBar[], step: number, midi: number): Not
 }
 
 export function isPitchInScale(midi: number, scale: ScaleState | undefined): boolean {
-  if (!scale?.locked) return true;
-  return isInScale(midi - BASE_MIDI, scale.root as NoteName, scale.scaleId as ScaleId);
+  return canEnterPitchWithScaleLock(midi - BASE_MIDI, scale);
 }
 
 /** Nearest in-scale pitch, searching down then up one semitone at a time. */

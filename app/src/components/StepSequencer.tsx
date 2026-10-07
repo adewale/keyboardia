@@ -29,7 +29,6 @@ import {
   releaseDockedTrack,
   resolveGhostVisibility,
   setDockPane,
-  setDockViewMode,
   toggleDock,
   toggleDockDetent,
   toggleDockInstrumentPicker,
@@ -38,7 +37,6 @@ import {
   toggleGhost,
   type DockPane,
   type DockState,
-  type DockViewMode,
 } from './editor-dock-state';
 import { isDrumInstrument } from '../shared/instrument-classification';
 import { TrackSkeleton } from './TrackSkeleton';
@@ -562,10 +560,6 @@ export function StepSequencer() {
     setDock(toggleDockDetent);
   }, []);
 
-  const handleSetDockViewMode = useCallback((viewMode: DockViewMode) => {
-    setDock(prev => setDockViewMode(prev, viewMode));
-  }, []);
-
   const hasPitch = useCallback((trackId: string | null) => {
     const track = trackId ? getState().tracks.find(t => t.id === trackId) : undefined;
     return !!track && !isDrumInstrument(track.sampleId);
@@ -1082,7 +1076,6 @@ export function StepSequencer() {
               selectedStep={reconciledDock.selectedStep}
               instrumentPickerOpen={reconciledDock.instrumentPickerOpen}
               copySourceId={copySource}
-              viewMode={reconciledDock.viewMode}
               detent={reconciledDock.detent}
               ghostVisibility={ghostVisibility}
               loopRegion={state.loopRegion ?? null}
@@ -1095,7 +1088,6 @@ export function StepSequencer() {
               onSelectTrack={handleOpenDock}
               onSetPane={handleSetDockPane}
               onSelectStep={handleSelectDockStep}
-              onSetViewMode={handleSetDockViewMode}
               onToggleDetent={handleToggleDockDetent}
               onToggleGhost={handleToggleGhost}
               onClose={handleCloseDock}

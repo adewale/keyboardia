@@ -16,7 +16,6 @@ import {
   selectDockStep,
   setDockDetent,
   setDockPane,
-  setDockViewMode,
   toggleDock,
   toggleDockDetent,
   toggleDockInstrumentPicker,
@@ -28,7 +27,7 @@ import {
 describe('editor dock state', () => {
   it('starts closed with nothing docked', () => {
     expect(DOCK_CLOSED).toEqual({
-      open: false, trackId: null, viewMode: 'piano-roll', detent: 'compact', ghostVisibility: {},
+      open: false, trackId: null, detent: 'compact', ghostVisibility: {},
       pane: 'notes', selectedStep: null, instrumentPickerOpen: false,
     });
     expect(isTrackDocked(DOCK_CLOSED, 'lead')).toBe(false);
@@ -57,12 +56,13 @@ describe('editor dock state', () => {
     expect(isTrackDocked(closed, 'lead')).toBe(false);
   });
 
-  it('keeps the track and view mode across close so the dock can collapse with content', () => {
-    const open = setDockViewMode(openDock(DOCK_CLOSED, 'lead'), 'chromatic');
+  it('keeps the track and pane across close so the dock can collapse with content', () => {
+    const open = setDockPane(openDock(DOCK_CLOSED, 'lead'), 'track');
     const closed = closeDock(open);
-    expect(closed).toMatchObject({ open: false, trackId: 'lead', viewMode: 'chromatic' });
+    expect(closed).toMatchObject({ open: false, trackId: 'lead', pane: 'track' });
     expect(closeDock(closed)).toBe(closed);
-    expect(openDock(closed, 'lead')).toMatchObject({ open: true, viewMode: 'chromatic' });
+    // The next open starts on Notes.
+    expect(openDock(closed, 'lead')).toMatchObject({ open: true, pane: 'notes' });
   });
 
   it('a landscape name tap shows that track\'s Track pane, and closes it on a second tap', () => {

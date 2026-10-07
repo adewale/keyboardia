@@ -341,18 +341,6 @@ export class SequencerPage {
     await expect(editor).not.toBeVisible();
   }
 
-  // ===== Chromatic Grid =====
-
-  /**
-   * Toggle chromatic grid for a track
-   */
-  async toggleChromaticGrid(trackIndex: number): Promise<void> {
-    const track = this.getTrack(trackIndex);
-    const expandButton = track.getByRole('button', { name: /chromatic|expand|keyboard/i })
-      .or(track.locator('.chromatic-toggle, [data-testid="chromatic-toggle"]'));
-    await expandButton.click();
-  }
-
   // ===== Utilities =====
 
   /**
