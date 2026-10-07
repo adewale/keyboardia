@@ -335,9 +335,10 @@ export function StepSequencer() {
       const neighbour = index < 0 ? undefined : ids[index + 1] ?? ids[index - 1];
       if (neighbour) focusRowControl(neighbour, ['[data-dock-toggle]', '.track-name']);
     }
-    // Deleting the docked track closes the dock (a collaborator's delete is
-    // caught by reconcileDock during render).
+    // Deleting the docked track closes the dock, and deleting the copy source
+    // ends copy mode (a collaborator's delete is caught during render).
     setDock(prev => releaseDockedTrack(prev, trackId));
+    setCopySource(prev => (prev === trackId ? null : prev));
     // Clean up audio engine resources (GainNode) to prevent memory leak
     audioEngine.removeTrackGain(trackId);
     dispatch({ type: 'DELETE_TRACK', trackId });
@@ -764,6 +765,9 @@ export function StepSequencer() {
   const trackIds = useMemo(() => new Set(state.tracks.map(t => t.id)), [state.tracks]);
   const reconciledDock = reconcileDock(dock, trackIds);
   if (reconciledDock !== dock) setDock(reconciledDock);
+  // Copy mode ends, as Escape ends it, when its source track is gone: there is
+  // nothing left to paste, and a later track must not inherit the source.
+  if (copySource !== null && !trackIds.has(copySource)) setCopySource(null);
   const dockedTrack = reconciledDock.trackId
     ? state.tracks.find(t => t.id === reconciledDock.trackId) ?? null
     : null;

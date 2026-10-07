@@ -632,6 +632,41 @@ describe('StepSequencer editor dock panes', () => {
     expect(isOpen()).toBe(false);
   });
 
+  it('ends copy mode, as Escape does, when a collaborator deletes the copy source', () => {
+    const view = render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Bass'));
+    fireEvent.click(paneChip('Track'));
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Copy' }));
+    fireEvent.click(screen.getByText('name Lead'));
+    if (pane() !== 'track') fireEvent.click(paneChip('Track'));
+    expect(within(tools()).getByRole('button', { name: 'Paste' })).toBeTruthy();
+
+    mocks.state.tracks = [lead, kick];
+    view.rerender(<StepSequencer />);
+    expect(within(tools()).queryByRole('button', { name: 'Paste' })).toBeNull();
+    expect(within(tools()).getByRole('button', { name: 'Copy' })).toBeTruthy();
+
+    // A track that arrives later under the same id does not revive copy mode.
+    mocks.state.tracks = [lead, kick, bass];
+    view.rerender(<StepSequencer />);
+    expect(within(tools()).queryByRole('button', { name: 'Paste' })).toBeNull();
+  });
+
+  it('ends copy mode when the copy source is deleted from its own Track pane', () => {
+    render(<StepSequencer />);
+    fireEvent.click(screen.getByText('pitch Bass'));
+    fireEvent.click(paneChip('Track'));
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Copy' }));
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Delete' }));
+    expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'DELETE_TRACK', trackId: 'bass' });
+    // The reducer is mocked, so Bass stays in state: only the delete handler
+    // can have ended copy mode here.
+    fireEvent.click(screen.getByText('name Lead'));
+    if (pane() !== 'track') fireEvent.click(paneChip('Track'));
+    expect(within(tools()).queryByRole('button', { name: 'Paste' })).toBeNull();
+    expect(within(tools()).getByRole('button', { name: 'Copy' })).toBeTruthy();
+  });
+
   it('shows FM parameters for an FM track only', () => {
     const fm = makeTrack('fm', 'Bell', 'tone:fm-bell');
     mocks.state.tracks = [lead, fm];
