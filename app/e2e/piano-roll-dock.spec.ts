@@ -47,6 +47,10 @@ const row = (page: Page, name: string) => page.locator('.track-row-wrapper', {
 });
 const pitchToggle = (page: Page, name: string) => row(page, name).locator('.expand-toggle');
 const dock = (page: Page) => page.getByTestId('editor-dock');
+const paneChip = (page: Page, name: string) => dock(page)
+  .getByRole('group', { name: 'Dock pane' })
+  .getByRole('button', { name, exact: true });
+const tools = (page: Page) => dock(page).locator('.dock-tools');
 
 async function expectDocked(page: Page, name: string) {
   await expect(dock(page)).toHaveClass(/\bopen\b/);
@@ -232,13 +236,14 @@ test.describe('Piano roll dock', () => {
     await row(page, 'Bass').locator('.track-name').click();
     await expectDocked(page, 'Bass');
 
-    // Deleting another track leaves the dock alone; deleting the docked one closes it.
-    await row(page, 'Lead').getByRole('button', { name: 'Delete' }).click();
+    // The rows carry no actions: Delete is in the Track pane, and deleting
+    // the docked track there closes the dock.
+    await expect(page.locator('.track-row-wrapper').getByRole('button', { name: /^(Copy|Clear|Delete|Paste)$/ })).toHaveCount(0);
+    await paneChip(page, 'Track').click();
+    await tools(page).getByRole('button', { name: 'Delete' }).click();
     await expect(page.locator('.track-row-wrapper')).toHaveCount(2);
-    await expectDocked(page, 'Bass');
-    await row(page, 'Bass').getByRole('button', { name: 'Delete' }).click();
-    await expect(page.locator('.track-row-wrapper')).toHaveCount(1);
     await expectClosed(page);
+    await expect(row(page, 'Bass')).toHaveCount(0);
   });
 
   test('renders the piano roll editor and toggles its detent', async ({ page, request }) => {
@@ -461,11 +466,6 @@ test.describe('Piano roll dock', () => {
 });
 
 test.describe('Piano roll dock: Step and Track panes', () => {
-  const paneChip = (page: Page, name: string) => dock(page)
-    .getByRole('group', { name: 'Dock pane' })
-    .getByRole('button', { name, exact: true });
-  const tools = (page: Page) => dock(page).locator('.dock-tools');
-
   test('Shift+click on a bar opens the Step pane and highlights its column under every pane', async ({ page, request }) => {
     await openSession(page, request, threeTracks);
     await openRoll(page, 'Lead');

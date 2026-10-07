@@ -279,13 +279,14 @@ export class SequencerPage {
   }
 
   /**
-   * Delete track using semantic locator
+   * Delete a track from the editor dock's Track pane (the row has no actions).
    */
   async deleteTrack(trackIndex: number): Promise<void> {
     const track = this.getTrack(trackIndex);
-    const deleteButton = track.getByRole('button', { name: /delete|remove/i })
-      .or(track.locator('.delete-button, [data-testid="delete-track"]'));
-    await deleteButton.click();
+    await track.locator('.track-name').click();
+    const dock = this.page.getByTestId('editor-dock');
+    await dock.getByRole('group', { name: 'Dock pane' }).getByRole('button', { name: 'Track', exact: true }).click();
+    await dock.getByRole('group', { name: 'Track actions' }).getByRole('button', { name: 'Delete' }).click();
   }
 
   // ===== Velocity Lane =====

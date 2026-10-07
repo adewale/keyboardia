@@ -47,18 +47,12 @@ function renderRow(overrides: Partial<React.ComponentProps<typeof TrackRow>> = {
       currentStep={-1}
       swing={0}
       anySoloed={false}
-      hasSteps
-      canDelete
       isCopySource={false}
       isCopyTarget={false}
       orientationMode="desktop"
       onToggleStep={vi.fn()}
       onToggleMute={vi.fn()}
       onToggleSolo={vi.fn()}
-      onClear={vi.fn()}
-      onDelete={vi.fn()}
-      onStartCopy={vi.fn()}
-      onCopyTo={vi.fn()}
       onSetParameterLock={vi.fn()}
       {...overrides}
     />

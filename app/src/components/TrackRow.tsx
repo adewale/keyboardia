@@ -54,18 +54,13 @@ interface TrackRowProps {
   currentStep: number;
   swing: number;
   anySoloed: boolean;
-  hasSteps: boolean;
-  canDelete: boolean;
+  /** Copy mode tints: the row a copy started from, and the rows it can paste to. */
   isCopySource: boolean;
   isCopyTarget: boolean;
   readOnly?: boolean;
   onToggleStep: (step: number) => void;
   onToggleMute: () => void;
   onToggleSolo: () => void;
-  onClear: () => void;
-  onDelete: () => void;
-  onStartCopy: () => void;
-  onCopyTo: () => void;
   onSetParameterLock?: (step: number, lock: ParameterLock | null) => void;
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
   // Phase 31D: Editing conveniences
@@ -131,18 +126,12 @@ export const TrackRow = React.memo(function TrackRow({
   currentStep,
   swing,
   anySoloed,
-  hasSteps,
-  canDelete,
   isCopySource,
   isCopyTarget,
   readOnly = false,
   onToggleStep,
   onToggleMute,
   onToggleSolo,
-  onClear,
-  onDelete,
-  onStartCopy,
-  onCopyTo,
   onSetParameterLock,
   scale,
   onSetName,
@@ -572,45 +561,6 @@ export const TrackRow = React.memo(function TrackRow({
               );
             });
           })()}
-        </div>
-
-        {/* RIGHT STICKY: Action buttons that stay fixed during horizontal scroll */}
-        <div className="track-right">
-          <div className="track-actions">
-            {isCopyTarget ? (
-              <button className="action-btn paste" onClick={onCopyTo} title="Paste pattern here">
-                Paste
-              </button>
-            ) : (
-              <>
-                <button
-                  className="action-btn"
-                  onClick={onStartCopy}
-                  disabled={!hasSteps}
-                  title="Copy pattern"
-                >
-                  Copy
-                </button>
-                <button
-                  className="action-btn"
-                  onClick={onClear}
-                  disabled={!hasSteps}
-                  title="Clear all steps"
-                >
-                  Clear
-                </button>
-                {canDelete && (
-                  <button
-                    className="action-btn delete"
-                    onClick={onDelete}
-                    title="Delete track"
-                  >
-                    Delete
-                  </button>
-                )}
-              </>
-            )}
-          </div>
         </div>
 
       </div>

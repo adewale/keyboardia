@@ -71,7 +71,6 @@ interface StubRowProps {
   isDocked?: boolean;
   onToggleDock?: () => void;
   onOpenDock?: () => void;
-  onDelete: () => void;
   dockSelectedStep?: number | null;
   onSelectDockStep?: (step: number) => void;
   isInstrumentPickerOpen?: boolean;
@@ -81,11 +80,11 @@ interface StubRowProps {
 }
 
 // A row reduced to the dock contract: the wrapper class, the pitch toggle
-// (melodic rows only), the name, the badge, step 0's cell and its Shift+click,
-// and delete.
+// (melodic rows only), the name, the badge, step 0's cell and its Shift+click.
+// The row has no actions: Copy, Clear and Delete live in the Track pane.
 vi.mock('./TrackRow', () => ({
   TrackRow: ({
-    track, isDocked, onToggleDock, onOpenDock, onDelete, dockSelectedStep, onSelectDockStep,
+    track, isDocked, onToggleDock, onOpenDock, dockSelectedStep, onSelectDockStep,
     isInstrumentPickerOpen, onToggleInstrumentPicker, isTrackPaneDocked, onToggleTrackPane,
   }: StubRowProps) => (
     <div
@@ -113,7 +112,6 @@ vi.mock('./TrackRow', () => ({
       </button>
       <button data-step-index={0}>cell {track.name} 0</button>
       <button onClick={() => onSelectDockStep?.(0)}>shift-click {track.name} 0</button>
-      <button onClick={onDelete}>delete {track.name}</button>
     </div>
   ),
 }));
@@ -320,13 +318,12 @@ describe('StepSequencer editor dock', () => {
     mocks.state.currentStep = -1;
   });
 
-  it('closes when the docked track is deleted here', () => {
+  it('closes when the docked track is deleted from its Track pane', () => {
     const view = render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Bass'));
-    fireEvent.click(screen.getByText('delete Lead'));
-    expect(isOpen()).toBe(true);
-
-    fireEvent.click(screen.getByText('delete Bass'));
+    fireEvent.click(paneChip('Track'));
+    fireEvent.click(within(tools()).getByRole('button', { name: 'Delete' }));
+    expect(mocks.dispatch).toHaveBeenCalledWith({ type: 'DELETE_TRACK', trackId: 'bass' });
     expect(isOpen()).toBe(false);
     // The reducer is mocked; mirror the delete it would have applied.
     mocks.state.tracks = [lead, kick];

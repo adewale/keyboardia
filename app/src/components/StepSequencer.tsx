@@ -1004,7 +1004,6 @@ export function StepSequencer() {
               </>
             )}
             {state.tracks.map((track, trackIndex) => {
-              const hasSteps = track.steps.some(s => s);
               const isCopySource = copySource === track.id;
               const isCopyTarget = copySource && !isCopySource;
               // Phase 31F: Selection state for this track
@@ -1024,8 +1023,6 @@ export function StepSequencer() {
                   currentStep={state.isPlaying ? state.currentStep : -1}
                   swing={state.swing}
                   anySoloed={anySoloed}
-                  hasSteps={hasSteps}
-                  canDelete={true}
                   isCopySource={isCopySource}
                   isCopyTarget={!!isCopyTarget}
                   readOnly={isPublished}
@@ -1033,10 +1030,6 @@ export function StepSequencer() {
                   onToggleStep={(step) => handleToggleStep(track.id, step)}
                   onToggleMute={() => handleToggleMute(track.id)}
                   onToggleSolo={() => handleToggleSolo(track.id)}
-                  onClear={() => handleClearTrack(track.id)}
-                  onDelete={() => handleDeleteTrack(track.id)}
-                  onStartCopy={() => handleStartCopy(track.id)}
-                  onCopyTo={() => handleCopyTo(track.id)}
                   onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
                   scale={state.scale}
                   onSetName={(name) => handleSetName(track.id, name)}
