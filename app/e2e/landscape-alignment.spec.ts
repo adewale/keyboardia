@@ -1,8 +1,11 @@
 /**
  * Landscape Mobile Alignment E2E Tests
  *
- * Verifies that M/S buttons, track name, and step grid are
- * vertically aligned in mobile landscape mode.
+ * The landscape row carries the desktop's two-line control block
+ * (specs/PIANO-ROLL-DOCK.md, Mobile): the same 134px column, line one
+ * identical to desktop, and a 28px controls line holding M, S and the pitch
+ * toggle, so the row is 48px. These tests measure that geometry, its
+ * alignment with the step cells, and the name's shared left edge.
  *
  * Run with: npx playwright test e2e/landscape-alignment.spec.ts
  */
@@ -40,6 +43,29 @@ async function addTrack(page: Page, instrumentName: RegExp = /808 Kick/) {
   await page.waitForTimeout(200); // Small delay for DOM to settle
 }
 
+const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
+const COLUMN_WIDTH = 134;
+const TOLERANCE = 2;
+
+type Box = { x: number; y: number; width: number; height: number };
+
+const centreY = (box: Box) => box.y + box.height / 2;
+
+async function boxOf(locator: ReturnType<Page['locator']>): Promise<Box> {
+  await expect(locator).toBeVisible();
+  const box = await locator.boundingBox();
+  if (!box) throw new Error('Element has no layout box');
+  return box;
+}
+
+/** The name's left edge measured from the control column's left edge. */
+async function nameOffset(page: Page): Promise<{ column: Box; offset: number }> {
+  const row = page.locator('.track-row').first();
+  const column = await boxOf(row.locator('.track-left'));
+  const name = await boxOf(row.locator('.track-name'));
+  return { column, offset: name.x - column.x };
+}
+
 test.describe('Landscape Mobile Alignment', () => {
   test.beforeEach(async ({ page }) => {
     await page.setViewportSize(LANDSCAPE_VIEWPORT);
@@ -47,181 +73,80 @@ test.describe('Landscape Mobile Alignment', () => {
     await waitForAppReady(page);
   });
 
-  test('M/S buttons should be vertically aligned with step grid cells', async ({ page }) => {
-    // Add a track first since sessions start empty
+  test('the landscape control column is the 134px two-line block', async ({ page }) => {
     await addTrack(page);
 
-    // Wait for track row to be visible
-    const trackRow = page.locator('.track-row').first();
-    await expect(trackRow).toBeVisible();
+    await expect(page.locator('.step-sequencer')).toHaveAttribute('data-orientation', 'landscape');
+    const row = page.locator('.track-row').first();
+    const column = await boxOf(row.locator('.track-left'));
+    const name = await boxOf(row.locator('.track-name'));
+    const mute = await boxOf(row.locator('.mute-button'));
+    const solo = await boxOf(row.locator('.solo-button'));
+    const cell = await boxOf(row.locator('.step-cell').first());
 
-    // Take a screenshot before measuring
-    await page.screenshot({
-      path: 'test-results/landscape-alignment-before.png',
-      fullPage: false
-    });
+    expect(column.width).toBeCloseTo(COLUMN_WIDTH, 0);
+    expect(column.height).toBeCloseTo(48, 0);
+    // Line one above line two.
+    expect(name.y + name.height).toBeLessThanOrEqual(mute.y + 0.5);
+    // The block sits centred on the step cells, so rows still tessellate.
+    expect(Math.abs(centreY(column) - centreY(cell))).toBeLessThanOrEqual(TOLERANCE);
+    // M and S share the controls line.
+    expect(Math.abs(centreY(mute) - centreY(solo))).toBeLessThanOrEqual(TOLERANCE);
 
-    // Get bounding boxes for alignment comparison
-    const muteBtn = trackRow.locator('.mute-button');
-    const soloBtn = trackRow.locator('.solo-button');
-    const trackName = trackRow.locator('.track-name');
-    const firstStepCell = trackRow.locator('.step-cell').first();
-
-    // Ensure all elements are visible
-    await expect(muteBtn).toBeVisible();
-    await expect(soloBtn).toBeVisible();
-    await expect(trackName).toBeVisible();
-    await expect(firstStepCell).toBeVisible();
-
-    // Get bounding boxes
-    const muteBtnBox = await muteBtn.boundingBox();
-    const soloBtnBox = await soloBtn.boundingBox();
-    const trackNameBox = await trackName.boundingBox();
-    const stepCellBox = await firstStepCell.boundingBox();
-
-    // All boxes should exist
-    expect(muteBtnBox).not.toBeNull();
-    expect(soloBtnBox).not.toBeNull();
-    expect(trackNameBox).not.toBeNull();
-    expect(stepCellBox).not.toBeNull();
-
-    // Log full bounding box details for debugging
-    console.log('Bounding boxes:');
-    console.log(`  Mute button: y=${muteBtnBox!.y.toFixed(1)}, height=${muteBtnBox!.height.toFixed(1)}`);
-    console.log(`  Solo button: y=${soloBtnBox!.y.toFixed(1)}, height=${soloBtnBox!.height.toFixed(1)}`);
-    console.log(`  Track name:  y=${trackNameBox!.y.toFixed(1)}, height=${trackNameBox!.height.toFixed(1)}`);
-    console.log(`  Step cell:   y=${stepCellBox!.y.toFixed(1)}, height=${stepCellBox!.height.toFixed(1)}`);
-
-    // Get computed styles to help debug
-    const styles = await page.evaluate(() => {
-      const trackRow = document.querySelector('.track-row') as HTMLElement;
-      const trackLeft = document.querySelector('.track-left') as HTMLElement;
-      const muteBtn = document.querySelector('.mute-button') as HTMLElement;
-      const soloBtn = document.querySelector('.solo-button') as HTMLElement;
-      const trackName = document.querySelector('.track-name') as HTMLElement;
-      const stepsContainer = document.querySelector('.steps') as HTMLElement;
-
-      const getRelevantStyles = (el: HTMLElement | null, name: string) => {
-        if (!el) return `${name}: not found`;
-        const style = window.getComputedStyle(el);
-        return `${name}: display=${style.display}, alignItems=${style.alignItems}, height=${style.height}, gridColumn=${style.gridColumn}, gridRow=${style.gridRow}`;
-      };
-
-      // List all children of track-left
-      const trackLeftChildren = trackLeft ? Array.from(trackLeft.children).map(c => {
-        const style = window.getComputedStyle(c);
-        return `  ${c.className}: display=${style.display}, gridColumn=${style.gridColumn}`;
-      }).join('\n') : 'trackLeft not found';
-
-      return [
-        getRelevantStyles(trackRow, 'trackRow'),
-        `trackLeft: gridTemplateColumns=${window.getComputedStyle(trackLeft).gridTemplateColumns}`,
-        getRelevantStyles(trackLeft, 'trackLeft'),
-        `trackLeft children:\n${trackLeftChildren}`,
-        getRelevantStyles(muteBtn, 'muteBtn'),
-        getRelevantStyles(soloBtn, 'soloBtn'),
-        getRelevantStyles(trackName, 'trackName'),
-        getRelevantStyles(stepsContainer, 'steps'),
-      ].join('\n');
-    });
-    console.log('Computed styles:\n' + styles);
-
-    // Calculate vertical centers
-    const muteBtnCenter = muteBtnBox!.y + muteBtnBox!.height / 2;
-    const soloBtnCenter = soloBtnBox!.y + soloBtnBox!.height / 2;
-    const trackNameCenter = trackNameBox!.y + trackNameBox!.height / 2;
-    const stepCellCenter = stepCellBox!.y + stepCellBox!.height / 2;
-
-    // Log values for debugging
-    console.log('Vertical centers:');
-    console.log(`  Mute button: ${muteBtnCenter.toFixed(1)}px`);
-    console.log(`  Solo button: ${soloBtnCenter.toFixed(1)}px`);
-    console.log(`  Track name:  ${trackNameCenter.toFixed(1)}px`);
-    console.log(`  Step cell:   ${stepCellCenter.toFixed(1)}px`);
-
-    // All elements should be aligned within 2px tolerance
-    // (accounting for sub-pixel rendering differences)
-    const TOLERANCE = 2;
-
-    expect(Math.abs(muteBtnCenter - soloBtnCenter)).toBeLessThanOrEqual(TOLERANCE);
-    expect(Math.abs(muteBtnCenter - trackNameCenter)).toBeLessThanOrEqual(TOLERANCE);
-    expect(Math.abs(muteBtnCenter - stepCellCenter)).toBeLessThanOrEqual(TOLERANCE);
-
-    // Take a final screenshot with annotations
-    await page.screenshot({
-      path: 'test-results/landscape-alignment-verified.png',
-      fullPage: false
-    });
+    // Badge and lane toggle are hidden in landscape.
+    await expect(row.locator('.track-instrument-badge')).toBeHidden();
+    await expect(row.locator('.velocity-toggle')).toBeHidden();
   });
 
   test('all track rows should have consistent vertical alignment', async ({ page }) => {
-    // Add multiple tracks using different instruments
     await addTrack(page, /808 Kick/);
     await addTrack(page, /808 Snare/);
     await addTrack(page, /808 Clap/);
 
-    // Wait for all track rows
     const trackRows = page.locator('.track-row');
     await expect(trackRows).toHaveCount(3, { timeout: 5000 });
 
-    // Take screenshot of multiple tracks
-    await page.screenshot({
-      path: 'test-results/landscape-alignment-multiple-tracks.png',
-      fullPage: false
-    });
-
-    // Verify alignment for each track row
+    const nameEdges: number[] = [];
     for (let i = 0; i < 3; i++) {
       const trackRow = trackRows.nth(i);
-      const muteBtn = trackRow.locator('.mute-button');
-      const stepCell = trackRow.locator('.step-cell').first();
-
-      const muteBtnBox = await muteBtn.boundingBox();
-      const stepCellBox = await stepCell.boundingBox();
-
-      if (muteBtnBox && stepCellBox) {
-        const muteBtnCenter = muteBtnBox.y + muteBtnBox.height / 2;
-        const stepCellCenter = stepCellBox.y + stepCellBox.height / 2;
-
-        console.log(`Track ${i + 1}: Mute=${muteBtnCenter.toFixed(1)}px, Step=${stepCellCenter.toFixed(1)}px`);
-
-        // Verify alignment within tolerance
-        expect(Math.abs(muteBtnCenter - stepCellCenter)).toBeLessThanOrEqual(2);
-      }
+      const column = await boxOf(trackRow.locator('.track-left'));
+      const cell = await boxOf(trackRow.locator('.step-cell').first());
+      const name = await boxOf(trackRow.locator('.track-name'));
+      expect(Math.abs(centreY(column) - centreY(cell))).toBeLessThanOrEqual(TOLERANCE);
+      nameEdges.push(name.x);
     }
+    expect(Math.max(...nameEdges) - Math.min(...nameEdges)).toBeLessThanOrEqual(0.5);
   });
 
-  test('M/S buttons and step cells should have same height in landscape', async ({ page }) => {
+  test('M/S buttons are 28px-tall touch targets on the controls line', async ({ page }) => {
     await addTrack(page);
 
     const trackRow = page.locator('.track-row').first();
-    const muteBtn = trackRow.locator('.mute-button');
-    const soloBtn = trackRow.locator('.solo-button');
-    const stepCell = trackRow.locator('.step-cell').first();
+    for (const selector of ['.mute-button', '.solo-button']) {
+      const box = await boxOf(trackRow.locator(selector));
+      expect(box.height).toBeCloseTo(28, 0);
+      expect(box.width).toBeCloseTo(32, 0);
+    }
+  });
+});
 
-    const muteBtnBox = await muteBtn.boundingBox();
-    const soloBtnBox = await soloBtn.boundingBox();
-    const stepCellBox = await stepCell.boundingBox();
+test.describe('Desktop and landscape share the control block', () => {
+  test('the name sits on the same left edge of a 134px column on both', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/');
+    await waitForAppReady(page);
+    await addTrack(page);
 
-    expect(muteBtnBox).not.toBeNull();
-    expect(soloBtnBox).not.toBeNull();
-    expect(stepCellBox).not.toBeNull();
+    await expect(page.locator('.step-sequencer')).toHaveAttribute('data-orientation', 'desktop');
+    const desktop = await nameOffset(page);
 
-    console.log('Element heights:');
-    console.log(`  Mute button: ${muteBtnBox!.height}px`);
-    console.log(`  Solo button: ${soloBtnBox!.height}px`);
-    console.log(`  Step cell:   ${stepCellBox!.height}px`);
+    await page.setViewportSize(IPHONE_14_LANDSCAPE);
+    await expect(page.locator('.step-sequencer')).toHaveAttribute('data-orientation', 'landscape');
+    const landscape = await nameOffset(page);
 
-    // All should be 36px in landscape mobile (increased from 32px for better touch targets)
-    const EXPECTED_HEIGHT = 36;
-    const HEIGHT_TOLERANCE = 2; // Allow for border differences
-
-    expect(muteBtnBox!.height).toBeGreaterThanOrEqual(EXPECTED_HEIGHT - HEIGHT_TOLERANCE);
-    expect(muteBtnBox!.height).toBeLessThanOrEqual(EXPECTED_HEIGHT + HEIGHT_TOLERANCE);
-    expect(soloBtnBox!.height).toBeGreaterThanOrEqual(EXPECTED_HEIGHT - HEIGHT_TOLERANCE);
-    expect(soloBtnBox!.height).toBeLessThanOrEqual(EXPECTED_HEIGHT + HEIGHT_TOLERANCE);
-    expect(stepCellBox!.height).toBeGreaterThanOrEqual(EXPECTED_HEIGHT - HEIGHT_TOLERANCE);
-    expect(stepCellBox!.height).toBeLessThanOrEqual(EXPECTED_HEIGHT + HEIGHT_TOLERANCE);
+    expect(desktop.column.width).toBeCloseTo(COLUMN_WIDTH, 0);
+    expect(landscape.column.width).toBeCloseTo(COLUMN_WIDTH, 0);
+    expect(Math.abs(desktop.offset - landscape.offset)).toBeLessThanOrEqual(0.5);
   });
 });
 
@@ -236,40 +161,21 @@ test.describe('Modern Device Landscape Alignment', () => {
   ];
 
   for (const device of modernDevices) {
-    test(`${device.name}: M/S buttons should be vertically aligned with step grid`, async ({ page }) => {
+    test(`${device.name}: the control block is 134px and centred on the step grid`, async ({ page }) => {
       await page.setViewportSize(device.viewport);
       await page.goto('/');
       await waitForAppReady(page);
       await addTrack(page);
 
       const trackRow = page.locator('.track-row').first();
-      await expect(trackRow).toBeVisible();
+      const column = await boxOf(trackRow.locator('.track-left'));
+      const mute = await boxOf(trackRow.locator('.mute-button'));
+      const solo = await boxOf(trackRow.locator('.solo-button'));
+      const cell = await boxOf(trackRow.locator('.step-cell').first());
 
-      const muteBtn = trackRow.locator('.mute-button');
-      const soloBtn = trackRow.locator('.solo-button');
-      const firstStepCell = trackRow.locator('.step-cell').first();
-
-      await expect(muteBtn).toBeVisible();
-      await expect(soloBtn).toBeVisible();
-      await expect(firstStepCell).toBeVisible();
-
-      const muteBtnBox = await muteBtn.boundingBox();
-      const soloBtnBox = await soloBtn.boundingBox();
-      const stepCellBox = await firstStepCell.boundingBox();
-
-      expect(muteBtnBox).not.toBeNull();
-      expect(soloBtnBox).not.toBeNull();
-      expect(stepCellBox).not.toBeNull();
-
-      const muteBtnCenter = muteBtnBox!.y + muteBtnBox!.height / 2;
-      const soloBtnCenter = soloBtnBox!.y + soloBtnBox!.height / 2;
-      const stepCellCenter = stepCellBox!.y + stepCellBox!.height / 2;
-
-      console.log(`${device.name} vertical centers: Mute=${muteBtnCenter.toFixed(1)}, Solo=${soloBtnCenter.toFixed(1)}, Step=${stepCellCenter.toFixed(1)}`);
-
-      const TOLERANCE = 2;
-      expect(Math.abs(muteBtnCenter - soloBtnCenter)).toBeLessThanOrEqual(TOLERANCE);
-      expect(Math.abs(muteBtnCenter - stepCellCenter)).toBeLessThanOrEqual(TOLERANCE);
+      expect(column.width).toBeCloseTo(COLUMN_WIDTH, 0);
+      expect(Math.abs(centreY(mute) - centreY(solo))).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(centreY(column) - centreY(cell))).toBeLessThanOrEqual(TOLERANCE);
     });
   }
 });

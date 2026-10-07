@@ -1,16 +1,16 @@
 {
   "schemaVersion": 3,
   "lanes": {
-    "mock-required": { "expected": 88, "skipped": 0 },
-    "offline-functional": { "expected": 79, "skipped": 72 },
-    "offline-audio": { "expected": 3, "skipped": 0 },
-    "worker": { "expected": 76, "skipped": 0 },
-    "worker-smoke": { "expected": 15, "skipped": 0 },
-    "real-chromium": { "expected": 218, "skipped": 30 },
-    "real-webkit": { "expected": 172, "skipped": 59 },
-    "visual-linux": { "expected": 11, "skipped": 0 },
-    "visual-macos": { "expected": 3, "skipped": 0 },
-    "pcm": { "expected": 6, "skipped": 0 },
-    "mobile-safari": { "expected": 7, "skipped": 0 }
+    "mock-required": {"expected": 88, "skipped": 0},
+    "offline-functional": {"expected": 80, "skipped": 73},
+    "offline-audio": {"expected": 3, "skipped": 0},
+    "worker": {"expected": 63, "skipped": 14},
+    "worker-smoke": {"expected": 16, "skipped": 0},
+    "real-chromium": {"expected": 205, "skipped": 45},
+    "real-webkit": {"expected": 158, "skipped": 75},
+    "visual-linux": {"expected": 11, "skipped": 0},
+    "visual-macos": {"expected": 3, "skipped": 0},
+    "pcm": {"expected": 6, "skipped": 0},
+    "mobile-safari": {"expected": 7, "skipped": 0}
   }
 }

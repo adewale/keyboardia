@@ -76,12 +76,13 @@ keyboard.spec.ts › Keyboard Shortcuts › Help panel closes with backdrop clic
 keyboard.spec.ts › Keyboard Shortcuts › Help panel has correct accessibility attributes
 keyboard.spec.ts › Keyboard Shortcuts › Space activates the focused modal control instead of the global transport
 keyboard.spec.ts › Keyboard Shortcuts › Space starts and stops playback
-landscape-alignment.spec.ts › Landscape Mobile Alignment › M/S buttons and step cells should have same height in landscape
-landscape-alignment.spec.ts › Landscape Mobile Alignment › M/S buttons should be vertically aligned with step grid cells
+landscape-alignment.spec.ts › Desktop and landscape share the control block › the name sits on the same left edge of a 134px column on both
+landscape-alignment.spec.ts › Landscape Mobile Alignment › M/S buttons are 28px-tall touch targets on the controls line
 landscape-alignment.spec.ts › Landscape Mobile Alignment › all track rows should have consistent vertical alignment
-landscape-alignment.spec.ts › Modern Device Landscape Alignment › Samsung Galaxy S24: M/S buttons should be vertically aligned with step grid
-landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 14: M/S buttons should be vertically aligned with step grid
-landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 15 Pro Max: M/S buttons should be vertically aligned with step grid
+landscape-alignment.spec.ts › Landscape Mobile Alignment › the landscape control column is the 134px two-line block
+landscape-alignment.spec.ts › Modern Device Landscape Alignment › Samsung Galaxy S24: the control block is 134px and centred on the step grid
+landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 14: the control block is 134px and centred on the step grid
+landscape-alignment.spec.ts › Modern Device Landscape Alignment › iPhone 15 Pro Max: the control block is 134px and centred on the step grid
 mcp-sampled-instrument-lifecycle.spec.ts › MCP-created sampled tracks become audible when added during uninterrupted playback
 midi-export-download.spec.ts › exports a valid MIDI download through the real browser Worker
 mixer-layout.spec.ts › Mixer Panel Layout › VU meter stays within mixer channel bounds
@@ -236,6 +237,7 @@ track-reorder.spec.ts › Track reorder browser contract › exposes one accessi
 track-reorder.spec.ts › Track reorder browser contract › lands on the exact target once without losing or duplicating tracks
 track-reorder.spec.ts › Track reorder browser contract › marks only the active track as dragging and clears it on release
 track-reorder.spec.ts › Track reorder browser contract › persists the exact order after reload
+track-reorder.spec.ts › Track reorder browser contract › reorders while the transport is playing
 velocity-lane.spec.ts › Velocity Lane › should collapse velocity lane when toggle is clicked again
 velocity-lane.spec.ts › Velocity Lane › should display velocity toggle button on tracks
 velocity-lane.spec.ts › Velocity Lane › should expand velocity lane when toggle is clicked

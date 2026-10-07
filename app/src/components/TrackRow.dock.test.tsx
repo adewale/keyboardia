@@ -84,8 +84,9 @@ describe('TrackRow and the editor dock', () => {
     expect(toggle.getAttribute('aria-controls')).toBe('editor-dock');
     expect(toggle.getAttribute('aria-expanded')).toBe('false');
     expect(toggle.classList.contains('expanded')).toBe(false);
-    // Lesson 61: the toggle stays a placed child of .track-left.
-    expect(toggle.parentElement?.classList.contains('track-left')).toBe(true);
+    // Lesson 61: the toggle sits on the placed controls line of .track-left.
+    expect(toggle.parentElement?.classList.contains('track-disclosure-group')).toBe(true);
+    expect(toggle.closest('.track-controls')?.parentElement?.classList.contains('track-left')).toBe(true);
 
     fireEvent.click(toggle);
     expect(onToggleDock).toHaveBeenCalledOnce();

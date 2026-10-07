@@ -65,7 +65,11 @@ async function createTestSession(request: APIRequestContext) {
 }
 
 /**
- * Helper to open pattern tools panel for a track
+ * Helper to open pattern tools panel for a track.
+ *
+ * The two-line control block (specs/PIANO-ROLL-DOCK.md phase 3) removed the
+ * desktop pattern tools toggle; the dock's Track pane brings it back in
+ * phase 7. Every test that needs this helper is test.fixme until then.
  */
 async function openPatternTools(page: Page, trackIndex = 0) {
   const trackRow = page.locator('.track-row').nth(trackIndex);
@@ -187,7 +191,7 @@ test.describe('Core mutations (delegated to applyMutation)', () => {
 // ============================================================================
 
 test.describe('Pattern operations (single client)', () => {
-  test('rotate right shifts pattern', async ({ page, request }) => {
+  test.fixme('rotate right shifts pattern', async ({ page, request }) => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
@@ -209,7 +213,7 @@ test.describe('Pattern operations (single client)', () => {
     expect(afterRotate).toEqual([1, 5, 9, 13]);
   });
 
-  test('rotate left shifts pattern', async ({ page, request }) => {
+  test.fixme('rotate left shifts pattern', async ({ page, request }) => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
@@ -227,7 +231,7 @@ test.describe('Pattern operations (single client)', () => {
     expect(afterRotate).toEqual([3, 7, 11, 15]);
   });
 
-  test('invert pattern toggles all steps', async ({ page, request }) => {
+  test.fixme('invert pattern toggles all steps', async ({ page, request }) => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
@@ -254,7 +258,7 @@ test.describe('Pattern operations (single client)', () => {
     expect(afterInvert).not.toContain(12);
   });
 
-  test('reverse pattern reverses step order', async ({ page, request }) => {
+  test.fixme('reverse pattern reverses step order', async ({ page, request }) => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
@@ -272,7 +276,7 @@ test.describe('Pattern operations (single client)', () => {
     expect(afterReverse.sort((a, b) => a - b)).toEqual([3, 7, 11, 15]);
   });
 
-  test('pattern operation persists after refresh', async ({ page, request }) => {
+  test.fixme('pattern operation persists after refresh', async ({ page, request }) => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
@@ -303,7 +307,7 @@ test.describe('Pattern operations (single client)', () => {
     expect(afterRefresh).toEqual([1, 5, 9, 13]);
   });
 
-  test('Euclidean fill distributes steps evenly', async ({ page, request }) => {
+  test.fixme('Euclidean fill distributes steps evenly', async ({ page, request }) => {
     // Start with empty track
     const { id } = await createSessionWithRetry(request, {
       tracks: [
@@ -368,7 +372,7 @@ test.describe('Pattern operations sync in multiplayer', () => {
     await context2?.close();
   });
 
-  test('rotate pattern syncs to other client', async ({ request }) => {
+  test.fixme('rotate pattern syncs to other client', async ({ request }) => {
     const { id } = await createTestSession(request);
 
     await Promise.all([
@@ -395,7 +399,7 @@ test.describe('Pattern operations sync in multiplayer', () => {
     ]);
   });
 
-  test('invert pattern syncs to other client', async ({ request }) => {
+  test.fixme('invert pattern syncs to other client', async ({ request }) => {
     const { id } = await createTestSession(request);
 
     await Promise.all([
@@ -416,7 +420,7 @@ test.describe('Pattern operations sync in multiplayer', () => {
     ]);
   });
 
-  test('reverse pattern syncs to other client', async ({ request }) => {
+  test.fixme('reverse pattern syncs to other client', async ({ request }) => {
     const { id } = await createTestSession(request);
 
     await Promise.all([
@@ -436,7 +440,7 @@ test.describe('Pattern operations sync in multiplayer', () => {
     ]);
   });
 
-  test('multiple pattern operations sync correctly', async ({ request }) => {
+  test.fixme('multiple pattern operations sync correctly', async ({ request }) => {
     const { id } = await createTestSession(request);
 
     await Promise.all([
@@ -465,7 +469,7 @@ test.describe('Pattern operations sync in multiplayer', () => {
 // ============================================================================
 
 test.describe('Selection invalidation after pattern operations', () => {
-  test('selection clears after rotate', async ({ page, request }) => {
+  test.fixme('selection clears after rotate', async ({ page, request }) => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
@@ -623,7 +627,7 @@ test.describe('Edge cases', () => {
     await expectActiveStepIndices(page, expected);
   });
 
-  test('pattern operations on empty track', async ({ page, request }) => {
+  test.fixme('pattern operations on empty track', async ({ page, request }) => {
     const { id } = await createSessionWithRetry(request, {
       tracks: [
         {
@@ -659,7 +663,7 @@ test.describe('Edge cases', () => {
     expect(activeSteps.length).toBe(16); // All steps should be active
   });
 
-  test('operations work after page navigation', async ({ page, request }) => {
+  test.fixme('operations work after page navigation', async ({ page, request }) => {
     const { id } = await createTestSession(request);
 
     // Navigate away
@@ -694,7 +698,7 @@ test.describe('Edge cases', () => {
 // ============================================================================
 
 test.describe('Error monitoring', () => {
-  test('no console errors during normal operations', async ({ page, request }) => {
+  test.fixme('no console errors during normal operations', async ({ page, request }) => {
     const consoleErrors: string[] = [];
 
     page.on('console', (msg) => {

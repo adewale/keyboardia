@@ -100,18 +100,24 @@ describe('TrackRow change instrument', () => {
     expect(document.querySelectorAll('.instrument-btn')).toHaveLength(0);
   });
 
-  it('places the desktop toggle in an explicit grid column', () => {
+  it('puts the desktop toggle in the badge slot of the placed controls line', () => {
     // .track-left is a fully-allocated grid whose every child is explicitly
-    // placed. A child without a grid-column is auto-placed into an implicit
-    // SECOND row, which grew every track row from 48px to 84px and moved the
-    // drag-reorder drop targets — 11 reorder tests failed while this component
-    // looked fine in isolation. jsdom computes no layout, so assert the
-    // contract that layout depends on: the class the stylesheet places.
+    // placed. A child without a placement is auto-placed into an implicit
+    // extra row, which once grew every track row from 48px to 84px and moved
+    // the drag-reorder drop targets — 11 reorder tests failed while this
+    // component looked fine in isolation. jsdom computes no layout, so assert
+    // the contract that layout depends on: the toggle sits in the badge slot
+    // of line two, and line two is a direct, placed child of .track-left.
     renderRow({ onSetInstrument: vi.fn() });
 
     const toggle = screen.getByTestId('change-instrument-track-1');
     expect(toggle.classList.contains('instrument-toggle')).toBe(true);
-    expect(toggle.parentElement?.classList.contains('track-left')).toBe(true);
+    expect(toggle.classList.contains('track-instrument-badge')).toBe(true);
+    const group = toggle.parentElement!;
+    expect(group.classList.contains('track-disclosure-group')).toBe(true);
+    expect(group.firstElementChild).toBe(toggle);
+    expect(group.parentElement?.classList.contains('track-controls')).toBe(true);
+    expect(group.parentElement?.parentElement?.classList.contains('track-left')).toBe(true);
   });
 
   it('opens the picker from the desktop toggle and marks the current instrument', () => {

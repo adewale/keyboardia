@@ -190,7 +190,10 @@ test.describe('Scrollbar behavior', () => {
     expect(firstTrackDelta).toBeGreaterThan(0);
   });
 
-  test('pattern tools panel should stay visible when scrolling horizontally', async ({ page, request }, testInfo) => {
+  // The two-line control block (specs/PIANO-ROLL-DOCK.md phase 3) removed the
+  // desktop pattern tools toggle; the dock's Track pane brings it back in
+  // phase 7. Until then the panel cannot be opened on desktop.
+  test.fixme('pattern tools panel should stay visible when scrolling horizontally', async ({ page, request }, testInfo) => {
     // Skip on mobile - pattern tools panel is hidden on mobile
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - pattern tools panel hidden on mobile');
 

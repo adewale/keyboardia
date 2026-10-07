@@ -9,8 +9,6 @@ import { EDITOR_DOCK_ID } from './editor-dock-state';
 import { VelocityLane } from './VelocityLane';
 import { InlineDrawer } from './InlineDrawer';
 import { TrackDrawer } from './TrackDrawer';
-import { StepCountDropdown } from './StepCountDropdown';
-import { TransposeDropdown } from './TransposeDropdown';
 import { ParameterLockEditor } from './ParameterLockEditor';
 import { TrackNameEditor } from './TrackNameEditor';
 import { PatternToolsPanel } from './PatternToolsPanel';
@@ -20,6 +18,7 @@ import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import {
   getInstrumentCategory,
+  getInstrumentCategoryColor,
   getInstrumentName,
 } from './sample-constants';
 import { isDrumInstrument } from '../shared/instrument-classification';
@@ -34,6 +33,9 @@ import './ChromaticGrid.css';
 import './VelocityLane.css';
 import './InlineDrawer.css';
 import './TrackDrawer.css';
+// The transpose and step-count dropdowns left the row with the two-line
+// control block; their styles stay imported here so the production stylesheet
+// order does not change before the dock's Track pane takes them (lesson 63).
 import './StepCountDropdown.css';
 import './TransposeDropdown.css';
 
@@ -42,6 +44,25 @@ import './TransposeDropdown.css';
  */
 function isFMSynth(sampleId: string): boolean {
   return sampleId.startsWith('tone:fm-');
+}
+
+/**
+ * The short engine label on line two of the control block: what kind of
+ * instrument plays this track. The full name is in the badge's tooltip.
+ */
+function getInstrumentBadge(sampleId: string): string {
+  if (sampleId.startsWith('tone:fm-')) return 'FM';
+  if (sampleId.startsWith('tone:')) return 'TON';
+  if (sampleId.startsWith('advanced:')) return 'ADV';
+  if (sampleId.startsWith('synth:')) return 'SYN';
+  if (/^(mic:|recording-|slice-)/.test(sampleId)) return 'REC';
+  return 'SMP';
+}
+
+/** Line one's transpose readout: blank at 0, otherwise signed semitones. */
+function formatTransposeReadout(transpose: number): string | null {
+  if (!Number.isFinite(transpose) || transpose === 0) return null;
+  return transpose > 0 ? `+${transpose}` : `${transpose}`;
 }
 
 /**
@@ -210,6 +231,9 @@ export const TrackRow = React.memo(function TrackRow({
     if (transpose === 0) return null; // Don't show badge if no transpose
     return getTransposedRoot(scale.root as NoteName, transpose);
   }, [scale, track.sampleId, track.transpose]);
+
+  const transposeReadout = formatTransposeReadout(track.transpose ?? 0);
+  const instrumentBadge = getInstrumentBadge(track.sampleId);
 
   // Phase 31H: Pre-compute range warnings for all steps
   // This avoids recalculating inside the render map function
@@ -489,6 +513,18 @@ export const TrackRow = React.memo(function TrackRow({
     onDragOver?.();
   }, [onDragOver]);
 
+  // Lesson 62: accept the drag on dragenter as well as dragover. When the
+  // element under a still cursor changes (the playhead indicator appearing in
+  // or leaving the cell under it), the browser re-targets the drag with
+  // dragenter and dragleave only. An uncancelled dragenter sets the drop
+  // operation to none, so a release in that instant ended the drag with no
+  // drop: "reorder during playback" failed whenever the drop point sat inside
+  // a cell's indicator, which is why it depended on the row's width.
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }, []);
+
   // BUG3-FIX: Read track ID from dataTransfer and pass BOTH source and target IDs
   // This ensures the target is from the actual drop event, not potentially stale state
   const handleDrop = useCallback((e: React.DragEvent) => {
@@ -540,6 +576,7 @@ export const TrackRow = React.memo(function TrackRow({
       ref={wrapperRef}
       draggable
       onDragStart={handleDragStart}
+      onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -559,7 +596,10 @@ export const TrackRow = React.memo(function TrackRow({
         className={`track-row ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}
         data-category={instrumentCategory}
       >
-        {/* LEFT STICKY: Controls that stay fixed during horizontal scroll */}
+        {/* LEFT STICKY: the two-line control block (specs/PIANO-ROLL-DOCK.md).
+            Three children, each placed explicitly by TrackRow.css (lesson 61):
+            the grip spans both lines, line one is identity, line two is
+            state and disclosure. */}
         <div className={`track-left${canChangeInstrument ? ' has-instrument-toggle' : ''}`}>
           {/* Phase 31G: Drag handle for track reordering */}
           <span
@@ -570,130 +610,119 @@ export const TrackRow = React.memo(function TrackRow({
           >
             ⠿
           </span>
-          {/* Track name - click to preview, double-click to rename */}
-          <TrackNameEditor
-            name={track.name}
-            instrumentName={getInstrumentName(track.sampleId)}
-            sampleId={track.sampleId}
-            canRename={!!onSetName}
-            onSave={(name) => onSetName?.(name)}
-            onPreview={handleNameClick}
-            onClickOverride={orientationMode === 'landscape' ? onToggleLandscapeDrawer : undefined}
-            disclosureExpanded={orientationMode === 'landscape' ? !!isLandscapeDrawerOpen : undefined}
-            // TrackDrawer unmounts while closed, so only point aria-controls at
-            // it while it actually exists.
-            disclosureControls={orientationMode === 'landscape' && isLandscapeDrawerOpen ? `track-drawer-${track.id}` : undefined}
-          />
-          {/* Mute + Solo buttons (directly in grid) */}
-          <button
-            className={`mute-button ${track.muted ? 'active' : ''}`}
-            onClick={onToggleMute}
-            title="Mute track"
-            aria-label="Mute"
-            aria-pressed={track.muted}
-          >
-            M
-          </button>
-          <button
-            className={`solo-button ${track.soloed ? 'active' : ''}`}
-            onClick={onToggleSolo}
-            title="Solo track (hear only this)"
-            aria-label="Solo"
-            aria-pressed={track.soloed}
-          >
-            S
-          </button>
 
-          {/* Pitch/Step control group: [Transpose] [Key] [Steps] - logically grouped */}
-          <div className="track-pitch-step-group">
-            <TransposeDropdown
-              value={track.transpose ?? 0}
-              onChange={handleTransposeChange}
-              disabled={!onSetTranspose}
+          {/* Line one, identity: category tick, name, transpose readout */}
+          <div className="track-identity">
+            <span
+              className="track-category-tick"
+              style={{ '--track-category-color': getInstrumentCategoryColor(track.sampleId) } as React.CSSProperties}
+              aria-hidden="true"
             />
-            {/* Key badge - render for melodic tracks, empty placeholder for percussion */}
-            {isMelodicTrack ? (
+            {/* Track name - click to preview, double-click to rename */}
+            <TrackNameEditor
+              name={track.name}
+              instrumentName={getInstrumentName(track.sampleId)}
+              sampleId={track.sampleId}
+              canRename={!!onSetName}
+              onSave={(name) => onSetName?.(name)}
+              onPreview={handleNameClick}
+              onClickOverride={orientationMode === 'landscape' ? onToggleLandscapeDrawer : undefined}
+              disclosureExpanded={orientationMode === 'landscape' ? !!isLandscapeDrawerOpen : undefined}
+              // TrackDrawer unmounts while closed, so only point aria-controls at
+              // it while it actually exists.
+              disclosureControls={orientationMode === 'landscape' && isLandscapeDrawerOpen ? `track-drawer-${track.id}` : undefined}
+            />
+            {transposeReadout && (
               <span
-                className={`track-key-badge ${effectiveKey ? 'active' : 'placeholder'}`}
+                className="track-transpose-readout"
                 title={effectiveKey
-                  ? `Effective root: ${effectiveKey} (transposed ${(track.transpose ?? 0) > 0 ? '+' : ''}${track.transpose ?? 0} from ${scale?.root})`
-                  : 'Key badge (shows effective root when transposed)'
-                }
+                  ? `Transposed ${transposeReadout} semitones (effective root ${effectiveKey}, from ${scale?.root})`
+                  : `Transposed ${transposeReadout} semitones`}
+                data-testid={`track-transpose-${track.id}`}
               >
-                {effectiveKey || '—'}
+                {transposeReadout}
               </span>
-            ) : (
-              /* Empty placeholder to maintain grid regularity for non-melodic tracks */
-              <span className="track-key-badge placeholder-empty" aria-hidden="true" />
             )}
-            <StepCountDropdown
-              value={track.stepCount ?? STEPS_PER_PAGE}
-              onChange={(value) => onSetStepCount?.(value)}
-              disabled={!onSetStepCount}
-            />
           </div>
 
-          {/* Pitch toggle (directly in grid - cell exists even when empty).
-              Docks this track in the editor dock under the grid. */}
-          {isMelodicTrack && (
-            <button
-              className={`expand-toggle ${isDocked ? 'expanded' : ''}`}
-              onClick={onToggleDock}
-              title={isDocked ? 'Close pitch editor' : 'Edit pitch in the dock'}
-              aria-label={isDocked ? 'Close pitch editor' : 'Open pitch editor'}
-              aria-expanded={isDocked}
-              aria-controls={EDITOR_DOCK_ID}
-              data-dock-toggle={track.id}
-            >
-              {isDocked ? <ChevronDown size={16} aria-hidden="true" /> : (
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                  {/* Piano keys icon - 3 white keys with 2 black keys */}
-                  <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                  <rect x="9" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                  <rect x="16" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                  <rect x="6" y="6" width="4" height="7" fill="#333" rx="1"/>
-                  <rect x="14" y="6" width="4" height="7" fill="#333" rx="1"/>
-                </svg>
+          {/* Line two: the state group, then the disclosure group */}
+          <div className="track-controls">
+            <div className="track-control-group track-state-group">
+              <button
+                className={`mute-button ${track.muted ? 'active' : ''}`}
+                onClick={onToggleMute}
+                title="Mute track"
+                aria-label="Mute"
+                aria-pressed={track.muted}
+              >
+                M
+              </button>
+              <button
+                className={`solo-button ${track.soloed ? 'active' : ''}`}
+                onClick={onToggleSolo}
+                title="Solo track (hear only this)"
+                aria-label="Solo"
+                aria-pressed={track.soloed}
+              >
+                S
+              </button>
+            </div>
+
+            <div className="track-control-group track-disclosure-group">
+              {/* The badge slot. An editable row puts the change-instrument
+                  toggle (issue #63) here, so both variants are one width. */}
+              {canChangeInstrument ? (
+                <button
+                  className={`instrument-toggle track-instrument-badge${isMelodicTrack ? '' : ' unpitched'}${isInstrumentPickerOpen ? ' active' : ''}`}
+                  onClick={(event) => handleToggleInstrumentPicker(event.currentTarget)}
+                  title={`Change instrument (currently ${getInstrumentName(track.sampleId)})`}
+                  aria-label="Change instrument"
+                  aria-expanded={isInstrumentPickerOpen}
+                  aria-controls={isInstrumentPickerOpen ? `instrument-panel-${track.id}` : undefined}
+                  data-testid={`change-instrument-${track.id}`}
+                >
+                  {instrumentBadge}
+                </button>
+              ) : (
+                <span
+                  className={`track-instrument-badge${isMelodicTrack ? '' : ' unpitched'}`}
+                  title={getInstrumentName(track.sampleId)}
+                >
+                  {instrumentBadge}
+                </span>
               )}
-            </button>
-          )}
-          {/* Phase 31G: Velocity lane toggle */}
-          <button
-            className={`velocity-toggle ${isVelocityExpanded ? 'expanded' : ''}`}
-            onClick={() => setIsVelocityExpanded(!isVelocityExpanded)}
-            title="Velocity lane (visual dynamics editing)"
-            aria-label="Velocity lane"
-            aria-expanded={isVelocityExpanded}
-            aria-controls={`velocity-panel-${track.id}`}
-          >
-            ▎
-          </button>
-          {/* Change instrument toggle (issue #63). Hidden in landscape by CSS;
-              that mode opens the same panel from the TrackDrawer instead. */}
-          {canChangeInstrument && (
-            <button
-              className={`instrument-toggle ${isInstrumentPickerOpen ? 'active' : ''}`}
-              onClick={(event) => handleToggleInstrumentPicker(event.currentTarget)}
-              title={`Change instrument (currently ${getInstrumentName(track.sampleId)})`}
-              aria-label="Change instrument"
-              aria-expanded={isInstrumentPickerOpen}
-              aria-controls={isInstrumentPickerOpen ? `instrument-panel-${track.id}` : undefined}
-              data-testid={`change-instrument-${track.id}`}
-            >
-              ♪
-            </button>
-          )}
-          {/* Pattern tools toggle (directly in grid) */}
-          <button
-            className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
-            onClick={() => setShowPatternTools(!showPatternTools)}
-            title="Pattern tools (rotate, invert, reverse, smart mirror, Euclidean)"
-            aria-label="Pattern tools"
-            aria-expanded={showPatternTools}
-            aria-controls={`pattern-tools-panel-${track.id}`}
-          >
-            ⚙
-          </button>
+
+              {/* Pitch toggle: docks this track in the editor dock under the
+                  grid. A drum row keeps the slot so the lane toggle lines up. */}
+              {isMelodicTrack ? (
+                <button
+                  className={`expand-toggle ${isDocked ? 'expanded' : ''}`}
+                  onClick={onToggleDock}
+                  title={isDocked ? 'Close pitch editor' : 'Edit pitch in the dock'}
+                  aria-label={isDocked ? 'Close pitch editor' : 'Open pitch editor'}
+                  aria-expanded={isDocked}
+                  aria-controls={EDITOR_DOCK_ID}
+                  data-dock-toggle={track.id}
+                >
+                  <span aria-hidden="true">♪</span>
+                </button>
+              ) : (
+                <span className="track-control-slot" aria-hidden="true" />
+              )}
+
+              {/* Phase 31G: Velocity lane toggle */}
+              <button
+                className={`velocity-toggle ${isVelocityExpanded ? 'expanded' : ''}`}
+                onClick={() => setIsVelocityExpanded(!isVelocityExpanded)}
+                title="Velocity lane (visual dynamics editing)"
+                aria-label="Velocity lane"
+                aria-expanded={isVelocityExpanded}
+                aria-controls={`velocity-panel-${track.id}`}
+              >
+                V
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* MIDDLE: Step grid - scrolls horizontally */}
