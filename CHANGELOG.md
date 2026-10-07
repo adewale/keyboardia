@@ -17,11 +17,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   button or Escape. It has track tabs, a 200ms open and close animation, a
   docked-row outline, and a one-time pulse on the docked row's cells. Dock
   state is local: never synced or persisted, and closed on load.
-- Notes, Step and Track panes over one roll (`DockPanes`). Notes switches
-  between Piano Roll and Grid and holds the ghost toggles. Step edits the
-  selected step's lock. Track holds transpose, step count, the instrument
-  picker, pattern tools, FM parameters, and Copy / Clear / Delete. Drum tracks
-  dock with the Step and Track panes.
+- Notes, Step and Track panes over one roll (`DockPanes`). Notes is the roll
+  and holds the ghost toggles. Step edits the selected step's lock. Track
+  holds transpose, step count, the instrument picker, pattern tools, FM
+  parameters, and Copy / Clear / Delete. Drum tracks dock with the Step and
+  Track panes.
+- Landscape dock: a bottom dock at 45% of the viewport height with 44px
+  targets and no detent toggle. Its roll scrolls in sync with the docked
+  row's steps (`scroll-sync.ts`), and landscape rows use the 3px cell gap and
+  8px column gap so the columns line up. A landscape track name opens that
+  track's Track pane, and a vertical swipe on the keyboard scrolls the roll.
 - `PianoRollEditor`: note bars with merged ties and velocity as brightness, on
   a C2 to C6 grid with a proportioned keyboard and a best-range rail in the
   134px left column. Ghost notes of other melodic tracks repeat modulo their
@@ -44,6 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - On desktop, `.tracks` is the vertical scroller.
 - Track rows accept a drag on `dragenter` as well as `dragover`, which fixes
   reorder during playback (lessons 62 and 83).
+- The velocity lane places its bars with `step-geometry.ts`, so bars after
+  step 16 sit under their cells instead of 8px to the left.
 
 **Removed:**
 - The per-track pitch panel between rows and its Grid / Piano Roll tabs; the
@@ -53,6 +60,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   dock.
 - The transpose dropdown, step-count dropdown and pattern-tools toggle from
   the track row.
+- The row's sticky action column (Copy / Paste, Clear, Delete); the actions
+  are in the Track pane only.
+- The dock's Grid view and `ChromaticGrid`; the roll is the Notes pane.
+- `InlineDrawer` and the dead mobile edit panel.
+- The SVG pitch contour overlay under melodic rows; contour marks are drawn
+  inside the cells instead.
 
 ### Phase 44 sound changes (August 2026)
 
