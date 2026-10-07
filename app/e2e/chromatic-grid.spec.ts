@@ -9,6 +9,10 @@ test.skip(useMockAPI, 'Chromatic grid tests require real backend for session API
 /**
  * Chromatic Grid Redesign Tests
  *
+ * The chromatic grid renders in the editor dock under the track rows
+ * (specs/PIANO-ROLL-DOCK.md, phase 2); a row's pitch toggle docks its track.
+ * Every grid query below is scoped to the dock.
+ *
  * Tests for the two-mode chromatic grid:
  * - "Events" mode (default): Shows key intervals + pitches with notes
  * - "All" mode: Shows all 49 chromatic pitches
@@ -89,7 +93,7 @@ test.describe('Chromatic Grid Redesign', () => {
     await pitchToggle.click();
 
     // Wait for chromatic grid to appear
-    const chromaticGrid = page.locator('.chromatic-grid');
+    const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
 
     // Verify segmented control is visible
@@ -113,7 +117,7 @@ test.describe('Chromatic Grid Redesign', () => {
     await pitchToggle.click();
 
     // Wait for chromatic grid to appear
-    const chromaticGrid = page.locator('.chromatic-grid');
+    const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
 
     // The track has notes at pitches -8, -9, -10, -11
@@ -139,7 +143,7 @@ test.describe('Chromatic Grid Redesign', () => {
     await pitchToggle.click();
 
     // Wait for chromatic grid to appear
-    const chromaticGrid = page.locator('.chromatic-grid');
+    const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
 
     // Click the "All" button
@@ -167,7 +171,7 @@ test.describe('Chromatic Grid Redesign', () => {
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
 
-    const chromaticGrid = page.locator('.chromatic-grid');
+    const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
 
     // Initially in events mode
@@ -195,7 +199,7 @@ test.describe('Chromatic Grid Redesign', () => {
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
 
-    await expect(page.locator('.chromatic-grid')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#editor-dock .chromatic-grid')).toBeVisible({ timeout: 5000 });
 
     // Check tooltip attributes
     const eventsButton = page.locator('.chromatic-view-mode-control__button', { hasText: 'Events' });
@@ -277,7 +281,7 @@ test.describe('Chromatic Grid Scale Lock', () => {
     await pitchToggle.click();
 
     // Wait for chromatic grid to appear
-    const chromaticGrid = page.locator('.chromatic-grid');
+    const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
 
     // Verify out-of-scale warning badge is visible (2 notes are out of scale: C#, D#)
@@ -298,7 +302,7 @@ test.describe('Chromatic Grid Scale Lock', () => {
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
 
-    const chromaticGrid = page.locator('.chromatic-grid');
+    const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
 
     // Verify out-of-scale pitches +1 (C#) and +3 (D#) are still visible
@@ -325,7 +329,7 @@ test.describe('Chromatic Grid Scale Lock', () => {
     const pitchToggle = page.locator('.expand-toggle').first();
     await pitchToggle.click();
 
-    const chromaticGrid = page.locator('.chromatic-grid');
+    const chromaticGrid = page.locator('#editor-dock .chromatic-grid');
     await expect(chromaticGrid).toBeVisible({ timeout: 5000 });
 
     // Persisted lock is applied on hydration.
@@ -374,7 +378,8 @@ test.describe('Fresh Session Scale Guardrail', () => {
     await expect(page.locator('.scale-type-select')).toHaveValue('minor-pentatonic');
 
     await page.locator('.expand-toggle').first().click();
-    const rows = page.locator('.chromatic-row');
+    await expect(page.locator('#editor-dock')).toHaveClass(/\bopen\b/);
+    const rows = page.locator('#editor-dock .chromatic-row');
     await expect(rows.first()).toBeVisible();
     for (let index = 0; index < 5; index++) {
       await rows.nth(index).locator('.chromatic-cell').nth(index).click();

@@ -3,8 +3,8 @@ import type { Track, ParameterLock, FMParams, ScaleState, LoopRegion } from '../
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { Add, ChevronDown, ChevronUp, Minus } from '../icons';
-import { ChromaticGrid, PitchContour } from './ChromaticGrid';
-import { PianoRoll } from './PianoRoll';
+import { PitchContour } from './ChromaticGrid';
+import { EDITOR_DOCK_ID } from './editor-dock-state';
 import { VelocityLane } from './VelocityLane';
 import { InlineDrawer } from './InlineDrawer';
 import { TrackDrawer } from './TrackDrawer';
@@ -27,6 +27,8 @@ import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
 import { features } from '../config/features';
 import { useDragToPaint } from './useDragToPaint';
 import './TrackRow.css';
+// ChromaticGrid and PianoRoll now render in the EditorDock; their styles stay
+// imported here so the production stylesheet order does not change (lesson 63).
 import './ChromaticGrid.css';
 import './PianoRoll.css';
 import './VelocityLane.css';
@@ -107,6 +109,16 @@ interface TrackRowProps {
   orientationMode?: 'portrait' | 'landscape' | 'desktop';
   isLandscapeDrawerOpen?: boolean;
   onToggleLandscapeDrawer?: () => void;
+  /**
+   * Editor dock (specs/PIANO-ROLL-DOCK.md). The pitch editor no longer opens
+   * under the row: the row asks StepSequencer to dock it.
+   * `isDocked` is true while the open dock shows this track.
+   */
+  isDocked?: boolean;
+  /** The pitch toggle: dock this track, or close the dock if it already shows it. */
+  onToggleDock?: () => void;
+  /** Clicking a melodic track's name: dock this track (never closes). */
+  onOpenDock?: () => void;
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -158,11 +170,11 @@ export const TrackRow = React.memo(function TrackRow({
   orientationMode,
   isLandscapeDrawerOpen,
   onToggleLandscapeDrawer,
+  isDocked = false,
+  onToggleDock,
+  onOpenDock,
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
-  const [isExpanded, setIsExpanded] = useState(false);
-  // Phase 31H: Toggle between chromatic grid and full piano roll view
-  const [pitchViewMode, setPitchViewMode] = useState<'chromatic' | 'piano-roll'>('chromatic');
   // Phase 31G: Velocity lane visibility
   const [isVelocityExpanded, setIsVelocityExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -423,6 +435,12 @@ export const TrackRow = React.memo(function TrackRow({
     });
   }, [track.sampleId, track.id, track.transpose]);
 
+  // Editor dock: clicking a melodic track's name previews it and docks it.
+  const handleNameClick = useCallback(() => {
+    void handleNamePreview();
+    if (isMelodicTrack) onOpenDock?.();
+  }, [handleNamePreview, isMelodicTrack, onOpenDock]);
+
   // Phase 31G: Drag handlers for track reordering
   // HIGH-2: Use track.id instead of trackIndex for stable references
   const handleDragStart = useCallback((e: React.DragEvent) => {
@@ -505,6 +523,7 @@ export const TrackRow = React.memo(function TrackRow({
     'track-row-wrapper',
     isDragTarget ? 'drag-target' : '',
     isDragging ? 'dragging' : '',
+    isDocked ? 'docked' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -550,7 +569,7 @@ export const TrackRow = React.memo(function TrackRow({
             sampleId={track.sampleId}
             canRename={!!onSetName}
             onSave={(name) => onSetName?.(name)}
-            onPreview={handleNamePreview}
+            onPreview={handleNameClick}
             onClickOverride={orientationMode === 'landscape' ? onToggleLandscapeDrawer : undefined}
             disclosureExpanded={orientationMode === 'landscape' ? !!isLandscapeDrawerOpen : undefined}
             // TrackDrawer unmounts while closed, so only point aria-controls at
@@ -606,17 +625,19 @@ export const TrackRow = React.memo(function TrackRow({
             />
           </div>
 
-          {/* Expand toggle (directly in grid - cell exists even when empty) */}
+          {/* Pitch toggle (directly in grid - cell exists even when empty).
+              Docks this track in the editor dock under the grid. */}
           {isMelodicTrack && (
             <button
-              className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
-              onClick={() => setIsExpanded(!isExpanded)}
-              title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
-              aria-label={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
-              aria-expanded={isExpanded}
-              aria-controls={`pitch-panel-${track.id}`}
+              className={`expand-toggle ${isDocked ? 'expanded' : ''}`}
+              onClick={onToggleDock}
+              title={isDocked ? 'Close pitch editor' : 'Edit pitch in the dock'}
+              aria-label={isDocked ? 'Close pitch editor' : 'Open pitch editor'}
+              aria-expanded={isDocked}
+              aria-controls={EDITOR_DOCK_ID}
+              data-dock-toggle={track.id}
             >
-              {isExpanded ? <ChevronDown size={16} aria-hidden="true" /> : (
+              {isDocked ? <ChevronDown size={16} aria-hidden="true" /> : (
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                   {/* Piano keys icon - 3 white keys with 2 black keys */}
                   <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
@@ -669,7 +690,7 @@ export const TrackRow = React.memo(function TrackRow({
 
         {/* MIDDLE: Step grid - scrolls horizontally */}
         <div
-          className={`steps ${isMelodicTrack && !isExpanded ? 'steps-with-contour' : ''}`}
+          className={`steps ${isMelodicTrack && !isDocked ? 'steps-with-contour' : ''}`}
           onPointerMove={handleStepsPointerMove}
         >
           {(() => {
@@ -713,7 +734,7 @@ export const TrackRow = React.memo(function TrackRow({
             });
           })()}
           {/* Pitch contour overlay for collapsed synth tracks */}
-          {isMelodicTrack && !isExpanded && (
+          {isMelodicTrack && !isDocked && (
             <PitchContour track={track} currentStep={currentStep} anySoloed={anySoloed} />
           )}
         </div>
@@ -771,13 +792,13 @@ export const TrackRow = React.memo(function TrackRow({
           volume={track.volume ?? 1}
           isMelodicTrack={isMelodicTrack}
           hasSteps={hasSteps}
-          isPitchExpanded={isExpanded}
+          isPitchExpanded={isDocked}
           isVelocityExpanded={isVelocityExpanded}
           arePatternToolsVisible={showPatternTools}
           onTransposeChange={handleTransposeChange}
           onStepCountChange={(stepCount) => onSetStepCount?.(stepCount)}
           onVolumeChange={(volume) => onSetVolume?.(volume)}
-          onExpandPitch={isMelodicTrack ? () => setIsExpanded(!isExpanded) : undefined}
+          onExpandPitch={isMelodicTrack ? onToggleDock : undefined}
           onExpandVelocity={() => setIsVelocityExpanded(!isVelocityExpanded)}
           onShowPatternTools={() => setShowPatternTools(!showPatternTools)}
           instrumentName={getInstrumentName(track.sampleId)}
@@ -1159,59 +1180,6 @@ export const TrackRow = React.memo(function TrackRow({
               className="fm-slider"
             />
             <span className="fm-value">{currentFMParams.modulationIndex.toFixed(1)}</span>
-          </div>
-        </div>
-      )}
-
-      {/* Pitch view - expanded chromatic grid or piano roll for synth tracks */}
-      {isMelodicTrack && onSetParameterLock && (
-        <div
-          id={`pitch-panel-${track.id}`}
-          className={`panel-animation-container ${isExpanded ? 'expanded' : ''}`}
-          aria-hidden={!isExpanded}
-          inert={!isExpanded}
-        >
-          <div className="panel-animation-content">
-            {/* View mode toggle */}
-            <div className="pitch-view-header">
-              <div className="pitch-view-tabs">
-                <button
-                  className={`pitch-view-tab ${pitchViewMode === 'chromatic' ? 'active' : ''}`}
-                  onClick={() => setPitchViewMode('chromatic')}
-                  title="Chromatic Grid - compact pitch offset view"
-                >
-                  Grid
-                </button>
-                <button
-                  className={`pitch-view-tab ${pitchViewMode === 'piano-roll' ? 'active' : ''}`}
-                  onClick={() => setPitchViewMode('piano-roll')}
-                  title="Piano Roll - full MIDI note view"
-                >
-                  Piano Roll
-                </button>
-              </div>
-            </div>
-
-            {/* Render the selected view */}
-            {pitchViewMode === 'chromatic' ? (
-              <ChromaticGrid
-                track={track}
-                currentStep={currentStep}
-                anySoloed={anySoloed}
-                onSetParameterLock={onSetParameterLock}
-                onToggleStep={onToggleStep}
-                scale={scale}
-              />
-            ) : (
-              <PianoRoll
-                track={track}
-                currentStep={currentStep}
-                anySoloed={anySoloed}
-                onSetParameterLock={onSetParameterLock}
-                onToggleStep={onToggleStep}
-                scale={scale}
-              />
-            )}
           </div>
         </div>
       )}

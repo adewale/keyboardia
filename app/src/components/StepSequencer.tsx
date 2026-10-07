@@ -12,6 +12,21 @@ import { useTrackPrewarm } from '../audio/useTrackPrewarm';
 import { useTrackInstrumentReconcile } from '../audio/useTrackInstrumentReconcile';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
+import { EditorDock, DOCK_TRANSITION_MS } from './EditorDock';
+import {
+  DOCK_CLOSED,
+  EDITOR_DOCK_ID,
+  closeDock,
+  isTrackDocked,
+  openDock,
+  reconcileDock,
+  releaseDockedTrack,
+  setDockViewMode,
+  toggleDock,
+  type DockState,
+  type DockViewMode,
+} from './editor-dock-state';
+import { isDrumInstrument } from '../shared/instrument-classification';
 import { TrackSkeleton } from './TrackSkeleton';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
@@ -63,6 +78,16 @@ export function StepSequencer() {
 
   // Landscape drawer accordion state: only one drawer open at a time
   const [openDrawerTrackId, setOpenDrawerTrackId] = useState<string | null>(null);
+
+  // Editor dock (specs/PIANO-ROLL-DOCK.md): which melodic track the dock under
+  // the grid edits. Local UI state: never synced, never persisted, closed on
+  // load, and opened only on request.
+  const [dock, setDock] = useState<DockState>(DOCK_CLOSED);
+  const getDock = useStableGetter(dock);
+  const tracksRef = useRef<HTMLDivElement>(null);
+  // Set when a request opens a closed dock, so the docked row's cells pulse
+  // once after the commit that marks the row as docked.
+  const dockPulsePendingRef = useRef(false);
 
   // Phase 31I: Mixer panel state
   const [isMixerOpen, setIsMixerOpen] = useState(false);
@@ -276,6 +301,9 @@ export function StepSequencer() {
   const handleDeleteTrack = useCallback((trackId: string) => {
     // Close landscape drawer if the deleted track had it open
     setOpenDrawerTrackId(prev => prev === trackId ? null : prev);
+    // Deleting the docked track closes the dock (a collaborator's delete is
+    // caught by reconcileDock during render).
+    setDock(prev => releaseDockedTrack(prev, trackId));
     // Clean up audio engine resources (GainNode) to prevent memory leak
     audioEngine.removeTrackGain(trackId);
     dispatch({ type: 'DELETE_TRACK', trackId });
@@ -474,6 +502,40 @@ export function StepSequencer() {
     }
   }, [copySource, dispatch]);
 
+  // Editor dock handlers. Reading the committed dock state (rather than a
+  // functional update) keeps the "was it closed?" check out of the updater,
+  // which StrictMode may run twice.
+  const handleOpenDock = useCallback((trackId: string) => {
+    const current = getDock();
+    if (!current.open) dockPulsePendingRef.current = true;
+    setDock(openDock(current, trackId));
+  }, [getDock]);
+
+  const handleToggleDock = useCallback((trackId: string) => {
+    const current = getDock();
+    const next = toggleDock(current, trackId);
+    if (!current.open && next.open) dockPulsePendingRef.current = true;
+    setDock(next);
+  }, [getDock]);
+
+  const handleCloseDock = useCallback(({ restoreFocus }: { restoreFocus: boolean }) => {
+    const { trackId } = getDock();
+    setDock(closeDock);
+    // Focus was inside the dock, which is about to become inert: hand it back
+    // to the pitch toggle of the row the dock was editing.
+    if (restoreFocus && trackId) {
+      requestAnimationFrame(() => {
+        Array.from(tracksRef.current?.querySelectorAll<HTMLElement>('[data-dock-toggle]') ?? [])
+          .find(toggle => toggle.dataset.dockToggle === trackId)
+          ?.focus();
+      });
+    }
+  }, [getDock]);
+
+  const handleSetDockViewMode = useCallback((viewMode: DockViewMode) => {
+    setDock(prev => setDockViewMode(prev, viewMode));
+  }, []);
+
 
   // Phase 36: Centralized keyboard handling via useKeyboard hook
   // Handles: Space (play/pause), Escape (cancel/clear), Delete (remove selection),
@@ -587,6 +649,43 @@ export function StepSequencer() {
 
   // Phase 21: Check if session is published (read-only)
   const isPublished = multiplayer?.isPublished ?? false;
+
+  // Editor dock: only melodic tracks can be docked. A docked track that is
+  // deleted (here or by a collaborator) or stops being melodic closes the dock.
+  const melodicTracks = useMemo(
+    () => state.tracks.filter(t => !isDrumInstrument(t.sampleId)),
+    [state.tracks],
+  );
+  const reconciledDock = reconcileDock(dock, new Set(melodicTracks.map(t => t.id)));
+  if (reconciledDock !== dock) setDock(reconciledDock);
+  const dockedTrack = reconciledDock.trackId
+    ? melodicTracks.find(t => t.id === reconciledDock.trackId) ?? null
+    : null;
+  const isDockOpen = reconciledDock.open && dockedTrack !== null;
+
+  // Opening a closed dock pulses the docked row's active cells once (150ms),
+  // so the eye finds the row the dock is editing, then brings the dock into
+  // the viewport if the page has it below the fold. No pulse and no smooth
+  // scroll under reduced motion.
+  useEffect(() => {
+    if (!dockPulsePendingRef.current || !dock.open) return;
+    dockPulsePendingRef.current = false;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    if (!reducedMotion) {
+      const cells = tracksRef.current?.querySelectorAll<HTMLElement>('.track-row-wrapper.docked .step-cell.active');
+      cells?.forEach(cell => {
+        cell.classList.remove('pulse');
+        void cell.offsetWidth; // restart the animation if it is still running
+        cell.classList.add('pulse');
+        cell.addEventListener('animationend', () => cell.classList.remove('pulse'), { once: true });
+      });
+    }
+    const reveal = setTimeout(() => {
+      const dockElement = tracksRef.current?.querySelector<HTMLElement>(`#${EDITOR_DOCK_ID}`);
+      dockElement?.scrollIntoView?.({ block: 'nearest', behavior: reducedMotion ? 'auto' : 'smooth' });
+    }, reducedMotion ? 0 : DOCK_TRANSITION_MS);
+    return () => clearTimeout(reveal);
+  }, [dock]);
 
   return (
     <div
@@ -748,7 +847,7 @@ export function StepSequencer() {
 
       {/* Phase 29E: Main content area with tracks and scale sidebar */}
       <div className="sequencer-content">
-        <div className="tracks">
+        <div className="tracks" ref={tracksRef}>
           <div className="tracks-inner">
             {/* Phase 34: Show skeletons during session loading to prevent CLS */}
             {multiplayer?.sessionStatus === 'loading' && state.tracks.length === 0 && (
@@ -821,9 +920,29 @@ export function StepSequencer() {
                   onDragOver={() => handleDragOver(track.id)}
                   onDragLeave={handleDragLeave}
                   onDragEnd={handleDragEnd}
+                  isDocked={isTrackDocked(reconciledDock, track.id)}
+                  onToggleDock={() => handleToggleDock(track.id)}
+                  onOpenDock={() => handleOpenDock(track.id)}
                 />
               );
             })}
+            {/* Editor dock: after the rows, never between them. */}
+            <EditorDock
+              open={isDockOpen}
+              track={dockedTrack}
+              melodicTracks={melodicTracks}
+              viewMode={reconciledDock.viewMode}
+              currentStep={state.isPlaying ? state.currentStep : -1}
+              anySoloed={anySoloed}
+              scale={state.scale}
+              readOnly={isPublished}
+              scrollerRef={tracksRef}
+              onSelectTrack={handleOpenDock}
+              onSetViewMode={handleSetDockViewMode}
+              onClose={handleCloseDock}
+              onToggleStep={handleToggleStep}
+              onSetParameterLock={handleSetParameterLock}
+            />
           </div>
         </div>
 

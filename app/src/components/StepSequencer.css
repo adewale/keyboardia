@@ -101,9 +101,28 @@
 .tracks {
   flex: 1;
   min-width: 0; /* Allow shrinking */
-  /* Horizontal scroll for the "sea of cells" - all tracks scroll together */
-  overflow-x: auto;
+  /* One scroller for the "sea of cells": all tracks scroll together
+     horizontally, and on desktop it is also the vertical scroller so the
+     editor dock can pin to its bottom edge (position: sticky; bottom: 0).
+     `overflow-x: auto` alone already computed overflow-y to auto, so this
+     only changes behaviour where a max-height applies below. */
+  overflow: auto;
   padding-bottom: 8px;
+}
+
+/* Desktop: cap the scroller so the pinned editor dock and the rows above it
+   share the viewport. The floor keeps short windows usable. Mobile keeps its
+   content-sized track area (phase 2 changes nothing there). */
+.step-sequencer[data-orientation="desktop"] .tracks {
+  max-height: max(78vh, 440px);
+  /* Sticky offsets are measured inside the scroller's padding, so bottom
+     padding here would leave rows showing under the pinned dock. The same
+     8px of space moves to the content's margin. */
+  padding-bottom: 0;
+}
+
+.step-sequencer[data-orientation="desktop"] .tracks-inner {
+  margin-bottom: 8px;
 }
 
 /* Inner container that expands to fit widest track */
@@ -127,6 +146,7 @@
 /* Custom scrollbar styling for the tracks panel */
 .tracks::-webkit-scrollbar {
   height: 8px;
+  width: 8px;
 }
 
 .tracks::-webkit-scrollbar-track {

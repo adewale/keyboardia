@@ -1,0 +1,240 @@
+/*
+ * Editor dock (specs/PIANO-ROLL-DOCK.md, phase 2).
+ *
+ * The dock is the last child of .tracks-inner, so it shares the rows'
+ * horizontal scroller (one scrollbar, step columns aligned) and pins to the
+ * bottom of .tracks, which is also the vertical scroller on desktop.
+ * Rows of cells stay contiguous above it; nothing is inserted between them.
+ */
+
+.dock {
+  position: sticky;
+  bottom: 0;
+  z-index: 6; /* above the sticky .track-left (3); see the spec's layer table */
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 200ms ease-out, margin-top 200ms ease-out;
+  border-radius: 8px 8px 0 0;
+  /* Closed, the dock takes no space: cancel the 2px row gap above it so the
+     track area is exactly as tall as before the dock existed. */
+  margin-top: -2px;
+}
+
+.dock.open {
+  grid-template-rows: 1fr;
+  margin-top: 6px;
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.45);
+}
+
+.dock-inner {
+  min-height: 0;
+  /* Clip during the open/close animation. `clip`, unlike `hidden`, does not
+     make a scroll container, so the sticky header and the roll's sticky pitch
+     column still stick to .tracks. `hidden` is the fallback. */
+  overflow: hidden;
+  overflow: clip;
+}
+
+.dock-panel {
+  min-width: max-content;
+  background: var(--color-surface);
+  /* Top edge only: a left border would shift every dock column 1px off the
+     row columns above it. */
+  border-top: 1px solid var(--color-border-light);
+  border-radius: 8px 8px 0 0;
+}
+
+/* Header: sticky-left, sized to the scroller's visible width by EditorDock. */
+.dock-head {
+  position: sticky;
+  left: 0;
+  z-index: 7;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  box-sizing: border-box;
+  padding: 6px 10px;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 8px 8px 0 0;
+}
+
+.dock-chips {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 6px;
+  background: var(--color-surface-elevated);
+}
+
+.dock-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.dock-chip:hover {
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.dock-chip.active {
+  background: var(--color-accent);
+  color: var(--color-bg);
+}
+
+.dock-chip:focus-visible,
+.dock-close:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 1px;
+}
+
+/* Category tick: the one place category colour appears on a tab. */
+.dock-tick {
+  width: 3px;
+  height: 12px;
+  border-radius: 2px;
+  background: var(--dock-tick, var(--color-text-muted));
+  flex: 0 0 auto;
+}
+
+.dock-track-tab[data-category="drums"] { --dock-tick: var(--color-drums, var(--color-orange)); }
+.dock-track-tab[data-category="bass"] { --dock-tick: var(--color-bass, var(--color-purple)); }
+.dock-track-tab[data-category="keys"] { --dock-tick: var(--color-keys, var(--color-blue)); }
+.dock-track-tab[data-category="leads"] { --dock-tick: var(--color-leads, var(--color-pink)); }
+.dock-track-tab[data-category="pads"] { --dock-tick: var(--color-pads, var(--color-green)); }
+.dock-track-tab[data-category="fx"] { --dock-tick: var(--color-fx, var(--color-cyan)); }
+
+.dock-track-tab.active .dock-tick {
+  background: var(--color-bg);
+}
+
+.dock-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-size: 13px;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.dock-title b {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.dock-close {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+  padding: 0 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.dock-close:hover {
+  color: var(--color-text);
+  border-color: var(--color-border-light);
+}
+
+/*
+ * Body: the existing roll, unchanged. Its height is capped so the pinned dock
+ * never outgrows the scroller (a sticky element taller than its scrollport
+ * would hide its own header); the roll scrolls vertically inside it.
+ */
+.dock-body {
+  max-height: min(50vh, 440px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-active) var(--color-surface);
+}
+
+.dock-body > .chromatic-grid {
+  margin-top: 0;
+}
+
+/* Published session: the dock opens and plays, but takes the read-only scrim. */
+.dock.read-only .dock-body {
+  filter: saturate(0.85);
+}
+
+.dock.read-only .dock-body :is(button, [role="button"]) {
+  cursor: default;
+}
+
+/*
+ * Published rows block pointer events; the pitch toggle stays reachable so a
+ * listener can open the read-only dock (StepSequencer withholds every edit).
+ */
+.step-sequencer.published .track-row .expand-toggle {
+  pointer-events: auto;
+}
+
+/*
+ * Row linkage, desktop only (phase 2 changes nothing on mobile): the docked
+ * row carries an accent outline, its pitch toggle turns accent, and its active
+ * cells pulse once when the dock opens.
+ */
+.step-sequencer[data-orientation="desktop"] .track-row-wrapper.docked .track-row {
+  box-shadow: inset 0 0 0 2px var(--color-accent);
+}
+
+.step-sequencer[data-orientation="desktop"] .track-row-wrapper.docked .track-left {
+  box-shadow:
+    inset 2px 0 0 var(--color-accent),
+    inset 0 2px 0 var(--color-accent),
+    inset 0 -2px 0 var(--color-accent),
+    4px 0 8px -4px rgba(0, 0, 0, 0.2);
+}
+
+.step-sequencer[data-orientation="desktop"] .track-row-wrapper.docked .expand-toggle.expanded {
+  background: var(--color-accent);
+  border-color: var(--color-accent-hover);
+  color: var(--color-bg);
+}
+
+.step-sequencer[data-orientation="desktop"] .track-row-wrapper.docked .step-cell.pulse {
+  animation: dock-cell-pulse 150ms ease-out;
+}
+
+@keyframes dock-cell-pulse {
+  0% { box-shadow: 0 0 0 3px var(--color-accent); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
+/* Mobile: portrait renders no rows; landscape gets its dock in phase 8. */
+.step-sequencer[data-orientation="landscape"] .dock,
+.step-sequencer[data-orientation="portrait"] .dock {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dock,
+  .dock-chip {
+    transition: none;
+  }
+
+  .step-sequencer[data-orientation="desktop"] .track-row-wrapper.docked .step-cell.pulse {
+    animation: none;
+  }
+}
