@@ -428,6 +428,27 @@ test.describe('Piano roll dock', () => {
     };
     await expectPagesAligned();
 
+    // The velocity lane sits on the same columns: bar 17 (after the first
+    // page gap) and bar 33 (after the second) start where their cells start.
+    await row(page, 'Lead').locator('.velocity-toggle').click();
+    const lane = row(page, 'Lead').locator('.velocity-lane');
+    for (const step of [0, 16, 32]) {
+      const bar = lane.locator(`.velocity-step[data-step="${step}"] .velocity-bar`);
+      await expect(bar).toBeVisible();
+      const [barBox, cellBox] = await Promise.all([
+        bar.boundingBox(),
+        row(page, 'Lead').locator('.step-cell').nth(step).boundingBox(),
+      ]);
+      expect(Math.abs(barBox!.x - cellBox!.x), `velocity bar ${step + 1}`).toBeLessThan(1);
+      expect(Math.abs(barBox!.width - cellBox!.width), `velocity bar ${step + 1} width`).toBeLessThan(1);
+    }
+    const [laneLast, rowLast] = await Promise.all([
+      lane.locator('.velocity-step[data-step="47"]').boundingBox(),
+      row(page, 'Lead').locator('.step-cell').nth(47).boundingBox(),
+    ]);
+    expect(Math.abs(laneLast!.x - rowLast!.x), 'velocity step 48').toBeLessThan(1);
+    await row(page, 'Lead').locator('.velocity-toggle').click();
+
     // The strip ends where the last cell ends.
     const [rulerBox, lastCell, firstCell] = await Promise.all([
       ruler.boundingBox(),
