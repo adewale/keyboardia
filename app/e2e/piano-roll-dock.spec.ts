@@ -643,8 +643,19 @@ test.describe('Piano roll dock: scale, key and range', () => {
   /** Click the roll at a step and pitch, scrolling that pitch row into view first. */
   async function clickRoll(page: Page, step: number, midi: number) {
     const scroller = dock(page).locator('.piano-roll-editor .dock-scroll');
-    await scroller.evaluate((element, top) => { element.scrollTop = top; }, (84 - midi) * 18 - 60);
-    const grid = await dock(page).locator('.piano-roll-editor .dock-scroll > :first-child').boundingBox();
+    // The roll scrolls smoothly (PianoRollEditor.css), and opening the dock
+    // smooth-scrolls the page to it: jump instead, then measure only once the
+    // grid has stopped moving, or the click lands a row off.
+    await scroller.evaluate((element, top) => {
+      element.scrollTo({ top, behavior: 'instant' });
+    }, (84 - midi) * 18 - 60);
+    const gridLocator = dock(page).locator('.piano-roll-editor .dock-scroll > :first-child');
+    let grid = await gridLocator.boundingBox();
+    await expect.poll(async () => {
+      const previous = grid;
+      grid = await gridLocator.boundingBox();
+      return !!previous && !!grid && previous.x === grid.x && previous.y === grid.y;
+    }, { intervals: [50] }).toBe(true);
     if (!grid) throw new Error('the roll grid must be measurable');
     await page.mouse.click(grid.x + stepToX(step, DESKTOP_STEP_GEOMETRY) + 12, grid.y + (84 - midi) * 18 + 9);
   }
