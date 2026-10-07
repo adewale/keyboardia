@@ -1,6 +1,6 @@
 # Piano Roll Dock
 
-> **Status:** Proposal
+> **Status:** Implemented on branch `claude/serene-ritchie-q34pf5` (phases 2 to 7); phase 8 (landscape dock) in progress; visual baselines pending
 > **Created:** October 2026
 > **Companions:** [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md), [CHROMATIC-GRID-REDESIGN.md](./CHROMATIC-GRID-REDESIGN.md), [MOBILE-INTERFACE-SIMPLIFICATION.md](./MOBILE-INTERFACE-SIMPLIFICATION.md), [research/PITCH-VISUALIZATION-RESEARCH.md](./research/PITCH-VISUALIZATION-RESEARCH.md), and on the roadmap branch (PR #61) `AFFORDANCES.md` and `LOOP-RULER-LESSONS.md`
 > **Mocks:** [mocks/piano-roll-dock.html](./mocks/piano-roll-dock.html) (interactive prototype, the source of every geometry number below), [mocks/piano-roll-layout-options.html](./mocks/piano-roll-layout-options.html) (ranked arrangements and the two-rolls test), [mocks/piano-roll-dock-storyboard.html](./mocks/piano-roll-dock-storyboard.html) (layer stack, scenario storyboard, roadmap impact)
@@ -44,20 +44,20 @@ Geometry, taken from the prototype:
 
 | Element | Value | Source |
 |---|---|---|
-| Step pitch | 36px cell + 3px gap = 39px | `StepCell.css`, `TrackRow.css` |
-| Control column | Two-line block: `[drag] 16px [body] 110px`, rows `[identity] 18px [controls] 18px`, row gap 2px, column gap 4px, padding 0 4px = 134px × 44px | this spec, mock |
+| Step pitch | 36px cell + 3px gap = 39px, plus an 8px page gap after every 16th cell; every surface places steps with `step-geometry.ts` | `StepCell.css`, `TrackRow.css`, `step-geometry.ts` |
+| Control column | Two-line block: `[drag] 16px [body] 110px`, rows `[identity] var(--ctl-identity-h)` (18px) `[controls] var(--ctl-h)` (18px; 28px in landscape), row gap 2px, column gap 4px, padding `0 0 0 4px` = 134px × 44px, in a 48px row (2px row padding) | `TrackRow.css` (`.track-left`) |
 | Line one (identity) | 3px category tick · name · transpose readout, right-aligned, mono 10px | mock |
-| Line two (controls) | state group M · S (20×18px), 4px, disclosure group badge (26×18px) · ♪ · lane (20×18px), 2px gaps | mock |
+| Line two (controls) | 2px left padding, state group M · S (18×18px), 4px, disclosure group badge (26×18px) · ♪ · lane (18×18px), 2px gaps = 110px. Landscape: M, S and ♪ at 32×28px; badge and lane hidden | `TrackRow.css` |
 | Dock left panel | 134px: 18px range rail · 116px keyboard | mock |
 | Dock toolbar | Under the dock header, sticky-left, sized to the scroller; holds the Notes, Step or Track controls | mock |
 | Dock grid row height | 18px | mock |
 | Dock grid height | 252px compact, 432px tall | decided |
 | Pitch range | C2 to C6 (MIDI 36 to 84); the grid scrolls vertically and centres on the docked track's notes | mock |
-| Note bar | `len × 39 − 3` wide, 14px tall, 3px radius, orange mixed toward a dark base by `volume` | mock |
+| Note bar | `spanWidth(start, len)` wide (`len × 39 − 3`, plus 8px for each page boundary inside the bar), 14px tall, 3px radius, orange mixed toward a dark base by `volume` | `PianoRollEditor.tsx`, `step-geometry.ts` |
 | Ghost note | dashed 1px border in the other track's category colour, 12px tall | mock |
 | Keyboard | matte warm grey white keys at real proportions (C, E, F, B short; D, G, A long), black keys 58% of the white key length, labels on C only and under the pointer | mock |
-| Line weights | step 4.5%, beat 10%, bar 22% white; octave rule on C 16%; black-key rows banded 22% black | mock |
-| Loop ruler | 24px, inside the scroller on the step pitch, with a sticky 340px spacer; keeps drag, Shift+click, double-click and the playhead; adds bar.beat labels | mock, `LoopRuler.tsx` |
+| Line weights | step 4.5%, beat 10%, bar (16 steps) 22% white, each a 1px element at its cell's left edge; a darker 8px band over each page gap; octave rule on C 16%; black-key rows banded 22% black | `PianoRollEditor.css` |
+| Loop ruler | 24px, inside the scroller, sticky to its top (z 5), with a sticky `--track-left-width` (134px) spacer and the rows' 8px gap; marks placed with `stepToX`; keeps drag, Shift+click, double-click and the playhead; adds bar.beat labels; hidden on mobile | `LoopRuler.tsx`, `LoopRuler.css` |
 
 ### Layering
 
@@ -218,11 +218,18 @@ Each phase is a shippable PR with its own baseline run.
 
 ## Test Plan
 
-- A new `e2e/piano-roll-dock.spec.ts`: open, switch, close, draw, select a step, ghost toggle, detents, published read-only. There is no piano roll e2e spec today.
-- `scrollbar.spec.ts` (single scrollbar, columns aligned) and `pitch-contour-alignment.spec.ts` extend to the dock.
-- `plock-editor.spec.ts` and `chromatic-grid.spec.ts` change home to the dock.
-- `mobile-orientation.spec.ts` gains the landscape dock, including the inert-when-closed check. `landscape-alignment.spec.ts` asserts that the landscape column is 134px and that desktop and landscape rows place the name on the same left edge.
-- `track-reorder.spec.ts` plus the unit case `state/grid.test.ts` ("reorder during playback") run repeatedly after phase 3.
+As built, phases 2 to 7:
+
+- `e2e/piano-roll-dock.spec.ts`: closed on load and opens from a pitch toggle; switches from another toggle and from a dock tab; closes from the toggle, the close button and Escape; rows stay contiguous and the dock columns sit on the row columns; pins to the bottom of the scroller; a track name docks, and adding or deleting tracks behaves; the roll renders and toggles its detent; a tall dock keeps its header inside the scroller on a short viewport; ghost chips show and hide ghost bars; roll columns stay on row columns with the keyboard pinned under horizontal scroll; the loop ruler's page 2 and page 3 marks equal step 17's and step 33's cells, the roll's notes and the roll's columns. Under "Step and Track panes": Shift+click on a bar opens the Step pane and highlights its column; a drum track docks with Step, no Notes and no roll; the Track pane holds the row controls and stays on screen while the grid scrolls; step count changes from the Track pane; a published session shows the panes read-only.
+- `e2e/track-reorder.spec.ts`: "reorders while the transport is playing", which asserts that its drop point is inside a step cell (lesson 83).
+- `e2e/landscape-alignment.spec.ts`: the landscape column is the 134px two-line block, M and S are 28px touch targets, and the name sits on the same left edge on desktop and landscape.
+- `e2e/plock-editor.spec.ts` and `e2e/change-instrument.spec.ts` follow the Step pane and the dock's instrument picker. `e2e/phase3-refactoring.spec.ts` (pattern tools) and the pattern-tools case in `e2e/scrollbar.spec.ts` open the Track pane. `e2e/chromatic-grid.spec.ts` selects Grid in the dock.
+- Unit and component tests: `editor-dock-state.test.ts`, `step-geometry.test.ts`, `piano-roll-bars.test.ts`, `step-contour.test.ts`, `PianoRollEditor.test.tsx`, `LoopRuler.test.tsx`, `StepSequencer.dock.test.tsx`, `TrackRow.dock.test.tsx`, `TrackRow.control-block.test.tsx`, `TrackRow.contour.test.tsx`, `TrackRow.change-instrument.test.tsx`, `StepCell.test.tsx`, `ParameterLockEditor.test.tsx` and `PatternToolsPanel.test.tsx`, all in `app/src/components/`.
+
+Still to do:
+
+- `pitch-contour-alignment.spec.ts` still tests the legacy `.pitch-contour` overlay and does not cover the in-cell marks or the dock.
+- `mobile-orientation.spec.ts` gains the landscape dock and the inert-when-closed check in phase 8.
 
 ## Visual Baseline Safety
 
@@ -254,6 +261,32 @@ Six arrangements for shrinking the keyboard and five answers to "two rolls at on
 - Changing the data model. Steps, parameter locks and transpose are untouched.
 - Auto-scroll during playback.
 - The mobile bottom-sheet primitive (Phase 38 / C-7). The dock is row-local disclosure, not a global sheet.
+
+## Implementation notes
+
+Built on branch `claude/serene-ritchie-q34pf5`, phases 2 to 7. The table records every place where the code as built differs from the sections above, with the reason. Where a row conflicts with an earlier section, the code is right and the earlier section describes the proposal.
+
+| Area | Spec said | As built | Why |
+|---|---|---|---|
+| Control block padding | `padding 0 4px` | `padding: 0 0 0 4px` on `.track-left` | The spec's sum, 4 + 16 + 4 + 110 + 4, is 138px, not 134px. The body column now ends on the block's right edge. |
+| Line-two control widths | M, S, ♪ and lane 20×18px | 18×18px, with 2px left padding on `.track-controls`: 2 + (18 + 2 + 18) + 4 + (26 + 2 + 18 + 2 + 18) = 110px | At 20px the line is 116px, wider than the 110px body column. |
+| Line heights | Two 18px lines | `--ctl-identity-h` (line one) and `--ctl-h` (line two), both 18px on desktop | Landscape raises only the controls line to 28px, so line one needs its own variable. |
+| Row height | Two lines "fit inside the existing 44px row" | The block is 44px. The row stays 48px because `.track-row` keeps 2px block padding. Landscape: a 48px block in a row with no padding. | The rows were 48px before the change (lesson 61). The cells stay where they were. |
+| Badge content | A 26×18px badge | A 9px mono engine code from `getInstrumentBadge` in `TrackRow.tsx` (`FM`, `TON`, `ADV`, `SYN`, `REC`, `SMP`), with the full instrument name in the tooltip. Drum badges carry `.unpitched`. An editable row's change-instrument toggle takes the badge slot with the same face. | An instrument name does not fit in 26px. One slot for both row variants keeps published and editable rows the same width (lesson 62 coda). |
+| Category colour | Confined to the 3px tick | The row's 4px category left border is removed. Colour is only on `.track-category-tick` (3×12px) and on the dock tabs' ticks. | As specified. It is recorded here because it removes a long-standing row edge. |
+| Which tracks dock | The pitch toggle, name or tab of a melodic track | Every track docks. Drum tracks get the Step and Track panes, their Notes chip is disabled, and the roll area reads "No pitch for drum tracks". Track tabs list every track. The pitch toggle stays melodic-only, and a drum row keeps an empty `.track-control-slot`. A drum's name docks it. | The Step and Track panes replace the p-lock strip and the row controls for drums too. |
+| Dock state | "Docked track can be the `focus` slice" | Local `DockState` in `StepSequencer` (`editor-dock-state.ts`): `open`, `trackId`, `viewMode`, `detent`, `ghostVisibility`, `pane`, `selectedStep`, `instrumentPickerOpen`. None of it is synced or persisted. | Pure transitions are easier to test than a reducer slice. `instrumentPickerOpen` exists because the row badge opens the picker in the Track pane. Switching track or leaving the pane closes it. |
+| Escape | Closes the dock | Escape from Step or Track returns to Notes. Escape from Notes, or from any pane of a drum track, closes the dock. Escape inside an open dropdown is left to the dropdown. | Escape used to dismiss the p-lock strip, so leaving the Step pane keeps that meaning. Focus moves to the active pane chip, so a second Escape closes the dock. |
+| Page gap | Geometry from the prototype: a uniform 39px pitch, note bars `len × 39 − 3` | The rows keep the 8px gap after every 16th cell. The ruler and the roll place everything with `stepToX`, `xToStep`, `spanWidth` and `gridWidth` from `step-geometry.ts`. A bar that crosses a page boundary spans the gap. Column lines are elements, not a gradient. | The prototype left out the page gap. An earlier commit removed the gap from the grid to fit the ruler, and that was reverted (lesson 84). |
+| Grid view | ChromaticGrid is absorbed by the Notes pane | `ChromaticGrid` still exists as the dock's Grid view, one chip away in the Notes toolbar (Grid / Piano Roll). Piano Roll is the default. Its page gap moved from 6px to 8px. The old `PianoRoll` component is deleted. | Kept so the existing chromatic-grid behaviour and tests survive while the roll matures. Whether to delete it is open. |
+| Row actions | Actions are edited in the Track pane | The Track pane has Copy / Paste, Clear and Delete. The desktop row also keeps them in its sticky `.track-right` column. | Phase 7 added them to the pane but did not remove them from the row. This is an open decision, not a design choice. |
+| Step pane | Pitch, volume, tie and envelope stages | `ParameterLockEditor` (pitch, volume, tie, Clear lock) in the dock toolbar. No envelope stages. | PR #87's envelope editor is not on this branch. |
+| Track pane | A transpose stepper | The existing `TransposeDropdown` and `StepCountDropdown`, the instrument picker, `PatternToolsPanel`, FM harmonicity and modulation for FM presets, and the track actions | It reuses the shipped controls. The stepper in Layout Principles is not built. |
+| Remote edits | Flash in the dock and the row at once | Row cells flash as before. The dock does not flash: `PianoRollEditor` does not read `useRemoteChanges`. | Not built yet. |
+| Pitch contour | Contour marks replace the old row overlay | `.step-contour` marks render inside melodic cells (`StepCell`, `step-contour.ts`). The legacy `PitchContour` SVG overlay from `ChromaticGrid.tsx` still renders on undocked melodic rows that have pitch variation, at a uniform 39px. | Not removed yet. It breaks the step-geometry rule (lesson 84). |
+| Tall dock on a short viewport | Two detents, 252px and 432px | As specified. `EditorDock` also sets `--dock-roll-max` from the `.tracks` scroller's max height, less the header and toolbar. | Without the cap, a tall roll would push the dock header out of the scroller. |
+| Scroller and mobile | `.tracks` becomes the vertical scroller | `max-height: max(78vh, 440px)` on desktop only. The dock and the docked outline are desktop-only, and the dock is hidden in landscape and portrait until phase 8. | Phase 8 builds the landscape dock. |
+| Published sessions | Dock opens read-only | Every pane renders read-only: `StepSequencer` withholds every edit, and the dock body is desaturated. The pitch toggle stays clickable in published sessions so that a listener can open the dock. | `.published .track-row` sets `pointer-events: none`, so the toggle needs its own exception. |
 
 ## Open Questions
 

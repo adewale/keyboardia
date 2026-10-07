@@ -254,4 +254,4 @@ Follow existing Keyboardia design system (see `index.css` for all CSS variables)
 
 Created: 2026-01-18
 Updated: 2026-01-18
-Status: Draft - Audited for internal consistency and design system alignment
+Status: Superseded by [PIANO-ROLL-DOCK.md](./PIANO-ROLL-DOCK.md) (October 2026)

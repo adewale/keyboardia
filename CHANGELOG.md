@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Piano roll dock (October 2026)
+
+**Added:**
+- Editor dock (`EditorDock`): one editor under the track rows, inside the same
+  horizontal scroller and pinned to its bottom edge, showing one track at a
+  time. It opens from a row's pitch toggle, a track name, a dock tab, or
+  Shift+click / long-press on a step, and closes from the toggle, the close
+  button or Escape. It has track tabs, a 200ms open and close animation, a
+  docked-row outline, and a one-time pulse on the docked row's cells. Dock
+  state is local: never synced or persisted, and closed on load.
+- Notes, Step and Track panes over one roll (`DockPanes`). Notes switches
+  between Piano Roll and Grid and holds the ghost toggles. Step edits the
+  selected step's lock. Track holds transpose, step count, the instrument
+  picker, pattern tools, FM parameters, and Copy / Clear / Delete. Drum tracks
+  dock with the Step and Track panes.
+- `PianoRollEditor`: note bars with merged ties and velocity as brightness, on
+  a C2 to C6 grid with a proportioned keyboard and a best-range rail in the
+  134px left column. Ghost notes of other melodic tracks repeat modulo their
+  own length. Two detents: 252px compact and 432px tall. One hit layer places,
+  paints, re-pitches, resizes and removes notes.
+- Pitch contour marks inside melodic step cells, so a melody stays readable
+  while the dock shows another track.
+- `step-geometry.ts`: one step-position helper, including the 8px page gap,
+  used by the loop ruler and the roll.
+- A playback reorder e2e test and a new e2e spec, `piano-roll-dock.spec.ts`.
+
+**Changed:**
+- The track control column is a two-line block at 134px (was 508px). Line one
+  has a category tick, the name and a transpose readout. Line two has mute,
+  solo, an engine badge (FM, TON, ADV, SYN, REC, SMP), the pitch toggle and
+  the lane toggle. Landscape uses the same block with a 28px controls line.
+- Category colour moved from the row's 4px left border to the name's tick.
+- The loop ruler sits inside the track scroller, sticky to its top, on the
+  cells' step positions, with bar.beat labels.
+- On desktop, `.tracks` is the vertical scroller.
+- Track rows accept a drag on `dragenter` as well as `dragover`, which fixes
+  reorder during playback (lessons 62 and 83).
+
+**Removed:**
+- The per-track pitch panel between rows and its Grid / Piano Roll tabs; the
+  old `PianoRoll` component.
+- The p-lock strip between rows, and the inline PatternToolsPanel, FM panel
+  and desktop instrument picker under each row. Their contents now live in the
+  dock.
+- The transpose dropdown, step-count dropdown and pattern-tools toggle from
+  the track row.
+
 ### Phase 44 sound changes (August 2026)
 
 **Added:**
