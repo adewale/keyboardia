@@ -298,6 +298,46 @@ describe('PianoRollEditor editing', () => {
     expect(onSetParameterLock).not.toHaveBeenCalled();
   });
 
+  it('a second pointer cannot start, cancel or end the first pointer\'s drag', () => {
+    const { hit, onToggleStep } = setup();
+    const releasePointerCapture = vi.fn();
+    Object.assign(hit, {
+      setPointerCapture: vi.fn(),
+      hasPointerCapture: (id: number) => id === 1,
+      releasePointerCapture,
+    });
+    const first = (step: number) => ({ ...at(step, 64), pointerId: 1, pointerType: 'touch' });
+    const second = (step: number) => ({ ...at(step, 64), pointerId: 2, pointerType: 'touch' });
+
+    fireEvent.pointerDown(hit, first(2));
+    fireEvent.pointerMove(hit, first(3));
+    fireEvent.pointerDown(hit, second(10));
+    fireEvent.pointerMove(hit, second(12));
+    fireEvent.pointerCancel(hit, second(12));
+    fireEvent.pointerUp(hit, second(12));
+    fireEvent.lostPointerCapture(hit, second(12));
+    expect(releasePointerCapture).not.toHaveBeenCalled();
+
+    // The first pointer's drag is still live: it keeps painting.
+    fireEvent.pointerMove(hit, first(5));
+    expect(onToggleStep.mock.calls.map(c => c[0])).toEqual([2, 3, 4, 5]);
+    fireEvent.pointerCancel(hit, first(5));
+    expect(releasePointerCapture).toHaveBeenCalledWith(1);
+    expect(releasePointerCapture).not.toHaveBeenCalledWith(2);
+    fireEvent.pointerMove(hit, first(7));
+    expect(onToggleStep.mock.calls.map(c => c[0])).toEqual([2, 3, 4, 5]);
+  });
+
+  it('losing pointer capture ends the drag without treating it as a tap', () => {
+    const track = makeTrack('lead', [[3, null]]);
+    const { hit, onToggleStep } = setup({ track });
+    fireEvent.pointerDown(hit, at(3, 60));
+    fireEvent.lostPointerCapture(hit, at(3, 60));
+    fireEvent.pointerUp(hit, at(3, 60));
+    fireEvent.pointerMove(hit, at(3, 62));
+    expect(onToggleStep).not.toHaveBeenCalled();
+  });
+
   it('long-press on a bar with touch selects its step instead of removing it', () => {
     vi.useFakeTimers();
     try {

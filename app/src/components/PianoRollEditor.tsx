@@ -336,6 +336,9 @@ export const PianoRollEditor = memo(function PianoRollEditor({
 
   const handlePointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (readOnly || e.button !== 0) return;
+    // One drag at a time: a second finger landing mid-drag must not replace
+    // the drag the first finger owns.
+    if (dragRef.current && dragRef.current.pointerId !== e.pointerId) return;
     const p = pointerToCell(e);
     const bar = barAt(bars, p.step, p.midi);
 
@@ -440,9 +443,11 @@ export const PianoRollEditor = memo(function PianoRollEditor({
   };
 
   const handlePointerMove = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const p = pointerToCell(e);
     const drag = dragRef.current;
-    if (drag && drag.pointerId === e.pointerId && !readOnly) {
+    // Another pointer moving during a drag neither edits nor moves the hover.
+    if (drag && drag.pointerId !== e.pointerId) return;
+    const p = pointerToCell(e);
+    if (drag && !readOnly) {
       // A hold only counts while the finger stays on the bar it pressed.
       if (drag.kind !== 'paint' && (p.midi !== drag.bar.midi || p.step < drag.bar.start
         || p.step >= drag.bar.start + drag.bar.len)) {
@@ -466,9 +471,20 @@ export const PianoRollEditor = memo(function PianoRollEditor({
     updateHover(p.step, p.midi, p.x);
   };
 
+  // A cancelled or uncaptured pointer ends the drag without committing a tap,
+  // but only when it is the pointer that owns the drag: another finger's
+  // cancel must leave the first finger's drag (and its capture) alone.
   const handlePointerCancel = (e: ReactPointerEvent<HTMLDivElement>) => {
-    endDrag(e.currentTarget, e.pointerId);
+    const drag = dragRef.current;
+    if (drag && drag.pointerId !== e.pointerId) return;
+    if (drag) endDrag(e.currentTarget, drag.pointerId);
     setHover(null);
+  };
+
+  const handleLostPointerCapture = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const drag = dragRef.current;
+    if (!drag || drag.pointerId !== e.pointerId) return;
+    endDrag(e.currentTarget, drag.pointerId);
   };
 
   const handlePointerLeave = () => {
@@ -660,6 +676,7 @@ export const PianoRollEditor = memo(function PianoRollEditor({
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             onPointerCancel={handlePointerCancel}
+            onLostPointerCapture={handleLostPointerCapture}
             onPointerLeave={handlePointerLeave}
           />
 
