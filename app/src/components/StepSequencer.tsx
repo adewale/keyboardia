@@ -306,18 +306,42 @@ export function StepSequencer() {
     }
   }, [dispatch, state.tracks, multiplayer]);
 
+  const rowWrapper = useCallback((trackId: string) => (
+    Array.from(tracksRef.current?.querySelectorAll<HTMLElement>('[data-track-id]') ?? [])
+      .find(element => element.dataset.trackId === trackId)
+  ), []);
+
+  // Focus a control on a track's row once the dock has rendered: the dock is
+  // about to become inert, or the control that had focus has unmounted.
+  const focusRowControl = useCallback((trackId: string, selectors: string[]) => {
+    requestAnimationFrame(() => {
+      const wrapper = rowWrapper(trackId);
+      focusFirstVisible(selectors.map(selector => wrapper?.querySelector<HTMLElement>(selector)));
+    });
+  }, [rowWrapper]);
+
   const handleClearTrack = useCallback((trackId: string) => {
     dispatch({ type: 'CLEAR_TRACK', trackId });
   }, [dispatch]);
 
   const handleDeleteTrack = useCallback((trackId: string) => {
+    // Delete is pressed in the docked track's Track pane: the dock is about to
+    // close (and turn inert) and the row goes away, so focus would fall to the
+    // page. Hand it to the next row, or the previous one after the last.
+    const dockElement = tracksRef.current?.querySelector(`#${EDITOR_DOCK_ID}`);
+    if (dockElement?.contains(document.activeElement)) {
+      const ids = getState().tracks.map(t => t.id);
+      const index = ids.indexOf(trackId);
+      const neighbour = index < 0 ? undefined : ids[index + 1] ?? ids[index - 1];
+      if (neighbour) focusRowControl(neighbour, ['[data-dock-toggle]', '.track-name']);
+    }
     // Deleting the docked track closes the dock (a collaborator's delete is
     // caught by reconcileDock during render).
     setDock(prev => releaseDockedTrack(prev, trackId));
     // Clean up audio engine resources (GainNode) to prevent memory leak
     audioEngine.removeTrackGain(trackId);
     dispatch({ type: 'DELETE_TRACK', trackId });
-  }, [dispatch]);
+  }, [dispatch, getState, focusRowControl]);
 
   const handleSetParameterLock = useCallback((trackId: string, step: number, lock: ParameterLock | null) => {
     dispatch({ type: 'SET_PARAMETER_LOCK', trackId, step, lock });
@@ -519,20 +543,6 @@ export function StepSequencer() {
     if (!getDock().open && next.open) dockPulsePendingRef.current = true;
     setDock(next);
   }, [getDock]);
-
-  const rowWrapper = useCallback((trackId: string) => (
-    Array.from(tracksRef.current?.querySelectorAll<HTMLElement>('[data-track-id]') ?? [])
-      .find(element => element.dataset.trackId === trackId)
-  ), []);
-
-  // Focus a control on a track's row once the dock has rendered: the dock is
-  // about to become inert, or the control that had focus has unmounted.
-  const focusRowControl = useCallback((trackId: string, selectors: string[]) => {
-    requestAnimationFrame(() => {
-      const wrapper = rowWrapper(trackId);
-      focusFirstVisible(selectors.map(selector => wrapper?.querySelector<HTMLElement>(selector)));
-    });
-  }, [rowWrapper]);
 
   const handleOpenDock = useCallback((trackId: string) => {
     commitDock(openDock(getDock(), trackId));

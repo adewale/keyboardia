@@ -332,6 +332,27 @@ describe('StepSequencer editor dock', () => {
     expect(screen.queryByTestId('piano-roll')).toBeNull();
   });
 
+  it('hands focus to the next row, or the previous after the last, when Delete in the Track pane removes the docked track', () => {
+    render(<StepSequencer />);
+    // A drum docks on its Track pane.
+    fireEvent.click(screen.getByText('name Kick'));
+    const remove = within(tools()).getByRole('button', { name: 'Delete' });
+    remove.focus();
+    fireEvent.click(remove);
+    expect(isOpen()).toBe(false);
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(document.activeElement).toBe(screen.getByText('pitch Bass'));
+
+    // The reducer is mocked, so Bass is still the last row: delete it from its pane.
+    fireEvent.click(screen.getByText('pitch Bass'));
+    fireEvent.click(paneChip('Track'));
+    const removeLast = within(tools()).getByRole('button', { name: 'Delete' });
+    removeLast.focus();
+    fireEvent.click(removeLast);
+    act(() => { vi.advanceTimersByTime(50); });
+    expect(document.activeElement).toBe(screen.getByText('name Kick'));
+  });
+
   it('closes when a collaborator deletes the docked track, and survives a reorder', () => {
     const view = render(<StepSequencer />);
     fireEvent.click(screen.getByText('pitch Lead'));
