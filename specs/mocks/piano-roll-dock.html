@@ -9,29 +9,34 @@
      the two-line control block and the proposed editor dock pinned under the grid.
      Single dark theme by choice: these are the app's own tokens. */
   :root {
-    --bg: #121212; --surface: #1e1e1e; --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
+    --color-accent: #e85a30; --color-surface: #1e1e1e;
+    --color-drums: #e67e22; --color-bass: #9b59b6; --color-keys: #3498db; --color-leads: #e91e63; --color-pads: #2ecc71; --color-fx: #00bcd4; --color-purple-dark: #8e44ad;
+    --bg: #121212; --surface: var(--color-surface); --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
     --border: #3a3a3a; --border-light: #4a4a4a; --border-hover: #555555;
     --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
-    --accent: #e85a30; --accent-hi: #f07048; --accent-text: #ff8a65;
+    --accent: var(--color-accent); --accent-hi: #f07048; --accent-text: #ff8a65;
     --success: #1db954; --info: #3498db; --info-text: #5eb3ea; --info-region: rgba(74,158,206,.3); --warning: #ffc107;
     --purple: #8e44ad; --purple-text: #c58ad6; --purple-muted: rgba(155,89,182,.15);
-    --cat-keys: #e85a30; --cat-bass: #9b59b6; --cat-drums: #4ecdc4;
+    --cat-keys: var(--color-keys); --cat-bass: var(--color-bass); --cat-drums: var(--color-drums);
     --playhead: #ffffff;
-    --key-white: #c9c5bc; --key-white-hi: #ddd9d0; --key-black: #131211; --key-black-hi: #2a2826; --key-label: #3f3c37;
+    --piano-key-surface: #0f0e0d; --piano-grid-step: rgb(255 255 255 / 4.5%); --piano-grid-beat: rgb(255 255 255 / 10%);
+    --piano-grid-bar: rgb(255 255 255 / 22%); --piano-grid-octave: rgb(255 255 255 / 16%); --piano-grid-black-row: rgb(0 0 0 / 22%);
+    --note-velocity-accent: var(--color-accent); --note-velocity-surface: var(--color-surface); --note-velocity: 1;
+    --piano-key-white: #c9c5bc; --piano-key-white-hover: #ddd9d0; --piano-key-black: #131211; --piano-key-black-hover: #2a2826; --piano-key-label: #3f3c37;
     --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+    --font-mono: 'SF Mono', 'Consolas', monospace;
     --step-w: 36px; --step-pitch: 39px;
-    /* Two-line control block: grip 16 + body 110 + padding 8 = 134px. Line 1: tick, name, transpose readout.
-       Line 2: M · S · badge · ♪ · lane. Two 18px lines fit inside the existing 44px row. */
+    /* Two-line control block: grip 12 + gap 4 + body 110 + padding 8 = 134px. Line 1: tick, name, transpose readout.
+       Line 2: M · S · badge · ♪ · lane. Two 17px lines plus a 2px gap align with the 36px cells. */
     --track-left-width: 134px;
-    --ctl-h: 18px;
-    --row-h: 18px; --dock-grid-h: 252px;
+    --ctl-h: 17px;
+    --row-h: 18px; --dock-grid-h: 252px; --dock-head-height: 44px; --dock-toolbar-height: 48px;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
   .page-wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 56px; display: flex; flex-direction: column; gap: 18px; }
-  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; line-height: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
   h1 { font-size: 22px; font-weight: 600; margin: 2px 0 4px; letter-spacing: -.01em; text-wrap: balance; }
   h2 { font-size: 15px; font-weight: 600; margin: 10px 0 8px; }
   .lede { color: var(--muted); max-width: 72ch; margin: 0; }
@@ -56,18 +61,18 @@
   .hint { font-size: 12px; color: var(--dim); }
 
   /* ===== The scroller: horizontal as today, plus vertical so the dock can pin to its bottom ===== */
-  .tracks { overflow: auto; max-height: 78vh; min-height: 440px; position: relative; scrollbar-color: var(--surface-4) var(--surface-2); }
+  .tracks { overflow: auto; max-height: 78vh; position: relative; scrollbar-color: var(--surface-4) var(--surface-2); }
   .tracks::-webkit-scrollbar { height: 8px; width: 8px; }
   .tracks::-webkit-scrollbar-track { background: var(--surface-2); border-radius: 4px; }
   .tracks::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
-  .tracks-inner { display: inline-flex; flex-direction: column; gap: 2px; min-width: 100%; min-height: 100%; }
+  .tracks-inner { display: flex; width: max-content; flex-direction: column; gap: 2px; min-width: 100%; min-height: 100%; }
   .tracks-inner .rows { display: flex; flex-direction: column; gap: 2px; }
   .tracks-inner .fill { flex: 1; }
 
   /* ===== Loop ruler (ported LoopRuler behaviour, grid aligned) ===== */
   .ruler-row { display: flex; gap: 8px; margin-bottom: 6px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-bottom: 2px; }
   .ruler-spacer { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--bg); display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; color: var(--dim); }
-  .loop-ruler { position: relative; height: 24px; width: calc(32 * var(--step-pitch) - 3px); background: var(--surface-2); border-radius: 4px; cursor: crosshair; user-select: none; touch-action: none; }
+  .loop-ruler { position: relative; height: 24px; width: 1253px; flex: none; background: var(--surface-2); border-radius: 4px; cursor: crosshair; user-select: none; touch-action: none; }
   .loop-ruler:hover, .loop-ruler.has-loop { background: var(--surface-3); }
   .loop-ruler.dragging { cursor: ew-resize; }
   .ruler-marker { position: absolute; top: 0; height: 100%; pointer-events: none; }
@@ -87,39 +92,39 @@
 
   /* ===== Track rows, on the row diet ===== */
   .track-row-wrapper { display: flex; flex-direction: column; border-radius: 4px; }
-  .track-row { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-radius: 4px; min-width: max-content; position: relative; }
+  .track-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; height: 44px; border-radius: 4px; min-width: max-content; position: relative; }
   .track-left {
     display: grid;
-    grid-template-columns: [drag] 16px [body] 110px;
+    grid-template-columns: [drag] 12px [body] 110px;
     grid-template-rows: [identity] var(--ctl-h) [controls] var(--ctl-h);
     column-gap: 4px; row-gap: 2px; align-content: center; padding: 0 4px; position: sticky; left: 0; z-index: 3; background: var(--surface);
-    box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); height: 44px; width: var(--track-left-width); min-width: var(--track-left-width);
+    box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); height: 36px; width: var(--track-left-width); min-width: var(--track-left-width);
   }
-  .track-row-wrapper.docked .track-row { box-shadow: inset 0 0 0 2px var(--accent); }
-  .track-row-wrapper.docked .track-left { box-shadow: inset 2px 0 0 var(--accent), inset 0 2px 0 var(--accent), inset 0 -2px 0 var(--accent), 4px 0 8px -4px rgba(0,0,0,.2); }
+  .track-row-wrapper.docked .track-left { box-shadow: inset 2px 0 0 var(--accent), 4px 0 8px -4px rgba(0,0,0,.2); }
   .drag-handle { grid-column: drag; grid-row: identity / span 2; align-self: center; color: var(--dim); font-size: 14px; letter-spacing: -2px; cursor: grab; text-align: center; }
-  .track-name { grid-column: body; grid-row: identity; height: var(--ctl-h); display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 0 2px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 3px; }
+  .track-name { grid-column: body; grid-row: identity; height: 17px; border: 0; color: var(--text); background: transparent; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 0 2px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 3px; }
   .track-name:hover { background: rgba(255,255,255,.05); }
   .track-name .tick { width: 3px; height: 12px; border-radius: 2px; background: var(--cat); flex: 0 0 auto; }
   .track-name .tr { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--info-text); }
-  .line2 { grid-column: body; grid-row: controls; display: flex; gap: 2px; align-items: center; padding-left: 2px; }
-  .line2 .group { display: inline-flex; gap: 2px; }
-  .line2 .group + .group { margin-left: 4px; }
+  .line2 { grid-column: body; grid-row: controls; display: flex; gap: 4px; align-items: center; }
+  .line2 .group { display: inline-flex; gap: 2px; flex: none; }
   .tl-btn { height: var(--ctl-h); width: 20px; border: 1px solid var(--border-hover); border-radius: 3px; background: transparent; color: var(--muted); font-size: 10px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
   .tl-btn:hover { border-color: var(--muted); }
   .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: #fff; }
-  .badge { height: var(--ctl-h); width: 26px; border-radius: 3px; background: var(--purple-muted); color: var(--purple-text); font-family: var(--font-mono); font-size: 9px; display: inline-flex; align-items: center; justify-content: center; }
+  .badge { height: var(--ctl-h); width: 20px; border: 0; padding: 0; border-radius: 3px; background: var(--purple-muted); color: var(--purple-text); font-family: var(--font-mono); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
   .badge.drum { background: rgba(255,255,255,.06); color: var(--muted); }
-  .expand-toggle { width: 20px; height: var(--ctl-h); border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 12px; cursor: pointer; transition: background 150ms ease; padding: 0; }
+  .expand-toggle { width: 20px; height: var(--ctl-h); border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; transition: background 150ms ease; padding: 0; }
   .expand-toggle.active { background: var(--accent); border-color: var(--accent-hi); color: var(--bg); }
-  .velocity-toggle { width: 20px; height: var(--ctl-h); border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; cursor: pointer; padding: 0; }
+  .velocity-toggle { width: 20px; height: var(--ctl-h); border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; padding: 0; }
   .steps { flex: 1; min-width: 0; }
   .step-grid { display: flex; gap: 3px; }
+  .step-cell.page-start { margin-left: 8px; }
   .step-cell { width: var(--step-w); height: 36px; border: 2px solid var(--border); border-radius: 4px; background: var(--surface-2); cursor: pointer; position: relative; flex: 0 0 auto; padding: 0; }
   .step-cell:hover { background: var(--surface-3); border-color: var(--border-light); }
   .step-cell.beat-start { border-left-color: var(--border-light); border-left-width: 3px; }
-  .step-cell.active { background: var(--accent); border-color: var(--accent-hi); }
-  .step-cell.active:hover { background: var(--accent-hi); }
+  .step-cell.active { background: var(--note-velocity-fill); border-color: var(--accent-hi); }
+  .step-cell, .note { --note-velocity-fill: color-mix(in srgb, var(--note-velocity-accent) calc(var(--note-velocity, 1) * 100%), var(--note-velocity-surface)); }
+  .step-cell.has-lock { border-color: var(--color-purple-dark); }
   .step-cell.playing { border-color: var(--playhead); border-width: 3px; }
   .step-cell.selected { border-color: var(--info); box-shadow: 0 0 0 2px rgba(74,158,206,.4); }
   .step-cell .contour { position: absolute; left: 5px; right: 5px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.8); pointer-events: none; }
@@ -128,51 +133,60 @@
   @keyframes cell-pulse { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
   .track-row.muted { opacity: .5; }
 
+  .velocity-lane { display: flex; gap: 3px; margin-left: 142px; height: 28px; }
+  .velocity-lane input { width: 36px; flex: none; margin: 0; accent-color: var(--accent); }
+  .velocity-lane input.page-start { margin-left: 8px; }
+
   /* ===== The dock ===== */
   .dock { position: sticky; bottom: 0; z-index: 6; display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease-out; margin-top: 6px; }
   .dock.open { grid-template-rows: 1fr; }
   .dock.tall { --dock-grid-h: 432px; }
-  .dock-inner { min-height: 0; overflow: hidden; background: var(--surface); border: 1px solid var(--border-light); border-bottom: 0; border-radius: 8px 8px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,.45); display: flex; flex-direction: column; min-width: max-content; }
-  .dock-head { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--border); position: sticky; left: 0; background: var(--surface); z-index: 2; }
-  .chips { display: inline-flex; gap: 2px; background: var(--surface-2); border-radius: 6px; padding: 2px; }
-  .chip { padding: 5px 11px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .dock-inner { min-height: 0; overflow: hidden; background: var(--surface); border: 0; border-top: 1px solid var(--border-light); border-radius: 8px 8px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,.45); display: flex; flex-direction: column; min-width: max-content; }
+  .dock-head { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--border); position: sticky; left: 0; background: var(--surface); z-index: 2; height: var(--dock-head-height); flex-shrink: 0; }
+  .chips { display: inline-flex; gap: 2px; background: var(--surface-2); border-radius: 4px; padding: 2px; flex: none; }
+  .track-tabs { min-width: 0; flex: 1; overflow-x: auto; }
+  .chip { height: 28px; flex: none; padding: 0 11px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chip:disabled { opacity: .4; cursor: default; }
   .chip:hover { color: var(--text); background: rgba(255,255,255,.05); }
   .chip.active { background: var(--accent); color: var(--bg); }
   .chip .tick { width: 3px; height: 12px; border-radius: 2px; background: var(--cat); }
   .chip.active .tick { background: var(--bg); }
   .dock-title { font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+  .dock-title { white-space: nowrap; }
   .dock-title b { color: var(--text); font-weight: 600; }
-  .dock-head .right { margin-left: auto; display: inline-flex; gap: 6px; }
+  .dock-head .right { margin-left: auto; display: inline-flex; gap: 6px; flex: none; }
   .dock-head .ib { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
   .dock-head .ib:hover { color: var(--text); border-color: var(--border-light); }
   .dock-body { display: flex; gap: 8px; }
-  .dock-left { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--surface); display: grid; grid-template-columns: 18px 1fr; height: var(--dock-grid-h); overflow: hidden; border-right: 1px solid var(--border); transition: height 200ms ease-out; }
-  .dock-tools { position: sticky; left: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--border); }
-  .pane { padding: 6px 10px; font-size: 12px; color: var(--muted); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; min-height: 40px; }
+  .dock-left { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--surface); display: grid; grid-template-columns: 18px 1fr; height: var(--dock-grid-h); overflow: hidden; box-shadow: inset -1px 0 var(--border); transition: height 200ms ease-out; }
+  .dock-tools { position: sticky; left: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--border); height: var(--dock-toolbar-height); flex-shrink: 0; overflow-x: auto; overflow-y: hidden; }
+  .pane { padding: 0 10px; height: calc(var(--dock-toolbar-height) - 1px); font-size: 12px; color: var(--muted); display: flex; flex-wrap: nowrap; align-items: center; gap: 14px; width: max-content; min-width: 100%; }
   .pane b { display: none; }
-  .pane .rowc { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
-  .pane .k { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .05em; margin-right: 2px; }
-  .cbtn { height: 26px; padding: 0 9px; border: 1px solid var(--border-hover); border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .pane .rowc { display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; flex: none; white-space: nowrap; }
+  .pane .k { font-size: 11px; font-weight: 500; color: var(--dim); text-transform: uppercase; letter-spacing: .5px; margin-right: 2px; }
+  .pane .value, .pane input, .pane select, .bpm b { font-family: var(--font-mono); }
+  .cbtn { height: 28px; padding: 0 9px; border: 1px solid var(--border-hover); border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cbtn:disabled { opacity: .4; cursor: default; }
   .cbtn.sym { padding: 0 8px; font-weight: 600; }
   .cbtn[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.12); }
   .cbtn.ghost-toggle i { width: 10px; height: 10px; border-radius: 2px; border: 1px dashed var(--gc); display: inline-block; }
   .cbtn.ghost-toggle[aria-pressed="true"] i { background: var(--gc); border-style: solid; }
   .cbtn.quiet { color: var(--muted); border-color: var(--border); background: transparent; }
-  .pane input[type=range] { width: 110px; accent-color: var(--accent); }
+  .pane input[type=range] { width: 110px; height: 28px; accent-color: var(--accent); }
   .pane .empty { color: var(--dim); }
   .range-rail { position: relative; will-change: transform; }
   .range-rail .bracket { position: absolute; left: 7px; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--info-text), rgba(94,179,234,.35)); }
   .range-rail .bracket::before, .range-rail .bracket::after { content: ''; position: absolute; left: -2px; width: 7px; height: 2px; background: var(--info-text); border-radius: 1px; }
   .range-rail .bracket::before { top: 0; } .range-rail .bracket::after { bottom: 0; }
-  .keycol { position: relative; background: #0f0e0d; will-change: transform; }
-  .key { position: absolute; left: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-family: var(--font-mono); font-size: 10px; color: var(--key-label); cursor: pointer; user-select: none; transition: background 70ms ease, transform 70ms ease; }
-  .key.white { width: 100%; z-index: 1; background: linear-gradient(90deg, #bab6ad 0%, var(--key-white) 45%, #d3cfc6 100%); border-bottom: 1px solid #0f0e0d; border-radius: 0 2px 2px 0; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), inset -3px 0 3px rgba(0,0,0,.07); }
-  .key.black { width: 58%; z-index: 2; color: rgba(255,255,255,.7); background: linear-gradient(90deg, #2a2826 0%, var(--key-black) 60%, #060606 100%); border-radius: 0 3px 3px 0; box-shadow: 2px 2px 5px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.1), inset 0 -1px 0 rgba(0,0,0,.8); }
-  .key.white.c .lbl { color: #25231f; font-weight: 600; }
+  .keycol { position: relative; background: var(--piano-key-surface); will-change: transform; }
+  .key { position: absolute; left: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--piano-key-label); cursor: pointer; user-select: none; transition: background 70ms ease, transform 70ms ease; }
+  .key.white { width: 100%; z-index: 1; background: var(--piano-key-white); border-bottom: 1px solid var(--piano-key-surface); border-radius: 0 2px 2px 0; }
+  .key.black { width: 58%; z-index: 2; color: var(--text); background: var(--piano-key-black); border-radius: 0 3px 3px 0; }
+  .key.white.c .lbl { color: var(--piano-key-label); font-weight: 500; }
   .key .lbl { opacity: 0; }
   .key.c .lbl, .key.hover .lbl, .key.pressed .lbl { opacity: 1; }
-  .key.white:hover, .key.white.hover { background: var(--key-white-hi); }
-  .key.black:hover, .key.black.hover { background: var(--key-black-hi); }
+  .key.white:hover, .key.white.hover { background: var(--piano-key-white-hover); }
+  .key.black:hover, .key.black.hover { background: var(--piano-key-black-hover); }
   .key.pressed { background: var(--accent) !important; transform: translateX(2px); }
   .key.pressed .lbl { color: #fff !important; }
   .key.white.root .lbl { color: #1f6fa8; } .key.white.fifth .lbl { color: #7a3a9a; } .key.black.fifth .lbl { color: var(--purple-text); }
@@ -183,16 +197,16 @@
   .dock-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
   .grid { position: relative; overflow: hidden; }
   .row { position: absolute; left: 0; right: 0; }
-  .row.black { background: rgba(0,0,0,.22); }
-  .row.c { border-top: 1px solid rgba(255,255,255,.16); }
+  .row.black { background: var(--piano-grid-black-row); }
+  .row.c { border-top: 1px solid var(--piano-grid-octave); }
   .row.root { background: rgba(94,179,234,.07); } .row.fifth { background: rgba(197,138,214,.05); }
-  .row.out { background-image: repeating-linear-gradient(135deg, rgba(255,255,255,.045) 0 1px, transparent 1px 7px); }
+  .row.out { background-image: repeating-linear-gradient(135deg, rgb(255 255 255 / 4.5%) 0 1px, transparent 1px 7px); }
   .row.scale-out { background: rgba(0,0,0,.42); }
-  .lines { position: absolute; inset: 0; pointer-events: none; background-image:
-      repeating-linear-gradient(to right, rgba(255,255,255,.22) 0 1px, transparent 1px 624px),
-      repeating-linear-gradient(to right, rgba(255,255,255,.10) 0 1px, transparent 1px 156px),
-      repeating-linear-gradient(to right, rgba(255,255,255,.045) 0 1px, transparent 1px 39px),
-      repeating-linear-gradient(to bottom, rgba(255,255,255,.035) 0 1px, transparent 1px 18px); }
+  .lines { position: absolute; inset: 0; pointer-events: none; }
+  .grid-line { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--piano-grid-step); }
+  .grid-line.beat { background: var(--piano-grid-beat); }
+  .grid-line.bar { background: var(--piano-grid-bar); }
+  .page-band { position: absolute; top: 0; bottom: 0; width: 11px; background: var(--piano-grid-bar); opacity: .3; }
   .loop-shade { position: absolute; top: 0; bottom: 0; background: rgba(0,0,0,.35); pointer-events: none; display: none; }
   .grid.has-loop .loop-shade { display: block; }
   .hl-row, .hl-col, .sel-col { position: absolute; pointer-events: none; opacity: 0; }
@@ -205,14 +219,13 @@
   .grid.hovering.empty .ghost { opacity: 1; }
   .notes { position: absolute; inset: 0; transition: opacity 120ms ease; }
   .notes.fading { opacity: 0; }
-  .notes .note { position: absolute; border-radius: 3px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 0 10px var(--glow); background-image: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 55%); display: flex; align-items: center; padding-left: 6px; font-family: var(--font-mono); font-size: 10px; color: rgba(255,255,255,.85); overflow: hidden; white-space: nowrap; }
-  .notes .note::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 6px; background: rgba(255,255,255,.14); border-radius: 0 3px 3px 0; }
-  .notes .note.playing { box-shadow: 0 0 0 2px var(--playhead), 0 0 14px rgba(255,255,255,.45); filter: brightness(1.25); }
+  .notes .note { position: absolute; border-radius: 3px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35); background: var(--note-velocity-fill); display: flex; align-items: center; padding-left: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--text); overflow: hidden; white-space: nowrap; }
+  .notes .note.playing { box-shadow: 0 0 0 2px var(--playhead), 0 0 14px rgba(255,255,255,.45);  }
   .notes .note.dragging { opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.5), 0 6px 18px rgba(0,0,0,.5); }
   .ghosts { position: absolute; inset: 0; pointer-events: none; transition: opacity 120ms ease; }
   .ghosts .gnote { position: absolute; border-radius: 3px; border: 1px dashed var(--gc); background: color-mix(in srgb, var(--gc) 14%, transparent); }
   .playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--playhead); box-shadow: 0 0 8px rgba(255,255,255,.6); pointer-events: none; opacity: 0; z-index: 3; }
-  .wash { position: absolute; top: 0; bottom: 0; left: 0; width: var(--step-w); background: rgba(255,255,255,.045); pointer-events: none; opacity: 0; }
+  .wash { position: absolute; top: 0; bottom: 0; left: 0; width: var(--step-w); background: rgb(255 255 255 / 4.5%); pointer-events: none; opacity: 0; }
   .grid.playing .playhead, .grid.playing .wash { opacity: 1; }
   .hit { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
   .tip { position: absolute; pointer-events: none; z-index: 4; opacity: 0; background: var(--surface-3); color: var(--text); border: 1px solid var(--border-light); border-radius: 5px; padding: 2px 7px; font-family: var(--font-mono); font-size: 10px; white-space: nowrap; transform: translate(10px, -26px); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
@@ -226,7 +239,28 @@
   .try { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; max-width: 72ch; }
   .links { font-size: 13px; color: var(--muted); }
 
-  @media (max-width: 640px) { h1 { font-size: 19px; } .play-button { width: 44px; height: 44px; } .tracks { max-height: 70vh; } }
+  .dock-body[hidden], .velocity-lane[hidden] { display: none; }
+  .dock-head .dock-title { display: none; }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .page-wrap { padding: 8px; }
+    .page-wrap > div:first-child { display: none; }
+    .sequencer { padding: 6px; }
+    .tracks { max-height: calc(100vh - 128px); }
+    .track-row { height: 48px; padding: 0; }
+    .track-left { height: 48px; align-content: start; grid-template-rows: [identity] 17px [controls] 28px; }
+    .line2 { --ctl-h: 28px; }
+    .line2 .badge, .line2 .velocity-toggle { display: none; }
+    .dock { --dock-grid-h: max(18px, min(calc(45vh - 93px), var(--dock-available-grid-height, 18px))); }
+    .dock.tall { --dock-grid-h: max(18px, min(calc(60vh - 93px), var(--dock-available-grid-height, 18px))); }
+    .dock-head .ib { padding: 0 4px; }
+    .transport .hint, .transport .session-name { display: none; }
+  }
+  @media (max-width: 640px) { h1 { font-size: 19px; } .play-button { width: 44px; height: 44px; } }
+  @media (max-width: 640px) and (orientation: portrait) { .tracks { max-height: 70vh; } }
+  @media (orientation: landscape) and (max-height: 340px) {
+    .play-button { width: 44px; height: 44px; }
+    .tracks { max-height: calc(100vh - 88px); }
+  }
   @media (prefers-reduced-motion: reduce) {
     .dock, .dock-left, .dock-scroll, .notes, .ghosts, .key, .play-button::before, .expand-toggle { transition: none; }
     .step-cell.pulse, .shift-click-marker { animation: none; }
@@ -240,7 +274,7 @@
   <div>
     <div class="eyebrow">Keyboardia · Pitch panel · Editor dock prototype</div>
     <h1>Piano roll dock</h1>
-    <p class="lede">The sequencer with the two-line control block and the proposed editor dock under the grid. The keyboard starts on the same left edge as the track names. Press ♪ on Lead or Bass, or click a track name, to dock that track. Shift+click a step for its Step pane. Rows never move; the dock shows one track and ghosts the other. Everything is wired to a small synth. The dock starts open here so the page shows its working state; in the app it opens only on request.</p>
+    <p class="lede">The sequencer with the two-line control block and the proposed editor dock under the grid. The keyboard starts on the same left edge as the track names. Press ♪ on Lead or Bass, or click a track name, to dock that track. Shift+click a step for its Step pane. Rows stay contiguous; the dock shows one track and ghosts the other. Note editing and playback use a small synth; step-count, instrument, envelope, pattern and action integration are labelled layout previews in this spec-only mock. The dock starts open here so the page shows its working state; in the app it opens only on request.</p>
   </div>
 
   <section class="sequencer" id="sequencer" aria-label="Sequencer">
@@ -263,12 +297,12 @@
     <ul class="notes-list">
       <li><b>Rows stay contiguous.</b> Lead, Bass, Kick and Hat never gain a panel between them. The dock takes its space from the bottom of the scroller and pins there while the tracks scroll above it.</li>
       <li><b>One scroller.</b> The ruler, every row and the dock share the horizontal scroll, so step 9 is the same x everywhere. The dock's control panel and keyboard are sticky to the left like the control column.</li>
-      <li><b>Two-line control block, 134px.</b> Line one is identity: category tick, name, transpose readout. Line two is state and disclosure: mute and solo, then badge, ♪ and the lane toggle. Two 18px lines fit the existing 44px row, so nothing grows. Step count, instrument, pattern tools and actions live in the dock's Track pane.</li>
+      <li><b>Two-line control block, 134px.</b> Line one is identity: category tick, name, transpose readout. Line two is state and disclosure: mute and solo, then badge, ♪ and the lane toggle. Two 17px lines and a 2px gap align with the cells inside a 44px row. Step count, instrument, pattern tools and actions live in the dock's Track pane.</li>
       <li><b>One left edge.</b> The grip, the names, the ruler's spacer, the dock toolbar and the keyboard all start on the same line, and the dock grid starts where the step cells start.</li>
-      <li><b>Row and dock are tied three ways.</b> The docked row gets an accent outline, its ♪ turns orange, and on open its cells pulse once. The dock's tab carries the same name and category tick.</li>
+      <li><b>Row and dock are tied three ways.</b> The docked control block gets a 2px accent edge, its ♪ turns orange, and on open its cells pulse once. The dock's tab carries the same name and category tick.</li>
       <li><b>Switching is a crossfade, not a layout change.</b> Press the other track's ♪ or tab: notes fade over 120ms, ghosts swap, the pitch scroll eases to the new notes. Nothing above moves.</li>
       <li><b>Ghost notes answer "two rolls at once".</b> The other melodic track is drawn dashed in its category colour. Toggle it in the Notes pane.</li>
-      <li><b>Three panes as one toolbar, one grid, two heights.</b> Notes, Step and Track swap the toolbar under the dock header. Step highlights the selected step's column. Track holds transpose, steps, instrument, pattern tools and actions. The grid never disappears. The ⇕ button toggles the compact and tall detents.</li>
+      <li><b>Three panes as one toolbar, one grid, two heights.</b> Notes, Step and Track swap the toolbar under the dock header. Step highlights the selected step's column. Track holds transpose, steps, instrument, pattern tools and actions. The Notes grid stays visible for melodic tracks; drums open the Step or Track toolbar. The ⇕ button toggles the compact and tall detents.</li>
       <li><b>Pitch contour in the cells.</b> Melodic rows show where each note sits, so the melody stays readable while the dock shows another track.</li>
     </ul>
   </section>
@@ -277,7 +311,7 @@
     <h2>Try it</h2>
     <ol class="try">
       <li>Press Play. Playheads run on the ruler, the cells and the dock from one clock.</li>
-      <li>Press ♪ on Bass and watch the crossfade and the outline move. Press ♪ on Lead to come back.</li>
+      <li>Press ♪ on Bass and watch the crossfade and the control edge move. Press ♪ on Lead to come back.</li>
       <li>Drag across empty dock cells to paint, drag a bar up or down to re-pitch, drag its right edge to lengthen it. The row above updates on the same frame.</li>
       <li>Shift+click a Lead cell. The dock switches to the Step pane for that step; change its pitch or tie there.</li>
       <li>Open the Track pane and change transpose. Every bar shifts, and the readout in the row follows.</li>
@@ -291,7 +325,15 @@
 (function () {
   'use strict';
   const STEPS = 32, STEP_W = 36, GAP = 3, PITCH = STEP_W + GAP;
-  const MIDI_MAX = 84, MIDI_MIN = 36; // C6 .. C2
+  const MIDI_MAX = 108, MIDI_MIN = 12; // C8 .. C0: transpose +/-24 plus pitch lock +/-24
+  const PAGE_STEPS = 16, PAGE_GAP = 8;
+  const stepX = step => step * PITCH + Math.floor(step / PAGE_STEPS) * PAGE_GAP;
+  const cellRight = step => stepX(step) + STEP_W;
+  const spanWidth = (start, len) => cellRight(start + len - 1) - stepX(start);
+  const GRID_WIDTH = cellRight(STEPS - 1);
+  const xToIndex = x => { let i = STEPS - 1; while (i > 0 && x < stepX(i)) i--; return i; };
+  const playheadX = step => stepX(Math.floor(step)) + (step % 1) * PITCH;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
   const ROWS = MIDI_MAX - MIDI_MIN + 1, H = 18, BASE_MIDI = 60;
   const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   const BLACK = new Set([1,3,6,8,10]), MAJOR = new Set([0,2,4,5,7,9,11]);
@@ -304,7 +346,7 @@
 
   // ---------- tracks: steps + parameter locks, as in the app ----------
   function mk(id, name, kind, inst, badge, cat, transpose, range) {
-    return { id, name, kind, inst, badge, cat, transpose: transpose || 0, range, steps: new Array(STEPS).fill(false), locks: new Array(STEPS).fill(null), pattern: null, bars: [] };
+    return { id, name, kind, inst, badge, cat, transpose: transpose || 0, range, steps: new Array(STEPS).fill(false), locks: new Array(STEPS).fill(null), pattern: null, bars: [], defaultVelocity: 1 };
   }
   const lead = mk('lead', 'Lead', 'melodic', 'FM Bell', 'FM', 'var(--cat-keys)', 0, { min: 50, max: 84, optMin: 55, optMax: 79 });
   const bass = mk('bass', 'Bass', 'melodic', 'Sub', 'SMP', 'var(--cat-bass)', -12, { min: 36, max: 64, optMin: 38, optMax: 55 });
@@ -318,11 +360,24 @@
     .forEach(([s, m, v, t]) => { bass.steps[s] = true; bass.locks[s] = { pitch: m - BASE_MIDI - bass.transpose, volume: v, tie: !!t }; });
   kick.pattern = new Array(STEPS).fill(false).map((_, i) => i % 4 === 0 || i === 14 || i === 30);
   hat.pattern = new Array(STEPS).fill(false).map((_, i) => i % 2 === 0);
+  // Drums use the same active-step and lock model; only Notes is melodic-only.
+  kick.steps = kick.pattern; hat.steps = hat.pattern;
+  kick.range = hat.range = { min: 12, max: 108, optMin: 36, optMax: 84 };
   const tracks = [lead, bass, kick, hat];
   const melodic = tracks.filter(t => t.kind === 'melodic');
 
-  const stepMidi = (t, i) => t.steps[i] ? BASE_MIDI + t.transpose + ((t.locks[i] && t.locks[i].pitch) || 0) : null;
-  const stepVel = (t, i) => (t.locks[i] && typeof t.locks[i].volume === 'number') ? t.locks[i].volume : 0.8;
+  // A continuation inherits the attack's pitch and volume; its own locks do not sound.
+  function attackStep(t, i) {
+    let head = i;
+    for (let n = 0; n < STEPS - 1; n++) {
+      const previous = (head - 1 + STEPS) % STEPS;
+      if (!t.steps[head] || !t.locks[head]?.tie || !t.steps[previous]) break;
+      head = previous;
+    }
+    return head;
+  }
+  const stepMidi = (t, i) => t.steps[i] ? BASE_MIDI + t.transpose + (t.locks[attackStep(t, i)]?.pitch ?? 0) : null;
+  const stepVel = (t, i) => t.locks[attackStep(t, i)]?.volume ?? 1;
   function computeBars(t) {
     const bars = []; let cur = null;
     for (let i = 0; i < STEPS; i++) {
@@ -336,8 +391,26 @@
   const barAt = (t, step, midi) => t.bars.find(b => b.midi === midi && step >= b.start && step < b.start + b.len);
   let scaleLocked = false;
   const inScale = m => !scaleLocked || MAJOR.has(pc(m));
-  function snapToScale(m) { if (inScale(m)) return m; for (let d = 1; d < 7; d++) { if (m - d >= MIDI_MIN && MAJOR.has(pc(m - d))) return m - d; if (m + d <= MIDI_MAX && MAJOR.has(pc(m + d))) return m + d; } return m; }
-  function placeNote(t, step, midi, vel) { t.steps[step] = true; t.locks[step] = { pitch: midi - BASE_MIDI - t.transpose, volume: vel == null ? 0.8 : vel, tie: false }; }
+  function editableMidi(t, midi) {
+    const min = BASE_MIDI + t.transpose - 24, max = BASE_MIDI + t.transpose + 24;
+    if (!Number.isInteger(midi) || midi < min || midi > max) return null;
+    if (inScale(midi)) return midi;
+    for (let d = 1; d < 12; d++) {
+      if (midi - d >= min && MAJOR.has(pc(midi - d))) return midi - d;
+      if (midi + d <= max && MAJOR.has(pc(midi + d))) return midi + d;
+    }
+    return midi;
+  }
+  function placeNote(t, step, midi, vel) {
+    const target = editableMidi(t, midi);
+    if (target === null) return;
+    t.steps[step] = true;
+    const volume = vel == null ? t.defaultVelocity : vel;
+    const lock = {}, pitch = target - BASE_MIDI - t.transpose;
+    if (pitch !== 0) lock.pitch = pitch;
+    if (volume !== 1) lock.volume = volume;
+    t.locks[step] = Object.keys(lock).length ? lock : null;
+  }
   function clearBar(t, b) { for (let i = b.start; i < b.start + b.len; i++) { t.steps[i] = false; t.locks[i] = null; } }
   let loop = null;
 
@@ -354,12 +427,13 @@
     if (ac.state === 'suspended') ac.resume();
   }
   function playVoice(t, midi, vel, when, dur) {
+    if (vel <= 0) return;
     const f = 440 * Math.pow(2, (midi - 69) / 12), isBass = t.id === 'bass';
     const o1 = ac.createOscillator(); o1.type = isBass ? 'sine' : 'triangle'; o1.frequency.value = f;
     const o2 = ac.createOscillator(); o2.type = isBass ? 'triangle' : 'sine'; o2.frequency.value = isBass ? f : f * 2; o2.detune.value = 4;
     const g2 = ac.createGain(); g2.gain.value = isBass ? 0.5 : 0.3;
     const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = isBass ? 500 + vel * 600 : 1400 + vel * 3200; lp.Q.value = 0.7;
-    const g = ac.createGain(); const peak = (0.15 + vel * 0.85) * (isBass ? 1.3 : 1);
+    const g = ac.createGain(); const peak = vel * (isBass ? 1.3 : 1);
     g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(peak, when + 0.008);
     g.gain.exponentialRampToValueAtTime(Math.max(peak * 0.55, 0.0005), when + 0.16); g.gain.setTargetAtTime(0.0001, when + dur, 0.035);
     o1.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); g.connect(master);
@@ -367,7 +441,7 @@
   }
   function playKick(when) { const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150, when); o.frequency.exponentialRampToValueAtTime(45, when + 0.12); const g = ac.createGain(); g.gain.setValueAtTime(0.9, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.3); o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.35); }
   function playHat(when, accent) { const s = ac.createBufferSource(); s.buffer = noiseBuf; const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 7000; const g = ac.createGain(); g.gain.setValueAtTime(accent ? 0.25 : 0.12, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.05); s.connect(hp); hp.connect(g); g.connect(master); s.start(when); s.stop(when + 0.06); }
-  function audition(t, midi, vel) { ensureAudio(); playVoice(t, midi, vel == null ? 0.8 : vel, ac.currentTime, 0.18); }
+  function audition(t, midi, vel) { ensureAudio(); playVoice(t, midi, vel == null ? 1 : vel, ac.currentTime, 0.18); }
 
   // ---------- transport ----------
   let playing = false, startTime = 0, nextTick = 0, nextTime = 0, timer = null, raf = null;
@@ -375,9 +449,11 @@
   function schedule() {
     while (nextTime < ac.currentTime + 0.12) {
       const s = stepAt(nextTick);
-      melodic.forEach(t => { if (t.muted) return; const b = t.bars.find(x => x.start === s); if (b) playVoice(t, b.midi, b.vel, nextTime, b.len * SPB * 0.96); });
-      if (kick.pattern[s] && !kick.muted) playKick(nextTime);
-      if (hat.pattern[s] && !hat.muted) playHat(nextTime, s % 4 === 0);
+      const anySoloed = tracks.some(t => t.soloed);
+      const audible = t => anySoloed ? t.soloed : !t.muted;
+      melodic.forEach(t => { if (!audible(t)) return; const b = t.bars.find(x => x.start === s); if (b) playVoice(t, b.midi, b.vel, nextTime, b.len * SPB * 0.96); });
+      if (kick.pattern[s] && audible(kick)) playKick(nextTime);
+      if (hat.pattern[s] && audible(hat)) playHat(nextTime, s % 4 === 0);
       nextTick++; nextTime += SPB;
     }
   }
@@ -403,14 +479,15 @@
     const t = Math.max(0, ac.currentTime - startTime) / SPB;
     const stepF = loop ? loop.start + (t % (loop.end - loop.start + 1)) : t % STEPS;
     const s = Math.floor(stepF);
-    ui.playhead.style.transform = 'translateX(' + (stepF * PITCH).toFixed(2) + 'px)';
-    ui.wash.style.transform = 'translateX(' + (s * PITCH) + 'px)';
-    ui.rulerPlayhead.style.transform = 'translateX(' + (stepF * PITCH).toFixed(2) + 'px)';
+    ui.playhead.style.transform = 'translateX(' + playheadX(stepF).toFixed(2) + 'px)';
+    ui.wash.style.transform = 'translateX(' + stepX(s) + 'px)';
+    ui.rulerPlayhead.style.transform = 'translateX(' + playheadX(stepF).toFixed(2) + 'px)';
     setPlayingStep(s); raf = requestAnimationFrame(tick);
   }
   playBtn.addEventListener('click', () => playing ? stopPlayback() : startPlayback());
 
   // ---------- dock state (local, never synced) ----------
+  let paintVersion = 0;
   const dock = { open: false, track: null, pane: 'notes', ghosts: { lead: true, bass: true }, selectedStep: null, tall: false };
   const ui = { noteEls: [], keyEls: new Map() };
   const inner = document.getElementById('inner');
@@ -423,7 +500,6 @@
     if (!inScale(midi)) c.push('scale-out');
     return c.join(' ');
   }
-  function velColor(v) { const lo = [96, 40, 26], hi = [232, 90, 48]; return 'rgb(' + lo.map((a, i) => Math.round(a + (hi[i] - a) * v)).join(',') + ')'; }
   const trLabel = t => (t.transpose >= 0 ? '+' : '') + t.transpose;
 
   // ---------- ruler ----------
@@ -432,22 +508,22 @@
     el('ruler-spacer', rowEl).textContent = 'Loop';
     const ruler = el('loop-ruler', rowEl); ruler.setAttribute('role', 'slider'); ruler.setAttribute('aria-label', 'Loop region');
     const markers = el('ruler-markers', ruler);
-    for (let s = 0; s < STEPS; s += 4) { const page = s % 16 === 0; const m = el('ruler-marker ' + (page ? 'pg' : 'beat'), markers); m.style.left = (s * PITCH) + 'px'; el('marker-label', m).textContent = page ? String(s / 16 + 1) : (Math.floor(s / 16) + 1) + '.' + ((s % 16) / 4 + 1); }
+    for (let s = 0; s < STEPS; s += 4) { const page = s % 16 === 0; const m = el('ruler-marker ' + (page ? 'pg' : 'beat'), markers); m.style.left = stepX(s) + 'px'; el('marker-label', m).textContent = page ? String(s / 16 + 1) : (Math.floor(s / 16) + 1) + '.' + ((s % 16) / 4 + 1); }
     const region = el('loop-region', ruler); region.style.display = 'none'; el('loop-bracket start', region); el('loop-bracket end', region);
     const shiftMarker = el('shift-click-marker', ruler); shiftMarker.style.display = 'none';
     ui.ruler = ruler; ui.rulerPlayhead = el('ruler-playhead', ruler);
     let dragStart = null, dragEnd = null, shiftStart = null;
-    const xToStep = x => Math.min(STEPS - 1, Math.max(0, Math.floor((x - ruler.getBoundingClientRect().left) / PITCH)));
+    const xToStep = x => Math.min(STEPS - 1, Math.max(0, xToIndex(x - ruler.getBoundingClientRect().left)));
     const showRegion = (r, preview) => {
       if (!r) { region.style.display = 'none'; ruler.classList.remove('has-loop'); ruler.title = 'Drag to set loop region'; return; }
-      region.style.display = ''; region.classList.toggle('preview', !!preview); region.style.left = (r.start * PITCH) + 'px'; region.style.width = ((r.end - r.start + 1) * PITCH - GAP) + 'px';
+      region.style.display = ''; region.classList.toggle('preview', !!preview); region.style.left = stepX(r.start) + 'px'; region.style.width = spanWidth(r.start, r.end - r.start + 1) + 'px';
       ruler.classList.add('has-loop'); ruler.title = 'Loop: steps ' + (r.start + 1) + '-' + (r.end + 1) + ' (double-click to clear)';
     };
     const setLoop = r => { loop = r; showRegion(r); if (ui.shadeLoop) ui.shadeLoop(); };
     ruler.title = 'Drag to set loop region';
     ruler.addEventListener('pointerdown', e => {
       const s = xToStep(e.clientX);
-      if (e.shiftKey) { if (shiftStart === null) { shiftStart = s; shiftMarker.style.display = ''; shiftMarker.style.left = (s * PITCH) + 'px'; } else { setLoop({ start: Math.min(shiftStart, s), end: Math.max(shiftStart, s) }); shiftStart = null; shiftMarker.style.display = 'none'; } return; }
+      if (e.shiftKey) { if (shiftStart === null) { shiftStart = s; shiftMarker.style.display = ''; shiftMarker.style.left = stepX(s) + 'px'; } else { if (Math.abs(s - shiftStart) + 1 >= MIN_LOOP_LENGTH) setLoop({ start: Math.min(shiftStart, s), end: Math.max(shiftStart, s) }); shiftStart = null; shiftMarker.style.display = 'none'; } return; }
       shiftStart = null; shiftMarker.style.display = 'none'; dragStart = dragEnd = s; ruler.classList.add('dragging'); try { ruler.setPointerCapture(e.pointerId); } catch (_) {}
     });
     ruler.addEventListener('pointermove', e => { if (dragStart === null) return; dragEnd = xToStep(e.clientX); showRegion({ start: Math.min(dragStart, dragEnd), end: Math.max(dragStart, dragEnd) }, true); });
@@ -462,53 +538,67 @@
     const row = el('track-row', wrap);
     const left = el('track-left', row);
     el('drag-handle', left).textContent = '⋮⋮';
-    const name = el('track-name', left); t.nameEl = name;
+    const name = el('track-name', left, 'button'); t.nameEl = name;
     name.innerHTML = '<span class="tick" style="--cat:' + t.cat + '"></span>' + t.name + (t.kind === 'melodic' ? '<span class="tr"></span>' : '');
-    name.title = t.kind === 'melodic' ? 'Open ' + t.name + ' in the dock' : t.name;
+    name.title = 'Open ' + t.name + ' in the dock'; name.addEventListener('click', () => openDock(t, 'track'));
     const line2 = el('line2', left);
     const state = el('group', line2), disclose = el('group', line2);
     const m = el('tl-btn mute-button', state, 'button'); m.textContent = 'M'; m.title = 'Mute'; m.addEventListener('click', () => { t.muted = !t.muted; m.classList.toggle('active', t.muted); row.classList.toggle('muted', t.muted); });
-    const so = el('tl-btn solo-button', state, 'button'); so.textContent = 'S'; so.title = 'Solo';
-    const badge = el('badge' + (t.kind === 'melodic' ? '' : ' drum'), disclose); badge.textContent = t.badge; badge.title = t.inst;
+    const so = el('tl-btn solo-button', state, 'button'); so.textContent = 'S'; so.title = 'Solo'; so.addEventListener('click', () => { t.soloed = !t.soloed; so.classList.toggle('active', t.soloed); so.setAttribute('aria-pressed', String(t.soloed)); });
+    const badge = el('badge' + (t.kind === 'melodic' ? '' : ' drum'), disclose, 'button'); badge.textContent = t.badge; badge.title = 'Instrument: ' + t.inst; badge.addEventListener('click', () => openDock(t, 'track'));
     const ex = el('expand-toggle', disclose, 'button'); ex.innerHTML = '&#9835;'; ex.title = 'Piano roll'; t.toggleEl = ex;
-    if (t.kind !== 'melodic') ex.style.visibility = 'hidden'; else { ex.addEventListener('click', () => (dock.open && dock.track === t) ? closeDock() : openDock(t, 'notes')); name.addEventListener('click', () => openDock(t, 'notes')); }
+    if (t.kind !== 'melodic') ex.style.visibility = 'hidden'; else { ex.addEventListener('click', () => (dock.open && dock.track === t) ? closeDock() : openDock(t, 'notes'));  }
     const v = el('velocity-toggle', disclose, 'button'); v.textContent = 'V'; v.title = 'Velocity lane';
     const stepsEl = el('steps', row); const grid = el('step-grid', stepsEl);
     t.cells = [];
     for (let i = 0; i < STEPS; i++) {
-      const c = el('step-cell' + (i % 4 === 0 ? ' beat-start' : ''), grid, 'button'); c.title = 'Step ' + (i + 1) + (t.kind === 'melodic' ? ' · Shift+click for the Step pane' : '');
+      const c = el('step-cell' + (i % 4 === 0 ? ' beat-start' : '') + (i > 0 && i % PAGE_STEPS === 0 ? ' page-start' : ''), grid, 'button'); c.title = 'Step ' + (i + 1) + (t.kind === 'melodic' ? ' · Shift+click for the Step pane' : '');
       c.addEventListener('click', e => {
-        if (t.kind !== 'melodic') { t.pattern[i] = !t.pattern[i]; syncRow(t); return; }
-        if (e.shiftKey) { if (t.steps[i]) selectStep(t, i); return; }
-        if (t.steps[i]) { t.steps[i] = false; t.locks[i] = null; } else placeNote(t, i, BASE_MIDI + t.transpose, 0.8);
+        if (e.shiftKey) { selectStep(t, i); return; }
+        if (t.steps[i]) { t.steps[i] = false; t.locks[i] = null; } else placeNote(t, i, BASE_MIDI + t.transpose, t.defaultVelocity);
         trackChanged(t);
       });
       t.cells.push(c);
     }
+    const lane = el('velocity-lane', wrap); lane.hidden = true; t.lane = lane;
+    t.velocityInputs = [];
+    for (let i = 0; i < STEPS; i++) {
+      const input = el(i > 0 && i % PAGE_STEPS === 0 ? 'page-start' : '', lane, 'input');
+      input.type = 'range'; input.min = 0; input.max = 127; input.value = Math.round(stepVel(t, i) * 127);
+      input.setAttribute('aria-label', t.name + ' step ' + (i + 1) + ' velocity');
+      input.addEventListener('input', () => { t.locks[i] = Object.assign({}, t.locks[i], { volume: Number(input.value) / 127 }); trackChanged(t); });
+      t.velocityInputs.push(input);
+    }
+    v.addEventListener('click', () => { lane.hidden = !lane.hidden; v.setAttribute('aria-expanded', String(!lane.hidden)); });
     syncRow(t);
   }
   function syncRow(t) {
-    if (t.kind !== 'melodic') { t.cells.forEach((c, i) => c.classList.toggle('active', !!t.pattern[i])); return; }
     computeBars(t);
     const trEl = t.nameEl.querySelector('.tr'); if (trEl) trEl.textContent = t.transpose === 0 ? '' : trLabel(t);
     const midis = t.bars.map(b => b.midi); const lo = Math.min.apply(null, midis), hi = Math.max.apply(null, midis);
     t.cells.forEach((c, i) => {
-      const on = !!t.steps[i]; c.classList.toggle('active', on); c.classList.toggle('tie', on && !!(t.locks[i] && t.locks[i].tie));
+      const on = !!t.steps[i]; c.style.setProperty('--note-velocity', String(stepVel(t, i))); c.classList.toggle('has-lock', !!t.locks[i] && Object.keys(t.locks[i]).length > 0);
+      if (t.velocityInputs) {
+        const input = t.velocityInputs[i], tied = on && attackStep(t, i) !== i;
+        input.value = Math.round(stepVel(t, i) * 127); input.disabled = tied;
+        input.title = tied ? 'Inherited from attack step ' + (attackStep(t, i) + 1) + '; turn off Tie to edit this step' : '';
+      }
+      c.classList.toggle('active', on); c.classList.toggle('tie', on && !!(t.locks[i] && t.locks[i].tie));
       c.classList.toggle('selected', dock.open && dock.track === t && dock.pane === 'step' && dock.selectedStep === i);
       let mark = c.querySelector('.contour');
-      if (on) { if (!mark) mark = el('contour', c); const m = stepMidi(t, i); const f = hi === lo ? 0.5 : (m - lo) / (hi - lo); mark.style.top = (24 - f * 20) + 'px'; }
+      if (on && t.kind === 'melodic') { if (!mark) mark = el('contour', c); const m = stepMidi(t, i); const f = hi === lo ? 0.5 : (m - lo) / (hi - lo); mark.style.top = (24 - f * 20) + 'px'; }
       else if (mark) mark.remove();
     });
   }
-  function trackChanged(t) { syncRow(t); if (dock.open) { if (dock.track === t) drawNotes(false); drawGhosts(); if (dock.pane === 'step') renderPane(); } }
+  function trackChanged(t, refreshPane = true) { syncRow(t); if (dock.open) { if (dock.track === t) drawNotes(false); drawGhosts(); if (refreshPane && dock.track === t && dock.pane === 'step') renderPane(); } }
 
   // ---------- dock ----------
   function renderDock(parent) {
-    const d = el('dock', parent); ui.dock = d;
+    const d = el('dock', parent); ui.dock = d; d.inert = true; d.setAttribute('aria-hidden', 'true');
     const innerD = el('dock-inner', d);
     const head = el('dock-head', innerD);
-    const tabs = el('chips', head);
-    melodic.forEach(t => { const c = el('chip', tabs, 'button'); c.innerHTML = '<span class="tick" style="--cat:' + t.cat + '"></span>' + t.name; c.addEventListener('click', () => openDock(t, dock.pane)); t.tabEl = c; });
+    const tabs = el('chips track-tabs', head);
+    tracks.forEach(t => { const c = el('chip', tabs, 'button'); c.innerHTML = '<span class="tick" style="--cat:' + t.cat + '"></span>' + t.name; c.addEventListener('click', () => openDock(t, dock.pane)); t.tabEl = c; });
     const panes = el('chips', head); ui.paneChips = {};
     [['notes', 'Notes'], ['step', 'Step'], ['track', 'Track']].forEach(([k, label]) => { const c = el('chip', panes, 'button'); c.textContent = label; c.addEventListener('click', () => { dock.pane = k; renderPane(); }); ui.paneChips[k] = c; });
     ui.title = el('dock-title', head);
@@ -518,7 +608,7 @@
     const close = el('ib', right, 'button'); close.innerHTML = '&#10005;'; close.title = 'Close (Esc)'; close.addEventListener('click', closeDock);
     const tools = el('dock-tools', innerD);
     ui.pane = el('pane', tools);
-    const body = el('dock-body', innerD);
+    const body = el('dock-body', innerD); ui.body = body;
     const left = el('dock-left', body);
     const rail = el('range-rail', left); rail.style.height = (ROWS * H) + 'px'; ui.bracket = el('bracket', rail);
     const keycol = el('keycol', left); keycol.style.height = (ROWS * H) + 'px';
@@ -535,20 +625,32 @@
       ui.keyEls.set(midi, k); ui.keyList.push([midi, k]);
     });
     const scroll = el('dock-scroll', body); ui.scroll = scroll;
-    const grid = el('grid', scroll); grid.style.width = (STEPS * PITCH) + 'px'; grid.style.height = (ROWS * H) + 'px'; ui.grid = grid;
+    const grid = el('grid', scroll); grid.style.width = GRID_WIDTH + 'px'; grid.style.height = (ROWS * H) + 'px'; ui.grid = grid;
     ui.rowEls = []; for (let i = 0; i < ROWS; i++) { const r = el('row', grid); r.style.top = (i * H) + 'px'; r.style.height = H + 'px'; ui.rowEls.push(r); }
-    el('lines', grid);
+    const lines = el('lines', grid);
+    for (let i = 0; i < STEPS; i++) {
+      const line = el('grid-line' + (i % 16 === 0 ? ' bar' : i % 4 === 0 ? ' beat' : ''), lines); line.style.left = stepX(i) + 'px';
+      if (i > 0 && i % PAGE_STEPS === 0) { const band = el('page-band', lines); band.style.left = cellRight(i - 1) + 'px'; }
+    }
     ui.shadeL = el('loop-shade', grid); ui.shadeR = el('loop-shade', grid);
     ui.hlRow = el('hl-row', grid); ui.hlRow.style.height = H + 'px'; ui.hlCol = el('hl-col', grid); ui.selCol = el('sel-col', grid);
     ui.ghostsLayer = el('ghosts', grid); ui.notesLayer = el('notes', grid);
     ui.ghost = el('ghost', grid); ui.ghost.style.height = (H - 4) + 'px'; ui.ghost.style.width = STEP_W + 'px';
     ui.wash = el('wash', grid); ui.playhead = el('playhead', grid); const hit = el('hit', grid); ui.tip = el('tip', grid);
     scroll.addEventListener('scroll', () => { const y = -scroll.scrollTop + 'px'; rail.style.transform = 'translateY(' + y + ')'; keycol.style.transform = 'translateY(' + y + ')'; });
-    ui.shadeLoop = () => { grid.classList.toggle('has-loop', !!loop); if (!loop) return; ui.shadeL.style.left = '0'; ui.shadeL.style.width = (loop.start * PITCH) + 'px'; ui.shadeR.style.left = ((loop.end + 1) * PITCH - GAP) + 'px'; ui.shadeR.style.right = '0'; };
+    ui.shadeLoop = () => { grid.classList.toggle('has-loop', !!loop); if (!loop) return; ui.shadeL.style.left = '0'; ui.shadeL.style.width = stepX(loop.start) + 'px'; ui.shadeR.style.left = cellRight(loop.end) + 'px'; ui.shadeR.style.right = '0'; };
     bindHit(hit, grid);
     // The head is sticky-left inside a max-content dock; size it to the scroller so its close button stays on screen.
     ui.head = head;
-    const fitHead = () => { head.style.width = tracksEl.clientWidth + 'px'; tools.style.width = tracksEl.clientWidth + 'px'; };
+    const fitHead = () => {
+      head.style.width = tracksEl.clientWidth + 'px'; tools.style.width = tracksEl.clientWidth + 'px';
+      const rowHeight = tracks[0].wrap.querySelector('.track-row').offsetHeight;
+      // Opening compresses the enclosing grid; reserve the full chrome rather than transient rectangles.
+      const style = getComputedStyle(d);
+      const chromeHeight = parseFloat(style.getPropertyValue('--dock-head-height')) + parseFloat(style.getPropertyValue('--dock-toolbar-height'));
+      const reserved = ui.ruler.parentElement.offsetHeight + rowHeight + chromeHeight + 17;
+      d.style.setProperty('--dock-available-grid-height', Math.max(18, tracksEl.clientHeight - reserved) + 'px');
+    };
     if (window.ResizeObserver) new ResizeObserver(fitHead).observe(tracksEl); else window.addEventListener('resize', fitHead);
     fitHead();
   }
@@ -562,12 +664,14 @@
   function drawNotes(fade) {
     const t = dock.track; if (!t) return;
     const layer = ui.notesLayer;
+    const version = ++paintVersion;
     const paint = () => {
+      if (version !== paintVersion || t !== dock.track) return;
       computeBars(t); layer.innerHTML = ''; ui.noteEls = [];
-      t.bars.forEach(b => {
-        const n = el('note', layer); n.style.left = (b.start * PITCH) + 'px'; n.style.width = (b.len * PITCH - GAP) + 'px';
-        n.style.top = ((MIDI_MAX - b.midi) * H + 2) + 'px'; n.style.height = (H - 4) + 'px'; n.style.background = velColor(b.vel);
-        n.style.setProperty('--glow', 'rgba(232,90,48,' + (0.15 + b.vel * 0.45).toFixed(2) + ')'); if (b.len >= 2) n.textContent = noteName(b.midi); n._bar = b; ui.noteEls.push(n);
+      (t.kind === 'melodic' ? t.bars : []).forEach(b => {
+        const n = el('note', layer); n.style.left = stepX(b.start) + 'px'; n.style.width = spanWidth(b.start, b.len) + 'px';
+        n.style.top = ((MIDI_MAX - b.midi) * H + 2) + 'px'; n.style.height = (H - 4) + 'px'; n.style.setProperty('--note-velocity', String(b.vel));
+ if (b.len >= 2) n.textContent = noteName(b.midi); n._bar = b; ui.noteEls.push(n);
       });
       syncRow(t);
     };
@@ -578,7 +682,7 @@
     melodic.forEach(o => {
       if (o === dock.track || !dock.ghosts[o.id]) return;
       computeBars(o);
-      o.bars.forEach(b => { const g = el('gnote', layer); g.style.setProperty('--gc', o.cat); g.style.left = (b.start * PITCH) + 'px'; g.style.width = (b.len * PITCH - GAP) + 'px'; g.style.top = ((MIDI_MAX - b.midi) * H + 3) + 'px'; g.style.height = (H - 6) + 'px'; g.title = o.name + ' · ' + noteName(b.midi); });
+      o.bars.forEach(b => { const g = el('gnote', layer); g.style.setProperty('--gc', o.cat); g.style.left = stepX(b.start) + 'px'; g.style.width = spanWidth(b.start, b.len) + 'px'; g.style.top = ((MIDI_MAX - b.midi) * H + 3) + 'px'; g.style.height = (H - 6) + 'px'; g.title = o.name + ' · ' + noteName(b.midi); });
     });
   }
   function centreOn(t, smooth) {
@@ -590,81 +694,113 @@
   }
   function openDock(t, pane) {
     const switching = dock.open && dock.track !== t, wasOpen = dock.open;
-    dock.open = true; dock.track = t; dock.pane = pane || dock.pane; if (dock.pane === 'step' && dock.selectedStep === null) dock.pane = 'notes';
-    melodic.forEach(o => { o.wrap.classList.toggle('docked', o === t); o.toggleEl.classList.toggle('active', o === t); o.tabEl.classList.toggle('active', o === t); });
-    ui.dock.classList.add('open');
+    if (switching && ui.cancelDrag) ui.cancelDrag();
+    dock.open = true; dock.track = t; dock.pane = pane || dock.pane; if (t.kind !== 'melodic' && dock.pane === 'notes') dock.pane = 'track';
+    if (switching) dock.selectedStep = null;
+    tracks.forEach(o => { o.wrap.classList.toggle('docked', o === t); o.toggleEl.classList.toggle('active', o === t); o.tabEl.classList.toggle('active', o === t); syncRow(o); });
+    ui.dock.classList.add('open'); ui.dock.inert = false; ui.dock.setAttribute('aria-hidden', 'false');
     applyClasses(); drawNotes(switching); drawGhosts(); renderPane();
     if (!wasOpen) { t.cells.forEach(c => { if (c.classList.contains('active')) { c.classList.remove('pulse'); void c.offsetWidth; c.classList.add('pulse'); } }); }
-    if (!wasOpen) { setTimeout(() => centreOn(t, false), 0); setTimeout(() => { tracksEl.scrollTop = tracksEl.scrollHeight; }, 210); } else centreOn(t, true);
+    if (!wasOpen) { setTimeout(() => centreOn(t, false), 0); setTimeout(() => { tracksEl.scrollTop = tracksEl.scrollHeight; }, 210); } else if (switching) centreOn(t, true);
   }
   function closeDock() {
     if (!dock.open) return;
-    dock.open = false; ui.dock.classList.remove('open');
-    melodic.forEach(o => { o.wrap.classList.remove('docked'); o.toggleEl.classList.remove('active'); o.tabEl.classList.remove('active'); syncRow(o); });
+    if (ui.cancelDrag) ui.cancelDrag();
+    dock.open = false; ++paintVersion; ui.notesLayer.classList.remove('fading'); ui.dock.classList.remove('open'); ui.dock.inert = true; ui.dock.setAttribute('aria-hidden', 'true');
+    tracks.forEach(o => { o.wrap.classList.remove('docked'); o.toggleEl.classList.remove('active'); o.tabEl.classList.remove('active'); syncRow(o); });
     ui.selCol.classList.remove('on');
   }
-  function selectStep(t, i) { dock.selectedStep = i; openDock(t, 'step'); }
+  function selectStep(t, i) { openDock(t, 'step'); dock.selectedStep = i; renderPane(); }
   function renderPane() {
     const t = dock.track; if (!t) return;
-    Object.keys(ui.paneChips).forEach(k => ui.paneChips[k].classList.toggle('active', dock.pane === k));
+    const focusedKey = ui.pane.contains(document.activeElement) ? document.activeElement.dataset.focusKey : null;
+    Object.keys(ui.paneChips).forEach(k => { ui.paneChips[k].classList.toggle('active', dock.pane === k); ui.paneChips[k].disabled = k === 'notes' && t.kind !== 'melodic'; });
+    ui.body.style.visibility = t.kind === 'melodic' ? '' : 'hidden'; ui.body.inert = t.kind !== 'melodic';
     ui.title.innerHTML = '<b>' + t.name + '</b> · ' + t.inst + (dock.pane === 'step' && dock.selectedStep !== null ? ' · step ' + (dock.selectedStep + 1) : '');
     const p = ui.pane; p.innerHTML = '';
     const sel = dock.selectedStep;
-    ui.selCol.classList.toggle('on', dock.pane === 'step' && sel !== null); if (sel !== null) ui.selCol.style.left = (sel * PITCH) + 'px';
+    ui.selCol.classList.toggle('on', dock.pane === 'step' && sel !== null); if (sel !== null) ui.selCol.style.left = stepX(sel) + 'px';
     syncRow(t);
     if (dock.pane === 'notes') {
       p.innerHTML = '<b>Notes</b>';
       const g = el('rowc', p); g.innerHTML = '<span class="k">Ghosts</span>';
       melodic.forEach(o => { if (o === t) return; const b = el('cbtn ghost-toggle', g, 'button'); b.style.setProperty('--gc', o.cat); b.setAttribute('aria-pressed', String(!!dock.ghosts[o.id])); b.innerHTML = '<i></i>' + o.name; b.addEventListener('click', () => { dock.ghosts[o.id] = !dock.ghosts[o.id]; b.setAttribute('aria-pressed', String(dock.ghosts[o.id])); drawGhosts(); }); });
-      const r2 = el('rowc', p); r2.innerHTML = '<span class="k">Range</span><span>' + noteName(t.range.optMin) + ' to ' + noteName(t.range.optMax) + ' best</span>';
-      const r3 = el('rowc', p); r3.innerHTML = '<span class="k">Default velocity</span><input id="defVel" type="range" min="10" max="127" value="102">';
+      const r2 = el('rowc', p); r2.innerHTML = '<span class="k">Range</span><span class="value">' + noteName(t.range.optMin) + ' to ' + noteName(t.range.optMax) + ' best</span>';
+      const r3 = el('rowc', p); r3.innerHTML = '<span class="k">Default velocity</span><input id="defVel" type="range" min="0" max="127" value="127">';
+      const defaultInput = document.getElementById('defVel'); defaultInput.value = Math.round(t.defaultVelocity * 127); defaultInput.setAttribute('aria-label', 'Default velocity'); defaultInput.addEventListener('input', () => { t.defaultVelocity = Number(defaultInput.value) / 127; });
       const r4 = el('rowc', p); const fit = el('cbtn quiet', r4, 'button'); fit.textContent = 'Fit to notes'; fit.addEventListener('click', () => centreOn(t, true));
     } else if (dock.pane === 'step') {
-      if (sel === null || !t.steps[sel]) { p.innerHTML = '<b>Step</b><span class="empty">Shift+click an active cell in the ' + t.name + ' row to edit its lock.</span>'; return; }
-      const lock = t.locks[sel] || (t.locks[sel] = { pitch: 0, volume: 0.8, tie: false });
+      if (sel === null) { p.innerHTML = '<b>Step</b><span class="empty">Shift+click a cell in the ' + t.name + ' row to edit its lock.</span>'; return; }
+      const lock = Object.assign({ pitch: 0 }, t.locks[sel]);
+      const tied = t.steps[sel] && attackStep(t, sel) !== sel;
+      const effectiveMidi = tied ? stepMidi(t, sel) : BASE_MIDI + t.transpose + lock.pitch;
       p.innerHTML = '<b>Step ' + (sel + 1) + '</b>';
       const pr = el('rowc', p); pr.innerHTML = '<span class="k">Pitch</span>';
       const minus = el('cbtn sym', pr, 'button'); minus.textContent = '−';
-      const val = el('cbtn', pr, 'span'); val.textContent = noteName(stepMidi(t, sel)) + ' (' + (lock.pitch >= 0 ? '+' : '') + lock.pitch + ')';
+      const val = el('cbtn value', pr, 'span'); val.textContent = noteName(effectiveMidi) + ' (' + (effectiveMidi - BASE_MIDI - t.transpose >= 0 ? '+' : '') + (effectiveMidi - BASE_MIDI - t.transpose) + ')';
       const plus = el('cbtn sym', pr, 'button'); plus.textContent = '+';
-      const bump = d => { lock.pitch += d; trackChanged(t); audition(t, stepMidi(t, sel), stepVel(t, sel)); renderPane(); };
+      const nextPitch = direction => {
+        let pitch = lock.pitch + direction;
+        while (pitch >= -24 && pitch <= 24 && !inScale(BASE_MIDI + t.transpose + pitch)) pitch += direction;
+        return pitch >= -24 && pitch <= 24 ? pitch : null;
+      };
+      minus.disabled = tied || nextPitch(-1) === null; plus.disabled = tied || nextPitch(1) === null;
+      const bump = d => { const pitch = nextPitch(d); if (pitch === null || tied) return; lock.pitch = pitch; t.locks[sel] = Object.assign({}, t.locks[sel], { pitch: lock.pitch }); trackChanged(t); audition(t, BASE_MIDI + t.transpose + lock.pitch, stepVel(t, sel)); };
       minus.addEventListener('click', () => bump(-1)); plus.addEventListener('click', () => bump(1));
       const vr = el('rowc', p); vr.innerHTML = '<span class="k">Volume</span>';
       const slider = el('', vr, 'input'); slider.type = 'range'; slider.min = 0; slider.max = 127; slider.value = Math.round(stepVel(t, sel) * 127);
-      const vv = el('', vr, 'span'); vv.textContent = slider.value;
-      slider.addEventListener('input', () => { lock.volume = slider.value / 127; vv.textContent = slider.value; trackChanged(t); });
+      slider.disabled = tied; slider.title = tied ? 'Inherited from attack step ' + (attackStep(t, sel) + 1) + '; turn off Tie to edit this step' : '';
+      slider.setAttribute('aria-label', 'Step volume');
+      const vv = el('value', vr, 'span'); vv.textContent = slider.value;
+      slider.addEventListener('input', () => { lock.volume = slider.value / 127; t.locks[sel] = Object.assign({}, t.locks[sel], { volume: lock.volume }); vv.textContent = slider.value; trackChanged(t, false); });
       const tr = el('rowc', p); tr.innerHTML = '<span class="k">Tie</span>';
       const tie = el('cbtn', tr, 'button'); tie.textContent = lock.tie ? 'Tied to previous' : 'New attack'; tie.setAttribute('aria-pressed', String(!!lock.tie));
-      tie.addEventListener('click', () => { lock.tie = !lock.tie; trackChanged(t); renderPane(); });
+      tie.addEventListener('click', () => { lock.tie = !lock.tie; t.locks[sel] = Object.assign({}, t.locks[sel], { tie: lock.tie }); trackChanged(t); renderPane(); });
       const er = el('rowc', p); er.innerHTML = '<span class="k">Envelope</span>' + ['Attack', 'Decay', 'Release'].map(s => '<span class="cbtn quiet">' + s + ' · track</span>').join('');
-      const cl = el('rowc', p); const clr = el('cbtn quiet', cl, 'button'); clr.textContent = 'Clear lock'; clr.addEventListener('click', () => { t.locks[sel] = { pitch: 0, volume: 0.8, tie: false }; trackChanged(t); renderPane(); });
+      const cl = el('rowc', p); const clr = el('cbtn quiet', cl, 'button'); clr.textContent = 'Clear lock'; clr.addEventListener('click', () => { t.locks[sel] = null; trackChanged(t); renderPane(); });
     } else {
       p.innerHTML = '<b>' + t.name + ' track</b>';
       const tr = el('rowc', p); tr.innerHTML = '<span class="k">Transpose</span>';
       const minus = el('cbtn sym', tr, 'button'); minus.textContent = '−';
-      const val = el('cbtn', tr, 'span'); val.textContent = trLabel(t);
+      const val = el('cbtn value', tr, 'span'); val.textContent = trLabel(t);
       const plus = el('cbtn sym', tr, 'button'); plus.textContent = '+';
-      const setT = d => { t.transpose += d; trackChanged(t); renderPane(); centreOn(t, true); };
+      minus.disabled = t.transpose <= -24; plus.disabled = t.transpose >= 24;
+      const setT = d => { t.transpose = clamp(t.transpose + d, -24, 24); trackChanged(t); renderPane(); centreOn(t, true); };
       minus.addEventListener('click', () => setT(-1)); plus.addEventListener('click', () => setT(1));
-      const sr = el('rowc', p); sr.innerHTML = '<span class="k">Steps · Instrument</span><span class="cbtn">32 <span class="caret">&#9660;</span></span><span class="cbtn">' + t.inst + ' <span class="caret">&#9660;</span></span>';
-      const pr = el('rowc', p); pr.innerHTML = '<span class="k">Pattern tools</span><span class="cbtn quiet">Rotate</span><span class="cbtn quiet">Invert</span><span class="cbtn quiet">Euclid</span>';
-      const ar = el('rowc', p); ar.innerHTML = '<span class="k">Actions</span><span class="cbtn quiet">Copy</span><span class="cbtn quiet">Clear</span><span class="cbtn quiet">Delete</span>';
+      const sr = el('rowc', p); sr.title = 'Layout preview: step-count and instrument integration ships with the Track pane'; sr.innerHTML = '<span class="k">Steps · Instrument</span><select class="cbtn value" aria-label="Step count preview" disabled><option>32</option></select><select class="cbtn" aria-label="Instrument preview" disabled><option>' + t.inst + '</option></select>';
+      const laneGroup = el('rowc', p); laneGroup.innerHTML = '<span class="k">Lane</span>';
+      const lane = el('cbtn', laneGroup, 'button'); lane.textContent = 'Velocity lane'; lane.setAttribute('aria-expanded', String(!t.lane.hidden));
+      lane.addEventListener('click', () => { t.lane.hidden = !t.lane.hidden; lane.setAttribute('aria-expanded', String(!t.lane.hidden)); });
+      const pr = el('rowc', p); pr.title = 'Layout preview: pattern tools are integrated in the application phase'; pr.innerHTML = '<span class="k">Pattern tools</span><span class="cbtn quiet">Rotate</span><span class="cbtn quiet">Invert</span><span class="cbtn quiet">Euclid</span>';
+      const ar = el('rowc', p); ar.title = 'Layout preview: actions are integrated in the application phase'; ar.innerHTML = '<span class="k">Actions</span><span class="cbtn quiet">Copy</span><span class="cbtn quiet">Clear</span><span class="cbtn quiet">Delete</span>';
+    }
+    const controls = [...p.querySelectorAll('button,input,select')];
+    controls.forEach((control, i) => { control.dataset.focusKey = dock.pane + ':' + i; });
+    if (focusedKey) {
+      const target = controls.find(control => control.dataset.focusKey === focusedKey && !control.disabled)
+        || controls.find(control => !control.disabled) || ui.paneChips[dock.pane];
+      target.focus({ preventScroll: true });
     }
   }
 
   // ---------- pointer interaction on the dock grid ----------
   function bindHit(hit, grid) {
-    const pos = e => { const r = grid.getBoundingClientRect(); const x = Math.min(Math.max(0, e.clientX - r.left), STEPS * PITCH - 1); const y = Math.min(Math.max(0, e.clientY - r.top), ROWS * H - 1); return { x, y, step: Math.floor(x / PITCH), midi: MIDI_MAX - Math.floor(y / H) }; };
-    const nearRightEdge = (p, b) => p.x > (b.start + b.len) * PITCH - GAP - 9;
+    hit.tabIndex = 0; hit.setAttribute('aria-label', 'Piano roll note editor');
+    const pos = e => { const r = grid.getBoundingClientRect(); const x = Math.min(Math.max(0, e.clientX - r.left), GRID_WIDTH - 1); const y = Math.min(Math.max(0, e.clientY - r.top), ROWS * H - 1); return { x, y, step: xToIndex(x), midi: MIDI_MAX - Math.floor(y / H) }; };
+    const nearRightEdge = (p, b) => p.x > cellRight(b.start + b.len - 1) - 9;
     let drag = null, hoverMidi = null;
+    const snapshot = t => ({ track: t, steps: t.steps.slice(), locks: t.locks.map(lock => lock && Object.assign({}, lock)) });
+    const restore = state => { state.track.steps.splice(0, STEPS, ...state.steps); state.track.locks.splice(0, STEPS, ...state.locks); trackChanged(state.track); };
+    ui.cancelDrag = () => { if (drag) restore(drag.original); drag = null; hideHover(); };
     const showHover = p => {
       const t = dock.track; if (!t) return; const b = barAt(t, p.step, p.midi);
       grid.classList.add('hovering'); grid.classList.toggle('empty', !b);
-      ui.hlRow.style.top = ((MIDI_MAX - p.midi) * H) + 'px'; ui.hlCol.style.left = (p.step * PITCH) + 'px';
-      ui.ghost.style.left = (p.step * PITCH) + 'px'; ui.ghost.style.top = ((MIDI_MAX - p.midi) * H + 2) + 'px'; ui.ghost.style.opacity = inScale(p.midi) ? '' : '0';
+      ui.hlRow.style.top = ((MIDI_MAX - p.midi) * H) + 'px'; ui.hlCol.style.left = stepX(p.step) + 'px';
+      const target = editableMidi(t, p.midi);
+      ui.ghost.style.left = stepX(p.step) + 'px'; ui.ghost.style.top = ((MIDI_MAX - (target === null ? p.midi : target)) * H + 2) + 'px'; ui.ghost.style.opacity = target === null ? '0' : '';
       ui.tip.style.left = p.x + 'px'; ui.tip.style.top = p.y + 'px';
       ui.tip.innerHTML = b ? '<b>' + noteName(b.midi) + '</b> · ' + b.len + (b.len === 1 ? ' step' : ' steps') + ' · vel ' + Math.round(b.vel * 127) : '<b>' + noteName(p.midi) + '</b> · step ' + (p.step + 1) + (p.midi < t.range.min ? ' · below the instrument' : '');
-      hit.style.cursor = b ? (nearRightEdge(p, b) ? 'ew-resize' : 'grab') : 'crosshair';
+      hit.style.cursor = b ? (nearRightEdge(p, b) ? 'ew-resize' : 'grab') : target === null ? 'not-allowed' : 'crosshair';
       if (hoverMidi !== p.midi) { if (hoverMidi != null && ui.keyEls.get(hoverMidi)) ui.keyEls.get(hoverMidi).classList.remove('hover'); hoverMidi = p.midi; if (ui.keyEls.get(p.midi)) ui.keyEls.get(p.midi).classList.add('hover'); }
     };
     const hideHover = () => { grid.classList.remove('hovering'); if (hoverMidi != null && ui.keyEls.get(hoverMidi)) ui.keyEls.get(hoverMidi).classList.remove('hover'); hoverMidi = null; };
@@ -672,29 +808,43 @@
     hit.addEventListener('pointermove', e => { const p = pos(e); if (!drag) showHover(p); else dragMove(p); });
     hit.addEventListener('pointerleave', () => { if (!drag) hideHover(); });
     hit.addEventListener('pointerdown', e => {
-      const t = dock.track; if (!t) return; e.preventDefault(); hit.setPointerCapture(e.pointerId);
-      const p = pos(e), b = barAt(t, p.step, p.midi);
-      if (b && e.shiftKey) { selectStep(t, b.start); return; }
-      if (b) { drag = nearRightEdge(p, b) ? { kind: 'resize', bar: b } : { kind: 'move', bar: b, midi: b.midi, moved: false }; markDragging(); }
-      else { const m = snapToScale(p.midi); const dv = document.getElementById('defVel'); const vel = dv ? dv.value / 127 : 0.8; placeNote(t, p.step, m, vel); audition(t, m, vel); drag = { kind: 'paint', lastStep: p.step, midi: m, vel }; drawNotes(false); drawGhosts(); }
+      const t = dock.track; if (!t || t.kind !== 'melodic') return; e.preventDefault(); hit.focus({ preventScroll: true }); hit.setPointerCapture(e.pointerId);
+      const p = pos(e), b = barAt(t, p.step, p.midi), original = snapshot(t);
+      if (e.shiftKey) { selectStep(t, p.step); return; }
+      if (b) { drag = nearRightEdge(p, b) ? { kind: 'resize', bar: b, original } : { kind: 'move', bar: b, midi: b.midi, moved: false, attempted: false, startX: p.x, startY: p.y, original }; markDragging(); }
+      else { const m = editableMidi(t, p.midi); if (m === null) return; const vel = t.defaultVelocity; placeNote(t, p.step, m, vel); audition(t, m, vel); drag = { kind: 'paint', lastStep: p.step, midi: m, vel, original }; trackChanged(t); drawGhosts(); }
       showHover(p);
     });
     function dragMove(p) {
-      const t = dock.track;
+      const t = drag.original.track;
       if (drag.kind === 'paint') {
-        const m = snapToScale(p.midi);
-        if (p.step !== drag.lastStep || m !== drag.midi) { const from = Math.min(drag.lastStep, p.step), to = Math.max(drag.lastStep, p.step); for (let s = from; s <= to; s++) placeNote(t, s, m, drag.vel); if (m !== drag.midi) audition(t, m, drag.vel); drag.lastStep = p.step; drag.midi = m; drawNotes(false); }
+        const m = editableMidi(t, p.midi);
+        if (m === null) { showHover(p); return; }
+        if (p.step !== drag.lastStep || m !== drag.midi) { const from = Math.min(drag.lastStep, p.step), to = Math.max(drag.lastStep, p.step); for (let s = from; s <= to; s++) placeNote(t, s, m, drag.vel); if (m !== drag.midi) audition(t, m, drag.vel); drag.lastStep = p.step; drag.midi = m; trackChanged(t); }
       } else if (drag.kind === 'move') {
-        const m = snapToScale(p.midi);
-        if (m !== drag.midi) { const b = drag.bar; for (let s = b.start; s < b.start + b.len; s++) t.locks[s] = Object.assign({}, t.locks[s], { pitch: m - BASE_MIDI - t.transpose }); drag.midi = m; drag.moved = true; audition(t, m, b.vel); drawNotes(false); drag.bar = barAt(t, b.start, m) || drag.bar; markDragging(); }
+        drag.attempted ||= Math.abs(p.x - drag.startX) > 3 || Math.abs(p.y - drag.startY) > 3;
+        const m = editableMidi(t, p.midi);
+        if (m === null) { showHover(p); return; }
+        if (m !== drag.midi) { const b = drag.bar; for (let s = b.start; s < b.start + b.len; s++) t.locks[s] = Object.assign({}, t.locks[s], { pitch: m - BASE_MIDI - t.transpose }); drag.midi = m; drag.moved = true; audition(t, m, b.vel); trackChanged(t); drag.bar = barAt(t, b.start, m) || drag.bar; markDragging(); }
       } else if (drag.kind === 'resize') {
         const b = drag.bar; const newLen = Math.min(STEPS - b.start, Math.max(1, p.step - b.start + 1));
-        if (newLen !== b.len) { for (let s = b.start + 1; s < b.start + Math.max(newLen, b.len); s++) { if (s < b.start + newLen) { t.steps[s] = true; t.locks[s] = { pitch: b.midi - BASE_MIDI - t.transpose, volume: b.vel, tie: true }; } else { t.steps[s] = false; t.locks[s] = null; } } drawNotes(false); drag.bar = barAt(t, b.start, b.midi) || b; markDragging(); }
+        if (newLen !== b.len) { for (let s = b.start + 1; s < b.start + Math.max(newLen, b.len); s++) { if (s < b.start + newLen) { t.steps[s] = true; t.locks[s] = { pitch: b.midi - BASE_MIDI - t.transpose, volume: b.vel, tie: true }; } else { t.steps[s] = false; t.locks[s] = null; } } trackChanged(t); drag.bar = barAt(t, b.start, b.midi) || b; markDragging(); }
       }
       showHover(p);
     }
-    hit.addEventListener('pointerup', e => { if (!drag) return; if (drag.kind === 'move' && !drag.moved) { clearBar(dock.track, drag.bar); drawNotes(false); } drag = null; showHover(pos(e)); });
-    hit.addEventListener('pointercancel', () => { drag = null; hideHover(); });
+    hit.addEventListener('pointerup', e => {
+      if (!drag) return;
+      const p = pos(e), t = drag.original.track;
+      if (drag.kind === 'move') {
+        const attempted = drag.attempted || Math.abs(p.x - drag.startX) > 3 || Math.abs(p.y - drag.startY) > 3;
+        if (attempted && editableMidi(t, p.midi) === null) restore(drag.original);
+        else if (!attempted && !drag.moved) { clearBar(t, drag.bar); trackChanged(t); }
+      } else if (editableMidi(t, p.midi) === null) {
+        restore(drag.original);
+      }
+      drag = null; showHover(p);
+    });
+    hit.addEventListener('pointercancel', () => ui.cancelDrag());
   }
 
   // ---------- build ----------
@@ -706,7 +856,7 @@
   applyClasses();
   const scaleBtn = document.getElementById('scaleBtn');
   scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); applyClasses(); });
-  window.addEventListener('keydown', e => { if (e.key === 'Escape' && dock.open) closeDock(); });
+  window.addEventListener('keydown', e => { if (e.key === 'Escape' && dock.open && ui.dock.contains(document.activeElement)) { closeDock(); dock.track.nameEl.focus(); } });
   // The page opens with Lead docked so its first frame shows the working state. In the app the dock opens only on request.
   openDock(lead, 'notes');
 })();

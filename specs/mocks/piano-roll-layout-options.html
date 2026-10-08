@@ -9,15 +9,39 @@
      mock of the sequencer on the left and the ranking rationale on the right. Keyboardia's own dark
      tokens, single theme by choice. */
   :root {
-    --bg: #121212; --surface: #1e1e1e; --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
+    --color-accent: #e85a30; --color-surface: #1e1e1e;
+    --color-drums: #e67e22; --color-bass: #9b59b6; --color-keys: #3498db;
+    --color-leads: #e91e63; --color-pads: #2ecc71; --color-fx: #00bcd4; --color-purple-dark: #8e44ad;
+    /* Canonical contract from PIANO-ROLL-DOCK.md; evaluate fill again on each cell/bar. */
+    --piano-key-white: #c9c5bc;
+    --piano-key-white-hover: #ddd9d0;
+    --piano-key-black: #131211;
+    --piano-key-black-hover: #2a2826;
+    --piano-key-label: #3f3c37;
+    --piano-key-surface: #0f0e0d;
+    --piano-grid-step: rgb(255 255 255 / 4.5%);
+    --piano-grid-beat: rgb(255 255 255 / 10%);
+    --piano-grid-bar: rgb(255 255 255 / 22%);
+    --piano-grid-octave: rgb(255 255 255 / 16%);
+    --piano-grid-black-row: rgb(0 0 0 / 22%);
+    --note-velocity-accent: var(--color-accent);
+    --note-velocity-surface: var(--color-surface);
+    --note-velocity: 1;
+    --note-velocity-fill: color-mix(in srgb,
+      var(--note-velocity-accent) calc(var(--note-velocity) * 100%),
+      var(--note-velocity-surface));
+    --bg: #121212; --surface: var(--color-surface); --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
     --border: #3a3a3a; --border-light: #4a4a4a; --border-hover: #555555;
     --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
-    --accent: #e85a30; --accent-hi: #f07048; --accent-text: #ff8a65;
+    --accent: var(--color-accent); --accent-hi: #f07048; --accent-text: #ff8a65;
     --info: #3498db; --info-text: #5eb3ea; --success: #1db954; --warning: #ffc107; --error-text: #ff7b7b;
     --purple-text: #c58ad6; --purple-muted: rgba(155,89,182,.15);
-    --key-white: #c9c5bc; --key-black: #131211;
+    /* Historical primitives keep their aliases; adopted surfaces use the canonical tokens. */
+    --key-white: var(--piano-key-white); --key-black: var(--piano-key-black);
+    --contour: rgba(255,255,255,.75);
+    --track-left-width: 134px; --ctl-h: 17px; --dock-control-height: 28px; --dock-control-radius: 4px;
     --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'SF Mono', Menlo, Consolas, monospace;
+    --font-mono: 'SF Mono', 'Consolas', monospace;
     color-scheme: dark;
   }
   * { box-sizing: border-box; }
@@ -129,7 +153,74 @@
   .m-modal .x { margin-left: auto; color: var(--muted); font-size: 16px; }
   .s.on.b2 { background: #8e44ad; border-color: #a569bd; }
 
+  /* Adopted cards use the corrected PR #127 contract. Historical candidates above retain their geometry. */
+  .m.adopted { zoom: 1; }
+  .mockframe:has(.adopted) { container-type: inline-size; }
+  .m.adopted .m-ruler, .m.adopted .m-row, .m.adopted .m-lane { gap: 8px; }
+  .m.adopted .m-row { height: 44px; padding-block: 4px; }
+  .m.adopted .m-head { width: var(--track-left-width); height: 36px; padding-inline: 4px; gap: 4px; box-shadow: none; position: relative; }
+  .m.adopted .m-rowhl { outline: none; border-radius: 0; }
+  .m.adopted .m-rowhl .m-head::before { content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 2px; background: var(--accent); }
+  .a-grip { width: 12px; flex: 0 0 12px; color: var(--dim); font-size: 10px; }
+  .a-body { width: 110px; display: flex; flex-direction: column; gap: 2px; }
+  .a-identity { height: var(--ctl-h); display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 500; border: 0; padding: 0; color: var(--text); background: transparent; cursor: pointer; font-family: var(--font-ui); }
+  .a-identity::before { content: ''; width: 3px; height: 12px; flex: 0 0 3px; background: var(--category, var(--color-keys)); }
+  .a-identity .value { margin-left: auto; font-family: var(--font-mono); font-size: 10px; }
+  .a-line2 { display: flex; gap: 4px; height: var(--ctl-h); }
+  .a-group { display: flex; gap: 2px; }
+  .a-item { width: 20px; height: var(--ctl-h); display: inline-flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font: 700 10px var(--font-ui); }
+  .a-item.badge { font-family: var(--font-mono); color: var(--purple-text); }
+  .a-item.on { background: var(--accent); color: var(--bg); }
+  .a-item[disabled] { opacity: .38; }
+  .m.adopted .m-steps { gap: 3px; }
+  .m.adopted .s, .m.adopted .n { --note-velocity-fill: color-mix(in srgb, var(--note-velocity-accent) calc(var(--note-velocity) * 100%), var(--note-velocity-surface)); }
+  .m.adopted .s.page { margin-left: 8px; }
+  .m.adopted .s.on { background: var(--note-velocity-fill); border-color: var(--note-velocity-fill); box-shadow: none; }
+  .m.adopted .s.locked { border-color: var(--color-purple-dark); }
+  .m.adopted .s .pv { background: var(--contour); height: 2px; }
+  .m.adopted .s.tie .pv { left: 0; right: 0; }
+  .m.adopted .m-panel { border: 0; border-top: 1px solid var(--border-light); gap: 0; border-radius: 0; }
+  .m.adopted .m-dockhead { height: 44px; flex: 0 0 44px; padding: 4px; flex-wrap: nowrap; overflow-x: auto; position: sticky; left: 0; width: 100cqw; }
+  .m.adopted .c.chip, .a-toolbar button, .a-toolbar select { height: var(--dock-control-height); min-height: var(--dock-control-height); border-radius: var(--dock-control-radius); font: 500 11px var(--font-mono); white-space: nowrap; flex: 0 0 auto; }
+  .a-toolbar { height: 48px; min-height: 48px; display: flex; align-items: center; flex-wrap: nowrap; gap: 8px; padding: 10px 8px; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; border-bottom: 1px solid var(--border); position: sticky; left: 0; width: 100cqw; }
+  .a-toolbar::-webkit-scrollbar { display: none; }
+  .a-toolbar button, .a-toolbar select { background: var(--surface-2); color: var(--text); border: 1px solid var(--border-hover); padding: 0 8px; }
+  .a-toolbar select { --dropdown-height: 28px; --dropdown-border-radius: 4px; height: var(--dropdown-height); border-radius: var(--dropdown-border-radius); }
+  .a-toolbar :disabled { opacity: .6; cursor: default; }
+  .a-label { font: 500 11px var(--font-ui); letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+  .a-value { font-family: var(--font-mono); white-space: nowrap; }
+  .a-pitchscroll { height: 252px; overflow-y: auto; overflow-x: hidden; }
+  .a-range-rail { width: 18px; flex: 0 0 18px; background: var(--color-surface); position: relative; }
+  .a-range-bracket { position: absolute; left: 8px; width: 6px; border: 1px solid var(--info-text); border-right: 0; }
+  .m.adopted .m-kb { background: var(--piano-key-white); }
+  .a-key { position: absolute; left: 0; width: 116px; border-bottom: 1px solid var(--piano-key-surface); color: var(--piano-key-label); font: 500 10px var(--font-mono); text-align: right; padding-right: 6px; }
+  .a-key:hover { background: var(--piano-key-white-hover); }
+  .a-key.black { background: var(--piano-key-black); width: 58%; color: var(--muted); }
+  .a-key.black:hover { background: var(--piano-key-black-hover); }
+  .a-key .hover-label { display: none; }
+  .a-key:hover .hover-label { display: inline; }
+  .m.adopted .m-grid { flex: 0 0 auto; background-image: none; }
+  .a-pitchband { position: absolute; left: 0; right: 0; pointer-events: none; }
+  .a-pitchband.black { background: var(--piano-grid-black-row); }
+  .a-pitchband.octave { border-top: 1px solid var(--piano-grid-octave); }
+  .a-gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--piano-grid-step); pointer-events: none; }
+  .a-gridline.beat { background: var(--piano-grid-beat); }
+  .a-gridline.page, .a-gridline.pg { background: var(--piano-grid-bar); width: 2px; }
+  .m.adopted .m-grid .n { background: var(--note-velocity-fill); box-shadow: none; border-radius: 3px; font: 500 10px var(--font-mono); color: var(--text); height: 14px; overflow: hidden; white-space: nowrap; z-index: 1; }
+  .m.adopted .m-grid .n.ghost { background: transparent; border: 1px dashed var(--ghost-accent); color: var(--ghost-accent); height: 12px; }
+  .a-dock-body { height: 252px; position: relative; }
+  .a-pane-body { height: 252px; padding: 16px; color: var(--muted); font-size: 12px; position: absolute; inset: 0; }
+  .m.adopted .m-note { width: 1395px; }
+  .a-pane-body .a-value { color: var(--text); }
+  .m.adopted [hidden] { display: none; }
+
   @media (max-width: 860px) { .card { grid-template-columns: 1fr; } }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .m.adopted .m-row { height: 48px; padding-block: 0 1px; align-items: flex-start; }
+    .m.adopted .m-head { height: 47px; }
+    .m.adopted .a-line2, .m.adopted .a-item { height: 28px; }
+    .m.adopted .m-steps { margin-top: 6px; }
+  }
 </style>
 </head>
 <body>
@@ -138,7 +229,7 @@
   <div>
     <div class="eyebrow">Keyboardia · Pitch panel · Layout research</div>
     <h1>Piano roll layout options</h1>
-    <p class="lede">How sequencers and DAWs place track controls, the step grid and the note editor relative to each other, what that implies for Keyboardia's control column, and six arrangements ranked against alignment, row rhythm and tessellation. Each mock shows the Lead track with its roll open and the Kick and Hat tracks below it.</p>
+    <p class="lede">Proposal only: PR #127 is spec and mocks; application integration is deferred. How sequencers and DAWs place track controls, the step grid and the note editor relative to each other, what that implies for Keyboardia's control column, and six arrangements ranked against alignment, row rhythm and tessellation. The #1 cards show the adopted PR #127 proposal after the consistency audit. Other cards preserve historical candidate layouts and their original trade-offs, including their wider columns.</p>
   </div>
 
   <section>
@@ -161,12 +252,24 @@
   <section>
     <h2>Constraints the arrangement has to respect</h2>
     <ul class="constraints">
-      <li><b>Column alignment.</b> Every step column, in every row and in the roll, sits on the same 39px pitch so that the same beat is the same x position everywhere. The roll's left edge is therefore pinned to the control column's right edge, and the keyboard is exactly as wide as that column.</li>
+      <li><b>Column alignment.</b> Every step column, in every row and in the roll, sits on a 39px pitch (36px cell + 3px ordinary gap), with 8px extra at each 16-step page boundary. The 11px page band is shared by the ruler, cells, property lanes and dock. The adopted keyboard and control column are both 134px, with the common 8px gap before step 1 at x=142px. The dock column contains an 18px range rail and 116px keyboard.</li>
       <li><b>Row rhythm.</b> Track rows repeat at one height. The eye scans down a column to see which instruments hit a beat together. Anything inserted between rows that is not a row of cells breaks the scan.</li>
       <li><b>Tessellation.</b> Rows are the same width and height and butt against each other, so the grid reads as one surface. A drawer under one track, and equally a 400px roll under one track, splits that surface in two.</li>
       <li><b>Row width is load-bearing.</b> Changing the control column's width moves the drop target for drag-reorder during playback, which the project's lesson 62 records as fragile. Moving width between left and right of the row keeps the total, which is a different proposition from changing it.</li>
       <li><b>Discoverability.</b> Transpose and step count are the two controls people reach for while composing. Hiding them costs more than hiding pattern tools or the instrument picker.</li>
       <li><b>Shared horizontal scroll.</b> All rows and the editor scroll together, and sticky columns on the left (or right) must be children of that one scroller.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Adopted consistency contract</h2>
+    <ul class="constraints">
+      <li><b>Compact controls.</b> Width 134 = grip 12 + body 110 + gap 4 + padding 8. Two 17px lines with a 2px gap make 36px. Five 20 × 17px line-two items have 2px gaps within groups and 4px between groups, totalling 110px.</li>
+      <li><b>Row geometry.</b> Desktop: 44px row with 4px padding above and below the 36px block, plus 2px gap = 46px pitch. Landscape: identity 17 + gap 2 + controls 28 + padding 1 = 48px row, plus 2px gap = 50px pitch; reserve scroll space so the rows clear the dock.</li>
+      <li><b>One toolbar.</b> Notes, Step and Track each have a fixed 48px toolbar, single line with horizontal overflow. Chips, tools, tie toggle, pattern buttons and both dropdown variants are 28px high, radius 4px; dropdowns use the existing variables. The adopted cards let you switch panes and all track tabs; the other controls are intentionally disabled integration previews.</li>
+      <li><b>Pitch stays visible.</b> MIDI 12..108 is a full chromatic range. Scale lock snaps new or moved notes without changing existing pitches or removing rows. Drum tracks open Step and Track; Notes is melodic only.</li>
+      <li><b>Shared velocity colour.</b> Cells and bars use the same CSS token formula: accent mixed toward surface by velocity. Each cell/bar evaluates --note-velocity-fill locally using normalized --note-velocity; no lock means 1.0. The seeded 0.3, 0.5, 0.8 and 1.0 locks demonstrate the ramp; no white fill or volume badge. Cells carry at most velocity colour, a pitch/tie contour and a purple lock border.</li>
+      <li><b>State and typography.</b> Docked state is a 2px accent edge on the control block only. Chrome accent marks active chips and ♪. Canonical --piano-key-*, --piano-grid-{step,beat,bar,octave,black-row} and --note-velocity-{accent,surface,fill} tokens belong in index.css. Grid alphas are 4.5%, 10%, 22%, 16% white and 22% black respectively. Values use --font-mono; toolbar labels 11/500, 0.5px tracking, uppercase; line-two glyphs 10/700; keyboard and bar labels 10/500.</li>
     </ul>
   </section>
 
@@ -271,22 +374,166 @@
   const shortHead = (name, pvOn) => CTRL.drag() + CTRL.name(name, true) + CTRL.M(true) + CTRL.S(true) + CTRL.pv(pvOn, true);
   const ROWS = 10, RH = 14, COLS = 12;
 
+  // Corrected adopted design; the older helpers remain the historical candidate renderer.
+  const ADOPTED_COLS = 32, MIDI_MIN = 12, MIDI_MAX = 108, ADOPTED_RH = 18;
+  const stepX = step => step * PITCH + Math.floor(step / 16) * 8;
+  const adoptedWidth = stepX(ADOPTED_COLS - 1) + 36;
+  const pitchName = midi => ['C','C♯','D','D♯','E','F','F♯','G','G♯','A','A♯','B'][midi % 12] + (Math.floor(midi / 12) - 1);
+  const adoptedNotes = source => [0,12,24].flatMap(offset => source
+    .filter(([step, len]) => step + offset + len <= ADOPTED_COLS)
+    .map(([step, len, r], index) => ({ step: step + offset, len, midi: 72 - r, velocity: [0.3,0.5,0.8,1][index], locked: index < 4 })));
+  const adoptedTracks = [
+    { name: 'Lead', melodic: true, category: 'keys', notes: adoptedNotes(notes), instrument: 'FM Bell', transpose: '+0' },
+    { name: 'Bass', melodic: true, category: 'bass', notes: adoptedNotes([[0,2,8],[3,2,7],[6,1,9],[8,2,8],[11,1,6]]), instrument: 'Sub', transpose: '−12' },
+    { name: 'Kick', melodic: false, category: 'drums', pattern: kick, instrument: 'Kick', transpose: '—' },
+    { name: 'Hat', melodic: false, category: 'drums', pattern: hat, instrument: 'Hat', transpose: '—' },
+  ];
+  function adoptedHead(track, active) {
+    return '<span class="a-grip">⋮⋮</span><div class="a-body">'
+      + '<button class="a-identity" data-open-track="' + track.name + '" style="--category:var(--color-' + track.category + ')">' + track.name + '<span class="value">' + track.transpose + '</span></button>'
+      + '<div class="a-line2" title="Intentional layout preview: mute, solo and lane integration is deferred"><span class="a-group"><span class="a-item">M</span><span class="a-item">S</span></span>'
+      + '<span class="a-group"><span class="a-item badge">' + (track.melodic ? 'FM' : 'SMP') + '</span>'
+      + '<button class="a-item' + (active && track.melodic ? ' on' : '') + '" data-open="' + track.name + '" title="Open Notes"' + (track.melodic ? '' : ' disabled') + '>♪</button>'
+      + '<span class="a-item">V</span></span></div></div>';
+  }
+  function adoptedRow(parent, track, active) {
+    const r = el('m-row' + (active ? ' m-rowhl' : ''), parent);
+    r.dataset.track = track.name;
+    el('m-head', r, adoptedHead(track, active));
+    const cells = el('m-steps', r);
+    for (let step = 0; step < ADOPTED_COLS; step++) {
+      const note = track.melodic && track.notes.find(n => step >= n.step && step < n.step + n.len);
+      const on = track.melodic ? !!note : !!track.pattern[step % track.pattern.length];
+      const tie = note && step > note.step;
+      const cell = el('s' + (step % 4 === 0 ? ' b' : '') + (step && step % 16 === 0 ? ' page' : '') + (on ? ' on' : '') + (note && note.locked ? ' locked' : '') + (tie ? ' tie' : ''), cells);
+      if (note) {
+        cell.style.setProperty('--note-velocity', note.velocity ?? 1);
+        cell.title = pitchName(note.midi) + ' · velocity ' + (note.velocity ?? 1);
+        const contour = el('pv', cell);
+        contour.style.top = (5 + (72 - note.midi) * 2) + 'px';
+      }
+    }
+  }
+  function adoptedRuler(parent) {
+    const r = el('m-ruler', parent);
+    el('sp a-label', r, 'Loop').style.width = '134px';
+    const bar = el('bar', r); bar.style.width = adoptedWidth + 'px';
+    for (let step = 0; step < ADOPTED_COLS; step += 4) {
+      const line = el('a-gridline' + (step % 16 === 0 ? ' pg' : ' beat'), bar); line.style.left = stepX(step) + 'px';
+      if (step % 16 === 0) {
+        const label = el('a-value', bar, String(step / 16 + 1));
+        label.style.cssText = 'position:absolute;top:3px;left:' + (stepX(step) + 5) + 'px;font-size:11px';
+      }
+    }
+  }
+  function adoptedPitchGrid(parent, track, ghosts) {
+    const viewport = el('a-pitchscroll', parent);
+    const lane = el('m-lane', viewport);
+    const left = el('m-kbwrap', lane); left.style.width = '134px';
+    const rail = el('a-range-rail', left);
+    const range = el('a-range-bracket', rail);
+    range.title = 'Recommended range preview; MIDI rows remain visible beyond it';
+    range.style.top = (MIDI_MAX - 84) * ADOPTED_RH + 'px'; range.style.height = 25 * ADOPTED_RH + 'px';
+    const kb = el('m-kb', left);
+    const height = (MIDI_MAX - MIDI_MIN + 1) * ADOPTED_RH;
+    kb.style.cssText = 'width:116px;height:' + height + 'px';
+    for (let midi = MIDI_MAX; midi >= MIDI_MIN; midi--) {
+      const key = el('a-key' + ([1,3,6,8,10].includes(midi % 12) ? ' black' : ''), kb, midi % 12 === 0 ? pitchName(midi) : '<span class="hover-label">' + pitchName(midi) + '</span>');
+      key.dataset.midi = midi;
+      key.title = pitchName(midi) + ' · layout preview; audition is not implemented here';
+      key.style.top = (MIDI_MAX - midi) * ADOPTED_RH + 'px'; key.style.height = ADOPTED_RH + 'px';
+    }
+    const g = el('m-grid', lane); g.style.cssText = 'width:' + adoptedWidth + 'px;height:' + height + 'px';
+    for (let midi = MIDI_MAX; midi >= MIDI_MIN; midi--) {
+      const band = el('a-pitchband' + ([1,3,6,8,10].includes(midi % 12) ? ' black' : '') + (midi % 12 === 0 ? ' octave' : ''), g);
+      band.style.top = (MIDI_MAX - midi) * ADOPTED_RH + 'px'; band.style.height = ADOPTED_RH + 'px';
+    }
+    for (let step = 0; step < ADOPTED_COLS; step++) {
+      const line = el('a-gridline' + (step % 16 === 0 ? ' page' : step % 4 === 0 ? ' beat' : ''), g);
+      line.style.left = stepX(step) + 'px';
+    }
+    const sets = ghosts ? adoptedTracks.filter(t => t.melodic) : [track];
+    sets.forEach(t => t.notes.forEach(note => {
+      const ghost = t !== track;
+      const n = el('n' + (ghost ? ' ghost' : ''), g, pitchName(note.midi));
+      n.dataset.step = note.step; n.dataset.track = t.name; n.dataset.midi = note.midi;
+      n.style.left = stepX(note.step) + 'px';
+      n.style.width = (stepX(note.step + note.len - 1) + 36 - stepX(note.step)) + 'px';
+      n.style.top = ((MIDI_MAX - note.midi) * ADOPTED_RH + (ghost ? 3 : 2)) + 'px';
+      n.style.setProperty('--note-velocity', note.velocity ?? 1);
+      if (ghost) n.style.setProperty('--ghost-accent', 'var(--color-' + t.category + ')');
+    }));
+    viewport.scrollTop = (MIDI_MAX - 74) * ADOPTED_RH;
+  }
+  function adoptedDock(parent, selected, ghosts) {
+    const dock = el('m-panel dock', parent); dock.style.flexDirection = 'column'; dock.style.width = (142 + adoptedWidth) + 'px';
+    const header = el('m-dockhead', dock);
+    const toolbar = el('a-toolbar', dock);
+    const body = el('a-dock-body', dock);
+    const gridHost = el('a-grid-host', body);
+    const preview = el('a-pane-body', body);
+    let track = adoptedTracks.find(t => t.name === selected), pane = 'Notes';
+    let gridTrack = null;
+    function render() {
+      header.innerHTML = adoptedTracks.map(t => '<button class="c chip' + (t === track ? ' on' : '') + '" data-track="' + t.name + '" aria-pressed="' + (t === track) + '">' + t.name + '</button>').join('')
+        + '<span class="a-label">Pane</span>' + ['Notes','Step','Track'].map(p => '<button class="c chip' + (p === pane ? ' on' : '') + '" data-pane="' + p + '" aria-pressed="' + (p === pane) + '"' + (p === 'Notes' && !track.melodic ? ' disabled title="Notes is melodic only"' : '') + '>' + p + '</button>').join('');
+      if (pane === 'Notes') {
+        toolbar.innerHTML = '<span class="a-label">Scale</span><select aria-label="Scale"><option>C major</option><option>Chromatic</option></select><button>Scale lock</button><span class="a-label">Octave</span><select aria-label="Octave"><option>C4</option><option>C3</option></select><button>Fit to notes</button><span class="a-label">Velocity</span><span class="a-value">1.0</span><button>Ghosts ' + (ghosts ? 'on' : 'off') + '</button><span class="a-value">MIDI 12..108</span>';
+      } else if (pane === 'Step') {
+        const velocity = track.melodic ? track.notes[0].velocity ?? 1 : 1;
+        toolbar.innerHTML = '<span class="a-label">Step</span><span class="a-value">1</span>' + (track.melodic ? '<span class="a-label">Pitch</span><select aria-label="Pitch"><option>' + pitchName(track.notes[0].midi) + '</option></select>' : '')
+          + '<span class="a-label">Velocity</span><select aria-label="Velocity">' + [...new Set([velocity,1,0.5])].map(v => '<option>' + v.toFixed(1) + '</option>').join('') + '</select><button aria-pressed="' + (track.melodic && track.notes[0].len > 1) + '">Tie</button><span class="a-label">Envelope</span><button>Reset</button>';
+      } else {
+        toolbar.innerHTML = '<span class="a-label">Instrument</span><select aria-label="Instrument"><option>' + track.instrument + '</option></select><span class="a-label">Steps</span><select aria-label="Steps"><option>32</option></select><button>Rotate ←</button><button>Rotate →</button><button>Copy</button><button>Clear</button>';
+      }
+      toolbar.title = 'Intentional integration preview: controls are disabled; working replacements are required in the application phases';
+      toolbar.querySelectorAll('button, select').forEach(control => { control.disabled = true; control.title = toolbar.title; });
+      // Panes only change the toolbar. Rebuild/recentre pitches only when the melodic track changes.
+      if (track.melodic && gridTrack !== track) {
+        gridHost.replaceChildren();
+        adoptedPitchGrid(gridHost, track, ghosts);
+        gridTrack = track;
+      }
+      // Keep the viewport mounted and its scroll offset intact while reserving the same drum body height.
+      gridHost.style.visibility = track.melodic ? 'visible' : 'hidden';
+      gridHost.inert = !track.melodic;
+      gridHost.setAttribute('aria-hidden', String(!track.melodic));
+      preview.hidden = track.melodic;
+      if (!track.melodic) preview.innerHTML = '<span class="a-label">' + track.name + ' · ' + pane + ' · Integration preview</span><p>' + (pane === 'Step' ? 'Supported step locks and envelope editing are intentionally disabled in this research mock; the working Step replacement ships in phase 5.' : 'Instrument, pattern tools and track actions are intentionally disabled in this research mock. Working Track controls and the desktop row diet ship together in phase 3.') + '</p>';
+      parent.querySelectorAll('.m-row').forEach(r => {
+        r.classList.toggle('m-rowhl', r.dataset.track === track.name);
+        const toggle = r.querySelector('[data-open]');
+        toggle.classList.toggle('on', r.dataset.track === track.name && track.melodic && pane === 'Notes');
+      });
+    }
+    header.addEventListener('click', event => {
+      const tab = event.target.closest('[data-track], [data-pane]'); if (!tab || tab.disabled) return;
+      if (tab.dataset.track) { track = adoptedTracks.find(t => t.name === tab.dataset.track); if (!track.melodic && pane === 'Notes') pane = 'Track'; }
+      if (tab.dataset.pane) pane = tab.dataset.pane;
+      render();
+    });
+    parent.addEventListener('click', event => {
+      const toggle = event.target.closest('[data-open], [data-open-track]'); if (!toggle || toggle.disabled) return;
+      track = adoptedTracks.find(t => t.name === (toggle.dataset.open || toggle.dataset.openTrack)); pane = toggle.dataset.open ? 'Notes' : 'Track'; render();
+    });
+    render();
+  }
+  function adoptedMock(root, selected, compare) {
+    const m = el('m adopted', root);
+    adoptedRuler(m);
+    adoptedTracks.forEach(track => adoptedRow(m, track, track.name === selected));
+    adoptedDock(m, selected, compare);
+    el('m-note', m, 'Intentional research preview: navigation works; disabled controls await app integration. Actual pixels: 134px column; desktop 44px rows + 2px gap, landscape 48px + 2px; 48px toolbar; 28px controls. Scroll right to inspect the 11px page band. Cells and bars share velocity colours; docked state is the control-block edge only.');
+  }
+
   const options = [
     {
-      rank: 1, title: 'Editor dock below the grid, controls to the left of the keys', precedent: 'Ableton Clip View, Bitwig Detail Editor, FL Studio Channel Rack preview',
-      scores: { align: 3, rhythm: 3, tess: 3, kb: 3, risk: 3, disc: 3 },
-      why: 'The roll leaves the track list. Rows stay contiguous, the sea of cells is never split, and the 512px column becomes the editor’s own control panel with a 96px keyboard against the grid. The melodic row keeps a pitch-contour preview inside its cells, so the melody is still readable in the grid. Nothing about the row column changes, so lesson 62 is untouched. How this differs from today: the shipped roll is one panel per track, inserted between that track and the next, with the keyboard filling the column. The dock is one panel for the whole sequencer, after the last row, showing the selected track, with the column holding the editor\u2019s controls. With a single melodic track at the bottom the two look alike. The difference appears the moment two rolls are open, which the test below explores.',
-      pros: ['Column, rhythm and tessellation all intact', 'Keyboard at a real piano-roll proportion', 'Transpose, scale lock, octave and velocity sit where the Clip View puts them', 'No change to track-left width'],
-      cons: ['The roll is no longer under its track; a highlight on the row and the dock’s title tie them together', 'Needs a vertical budget: dock height plus the grid'],
-      build(root) {
-        const m = el('m', root);
-        ruler(m, 512, COLS);
-        row(m, 512, fullHead('Lead', true), lead, leadTie, { preview: [2,0,1,0,0,0,0,3,4,4,0,2] });
-        row(m, 512, drumFullHead('Kick'), kick);
-        row(m, 512, drumFullHead('Hat'), hat);
-        panel(m, 512, 96, ROWS, RH, COLS, '<b>Lead · FM Bell</b><div class="rowc">' + CTRL.chip('Transpose − +0 +') + CTRL.chip('Steps 32') + '</div><div class="rowc">' + CTRL.chip('Lock to C major') + CTRL.chip('Octave − +') + '</div><div class="rowc">' + CTRL.chip('Velocity 80') + CTRL.chip('Fit to notes') + '</div>', true);
-        el('m-note', m, 'Rows touch. The dock is pinned under the grid and shares its horizontal scroll; the row with the open editor is highlighted.');
-      }
+      rank: 1, title: 'Adopted: editor dock below the grid, 134px two-line controls', precedent: 'Ableton Clip View, Bitwig Detail Editor, FL Studio Channel Rack preview',
+      scores: { align: 3, rhythm: 3, tess: 3, kb: 3, risk: 2, disc: 3 },
+      why: 'The roll leaves the track list. The adopted control column is 134px, made of a 12px grip, 4px gap, 110px body and 8px padding. Two 17px lines with a 2px gap fit the existing 44px row, so rows stay contiguous at 46px pitch. The dock left panel shares the 134px width, with an 18px range rail and 116px keyboard; editor controls move to one 48px toolbar rather than filling a wide column beside the keys. The row diet ships atomically with working Track controls in phase 3; the one-time width change requires lesson 62 reorder checks; dock toggles never change row width. Every track has a dock tab: drums can use Step and Track, while Notes remains melodic. The melodic row keeps its pitch/tie contour; cells and bars share the velocity colour formula with unlocked velocity 1.0.',
+      pros: ['Aligned columns and contiguous rows', 'All row state and disclosure controls fit the 110px body', 'Fixed toolbar geometry in every pane', 'Existing off-scale notes stay visible across MIDI 12..108'],
+      cons: ['The roll is no longer under its track; a 2px control-block edge and the active tab identify it', 'The one-time row diet must pass drag-reorder checks', 'Needs a vertical budget: dock height plus the grid'],
+      build(root) { adoptedMock(root, 'Lead', false); }
     },
     {
       rank: 2, title: 'Split the controls across the row: identity left, parameters right', precedent: 'Ableton Arrangement (headers on the right), Reaper mixer strip, Keyboardia’s existing track-right column',
@@ -344,7 +591,7 @@
     {
       rank: 5, title: 'Compact row with a per-track drawer', precedent: 'Keyboardia’s own landscape mobile layout and TrackDrawer',
       scores: { align: 3, rhythm: 1, tess: 1, kb: 2, risk: 1, disc: 2 },
-      why: 'The arrangement in the main prototype. The column shrinks to 224px and the hidden controls appear in a strip under the track. That strip is a row without cells, so it breaks the vertical scan from Lead to Kick, and on a track without the roll open it is the only thing between two rows of cells. It also changes the column width, so lesson 62 applies.',
+      why: 'Historical compact-drawer candidate. The column shrinks to 224px and the hidden controls appear in a strip under the track. That strip is a row without cells, so it breaks the vertical scan from Lead to Kick, and on a track without the roll open it is the only thing between two rows of cells. It also changes the column width, so lesson 62 applies.',
       pros: ['Reuses a shipped component and pattern', 'Small keyboard'],
       cons: ['Drawer strip breaks row rhythm and splits the grid', 'Width change hits lesson 62', 'Transpose and step count one click away'],
       build(root) {
@@ -396,23 +643,12 @@
 
   const multi = [
     {
-      rank: 1, title: 'One dock, track tabs, ghost notes for the other melodic tracks', precedent: 'Ghost notes in Ableton, Logic and FL Studio; Bitwig multi-track note editing',
+      rank: 1, title: 'Adopted: one dock, all track tabs, melodic ghost notes', precedent: 'Ghost notes in Ableton, Logic and FL Studio; Bitwig multi-track note editing',
       scores: { contig: 3, compare: 3, kb: 3, vert: 3, find: 2 },
-      why: 'Opening Bass while Lead is open switches the dock to Bass and keeps Lead visible as dashed ghost notes in the same grid. That is how every DAW lets you write a bassline against a lead: one keyboard, one grid, both parts. The rows above never move, and both melodic rows show their pitch contour in the cells.',
-      pros: ['Grid stays one surface however many rolls are open', 'Two parts compared in the same pitch space', 'Vertical cost is one dock, always'],
-      cons: ['Only one track is editable at a time', 'Which row the dock is editing must be obvious: tab plus row highlight'],
-      build(root) {
-        const m = el('m', root);
-        ruler(m, 512, COLS);
-        row(m, 512, fullHead('Lead', false), lead, leadTie, { preview: leadPrev });
-        row(m, 512, bassHead(true), bass, null, { preview: bassPrev }).classList.add('m-rowhl', 'bass');
-        row(m, 512, drumFullHead('Kick'), kick);
-        row(m, 512, drumFullHead('Hat'), hat);
-        const d = el('m-panel dock', m); d.style.flexDirection = 'column'; d.style.gap = '0';
-        el('m-dockhead', d, CTRL.chip('Lead') + CTRL.chip('Bass', true) + '<span class="lbl">Ghost: Lead</span>');
-        lane(d, 512, 96, ROWS, RH, COLS, '<b>Bass \u00B7 Sub</b><div class="rowc">' + CTRL.chip('Transpose \u2212 \u221212 +') + CTRL.chip('Steps 32') + '</div><div class="rowc">' + CTRL.chip('Lock to C major') + CTRL.chip('Ghost notes: Lead') + '</div>', [{ notes: leadNotes, cls: 'ghost' }, { notes: bassNotes, cls: 'bass' }]);
-        el('m-note', m, 'Bass is being edited; Lead shows as dashed ghosts. Clicking the Lead tab or the Lead row swaps them.');
-      }
+      why: 'Opening Bass while Lead is open switches the dock to Bass and keeps Lead visible as dashed ghost notes on the same chromatic pitch axis. One 134px left panel (18px range rail + 116px keyboard), one grid, both parts; scale lock preserves existing note pitches across MIDI 12..108. The rows above stay at 46px pitch and both melodic rows show their pitch/tie contour. Cells and solid bars share the same velocity colour formula. All four tracks have tabs; Kick and Hat open Step or Track. Switching pane keeps the toolbar at 48px, with 28px controls and 4px radii.',
+      pros: ['Grid stays one surface however many tracks are inspected', 'Two parts compared in the same pitch space', 'Vertical cost is one dock, always', 'Drum track and step controls stay reachable'],
+      cons: ['Only one track is editable at a time', 'The active tab and 2px accent control-block edge must identify the docked track'],
+      build(root) { adoptedMock(root, 'Bass', true); }
     },
     {
       rank: 2, title: 'One dock with stacked lanes, each fitted to its own pitch range', precedent: 'Logic multi-track piano roll, Reaper lanes',
