@@ -4443,21 +4443,9 @@ commit; this section documents the outcomes.
 
 These are still open:
 
-- ~~**Tighten `metrics/percentile.ts` and `metrics/ring-buffer.ts`** to
-  reach >90% mutation score. Currently 88% and 84%.~~ **Closed
-  (September 2026): the survivors cannot be killed by a meaningful test.**
-  `npx stryker run --mutate src/audio/metrics/percentile.ts,src/audio/metrics/ring-buffer.ts`
-  scored 89.47% and 83.87% with the same 7 survivors: `new Array(n)`
-  preallocation mutated to `new Array()` (3, ring-buffer) and fast-path
-  early returns removed (`values.length === 1` and `lower === upper` in
-  percentile, `count === 0` twice in ring-buffer). The ring-buffer
-  survivors are equivalent mutants: preallocation is a performance
-  property and the early returns produce the same results as the general
-  path. The percentile survivors differ only for a non-finite percentile
-  or value (NaN, Infinity), whose behaviour is unspecified; decide that
-  behaviour first if it matters rather than chasing the score. Stryker
-  stays a manual tool (`break: null`, no schedule); see
-  `app/stryker.config.mjs`.
+- **Mutation-score expansion is deferred under the owner's cost cap.**
+  No new mutation targets, campaigns, dependencies or scheduled lanes belong
+  in this readiness pass; pre-existing optional tooling is unchanged.
 - **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
   call sites** to production interfaces through real dependency injection.
   Until that seam exists, `mock-fidelity.test.ts` discovers name drift across
@@ -6974,3 +6962,21 @@ path it names, and reject anything it cannot analyze.** Give the gate negative
 fixtures that break discovery, classification, wiring, and output independently.
 Diagnostics should compose production transformations rather than copy them.
 Treat an unsupported construct as a decision to make, never as an implicit pass.
+
+## Lesson 83: Retry Reasons Must Share One Attempt Budget
+
+**Date:** 2026-10-09
+
+The session-read helper nested a three-attempt transport loop inside a
+three-attempt empty-response loop. Alternating transport failures and empty
+successful responses could therefore make nine requests, despite the caller
+asking for three. Transport errors, HTTP 429 and incomplete successful reads
+now share one loop and one budget; malformed JSON and other HTTP errors fail
+immediately. The existing helper test checks a mixed failure sequence with
+fake timers and exact request/annotation counts.
+
+Splitting heavy Vitest files into projects must move work, not duplicate it.
+The existing required CI job still executes all three groups, while T0 avoids
+native-render and verification-tooling work. PCM tests reuse a capture fixture
+instead of repeatedly rebuilding it. No mutation campaign, extra scheduled
+job, browser matrix, or timeout increase was added during this readiness pass.

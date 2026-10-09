@@ -93,6 +93,20 @@ describe('E2E API helpers retry policy', () => {
     await settled;
     expect(post).toHaveBeenCalledTimes(3);
     expect(retries()).toHaveLength(2);
+
+    // Reads share one attempt budget across transport, rate limiting and
+    // empty successful responses; nested retry loops used to permit 9 calls.
+    testInfo.annotations.length = 0;
+    const get = vi.fn()
+      .mockRejectedValueOnce(new Error('connect ECONNREFUSED'))
+      .mockResolvedValueOnce(response(200, { state: { tracks: [] } }))
+      .mockResolvedValueOnce(response(429, { error: 'rate limited' }));
+    const read = getSessionWithRetry({ get } as unknown as APIRequestContext, 'session-1', 3);
+    const readSettled = expect(read).rejects.toThrow('Session session-1 read failed: 429');
+    await vi.runAllTimersAsync();
+    await readSettled;
+    expect(get).toHaveBeenCalledTimes(3);
+    expect(retries()).toHaveLength(2);
   });
 
   it('fails a session read on the first 5xx instead of retrying it', async () => {

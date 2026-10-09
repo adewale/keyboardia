@@ -1,12 +1,6 @@
 // Stryker configuration — mutation testing for critical pure modules.
 // Run with: npm run test:mutation
-//
-// Manual by decision: no CI lane or schedule runs this, and `break: null`
-// means no score fails a run. Use it as evidence for a specific change to one
-// of the modules below. Some survivors are equivalent mutants that no test can
-// kill (for example the fast-path early returns and `new Array(n)`
-// preallocation in metrics/ring-buffer.ts), so read the survivors instead of
-// chasing the percentage. See docs/LESSONS-LEARNED.md lesson 33.
+// See docs/LESSONS-LEARNED.md lesson 33.
 export default {
   $schema: './node_modules/@stryker-mutator/core/schema/stryker-schema.json',
   packageManager: 'npm',

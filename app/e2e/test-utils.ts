@@ -107,16 +107,25 @@ async function sendWithTransportRetry(
   label: string,
   send: () => Promise<APIResponse>,
   maxAttempts: number,
+  retryResponse?: (response: APIResponse) => Promise<string | null>,
 ): Promise<APIResponse> {
   for (let attempt = 1; ; attempt++) {
-    let reason: string;
+    let reason: string | undefined;
+    let response: APIResponse | undefined;
     try {
-      const response = await send();
-      if (!isRetryableApiStatus(response.status()) || attempt >= maxAttempts) return response;
-      reason = `HTTP ${response.status()}`;
+      response = await send();
     } catch (error) {
       if (attempt >= maxAttempts) throw error;
       reason = error instanceof Error ? error.message : String(error);
+    }
+    if (response) {
+      // Response parsing is not a transport error: malformed successful
+      // responses must fail immediately, not be hidden by another attempt.
+      const responseReason = isRetryableApiStatus(response.status())
+        ? `HTTP ${response.status()}`
+        : await retryResponse?.(response);
+      if (!responseReason || attempt >= maxAttempts) return response;
+      reason = responseReason;
     }
     const delay = calculateBackoffDelay(attempt - 1);
     recordApiRetry(`${label} attempt ${attempt} failed (${reason}); retrying in ${delay}ms`);
@@ -253,19 +262,19 @@ export async function getSessionWithRetry(
   maxAttempts = 3
 ): Promise<SessionResponse> {
   const label = `Session ${sessionId} read`;
-  for (let attempt = 1; ; attempt++) {
-    const response = await sendWithTransportRetry(
-      label,
-      () => request.get(`${API_BASE}/api/sessions/${sessionId}`),
-      maxAttempts,
-    );
-    if (!response.ok()) throw await describeFailure(label, response);
-    const session = await response.json() as SessionResponse;
-    if ((session.state?.tracks?.length ?? 0) > 0 || attempt >= maxAttempts) return session;
-    const delay = calculateBackoffDelay(attempt - 1);
-    recordApiRetry(`${label} attempt ${attempt} returned no tracks; re-reading in ${delay}ms`);
-    await sleep(delay);
-  }
+  let session: SessionResponse | undefined;
+  const response = await sendWithTransportRetry(
+    label,
+    () => request.get(`${API_BASE}/api/sessions/${sessionId}`),
+    maxAttempts,
+    async response => {
+      if (!response.ok()) return null;
+      session = await response.json() as SessionResponse;
+      return (session.state?.tracks?.length ?? 0) > 0 ? null : 'no tracks';
+    },
+  );
+  if (!response.ok()) throw await describeFailure(label, response);
+  return session!;
 }
 
 /**
