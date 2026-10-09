@@ -333,6 +333,81 @@
   [data-display-mode="landscape"] .mobile-timeline span { position: absolute; font: 500 10px/16px var(--font-mono); color: var(--muted); }
   [data-display-mode="landscape"] .timeline-caption { position: sticky; left: 0; width: 92px; background: var(--surface); z-index: 1; padding-left: 6px; }
 
+  /* ===== Audit switches (proportion audit, October 2026) =====
+     Row geometry options from the row audit, and the two fix sets. The default
+     (data-rows="reconciled", both fix sets off) is the PR #127 contract exactly. */
+  .audit-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--muted); }
+  .audit-bar .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
+  .audit-bar .set { display: inline-flex; gap: 2px; background: var(--surface-2); border-radius: 4px; }
+  .audit-bar .opt { height: 28px; padding: 0 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .audit-bar .opt:hover { color: var(--text); }
+  .audit-bar .opt[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+  .audit-bar .readout { font-family: var(--font-mono); font-size: 11px; color: var(--text); white-space: nowrap; }
+  .audit-bar .spacer { flex: 1; }
+  html { --row-opt-h: 58px; }
+
+  /* Row option: 50 / 52. Two 24px lines, no padding; the tile is the row. */
+  html[data-rows="r50"] { --row-opt-h: 50px; }
+  html[data-rows="r50"] .track-row { height: 50px; padding: 0; }
+  /* Row option: 48 / 50 with two 22px lines (production's row and pitch). */
+  html[data-rows="r48two"] { --row-opt-h: 48px; }
+  html[data-rows="r48two"] .track-row { height: 48px; padding: 1px 0; }
+  html[data-rows="r48two"] .track-left { grid-template-rows: [identity] 22px [controls] 22px; height: 46px; }
+  html[data-rows="r48two"] .track-name, html[data-rows="r48two"] .rename-input, html[data-rows="r48two"] .tl-btn, html[data-rows="r48two"] .badge, html[data-rows="r48two"] .expand-toggle, html[data-rows="r48two"] .velocity-toggle { height: 22px; }
+  /* Row options: one line. Name, M, S and the Notes toggle in one band; badge, lane toggle and
+     transpose readout move to the Track pane, as the surveyed products do. */
+  html[data-rows="r48one"] { --row-opt-h: 48px; }
+  html[data-rows="r48one"] .track-row { height: 48px; padding: 6px 0; }
+  html[data-rows="r36one"] { --row-opt-h: 36px; }
+  html[data-rows="r36one"] .track-row { height: 36px; padding: 0; }
+  html[data-rows="r36one"] .tracks-inner .rows, html[data-rows="r36one"] .tracks-inner { gap: 3px; }
+  html[data-rows="r48one"] .track-left, html[data-rows="r36one"] .track-left { display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 4px; }
+  html[data-rows="r48one"] .drag-handle, html[data-rows="r36one"] .drag-handle, html[data-rowfix="on"] .drag-handle { width: 12px; flex: none; overflow: hidden; }
+  html[data-rows="r48one"] .track-name, html[data-rows="r36one"] .track-name, html[data-rows="r48one"] .rename-input, html[data-rows="r36one"] .rename-input { flex: 1 1 0; min-width: 0; height: 24px; }
+  html[data-rows="r48one"] .track-name, html[data-rows="r36one"] .track-name { display: block; line-height: 24px; text-overflow: ellipsis; }
+  html[data-rows="r48one"] .track-name .tick, html[data-rows="r36one"] .track-name .tick { display: inline-block; vertical-align: -1px; margin-right: 4px; }
+  html[data-rows="r48one"] .track-name .tr, html[data-rows="r36one"] .track-name .tr, html[data-rows="r48one"] .line2 .badge, html[data-rows="r36one"] .line2 .badge, html[data-rows="r48one"] .velocity-toggle, html[data-rows="r36one"] .velocity-toggle { display: none; }
+  html[data-rows="r48one"] .line2, html[data-rows="r36one"] .line2 { display: contents; }
+
+  /* Row fixes: contour centred and continuous (JS), borders 2 with 3 at beat starts and the lock as colour only,
+     actions on the cell band, lane as one row pitch, ruler one lattice slot above the rows, no closed-dock line, grip glyph 12px. */
+  html[data-rowfix="on"] .step-cell.has-lock { border-width: 2px; }
+  html[data-rowfix="on"] .step-cell.has-lock.beat-start { border-left-width: 3px; }
+  html[data-rowfix="on"] .step-cell.playing { border-width: 3px; }
+  html[data-rowfix="on"] .row-actions button { height: 36px; width: 48px; min-width: 48px; padding: 0; }
+  html[data-rowfix="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
+  html[data-rowfix="on"][data-rows="r36one"] .velocity-lane { margin-top: 3px; }
+  html[data-rowfix="on"] .velocity-lane input { height: 36px; }
+  html[data-rowfix="on"] .ruler-row { margin-bottom: 0; padding-bottom: 0; }
+  html[data-rowfix="on"] .marker-label { top: 0; line-height: 24px; }
+  html[data-rowfix="on"] .dock:not(.open) { margin-top: 0; }
+  html[data-rowfix="on"] .dock:not(.open) .dock-inner { border-top: 0; }
+  html[data-rowfix="on"] .drag-handle { font-size: 12px; letter-spacing: 0; }
+  html[data-rowfix="on"] .tl-btn, html[data-rowfix="on"] .badge, html[data-rowfix="on"] .expand-toggle, html[data-rowfix="on"] .velocity-toggle { border-radius: 4px; }
+
+  /* Dock fixes: rail 20 so keys start where names start, rules outside the strips with even 8px padding,
+     one border colour, whole-row keys and whole-pixel bars (JS), grid lines in the gaps (JS), octave rule on the B|C crack. */
+  html[data-dockfix="on"] .dock { margin-top: 4px; }
+  html[data-dockfix="on"] .dock-left { grid-template-columns: 20px 1fr; }
+  html[data-dockfix="on"] .range-rail .bracket { left: 9px; width: 2px; }
+  html[data-dockfix="on"] .range-rail .bracket::before, html[data-dockfix="on"] .range-rail .bracket::after { left: -2px; width: 6px; }
+  html[data-dockfix="on"] .dock-head { height: calc(var(--dock-head-height) + 1px); padding: 8px 20px; }
+  html[data-dockfix="on"] .dock-head .right { gap: 4px; }
+  html[data-dockfix="on"] .tools-shell, html[data-dockfix="on"] .dock-tools { height: calc(var(--dock-toolbar-height) + 1px); }
+  html[data-dockfix="on"] .pane { height: var(--dock-toolbar-height); padding: 0 20px; gap: 16px; }
+  html[data-dockfix="on"] .editor-status { padding: 4px 20px; min-height: 24px; line-height: 16px; }
+  html[data-dockfix="on"] .chip, html[data-dockfix="on"] .cbtn { padding: 0 8px; }
+  html[data-dockfix="on"] .cbtn { font-weight: 500; }
+  html[data-dockfix="on"] .dock-head .ib, html[data-dockfix="on"] .cbtn, html[data-dockfix="on"] .cbtn.quiet, html[data-dockfix="on"] .tool-scroll, html[data-dockfix="on"] .pane input[type=number], html[data-dockfix="on"] .pane select, html[data-dockfix="on"] .detail-controls input, html[data-dockfix="on"] .detail-controls select, html[data-dockfix="on"] .row-actions button, html[data-dockfix="on"] .rename-input { border-color: #74747f; }
+  html[data-dockfix="on"] .dock-head .ib:hover { border-color: var(--muted); }
+  html[data-dockfix="on"] .key.black { width: 78px; border-radius: 0 2px 2px 0; }
+  html[data-dockfix="on"][data-display-mode="landscape"] .key.black { width: 38px; }
+  html[data-dockfix="on"] .key { padding-right: 6px; }
+  html[data-dockfix="on"] .key .lbl { display: block; line-height: var(--pitch-row-height); }
+  html[data-dockfix="on"] .row.c { border-top: 0; border-bottom: 1px solid var(--piano-grid-octave); }
+  html[data-dockfix="on"] .notes .note, html[data-dockfix="on"] .ghosts .gnote, html[data-dockfix="on"] .ghost { border-radius: 2px; }
+  html[data-dockfix="on"] .tip { border-radius: 4px; }
+
   /* ===== Portrait: consumption only ===== */
   [data-display-mode="portrait"] .sequencer { display: none; }
   [data-display-mode="portrait"] .portrait-preview { display: block; }
@@ -348,6 +423,23 @@
   </div>
 
   <section class="portrait-preview" aria-label="Portrait listening preview"><h2>Keyboardia · listening view</h2><p>Editing is available in landscape. Rotate your phone to edit the pattern.</p><button class="cbtn" id="portraitPlay" type="button">Play preview</button></section>
+  <section class="audit-bar" aria-label="Audit switches">
+    <span class="k">Rows</span>
+    <span class="set" role="group" aria-label="Row geometry" id="rowOpts">
+      <button class="opt" type="button" data-rows="reconciled" aria-pressed="true" title="PR #127 contract: 24 + 2 + 24 in a 58px row, pitch 60">58 / 60 two lines</button>
+      <button class="opt" type="button" data-rows="r50" aria-pressed="false" title="Row audit's pick: two 24px lines, no padding, pitch 52 = 4/3 of the step pitch">50 / 52 two lines</button>
+      <button class="opt" type="button" data-rows="r48two" aria-pressed="false" title="Production's row and pitch with two 22px lines">48 / 50 two 22px lines</button>
+      <button class="opt" type="button" data-rows="r48one" aria-pressed="false" title="Research: one 36px band, name truncates, badge and lane toggle move to the Track pane">48 / 50 one line</button>
+      <button class="opt" type="button" data-rows="r36one" aria-pressed="false" title="Strict 1:1 with the step pitch">36 / 39 one line</button>
+    </span>
+    <span class="k">Fixes</span>
+    <span class="set">
+      <button class="opt" type="button" id="rowFix" aria-pressed="false" title="Contour centred and continuous, 2px borders with 3px beat starts, 36px actions on the cell band, lane as one pitch, ruler one slot above, no closed-dock line">Rows</button>
+      <button class="opt" type="button" id="dockFix" aria-pressed="false" title="Rail 20, whole-row keys, whole-pixel Fit on the active track, bar inset = cell border, grid lines in the gaps, octave rule on B|C, even 8px chrome padding, one border colour">Dock</button>
+    </span>
+    <span class="spacer"></span>
+    <span class="readout" id="auditReadout"></span>
+  </section>
   <section class="sequencer" id="sequencer" aria-label="Sequencer">
     <div class="transport">
       <button class="play-button" id="playBtn" type="button" aria-label="Play"><span id="playIcon">&#9654;</span></button>
@@ -415,6 +507,8 @@
   const noteName = m => NOTE_NAMES[pc(m)] + (Math.floor(m / 12) - 1);
   const el = (cls, parent, tag) => { const d = document.createElement(tag || 'div'); if (cls) d.className = cls; if (parent) parent.appendChild(d); return d; };
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const rowFix = () => document.documentElement.dataset.rowfix === 'on';
+  const dockFix = () => document.documentElement.dataset.dockfix === 'on';
 
   // ---------- tracks: steps + parameter locks, as in the app ----------
   function mk(id, name, kind, inst, badge, cat, transpose, range) {
@@ -700,7 +794,7 @@
     const wrap=el('track-row-wrapper',parent);t.wrap=wrap;
     const row=el('track-row',wrap);
     const left=el('track-left',row);
-    const grip=el('drag-handle',left);grip.textContent='⋮⋮';grip.setAttribute('aria-hidden','true');grip.title='Layout preview: reorder is not implemented here';
+    const grip=el('drag-handle',left);grip.textContent=rowFix()?'⠿':'⋮⋮';t.gripEl=grip;grip.setAttribute('aria-hidden','true');grip.title='Layout preview: reorder is not implemented here';
     const name=el('track-name',left,'button');t.nameEl=name;
     let nameTimer=null;
     name.addEventListener('click',()=>{clearTimeout(nameTimer);nameTimer=setTimeout(()=>openDock(t,'track',name),200);});
@@ -776,7 +870,9 @@
       let mark=c.querySelector('.contour');
       if(on&&t.kind==='melodic'){
         if(!mark)mark=el('contour',c);
-        const relative=stepMidi(t,i)-BASE_MIDI-t.transpose;mark.style.top=(24-(relative+24)/48*20)+'px';
+        const relative=stepMidi(t,i)-BASE_MIDI-t.transpose;
+        if(rowFix()){const gap=i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP,tied=!!t.locks[i]?.tie;mark.style.top=(8+(24-relative)/48*20-1.5-c.clientTop)+'px';mark.style.left=(tied?-(gap+5):5)-c.clientLeft+'px';mark.style.right=(5-(c.offsetWidth-c.clientWidth-c.clientLeft))+'px';mark.style.borderRadius=tied?'0 2px 2px 0':'2px';}
+        else{mark.style.top=(24-(relative+24)/48*20)+'px';mark.style.left='';mark.style.right='';mark.style.borderRadius='';}
       }else if(mark)mark.remove();
     });
   }
@@ -788,6 +884,8 @@
   const isLandscape=()=>displayMode()==='landscape';
   const isPortrait=()=>displayMode()==='portrait';
   const WHITE_SPAN={0:[0,1.5],2:[-.5,1.5],4:[-.5,1],5:[0,1.5],7:[-.5,1.5],9:[-.5,1.5],11:[-.5,1]};
+  // Whole-row spans (dock fix): C 2, D 2, E 1, F 2, G 2, A 2, B 1 = 12 rows; every key edge on a row line.
+  const WHITE_SPAN_FIX={0:[0,2],2:[0,2],4:[0,1],5:[0,2],7:[0,2],9:[0,2],11:[0,1]};
   function renderDock(parent) {
     const d=el('dock',parent);ui.dock=d;d.inert=true;d.setAttribute('aria-hidden','true');d.setAttribute('role','region');d.setAttribute('aria-label','Track editor');
     const innerD=el('dock-inner',d),head=el('dock-head',innerD);ui.head=head;
@@ -821,8 +919,11 @@
     const scroll=el('dock-scroll',body);ui.scroll=scroll;
     const grid=el('grid',scroll);grid.style.width=GRID_WIDTH+'px';ui.grid=grid;
     ui.rowEls=Array.from({length:ROWS},()=>el('row',grid));
-    const lines=el('lines',grid);
-    for(let i=0;i<STEPS;i++){const line=el('grid-line'+(i%16===0?' bar':i%4===0?' beat':''),lines);line.style.left=stepX(i)+'px';if(i>0&&i%PAGE_STEPS===0){const band=el('page-band',lines);band.style.left=cellRight(i-1)+'px';}}
+    const lines=el('lines',grid);ui.lines=lines;
+    ui.drawLines=()=>{lines.replaceChildren();for(let i=0;i<STEPS;i++){
+      if(dockFix()){if(i===0)continue;const page=i%PAGE_STEPS===0;const line=el('grid-line'+(page?' bar':i%4===0?' beat':''),lines);line.style.left=(page?stepX(i)-6:stepX(i)-2)+'px';if(page){const band=el('page-band',lines);band.style.left=cellRight(i-1)+'px';}}
+      else{const line=el('grid-line'+(i%16===0?' bar':i%4===0?' beat':''),lines);line.style.left=stepX(i)+'px';if(i>0&&i%PAGE_STEPS===0){const band=el('page-band',lines);band.style.left=cellRight(i-1)+'px';}}
+    }};ui.drawLines();
     ui.shadeL=el('loop-shade',grid);ui.shadeR=el('loop-shade',grid);
     ui.hlRow=el('hl-row',grid);ui.hlCol=el('hl-col',grid);ui.selCol=el('sel-col',grid);
     ui.ghostsLayer=el('ghosts',grid);ui.notesLayer=el('notes',grid);ui.ghost=el('ghost',grid);
@@ -879,23 +980,28 @@
     // Choose only the text foreground from the actual CSS fill; CSS still owns every velocity colour.
     node.style.setProperty('--note-label-ink',(l+.05)/.056>=1.05/(l+.05)?'#121212':'#ffffff');
   }
+  // Bar height: 14/18 of the row as specified, or (dock fix) the row minus an inset equal to the cell border.
+  const barInset = () => H>=18?2:H>=4?1:0;
+  const barH = () => dockFix()?H-2*barInset():Math.max(1,H*14/18);
+  const ghostH = () => dockFix()?Math.max(1,barH()-2):Math.max(1,H*12/18);
+  const barRadius = h => Math.min(dockFix()?2:3,h/2);
   function drawNotes(fade) {
     const t=dock.track;if(!t)return;const layer=ui.notesLayer,version=++paintVersion;
     const paint=()=>{if(version!==paintVersion||t!==dock.track)return;computeBars(t);layer.replaceChildren();ui.noteEls=[];
-      (t.kind==='melodic'?t.bars:[]).forEach(b=>{const n=el('note',layer);n.style.left=stepX(b.start)+'px';n.style.width=spanWidth(b.start,b.len)+'px';n.style.top=(MIDI_MAX-b.midi)*H+((H-Math.max(1,H*14/18))/2)+'px';n.style.height=Math.max(1,H*14/18)+'px';n.style.borderRadius=Math.min(3,Math.max(1,H*14/18)/2)+'px';n.style.setProperty('--note-velocity',String(b.vel));const label=el('bar-label',n);label.textContent=noteName(b.midi);n._bar=b;ui.noteEls.push(n);noteInk(n);});syncRow(t);
+      (t.kind==='melodic'?t.bars:[]).forEach(b=>{const n=el('note',layer);n.style.left=stepX(b.start)+'px';n.style.width=spanWidth(b.start,b.len)+'px';const bh=barH();n.style.top=(MIDI_MAX-b.midi)*H+((H-bh)/2)+'px';n.style.height=bh+'px';n.style.borderRadius=barRadius(bh)+'px';n.style.setProperty('--note-velocity',String(b.vel));const label=el('bar-label',n);label.textContent=noteName(b.midi);n._bar=b;ui.noteEls.push(n);noteInk(n);});syncRow(t);
     };
     if(fade&&!reduced){layer.classList.add('fading');setTimeout(()=>{paint();layer.classList.remove('fading');},120);}else paint();
   }
   function drawGhosts() {
     ui.ghostsLayer.replaceChildren();
-    melodic.forEach(o=>{if(o===dock.track||!dock.ghosts[o.id])return;computeBars(o);o.bars.forEach(b=>{const g=el('gnote',ui.ghostsLayer);g.style.setProperty('--gc',o.cat);g.style.left=stepX(b.start)+'px';g.style.width=spanWidth(b.start,b.len)+'px';g.style.top=(MIDI_MAX-b.midi)*H+((H-Math.max(1,H*12/18))/2)+'px';g.style.height=Math.max(1,H*12/18)+'px';g.style.borderRadius=Math.min(3,Math.max(1,H*12/18)/2)+'px';});});
+    melodic.forEach(o=>{if(o===dock.track||!dock.ghosts[o.id])return;computeBars(o);o.bars.forEach(b=>{const g=el('gnote',ui.ghostsLayer);g.style.setProperty('--gc',o.cat);g.style.left=stepX(b.start)+'px';g.style.width=spanWidth(b.start,b.len)+'px';const gh=ghostH();g.style.top=(MIDI_MAX-b.midi)*H+((H-gh)/2)+'px';g.style.height=gh+'px';g.style.borderRadius=barRadius(gh)+'px';});});
   }
   function setPitchHeight(value) {
     H=clamp(value,2,36);document.documentElement.style.setProperty('--pitch-row-height',H+'px');
     ui.grid.style.height=ui.rail.style.height=ui.keycol.style.height=ROWS*H+'px';
     ui.rowEls.forEach((r,i)=>{r.style.top=i*H+'px';r.style.height=H+'px';});
-    ui.keyList.forEach(([midi,k])=>{let top,height;if(isBlack(midi)){top=(MIDI_MAX-midi)*H;height=H;}else{const span=WHITE_SPAN[pc(midi)],rb=midi-MIDI_MIN;top=Math.max(0,(ROWS-rb-span[1])*H);height=Math.min(ROWS*H,(ROWS-rb-span[0])*H)-top;}k.style.top=top+'px';k.style.height=height+'px';});
-    ui.hlRow.style.height=ui.focusMarker.style.height=H+'px';ui.ghost.style.height=Math.max(1,H*14/18)+'px';ui.ghost.style.width=STEP_W+'px';
+    ui.keyList.forEach(([midi,k])=>{let top,height,pad=0;if(isBlack(midi)){top=(MIDI_MAX-midi)*H;height=H;}else{const span=(dockFix()?WHITE_SPAN_FIX:WHITE_SPAN)[pc(midi)],rb=midi-MIDI_MIN;top=Math.max(0,(ROWS-rb-span[1])*H);height=Math.min(ROWS*H,(ROWS-rb-span[0])*H)-top;if(dockFix())pad=(span[1]-1)*H;}k.style.top=top+'px';k.style.height=height+'px';k.style.paddingTop=pad+'px';});
+    ui.hlRow.style.height=ui.focusMarker.style.height=H+'px';ui.ghost.style.height=barH()+'px';ui.ghost.style.width=STEP_W+'px';
     ui.grid.classList.toggle('overview',H<12);ui.keycol.classList.toggle('overview',H<12);
     applyClasses();if(dock.track){drawNotes(false);drawGhosts();}moveGridCursor(false);
   }
@@ -905,9 +1011,9 @@
   }
   function fitComparison(initial=false) {
     if(!dock.track||dock.track.kind!=='melodic')return;
-    const mids=comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
+    const mids=(initial===true&&dockFix())?(computeBars(dock.track),dock.track.bars.map(b=>b.midi)):comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
     const lo=Math.min(...mids),hi=Math.max(...mids),viewport=parseFloat(getComputedStyle(ui.scroll).height)||252;
-    setPitchHeight(clamp(viewport/(hi-lo+5),2,initial===true?18:36));
+    const raw=viewport/(hi-lo+5);setPitchHeight(clamp(dockFix()?Math.floor(raw):raw,2,initial===true?18:36));
     ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-hi-2)*H);ui.scroll.dispatchEvent(new Event('scroll'));
     setStatus('Showing '+dock.track.name+' and enabled comparison tracks. Zoom in for detail.');
   }
@@ -1054,7 +1160,7 @@
       const preview=b?b.midi:target;
       grid.classList.add('hovering');grid.classList.toggle('empty',!b);
       ui.hlRow.style.top=(MIDI_MAX-(preview===null?p.midi:preview))*H+'px';ui.hlCol.style.left=stepX(p.step)+'px';
-      ui.ghost.style.left=stepX(p.step)+'px';ui.ghost.style.top=(MIDI_MAX-(target===null?p.midi:target))*H+((H-Math.max(1,H*14/18))/2)+'px';ui.ghost.style.opacity=target===null?'0':'';
+      ui.ghost.style.left=stepX(p.step)+'px';ui.ghost.style.top=(MIDI_MAX-(target===null?p.midi:target))*H+((H-barH())/2)+'px';ui.ghost.style.opacity=target===null?'0':'';
       ui.tip.style.left=p.x+'px';ui.tip.style.top=p.y+'px';
       ui.tip.replaceChildren();
       const strong=el('',ui.tip,'b');strong.textContent=noteName(preview===null?p.midi:preview);
@@ -1189,6 +1295,17 @@
       const t=selection.track;selection.steps.forEach(i=>{t.steps[i]=false;t.locks[i]=null;t.tieOrigins?.delete(i);});trackChanged(t);clearSelection();e.preventDefault();
     }
   });
+  // ---------- audit switches ----------
+  const ROW_OPTS={reconciled:{row:58,pitch:60,inset:11},r50:{row:50,pitch:52,inset:7},r48two:{row:48,pitch:50,inset:6},r48one:{row:48,pitch:50,inset:6},r36one:{row:36,pitch:39,inset:0}};
+  function applyAudit(){
+    const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'reconciled'];
+    tracks.forEach(t=>{if(t.gripEl)t.gripEl.textContent=rowFix()?'⠿':'⋮⋮';syncRow(t);});
+    if(ui.drawLines)ui.drawLines();setPitchHeight(H);
+    document.getElementById('auditReadout').textContent='row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch';
+  }
+  document.getElementById('rowOpts').addEventListener('click',e=>{const b=e.target.closest('[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.querySelectorAll('#rowOpts .opt').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
+  for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on';document.documentElement.dataset[key]=on?'on':'off';b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
+  document.documentElement.dataset.rows='reconciled';applyAudit();
   // The page opens with Lead docked so its first frame shows the working state. In the app the dock opens only on request.
   openDock(lead, 'notes');
 })();
