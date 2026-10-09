@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keyboardia Piano Roll</title>
+<style>
+  /* Layout: the Keyboardia sequencer (transport, loop ruler, four track rows on the 39px step pitch) with
+     the two-line control block and the proposed editor dock pinned under the grid.
+     Single dark theme by choice: these are the app's own tokens. */
+  :root {
+    --color-accent: #e85a30; --color-surface: #1e1e1e;
+    --color-drums: #e67e22; --color-bass: #9b59b6; --color-keys: #3498db; --color-leads: #e91e63; --color-pads: #2ecc71; --color-fx: #00bcd4; --color-purple-dark: #8e44ad;
+    --bg: #121212; --surface: var(--color-surface); --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
+    --border: #3a3a3a; --border-light: #4a4a4a; --border-hover: #555555;
+    --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
+    --accent: var(--color-accent); --accent-hi: #f07048; --accent-text: #ff8a65;
+    --success: #1db954; --info: #3498db; --info-text: #5eb3ea; --info-region: rgba(74,158,206,.3); --warning: #ffc107;
+    --purple: #8e44ad; --purple-text: #c58ad6; --purple-muted: rgba(155,89,182,.15);
+    --cat-keys: var(--color-keys); --cat-bass: var(--color-bass); --cat-drums: var(--color-drums);
+    --playhead: #ffffff;
+    --piano-key-surface: #0f0e0d; --piano-grid-step: rgb(255 255 255 / 4.5%); --piano-grid-beat: rgb(255 255 255 / 10%);
+    --piano-grid-bar: rgb(255 255 255 / 22%); --piano-grid-octave: rgb(255 255 255 / 16%); --piano-grid-black-row: rgb(0 0 0 / 22%);
+    --note-velocity-accent: var(--color-accent); --note-velocity-surface: var(--color-surface); --note-velocity: 1;
+    --piano-key-white: #c9c5bc; --piano-key-white-hover: #ddd9d0; --piano-key-black: #131211; --piano-key-black-hover: #2a2826; --piano-key-label: #3f3c37;
+    --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'Consolas', monospace;
+    --step-w: 36px; --step-pitch: 39px;
+    /* Two-line control block: grip 12 + gap 4 + body 130 + padding 8 = 154px. Identity and controls
+       each have 24px targets; a 2px gap gives a 50px stack within a 58px row. */
+    --track-left-width: 154px;
+    --pitch-row-height: 18px;
+    --ctl-h: 24px;
+    --row-h: 18px; --dock-grid-h: 252px; --dock-head-height: 84px; --dock-toolbar-height: 48px;
+    --note-presence-outline: #b8b8b8;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+  .page-wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 56px; display: flex; flex-direction: column; gap: 18px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; line-height: 16px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+  h1 { font-size: 22px; font-weight: 600; margin: 2px 0 4px; letter-spacing: -.01em; text-wrap: balance; }
+  h2 { font-size: 15px; font-weight: 600; margin: 10px 0 8px; }
+  .lede { color: var(--muted); max-width: 72ch; margin: 0; }
+  button { font: inherit; }
+  button:focus-visible, input:focus-visible, select:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--info-text); outline-offset: 2px; }
+
+  /* ===== App shell ===== */
+  .sequencer { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .transport { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 4px 8px; }
+  .play-button { width: 56px; height: 56px; border: none; border-radius: 50%; background: var(--success); color: #000; font-size: 22px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; position: relative; overflow: hidden; }
+  .play-button::before { content: ''; position: absolute; inset: 0; background: rgba(255,255,255,.15); border-radius: 50%; transform: scaleX(0); transform-origin: left center; transition: transform 250ms ease-out; }
+  .play-button:hover::before { transform: scaleX(1); }
+  .play-button.playing { background: var(--accent); }
+  .bpm { display: flex; flex-direction: column; line-height: 1.1; }
+  .bpm b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .bpm span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid #6c6c76; color: var(--text); font-size: 13px; cursor: pointer; }
+  .pill .caret { color: var(--muted); font-size: 10px; }
+  .pill[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.15); }
+  .transport .spacer { flex: 1; }
+  .session-name { color: var(--muted); font-size: 13px; }
+  .hint { font-size: 12px; color: var(--dim); }
+
+  /* ===== The scroller: horizontal as today, plus vertical so the dock can pin to its bottom ===== */
+  .tracks { overflow: auto; max-height: 78vh; position: relative; scrollbar-color: var(--surface-4) var(--surface-2); }
+  .tracks::-webkit-scrollbar { height: 8px; width: 8px; }
+  .tracks::-webkit-scrollbar-track { background: var(--surface-2); border-radius: 4px; }
+  .tracks::-webkit-scrollbar-thumb { background: var(--surface-4); border-radius: 4px; }
+  .tracks-inner { display: flex; width: max-content; flex-direction: column; gap: 2px; min-width: 100%; min-height: 100%; }
+  .tracks-inner .rows { display: flex; flex-direction: column; gap: 2px; }
+  .tracks-inner .fill { flex: 1; }
+
+  /* ===== Loop ruler (ported LoopRuler behaviour, grid aligned) ===== */
+  .ruler-row { display: flex; gap: 8px; margin-bottom: 6px; position: sticky; top: 0; z-index: 5; background: var(--bg); padding-bottom: 2px; }
+  .ruler-spacer { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--bg); display: flex; align-items: center; justify-content: flex-end; padding-right: 8px; font-size: 11px; color: var(--dim); }
+  .loop-ruler { position: relative; height: 24px; width: 1253px; flex: none; background: var(--surface-2); border-radius: 4px; cursor: crosshair; user-select: none; touch-action: none; }
+  .loop-ruler:hover, .loop-ruler.has-loop { background: var(--surface-3); }
+  .loop-ruler.dragging { cursor: ew-resize; }
+  .ruler-marker { position: absolute; top: 0; height: 100%; pointer-events: none; }
+  .ruler-marker.beat { width: 1px; background: var(--border-light); opacity: .6; }
+  .ruler-marker.pg { width: 2px; background: var(--border-light); }
+  .marker-label { position: absolute; top: 3px; left: 4px; font-family: var(--font-mono); font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .ruler-marker.pg .marker-label { color: var(--muted); font-weight: 600; }
+  .loop-region { position: absolute; top: 2px; bottom: 2px; background: var(--info-region); border-radius: 2px; pointer-events: none; }
+  .loop-region.preview { background: rgba(74,158,206,.2); border: 1px dashed var(--info); }
+  .loop-bracket { position: absolute; top: 0; bottom: 0; width: 4px; background: var(--info); }
+  .loop-bracket.start { left: 0; border-radius: 2px 0 0 2px; }
+  .loop-bracket.end { right: 0; border-radius: 0 2px 2px 0; }
+  .shift-click-marker { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--warning); animation: marker-pulse 1s ease-in-out infinite; }
+  @keyframes marker-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+  .ruler-playhead { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--playhead); pointer-events: none; z-index: 2; display: none; }
+  .loop-ruler.playing .ruler-playhead { display: block; }
+
+  /* ===== Track rows, on the row diet ===== */
+  .track-row-wrapper { display: flex; flex-direction: column; border-radius: 4px; }
+  .track-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; height: 58px; border-radius: 4px; min-width: max-content; position: relative; }
+  .track-left {
+    display: grid;
+    grid-template-columns: [drag] 12px [body] 130px;
+    grid-template-rows: [identity] var(--ctl-h) [controls] var(--ctl-h);
+    column-gap: 4px; row-gap: 2px; align-content: center; padding: 0 4px; position: sticky; left: 0; z-index: 3; background: var(--surface);
+    box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); height: 50px; width: var(--track-left-width); min-width: var(--track-left-width);
+  }
+  .track-row-wrapper.docked .track-left { box-shadow: inset 2px 0 0 var(--accent), 4px 0 8px -4px rgba(0,0,0,.2); }
+  .drag-handle { grid-column: drag; grid-row: identity / span 2; align-self: center; color: var(--dim); font-size: 14px; letter-spacing: -2px; cursor: grab; text-align: center; }
+  .track-name { grid-column: body; grid-row: identity; height: 24px; border: 0; color: var(--text); background: transparent; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 0 2px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 3px; }
+  .track-name:hover { background: rgba(255,255,255,.05); }
+  .track-name .tick { width: 3px; height: 12px; border-radius: 2px; background: var(--cat); flex: 0 0 auto; }
+  .track-name .tr { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--info-text); }
+  .line2 { grid-column: body; grid-row: controls; display: flex; gap: 4px; align-items: center; }
+  .line2 .group { display: inline-flex; gap: 2px; flex: none; }
+  .tl-btn { height: var(--ctl-h); width: 24px; border: 1px solid var(--border-hover); border-radius: 3px; background: transparent; color: var(--muted); font-size: 10px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
+  .tl-btn:hover { border-color: var(--muted); }
+  .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: #fff; }
+  .badge { height: var(--ctl-h); width: 24px; border: 0; padding: 0; border-radius: 3px; background: var(--purple-muted); color: var(--purple-text); font-family: var(--font-mono); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .badge.drum { background: rgba(255,255,255,.06); color: var(--muted); }
+  .expand-toggle { width: 24px; height: var(--ctl-h); border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; transition: background 150ms ease; padding: 0; }
+  .expand-toggle.active { background: var(--accent); border-color: var(--accent-hi); color: var(--bg); }
+  .velocity-toggle { width: 24px; height: var(--ctl-h); border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; padding: 0; }
+  .steps { flex: 1; min-width: 0; }
+  .step-grid { display: flex; gap: 3px; }
+  .step-cell.page-start { margin-left: 8px; }
+  .step-cell { width: var(--step-w); height: 36px; border: 2px solid var(--border); border-radius: 4px; background: var(--surface-2); cursor: pointer; position: relative; flex: 0 0 auto; padding: 0; }
+  .step-cell:hover { background: var(--surface-3); border-color: var(--border-light); }
+  .step-cell.beat-start { border-left-color: var(--border-light); border-left-width: 3px; }
+  .step-cell.active { background: var(--note-velocity-fill); border-color: var(--accent-hi); }
+  .step-cell, .note { --note-velocity-fill: color-mix(in srgb, var(--note-velocity-accent) calc(var(--note-velocity, 1) * 100%), var(--note-velocity-surface)); }
+  .step-cell.has-lock { border-color: var(--color-purple-dark); }
+  .step-cell.playing { border-color: var(--playhead); border-width: 3px; }
+  .step-cell.selected { border-color: var(--info); box-shadow: 0 0 0 2px rgba(74,158,206,.4); }
+  .step-cell .contour { position: absolute; left: 5px; right: 5px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.8); pointer-events: none; }
+  .step-cell.tie .contour { left: -5px; border-radius: 0 2px 2px 0; }
+  .step-cell.pulse { animation: cell-pulse 150ms ease-out; }
+  @keyframes cell-pulse { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .track-row.muted { opacity: .5; }
+
+  .velocity-lane { display: flex; gap: 3px; margin-left: calc(var(--track-left-width) + 8px); height: 28px; }
+  .velocity-lane input { width: 36px; flex: none; margin: 0; accent-color: var(--accent); }
+  .velocity-lane input.page-start { margin-left: 8px; }
+
+  /* ===== The dock ===== */
+  .dock { position: sticky; bottom: 0; z-index: 6; display: grid; grid-template-rows: 0fr; transition: grid-template-rows 200ms ease-out; margin-top: 6px; }
+  .dock.open { grid-template-rows: 1fr; }
+  .dock.tall { --dock-grid-h: 432px; }
+  .dock-inner { min-height: 0; overflow: hidden; background: var(--surface); border: 0; border-top: 1px solid var(--border-light); border-radius: 8px 8px 0 0; box-shadow: 0 -8px 24px rgba(0,0,0,.45); display: flex; flex-direction: column; min-width: max-content; }
+  .dock-head { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-bottom: 1px solid var(--border); position: sticky; left: 0; background: var(--surface); z-index: 2; height: var(--dock-head-height); flex-shrink: 0; }
+  .chips { display: inline-flex; gap: 2px; background: var(--surface-2); border-radius: 4px; padding: 2px; flex: none; }
+  .track-tabs { min-width: 0; flex: 1; overflow-x: auto; }
+  .chip { height: 28px; flex: none; padding: 0 11px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  .chip:disabled { opacity: .4; cursor: default; }
+  .chip:hover { color: var(--text); background: rgba(255,255,255,.05); }
+  .chip.active { background: var(--accent); color: var(--bg); }
+  .chip .tick { width: 3px; height: 12px; border-radius: 2px; background: var(--cat); }
+  .chip.active .tick { background: var(--bg); }
+  .dock-title { font-size: 13px; color: var(--muted); display: inline-flex; gap: 6px; align-items: center; }
+  .dock-title { white-space: nowrap; }
+  .dock-title b { color: var(--text); font-weight: 600; }
+  .dock-head .right { margin-left: auto; display: inline-flex; gap: 6px; flex: none; }
+  .dock-head .ib { height: 28px; min-width: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; }
+  .dock-head .ib:hover { color: var(--text); border-color: var(--border-light); }
+  .dock-body { display: flex; gap: 8px; }
+  .dock-left { width: var(--track-left-width); min-width: var(--track-left-width); position: sticky; left: 0; z-index: 3; background: var(--surface); display: grid; grid-template-columns: 18px 1fr; height: var(--dock-grid-h); overflow: hidden; box-shadow: inset -1px 0 var(--border); transition: height 200ms ease-out; }
+  .dock-tools { position: sticky; left: 0; z-index: 2; background: var(--surface); border-bottom: 1px solid var(--border); height: var(--dock-toolbar-height); flex-shrink: 0; overflow-x: auto; overflow-y: hidden; }
+  .pane { padding: 0 10px; height: calc(var(--dock-toolbar-height) - 1px); font-size: 12px; color: var(--muted); display: flex; flex-wrap: nowrap; align-items: center; gap: 14px; width: max-content; min-width: 100%; }
+  .pane b { font-weight: 500; }
+  .pane .rowc { display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; flex: none; white-space: nowrap; }
+  .pane .k { font-size: 11px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-right: 2px; }
+  .pane .value, .pane input, .pane select, .bpm b { font-family: var(--font-mono); }
+  .cbtn { height: 28px; padding: 0 9px; border: 1px solid var(--border-hover); border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .cbtn:disabled { opacity: .4; cursor: default; }
+  .cbtn.sym { padding: 0 8px; font-weight: 600; }
+  .cbtn[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.12); }
+  .cbtn.ghost-toggle i { width: 10px; height: 10px; border-radius: 2px; border: 1px dashed var(--gc); display: inline-block; }
+  .cbtn.ghost-toggle[aria-pressed="true"] i { background: var(--gc); border-style: solid; }
+  .cbtn.quiet { color: var(--muted); border-color: var(--border); background: transparent; }
+  .pane input[type=range] { width: 110px; height: 28px; accent-color: var(--accent); }
+  .pane .empty { color: var(--muted); }
+  .range-rail { position: relative; will-change: transform; }
+  .range-rail .bracket { position: absolute; left: 7px; width: 3px; border-radius: 2px; background: linear-gradient(180deg, var(--info-text), rgba(94,179,234,.35)); }
+  .range-rail .bracket::before, .range-rail .bracket::after { content: ''; position: absolute; left: -2px; width: 7px; height: 2px; background: var(--info-text); border-radius: 1px; }
+  .range-rail .bracket::before { top: 0; } .range-rail .bracket::after { bottom: 0; }
+  .keycol { position: relative; background: var(--piano-key-surface); will-change: transform; }
+  .key { position: absolute; left: 0; display: flex; align-items: center; justify-content: flex-end; padding-right: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--piano-key-label); cursor: pointer; user-select: none; transition: background 70ms ease, transform 70ms ease; }
+  .key.white { width: 100%; z-index: 1; background: var(--piano-key-white); border-bottom: 1px solid var(--piano-key-surface); border-radius: 0 2px 2px 0; }
+  .key.black { width: 58%; z-index: 2; color: var(--text); background: var(--piano-key-black); border-radius: 0 3px 3px 0; }
+  .key.white.c .lbl { color: var(--piano-key-label); font-weight: 500; }
+  .key .lbl { opacity: 0; }
+  .key.c .lbl, .key:hover .lbl, .key:focus-visible .lbl, .key.hover .lbl, .key.pressed .lbl { opacity: 1; }
+  .key.white:hover, .key.white.hover { background: var(--piano-key-white-hover); }
+  .key.black:hover, .key.black.hover { background: var(--piano-key-black-hover); }
+  .key.pressed { background: var(--accent) !important; transform: translateX(2px); }
+  .key.pressed .lbl { color: var(--bg) !important; }
+  .key.white.root .lbl, .key.white.fifth .lbl { color: var(--piano-key-label); }
+  .key.out, .key.scale-out, .key.out.scale-out { filter: none; }
+  .track-row.muted { opacity: 1; }
+
+  .dock-scroll { height: var(--dock-grid-h); overflow-y: auto; overflow-x: hidden; scrollbar-color: var(--border-light) var(--surface); scroll-behavior: smooth; transition: height 200ms ease-out; }
+  .dock-scroll::-webkit-scrollbar { width: 8px; }
+  .dock-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+  .grid { position: relative; overflow: hidden; }
+  .row { position: absolute; left: 0; right: 0; }
+  .row.black { background: var(--piano-grid-black-row); }
+  .row.c { border-top: 1px solid var(--piano-grid-octave); }
+  .row.root { background: rgba(94,179,234,.07); } .row.fifth { background: rgba(197,138,214,.05); }
+  .row.out { background-image: repeating-linear-gradient(135deg, rgb(255 255 255 / 4.5%) 0 1px, transparent 1px 7px); }
+  .row.scale-out { background: rgba(0,0,0,.42); }
+  .lines { position: absolute; inset: 0; pointer-events: none; }
+  .grid-line { position: absolute; top: 0; bottom: 0; width: 1px; background: var(--piano-grid-step); }
+  .grid-line.beat { background: var(--piano-grid-beat); }
+  .grid-line.bar { background: var(--piano-grid-bar); }
+  .page-band { position: absolute; top: 0; bottom: 0; width: 11px; background: var(--piano-grid-bar); opacity: .3; }
+  .loop-shade { position: absolute; top: 0; bottom: 0; background: rgba(0,0,0,.35); pointer-events: none; display: none; }
+  .grid.has-loop .loop-shade { display: block; }
+  .hl-row, .hl-col, .sel-col { position: absolute; pointer-events: none; opacity: 0; }
+  .hl-row { left: 0; right: 0; background: rgba(255,255,255,.035); }
+  .hl-col { top: 0; bottom: 0; width: var(--step-w); background: rgba(255,255,255,.035); }
+  .sel-col { top: 0; bottom: 0; width: var(--step-w); background: rgba(74,158,206,.12); box-shadow: inset 0 0 0 1px rgba(74,158,206,.5); }
+  .grid.hovering .hl-row, .grid.hovering .hl-col { opacity: 1; }
+  .sel-col.on { opacity: 1; }
+  .ghost { position: absolute; pointer-events: none; opacity: 0; border-radius: 3px; border: 1px dashed rgba(232,90,48,.8); background: rgba(232,90,48,.18); }
+  .grid.hovering.empty .ghost { opacity: 1; }
+  .notes { position: absolute; inset: 0; transition: opacity 120ms ease; }
+  .notes.fading { opacity: 0; }
+  .notes .note { position: absolute; border-radius: 3px; pointer-events: none; box-shadow: 0 0 0 1px rgba(0,0,0,.35); background: var(--note-velocity-fill); display: flex; align-items: center; padding-left: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--text); overflow: hidden; white-space: nowrap; }
+  .notes .note.playing { box-shadow: 0 0 0 2px var(--playhead), 0 0 14px rgba(255,255,255,.45);  }
+  .notes .note.dragging { opacity: .9; box-shadow: 0 0 0 1px rgba(255,255,255,.5), 0 6px 18px rgba(0,0,0,.5); }
+  .ghosts { position: absolute; inset: 0; pointer-events: none; transition: opacity 120ms ease; }
+  .ghosts .gnote { position: absolute; border-radius: 3px; border: 1px dashed var(--gc); background: color-mix(in srgb, var(--gc) 14%, transparent); }
+  .playhead { position: absolute; top: 0; bottom: 0; left: 0; width: 2px; background: var(--playhead); box-shadow: 0 0 8px rgba(255,255,255,.6); pointer-events: none; opacity: 0; z-index: 3; }
+  .wash { position: absolute; top: 0; bottom: 0; left: 0; width: var(--step-w); background: rgb(255 255 255 / 4.5%); pointer-events: none; opacity: 0; }
+  .grid.playing .playhead, .grid.playing .wash { opacity: 1; }
+  .hit { position: absolute; inset: 0; cursor: crosshair; touch-action: none; }
+  .tip { position: absolute; pointer-events: none; z-index: 4; opacity: 0; background: var(--surface-3); color: var(--text); border: 1px solid var(--border-light); border-radius: 5px; padding: 2px 7px; font-family: var(--font-mono); font-size: 10px; white-space: nowrap; transform: translate(10px, -26px); box-shadow: 0 4px 12px rgba(0,0,0,.4); }
+  .grid.hovering .tip { opacity: 1; }
+  .tip b { color: var(--accent-text); font-weight: 500; }
+
+  /* ===== Notes below the mock ===== */
+  .notes-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px 24px; margin: 0; padding: 0; list-style: none; }
+  .notes-list li { font-size: 13px; color: var(--muted); }
+  .notes-list li b { color: var(--text); font-weight: 600; }
+  .try { margin: 0; padding-left: 18px; color: var(--muted); font-size: 13px; display: grid; gap: 4px; max-width: 72ch; }
+  .links { font-size: 13px; color: var(--muted); }
+
+  .dock-body[hidden], .velocity-lane[hidden] { display: none; }
+
+
+  @media (max-width: 640px) { h1 { font-size: 19px; } .play-button { width: 44px; height: 44px; } }
+  @media (max-width: 640px) and (orientation: portrait) { .tracks { max-height: 70vh; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock, .dock-left, .dock-scroll, .notes, .ghosts, .key, .play-button::before, .expand-toggle { transition: none; }
+    .step-cell.pulse, .shift-click-marker { animation: none; }
+    .dock-scroll { scroll-behavior: auto; }
+  }
+  /* Revised accessibility and workflow contract. Musical objects retain a shared column map. */
+  .hint, .ruler-spacer, .marker-label, .pane .k, .pane .empty { color: var(--muted); }
+  .track-row { height: 58px; }
+  .track-left { grid-template-columns: [drag] 12px [body] 130px; grid-template-rows: [identity] 24px [controls] 24px; height: 50px; }
+  .track-name { height: 24px; }
+  .tl-btn, .badge, .expand-toggle, .velocity-toggle { width: 24px; height: 24px; }
+  .badge { cursor: pointer; }
+  .drag-handle { cursor: default; }
+  .solo-button.active { background: var(--warning); border-color: var(--warning); color: var(--bg); }
+  .mute-button.active { color: var(--bg); }
+  .step-cell.has-lock { border-width: 1px; }
+  .step-cell.active:hover { filter: none; outline: 1px solid var(--note-presence-outline); }
+  .step-cell.range-selected { outline: 2px solid var(--info-text); outline-offset: 0; }
+  .velocity-lane { margin-left: calc(var(--track-left-width) + 8px); }
+  .row-actions { display: flex; gap: 4px; position: sticky; right: 0; padding: 2px 4px; background: var(--surface); z-index: 4; align-self: center; }
+  html[data-narrow-landscape="true"] .row-actions { position: static; }
+  .row-actions button { min-width: 44px; height: 32px; padding: 0 5px; font-size: 11px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); cursor: pointer; }
+  .row-actions button.copy-source { background: var(--success); color: var(--bg); }
+  .row-actions button.paste { border-color: var(--info-text); }
+  .copy-status { color: var(--text); min-height: 24px; }
+  .copy-status:empty { display: none; }
+  .dock-head { height: var(--dock-head-height); display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 32px 32px; gap: 4px; padding: 8px 10px; }
+  .dock-head .dock-title { display: block; overflow: hidden; text-overflow: ellipsis; font-size: 13px; }
+  .dock-head .right { grid-column: 2; grid-row: 1; margin: 0; justify-self: end; }
+  .dock-head .track-tabs { grid-column: 1; grid-row: 2; width: auto; }
+  .dock-head .pane-tabs { grid-column: 2; grid-row: 2; }
+  .chips { padding: 0; }
+  .chip, .dock-head .ib, .cbtn, .pane input[type=range] { height: 32px; }
+  .chip { padding: 0 9px; }
+  .dock-head .ib { min-width: 32px; border-color: #787883; }
+  .cbtn { border-color: #787883; }
+  .cbtn.quiet { border-color: #787883; }
+  .cbtn.value { cursor: default; }
+  .pane :focus-visible, .track-tabs .chip:focus-visible { outline-offset: -2px; }
+  .pane input[type=number], .pane select { height: 32px; min-width: 52px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font: inherit; }
+  .pane input[type=number] { width: 60px; }
+  .tools-shell { display: flex; position: sticky; left: 0; height: var(--dock-toolbar-height); flex-shrink: 0; background: var(--surface); z-index: 3; }
+  .tools-shell .dock-tools { flex: 1; min-width: 0; width: auto; position: static; }
+  .tool-scroll { height: 32px; align-self: center; width: 32px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 18px; flex: none; }
+  .tool-scroll:disabled { opacity: .4; }
+  .pane b { display: inline; font-weight: 500; }
+  .pane .context { color: var(--text); }
+  .dock-body { height: var(--dock-grid-h); position: relative; }
+  .dock-details { display: none; position: sticky; left: 0; height: var(--dock-grid-h); overflow: auto; padding: 16px; background: var(--surface); color: var(--text); flex: none; }
+  .dock-details h3 { margin: 0 0 8px; font-size: 15px; }
+  .dock-details p { margin: 0 0 12px; max-width: 65ch; color: var(--muted); }
+  .detail-controls { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; }
+  .detail-controls label { display: flex; gap: 8px; align-items: center; }
+  .detail-controls input, .detail-controls select { height: 32px; background: var(--surface-2); border: 1px solid #787883; border-radius: 4px; color: var(--text); font: inherit; }
+  .dock-body.show-details .dock-details { display: block; }
+  .dock-body.show-details .dock-left, .dock-body.show-details .dock-scroll { display: none; }
+  .notes .note { color: var(--note-label-ink, var(--text)); outline: 1px solid var(--note-presence-outline); outline-offset: -1px; box-shadow: none; }
+  .note .bar-label { line-height: 1; }
+  .grid.overview .bar-label { display: none; }
+  .keycol.overview .lbl { visibility: hidden; }
+  .key { border: 0; padding: 0 6px 0 0; font-size: 10px; line-height: 1; overflow: hidden; }
+  .key.pressed .lbl { color: var(--bg) !important; }
+  .grid-focus { position: absolute; pointer-events: none; border: 2px solid var(--info-text); z-index: 4; width: 36px; display: none; }
+  .grid:focus-within .grid-focus { display: block; }
+  .hit.pan { touch-action: auto; cursor: all-scroll; }
+  .editor-status { position: sticky; left: 0; margin: 0; padding: 3px 10px; font-size: 11px; color: var(--muted); background: var(--surface); min-height: 24px; }
+  .mobile-timeline { display: none; }
+  .portrait-preview { display: none; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+  .portrait-preview p { color: var(--muted); }
+  .rename-input { grid-column: body; grid-row: identity; width: 100%; height: 24px; font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid #787883; border-radius: 4px; }
+  [hidden] { display: none !important; }
+
+    :root[data-display-mode="landscape"]{ --track-left-width: 216px; --ctl-h: 44px; --dock-head-height: 88px; --dock-toolbar-height: 48px; }
+    [data-display-mode="landscape"] .tracks{ max-height: calc(100dvh - 108px); }
+    [data-display-mode="landscape"] .track-row{ height: 48px; padding: 2px 0; }
+    [data-display-mode="landscape"] .track-left{ display: flex; gap: 4px; height: 44px; padding: 0 4px; }
+    [data-display-mode="landscape"] .drag-handle{ display: none; }
+    [data-display-mode="landscape"] .track-name{ flex: 0 0 64px; height: 44px; padding: 0; }
+    [data-display-mode="landscape"] .track-name .tr{ display: none; }
+    [data-display-mode="landscape"] .line2, [data-display-mode="landscape"] .line2 .group{ display: contents; }
+    [data-display-mode="landscape"] .tl-btn, [data-display-mode="landscape"] .expand-toggle{ width: 44px; height: 44px; flex: none; }
+    [data-display-mode="landscape"] .line2 .badge, [data-display-mode="landscape"] .line2 .velocity-toggle{ display: none; }
+    [data-display-mode="landscape"] .expand-toggle{ visibility: visible !important; }
+    [data-display-mode="landscape"] .step-cell{ height: 44px; }
+    [data-display-mode="landscape"] .row-actions button{ height: 44px; }
+    [data-display-mode="landscape"] .dock.open{ position: fixed; inset: 8px; width: calc(100vw - 16px); margin: 0; z-index: 20; --dock-grid-h: calc(100dvh - 170px); }
+    [data-display-mode="landscape"] .dock.open .dock-inner{ min-width: 0; width: 100%; border: 1px solid #787883; border-radius: 8px; }
+    [data-display-mode="landscape"] .dock.open .dock-head{ grid-template-rows: 44px 44px; gap: 0; padding: 0 6px; }
+    [data-display-mode="landscape"] .editor-status{ min-height: 16px; height: 16px; line-height: 16px; padding: 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+    [data-display-mode="landscape"] .editor-status .status-message{ position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+    [data-display-mode="landscape"] .mobile-timeline{ display: block; position: absolute; inset: 0; }
+    [data-display-mode="landscape"] .mobile-timeline span{ position: absolute; font: 500 10px/16px var(--font-mono); color: var(--muted); }
+    [data-display-mode="landscape"] .timeline-caption{ position: sticky; left: 0; width: 92px; background: var(--surface); z-index: 1; padding-left: 6px; }
+    [data-display-mode="landscape"] .chip, [data-display-mode="landscape"] .dock-head .ib, [data-display-mode="landscape"] .cbtn, [data-display-mode="landscape"] .pane input, [data-display-mode="landscape"] .pane select, [data-display-mode="landscape"] .detail-controls input, [data-display-mode="landscape"] .detail-controls select{ height: 44px; }
+    [data-display-mode="landscape"] .dock-head .ib, [data-display-mode="landscape"] .tool-scroll{ min-width: 44px; height: 44px; }
+    [data-display-mode="landscape"] .dock-head .dock-title{ font-size: 12px; }
+    [data-display-mode="landscape"] .dock-head .track-tabs{ min-width: 44px; }
+    [data-display-mode="landscape"] .dock-head .chip{ padding: 0 8px; }
+    [data-display-mode="landscape"] .dock-head .ib:first-child{ display: none; }
+    [data-display-mode="landscape"] .dock-body{ overflow-x: auto; }
+    [data-display-mode="landscape"] .dock-left{ min-width: 84px; width: 84px; }
+    [data-display-mode="landscape"] .dock-scroll{ flex: none; }
+    [data-display-mode="landscape"] .dock-head .right{ gap: 4px; }
+    [data-display-mode="landscape"] .rename-input{ flex: 0 0 64px; height: 44px; }
+
+  [data-display-mode="portrait"] .sequencer { display: none; }
+  [data-display-mode="portrait"] .portrait-preview { display: block; }
+
+</style>
+</head>
+<body>
+
+<div class="page-wrap">
+  <div>
+    <div class="eyebrow">Keyboardia · Pitch panel · Editor dock prototype</div>
+    <h1>Piano roll dock</h1>
+    <p class="lede">The sequencer with the two-line control block and the proposed editor dock under the grid. The keyboard starts on the same left edge as the track names. Press ♪ on Lead or Bass to open Notes, or click a track name to open Track. Double-click the name to rename; the instrument badge auditions. Hold or Shift+click a step to open Step. Rows stay contiguous; the dock fits the selected track and enabled ghosts for comparison. Note editing and playback use a small synth; step-count, instrument, envelope and pattern-tool integration are labelled, disabled previews. Row Copy/Paste, Clear and Delete are working prototype actions in this spec-only mock. Scale selection and reorder are also previews; portrait shows a listening placeholder rather than an editing surface. The dock starts open here so the page shows its working state; in the app it opens only on request.</p>
+  </div>
+
+  <section class="portrait-preview" aria-label="Portrait listening preview"><h2>Keyboardia · listening view</h2><p>Editing is available in landscape. Rotate your phone to edit the pattern.</p><button class="cbtn" id="portraitPlay" type="button">Play preview</button></section>
+  <section class="sequencer" id="sequencer" aria-label="Sequencer">
+    <div class="transport">
+      <button class="play-button" id="playBtn" type="button" aria-label="Play"><span id="playIcon">&#9654;</span></button>
+      <div class="bpm"><b>120</b><span>BPM</span></div>
+      <button class="pill" type="button" disabled title="Integration preview: scale selection uses the real app">Scale: C major <span class="caret">&#9660;</span></button>
+      <button class="pill" id="scaleBtn" type="button" aria-pressed="false" title="Lock the dock to the scale">Lock to scale</button>
+      <span class="spacer"></span>
+      <span class="hint">Esc closes the dock</span>
+      <span class="session-name">keys-and-piano · 4 tracks</span>
+    </div>
+    <div class="tracks" id="tracks">
+      <div class="tracks-inner" id="inner"></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the prototype demonstrates</h2>
+    <ul class="notes-list">
+      <li><b>Rows stay contiguous.</b> Lead, Bass, Kick and Hat never gain a panel between them. The dock takes its space from the bottom of the scroller and pins there while the tracks scroll above it.</li>
+      <li><b>One scroller.</b> The ruler, every row and the dock share the horizontal scroll, so step 9 is the same x everywhere. The dock's control panel and keyboard are sticky to the left like the control column.</li>
+      <li><b>Accessible control block, 154px.</b> Desktop identity and controls have 24px targets, with a 2px gap inside a 58px row. The instrument badge auditions; a single name click opens Track and a double-click renames. Copy/Paste, Clear and Delete remain on their target rows. Landscape uses 44px controls and an expanded editor.</li>
+      <li><b>One left edge.</b> The grip, the names, the ruler's spacer, the dock toolbar and the keyboard all start on the same line, and the dock grid starts where the step cells start.</li>
+      <li><b>Row and dock are tied three ways.</b> The docked control block gets a 2px accent edge, its ♪ turns orange, and on open its cells pulse once. The visible dock heading and tab carry the same name and category tick.</li>
+      <li><b>Switching is a crossfade, not a layout change.</b> Press the other track's ♪ or tab: notes fade over 120ms, ghosts swap, the pitch scroll eases to the new notes. Nothing above moves.</li>
+      <li><b>Ghost notes answer "two rolls at once".</b> The other melodic track is drawn dashed in its category colour. Toggle it in the Notes pane.</li>
+      <li><b>Three panes as one toolbar, one grid, two heights.</b> Notes, Step and Track swap the toolbar under the dock header. Step highlights the selected step's column. Track holds transpose, steps, instrument, pattern tools and actions. The Notes grid stays visible for melodic tracks; drums open the Step or Track toolbar. The ⇕ button toggles the compact and tall detents.</li>
+      <li><b>Pitch contour in the cells.</b> Melodic rows show where each note sits, so the melody stays readable while the dock shows another track.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Try it</h2>
+    <ol class="try">
+      <li>Press Play. Playheads run on the ruler, the cells and the dock from one clock.</li>
+      <li>Press ♪ on Bass and watch the crossfade and the control edge move. Press ♪ on Lead to come back.</li>
+      <li>Drag across empty dock cells to paint, drag a bar up or down to re-pitch, drag its right edge to lengthen it. The row above updates on the same frame.</li>
+      <li>Shift+click a Lead cell. The dock switches to the Step pane for that step; change its pitch or tie there.</li>
+      <li>Open the Track pane and change transpose. Every bar shifts, and the readout in the row follows.</li>
+      <li>Toggle the tall detent with ⇕. Turn on "Lock to scale" and drop a note on a dimmed row. Press Escape to close the dock.</li>
+    </ol>
+    <p class="links">Companion pages: the ranked layout research with the two-rolls test, and the design brief with the layer stack, storyboard and roadmap impact. In the repository both live under <code>specs/</code>.</p>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const STEPS = 32, STEP_W = 36, GAP = 3, PITCH = STEP_W + GAP;
+  const MIDI_MAX = 108, MIDI_MIN = 12; // C8 .. C0: transpose +/-24 plus pitch lock +/-24
+  const PAGE_STEPS = 16, PAGE_GAP = 8;
+  const stepX = step => step * PITCH + Math.floor(step / PAGE_STEPS) * PAGE_GAP;
+  const cellRight = step => stepX(step) + STEP_W;
+  const spanWidth = (start, len) => cellRight(start + len - 1) - stepX(start);
+  const GRID_WIDTH = cellRight(STEPS - 1);
+  const xToIndex = x => { let i = STEPS - 1; while (i > 0 && x < stepX(i)) i--; return i; };
+  const playheadX = step => stepX(Math.floor(step)) + (step % 1) * PITCH;
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const ROWS = MIDI_MAX - MIDI_MIN + 1, BASE_MIDI = 60;
+  let H = 18;
+  const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+  const BLACK = new Set([1,3,6,8,10]), MAJOR = new Set([0,2,4,5,7,9,11]);
+  const BPM = 120, SPB = 60 / BPM / 4, MIN_LOOP_LENGTH = 2;
+  const isBlack = m => BLACK.has(((m % 12) + 12) % 12);
+  const pc = m => ((m % 12) + 12) % 12;
+  const noteName = m => NOTE_NAMES[pc(m)] + (Math.floor(m / 12) - 1);
+  const el = (cls, parent, tag) => { const d = document.createElement(tag || 'div'); if (cls) d.className = cls; if (parent) parent.appendChild(d); return d; };
+  const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // ---------- tracks: steps + parameter locks, as in the app ----------
+  function mk(id, name, kind, inst, badge, cat, transpose, range) {
+    return { id, name, kind, inst, badge, cat, transpose: transpose || 0, range, steps: new Array(STEPS).fill(false), locks: new Array(STEPS).fill(null), pattern: null, bars: [], defaultVelocity: 1 };
+  }
+  const lead = mk('lead', 'Lead', 'melodic', 'FM Bell', 'FM', 'var(--cat-keys)', 0, { min: 50, max: 84, optMin: 55, optMax: 79 });
+  const bass = mk('bass', 'Bass', 'melodic', 'Sub', 'SMP', 'var(--cat-bass)', -12, { min: 36, max: 64, optMin: 38, optMax: 55 });
+  const kick = mk('kick', 'Kick', 'drum', '808 Kick', 'SMP', 'var(--cat-drums)');
+  const hat = mk('hat', 'Hat', 'drum', 'Closed Hat', 'SMP', 'var(--cat-drums)');
+  [[0,60,.9],[2,64,.7],[3,67,.8],[4,67,.8,1],[5,67,.8,1],[7,69,.6],[8,72,.95],[9,72,.95,1],[11,71,.5],[12,67,.75],[13,67,.75,1],[14,64,.6],[15,62,.55],
+   [16,60,.9],[17,60,.9,1],[18,60,.9,1],[20,64,.7],[21,65,.65],[22,67,.85],[23,67,.85,1],[24,69,.7],[26,67,.6],[27,64,.8],[28,62,.7],[29,62,.7,1],[30,60,.9],[31,60,.9,1]]
+    .forEach(([s, m, v, t]) => { lead.steps[s] = true; lead.locks[s] = { pitch: m - BASE_MIDI, volume: v, tie: !!t }; });
+  [[0,48,.9],[1,48,.9,1],[3,48,.7],[6,43,.8],[7,43,.8,1],[8,48,.9],[9,48,.9,1],[11,50,.6],[14,43,.8],[15,45,.6],
+   [16,48,.9],[17,48,.9,1],[19,48,.7],[22,41,.8],[23,41,.8,1],[24,45,.9],[25,45,.9,1],[27,47,.6],[30,48,.9],[31,48,.9,1]]
+    .forEach(([s, m, v, t]) => { bass.steps[s] = true; bass.locks[s] = { pitch: m - BASE_MIDI - bass.transpose, volume: v, tie: !!t }; });
+  kick.pattern = new Array(STEPS).fill(false).map((_, i) => i % 4 === 0 || i === 14 || i === 30);
+  hat.pattern = new Array(STEPS).fill(false).map((_, i) => i % 2 === 0);
+  // Drums use the same active-step and lock model; only Notes is melodic-only.
+  kick.steps = kick.pattern; hat.steps = hat.pattern;
+  kick.range = hat.range = { min: 12, max: 108, optMin: 36, optMax: 84 };
+  const tracks = [lead, bass, kick, hat];
+  const melodic = tracks.filter(t => t.kind === 'melodic');
+
+  // A continuation inherits the attack's pitch and volume; its own locks do not sound.
+  function attackStep(t, i) {
+    let head = i;
+    for (let n = 0; n < STEPS - 1; n++) {
+      const previous = (head - 1 + STEPS) % STEPS;
+      if (!t.steps[head] || !t.locks[head]?.tie || !t.steps[previous]) break;
+      head = previous;
+    }
+    return head;
+  }
+  const stepMidi = (t, i) => t.steps[i] ? BASE_MIDI + t.transpose + (t.locks[attackStep(t, i)]?.pitch ?? 0) : null;
+  const stepVel = (t, i) => t.locks[attackStep(t, i)]?.volume ?? 1;
+  function computeBars(t) {
+    const bars = []; let cur = null;
+    for (let i = 0; i < STEPS; i++) {
+      if (!t.steps[i]) { cur = null; continue; }
+      if (cur && t.locks[i] && t.locks[i].tie) { cur.len++; continue; }
+      cur = { start: i, len: 1, midi: stepMidi(t, i), vel: stepVel(t, i) }; bars.push(cur);
+    }
+    t.bars = bars; return bars;
+  }
+  melodic.forEach(computeBars);
+  const barAt = (t, step, midi) => t.bars.find(b => b.midi === midi && step >= b.start && step < b.start + b.len);
+  let scaleLocked = false;
+  const inScale = m => !scaleLocked || MAJOR.has(pc(m));
+  function editableMidi(t, midi) {
+    const min = BASE_MIDI + t.transpose - 24, max = BASE_MIDI + t.transpose + 24;
+    if (!Number.isInteger(midi) || midi < min || midi > max) return null;
+    if (inScale(midi)) return midi;
+    for (let d = 1; d < 12; d++) {
+      if (midi - d >= min && MAJOR.has(pc(midi - d))) return midi - d;
+      if (midi + d <= max && MAJOR.has(pc(midi + d))) return midi + d;
+    }
+    return midi;
+  }
+  function placeNote(t, step, midi, vel) {
+    const target = editableMidi(t, midi);
+    if (target === null) return;
+    t.steps[step] = true;
+    const volume = vel == null ? t.defaultVelocity : vel;
+    const lock = Object.assign({}, t.locks[step]), pitch = target - BASE_MIDI - t.transpose;
+    t.tieOrigins?.delete(step);
+    if(lock.tie)lock.tie=false; // Explicit placement creates an attack at the previewed pitch.
+    if (pitch !== 0) lock.pitch = pitch; else delete lock.pitch;
+    if (lock.volume == null && volume !== 1) lock.volume = volume;
+    t.locks[step] = Object.keys(lock).length ? lock : null;
+  }
+  function clearBar(t, b) { for (let i = b.start; i < b.start + b.len; i++) t.steps[i] = false; }
+  let loop = null;
+
+  // ---------- audio ----------
+  let ac = null, master = null, noiseBuf = null;
+  function ensureAudio() {
+    if (!ac) {
+      ac = new (window.AudioContext || window.webkitAudioContext)();
+      master = ac.createGain(); master.gain.value = 0.24;
+      const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; master.connect(comp); comp.connect(ac.destination);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate * 0.1, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (ac.state === 'suspended') ac.resume();
+  }
+  function playVoice(t, midi, vel, when, dur) {
+    if (vel <= 0) return;
+    const f = 440 * Math.pow(2, (midi - 69) / 12), isBass = t.id === 'bass';
+    const o1 = ac.createOscillator(); o1.type = isBass ? 'sine' : 'triangle'; o1.frequency.value = f;
+    const o2 = ac.createOscillator(); o2.type = isBass ? 'triangle' : 'sine'; o2.frequency.value = isBass ? f : f * 2; o2.detune.value = 4;
+    const g2 = ac.createGain(); g2.gain.value = isBass ? 0.5 : 0.3;
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = isBass ? 500 + vel * 600 : 1400 + vel * 3200; lp.Q.value = 0.7;
+    const g = ac.createGain(); const peak = vel * (isBass ? 1.3 : 1);
+    g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(peak, when + 0.008);
+    g.gain.exponentialRampToValueAtTime(Math.max(peak * 0.55, 0.0005), when + 0.16); g.gain.setTargetAtTime(0.0001, when + dur, 0.035);
+    o1.connect(lp); o2.connect(g2); g2.connect(lp); lp.connect(g); g.connect(master);
+    o1.start(when); o2.start(when); o1.stop(when + dur + 0.4); o2.stop(when + dur + 0.4);
+  }
+  function playKick(when, vel = 1, midi = 60) { if (vel <= 0) return; const ratio = Math.pow(2, (midi - 60) / 12); const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150 * ratio, when); o.frequency.exponentialRampToValueAtTime(45 * ratio, when + 0.12); const g = ac.createGain(); g.gain.setValueAtTime(0.9 * vel, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.3); o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.35); }
+  function playHat(when, accent, vel = 1, midi = 60) { if (vel <= 0) return; const s = ac.createBufferSource(); s.buffer = noiseBuf; const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = clamp(7000 * Math.pow(2, (midi - 60) / 12), 1500, 18000); const g = ac.createGain(); g.gain.setValueAtTime((accent ? 0.25 : 0.12) * vel, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.05); s.connect(hp); hp.connect(g); g.connect(master); s.start(when); s.stop(when + 0.06); }
+  function audition(t, midi, vel) { ensureAudio(); if(t.kind==='drum'){if(t===kick)playKick(ac.currentTime,vel,midi);else playHat(ac.currentTime,true,vel,midi);}else playVoice(t, midi, vel == null ? 1 : vel, ac.currentTime, 0.18); }
+
+  // ---------- transport ----------
+  let playing = false, startTime = 0, nextTick = 0, nextTime = 0, timer = null, raf = null;
+  const stepAt = n => loop ? loop.start + (n % (loop.end - loop.start + 1)) : n % STEPS;
+  function schedule() {
+    while (nextTime < ac.currentTime + 0.12) {
+      const s = stepAt(nextTick);
+      const anySoloed = tracks.some(t => t.soloed);
+      const audible = t => anySoloed ? t.soloed : !t.muted;
+      melodic.forEach(t => { if (!audible(t)) return; const b = t.bars.find(x => x.start === s); if (b) playVoice(t, b.midi, b.vel, nextTime, b.len * SPB * 0.96); });
+      if (!kick.deleted && kick.steps[s] && audible(kick)) playKick(nextTime,stepVel(kick,s),stepMidi(kick,s));
+      if (!hat.deleted && hat.steps[s] && audible(hat)) playHat(nextTime, s % 4 === 0,stepVel(hat,s),stepMidi(hat,s));
+      nextTick++; nextTime += SPB;
+    }
+  }
+  const playBtn = document.getElementById('playBtn'), playIcon = document.getElementById('playIcon');
+  function startPlayback() {
+    ensureAudio(); playing = true; startTime = ac.currentTime + 0.06; nextTick = 0; nextTime = startTime;
+    timer = setInterval(schedule, 25); playIcon.innerHTML = '&#9632;'; playBtn.classList.add('playing'); playBtn.setAttribute('aria-label', 'Stop');
+    ui.grid.classList.add('playing'); ui.ruler.classList.add('playing'); raf = requestAnimationFrame(tick);
+  }
+  function stopPlayback() {
+    playing = false; clearInterval(timer); cancelAnimationFrame(raf);
+    playIcon.innerHTML = '&#9654;'; playBtn.classList.remove('playing'); playBtn.setAttribute('aria-label', 'Play');
+    ui.grid.classList.remove('playing'); ui.ruler.classList.remove('playing'); setPlayingStep(-1);
+  }
+  let lastPlayingStep = -1;
+  function setPlayingStep(s) {
+    if (s === lastPlayingStep) return; lastPlayingStep = s;
+    tracks.forEach(t => t.cells.forEach((c, i) => c.classList.toggle('playing', i === s)));
+    ui.noteEls.forEach(n => { const b = n._bar; n.classList.toggle('playing', s >= b.start && s < b.start + b.len); });
+  }
+  function tick() {
+    if (!playing) return;
+    const t = Math.max(0, ac.currentTime - startTime) / SPB;
+    const stepF = loop ? loop.start + (t % (loop.end - loop.start + 1)) : t % STEPS;
+    const s = Math.floor(stepF);
+    ui.playhead.style.transform = 'translateX(' + playheadX(stepF).toFixed(2) + 'px)';
+    ui.wash.style.transform = 'translateX(' + stepX(s) + 'px)';
+    ui.rulerPlayhead.style.transform = 'translateX(' + playheadX(stepF).toFixed(2) + 'px)';
+    setPlayingStep(s); raf = requestAnimationFrame(tick);
+  }
+  playBtn.addEventListener('click', () => playing ? stopPlayback() : startPlayback());
+  document.getElementById('portraitPlay').addEventListener('click',e=>{playing?stopPlayback():startPlayback();e.currentTarget.textContent=playing?'Stop preview':'Play preview';});
+
+  // ---------- dock state (local, never synced) ----------
+  let paintVersion = 0;
+  const dock = { open: false, track: null, pane: 'notes', ghosts: { lead: true, bass: true }, selectedStep: null, tall: false };
+  const ui = { noteEls: [], keyEls: new Map() };
+  const inner = document.getElementById('inner');
+  const tracksEl = document.getElementById('tracks');
+
+  function rowClasses(midi, t) {
+    const c = [isBlack(midi) ? 'black' : 'white'];
+    if (pc(midi) === 0) c.push('c', 'root'); else if (pc(midi) === 7) c.push('fifth');
+    const r = (t || lead).range; if (midi < r.min || midi > r.max) c.push('out');
+    if (!inScale(midi)) c.push('scale-out');
+    return c.join(' ');
+  }
+  const trLabel = t => (t.transpose >= 0 ? '+' : '') + t.transpose;
+
+  // ---------- ruler ----------
+  function renderRuler(parent) {
+    const rowEl = el('ruler-row', parent);
+    el('ruler-spacer', rowEl).textContent = 'Loop';
+    const ruler = el('loop-ruler', rowEl); ruler.setAttribute('role', 'group'); ruler.tabIndex=0; ruler.setAttribute('aria-label', 'Loop region: arrows change start; Shift+arrows change end; Delete clears');
+    const markers = el('ruler-markers', ruler);
+    for (let s = 0; s < STEPS; s += 4) { const page = s % 16 === 0; const m = el('ruler-marker ' + (page ? 'pg' : 'beat'), markers); m.style.left = stepX(s) + 'px'; el('marker-label', m).textContent = page ? String(s / 16 + 1) : (Math.floor(s / 16) + 1) + '.' + ((s % 16) / 4 + 1); }
+    const region = el('loop-region', ruler); region.style.display = 'none'; el('loop-bracket start', region); el('loop-bracket end', region);
+    const shiftMarker = el('shift-click-marker', ruler); shiftMarker.style.display = 'none';
+    ui.ruler = ruler; ui.rulerPlayhead = el('ruler-playhead', ruler);
+    let dragStart = null, dragEnd = null, shiftStart = null;
+    const xToStep = x => Math.min(STEPS - 1, Math.max(0, xToIndex(x - ruler.getBoundingClientRect().left)));
+    const showRegion = (r, preview) => {
+      if (!r) { region.style.display = 'none'; ruler.classList.remove('has-loop'); ruler.title = 'Drag to set loop region'; return; }
+      region.style.display = ''; region.classList.toggle('preview', !!preview); region.style.left = stepX(r.start) + 'px'; region.style.width = spanWidth(r.start, r.end - r.start + 1) + 'px';
+      ruler.classList.add('has-loop'); ruler.title = 'Loop: steps ' + (r.start + 1) + '-' + (r.end + 1) + ' (double-click to clear)';
+    };
+    const setLoop = r => { loop = r; showRegion(r); ruler.setAttribute('aria-label', (r ? 'Loop steps '+(r.start+1)+' through '+(r.end+1) : 'Full pattern') + '. Arrows change start; Shift+arrows change end; Delete clears'); if(ui.loopInputs){ui.loopInputs[0].value=(r?.start??0)+1;ui.loopInputs[1].value=(r?.end??STEPS-1)+1;}if(ui.clearLoop)ui.clearLoop.disabled=!r; if (ui.shadeLoop) ui.shadeLoop(); };ui.setLoop=setLoop;
+    ruler.addEventListener('keydown', e => {
+      if(e.key==='Delete'||e.key==='Backspace'){e.preventDefault();setLoop(null);return;}
+      if(e.key!=='ArrowLeft'&&e.key!=='ArrowRight')return;e.preventDefault();
+      const r=Object.assign({start:0,end:STEPS-1},loop),delta=e.key==='ArrowLeft'?-1:1;
+      if(e.shiftKey)r.end=clamp(r.end+delta,r.start+1,STEPS-1);else r.start=clamp(r.start+delta,0,r.end-1);setLoop(r);
+    });
+    ruler.title = 'Drag to set loop region';
+    ruler.addEventListener('pointerdown', e => {
+      const s = xToStep(e.clientX);
+      if (e.shiftKey) { if (shiftStart === null) { shiftStart = s; shiftMarker.style.display = ''; shiftMarker.style.left = stepX(s) + 'px'; } else { if (Math.abs(s - shiftStart) + 1 >= MIN_LOOP_LENGTH) setLoop({ start: Math.min(shiftStart, s), end: Math.max(shiftStart, s) }); shiftStart = null; shiftMarker.style.display = 'none'; } return; }
+      shiftStart = null; shiftMarker.style.display = 'none'; dragStart = dragEnd = s; ruler.classList.add('dragging'); try { ruler.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    ruler.addEventListener('pointermove', e => { if (dragStart === null) return; dragEnd = xToStep(e.clientX); showRegion({ start: Math.min(dragStart, dragEnd), end: Math.max(dragStart, dragEnd) }, true); });
+    ruler.addEventListener('pointerup', () => { ruler.classList.remove('dragging'); if (dragStart !== null && dragEnd !== null) { const start = Math.min(dragStart, dragEnd), end = Math.max(dragStart, dragEnd); if (end - start + 1 >= MIN_LOOP_LENGTH) setLoop({ start, end }); else showRegion(loop); } dragStart = dragEnd = null; });
+    ruler.addEventListener('dblclick', () => { setLoop(null); shiftStart = null; shiftMarker.style.display = 'none'; });
+    window.addEventListener('keydown', e => { if (e.key === 'Escape') { shiftStart = null; shiftMarker.style.display = 'none'; } });
+  }
+
+  const selection = { track: null, steps: new Set(), anchor: null };
+  let copySource = null, copyData = null;
+  function setStatus(message) { if (ui.statusText) ui.statusText.textContent = message; }
+  function syncActions() {
+    tracks.forEach(t => {
+      t.copyEl.textContent = copySource && copySource !== t ? 'Paste' : 'Copy';
+      t.copyEl.classList.toggle('copy-source', copySource === t);
+      t.copyEl.classList.toggle('paste', !!copySource && copySource !== t);
+      t.copyEl.setAttribute('aria-label', (copySource && copySource !== t ? 'Paste into ' : 'Copy ') + t.name);
+      t.copyEl.setAttribute('aria-pressed', String(copySource === t));
+      t.copyEl.disabled = !copySource && !t.steps.some(Boolean);
+    });
+    ui.copyStatus.textContent = copySource ? 'Copying ' + copySource.name + ' — choose Paste on a destination row. Escape cancels.' : '';
+  }
+  function clearSelection() {
+    const previous = selection.track;
+    selection.track = null; selection.steps.clear(); selection.anchor = null;
+    if (previous) syncRow(previous);
+  }
+  function selectRange(t, i, extend) {
+    if (selection.track !== t) clearSelection();
+    selection.track = t;
+    if (extend && selection.anchor !== null) {
+      selection.steps = new Set(Array.from({length:Math.abs(i-selection.anchor)+1},(_,n)=>Math.min(i,selection.anchor)+n));
+    } else {
+      if (selection.steps.has(i)) selection.steps.delete(i); else selection.steps.add(i);
+      selection.anchor = i;
+    }
+    syncRow(t); setStatus(t.name + ': ' + selection.steps.size + ' steps selected');
+  }
+  function renameTrack(t) {
+    if (t.nameInput) return;
+    const input = el('rename-input', t.nameEl.parentElement, 'input');
+    input.value = t.name; input.maxLength = 32; input.setAttribute('aria-label', 'Rename ' + t.name);
+    t.nameEl.hidden = true; t.nameInput = input;
+    let done = false;
+    const finish = save => {
+      if (done) return; done = true;
+      const value = input.value.trim(); if (save && value) t.name = value;
+      input.remove(); t.nameInput = null; t.nameEl.hidden = false; updateIdentity(t);
+      if (dock.track === t) renderPane(); t.nameEl.focus(); syncActions();
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === 'Escape') { e.stopPropagation(); finish(e.key === 'Enter'); } });
+    input.addEventListener('blur', () => finish(true));
+    input.focus(); input.select();
+  }
+  function updateIdentity(t) {
+    t.nameEl.replaceChildren();
+    const tick = el('tick', t.nameEl); tick.style.setProperty('--cat',t.cat);
+    t.nameEl.append(document.createTextNode(t.name));
+    if (t.kind === 'melodic') { const tr=el('tr',t.nameEl);tr.textContent=t.transpose===0?'':trLabel(t); }
+    t.nameEl.setAttribute('aria-label', 'Edit ' + t.name + ' track; double-click to rename');
+    if (t.tabEl) { t.tabEl.replaceChildren(); const tick=el('tick',t.tabEl);tick.style.setProperty('--cat',t.cat);t.tabEl.append(document.createTextNode(t.name)); }
+    if (t.badgeEl) t.badgeEl.setAttribute('aria-label','Audition '+t.name);
+    const mute=t.wrap?.querySelector('.mute-button'),solo=t.wrap?.querySelector('.solo-button');if(mute)mute.setAttribute('aria-label','Mute '+t.name);if(solo)solo.setAttribute('aria-label','Solo '+t.name);
+  }
+  // A hold discloses without toggling; movement cancels the hold and scrolling stays native.
+  function bindStepGesture(c, t, i) {
+    let timer = null, held = false, origin = null, suppress = false;
+    const cancel = () => { clearTimeout(timer); timer=null; };
+    c.addEventListener('pointerdown', e => {
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey || e.isPrimary===false) return;
+      held=false; suppress=false; origin={x:e.clientX,y:e.clientY};
+      timer=setTimeout(()=>{held=true;suppress=true;selectStep(t,i,c);},400);
+    });
+    c.addEventListener('pointermove', e=>{if(origin && Math.hypot(e.clientX-origin.x,e.clientY-origin.y)>3){cancel();suppress=true;}});
+    c.addEventListener('pointerup',cancel);c.addEventListener('pointercancel',()=>{cancel();suppress=true;});
+    c.addEventListener('pointerleave',cancel);
+    c.addEventListener('click',e=>{
+      if(e.pointerType==='touch'&&e.isPrimary===false)return;
+      cancel();
+      if (suppress || held) { suppress=false;held=false;return; }
+      if (e.ctrlKey || (e.metaKey && !e.shiftKey)) { selectRange(t,i,false);return; }
+      if (e.shiftKey) { if(selection.track===t && selection.steps.size) selectRange(t,i,true);else selectStep(t,i,c);return; }
+      t.steps[i]=!t.steps[i];trackChanged(t); // Locks survive an ordinary toggle.
+    });
+    c.addEventListener('keydown',e=>{
+      if (e.key==='ArrowLeft'||e.key==='ArrowRight') {
+        e.preventDefault();const next=clamp(i+(e.key==='ArrowLeft'?-1:1),0,STEPS-1);
+        t.cells.forEach((cell,n)=>cell.tabIndex=n===next?0:-1);t.cells[next].focus();
+      } else if(e.key==='Enter' && e.shiftKey) { e.preventDefault();selectStep(t,i,c); }
+    });
+  }
+  function renderTrackRow(parent, t) {
+    const wrap=el('track-row-wrapper',parent);t.wrap=wrap;
+    const row=el('track-row',wrap);
+    const left=el('track-left',row);
+    const grip=el('drag-handle',left);grip.textContent='⋮⋮';grip.setAttribute('aria-hidden','true');grip.title='Layout preview: reorder is not implemented here';
+    const name=el('track-name',left,'button');t.nameEl=name;
+    let nameTimer=null;
+    name.addEventListener('click',()=>{clearTimeout(nameTimer);nameTimer=setTimeout(()=>openDock(t,'track',name),200);});
+    name.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();clearTimeout(nameTimer);openDock(t,'track',name);}});
+    name.addEventListener('dblclick',()=>{clearTimeout(nameTimer);renameTrack(t);});
+    const line2=el('line2',left),state=el('group',line2),disclose=el('group',line2);
+    const m=el('tl-btn mute-button',state,'button');m.textContent='M';m.setAttribute('aria-label','Mute '+t.name);m.setAttribute('aria-pressed','false');
+    m.addEventListener('click',()=>{t.muted=!t.muted;m.classList.toggle('active',t.muted);m.setAttribute('aria-pressed',String(t.muted));row.classList.toggle('muted',t.muted);});
+    const so=el('tl-btn solo-button',state,'button');so.textContent='S';so.setAttribute('aria-label','Solo '+t.name);so.setAttribute('aria-pressed','false');
+    so.addEventListener('click',()=>{t.soloed=!t.soloed;so.classList.toggle('active',t.soloed);so.setAttribute('aria-pressed',String(t.soloed));});
+    const badge=el('badge'+(t.kind==='melodic'?'':' drum'),disclose,'button');t.badgeEl=badge;badge.textContent=t.badge;badge.title='Audition '+t.inst;
+    badge.addEventListener('click',()=>audition(t,BASE_MIDI+t.transpose,1));
+    const ex=el('expand-toggle',disclose,'button');t.toggleEl=ex;
+    ex.textContent=t.kind==='melodic'?'♪':'T';ex.setAttribute('aria-label','Edit '+t.name+' notes or track');
+    ex.setAttribute('aria-expanded','false');
+    ex.addEventListener('click',()=>{
+      if (isLandscape()) openDock(t,'track',ex);
+      else if(t.kind!=='melodic') openDock(t,'track',ex);
+      else if(dock.open && dock.track===t && dock.pane==='notes') closeDock();
+      else openDock(t,'notes',ex);
+    });
+    const v=el('velocity-toggle',disclose,'button');v.textContent='V';v.setAttribute('aria-label',t.name+' velocity lane');v.setAttribute('aria-expanded','false');t.laneToggle=v;
+    const stepsEl=el('steps',row),grid=el('step-grid',stepsEl);grid.setAttribute('role','group');grid.setAttribute('aria-label',t.name+' pattern');
+    t.cells=[];
+    for(let i=0;i<STEPS;i++){
+      const c=el('step-cell'+(i%4===0?' beat-start':'')+(i>0&&i%PAGE_STEPS===0?' page-start':''),grid,'button');c.tabIndex=i===0?0:-1;
+      bindStepGesture(c,t,i);t.cells.push(c);
+    }
+    const actions=el('row-actions',row);
+    const copy=el('',actions,'button');t.copyEl=copy;copy.textContent='Copy';
+    copy.addEventListener('click',()=>{
+      if(copySource===t){copySource=null;copyData=null;}
+      else if(copySource){t.steps=copyData.steps.slice();t.locks=copyData.locks.map(l=>l&&Object.assign({},l));t.pattern=t.steps;t.tieOrigins?.clear();trackChanged(t);copySource=null;copyData=null;}
+      else{copySource=t;copyData={steps:t.steps.slice(),locks:t.locks.map(l=>l&&Object.assign({},l))};}
+      syncActions();
+    });
+    const clear=el('',actions,'button');clear.textContent='Clear';clear.setAttribute('aria-label','Clear '+t.name+' pattern');
+    clear.addEventListener('click',()=>{t.steps.fill(false);t.locks.fill(null);t.tieOrigins?.clear();trackChanged(t);setStatus(t.name+' pattern cleared');});
+    const remove=el('',actions,'button');remove.textContent='Delete';remove.setAttribute('aria-label','Delete '+t.name+' track');
+    remove.addEventListener('click',()=>{
+      const index=tracks.indexOf(t);if(dock.track===t)closeDock();
+      if(copySource===t){copySource=null;copyData=null;}
+      if(selection.track===t)clearSelection();
+      t.deleted=true;tracks.splice(index,1);const mi=melodic.indexOf(t);if(mi>=0)melodic.splice(mi,1);
+      t.wrap.remove();t.tabEl.remove();syncActions();if(dock.open)drawGhosts();
+      const next=tracks[Math.min(index,tracks.length-1)];if(next)next.nameEl.focus();else playBtn.focus();
+    });
+    const lane=el('velocity-lane',wrap);lane.hidden=true;t.lane=lane;t.velocityInputs=[];
+    for(let i=0;i<STEPS;i++){
+      const input=el(i>0&&i%PAGE_STEPS===0?'page-start':'',lane,'input');input.type='range';input.min=0;input.max=127;
+      input.setAttribute('aria-label',t.name+' step '+(i+1)+' velocity');
+      input.addEventListener('input',()=>{t.locks[i]=Object.assign({},t.locks[i],{volume:Number(input.value)/127});trackChanged(t);});
+      t.velocityInputs.push(input);
+    }
+    v.addEventListener('click',()=>{lane.hidden=!lane.hidden;v.setAttribute('aria-expanded',String(!lane.hidden));});
+    updateIdentity(t);syncRow(t);
+  }
+  function syncRow(t) {
+    computeBars(t);
+    const tr=t.nameEl.querySelector('.tr');if(tr)tr.textContent=t.transpose===0?'':trLabel(t);
+    t.cells.forEach((c,i)=>{
+      const on=!!t.steps[i],locked=!!t.locks[i]&&Object.keys(t.locks[i]).length>0;
+      c.style.setProperty('--note-velocity',String(stepVel(t,i)));
+      c.classList.toggle('active',on);c.classList.toggle('has-lock',locked);c.classList.toggle('tie',on&&!!t.locks[i]?.tie);
+      c.classList.toggle('selected',dock.open&&dock.track===t&&dock.selectedStep===i);
+      c.classList.toggle('range-selected',selection.track===t&&selection.steps.has(i));
+      c.setAttribute('aria-label',t.name+' step '+(i+1)+', '+(on?'active '+noteName(stepMidi(t,i)):'inactive')+(locked?', has parameter lock':''));
+      c.setAttribute('aria-pressed',String(on));
+      c.title='Step '+(i+1)+' · Shift+click or hold for details · Ctrl/Cmd+click selects';
+      const input=t.velocityInputs[i],tied=on&&attackStep(t,i)!==i;
+      input.value=Math.round(stepVel(t,i)*127);input.disabled=tied;
+      input.title=tied?'Inherited from attack step '+(attackStep(t,i)+1)+'; turn off Tie to edit':'';
+      let mark=c.querySelector('.contour');
+      if(on&&t.kind==='melodic'){
+        if(!mark)mark=el('contour',c);
+        const relative=stepMidi(t,i)-BASE_MIDI-t.transpose;mark.style.top=(24-(relative+24)/48*20)+'px';
+      }else if(mark)mark.remove();
+    });
+  }
+  function trackChanged(t, refreshPane=true) {
+    syncRow(t);syncActions();if(dock.open){if(dock.track===t)drawNotes(false);drawGhosts();if(refreshPane&&dock.track===t&&dock.pane==='step')renderPane();}
+  }
+
+  function displayMode(){if(innerWidth>=768&&innerHeight>=500)return 'desktop';if(innerHeight<500||innerWidth>innerHeight)return 'landscape';return 'portrait';}
+  const isLandscape=()=>displayMode()==='landscape';
+  const isPortrait=()=>displayMode()==='portrait';
+  const WHITE_SPAN={0:[0,1.5],2:[-.5,1.5],4:[-.5,1],5:[0,1.5],7:[-.5,1.5],9:[-.5,1.5],11:[-.5,1]};
+  function renderDock(parent) {
+    const d=el('dock',parent);ui.dock=d;d.inert=true;d.setAttribute('aria-hidden','true');d.setAttribute('role','region');d.setAttribute('aria-label','Track editor');
+    const innerD=el('dock-inner',d),head=el('dock-head',innerD);ui.head=head;
+    ui.title=el('dock-title',head);ui.title.id='dock-context';
+    const right=el('right',head);
+    const detent=el('ib',right,'button');detent.textContent='⇕ Tall';detent.setAttribute('aria-label','Toggle tall editor');
+    detent.addEventListener('click',()=>{dock.tall=!dock.tall;d.classList.toggle('tall',dock.tall);detent.textContent=dock.tall?'⇕ Compact':'⇕ Tall';setTimeout(fitComparison,reduced?0:220);});
+    const close=el('ib',right,'button');close.textContent='×';close.setAttribute('aria-label','Close editor');close.addEventListener('click',closeDock);
+    const tabs=el('chips track-tabs',head);tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Editing track');
+    tracks.forEach(t=>{const c=el('chip',tabs,'button');t.tabEl=c;updateIdentity(t);c.addEventListener('click',()=>openDock(t,dock.pane,c));});
+    const panes=el('chips pane-tabs',head);panes.setAttribute('role','group');panes.setAttribute('aria-label','Editor view');ui.paneChips={};
+    [['notes','Notes'],['step','Step'],['track','Track']].forEach(([k,label])=>{const c=el('chip',panes,'button');c.textContent=label;c.addEventListener('click',()=>{if(ui.cancelDrag)ui.cancelDrag();dock.pane=k;renderPane();if(k==='notes'&&dock.fitPending){fitComparison(true);dock.fitPending=false;}});ui.paneChips[k]=c;});
+    const shell=el('tools-shell',innerD);ui.toolsShell=shell;
+    const back=el('tool-scroll',shell,'button');back.textContent='‹';back.setAttribute('aria-label','Scroll tools left');
+    const tools=el('dock-tools',shell);ui.tools=tools;ui.pane=el('pane',tools);
+    const next=el('tool-scroll',shell,'button');next.textContent='›';next.setAttribute('aria-label','Scroll tools right');
+    const overflow=()=>{const needed=ui.pane.scrollWidth>shell.clientWidth+2;back.hidden=next.hidden=!needed;back.disabled=tools.scrollLeft<1;next.disabled=tools.scrollLeft+tools.clientWidth>=tools.scrollWidth-2;};
+    back.addEventListener('click',()=>{tools.scrollLeft-=Math.max(100,tools.clientWidth*.7);overflow();});
+    next.addEventListener('click',()=>{tools.scrollLeft+=Math.max(100,tools.clientWidth*.7);overflow();});
+    tools.addEventListener('scroll',overflow);ui.overflow=overflow;
+    const body=el('dock-body',innerD);ui.body=body;
+    const left=el('dock-left',body),rail=el('range-rail',left);ui.rail=rail;ui.bracket=el('bracket',rail);
+    const keycol=el('keycol',left);ui.keycol=keycol;ui.keyList=[];
+    const order=Array.from({length:ROWS},(_,i)=>MIDI_MIN+i).sort((a,b)=>Number(isBlack(a))-Number(isBlack(b)));
+    order.forEach(midi=>{
+      const k=el('key',keycol,'button');k.innerHTML='<span class="lbl">'+noteName(midi)+'</span>';k.setAttribute('aria-label','Audition '+noteName(midi));k.tabIndex=midi===60?0:-1;
+      k.addEventListener('click',()=>{if(dock.track)audition(dock.track,midi,1);k.classList.add('pressed');setTimeout(()=>k.classList.remove('pressed'),160);});
+      k.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const next=clamp(midi+(e.key==='ArrowUp'?1:-1),MIDI_MIN,MIDI_MAX);k.tabIndex=-1;const target=ui.keyEls.get(next);target.tabIndex=0;target.focus();ensurePitchVisible(next);}});
+      ui.keyEls.set(midi,k);ui.keyList.push([midi,k]);
+    });
+    const scroll=el('dock-scroll',body);ui.scroll=scroll;
+    const grid=el('grid',scroll);grid.style.width=GRID_WIDTH+'px';ui.grid=grid;
+    ui.rowEls=Array.from({length:ROWS},()=>el('row',grid));
+    const lines=el('lines',grid);
+    for(let i=0;i<STEPS;i++){const line=el('grid-line'+(i%16===0?' bar':i%4===0?' beat':''),lines);line.style.left=stepX(i)+'px';if(i>0&&i%PAGE_STEPS===0){const band=el('page-band',lines);band.style.left=cellRight(i-1)+'px';}}
+    ui.shadeL=el('loop-shade',grid);ui.shadeR=el('loop-shade',grid);
+    ui.hlRow=el('hl-row',grid);ui.hlCol=el('hl-col',grid);ui.selCol=el('sel-col',grid);
+    ui.ghostsLayer=el('ghosts',grid);ui.notesLayer=el('notes',grid);ui.ghost=el('ghost',grid);
+    ui.wash=el('wash',grid);ui.playhead=el('playhead',grid);ui.focusMarker=el('grid-focus',grid);
+    const hit=el('hit',grid);ui.hit=hit;ui.tip=el('tip',grid);
+    ui.details=el('dock-details',body);
+    ui.status=el('editor-status',innerD);ui.status.id='editor-status';ui.status.setAttribute('role','status');
+    ui.statusText=el('status-message',ui.status,'span');setStatus('Arrow keys move through notes. Enter toggles. Shift+Enter opens Step.');
+    ui.timeline=el('mobile-timeline',ui.status);ui.timeline.setAttribute('aria-hidden','true');
+    const caption=el('timeline-caption',ui.timeline,'span');caption.textContent='Bar · beat';
+    ui.timelineLabels=[];for(let i=0;i<STEPS;i+=4){const label=el('',ui.timeline,'span');label.textContent=i%16===0?String(i/16+1):(Math.floor(i/16)+1)+'.'+(i%16/4+1);ui.timelineLabels.push([i,label]);}
+    const syncTimeline=()=>ui.timelineLabels.forEach(([i,label])=>label.style.left=92+stepX(i)-body.scrollLeft+'px');body.addEventListener('scroll',syncTimeline);syncTimeline();
+    scroll.addEventListener('scroll',()=>{const y=-scroll.scrollTop+'px';rail.style.transform=keycol.style.transform='translateY('+y+')';});
+    ui.shadeLoop=()=>{grid.classList.toggle('has-loop',!!loop);if(!loop)return;ui.shadeL.style.left='0';ui.shadeL.style.width=stepX(loop.start)+'px';ui.shadeR.style.left=cellRight(loop.end)+'px';ui.shadeR.style.right='0';};
+    bindHit(hit,grid);
+    let lastViewport='';
+    const fitHead=()=>{
+      const viewport=innerWidth+':'+innerHeight,changed=lastViewport&&lastViewport!==viewport;lastViewport=viewport;
+      const width=isLandscape()?innerWidth-18:tracksEl.clientWidth;
+      head.style.width=shell.style.width=ui.details.style.width=ui.status.style.width=width+'px';
+      ui.overflow();updateMode();if(changed&&dock.open){if(ui.cancelDrag)ui.cancelDrag();requestAnimationFrame(fitComparison);}
+    };
+    ui.fitHead=fitHead;if(window.ResizeObserver)new ResizeObserver(fitHead).observe(tracksEl);window.addEventListener('resize',fitHead);
+    setPitchHeight(18);fitHead();
+  }
+  function updateMode() {
+    const mode=displayMode();document.documentElement.dataset.displayMode=mode;document.documentElement.dataset.narrowLandscape=String(mode==='landscape'&&innerWidth<440);
+    if(ui.mode!==mode&&dock.open){dock.pan=mode==='landscape';ui.hit.classList.toggle('pan',dock.pan);ui.panButton?.setAttribute('aria-pressed',String(dock.pan));}ui.mode=mode;
+    const portrait=isPortrait();
+    document.querySelector('.sequencer').inert=portrait;
+    if(portrait&&dock.open){if(ui.cancelDrag)ui.cancelDrag();closeDock();}
+    if(isLandscape()){
+      tracks.forEach(t=>{t.toggleEl.textContent='Edit';t.toggleEl.setAttribute('aria-label','Edit '+t.name+' track');});
+      tracksEl.inert=dock.open;
+      document.querySelector('.transport').inert=dock.open;
+    }else{
+      tracksEl.inert=false;document.querySelector('.transport').inert=false;
+      tracks.forEach(t=>{t.toggleEl.textContent=t.kind==='melodic'?'♪':'T';});
+    }
+    // A fixed editor must not inherit an inert background ancestor.
+    if(isLandscape()&&dock.open){tracksEl.inert=false;ui.rows.inert=true;ui.ruler.parentElement.inert=true;}else if(ui.rows){ui.rows.inert=portrait;ui.ruler.parentElement.inert=portrait;}
+  }
+  function applyClasses() {
+    const t=dock.track||tracks.find(t=>t.kind==='melodic')||lead;
+    ui.rowEls.forEach((r,i)=>r.className='row '+rowClasses(MIDI_MAX-i,t));
+    ui.keyList.forEach(([midi,k])=>{const hover=k.classList.contains('hover');k.className='key '+rowClasses(midi,t)+(hover?' hover':'');});
+    ui.bracket.style.top=(MIDI_MAX-t.range.optMax)*H+2+'px';ui.bracket.style.height=Math.max(2,(t.range.optMax-t.range.optMin+1)*H-4)+'px';
+  }
+  function noteInk(node) {
+    const value=getComputedStyle(node).backgroundColor;
+    const values=value.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>value.startsWith('color(')?v*255:v);
+    const linear=v=>{v/=255;return v<=.04045?v/12.92:Math.pow((v+.055)/1.055,2.4);};
+    const l=values.reduce((sum,v,i)=>sum+linear(v)*[.2126,.7152,.0722][i],0);
+    // Choose only the text foreground from the actual CSS fill; CSS still owns every velocity colour.
+    node.style.setProperty('--note-label-ink',(l+.05)/.056>=1.05/(l+.05)?'#121212':'#ffffff');
+  }
+  function drawNotes(fade) {
+    const t=dock.track;if(!t)return;const layer=ui.notesLayer,version=++paintVersion;
+    const paint=()=>{if(version!==paintVersion||t!==dock.track)return;computeBars(t);layer.replaceChildren();ui.noteEls=[];
+      (t.kind==='melodic'?t.bars:[]).forEach(b=>{const n=el('note',layer);n.style.left=stepX(b.start)+'px';n.style.width=spanWidth(b.start,b.len)+'px';n.style.top=(MIDI_MAX-b.midi)*H+((H-Math.max(1,H*14/18))/2)+'px';n.style.height=Math.max(1,H*14/18)+'px';n.style.borderRadius=Math.min(3,Math.max(1,H*14/18)/2)+'px';n.style.setProperty('--note-velocity',String(b.vel));const label=el('bar-label',n);label.textContent=noteName(b.midi);n._bar=b;ui.noteEls.push(n);noteInk(n);});syncRow(t);
+    };
+    if(fade&&!reduced){layer.classList.add('fading');setTimeout(()=>{paint();layer.classList.remove('fading');},120);}else paint();
+  }
+  function drawGhosts() {
+    ui.ghostsLayer.replaceChildren();
+    melodic.forEach(o=>{if(o===dock.track||!dock.ghosts[o.id])return;computeBars(o);o.bars.forEach(b=>{const g=el('gnote',ui.ghostsLayer);g.style.setProperty('--gc',o.cat);g.style.left=stepX(b.start)+'px';g.style.width=spanWidth(b.start,b.len)+'px';g.style.top=(MIDI_MAX-b.midi)*H+((H-Math.max(1,H*12/18))/2)+'px';g.style.height=Math.max(1,H*12/18)+'px';g.style.borderRadius=Math.min(3,Math.max(1,H*12/18)/2)+'px';});});
+  }
+  function setPitchHeight(value) {
+    H=clamp(value,2,36);document.documentElement.style.setProperty('--pitch-row-height',H+'px');
+    ui.grid.style.height=ui.rail.style.height=ui.keycol.style.height=ROWS*H+'px';
+    ui.rowEls.forEach((r,i)=>{r.style.top=i*H+'px';r.style.height=H+'px';});
+    ui.keyList.forEach(([midi,k])=>{let top,height;if(isBlack(midi)){top=(MIDI_MAX-midi)*H;height=H;}else{const span=WHITE_SPAN[pc(midi)],rb=midi-MIDI_MIN;top=Math.max(0,(ROWS-rb-span[1])*H);height=Math.min(ROWS*H,(ROWS-rb-span[0])*H)-top;}k.style.top=top+'px';k.style.height=height+'px';});
+    ui.hlRow.style.height=ui.focusMarker.style.height=H+'px';ui.ghost.style.height=Math.max(1,H*14/18)+'px';ui.ghost.style.width=STEP_W+'px';
+    ui.grid.classList.toggle('overview',H<12);ui.keycol.classList.toggle('overview',H<12);
+    applyClasses();if(dock.track){drawNotes(false);drawGhosts();}moveGridCursor(false);
+  }
+  function comparisonMidis() {
+    const t=dock.track;if(!t)return [];
+    return [t,...melodic.filter(o=>o!==t&&dock.ghosts[o.id])].flatMap(o=>{computeBars(o);return o.bars.map(b=>b.midi);});
+  }
+  function fitComparison(initial=false) {
+    if(!dock.track||dock.track.kind!=='melodic')return;
+    const mids=comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
+    const lo=Math.min(...mids),hi=Math.max(...mids),viewport=parseFloat(getComputedStyle(ui.scroll).height)||252;
+    setPitchHeight(clamp(viewport/(hi-lo+5),2,initial===true?18:36));
+    ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-hi-2)*H);ui.scroll.dispatchEvent(new Event('scroll'));
+    setStatus('Showing '+dock.track.name+' and enabled comparison tracks. Zoom in for detail.');
+  }
+  function zoomPitch(direction) {
+    const mid=MIDI_MAX-(ui.scroll.scrollTop+ui.scroll.clientHeight/2)/H;
+    const stops=[2,4,6,9,12,18,24,36],next=direction>0?stops.find(h=>h>H):[...stops].reverse().find(h=>h<H);
+    if(!next)return;setPitchHeight(next);ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-mid)*H-ui.scroll.clientHeight/2);ui.scroll.dispatchEvent(new Event('scroll'));
+    setStatus('Pitch zoom changed. Arrow keys and Step controls remain available.');
+  }
+  function centreOn(t) {
+    computeBars(t);const mids=t.bars.map(b=>b.midi);const mid=mids.length?(Math.min(...mids)+Math.max(...mids))/2:BASE_MIDI;
+    ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-mid)*H-ui.scroll.clientHeight/2);ui.scroll.dispatchEvent(new Event('scroll'));
+  }
+  function ensurePitchVisible(midi) {
+    const top=(MIDI_MAX-midi)*H;if(top<ui.scroll.scrollTop)ui.scroll.scrollTop=top;else if(top+H>ui.scroll.scrollTop+ui.scroll.clientHeight)ui.scroll.scrollTop=top+H-ui.scroll.clientHeight;
+    ui.scroll.dispatchEvent(new Event('scroll'));
+  }
+  function openDock(t,pane,opener) {
+    if(isPortrait()||t.deleted)return;
+    const switching=dock.track!==t,wasOpen=dock.open;
+    if(ui.cancelDrag)ui.cancelDrag();
+    if(!wasOpen)dock.opener=opener||t.nameEl;
+    dock.open=true;dock.track=t;dock.pane=pane||dock.pane;if(t.kind!=='melodic'&&dock.pane==='notes')dock.pane='track';
+    if(switching){dock.selectedStep=null;dock.cursorStep=0;dock.cursorMidi=BASE_MIDI+t.transpose;}if(switching||!wasOpen)dock.fitPending=true;
+    if(!wasOpen){dock.pan=isLandscape();ui.hit.classList.toggle('pan',dock.pan);}
+    ui.dock.classList.add('open');ui.dock.inert=false;ui.dock.setAttribute('aria-hidden','false');
+    tracks.forEach(o=>{o.wrap.classList.toggle('docked',o===t);o.tabEl.classList.toggle('active',o===t);o.tabEl.setAttribute('aria-pressed',String(o===t));syncRow(o);});
+    applyClasses();drawNotes(switching&&wasOpen);drawGhosts();renderPane();updateMode();ui.fitHead();
+    if(dock.pane==='notes'&&dock.fitPending)setTimeout(()=>{if(dock.track===t&&dock.pane==='notes'){fitComparison(true);dock.fitPending=false;}},0);
+    if(!wasOpen)ui.paneChips[dock.pane].focus({preventScroll:true});
+    const offset=t.wrap.offsetTop,viewTop=tracksEl.scrollTop+ui.ruler.parentElement.offsetHeight;
+    if(!isLandscape()&&(offset<viewTop||offset+58>tracksEl.scrollTop+tracksEl.clientHeight-ui.dock.offsetHeight))tracksEl.scrollTop=Math.max(0,offset-ui.ruler.parentElement.offsetHeight);
+    const tabs=t.tabEl.parentElement;if(t.tabEl.offsetLeft<tabs.scrollLeft)tabs.scrollLeft=t.tabEl.offsetLeft;else if(t.tabEl.offsetLeft+t.tabEl.offsetWidth>tabs.scrollLeft+tabs.clientWidth)tabs.scrollLeft=t.tabEl.offsetLeft+t.tabEl.offsetWidth-tabs.clientWidth;
+  }
+  function closeDock() {
+    if(!dock.open)return;
+    if(ui.cancelDrag)ui.cancelDrag();
+    dock.open=false;++paintVersion;ui.notesLayer.classList.remove('fading');ui.dock.classList.remove('open');ui.dock.inert=true;ui.dock.setAttribute('aria-hidden','true');
+    tracks.forEach(o=>{o.wrap.classList.remove('docked');o.toggleEl.classList.remove('active');o.toggleEl.setAttribute('aria-expanded','false');o.tabEl.setAttribute('aria-pressed','false');syncRow(o);});
+    ui.selCol.classList.remove('on');updateMode();
+    const opener=dock.opener;if(opener&&opener.isConnected&&!opener.closest('[inert]'))opener.focus({preventScroll:true});else (isPortrait()?document.getElementById('portraitPlay'):playBtn).focus({preventScroll:true});
+  }
+  function selectStep(t,i,opener) { openDock(t,'step',opener);dock.selectedStep=i;dock.cursorStep=i;dock.cursorMidi=stepMidi(t,i)||BASE_MIDI+t.transpose;renderPane();ensurePitchVisible(dock.cursorMidi);moveGridCursor(false); }
+  function updateContext(step=dock.selectedStep,midi) {
+    const t=dock.track;if(!t)return;
+    if(step===null||step===undefined){ui.title.textContent=t.name+' · '+t.inst;return;}
+    const effective=midi??stepMidi(t,step)??(BASE_MIDI+t.transpose+(t.locks[step]?.pitch??0));
+    ui.title.textContent=t.name+' · '+t.inst+' · Step '+(step+1)+' · '+noteName(effective)+' · v'+Math.round(stepVel(t,step)*127);
+  }
+  function renderPane() {
+    const t=dock.track;if(!t)return;
+    const focusedKey=ui.pane.contains(document.activeElement)?document.activeElement.dataset.focusKey:null;
+    Object.entries(ui.paneChips).forEach(([k,c])=>{c.classList.toggle('active',dock.pane===k);c.setAttribute('aria-pressed',String(dock.pane===k));c.disabled=k==='notes'&&t.kind!=='melodic';});
+    tracks.forEach(o=>{o.toggleEl.classList.toggle('active',o===t&&dock.pane==='notes');o.toggleEl.setAttribute('aria-expanded',String(o===t&&dock.open));});
+    updateContext();
+    ui.selCol.classList.toggle('on',dock.selectedStep!==null);if(dock.selectedStep!==null)ui.selCol.style.left=stepX(dock.selectedStep)+'px';
+    const details=dock.pane==='track'||t.kind!=='melodic';
+    ui.body.classList.toggle('show-details',details);ui.scroll.inert=ui.keycol.inert=details;
+    ui.pane.replaceChildren();const p=ui.pane,sel=dock.selectedStep;syncRow(t);
+    const group=label=>{const g=el('rowc',p);el('k',g,'span').textContent=label;return g;};
+    const button=(parent,label,handler,aria)=>{const b=el('cbtn',parent,'button');b.textContent=label;if(aria)b.setAttribute('aria-label',aria);b.addEventListener('click',handler);return b;};
+    if(dock.pane==='notes'){
+      const g=group('Ghosts');
+      melodic.filter(o=>o!==t).forEach(o=>{const b=button(g,o.name,()=>{dock.ghosts[o.id]=!dock.ghosts[o.id];b.setAttribute('aria-pressed',String(dock.ghosts[o.id]));drawGhosts();fitComparison();});b.classList.add('ghost-toggle');b.style.setProperty('--gc',o.cat);b.setAttribute('aria-pressed',String(!!dock.ghosts[o.id]));});
+      el('value',group('Range'),'span').textContent=noteName(t.range.optMin)+' to '+noteName(t.range.optMax)+' best';
+      const velocity=el('',group('Insertion volume'),'input');velocity.type='range';velocity.min=0;velocity.max=127;velocity.value=Math.round(t.defaultVelocity*127);velocity.setAttribute('aria-label','Default velocity');velocity.addEventListener('input',()=>t.defaultVelocity=Number(velocity.value)/127);
+      button(p,'Fit comparison',fitComparison);button(p,'−',()=>zoomPitch(-1),'Zoom pitch out');button(p,'+',()=>zoomPitch(1),'Zoom pitch in');
+      const pan=button(p,'Pan',()=>{ui.cancelDrag();dock.pan=!dock.pan;ui.hit.classList.toggle('pan',dock.pan);pan.setAttribute('aria-pressed',String(dock.pan));setStatus(dock.pan?'Pan: drag to scroll. Switch Pan off to draw.':'Draw: hold for Step; drag to paint or change pitch.');});ui.panButton=pan;pan.setAttribute('aria-pressed',String(!!dock.pan));
+      const bounds=group('Loop');ui.loopInputs=[];
+      for(const [key,label] of [['start','Loop start'],['end','Loop end']]){const input=el('',bounds,'input');input.type='number';input.min=key==='start'?1:2;input.max=key==='start'?STEPS-1:STEPS;input.value=key==='start'?(loop?.start??0)+1:(loop?.end??STEPS-1)+1;input.setAttribute('aria-label',label);input.addEventListener('change',()=>{const r=Object.assign({start:0,end:STEPS-1},loop),value=Number(input.value)-1;if(!Number.isFinite(value)||!Number.isInteger(value)){input.value=(r[key])+1;return;}r[key]=key==='start'?clamp(value,0,r.end-1):clamp(value,r.start+1,STEPS-1);ui.setLoop(r);setStatus('Loop steps '+(r.start+1)+' through '+(r.end+1));});ui.loopInputs.push(input);}
+      ui.clearLoop=button(p,'Clear loop',()=>ui.setLoop(null));ui.clearLoop.disabled=!loop;
+    }else if(dock.pane==='step'){
+      const selector=el('',group('Step'),'select');selector.setAttribute('aria-label','Selected step');
+      for(let i=0;i<STEPS;i++){const option=el('',selector,'option');option.value=i;option.textContent=String(i+1);}
+      if(sel===null){const option=el('',selector,'option');option.value='';option.textContent='Choose';selector.value='';}else selector.value=sel;
+      selector.addEventListener('change',()=>{dock.selectedStep=Number(selector.value);renderPane();});
+      if(sel===null){el('empty',p,'span').textContent='Choose a step, Shift+click, or hold a cell to edit.';}
+      else{
+        const lock=t.locks[sel]||{},tied=t.steps[sel]&&attackStep(t,sel)!==sel;
+        const effective=tied?stepMidi(t,sel):BASE_MIDI+t.transpose+(lock.pitch||0);
+        const pitch=group('Pitch');const nextPitch=d=>{let v=(lock.pitch||0)+d;while(v>=-24&&v<=24&&!inScale(BASE_MIDI+t.transpose+v))v+=d;return v>=-24&&v<=24?v:null;};
+        const changePitch=d=>{const v=nextPitch(d);if(v===null||tied)return;t.locks[sel]=Object.assign({},t.locks[sel],{pitch:v});trackChanged(t);audition(t,BASE_MIDI+t.transpose+v,stepVel(t,sel));};
+        const minus=button(pitch,'−',()=>changePitch(-1),'Step pitch down');el('cbtn value',pitch,'span').textContent=noteName(effective)+' ('+(effective-BASE_MIDI-t.transpose>=0?'+':'')+(effective-BASE_MIDI-t.transpose)+')';
+        const plus=button(pitch,'+',()=>changePitch(1),'Step pitch up');minus.disabled=tied||nextPitch(-1)===null;plus.disabled=tied||nextPitch(1)===null;
+        const slider=el('',group('Volume'),'input');slider.type='range';slider.min=0;slider.max=127;slider.value=Math.round(stepVel(t,sel)*127);slider.disabled=tied;slider.setAttribute('aria-label','Step volume');slider.title=tied?'Inherited from attack step '+(attackStep(t,sel)+1)+'; turn off Tie to edit':'';
+        const value=el('value',slider.parentElement,'span');value.textContent=slider.value;
+        slider.addEventListener('input',()=>{t.locks[sel]=Object.assign({},t.locks[sel],{volume:Number(slider.value)/127});value.textContent=slider.value;trackChanged(t,false);updateContext();});
+        const tie=button(group('Tie'),lock.tie?'Tied to previous':'New attack',()=>{t.locks[sel]=Object.assign({},t.locks[sel],{tie:!t.locks[sel]?.tie});t.tieOrigins?.delete(sel);trackChanged(t);});tie.setAttribute('aria-pressed',String(!!lock.tie));tie.disabled=t.kind!=='melodic';tie.title=t.kind!=='melodic'?'One-shot preview does not sustain ties':'';
+        button(p,t.steps[sel]?'Deactivate':'Activate',()=>{t.steps[sel]=!t.steps[sel];trackChanged(t);},'Toggle selected step');
+        button(p,'Erase step',()=>{t.steps[sel]=false;t.locks[sel]=null;t.tieOrigins?.delete(sel);trackChanged(t);});
+        button(p,'Clear lock',()=>{t.locks[sel]=null;t.tieOrigins?.delete(sel);trackChanged(t);});
+        if(tied)el('context',p,'span').textContent='Pitch and volume inherit from attack step '+(attackStep(t,sel)+1);
+      }
+    }else{
+      const tr=group('Transpose');
+      const minus=button(tr,'−',()=>{t.transpose--;trackChanged(t);renderPane();},'Track transpose down');minus.disabled=t.transpose<=-24;
+      el('cbtn value',tr,'span').textContent=trLabel(t);
+      const plus=button(tr,'+',()=>{t.transpose++;trackChanged(t);renderPane();},'Track transpose up');plus.disabled=t.transpose>=24;
+      const lane=button(p,'Velocity lane',()=>{t.lane.hidden=!t.lane.hidden;t.laneToggle.setAttribute('aria-expanded',String(!t.lane.hidden));lane.setAttribute('aria-expanded',String(!t.lane.hidden));});lane.setAttribute('aria-expanded',String(!t.lane.hidden));
+      button(p,'Audition',()=>audition(t,BASE_MIDI+t.transpose,1));button(p,'Rename',()=>{closeDock();renameTrack(t);});
+    }
+    ui.details.replaceChildren();el('',ui.details,'h3').textContent=ui.title.textContent;
+    if(dock.pane==='track'){
+      el('',ui.details,'p').textContent='Copy/Paste, Clear and Delete stay on the target row. Close the editor to act on that row.';
+      const controls=el('detail-controls',ui.details);
+      const label=el('',controls,'label');label.textContent='Instrument ';
+      const instrument=el('',label,'select');instrument.disabled=true;instrument.setAttribute('aria-label','Instrument integration preview');el('',instrument,'option').textContent=t.inst;
+      const label2=el('',controls,'label');label2.textContent='Steps ';
+      const count=el('',label2,'select');count.disabled=true;count.setAttribute('aria-label','Step count integration preview');el('',count,'option').textContent=STEPS;
+      el('',ui.details,'p').textContent='Integration preview: instrument selection, step count, envelope/FM parameters and pattern tools require the real app. These controls are disabled here.';
+    }else if(t.kind!=='melodic'){
+      el('',ui.details,'p').textContent=sel===null?'Choose a step above to edit this drum pattern.':'Edit pitch and volume above. This one-shot preview does not sustain ties.';
+      el('',ui.details,'p').textContent='Envelope controls are an integration preview; the real app must use its instrument capability rules.';
+    }
+    const controls=[...p.querySelectorAll('button,input,select')];controls.forEach((c,i)=>c.dataset.focusKey=dock.pane+':'+i);
+    if(focusedKey){const target=controls.find(c=>c.dataset.focusKey===focusedKey&&!c.disabled)||controls.find(c=>!c.disabled)||ui.paneChips[dock.pane];target.focus({preventScroll:true});}
+    requestAnimationFrame(ui.overflow);
+  }
+  function moveGridCursor(announce=true) {
+    if(!ui.focusMarker)return;
+    const t=dock.track,step=dock.cursorStep||0,midi=dock.cursorMidi||60;
+    ui.focusMarker.style.left=stepX(step)+'px';ui.focusMarker.style.top=(MIDI_MAX-midi)*H+'px';
+    if(t&&announce)updateContext(step,midi);
+    if(announce&&t){const active=!!barAt(t,step,midi),attack=attackStep(t,step);setStatus(t.name+' · Step '+(step+1)+' · '+noteName(midi)+' · '+(active?'active':'empty')+' · volume '+Math.round(stepVel(t,step)*127)+(active&&attack!==step?' · inherits attack step '+(attack+1):'')+'. Enter toggles; Shift+Enter edits Step; Space auditions.');}
+  }
+
+  function bindHit(hit,grid) {
+    hit.tabIndex=0;hit.setAttribute('role','group');hit.setAttribute('aria-label','Piano roll note editor');hit.setAttribute('aria-describedby','editor-status');
+    const pos=e=>{const r=grid.getBoundingClientRect();const x=clamp(e.clientX-r.left,0,GRID_WIDTH-1),y=clamp(e.clientY-r.top,0,ROWS*H-1);return{x,y,step:xToIndex(x),midi:MIDI_MAX-Math.floor(y/H)};};
+    const edge=(p,b)=>p.x>cellRight(b.start+b.len-1)-9;
+    let pending=null,drag=null,suppress=false,hoverMidi=null,acceptedPointer=null;
+    const snapshot=t=>({track:t,steps:t.steps.slice(),locks:t.locks.map(l=>l&&Object.assign({},l)),tieOrigins:new Map(t.tieOrigins||[])});
+    const restore=(state,refresh=true)=>{state.track.tieOrigins=new Map(state.tieOrigins);state.track.steps.splice(0,STEPS,...state.steps);state.track.locks.splice(0,STEPS,...state.locks.map(l=>l&&Object.assign({},l)));if(refresh)trackChanged(state.track);};
+    const hideHover=()=>{grid.classList.remove('hovering');if(hoverMidi!==null)ui.keyEls.get(hoverMidi)?.classList.remove('hover');hoverMidi=null;};
+    ui.cancelDrag=()=>{
+      const active=!!drag||!!pending;
+      if(pending)clearTimeout(pending.timer);
+      if(drag)restore(drag.original);
+      pending=null;drag=null;acceptedPointer=null;suppress=true;hideHover();return active;
+    };
+    const showHover=p=>{
+      const t=dock.track;if(!t)return;
+      const b=barAt(t,p.step,p.midi),target=editableMidi(t,p.midi);
+      const preview=b?b.midi:target;
+      grid.classList.add('hovering');grid.classList.toggle('empty',!b);
+      ui.hlRow.style.top=(MIDI_MAX-(preview===null?p.midi:preview))*H+'px';ui.hlCol.style.left=stepX(p.step)+'px';
+      ui.ghost.style.left=stepX(p.step)+'px';ui.ghost.style.top=(MIDI_MAX-(target===null?p.midi:target))*H+((H-Math.max(1,H*14/18))/2)+'px';ui.ghost.style.opacity=target===null?'0':'';
+      ui.tip.style.left=p.x+'px';ui.tip.style.top=p.y+'px';
+      ui.tip.replaceChildren();
+      const strong=el('',ui.tip,'b');strong.textContent=noteName(preview===null?p.midi:preview);
+      ui.tip.append(document.createTextNode(b?' · '+b.len+' steps · volume '+Math.round(b.vel*127):' · Step '+(p.step+1)+(target===null?' · outside editable range':target!==p.midi?' · snapped':'')));
+      hit.style.cursor=dock.pan?'all-scroll':b?(edge(p,b)?'ew-resize':'ns-resize'):target===null?'not-allowed':'crosshair';
+      if(hoverMidi!==preview){if(hoverMidi!==null)ui.keyEls.get(hoverMidi)?.classList.remove('hover');hoverMidi=preview;if(preview!==null)ui.keyEls.get(preview)?.classList.add('hover');}
+    };
+    const mark=()=>{if(!drag?.bar)return;const n=ui.noteEls.find(n=>n._bar.start===drag.bar.start&&n._bar.midi===(drag.midi||drag.bar.midi));if(n)n.classList.add('dragging');};
+    const begin=()=>{
+      if(!pending)return;
+      clearTimeout(pending.timer);const p=pending.p,b=pending.bar;
+      drag={kind:b?(edge(p,b)?'resize':'move'):'paint',bar:b,original:pending.original,midi:b?b.midi:p.midi,lastStep:p.step,painted:new Set(),valid:true};
+      pending=null;
+      if(drag.kind==='paint'){
+        if(drag.original.steps[p.step]){drag.valid=false;return;}
+        const m=editableMidi(dock.track,p.midi);if(m===null){drag.valid=false;return;}
+        drag.midi=m;placeNote(dock.track,p.step,m,dock.track.defaultVelocity);drag.painted.add(p.step);trackChanged(dock.track);
+      }
+      mark();
+    };
+    const dragMove=p=>{
+      if(!drag)return;
+      const t=drag.original.track,m=editableMidi(t,p.midi);
+      if(m===null)drag.valid=false;
+      if(m===null){showHover(p);return;}
+      if(drag.kind==='paint'){
+        const from=Math.min(drag.lastStep,p.step),to=Math.max(drag.lastStep,p.step);
+        if(Array.from({length:to-from+1},(_,n)=>from+n).some(s=>drag.original.steps[s]&&!drag.painted.has(s))){drag.valid=false;setStatus('That step already has a note. The gesture will not overwrite it.');return;}
+        for(let s=from;s<=to;s++){placeNote(t,s,m,t.defaultVelocity);drag.painted.add(s);}
+        drag.lastStep=p.step;drag.midi=m;trackChanged(t);
+      }else if(drag.kind==='move'){
+        restore(drag.original,false);
+        if(m===drag.bar.midi){drag.midi=m;trackChanged(t);showHover(p);return;}
+        t.locks[drag.bar.start]=Object.assign({},t.locks[drag.bar.start],{pitch:m-BASE_MIDI-t.transpose});
+        drag.midi=m;trackChanged(t);
+      }else{
+        const b=drag.bar,len=clamp(p.step-b.start+1,1,STEPS-b.start);
+        const collision=Array.from({length:Math.max(0,len-b.len)},(_,n)=>b.start+b.len+n).some(s=>drag.original.steps[s]);
+        if(collision){drag.valid=false;setStatus('Length stops before an occupied step. Release restores the original note.');return;}
+        restore(drag.original,false);
+        for(let s=b.start+1;s<b.start+Math.max(len,b.len);s++){
+          if(s<b.start+len){
+            if(!t.steps[s]&&!t.tieOrigins.has(s))t.tieOrigins.set(s,{hasTie:Object.prototype.hasOwnProperty.call(t.locks[s]||{},'tie'),tie:t.locks[s]?.tie});
+            t.steps[s]=true;t.locks[s]=Object.assign({},t.locks[s],{tie:true});
+          }else{
+            t.steps[s]=false;const prior=t.tieOrigins.get(s);
+            if(prior){const lock=Object.assign({},t.locks[s]);if(prior.hasTie)lock.tie=prior.tie;else delete lock.tie;t.locks[s]=Object.keys(lock).length?lock:null;t.tieOrigins.delete(s);}
+          }
+        }
+        trackChanged(t);
+      }
+      mark();showHover(p);
+    };
+    hit.addEventListener('pointerdown',e=>{
+      if(e.button!==0||dock.pan||acceptedPointer!==null||e.isPrimary===false)return;
+      const t=dock.track;if(!t||t.kind!=='melodic')return;
+      acceptedPointer=e.pointerId;e.preventDefault();hit.focus({preventScroll:true});hit.setPointerCapture(e.pointerId);suppress=false;
+      const p=pos(e);dock.cursorStep=p.step;dock.cursorMidi=p.midi;moveGridCursor();
+      if(e.ctrlKey||(e.metaKey&&!e.shiftKey)){selectRange(t,p.step,false);suppress=true;return;}
+      if(e.shiftKey){if(selection.track===t&&selection.steps.size)selectRange(t,p.step,true);else selectStep(t,p.step,hit);suppress=true;return;}
+      const b=barAt(t,p.step,p.midi);pending={p,bar:b,x:e.clientX,y:e.clientY,original:snapshot(t),timer:null};
+      pending.timer=setTimeout(()=>{const step=p.step;pending=null;suppress=true;selectStep(t,step,hit);},400);
+      showHover(p);
+    });
+    hit.addEventListener('pointermove',e=>{
+      if(dock.pan||e.isPrimary===false||(acceptedPointer!==null&&e.pointerId!==acceptedPointer))return;
+      const p=pos(e);
+      if(pending&&Math.hypot(e.clientX-pending.x,e.clientY-pending.y)>3)begin();
+      if(drag)dragMove(p);else showHover(p);
+    });
+    hit.addEventListener('pointerup',e=>{
+      if(e.pointerId!==acceptedPointer)return;acceptedPointer=null;
+      if(dock.pan)return;const p=pos(e),t=dock.track;let committed=true;
+      if(suppress){suppress=false;return;}
+      if(pending){
+        clearTimeout(pending.timer);const b=pending.bar;pending=null;
+        if(b){clearBar(t,b);trackChanged(t);}else{const m=editableMidi(t,p.midi);if(m!==null&&!t.steps[p.step]){placeNote(t,p.step,m,t.defaultVelocity);trackChanged(t);audition(t,m,stepVel(t,p.step));}else{committed=false;if(t.steps[p.step])setStatus('That step already has a note. Open Step or drag its bar to change pitch.');}}
+      }else if(drag){if(!drag.valid||editableMidi(t,p.midi)===null){restore(drag.original);committed=false;}drag=null;}
+      if(committed){dock.cursorStep=p.step;dock.cursorMidi=stepMidi(t,p.step)??editableMidi(t,p.midi)??p.midi;moveGridCursor();}
+      showHover(p);
+    });
+    hit.addEventListener('pointercancel',e=>{if(e.pointerId===acceptedPointer)ui.cancelDrag();});
+    hit.addEventListener('lostpointercapture',e=>{if(e.pointerId===acceptedPointer)ui.cancelDrag();});
+    hit.addEventListener('pointerleave',()=>{if(!pending&&!drag)hideHover();});
+    hit.addEventListener('focus',()=>moveGridCursor());
+    hit.addEventListener('keydown',e=>{
+      const t=dock.track;if(!t)return;
+      dock.cursorStep=dock.cursorStep||0;dock.cursorMidi=dock.cursorMidi||BASE_MIDI+t.transpose;
+      if(['ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Home','End'].includes(e.key)){
+        e.preventDefault();
+        if(e.key==='ArrowLeft')dock.cursorStep=clamp(dock.cursorStep-1,0,STEPS-1);
+        if(e.key==='ArrowRight')dock.cursorStep=clamp(dock.cursorStep+1,0,STEPS-1);
+        if(e.key==='ArrowUp')dock.cursorMidi=clamp(dock.cursorMidi+1,MIDI_MIN,MIDI_MAX);
+        if(e.key==='ArrowDown')dock.cursorMidi=clamp(dock.cursorMidi-1,MIDI_MIN,MIDI_MAX);
+        if(e.key==='Home')dock.cursorStep=0;if(e.key==='End')dock.cursorStep=STEPS-1;
+        ensurePitchVisible(dock.cursorMidi);
+        const scroller=isLandscape()?ui.body:tracksEl,x=(isLandscape()?92:162)+stepX(dock.cursorStep);
+        const covered=isLandscape()?84:0;
+        if(x<scroller.scrollLeft+covered)scroller.scrollLeft=Math.max(0,x-covered);else if(x+STEP_W>scroller.scrollLeft+scroller.clientWidth)scroller.scrollLeft=x+STEP_W-scroller.clientWidth;
+        moveGridCursor();
+      }else if(e.key==='Enter'){
+        e.preventDefault();
+        if(e.shiftKey){selectStep(t,dock.cursorStep,hit);return;}
+        const b=barAt(t,dock.cursorStep,dock.cursorMidi);
+        if(b)clearBar(t,b);else{const m=editableMidi(t,dock.cursorMidi);if(m===null)return;if(t.steps[dock.cursorStep]){setStatus('That step already has a note. Shift+Enter opens Step to change pitch.');return;}placeNote(t,dock.cursorStep,m,t.defaultVelocity);dock.cursorMidi=m;}
+        trackChanged(t);moveGridCursor();
+      }else if(e.key==='Delete'||e.key==='Backspace'){
+        e.preventDefault();e.stopPropagation();if(selection.track&&selection.steps.size){const target=selection.track;selection.steps.forEach(i=>{target.steps[i]=false;target.locks[i]=null;target.tieOrigins?.delete(i);});clearSelection();trackChanged(target);moveGridCursor();return;}const b=barAt(t,dock.cursorStep,dock.cursorMidi);if(b){clearBar(t,b);for(let s=b.start;s<b.start+b.len;s++){t.locks[s]=null;t.tieOrigins?.delete(s);}trackChanged(t);moveGridCursor();}
+      }else if(e.key===' '){e.preventDefault();audition(t,dock.cursorMidi,1);}
+    });
+  }
+
+  // ---------- build ----------
+  renderRuler(inner);
+  const rowsEl = el('rows', inner); ui.rows = rowsEl;
+  ui.copyStatus = el('copy-status', inner); ui.copyStatus.setAttribute('role','status');
+  tracks.forEach(t => renderTrackRow(rowsEl, t));
+  el('fill', inner);
+  renderDock(inner);
+  syncActions();
+  applyClasses();
+  const scaleBtn = document.getElementById('scaleBtn');
+  scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); applyClasses(); });
+  window.addEventListener('keydown', e => {
+    if(e.defaultPrevented)return;
+    if(e.key==='Escape'){
+      if(ui.cancelDrag&&ui.cancelDrag()){e.preventDefault();return;}
+      if(copySource){copySource=null;copyData=null;syncActions();e.preventDefault();return;}
+      if(dock.open&&ui.dock.contains(document.activeElement)){closeDock();e.preventDefault();return;}
+      if(selection.steps.size){clearSelection();e.preventDefault();return;}
+    }else if((e.key==='Delete'||e.key==='Backspace')&&selection.track&&selection.steps.size&&!['INPUT','SELECT'].includes(document.activeElement.tagName)){
+      const t=selection.track;selection.steps.forEach(i=>{t.steps[i]=false;t.locks[i]=null;t.tieOrigins?.delete(i);});trackChanged(t);clearSelection();e.preventDefault();
+    }
+  });
+  // The page opens with Lead docked so its first frame shows the working state. In the app the dock opens only on request.
+  openDock(lead, 'notes');
+})();
+</script>
+
+</body>
+</html>

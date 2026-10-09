@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Piano Roll Dock Brief</title>
+<style>
+  /* Layout: a design brief. A decision, a layer stack, a scenario storyboard, then consequences and a
+     build order. Keyboardia's own dark tokens, single theme by choice. */
+  :root {
+    --color-accent: #e85a30; --color-surface: #1e1e1e;
+    --color-drums: #e67e22; --color-bass: #9b59b6; --color-keys: #3498db;
+    --color-leads: #e91e63; --color-pads: #2ecc71; --color-fx: #00bcd4; --color-purple-dark: #8e44ad;
+    /* Canonical contract from PIANO-ROLL-DOCK.md; evaluate fill again on each cell/bar. */
+    --piano-key-white: #c9c5bc;
+    --piano-key-white-hover: #ddd9d0;
+    --piano-key-black: #131211;
+    --piano-key-black-hover: #2a2826;
+    --piano-key-label: #3f3c37;
+    --piano-key-surface: #0f0e0d;
+    --piano-grid-step: rgb(255 255 255 / 4.5%);
+    --piano-grid-beat: rgb(255 255 255 / 10%);
+    --piano-grid-bar: rgb(255 255 255 / 22%);
+    --piano-grid-octave: rgb(255 255 255 / 16%);
+    --piano-grid-black-row: rgb(0 0 0 / 22%);
+    --note-velocity-accent: var(--color-accent);
+    --note-velocity-surface: var(--color-surface);
+    --note-presence-outline: #b8b8b8;
+    --note-velocity: 1;
+    --note-velocity-fill: color-mix(in srgb,
+      var(--note-velocity-accent) calc(var(--note-velocity) * 100%),
+      var(--note-velocity-surface));
+    --bg: #121212; --surface: var(--color-surface); --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
+    --border: #3a3a3a; --border-light: #4a4a4a;
+    --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
+    --accent: var(--color-accent); --accent-text: #ff8a65; --color-info: #3498db; --info: var(--color-info); --info-text: #5eb3ea; --success: #1db954; --warning: #ffc107; --error-text: #ff7b7b; --purple-text: #c58ad6;
+    --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'Consolas', monospace;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font-ui); font-size: 14px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding-inline: 16px; padding-block: 24px 64px; display: flex; flex-direction: column; gap: 30px; }
+  .eyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--accent-text); }
+  h1 { font-size: 24px; font-weight: 600; margin: 2px 0 6px; letter-spacing: -.01em; text-wrap: balance; }
+  h2 { font-size: 17px; font-weight: 600; margin: 0 0 10px; padding-top: 6px; border-top: 1px solid var(--border); padding-top: 14px; }
+  h3 { font-size: 14px; font-weight: 600; margin: 14px 0 6px; }
+  p { margin: 0 0 10px; max-width: 78ch; }
+  .lede { color: var(--muted); }
+  a { color: var(--info-text); }
+  code { font-family: var(--font-mono); font-size: 12px; color: var(--text); background: var(--surface-2); padding: 1px 5px; border-radius: 3px; }
+  ul, ol { margin: 0 0 10px; padding-left: 20px; max-width: 80ch; }
+  li { margin-bottom: 4px; }
+  li b, p b { color: var(--text); font-weight: 600; }
+  .muted { color: var(--muted); }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { text-align: left; padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--muted); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; }
+  .tablewrap { overflow-x: auto; margin-bottom: 10px; }
+  .callout { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 6px; padding: 10px 14px; margin: 10px 0 14px; max-width: 80ch; }
+  .callout.info { border-left-color: var(--info); }
+  .callout.warn { border-left-color: var(--warning); }
+  .tag { display: inline-block; font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; border-radius: 3px; background: var(--surface-3); color: var(--muted); margin-right: 4px; white-space: nowrap; }
+  .tag.must { background: rgba(232,90,48,.18); color: var(--accent-text); }
+  .tag.open { background: rgba(255,193,7,.15); color: var(--warning); }
+
+  /* Layer stack diagram */
+  .stack { display: grid; grid-template-columns: 1fr; gap: 6px; max-width: 720px; margin: 8px 0 14px; }
+  .layer { display: grid; grid-template-columns: 56px 1fr; gap: 12px; align-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; }
+  .layer .z { font-family: var(--font-mono); font-size: 12px; color: var(--accent-text); }
+  .layer .what { font-size: 13px; }
+  .layer .what b { display: block; font-weight: 600; }
+  .layer .what span { color: var(--muted); }
+  .layer.dock { border-color: rgba(232,90,48,.6); }
+
+  /* Scenario storyboard */
+  .scene { display: grid; grid-template-columns: 180px 1fr; gap: 14px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+  .scene:last-child { border-bottom: 0; }
+  .scene .name { font-weight: 600; font-size: 13px; }
+  .scene .name small { display: block; font-weight: 400; color: var(--muted); font-family: var(--font-mono); font-size: 11px; margin-top: 2px; }
+  .scene .body { font-size: 13px; color: var(--muted); display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 6px 16px; }
+  .scene .body div b { display: block; color: var(--text); font-weight: 500; font-size: 11px; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+
+  @media (max-width: 640px) { .scene { grid-template-columns: 1fr; } .layer { grid-template-columns: 44px 1fr; } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div>
+    <div class="eyebrow">Keyboardia · Pitch panel · Design brief</div>
+    <h1>Piano roll dock</h1>
+    <p class="lede">Proposal only · PR #127 changes spec and mocks, with application integration deferred to the phases below. The decision from the layout research, worked through: how the dock layers over the grid, what moves and what stays still in each scenario, which gestures it answers to, how it is documented in this project's own format, and what it changes for the other per-track panels, mobile, large pieces and the open work on GitHub.</p>
+  </div>
+
+  <section>
+    <h2>1. Decision</h2>
+    <p>The note editor leaves the track list. On desktop, one <b>editor dock</b> sits under the sea of cells, inside the shared horizontal scroller, pinned to the bottom while tracks scroll above it. Expanded mobile uses the separate editor sheet described below. It shows one track at a time, chosen by the track's pitch toggle, its name, or a tab in the dock. Every track, including drums, has a tab and can open Step or Track; Notes is available only for melodic tracks. Other melodic tracks appear as ghost notes. The desktop control column is a two-line block, 154px wide, matched by the dock's left panel (18px range rail + 136px proportional keyboard). Its 84px header exposes track/step context above tabs; a fixed 48px toolbar uses 32px controls. Expanded mobile uses a separate editor timeline: fixed inset 8px, header 88px, tools 48px with 44px controls, status 16px and borders 2px, leaving a 150px body at 568 × 320. Mobile keys use 84px (18px rail + 66px keys), independent of the 216px single-line row controls. Rows never gain or lose a panel between them.</p>
+    <p>Three things pinned this choice: the per-track roll fails the two-rolls-open test, every reference tool keeps editors out of the track list, and rows stay contiguous. The row diet changes the control width once when it ships; opening, closing or switching the dock never changes it. That one width change requires lesson 62's drag-reorder checks.</p>
+    <div class="tablewrap"><table>
+      <caption style="text-align:left; margin-bottom:6px">Adopted geometry and surface contract · revised audit targets, application verification pending</caption>
+      <thead><tr><th>Surface</th><th>Target</th></tr></thead>
+      <tbody>
+        <tr><td>Desktop left and alignment</td><td>154px = grip 12 + gap 4 + body 130 + horizontal padding 8. Common leading gap 8 places step 1 at x=162 on rows, ruler, dock and lanes. Dock left: rail 18 + keyboard 136.</td></tr>
+        <tr><td>Desktop row targets</td><td>Identity 24 + gap 2 + controls 24 = 50px. Five controls 24 × 24; group gaps 2 + 4 + 2 + 2 = 10px within the 130px body. Padding 4 above/below makes row 58; row gap 2 makes pitch 60.</td></tr>
+        <tr><td>Mobile row targets</td><td>216px = name 64 + M 44 + S 44 + Edit 44 + three gaps 4 + padding 8. Single-line row 48; pitch 50. Desktop layout changes atomically with working replacements; no universal 44px desktop geometry claim.</td></tr>
+        <tr><td>Desktop dock chrome</td><td>Header 84 = visible track/step context 32 + tabs row 32 + padding 16 + gap 4. Tools 48 with controls 32, radius 4; status 24 and top border 1. Total dock 409px compact / 589px tall = header 84 + tools 48 + status 24 + border 1 + body 252/432. The old 384/564 totals excluded status/border.</td></tr>
+        <tr><td>Expanded mobile dock</td><td>Fixed inset 8px. Header 88 = two 44px rows, no vertical padding/gap. Toolbar 48 = controls 44 + padding 4; status 16, borders 2. Body fills remainder: <code>--dock-grid-h: calc(100dvh - 170px)</code>, giving 150px at 568 × 320. Independent horizontal body scroller and 84px key column (rail 18 + keys 66). The existing 16px status line renders bar.beat labels at left = 92 + stepX(s) − body.scrollLeft. Always-visible selected-step heading/readout identifies context; main stepCursor updates both. Labels spend no body height; returning leaves row scroll unchanged.</td></tr>
+        <tr><td>Step/page mapping</td><td>36px cells + ordinary gap 3 = step pitch 39. Each 16-step page adds 8px, yielding an 11px band. Same stepX mapping on every timeline and lane; desktop shares horizontal scroll/alignment, expanded mobile scrolls independently.</td></tr>
+        <tr><td>Pitch body and keyboard</td><td>Desktop body detents 252/432px, stable for Notes, melodic Track and drum Step/Track. Zoom 2..36px per pitch, default 18; solid/ghost heights are max(1px, 14/18 × H) and max(1px, 12/18 × H), centered in each row; radius is min(3px, half actual height), including the 1px minimum (default heights 14/12). White keys use the main mock's half-row span algorithm, source near line 620; black keys overlay the naturals. No fixed 18px row or 14px bar assertions outside default zoom.</td></tr>
+        <tr><td>Pitch identity</td><td>MIDI 12..108 inclusive, fully chromatic. Scale lock snaps new/moved notes while existing off-scale pitches stay visible. Hover ghost, tooltip, row highlight and committed pitch agree on the snapped identity. Main explicit Fit comparison includes enabled absolute-pitch ghosts and chooses fractional H = clamp(B/(hi−lo+5), 2, 36), padding two rows each side. Automatic initial/switch Fit caps at 18; ghost-toggle Fit uses the 36px ceiling. Fit reveals the padded upper edge, bounded by scroll limits; manual zoom preserves the viewport center. Layout-card Fit remains a disabled integration preview.</td></tr>
+        <tr><td>Velocity, presence, foreground</td><td>Local cell/bar <code>--note-velocity-fill</code> mixes accent toward surface by normalized velocity; unlocked 1.0. Constant <code>--note-presence-outline: #b8b8b8</code> remains at velocity 0. Recalculate accessible foreground against the actual fill: dark on bright, white on dark, shared by bar labels and filled control states. Keep pitch/tie contour and purple lock border; remove white velocity fills and volume badges.</td></tr>
+        <tr><td>Tokens and labels</td><td>Canonical piano-key/grid/velocity tokens remain shared. <code>--color-info: #3498db</code>; focus <code>--info-text: #5eb3ea</code>. Informative labels use <code>--muted</code>, never dim. Values use mono; toolbar labels 11/500 with 0.5px tracking; glyphs 10/700; keyboard/bar labels 10/500. White-key root/fifth text uses --piano-key-label; valid out-of-recommendation keys retain full brightness. Keep grid root/fifth hue and out-of-recommendation decoration plus range bracket; measure label contrast against each actual key fill.</td></tr>
+        <tr><td>Context and focus</td><td>Docked edge is 2px on the control block; ♪ is active only in Notes. Current highlight column persists across Notes/Step. Selected-step heading and pitch/volume readout stay visible in every pane and update with main stepCursor. Inactive steps use stored/default effective values; live announcements include effective volume and tie inheritance. Step visibly names track and step number. Its toolbar picker is 32px desktop / 44px mobile; desktop 32 exceeds the WCAG 24px minimum and provides the equivalent tiny-object workflow, with no 44px desktop body-selector claim. Header rebuilds restore focused <code>data-track</code>/<code>data-pane</code>; pane updates preserve mounted grid/scroll, and closing returns focus to the opener.</td></tr>
+        <tr><td>Preview scope</td><td>Layout options implement navigation and keyboard hover labels only. Editing, audition and tools are visibly disabled integration previews; meaningful drum body content previews supported controls. Historical candidates are marked historical and exempt from revised targets. Discoverability and engineering ratings remain pending verification.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="callout info"><b>Reconciling with the affordance spec on the roadmap branch.</b> <code>specs/AFFORDANCES.md</code> in <a href="https://github.com/adewale/keyboardia/pull/61">adewale/keyboardia#61</a> (unmerged since July) adopts "inline expansion below the row" as the one disclosure mechanism (C-1) and plans property lanes rendered as grid rows (N3). The dock amends C-1, not N3: lanes that are rows of cells stay inline because they tessellate; editors, which are not rows of cells, go to the dock. The dock is the generalised <code>ParameterLockEditor</code> that C-1 wanted to keep, moved from "below its row" to "below the grid" so that two of them can never stack. That amendment should be written into AFFORDANCES before either lands.</div>
+  </section>
+
+  <section>
+    <h2>2. Layering</h2>
+    <p>Every surface gets a named layer so that stacking is a decision, not an accident of DOM order. Today's sticky control column is at z 3 and overlays at 100; the dock slots between.</p>
+    <div class="stack">
+      <div class="layer"><span class="z">z 0</span><div class="what"><b>Grid surface</b><span>Track rows, step cells, page dividers. Desktop shared timeline; expanded mobile editor has its own body scroller.</span></div></div>
+      <div class="layer"><span class="z">z 1</span><div class="what"><b>In-row lanes</b><span>Pitch contour marks inside melodic cells, velocity lane rows (AFFORDANCES N3). Rows of cells, same column grid, tessellate.</span></div></div>
+      <div class="layer"><span class="z">z 2</span><div class="what"><b>Row state</b><span>Playing outline, remote-change flash and selection. Docked state is a 2px accent edge on the control block only; it never outlines the cells or the full row.</span></div></div>
+      <div class="layer"><span class="z">z 3</span><div class="what"><b>Sticky chrome, left</b><span>154px desktop control column and ruler spacer, with the docked edge on the control block.</span></div></div>
+      <div class="layer"><span class="z">z 5</span><div class="what"><b>Sticky chrome, top</b><span>Loop ruler, moved into the scroller on the step pitch (per the loop ruler postmortem's "in-grid or content-bearing" rule).</span></div></div>
+      <div class="layer dock"><span class="z">z 6</span><div class="what"><b>Editor dock</b><span>Sticky to the scroller's bottom edge. Its control panel is sticky-left at z 7 inside it. Holds three panes: Notes, Step, Track.</span></div></div>
+      <div class="layer"><span class="z">z 8</span><div class="what"><b>Transient, inside the dock</b><span>Ghost note under the pointer, hover crosshair, drag preview, tooltip chip. Pointer-events none.</span></div></div>
+      <div class="layer"><span class="z">z 10</span><div class="what"><b>Playheads</b><span>One line in the ruler, one across the dock grid, plus the existing per-cell outline. Driven by the scheduler's position, never animated with CSS.</span></div></div>
+      <div class="layer"><span class="z">z 100</span><div class="what"><b>Global overlays</b><span>QR, shortcuts and expanded mobile editor sheet (C-7). Desktop keeps the bottom dock.</span></div></div>
+    </div>
+    <h3>Rules the layers encode</h3>
+    <ul>
+      <li><b>Only the dock's height changes layout.</b> Opening it takes space from the bottom of the scroller. Nothing between two track rows ever changes size.</li>
+      <li><b>One left edge.</b> The desktop 154px column starts at x=0; gap 8 places ruler, cells, dock grid and lanes at x=162px. An 18px rail precedes the 136px keyboard. Mobile row left is 216px; the expanded editor has an independent 84px key column and timeline.</li>
+      <li><b>Desktop shared scroller.</b> The dock shares <code>.tracks</code> horizontal scroll, so step N is at the same x in the ruler, every row and the dock. Pitch scroll is independent. Expanded mobile also has independent horizontal body scroll, the same stepX/page mapping and explicit step/selection context; return restores the row timeline unchanged.</li>
+      <li><b>State lives on the control-block edge, class lives on the name.</b> Docked state uses a 2px accent edge on the control block only. Active chips and ♪ use the accent; the category tick keeps the track's category colour.</li>
+      <li><b>Transient layers never take pointer events.</b> One hit layer in the dock computes step and pitch from coordinates, as the prototype does.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>3. What happens, scenario by scenario</h2>
+    <p class="muted">Durations reuse the app's existing timings: 200ms ease-out is the <code>.panel-animation-container</code> grid-rows transition; 150ms is the remote-change flash. Under <code>prefers-reduced-motion</code> every transition below becomes a cut.</p>
+
+    <div class="scene"><div class="name">Open from a row<small>♪ opens Notes; delayed name click opens Track</small></div><div class="body">
+      <div><b>Moves</b>The dock grows from 0 to its height over 200ms. Reserve dock space without forcing scroll to the bottom; reveal the docked row only when necessary and preserve the current row scroll otherwise.</div>
+      <div><b>Stays</b>Every row, every cell, the ruler, the control column.</div>
+      <div><b>How you know</b>The control block gets its 2px accent edge and the melodic row’s ♪ turns orange when Notes is active. Drum names open Track; selecting a drum step opens Step. The dock title and tab carry the same name and category tick. Name Enter/Space opens Track immediately; a mouse single-click waits 200ms before opening Track; double-click cancels that open and enters Rename. The instrument badge auditions.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Switch track<small>another ♪, name, or dock tab</small></div><div class="body">
+      <div><b>Moves</b>Notes crossfade over 120ms. The previous track's notes become ghosts, the new track's ghosts become solid. The keyboard stays; explicit Fit comparison frames active notes and enabled ghosts using the largest fractional H = clamp(B/(hi−lo+5),2,36). Initial/track-switch automatic Fit uses an 18px ceiling; neither rounds to integer pitch heights. Pane-only updates keep the mounted grid and scroll.</div>
+      <div><b>Stays</b>Dock height, dock position, the grid above, all columns and the 48px toolbar.</div>
+      <div><b>How you know</b>The 2px control-block edge moves to the selected row. The tab chip changes. Visible track context and transpose change; Step also shows its number. Header rebuilds retain focus by data-track/data-pane. Switching track or pane preserves the 48px single-line toolbar. Drum tabs offer Step and Track; switching from Notes to a drum selects Track.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Close<small>♪ again, Escape, or the dock's close</small></div><div class="body">
+      <div><b>Moves</b>Dock collapses over 200ms. Scroll position of the tracks is preserved.</div>
+      <div><b>Stays</b>The row timeline and its scroll.</div>
+      <div><b>How you know</b>The control-block edge and active ♪ clear together. After menus/rename consume their own Escape, successive Escape cancels the active drag, then copy mode, then closes the dock only with focus inside it, before range-selection handling. Each key handles only one state; closing does not clear the range. Outside the dock, existing range handling remains. Closing returns focus to the opener, or a surviving equivalent if the opener was deleted; hidden dock controls are inert.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Playing<small>transport running</small></div><div class="body">
+      <div><b>Moves</b>Three playheads from one clock: the ruler line, the dock line, the per-cell outline. The sounding bar gets a distinct playing state with no transform; the constant presence outline remains at every velocity, including zero.</div>
+      <div><b>Stays</b>Nothing scrolls on its own. There is no auto-scroll today and the dock does not add one.</div>
+      <div><b>How you know</b>Playheads are vertically aligned because they share the step pitch. If the docked track is shorter than the longest track, its playhead wraps where its row's cells wrap.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Draw<small>Draw mode: click, paint, re-pitch or resize; mobile starts in Pan</small></div><div class="body">
+      <div><b>Moves</b>The bar follows the pointer. The row's cells above update on the same frame: a new unlocked step takes the accent at velocity 1.0, a lengthened note writes ties. Cells and bars use the same velocity colour formula.</div>
+      <div><b>Stays</b>Dock, grid, keyboard.</div>
+      <div><b>How you know</b>A dashed ghost bar shows where a note will land before you commit. The cursor changes at a bar's right edge. Each new pitch auditions in the future app. Explicit placement/paint on an inactive step commits the requested pitch and tie:false, preserving stored volume/envelope fields. Ordinary activation toggles and tie extension preserve stored fields; re-pitch changes only pitch. Mutations remain reversible; collisions roll back the entire gesture, including ties and locks. Scale snapping uses one pitch identity for ghost position, tooltip, row highlight and commit. All MIDI 12..108 rows remain; scale lock preserves existing off-scale notes.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Select a step<small>select first; Shift discloses, or hold 400ms</small></div><div class="body">
+      <div><b>Moves</b>The dock switches to the Step pane for that step: Pitch and Volume on all tracks, including drums, plus Tie and the envelope stages from <a href="https://github.com/adewale/keyboardia/pull/87">#87</a> according to instrument capability and inherited-value rules. The main one-shot drum preview visibly disables Tie because it cannot sustain ties; envelope examples remain disabled integration previews. Activate/Deactivate preserves stored locks; Erase step clears activation and locks; Clear lock preserves activation. If the dock was closed it opens (200ms).</div>
+      <div><b>Stays</b>The grid. Today's inline p-lock strip no longer appears between rows.</div>
+      <div><b>How you know</b>Ctrl/Cmd+click selects multiple targets; Shift extends the selection before Shift disclosure opens Step for that selection. A 400ms hold on a cell or bar discloses Step; movement beyond 3px cancels the hold and its click action. The Step pane header names the step and track. Notes and Step retain the same current column. Keyboard uses roving cell focus: arrows move, Enter/Space act, Shift discloses; visible focus and focus return complete the workflow.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Remote edit<small>a collaborator changes the docked track</small></div><div class="body">
+      <div><b>Moves</b>A conflicting remote edit first cancels the local drag and rolls back its isolated preview, retaining authoritative remote state. The affected bar then flashes with that player's colour for 150ms, the same <code>useRemoteChanges</code> grammar the cells use. Rollback must not overwrite the remote edit.</div>
+      <div><b>Stays</b>Your view and selection remain unless the remote edit invalidates them; reconcile only invalid context. Dock state is local, like every panel today.</div>
+      <div><b>How you know</b>The flash is in the dock and in the row cell at once. Cursor overlay stays on the grid; it does not map into the dock.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Reorder, delete, add<small>drag a row, delete the docked track, add a track</small></div><div class="body">
+      <div><b>Moves</b>Rows move as they do today. Deleting the docked track closes the dock (200ms). Adding a melodic track does not open it.</div>
+      <div><b>Stays</b>Row width and drop geometry remain fixed across dock state changes after the one-time row diet.</div>
+      <div><b>How you know</b>The control-block edge travels with its row during a drag; it never outlines the full row.</div>
+    </div></div>
+
+    <div class="scene"><div class="name">Published session<small>read-only</small></div><div class="body">
+      <div><b>Moves</b>Dock opens and plays. Keys still audition.</div>
+      <div><b>Stays</b>No ghost bar, no drag cursors, no Step pane edits.</div>
+      <div><b>How you know</b>The dock takes the same scrim the published grid uses, which it does not today because panels sit outside <code>.published .track-row</code>.</div>
+    </div></div>
+  </section>
+
+  <section>
+    <h2>4. Affordances, in the house vocabulary</h2>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Gesture</th><th>On</th><th>Result</th><th>Vocabulary</th></tr></thead>
+      <tbody>
+        <tr><td>Click / double-click</td><td>♪, name, badge, dock tab</td><td>♪ opens Notes; name Enter/Space opens Track immediately; mouse click opens Track after 200ms, double-click cancels that open and enters Rename; badge auditions. Tabs retain supported pane, falling back to Track for drums.</td><td>Explicit entry points; retain shipped access</td></tr>
+        <tr><td>Click / drag</td><td>Empty dock cell, bar or right edge</td><td>In Draw mode (mobile starts in Pan), place/paint a new attack (requested pitch, tie:false, retained volume/envelope), toggle activation preserving locks, re-pitch or extend ties preserving unrelated stored fields. Mutations are reversible and roll back on collision.</td><td>Tap = act; drag-to-adjust</td></tr>
+        <tr><td>Ctrl/Cmd+click; Shift extend, then Shift disclose</td><td>Cells/bars</td><td>Select multiple targets, extend the selection, disclose Step for that selection; do not collapse it on disclosure.</td><td>Selection precedes disclosure</td></tr>
+        <tr><td>Hold 400ms</td><td>A cell or bar</td><td>Disclose Step, suppress click mutation; movement beyond 3px cancels the hold/click. Pan movement or mode changes cancel pending holds; only the accepted pointer ID can move or finish the gesture. Pointer cancellation leaves data unchanged.</td><td>Touch disclosure with movement threshold</td></tr>
+        <tr><td>Arrow keys; Enter/Space; Shift</td><td>Roving focused cell</td><td>Move cell focus; perform action; disclose Step. Home/End reveal first/final steps beyond the sticky keyboard without moving row scroll. Accessible track/step/pitch/volume labels and visible focus.</td><td>Keyboard equivalent workflow</td></tr>
+        <tr><td>Click</td><td>Key or instrument badge</td><td>Audition in the app; companion keyboard demonstrates hover labels only.</td><td>Tap = act</td></tr>
+        <tr><td>Click</td><td>Ghosts, Range, Fit comparison, Zoom out/in, Pan</td><td>Compare enabled absolute-pitch ghosts, inspect range, fit all compared notes at fractional clamp(B/(hi−lo+5),2,36), initial/switch cap 18; zoom 2..36 (default 18), pan without painting.</td><td>Explicit navigation controls</td></tr>
+        <tr><td>Escape / close</td><td>Focus inside dock</td><td>Escape cancels drag, then copy, then closes the dock, one state per key, before range handling; the range survives. Close returns focus to opener and preserves row scroll; no forced scroll to bottom.</td><td>Keyboard focus return</td></tr>
+      </tbody>
+    </table></div>
+    <p class="muted">These are future app acceptance promises, including selection, touch and keyboard workflows. The companion previews do not implement editing, audition, holds or mutation rollback. Verify each gesture before replacing its shipped entry point.</p>
+  </section>
+
+  <section>
+    <h2>5. How to document it</h2>
+    <p>The project has a working format for exactly this kind of decision, visible on the roadmap branch: a spec in <code>specs/</code>, static HTML mocks in <code>specs/mocks/</code>, a postmortem-style lessons file when a surface is replaced, and a lesson in <code>docs/LESSONS-LEARNED.md</code> when a constraint is discovered. Follow it.</p>
+    <ol>
+      <li><b><code>specs/PIANO-ROLL-DOCK.md</code></b>, status Proposal, with the headings the other UI specs use: The Problem, The Proposal, Visual Representation, Interaction Design, UI Philosophy Alignment table, What We Remove, Multiplayer Considerations, Implementation Phases, Alternatives Considered, Visual baseline safety, Non-goals, Open Questions, References. The research page and this brief become its content. The six ranked arrangements and the two-rolls test go under Alternatives Considered, with the modal recorded under "Decided against", as <a href="https://github.com/adewale/keyboardia/issues/121">#121</a> does.</li>
+      <li><b><code>specs/mocks/piano-roll-dock.html</code></b>: the interactive prototype, checked in as the roadmap branch checks in its storyboards. Specs cite mocks by file; the chosen contract must agree across the normative spec and all three companions; measured mocks supply evidence rather than a compliance claim.</li>
+      <li><b>Constraints as a table with a source each.</b> Column alignment, row rhythm, tessellation, lesson 62, shared scroller, mobile modes, published mode, 64KB message cap if dock state ever syncs. One row per constraint, one file:line or lesson number per row, so a later reader can check whether it still holds.</li>
+      <li><b>Trade-offs as a ledger, not prose.</b> What the dock gives up (the roll is not under its row; one editable track at a time) against what it buys, each with the scenario that exposed it. Future readers argue with ledgers; they ignore paragraphs.</li>
+      <li><b>Amend <code>AFFORDANCES.md</code></b> C-1 and C-4 in the same change, so the two specs cannot disagree.</li>
+      <li><b>A lesson</b> when the build teaches one. The loop ruler's "in-grid or content-bearing" rule is the model; the first candidate here is "an editor is not a lane: lanes tessellate, editors dock".</li>
+      <li><b>PR template</b> already asks What changed / Why / Verification / Risk. Risk should name the reorder suite and the visual baselines explicitly.</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>6. Consequences</h2>
+
+    <h3>6.1 The other panels and drawers</h3>
+    <p>A track row today can stack seven surfaces below it, each with its own <code>useState</code> and no accordion: the landscape TrackDrawer, the instrument picker, PatternToolsPanel, VelocityLane, the legacy InlineDrawer, an always-on FM panel, the pitch panel, and the ParameterLockEditor strip. <a href="https://github.com/adewale/keyboardia/pull/87">#87</a> adds an envelope editor to the strip. This is the sprawl the affordance spec counted as nine reveal mechanisms. The dock is the chance to tidy it, and the tidy has a rule: <b>rows of cells and immediate row actions stay inline; editors dock.</b></p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Surface today</th><th>Becomes</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr><td>Pitch panel (ChromaticGrid, PianoRoll)</td><td>Dock, Notes pane</td><td>The decision</td></tr>
+        <tr><td>ParameterLockEditor strip, envelope editor (#87)</td><td>Dock, Step pane</td><td>Same noun (a step), same place; the strip between rows goes away</td></tr>
+        <tr><td>PatternToolsPanel, FM params, instrument picker, transpose, step count</td><td>Dock, Track pane</td><td>Preserve shipped instrument/pattern controls, transpose and supported FM controls. Track editing occupies the dock instead of an inline strip.</td></tr>
+        <tr><td>Copy/Paste, Clear, Delete</td><td>Stay on the track row</td><td>Immediate row actions retain their row entry points: 32px desktop / 44px mobile, with reserved end scroll space and a muted edge. Actions are sticky-right except in landscape below 440px width, where they are static at the far end of the horizontal row so they cannot cover Edit. They do not migrate into the Track pane.</td></tr>
+        <tr><td>VelocityLane</td><td>Stays inline as a property lane (N3)</td><td>It is a row of cells on the column grid; it tessellates</td></tr>
+        <tr><td>Pitch contour marks</td><td>New, inside melodic cells</td><td>The FL Studio preview; keeps the melody readable when the dock shows another track</td></tr>
+        <tr><td>TrackDrawer (landscape), InlineDrawer (legacy)</td><td>TrackDrawer becomes the Track pane on landscape; InlineDrawer deleted</td><td>The survey found InlineDrawer unreachable now that portrait renders no rows</td></tr>
+      </tbody>
+    </table></div>
+    <p>The desktop row diet ships with working Track controls: 154px left (grip 12 + gap 4 + body 130 + padding 8), identity 24 + gap 2 + controls 24 = 50px, row 58 with 4px pads, pitch 60. Five 24 × 24 items retain mute, solo, audition badge, Notes and lane disclosure. Name Enter/Space opens Track immediately; mouse click waits 200ms for double-click Rename. Row actions reserve their full width and trailing scroll space with a muted sticky edge, so far columns become fully reachable on horizontal scroll. Copy/Paste/Clear/Delete keep their same-row entry points; instrument controls and pattern tools remain reachable through Track. Reorder during playback must pass against the real application before this one-time width change lands.</p>
+
+    <h3>6.2 Mobile</h3>
+    <p>Lesson 31: one JavaScript decision mirrors the existing orientation decision in app/src/hooks/useDisplayMode.ts exactly. Desktop if width ≥768 and height ≥500; otherwise landscape if height &lt;500 or width &gt;height; otherwise portrait. CSS reads root data-display-mode from that same decision. Sequencer orientation/height media queries must not independently select a mode.</p>
+    <ul>
+      <li><b>Portrait</b> at width &lt;768px, portrait orientation and height ≥500px is consumption only: hide the full sequencer, render no rows or dock and show a visible rotate-to-edit placeholder. Other portrait sizes do not inherit this blanket exclusion.</li>
+      <li><b>Landscape row</b> uses left 216px: name 64 + M/S/Edit each 44 + three gaps 4 + padding 8. Single-line row 48, pitch 50. Edit opens supported Step/Track for drums and Notes for melodic tracks; maintain lane access and all shipped actions. Below 440px viewport width, row actions are static at the far end of the horizontally scrolling row, keeping Edit unobscured; at width ≥440 they remain sticky-right. This width rule applies only within the existing JavaScript landscape mode; it adds no sheet and changes no row height or display-mode decision.</li>
+      <li><b>Expanded editor sheet</b> is fixed inset 8px: header 88 (two 44px rows, no vertical padding/gap), toolbar 48 (44px controls + 4px padding), visible status 16 and borders 2. <code>--dock-grid-h: calc(100dvh - 170px)</code> fills the remaining body, giving 150px at 568 × 320. Every newly opened mobile editor starts with Pan enabled (<code>aria-pressed=true</code>, <code>touch-action:auto</code>), so initial swipes scroll without mutating notes; switch Pan off explicitly to Draw. Pane/track switches within the open editor retain its mode. Body must not collapse when switching to drum Step/Track.</li>
+      <li><b>Separate editor timeline</b> uses key column 84 = rail 18 + keys 66 and its own horizontal body scroller. Keep desktop stepX/page mapping, an always-visible selected-step heading/readout and bar.beat labels in the existing 16px status line, synchronized to 92 + stepX(s) − body.scrollLeft without reducing the 150px body. Desktop retains shared horizontal scroll and alignment; expanded mobile gives keys room and returns to unchanged row scroll.</li>
+      <li><b>Preview scope</b> is explicit: these layout cards embed the sheet within a viewport and show the disabled editing/audio status on mobile. Actual fixed positioning, safe areas, focus return, orientation transitions and touch gestures require app verification.</li>
+    </ul>
+
+    <h3>6.3 Very complex pieces</h3>
+    <ul>
+      <li><b>Sixteen tracks, 128 steps.</b> The dock renders one track as bars, not 4,600 buttons, so it is cheaper than today's roll. Sixteen rows at 60px pitch plus dock chrome and a 252px body exceeds most viewports; the tracks scroll under the sticky dock, which is the DAW behaviour.</li>
+      <li><b>Polymeter.</b> Rows end at different widths. The dock's grid is the docked track's length, with the same page dividers. Ghost notes from a track of a different length repeat modulo that length, drawn lighter, so the ghost is truthful about what will sound (the loop ruler postmortem's "truthful per-track rendering").</li>
+      <li><b>Many melodic tracks.</b> Ghosts are per-track toggles, on by default for the two nearest melodic tracks and off beyond that, so a sixteen-track piece does not become a thicket.</li>
+      <li><b>Any length (<a href="https://github.com/adewale/keyboardia/issues/119">#119</a>)</b> changes nothing in the dock except that page dividers stop coinciding with track ends.</li>
+      <li><b>Patterns and song mode (<a href="https://github.com/adewale/keyboardia/issues/121">#121</a>).</b> The dock edits the current pattern. A queued switch re-renders the dock at the boundary. Song playback is a sequence of such re-renders. The dock should display the pattern name in its title from day one so that the field exists when patterns do.</li>
+    </ul>
+
+    <h3>6.4 Multiplayer and data</h3>
+    <ul>
+      <li>Dock state (which track, which pane, ghost toggles, pitch scroll) is local, as every panel is today. It never syncs, so the 64KB message cap is untouched.</li>
+      <li>Every dock edit uses reversible domain mutations: preserve parameter locks on toggle/re-pitch/tie edits, validate collisions before committing and roll back the complete gesture on failure. The MCP note surface in <a href="https://github.com/adewale/keyboardia/issues/92">#92</a> should share those operations, so an agent-written melody and a dock-drawn melody are the same data.</li>
+      <li>The <code>focus</code> slice already exists in the store with no UI dispatching it. "Docked track" can be that slice, which keeps the reducer honest without adding a new one.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>7. Roadmap impact</h2>
+    <h3>Open pull requests</h3>
+    <div class="tablewrap"><table>
+      <thead><tr><th>PR</th><th>What it touches</th><th>Effect of the dock</th></tr></thead>
+      <tbody>
+        <tr><td><a href="https://github.com/adewale/keyboardia/pull/87">#87</a> envelope v2 authoring</td><td>Adds EnvelopeEditor into the ParameterLockEditor strip, plus TrackRow, Transport, XYPad</td><td>Merge first. The dock's Step pane then moves the strip wholesale, envelope included. Building the dock on top of an unmerged 100-file PR is the worse order.</td></tr>
+        <tr><td><a href="https://github.com/adewale/keyboardia/pull/61">#61</a> affordances, evolution roadmap, pattern mode, mocks</td><td>Specs only, unmerged since July</td><td>Directly affected: C-1 and C-4 need the amendment in section 1. Merge it with that amendment, or land the dock spec referencing it. Do not leave the two disagreeing.</td></tr>
+        <tr><td><a href="https://github.com/adewale/keyboardia/pull/85">#85</a> and <a href="https://github.com/adewale/keyboardia/pull/58">#58</a> grip and gear glyphs</td><td>Control column icons</td><td>Compatible. Preserve the glyphs in the 12px grip and compact control block; the width changes once with the row diet.</td></tr>
+        <tr><td><a href="https://github.com/adewale/keyboardia/pull/122">#122</a>, <a href="https://github.com/adewale/keyboardia/pull/102">#102</a>, <a href="https://github.com/adewale/keyboardia/pull/84">#84</a></td><td>Verification, audio, evals</td><td>Unrelated.</td></tr>
+      </tbody>
+    </table></div>
+    <h3>Open issues</h3>
+    <ul>
+      <li><a href="https://github.com/adewale/keyboardia/issues/92">#92</a> MCP pitched notes: the dock is its UI counterpart; share the domain operation.</li>
+      <li><a href="https://github.com/adewale/keyboardia/issues/119">#119</a> any track length and <a href="https://github.com/adewale/keyboardia/issues/121">#121</a> song mode: covered in 6.3; neither blocks the dock, the dock should not block them.</li>
+      <li><a href="https://github.com/adewale/keyboardia/issues/118">#118</a> step-count labels: the Track pane will show the step count control, so settle the label wording first.</li>
+    </ul>
+    <h3>Branches</h3>
+    <ul>
+      <li><b>Live and relevant:</b> <code>claude/adsr-handling-1fbpmm</code> (#87), <code>claude/keyboardia-evolution-roadmap-oap6n8</code> (#61), <code>claude/keyboardia-take-five-8brx26</code> (tracks run free; two commits unmerged, and the dock's playhead wrap assumes it).</li>
+      <li><b>Stale research branches</b> from January to July that are hundreds of commits behind main (promotion strategy, security analysis, deep project review, sample lab and others). None touch the track row. They should be pruned or archived in a separate pass so that the dock's branch list is readable.</li>
+    </ul>
+    <h3>Tests to write or update</h3>
+    <ul>
+      <li>There is no piano roll e2e spec today. The dock gets one: open, switch, close, draw, select step, ghost toggle, published read-only.</li>
+      <li><code>scrollbar.spec.ts</code> (single scrollbar, columns aligned) and <code>pitch-contour-alignment.spec.ts</code> extend to the dock.</li>
+      <li><code>plock-editor.spec.ts</code> and <code>chromatic-grid.spec.ts</code> change home: the editor is in the dock.</li>
+      <li><code>mobile-orientation.spec.ts</code> gains the landscape dock, including the inert-when-closed check.</li>
+      <li>Visual baselines: sequencer-grid, track-row-with-steps and the Holby populated set change. Run the manual baseline workflow once per stage, review the diff as a human.</li>
+      <li>The reorder-during-playback case exists only as a unit test. Keep it green through the one-time control-width change and every dock state.</li>
+    </ul>
+    <h3>Build order</h3>
+    <p class="muted">PR #127 covers phase 1 only: specification and mocks. These are future implementation phases, not completed app work. Keep each original entry point until its replacement works.</p>
+    <ol>
+      <li><b>Spec and mocks.</b> Reconcile these companions to <code>specs/PIANO-ROLL-DOCK.md</code>; carry the C-1 / C-4 amendment. No app code.</li>
+      <li><b>Desktop dock shell and access.</b> Every-track tabs, capability-aware panes, 2px control-block edge, animation, Escape, reserved dock space, visible 84px header, fixed 48px toolbar and 32px / 4px chrome. Preserve all valid absolute pitches and off-scale notes. Keep the original row template, original Track/Step controls and landscape paths reachable.</li>
+      <li><b>Desktop Track pane and row diet, together.</b> Deliver working transpose, step count, instrument, pattern tools, supported FM controls and lane disclosure for all tracks, including drums. Keep Copy/Paste, Clear and Delete on each track row. Only then replace desktop originals with the 154px column, 24px identity/control lines, 58px rows and 60px pitch; update every spacer/offset and verify drag/auto-scroll against a real Worker. Keep editable transpose until its replacement works. Landscape keeps its old path.</li>
+      <li><b>Shared rendering and column geometry.</b> Bars/ties with zoom 2..36 (default 18, default bars 14), proportional white keys, 18px range rail / 136px desktop keyboard, ruler, validated draw/drag, 252px / 432px detents and shared 8px leading gap / 11px page bands. Introduce canonical CSS tokens and the shared cell/bar velocity formula together: unlocked 1.0, constant presence outline at zero and a shared contrast-aware foreground, no white fill or volume badge. Preserve MIDI 12..108 and scale-lock visibility/bounds.</li>
+      <li><b>Step pane cutover.</b> Complete Pitch and Volume for all tracks, including drums, and capability-gated Tie and #87's envelope editor. Verify selection, inherited values, editing and read-only behavior. Activate/Deactivate preserves locks; Erase step clears activation and locks; Clear lock leaves activation unchanged. Keep unsupported controls visibly disabled with explanations; the one-shot preview does not sustain ties. Remove the desktop strip only when its replacement works. Preserve the landscape path.</li>
+      <li><b>Ghosts and contour cutover.</b> Truthful absolute-pitch ghosts and melodic pitch/tie contours. Remove pitch/tie badges when contours land; retain only velocity colour, contour and the purple lock border.</li>
+      <li><b>Atomic landscape cutover.</b> Land the 216px single-line name/M/S/Edit column, 48px rows / 50px pitch, working Track/Step for all tracks, melodic Notes, lane access, common stepX/page mapping, independent expanded mobile scroller and 84px key column together. Expanded inset-8 sheet uses header 88/tools 48/status 16/borders 2 with 44px controls and ≥150px body at 568 × 320; open mobile editors in Pan by default and require explicitly switching Pan off to Draw. Reserve dock space; replace the drawer and hidden/dead mobile paths only alongside usable replacements. Verify portrait and orientation transitions.</li>
+    </ol>
+    <p class="muted">Each future phase has its own relevant checks and reviewed baselines. Geometry measurements of these mocks validate the proposal; they do not validate application integration.</p>
+  </section>
+
+  <section>
+    <h2>8. Audit acceptance · all 14 findings</h2>
+    <p class="muted">Pending application verification. Companion geometry, navigation and disabled previews are reviewable evidence; they do not establish shipped parity, gesture reliability or WCAG conformance. Historical layout candidates are exempt from revised geometry targets.</p>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Finding</th><th>Future application acceptance and risk</th></tr></thead>
+      <tbody>
+        <tr><td>1 · Target geometry</td><td>Measure desktop five 24 × 24 controls, 154px left, 58/60 rows; mobile 44px controls, 216px left, 48/50 rows. Verify WCAG 2.2 target minimum (2.5.8), spacing and touch use; desktop is not a universal 44px target claim.</td></tr>
+        <tr><td>2 · Visible context</td><td>Desktop header 84, tools 48, controls 32. Track identity and Step number remain visible above the tabs; current column survives Notes/Step and ♪ lights only in Notes. Rebuilt headers restore the focused track/pane button.</td></tr>
+        <tr><td>3 · Zero-velocity presence</td><td>At velocities 0 through 1, constant #b8b8b8 note outline maintains non-text presence (WCAG 1.4.11, ≥3:1 against adjacent surfaces). Shared dynamic foreground reaches ≥4.5:1 for small labels (1.4.3), including intermediate fills, selected and playing states.</td></tr>
+        <tr><td>4 · Informative labels</td><td>Use --muted for parameter, context and preview labels; measure composited text contrast on every surface. Focus uses --info-text #5eb3ea, distinct from --color-info #3498db. Hover/focus content must meet 1.4.13 where applicable: dismissible, hoverable and persistent.</td></tr>
+        <tr><td>5 · Filled control contrast</td><td>Mute/solo, active tabs and toggles use the same contrast-aware foreground strategy as notes; verify pressed state labels and accessible names, including bright solo fills. Colour alone does not communicate state.</td></tr>
+        <tr><td>6 · Toolbar and drum content</td><td>Notes includes Ghosts, Range, Default velocity, Fit comparison, Zoom out/in, Pan, Loop start/end inputs and Clear loop (32px desktop / 44px mobile), as well as scale controls. Track includes transpose; Copy/Paste/Clear/Delete stay on the row; retain row lane disclosure and supported Track access. The Step picker stays in the toolbar, 32px desktop / 44px mobile, with body/grid mount and scroll retained. All shipped pattern/FM/instrument controls remain reachable. Drum Step supports Pitch and Volume; Tie and envelope stages follow instrument capability and inherited-value rules. The one-shot preview visibly disables Tie with an explanation, and envelope examples remain disabled previews. Verify Activate/Deactivate preserves locks, Erase step clears activation and locks, and Clear lock preserves activation; drum Track has instrument/pattern/actions. Disabled previews explicitly remain visible on mobile.</td></tr>
+        <tr><td>7 · Mobile pitch viewport</td><td>At 568 × 320, inset 8, header 88, tools 48, status 16 and borders 2 leave body 150. Key column 84 (18 + 66) and independent body scroll preserve stepX/page mapping; bar.beat labels stay in the 16px status line, synchronized to left = 92 + stepX(s) − body.scrollLeft. The selected-step heading/readout remains visible and updates with main stepCursor; labels take no space from the 150px body. Verify initial mobile Pan is pressed with touch-action:auto: first swipes scroll without painting; Draw requires explicitly turning Pan off, and pane switches retain the current mode. Desktop total heights 409/589 include header 84, tools 48, status 24 and top border 1; the 252/432 body stays stable across melodic Track and drum Step/Track.</td></tr>
+        <tr><td>8 · Portrait consumption</td><td>Use the single JavaScript useDisplayMode decision and root data-display-mode CSS. Desktop width ≥768 AND height ≥500 has priority; otherwise landscape height &lt;500 OR width &gt;height; otherwise portrait. Probe 767 × 768 portrait, 768 × 768 and 769 × 768 desktop, and 768 × 499 landscape. Also check 1024 × 500 desktop, 700 × 600 landscape, and short portrait height 499 landscape. Only portrait mode, width &lt;768 and height ≥500 hides the full sequencer: no rows or dock, visible consumption/rotate placeholder. Verify orientation changes, safe areas and state retention without exposing hidden editing controls.</td></tr>
+        <tr><td>9 · Hold and selection</td><td>400ms hold on both cells and bars opens Step without click mutation. Movement beyond 3px cancels hold/click; Pan movement or mode changes cancel pending holds. One accepted pointer ID owns each gesture: another pointer cannot move, commit or end it. Test touch scroll and accepted-pointer cancellation with rollback. Ctrl/Cmd+click builds multi-target selection; Shift extends, then Shift disclosure retains it.</td></tr>
+        <tr><td>10 · Keyboard workflow</td><td>Roving cells expose track/step/pitch labels; arrows move, Enter/Space act, Shift discloses. Verify visible focus, logical order, focus retained through rebuilds and return to the opener after close. Home/End reveal first/final steps beyond the sticky keyboard without changing row scroll. With drag, copy, range and dock focus, successive Escape cancels drag, then copy, then closes the dock without clearing the range; outside-dock Escape retains existing selection handling. The loop ruler is a keyboard focus group, not slider handles. The Notes toolbar provides Loop start/end inputs and Clear loop at 32px desktop / 44px mobile (implemented in the main mock, disabled in the companion). Verify endpoints can set and clear the same loop as ruler gestures (WCAG 2.1.1, 2.4.3, 2.4.7 and 2.4.11).</td></tr>
+        <tr><td>11 · Snapped identity and hover</td><td>Scale-locked ghost, tooltip, row highlight and commit agree on one snapped pitch. Existing off-scale notes and absolute-pitch comparison ghosts stay truthful. Proportional natural keys use the half-row algorithm. White root/fifth labels keep --piano-key-label, with full key brightness outside the recommended range; hue/out-of-recommendation decoration stays on grid and bracket. Verify key-label contrast in hover and range states; hover UI in companions demonstrates labels only and never implies implemented audition/editing.</td></tr>
+        <tr><td>12 · Open, close and access</td><td>No forced scroll to bottom on open; close/return preserves row timeline scroll and restores opener focus. Name Enter/Space opens Track immediately; mouse click waits 200ms, double-click cancels and renames; badge auditions. Keep shipped row actions and published read-only navigation reachable. Reserve action width/end scroll padding and mark the sticky overlay edge; at maximum scroll, final step cells must clear the actions rather than remain covered. At 390 × 499 and 439 × 499 (landscape), verify actions are static at the horizontal row end, Edit is unobscured and operable, and actions remain reachable by scrolling. At 440 × 499 verify sticky-right actions return. Across these probes retain left 216, row 48, pitch 50 and the existing root JavaScript mode decision; add no sheet or row height.</td></tr>
+        <tr><td>13 · Mutation integrity</td><td>Explicit placement/paint on an inactive step sets the requested pitch and tie:false while preserving volume/envelope fields. Ordinary toggles and tie extension preserve stored fields; re-pitch preserves unrelated locks. Dock Delete addresses the selected range first and only its steps/locks; without a range it addresses only the cursor/bar note. Read-only and no-op Delete are consumed locally. Mutations use reversible domain operations. Collision or cancelled gesture rolls back notes, ties and locks together. A conflicting remote edit first cancels the local drag and rolls back its isolated preview without overwriting authoritative remote state; preserve view and selection unless invalidated. Verify undo/redo, published read-only rejection and remote-edit interaction in the real app.</td></tr>
+        <tr><td>14 · Comparison and zoom</td><td>Explicit Fit in the main mock includes active notes and enabled ghosts, selecting largest fractional H = clamp(B/(hi−lo+5),2,36); initial/switch automatic Fit caps at 18. No current all-Fit-at-18 limitation remains. Zoom 2..36 (default 18), with centered proportional bar/keyboard geometry and radius bounded by half actual bar height; assert default 14px bars only at default zoom. Verify fit, range, ghost selection, pan and zoom together on desktop and expanded mobile; discoverability ratings remain pending user/workflow verification.</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section>
+    <h2>9. Open questions</h2>
+    <ul>
+      <li><span class="tag">decided</span> The dock opens only on request. Adding a melodic track does not open it.</li>
+      <li><span class="tag">decided</span> Desktop body detents: compact 252px and tall 432px. Mobile expanded body fills remaining height, ≥150px at 568 × 320.</li>
+      <li><span class="tag">decided</span> The docked track is not persisted.</li>
+      <li><span class="tag">decided</span> The desktop two-line row diet ships atomically with working desktop Track controls in phase 3; landscape cuts over atomically in phase 7.</li>
+    </ul>
+  </section>
+</div>
+
+</body>
+</html>
