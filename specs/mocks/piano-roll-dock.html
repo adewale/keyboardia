@@ -495,11 +495,11 @@
   html[data-rows="tall"] .track-left { grid-template-columns: [drag] 12px [body] 184px; height: 50px; padding: 0 12px 0 4px; }
   html[data-rows="tall"] .track-name .inst { display: inline; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; text-transform: none; }
   html[data-rows="tall"] .line2 .badge { display: none; }
-  html[data-rows="tall"] .line2 .act-group { display: inline-flex; }
+  html[data-rows="tall"] .line2 .group.act-group { display: inline-flex; }
   html[data-rows="tall"] .row-actions { display: none; }
   html[data-rows="tall"] .velocity-lane { margin-top: 3px; }
   html[data-rows="tall"][data-rowfix="on"] .velocity-lane { margin-top: 3px; }
-  .line2 .act-group { display: none; gap: 2px; }
+  html .line2 .group.act-group { display: none; gap: 2px; }
   .act-group .tl-btn { font-size: 12px; font-weight: 500; }
   .act-group .tl-btn.copy-source { background: var(--success); border-color: var(--success); color: var(--bg); }
   .act-group .tl-btn.paste { border-color: var(--info-text); color: var(--info-text); }
@@ -528,6 +528,56 @@
   html[data-rows="impeccable"] .row-actions button.copy-source { background: var(--success); color: var(--bg); }
   html[data-rows="impeccable"] .row-actions button.paste { border-color: var(--info-text); color: var(--info-text); }
   html[data-rows="impeccable"] .track-row-wrapper.kind-melodic + .track-row-wrapper.kind-drum { margin-top: 12px; }
+
+  /* ===== CRAP pass (Robin Williams), applied to every row option =====
+     Repetition: one 4px category chip at the block's left edge in every option; the 24px control unit; radius 4 on
+     every control, tile and action; name 13/600, instrument 11/400 muted, glyphs 10/700; the dock rail equals the
+     name's offset so keys and names share one x. Alignment: the name's left edge is the controls' left edge; row
+     actions sit on the 36px cell band; the ruler is one slot above the rows; the lane is one row pitch. Proximity:
+     2px inside a group, 4px between groups, 8px between the column and the grid. Contrast: the docked row lifts to
+     --surface-2 with its name in accent, instead of an edge the chip would hide. */
+  html[data-crap="on"] .track-left { position: relative; }
+  html[data-crap="on"] .cat-chip { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cat); border-radius: 1px; }
+  html[data-crap="on"] .track-left::before { display: none; }
+  html[data-crap="on"] .track-name .tick { display: none; }
+  html[data-crap="on"] .track-name { padding: 0; font-weight: 600; }
+  html[data-crap="on"] .track-name .inst { font-weight: 400; }
+  html[data-crap="on"] .track-row-wrapper.docked .track-left { background: var(--surface-2); box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); }
+  html[data-crap="on"] .track-row-wrapper.docked .track-name { color: var(--accent-text); }
+  html[data-crap="on"] .tl-btn, html[data-crap="on"] .badge, html[data-crap="on"] .expand-toggle, html[data-crap="on"] .velocity-toggle, html[data-crap="on"] .glyph-tile, html[data-crap="on"] .row-actions button, html[data-crap="on"] .rename-input, html[data-crap="on"] .track-name { border-radius: 4px; }
+  html[data-crap="on"] .line2 { gap: 4px; }
+  html[data-crap="on"] .line2 .group { gap: 2px; }
+  html[data-crap="on"] .row-actions { gap: 4px; padding: 0 8px; }
+  html[data-crap="on"]:not([data-rows="impeccable"]) .row-actions button { height: 36px; width: 48px; min-width: 48px; padding: 0; }
+  html[data-crap="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
+  html[data-crap="on"][data-rows="r36one"] .velocity-lane, html[data-crap="on"][data-rows="quiet"] .velocity-lane, html[data-crap="on"][data-rows="tiles"] .velocity-lane, html[data-crap="on"][data-rows="tall"] .velocity-lane { margin-top: 3px; }
+  html[data-crap="on"] .velocity-lane input { height: 36px; }
+  html[data-crap="on"] .ruler-row { margin-bottom: 0; padding-bottom: 0; }
+  html[data-crap="on"] .marker-label { top: 0; line-height: 24px; }
+  html[data-crap="on"] .drag-handle { width: 12px; flex: none; overflow: hidden; font-size: 12px; letter-spacing: 0; }
+  /* Two-line 154 options and tall: the chip sits in the 4px padding before the grip; name x = 20 = rail 20. */
+  html[data-crap="on"][data-rows="reconciled"] .track-left, html[data-crap="on"][data-rows="r50"] .track-left, html[data-crap="on"][data-rows="r48two"] .track-left { padding-left: 4px; }
+  /* Chip-led options: chip 4 + gap 8, so the name and the keys start 12px in. */
+  html[data-crap="on"][data-rows="label"] .track-left, html[data-crap="on"][data-rows="quiet"] .track-left, html[data-crap="on"][data-rows="impeccable"] .track-left { padding-left: 12px; }
+  html[data-crap="on"][data-rows="caption"] .track-left { padding-left: 12px; padding-right: 4px; }
+  html[data-crap="on"][data-rows="caption"] .line2 .group { gap: 2px; }
+  html[data-crap="on"][data-rows="r48one"] .track-left, html[data-crap="on"][data-rows="r36one"] .track-left { padding-left: 4px; }
+  html[data-crap="on"][data-rows="label"] .track-name { margin-right: 4px; }
+  html[data-crap="on"][data-rows="impeccable"] .track-name { margin-right: 12px; }
+  html[data-crap="on"][data-rows="tiles"] .cat-chip { display: none; }
+  html[data-crap="on"][data-rows="caption"] .row-caption .ci { font-size: 11px; }
+  html[data-crap="on"][data-rows="r48one"] .dock-left, html[data-crap="on"][data-rows="r36one"] .dock-left { grid-template-columns: 20px 1fr; }
+  html[data-crap="on"][data-rows="caption"] .dock-left { grid-template-columns: 12px 1fr; }
+  html[data-crap="on"][data-rows="caption"] .range-rail .bracket { left: 5px; }
+  html[data-crap="on"][data-rows="tiles"] .dock-left { grid-template-columns: 0px 1fr; }
+  html[data-crap="on"][data-rows="tiles"] .range-rail { z-index: 3; overflow: visible; }
+  html[data-crap="on"][data-rows="tiles"] .range-rail .bracket { left: 2px; }
+  html[data-crap="on"][data-rows="label"] .dock-left, html[data-crap="on"][data-rows="quiet"] .dock-left, html[data-crap="on"][data-rows="impeccable"] .dock-left { grid-template-columns: 12px 1fr; }
+  html[data-crap="on"][data-rows="label"] .range-rail .bracket, html[data-crap="on"][data-rows="quiet"] .range-rail .bracket, html[data-crap="on"][data-rows="impeccable"] .range-rail .bracket { left: 5px; }
+  html[data-crap="on"][data-rows="label"] .dock-head, html[data-crap="on"][data-rows="quiet"] .dock-head, html[data-crap="on"][data-rows="impeccable"] .dock-head, html[data-crap="on"][data-rows="label"] .pane, html[data-crap="on"][data-rows="quiet"] .pane, html[data-crap="on"][data-rows="impeccable"] .pane, html[data-crap="on"][data-rows="label"] .editor-status, html[data-crap="on"][data-rows="quiet"] .editor-status, html[data-crap="on"][data-rows="impeccable"] .editor-status { padding-left: 12px; padding-right: 12px; }
+  html[data-crap="on"] .selected-bar { gap: 4px; }
+  html[data-crap="on"] .selected-bar .sb-inst { margin-right: 8px; }
+  html[data-crap="on"] .selected-bar .k { margin-left: 8px; }
 
   /* ===== Portrait: consumption only ===== */
   [data-display-mode="portrait"] .sequencer { display: none; }
@@ -567,6 +617,7 @@
     <span class="set">
       <button class="opt" type="button" id="rowFix" aria-pressed="false" title="Contour centred and continuous, 2px borders with 3px beat starts, 36px actions on the cell band, lane as one pitch, ruler one slot above, no closed-dock line">Rows</button>
       <button class="opt" type="button" id="dockFix" aria-pressed="false" title="Rail 20, whole-row keys, whole-pixel Fit on the active track, bar inset = cell border, grid lines in the gaps, octave rule on B|C, even 8px chrome padding, one border colour">Dock</button>
+      <button class="opt" type="button" id="crapFix" aria-pressed="true" title="Robin Williams' CRAP on every option: one 4px chip at the block edge, radius 4 and the 24px unit everywhere, name 13/600 over instrument 11/400; controls and keys on the name's left edge, actions on the cell band, ruler one slot above, lane one pitch; 2px inside groups and 4px between; the docked row lifts with its name in accent">CRAP</button>
     </span>
     <span class="spacer"></span>
     <span class="readout" id="auditReadout"></span>
@@ -930,7 +981,7 @@
   function renderTrackRow(parent, t) {
     const wrap=el('track-row-wrapper kind-'+t.kind,parent);t.wrap=wrap;
     const row=el('track-row',wrap);
-    const left=el('track-left',row);
+    const left=el('track-left',row);el('cat-chip',left);
     const grip=el('drag-handle',left);grip.textContent=rowFix()?'⠿':'⋮⋮';t.gripEl=grip;grip.setAttribute('aria-hidden','true');grip.title='Layout preview: reorder is not implemented here';
     const glyph=el('glyph-tile',left,'button');t.glyphEl=glyph;glyph.addEventListener('click',()=>openDock(t,t.kind==='melodic'?'notes':'track',glyph));
     const name=el('track-name',left,'button');t.nameEl=name;
@@ -1464,8 +1515,8 @@
     document.getElementById('auditReadout').textContent='row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch';
   }
   document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
-  for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on';document.documentElement.dataset[key]=on?'on':'off';b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
-  document.documentElement.dataset.rows='reconciled';applyAudit();
+  for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on';document.documentElement.dataset[key]=on?'on':'off';b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
+  document.documentElement.dataset.rows='reconciled';document.documentElement.dataset.crap='on';applyAudit();
   // The page opens with Lead docked so its first frame shows the working state. In the app the dock opens only on request.
   openDock(lead, 'notes');
 })();
