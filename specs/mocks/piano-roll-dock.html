@@ -18,7 +18,7 @@
     --accent: var(--color-accent); --accent-hi: #f07048; --accent-text: #ff8a65;
     --success: #1db954; --info: #3498db; --info-text: #5eb3ea; --info-region: rgba(74,158,206,.3); --warning: #ffc107;
     --purple: #8e44ad; --purple-text: #c58ad6; --purple-muted: rgba(155,89,182,.15);
-    --cat-keys: var(--color-keys); --cat-bass: var(--color-bass); --cat-drums: var(--color-drums);
+    --cat-keys: var(--color-keys); --cat-bass: var(--color-bass); --cat-drums: var(--color-drums); --cat-leads: var(--color-leads);
     --playhead: #ffffff;
     --piano-key-surface: #0f0e0d; --piano-grid-step: rgb(255 255 255 / 4.5%); --piano-grid-beat: rgb(255 255 255 / 10%);
     --piano-grid-bar: rgb(255 255 255 / 22%); --piano-grid-octave: rgb(255 255 255 / 16%); --piano-grid-black-row: rgb(0 0 0 / 22%);
@@ -334,8 +334,9 @@
   [data-display-mode="landscape"] .timeline-caption { position: sticky; left: 0; width: 92px; background: var(--surface); z-index: 1; padding-left: 6px; }
 
   /* ===== Audit switches (proportion audit, October 2026) =====
-     Row geometry options from the row audit, and the two fix sets. The default
-     (data-rows="reconciled", both fix sets off) is the PR #127 contract exactly. */
+     Row geometry options kept from the audit and the survey (D, H, I, J), their beat-wide recombinations (L, M, N),
+     and the fix sets. The page opens on L with every fix on; the PR #127 contract's own geometry (58/60) is no
+     longer selectable, by the owner's decision. */
   .audit-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--muted); }
   .audit-bar .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
   .audit-bar .set { display: inline-flex; gap: 2px; background: var(--surface-2); border-radius: 4px; }
@@ -349,28 +350,17 @@
   .audit-bar .spacer { flex: 1; }
   html { --row-opt-h: 58px; }
 
-  /* Row option: 50 / 52. Two 24px lines, no padding; the tile is the row. */
-  html[data-rows="r50"] { --row-opt-h: 50px; }
-  html[data-rows="r50"] .track-row { height: 50px; padding: 0; }
-  /* Row option: 48 / 50 with two 22px lines (production's row and pitch). */
-  html[data-rows="r48two"] { --row-opt-h: 48px; }
-  html[data-rows="r48two"] .track-row { height: 48px; padding: 1px 0; }
-  html[data-rows="r48two"] .track-left { grid-template-rows: [identity] 22px [controls] 22px; height: 46px; }
-  html[data-rows="r48two"] .track-name, html[data-rows="r48two"] .rename-input, html[data-rows="r48two"] .tl-btn, html[data-rows="r48two"] .badge, html[data-rows="r48two"] .expand-toggle, html[data-rows="r48two"] .velocity-toggle { height: 22px; }
   /* Row options: one line. Name, M, S and the Notes toggle in one band; badge, lane toggle and
      transpose readout move to the Track pane, as the surveyed products do. */
   html[data-rows="r48one"] { --row-opt-h: 48px; }
   html[data-rows="r48one"] .track-row { height: 48px; padding: 6px 0; }
-  html[data-rows="r36one"] { --row-opt-h: 36px; }
-  html[data-rows="r36one"] .track-row { height: 36px; padding: 0; }
-  html[data-rows="r36one"] .tracks-inner .rows, html[data-rows="r36one"] .tracks-inner { gap: 3px; }
-  html[data-rows="r48one"] .track-left, html[data-rows="r36one"] .track-left { display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 4px; }
-  html[data-rows="r48one"] .drag-handle, html[data-rows="r36one"] .drag-handle, html[data-rowfix="on"] .drag-handle { width: 12px; flex: none; overflow: hidden; }
-  html[data-rows="r48one"] .track-name, html[data-rows="r36one"] .track-name, html[data-rows="r48one"] .rename-input, html[data-rows="r36one"] .rename-input { flex: 1 1 0; min-width: 0; height: 24px; }
-  html[data-rows="r48one"] .track-name, html[data-rows="r36one"] .track-name { display: block; line-height: 24px; text-overflow: ellipsis; }
-  html[data-rows="r48one"] .track-name .tick, html[data-rows="r36one"] .track-name .tick { display: inline-block; vertical-align: -1px; margin-right: 4px; }
-  html[data-rows="r48one"] .track-name .tr, html[data-rows="r36one"] .track-name .tr, html[data-rows="r48one"] .line2 .badge, html[data-rows="r36one"] .line2 .badge, html[data-rows="r48one"] .velocity-toggle, html[data-rows="r36one"] .velocity-toggle { display: none; }
-  html[data-rows="r48one"] .line2, html[data-rows="r36one"] .line2 { display: contents; }
+  html[data-rows="r48one"] .track-left { display: flex; align-items: center; gap: 4px; height: 36px; padding: 0 4px; }
+  html[data-rows="r48one"] .drag-handle, html[data-rowfix="on"] .drag-handle { width: 12px; flex: none; overflow: hidden; }
+  html[data-rows="r48one"] .track-name, html[data-rows="r48one"] .rename-input { flex: 1 1 0; min-width: 0; height: 24px; }
+  html[data-rows="r48one"] .track-name { display: block; line-height: 24px; text-overflow: ellipsis; }
+  html[data-rows="r48one"] .track-name .tick { display: inline-block; vertical-align: -1px; margin-right: 4px; }
+  html[data-rows="r48one"] .track-name .tr, html[data-rows="r48one"] .line2 .badge, html[data-rows="r48one"] .velocity-toggle { display: none; }
+  html[data-rows="r48one"] .line2 { display: contents; }
 
   /* Row fixes: contour centred and continuous (JS), borders 2 with 3 at beat starts and the lock as colour only,
      actions on the cell band, lane as one row pitch, ruler one lattice slot above the rows, no closed-dock line, grip glyph 12px. */
@@ -379,7 +369,6 @@
   html[data-rowfix="on"] .step-cell.playing { border-width: 3px; }
   html[data-rowfix="on"] .row-actions button { height: 36px; width: 48px; min-width: 48px; padding: 0; }
   html[data-rowfix="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
-  html[data-rowfix="on"][data-rows="r36one"] .velocity-lane { margin-top: 3px; }
   html[data-rowfix="on"] .velocity-lane input { height: 36px; }
   html[data-rowfix="on"] .ruler-row { margin-bottom: 0; padding-bottom: 0; }
   html[data-rowfix="on"] .marker-label { top: 0; line-height: 24px; }
@@ -416,35 +405,6 @@
      exist in every mode and are shown only by the option that uses them. */
   .track-name .inst, .row-caption, .glyph-tile, .selected-bar { display: none; }
 
-  /* N1 · Label stack (Aubade, openDAW, Muse): name over instrument inside the 36px band, M/S beside, meter at the edge.
-     154 = chip 4 + 8 + text 78 + 6 + M 24 + 2 + S 24 + 5 + meter 3. */
-  html[data-rows="label"] { --row-opt-h: 48px; }
-  html[data-rows="label"] .track-row { height: 48px; padding: 6px 0; }
-  html[data-rows="label"] .track-left { display: flex; align-items: center; gap: 0; height: 36px; padding: 0; position: relative; }
-  html[data-rows="label"] .track-left::before { content: ''; width: 4px; height: 36px; flex: none; background: var(--cat); margin-right: 8px; }
-  html[data-rows="label"] .track-left::after { content: ''; position: absolute; right: 0; top: 0; width: 3px; height: 36px; background: var(--surface-4); }
-  html[data-rows="label"] .drag-handle, html[data-rows="label"] .track-name .tick, html[data-rows="label"] .track-name .tr, html[data-rows="label"] .line2 .badge, html[data-rows="label"] .line2 .expand-toggle, html[data-rows="label"] .velocity-toggle { display: none; }
-  html[data-rows="label"] .track-name { display: flex; flex-direction: column; align-items: stretch; justify-content: center; gap: 0; width: 78px; flex: 0 0 78px; height: 30px; padding: 0; margin-right: 6px; line-height: 16px; text-transform: none; text-align: left; }
-  html[data-rows="label"] .track-name .inst { display: block; font-size: 11px; line-height: 14px; font-weight: 400; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
-  html[data-rows="label"] .track-name .inst::before { content: none; }
-  html[data-rows="label"] .rename-input { width: 78px; flex: 0 0 78px; height: 24px; }
-  html[data-rows="label"] .line2 { display: contents; }
-  html[data-rows="label"] .line2 .group { gap: 2px; }
-
-  /* N2 · Caption strip (region name bars, tracker channel bars): a 12px caption over each lane, a 64px column holding
-     only the colour bar and M/S. Pitch 50 = caption 12 + gap 2 + band 36; band-to-band 14 as in production. */
-  html[data-rows="caption"] { --row-opt-h: 48px; --track-left-width: 64px; }
-  html[data-rows="caption"] .track-row { height: 48px; padding: 12px 0 0; }
-  html[data-rows="caption"] .track-left { display: flex; align-items: center; gap: 0; height: 36px; padding: 0 4px 0 0; }
-  html[data-rows="caption"] .track-left::before { content: ''; width: 3px; height: 36px; flex: none; background: var(--cat); margin-right: 6px; }
-  html[data-rows="caption"] .drag-handle, html[data-rows="caption"] .track-name, html[data-rows="caption"] .line2 .badge, html[data-rows="caption"] .line2 .expand-toggle, html[data-rows="caption"] .velocity-toggle { display: none; }
-  html[data-rows="caption"] .line2 { display: contents; }
-  html[data-rows="caption"] .line2 .group { gap: 3px; }
-  html[data-rows="caption"] .steps { position: relative; }
-  html[data-rows="caption"] .row-caption { display: flex; position: absolute; top: -12px; left: 0; height: 12px; align-items: center; gap: 6px; border: 0; padding: 0 2px; background: transparent; color: var(--text); font-size: 11px; line-height: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; text-transform: capitalize; }
-  html[data-rows="caption"] .row-caption .ci { font-weight: 400; color: var(--muted); font-size: 10.5px; text-transform: none; }
-  html[data-rows="caption"] .row-caption .cr { font-family: var(--font-mono); font-weight: 400; font-size: 10px; color: var(--info-text); text-transform: none; }
-
   /* N3 · Quiet head + selected-track bar (GarageBand iOS, BeepBox, Dawn): a 36px row on the step pitch, a 120px column
      with the chip and name; M/S appear on hover, focus or the docked row; everything else lives in the bar above the rows. */
   html[data-rows="quiet"], html[data-rows="tiles"] { --row-opt-h: 36px; }
@@ -461,10 +421,10 @@
   html[data-rows="quiet"] .line2 .group { display: contents; }
   html[data-rows="quiet"] .track-row-wrapper.docked .track-name { padding-right: 66px; }
   /* Keys start on the name text in the chip-led options: rail 12 = chip 4 + gap 8. */
-  html[data-rows="label"][data-dockfix="on"] .dock-left, html[data-rows="quiet"][data-dockfix="on"] .dock-left { grid-template-columns: 12px 1fr; }
-  html[data-rows="label"][data-dockfix="on"] .range-rail .bracket, html[data-rows="quiet"][data-dockfix="on"] .range-rail .bracket { left: 5px; }
-  html[data-rows="label"][data-dockfix="on"] .dock-head, html[data-rows="quiet"][data-dockfix="on"] .dock-head { padding-left: 12px; padding-right: 12px; }
-  html[data-rows="label"][data-dockfix="on"] .pane, html[data-rows="quiet"][data-dockfix="on"] .pane, html[data-rows="label"][data-dockfix="on"] .editor-status, html[data-rows="quiet"][data-dockfix="on"] .editor-status { padding-left: 12px; padding-right: 12px; }
+  html[data-rows="quiet"][data-dockfix="on"] .dock-left { grid-template-columns: 12px 1fr; }
+  html[data-rows="quiet"][data-dockfix="on"] .range-rail .bracket { left: 5px; }
+  html[data-rows="quiet"][data-dockfix="on"] .dock-head { padding-left: 12px; padding-right: 12px; }
+  html[data-rows="quiet"][data-dockfix="on"] .pane, html[data-rows="quiet"][data-dockfix="on"] .editor-status { padding-left: 12px; padding-right: 12px; }
   html[data-rows="quiet"] .selected-bar, html[data-rows="tiles"] .selected-bar { display: flex; }
   .selected-bar { align-items: center; gap: 8px; height: 36px; margin-bottom: 3px; padding: 0 8px; background: var(--surface); border-radius: 4px; position: sticky; left: 0; width: max-content; min-width: 100%; font-size: 12px; color: var(--muted); }
   .selected-bar .sb-chip { width: 4px; height: 24px; background: var(--cat); border-radius: 1px; }
@@ -508,30 +468,6 @@
   .act-group .tl-btn.paste { border-color: var(--info-text); color: var(--info-text); }
   .act-group .tl-btn:disabled { opacity: .4; cursor: default; }
 
-  /* N8 · Impeccable (pbakaus/impeccable, layout): reading order cells > name > state > actions, read with the squint
-     test. Proximity before containers: the column has no tile, only the sequencer's own ground. A 4-unit scale with
-     deliberate rhythm: 4px inside a group, 12px between groups, 8px padding. Density follows use frequency: M and S
-     stay; Copy, Clear and Delete become quiet 24px marks at the row's end; audition, lane and transpose live in the
-     dock. Rows group by meaning: a 12px interval separates melodic tracks from drums.
-     Column 200 = 8 + chip 4 + 8 + name 72 + 12 + M 24 + 4 + S 24 + 12 + ♪ 24 + 8; row 48 on 50, one 36px band. */
-  html[data-rows="impeccable"] { --row-opt-h: 48px; --track-left-width: 200px; }
-  html[data-rows="impeccable"] .track-row { height: 48px; padding: 6px 0; }
-  html[data-rows="impeccable"] .track-left { display: flex; align-items: center; gap: 0; height: 36px; padding: 0 8px; background: var(--bg); box-shadow: none; }
-  html[data-rows="impeccable"] .track-row-wrapper.docked .track-left { box-shadow: inset 2px 0 0 var(--accent); }
-  html[data-rows="impeccable"] .track-left::before { content: ''; width: 4px; height: 36px; flex: none; background: var(--cat); margin-right: 8px; border-radius: 1px; }
-  html[data-rows="impeccable"] .drag-handle, html[data-rows="impeccable"] .track-name .tick, html[data-rows="impeccable"] .track-name .tr, html[data-rows="impeccable"] .line2 .badge, html[data-rows="impeccable"] .velocity-toggle { display: none; }
-  html[data-rows="impeccable"] .track-name { display: block; width: 72px; flex: 0 0 72px; height: 36px; line-height: 36px; padding: 0; margin-right: 12px; text-overflow: ellipsis; text-align: left; }
-  html[data-rows="impeccable"] .rename-input { width: 72px; flex: 0 0 72px; height: 24px; margin-right: 12px; }
-  html[data-rows="impeccable"] .line2 { display: contents; }
-  html[data-rows="impeccable"] .line2 .group { gap: 4px; }
-  html[data-rows="impeccable"] .line2 .group + .group { margin-left: 12px; }
-  html[data-rows="impeccable"] .row-actions { gap: 4px; padding: 6px 8px; background: var(--bg); }
-  html[data-rows="impeccable"] .row-actions button { height: 24px; min-width: 0; width: auto; padding: 0 8px; font-size: 11px; background: transparent; border-color: transparent; color: var(--muted); }
-  html[data-rows="impeccable"] .row-actions button:hover, html[data-rows="impeccable"] .row-actions button:focus-visible { color: var(--text); border-color: var(--border-hover); }
-  html[data-rows="impeccable"] .row-actions button.copy-source { background: var(--success); color: var(--bg); }
-  html[data-rows="impeccable"] .row-actions button.paste { border-color: var(--info-text); color: var(--info-text); }
-  html[data-rows="impeccable"] .track-row-wrapper.kind-melodic + .track-row-wrapper.kind-drum { margin-top: 12px; }
-
   /* ===== CRAP pass (Robin Williams), applied to every row option =====
      Repetition: one 4px category chip at the block's left edge in every option; the 24px control unit; radius 4 on
      every control, tile and action; name 13/600, instrument 11/400 muted, glyphs 10/700; the dock rail equals the
@@ -551,36 +487,53 @@
   html[data-crap="on"] .line2 { gap: 4px; }
   html[data-crap="on"] .line2 .group { gap: 2px; }
   html[data-crap="on"] .row-actions { gap: 4px; padding: 0 8px; }
-  html[data-crap="on"]:not([data-rows="impeccable"]) .row-actions button { height: 36px; width: 48px; min-width: 48px; padding: 0; }
   html[data-crap="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
-  html[data-crap="on"][data-rows="r36one"] .velocity-lane, html[data-crap="on"][data-rows="quiet"] .velocity-lane, html[data-crap="on"][data-rows="tiles"] .velocity-lane, html[data-crap="on"][data-rows="tall"] .velocity-lane { margin-top: 3px; }
+  html[data-crap="on"][data-rows="quiet"] .velocity-lane, html[data-crap="on"][data-rows="tiles"] .velocity-lane, html[data-crap="on"][data-rows="tall"] .velocity-lane { margin-top: 3px; }
   html[data-crap="on"] .velocity-lane input { height: 36px; }
   html[data-crap="on"] .ruler-row { margin-bottom: 0; padding-bottom: 0; }
   html[data-crap="on"] .marker-label { top: 0; line-height: 24px; }
   html[data-crap="on"] .drag-handle { width: 12px; flex: none; overflow: hidden; font-size: 12px; letter-spacing: 0; }
   /* Two-line 154 options and tall: the chip sits in the 4px padding before the grip; name x = 20 = rail 20. */
-  html[data-crap="on"][data-rows="reconciled"] .track-left, html[data-crap="on"][data-rows="r50"] .track-left, html[data-crap="on"][data-rows="r48two"] .track-left { padding-left: 4px; }
   /* Chip-led options: chip 4 + gap 8, so the name and the keys start 12px in. */
-  html[data-crap="on"][data-rows="label"] .track-left, html[data-crap="on"][data-rows="quiet"] .track-left, html[data-crap="on"][data-rows="impeccable"] .track-left { padding-left: 12px; }
-  html[data-crap="on"][data-rows="caption"] .track-left { padding-left: 12px; padding-right: 4px; }
-  html[data-crap="on"][data-rows="caption"] .line2 .group { gap: 2px; }
-  html[data-crap="on"][data-rows="r48one"] .track-left, html[data-crap="on"][data-rows="r36one"] .track-left { padding-left: 4px; }
-  html[data-crap="on"][data-rows="label"] .track-name { margin-right: 4px; }
-  html[data-crap="on"][data-rows="impeccable"] .track-name { margin-right: 12px; }
+  html[data-crap="on"][data-rows="quiet"] .track-left { padding-left: 12px; }
+  html[data-crap="on"][data-rows="r48one"] .track-left { padding-left: 4px; }
   html[data-crap="on"][data-rows="tiles"] .cat-chip { display: none; }
-  html[data-crap="on"][data-rows="caption"] .row-caption .ci { font-size: 11px; }
-  html[data-crap="on"][data-rows="r48one"] .dock-left, html[data-crap="on"][data-rows="r36one"] .dock-left { grid-template-columns: 20px 1fr; }
-  html[data-crap="on"][data-rows="caption"] .dock-left { grid-template-columns: 12px 1fr; }
-  html[data-crap="on"][data-rows="caption"] .range-rail .bracket { left: 5px; }
+  html[data-crap="on"][data-rows="r48one"] .dock-left { grid-template-columns: 20px 1fr; }
   html[data-crap="on"][data-rows="tiles"] .dock-left { grid-template-columns: 0px 1fr; }
   html[data-crap="on"][data-rows="tiles"] .range-rail { z-index: 3; overflow: visible; }
   html[data-crap="on"][data-rows="tiles"] .range-rail .bracket { left: 2px; }
-  html[data-crap="on"][data-rows="label"] .dock-left, html[data-crap="on"][data-rows="quiet"] .dock-left, html[data-crap="on"][data-rows="impeccable"] .dock-left { grid-template-columns: 12px 1fr; }
-  html[data-crap="on"][data-rows="label"] .range-rail .bracket, html[data-crap="on"][data-rows="quiet"] .range-rail .bracket, html[data-crap="on"][data-rows="impeccable"] .range-rail .bracket { left: 5px; }
-  html[data-crap="on"][data-rows="label"] .dock-head, html[data-crap="on"][data-rows="quiet"] .dock-head, html[data-crap="on"][data-rows="impeccable"] .dock-head, html[data-crap="on"][data-rows="label"] .pane, html[data-crap="on"][data-rows="quiet"] .pane, html[data-crap="on"][data-rows="impeccable"] .pane, html[data-crap="on"][data-rows="label"] .editor-status, html[data-crap="on"][data-rows="quiet"] .editor-status, html[data-crap="on"][data-rows="impeccable"] .editor-status { padding-left: 12px; padding-right: 12px; }
+  html[data-crap="on"][data-rows="quiet"] .dock-left { grid-template-columns: 12px 1fr; }
+  html[data-crap="on"][data-rows="quiet"] .range-rail .bracket { left: 5px; }
+  html[data-crap="on"][data-rows="quiet"] .dock-head, html[data-crap="on"][data-rows="quiet"] .pane, html[data-crap="on"][data-rows="quiet"] .editor-status { padding-left: 12px; padding-right: 12px; }
   html[data-crap="on"] .selected-bar { gap: 4px; }
   html[data-crap="on"] .selected-bar .sb-inst { margin-right: 8px; }
   html[data-crap="on"] .selected-bar .k { margin-left: 8px; }
+
+  /* ===== Beat-wide tile (B's idea, kept): the control column is exactly four cells, 4 × 36 + 3 × 3 = 153px, so the
+     tile is one beat wide and the dock's keys are one beat wide. D's idea, kept: everything but identity, M, S and
+     Notes moves to the Track pane, so the grip, the audition badge, the lane toggle and the row actions leave the row. */
+  html[data-beat="on"] { --track-left-width: 153px; }
+  html[data-beat="on"] .drag-handle, html[data-beat="on"] .line2 .badge, html[data-beat="on"] .velocity-toggle, html[data-beat="on"] .row-actions, html[data-beat="on"] .line2 .group.act-group { display: none; }
+  html[data-beat="on"][data-rows="tall"] .track-left { grid-template-columns: [body] 129px; padding: 0 12px; }
+  html[data-beat="on"][data-rows="tall"] .drag-handle { display: none; }
+  /* L: the instrument leaves the row for the dock title; line one is the name and the transpose readout. */
+  html[data-beat="on"][data-rows="tall"] .track-name .inst { display: none; }
+  html[data-beat="on"][data-rows="tall"] .line2 .group.act-group { display: none; }
+  html[data-beat="on"][data-rows="r48one"] .track-left { padding: 0 8px 0 12px; }
+  html[data-beat="on"][data-crap="on"] .dock-left { grid-template-columns: 12px 1fr; }
+  html[data-beat="on"][data-crap="on"] .range-rail .bracket { left: 5px; }
+  html[data-beat="on"][data-crap="on"] .dock-head, html[data-beat="on"][data-crap="on"] .pane, html[data-beat="on"][data-crap="on"] .editor-status { padding-left: 12px; padding-right: 12px; }
+  html[data-beat="on"] .selected-bar { padding-left: 12px; }
+
+  /* ===== Velocity: fill (production's encoding, kept) or tint (the spec's colour-mix) =====
+     Fill: an active cell is the accent; a step with a volume lock below 1 carries a light wash from the bottom up to
+     its volume, so the quiet steps on a drum row stand out at a glance. The dock's bars carry the same wash. */
+  html[data-vel="fill"] .step-cell.active { background: var(--color-accent); }
+  html[data-vel="fill"] .step-cell.active.has-vol { background: linear-gradient(to top, rgb(255 255 255 / 30%) calc(var(--note-velocity) * 100%), transparent 0), var(--color-accent); }
+  html[data-vel="fill"] .notes .note { background: var(--color-accent); }
+  html[data-vel="fill"] .notes .note.has-vol { background: linear-gradient(to top, rgb(255 255 255 / 30%) calc(var(--note-velocity) * 100%), transparent 0), var(--color-accent); }
+  /* Tall cells: the pitch mark gets a 4px stroke and the cell's full height to move in. */
+  html[data-rows="tall"] .step-cell .contour { height: 4px; }
 
   /* ===== Portrait: consumption only ===== */
   [data-display-mode="portrait"] .sequencer { display: none; }
@@ -593,33 +546,28 @@
   <div>
     <div class="eyebrow">Keyboardia · Pitch panel · Editor dock prototype</div>
     <h1>Piano roll dock</h1>
-    <p class="lede">The sequencer with the two-line control block and the proposed editor dock under the grid. The keyboard starts on the same left edge as the track names. Press ♪ on Lead or Bass to open Notes, or click a track name to open Track. Double-click the name to rename; the instrument badge auditions. Hold or Shift+click a step to open Step. Rows stay contiguous; the dock fits the selected track and enabled ghosts for comparison. Note editing and playback use a small synth; step-count, instrument, envelope and pattern-tool integration are labelled, disabled previews. Row Copy/Paste, Clear and Delete are working prototype actions in this spec-only mock. Scale selection and reorder are also previews; portrait shows a listening placeholder rather than an editing surface. The dock starts open here so the page shows its working state; in the app it opens only on request.</p>
+    <p class="lede">The sequencer with the two-line control block and the proposed editor dock under the grid. The keyboard starts on the same left edge as the track names. Press ♪ on Piano or Duo to open Notes, or click a track name to open Track. Double-click the name to rename; the instrument badge auditions. Hold or Shift+click a step to open Step. Rows stay contiguous; the dock fits the selected track and enabled ghosts for comparison. Note editing and playback use a small synth; step-count, instrument, envelope and pattern-tool integration are labelled, disabled previews. Row Copy/Paste, Clear and Delete are working prototype actions in this spec-only mock. Scale selection and reorder are also previews; portrait shows a listening placeholder rather than an editing surface. The dock starts open here so the page shows its working state; in the app it opens only on request. The pattern is the owner's session <em>Piano in A Minor Pentatonic</em> (five tracks, 96 BPM), so the Piano's pitch locks and the half-volume steps on Ac. Kick, Brush Snare and Duo can be compared with the live app.</p>
   </div>
 
   <section class="portrait-preview" aria-label="Portrait listening preview"><h2>Keyboardia · listening view</h2><p>Editing is available in landscape. Rotate your phone to edit the pattern.</p><button class="cbtn" id="portraitPlay" type="button">Play preview</button></section>
   <section class="audit-bar" aria-label="Audit switches">
     <span class="k">Rows</span>
-    <span class="set" role="group" aria-label="Row geometry" id="rowOpts">
-      <button class="opt" type="button" data-rows="reconciled" aria-pressed="true" title="PR #127 contract: 24 + 2 + 24 in a 58px row, pitch 60"><b class="L">A</b>58 / 60 two lines</button>
-      <button class="opt" type="button" data-rows="r50" aria-pressed="false" title="Row audit's pick: two 24px lines, no padding, pitch 52 = 4/3 of the step pitch"><b class="L">B</b>50 / 52 two lines</button>
-      <button class="opt" type="button" data-rows="r48two" aria-pressed="false" title="Production's row and pitch with two 22px lines"><b class="L">C</b>48 / 50 two 22px lines</button>
-      <button class="opt" type="button" data-rows="r48one" aria-pressed="false" title="Research: one 36px band, name truncates, badge and lane toggle move to the Track pane"><b class="L">D</b>48 / 50 one line</button>
-      <button class="opt" type="button" data-rows="r36one" aria-pressed="false" title="Strict 1:1 with the step pitch"><b class="L">E</b>36 / 39 one line</button>
+    <span class="set" role="group" aria-label="Kept options" id="rowOpts">
+      <button class="opt" type="button" data-rows="r48one" data-beat="off" aria-pressed="false" title="D · 48/50 one line: name, M, S and Notes in one 36px band; everything else in the Track pane; 154px column"><b class="L">D</b>One line 48 / 50</button>
+      <button class="opt" type="button" data-rows="quiet" data-beat="off" aria-pressed="false" title="H · Quiet head: 36/39 row, 120px column with chip and name; M/S on hover or selection; a selected-track bar above the rows"><b class="L">H</b>Quiet head 36 / 39</button>
+      <button class="opt" type="button" data-rows="tiles" data-beat="off" aria-pressed="false" title="I · Cell tiles: the header is two cells, a colour tile that opens the track and a mute tile; 75px column; selected-track bar"><b class="L">I</b>Cell tiles 36 / 39</button>
+      <button class="opt" type="button" data-rows="tall" data-beat="off" aria-pressed="false" title="J · Tall cells: 36×50 cells fill a two-line 50px band on a 53px pitch; 216px column with identity, state, disclosure and actions"><b class="L">J</b>Tall cells 50 / 53</button>
     </span>
-    <span class="set" role="group" aria-label="Row geometry from the survey">
-      <button class="opt" type="button" data-rows="label" aria-pressed="false" title="Aubade, openDAW, Muse: name over instrument inside the 36px band, M/S beside, 154px column, production's 48/50"><b class="L">F</b>Label stack 48 / 50</button>
-      <button class="opt" type="button" data-rows="caption" aria-pressed="false" title="Region name bars, tracker channel bars: a 12px caption over each lane, a 64px column with only the colour bar and M/S; band-to-band 14 as in production"><b class="L">G</b>Caption strip 50</button>
-      <button class="opt" type="button" data-rows="quiet" aria-pressed="false" title="GarageBand iOS, BeepBox, Dawn: 36/39 row, 120px column with chip and name; M/S on hover or selection; per-track controls in a selected-track bar"><b class="L">H</b>Quiet head 36 / 39</button>
-      <button class="opt" type="button" data-rows="tiles" aria-pressed="false" title="BeepBox, Launchpad: the header is two cells, a colour tile that opens the track and a mute tile; 75px column"><b class="L">I</b>Cell tiles 36 / 39</button>
-    </span>
-    <span class="set" role="group" aria-label="Row geometry, requested">
-      <button class="opt" type="button" data-rows="tall" aria-pressed="false" title="CRAP: cells grow to 36×50 so the two-line block is one band; 216px column with identity on line one and M, S, Notes, lane, Copy, Clear and Delete on line two; 3px gaps both ways"><b class="L">J</b>Tall cells 50 / 53</button>
-      <button class="opt" type="button" data-rows="impeccable" aria-pressed="false" title="pbakaus/impeccable layout: reading order cells > name > state > actions; no tile, proximity instead; 4-unit scale with 4px inside groups and 12px between; quiet 24px actions at the row end; a 12px interval separates melodic tracks from drums; 200px column, 48/50"><b class="L">K</b>Impeccable 48 / 50</button>
+    <span class="set" role="group" aria-label="Recombinations">
+      <button class="opt" type="button" data-rows="tall" data-beat="on" aria-pressed="true" title="L · J's tall cells with B's beat-wide tile and D's Track pane: 36×50 cells, 50/53, a 153px tile (four cells) holding name and instrument over M, S and Notes; nothing else in the row"><b class="L">L</b>Tall cells, beat tile</button>
+      <button class="opt" type="button" data-rows="r48one" data-beat="on" aria-pressed="false" title="M · D's one line with B's beat-wide tile: 48/50, a 153px tile with name, M, S and Notes"><b class="L">M</b>One line, beat tile</button>
+      <button class="opt" type="button" data-rows="quiet" data-beat="on" aria-pressed="false" title="N · H's quiet head with B's beat-wide tile: 36/39, a 153px tile with chip and name, M/S on hover, selected-track bar"><b class="L">N</b>Quiet head, beat tile</button>
     </span>
     <span class="k">Fixes</span>
     <span class="set">
       <button class="opt" type="button" id="rowFix" aria-pressed="false" title="Contour centred and continuous, 2px borders with 3px beat starts, 36px actions on the cell band, lane as one pitch, ruler one slot above, no closed-dock line">Rows</button>
       <button class="opt" type="button" id="dockFix" aria-pressed="false" title="Rail 20, whole-row keys, whole-pixel Fit on the active track, bar inset = cell border, grid lines in the gaps, octave rule on B|C, even 8px chrome padding, one border colour">Dock</button>
+      <button class="opt" type="button" id="velFix" aria-pressed="true" title="Velocity as a fill: a step with a lowered volume carries a light wash up to its volume (production's encoding). Off: the spec's colour tint">Velocity fill</button>
       <button class="opt" type="button" id="crapFix" aria-pressed="true" title="Robin Williams' CRAP on every option: one 4px chip at the block edge, radius 4 and the 24px unit everywhere, name 13/600 over instrument 11/400; controls and keys on the name's left edge, actions on the cell band, ruler one slot above, lane one pitch; 2px inside groups and 4px between; the docked row lifts with its name in accent">CRAP</button>
     </span>
     <span class="spacer"></span>
@@ -628,12 +576,12 @@
   <section class="sequencer" id="sequencer" aria-label="Sequencer">
     <div class="transport">
       <button class="play-button" id="playBtn" type="button" aria-label="Play"><span id="playIcon">&#9654;</span></button>
-      <div class="bpm"><b>120</b><span>BPM</span></div>
+      <div class="bpm"><b>96</b><span>BPM</span></div>
       <button class="pill" type="button" disabled title="Integration preview: scale selection uses the real app">Scale: C major <span class="caret">&#9660;</span></button>
       <button class="pill" id="scaleBtn" type="button" aria-pressed="false" title="Lock the dock to the scale">Lock to scale</button>
       <span class="spacer"></span>
       <span class="hint">Esc closes the dock</span>
-      <span class="session-name">keys-and-piano · 4 tracks</span>
+      <span class="session-name">Piano in A Minor Pentatonic · 5 tracks</span>
     </div>
     <div class="tracks" id="tracks">
       <div class="tracks-inner" id="inner"></div>
@@ -643,7 +591,7 @@
   <section>
     <h2>What the prototype demonstrates</h2>
     <ul class="notes-list">
-      <li><b>Rows stay contiguous.</b> Lead, Bass, Kick and Hat never gain a panel between them. The dock takes its space from the bottom of the scroller and pins there while the tracks scroll above it.</li>
+      <li><b>Rows stay contiguous.</b> Piano, Ac. Kick, Brush Snare, Clap and Duo never gain a panel between them. The dock takes its space from the bottom of the scroller and pins there while the tracks scroll above it.</li>
       <li><b>One scroller.</b> The ruler, every row and the dock share the horizontal scroll, so step 9 is the same x everywhere. The dock's control panel and keyboard are sticky to the left like the control column.</li>
       <li><b>Accessible control block, 154px.</b> Desktop identity and controls have 24px targets, with a 2px gap inside a 58px row. The instrument badge auditions; a single name click opens Track and a double-click renames. Copy/Paste, Clear and Delete remain on their target rows. Landscape uses 44px controls and an expanded editor.</li>
       <li><b>One left edge.</b> The grip, the names, the ruler's spacer, the dock toolbar and the keyboard all start on the same line, and the dock grid starts where the step cells start.</li>
@@ -659,9 +607,9 @@
     <h2>Try it</h2>
     <ol class="try">
       <li>Press Play. Playheads run on the ruler, the cells and the dock from one clock.</li>
-      <li>Press ♪ on Bass and watch the crossfade and the control edge move. Press ♪ on Lead to come back.</li>
+      <li>Press ♪ on Duo and watch the crossfade and the docked state move. Press ♪ on Piano to come back.</li>
       <li>Drag across empty dock cells to paint, drag a bar up or down to re-pitch, drag its right edge to lengthen it. The row above updates on the same frame.</li>
-      <li>Shift+click a Lead cell. The dock switches to the Step pane for that step; change its pitch or tie there.</li>
+      <li>Shift+click a Piano cell. The dock switches to the Step pane for that step; change its pitch or tie there.</li>
       <li>Open the Track pane and change transpose. Every bar shifts, and the readout in the row follows.</li>
       <li>Toggle the tall detent with ⇕. Turn on "Lock to scale" and drop a note on a dimmed row. Press Escape to close the dock.</li>
     </ol>
@@ -686,7 +634,7 @@
   let H = 18;
   const NOTE_NAMES = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   const BLACK = new Set([1,3,6,8,10]), MAJOR = new Set([0,2,4,5,7,9,11]);
-  const BPM = 120, SPB = 60 / BPM / 4, MIN_LOOP_LENGTH = 2;
+  const BPM = 96, SPB = 60 / BPM / 4, MIN_LOOP_LENGTH = 2;
   const isBlack = m => BLACK.has(((m % 12) + 12) % 12);
   const pc = m => ((m % 12) + 12) % 12;
   const noteName = m => NOTE_NAMES[pc(m)] + (Math.floor(m / 12) - 1);
@@ -699,22 +647,32 @@
   function mk(id, name, kind, inst, badge, cat, transpose, range) {
     return { id, name, kind, inst, badge, cat, transpose: transpose || 0, range, steps: new Array(STEPS).fill(false), locks: new Array(STEPS).fill(null), pattern: null, bars: [], defaultVelocity: 1 };
   }
-  const lead = mk('lead', 'Lead', 'melodic', 'FM Bell', 'FM', 'var(--cat-keys)', 0, { min: 50, max: 84, optMin: 55, optMax: 79 });
-  const bass = mk('bass', 'Bass', 'melodic', 'Sub', 'SMP', 'var(--cat-bass)', -12, { min: 36, max: 64, optMin: 38, optMax: 55 });
-  const kick = mk('kick', 'Kick', 'drum', '808 Kick', 'SMP', 'var(--cat-drums)');
-  const hat = mk('hat', 'Hat', 'drum', 'Closed Hat', 'SMP', 'var(--cat-drums)');
-  [[0,60,.9],[2,64,.7],[3,67,.8],[4,67,.8,1],[5,67,.8,1],[7,69,.6],[8,72,.95],[9,72,.95,1],[11,71,.5],[12,67,.75],[13,67,.75,1],[14,64,.6],[15,62,.55],
-   [16,60,.9],[17,60,.9,1],[18,60,.9,1],[20,64,.7],[21,65,.65],[22,67,.85],[23,67,.85,1],[24,69,.7],[26,67,.6],[27,64,.8],[28,62,.7],[29,62,.7,1],[30,60,.9],[31,60,.9,1]]
-    .forEach(([s, m, v, t]) => { lead.steps[s] = true; lead.locks[s] = { pitch: m - BASE_MIDI, volume: v, tie: !!t }; });
-  [[0,48,.9],[1,48,.9,1],[3,48,.7],[6,43,.8],[7,43,.8,1],[8,48,.9],[9,48,.9,1],[11,50,.6],[14,43,.8],[15,45,.6],
-   [16,48,.9],[17,48,.9,1],[19,48,.7],[22,41,.8],[23,41,.8,1],[24,45,.9],[25,45,.9,1],[27,47,.6],[30,48,.9],[31,48,.9,1]]
-    .forEach(([s, m, v, t]) => { bass.steps[s] = true; bass.locks[s] = { pitch: m - BASE_MIDI - bass.transpose, volume: v, tie: !!t }; });
-  kick.pattern = new Array(STEPS).fill(false).map((_, i) => i % 4 === 0 || i === 14 || i === 30);
-  hat.pattern = new Array(STEPS).fill(false).map((_, i) => i % 2 === 0);
-  // Drums use the same active-step and lock model; only Notes is melodic-only.
-  kick.steps = kick.pattern; hat.steps = hat.pattern;
-  kick.range = hat.range = { min: 12, max: 108, optMin: 36, optMax: 84 };
-  const tracks = [lead, bass, kick, hat];
+  // Seeded from the owner's session "Piano in A Minor Pentatonic" (keyboardia.dev/s/630cd593…), 96 BPM, 16 steps used
+  // of 128; the 16-step pattern is repeated on page 2 so the page gap has something to show.
+  const piano = mk('piano', 'Piano', 'melodic', 'Piano', 'SMP', 'var(--cat-keys)', 0, { min: 21, max: 108, optMin: 36, optMax: 96 });
+  const akick = mk('akick', 'Ac. Kick', 'drum', 'Acoustic kick', 'SMP', 'var(--cat-drums)');
+  const snare = mk('snare', 'Brush Snare', 'drum', 'Brushes snare', 'SMP', 'var(--cat-drums)');
+  const clap = mk('clap', 'Clap', 'drum', 'Clap', 'SYN', 'var(--cat-drums)');
+  const duo = mk('duo', 'Duo', 'melodic', 'Duo lead', 'SYN', 'var(--cat-leads)', 0, { min: 36, max: 96, optMin: 48, optMax: 84 });
+  piano.voice = 'piano'; duo.voice = 'lead'; akick.voice = 'kick'; snare.voice = 'snare'; clap.voice = 'clap';
+  piano.gain = 1; akick.gain = 1; snare.gain = 1; clap.gain = 0.53; duo.gain = 0.2;
+  const SEED = {
+    piano: { on: [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15], locks: {"1": {"pitch": -24}, "4": {"pitch": -12}, "5": {"pitch": -12}, "6": {"pitch": 12}, "7": {"pitch": -5}, "8": {"pitch": -12}, "9": {"pitch": -12}, "11": {"pitch": -17}, "12": {"pitch": -5}, "14": {"pitch": 7}, "15": {"pitch": -5}} },
+    akick: { on: [0, 2, 3, 5, 7, 8, 10], locks: {"8": {"volume": 0.5}} },
+    snare: { on: [1, 3, 4, 6, 8, 9, 11], locks: {"9": {"volume": 0.5}} },
+    clap: { on: [1, 5, 6], locks: {} },
+    duo: { on: [0, 2, 3, 5, 7, 8, 10], locks: {"8": {"volume": 0.5}} },
+  };
+  for (const t of [piano, akick, snare, clap, duo]) {
+    const sd = SEED[t.id];
+    for (const page of [0, 16]) {
+      sd.on.forEach(i => { t.steps[i + page] = true; });
+      Object.entries(sd.locks).forEach(([i, l]) => { t.locks[Number(i) + page] = Object.assign({}, l); });
+    }
+    t.pattern = t.steps;
+    if (t.kind === 'drum') t.range = { min: 12, max: 108, optMin: 36, optMax: 84 };
+  }
+  const tracks = [piano, akick, snare, clap, duo];
   const melodic = tracks.filter(t => t.kind === 'melodic');
 
   // A continuation inherits the attack's pitch and volume; its own locks do not sound.
@@ -781,7 +739,7 @@
   }
   function playVoice(t, midi, vel, when, dur) {
     if (vel <= 0) return;
-    const f = 440 * Math.pow(2, (midi - 69) / 12), isBass = t.id === 'bass';
+    const f = 440 * Math.pow(2, (midi - 69) / 12), isBass = t.voice === 'lead'; vel = vel * (t.gain ?? 1);
     const o1 = ac.createOscillator(); o1.type = isBass ? 'sine' : 'triangle'; o1.frequency.value = f;
     const o2 = ac.createOscillator(); o2.type = isBass ? 'triangle' : 'sine'; o2.frequency.value = isBass ? f : f * 2; o2.detune.value = 4;
     const g2 = ac.createGain(); g2.gain.value = isBass ? 0.5 : 0.3;
@@ -794,7 +752,14 @@
   }
   function playKick(when, vel = 1, midi = 60) { if (vel <= 0) return; const ratio = Math.pow(2, (midi - 60) / 12); const o = ac.createOscillator(); o.type = 'sine'; o.frequency.setValueAtTime(150 * ratio, when); o.frequency.exponentialRampToValueAtTime(45 * ratio, when + 0.12); const g = ac.createGain(); g.gain.setValueAtTime(0.9 * vel, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.3); o.connect(g); g.connect(master); o.start(when); o.stop(when + 0.35); }
   function playHat(when, accent, vel = 1, midi = 60) { if (vel <= 0) return; const s = ac.createBufferSource(); s.buffer = noiseBuf; const hp = ac.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = clamp(7000 * Math.pow(2, (midi - 60) / 12), 1500, 18000); const g = ac.createGain(); g.gain.setValueAtTime((accent ? 0.25 : 0.12) * vel, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.05); s.connect(hp); hp.connect(g); g.connect(master); s.start(when); s.stop(when + 0.06); }
-  function audition(t, midi, vel) { ensureAudio(); if(t.kind==='drum'){if(t===kick)playKick(ac.currentTime,vel,midi);else playHat(ac.currentTime,true,vel,midi);}else playVoice(t, midi, vel == null ? 1 : vel, ac.currentTime, 0.18); }
+  function playDrum(t, when, vel, midi) {
+    vel = vel * (t.gain ?? 1);
+    if (t.voice === 'kick') return playKick(when, vel, midi);
+    if (t.voice === 'snare') { if (vel <= 0) return; const s = ac.createBufferSource(); s.buffer = noiseBuf; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1800 * Math.pow(2, (midi - 60) / 12); bp.Q.value = 0.8; const g = ac.createGain(); g.gain.setValueAtTime(0.5 * vel, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.14); s.connect(bp); bp.connect(g); g.connect(master); s.start(when); s.stop(when + 0.15); return; }
+    if (t.voice === 'clap') { if (vel <= 0) return; for (const d of [0, 0.012, 0.024]) { const s = ac.createBufferSource(); s.buffer = noiseBuf; const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 1200; bp.Q.value = 1.2; const g = ac.createGain(); g.gain.setValueAtTime(0.4 * vel, when + d); g.gain.exponentialRampToValueAtTime(0.001, when + d + 0.07); s.connect(bp); bp.connect(g); g.connect(master); s.start(when + d); s.stop(when + d + 0.08); } return; }
+    return playHat(when, true, vel, midi);
+  }
+  function audition(t, midi, vel) { ensureAudio(); if(t.kind==='drum')playDrum(t,ac.currentTime,vel==null?1:vel,midi);else playVoice(t, midi, vel == null ? 1 : vel, ac.currentTime, 0.18); }
 
   // ---------- transport ----------
   let playing = false, startTime = 0, nextTick = 0, nextTime = 0, timer = null, raf = null;
@@ -805,8 +770,7 @@
       const anySoloed = tracks.some(t => t.soloed);
       const audible = t => anySoloed ? t.soloed : !t.muted;
       melodic.forEach(t => { if (!audible(t)) return; const b = t.bars.find(x => x.start === s); if (b) playVoice(t, b.midi, b.vel, nextTime, b.len * SPB * 0.96); });
-      if (!kick.deleted && kick.steps[s] && audible(kick)) playKick(nextTime,stepVel(kick,s),stepMidi(kick,s));
-      if (!hat.deleted && hat.steps[s] && audible(hat)) playHat(nextTime, s % 4 === 0,stepVel(hat,s),stepMidi(hat,s));
+      tracks.forEach(t => { if (t.kind !== 'drum' || t.deleted || !t.steps[s] || !audible(t)) return; playDrum(t, nextTime, stepVel(t, s), stepMidi(t, s)); });
       nextTick++; nextTime += SPB;
     }
   }
@@ -842,7 +806,7 @@
 
   // ---------- dock state (local, never synced) ----------
   let paintVersion = 0;
-  const dock = { open: false, track: null, pane: 'notes', ghosts: { lead: true, bass: true }, selectedStep: null, tall: false };
+  const dock = { open: false, track: null, pane: 'notes', ghosts: { piano: true, duo: true }, selectedStep: null, tall: false };
   const ui = { noteEls: [], keyEls: new Map() };
   const inner = document.getElementById('inner');
   const tracksEl = document.getElementById('tracks');
@@ -850,7 +814,7 @@
   function rowClasses(midi, t) {
     const c = [isBlack(midi) ? 'black' : 'white'];
     if (pc(midi) === 0) c.push('c', 'root'); else if (pc(midi) === 7) c.push('fifth');
-    const r = (t || lead).range; if (midi < r.min || midi > r.max) c.push('out');
+    const r = (t || piano).range; if (midi < r.min || midi > r.max) c.push('out');
     if (!inScale(midi)) c.push('scale-out');
     return c.join(' ');
   }
@@ -1054,7 +1018,7 @@
     const tr=t.nameEl.querySelector('.tr');if(tr)tr.textContent=t.transpose===0?'':trLabel(t);
     t.cells.forEach((c,i)=>{
       const on=!!t.steps[i],locked=!!t.locks[i]&&Object.keys(t.locks[i]).length>0;
-      c.style.setProperty('--note-velocity',String(stepVel(t,i)));
+      c.style.setProperty('--note-velocity',String(stepVel(t,i)));c.classList.toggle('has-vol',on&&stepVel(t,i)<1);
       c.classList.toggle('active',on);c.classList.toggle('has-lock',locked);c.classList.toggle('tie',on&&!!t.locks[i]?.tie);
       c.classList.toggle('selected',dock.open&&dock.track===t&&dock.selectedStep===i);
       c.classList.toggle('range-selected',selection.track===t&&selection.steps.has(i));
@@ -1068,7 +1032,7 @@
       if(on&&t.kind==='melodic'){
         if(!mark)mark=el('contour',c);
         const relative=stepMidi(t,i)-BASE_MIDI-t.transpose;
-        if(rowFix()){const gap=i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP,tied=!!t.locks[i]?.tie;mark.style.top=(8+(24-relative)/48*20-1.5-c.clientTop)+'px';mark.style.left=(tied?-(gap+5):5)-c.clientLeft+'px';mark.style.right=(5-(c.offsetWidth-c.clientWidth-c.clientLeft))+'px';mark.style.borderRadius=tied?'0 2px 2px 0':'2px';}
+        if(rowFix()){const gap=i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP,tied=!!t.locks[i]?.tie;const C=c.offsetHeight,M=mark.offsetHeight||3;mark.style.top=(8+(24-relative)/48*(C-16)-M/2-c.clientTop)+'px';mark.style.left=(tied?-(gap+5):5)-c.clientLeft+'px';mark.style.right=(5-(c.offsetWidth-c.clientWidth-c.clientLeft))+'px';mark.style.borderRadius=tied?'0 2px 2px 0':'2px';}
         else{mark.style.top=(24-(relative+24)/48*20)+'px';mark.style.left='';mark.style.right='';mark.style.borderRadius='';}
       }else if(mark)mark.remove();
     });
@@ -1180,7 +1144,7 @@
     if(isLandscape()&&dock.open){tracksEl.inert=false;ui.rows.inert=true;ui.ruler.parentElement.inert=true;}else if(ui.rows){ui.rows.inert=portrait;ui.ruler.parentElement.inert=portrait;}
   }
   function applyClasses() {
-    const t=dock.track||tracks.find(t=>t.kind==='melodic')||lead;
+    const t=dock.track||tracks.find(t=>t.kind==='melodic')||piano;
     ui.rowEls.forEach((r,i)=>r.className='row '+rowClasses(MIDI_MAX-i,t));
     ui.keyList.forEach(([midi,k])=>{const hover=k.classList.contains('hover');k.className='key '+rowClasses(midi,t)+(hover?' hover':'');});
     ui.bracket.style.top=(MIDI_MAX-t.range.optMax)*H+2+'px';ui.bracket.style.height=Math.max(2,(t.range.optMax-t.range.optMin+1)*H-4)+'px';
@@ -1201,7 +1165,7 @@
   function drawNotes(fade) {
     const t=dock.track;if(!t)return;const layer=ui.notesLayer,version=++paintVersion;
     const paint=()=>{if(version!==paintVersion||t!==dock.track)return;computeBars(t);layer.replaceChildren();ui.noteEls=[];
-      (t.kind==='melodic'?t.bars:[]).forEach(b=>{const n=el('note',layer);n.style.left=stepX(b.start)+'px';n.style.width=spanWidth(b.start,b.len)+'px';const bh=barH();n.style.top=(MIDI_MAX-b.midi)*H+((H-bh)/2)+'px';n.style.height=bh+'px';n.style.borderRadius=barRadius(bh)+'px';n.style.setProperty('--note-velocity',String(b.vel));const label=el('bar-label',n);label.textContent=noteName(b.midi);n._bar=b;ui.noteEls.push(n);noteInk(n);});syncRow(t);
+      (t.kind==='melodic'?t.bars:[]).forEach(b=>{const n=el('note',layer);n.style.left=stepX(b.start)+'px';n.style.width=spanWidth(b.start,b.len)+'px';const bh=barH();n.style.top=(MIDI_MAX-b.midi)*H+((H-bh)/2)+'px';n.style.height=bh+'px';n.style.borderRadius=barRadius(bh)+'px';n.style.setProperty('--note-velocity',String(b.vel));n.classList.toggle('has-vol',b.vel<1);const label=el('bar-label',n);label.textContent=noteName(b.midi);n._bar=b;ui.noteEls.push(n);noteInk(n);});syncRow(t);
     };
     if(fade&&!reduced){layer.classList.add('fading');setTimeout(()=>{paint();layer.classList.remove('fading');},120);}else paint();
   }
@@ -1510,18 +1474,19 @@
     }
   });
   // ---------- audit switches ----------
-  const ROW_OPTS={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
+  const ROW_OPTS_OLD={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
+  const ROW_OPTS={'r48one':{row:48,pitch:50,inset:'6',col:154},'quiet':{row:36,pitch:39,inset:'0',col:120},'tiles':{row:36,pitch:39,inset:'0',col:75},'tall':{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},'tall+beat':{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},'r48one+beat':{row:48,pitch:50,inset:'6',col:153},'quiet+beat':{row:36,pitch:39,inset:'0',col:153}};
   function applyAudit(){
-    const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'reconciled'];
+    const root=document.documentElement,opt=ROW_OPTS[(root.dataset.rows||'tall')+(root.dataset.beat==='on'?'+beat':'')];
     tracks.forEach(t=>{if(t.gripEl)t.gripEl.textContent=rowFix()?'⠿':'⋮⋮';syncRow(t);});
     if(ui.drawLines)ui.drawLines();setPitchHeight(H);renderSelectedBar();if(ui.fitHead)ui.fitHead();
-    const ro=document.getElementById('auditReadout');ro.replaceChildren();const Lb=el('L',ro,'b');Lb.textContent=document.querySelector('.audit-bar .opt[data-rows="'+(root.dataset.rows||'reconciled')+'"] .L').textContent;ro.append(document.createTextNode('row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch'));
+    const ro=document.getElementById('auditReadout');ro.replaceChildren();const Lb=el('L',ro,'b');Lb.textContent=document.querySelector('.audit-bar .opt[data-rows="'+(root.dataset.rows||'tall')+'"][data-beat="'+(root.dataset.beat||'off')+'"] .L').textContent;ro.append(document.createTextNode('row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch'));
   }
-  document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
-  for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on';document.documentElement.dataset[key]=on?'on':'off';b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
-  document.documentElement.dataset.rows='reconciled';document.documentElement.dataset.crap='on';applyAudit();
-  // The page opens with Lead docked so its first frame shows the working state. In the app the dock opens only on request.
-  openDock(lead, 'notes');
+  document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.documentElement.dataset.beat=b.dataset.beat||'off';document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
+  for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap'],['velFix','vel']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on'&&document.documentElement.dataset[key]!=='fill';document.documentElement.dataset[key]=key==='vel'?(on?'fill':'tint'):(on?'on':'off');b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
+  const root0=document.documentElement;root0.dataset.rows='tall';root0.dataset.beat='on';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';document.getElementById('rowFix').setAttribute('aria-pressed','true');document.getElementById('dockFix').setAttribute('aria-pressed','true');applyAudit();
+  // The page opens with Piano docked so its first frame shows the working state. In the app the dock opens only on request.
+  openDock(piano, 'notes');
 })();
 </script>
 
