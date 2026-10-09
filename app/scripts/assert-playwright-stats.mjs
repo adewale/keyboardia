@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { readFileSync } from 'node:fs';
 import {
+  collectPlaywrightAnnotations,
   collectPlaywrightReportIdentities,
   diffPlaywrightIdentities,
   formatPlaywrightIdentityDiff,
@@ -20,6 +21,13 @@ const inventoryFile = inventoryArg
 const reviewed = new Set(readFileSync(inventoryFile, 'utf8')
   .split(/\r?\n/).map((line) => line.trim()).filter(Boolean));
 const report = JSON.parse(readFileSync(resolve(resultsFile), 'utf8'));
+// Helper-level API retries (e2e/test-utils.ts) happen below the reporter's
+// flaky count, so report every one before judging the contract.
+const apiRetries = collectPlaywrightAnnotations(report, 'api-retry');
+if (apiRetries.length > 0) {
+  console.log(`::warning title=E2E helper API retries::${apiRetries.length} helper-level API retries in ${resultsFile}`);
+  for (const retry of apiRetries) console.log(`  ${retry}`);
+}
 let disposition;
 let laneName;
 if (expectedArg === 'lane') {
@@ -76,4 +84,7 @@ if (laneName) {
   }
 }
 
-console.log(`Playwright contract valid: ${actual.expected} passed, ${actual.skipped} reviewed skips, ${observed.length} exact results`);
+console.log(
+  `Playwright contract valid: ${actual.expected} passed, ${actual.skipped} reviewed skips, `
+    + `${observed.length} exact results, ${apiRetries.length} helper API retries`,
+);

@@ -5,6 +5,7 @@ import { dirname, resolve } from 'node:path';
 import { SampledInstrument, SAMPLED_INSTRUMENTS, type InstrumentManifest } from './sampled-instrument';
 import { ChokeGroupRegistry } from './choke-groups';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
+import { requireOfflineAudio } from '../test/session-render';
 
 /**
  * INSTRUMENT-RANGE AUDIT — LAYER (b): HEADLESS OFFLINE-RENDER RMS
@@ -21,15 +22,12 @@ import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
  * It runs headless (no browser) via node-web-audio-api, reusing the exact same
  * production seam as layer (a) — a global fetch stub feeding the real loader —
  * but with real sample bytes and a real decode/render instead of fakes. If the
- * native node-web-audio-api binary is unavailable on this platform the whole
- * suite skips rather than failing.
+ * native node-web-audio-api binary cannot load, the test fails through
+ * requireOfflineAudio() instead of skipping: a skipped render reads as a pass.
  *
  * Output: test-results/instrument-range/offline-render.json (gitignored),
  * consumed by scripts/instrument-range-report.ts. Audit artifact, not a gate.
  */
-
-// node-web-audio-api ships a native binary; skip cleanly where it can't load.
-const webAudio = await import('node-web-audio-api').catch(() => null);
 
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
 const INSTRUMENTS_DIR = resolve(THIS_DIR, '../../public/instruments');
@@ -78,9 +76,9 @@ function loadManifests(): InstrumentManifest[] {
   return out.sort((a, b) => a.id.localeCompare(b.id));
 }
 
-describe.skipIf(!webAudio)('instrument range — headless offline render (layer b)', () => {
+describe('instrument range — headless offline render (layer b)', () => {
   it('renders every sampled instrument across the grid range and measures audio', async () => {
-    const { OfflineAudioContext } = webAudio!;
+    const { OfflineAudioContext } = await requireOfflineAudio();
     installDiskFetch();
     const manifests = loadManifests();
     const count = MAX_PITCH - MIN_PITCH + 1;
@@ -107,13 +105,22 @@ describe.skipIf(!webAudio)('instrument range — headless offline render (layer 
       );
       await inst.ensureLoaded();
 
-      // Progressive loading streams velocity layers in the background; wait for
-      // them so "silent" reflects range, not an unfinished load.
+      // Progressive loading streams velocity layers in the background; wait
+      // until every note root has a sample, or until the background load has
+      // settled without one, so "silent" reflects range rather than an
+      // unfinished load. The wait ends on loader state, not elapsed time: a
+      // 20 s wall-clock deadline here used to fall through silently and
+      // render whatever had decoded by then.
       const distinctNotes = new Set(manifest.samples.map(s => s.note)).size;
-      const deadline = Date.now() + 20_000;
-      while (inst.getSampleNotes().length < distinctNotes && Date.now() < deadline) {
+      let settled = false;
+      void inst.waitForBackgroundLoad().then(
+        () => { settled = true; },
+        () => { settled = true; },
+      );
+      while (inst.getSampleNotes().length < distinctNotes && !settled) {
         await new Promise(r => setTimeout(r, 20));
       }
+      expect(inst.getSampleNotes(), `${manifest.id} loaded note roots`).toHaveLength(distinctNotes);
 
       const sourceCreated: boolean[] = [];
       for (let i = 0; i < count; i++) {

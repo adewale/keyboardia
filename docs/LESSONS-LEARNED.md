@@ -60,7 +60,7 @@ Debugging war stories and insights from building Keyboardia.
 
 ### E2E Testing
 - [Lesson 15: E2E Tests Must Use Correct API Response Structure](#lesson-15-e2e-tests-must-use-correct-api-response-structure)
-- [Lesson 16: CI Tests Need Retry Logic for API Resilience](#lesson-16-ci-tests-need-retry-logic-for-api-resilience)
+- [Lesson 16: CI Tests Need Retry Logic for API Resilience](#lesson-16-ci-tests-need-retry-logic-for-api-resilience) (superseded)
 - [Lesson 17: Test Scripts Must Match Server Message Structure](#lesson-17-test-scripts-must-match-server-message-structure)
 - [Lesson 18: KV Save Debouncing Can Cause Test Timing Issues](#lesson-18-kv-save-debouncing-can-cause-test-timing-issues)
 - [Lesson 41: Upgrading vitest-pool-workers (v3→v4 Plugin Migration + Browser-Condition Trap)](#lesson-41-upgrading-vitest-pool-workers--the-v3v4-plugin-migration-and-a-browser-condition-trap)
@@ -3259,6 +3259,19 @@ But tests were assuming `tracks` was at the top level: `sessionData.tracks` inst
 
 ## Lesson 16: CI Tests Need Retry Logic for API Resilience
 
+> **Superseded (September 2026). Do not follow the Prevention list below.**
+> Retrying every failed API call hides backend bugs underneath Playwright's
+> `retries: 0` / `flaky: 0` lane contracts: with the old helper, a session
+> create that returned 500 once and then succeeded produced a green,
+> non-flaky result. The helpers in `app/e2e/test-utils.ts` now retry only
+> thrown transport errors and HTTP 429, fail on the first 5xx or other
+> non-2xx response, and record every retry as an `api-retry` test annotation
+> that `scripts/assert-playwright-stats.mjs` reports for each lane. No test
+> lane talks to the production API any more (the CI-only Vite proxy to the
+> production Worker was removed), so the rate-limit and cold-start rationale
+> below no longer applies. Never add retries, skips, or `continue-on-error`
+> to make a lane green.
+
 **Date:** 2024-12-18
 **Severity:** Medium - caused flaky CI
 **Time to Fix:** 30 minutes
@@ -4430,8 +4443,9 @@ commit; this section documents the outcomes.
 
 These are still open:
 
-- **Tighten `metrics/percentile.ts` and `metrics/ring-buffer.ts`** to
-  reach >90% mutation score. Currently 88% and 84%.
+- **Mutation-score expansion is deferred under the owner's cost cap.**
+  No new mutation targets, campaigns, dependencies or scheduled lanes belong
+  in this readiness pass; pre-existing optional tooling is unchanged.
 - **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
   call sites** to production interfaces through real dependency injection.
   Until that seam exists, `mock-fidelity.test.ts` discovers name drift across
@@ -6948,3 +6962,21 @@ path it names, and reject anything it cannot analyze.** Give the gate negative
 fixtures that break discovery, classification, wiring, and output independently.
 Diagnostics should compose production transformations rather than copy them.
 Treat an unsupported construct as a decision to make, never as an implicit pass.
+
+## Lesson 83: Retry Reasons Must Share One Attempt Budget
+
+**Date:** 2026-10-09
+
+The session-read helper nested a three-attempt transport loop inside a
+three-attempt empty-response loop. Alternating transport failures and empty
+successful responses could therefore make nine requests, despite the caller
+asking for three. Transport errors, HTTP 429 and incomplete successful reads
+now share one loop and one budget; malformed JSON and other HTTP errors fail
+immediately. The existing helper test checks a mixed failure sequence with
+fake timers and exact request/annotation counts.
+
+Splitting heavy Vitest files into projects must move work, not duplicate it.
+The existing required CI job still executes all three groups, while T0 avoids
+native-render and verification-tooling work. PCM tests reuse a capture fixture
+instead of repeatedly rebuilding it. No mutation campaign, extra scheduled
+job, browser matrix, or timeout increase was added during this readiness pass.

@@ -30,11 +30,12 @@ Prefer the narrowest controllable seam that still executes production code:
   Worker lanes reject any skipped, flaky, or unexpected result; the remaining
   offline lane ratchets its reviewed pass/skip totals so a new skip cannot turn
   a regression green.
-- The real-Worker lane runs with one browser worker. It intentionally exercises
-  the complete Worker-owned inventory below the production limit of 100 session
-  creates per IP per minute; increasing Playwright concurrency turns the
-  functional contract into a rate-limit load test and produces cascading,
-  non-diagnostic navigation timeouts.
+- Real-Worker lanes keep browser concurrency low: CI runs full Chromium with
+  two workers and WebKit with one. The owned Wrangler process raises the
+  session-create limit for the run (`E2E_SESSION_CREATE_RATE_LIMIT_PER_MINUTE`,
+  default 1000, in `scripts/test-e2e-full-stack.ts`); raising concurrency
+  further turns the functional contract into a rate-limit load test and
+  produces cascading, non-diagnostic navigation timeouts.
 - The full-stack runner must inherit Wrangler's stdout/stderr. It launches
   Playwright synchronously, so piped Worker logs cannot be drained by Node and
   can fill the OS buffer, deadlocking the server partway through the suite.
@@ -725,13 +726,20 @@ app/
 ### Running Tests
 
 ```bash
-# Unit tests only
+# Unit tests only (the fast product lane; T0 and the pre-push hook)
 npm run test:unit
+
+# Offline audio renders through the native renderer (CPU-heavy)
+npm run test:audio-render
+
+# Tests of the verification tooling itself: evidence receipts, the
+# instrument-quality matrix and audit, scanners, analyzers, eval manifest
+npm run test:verification-tooling
 
 # Integration tests (Workers runtime)
 npm run test:integration
 
-# All tests
+# All of the above
 npm run test:all
 
 # E2E tests
@@ -772,8 +780,11 @@ npm run validate:test-quality        # all four
 
 `validate:test-antipatterns` **fails the build**. It reports assertions
 nullified by `.catch(() => {})`, runtime self-skips (`test.skip(true, ...)`),
+dynamic imports whose load failure is swallowed
+(`await import('node-web-audio-api').catch(() => null)` feeding a `skipIf`),
 tautologies (`expect(true).toBe(true)`), self-comparisons, and tests with no
-assertion at all. Matching runs over comment-stripped source, so describing one
+assertion at all. Use `requireOfflineAudio()` (`src/test/session-render.ts`)
+for native audio: it fails with a clear message instead of skipping. Matching runs over comment-stripped source, so describing one
 of these patterns in a comment is not reported as an instance of it.
 
 `validate:test-links` **fails the build** on three kinds of test that are not
@@ -817,27 +828,33 @@ misses one. Both the offline Chromium matrix and real-Worker path are blocking.
 
 The authoritative workflow is `.github/workflows/ci.yml` and uses the
 repository-wide Node version. Every Playwright report is checked against both
-reviewed pass/skip totals and the exact title inventory:
+reviewed pass/skip totals and the exact test identities. The numbers live in
+exactly one place, `app/e2e/lane-contracts.json` (totals) and
+`app/e2e/lane-identities.json` (identities), and
+`scripts/assert-playwright-stats.mjs` enforces them; this document does not
+repeat them, because copies here drifted. The lanes are:
 
-1. **Mock-compatible Chromium:** five manifest files, 65 passed, zero skipped.
-2. **Remaining offline Chromium:** 82 passed and 69 reviewed backend-dependent
-   skips; a new or renamed skip fails the contract.
-3. **Worker-owned Chromium subset:** 12 manifest files, 73 passed, zero skipped,
-   serialized below the production session-create rate limit.
-4. **Full real-backend browsers:** the functional suite runs against an owned
-   Wrangler process in Chromium (200 passed, 17 reviewed skips) and broad
-   WebKit (154 passed, 52 reviewed browser/project skips; seven real-audio
-   specs are excluded and four playback tests in mixed files are among the
-   reviewed skips because headless WebKit can wedge on `AudioContext.resume()`).
-5. **Visuals:** three deterministic Holby screenshots gate on pinned `macos-14`;
-   11 tagged screenshots gate on the Linux real-Worker runner. Platform
-   baselines are not interchangeable.
+1. **Mock-compatible Chromium** (`mock-required`): the manifest files, zero
+   skips.
+2. **Remaining offline Chromium** (`offline-functional`): reviewed
+   backend-dependent skips; a new or renamed skip fails the contract.
+3. **Worker-owned Chromium subset** (`worker`, `worker-smoke`): zero skips,
+   kept below the session-create rate limit.
+4. **Full real-backend browsers** (`real-chromium`, `real-webkit`,
+   `mobile-safari`): the functional suite against an owned Wrangler process.
+   Seven real-audio specs are excluded from broad WebKit, and playback tests in
+   mixed files are among its reviewed skips, because headless WebKit can wedge
+   on `AudioContext.resume()`.
+5. **Audio** (`offline-audio`, `pcm`): real-audio specs, one browser worker.
+6. **Visuals** (`visual-linux`, `visual-macos`): tagged screenshots on the
+   Linux real-Worker runner and deterministic screenshots on pinned `macos-14`.
+   Platform baselines are not interchangeable.
 
 The full-stack launcher rejects an occupied port, tags health with a per-run
 nonce, races readiness against early Worker exit, enforces a 30-minute wall
 timeout, and terminates the detached process group on completion or signal.
 
-Unit tests retain Vitest's five-second global timeout. A measured slow property or render test may declare a local timeout in that test only. Do not reintroduce probabilistic WebSocket doubles as “chaos” evidence; named faults need a deterministic seam or a real Worker contract with an assertion proving the fault occurred.
+The `unit` Vitest lane runs under a 15-second global timeout (`app/vitest.config.ts` records the measurement behind it); `audio-render` and `verification-tooling` keep 30 seconds. A measured slow property or render test may declare a local timeout in that test only, and raising a lane's global timeout is a review event, not a fix. Do not reintroduce probabilistic WebSocket doubles as “chaos” evidence; named faults need a deterministic seam or a real Worker contract with an assertion proving the fault occurred.
 
 ---
 

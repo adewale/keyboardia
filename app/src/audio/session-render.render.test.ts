@@ -58,11 +58,26 @@ function installInstrumentDiskFetch(): () => void {
   };
 }
 
-// Stem loading is CPU-bound decode (finger-bass alone carries 112 files) and
-// must survive contended low-core CI runners. Keep enclosing test budgets at
-// least twice this value so the helpers' exact assertions fire before the
-// test's own timeout turns the failure into an opaque "timed out".
-const SAMPLE_LOAD_DEADLINE_MS = 30_000;
+// Stem loading is CPU-bound decode (finger-bass alone carries 112 files).
+// These waits end on loader state, never on elapsed time: they return once the
+// samples a render needs are installed, or once the background load has
+// settled without them (the assertions then fail at once). A wall-clock
+// deadline here used to expire while decode was still progressing on a
+// contended runner and report a partial load ("expected 10 to be 14"). The
+// enclosing test timeout is the only time budget.
+async function untilReadyOrSettled(
+  instrument: SampledInstrument,
+  isReady: () => boolean,
+): Promise<void> {
+  let settled = false;
+  void instrument.waitForBackgroundLoad().then(
+    () => { settled = true; },
+    () => { settled = true; },
+  );
+  while (!isReady() && !settled) {
+    await new Promise(resolveDelay => setTimeout(resolveDelay, 10));
+  }
+}
 
 async function waitForSampledStem(
   instrument: SampledInstrument,
@@ -74,14 +89,9 @@ async function waitForSampledStem(
   const renderedMidi = manifest.playbackNote ?? stem.midi;
   const expectedNotes = new Set(manifest.samples.map(sample => sample.note)).size;
   const expectedLayersAtMidi = manifest.samples.filter(sample => sample.note === renderedMidi).length;
-  const deadline = Date.now() + SAMPLE_LOAD_DEADLINE_MS;
-  while (Date.now() < deadline) {
-    if (
-      instrument.getSampleNotes().length >= expectedNotes
-      && instrument.getVelocityLayerCount(renderedMidi) >= expectedLayersAtMidi
-    ) return;
-    await new Promise(resolveDelay => setTimeout(resolveDelay, 10));
-  }
+  await untilReadyOrSettled(instrument, () =>
+    instrument.getSampleNotes().length >= expectedNotes
+    && instrument.getVelocityLayerCount(renderedMidi) >= expectedLayersAtMidi);
   expect(instrument.getSampleNotes().length).toBe(expectedNotes);
   expect(instrument.getVelocityLayerCount(renderedMidi)).toBe(expectedLayersAtMidi);
 }
@@ -177,10 +187,7 @@ async function renderPianoVelocitySweep(velocityCrossfade: number): Promise<Floa
 }
 
 async function viWaitForVelocityLayers(instrument: SampledInstrument, expected: number): Promise<void> {
-  const deadline = Date.now() + SAMPLE_LOAD_DEADLINE_MS;
-  while (instrument.getVelocityLayerCount(60) < expected && Date.now() < deadline) {
-    await new Promise(resolveDelay => setTimeout(resolveDelay, 10));
-  }
+  await untilReadyOrSettled(instrument, () => instrument.getVelocityLayerCount(60) >= expected);
   expect(instrument.getVelocityLayerCount(60)).toBe(expected);
 }
 
