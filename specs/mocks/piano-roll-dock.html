@@ -342,6 +342,9 @@
   .audit-bar .opt { height: 28px; padding: 0 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; white-space: nowrap; }
   .audit-bar .opt:hover { color: var(--text); }
   .audit-bar .opt[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
+  .audit-bar .opt .L { display: inline-block; min-width: 18px; margin: 0 6px 0 -3px; padding: 0 4px; border-radius: 3px; background: var(--text); color: var(--bg); font-family: var(--font-mono); font-size: 13px; font-weight: 700; line-height: 18px; text-align: center; }
+  .audit-bar .opt[aria-pressed="true"] .L { background: var(--bg); color: var(--text); }
+  .audit-bar .readout .L { display: inline-block; min-width: 22px; padding: 0 5px; margin-right: 8px; border-radius: 3px; background: var(--accent); color: var(--bg); font-weight: 700; font-size: 13px; line-height: 20px; text-align: center; }
   .audit-bar .readout { font-family: var(--font-mono); font-size: 11px; color: var(--text); white-space: nowrap; }
   .audit-bar .spacer { flex: 1; }
   html { --row-opt-h: 58px; }
@@ -597,21 +600,21 @@
   <section class="audit-bar" aria-label="Audit switches">
     <span class="k">Rows</span>
     <span class="set" role="group" aria-label="Row geometry" id="rowOpts">
-      <button class="opt" type="button" data-rows="reconciled" aria-pressed="true" title="PR #127 contract: 24 + 2 + 24 in a 58px row, pitch 60">58 / 60 two lines</button>
-      <button class="opt" type="button" data-rows="r50" aria-pressed="false" title="Row audit's pick: two 24px lines, no padding, pitch 52 = 4/3 of the step pitch">50 / 52 two lines</button>
-      <button class="opt" type="button" data-rows="r48two" aria-pressed="false" title="Production's row and pitch with two 22px lines">48 / 50 two 22px lines</button>
-      <button class="opt" type="button" data-rows="r48one" aria-pressed="false" title="Research: one 36px band, name truncates, badge and lane toggle move to the Track pane">48 / 50 one line</button>
-      <button class="opt" type="button" data-rows="r36one" aria-pressed="false" title="Strict 1:1 with the step pitch">36 / 39 one line</button>
+      <button class="opt" type="button" data-rows="reconciled" aria-pressed="true" title="PR #127 contract: 24 + 2 + 24 in a 58px row, pitch 60"><b class="L">A</b>58 / 60 two lines</button>
+      <button class="opt" type="button" data-rows="r50" aria-pressed="false" title="Row audit's pick: two 24px lines, no padding, pitch 52 = 4/3 of the step pitch"><b class="L">B</b>50 / 52 two lines</button>
+      <button class="opt" type="button" data-rows="r48two" aria-pressed="false" title="Production's row and pitch with two 22px lines"><b class="L">C</b>48 / 50 two 22px lines</button>
+      <button class="opt" type="button" data-rows="r48one" aria-pressed="false" title="Research: one 36px band, name truncates, badge and lane toggle move to the Track pane"><b class="L">D</b>48 / 50 one line</button>
+      <button class="opt" type="button" data-rows="r36one" aria-pressed="false" title="Strict 1:1 with the step pitch"><b class="L">E</b>36 / 39 one line</button>
     </span>
     <span class="set" role="group" aria-label="Row geometry from the survey">
-      <button class="opt" type="button" data-rows="label" aria-pressed="false" title="Aubade, openDAW, Muse: name over instrument inside the 36px band, M/S beside, 154px column, production's 48/50">Label stack 48 / 50</button>
-      <button class="opt" type="button" data-rows="caption" aria-pressed="false" title="Region name bars, tracker channel bars: a 12px caption over each lane, a 64px column with only the colour bar and M/S; band-to-band 14 as in production">Caption strip 50</button>
-      <button class="opt" type="button" data-rows="quiet" aria-pressed="false" title="GarageBand iOS, BeepBox, Dawn: 36/39 row, 120px column with chip and name; M/S on hover or selection; per-track controls in a selected-track bar">Quiet head 36 / 39</button>
-      <button class="opt" type="button" data-rows="tiles" aria-pressed="false" title="BeepBox, Launchpad: the header is two cells, a colour tile that opens the track and a mute tile; 75px column">Cell tiles 36 / 39</button>
+      <button class="opt" type="button" data-rows="label" aria-pressed="false" title="Aubade, openDAW, Muse: name over instrument inside the 36px band, M/S beside, 154px column, production's 48/50"><b class="L">F</b>Label stack 48 / 50</button>
+      <button class="opt" type="button" data-rows="caption" aria-pressed="false" title="Region name bars, tracker channel bars: a 12px caption over each lane, a 64px column with only the colour bar and M/S; band-to-band 14 as in production"><b class="L">G</b>Caption strip 50</button>
+      <button class="opt" type="button" data-rows="quiet" aria-pressed="false" title="GarageBand iOS, BeepBox, Dawn: 36/39 row, 120px column with chip and name; M/S on hover or selection; per-track controls in a selected-track bar"><b class="L">H</b>Quiet head 36 / 39</button>
+      <button class="opt" type="button" data-rows="tiles" aria-pressed="false" title="BeepBox, Launchpad: the header is two cells, a colour tile that opens the track and a mute tile; 75px column"><b class="L">I</b>Cell tiles 36 / 39</button>
     </span>
     <span class="set" role="group" aria-label="Row geometry, requested">
-      <button class="opt" type="button" data-rows="tall" aria-pressed="false" title="CRAP: cells grow to 36×50 so the two-line block is one band; 216px column with identity on line one and M, S, Notes, lane, Copy, Clear and Delete on line two; 3px gaps both ways">Tall cells 50 / 53</button>
-      <button class="opt" type="button" data-rows="impeccable" aria-pressed="false" title="pbakaus/impeccable layout: reading order cells > name > state > actions; no tile, proximity instead; 4-unit scale with 4px inside groups and 12px between; quiet 24px actions at the row end; a 12px interval separates melodic tracks from drums; 200px column, 48/50">Impeccable 48 / 50</button>
+      <button class="opt" type="button" data-rows="tall" aria-pressed="false" title="CRAP: cells grow to 36×50 so the two-line block is one band; 216px column with identity on line one and M, S, Notes, lane, Copy, Clear and Delete on line two; 3px gaps both ways"><b class="L">J</b>Tall cells 50 / 53</button>
+      <button class="opt" type="button" data-rows="impeccable" aria-pressed="false" title="pbakaus/impeccable layout: reading order cells > name > state > actions; no tile, proximity instead; 4-unit scale with 4px inside groups and 12px between; quiet 24px actions at the row end; a 12px interval separates melodic tracks from drums; 200px column, 48/50"><b class="L">K</b>Impeccable 48 / 50</button>
     </span>
     <span class="k">Fixes</span>
     <span class="set">
@@ -1512,7 +1515,7 @@
     const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'reconciled'];
     tracks.forEach(t=>{if(t.gripEl)t.gripEl.textContent=rowFix()?'⠿':'⋮⋮';syncRow(t);});
     if(ui.drawLines)ui.drawLines();setPitchHeight(H);renderSelectedBar();if(ui.fitHead)ui.fitHead();
-    document.getElementById('auditReadout').textContent='row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch';
+    const ro=document.getElementById('auditReadout');ro.replaceChildren();const Lb=el('L',ro,'b');Lb.textContent=document.querySelector('.audit-bar .opt[data-rows="'+(root.dataset.rows||'reconciled')+'"] .L').textContent;ro.append(document.createTextNode('row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch'));
   }
   document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
   for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on';document.documentElement.dataset[key]=on?'on':'off';b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
