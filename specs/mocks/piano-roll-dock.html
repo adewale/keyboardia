@@ -483,6 +483,52 @@
   html[data-rows="tiles"] .line2, html[data-rows="tiles"] .line2 .group { display: contents; }
   html[data-rows="tiles"] .tl-btn.mute-button { width: 36px; height: 36px; border-radius: 4px; font-size: 12px; }
 
+  /* N7 · Tall cells (Robin Williams' CRAP): the cell grows to the two-line block's height so the row is one band
+     again. Contrast: identity text on line one, controls on line two. Repetition: the 24px unit, the 3px gap in both
+     axes, the landscape block's 216px column. Alignment: cell top and bottom = block top and bottom; every control
+     starts on the name's left edge. Proximity: items 2px apart, groups 4px apart, actions inside the block.
+     Row 50 = 24 + 2 + 24; pitch 53; cells 36 × 50; column 216 = 4 + 12 + 4 + 184 + 12. */
+  html[data-rows="tall"] { --row-opt-h: 50px; --track-left-width: 216px; }
+  html[data-rows="tall"] .track-row { height: 50px; padding: 0; }
+  html[data-rows="tall"] .tracks-inner .rows, html[data-rows="tall"] .tracks-inner { gap: 3px; }
+  html[data-rows="tall"] .step-cell { height: 50px; }
+  html[data-rows="tall"] .track-left { grid-template-columns: [drag] 12px [body] 184px; height: 50px; padding: 0 12px 0 4px; }
+  html[data-rows="tall"] .track-name .inst { display: inline; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; text-transform: none; }
+  html[data-rows="tall"] .line2 .badge { display: none; }
+  html[data-rows="tall"] .line2 .act-group { display: inline-flex; }
+  html[data-rows="tall"] .row-actions { display: none; }
+  html[data-rows="tall"] .velocity-lane { margin-top: 3px; }
+  html[data-rows="tall"][data-rowfix="on"] .velocity-lane { margin-top: 3px; }
+  .line2 .act-group { display: none; gap: 2px; }
+  .act-group .tl-btn { font-size: 12px; font-weight: 500; }
+  .act-group .tl-btn.copy-source { background: var(--success); border-color: var(--success); color: var(--bg); }
+  .act-group .tl-btn.paste { border-color: var(--info-text); color: var(--info-text); }
+  .act-group .tl-btn:disabled { opacity: .4; cursor: default; }
+
+  /* N8 · Impeccable (pbakaus/impeccable, layout): reading order cells > name > state > actions, read with the squint
+     test. Proximity before containers: the column has no tile, only the sequencer's own ground. A 4-unit scale with
+     deliberate rhythm: 4px inside a group, 12px between groups, 8px padding. Density follows use frequency: M and S
+     stay; Copy, Clear and Delete become quiet 24px marks at the row's end; audition, lane and transpose live in the
+     dock. Rows group by meaning: a 12px interval separates melodic tracks from drums.
+     Column 200 = 8 + chip 4 + 8 + name 72 + 12 + M 24 + 4 + S 24 + 12 + ♪ 24 + 8; row 48 on 50, one 36px band. */
+  html[data-rows="impeccable"] { --row-opt-h: 48px; --track-left-width: 200px; }
+  html[data-rows="impeccable"] .track-row { height: 48px; padding: 6px 0; }
+  html[data-rows="impeccable"] .track-left { display: flex; align-items: center; gap: 0; height: 36px; padding: 0 8px; background: var(--bg); box-shadow: none; }
+  html[data-rows="impeccable"] .track-row-wrapper.docked .track-left { box-shadow: inset 2px 0 0 var(--accent); }
+  html[data-rows="impeccable"] .track-left::before { content: ''; width: 4px; height: 36px; flex: none; background: var(--cat); margin-right: 8px; border-radius: 1px; }
+  html[data-rows="impeccable"] .drag-handle, html[data-rows="impeccable"] .track-name .tick, html[data-rows="impeccable"] .track-name .tr, html[data-rows="impeccable"] .line2 .badge, html[data-rows="impeccable"] .velocity-toggle { display: none; }
+  html[data-rows="impeccable"] .track-name { display: block; width: 72px; flex: 0 0 72px; height: 36px; line-height: 36px; padding: 0; margin-right: 12px; text-overflow: ellipsis; text-align: left; }
+  html[data-rows="impeccable"] .rename-input { width: 72px; flex: 0 0 72px; height: 24px; margin-right: 12px; }
+  html[data-rows="impeccable"] .line2 { display: contents; }
+  html[data-rows="impeccable"] .line2 .group { gap: 4px; }
+  html[data-rows="impeccable"] .line2 .group + .group { margin-left: 12px; }
+  html[data-rows="impeccable"] .row-actions { gap: 4px; padding: 6px 8px; background: var(--bg); }
+  html[data-rows="impeccable"] .row-actions button { height: 24px; min-width: 0; width: auto; padding: 0 8px; font-size: 11px; background: transparent; border-color: transparent; color: var(--muted); }
+  html[data-rows="impeccable"] .row-actions button:hover, html[data-rows="impeccable"] .row-actions button:focus-visible { color: var(--text); border-color: var(--border-hover); }
+  html[data-rows="impeccable"] .row-actions button.copy-source { background: var(--success); color: var(--bg); }
+  html[data-rows="impeccable"] .row-actions button.paste { border-color: var(--info-text); color: var(--info-text); }
+  html[data-rows="impeccable"] .track-row-wrapper.kind-melodic + .track-row-wrapper.kind-drum { margin-top: 12px; }
+
   /* ===== Portrait: consumption only ===== */
   [data-display-mode="portrait"] .sequencer { display: none; }
   [data-display-mode="portrait"] .portrait-preview { display: block; }
@@ -512,6 +558,10 @@
       <button class="opt" type="button" data-rows="caption" aria-pressed="false" title="Region name bars, tracker channel bars: a 12px caption over each lane, a 64px column with only the colour bar and M/S; band-to-band 14 as in production">Caption strip 50</button>
       <button class="opt" type="button" data-rows="quiet" aria-pressed="false" title="GarageBand iOS, BeepBox, Dawn: 36/39 row, 120px column with chip and name; M/S on hover or selection; per-track controls in a selected-track bar">Quiet head 36 / 39</button>
       <button class="opt" type="button" data-rows="tiles" aria-pressed="false" title="BeepBox, Launchpad: the header is two cells, a colour tile that opens the track and a mute tile; 75px column">Cell tiles 36 / 39</button>
+    </span>
+    <span class="set" role="group" aria-label="Row geometry, requested">
+      <button class="opt" type="button" data-rows="tall" aria-pressed="false" title="CRAP: cells grow to 36×50 so the two-line block is one band; 216px column with identity on line one and M, S, Notes, lane, Copy, Clear and Delete on line two; 3px gaps both ways">Tall cells 50 / 53</button>
+      <button class="opt" type="button" data-rows="impeccable" aria-pressed="false" title="pbakaus/impeccable layout: reading order cells > name > state > actions; no tile, proximity instead; 4-unit scale with 4px inside groups and 12px between; quiet 24px actions at the row end; a 12px interval separates melodic tracks from drums; 200px column, 48/50">Impeccable 48 / 50</button>
     </span>
     <span class="k">Fixes</span>
     <span class="set">
@@ -799,6 +849,7 @@
       t.copyEl.setAttribute('aria-label', (copySource && copySource !== t ? 'Paste into ' : 'Copy ') + t.name);
       t.copyEl.setAttribute('aria-pressed', String(copySource === t));
       t.copyEl.disabled = !copySource && !t.steps.some(Boolean);
+      if (t.miniCopy) { const paste = !!copySource && copySource !== t; t.miniCopy.textContent = copySource === t ? '⧉' : paste ? '⤓' : '⧉'; t.miniCopy.title = paste ? 'Paste into ' + t.name : copySource === t ? 'Copying ' + t.name + ' (click to cancel)' : 'Copy ' + t.name; t.miniCopy.setAttribute('aria-label', t.miniCopy.title); t.miniCopy.classList.toggle('copy-source', copySource === t); t.miniCopy.classList.toggle('paste', paste); t.miniCopy.disabled = t.copyEl.disabled; }
     });
     ui.copyStatus.textContent = copySource ? 'Copying ' + copySource.name + ' — choose Paste on a destination row. Escape cancels.' : '';
   }
@@ -877,7 +928,7 @@
     });
   }
   function renderTrackRow(parent, t) {
-    const wrap=el('track-row-wrapper',parent);t.wrap=wrap;
+    const wrap=el('track-row-wrapper kind-'+t.kind,parent);t.wrap=wrap;
     const row=el('track-row',wrap);
     const left=el('track-left',row);
     const grip=el('drag-handle',left);grip.textContent=rowFix()?'⠿':'⋮⋮';t.gripEl=grip;grip.setAttribute('aria-hidden','true');grip.title='Layout preview: reorder is not implemented here';
@@ -904,6 +955,10 @@
       else openDock(t,'notes',ex);
     });
     const v=el('velocity-toggle',disclose,'button');v.textContent='V';v.setAttribute('aria-label',t.name+' velocity lane');v.setAttribute('aria-expanded','false');t.laneToggle=v;
+    const act=el('group act-group',line2);
+    const miniCopy=el('tl-btn',act,'button');miniCopy.textContent='⧉';t.miniCopy=miniCopy;miniCopy.addEventListener('click',()=>t.copyEl.click());
+    const miniClear=el('tl-btn',act,'button');miniClear.textContent='○';miniClear.setAttribute('aria-label','Clear '+t.name+' pattern');miniClear.title='Clear pattern';miniClear.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(2)').click());
+    const miniDelete=el('tl-btn',act,'button');miniDelete.textContent='✕';miniDelete.setAttribute('aria-label','Delete '+t.name+' track');miniDelete.title='Delete track';miniDelete.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(3)').click());
     const stepsEl=el('steps',row);const cap=el('row-caption',stepsEl,'button');t.captionEl=cap;cap.addEventListener('click',()=>openDock(t,'track',cap));
     const grid=el('step-grid',stepsEl);grid.setAttribute('role','group');grid.setAttribute('aria-label',t.name+' pattern');
     t.cells=[];
@@ -1401,7 +1456,7 @@
     }
   });
   // ---------- audit switches ----------
-  const ROW_OPTS={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75}};
+  const ROW_OPTS={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
   function applyAudit(){
     const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'reconciled'];
     tracks.forEach(t=>{if(t.gripEl)t.gripEl.textContent=rowFix()?'⠿':'⋮⋮';syncRow(t);});
