@@ -138,7 +138,7 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260911.1",
     "@eslint/js": "^9.39.1",
-    "@modelcontextprotocol/client": "2.0.0",
+    "@modelcontextprotocol/client": "2.3.1",
     "@playwright/test": "^1.57.0",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/typescript-checker": "^9.6.1",
@@ -157,7 +157,7 @@
     "globals": "^16.5.0",
     "husky": "^9.1.7",
     "jsdom": "^27.3.0",
-    "lint-staged": "^16.2.7",
+    "lint-staged": "^17.6.0",
     "midi-file": "^1.2.4",
     "node-web-audio-api": "^2.0.0",
     "pngjs": "5.0.0",
@@ -167,7 +167,7 @@
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
     "vitest": "^4.0.15",
-    "wrangler": "^4.53.0",
+    "wrangler": "^4.149.0",
     "ws": "^8.21.1"
   }
 }
