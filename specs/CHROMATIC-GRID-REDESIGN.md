@@ -1,5 +1,9 @@
 # Chromatic Grid Redesign
 
+> **Planned dock-specific amendment (October 2026):** [PIANO-ROLL-DOCK.md](./PIANO-ROLL-DOCK.md) defines the proposed successor Notes editor. The Events/All view modes,49 relative-pitch rows and scale filtering below continue to describe the earlier ChromaticGrid; they are not instructions to filter the dock's97 absolute MIDI12..108 rows. Range/scale cues may decorate but never hide notes, ties or ghosts.
+>
+> For the dock, one JS-supplied H2..36 drives keys, centred bars/ghosts and hit testing. Explicit/ghost Fit comparison chooses fractional `clamp(B/(hi-lo+5), 2, 36)`; automatic initial/track-switch Fit caps18, deferred until first Notes if initially opened in Track/Step. Initial Step reveals selected pitch at existing H; resize/detent refit measures the new B. Pane changes retain the Notes mount/H/scroll. Notes/ghost heights are `max(1px, 14/18*H)` / `max(1px, 12/18*H)`, centred with radius at most half-height and3px. At H<12 hide bar labels but preserve presence outlines and keyboard equivalents. Step and Notes-toolbar native loop inputs/Clear are32px desktop/44px mobile. Range/scale decoration never dims key labels or disables audition; white labels retain `--piano-key-label`, and muted controls retain informative contrast. Existing editor access remains until its working replacement ships.
+
 ## Problem Statement
 
 The current ChromaticGrid shows only 13 "key interval" pitch rows (0, ±5, ±7, ±12, ±17, ±19, ±24). However, users can set any pitch from -24 to +24 via the pitch slider in ParameterLockEditor. This creates a UX problem where notes exist but are invisible in the grid.
