@@ -386,7 +386,7 @@
   html[data-dockfix="on"] .cbtn { font-weight: 500; }
   html[data-dockfix="on"] .dock-head .ib, html[data-dockfix="on"] .cbtn, html[data-dockfix="on"] .cbtn.quiet, html[data-dockfix="on"] .tool-scroll, html[data-dockfix="on"] .pane input[type=number], html[data-dockfix="on"] .pane select, html[data-dockfix="on"] .detail-controls input, html[data-dockfix="on"] .detail-controls select, html[data-dockfix="on"] .row-actions button, html[data-dockfix="on"] .rename-input { border-color: #74747f; }
   html[data-dockfix="on"] .dock-head .ib:hover { border-color: var(--muted); }
-  html[data-dockfix="on"] .key.black { width: 78px; border-radius: 0 2px 2px 0; }
+  html[data-dockfix="on"] .key.black { width: 58%; border-radius: 0 2px 2px 0; }
   html[data-dockfix="on"][data-display-mode="landscape"] .key.black { width: 38px; }
   html[data-dockfix="on"] .key { padding-right: 6px; }
   html[data-dockfix="on"] .key .lbl { display: block; line-height: var(--pitch-row-height); }
@@ -500,6 +500,51 @@
   html[data-rows="flatfull"] .line2 { display: contents; }
   html[data-rows="flatfull"] .line2 .group + .group { margin-left: 2px; }
 
+  /* T, who over what (arrangement 3): line one is identity only; line two is [M S] [+0 32] [♪ V ⚙] … [⧉ ⋯].
+     Four looks for four kinds of control: outlined letters for state, mono values, soft fill for views, bare icons
+     for actions. The instrument label is the preview button, so the SMP badge goes. 270 = 7 cells. */
+  html[data-rows="tallwho"] { --track-left-width: 270px; }
+  html[data-rows="tallwho"] .track-left { flex-wrap: wrap; align-content: center; padding-right: 8px; }
+  html[data-rows="tallwho"] .track-name { flex: 0 0 100%; order: 0; height: 24px; line-height: 24px; text-align: left; white-space: nowrap; overflow: hidden; }
+  html[data-rows="tallwho"] .track-name .inst { display: inline; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; text-transform: none; cursor: pointer; }
+  html[data-rows="tallwho"] .track-name .inst:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
+  html[data-rows="tallwho"] .track-name .tr { display: none; }
+  html[data-rows="tallwho"] .line2 { display: contents; }
+  html[data-rows="tallwho"] .line2 .group { order: 1; }
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font-family: var(--font-mono); font-size: 10px; letter-spacing: -.3px; cursor: pointer; flex: none; }
+  html[data-rows="tallwho"] .pill-tr { order: 2; }
+  html[data-rows="tallwho"] .pill-steps { order: 3; margin-left: -2px; }
+  html[data-rows="tallwho"] .line2 .group:nth-child(2) { order: 4; }
+  html[data-rows="tallwho"] .line2 .group.act-group { order: 5; display: inline-flex; margin-left: auto; }
+  html[data-rows="tallwho"] .badge { display: none; }
+  html[data-rows="tallwho"] .tools-toggle { display: inline-flex; }
+  html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle { border: 0; background: rgba(255,255,255,.07); color: var(--muted); font-size: 12px; border-radius: 4px; }
+  html[data-rows="tallwho"] .expand-toggle.active { background: var(--accent); color: var(--bg); }
+  html[data-rows="tallwho"] .kind-drum .expand-toggle { opacity: .35; }
+  html[data-rows="tallwho"] .act-group .tl-btn { border: 0; background: transparent; color: var(--muted); font-size: 13px; }
+  html[data-rows="tallwho"] .act-group .tl-btn:hover { color: var(--text); background: rgba(255,255,255,.07); }
+  html[data-rows="tallwho"] .act-group .tl-btn:nth-child(2), html[data-rows="tallwho"] .act-group .tl-btn:nth-child(4) { display: none; }
+  html[data-rows="tallwho"] .act-group .more-btn { display: inline-flex; }
+  .act-group .more-btn { display: none; letter-spacing: 1px; }
+
+  /* U: the per-instrument panel under the track row. The same controls as the dock's Track pane, in a 48px strip
+     that slides in beneath the row (and above its velocity lane), pushing the rows below down. It is sticky to the
+     left so it stays in view while the grid scrolls, and it starts on the tile's left edge with the track's chip. */
+  .row-panel { display: flex; align-items: center; gap: 14px; height: 48px; margin-top: 3px; padding: 0 12px 0 0; position: sticky; left: 0; max-width: calc(100vw - 72px); background: var(--surface-2); border-radius: 4px; color: var(--muted); font-size: 12px; overflow-x: auto; overflow-y: hidden; }
+  .row-panel .rp-chip { flex: none; width: 4px; height: 48px; border-radius: 4px 0 0 4px; background: var(--cat); margin-right: -6px; }
+  .row-panel .rp-title { flex: none; font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; }
+  .row-panel .rp-title small { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; }
+  .row-panel .rowc { display: inline-flex; align-items: center; gap: 2px; flex: none; }
+  .row-panel .rowc .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-right: 6px; }
+  .row-panel .cbtn { height: 24px; padding: 0 8px; border: 1px solid var(--border-hover); border-radius: 4px; background: transparent; color: var(--text); font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .row-panel .cbtn.value { border-color: transparent; font-family: var(--font-mono); }
+  .row-panel .cbtn.sym { width: 24px; padding: 0; font-weight: 700; }
+  .row-panel .cbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
+  .row-panel .cbtn:disabled { opacity: .4; cursor: default; }
+  .row-panel .rp-close { margin-left: auto; flex: none; width: 24px; height: 24px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; }
+  .track-row-wrapper.panel-open .track-name { color: var(--accent-text); }
+  .track-row-wrapper.panel-open .track-left { background: var(--surface-2); }
+
   /* Simple tile: chip, name, instrument and the transpose readout; nothing else in the row. The tile opens the
      per-instrument panel, the dock's Track pane, where mute, solo, transpose, steps, instrument, lane, copy, paste,
      clear and delete live. Column 153 = one beat. */
@@ -561,12 +606,12 @@
   <section class="audit-bar" aria-label="Audit switches">
     <span class="k">Complete tile</span>
     <span class="set" role="group" aria-label="Complete tile" id="rowOpts">
-      <button class="opt" type="button" data-rows="tallfull" aria-pressed="false" title="O · Tall lattice, complete tile: 36×50 cells on a 53px pitch; a 270px tile (seven cells) with name, instrument, transpose and steps on line one and M, S, preview, Notes, lane, tools, copy/paste, clear, delete on line two"><b class="L">O</b>Tall · complete</button>
-      <button class="opt" type="button" data-rows="flatfull" aria-pressed="false" title="P · Flat lattice, complete tile: 36×36 cells on the 39px pitch; a 465px tile (twelve cells, three beats) with every control on one line"><b class="L">P</b>Flat · complete</button>
+      <button class="opt" type="button" data-rows="tallwho" aria-pressed="false" title="T · Tall lattice, complete tile, arrangement 3 (who over what): line one is the name and instrument only; line two is M S, transpose and steps as 24px values, Notes, lane, tools, then copy and a ⋯ menu. 270px, seven cells"><b class="L">T</b>Tall · who over what</button>
     </span>
     <span class="k">Simple tile</span>
     <span class="set" role="group" aria-label="Simple tile">
       <button class="opt" type="button" data-rows="tallsimple" aria-pressed="true" title="Q · Tall lattice, simple tile: 36×50 cells on a 53px pitch; a 153px tile (one beat) with chip, name, instrument and transpose readout; every control in the per-instrument panel"><b class="L">Q</b>Tall · simple</button>
+      <button class="opt" type="button" data-rows="tallsimple" data-panel="row" aria-pressed="false" title="U · Q's tile, but the per-instrument panel opens under the track row instead of in the dock: click the name and a 48px panel with transpose, lane, preview, rename, mute, solo, copy, clear and delete slides in beneath the row, pushing the rows below down. Notes still open the dock"><b class="L">U</b>Tall · panel under row</button>
       <button class="opt" type="button" data-rows="flatsimple" aria-pressed="false" title="R · Flat lattice, simple tile: 36×36 cells on the 39px pitch; a 153px tile with chip and name; every control in the per-instrument panel"><b class="L">R</b>Flat · simple</button>
       <button class="opt" type="button" data-rows="tiles" aria-pressed="false" title="I · Flat lattice, cell tiles: the header is two cells, a colour tile that opens the track and a mute tile; 75px"><b class="L">I</b>Cell tiles</button>
     </span>
@@ -919,6 +964,7 @@
     t.nameEl.append(document.createTextNode(t.name));
     if (t.kind === 'melodic') { const tr=el('tr',t.nameEl);tr.textContent=t.transpose===0?'':trLabel(t); }
     const inst=el('inst',t.nameEl,'span');inst.textContent=t.inst;
+    inst.addEventListener('click',e=>{if(document.documentElement.dataset.rows==='tallwho'){e.stopPropagation();e.preventDefault();audition(t,BASE_MIDI+t.transpose,1);}});inst.title='Preview '+t.inst+': play one note';
     if(t.wrap)t.wrap.style.setProperty('--cat',t.cat);
     if(t.captionEl){t.captionEl.replaceChildren();t.captionEl.append(document.createTextNode(t.name));const ci=el('ci',t.captionEl,'span');ci.textContent='· '+t.inst;const cr=el('cr',t.captionEl,'span');cr.textContent=(t.kind==='melodic'?trLabel(t)+' st · ':'')+STEPS+' steps';}
     if(t.pillTr){t.pillTr.textContent=t.kind==='melodic'?trLabel(t):'—';}
@@ -990,6 +1036,7 @@
     const act=el('group act-group',line2);
     const miniCopy=el('tl-btn',act,'button');miniCopy.textContent='⧉';t.miniCopy=miniCopy;miniCopy.addEventListener('click',()=>t.copyEl.click());
     const miniClear=el('tl-btn',act,'button');miniClear.textContent='○';miniClear.setAttribute('aria-label','Clear '+t.name+' pattern');miniClear.title='Clear pattern';miniClear.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(2)').click());
+    const more=el('tl-btn more-btn',act,'button');more.textContent='⋯';more.setAttribute('aria-label','More for '+t.name+': paste, clear, rename, delete');more.title='Paste, clear, rename, delete: opens the Track pane';more.addEventListener('click',()=>openDock(t,'track',more));
     const miniDelete=el('tl-btn',act,'button');miniDelete.textContent='✕';miniDelete.setAttribute('aria-label','Delete '+t.name+' track');miniDelete.title='Delete track';miniDelete.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(3)').click());
     const stepsEl=el('steps',row);const cap=el('row-caption',stepsEl,'button');t.captionEl=cap;cap.addEventListener('click',()=>openDock(t,'track',cap));
     const grid=el('step-grid',stepsEl);grid.setAttribute('role','group');grid.setAttribute('aria-label',t.name+' pattern');
@@ -1085,7 +1132,7 @@
     const innerD=el('dock-inner',d),head=el('dock-head',innerD);ui.head=head;
     ui.title=el('dock-title',head);ui.title.id='dock-context';
     const right=el('right',head);
-    const detent=el('ib',right,'button');detent.textContent='⇕ Tall';detent.setAttribute('aria-label','Toggle tall editor');
+    const detent=el('ib',right,'button');ui.detent=detent;detent.textContent='⇕ Tall';detent.setAttribute('aria-label','Toggle tall editor');
     detent.addEventListener('click',()=>{dock.tall=!dock.tall;d.classList.toggle('tall',dock.tall);detent.textContent=dock.tall?'⇕ Compact':'⇕ Tall';setTimeout(fitComparison,reduced?0:220);});
     const close=el('ib',right,'button');close.textContent='×';close.setAttribute('aria-label','Close editor');close.addEventListener('click',closeDock);
     const tabs=el('chips track-tabs',head);tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Editing track');
@@ -1207,6 +1254,13 @@
     if(!dock.track||dock.track.kind!=='melodic')return;
     const mids=(initial===true&&dockFix())?(computeBars(dock.track),dock.track.bars.map(b=>b.midi)):comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
     const lo=Math.min(...mids),hi=Math.max(...mids),viewport=parseFloat(getComputedStyle(ui.scroll).height)||252;
+    if(initial===true&&dockFix()){
+      const need=hi-lo+5;let h=Math.min(18,Math.floor(252/need));
+      if(h<12){h=Math.min(18,Math.floor(432/need));if(!dock.tall){dock.tall=true;ui.dock.classList.add('tall');if(ui.detent)ui.detent.textContent='⇕ Compact';}}
+      setPitchHeight(Math.max(12,h));
+      ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-hi-2)*H-Math.max(0,(ui.scroll.clientHeight-need*H)/2));ui.scroll.dispatchEvent(new Event('scroll'));
+      setStatus('Showing '+dock.track.name+' at '+H+'px per semitone.');return;
+    }
     const raw=viewport/(hi-lo+5);setPitchHeight(clamp(dockFix()?Math.floor(raw):raw,2,initial===true?18:36));
     ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-hi-2)*H);ui.scroll.dispatchEvent(new Event('scroll'));
     setStatus('Showing '+dock.track.name+' and enabled comparison tracks. Zoom in for detail.');
@@ -1225,8 +1279,25 @@
     const top=(MIDI_MAX-midi)*H;if(top<ui.scroll.scrollTop)ui.scroll.scrollTop=top;else if(top+H>ui.scroll.scrollTop+ui.scroll.clientHeight)ui.scroll.scrollTop=top+H-ui.scroll.clientHeight;
     ui.scroll.dispatchEvent(new Event('scroll'));
   }
+  const rowPanel=()=>document.documentElement.dataset.panel==='row';
+  let openRowPanel=null;
+  function closeRowPanel(){if(!openRowPanel)return;const {t,panel}=openRowPanel;panel.remove();t.wrap.classList.remove('panel-open');openRowPanel=null;}
+  function toggleRowPanel(t,opener){
+    if(openRowPanel&&openRowPanel.t===t){closeRowPanel();return;}
+    closeRowPanel();
+    const panel=el('row-panel',null,'section');panel.setAttribute('aria-label',t.name+' panel');
+    t.wrap.insertBefore(panel,t.wrap.querySelector('.track-row').nextSibling);t.wrap.classList.add('panel-open');
+    openRowPanel={t,panel,opener};renderRowPanel();
+  }
+  function renderRowPanel(){
+    if(!openRowPanel)return;const {t,panel}=openRowPanel;panel.replaceChildren();
+    el('rp-chip',panel);const title=el('rp-title',panel);title.textContent=t.name;el('',title,'small').textContent=t.inst;
+    renderTrackTools(panel,t,renderRowPanel);
+    const close=el('rp-close',panel,'button');close.textContent='✕';close.setAttribute('aria-label','Close panel');close.addEventListener('click',closeRowPanel);
+  }
   function openDock(t,pane,opener) {
     if(isPortrait()||t.deleted)return;
+    if(rowPanel()&&(pane==='track'||(pane!=='notes')||t.kind!=='melodic')){toggleRowPanel(t,opener);return;}
     const switching=dock.track!==t,wasOpen=dock.open;
     if(ui.cancelDrag)ui.cancelDrag();
     if(!wasOpen)dock.opener=opener||t.nameEl;
@@ -1256,6 +1327,20 @@
     if(step===null||step===undefined){ui.title.textContent=t.name+' · '+t.inst;return;}
     const effective=midi??stepMidi(t,step)??(BASE_MIDI+t.transpose+(t.locks[step]?.pitch??0));
     ui.title.textContent=t.name+' · '+t.inst+' · Step '+(step+1)+' · '+noteName(effective)+' · v'+Math.round(stepVel(t,step)*127);
+  }
+  // The per-instrument controls: transpose, lane, preview, rename, mute, solo, copy/paste, clear, delete.
+  // Rendered into the dock's Track pane, or into the panel under the row (option U). `refresh` re-renders the host.
+  function renderTrackTools(p,t,refresh){
+    const group=label=>{const g=el('rowc',p);el('k',g,'span').textContent=label;return g;};
+    const button=(parent,label,handler,aria)=>{const b=el('cbtn'+(aria==='sym'?' sym':''),parent,'button');b.textContent=label;if(aria&&aria!=='sym')b.setAttribute('aria-label',aria);b.addEventListener('click',handler);return b;};
+    const tr=group('Transpose');
+    const minus=button(tr,'−',()=>{t.transpose--;trackChanged(t);refresh();},'Track transpose down');minus.disabled=t.transpose<=-24;
+    el('cbtn value',tr,'span').textContent=trLabel(t);
+    const plus=button(tr,'+',()=>{t.transpose++;trackChanged(t);refresh();},'Track transpose up');plus.disabled=t.transpose>=24;
+    const lane=button(p,'Velocity lane',()=>{t.lane.hidden=!t.lane.hidden;t.laneToggle.setAttribute('aria-expanded',String(!t.lane.hidden));lane.setAttribute('aria-expanded',String(!t.lane.hidden));});lane.setAttribute('aria-expanded',String(!t.lane.hidden));
+    button(p,'Preview',()=>audition(t,BASE_MIDI+t.transpose,1),'Preview '+t.inst+': play one note');button(p,'Rename',()=>{closeDock();closeRowPanel();renameTrack(t);});
+    const st=group('State');const pm=button(st,'M',()=>{t.wrap.querySelector('.mute-button').click();refresh();},'sym');pm.setAttribute('aria-pressed',String(!!t.muted));pm.setAttribute('aria-label','Mute '+t.name);const ps=button(st,'S',()=>{t.wrap.querySelector('.solo-button').click();refresh();},'sym');ps.setAttribute('aria-pressed',String(!!t.soloed));ps.setAttribute('aria-label','Solo '+t.name);
+    const ac=group('Pattern');const pc=button(ac,copySource&&copySource!==t?'Paste here':copySource===t?'Copying…':'Copy',()=>{t.copyEl.click();refresh();});pc.disabled=t.copyEl.disabled;button(ac,'Clear',()=>{t.wrap.querySelector('.row-actions button:nth-child(2)').click();refresh();});button(ac,'Delete',()=>{closeRowPanel();t.wrap.querySelector('.row-actions button:nth-child(3)').click();});
   }
   function renderPane() {
     const t=dock.track;if(!t)return;
@@ -1302,14 +1387,7 @@
         if(tied)el('context',p,'span').textContent='Pitch and volume inherit from attack step '+(attackStep(t,sel)+1);
       }
     }else{
-      const tr=group('Transpose');
-      const minus=button(tr,'−',()=>{t.transpose--;trackChanged(t);renderPane();},'Track transpose down');minus.disabled=t.transpose<=-24;
-      el('cbtn value',tr,'span').textContent=trLabel(t);
-      const plus=button(tr,'+',()=>{t.transpose++;trackChanged(t);renderPane();},'Track transpose up');plus.disabled=t.transpose>=24;
-      const lane=button(p,'Velocity lane',()=>{t.lane.hidden=!t.lane.hidden;t.laneToggle.setAttribute('aria-expanded',String(!t.lane.hidden));lane.setAttribute('aria-expanded',String(!t.lane.hidden));});lane.setAttribute('aria-expanded',String(!t.lane.hidden));
-      button(p,'Preview',()=>audition(t,BASE_MIDI+t.transpose,1),'Preview '+t.inst+': play one note');button(p,'Rename',()=>{closeDock();renameTrack(t);});
-      const st=group('State');const pm=button(st,'M',()=>{t.wrap.querySelector('.mute-button').click();renderPane();},'sym');pm.setAttribute('aria-pressed',String(!!t.muted));pm.setAttribute('aria-label','Mute '+t.name);const ps=button(st,'S',()=>{t.wrap.querySelector('.solo-button').click();renderPane();},'sym');ps.setAttribute('aria-pressed',String(!!t.soloed));ps.setAttribute('aria-label','Solo '+t.name);
-      const ac=group('Pattern');const pc=button(ac,copySource&&copySource!==t?'Paste here':copySource===t?'Copying…':'Copy',()=>{t.copyEl.click();renderPane();});pc.disabled=t.copyEl.disabled;button(ac,'Clear',()=>{t.wrap.querySelector('.row-actions button:nth-child(2)').click();renderPane();});button(ac,'Delete',()=>t.wrap.querySelector('.row-actions button:nth-child(3)').click());
+      renderTrackTools(p,t,renderPane);
     }
     ui.details.replaceChildren();el('',ui.details,'h3').textContent=ui.title.textContent;
     if(dock.pane==='track'){
@@ -1483,6 +1561,7 @@
   scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); applyClasses(); });
   window.addEventListener('keydown', e => {
     if(e.defaultPrevented)return;
+    if(e.key==='Escape'&&openRowPanel){closeRowPanel();return;}
     if(e.key==='Escape'){
       if(ui.cancelDrag&&ui.cancelDrag()){e.preventDefault();return;}
       if(copySource){copySource=null;copyData=null;syncActions();e.preventDefault();return;}
@@ -1494,7 +1573,7 @@
   });
   // ---------- audit switches ----------
   const ROW_OPTS_OLD={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
-  const ROW_OPTS={tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
+  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
   // Example strip: attack at +7, two ties, attack at −5, rest, attack at 0, tie, then a step at half volume on 0.
   // Cells are real .step-cell elements and the mark is placed by the row formula, so the strip tracks every switch.
   const DEMO=[{on:1,p:7},{on:1,p:7,tie:1},{on:1,p:7,tie:1},{on:1,p:-5},{on:0},{on:1,p:0},{on:1,p:0,tie:1},{on:1,p:0,vol:.5},{on:1,p:12,vol:.3},{on:1,p:12,tie:1,vol:.3},{on:1,p:0,env:1},{on:0,p:-12}];
@@ -1519,11 +1598,11 @@
     const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'tallsimple'];renderLegendDemo();
     tracks.forEach(t=>{if(t.gripEl)t.gripEl.textContent=rowFix()?'⠿':'⋮⋮';syncRow(t);});
     if(ui.drawLines)ui.drawLines();setPitchHeight(H);renderSelectedBar();if(ui.fitHead)ui.fitHead();
-    const ro=document.getElementById('auditReadout');ro.replaceChildren();const Lb=el('L',ro,'b');Lb.textContent=document.querySelector('.audit-bar .opt[data-rows="'+(root.dataset.rows||'tallsimple')+'"] .L').textContent;ro.append(document.createTextNode('row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch'));
+    const ro=document.getElementById('auditReadout');ro.replaceChildren();const Lb=el('L',ro,'b');Lb.textContent=(document.querySelector('.audit-bar .opt[data-rows][aria-pressed="true"] .L')||document.querySelector('.audit-bar .opt[data-rows="'+(root.dataset.rows||'tallsimple')+'"] .L')).textContent;ro.append(document.createTextNode('row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch'));
   }
-  document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.documentElement.dataset.beat=b.dataset.beat||'off';document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
+  document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.documentElement.dataset.beat=b.dataset.beat||'off';document.documentElement.dataset.panel=b.dataset.panel||'dock';closeRowPanel();document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
   for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap'],['velFix','vel'],['lockBorder','lockborder']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on'&&document.documentElement.dataset[key]!=='fill';document.documentElement.dataset[key]=key==='vel'?(on?'fill':'tint'):(on?'on':'off');b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
-  const root0=document.documentElement;root0.dataset.rows='tallsimple';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';root0.dataset.lockborder='off';document.getElementById('rowFix').setAttribute('aria-pressed','true');document.getElementById('dockFix').setAttribute('aria-pressed','true');applyAudit();
+  const root0=document.documentElement;root0.dataset.rows='tallsimple';root0.dataset.panel='dock';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';root0.dataset.lockborder='off';document.getElementById('rowFix').setAttribute('aria-pressed','true');document.getElementById('dockFix').setAttribute('aria-pressed','true');applyAudit();
   // The page opens with Piano docked so its first frame shows the working state. In the app the dock opens only on request.
   openDock(piano, 'notes');
 })();
