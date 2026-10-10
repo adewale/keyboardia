@@ -551,6 +551,25 @@
   .track-row-wrapper.panel-open .track-left { background: var(--surface-2); }
   .track-row-wrapper.panel-open .row-panel .rp-title { display: none; }
 
+  /* Colour tiles (as option I): the whole tile is the track's category colour with dark type. Docked or with its
+     panel open, the tile gets a light inset outline; muted, it goes hollow with the colour as a 2px ring. */
+  html[data-rows^="tall"] .track-left, html[data-rows^="flat"] .track-left { background: var(--cat); color: var(--bg); border-radius: 4px; }
+  html[data-rows^="tall"] .cat-chip, html[data-rows^="flat"] .cat-chip { display: none; }
+  html[data-rows^="tall"] .track-name, html[data-rows^="flat"] .track-name, html[data-rows^="tall"] .track-name .inst, html[data-rows^="flat"] .track-name .inst, html[data-rows^="tall"] .track-name .tr, html[data-rows^="flat"] .track-name .tr { color: var(--bg); }
+  html[data-rows^="tall"] .track-name .inst, html[data-rows^="flat"] .track-name .inst, html[data-rows^="tall"] .track-name .tr, html[data-rows^="flat"] .track-name .tr { opacity: .72; }
+  html[data-crap="on"][data-rows^="tall"] .track-row-wrapper.docked .track-left, html[data-crap="on"][data-rows^="flat"] .track-row-wrapper.docked .track-left, html[data-rows^="tall"] .track-row-wrapper.panel-open .track-left, html[data-rows^="flat"] .track-row-wrapper.panel-open .track-left { background: var(--cat); outline: 2px solid var(--text); outline-offset: -2px; box-shadow: none; }
+  html[data-crap="on"][data-rows^="tall"] .track-row-wrapper.docked .track-name, html[data-crap="on"][data-rows^="flat"] .track-row-wrapper.docked .track-name, html[data-rows^="tall"] .track-row-wrapper.panel-open .track-name, html[data-rows^="flat"] .track-row-wrapper.panel-open .track-name { color: var(--bg); }
+  html[data-rows^="tall"] .track-row.muted .track-left, html[data-rows^="flat"] .track-row.muted .track-left { background: transparent; box-shadow: inset 0 0 0 2px var(--cat); color: var(--text); }
+  html[data-rows^="tall"] .track-row.muted .track-name, html[data-rows^="flat"] .track-row.muted .track-name, html[data-rows^="tall"] .track-row.muted .track-name .inst, html[data-rows^="flat"] .track-row.muted .track-name .inst, html[data-rows^="tall"] .track-row.muted .track-name .tr, html[data-rows^="flat"] .track-row.muted .track-name .tr { color: var(--text); }
+  html[data-rows^="tall"] .track-row-wrapper.panel-open .track-name::after { color: var(--bg); }
+  /* T's controls on colour: dark ink, translucent boxes; the open view inverts. */
+  html[data-rows="tallwho"] .tl-btn, html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle, html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { border-color: rgba(0,0,0,.45); color: var(--bg); background: rgba(0,0,0,.12); }
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { background: rgba(0,0,0,.28); }
+  html[data-rows="tallwho"] .expand-toggle.active { background: var(--bg); border-color: var(--bg); color: var(--text); }
+  html[data-rows="tallwho"] .track-row.muted .tl-btn, html[data-rows="tallwho"] .track-row.muted .expand-toggle, html[data-rows="tallwho"] .track-row.muted .velocity-toggle, html[data-rows="tallwho"] .track-row.muted .tools-toggle, html[data-rows="tallwho"] .track-row.muted .pill-tr, html[data-rows="tallwho"] .track-row.muted .pill-steps { border-color: var(--border-hover); color: var(--text); background: transparent; }
+  html[data-rows="tallwho"] .track-row.muted .track-name .inst { color: var(--text); }
+  .row-panel .rp-chip { background: var(--cat); }
+
   /* Simple tile: chip, name, instrument and the transpose readout; nothing else in the row. The tile opens the
      per-instrument panel, the dock's Track pane, where mute, solo, transpose, steps, instrument, lane, copy, paste,
      clear and delete live. Column 153 = one beat. */
@@ -616,8 +635,7 @@
     </span>
     <span class="k">Simple tile</span>
     <span class="set" role="group" aria-label="Simple tile">
-      <button class="opt" type="button" data-rows="tallsimple" aria-pressed="true" title="Q · Tall lattice, simple tile: 36×50 cells on a 53px pitch; a 153px tile (one beat) with chip, name, instrument and transpose readout; every control in the per-instrument panel"><b class="L">Q</b>Tall · simple</button>
-      <button class="opt" type="button" data-rows="tallsimple" data-panel="row" aria-pressed="false" title="U · Q's tile, but the per-instrument panel opens under the track row instead of in the dock: click the name and a 48px panel with transpose, lane, preview, rename, mute, solo, copy, clear and delete slides in beneath the row, pushing the rows below down. Notes still open the dock"><b class="L">U</b>Tall · panel under row</button>
+      <button class="opt" type="button" data-rows="tallsimple" data-panel="row" aria-pressed="true" title="U · Q's tile, but the per-instrument panel opens under the track row instead of in the dock: click the name and a 48px panel with transpose, lane, preview, rename, mute, solo, copy, clear and delete slides in beneath the row, pushing the rows below down. Notes still open the dock"><b class="L">U</b>Tall · panel under row</button>
       <button class="opt" type="button" data-rows="flatsimple" aria-pressed="false" title="R · Flat lattice, simple tile: 36×36 cells on the 39px pitch; a 153px tile with chip and name; every control in the per-instrument panel"><b class="L">R</b>Flat · simple</button>
       <button class="opt" type="button" data-rows="tiles" aria-pressed="false" title="I · Flat lattice, cell tiles: the header is two cells, a colour tile that opens the track and a mute tile; 75px"><b class="L">I</b>Cell tiles</button>
     </span>
@@ -1598,7 +1616,6 @@
     requestAnimationFrame(()=>{[...grid.children].forEach((c,i)=>{const d=DEMO[i];if(!d.on&&!d.p)return;const mark=el('contour',c);
       const next=!!d.on&&!!DEMO[i+1]?.tie;if(rowFix()){const C=c.offsetHeight,M=mark.offsetHeight||3,bR=c.offsetWidth-c.clientWidth-c.clientLeft;mark.style.top=(8+(24-d.p)/48*(C-16)-M/2-c.clientTop)+'px';mark.style.left=(d.tie?-GAP:5)-c.clientLeft+'px';mark.style.right=(next?-bR:5-bR)+'px';mark.style.borderRadius=(d.tie?'0':'2px')+' '+(next?'0 0':'2px 2px')+' '+(d.tie?'0':'2px');}
       else{mark.style.top=(24-(d.p+24)/48*20)+'px';if(d.tie)mark.style.left='-5px';}});});
-    const txt=el('txt',host);txt.innerHTML='<b>One bar is one note.</b> A tie makes a step keep the previous note sounding instead of starting a new one, so a note can be longer than one step. The bar starts inside the note\'s first cell, runs unbroken through every tied cell, and stops inside the last one. Its length is how long the note is held, its height is the pitch, and a new note always starts a new bar, even at the same pitch.';
   }
   function applyAudit(){
     const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'tallsimple'];renderLegendDemo();
@@ -1608,7 +1625,7 @@
   }
   document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.documentElement.dataset.beat=b.dataset.beat||'off';document.documentElement.dataset.panel=b.dataset.panel||'dock';closeRowPanel();document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
   for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap'],['velFix','vel'],['lockBorder','lockborder']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on'&&document.documentElement.dataset[key]!=='fill';document.documentElement.dataset[key]=key==='vel'?(on?'fill':'tint'):(on?'on':'off');b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
-  const root0=document.documentElement;root0.dataset.rows='tallsimple';root0.dataset.panel='dock';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';root0.dataset.lockborder='off';document.getElementById('rowFix').setAttribute('aria-pressed','true');document.getElementById('dockFix').setAttribute('aria-pressed','true');applyAudit();
+  const root0=document.documentElement;root0.dataset.rows='tallsimple';root0.dataset.panel='row';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';root0.dataset.lockborder='off';document.getElementById('rowFix').setAttribute('aria-pressed','true');document.getElementById('dockFix').setAttribute('aria-pressed','true');applyAudit();
   // The page opens with Piano docked so its first frame shows the working state. In the app the dock opens only on request.
   openDock(piano, 'notes');
 })();
