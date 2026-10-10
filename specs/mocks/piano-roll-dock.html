@@ -503,7 +503,7 @@
   /* T, who over what (arrangement 3): line one is identity only; line two is [M S] [+0 32] [♪ V ⚙] … [⧉ ⋯].
      Four looks for four kinds of control: outlined letters for state, mono values, soft fill for views, bare icons
      for actions. The instrument label is the preview button, so the SMP badge goes. 270 = 7 cells. */
-  html[data-rows="tallwho"] { --track-left-width: 270px; }
+  html[data-rows="tallwho"] { --track-left-width: 309px; }
   html[data-rows="tallwho"] .track-left { flex-wrap: wrap; align-content: center; padding-right: 8px; }
   html[data-rows="tallwho"] .track-name { flex: 0 0 100%; order: 0; height: 24px; line-height: 24px; text-align: left; white-space: nowrap; overflow: hidden; }
   html[data-rows="tallwho"] .track-name .inst { display: inline; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; text-transform: none; cursor: pointer; }
@@ -518,20 +518,25 @@
   html[data-rows="tallwho"] .line2 .group.act-group { order: 5; display: inline-flex; margin-left: auto; }
   html[data-rows="tallwho"] .badge { display: none; }
   html[data-rows="tallwho"] .tools-toggle { display: inline-flex; }
-  html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle { border: 0; background: rgba(255,255,255,.07); color: var(--muted); font-size: 12px; border-radius: 4px; }
-  html[data-rows="tallwho"] .expand-toggle.active { background: var(--accent); color: var(--bg); }
+  html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle, html[data-rows="tallwho"] .tl-btn, html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { width: 24px; height: 24px; border: 1px solid var(--border-hover); border-radius: 4px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; padding: 0; }
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { background: var(--surface-2); color: var(--text); font-family: var(--font-mono); font-weight: 500; font-size: 10px; letter-spacing: -.3px; }
+  html[data-rows="tallwho"] .pill-tr { border-radius: 4px 0 0 4px; }
+  html[data-rows="tallwho"] .pill-steps { border-radius: 0 4px 4px 0; border-left: 0; margin-left: -2px; }
+  html[data-rows="tallwho"] .expand-toggle.active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
   html[data-rows="tallwho"] .kind-drum .expand-toggle { opacity: .35; }
-  html[data-rows="tallwho"] .act-group .tl-btn { border: 0; background: transparent; color: var(--muted); font-size: 13px; }
-  html[data-rows="tallwho"] .act-group .tl-btn:hover { color: var(--text); background: rgba(255,255,255,.07); }
-  html[data-rows="tallwho"] .act-group .tl-btn:nth-child(2), html[data-rows="tallwho"] .act-group .tl-btn:nth-child(4) { display: none; }
-  html[data-rows="tallwho"] .act-group .more-btn { display: inline-flex; }
+  html[data-rows="tallwho"] .act-group .tl-btn { font-size: 12px; font-weight: 500; }
+  html[data-rows="tallwho"] .act-group .more-btn { display: none; }
   .act-group .more-btn { display: none; letter-spacing: 1px; }
 
   /* U: the per-instrument panel under the track row. The same controls as the dock's Track pane, in a 48px strip
      that slides in beneath the row (and above its velocity lane), pushing the rows below down. It is sticky to the
      left so it stays in view while the grid scrolls, and it starts on the tile's left edge with the track's chip. */
-  .row-panel { display: flex; align-items: center; gap: 14px; height: 48px; margin-top: 3px; padding: 0 12px 0 0; position: sticky; left: 0; max-width: calc(100vw - 72px); background: var(--surface-2); border-radius: 4px; color: var(--muted); font-size: 12px; overflow-x: auto; overflow-y: hidden; }
-  .row-panel .rp-chip { flex: none; width: 4px; height: 48px; border-radius: 4px 0 0 4px; background: var(--cat); margin-right: -6px; }
+  .row-panel { display: flex; align-items: center; gap: 14px; height: 48px; margin-top: 0; padding: 0 14px 0 0; position: sticky; left: 0; width: max-content; max-width: calc(100vw - 72px); background: var(--surface-2); border-radius: 0 0 4px 4px; color: var(--muted); font-size: 12px; overflow-x: auto; overflow-y: hidden; }
+  .row-panel .rp-chip { flex: none; width: 4px; height: 48px; border-radius: 0 0 0 4px; background: var(--cat); margin-right: -6px; }
+  .track-row-wrapper.panel-open .track-left { border-radius: 4px 4px 0 0; }
+  .track-row-wrapper.panel-open .track-row { border-radius: 4px 4px 0 0; }
+  .track-row-wrapper.panel-open .track-name::after { content: '▴'; font-size: 9px; color: var(--muted); position: absolute; right: 12px; bottom: 8px; }
+  .track-row-wrapper.panel-open .track-name { position: relative; }
   .row-panel .rp-title { flex: none; font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; }
   .row-panel .rp-title small { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; }
   .row-panel .rowc { display: inline-flex; align-items: center; gap: 2px; flex: none; }
@@ -544,6 +549,7 @@
   .row-panel .rp-close { margin-left: auto; flex: none; width: 24px; height: 24px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; }
   .track-row-wrapper.panel-open .track-name { color: var(--accent-text); }
   .track-row-wrapper.panel-open .track-left { background: var(--surface-2); }
+  .track-row-wrapper.panel-open .row-panel .rp-title { display: none; }
 
   /* Simple tile: chip, name, instrument and the transpose readout; nothing else in the row. The tile opens the
      per-instrument panel, the dock's Track pane, where mute, solo, transpose, steps, instrument, lane, copy, paste,
@@ -606,7 +612,7 @@
   <section class="audit-bar" aria-label="Audit switches">
     <span class="k">Complete tile</span>
     <span class="set" role="group" aria-label="Complete tile" id="rowOpts">
-      <button class="opt" type="button" data-rows="tallwho" aria-pressed="false" title="T · Tall lattice, complete tile, arrangement 3 (who over what): line one is the name and instrument only; line two is M S, transpose and steps as 24px values, Notes, lane, tools, then copy and a ⋯ menu. 270px, seven cells"><b class="L">T</b>Tall · who over what</button>
+      <button class="opt" type="button" data-rows="tallwho" aria-pressed="false" title="T · Tall lattice, complete tile, arrangement 3 (who over what): line one is the name and instrument only; line two is M S, transpose and steps as joined 24px values, Notes, lane, tools, then copy, clear and delete. Every control is one 24px box with production's 1px border. 309px, eight cells"><b class="L">T</b>Tall · who over what</button>
     </span>
     <span class="k">Simple tile</span>
     <span class="set" role="group" aria-label="Simple tile">
@@ -1085,7 +1091,7 @@
       c.classList.toggle('range-selected',selection.track===t&&selection.steps.has(i));
       c.setAttribute('aria-label',t.name+' step '+(i+1)+', '+(on?'active '+noteName(stepMidi(t,i)):'inactive')+(locked?', has parameter lock':''));
       c.setAttribute('aria-pressed',String(on));
-      c.title='Step '+(i+1)+' · Shift+click or hold for details · Ctrl/Cmd+click selects';
+      {const lk=t.locks[i]||{},pv=lk.pitch||0,vol=Math.round(stepVel(t,i)*100);c.title='Step '+(i+1)+(on?'\n'+(t.kind==='melodic'?'Pitch: '+(pv>0?'+':'')+pv+' · ':'')+'Vol: '+vol+'%'+(lk.tie?' · Tied':''):'')+'\nShift+click or hold for details · Ctrl/Cmd+click selects';}
       const input=t.velocityInputs[i],tied=on&&attackStep(t,i)!==i;
       input.value=Math.round(stepVel(t,i)*127);input.disabled=tied;
       input.title=tied?'Inherited from attack step '+(attackStep(t,i)+1)+'; turn off Tie to edit':'';
@@ -1573,7 +1579,7 @@
   });
   // ---------- audit switches ----------
   const ROW_OPTS_OLD={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
-  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
+  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:309},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
   // Example strip: attack at +7, two ties, attack at −5, rest, attack at 0, tie, then a step at half volume on 0.
   // Cells are real .step-cell elements and the mark is placed by the row formula, so the strip tracks every switch.
   const DEMO=[{on:1,p:7},{on:1,p:7,tie:1},{on:1,p:7,tie:1},{on:1,p:-5},{on:0},{on:1,p:0},{on:1,p:0,tie:1},{on:1,p:0,vol:.5},{on:1,p:12,vol:.3},{on:1,p:12,tie:1,vol:.3},{on:1,p:0,env:1},{on:0,p:-12}];
