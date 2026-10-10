@@ -137,14 +137,25 @@
      volume is the wash. An envelope-only lock, which has no signal of its own, gets a dot in the top right corner.
      A lock stored on a step that is off (the product keeps it) shows as a faint mark, so it is not a surprise when
      the step comes back. The product's purple border is behind the Lock border switch for comparison. */
-  html[data-lockborder="on"] .step-cell.has-lock { border-color: var(--color-purple-dark); border-width: 1px; }
-  .step-cell .env-dot { position: absolute; top: 4px; right: 4px; width: 5px; height: 5px; border-radius: 50%; background: rgba(255,255,255,.9); pointer-events: none; }
-  .step-cell:not(.active) .contour { opacity: .3; }
+  /* Marks, production evolved. Volume is the cell's level: accent from the bottom up to the volume, a dim tint above,
+     so a full note is a plain cell (production's velocity fill, kept). Pitch is production's corner badge with the
+     amount in it: ↑7, ↓5, on the note's first cell only. A tie joins the cells into one shape across the gap
+     (production's double left border, grown into a bridge). An envelope-only lock is a corner fold. A lock kept on
+     a step that is off keeps its badge, dimmed, inside a dashed border. No blue, no purple. */
+  html { --accent-dim: color-mix(in srgb, var(--color-accent) 32%, var(--surface-2)); }
+  .step-cell .pchip { position: absolute; top: 3px; right: 3px; height: 12px; padding: 0 3px; border-radius: 2px; background: rgba(0,0,0,.55); color: #fff; font-family: var(--font-mono); font-size: 9px; font-weight: 600; line-height: 12px; letter-spacing: -.2px; pointer-events: none; }
+  .step-cell .env-fold { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.55) 50%); border-radius: 0 0 4px 0; pointer-events: none; }
+  .step-cell.tie { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-color: transparent !important; }
+  .step-cell.tie-next { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-color: transparent !important; }
+  .step-cell.tie::before { content: ''; position: absolute; top: -2px; bottom: -2px; left: calc(-1 * var(--tie-gap, 3px)); width: var(--tie-gap, 3px); background: inherit; box-shadow: inset 0 2px var(--accent-hi), inset 0 -2px var(--accent-hi); pointer-events: none; }
+  .step-cell.tie, .step-cell.tie-next { background-clip: padding-box; }
+  .step-cell.tie { border-left-width: 0; padding-left: 2px; }
+  .step-cell.tie-next { border-right-width: 0; padding-right: 2px; }
+  .step-cell:not(.active).has-lock { border-style: dashed; border-color: color-mix(in srgb, var(--color-accent) 55%, transparent); }
+  .step-cell:not(.active) .pchip { opacity: .55; }
   .step-cell.playing { border-color: var(--playhead); border-width: 3px; }
   .step-cell.selected { border-color: var(--info); box-shadow: 0 0 0 2px rgba(74,158,206,.4); }
   .step-cell.range-selected { outline: 2px solid var(--info-text); outline-offset: 0; }
-  .step-cell .contour { position: absolute; left: 5px; right: 5px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.8); pointer-events: none; }
-  .step-cell.tie .contour { left: -5px; border-radius: 0 2px 2px 0; }
   .step-cell.pulse { animation: cell-pulse 150ms ease-out; }
   @keyframes cell-pulse { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
   /* Row actions stay on their row: sticky-right on desktop and wide landscape, static at the row's end in narrow landscape. */
@@ -358,8 +369,6 @@
 
   /* Row fixes: contour centred and continuous (JS), borders 2 with 3 at beat starts and the lock as colour only,
      actions on the cell band, lane as one row pitch, ruler one lattice slot above the rows, no closed-dock line, grip glyph 12px. */
-  html[data-rowfix="on"][data-lockborder="on"] .step-cell.has-lock { border-width: 2px; }
-  html[data-rowfix="on"][data-lockborder="on"] .step-cell.has-lock.beat-start { border-left-width: 3px; }
   html[data-rowfix="on"] .step-cell.playing { border-width: 3px; }
   html[data-rowfix="on"] .row-actions button { height: 36px; width: 48px; min-width: 48px; padding: 0; }
   html[data-rowfix="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
@@ -460,12 +469,8 @@
   /* ===== Velocity: fill (production's encoding, kept) or tint (the spec's colour-mix) =====
      Fill: an active cell is the accent; a step with a volume lock below 1 carries a light wash from the bottom up to
      its volume, so the quiet steps on a drum row stand out at a glance. The dock's bars carry the same wash. */
-  html[data-vel="fill"] .step-cell.active { background: var(--color-accent); }
-  html[data-vel="fill"] .step-cell.active.has-vol { background: linear-gradient(to top, rgb(255 255 255 / 30%) calc(var(--note-velocity) * 100%), transparent 0), var(--color-accent); }
-  html[data-vel="fill"] .notes .note { background: var(--color-accent); }
-  html[data-vel="fill"] .notes .note.has-vol { background: linear-gradient(to top, rgb(255 255 255 / 30%) calc(var(--note-velocity) * 100%), transparent 0), var(--color-accent); }
-  /* Tall cells: the pitch mark gets a 4px stroke and the cell's full height to move in. */
-  html[data-rows^="tall"] .step-cell .contour { height: 4px; }
+  html[data-vel="fill"] .step-cell.active { background: linear-gradient(to top, var(--color-accent) calc(var(--note-velocity, 1) * 100%), var(--accent-dim) 0); }
+  html[data-vel="fill"] .notes .note { background: linear-gradient(to top, var(--color-accent) calc(var(--note-velocity, 1) * 100%), var(--accent-dim) 0); }
 
   /* ===== Round 3: two lattices, two tile families =====
      Lattices (the density and tessellation to preserve): tall, 36 × 50 cells on a 53px pitch; flat, 36 × 36 cells on
@@ -473,7 +478,6 @@
   html[data-rows^="tall"] { --row-opt-h: 50px; }
   html[data-rows^="tall"] .track-row { height: 50px; padding: 0; }
   html[data-rows^="tall"] .step-cell { height: 50px; }
-  html[data-rows^="tall"] .step-cell .contour { height: 4px; }
   html[data-rows^="flat"] { --row-opt-h: 36px; }
   html[data-rows^="flat"] .track-row { height: 36px; padding: 0; }
   html[data-rows^="tall"] .tracks-inner .rows, html[data-rows^="tall"] .tracks-inner, html[data-rows^="flat"] .tracks-inner .rows, html[data-rows^="flat"] .tracks-inner { gap: 3px; }
@@ -503,7 +507,7 @@
   /* T, who over what (arrangement 3): line one is identity only; line two is [M S] [+0 32] [♪ V ⚙] … [⧉ ⋯].
      Four looks for four kinds of control: outlined letters for state, mono values, soft fill for views, bare icons
      for actions. The instrument label is the preview button, so the SMP badge goes. 270 = 7 cells. */
-  html[data-rows="tallwho"] { --track-left-width: 309px; }
+  html[data-rows="tallwho"] { --track-left-width: 348px; }
   html[data-rows="tallwho"] .track-left { flex-wrap: wrap; align-content: center; padding-right: 8px; }
   html[data-rows="tallwho"] .track-name { flex: 0 0 100%; order: 0; height: 24px; line-height: 24px; text-align: left; white-space: nowrap; overflow: hidden; }
   html[data-rows="tallwho"] .track-name .inst { display: inline; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; text-transform: none; cursor: pointer; }
@@ -551,23 +555,13 @@
   .track-row-wrapper.panel-open .track-left { background: var(--surface-2); }
   .track-row-wrapper.panel-open .row-panel .rp-title { display: none; }
 
-  /* Colour tiles (as option I): the whole tile is the track's category colour with dark type. Docked or with its
-     panel open, the tile gets a light inset outline; muted, it goes hollow with the colour as a 2px ring. */
-  html[data-rows^="tall"] .track-left, html[data-rows^="flat"] .track-left { background: var(--cat); color: var(--bg); border-radius: 4px; }
+  /* A little colour, as option I: a 36px glyph tile in the track's colour at the tile's left edge, the rest of the
+     tile in the surface. Docked or with its panel open, the glyph tile gets a light inset outline; muted, it goes hollow. */
+  html[data-rows^="tall"] .track-left, html[data-rows^="flat"] .track-left { position: relative; padding-left: 48px; }
   html[data-rows^="tall"] .cat-chip, html[data-rows^="flat"] .cat-chip { display: none; }
-  html[data-rows^="tall"] .track-name, html[data-rows^="flat"] .track-name, html[data-rows^="tall"] .track-name .inst, html[data-rows^="flat"] .track-name .inst, html[data-rows^="tall"] .track-name .tr, html[data-rows^="flat"] .track-name .tr { color: var(--bg); }
-  html[data-rows^="tall"] .track-name .inst, html[data-rows^="flat"] .track-name .inst, html[data-rows^="tall"] .track-name .tr, html[data-rows^="flat"] .track-name .tr { opacity: .72; }
-  html[data-crap="on"][data-rows^="tall"] .track-row-wrapper.docked .track-left, html[data-crap="on"][data-rows^="flat"] .track-row-wrapper.docked .track-left, html[data-rows^="tall"] .track-row-wrapper.panel-open .track-left, html[data-rows^="flat"] .track-row-wrapper.panel-open .track-left { background: var(--cat); outline: 2px solid var(--text); outline-offset: -2px; box-shadow: none; }
-  html[data-crap="on"][data-rows^="tall"] .track-row-wrapper.docked .track-name, html[data-crap="on"][data-rows^="flat"] .track-row-wrapper.docked .track-name, html[data-rows^="tall"] .track-row-wrapper.panel-open .track-name, html[data-rows^="flat"] .track-row-wrapper.panel-open .track-name { color: var(--bg); }
-  html[data-rows^="tall"] .track-row.muted .track-left, html[data-rows^="flat"] .track-row.muted .track-left { background: transparent; box-shadow: inset 0 0 0 2px var(--cat); color: var(--text); }
-  html[data-rows^="tall"] .track-row.muted .track-name, html[data-rows^="flat"] .track-row.muted .track-name, html[data-rows^="tall"] .track-row.muted .track-name .inst, html[data-rows^="flat"] .track-row.muted .track-name .inst, html[data-rows^="tall"] .track-row.muted .track-name .tr, html[data-rows^="flat"] .track-row.muted .track-name .tr { color: var(--text); }
-  html[data-rows^="tall"] .track-row-wrapper.panel-open .track-name::after { color: var(--bg); }
-  /* T's controls on colour: dark ink, translucent boxes; the open view inverts. */
-  html[data-rows="tallwho"] .tl-btn, html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle, html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { border-color: rgba(0,0,0,.45); color: var(--bg); background: rgba(0,0,0,.12); }
-  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { background: rgba(0,0,0,.28); }
-  html[data-rows="tallwho"] .expand-toggle.active { background: var(--bg); border-color: var(--bg); color: var(--text); }
-  html[data-rows="tallwho"] .track-row.muted .tl-btn, html[data-rows="tallwho"] .track-row.muted .expand-toggle, html[data-rows="tallwho"] .track-row.muted .velocity-toggle, html[data-rows="tallwho"] .track-row.muted .tools-toggle, html[data-rows="tallwho"] .track-row.muted .pill-tr, html[data-rows="tallwho"] .track-row.muted .pill-steps { border-color: var(--border-hover); color: var(--text); background: transparent; }
-  html[data-rows="tallwho"] .track-row.muted .track-name .inst { color: var(--text); }
+  html[data-rows^="tall"] .glyph-tile, html[data-rows^="flat"] .glyph-tile { display: inline-flex; position: absolute; left: 0; top: 0; align-items: center; justify-content: center; width: 36px; height: var(--row-opt-h); border: 0; border-radius: 4px; background: var(--cat); color: var(--bg); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0; margin: 0; }
+  html[data-rows^="tall"] .track-row-wrapper.docked .glyph-tile, html[data-rows^="flat"] .track-row-wrapper.docked .glyph-tile, html[data-rows^="tall"] .track-row-wrapper.panel-open .glyph-tile, html[data-rows^="flat"] .track-row-wrapper.panel-open .glyph-tile { outline: 2px solid var(--text); outline-offset: -2px; }
+  html[data-rows^="tall"] .track-row.muted .glyph-tile, html[data-rows^="flat"] .track-row.muted .glyph-tile { background: transparent; box-shadow: inset 0 0 0 2px var(--cat); color: var(--text); }
   .row-panel .rp-chip { background: var(--cat); }
 
   /* Simple tile: chip, name, instrument and the transpose readout; nothing else in the row. The tile opens the
@@ -596,12 +590,13 @@
   .act-group .tl-btn:disabled { opacity: .4; cursor: default; }
   /* Legend for the three signals a cell carries. */
   .audit-legend { flex: 0 0 100%; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); padding-top: 2px; }
-  .audit-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .audit-legend span { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; }
   .audit-legend i { display: inline-block; width: 16px; height: 16px; border-radius: 3px; background: var(--color-accent); border: 2px solid var(--accent-hi); position: relative; }
-  .audit-legend i.mark::after { content: ''; position: absolute; left: 2px; right: 2px; top: 3px; height: 2px; background: rgba(255,255,255,.9); border-radius: 1px; }
-  .audit-legend i.dot::after { content: ''; position: absolute; top: 2px; right: 2px; width: 4px; height: 4px; border-radius: 50%; background: rgba(255,255,255,.9); }
-  .audit-legend i.ghost { background: var(--surface-2); border-color: var(--border); } .audit-legend i.ghost::after { content: ''; position: absolute; left: 2px; right: 2px; top: 5px; height: 2px; background: rgba(255,255,255,.3); border-radius: 1px; }
-  .audit-legend i.wash { background: linear-gradient(to top, rgb(255 255 255 / 30%) 50%, transparent 0), var(--color-accent); }
+  .audit-legend i.level { background: linear-gradient(to top, var(--color-accent) 50%, var(--accent-dim) 0); }
+  .audit-legend i.badge::after { content: ''; position: absolute; top: 1px; right: 1px; width: 7px; height: 4px; border-radius: 1px; background: rgba(0,0,0,.6); }
+  .audit-legend i.bridge { border-radius: 0 3px 3px 0; border-left-color: transparent; } .audit-legend i.bridge::before { content: ''; position: absolute; left: -7px; top: -2px; bottom: -2px; width: 7px; background: var(--color-accent); }
+  .audit-legend i.fold::after { content: ''; position: absolute; right: -2px; bottom: -2px; width: 6px; height: 6px; background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.6) 50%); }
+  .audit-legend i.kept { background: var(--surface-2); border: 2px dashed color-mix(in srgb, var(--color-accent) 55%, transparent); }
   /* Example cells: real .step-cell elements on the current lattice, placed by the same code as the rows, so the strip
      shows exactly how an attack, the ties that carry it, a second attack and a quiet step read on the chosen option. */
   .legend-demo { flex: 0 0 100%; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 0 2px; }
@@ -631,7 +626,7 @@
   <section class="audit-bar" aria-label="Audit switches">
     <span class="k">Complete tile</span>
     <span class="set" role="group" aria-label="Complete tile" id="rowOpts">
-      <button class="opt" type="button" data-rows="tallwho" aria-pressed="false" title="T · Tall lattice, complete tile, arrangement 3 (who over what): line one is the name and instrument only; line two is M S, transpose and steps as joined 24px values, Notes, lane, tools, then copy, clear and delete. Every control is one 24px box with production's 1px border. 309px, eight cells"><b class="L">T</b>Tall · who over what</button>
+      <button class="opt" type="button" data-rows="tallwho" aria-pressed="false" title="T · Tall lattice, complete tile, arrangement 3 (who over what): line one is the name and instrument only; line two is M S, transpose and steps as joined 24px values, Notes, lane, tools, then copy, clear and delete. Every control is one 24px box with production's 1px border. 348px, nine cells"><b class="L">T</b>Tall · who over what</button>
     </span>
     <span class="k">Simple tile</span>
     <span class="set" role="group" aria-label="Simple tile">
@@ -644,12 +639,11 @@
       <button class="opt" type="button" id="rowFix" aria-pressed="false" title="Contour centred and continuous, 2px borders with 3px beat starts, 36px actions on the cell band, lane as one pitch, ruler one slot above, no closed-dock line">Rows</button>
       <button class="opt" type="button" id="dockFix" aria-pressed="false" title="Rail 20, whole-row keys, whole-pixel Fit on the active track, bar inset = cell border, grid lines in the gaps, octave rule on B|C, even 8px chrome padding, one border colour">Dock</button>
       <button class="opt" type="button" id="velFix" aria-pressed="true" title="Velocity as a fill: a step with a lowered volume carries a light wash up to its volume (production's encoding). Off: the spec's colour tint">Velocity fill</button>
-      <button class="opt" type="button" id="lockBorder" aria-pressed="false" title="The product's purple border on every step that has a parameter lock. Off: each lock shows as its own mark, envelope-only locks as a dot, and a lock stored on a step that is off as a faint mark">Lock border</button>
       <button class="opt" type="button" id="crapFix" aria-pressed="true" title="Robin Williams' CRAP on every option: one 4px chip at the block edge, radius 4 and the 24px unit everywhere, name 13/600 over instrument 11/400; controls and keys on the name's left edge, actions on the cell band, ruler one slot above, lane one pitch; 2px inside groups and 4px between; the docked row lifts with its name in accent">CRAP</button>
     </span>
     <span class="spacer"></span>
     <span class="readout" id="auditReadout"></span>
-    <span class="audit-legend"><span><i class="mark"></i> white mark: the step's pitch lock, centre 0, higher up; ties continue it</span><span><i class="dot"></i> dot: the step has its own envelope, the one lock with no mark of its own</span><span><i class="ghost"></i> faint mark: a lock kept on a step that is off</span><span><i class="wash"></i> lighter wash: volume below 1, as high as the volume</span></span>
+    <span class="audit-legend"><span><i class="level"></i> level: the volume, accent up to it</span><span><i class="badge"></i> badge: pitch, ↑7 or ↓5, on the note's first cell</span><span><i class="bridge"></i> bridge: a tie, one shape across the gap</span><span><i class="fold"></i> fold: an envelope lock</span><span><i class="kept"></i> dashed: a lock kept on a step that is off</span></span>
     <span class="legend-demo" id="legendDemo" aria-label="Example cells"></span>
   </section>
   <section class="sequencer" id="sequencer" aria-label="Sequencer">
@@ -1098,12 +1092,20 @@
     v.addEventListener('click',()=>{lane.hidden=!lane.hidden;v.setAttribute('aria-expanded',String(!lane.hidden));});
     updateIdentity(t);syncRow(t);
   }
+  // The marks a cell carries, from its lock: level (volume), badge (pitch, first cell of a note only), bridge (tie),
+  // fold (envelope). Shared by the rows and the legend's example strip.
+  function decorateCell(c,o){
+    c.style.setProperty('--note-velocity',String(o.vol??1));c.style.setProperty('--tie-gap',(o.gap??GAP)+'px');
+    c.classList.toggle('tie',!!(o.on&&o.tie));c.classList.toggle('tie-next',!!(o.on&&o.next));
+    let chip=c.querySelector('.pchip');const show=o.melodic&&o.pitch!==0&&!(o.on&&o.tie);
+    if(show){if(!chip)chip=el('pchip',c,'span');chip.textContent=(o.pitch>0?'↑':'↓')+Math.abs(o.pitch);}else if(chip)chip.remove();
+    let fold=c.querySelector('.env-fold');if(o.env&&!fold)el('env-fold',c,'span');else if(!o.env&&fold)fold.remove();
+  }
   function syncRow(t) {
     computeBars(t);
     const tr=t.nameEl.querySelector('.tr');if(tr)tr.textContent=t.transpose===0?'':trLabel(t);
     t.cells.forEach((c,i)=>{
       const on=!!t.steps[i],locked=!!t.locks[i]&&Object.keys(t.locks[i]).length>0;
-      c.style.setProperty('--note-velocity',String(stepVel(t,i)));c.classList.toggle('has-vol',on&&stepVel(t,i)<1);
       c.classList.toggle('active',on);c.classList.toggle('has-lock',locked);c.classList.toggle('tie',on&&!!t.locks[i]?.tie);
       c.classList.toggle('selected',dock.open&&dock.track===t&&dock.selectedStep===i);
       c.classList.toggle('range-selected',selection.track===t&&selection.steps.has(i));
@@ -1113,16 +1115,9 @@
       const input=t.velocityInputs[i],tied=on&&attackStep(t,i)!==i;
       input.value=Math.round(stepVel(t,i)*127);input.disabled=tied;
       input.title=tied?'Inherited from attack step '+(attackStep(t,i)+1)+'; turn off Tie to edit':'';
-      let mark=c.querySelector('.contour');
       const envKeys=['attack','decay','release','attackDuration','holdDuration','decayDuration','releaseDuration'];
-      const hasEnv=!!t.locks[i]&&envKeys.some(k=>t.locks[i][k]!=null);let dot=c.querySelector('.env-dot');
-      if(hasEnv&&!dot)el('env-dot',c);else if(!hasEnv&&dot)dot.remove();
-      if((on||locked)&&t.kind==='melodic'){
-        if(!mark)mark=el('contour',c);
-        const relative=on?stepMidi(t,i)-BASE_MIDI-t.transpose:(t.locks[i]?.pitch??0);
-        if(rowFix()){const gap=i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP,tied=on&&!!t.locks[i]?.tie,next=on&&i+1<STEPS&&!!t.steps[i+1]&&!!t.locks[i+1]?.tie;const C=c.offsetHeight,M=mark.offsetHeight||3,bR=c.offsetWidth-c.clientWidth-c.clientLeft;mark.style.top=(8+(24-relative)/48*(C-16)-M/2-c.clientTop)+'px';mark.style.left=(tied?-gap:5)-c.clientLeft+'px';mark.style.right=(next?-bR:5-bR)+'px';mark.style.borderRadius=(tied?'0':'2px')+' '+(next?'0 0':'2px 2px')+' '+(tied?'0':'2px');}
-        else{mark.style.top=(24-(relative+24)/48*20)+'px';mark.style.left='';mark.style.right='';mark.style.borderRadius='';}
-      }else if(mark)mark.remove();
+      const hasEnv=!!t.locks[i]&&envKeys.some(k=>t.locks[i][k]!=null);
+      decorateCell(c,{on,melodic:t.kind==='melodic',pitch:on?stepMidi(t,i)-BASE_MIDI-t.transpose:(t.locks[i]?.pitch??0),vol:stepVel(t,i),tie:!!t.locks[i]?.tie,next:i+1<STEPS&&!!t.steps[i+1]&&!!t.locks[i+1]?.tie,env:hasEnv,gap:i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP});
     });
   }
   // Selected-track bar (quiet head and cell-tile options): the per-track controls that left the row, for the docked track.
@@ -1597,7 +1592,7 @@
   });
   // ---------- audit switches ----------
   const ROW_OPTS_OLD={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
-  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:309},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
+  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:348},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
   // Example strip: attack at +7, two ties, attack at −5, rest, attack at 0, tie, then a step at half volume on 0.
   // Cells are real .step-cell elements and the mark is placed by the row formula, so the strip tracks every switch.
   const DEMO=[{on:1,p:7},{on:1,p:7,tie:1},{on:1,p:7,tie:1},{on:1,p:-5},{on:0},{on:1,p:0},{on:1,p:0,tie:1},{on:1,p:0,vol:.5},{on:1,p:12,vol:.3},{on:1,p:12,tie:1,vol:.3},{on:1,p:0,env:1},{on:0,p:-12}];
@@ -1608,14 +1603,10 @@
     DEMO.forEach((d,i)=>{
       const c=el('step-cell'+(i%4===0?' beat-start':''),grid,'span');c.setAttribute('aria-hidden','true');
       const locked=(d.p!==0||d.tie||d.vol!==undefined||d.env);
-      c.classList.toggle('active',!!d.on);c.classList.toggle('has-lock',!!locked);c.classList.toggle('tie',!!(d.on&&d.tie));
-      c.style.setProperty('--note-velocity',String(d.vol??1));c.classList.toggle('has-vol',!!(d.on&&d.vol!==undefined&&d.vol<1));
-      if(d.env)el('env-dot',c);
+      c.classList.toggle('active',!!d.on);c.classList.toggle('has-lock',!!locked);
+      decorateCell(c,{on:!!d.on,melodic:true,pitch:d.p||0,vol:d.vol??1,tie:!!d.tie,next:!!DEMO[i+1]?.tie,env:!!d.env,gap:GAP});
     });
     DEMO_CAPS.forEach(([n,text])=>{const l=el('',cap,'span');l.style.width=(n*STEP_W+(n-1)*GAP)+'px';l.textContent=text;});
-    requestAnimationFrame(()=>{[...grid.children].forEach((c,i)=>{const d=DEMO[i];if(!d.on&&!d.p)return;const mark=el('contour',c);
-      const next=!!d.on&&!!DEMO[i+1]?.tie;if(rowFix()){const C=c.offsetHeight,M=mark.offsetHeight||3,bR=c.offsetWidth-c.clientWidth-c.clientLeft;mark.style.top=(8+(24-d.p)/48*(C-16)-M/2-c.clientTop)+'px';mark.style.left=(d.tie?-GAP:5)-c.clientLeft+'px';mark.style.right=(next?-bR:5-bR)+'px';mark.style.borderRadius=(d.tie?'0':'2px')+' '+(next?'0 0':'2px 2px')+' '+(d.tie?'0':'2px');}
-      else{mark.style.top=(24-(d.p+24)/48*20)+'px';if(d.tie)mark.style.left='-5px';}});});
   }
   function applyAudit(){
     const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'tallsimple'];renderLegendDemo();
@@ -1624,8 +1615,8 @@
     const ro=document.getElementById('auditReadout');ro.replaceChildren();const Lb=el('L',ro,'b');Lb.textContent=(document.querySelector('.audit-bar .opt[data-rows][aria-pressed="true"] .L')||document.querySelector('.audit-bar .opt[data-rows="'+(root.dataset.rows||'tallsimple')+'"] .L')).textContent;ro.append(document.createTextNode('row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch'));
   }
   document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.documentElement.dataset.beat=b.dataset.beat||'off';document.documentElement.dataset.panel=b.dataset.panel||'dock';closeRowPanel();document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
-  for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap'],['velFix','vel'],['lockBorder','lockborder']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on'&&document.documentElement.dataset[key]!=='fill';document.documentElement.dataset[key]=key==='vel'?(on?'fill':'tint'):(on?'on':'off');b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
-  const root0=document.documentElement;root0.dataset.rows='tallsimple';root0.dataset.panel='row';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';root0.dataset.lockborder='off';document.getElementById('rowFix').setAttribute('aria-pressed','true');document.getElementById('dockFix').setAttribute('aria-pressed','true');applyAudit();
+  for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap'],['velFix','vel']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on'&&document.documentElement.dataset[key]!=='fill';document.documentElement.dataset[key]=key==='vel'?(on?'fill':'tint'):(on?'on':'off');b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
+  const root0=document.documentElement;root0.dataset.rows='tallsimple';root0.dataset.panel='row';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';document.getElementById('rowFix').setAttribute('aria-pressed','true');document.getElementById('dockFix').setAttribute('aria-pressed','true');applyAudit();
   // The page opens with Piano docked so its first frame shows the working state. In the app the dock opens only on request.
   openDock(piano, 'notes');
 })();
