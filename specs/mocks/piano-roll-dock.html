@@ -525,6 +525,17 @@
   .audit-legend i.mark::after { content: ''; position: absolute; left: 2px; right: 2px; top: 3px; height: 2px; background: rgba(255,255,255,.9); border-radius: 1px; }
   .audit-legend i.lock { border-color: var(--color-purple-dark); }
   .audit-legend i.wash { background: linear-gradient(to top, rgb(255 255 255 / 30%) 50%, transparent 0), var(--color-accent); }
+  /* Example cells: real .step-cell elements on the current lattice, placed by the same code as the rows, so the strip
+     shows exactly how an attack, the ties that carry it, a second attack and a quiet step read on the chosen option. */
+  .legend-demo { flex: 0 0 100%; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 0 2px; }
+  .legend-demo .step-grid { flex: none; }
+  .legend-demo .step-cell { cursor: default; }
+  .legend-demo .cap { display: flex; gap: 3px; font-family: var(--font-mono); font-size: 10px; color: var(--muted); }
+  .legend-demo .cap span { width: var(--step-w); text-align: center; white-space: nowrap; }
+  .legend-demo .cap span.page { margin-left: 8px; }
+  .legend-demo .ex { display: flex; flex-direction: column; gap: 3px; }
+  .legend-demo .ex > b { font-size: 11px; font-weight: 500; color: var(--muted); }
+  .legend-demo .txt { font-size: 12px; color: var(--muted); max-width: 46ch; }
 
   /* ===== Portrait: consumption only ===== */
   [data-display-mode="portrait"] .sequencer { display: none; }
@@ -563,6 +574,7 @@
     <span class="spacer"></span>
     <span class="readout" id="auditReadout"></span>
     <span class="audit-legend"><span><i class="mark"></i> white mark: the step's pitch lock, centre 0, higher up; ties continue it</span><span><i class="lock"></i> purple border: the step has a parameter lock</span><span><i class="wash"></i> lighter wash: volume below 1, as high as the volume</span></span>
+    <span class="legend-demo" id="legendDemo" aria-label="Example cells"></span>
   </section>
   <section class="sequencer" id="sequencer" aria-label="Sequencer">
     <div class="transport">
@@ -1027,7 +1039,7 @@
       if(on&&t.kind==='melodic'){
         if(!mark)mark=el('contour',c);
         const relative=stepMidi(t,i)-BASE_MIDI-t.transpose;
-        if(rowFix()){const gap=i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP,tied=!!t.locks[i]?.tie;const C=c.offsetHeight,M=mark.offsetHeight||3;mark.style.top=(8+(24-relative)/48*(C-16)-M/2-c.clientTop)+'px';mark.style.left=(tied?-(gap+5):5)-c.clientLeft+'px';mark.style.right=(5-(c.offsetWidth-c.clientWidth-c.clientLeft))+'px';mark.style.borderRadius=tied?'0 2px 2px 0':'2px';}
+        if(rowFix()){const gap=i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP,tied=!!t.locks[i]?.tie,next=i+1<STEPS&&!!t.steps[i+1]&&!!t.locks[i+1]?.tie;const C=c.offsetHeight,M=mark.offsetHeight||3,bR=c.offsetWidth-c.clientWidth-c.clientLeft;mark.style.top=(8+(24-relative)/48*(C-16)-M/2-c.clientTop)+'px';mark.style.left=(tied?-gap:5)-c.clientLeft+'px';mark.style.right=(next?-bR:5-bR)+'px';mark.style.borderRadius=(tied?'0':'2px')+' '+(next?'0 0':'2px 2px')+' '+(tied?'0':'2px');}
         else{mark.style.top=(24-(relative+24)/48*20)+'px';mark.style.left='';mark.style.right='';mark.style.borderRadius='';}
       }else if(mark)mark.remove();
     });
@@ -1473,8 +1485,26 @@
   // ---------- audit switches ----------
   const ROW_OPTS_OLD={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
   const ROW_OPTS={tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
+  // Example strip: attack at +7, two ties, attack at −5, rest, attack at 0, tie, then a step at half volume on 0.
+  // Cells are real .step-cell elements and the mark is placed by the row formula, so the strip tracks every switch.
+  const DEMO=[{on:1,p:7},{on:1,p:7,tie:1},{on:1,p:7,tie:1},{on:1,p:-5},{on:0},{on:1,p:0},{on:1,p:0,tie:1},{on:1,p:0,vol:.5},{on:1,p:12,vol:.3},{on:1,p:12,tie:1,vol:.3},{on:0},{on:1,p:-12}];
+  function renderLegendDemo(){
+    const host=document.getElementById('legendDemo');if(!host)return;host.replaceChildren();
+    const ex=el('ex',host);const grid=el('step-grid',ex);const cap=el('cap',ex);
+    DEMO.forEach((d,i)=>{
+      const c=el('step-cell'+(i%4===0?' beat-start':''),grid,'span');c.setAttribute('aria-hidden','true');
+      const locked=d.on&&(d.p!==0||d.tie||d.vol!==undefined||d.lock);
+      c.classList.toggle('active',!!d.on);c.classList.toggle('has-lock',!!locked);c.classList.toggle('tie',!!(d.on&&d.tie));
+      c.style.setProperty('--note-velocity',String(d.vol??1));c.classList.toggle('has-vol',!!(d.on&&d.vol!==undefined&&d.vol<1));
+      const l=el('',cap,'span');l.textContent=d.on?(d.tie?'tie':(d.p>0?'+':'')+d.p+(d.vol!==undefined?' v'+Math.round(d.vol*127):'')):'·';
+    });
+    requestAnimationFrame(()=>{[...grid.children].forEach((c,i)=>{const d=DEMO[i];if(!d.on)return;const mark=el('contour',c);
+      const next=!!DEMO[i+1]?.tie;if(rowFix()){const C=c.offsetHeight,M=mark.offsetHeight||3,bR=c.offsetWidth-c.clientWidth-c.clientLeft;mark.style.top=(8+(24-d.p)/48*(C-16)-M/2-c.clientTop)+'px';mark.style.left=(d.tie?-GAP:5)-c.clientLeft+'px';mark.style.right=(next?-bR:5-bR)+'px';mark.style.borderRadius=(d.tie?'0':'2px')+' '+(next?'0 0':'2px 2px')+' '+(d.tie?'0':'2px');}
+      else{mark.style.top=(24-(d.p+24)/48*20)+'px';if(d.tie)mark.style.left='-5px';}});});
+    const txt=el('txt',host);txt.innerHTML='<b>Ties.</b> A tied cell has no attack, so its mark crosses the gap and runs on at the attack\'s height: one bar per note, as long as the note. A new attack starts a new bar 5px in from its cell edge, so two notes at one pitch (steps 6 and 8) read as two bars, not one. Volume is the wash, so step 8\'s v64 and the quiet tied note at 9 and 10 stay visible under the mark.';
+  }
   function applyAudit(){
-    const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'tallsimple'];
+    const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'tallsimple'];renderLegendDemo();
     tracks.forEach(t=>{if(t.gripEl)t.gripEl.textContent=rowFix()?'⠿':'⋮⋮';syncRow(t);});
     if(ui.drawLines)ui.drawLines();setPitchHeight(H);renderSelectedBar();if(ui.fitHead)ui.fitHead();
     const ro=document.getElementById('auditReadout');ro.replaceChildren();const Lb=el('L',ro,'b');Lb.textContent=document.querySelector('.audit-bar .opt[data-rows="'+(root.dataset.rows||'tallsimple')+'"] .L').textContent;ro.append(document.createTextNode('row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch'));
