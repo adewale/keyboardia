@@ -180,10 +180,16 @@
   .m.adopted .m-steps { gap: 3px; }
   .m.adopted .s, .m.adopted .n { --note-velocity-fill: color-mix(in srgb, var(--note-velocity-accent) calc(var(--note-velocity) * 100%), var(--note-velocity-surface)); }
   .m.adopted .s.page { margin-left: 8px; }
-  .m.adopted .s.on { background: var(--note-velocity-fill); border-color: var(--note-velocity-fill); box-shadow: none; }
-  .m.adopted .s.locked { border-color: var(--color-purple-dark); }
-  .m.adopted .s .pv { background: var(--contour); height: 2px; }
-  .m.adopted .s.tie .pv { left: 0; right: 0; }
+  /* Marks: volume is the cell's level (accent up to it, a dim tint above), pitch is a corner badge with the amount
+     (↑7, ↓5) on the note's first cell, a tie joins the cells into one shape across the gap. No purple border. */
+  .m.adopted { --accent-dim: color-mix(in srgb, var(--accent) 32%, var(--surface-2)); }
+  .m.adopted .s.on { background: linear-gradient(to top, var(--accent) calc(var(--note-velocity, 1) * 100%), var(--accent-dim) 0); border-color: var(--accent-hi); box-shadow: none; }
+  .m.adopted .s .pv { display: none; }
+  .m.adopted .s .pchip { position: absolute; top: 3px; right: 3px; height: 12px; padding: 0 3px; border-radius: 2px; background: rgba(0,0,0,.55); color: #fff; font: 600 9px/12px var(--font-mono); letter-spacing: -.2px; pointer-events: none; }
+  .m.adopted .s.tie { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-width: 0; padding-left: 2px; background-clip: padding-box; }
+  .m.adopted .s.tie-next { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-width: 0; padding-right: 2px; background-clip: padding-box; }
+  .m.adopted .s.tie::before { content: ''; position: absolute; top: -2px; bottom: -2px; left: calc(-1 * var(--tie-gap, 3px)); width: var(--tie-gap, 3px); background: inherit; background-clip: padding-box; border-top: 2px solid var(--accent-hi); border-bottom: 2px solid var(--accent-hi); box-sizing: border-box; pointer-events: none; }
+  .m.adopted .m-grid .n { background: linear-gradient(to top, var(--accent) calc(var(--note-velocity, 1) * 100%), var(--accent-dim) 0); }
   .m.adopted .m-panel { border: 0; border-top: 1px solid var(--border-light); gap: 0; border-radius: 0; }
   .m.adopted .m-dockhead { height: 84px; flex: 0 0 84px; padding: 8px; gap: 4px; flex-direction: column; align-items: stretch; position: sticky; left: 0; width: 100cqw; }
   .a-context, .a-tabs { display: flex; align-items: center; gap: 8px; height: 32px; min-height: 32px; overflow-x: auto; white-space: nowrap; }
@@ -494,12 +500,14 @@
       const note = track.melodic && track.notes.find(n => step >= n.step && step < n.step + n.len);
       const on = track.melodic ? !!note : !!track.pattern[step % track.pattern.length];
       const tie = note && step > note.step;
-      const cell = el('s' + (step % 4 === 0 ? ' b' : '') + (step && step % 16 === 0 ? ' page' : '') + (on ? ' on' : '') + (note && note.locked ? ' locked' : '') + (tie ? ' tie' : ''), cells);
+      const next = note && step + 1 < note.step + note.len;
+      const cell = el('s' + (step % 4 === 0 ? ' b' : '') + (step && step % 16 === 0 ? ' page' : '') + (on ? ' on' : '') + (note && note.locked ? ' locked' : '') + (tie ? ' tie' : '') + (next ? ' tie-next' : ''), cells);
       if (note) {
         cell.style.setProperty('--note-velocity', note.velocity ?? 1);
+        cell.style.setProperty('--tie-gap', (step % 16 === 0 ? 11 : 3) + 'px');
         cell.title = pitchName(note.midi) + ' · velocity ' + (note.velocity ?? 1);
-        const contour = el('pv', cell);
-        contour.style.top = (5 + (72 - note.midi) * 2) + 'px';
+        const offset = note.midi - 60;
+        if (!tie && offset !== 0) el('pchip', cell, (offset > 0 ? '↑' : '↓') + Math.abs(offset));
       }
     }
     el('a-row-actions', r, ['Copy','Paste','Clear','Delete'].map(action => '<button disabled title="Integration preview: ' + action + ' ' + track.name + ' is not implemented">' + action + '</button>').join(''));

@@ -147,7 +147,7 @@
   .step-cell .env-fold { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.55) 50%); border-radius: 0 0 4px 0; pointer-events: none; }
   .step-cell.tie { border-top-left-radius: 0; border-bottom-left-radius: 0; border-left-color: transparent !important; }
   .step-cell.tie-next { border-top-right-radius: 0; border-bottom-right-radius: 0; border-right-color: transparent !important; }
-  .step-cell.tie::before { content: ''; position: absolute; top: -2px; bottom: -2px; left: calc(-1 * var(--tie-gap, 3px)); width: var(--tie-gap, 3px); background: inherit; box-shadow: inset 0 2px var(--accent-hi), inset 0 -2px var(--accent-hi); pointer-events: none; }
+  .step-cell.tie::before { content: ''; position: absolute; top: -2px; bottom: -2px; left: calc(-1 * var(--tie-gap, 3px)); width: var(--tie-gap, 3px); background: inherit; background-clip: padding-box; border-top: 2px solid var(--accent-hi); border-bottom: 2px solid var(--accent-hi); box-sizing: border-box; pointer-events: none; }
   .step-cell.tie, .step-cell.tie-next { background-clip: padding-box; }
   .step-cell.tie { border-left-width: 0; padding-left: 2px; }
   .step-cell.tie-next { border-right-width: 0; padding-right: 2px; }
@@ -727,16 +727,21 @@
   const snare = mk('snare', 'Brush Snare', 'drum', 'Brushes snare', 'SMP', 'var(--cat-drums)');
   const clap = mk('clap', 'Clap', 'drum', 'Clap', 'SYN', 'var(--cat-drums)');
   const duo = mk('duo', 'Duo', 'melodic', 'Duo lead', 'SYN', 'var(--cat-leads)', 0, { min: 36, max: 96, optMin: 48, optMax: 84 });
-  piano.voice = 'piano'; duo.voice = 'lead'; akick.voice = 'kick'; snare.voice = 'snare'; clap.voice = 'clap';
-  piano.gain = 1; akick.gain = 1; snare.gain = 1; clap.gain = 0.53; duo.gain = 0.2;
+  // Bass is not in the session: it is a demonstration row with every kind of lock, so the marks can be compared on
+  // both lattices in one view. Held notes (ties), volumes from 30% to 80%, an envelope lock, and a lock kept on an
+  // off step.
+  const bass = mk('bass', 'Bass', 'melodic', 'Sub bass', 'SYN', 'var(--cat-bass)', 0, { min: 24, max: 84, optMin: 28, optMax: 60 });
+  piano.voice = 'piano'; duo.voice = 'lead'; bass.voice = 'lead'; akick.voice = 'kick'; snare.voice = 'snare'; clap.voice = 'clap';
+  piano.gain = 1; akick.gain = 1; snare.gain = 1; clap.gain = 0.53; duo.gain = 0.2; bass.gain = 0.3;
   const SEED = {
     piano: { on: [0, 1, 2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15], locks: {"1": {"pitch": -24}, "4": {"pitch": -12}, "5": {"pitch": -12}, "6": {"pitch": 12}, "7": {"pitch": -5}, "8": {"pitch": -12}, "9": {"pitch": -12}, "11": {"pitch": -17}, "12": {"pitch": -5}, "14": {"pitch": 7}, "15": {"pitch": -5}} },
     akick: { on: [0, 2, 3, 5, 7, 8, 10], locks: {"8": {"volume": 0.5}} },
     snare: { on: [1, 3, 4, 6, 8, 9, 11], locks: {"9": {"volume": 0.5}} },
     clap: { on: [1, 5, 6], locks: {} },
     duo: { on: [0, 2, 3, 5, 7, 8, 10], locks: {"8": {"volume": 0.5}} },
+    bass: { on: [0, 1, 2, 3, 5, 6, 7, 8, 9, 10, 12, 14, 15], locks: {"1": {"tie": true}, "2": {"tie": true}, "3": {"pitch": 7, "volume": 0.6}, "5": {"pitch": -5}, "6": {"tie": true}, "7": {"volume": 0.4}, "8": {"pitch": 12, "volume": 0.3}, "9": {"tie": true}, "10": {"tie": true}, "12": {"attack": 0.2}, "13": {"pitch": -12}, "14": {"pitch": 3, "volume": 0.8}, "15": {"tie": true}} },
   };
-  for (const t of [piano, akick, snare, clap, duo]) {
+  for (const t of [piano, bass, akick, snare, clap, duo]) {
     const sd = SEED[t.id];
     for (const page of [0, 16]) {
       sd.on.forEach(i => { t.steps[i + page] = true; });
@@ -745,7 +750,7 @@
     t.pattern = t.steps;
     if (t.kind === 'drum') t.range = { min: 12, max: 108, optMin: 36, optMax: 84 };
   }
-  const tracks = [piano, akick, snare, clap, duo];
+  const tracks = [piano, bass, akick, snare, clap, duo];
   const melodic = tracks.filter(t => t.kind === 'melodic');
 
   // A continuation inherits the attack's pitch and volume; its own locks do not sound.
