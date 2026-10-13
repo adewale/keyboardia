@@ -191,8 +191,8 @@
   .chip:disabled { opacity: .4; cursor: default; }
   .chip:hover { color: var(--text); background: rgba(255,255,255,.05); }
   .chip.active { background: var(--accent); color: var(--bg); }
-  .chip .tick { width: 3px; height: 12px; border-radius: 2px; background: var(--cat); }
-  .chip.active .tick { background: var(--bg); }
+  .chip .tick { width: 6px; height: 16px; border-radius: 0; background: var(--cat); position: relative; }
+  .chip .tick::before { content: ''; position: absolute; left: 2px; top: 2px; width: 4px; height: 12px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
   /* Toolbar: one 48px strip under the header that swaps content with the pane. It is a single
      scrolling line; the shell holds the overflow buttons and stays sticky during horizontal scroll. */
   .tools-shell { display: flex; position: sticky; left: 0; height: var(--dock-toolbar-height); flex-shrink: 0; background: var(--surface); z-index: 3; }
@@ -555,14 +555,15 @@
   .track-row-wrapper.panel-open .track-left { background: var(--surface-2); }
   .track-row-wrapper.panel-open .row-panel .rp-title { display: none; }
 
-  /* A little colour, as option I: a 36px glyph tile in the track's colour at the tile's left edge, the rest of the
-     tile in the surface. Docked or with its panel open, the glyph tile gets a light inset outline; muted, it goes hollow. */
-  html[data-rows^="tall"] .track-left, html[data-rows^="flat"] .track-left { position: relative; padding-left: 48px; }
-  html[data-rows^="tall"] .cat-chip, html[data-rows^="flat"] .cat-chip { display: none; }
-  html[data-rows^="tall"] .glyph-tile, html[data-rows^="flat"] .glyph-tile { display: inline-flex; position: absolute; left: 0; top: 0; align-items: center; justify-content: center; width: 36px; height: var(--row-opt-h); border: 0; border-radius: 4px; background: var(--cat); color: var(--bg); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0; margin: 0; }
-  html[data-rows^="tall"] .track-row-wrapper.docked .glyph-tile, html[data-rows^="flat"] .track-row-wrapper.docked .glyph-tile, html[data-rows^="tall"] .track-row-wrapper.panel-open .glyph-tile, html[data-rows^="flat"] .track-row-wrapper.panel-open .glyph-tile { outline: 2px solid var(--text); outline-offset: -2px; }
-  html[data-rows^="tall"] .track-row.muted .glyph-tile, html[data-rows^="flat"] .track-row.muted .glyph-tile { background: transparent; box-shadow: inset 0 0 0 2px var(--cat); color: var(--text); }
-  .row-panel .rp-chip { background: var(--cat); }
+  /* The chip: a 6px straight line in the track's colour down the row's left edge, full height, with the drag
+     grip inside it as three dark dots. It is the drag handle. It never changes with mute, solo or docking.
+     The same mark is used wherever the track's colour appears: the dock's tabs and the row panel. */
+  html[data-rows^="tall"] .track-left, html[data-rows^="flat"] .track-left { position: relative; padding-left: 24px; border-radius: 0 4px 4px 0; }
+  html[data-rows^="tall"] .glyph-tile, html[data-rows^="flat"] .glyph-tile { display: none; }
+  html[data-rows^="tall"] .cat-chip, html[data-rows^="flat"] .cat-chip, html[data-crap="on"][data-rows^="tall"] .cat-chip, html[data-crap="on"][data-rows^="flat"] .cat-chip { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 0; background: var(--cat); cursor: grab; }
+  html[data-rows^="tall"] .cat-chip::before, html[data-rows^="flat"] .cat-chip::before { content: ''; position: absolute; left: 2px; top: 50%; width: 4px; height: 12px; margin-top: -6px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
+  .row-panel .rp-chip { width: 6px; position: relative; background: var(--cat); }
+  .row-panel .rp-chip::before { content: ''; position: absolute; left: 2px; top: 50%; width: 4px; height: 12px; margin-top: -6px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
 
   /* Simple tile: chip, name, instrument and the transpose readout; nothing else in the row. The tile opens the
      per-instrument panel, the dock's Track pane, where mute, solo, transpose, steps, instrument, lane, copy, paste,
@@ -1022,7 +1023,7 @@
   function renderTrackRow(parent, t) {
     const wrap=el('track-row-wrapper kind-'+t.kind,parent);t.wrap=wrap;
     const row=el('track-row',wrap);
-    const left=el('track-left',row);el('cat-chip',left);
+    const left=el('track-left',row);const chip=el('cat-chip',left);chip.title='Drag to reorder';chip.setAttribute('aria-hidden','true');
     const grip=el('drag-handle',left);grip.textContent=rowFix()?'⠿':'⋮⋮';t.gripEl=grip;grip.setAttribute('aria-hidden','true');grip.title='Layout preview: reorder is not implemented here';
     const glyph=el('glyph-tile',left,'button');t.glyphEl=glyph;glyph.addEventListener('click',()=>openDock(t,t.kind==='melodic'?'notes':'track',glyph));
     const name=el('track-name',left,'button');t.nameEl=name;
