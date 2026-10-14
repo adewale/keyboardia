@@ -504,33 +504,46 @@
   html[data-rows="flatfull"] .line2 { display: contents; }
   html[data-rows="flatfull"] .line2 .group + .group { margin-left: 2px; }
 
-  /* T, who over what (arrangement 3): line one is identity only; line two is [M S] [+0 32] [♪ V ⚙] … [⧉ ⋯].
-     Four looks for four kinds of control: outlined letters for state, mono values, soft fill for views, bare icons
-     for actions. The instrument label is the preview button, so the SMP badge goes. 270 = 7 cells. */
-  html[data-rows="tallwho"] { --track-left-width: 348px; }
-  html[data-rows="tallwho"] .track-left { flex-wrap: wrap; align-content: center; padding-right: 8px; }
-  html[data-rows="tallwho"] .track-name { flex: 0 0 100%; order: 0; height: 24px; line-height: 24px; text-align: left; white-space: nowrap; overflow: hidden; }
-  html[data-rows="tallwho"] .track-name .inst { display: inline; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; text-transform: none; cursor: pointer; }
-  html[data-rows="tallwho"] .track-name .inst:hover { color: var(--text); text-decoration: underline; text-underline-offset: 3px; }
-  html[data-rows="tallwho"] .track-name .tr { display: none; }
+  /* The control tile: a ledger matrix with segmented trays, 270 = 7 cells. The identity column (name over
+     instrument, both from x24, locked to the two 24px lines) and a 2 × 5 block of controls from x138 to x262:
+     line one [M|S] [keys|lane|tools], line two [+0|32] [copy|clear|delete]. Three classes, one look each:
+     information is bare text; state is a hollow box that fills when on; a control is a solid chip. Trays touch,
+     with 4px between trays, and the solid trays keep a 1px seam so two values never read as one. One type style
+     in every box: 11px, 600, tabular numbers. The icons share one 12px optical box inside the 24px unit. */
+  html[data-rows="tallwho"] { --track-left-width: 270px; }
+  html[data-rows="tallwho"] .track-left { display: block; position: relative; padding: 0; }
+  html[data-rows="tallwho"] .track-name { position: absolute; left: 24px; top: 0; width: 102px; height: 24px; line-height: 24px; margin: 0; padding: 0; text-align: left; white-space: nowrap; overflow: visible; }
+  html[data-rows="tallwho"] .track-name .inst { display: block; position: absolute; left: 0; top: 26px; width: 102px; height: 24px; line-height: 24px; margin: 0; font-size: 11px; font-weight: 400; color: var(--muted); text-transform: none; overflow: hidden; text-overflow: ellipsis; }
+  html[data-rows="tallwho"] .track-name .tr, html[data-rows="tallwho"] .badge, html[data-rows="tallwho"] .act-group .more-btn, html[data-rows="tallwho"] .drag-handle, html[data-rows="tallwho"] .glyph-tile { display: none; }
   html[data-rows="tallwho"] .line2 { display: contents; }
-  html[data-rows="tallwho"] .line2 .group { order: 1; }
-  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font-family: var(--font-mono); font-size: 10px; letter-spacing: -.3px; cursor: pointer; flex: none; }
-  html[data-rows="tallwho"] .pill-tr { order: 2; }
-  html[data-rows="tallwho"] .pill-steps { order: 3; margin-left: -2px; }
-  html[data-rows="tallwho"] .line2 .group:nth-child(2) { order: 4; }
-  html[data-rows="tallwho"] .line2 .group.act-group { order: 5; display: inline-flex; margin-left: auto; }
-  html[data-rows="tallwho"] .badge { display: none; }
-  html[data-rows="tallwho"] .tools-toggle { display: inline-flex; }
-  html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle, html[data-rows="tallwho"] .tl-btn, html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { width: 24px; height: 24px; border: 1px solid var(--border-hover); border-radius: 4px; background: transparent; color: var(--muted); font-size: 11px; font-weight: 700; padding: 0; }
-  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { background: var(--surface-2); color: var(--text); font-family: var(--font-mono); font-weight: 500; font-size: 10px; letter-spacing: -.3px; }
-  html[data-rows="tallwho"] .pill-tr { border-radius: 4px 0 0 4px; }
-  html[data-rows="tallwho"] .pill-steps { border-radius: 0 4px 4px 0; border-left: 0; margin-left: -2px; }
-  html[data-rows="tallwho"] .expand-toggle.active { background: var(--accent); border-color: var(--accent); color: var(--bg); }
-  html[data-rows="tallwho"] .kind-drum .expand-toggle { opacity: .35; }
-  html[data-rows="tallwho"] .act-group .tl-btn { font-size: 12px; font-weight: 500; }
-  html[data-rows="tallwho"] .act-group .more-btn { display: none; }
-  .act-group .more-btn { display: none; letter-spacing: 1px; }
+  html[data-rows="tallwho"] .line2 .group, html[data-crap="on"][data-rows="tallwho"] .line2 .group { position: absolute; top: 0; display: inline-flex; gap: 0; }
+  html[data-rows="tallwho"] .line2 .group:nth-child(1) { left: 138px; }
+  html[data-rows="tallwho"] .line2 .group:nth-child(2) { left: 190px; }
+  html[data-rows="tallwho"] .line2 .group.act-group { left: 190px; top: 26px; display: inline-flex; }
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { position: absolute; top: 26px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; margin: 0; }
+  html[data-rows="tallwho"] .pill-tr { left: 138px; } html[data-rows="tallwho"] .pill-steps { left: 162px; }
+  /* one unit, one type style */
+  html[data-rows="tallwho"] .tl-btn, html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle, html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { box-sizing: border-box; width: 24px; height: 24px; padding: 0; margin: 0; border-radius: 0; font: 600 11px/1 var(--font-ui); font-variant-numeric: tabular-nums; letter-spacing: 0; display: inline-flex; align-items: center; justify-content: center; }
+  html[data-rows="tallwho"] .tl-btn svg, html[data-rows="tallwho"] .expand-toggle svg, html[data-rows="tallwho"] .velocity-toggle svg, html[data-rows="tallwho"] .tools-toggle svg { width: 16px; height: 16px; display: block; }
+  /* state: hollow, fills when on */
+  html[data-rows="tallwho"] .mute-button, html[data-rows="tallwho"] .solo-button, html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle { border: 1px solid #555; background: transparent; color: var(--muted); }
+  html[data-rows="tallwho"] .solo-button, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle { border-left: 0; }
+  html[data-rows="tallwho"] .mute-button, html[data-rows="tallwho"] .expand-toggle { border-radius: 4px 0 0 4px; }
+  html[data-rows="tallwho"] .solo-button, html[data-rows="tallwho"] .tools-toggle { border-radius: 0 4px 4px 0; }
+  html[data-rows="tallwho"] .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: #121212; }
+  html[data-rows="tallwho"] .solo-button.active { background: #f1c40f; border-color: #f1c40f; color: #121212; }
+  html[data-rows="tallwho"] .expand-toggle.active, html[data-rows="tallwho"] .velocity-toggle[aria-expanded="true"], html[data-rows="tallwho"] .tools-toggle.active { background: rgba(0,188,212,.15); border-color: #00bcd4; color: #00bcd4; box-shadow: -1px 0 0 #00bcd4; }
+  html[data-rows="tallwho"] .expand-toggle.active { box-shadow: none; }
+  html[data-rows="tallwho"] .kind-drum .expand-toggle { color: transparent; }
+  html[data-rows="tallwho"] .kind-drum .expand-toggle svg { visibility: hidden; }
+  /* control: solid chip, 1px seam between segments */
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps, html[data-rows="tallwho"] .act-group .tl-btn { border: 0; background: #3a3a3a; color: var(--text); }
+  html[data-rows="tallwho"] .pill-steps, html[data-rows="tallwho"] .act-group .tl-btn + .tl-btn { box-shadow: inset 1px 0 0 var(--surface); }
+  html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .act-group .tl-btn:first-child { border-radius: 4px 0 0 4px; }
+  html[data-rows="tallwho"] .pill-steps, html[data-rows="tallwho"] .act-group .tl-btn:last-child { border-radius: 0 4px 4px 0; }
+  html[data-rows="tallwho"] .act-group .tl-btn.copy-source { background: #3a3a3a; color: var(--accent-text); }
+  html[data-rows="tallwho"] .act-group .tl-btn.paste { color: #5eb3ea; }
+  html[data-rows="tallwho"] .act-group .tl-btn:disabled { opacity: .4; }
 
   /* U: the per-instrument panel under the track row. The same controls as the dock's Track pane, in a 48px strip
      that slides in beneath the row (and above its velocity lane), pushing the rows below down. It is sticky to the
@@ -627,7 +640,7 @@
   <section class="audit-bar" aria-label="Audit switches">
     <span class="k">Tile</span>
     <span class="set" role="group" aria-label="Complete tile" id="rowOpts">
-      <button class="opt" type="button" data-rows="tallwho" aria-pressed="true" title="T · Tall lattice, complete tile, arrangement 3 (who over what): line one is the name and instrument only; line two is M S, transpose and steps as joined 24px values, Notes, lane, tools, then copy, clear and delete. Every control is one 24px box with production's 1px border. 348px, nine cells"><b class="L">T</b>Tall · who over what</button>
+      <button class="opt" type="button" data-rows="tallwho" aria-pressed="true" title="T · The control tile: a ledger matrix with segmented trays, 270px (seven cells). Name over instrument from x24; a 2 × 5 block from x138: [M|S] [Notes|lane|tools] over [transpose|steps] [copy|clear|delete]. State is a hollow box that fills when on; a control is a solid chip"><b class="L">T</b>Ledger matrix</button>
     </span>
     <span class="k">Fixes</span>
     <span class="set">
@@ -706,6 +719,18 @@
   const isBlack = m => BLACK.has(((m % 12) + 12) % 12);
   const pc = m => ((m % 12) + 12) % 12;
   const noteName = m => NOTE_NAMES[pc(m)] + (Math.floor(m / 12) - 1);
+  // Icons: one 16px grid, 1.5px strokes, round caps, each glyph in the same 12px optical box.
+  const PSVG = body => '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
+  function gearPath(){const n=6,ro=5.25,ri=3.9,cx=8,cy=8,pts=[];const tw=0.24;for(let i=0;i<n;i++){const a=i*2*Math.PI/n-Math.PI/2;const h=Math.PI/n;pts.push([a-h+0.16,ri],[a-tw,ro],[a+tw,ro],[a+h-0.16,ri]);}return 'M'+pts.map(([a,r])=>(cx+r*Math.cos(a)).toFixed(2)+' '+(cy+r*Math.sin(a)).toFixed(2)).join('L')+'Z';}
+  const ICON = {
+    keys: PSVG('<rect x="2.75" y="2.75" width="10.5" height="10.5" rx="1.5"/><path d="M6.25 8.75v4.5M9.75 8.75v4.5"/><path d="M5.25 2.75h2v6h-2zM8.75 2.75h2v6h-2z" fill="currentColor" stroke="none"/>'),
+    lane: PSVG('<path d="M3.25 13.25v-2.5M6.5 13.25V8.25M9.75 13.25V5.5M13 13.25V2.75"/>'),
+    gear: PSVG('<path d="'+gearPath()+'"/><circle cx="8" cy="8" r="1.75"/>'),
+    copy: PSVG('<rect x="5.75" y="5.75" width="7.5" height="7.5" rx="1.5"/><path d="M10.25 4.5v-.25a1.5 1.5 0 00-1.5-1.5h-4.5a1.5 1.5 0 00-1.5 1.5v4.5a1.5 1.5 0 001.5 1.5h.25"/>'),
+    paste: PSVG('<rect x="3.25" y="3.75" width="9.5" height="9.5" rx="1.5"/><rect x="6" y="2.75" width="4" height="2.5" rx=".75"/><path d="M6 8.25h4M6 10.75h4"/>'),
+    clear: PSVG('<g transform="translate(-.25 -.5)"><path d="M9.4 2.9l3.9 3.9-6 6H4.75l-2-2a1.2 1.2 0 010-1.7z"/><path d="M6.2 6.1l3.9 3.9M7.4 12.8h5.85"/></g>'),
+    bin: PSVG('<path d="M2.75 4.5h10.5M6 4.5V2.75h4V4.5M4.25 4.5l.75 8.75h6l.75-8.75M6.75 7v3.75M9.25 7v3.75"/>'),
+  };
   const el = (cls, parent, tag) => { const d = document.createElement(tag || 'div'); if (cls) d.className = cls; if (parent) parent.appendChild(d); return d; };
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const rowFix = () => document.documentElement.dataset.rowfix === 'on';
@@ -940,7 +965,7 @@
       t.copyEl.setAttribute('aria-label', (copySource && copySource !== t ? 'Paste into ' : 'Copy ') + t.name);
       t.copyEl.setAttribute('aria-pressed', String(copySource === t));
       t.copyEl.disabled = !copySource && !t.steps.some(Boolean);
-      if (t.miniCopy) { const paste = !!copySource && copySource !== t; t.miniCopy.textContent = copySource === t ? '⧉' : paste ? '⤓' : '⧉'; t.miniCopy.title = paste ? 'Paste into ' + t.name : copySource === t ? 'Copying ' + t.name + ' (click to cancel)' : 'Copy ' + t.name; t.miniCopy.setAttribute('aria-label', t.miniCopy.title); t.miniCopy.classList.toggle('copy-source', copySource === t); t.miniCopy.classList.toggle('paste', paste); t.miniCopy.disabled = t.copyEl.disabled; }
+      if (t.miniCopy) { const paste = !!copySource && copySource !== t; t.miniCopy.innerHTML = paste ? ICON.paste : ICON.copy; t.miniCopy.classList.toggle('paste', paste); t.miniCopy.title = paste ? 'Paste into ' + t.name : copySource === t ? 'Copying ' + t.name + ' (click to cancel)' : 'Copy ' + t.name; t.miniCopy.setAttribute('aria-label', t.miniCopy.title); t.miniCopy.classList.toggle('copy-source', copySource === t); t.miniCopy.classList.toggle('paste', paste); t.miniCopy.disabled = t.copyEl.disabled; }
     });
     ui.copyStatus.textContent = copySource ? 'Copying ' + copySource.name + ' — choose Paste on a destination row. Escape cancels.' : '';
   }
@@ -1041,7 +1066,7 @@
     const badge=el('badge'+(t.kind==='melodic'?'':' drum'),disclose,'button');t.badgeEl=badge;badge.textContent=t.badge;badge.title='Preview '+t.inst+': play one note';
     badge.addEventListener('click',()=>audition(t,BASE_MIDI+t.transpose,1));
     const ex=el('expand-toggle',disclose,'button');t.toggleEl=ex;
-    ex.textContent=t.kind==='melodic'?'♪':'T';ex.setAttribute('aria-label','Edit '+t.name+' notes or track');
+    ex.innerHTML=ICON.keys;ex.setAttribute('aria-label',t.kind==='melodic'?'Notes: open the piano roll for '+t.name:'No pitch view for '+t.name);ex.title=t.kind==='melodic'?'Notes':'';
     ex.setAttribute('aria-expanded','false');
     ex.addEventListener('click',()=>{
       if (isLandscape()) openDock(t,'track',ex);
@@ -1049,13 +1074,13 @@
       else if(dock.open && dock.track===t && dock.pane==='notes') closeDock();
       else openDock(t,'notes',ex);
     });
-    const v=el('velocity-toggle',disclose,'button');v.textContent='V';v.setAttribute('aria-label',t.name+' velocity lane');v.setAttribute('aria-expanded','false');t.laneToggle=v;
-    const gear=el('tl-btn tools-toggle',disclose,'button');gear.textContent='⚙';gear.setAttribute('aria-label','Tools for '+t.name);gear.title='Pattern tools: opens the Track pane';gear.addEventListener('click',()=>openDock(t,'track',gear));
+    const v=el('velocity-toggle',disclose,'button');v.innerHTML=ICON.lane;v.title='Velocity lane';v.setAttribute('aria-label',t.name+' velocity lane');v.setAttribute('aria-expanded','false');t.laneToggle=v;
+    const gear=el('tl-btn tools-toggle',disclose,'button');gear.innerHTML=ICON.gear;t.toolsEl=gear;gear.setAttribute('aria-label','Tools for '+t.name);gear.title='Pattern tools: opens the Track pane';gear.addEventListener('click',()=>openDock(t,'track',gear));
     const act=el('group act-group',line2);
-    const miniCopy=el('tl-btn',act,'button');miniCopy.textContent='⧉';t.miniCopy=miniCopy;miniCopy.addEventListener('click',()=>t.copyEl.click());
-    const miniClear=el('tl-btn',act,'button');miniClear.textContent='○';miniClear.setAttribute('aria-label','Clear '+t.name+' pattern');miniClear.title='Clear pattern';miniClear.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(2)').click());
+    const miniCopy=el('tl-btn',act,'button');miniCopy.innerHTML=ICON.copy;t.miniCopy=miniCopy;miniCopy.addEventListener('click',()=>t.copyEl.click());
+    const miniClear=el('tl-btn',act,'button');miniClear.innerHTML=ICON.clear;miniClear.setAttribute('aria-label','Clear '+t.name+' pattern');miniClear.title='Clear pattern';miniClear.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(2)').click());
     const more=el('tl-btn more-btn',act,'button');more.textContent='⋯';more.setAttribute('aria-label','More for '+t.name+': paste, clear, rename, delete');more.title='Paste, clear, rename, delete: opens the Track pane';more.addEventListener('click',()=>openDock(t,'track',more));
-    const miniDelete=el('tl-btn',act,'button');miniDelete.textContent='✕';miniDelete.setAttribute('aria-label','Delete '+t.name+' track');miniDelete.title='Delete track';miniDelete.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(3)').click());
+    const miniDelete=el('tl-btn',act,'button');miniDelete.innerHTML=ICON.bin;miniDelete.setAttribute('aria-label','Delete '+t.name+' track');miniDelete.title='Delete track';miniDelete.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(3)').click());
     const stepsEl=el('steps',row);const cap=el('row-caption',stepsEl,'button');t.captionEl=cap;cap.addEventListener('click',()=>openDock(t,'track',cap));
     const grid=el('step-grid',stepsEl);grid.setAttribute('role','group');grid.setAttribute('aria-label',t.name+' pattern');
     t.cells=[];
@@ -1221,7 +1246,7 @@
       document.querySelector('.transport').inert=dock.open;
     }else{
       tracksEl.inert=false;document.querySelector('.transport').inert=false;
-      tracks.forEach(t=>{t.toggleEl.textContent=t.kind==='melodic'?'♪':'T';});
+      tracks.forEach(t=>{t.toggleEl.innerHTML=ICON.keys;});
     }
     // A fixed editor must not inherit an inert background ancestor.
     if(isLandscape()&&dock.open){tracksEl.inert=false;ui.rows.inert=true;ui.ruler.parentElement.inert=true;}else if(ui.rows){ui.rows.inert=portrait;ui.ruler.parentElement.inert=portrait;}
@@ -1336,7 +1361,7 @@
     if(!dock.open)return;
     if(ui.cancelDrag)ui.cancelDrag();
     dock.open=false;++paintVersion;ui.notesLayer.classList.remove('fading');ui.dock.classList.remove('open');ui.dock.inert=true;ui.dock.setAttribute('aria-hidden','true');
-    tracks.forEach(o=>{o.wrap.classList.remove('docked');o.toggleEl.classList.remove('active');o.toggleEl.setAttribute('aria-expanded','false');o.tabEl.setAttribute('aria-pressed','false');syncRow(o);});
+    tracks.forEach(o=>{o.wrap.classList.remove('docked');o.toggleEl.classList.remove('active');if(o.toolsEl)o.toolsEl.classList.remove('active');o.toggleEl.setAttribute('aria-expanded','false');o.tabEl.setAttribute('aria-pressed','false');syncRow(o);});
     ui.selCol.classList.remove('on');updateMode();renderSelectedBar();
     const opener=dock.opener;if(opener&&opener.isConnected&&!opener.closest('[inert]'))opener.focus({preventScroll:true});else (isPortrait()?document.getElementById('portraitPlay'):playBtn).focus({preventScroll:true});
   }
@@ -1365,7 +1390,7 @@
     const t=dock.track;if(!t)return;
     const focusedKey=ui.pane.contains(document.activeElement)?document.activeElement.dataset.focusKey:null;
     Object.entries(ui.paneChips).forEach(([k,c])=>{c.classList.toggle('active',dock.pane===k);c.setAttribute('aria-pressed',String(dock.pane===k));c.disabled=k==='notes'&&t.kind!=='melodic';});
-    tracks.forEach(o=>{o.toggleEl.classList.toggle('active',o===t&&dock.pane==='notes');o.toggleEl.setAttribute('aria-expanded',String(o===t&&dock.open));});
+    tracks.forEach(o=>{o.toggleEl.classList.toggle('active',o===t&&dock.pane==='notes');o.toggleEl.setAttribute('aria-expanded',String(o===t&&dock.open));if(o.toolsEl)o.toolsEl.classList.toggle('active',o===t&&dock.pane==='track');});
     updateContext();
     ui.selCol.classList.toggle('on',dock.selectedStep!==null);if(dock.selectedStep!==null)ui.selCol.style.left=stepX(dock.selectedStep)+'px';
     const details=dock.pane==='track'||t.kind!=='melodic';
@@ -1592,7 +1617,7 @@
   });
   // ---------- audit switches ----------
   const ROW_OPTS_OLD={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
-  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:348},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
+  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
   // Example strip: attack at +7, two ties, attack at −5, rest, attack at 0, tie, then a step at half volume on 0.
   // Cells are real .step-cell elements and the mark is placed by the row formula, so the strip tracks every switch.
   const DEMO=[{on:1,p:7},{on:1,p:7,tie:1},{on:1,p:7,tie:1},{on:1,p:-5},{on:0},{on:1,p:0},{on:1,p:0,tie:1},{on:1,p:0,vol:.5},{on:1,p:12,vol:.3},{on:1,p:12,tie:1,vol:.3},{on:1,p:0,env:1},{on:0,p:-12}];
