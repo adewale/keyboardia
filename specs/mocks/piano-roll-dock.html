@@ -510,18 +510,21 @@
      information is bare text; state is a hollow box that fills when on; a control is a solid chip. Trays touch,
      with 4px between trays, and the solid trays keep a 1px seam so two values never read as one. One type style
      in every box: 11px, 600, tabular numbers. The icons share one 12px optical box inside the 24px unit. */
-  html[data-rows="tallwho"] { --track-left-width: 270px; }
+  /* F · "M S under the name", 231px (six cells). Left: the track (name over [M|S]). Right: the pattern
+     ([Notes|lane|tools] over [copy|clear|delete], [transpose|steps] beside). The row shows the track name only. */
+  html[data-rows="tallwho"] { --track-left-width: 231px; }
   html[data-rows="tallwho"] .track-left { display: block; position: relative; padding: 0; }
-  html[data-rows="tallwho"] .track-name { position: absolute; left: 24px; top: 0; width: 102px; height: 24px; line-height: 24px; margin: 0; padding: 0; text-align: left; white-space: nowrap; overflow: visible; }
-  html[data-rows="tallwho"] .track-name .inst { display: block; position: absolute; left: 0; top: 26px; width: 102px; height: 24px; line-height: 24px; margin: 0; font-size: 11px; font-weight: 400; color: var(--muted); text-transform: none; overflow: hidden; text-overflow: ellipsis; }
+  html[data-rows="tallwho"] .track-name { position: absolute; left: 24px; top: 0; width: 120px; height: 24px; line-height: 24px; margin: 0; padding: 0; text-align: left; white-space: nowrap; overflow: hidden; }
+  html[data-rows="tallwho"] .track-name .nm { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  html[data-rows="tallwho"] .track-name .inst { display: none; }
   html[data-rows="tallwho"] .track-name .tr, html[data-rows="tallwho"] .badge, html[data-rows="tallwho"] .act-group .more-btn, html[data-rows="tallwho"] .drag-handle, html[data-rows="tallwho"] .glyph-tile { display: none; }
   html[data-rows="tallwho"] .line2 { display: contents; }
   html[data-rows="tallwho"] .line2 .group, html[data-crap="on"][data-rows="tallwho"] .line2 .group { position: absolute; top: 0; display: inline-flex; gap: 0; }
-  html[data-rows="tallwho"] .line2 .group:nth-child(1) { left: 138px; }
-  html[data-rows="tallwho"] .line2 .group:nth-child(2) { left: 190px; }
-  html[data-rows="tallwho"] .line2 .group.act-group { left: 190px; top: 26px; display: inline-flex; }
+  html[data-rows="tallwho"] .line2 .group:nth-child(1) { left: 24px; top: 26px; }
+  html[data-rows="tallwho"] .line2 .group:nth-child(2) { left: 152px; top: 0; }
+  html[data-rows="tallwho"] .line2 .group.act-group { left: 152px; top: 26px; display: inline-flex; }
   html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { position: absolute; top: 26px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; padding: 0; margin: 0; }
-  html[data-rows="tallwho"] .pill-tr { left: 138px; } html[data-rows="tallwho"] .pill-steps { left: 162px; }
+  html[data-rows="tallwho"] .pill-tr { left: 100px; } html[data-rows="tallwho"] .pill-steps { left: 124px; }
   /* one unit, one type style */
   html[data-rows="tallwho"] .tl-btn, html[data-rows="tallwho"] .expand-toggle, html[data-rows="tallwho"] .velocity-toggle, html[data-rows="tallwho"] .tools-toggle, html[data-rows="tallwho"] .pill-tr, html[data-rows="tallwho"] .pill-steps { box-sizing: border-box; width: 24px; height: 24px; padding: 0; margin: 0; border-radius: 0; font: 600 11px/1 var(--font-ui); font-variant-numeric: tabular-nums; letter-spacing: 0; display: inline-flex; align-items: center; justify-content: center; }
   html[data-rows="tallwho"] .tl-btn svg, html[data-rows="tallwho"] .expand-toggle svg, html[data-rows="tallwho"] .velocity-toggle svg, html[data-rows="tallwho"] .tools-toggle svg { width: 16px; height: 16px; display: block; }
@@ -640,7 +643,7 @@
   <section class="audit-bar" aria-label="Audit switches">
     <span class="k">Tile</span>
     <span class="set" role="group" aria-label="Complete tile" id="rowOpts">
-      <button class="opt" type="button" data-rows="tallwho" aria-pressed="true" title="T · The control tile: a ledger matrix with segmented trays, 270px (seven cells). Name over instrument from x24; a 2 × 5 block from x138: [M|S] [Notes|lane|tools] over [transpose|steps] [copy|clear|delete]. State is a hollow box that fills when on; a control is a solid chip"><b class="L">T</b>Ledger matrix</button>
+      <button class="opt" type="button" data-rows="tallwho" aria-pressed="true" title="F · The control tile: M S under the name, 231px (six cells). Left, the track: name over [M|S]. Right, the pattern: [Notes|lane|tools] over [copy|clear|delete], with [transpose|steps] beside. The row shows the track name only; the instrument appears in the tooltip once the track is renamed"><b class="L">F</b>M S under the name</button>
     </span>
     <span class="k">Fixes</span>
     <span class="set">
@@ -743,14 +746,16 @@
   // Seeded from the owner's session "Piano in A Minor Pentatonic" (keyboardia.dev/s/630cd593…), 96 BPM, 16 steps used
   // of 128; the 16-step pattern is repeated on page 2 so the page gap has something to show.
   const piano = mk('piano', 'Piano', 'melodic', 'Piano', 'SMP', 'var(--cat-keys)', 0, { min: 21, max: 108, optMin: 36, optMax: 96 });
-  const akick = mk('akick', 'Ac. Kick', 'drum', 'Acoustic kick', 'SMP', 'var(--cat-drums)');
-  const snare = mk('snare', 'Brush Snare', 'drum', 'Brushes snare', 'SMP', 'var(--cat-drums)');
+  const akick = mk('akick', 'Ac. Kick', 'drum', 'Ac. Kick', 'SMP', 'var(--cat-drums)');
+  const snare = mk('snare', 'Brush Snare', 'drum', 'Brush Snare', 'SMP', 'var(--cat-drums)');
   const clap = mk('clap', 'Clap', 'drum', 'Clap', 'SYN', 'var(--cat-drums)');
-  const duo = mk('duo', 'Duo', 'melodic', 'Duo lead', 'SYN', 'var(--cat-leads)', 0, { min: 36, max: 96, optMin: 48, optMax: 84 });
+  const duo = mk('duo', 'Duo', 'melodic', 'Duo', 'SYN', 'var(--cat-leads)', 0, { min: 36, max: 96, optMin: 48, optMax: 84 });
   // Bass is not in the session: it is a demonstration row with every kind of lock, so the marks can be compared on
   // both lattices in one view. Held notes (ties), volumes from 30% to 80%, an envelope lock, and a lock kept on an
   // off step.
-  const bass = mk('bass', 'Bass', 'melodic', 'Sub bass', 'SYN', 'var(--cat-bass)', 0, { min: 24, max: 84, optMin: 28, optMax: 60 });
+  const bass = mk('bass', 'Bass', 'melodic', 'Sub Bass', 'SYN', 'var(--cat-bass)', 0, { min: 24, max: 84, optMin: 28, optMax: 60 });
+  // Sample ids and names follow production's catalogue (shared/instrument-catalog.ts). Bass is the one renamed track.
+  piano.sid = 'sampled:piano'; bass.sid = 'advanced:sub-bass'; akick.sid = 'sampled:acoustic-kick'; snare.sid = 'sampled:brushes-snare'; clap.sid = 'clap'; duo.sid = 'tone:duo-lead';
   piano.voice = 'piano'; duo.voice = 'lead'; bass.voice = 'lead'; akick.voice = 'kick'; snare.voice = 'snare'; clap.voice = 'clap';
   piano.gain = 1; akick.gain = 1; snare.gain = 1; clap.gain = 0.53; duo.gain = 0.2; bass.gain = 0.3;
   const SEED = {
@@ -1001,10 +1006,15 @@
     input.addEventListener('blur', () => finish(true));
     input.focus(); input.select();
   }
+  // Production's naming rule: the row shows the track name only. The instrument appears where a name is shown in full
+  // (tooltip, dock title) and only once the track has been renamed away from its instrument's catalogue name.
+  const renamed = t => t.name !== t.inst;
+  const instSuffix = t => renamed(t) ? ' · ' + t.inst : '';
+  const nameTooltip = t => (renamed(t) ? 'Instrument: ' + t.inst + '\n' : '') + 'ID: ' + t.sid + '\nDouble-click to rename';
   function updateIdentity(t) {
     t.nameEl.replaceChildren();
     const tick = el('tick', t.nameEl); tick.style.setProperty('--cat',t.cat);
-    t.nameEl.append(document.createTextNode(t.name));
+    const nm=el('nm',t.nameEl,'span');nm.textContent=t.name;t.nameEl.title=nameTooltip(t);
     if (t.kind === 'melodic') { const tr=el('tr',t.nameEl);tr.textContent=t.transpose===0?'':trLabel(t); }
     const inst=el('inst',t.nameEl,'span');inst.textContent=t.inst;
     inst.addEventListener('click',e=>{if(document.documentElement.dataset.rows==='tallwho'){e.stopPropagation();e.preventDefault();audition(t,BASE_MIDI+t.transpose,1);}});inst.title='Preview '+t.inst+': play one note';
@@ -1368,9 +1378,9 @@
   function selectStep(t,i,opener) { openDock(t,'step',opener);dock.selectedStep=i;dock.cursorStep=i;dock.cursorMidi=stepMidi(t,i)||BASE_MIDI+t.transpose;renderPane();ensurePitchVisible(dock.cursorMidi);moveGridCursor(false); }
   function updateContext(step=dock.selectedStep,midi) {
     const t=dock.track;if(!t)return;
-    if(step===null||step===undefined){ui.title.textContent=t.name+' · '+t.inst;return;}
+    if(step===null||step===undefined){ui.title.textContent=t.name+instSuffix(t);return;}
     const effective=midi??stepMidi(t,step)??(BASE_MIDI+t.transpose+(t.locks[step]?.pitch??0));
-    ui.title.textContent=t.name+' · '+t.inst+' · Step '+(step+1)+' · '+noteName(effective)+' · v'+Math.round(stepVel(t,step)*127);
+    ui.title.textContent=t.name+instSuffix(t)+' · Step '+(step+1)+' · '+noteName(effective)+' · v'+Math.round(stepVel(t,step)*127);
   }
   // The per-instrument controls: transpose, lane, preview, rename, mute, solo, copy/paste, clear, delete.
   // Rendered into the dock's Track pane, or into the panel under the row (option U). `refresh` re-renders the host.
@@ -1617,7 +1627,7 @@
   });
   // ---------- audit switches ----------
   const ROW_OPTS_OLD={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
-  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
+  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:231},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
   // Example strip: attack at +7, two ties, attack at −5, rest, attack at 0, tie, then a step at half volume on 0.
   // Cells are real .step-cell elements and the mark is placed by the row formula, so the strip tracks every switch.
   const DEMO=[{on:1,p:7},{on:1,p:7,tie:1},{on:1,p:7,tie:1},{on:1,p:-5},{on:0},{on:1,p:0},{on:1,p:0,tie:1},{on:1,p:0,vol:.5},{on:1,p:12,vol:.3},{on:1,p:12,tie:1,vol:.3},{on:1,p:0,env:1},{on:0,p:-12}];
