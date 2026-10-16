@@ -25,7 +25,7 @@ import {
 } from './velocity-lane-math';
 
 /**
- * The lane sits on the rows' step columns, page gap included (lesson 84), so
+ * The lane sits on the rows' step columns, page gap included (lesson 85), so
  * each bar is placed with step-geometry.ts like the ruler and the roll. The
  * lane is hidden under 768px and in landscape (VelocityLane.css, TrackRow.css),
  * so only the desktop geometry applies.

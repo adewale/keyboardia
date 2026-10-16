@@ -3614,7 +3614,7 @@ dock shell, the two-line block, `PianoRollEditor`, ghost notes and pitch
 contour marks, and the Step and Track panes. The loop ruler moved into the
 grid on the shared step geometry. Phase 8 (the landscape dock) is in progress,
 and visual baselines are pending. The playback reorder fragility from lesson 62
-is fixed (lesson 83).
+is fixed (lesson 84).
 
 ---
 
