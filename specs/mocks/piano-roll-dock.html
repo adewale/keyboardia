@@ -722,18 +722,23 @@
   const isBlack = m => BLACK.has(((m % 12) + 12) % 12);
   const pc = m => ((m % 12) + 12) % 12;
   const noteName = m => NOTE_NAMES[pc(m)] + (Math.floor(m / 12) - 1);
-  // Icons: one 16px grid, 1.5px strokes, round caps, each glyph in the same 12px optical box.
-  const PSVG = body => '<svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
-  function gearPath(){const n=6,ro=5.25,ri=3.9,cx=8,cy=8,pts=[];const tw=0.24;for(let i=0;i<n;i++){const a=i*2*Math.PI/n-Math.PI/2;const h=Math.PI/n;pts.push([a-h+0.16,ri],[a-tw,ro],[a+tw,ro],[a+h-0.16,ri]);}return 'M'+pts.map(([a,r])=>(cx+r*Math.cos(a)).toFixed(2)+' '+(cy+r*Math.sin(a)).toFixed(2)).join('L')+'Z';}
+  // Icons follow production's icon system (specs/ICON-SYSTEM.md): Lucide's 24px grid, 2px stroke, round caps and joins,
+  // drawn at 16px. Tools, Copy, Paste, Clear and Delete are Lucide 1.25.0 paths (settings, copy, clipboard-paste,
+  // eraser, trash-2; ISC licence). Notes and Lane have no Lucide equivalent, so they are drawn to the same rules.
+  const LSVG = body => '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + body + '</svg>';
   const ICON = {
-    keys: PSVG('<rect x="2.75" y="2.75" width="10.5" height="10.5" rx="1.5"/><path d="M6.25 8.75v4.5M9.75 8.75v4.5"/><path d="M5.25 2.75h2v6h-2zM8.75 2.75h2v6h-2z" fill="currentColor" stroke="none"/>'),
-    lane: PSVG('<path d="M3.25 13.25v-2.5M6.5 13.25V8.25M9.75 13.25V5.5M13 13.25V2.75"/>'),
-    gear: PSVG('<path d="'+gearPath()+'"/><circle cx="8" cy="8" r="1.75"/>'),
-    copy: PSVG('<rect x="5.75" y="5.75" width="7.5" height="7.5" rx="1.5"/><path d="M10.25 4.5v-.25a1.5 1.5 0 00-1.5-1.5h-4.5a1.5 1.5 0 00-1.5 1.5v4.5a1.5 1.5 0 001.5 1.5h.25"/>'),
-    paste: PSVG('<rect x="3.25" y="3.75" width="9.5" height="9.5" rx="1.5"/><rect x="6" y="2.75" width="4" height="2.5" rx=".75"/><path d="M6 8.25h4M6 10.75h4"/>'),
-    clear: PSVG('<g transform="translate(-.25 -.5)"><path d="M9.4 2.9l3.9 3.9-6 6H4.75l-2-2a1.2 1.2 0 010-1.7z"/><path d="M6.2 6.1l3.9 3.9M7.4 12.8h5.85"/></g>'),
-    bin: PSVG('<path d="M2.75 4.5h10.5M6 4.5V2.75h4V4.5M4.25 4.5l.75 8.75h6l.75-8.75M6.75 7v3.75M9.25 7v3.75"/>'),
+    // Notes: a keyboard on Lucide's keyboard proportions (20 × 14): two black keys as narrow outlined keys, white-key
+    // joins below them. Its weight matches Lucide's own piano icon.
+    keys: LSVG('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M7.5 5v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V5M13.5 5v6a1 1 0 0 0 1 1h1a1 1 0 0 0 1-1V5M9 12v7M15 12v7"/>'),
+    // Lane: four rising bars, centred on the grid (x 4.5 to 19.5, y 4 to 20).
+    lane: LSVG('<path d="M4.5 20v-4M9.5 20v-8M14.5 20V8M19.5 20V4"/>'),
+    gear: LSVG("<path d=\"M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915\"/><circle cx=\"12\" cy=\"12\" r=\"3\"/>"),
+    copy: LSVG("<rect width=\"14\" height=\"14\" x=\"8\" y=\"8\" rx=\"2\" ry=\"2\"/><path d=\"M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2\"/>"),
+    paste: LSVG("<path d=\"M11 14h10\"/><path d=\"M16 4h2a2 2 0 0 1 2 2v1.344\"/><path d=\"m17 18 4-4-4-4\"/><path d=\"M8 4H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 1.793-1.113\"/><rect x=\"8\" y=\"2\" width=\"8\" height=\"4\" rx=\"1\"/>"),
+    clear: LSVG("<path d=\"M21 21H8a2 2 0 0 1-1.42-.587l-3.994-3.999a2 2 0 0 1 0-2.828l10-10a2 2 0 0 1 2.829 0l5.999 6a2 2 0 0 1 0 2.828L12.834 21\"/><path d=\"m5.082 11.09 8.828 8.828\"/>"),
+    bin: LSVG("<path d=\"M10 11v6\"/><path d=\"M14 11v6\"/><path d=\"M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6\"/><path d=\"M3 6h18\"/><path d=\"M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2\"/>"),
   };
+
   const el = (cls, parent, tag) => { const d = document.createElement(tag || 'div'); if (cls) d.className = cls; if (parent) parent.appendChild(d); return d; };
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const rowFix = () => document.documentElement.dataset.rowfix === 'on';
@@ -1309,11 +1314,15 @@
     const mids=(initial===true&&dockFix())?(computeBars(dock.track),dock.track.bars.map(b=>b.midi)):comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
     const lo=Math.min(...mids),hi=Math.max(...mids),viewport=parseFloat(getComputedStyle(ui.scroll).height)||252;
     if(initial===true&&dockFix()){
-      const need=hi-lo+5;let h=Math.min(18,Math.floor(252/need));
-      if(h<12){h=Math.min(18,Math.floor(432/need));if(!dock.tall){dock.tall=true;ui.dock.classList.add('tall');if(ui.detent)ui.detent.textContent='⇕ Compact';}}
-      setPitchHeight(Math.max(12,h));
-      ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-hi-2)*H-Math.max(0,(ui.scroll.clientHeight-need*H)/2));ui.scroll.dispatchEvent(new Event('scroll'));
-      setStatus('Showing '+dock.track.name+' at '+H+'px per semitone.');return;
+      // Opening never squeezes the roll below the spec's default H (18px, a 36 × 18 cell). If the track's range does
+      // not fit the compact body, the dock opens tall; if it still does not fit, it scrolls to centre the notes.
+      // "Fit comparison" remains the way to trade cell height for a whole-range overview.
+      const need=hi-lo+5,h=18,fits=view=>need*h<=view;
+      if(!fits(252)&&!dock.tall){dock.tall=true;ui.dock.classList.add('tall');if(ui.detent)ui.detent.textContent='⇕ Compact';}
+      setPitchHeight(h);
+      const view=dock.tall?432:252,centre=(MIDI_MAX-(hi+lo)/2)*H+H/2;
+      ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,fits(view)?(MIDI_MAX-hi-2)*H-Math.max(0,(view-need*H)/2):centre-view/2);ui.scroll.dispatchEvent(new Event('scroll'));
+      setStatus('Showing '+dock.track.name+' at '+H+'px per semitone'+(fits(view)?'.':'; scroll for the rest of its range, or Fit comparison for all of it.'));return;
     }
     const raw=viewport/(hi-lo+5);setPitchHeight(clamp(dockFix()?Math.floor(raw):raw,2,initial===true?18:36));
     ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-hi-2)*H);ui.scroll.dispatchEvent(new Event('scroll'));
