@@ -62,6 +62,10 @@
   .bpm span { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
   .pill { display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; border-radius: 6px; background: var(--surface-2); border: 1px solid #6c6c76; color: var(--text); font-size: 13px; cursor: pointer; }
   .pill .caret { color: var(--muted); font-size: 10px; }
+  .pill.icon { width: 32px; padding: 0; justify-content: center; }
+  .detail-info { display: inline-flex; align-items: baseline; gap: 8px; color: var(--text); }
+  .detail-info .k { font: 500 11px/1 var(--font-ui); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .detail-info .id { font-size: 12px; color: var(--muted); }
   .pill[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.15); }
   .transport .spacer { flex: 1; }
   .session-name { color: var(--muted); font-size: 13px; }
@@ -162,7 +166,6 @@
   @keyframes cell-pulse { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
   /* Row actions stay on their row: sticky-right on desktop and wide landscape, static at the row's end in narrow landscape. */
   .row-actions { display: flex; gap: 4px; position: sticky; right: 0; padding: 2px 4px; background: var(--surface); z-index: 4; align-self: center; }
-  html[data-narrow-landscape="true"] .row-actions { position: static; }
   .row-actions button { min-width: 44px; height: 32px; padding: 0 5px; font-size: 11px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); cursor: pointer; }
   .row-actions button.copy-source { background: var(--success); color: var(--bg); }
   .row-actions button.paste { border-color: var(--info-text); }
@@ -664,6 +667,22 @@
   html[data-ui="one"] .pane .value, html[data-ui="one"] .pane input, html[data-ui="one"] .pane select, html[data-ui="one"] .bpm b { font-family: var(--font-ui); }
   html[data-ui="one"] .bpm b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
   html[data-ui="one"] .grid-gutter { position: absolute; top: 0; bottom: 0; width: 3px; background: rgb(0 0 0 / 38%); }
+
+  /* Landscape row, as production: M | S | name with a chevron, 44px targets, nothing else in the row. A tap on the
+     name opens the track's editor (production's drawer override); Copy, Clear and Delete live in its Track pane.
+     216 = 4 + M 44 + 4 + S 44 + 4 + name 112 + 4. These rules beat the desktop tile's positioned layout. */
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left { display: flex; align-items: center; gap: 4px; height: 44px; padding: 0 4px; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left :is(.track-name, .line2 .group, .pill-tr, .pill-steps) { position: static; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left :is(.pill-tr, .pill-steps, .act-group, .line2 .group:nth-child(2)) { display: none; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left .line2 .group:nth-child(1) { order: 0; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left .tl-btn { width: 44px; height: 44px; font-size: 12px; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left .track-name { order: 1; flex: 0 0 112px; width: 112px; height: 44px; line-height: 44px; display: flex; align-items: center; gap: 4px; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-left .track-name .nm { flex: 0 1 auto; min-width: 0; }
+  .track-name .chev { display: none; }
+  html[data-display-mode="landscape"] .track-name .chev { display: inline-flex; flex: none; color: var(--muted); }
+  html[data-display-mode="landscape"] .track-name .chev svg { width: 14px; height: 14px; }
+  /* The marks legend wraps and scrolls inside itself so it never widens the page on a phone. */
+  .audit-bar .legend-demo { max-width: 100%; overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -672,24 +691,11 @@
   <div>
     <div class="eyebrow">Keyboardia · Pitch panel · Editor dock prototype</div>
     <h1>Piano roll dock</h1>
-    <p class="lede">The sequencer with the proposed editor dock under the grid. Each row's control tile puts the track on the left (name over M and S) and the pattern on the right. Press the keyboard icon on Piano, Bass or Duo to open Notes; press the gear, the transpose or the step count to open Track. Click a name to hear its instrument, as in the app, and double-click it to rename; hover it for the sample ID, and the instrument once the track is renamed. Hold or Shift+click a step to open Step. Rows stay contiguous; the dock opens at 18px per semitone and scrolls to the track's notes. Note editing and playback use a small synth; step-count, instrument, envelope and pattern-tool integration are labelled, disabled previews. Copy/Paste, Clear and Delete are working prototype actions in this spec-only mock. Scale selection and reorder are previews; portrait shows a listening placeholder. The dock starts open here so the page shows its working state; in the app it opens only on request. The pattern is the owner's session <em>Piano in A Minor Pentatonic</em> plus a Bass demonstration row with every kind of lock.</p>
+    <p class="lede">The sequencer with the proposed editor dock under the grid. Each row's control tile puts the track on the left (name over M and S) and the pattern on the right. Press the keyboard icon on Piano, Bass or Duo to open Notes; press the gear, the transpose or the step count to open Track. Click a name to hear its instrument, as in the app, and double-click it to rename; hover it for the sample ID, and the instrument once the track is renamed. Hold or Shift+click a step to open Step. Rows stay contiguous; the dock opens at 18px per semitone and scrolls to the track's notes. Note editing and playback use a small synth; step-count, envelope and pattern-tool integration are labelled, disabled previews. Copy/Paste, Clear and Delete are working prototype actions in this mock. Scale selection and reorder are previews; portrait shows a listening placeholder. The dock starts open here so the page shows its working state; in the app it opens only on request. The pattern is the owner's session <em>Piano in A Minor Pentatonic</em> plus a Bass demonstration row with every kind of lock.</p>
   </div>
 
   <section class="portrait-preview" aria-label="Portrait listening preview"><h2>Keyboardia · listening view</h2><p>Editing is available in landscape. Rotate your phone to edit the pattern.</p><button class="cbtn" id="portraitPlay" type="button">Play preview</button></section>
-  <section class="audit-bar" aria-label="Audit switches">
-    <span class="k">Tile</span>
-    <span class="set" role="group" aria-label="Complete tile" id="rowOpts">
-      <button class="opt" type="button" data-rows="tallwho" aria-pressed="true" title="F · The control tile: M S under the name, 231px (six cells). Left, the track: name over [M|S]. Right, the pattern: [Notes|lane|tools] over [copy|clear|delete], with [transpose|steps] beside. The row shows the track name only; the instrument appears in the tooltip once the track is renamed"><b class="L">F</b>M S under the name</button>
-    </span>
-    <span class="k">Fixes</span>
-    <span class="set">
-      <button class="opt" type="button" id="rowFix" aria-pressed="false" title="Contour centred and continuous, 2px borders with 3px beat starts, 36px actions on the cell band, lane as one pitch, ruler one slot above, no closed-dock line">Rows</button>
-      <button class="opt" type="button" id="dockFix" aria-pressed="false" title="Rail 20, whole-row keys, whole-pixel Fit on the active track, bar inset = cell border, grid lines in the gaps, octave rule on B|C, even 8px chrome padding, one border colour">Dock</button>
-      <button class="opt" type="button" id="velFix" aria-pressed="true" title="Velocity as a fill: a step with a lowered volume carries a light wash up to its volume (production's encoding). Off: the spec's colour tint">Velocity fill</button>
-      <button class="opt" type="button" id="crapFix" aria-pressed="true" title="Robin Williams' CRAP across the page: the three button classes, trays for related controls, radius 4, the 24px unit in rows and 32px in toolbars, one label style; the docked row lifts with its name in accent">CRAP</button>
-    </span>
-    <span class="spacer"></span>
-    <span class="readout" id="auditReadout"></span>
+  <section class="audit-bar" aria-label="Marks in the cells">
     <span class="audit-legend"><span><i class="level"></i> level: the volume, accent up to it</span><span><i class="badge"></i> badge: pitch, ↑7 or ↓5, on the note's first cell</span><span><i class="bridge"></i> bridge: a tie, one shape across the gap</span><span><i class="fold"></i> fold: an envelope lock</span><span><i class="kept"></i> dashed: a lock kept on a step that is off</span></span>
     <span class="legend-demo" id="legendDemo" aria-label="Example cells"></span>
   </section>
@@ -698,11 +704,10 @@
       <button class="play-button" id="playBtn" type="button" aria-label="Play"><span id="playIcon">&#9654;</span></button>
       <div class="bpm"><b>96</b><span>BPM</span></div>
       <button class="pill" type="button" disabled title="Integration preview: scale selection uses the real app">Scale: C major <span class="caret">&#9660;</span></button>
-      <button class="pill" id="scaleBtn" type="button" aria-pressed="false" title="Lock the dock to the scale">Lock to scale</button>
+      <button class="pill icon" id="scaleBtn" type="button" aria-pressed="false" aria-label="Constrain notes to selected scale" title="Lock scale (constrain to scale notes only)"></button>
       <span class="spacer"></span>
       <span class="copy-status" id="copyStatus" role="status" aria-live="polite"></span>
-      <span class="hint">Esc closes the dock</span>
-      <span class="session-name">Piano in A Minor Pentatonic · 5 tracks</span>
+      <span class="session-name" id="sessionName">Piano in A Minor Pentatonic</span>
     </div>
     <div class="tracks" id="tracks">
       <div class="tracks-inner" id="inner"></div>
@@ -733,7 +738,7 @@
       <li>Drag across empty dock cells to paint, drag a bar up or down to re-pitch, drag its right edge to lengthen it. The row above updates on the same frame.</li>
       <li>Shift+click a Piano cell. The dock switches to the Step pane for that step; change its pitch or tie there.</li>
       <li>Press a row's gear to open Track and change transpose. Every bar shifts, and the row's transpose chip follows.</li>
-      <li>Switch to Tall. Turn on "Lock to scale" and drop a note on a dimmed row. Press Escape to close the dock.</li>
+      <li>Switch to Tall. Press the scale lock beside the scale and drop a note on a dimmed row. Press Escape to close the dock.</li>
     </ol>
     <p class="links">Companion pages: the ranked layout research with the two-rolls test, and the design brief with the layer stack, storyboard and roadmap impact. In the repository both live under <code>specs/</code>.</p>
   </section>
@@ -768,6 +773,7 @@
     // Transport and dock glyphs, Lucide 1.25.0 (play and square filled in the transport, as production does).
     play: LSVG("<path d=\"M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z\"/>").replace('fill="none"','fill="currentColor"'),
     stop: LSVG("<rect width=\"18\" height=\"18\" x=\"3\" y=\"3\" rx=\"2\"/>").replace('fill="none"','fill="currentColor"'),
+    lock: LSVG("<rect width=\"18\" height=\"11\" x=\"3\" y=\"11\" rx=\"2\" ry=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 10 0v4\"/>"), lockOpen: LSVG("<rect width=\"18\" height=\"11\" x=\"3\" y=\"11\" rx=\"2\" ry=\"2\"/><path d=\"M7 11V7a5 5 0 0 1 9.9-1\"/>"),
     chevronDown: LSVG("<path d=\"m6 9 6 6 6-6\"/>"), chevronUp: LSVG("<path d=\"m18 15-6-6-6 6\"/>"), x: LSVG("<path d=\"M18 6 6 18\"/><path d=\"m6 6 12 12\"/>"), minus: LSVG("<path d=\"M5 12h14\"/>"), plus: LSVG("<path d=\"M5 12h14\"/><path d=\"M12 5v14\"/>"),
     // Notes: a keyboard on Lucide's keyboard proportions (20 × 14): two black keys as narrow outlined keys, white-key
     // joins below them. Its weight matches Lucide's own piano icon.
@@ -823,6 +829,7 @@
     if (t.kind === 'drum') t.range = { min: 12, max: 108, optMin: 36, optMax: 84 };
   }
   const tracks = [piano, bass, akick, snare, clap, duo];
+  { const sn = document.getElementById('sessionName'); if (sn) sn.textContent = 'Piano in A Minor Pentatonic · ' + tracks.length + ' tracks'; }
   const melodic = tracks.filter(t => t.kind === 'melodic');
 
   // A continuation inherits the attack's pitch and volume; its own locks do not sound.
@@ -1066,7 +1073,7 @@
   function updateIdentity(t) {
     t.nameEl.replaceChildren();
     const tick = el('tick', t.nameEl); tick.style.setProperty('--cat',t.cat);
-    const nm=el('nm',t.nameEl,'span');nm.textContent=t.name;t.nameEl.title=nameTooltip(t);
+    const nm=el('nm',t.nameEl,'span');nm.textContent=t.name;t.nameEl.title=nameTooltip(t);const chev=el('chev',t.nameEl,'span');chev.innerHTML=ICON.chevronDown;chev.setAttribute('aria-hidden','true');
     if (t.kind === 'melodic') { const tr=el('tr',t.nameEl);tr.textContent=t.transpose===0?'':trLabel(t); }
     const inst=el('inst',t.nameEl,'span');inst.textContent=t.inst;
     inst.addEventListener('click',e=>{if(document.documentElement.dataset.rows==='tallwho'){e.stopPropagation();e.preventDefault();audition(t,BASE_MIDI+t.transpose,1);}});inst.title='Preview '+t.inst+': play one note';
@@ -1219,7 +1226,6 @@
     const button=(label,handler,cls)=>{const b=el('cbtn'+(cls?' '+cls:''),bar,'button');b.textContent=label;b.addEventListener('click',handler);return b;};
     if(t.kind==='melodic'){el('k',bar,'span').textContent='Transpose';const minus=button('−',()=>{t.transpose--;trackChanged(t);renderPane();},'sym');minus.innerHTML=ICON.minus;minus.setAttribute('aria-label','Track transpose down');minus.disabled=t.transpose<=-24;el('cbtn value',bar,'span').textContent=trLabel(t);const plus=button('+',()=>{t.transpose++;trackChanged(t);renderPane();},'sym');plus.innerHTML=ICON.plus;plus.setAttribute('aria-label','Track transpose up');plus.disabled=t.transpose>=24;}
     el('k',bar,'span').textContent='Steps';const steps=el('cbtn value',bar,'span');steps.textContent=String(STEPS);steps.title='Integration preview';
-    const inst=button('Instrument ▾',()=>{},'quiet');inst.disabled=true;inst.title='Integration preview: instrument selection uses the real app';
     const lane=button('Velocity lane',()=>{t.lane.hidden=!t.lane.hidden;t.laneToggle.setAttribute('aria-expanded',String(!t.lane.hidden));renderSelectedBar();});lane.setAttribute('aria-pressed',String(!t.lane.hidden));
     if(t.kind==='melodic'){const notes=button('Notes',()=>openDock(t,'notes',notes));notes.setAttribute('aria-pressed',String(dock.open&&dock.track===t&&dock.pane==='notes'));}
     el('spacer',bar);
@@ -1301,13 +1307,12 @@
     setPitchHeight(18);fitHead();
   }
   function updateMode() {
-    const mode=displayMode();document.documentElement.dataset.displayMode=mode;document.documentElement.dataset.narrowLandscape=String(mode==='landscape'&&innerWidth<440);
+    const mode=displayMode();document.documentElement.dataset.displayMode=mode;
     if(ui.mode!==mode&&dock.open){dock.pan=mode==='landscape';ui.hit.classList.toggle('pan',dock.pan);ui.panButton?.setAttribute('aria-pressed',String(dock.pan));}ui.mode=mode;
     const portrait=isPortrait();
     document.querySelector('.sequencer').inert=portrait;
     if(portrait&&dock.open){if(ui.cancelDrag)ui.cancelDrag();closeDock();}
     if(isLandscape()){
-      tracks.forEach(t=>{t.toggleEl.textContent='Edit';t.toggleEl.setAttribute('aria-label','Edit '+t.name+' track');});
       tracksEl.inert=dock.open;
       document.querySelector('.transport').inert=dock.open;
     }else{
@@ -1517,11 +1522,10 @@
     ui.details.replaceChildren();if(dock.pane==='step'&&ui.title.textContent)el('',ui.details,'h3').textContent=ui.title.textContent;
     if(dock.pane==='track'){
       const controls=el('detail-controls',ui.details);
-      const label=el('',controls,'label');label.textContent='Instrument ';
-      const instrument=el('',label,'select');instrument.disabled=true;instrument.setAttribute('aria-label','Instrument integration preview');el('',instrument,'option').textContent=t.inst;
+      const instr=el('detail-info',controls,'span');instr.innerHTML='<span class="k">Instrument</span> '+esc(t.inst)+' <span class="id">'+esc(t.sid)+'</span>';
       const label2=el('',controls,'label');label2.textContent='Steps ';
       const count=el('',label2,'select');count.disabled=true;count.setAttribute('aria-label','Step count integration preview');el('',count,'option').textContent=STEPS;
-      el('',ui.details,'p').textContent='Integration preview: instrument selection, step count, envelope/FM parameters and pattern tools require the real app. These controls are disabled here.';
+      el('',ui.details,'p').textContent='Integration preview: step count, envelope/FM parameters and pattern tools require the real app. These controls are disabled here.';
     }else if(t.kind!=='melodic'){
       el('',ui.details,'p').textContent=sel===null?'Choose a step above to edit this drum pattern.':'Edit pitch and volume above. This one-shot preview does not sustain ties.';
       el('',ui.details,'p').textContent='Envelope controls are an integration preview; the real app must use its instrument capability rules.';
@@ -1682,7 +1686,9 @@
   syncActions();
   applyClasses();
   const scaleBtn = document.getElementById('scaleBtn');
-  scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); applyClasses(); });
+  const syncScaleBtn = () => { scaleBtn.innerHTML = scaleLocked ? ICON.lock : ICON.lockOpen; scaleBtn.title = scaleLocked ? 'Unlock scale (show all notes)' : 'Lock scale (constrain to scale notes only)'; };
+  syncScaleBtn();
+  scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); syncScaleBtn(); applyClasses(); });
   window.addEventListener('keydown', e => {
     if(e.defaultPrevented)return;
     if(e.key==='Escape'&&openRowPanel){closeRowPanel();return;}
@@ -1717,11 +1723,8 @@
     const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'tallwho'];renderLegendDemo();
     tracks.forEach(t=>{if(t.gripEl)t.gripEl.textContent=rowFix()?'⠿':'⋮⋮';syncRow(t);});
     if(ui.drawLines)ui.drawLines();setPitchHeight(H);renderSelectedBar();if(ui.fitHead)ui.fitHead();
-    const ro=document.getElementById('auditReadout');ro.replaceChildren();const Lb=el('L',ro,'b');Lb.textContent=(document.querySelector('.audit-bar .opt[data-rows][aria-pressed="true"] .L')||document.querySelector('.audit-bar .opt[data-rows="'+(root.dataset.rows||'tallwho')+'"] .L')).textContent;ro.append(document.createTextNode('row '+opt.row+' · pitch '+opt.pitch+' · cell inset '+opt.inset+' · column '+opt.col+' · '+(800/opt.pitch).toFixed(1)+' rows per 800px · '+(opt.pitch/39).toFixed(2)+' : 1 to the step pitch'));
   }
-  document.querySelector('.audit-bar').addEventListener('click',e=>{const b=e.target.closest('.opt[data-rows]');if(!b)return;document.documentElement.dataset.rows=b.dataset.rows;document.documentElement.dataset.beat=b.dataset.beat||'off';document.documentElement.dataset.panel=b.dataset.panel||'dock';closeRowPanel();document.querySelectorAll('.audit-bar .opt[data-rows]').forEach(o=>o.setAttribute('aria-pressed',String(o===b)));applyAudit();});
-  for(const [id,key] of [['rowFix','rowfix'],['dockFix','dockfix'],['crapFix','crap'],['velFix','vel']]){const b=document.getElementById(id);b.addEventListener('click',()=>{const on=document.documentElement.dataset[key]!=='on'&&document.documentElement.dataset[key]!=='fill';document.documentElement.dataset[key]=key==='vel'?(on?'fill':'tint'):(on?'on':'off');b.setAttribute('aria-pressed',String(on));applyAudit();if(key==='dockfix'&&dock.open&&dock.track?.kind==='melodic')fitComparison(true);});}
-  const root0=document.documentElement;root0.dataset.ui='one';root0.dataset.rows='tallwho';root0.dataset.panel='dock';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';document.getElementById('rowFix').setAttribute('aria-pressed','true');document.getElementById('dockFix').setAttribute('aria-pressed','true');applyAudit();
+  const root0=document.documentElement;root0.dataset.ui='one';root0.dataset.rows='tallwho';root0.dataset.panel='dock';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';applyAudit();
   // The page opens with Piano docked so its first frame shows the working state. In the app the dock opens only on request.
   openDock(piano, 'notes');
 })();
