@@ -12,6 +12,9 @@
   :root {
     --color-accent: #e85a30; --color-surface: #1e1e1e;
     --color-drums: #e67e22; --color-bass: #9b59b6; --color-keys: #3498db; --color-leads: #e91e63; --color-pads: #2ecc71; --color-fx: #00bcd4; --color-purple-dark: #8e44ad;
+    /* "On" for views and toggles (open view, selected tab, pressed toggle): a solid light fill, like M and S fill solid,
+       with no hue so it never reads as an instrument category (cyan is FX) or as the orange accent. */
+    --on-bg: #e6e6e6; --on-line: #e6e6e6; --on-ink: #121212;
     --bg: #121212; --surface: var(--color-surface); --surface-2: #2a2a2a; --surface-3: #333333; --surface-4: #444444;
     --border: #3a3a3a; --border-light: #4a4a4a; --border-hover: #555555;
     --text: rgba(255,255,255,.87); --muted: rgba(255,255,255,.6); --dim: rgba(255,255,255,.38);
@@ -163,8 +166,13 @@
   .row-actions button { min-width: 44px; height: 32px; padding: 0 5px; font-size: 11px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); cursor: pointer; }
   .row-actions button.copy-source { background: var(--success); color: var(--bg); }
   .row-actions button.paste { border-color: var(--info-text); }
-  .copy-status { color: var(--text); min-height: 24px; }
+  /* Copy status: information, so bare text with the action's icon. It sits in the transport (always visible) and
+     stands in for the Esc hint while a copy is pending or just finished. */
+  .copy-status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); }
+  .copy-status svg { width: 16px; height: 16px; flex: none; color: var(--muted); }
+  .copy-status b { font-weight: 600; }
   .copy-status:empty { display: none; }
+  .copy-status:not(:empty) + .hint { display: none; }
 
   .velocity-lane { display: flex; gap: 3px; margin-left: calc(var(--track-left-width) + 8px); height: 28px; }
   .velocity-lane input { width: 36px; flex: none; margin: 0; accent-color: var(--accent); }
@@ -534,7 +542,7 @@
   html[data-rows="tallwho"] .solo-button, html[data-rows="tallwho"] .tools-toggle { border-radius: 0 4px 4px 0; }
   html[data-rows="tallwho"] .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: #121212; }
   html[data-rows="tallwho"] .solo-button.active { background: #f1c40f; border-color: #f1c40f; color: #121212; }
-  html[data-rows="tallwho"] .expand-toggle.active, html[data-rows="tallwho"] .velocity-toggle[aria-expanded="true"], html[data-rows="tallwho"] .tools-toggle.active { background: rgba(0,188,212,.15); border-color: #00bcd4; color: #00bcd4; box-shadow: -1px 0 0 #00bcd4; }
+  html[data-rows="tallwho"] .expand-toggle.active, html[data-rows="tallwho"] .velocity-toggle[aria-expanded="true"], html[data-rows="tallwho"] .tools-toggle.active { background: var(--on-bg); border-color: var(--on-line); color: var(--on-ink); box-shadow: -1px 0 0 var(--on-line); }
   html[data-rows="tallwho"] .expand-toggle.active { box-shadow: none; }
   html[data-rows="tallwho"] .kind-drum .expand-toggle { color: transparent; }
   html[data-rows="tallwho"] .kind-drum .expand-toggle svg { visibility: hidden; }
@@ -637,7 +645,7 @@
   html[data-ui="one"] .cbtn svg, html[data-ui="one"] .dock-head .ib svg, html[data-ui="one"] .pill svg, html[data-ui="one"] .play-button svg { width: 16px; height: 16px; flex: none; }
   html[data-ui="one"] .play-button svg { width: 22px; height: 22px; }
   html[data-ui="one"] .cbtn[aria-pressed], html[data-ui="one"] .cbtn[aria-expanded], html[data-ui="one"] .pill[aria-pressed], html[data-ui="one"] .chip { background: transparent; border: 1px solid #555; color: var(--muted); }
-  html[data-ui="one"] .cbtn[aria-pressed="true"], html[data-ui="one"] .cbtn[aria-expanded="true"], html[data-ui="one"] .pill[aria-pressed="true"], html[data-ui="one"] .chip.active { background: rgba(0,188,212,.15); border-color: #00bcd4; color: #00bcd4; }
+  html[data-ui="one"] .cbtn[aria-pressed="true"], html[data-ui="one"] .cbtn[aria-expanded="true"], html[data-ui="one"] .pill[aria-pressed="true"], html[data-ui="one"] .chip.active { background: var(--on-bg); border-color: var(--on-line); color: var(--on-ink); }
   html[data-ui="one"] .cbtn.st-mute[aria-pressed="true"] { background: #e74c3c; border-color: #e74c3c; color: #fff; }
   html[data-ui="one"] .cbtn.st-solo[aria-pressed="true"] { background: #f1c40f; border-color: #f1c40f; color: #121212; }
   html[data-ui="one"] .cbtn.value { background: transparent; border: 0; color: var(--text); padding: 0 6px; min-width: 32px; }
@@ -646,7 +654,7 @@
   html[data-ui="one"] .pane-tabs { display: inline-flex; gap: 0; }
   html[data-ui="one"] .pane-tabs .chip { border-radius: 0; } html[data-ui="one"] .pane-tabs .chip + .chip { border-left-width: 0; }
   html[data-ui="one"] .pane-tabs .chip:first-child { border-radius: 4px 0 0 4px; } html[data-ui="one"] .pane-tabs .chip:last-child { border-radius: 0 4px 4px 0; }
-  html[data-ui="one"] .pane-tabs .chip.active + .chip { box-shadow: -1px 0 0 #00bcd4; }
+  html[data-ui="one"] .pane-tabs .chip.active + .chip { box-shadow: -1px 0 0 var(--on-line); }
   html[data-ui="one"] .tray { display: inline-flex; gap: 0; }
   html[data-ui="one"] .tray > .cbtn { border-radius: 0; }
   html[data-ui="one"] .tray > .cbtn:first-child { border-radius: 4px 0 0 4px; } html[data-ui="one"] .tray > .cbtn:last-child { border-radius: 0 4px 4px 0; } html[data-ui="one"] .tray > .cbtn:only-child { border-radius: 4px; }
@@ -692,6 +700,7 @@
       <button class="pill" type="button" disabled title="Integration preview: scale selection uses the real app">Scale: C major <span class="caret">&#9660;</span></button>
       <button class="pill" id="scaleBtn" type="button" aria-pressed="false" title="Lock the dock to the scale">Lock to scale</button>
       <span class="spacer"></span>
+      <span class="copy-status" id="copyStatus" role="status" aria-live="polite"></span>
       <span class="hint">Esc closes the dock</span>
       <span class="session-name">Piano in A Minor Pentatonic · 5 tracks</span>
     </div>
@@ -999,7 +1008,10 @@
   }
 
   const selection = { track: null, steps: new Set(), anchor: null };
-  let copySource = null, copyData = null;
+  let copySource = null, copyData = null, copyStatusTimer = null;
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+  // One line, three messages: pending (stays until pasted or cancelled), then a short-lived result.
+  function setCopyStatus(icon, html, ms) { if (!ui.copyStatus) return; clearTimeout(copyStatusTimer); ui.copyStatus.dataset.kind = ms ? 'result' : 'pending'; ui.copyStatus.innerHTML = icon + '<span>' + html + '</span>'; if (ms) copyStatusTimer = setTimeout(() => { if (!copySource) ui.copyStatus.replaceChildren(); }, ms); }
   function setStatus(message) { if (ui.statusText) ui.statusText.textContent = message; }
   function syncActions() {
     tracks.forEach(t => {
@@ -1011,7 +1023,8 @@
       t.copyEl.disabled = !copySource && !t.steps.some(Boolean);
       if (t.miniCopy) { const paste = !!copySource && copySource !== t; t.miniCopy.innerHTML = paste ? ICON.paste : ICON.copy; t.miniCopy.classList.toggle('paste', paste); t.miniCopy.title = paste ? 'Paste into ' + t.name : copySource === t ? 'Copying ' + t.name + ' (click to cancel)' : 'Copy ' + t.name; t.miniCopy.setAttribute('aria-label', t.miniCopy.title); t.miniCopy.classList.toggle('copy-source', copySource === t); t.miniCopy.classList.toggle('paste', paste); t.miniCopy.disabled = t.copyEl.disabled; }
     });
-    ui.copyStatus.textContent = copySource ? 'Copying ' + copySource.name + ' — choose Paste on a destination row. Escape cancels.' : '';
+    if (copySource) setCopyStatus(ICON.copy, 'Copying <b>' + esc(copySource.name) + '</b>. Press Paste on another row; Copy again or Esc cancels.');
+    else if (ui.copyStatus && ui.copyStatus.dataset.kind === 'pending') ui.copyStatus.replaceChildren();
   }
   function clearSelection() {
     const previous = selection.track;
@@ -1140,8 +1153,8 @@
     const actions=el('row-actions',row);
     const copy=el('',actions,'button');t.copyEl=copy;copy.textContent='Copy';
     copy.addEventListener('click',()=>{
-      if(copySource===t){copySource=null;copyData=null;}
-      else if(copySource){t.steps=copyData.steps.slice();t.locks=copyData.locks.map(l=>l&&Object.assign({},l));t.pattern=t.steps;t.tieOrigins?.clear();trackChanged(t);copySource=null;copyData=null;}
+      if(copySource===t){copySource=null;copyData=null;setCopyStatus(ICON.copy,'Copy cancelled.',2500);}
+      else if(copySource){const from=copySource;t.steps=copyData.steps.slice();t.locks=copyData.locks.map(l=>l&&Object.assign({},l));t.pattern=t.steps;t.tieOrigins?.clear();trackChanged(t);copySource=null;copyData=null;setCopyStatus(ICON.paste,'Pasted <b>'+esc(from.name)+'</b> into <b>'+esc(t.name)+'</b>.',4000);}
       else{copySource=t;copyData={steps:t.steps.slice(),locks:t.locks.map(l=>l&&Object.assign({},l))};}
       syncActions();
     });
@@ -1658,7 +1671,7 @@
   renderRuler(inner);
   ui.selectedBar = el('selected-bar', inner); ui.selectedBar.setAttribute('role','group'); ui.selectedBar.setAttribute('aria-label','Selected track');
   const rowsEl = el('rows', inner); ui.rows = rowsEl;
-  ui.copyStatus = el('copy-status', inner); ui.copyStatus.setAttribute('role','status');
+  ui.copyStatus = document.getElementById('copyStatus');
   tracks.forEach(t => renderTrackRow(rowsEl, t));
   el('fill', inner);
   renderDock(inner);
@@ -1671,7 +1684,7 @@
     if(e.key==='Escape'&&openRowPanel){closeRowPanel();return;}
     if(e.key==='Escape'){
       if(ui.cancelDrag&&ui.cancelDrag()){e.preventDefault();return;}
-      if(copySource){copySource=null;copyData=null;syncActions();e.preventDefault();return;}
+      if(copySource){copySource=null;copyData=null;syncActions();setCopyStatus(ICON.copy,'Copy cancelled.',2500);e.preventDefault();return;}
       if(dock.open&&ui.dock.contains(document.activeElement)){closeDock();e.preventDefault();return;}
       if(selection.steps.size){clearSelection();e.preventDefault();return;}
     }else if((e.key==='Delete'||e.key==='Backspace')&&selection.track&&selection.steps.size&&!['INPUT','SELECT'].includes(document.activeElement.tagName)){
