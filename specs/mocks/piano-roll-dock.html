@@ -672,7 +672,7 @@
   <div>
     <div class="eyebrow">Keyboardia · Pitch panel · Editor dock prototype</div>
     <h1>Piano roll dock</h1>
-    <p class="lede">The sequencer with the proposed editor dock under the grid. Each row's control tile puts the track on the left (name over M and S) and the pattern on the right. Press the keyboard icon on Piano, Bass or Duo to open Notes; press the gear, the transpose or the step count to open Track. Double-click a name to rename it; hover it for the sample ID, and the instrument once the track is renamed. Hold or Shift+click a step to open Step. Rows stay contiguous; the dock opens at 18px per semitone and scrolls to the track's notes. Note editing and playback use a small synth; step-count, instrument, envelope and pattern-tool integration are labelled, disabled previews. Copy/Paste, Clear and Delete are working prototype actions in this spec-only mock. Scale selection and reorder are previews; portrait shows a listening placeholder. The dock starts open here so the page shows its working state; in the app it opens only on request. The pattern is the owner's session <em>Piano in A Minor Pentatonic</em> plus a Bass demonstration row with every kind of lock.</p>
+    <p class="lede">The sequencer with the proposed editor dock under the grid. Each row's control tile puts the track on the left (name over M and S) and the pattern on the right. Press the keyboard icon on Piano, Bass or Duo to open Notes; press the gear, the transpose or the step count to open Track. Click a name to hear its instrument, as in the app, and double-click it to rename; hover it for the sample ID, and the instrument once the track is renamed. Hold or Shift+click a step to open Step. Rows stay contiguous; the dock opens at 18px per semitone and scrolls to the track's notes. Note editing and playback use a small synth; step-count, instrument, envelope and pattern-tool integration are labelled, disabled previews. Copy/Paste, Clear and Delete are working prototype actions in this spec-only mock. Scale selection and reorder are previews; portrait shows a listening placeholder. The dock starts open here so the page shows its working state; in the app it opens only on request. The pattern is the owner's session <em>Piano in A Minor Pentatonic</em> plus a Bass demonstration row with every kind of lock.</p>
   </div>
 
   <section class="portrait-preview" aria-label="Portrait listening preview"><h2>Keyboardia · listening view</h2><p>Editing is available in landscape. Rotate your phone to edit the pattern.</p><button class="cbtn" id="portraitPlay" type="button">Play preview</button></section>
@@ -1075,7 +1075,7 @@
     if(t.pillTr){t.pillTr.textContent=t.kind==='melodic'?trLabel(t):'—';}
     if(t.glyphEl){t.glyphEl.textContent=t.name.slice(0,2);t.glyphEl.setAttribute('aria-label','Open '+t.name);t.glyphEl.title=t.name+' · '+t.inst;}
     if(ui.selectedBar)renderSelectedBar();
-    t.nameEl.setAttribute('aria-label', 'Edit ' + t.name + ' track; double-click to rename');
+    t.nameEl.setAttribute('aria-label', 'Preview ' + t.name + '; double-click to rename');
     if (t.tabEl) { t.tabEl.replaceChildren(); const tick=el('tick',t.tabEl);tick.style.setProperty('--cat',t.cat);t.tabEl.append(document.createTextNode(t.name)); }
     if (t.badgeEl) t.badgeEl.setAttribute('aria-label','Preview '+t.name);
     const mute=t.wrap?.querySelector('.mute-button'),solo=t.wrap?.querySelector('.solo-button');if(mute)mute.setAttribute('aria-label','Mute '+t.name);if(solo)solo.setAttribute('aria-label','Solo '+t.name);
@@ -1117,8 +1117,12 @@
     const pillTr=el('pill-tr',left,'button');t.pillTr=pillTr;pillTr.title='Transpose: opens the Track pane';pillTr.setAttribute('aria-label','Transpose '+t.name);pillTr.addEventListener('click',()=>openDock(t,'track',pillTr));
     const pillSteps=el('pill-steps',left,'button');pillSteps.textContent=String(STEPS);pillSteps.title='Step count: opens the Track pane';pillSteps.setAttribute('aria-label','Step count '+t.name);pillSteps.addEventListener('click',()=>openDock(t,'track',pillSteps));
     let nameTimer=null;
-    name.addEventListener('click',()=>{clearTimeout(nameTimer);nameTimer=setTimeout(()=>openDock(t,'track',name),200);});
-    name.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();clearTimeout(nameTimer);openDock(t,'track',name);}});
+    // Production's name behaviour (TrackNameEditor): a click previews the instrument at the track's transpose after a
+    // 200ms wait that tells it from a double-click; Enter or Space previews at once; a double-click renames. In
+    // landscape a click opens the track's editor instead, as production's drawer override does.
+    const nameAction=()=>{if(isLandscape())openDock(t,'track',name);else audition(t,BASE_MIDI+t.transpose,1);};
+    name.addEventListener('click',()=>{clearTimeout(nameTimer);nameTimer=setTimeout(nameAction,200);});
+    name.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();clearTimeout(nameTimer);nameAction();}});
     name.addEventListener('dblclick',()=>{clearTimeout(nameTimer);renameTrack(t);});
     const line2=el('line2',left),state=el('group',line2),disclose=el('group',line2);
     const m=el('tl-btn mute-button',state,'button');m.textContent='M';m.setAttribute('aria-label','Mute '+t.name);m.setAttribute('aria-pressed','false');
