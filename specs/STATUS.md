@@ -54,6 +54,7 @@
 | 42 | Not Started | Admin Dashboard & Operations |
 | 43 | ✅ Implemented | Sound Quality Parity (automated gates complete; human Song Maker preference trial pending) |
 | 44 | 🟡 Implemented / device gate open | Velocity timbre, new-session room, mobile media route, startup/sustain evidence complete; physical iPhone ringer-off/latency gate pending; sampled motion, per-instrument sends, and quality tiers assessed but not implemented |
+| 45 | 🟡 On branch | Piano roll editor dock and two-line 134px control block (phases 2 to 7 on `claude/serene-ritchie-q34pf5`; landscape dock in progress; visual baselines pending). See [PIANO-ROLL-DOCK.md](./PIANO-ROLL-DOCK.md) |
 
 ---
 
@@ -1082,6 +1083,20 @@ PitchOverview should warn about instruments that are effectively inaudible on ty
 **Design Decision — VelocityOverview Removed:**
 
 VelocityOverview was removed from scope because it provided information without actionable insight. VelocityLane is sufficient for velocity editing.
+
+---
+
+## Phase 45: Piano Roll Editor Dock 🟡 On Branch
+
+One editor dock under the track rows replaces the per-track pitch panel, the
+p-lock strip and the inline pattern-tools, FM and instrument panels. The
+control column becomes a 134px two-line block. Phases 2 to 7 of
+[PIANO-ROLL-DOCK.md](./PIANO-ROLL-DOCK.md) are on branch
+`claude/serene-ritchie-q34pf5`. Phase 8 (the landscape dock) and the visual
+baseline run remain. Deviations from the spec are recorded in its
+Implementation notes. Lessons 83 and 84 in
+[LESSONS-LEARNED.md](../docs/LESSONS-LEARNED.md) cover the dragenter fix and
+the shared step geometry.
 
 ---
 

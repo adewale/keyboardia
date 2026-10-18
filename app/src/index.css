@@ -185,8 +185,10 @@
 
   /* ===== 8. LAYOUT DIMENSIONS ===== */
   /* MEDIUM-6: Centralized layout values to avoid magic numbers */
-  /* Track-left width includes: drag(20) + name(100) + mute(36) + solo(36) + transpose(60) + badge(36) + steps(60) + pitch(36) + velocity(36) + tools(36) + gaps */
-  --track-left-width: 512px;
+  /* The two-line control block (specs/PIANO-ROLL-DOCK.md): 4px padding +
+     drag(16) + 4px gap + body(110). One width for the control column, the
+     ruler spacer, the dock's left panel and the roll's keyboard. */
+  --track-left-width: 134px;
   --flex-gap: 8px;
 
   /* ===== 9. MOTION ===== */

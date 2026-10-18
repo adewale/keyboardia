@@ -1,0 +1,164 @@
+/*
+ * ParameterLockEditor: one step's lock (pitch, volume, tie, clear).
+ * It renders in the editor dock's Step toolbar (EditorDock.css), which owns
+ * the surface; these rules are the controls themselves.
+ */
+
+.plock-inline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  min-width: 0;
+}
+
+.plock-step {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+  min-width: 50px;
+}
+
+.plock-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plock-param {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plock-label {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.plock-label.pitch {
+  background: var(--color-blue);
+  color: var(--color-on-bright);
+}
+
+.plock-label.volume {
+  background: var(--color-accent);
+  color: var(--color-on-bright);
+}
+
+.plock-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.plock-slider {
+  width: 80px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-surface-active);
+  border-radius: 2px;
+  outline: none;
+}
+
+.plock-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.plock-slider.pitch::-webkit-slider-thumb {
+  background: var(--color-blue);
+}
+
+.plock-slider.volume::-webkit-slider-thumb {
+  background: var(--color-accent);
+}
+
+.plock-value {
+  font-size: 12px;
+  color: var(--color-text-muted);
+  min-width: 35px;
+  text-align: right;
+  font-family: monospace;
+}
+
+.plock-clear {
+  padding: 4px 8px;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: auto;
+}
+
+.plock-clear:hover,
+.plock-clear:focus-visible {
+  border-color: var(--color-error);
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--color-error-text);
+}
+
+/* Phase 29B: Tie toggle button */
+.plock-tie {
+  padding: 4px 8px;
+  border: 1px solid var(--color-text-muted);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 8px;
+}
+
+.plock-tie:hover {
+  border-color: var(--color-blue);
+  color: var(--color-blue-text);
+}
+
+.plock-tie.active {
+  border-color: var(--color-blue);
+  background: var(--color-blue);
+  color: var(--color-on-bright);
+}
+
+/* Out-of-range pitch warning styles */
+.plock-label.out-of-range,
+.plock-value.out-of-range {
+  color: var(--color-error-text);
+}
+
+.plock-label.pitch.out-of-range {
+  background: var(--color-error);
+  color: var(--color-on-bright);
+}
+
+.plock-slider.pitch.out-of-range {
+  opacity: 0.7;
+}
+
+.plock-slider.pitch.out-of-range::-webkit-slider-thumb {
+  background: var(--color-error);
+}
+
+.plock-warning {
+  max-width: 140px;
+  color: var(--color-error-text);
+  font-size: 10px;
+  line-height: 1.2;
+}
+
+.plock-inline :is(input, button):disabled {
+  cursor: default;
+  opacity: 0.6;
+}

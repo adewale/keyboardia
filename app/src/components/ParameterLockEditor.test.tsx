@@ -14,7 +14,6 @@ function renderEditor(overrides: Partial<ComponentProps<typeof ParameterLockEdit
     onVolumeChange: vi.fn(),
     onTieToggle: vi.fn(),
     onClearLock: vi.fn(),
-    onDismiss: vi.fn(),
     ...overrides,
   };
   return { props, ...render(<ParameterLockEditor {...props} />) };
@@ -59,5 +58,22 @@ describe('ParameterLockEditor accessibility', () => {
 
     expect(descriptionId).toBeTruthy();
     expect(document.getElementById(descriptionId!)?.textContent).toMatch(/outside.*playable range.*silent/i);
+  });
+
+  it('disables every control in a published session', () => {
+    renderEditor({ step: 1, lock: { pitch: 4, tie: true }, disabled: true });
+
+    expect(screen.getByRole('slider', { name: 'Pitch' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('slider', { name: 'Volume' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Tie' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Clear lock' }).hasAttribute('disabled')).toBe(true);
+  });
+
+  it('stays put on an outside click: the dock decides when the Step pane leaves', () => {
+    const { container } = renderEditor();
+    fireEvent.mouseDown(document.body);
+
+    expect(container.querySelector('.plock-inline')).not.toBeNull();
+    expect(screen.getByText('Step 1')).toBeDefined();
   });
 });

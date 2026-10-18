@@ -1,9 +1,52 @@
-/* Phase 31G: Loop Selection Ruler */
+/* Phase 31G: Loop Selection Ruler
+ *
+ * The ruler is the first row of .tracks-inner, inside the one horizontal
+ * scroller it shares with the track rows and the editor dock
+ * (specs/PIANO-ROLL-DOCK.md). It is sticky to the top of that scroller, its
+ * spacer is sticky to the left like the rows' control column, and the strip
+ * sits on the rows' step geometry (step-geometry.ts: the step pitch plus the
+ * page gap after every 16 steps) so every mark lands on a cell edge. The strip
+ * width and every position are set inline by LoopRuler.tsx.
+ */
+
+/* Row: spacer + 8px gap (the .track-row gap) + strip */
+.ruler-row {
+  display: flex;
+  gap: 8px;
+  position: sticky;
+  top: 0;
+  /* Above the rows' sticky .track-left (3); the dock pins to the bottom (6) */
+  z-index: 5;
+  /* Opaque, so rows scrolling up pass under it */
+  background: var(--color-surface);
+  padding-bottom: 6px;
+}
+
+/* Spacer: exactly the control column's width, pinned left */
+.ruler-spacer {
+  width: var(--track-left-width);
+  min-width: var(--track-left-width);
+  flex-shrink: 0;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--color-surface);
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 8px;
+  font-size: 11px;
+  color: var(--color-text-muted);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 .loop-ruler {
+  /* Width inline: the first cell's left edge to the last cell's right edge */
+  flex-shrink: 0;
   height: 24px;
   background: var(--color-surface-elevated);
   border-radius: 4px;
-  margin-bottom: 8px;
   position: relative;
   cursor: crosshair;
   user-select: none;
@@ -21,7 +64,8 @@
   pointer-events: none;
 }
 
-/* Individual markers */
+/* Individual markers: the line is a pseudo-element so its opacity does not
+   fade the label */
 .ruler-marker {
   position: absolute;
   top: 0;
@@ -29,26 +73,44 @@
   pointer-events: none;
 }
 
+.ruler-marker::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+}
+
 /* Beat marker (every 4 steps) */
-.ruler-marker.beat {
+.ruler-marker.beat::before {
   width: 1px;
   background: var(--color-border);
   opacity: 0.3;
 }
 
 /* Page marker (every 16 steps) */
-.ruler-marker.page {
+.ruler-marker.page::before {
   width: 2px;
   background: var(--color-border-light);
   opacity: 0.6;
 }
 
-.ruler-marker.page .marker-label {
+/* Labels: bar.beat on beat markers, the page number on page markers */
+.marker-label {
   position: absolute;
   top: 2px;
   left: 4px;
   font-size: 10px;
   color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.ruler-marker.beat .marker-label {
+  opacity: 0.7;
+}
+
+.ruler-marker.page .marker-label {
   font-weight: 500;
 }
 
@@ -129,13 +191,14 @@
   }
 }
 
-/* Mobile: slightly taller for easier touch */
+/* Mobile: slightly taller for easier touch. LoopRuler.tsx switches to the
+   wider cells' geometry (44px cells, StepCell.css) at the same width. */
 @media (max-width: 768px) {
   .loop-ruler {
     height: 32px;
   }
 
-  .ruler-marker.page .marker-label {
+  .marker-label {
     font-size: 11px;
     top: 6px;
   }

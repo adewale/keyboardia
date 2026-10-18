@@ -129,45 +129,38 @@ test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
     const tracksScroller = page.locator('.tracks');
     await tracksScroller.evaluate((element) => { element.scrollLeft = 0; });
 
-    // The full row is wider than the desktop viewport. Locator screenshots
-    // therefore scrolled it under the sticky app header and captured the
-    // random presence avatar instead of any track pixels. Drive the shared
-    // tracks scroller to its real end, then prove the sticky actions do not
-    // cover the last step's hit area. `scrollIntoViewIfNeeded()` is insufficient
-    // here: sticky controls can occlude an element that is still geometrically
-    // inside the viewport, so Chromium correctly decides no scroll is needed.
+    // Locator screenshots of a row scroll it under the sticky app header and
+    // capture the presence avatar instead of track pixels. Drive the shared
+    // tracks scroller to its end, then prove the last step is reachable: inside
+    // the scroller's visible box and the topmost element at its centre. The
+    // row has no sticky action column any more (the actions are in the dock's
+    // Track pane), so nothing on the right can occlude it.
     const stepStrip = trackRow.locator('.steps');
-    const stickyActions = trackRow.locator('.track-right');
-    await expect(stickyActions).toBeVisible();
     const lastStep = stepStrip.locator('.step-cell').last();
     await tracksScroller.evaluate((element) => { element.scrollLeft = element.scrollWidth; });
     await expect(lastStep).toBeVisible();
-    const maxScroll = await tracksScroller.evaluate((element) => element.scrollLeft);
-    expect(maxScroll, 'the step strip did not scroll, so reachability is untested')
-      .toBeGreaterThan(0);
+    await expect(trackRow.locator('.track-right')).toHaveCount(0);
 
-    const [stripBox, headerBox, actionsBox, lastStepBox] = await Promise.all([
+    const [stripBox, headerBox, scrollerBox, lastStepBox] = await Promise.all([
       stepStrip.boundingBox(),
       page.locator('.app-header').boundingBox(),
-      stickyActions.boundingBox(),
+      tracksScroller.boundingBox(),
       lastStep.boundingBox(),
     ]);
     expect(stripBox).not.toBeNull();
     expect(headerBox).not.toBeNull();
-    expect(actionsBox).not.toBeNull();
+    expect(scrollerBox).not.toBeNull();
     expect(lastStepBox).not.toBeNull();
     expect(stripBox!.y).toBeGreaterThanOrEqual(headerBox!.y + headerBox!.height);
-    expect(lastStepBox!.x + lastStepBox!.width).toBeLessThanOrEqual(actionsBox!.x);
+    expect(lastStepBox!.x + lastStepBox!.width).toBeLessThanOrEqual(scrollerBox!.x + scrollerBox!.width);
     expect(await lastStep.evaluate((element) => {
       const box = element.getBoundingClientRect();
       return document.elementFromPoint(box.x + box.width / 2, box.y + box.height / 2) === element;
     })).toBe(true);
 
     // Reset to the stable origin view for the visual contract. Screenshot the
-    // first three unobscured beat groups; the assertions above independently
-    // cover the cells behind the sticky controls. This keeps the controls in
-    // the real DOM state without making their OS-rendered text part of a step
-    // cell baseline.
+    // first three beat groups, so no OS-rendered control text becomes part of
+    // a step cell baseline.
     await tracksScroller.evaluate((element) => { element.scrollLeft = 0; });
     const [firstVisibleStepBox, lastVisibleStepBox] = await Promise.all([
       stepStrip.locator('.step-cell').first().boundingBox(),

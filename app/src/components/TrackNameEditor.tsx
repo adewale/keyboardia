@@ -26,11 +26,11 @@ export interface TrackNameEditorProps {
   onSave: (name: string) => void;
   /** Callback for single-click preview (fires after 200ms delay) */
   onPreview: () => void;
-  /** Optional override for single-click behavior (e.g., toggle landscape drawer) */
+  /** Optional override for single-click behavior (e.g., the landscape dock's Track pane) */
   onClickOverride?: () => void;
-  /** Disclosure state when the name opens a landscape drawer */
+  /** Disclosure state when the name discloses something (the landscape dock) */
   disclosureExpanded?: boolean;
-  /** ID of the landscape drawer controlled by the name */
+  /** ID of the element the name discloses */
   disclosureControls?: string;
 }
 

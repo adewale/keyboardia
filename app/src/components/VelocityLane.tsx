@@ -13,6 +13,8 @@
 
 import React, { useCallback, useRef, useState } from 'react';
 import type { Track, ParameterLock } from '../types';
+import { STEPS_PER_PAGE } from '../types';
+import { DESKTOP_STEP_GEOMETRY, cellWidth, gridWidth, stepToX } from './step-geometry';
 import './VelocityLane.css';
 import {
   BAR_HEIGHT,
@@ -21,6 +23,15 @@ import {
   getVelocityFromLock,
   getVelocityLevel,
 } from './velocity-lane-math';
+
+/**
+ * The lane sits on the rows' step columns, page gap included (lesson 85), so
+ * each bar is placed with step-geometry.ts like the ruler and the roll. The
+ * lane is hidden under 768px and in landscape (VelocityLane.css, TrackRow.css),
+ * so only the desktop geometry applies.
+ */
+const GEOMETRY = DESKTOP_STEP_GEOMETRY;
+const CELL_W = cellWidth(GEOMETRY);
 
 interface VelocityLaneProps {
   track: Track;
@@ -129,7 +140,8 @@ export const VelocityLane = React.memo(function VelocityLane({
   }, []);
 
   // Render velocity bars only for active steps
-  const steps = track.steps.slice(0, track.stepCount);
+  const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+  const steps = track.steps.slice(0, stepCount);
 
   return (
     <div
@@ -144,7 +156,7 @@ export const VelocityLane = React.memo(function VelocityLane({
       <div className="velocity-lane-spacer" />
 
       {/* Velocity bars container */}
-      <div className="velocity-bars">
+      <div className="velocity-bars" style={{ width: gridWidth(stepCount, GEOMETRY) }}>
         {steps.map((isActive, step) => {
           const velocity = getVelocity(step);
           const height = isActive ? (velocity / 100) * BAR_HEIGHT : 0;
@@ -155,6 +167,7 @@ export const VelocityLane = React.memo(function VelocityLane({
               key={step}
               className={`velocity-step ${isActive ? 'active' : 'inactive'}`}
               data-step={step}
+              style={{ left: stepToX(step, GEOMETRY), width: CELL_W }}
             >
               {isActive && (
                 <div
