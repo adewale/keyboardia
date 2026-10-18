@@ -61,6 +61,15 @@ describe('MCP rhythm domain', () => {
     expect(retry).toEqual({ state: added.state, events: [], changed: false });
   });
 
+  it('starts an agent-added bass track in the bass register', () => {
+    const added = applyMcpSessionEdit(createInitialSessionState(), {
+      operation: 'add_track',
+      track_id: 'bass-agent-a7f3c29d',
+      sample_id: 'sampled:finger-bass',
+    });
+    expect(added.state.tracks[0]?.transpose).toBe(-12);
+  });
+
   it('rejects reusing a track ID for a different track', () => {
     const state = applyMcpSessionEdit(createInitialSessionState(), {
       operation: 'add_track',

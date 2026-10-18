@@ -34,6 +34,7 @@ import {
 import { MAX_TRACK_NAME_LENGTH } from './validation';
 import { isValidPan } from './validation';
 import { setTrackInstrument } from './track-instrument';
+import { recommendedTrackTranspose } from './track-transpose';
 import { clampTrackEnvelope, TRACK_GATE_RANGE } from './envelope';
 import {
   convertTrackEnvelopeUnitsWithReportV2,
@@ -70,7 +71,7 @@ export function createDefaultTrack(
     pan: 0,
     muted: false,
     soloed: false,
-    transpose: 0,
+    transpose: recommendedTrackTranspose(sampleId),
     stepCount: DEFAULT_STEP_COUNT,
   };
 }

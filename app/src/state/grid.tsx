@@ -15,6 +15,7 @@ import {
   normalizeSessionScale,
 } from '../shared/scale-defaults';
 import { recommendedTrackPan } from '../shared/track-pan';
+import { recommendedTrackTranspose } from '../shared/track-transpose';
 
 // Backwards-compatible export for UI consumers. New sessions are scale-locked.
 export const DEFAULT_SCALE_STATE: ScaleState = {
@@ -273,7 +274,7 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         pan: recommendedTrackPan(action.sampleId, state.tracks.length),
         muted: false,
         soloed: false,
-        transpose: 0,
+        transpose: recommendedTrackTranspose(action.sampleId),
         stepCount: STEPS_PER_PAGE,
       };
       // Prevent duplicate tracks (defensive check for multiplayer sync issues)

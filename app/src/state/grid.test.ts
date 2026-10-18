@@ -4020,3 +4020,26 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
     });
   });
 });
+
+describe('ADD_TRACK default transpose', () => {
+  const addTrack = (sampleId: string, track?: Track) =>
+    gridReducer(createTestGridState({ tracks: [] }), {
+      type: 'ADD_TRACK', sampleId, name: sampleId, track,
+    }).tracks[0]!;
+
+  it('starts a new bass track in the bass register instead of at C4', () => {
+    expect(addTrack('sampled:finger-bass').transpose).toBe(-12);
+    expect(addTrack('synth:bass').transpose).toBe(-12);
+    expect(addTrack('advanced:sub-bass').transpose).toBe(-24);
+  });
+
+  it('leaves melodic instruments at C4', () => {
+    expect(addTrack('sampled:piano').transpose).toBe(0);
+    expect(addTrack('sampled:alto-sax').transpose).toBe(0);
+  });
+
+  it('keeps the transpose of a track that arrives from a collaborator', () => {
+    const remote = createTestTrack({ id: 'remote-bass', sampleId: 'sampled:finger-bass', transpose: 0 });
+    expect(addTrack('sampled:finger-bass', remote).transpose).toBe(0);
+  });
+});
