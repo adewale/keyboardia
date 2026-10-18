@@ -5,7 +5,7 @@ Status: implemented by the accessible icon-system PR.
 ## Goals
 
 - Replace only platform-dependent glyphs whose SVG equivalent is materially clearer.
-- Preserve visible words for unfamiliar, destructive, or product-specific actions.
+- Preserve visible words for unfamiliar, destructive, or product-specific actions, except in the desktop track tile, where Copy/Paste, Clear and Delete are icon-only (rule 5).
 - Keep the system small enough to audit and remove.
 - Treat accessibility, touch targets, reduced motion, and visual evidence as part of the feature.
 
@@ -40,7 +40,7 @@ not own panel lifecycle or feature-specific state.
 2. Icon-only controls require an `aria-label`; `title` is supplementary.
 3. Icons beside visible text are decorative and use `aria-hidden="true"`.
 4. Toggle labels remain stable while `aria-pressed` exposes state; disclosures use `aria-expanded`.
-5. Destructive actions keep visible labels and a subtle but distinct resting treatment.
+5. Destructive actions keep a subtle but distinct resting treatment. They keep visible labels wherever there is room (dock panes, drawers, menus). In the desktop track tile, Copy/Paste, Clear and Delete are icon-only: each has an `aria-label` naming the action and the track ("Delete Piano track") and a `title` tooltip, and Paste replaces Copy only while another track is the copy source.
 6. Touch controls use real, non-overlapping layout boxes of at least 44px where
    the landscape layout is explicitly touch-oriented.
 
@@ -58,13 +58,13 @@ not own panel lifecycle or feature-specific state.
 | `→`, `←` in player toasts | Player joined/left | Lucide `UserPlus`/`UserMinus` |
 | `↻` beside Rotate to edit | Device rotation hint | Lucide `RotateCw` plus the existing label |
 | `+`, `−` in icon controls | Increment/decrement | Lucide `Plus`/`Minus` |
+| Copy, Paste, Clear, Delete in the desktop track tile | Pattern actions | Lucide `Copy`/`ClipboardPaste`/`Eraser`/`Trash2`, icon-only with accessible names (rule 5); dock panes and the landscape editor keep icon plus word |
 | `✂` beside Auto-Slice | Slice | Lucide `Scissors` plus the existing label |
 | Copy Link, Show QR Code | Share-menu recognition | Lucide `Link`/`QrCode` plus the existing labels |
 
 The following remain text or existing domain marks because no replacement is a
 clear enough improvement:
 
-- Copy, Paste, Clear, Delete
 - FX, Mixer, Pitch
 - Mute and Solo (`M`, `S`)
 - Pattern rotate arrows; Invert, Reverse, and Mirror keep visible words
