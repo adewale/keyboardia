@@ -312,7 +312,7 @@
   [data-display-mode="landscape"] .tracks { max-height: calc(100dvh - 108px); }
   [data-display-mode="landscape"] .tl-btn, [data-display-mode="landscape"] .expand-toggle { width: 44px; height: 44px; flex: none; }
   [data-display-mode="landscape"] .line2 .velocity-toggle { display: none; }
-  [data-display-mode="landscape"] .dock.open { position: fixed; inset: 8px; width: calc(100vw - 16px); margin: 0; z-index: 20; --dock-grid-h: calc(100dvh - 170px); }
+  [data-display-mode="landscape"] .dock.open { position: fixed; inset: 8px; width: calc(100vw - 16px); margin: 0; z-index: 20; --dock-grid-h: calc(100dvh - 126px); }
   [data-display-mode="landscape"] .dock.open .dock-inner { min-width: 0; width: 100%; border: 1px solid #787883; border-radius: 8px; }
   [data-display-mode="landscape"] .dock.open .dock-head { grid-template-rows: 44px 44px; gap: 0; padding: 0 6px; }
   [data-display-mode="landscape"] .dock-head .dock-title { font-size: 12px; }
@@ -523,6 +523,35 @@
   html[data-display-mode="landscape"] .track-name .chev svg { width: 14px; height: 14px; }
   /* The marks legend wraps and scrolls inside itself so it never widens the page on a phone. */
   .audit-bar .legend-demo { max-width: 100%; overflow-x: auto; }
+
+  /* ===== Piano roll, CRAP pass =====
+     Contrast: a dark keyboard, so the notes are the brightest marks in the dock (the ivory keys out-shouted them).
+     Repetition: no hue without a meaning (root rows neutral, fifths untinted, range bracket grey; blue stays
+     selection); one dashed meaning (a lock kept on an off step), so ghosts are solid; bars share the cells' 4px
+     corners and accent-hi edge; one mono style, 10px/600, for key labels, bar labels and cell badges.
+     Alignment: the dock's content edge is the rows' content edge, x24 inside the column (tabs, toolbar, keys, status).
+     Proximity: one header row; the context line moves into the status strip; the toolbar is four labelled groups
+     whose related controls touch. */
+  :root { --piano-key-surface: #1a1a1a; --piano-key-white: #2c2c2c; --piano-key-white-hover: #363636; --piano-key-black: #121212; --piano-key-black-hover: #1f1f1f; --piano-key-label: var(--muted); --dock-head-height: 48px; }
+  :root[data-display-mode="landscape"] { --dock-head-height: 44px; }
+  .key.black { color: var(--muted); }
+  .key, .notes .note, .step-cell .pchip { font-family: var(--font-mono); font-size: 10px; font-weight: 600; }
+  .row.root { background: rgb(255 255 255 / 4%); } .row.fifth { background: transparent; }
+  .range-rail .bracket, html[data-dockfix="on"] .range-rail .bracket, html[data-crap="on"][data-rows^="tall"] .range-rail .bracket { left: 11px; width: 2px; background: rgb(255 255 255 / 30%); }
+  .range-rail .bracket::before, .range-rail .bracket::after { background: rgb(255 255 255 / 45%); }
+  html[data-dockfix="on"] .ghosts .gnote, .ghosts .gnote { border-style: solid; border-radius: 4px; }
+  .cbtn.ghost-toggle i, html[data-ui="one"] .cbtn.ghost-toggle i { border-style: solid; }
+  html[data-dockfix="on"] .notes .note { outline-color: var(--accent-hi); }
+  html[data-crap="on"][data-rows^="tall"] .dock-left { grid-template-columns: 24px 1fr; }
+  html[data-crap="on"][data-rows^="tall"] .dock-head, html[data-crap="on"][data-rows^="tall"] .pane, html[data-crap="on"][data-rows^="tall"] .editor-status { padding-left: 24px; }
+  html[data-dockfix="on"] .dock-head { grid-template-columns: minmax(0, 1fr) auto auto; grid-template-rows: 32px; column-gap: 16px; }
+  .dock-head .track-tabs { grid-column: 1; grid-row: 1; } .dock-head .pane-tabs { grid-column: 2; grid-row: 1; } html[data-dockfix="on"] .dock-head .right { grid-column: 3; grid-row: 1; }
+  [data-display-mode="landscape"] .dock.open .dock-head { grid-template-rows: 44px; }
+  .editor-status .dock-title { display: inline; margin-right: 12px; color: var(--text); font-size: 11px; }
+  .editor-status .dock-title:empty { display: none; }
+  [data-display-mode="landscape"] .editor-status .dock-title { display: none; }
+  html[data-dockfix="on"] .pane .rowc .tray + .tray, html[data-dockfix="on"] .pane .rowc > .cbtn + .tray, html[data-dockfix="on"] .pane .rowc > .tray + .cbtn { margin-left: 0; }
+  .pane .rowc .value { color: var(--text); }
 </style>
 </head>
 <body>
@@ -1097,6 +1126,7 @@
     const hit=el('hit',grid);ui.hit=hit;ui.tip=el('tip',grid);
     ui.details=el('dock-details',body);
     ui.status=el('editor-status',innerD);ui.status.id='editor-status';ui.status.setAttribute('role','status');
+    ui.status.append(ui.title);
     ui.statusText=el('status-message',ui.status,'span');setStatus('Arrow keys move through notes. Enter toggles. Shift+Enter opens Step.');
     ui.timeline=el('mobile-timeline',ui.status);ui.timeline.setAttribute('aria-hidden','true');
     const caption=el('timeline-caption',ui.timeline,'span');caption.textContent='Bar · beat';
@@ -1149,7 +1179,7 @@
   const barInset = () => H>=18?2:H>=4?1:0;
   const barH = () => H-2*barInset();
   const ghostH = () => Math.max(1,barH()-2);
-  const barRadius = h => Math.min(2,h/2);
+  const barRadius = h => Math.min(4,h/2);
   function drawNotes(fade) {
     const t=dock.track;if(!t)return;const layer=ui.notesLayer,version=++paintVersion;
     const paint=()=>{if(version!==paintVersion||t!==dock.track)return;computeBars(t);layer.replaceChildren();ui.noteEls=[];
@@ -1277,15 +1307,15 @@
     const group=label=>{const g=el('rowc',p);el('k',g,'span').textContent=label;return g;};
     const button=(parent,label,handler,aria)=>{const b=el('cbtn',parent,'button');b.textContent=label;if(aria)b.setAttribute('aria-label',aria);b.addEventListener('click',handler);return b;};
     if(dock.pane==='notes'){
-      const g=group('Ghosts');
+      const g=el('tray',group('Ghosts'));
       melodic.filter(o=>o!==t).forEach(o=>{const b=button(g,o.name,()=>{dock.ghosts[o.id]=!dock.ghosts[o.id];b.setAttribute('aria-pressed',String(dock.ghosts[o.id]));drawGhosts();fitComparison();});b.classList.add('ghost-toggle');b.style.setProperty('--gc',o.cat);b.setAttribute('aria-pressed',String(!!dock.ghosts[o.id]));});
-      el('value',group('Range'),'span').textContent=noteName(t.range.optMin)+' to '+noteName(t.range.optMax)+' best';
       const velocity=el('',group('Insertion volume'),'input');velocity.type='range';velocity.min=0;velocity.max=127;velocity.value=Math.round(t.defaultVelocity*127);velocity.setAttribute('aria-label','Default velocity');velocity.addEventListener('input',()=>t.defaultVelocity=Number(velocity.value)/127);
-      button(p,'Fit comparison',fitComparison);const zo=el('tray',p);button(zo,'−',()=>zoomPitch(-1),'Zoom pitch out').innerHTML=ICON.minus;button(zo,'+',()=>zoomPitch(1),'Zoom pitch in').innerHTML=ICON.plus;
-      const pan=button(p,'Pan',()=>{ui.cancelDrag();dock.pan=!dock.pan;ui.hit.classList.toggle('pan',dock.pan);pan.setAttribute('aria-pressed',String(dock.pan));setStatus(dock.pan?'Pan: drag to scroll. Switch Pan off to draw.':'Draw: hold for Step; drag to paint or change pitch.');});ui.panButton=pan;pan.setAttribute('aria-pressed',String(!!dock.pan));
+      const view=group('View');button(view,'Fit comparison',fitComparison);const zo=el('tray',view);button(zo,'−',()=>zoomPitch(-1),'Zoom pitch out').innerHTML=ICON.minus;button(zo,'+',()=>zoomPitch(1),'Zoom pitch in').innerHTML=ICON.plus;
+      const pan=button(view,'Pan',()=>{ui.cancelDrag();dock.pan=!dock.pan;ui.hit.classList.toggle('pan',dock.pan);pan.setAttribute('aria-pressed',String(dock.pan));setStatus(dock.pan?'Pan: drag to scroll. Switch Pan off to draw.':'Draw: hold for Step; drag to paint or change pitch.');});ui.panButton=pan;pan.setAttribute('aria-pressed',String(!!dock.pan));
+      el('value',view,'span').textContent=noteName(t.range.optMin)+'–'+noteName(t.range.optMax)+' best';
       const bounds=group('Loop');ui.loopInputs=[];
       for(const [key,label] of [['start','Loop start'],['end','Loop end']]){const input=el('',bounds,'input');input.type='number';input.min=key==='start'?1:2;input.max=key==='start'?STEPS-1:STEPS;input.value=key==='start'?(loop?.start??0)+1:(loop?.end??STEPS-1)+1;input.setAttribute('aria-label',label);input.addEventListener('change',()=>{const r=Object.assign({start:0,end:STEPS-1},loop),value=Number(input.value)-1;if(!Number.isFinite(value)||!Number.isInteger(value)){input.value=(r[key])+1;return;}r[key]=key==='start'?clamp(value,0,r.end-1):clamp(value,r.start+1,STEPS-1);ui.setLoop(r);setStatus('Loop steps '+(r.start+1)+' through '+(r.end+1));});ui.loopInputs.push(input);}
-      ui.clearLoop=button(p,'Clear loop',()=>ui.setLoop(null));ui.clearLoop.disabled=!loop;
+      ui.clearLoop=button(bounds,'Clear loop',()=>ui.setLoop(null));ui.clearLoop.disabled=!loop;
     }else if(dock.pane==='step'){
       const selector=el('',group('Step'),'select');selector.setAttribute('aria-label','Selected step');
       for(let i=0;i<STEPS;i++){const option=el('',selector,'option');option.value=i;option.textContent=String(i+1);}
@@ -1303,9 +1333,10 @@
         const value=el('value',slider.parentElement,'span');value.textContent=slider.value;
         slider.addEventListener('input',()=>{t.locks[sel]=Object.assign({},t.locks[sel],{volume:Number(slider.value)/127});value.textContent=slider.value;trackChanged(t,false);updateContext();});
         const tie=button(group('Tie'),lock.tie?'Tied to previous':'New attack',()=>{t.locks[sel]=Object.assign({},t.locks[sel],{tie:!t.locks[sel]?.tie});t.tieOrigins?.delete(sel);trackChanged(t);});tie.setAttribute('aria-pressed',String(!!lock.tie));tie.disabled=t.kind!=='melodic';tie.title=t.kind!=='melodic'?'One-shot preview does not sustain ties':'';
-        button(p,t.steps[sel]?'Deactivate':'Activate',()=>{t.steps[sel]=!t.steps[sel];trackChanged(t);},'Toggle selected step');
-        button(p,'Erase step',()=>{t.steps[sel]=false;t.locks[sel]=null;t.tieOrigins?.delete(sel);trackChanged(t);});
-        button(p,'Clear lock',()=>{t.locks[sel]=null;t.tieOrigins?.delete(sel);trackChanged(t);});
+        const acts=el('tray',el('rowc',p));
+        button(acts,t.steps[sel]?'Deactivate':'Activate',()=>{t.steps[sel]=!t.steps[sel];trackChanged(t);},'Toggle selected step');
+        button(acts,'Erase step',()=>{t.steps[sel]=false;t.locks[sel]=null;t.tieOrigins?.delete(sel);trackChanged(t);});
+        button(acts,'Clear lock',()=>{t.locks[sel]=null;t.tieOrigins?.delete(sel);trackChanged(t);});
         if(tied)el('context',p,'span').textContent='Pitch and volume inherit from attack step '+(attackStep(t,sel)+1);
       }
     }else{
