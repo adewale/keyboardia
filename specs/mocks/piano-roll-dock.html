@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ui="one" data-rows="tallwho" data-crap="on" data-vel="fill" data-rowfix="on" data-dockfix="on">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -25,7 +25,7 @@
     --playhead: #ffffff;
     --piano-key-surface: #0f0e0d; --piano-grid-step: rgb(255 255 255 / 4.5%); --piano-grid-beat: rgb(255 255 255 / 10%);
     --piano-grid-bar: rgb(255 255 255 / 22%); --piano-grid-octave: rgb(255 255 255 / 16%); --piano-grid-black-row: rgb(0 0 0 / 22%);
-    --note-velocity-accent: var(--color-accent); --note-velocity-surface: var(--color-surface); --note-velocity: 1;
+    --note-velocity: 1;
     --piano-key-white: #c9c5bc; --piano-key-white-hover: #ddd9d0; --piano-key-black: #131211; --piano-key-black-hover: #2a2826; --piano-key-label: #3f3c37;
     --font-ui: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'SF Mono', 'Consolas', monospace;
@@ -33,7 +33,7 @@
     /* The control tile (F): 231px, six step pitches less the gap. The tall-row rules below lay it out. */
     --track-left-width: 231px;
     --pitch-row-height: 18px;
-    --row-h: 18px; --dock-grid-h: 252px; --dock-head-height: 84px; --dock-toolbar-height: 48px;
+    --dock-grid-h: 252px; --dock-head-height: 84px; --dock-toolbar-height: 48px;
     --note-presence-outline: #b8b8b8;
     color-scheme: dark;
   }
@@ -105,27 +105,16 @@
   .track-row-wrapper { display: flex; flex-direction: column; border-radius: 4px; }
   .track-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; height: 58px; border-radius: 4px; min-width: max-content; position: relative; }
   .track-left {
-    display: grid;
-    grid-template-columns: [drag] 12px [body] 130px;
-    grid-template-rows: [identity] 24px [controls] 24px;
-    column-gap: 4px; row-gap: 2px; align-content: center; padding: 0 4px; position: sticky; left: 0; z-index: 3; background: var(--surface);
+    align-content: center; position: sticky; left: 0; z-index: 3; background: var(--surface);
     box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); height: 50px; width: var(--track-left-width); min-width: var(--track-left-width);
   }
-  .track-row-wrapper.docked .track-left { box-shadow: inset 2px 0 0 var(--accent), 4px 0 8px -4px rgba(0,0,0,.2); }
-  .drag-handle { grid-column: drag; grid-row: identity / span 2; align-self: center; color: var(--dim); font-size: 14px; letter-spacing: -2px; cursor: default; text-align: center; }
-  .track-name { grid-column: body; grid-row: identity; height: 24px; border: 0; color: var(--text); background: transparent; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 0 2px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 3px; }
+  .track-name { height: 24px; border: 0; color: var(--text); background: transparent; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; padding: 0 2px; text-transform: capitalize; overflow: hidden; white-space: nowrap; cursor: pointer; border-radius: 3px; }
   .track-name:hover { background: rgba(255,255,255,.05); }
-  .track-name .tick { width: 3px; height: 12px; border-radius: 2px; background: var(--cat); flex: 0 0 auto; }
-  .track-name .tr { margin-left: auto; font-family: var(--font-mono); font-size: 10px; color: var(--info-text); }
-  .rename-input { grid-column: body; grid-row: identity; width: 100%; height: 24px; font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid #787883; border-radius: 4px; }
-  .line2 { grid-column: body; grid-row: controls; display: flex; gap: 4px; align-items: center; }
+  .rename-input { width: 100%; height: 24px; font: inherit; color: var(--text); background: var(--surface-2); border: 1px solid #787883; border-radius: 4px; }
+  .line2 { display: flex; gap: 4px; align-items: center; }
   .line2 .group { display: inline-flex; gap: 2px; flex: none; }
   .tl-btn { height: 24px; width: 24px; border: 1px solid var(--border-hover); border-radius: 3px; background: transparent; color: var(--muted); font-size: 10px; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; padding: 0; }
   .tl-btn:hover { border-color: var(--muted); }
-  .mute-button.active { background: #e74c3c; border-color: #e74c3c; color: var(--bg); }
-  .solo-button.active { background: var(--warning); border-color: var(--warning); color: var(--bg); }
-  .badge { height: 24px; width: 24px; border: 0; padding: 0; border-radius: 3px; background: var(--purple-muted); color: var(--purple-text); font-family: var(--font-mono); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; }
-  .badge.drum { background: rgba(255,255,255,.06); color: var(--muted); }
   .expand-toggle { width: 24px; height: 24px; border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; transition: background 150ms ease; padding: 0; }
   .expand-toggle.active { background: var(--accent); border-color: var(--accent-hi); color: var(--bg); }
   .velocity-toggle { width: 24px; height: 24px; border: 1px solid var(--surface-4); border-radius: 3px; background: var(--surface-2); color: var(--muted); font-size: 10px; font-weight: 700; cursor: pointer; padding: 0; }
@@ -136,13 +125,8 @@
   .step-cell { width: var(--step-w); height: 36px; border: 2px solid var(--border); border-radius: 4px; background: var(--surface-2); cursor: pointer; position: relative; flex: 0 0 auto; padding: 0; }
   .step-cell:hover { background: var(--surface-3); border-color: var(--border-light); }
   .step-cell.beat-start { border-left-color: var(--border-light); border-left-width: 3px; }
-  .step-cell.active { background: var(--note-velocity-fill); border-color: var(--accent-hi); }
+  .step-cell.active { border-color: var(--accent-hi); }
   .step-cell.active:hover { outline: 1px solid var(--note-presence-outline); }
-  .step-cell, .note { --note-velocity-fill: color-mix(in srgb, var(--note-velocity-accent) calc(var(--note-velocity, 1) * 100%), var(--note-velocity-surface)); }
-  /* Locks. Each kind is its own signal in the cell: pitch is the mark's height, a tie is the mark running on,
-     volume is the wash. An envelope-only lock, which has no signal of its own, gets a dot in the top right corner.
-     A lock stored on a step that is off (the product keeps it) shows as a faint mark, so it is not a surprise when
-     the step comes back. The product's purple border is behind the Lock border switch for comparison. */
   /* Marks, production evolved. Volume is the cell's level: accent from the bottom up to the volume, a dim tint above,
      so a full note is a plain cell (production's velocity fill, kept). Pitch is production's corner badge with the
      amount in it: ↑7, ↓5, on the note's first cell only. A tie joins the cells into one shape across the gap
@@ -164,11 +148,9 @@
   .step-cell.range-selected { outline: 2px solid var(--info-text); outline-offset: 0; }
   .step-cell.pulse { animation: cell-pulse 150ms ease-out; }
   @keyframes cell-pulse { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
-  /* Row actions stay on their row: sticky-right on desktop and wide landscape, static at the row's end in narrow landscape. */
-  .row-actions { display: flex; gap: 4px; position: sticky; right: 0; padding: 2px 4px; background: var(--surface); z-index: 4; align-self: center; }
-  .row-actions button { min-width: 44px; height: 32px; padding: 0 5px; font-size: 11px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); cursor: pointer; }
-  .row-actions button.copy-source { background: var(--success); color: var(--bg); }
-  .row-actions button.paste { border-color: var(--info-text); }
+  /* The row's Copy, Clear and Delete buttons are never shown: they hold the actions and the copy state, and the
+     tile's icon buttons and the Track pane click them. */
+  .row-actions { display: none; }
   /* Copy status: information, so bare text with the action's icon. It sits in the transport (always visible) and
      stands in for the Esc hint while a copy is pending or just finished. */
   .copy-status { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--text); }
@@ -218,11 +200,9 @@
   .pane .empty { color: var(--muted); }
   .cbtn { height: 32px; padding: 0 9px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; white-space: nowrap; font-variant-numeric: tabular-nums; }
   .cbtn:disabled { opacity: .4; cursor: default; }
-  .cbtn.sym { padding: 0 8px; font-weight: 600; }
   .cbtn[aria-pressed="true"] { border-color: var(--info-text); color: var(--info-text); background: rgba(52,152,219,.12); }
   .cbtn.ghost-toggle i { width: 10px; height: 10px; border-radius: 2px; border: 1px dashed var(--gc); display: inline-block; }
   .cbtn.ghost-toggle[aria-pressed="true"] i { background: var(--gc); border-style: solid; }
-  .cbtn.quiet { color: var(--muted); border-color: #787883; background: transparent; }
   .cbtn.value { cursor: default; }
   .pane input[type=range] { width: 110px; height: 32px; accent-color: var(--accent); }
   .pane input[type=number], .pane select { height: 32px; min-width: 52px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font: inherit; }
@@ -287,7 +267,7 @@
   .notes { position: absolute; inset: 0; transition: opacity 120ms ease; }
   .notes.fading { opacity: 0; }
   /* A bar keeps a constant presence outline at every velocity; its label ink is chosen from the composited fill. */
-  .notes .note { position: absolute; border-radius: 3px; pointer-events: none; outline: 1px solid var(--note-presence-outline); outline-offset: -1px; background: var(--note-velocity-fill); display: flex; align-items: center; padding-left: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--note-label-ink, var(--text)); overflow: hidden; white-space: nowrap; }
+  .notes .note { position: absolute; border-radius: 3px; pointer-events: none; outline: 1px solid var(--note-presence-outline); outline-offset: -1px; display: flex; align-items: center; padding-left: 6px; font-family: var(--font-mono); font-size: 10px; font-weight: 500; color: var(--note-label-ink, var(--text)); overflow: hidden; white-space: nowrap; }
   .note .bar-label { line-height: 1; }
   .grid.overview .bar-label { display: none; }
   .notes .note.playing { box-shadow: 0 0 0 2px var(--playhead), 0 0 14px rgba(255,255,255,.45);  }
@@ -330,17 +310,8 @@
      The mode comes from the JS display-mode decision on the root, never from a media query. */
   :root[data-display-mode="landscape"] { --track-left-width: 216px; --dock-head-height: 88px; --dock-toolbar-height: 48px; }
   [data-display-mode="landscape"] .tracks { max-height: calc(100dvh - 108px); }
-  [data-display-mode="landscape"] .track-row { height: 48px; padding: 2px 0; }
-  [data-display-mode="landscape"] .track-left { display: flex; gap: 4px; height: 44px; padding: 0 4px; }
-  [data-display-mode="landscape"] .drag-handle { display: none; }
-  [data-display-mode="landscape"] .track-name { flex: 0 0 64px; height: 44px; padding: 0; }
-  [data-display-mode="landscape"] .track-name .tr { display: none; }
-  [data-display-mode="landscape"] .rename-input { flex: 0 0 64px; height: 44px; }
-  [data-display-mode="landscape"] .line2, [data-display-mode="landscape"] .line2 .group { display: contents; }
   [data-display-mode="landscape"] .tl-btn, [data-display-mode="landscape"] .expand-toggle { width: 44px; height: 44px; flex: none; }
-  [data-display-mode="landscape"] .line2 .badge, [data-display-mode="landscape"] .line2 .velocity-toggle { display: none; }
-  [data-display-mode="landscape"] .step-cell { height: 44px; }
-  [data-display-mode="landscape"] .row-actions button { height: 44px; }
+  [data-display-mode="landscape"] .line2 .velocity-toggle { display: none; }
   [data-display-mode="landscape"] .dock.open { position: fixed; inset: 8px; width: calc(100vw - 16px); margin: 0; z-index: 20; --dock-grid-h: calc(100dvh - 170px); }
   [data-display-mode="landscape"] .dock.open .dock-inner { min-width: 0; width: 100%; border: 1px solid #787883; border-radius: 8px; }
   [data-display-mode="landscape"] .dock.open .dock-head { grid-template-rows: 44px 44px; gap: 0; padding: 0 6px; }
@@ -360,35 +331,18 @@
   [data-display-mode="landscape"] .mobile-timeline span { position: absolute; font: 500 10px/16px var(--font-mono); color: var(--muted); }
   [data-display-mode="landscape"] .timeline-caption { position: sticky; left: 0; width: 92px; background: var(--surface); z-index: 1; padding-left: 6px; }
 
-  /* ===== Audit switches (proportion audit, October 2026) =====
-     Row geometry options kept from the audit and the survey (D, H, I, J), their beat-wide recombinations (L, M, N),
-     and the fix sets. The page opens on L with every fix on; the PR #127 contract's own geometry (58/60) is no
-     longer selectable, by the owner's decision. */
+  /* ===== Marks legend strip (the legend and real example cells) ===== */
   .audit-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; font-size: 12px; color: var(--muted); }
-  .audit-bar .k { font-family: var(--font-mono); font-size: 11px; letter-spacing: .5px; text-transform: uppercase; color: var(--muted); }
-  .audit-bar .set { display: inline-flex; gap: 2px; background: var(--surface-2); border-radius: 4px; }
-  .audit-bar .opt { height: 28px; padding: 0 9px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; white-space: nowrap; }
-  .audit-bar .opt:hover { color: var(--text); }
-  .audit-bar .opt[aria-pressed="true"] { background: var(--accent); color: var(--bg); }
-  .audit-bar .opt .L { display: inline-block; min-width: 18px; margin: 0 6px 0 -3px; padding: 0 4px; border-radius: 3px; background: var(--text); color: var(--bg); font-family: var(--font-mono); font-size: 13px; font-weight: 700; line-height: 18px; text-align: center; }
-  .audit-bar .opt[aria-pressed="true"] .L { background: var(--bg); color: var(--text); }
-  .audit-bar .readout .L { display: inline-block; min-width: 22px; padding: 0 5px; margin-right: 8px; border-radius: 3px; background: var(--accent); color: var(--bg); font-weight: 700; font-size: 13px; line-height: 20px; text-align: center; }
-  .audit-bar .readout { font-family: var(--font-mono); font-size: 11px; color: var(--text); white-space: nowrap; }
-  .audit-bar .spacer { flex: 1; }
-  html { --row-opt-h: 58px; }
 
-  /* Row fixes: contour centred and continuous (JS), borders 2 with 3 at beat starts and the lock as colour only,
-     actions on the cell band, lane as one row pitch, ruler one lattice slot above the rows, no closed-dock line, grip glyph 12px. */
+  /* Row fixes: borders 2 with 3 at beat starts, lane as one row pitch, ruler one lattice slot above the rows, no closed-dock line. */
   html[data-rowfix="on"] .step-cell.playing { border-width: 3px; }
-  html[data-rowfix="on"] .row-actions button { height: 36px; width: 48px; min-width: 48px; padding: 0; }
   html[data-rowfix="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
   html[data-rowfix="on"] .velocity-lane input { height: 36px; }
   html[data-rowfix="on"] .ruler-row { margin-bottom: 0; padding-bottom: 0; }
   html[data-rowfix="on"] .marker-label { top: 0; line-height: 24px; }
   html[data-rowfix="on"] .dock:not(.open) { margin-top: 0; }
   html[data-rowfix="on"] .dock:not(.open) .dock-inner { border-top: 0; }
-  html[data-rowfix="on"] .drag-handle { font-size: 12px; letter-spacing: 0; }
-  html[data-rowfix="on"] .tl-btn, html[data-rowfix="on"] .badge, html[data-rowfix="on"] .expand-toggle, html[data-rowfix="on"] .velocity-toggle { border-radius: 4px; }
+  html[data-rowfix="on"] .tl-btn, html[data-rowfix="on"] .expand-toggle, html[data-rowfix="on"] .velocity-toggle { border-radius: 4px; }
 
   /* Dock fixes: rail 20 so keys start where names start, rules outside the strips with even 8px padding,
      one border colour, whole-row keys and whole-pixel bars (JS), grid lines in the gaps (JS), octave rule on the B|C crack. */
@@ -403,7 +357,7 @@
   html[data-dockfix="on"] .editor-status { padding: 4px 20px; min-height: 24px; line-height: 16px; }
   html[data-dockfix="on"] .chip, html[data-dockfix="on"] .cbtn { padding: 0 8px; }
   html[data-dockfix="on"] .cbtn { font-weight: 500; }
-  html[data-dockfix="on"] .dock-head .ib, html[data-dockfix="on"] .cbtn, html[data-dockfix="on"] .cbtn.quiet, html[data-dockfix="on"] .tool-scroll, html[data-dockfix="on"] .pane input[type=number], html[data-dockfix="on"] .pane select, html[data-dockfix="on"] .detail-controls input, html[data-dockfix="on"] .detail-controls select, html[data-dockfix="on"] .row-actions button, html[data-dockfix="on"] .rename-input { border-color: #74747f; }
+  html[data-dockfix="on"] .dock-head .ib, html[data-dockfix="on"] .cbtn, html[data-dockfix="on"] .tool-scroll, html[data-dockfix="on"] .pane input[type=number], html[data-dockfix="on"] .pane select, html[data-dockfix="on"] .detail-controls input, html[data-dockfix="on"] .detail-controls select, html[data-dockfix="on"] .rename-input { border-color: #74747f; }
   html[data-dockfix="on"] .dock-head .ib:hover { border-color: var(--muted); }
   html[data-dockfix="on"] .key.black { width: 58%; border-radius: 0 2px 2px 0; }
   html[data-dockfix="on"][data-display-mode="landscape"] .key.black { width: 38px; }
@@ -413,121 +367,54 @@
   html[data-dockfix="on"] .notes .note, html[data-dockfix="on"] .ghosts .gnote, html[data-dockfix="on"] .ghost { border-radius: 2px; }
   html[data-dockfix="on"] .tip { border-radius: 4px; }
 
-  /* ===== Row options from the hobbyist survey =====
-     The chip colour comes from --cat on the wrapper; the instrument line, caption, glyph tile and selected-track bar
-     exist in every mode and are shown only by the option that uses them. */
-  .track-name .inst, .row-caption, .glyph-tile, .selected-bar { display: none; }
-
-  .selected-bar { align-items: center; gap: 8px; height: 36px; margin-bottom: 3px; padding: 0 8px; background: var(--surface); border-radius: 4px; position: sticky; left: 0; width: max-content; min-width: 100%; font-size: 12px; color: var(--muted); }
-  .selected-bar .sb-chip { width: 4px; height: 24px; background: var(--cat); border-radius: 1px; }
-  .selected-bar .sb-name { color: var(--text); font-size: 13px; font-weight: 600; text-transform: capitalize; }
-  .selected-bar .sb-inst { color: var(--muted); font-size: 11px; }
-  .selected-bar .k { font-size: 11px; font-weight: 500; letter-spacing: .5px; text-transform: uppercase; margin-left: 6px; }
-  .selected-bar .cbtn { height: 24px; padding: 0 8px; font-size: 12px; }
-  .selected-bar .cbtn.sym { padding: 0 7px; }
-  .selected-bar .tl-btn { width: 24px; height: 24px; }
-  .selected-bar .spacer { flex: 1; }
-
-  /* N4 · Cell-tile rail (BeepBox, Launchpad, GarageBand icons): the header is two cells, a colour tile with a glyph that
-     selects and opens the track, and a mute tile. 75 = 36 + 3 + 36, then the grid's own 8px gap. */
-  html[data-rows="tiles"] { --track-left-width: 75px; }
-  html[data-rows="tiles"] .track-left { display: flex; align-items: center; gap: 3px; height: 36px; padding: 0; }
-  html[data-rows="tiles"] .drag-handle, html[data-rows="tiles"] .track-name, html[data-rows="tiles"] .solo-button, html[data-rows="tiles"] .line2 .badge, html[data-rows="tiles"] .line2 .expand-toggle, html[data-rows="tiles"] .velocity-toggle { display: none; }
-  html[data-rows="tiles"] .glyph-tile { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border: 0; border-radius: 4px; background: var(--cat); color: var(--bg); font-size: 13px; font-weight: 700; cursor: pointer; padding: 0; flex: none; }
-  html[data-rows="tiles"] .track-row-wrapper.docked .glyph-tile { outline: 2px solid var(--text); outline-offset: -2px; }
-  html[data-rows="tiles"] .line2, html[data-rows="tiles"] .line2 .group { display: contents; }
-  html[data-rows="tiles"] .tl-btn.mute-button { width: 36px; height: 36px; border-radius: 4px; font-size: 12px; }
-
-  /* ===== CRAP pass (Robin Williams), applied to every row option =====
-     Repetition: one 4px category chip at the block's left edge in every option; the 24px control unit; radius 4 on
-     every control, tile and action; name 13/600, instrument 11/400 muted, glyphs 10/700; the dock rail equals the
-     name's offset so keys and names share one x. Alignment: the name's left edge is the controls' left edge; row
-     actions sit on the 36px cell band; the ruler is one slot above the rows; the lane is one row pitch. Proximity:
-     2px inside a group, 4px between groups, 8px between the column and the grid. Contrast: the docked row lifts to
-     --surface-2 with its name in accent, instead of an edge the chip would hide. */
+  /* ===== CRAP pass (Robin Williams) =====
+     Repetition: the 24px control unit; radius 4 on every control; name 13/600. Alignment: the ruler is one slot
+     above the rows; the lane is one row pitch. Proximity: 2px inside a group, 4px between groups, 8px between the
+     column and the grid. Contrast: the docked row lifts to --surface-2 with its name in accent, instead of an edge
+     the chip would hide. */
   html[data-crap="on"] .track-left { position: relative; }
-  html[data-crap="on"] .cat-chip { position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--cat); border-radius: 1px; }
-  html[data-crap="on"] .track-left::before { display: none; }
-  html[data-crap="on"] .track-name .tick { display: none; }
   html[data-crap="on"] .track-name { padding: 0; font-weight: 600; }
-  html[data-crap="on"] .track-name .inst { font-weight: 400; }
   html[data-crap="on"] .track-row-wrapper.docked .track-left { background: var(--surface-2); box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); }
   html[data-crap="on"] .track-row-wrapper.docked .track-name { color: var(--accent-text); }
-  html[data-crap="on"] .tl-btn, html[data-crap="on"] .badge, html[data-crap="on"] .expand-toggle, html[data-crap="on"] .velocity-toggle, html[data-crap="on"] .glyph-tile, html[data-crap="on"] .row-actions button, html[data-crap="on"] .rename-input, html[data-crap="on"] .track-name { border-radius: 4px; }
+  html[data-crap="on"] .tl-btn, html[data-crap="on"] .expand-toggle, html[data-crap="on"] .velocity-toggle, html[data-crap="on"] .rename-input, html[data-crap="on"] .track-name { border-radius: 4px; }
   html[data-crap="on"] .line2 { gap: 4px; }
   html[data-crap="on"] .line2 .group { gap: 2px; }
-  html[data-crap="on"] .row-actions { gap: 4px; padding: 0 8px; }
   html[data-crap="on"] .velocity-lane { height: var(--row-opt-h); margin-top: 2px; align-items: center; }
-  html[data-crap="on"][data-rows="tiles"] .velocity-lane, html[data-crap="on"][data-rows^="tall"] .velocity-lane { margin-top: 3px; }
+  html[data-crap="on"][data-rows^="tall"] .velocity-lane { margin-top: 3px; }
   html[data-crap="on"] .velocity-lane input { height: 36px; }
   html[data-crap="on"] .ruler-row { margin-bottom: 0; padding-bottom: 0; }
   html[data-crap="on"] .marker-label { top: 0; line-height: 24px; }
-  html[data-crap="on"] .drag-handle { width: 12px; flex: none; overflow: hidden; font-size: 12px; letter-spacing: 0; }
-  /* Two-line 154 options and tall: the chip sits in the 4px padding before the grip; name x = 20 = rail 20. */
-  /* Chip-led options: chip 4 + gap 8, so the name and the keys start 12px in. */
-  html[data-crap="on"][data-rows="tiles"] .cat-chip { display: none; }
-  html[data-crap="on"][data-rows^="tall"] .dock-left, html[data-crap="on"][data-rows^="flat"] .dock-left { grid-template-columns: 12px 1fr; }
-  html[data-crap="on"][data-rows^="tall"] .range-rail .bracket, html[data-crap="on"][data-rows^="flat"] .range-rail .bracket { left: 5px; }
-  html[data-crap="on"][data-rows^="tall"] .dock-head, html[data-crap="on"][data-rows^="flat"] .dock-head, html[data-crap="on"][data-rows^="tall"] .pane, html[data-crap="on"][data-rows^="flat"] .pane, html[data-crap="on"][data-rows^="tall"] .editor-status, html[data-crap="on"][data-rows^="flat"] .editor-status { padding-left: 12px; padding-right: 12px; }
-  html[data-crap="on"][data-rows="tiles"] .dock-left { grid-template-columns: 0px 1fr; }
-  html[data-crap="on"][data-rows="tiles"] .range-rail { z-index: 3; overflow: visible; }
-  html[data-crap="on"][data-rows="tiles"] .range-rail .bracket { left: 2px; }
-  html[data-crap="on"] .selected-bar { gap: 4px; }
-  html[data-crap="on"] .selected-bar .sb-inst { margin-right: 8px; }
-  html[data-crap="on"] .selected-bar .k { margin-left: 8px; }
+  /* The dock's rail is 12px and its strips are padded 12px, so the keys and the toolbar line up 12px in. */
+  html[data-crap="on"][data-rows^="tall"] .dock-left { grid-template-columns: 12px 1fr; }
+  html[data-crap="on"][data-rows^="tall"] .range-rail .bracket { left: 5px; }
+  html[data-crap="on"][data-rows^="tall"] .dock-head, html[data-crap="on"][data-rows^="tall"] .pane, html[data-crap="on"][data-rows^="tall"] .editor-status { padding-left: 12px; padding-right: 12px; }
 
-  /* ===== Velocity: fill (production's encoding, kept) or tint (the spec's colour-mix) =====
-     Fill: an active cell is the accent; a step with a volume lock below 1 carries a light wash from the bottom up to
+  /* ===== Velocity: fill (production's encoding, kept) =====
+     An active cell is the accent; a step with a volume lock below 1 carries a light wash from the bottom up to
      its volume, so the quiet steps on a drum row stand out at a glance. The dock's bars carry the same wash. */
   html[data-vel="fill"] .step-cell.active { background: linear-gradient(to top, var(--color-accent) calc(var(--note-velocity, 1) * 100%), var(--accent-dim) 0); }
   html[data-vel="fill"] .notes .note { background: linear-gradient(to top, var(--color-accent) calc(var(--note-velocity, 1) * 100%), var(--accent-dim) 0); }
 
-  /* ===== Round 3: two lattices, two tile families =====
-     Lattices (the density and tessellation to preserve): tall, 36 × 50 cells on a 53px pitch; flat, 36 × 36 cells on
-     the 39px step pitch. Gaps are 3px both ways. */
+  /* ===== The tall lattice =====
+     36 × 50 cells on a 53px pitch, the density and tessellation to preserve. Gaps are 3px both ways. */
   html[data-rows^="tall"] { --row-opt-h: 50px; }
   html[data-rows^="tall"] .track-row { height: 50px; padding: 0; }
   html[data-rows^="tall"] .step-cell { height: 50px; }
-  html[data-rows^="flat"] { --row-opt-h: 36px; }
-  html[data-rows^="flat"] .track-row { height: 36px; padding: 0; }
-  html[data-rows^="tall"] .tracks-inner .rows, html[data-rows^="tall"] .tracks-inner, html[data-rows^="flat"] .tracks-inner .rows, html[data-rows^="flat"] .tracks-inner { gap: 3px; }
-  html[data-rows^="tall"] .velocity-lane, html[data-rows^="flat"] .velocity-lane { margin-top: 3px; }
-  html[data-rows^="tall"] .track-left, html[data-rows^="flat"] .track-left { display: flex; align-items: center; height: var(--row-opt-h); padding: 0 12px; column-gap: 4px; row-gap: 2px; }
-  html[data-rows^="tall"] .drag-handle, html[data-rows^="flat"] .drag-handle, html[data-rows^="tall"] .row-actions, html[data-rows^="flat"] .row-actions, html[data-rows^="tall"] .track-name .tick, html[data-rows^="flat"] .track-name .tick { display: none; }
-  html[data-rows^="tall"] .track-name, html[data-rows^="flat"] .track-name { flex: 1 1 0; min-width: 0; height: 24px; padding: 0; }
-  html[data-rows^="tall"] .rename-input, html[data-rows^="flat"] .rename-input { flex: 1 1 0; min-width: 0; height: 24px; }
-  .pill-tr, .pill-steps, .tools-toggle { display: none; }
+  html[data-rows^="tall"] .tracks-inner .rows, html[data-rows^="tall"] .tracks-inner { gap: 3px; }
+  html[data-rows^="tall"] .velocity-lane { margin-top: 3px; }
+  html[data-rows^="tall"] .track-left { display: flex; align-items: center; height: var(--row-opt-h); padding: 0 12px; column-gap: 4px; row-gap: 2px; }
+  html[data-rows^="tall"] .track-name { flex: 1 1 0; min-width: 0; height: 24px; padding: 0; }
+  html[data-rows^="tall"] .rename-input { flex: 1 1 0; min-width: 0; height: 24px; }
 
-  /* Complete tile: name, instrument, transpose and step count on line one (one line on the flat lattice); M, S,
-     preview, Notes, lane, tools, copy/paste, clear and delete as 24px controls. Columns are cell multiples:
-     tall 270 = 7 cells, flat 465 = 12 cells (three beats). */
-  html[data-rows$="full"] { }
-  html[data-rows="tallfull"] { --track-left-width: 270px; }
-  html[data-rows="flatfull"] { --track-left-width: 465px; }
-  html[data-rows="tallfull"] .track-left { flex-wrap: wrap; align-content: center; }
-  html[data-rows="tallfull"] .line2 { flex: 0 0 100%; }
-  html[data-rows$="full"] .track-name .inst { display: inline; font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; text-transform: none; }
-  html[data-rows$="full"] .track-name .tr { display: none; }
-  html[data-rows$="full"] .pill-tr, html[data-rows$="full"] .pill-steps { display: inline-flex; align-items: center; justify-content: space-between; width: 48px; height: 24px; padding: 0 6px; border: 1px solid #787883; border-radius: 4px; background: var(--surface-2); color: var(--text); font-family: var(--font-mono); font-size: 10px; cursor: pointer; flex: none; }
-  html[data-rows$="full"] .pill-tr::after, html[data-rows$="full"] .pill-steps::after { content: '▾'; color: var(--muted); font-size: 9px; }
-  html[data-rows$="full"] .tools-toggle { display: inline-flex; }
-  html[data-rows="flatfull"] .line2 { display: contents; }
-  html[data-rows="flatfull"] .line2 .group + .group { margin-left: 2px; }
-
-  /* The control tile: a ledger matrix with segmented trays, 270 = 7 cells. The identity column (name over
-     instrument, both from x24, locked to the two 24px lines) and a 2 × 5 block of controls from x138 to x262:
-     line one [M|S] [keys|lane|tools], line two [+0|32] [copy|clear|delete]. Three classes, one look each:
-     information is bare text; state is a hollow box that fills when on; a control is a solid chip. Trays touch,
-     with 4px between trays, and the solid trays keep a 1px seam so two values never read as one. One type style
-     in every box: 11px, 600, tabular numbers. The icons share one 12px optical box inside the 24px unit. */
-  /* F · "M S under the name", 231px (six cells). Left: the track (name over [M|S]). Right: the pattern
-     ([Notes|lane|tools] over [copy|clear|delete], [transpose|steps] beside). The row shows the track name only. */
+  /* The control tile, "M S under the name", 231px (six cells). Left: the track (name over [M|S]). Right: the pattern
+     ([Notes|lane|tools] over [copy|clear|delete], [transpose|steps] beside). The row shows the track name only.
+     Three classes, one look each: information is bare text; state is a hollow box that fills when on; a control is a
+     solid chip. Trays touch, and the solid trays keep a 1px seam so two values never read as one. One type style in
+     every box: 11px, 600, tabular numbers. */
   html[data-rows="tallwho"] { --track-left-width: 231px; }
   html[data-rows="tallwho"] .track-left { display: block; position: relative; padding: 0; }
   html[data-rows="tallwho"] .track-name { position: absolute; left: 24px; top: 0; width: 120px; height: 24px; line-height: 24px; margin: 0; padding: 0; text-align: left; white-space: nowrap; overflow: hidden; }
   html[data-rows="tallwho"] .track-name .nm { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  html[data-rows="tallwho"] .track-name .inst { display: none; }
-  html[data-rows="tallwho"] .track-name .tr, html[data-rows="tallwho"] .badge, html[data-rows="tallwho"] .act-group .more-btn, html[data-rows="tallwho"] .drag-handle, html[data-rows="tallwho"] .glyph-tile { display: none; }
   html[data-rows="tallwho"] .line2 { display: contents; }
   html[data-rows="tallwho"] .line2 .group, html[data-crap="on"][data-rows="tallwho"] .line2 .group { position: absolute; top: 0; display: inline-flex; gap: 0; }
   html[data-rows="tallwho"] .line2 .group:nth-child(1) { left: 24px; top: 26px; }
@@ -556,66 +443,17 @@
   html[data-rows="tallwho"] .pill-steps, html[data-rows="tallwho"] .act-group .tl-btn:last-child { border-radius: 0 4px 4px 0; }
   html[data-rows="tallwho"] .act-group .tl-btn.copy-source { background: #3a3a3a; color: var(--accent-text); }
   html[data-rows="tallwho"] .act-group .tl-btn.paste { color: #5eb3ea; }
-  html[data-rows="tallwho"] .act-group .tl-btn:disabled { opacity: .4; }
-
-  /* U: the per-instrument panel under the track row. The same controls as the dock's Track pane, in a 48px strip
-     that slides in beneath the row (and above its velocity lane), pushing the rows below down. It is sticky to the
-     left so it stays in view while the grid scrolls, and it starts on the tile's left edge with the track's chip. */
-  .row-panel { display: flex; align-items: center; gap: 14px; height: 48px; margin-top: 0; padding: 0 14px 0 0; position: sticky; left: 0; width: max-content; max-width: calc(100vw - 72px); background: var(--surface-2); border-radius: 0 0 4px 4px; color: var(--muted); font-size: 12px; overflow-x: auto; overflow-y: hidden; }
-  .row-panel .rp-chip { flex: none; width: 4px; height: 48px; border-radius: 0 0 0 4px; background: var(--cat); margin-right: -6px; }
-  .track-row-wrapper.panel-open .track-left { border-radius: 4px 4px 0 0; }
-  .track-row-wrapper.panel-open .track-row { border-radius: 4px 4px 0 0; }
-  .track-row-wrapper.panel-open .track-name::after { content: '▴'; font-size: 9px; color: var(--muted); position: absolute; right: 12px; bottom: 8px; }
-  .track-row-wrapper.panel-open .track-name { position: relative; }
-  .row-panel .rp-title { flex: none; font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; }
-  .row-panel .rp-title small { font-size: 11px; font-weight: 400; color: var(--muted); margin-left: 6px; }
-  .row-panel .rowc { display: inline-flex; align-items: center; gap: 2px; flex: none; }
-  .row-panel .rowc .k { font-family: var(--font-mono); font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); margin-right: 6px; }
-  .row-panel .cbtn { height: 24px; padding: 0 8px; border: 1px solid var(--border-hover); border-radius: 4px; background: transparent; color: var(--text); font-size: 12px; cursor: pointer; white-space: nowrap; }
-  .row-panel .cbtn.value { border-color: transparent; font-family: var(--font-mono); }
-  .row-panel .cbtn.sym { width: 24px; padding: 0; font-weight: 700; }
-  .row-panel .cbtn[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--bg); }
-  .row-panel .cbtn:disabled { opacity: .4; cursor: default; }
-  .row-panel .rp-close { margin-left: auto; flex: none; width: 24px; height: 24px; border: 0; border-radius: 4px; background: transparent; color: var(--muted); cursor: pointer; font-size: 13px; }
-  .track-row-wrapper.panel-open .track-name { color: var(--accent-text); }
-  .track-row-wrapper.panel-open .track-left { background: var(--surface-2); }
-  .track-row-wrapper.panel-open .row-panel .rp-title { display: none; }
+  html[data-rows="tallwho"] .act-group .tl-btn:disabled { opacity: .4; cursor: default; }
 
   /* The chip: a 6px straight line in the track's colour down the row's left edge, full height, with the drag
      grip inside it as three dark dots. It is the drag handle. It never changes with mute, solo or docking.
-     The same mark is used wherever the track's colour appears: the dock's tabs and the row panel. */
-  html[data-rows^="tall"] .track-left, html[data-rows^="flat"] .track-left { position: relative; padding-left: 24px; border-radius: 0 4px 4px 0; }
-  html[data-rows^="tall"] .glyph-tile, html[data-rows^="flat"] .glyph-tile { display: none; }
-  html[data-rows^="tall"] .cat-chip, html[data-rows^="flat"] .cat-chip, html[data-crap="on"][data-rows^="tall"] .cat-chip, html[data-crap="on"][data-rows^="flat"] .cat-chip { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 0; background: var(--cat); cursor: grab; }
-  html[data-rows^="tall"] .cat-chip::before, html[data-rows^="flat"] .cat-chip::before { content: ''; position: absolute; left: 2px; top: 50%; width: 4px; height: 12px; margin-top: -6px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
-  .row-panel .rp-chip { width: 6px; position: relative; background: var(--cat); }
-  .row-panel .rp-chip::before { content: ''; position: absolute; left: 2px; top: 50%; width: 4px; height: 12px; margin-top: -6px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
-
-  /* Simple tile: chip, name, instrument and the transpose readout; nothing else in the row. The tile opens the
-     per-instrument panel, the dock's Track pane, where mute, solo, transpose, steps, instrument, lane, copy, paste,
-     clear and delete live. Column 153 = one beat. */
-  html[data-rows$="simple"] { --track-left-width: 153px; }
-  html[data-rows$="simple"] .line2, html[data-rows$="simple"] .pill-tr, html[data-rows$="simple"] .pill-steps { display: none; }
-  html[data-rows="tallsimple"] .track-name { display: flex; flex-direction: column; align-items: stretch; justify-content: center; height: 38px; line-height: 16px; text-align: left; }
-  html[data-rows="tallsimple"] .track-name .inst { display: block; font-size: 11px; line-height: 14px; font-weight: 400; color: var(--muted); overflow: hidden; text-overflow: ellipsis; }
-  html[data-rows="tallsimple"] .track-name .tr { position: absolute; right: 12px; top: 8px; margin: 0; }
-  html[data-rows="flatsimple"] .track-name { display: block; height: 36px; line-height: 36px; text-overflow: ellipsis; text-align: left; }
-  html[data-rows="flatsimple"] .track-name .inst { display: none; }
-  html[data-rows="flatsimple"] .track-name .tr { float: right; line-height: 36px; }
-
-  /* Cell tiles keep the flat lattice and the selected-track bar; the line-two action group exists for the complete tiles only. */
-  html[data-rows="tiles"] { --row-opt-h: 36px; }
-  html[data-rows="tiles"] .track-row { height: 36px; padding: 0; }
-  html[data-rows="tiles"] .tracks-inner .rows, html[data-rows="tiles"] .tracks-inner { gap: 3px; }
-  html[data-rows="tiles"] .selected-bar { display: flex; }
-  html[data-rows="tiles"] .velocity-lane { margin-top: 3px; }
-  html .line2 .group.act-group { display: none; gap: 2px; }
-  html[data-rows$="full"] .line2 .group.act-group { display: inline-flex; }
-  .act-group .tl-btn { font-size: 12px; font-weight: 500; }
-  .act-group .tl-btn.copy-source { background: var(--success); border-color: var(--success); color: var(--bg); }
-  .act-group .tl-btn.paste { border-color: var(--info-text); color: var(--info-text); }
-  .act-group .tl-btn:disabled { opacity: .4; cursor: default; }
-  /* Legend for the three signals a cell carries. */
+     The same mark is used on the dock's track tabs. */
+  html[data-rows^="tall"] .track-left { position: relative; padding-left: 24px; border-radius: 0 4px 4px 0; }
+  html[data-rows^="tall"] .cat-chip { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 0; background: var(--cat); cursor: grab; }
+  html[data-rows^="tall"] .cat-chip::before { content: ''; position: absolute; left: 2px; top: 50%; width: 4px; height: 12px; margin-top: -6px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
+  /* Legend for the signals a cell carries. The badge swatch is hidden: it was caught by the tile's old .badge hide
+     rule, and this cleanup keeps the page pixel-identical. Delete this rule to show it. */
+  .audit-legend i.badge { display: none; }
   .audit-legend { flex: 0 0 100%; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); padding-top: 2px; }
   .audit-legend span { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; }
   .audit-legend i { display: inline-block; width: 16px; height: 16px; border-radius: 3px; background: var(--color-accent); border: 2px solid var(--accent-hi); position: relative; }
@@ -624,8 +462,8 @@
   .audit-legend i.bridge { border-radius: 0 3px 3px 0; border-left-color: transparent; } .audit-legend i.bridge::before { content: ''; position: absolute; left: -7px; top: -2px; bottom: -2px; width: 7px; background: var(--color-accent); }
   .audit-legend i.fold::after { content: ''; position: absolute; right: -2px; bottom: -2px; width: 6px; height: 6px; background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.6) 50%); }
   .audit-legend i.kept { background: var(--surface-2); border: 2px dashed color-mix(in srgb, var(--color-accent) 55%, transparent); }
-  /* Example cells: real .step-cell elements on the current lattice, placed by the same code as the rows, so the strip
-     shows exactly how an attack, the ties that carry it, a second attack and a quiet step read on the chosen option. */
+  /* Example cells: real .step-cell elements on the row lattice, decorated by the same code as the rows, so the strip
+     shows exactly how an attack, the ties that carry it, a second attack and a quiet step read in the rows. */
   .legend-demo { flex: 0 0 100%; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; padding: 4px 0 2px; }
   .legend-demo .step-grid { flex: none; }
   .legend-demo .step-cell { cursor: default; }
@@ -663,7 +501,7 @@
   html[data-ui="one"] .tray > .cbtn:first-child { border-radius: 4px 0 0 4px; } html[data-ui="one"] .tray > .cbtn:last-child { border-radius: 0 4px 4px 0; } html[data-ui="one"] .tray > .cbtn:only-child { border-radius: 4px; }
   html[data-ui="one"] .tray > .cbtn:not([aria-pressed]):not([aria-expanded]):not(.value) + .cbtn:not([aria-pressed]):not([aria-expanded]):not(.value) { box-shadow: inset 1px 0 0 var(--surface); }
   html[data-ui="one"] .tray > .cbtn[aria-pressed] + .cbtn[aria-pressed] { border-left-width: 0; }
-  html[data-ui="one"] .pane .k, html[data-ui="one"] .bpm span, html[data-ui="one"] .audit-bar .k { font: 500 11px/1 var(--font-ui); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  html[data-ui="one"] .pane .k, html[data-ui="one"] .bpm span { font: 500 11px/1 var(--font-ui); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   html[data-ui="one"] .pane .value, html[data-ui="one"] .pane input, html[data-ui="one"] .pane select, html[data-ui="one"] .bpm b { font-family: var(--font-ui); }
   html[data-ui="one"] .bpm b { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
   html[data-ui="one"] .grid-gutter { position: absolute; top: 0; bottom: 0; width: 3px; background: rgb(0 0 0 / 38%); }
@@ -789,24 +627,22 @@
 
   const el = (cls, parent, tag) => { const d = document.createElement(tag || 'div'); if (cls) d.className = cls; if (parent) parent.appendChild(d); return d; };
   const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const rowFix = () => document.documentElement.dataset.rowfix === 'on';
-  const dockFix = () => document.documentElement.dataset.dockfix === 'on';
 
   // ---------- tracks: steps + parameter locks, as in the app ----------
-  function mk(id, name, kind, inst, badge, cat, transpose, range) {
-    return { id, name, kind, inst, badge, cat, transpose: transpose || 0, range, steps: new Array(STEPS).fill(false), locks: new Array(STEPS).fill(null), pattern: null, bars: [], defaultVelocity: 1 };
+  function mk(id, name, kind, inst, cat, transpose, range) {
+    return { id, name, kind, inst, cat, transpose: transpose || 0, range, steps: new Array(STEPS).fill(false), locks: new Array(STEPS).fill(null), pattern: null, bars: [], defaultVelocity: 1 };
   }
   // Seeded from the owner's session "Piano in A Minor Pentatonic" (keyboardia.dev/s/630cd593…), 96 BPM, 16 steps used
   // of 128; the 16-step pattern is repeated on page 2 so the page gap has something to show.
-  const piano = mk('piano', 'Piano', 'melodic', 'Piano', 'SMP', 'var(--cat-keys)', 0, { min: 21, max: 108, optMin: 36, optMax: 96 });
-  const akick = mk('akick', 'Ac. Kick', 'drum', 'Ac. Kick', 'SMP', 'var(--cat-drums)');
-  const snare = mk('snare', 'Brush Snare', 'drum', 'Brush Snare', 'SMP', 'var(--cat-drums)');
-  const clap = mk('clap', 'Clap', 'drum', 'Clap', 'SYN', 'var(--cat-drums)');
-  const duo = mk('duo', 'Duo', 'melodic', 'Duo', 'SYN', 'var(--cat-leads)', 0, { min: 36, max: 96, optMin: 48, optMax: 84 });
+  const piano = mk('piano', 'Piano', 'melodic', 'Piano', 'var(--cat-keys)', 0, { min: 21, max: 108, optMin: 36, optMax: 96 });
+  const akick = mk('akick', 'Ac. Kick', 'drum', 'Ac. Kick', 'var(--cat-drums)');
+  const snare = mk('snare', 'Brush Snare', 'drum', 'Brush Snare', 'var(--cat-drums)');
+  const clap = mk('clap', 'Clap', 'drum', 'Clap', 'var(--cat-drums)');
+  const duo = mk('duo', 'Duo', 'melodic', 'Duo', 'var(--cat-leads)', 0, { min: 36, max: 96, optMin: 48, optMax: 84 });
   // Bass is not in the session: it is a demonstration row with every kind of lock, so the marks can be compared on
   // both lattices in one view. Held notes (ties), volumes from 30% to 80%, an envelope lock, and a lock kept on an
   // off step.
-  const bass = mk('bass', 'Bass', 'melodic', 'Sub Bass', 'SYN', 'var(--cat-bass)', 0, { min: 24, max: 84, optMin: 28, optMax: 60 });
+  const bass = mk('bass', 'Bass', 'melodic', 'Sub Bass', 'var(--cat-bass)', 0, { min: 24, max: 84, optMin: 28, optMax: 60 });
   // Sample ids and names follow production's catalogue (shared/instrument-catalog.ts). Bass is the one renamed track.
   piano.sid = 'sampled:piano'; bass.sid = 'advanced:sub-bass'; akick.sid = 'sampled:acoustic-kick'; snare.sid = 'sampled:brushes-snare'; clap.sid = 'clap'; duo.sid = 'tone:duo-lead';
   piano.voice = 'piano'; duo.voice = 'lead'; bass.voice = 'lead'; akick.voice = 'kick'; snare.voice = 'snare'; clap.voice = 'clap';
@@ -1068,23 +904,14 @@
   // Production's naming rule: the row shows the track name only. The instrument appears where a name is shown in full
   // (tooltip, dock title) and only once the track has been renamed away from its instrument's catalogue name.
   const renamed = t => t.name !== t.inst;
-  const instSuffix = t => renamed(t) ? ' · ' + t.inst : '';
   const nameTooltip = t => (renamed(t) ? 'Instrument: ' + t.inst + '\n' : '') + 'ID: ' + t.sid + '\nDouble-click to rename';
   function updateIdentity(t) {
     t.nameEl.replaceChildren();
-    const tick = el('tick', t.nameEl); tick.style.setProperty('--cat',t.cat);
     const nm=el('nm',t.nameEl,'span');nm.textContent=t.name;t.nameEl.title=nameTooltip(t);const chev=el('chev',t.nameEl,'span');chev.innerHTML=ICON.chevronDown;chev.setAttribute('aria-hidden','true');
-    if (t.kind === 'melodic') { const tr=el('tr',t.nameEl);tr.textContent=t.transpose===0?'':trLabel(t); }
-    const inst=el('inst',t.nameEl,'span');inst.textContent=t.inst;
-    inst.addEventListener('click',e=>{if(document.documentElement.dataset.rows==='tallwho'){e.stopPropagation();e.preventDefault();audition(t,BASE_MIDI+t.transpose,1);}});inst.title='Preview '+t.inst+': play one note';
     if(t.wrap)t.wrap.style.setProperty('--cat',t.cat);
-    if(t.captionEl){t.captionEl.replaceChildren();t.captionEl.append(document.createTextNode(t.name));const ci=el('ci',t.captionEl,'span');ci.textContent='· '+t.inst;const cr=el('cr',t.captionEl,'span');cr.textContent=(t.kind==='melodic'?trLabel(t)+' st · ':'')+STEPS+' steps';}
     if(t.pillTr){t.pillTr.textContent=t.kind==='melodic'?trLabel(t):'—';}
-    if(t.glyphEl){t.glyphEl.textContent=t.name.slice(0,2);t.glyphEl.setAttribute('aria-label','Open '+t.name);t.glyphEl.title=t.name+' · '+t.inst;}
-    if(ui.selectedBar)renderSelectedBar();
     t.nameEl.setAttribute('aria-label', 'Preview ' + t.name + '; double-click to rename');
     if (t.tabEl) { t.tabEl.replaceChildren(); const tick=el('tick',t.tabEl);tick.style.setProperty('--cat',t.cat);t.tabEl.append(document.createTextNode(t.name)); }
-    if (t.badgeEl) t.badgeEl.setAttribute('aria-label','Preview '+t.name);
     const mute=t.wrap?.querySelector('.mute-button'),solo=t.wrap?.querySelector('.solo-button');if(mute)mute.setAttribute('aria-label','Mute '+t.name);if(solo)solo.setAttribute('aria-label','Solo '+t.name);
   }
   // A hold discloses without toggling; movement cancels the hold and scrolling stays native.
@@ -1118,8 +945,6 @@
     const wrap=el('track-row-wrapper kind-'+t.kind,parent);t.wrap=wrap;
     const row=el('track-row',wrap);
     const left=el('track-left',row);const chip=el('cat-chip',left);chip.title='Drag to reorder';chip.setAttribute('aria-hidden','true');
-    const grip=el('drag-handle',left);grip.textContent=rowFix()?'⠿':'⋮⋮';t.gripEl=grip;grip.setAttribute('aria-hidden','true');grip.title='Layout preview: reorder is not implemented here';
-    const glyph=el('glyph-tile',left,'button');t.glyphEl=glyph;glyph.addEventListener('click',()=>openDock(t,t.kind==='melodic'?'notes':'track',glyph));
     const name=el('track-name',left,'button');t.nameEl=name;
     const pillTr=el('pill-tr',left,'button');t.pillTr=pillTr;pillTr.title='Transpose: opens the Track pane';pillTr.setAttribute('aria-label','Transpose '+t.name);pillTr.addEventListener('click',()=>openDock(t,'track',pillTr));
     const pillSteps=el('pill-steps',left,'button');pillSteps.textContent=String(STEPS);pillSteps.title='Step count: opens the Track pane';pillSteps.setAttribute('aria-label','Step count '+t.name);pillSteps.addEventListener('click',()=>openDock(t,'track',pillSteps));
@@ -1133,11 +958,9 @@
     name.addEventListener('dblclick',()=>{clearTimeout(nameTimer);renameTrack(t);});
     const line2=el('line2',left),state=el('group',line2),disclose=el('group',line2);
     const m=el('tl-btn mute-button',state,'button');m.textContent='M';m.setAttribute('aria-label','Mute '+t.name);m.setAttribute('aria-pressed','false');
-    m.addEventListener('click',()=>{t.muted=!t.muted;m.classList.toggle('active',t.muted);m.setAttribute('aria-pressed',String(t.muted));row.classList.toggle('muted',t.muted);renderSelectedBar();});
+    m.addEventListener('click',()=>{t.muted=!t.muted;m.classList.toggle('active',t.muted);m.setAttribute('aria-pressed',String(t.muted));row.classList.toggle('muted',t.muted);});
     const so=el('tl-btn solo-button',state,'button');so.textContent='S';so.setAttribute('aria-label','Solo '+t.name);so.setAttribute('aria-pressed','false');
-    so.addEventListener('click',()=>{t.soloed=!t.soloed;so.classList.toggle('active',t.soloed);so.setAttribute('aria-pressed',String(t.soloed));renderSelectedBar();});
-    const badge=el('badge'+(t.kind==='melodic'?'':' drum'),disclose,'button');t.badgeEl=badge;badge.textContent=t.badge;badge.title='Preview '+t.inst+': play one note';
-    badge.addEventListener('click',()=>audition(t,BASE_MIDI+t.transpose,1));
+    so.addEventListener('click',()=>{t.soloed=!t.soloed;so.classList.toggle('active',t.soloed);so.setAttribute('aria-pressed',String(t.soloed));});
     const ex=el('expand-toggle',disclose,'button');t.toggleEl=ex;
     ex.innerHTML=ICON.keys;ex.setAttribute('aria-label',t.kind==='melodic'?'Notes: open the piano roll for '+t.name:'No pitch view for '+t.name);ex.title=t.kind==='melodic'?'Notes':'';
     ex.setAttribute('aria-expanded','false');
@@ -1152,9 +975,8 @@
     const act=el('group act-group',line2);
     const miniCopy=el('tl-btn',act,'button');miniCopy.innerHTML=ICON.copy;t.miniCopy=miniCopy;miniCopy.addEventListener('click',()=>t.copyEl.click());
     const miniClear=el('tl-btn',act,'button');miniClear.innerHTML=ICON.clear;miniClear.setAttribute('aria-label','Clear '+t.name+' pattern');miniClear.title='Clear pattern';miniClear.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(2)').click());
-    const more=el('tl-btn more-btn',act,'button');more.textContent='⋯';more.setAttribute('aria-label','More for '+t.name+': paste, clear, rename, delete');more.title='Paste, clear, rename, delete: opens the Track pane';more.addEventListener('click',()=>openDock(t,'track',more));
     const miniDelete=el('tl-btn',act,'button');miniDelete.innerHTML=ICON.bin;miniDelete.setAttribute('aria-label','Delete '+t.name+' track');miniDelete.title='Delete track';miniDelete.addEventListener('click',()=>t.wrap.querySelector('.row-actions button:nth-child(3)').click());
-    const stepsEl=el('steps',row);const cap=el('row-caption',stepsEl,'button');t.captionEl=cap;cap.addEventListener('click',()=>openDock(t,'track',cap));
+    const stepsEl=el('steps',row);
     const grid=el('step-grid',stepsEl);grid.setAttribute('role','group');grid.setAttribute('aria-label',t.name+' pattern');
     t.cells=[];
     for(let i=0;i<STEPS;i++){
@@ -1201,7 +1023,6 @@
   }
   function syncRow(t) {
     computeBars(t);
-    const tr=t.nameEl.querySelector('.tr');if(tr)tr.textContent=t.transpose===0?'':trLabel(t);
     t.cells.forEach((c,i)=>{
       const on=!!t.steps[i],locked=!!t.locks[i]&&Object.keys(t.locks[i]).length>0;
       c.classList.toggle('active',on);c.classList.toggle('has-lock',locked);c.classList.toggle('tie',on&&!!t.locks[i]?.tie);
@@ -1218,21 +1039,6 @@
       decorateCell(c,{on,melodic:t.kind==='melodic',pitch:on?stepMidi(t,i)-BASE_MIDI-t.transpose:(t.locks[i]?.pitch??0),vol:stepVel(t,i),tie:!!t.locks[i]?.tie,next:i+1<STEPS&&!!t.steps[i+1]&&!!t.locks[i+1]?.tie,env:hasEnv,gap:i%PAGE_STEPS===0?PAGE_GAP+GAP:GAP});
     });
   }
-  // Selected-track bar (quiet head and cell-tile options): the per-track controls that left the row, for the docked track.
-  function renderSelectedBar() {
-    const bar=ui.selectedBar;if(!bar)return;const mode=document.documentElement.dataset.rows;if(mode!=='quiet'&&mode!=='tiles'){bar.replaceChildren();return;}
-    const t=dock.track||tracks[0];if(!t)return;bar.replaceChildren();bar.style.setProperty('--cat',t.cat);
-    el('sb-chip',bar);el('sb-name',bar,'span').textContent=t.name;el('sb-inst',bar,'span').textContent=t.inst;
-    const button=(label,handler,cls)=>{const b=el('cbtn'+(cls?' '+cls:''),bar,'button');b.textContent=label;b.addEventListener('click',handler);return b;};
-    if(t.kind==='melodic'){el('k',bar,'span').textContent='Transpose';const minus=button('−',()=>{t.transpose--;trackChanged(t);renderPane();},'sym');minus.innerHTML=ICON.minus;minus.setAttribute('aria-label','Track transpose down');minus.disabled=t.transpose<=-24;el('cbtn value',bar,'span').textContent=trLabel(t);const plus=button('+',()=>{t.transpose++;trackChanged(t);renderPane();},'sym');plus.innerHTML=ICON.plus;plus.setAttribute('aria-label','Track transpose up');plus.disabled=t.transpose>=24;}
-    el('k',bar,'span').textContent='Steps';const steps=el('cbtn value',bar,'span');steps.textContent=String(STEPS);steps.title='Integration preview';
-    const lane=button('Velocity lane',()=>{t.lane.hidden=!t.lane.hidden;t.laneToggle.setAttribute('aria-expanded',String(!t.lane.hidden));renderSelectedBar();});lane.setAttribute('aria-pressed',String(!t.lane.hidden));
-    if(t.kind==='melodic'){const notes=button('Notes',()=>openDock(t,'notes',notes));notes.setAttribute('aria-pressed',String(dock.open&&dock.track===t&&dock.pane==='notes'));}
-    el('spacer',bar);
-    const m=el('tl-btn mute-button'+(t.muted?' active':''),bar,'button');m.textContent='M';m.setAttribute('aria-pressed',String(!!t.muted));m.addEventListener('click',()=>t.wrap.querySelector('.mute-button').click());
-    const so=el('tl-btn solo-button'+(t.soloed?' active':''),bar,'button');so.textContent='S';so.setAttribute('aria-pressed',String(!!t.soloed));so.addEventListener('click',()=>t.wrap.querySelector('.solo-button').click());
-    const more=button('⋯',()=>{},'quiet');more.disabled=true;more.title='Pattern tools preview';
-  }
   function trackChanged(t, refreshPane=true) {
     syncRow(t);syncActions();if(dock.open){if(dock.track===t)drawNotes(false);drawGhosts();if(refreshPane&&dock.track===t&&dock.pane==='step')renderPane();}
   }
@@ -1240,9 +1046,8 @@
   function displayMode(){if(innerWidth>=768&&innerHeight>=500)return 'desktop';if(innerHeight<500||innerWidth>innerHeight)return 'landscape';return 'portrait';}
   const isLandscape=()=>displayMode()==='landscape';
   const isPortrait=()=>displayMode()==='portrait';
-  const WHITE_SPAN={0:[0,1.5],2:[-.5,1.5],4:[-.5,1],5:[0,1.5],7:[-.5,1.5],9:[-.5,1.5],11:[-.5,1]};
-  // Whole-row spans (dock fix): C 2, D 2, E 1, F 2, G 2, A 2, B 1 = 12 rows; every key edge on a row line.
-  const WHITE_SPAN_FIX={0:[0,2],2:[0,2],4:[0,1],5:[0,2],7:[0,2],9:[0,2],11:[0,1]};
+  // Whole-row white keys: C 2, D 2, E 1, F 2, G 2, A 2, B 1 = 12 rows; every key edge on a row line.
+  const WHITE_SPAN={0:[0,2],2:[0,2],4:[0,1],5:[0,2],7:[0,2],9:[0,2],11:[0,1]};
   function renderDock(parent) {
     const d=el('dock',parent);ui.dock=d;d.inert=true;d.setAttribute('aria-hidden','true');d.setAttribute('role','region');d.setAttribute('aria-label','Track editor');
     const innerD=el('dock-inner',d),head=el('dock-head',innerD);ui.head=head;
@@ -1276,11 +1081,13 @@
     const scroll=el('dock-scroll',body);ui.scroll=scroll;
     const grid=el('grid',scroll);grid.style.width=GRID_WIDTH+'px';ui.grid=grid;
     ui.rowEls=Array.from({length:ROWS},()=>el('row',grid));
-    const lines=el('lines',grid);ui.lines=lines;
-    ui.drawLines=()=>{lines.replaceChildren();for(let i=0;i<STEPS;i++){
-      if(dockFix()){if(i===0)continue;const page=i%PAGE_STEPS===0;if(!page){const g=el('grid-gutter',lines);g.style.left=cellRight(i-1)+'px';}const line=el('grid-line'+(page?' bar':i%4===0?' beat':''),lines);line.style.left=(page?stepX(i)-6:stepX(i)-2)+'px';if(page){const band=el('page-band',lines);band.style.left=cellRight(i-1)+'px';}}
-      else{const line=el('grid-line'+(i%16===0?' bar':i%4===0?' beat':''),lines);line.style.left=stepX(i)+'px';if(i>0&&i%PAGE_STEPS===0){const band=el('page-band',lines);band.style.left=cellRight(i-1)+'px';}}
-    }};ui.drawLines();
+    const lines=el('lines',grid);
+    // Grid lines sit in the gaps between columns: a dark gutter with the line inside it, and a band in the page gap.
+    for(let i=1;i<STEPS;i++){
+      const page=i%PAGE_STEPS===0;if(!page){const g=el('grid-gutter',lines);g.style.left=cellRight(i-1)+'px';}
+      const line=el('grid-line'+(page?' bar':i%4===0?' beat':''),lines);line.style.left=(page?stepX(i)-6:stepX(i)-2)+'px';
+      if(page){const band=el('page-band',lines);band.style.left=cellRight(i-1)+'px';}
+    }
     ui.shadeL=el('loop-shade',grid);ui.shadeR=el('loop-shade',grid);
     ui.hlRow=el('hl-row',grid);ui.hlCol=el('hl-col',grid);ui.selCol=el('sel-col',grid);
     ui.ghostsLayer=el('ghosts',grid);ui.notesLayer=el('notes',grid);ui.ghost=el('ghost',grid);
@@ -1336,11 +1143,11 @@
     // Choose only the text foreground from the actual CSS fill; CSS still owns every velocity colour.
     node.style.setProperty('--note-label-ink',(l+.05)/.056>=1.05/(l+.05)?'#121212':'#ffffff');
   }
-  // Bar height: 14/18 of the row as specified, or (dock fix) the row minus an inset equal to the cell border.
+  // Bar height: the row minus an inset equal to the cell border, so bars sit on whole pixels.
   const barInset = () => H>=18?2:H>=4?1:0;
-  const barH = () => dockFix()?H-2*barInset():Math.max(1,H*14/18);
-  const ghostH = () => dockFix()?Math.max(1,barH()-2):Math.max(1,H*12/18);
-  const barRadius = h => Math.min(dockFix()?2:3,h/2);
+  const barH = () => H-2*barInset();
+  const ghostH = () => Math.max(1,barH()-2);
+  const barRadius = h => Math.min(2,h/2);
   function drawNotes(fade) {
     const t=dock.track;if(!t)return;const layer=ui.notesLayer,version=++paintVersion;
     const paint=()=>{if(version!==paintVersion||t!==dock.track)return;computeBars(t);layer.replaceChildren();ui.noteEls=[];
@@ -1356,7 +1163,7 @@
     H=clamp(value,2,36);document.documentElement.style.setProperty('--pitch-row-height',H+'px');
     ui.grid.style.height=ui.rail.style.height=ui.keycol.style.height=ROWS*H+'px';
     ui.rowEls.forEach((r,i)=>{r.style.top=i*H+'px';r.style.height=H+'px';});
-    ui.keyList.forEach(([midi,k])=>{let top,height,pad=0;if(isBlack(midi)){top=(MIDI_MAX-midi)*H;height=H;}else{const span=(dockFix()?WHITE_SPAN_FIX:WHITE_SPAN)[pc(midi)],rb=midi-MIDI_MIN;top=Math.max(0,(ROWS-rb-span[1])*H);height=Math.min(ROWS*H,(ROWS-rb-span[0])*H)-top;if(dockFix())pad=(span[1]-1)*H;}k.style.top=top+'px';k.style.height=height+'px';k.style.paddingTop=pad+'px';});
+    ui.keyList.forEach(([midi,k])=>{let top,height,pad=0;if(isBlack(midi)){top=(MIDI_MAX-midi)*H;height=H;}else{const span=WHITE_SPAN[pc(midi)],rb=midi-MIDI_MIN;top=Math.max(0,(ROWS-rb-span[1])*H);height=Math.min(ROWS*H,(ROWS-rb-span[0])*H)-top;pad=(span[1]-1)*H;}k.style.top=top+'px';k.style.height=height+'px';k.style.paddingTop=pad+'px';});
     ui.hlRow.style.height=ui.focusMarker.style.height=H+'px';ui.ghost.style.height=barH()+'px';ui.ghost.style.width=STEP_W+'px';
     ui.grid.classList.toggle('overview',H<12);ui.keycol.classList.toggle('overview',H<12);
     applyClasses();if(dock.track){drawNotes(false);drawGhosts();}moveGridCursor(false);
@@ -1367,9 +1174,9 @@
   }
   function fitComparison(initial=false) {
     if(!dock.track||dock.track.kind!=='melodic')return;
-    const mids=(initial===true&&dockFix())?(computeBars(dock.track),dock.track.bars.map(b=>b.midi)):comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
+    const mids=initial===true?(computeBars(dock.track),dock.track.bars.map(b=>b.midi)):comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
     const lo=Math.min(...mids),hi=Math.max(...mids),viewport=parseFloat(getComputedStyle(ui.scroll).height)||252;
-    if(initial===true&&dockFix()){
+    if(initial===true){
       // Opening never squeezes the roll below the spec's default H (18px, a 36 × 18 cell). If the track's range does
       // not fit the compact body, the dock opens tall; if it still does not fit, it scrolls to centre the notes.
       // "Fit comparison" remains the way to trade cell height for a whole-range overview.
@@ -1380,7 +1187,7 @@
       ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,fits(view)?(MIDI_MAX-hi-2)*H-Math.max(0,(view-need*H)/2):centre-view/2);ui.scroll.dispatchEvent(new Event('scroll'));
       setStatus('Showing '+dock.track.name+' at '+H+'px per semitone'+(fits(view)?'.':'; scroll for the rest of its range, or Fit comparison for all of it.'));return;
     }
-    const raw=viewport/(hi-lo+5);setPitchHeight(clamp(dockFix()?Math.floor(raw):raw,2,initial===true?18:36));
+    setPitchHeight(clamp(Math.floor(viewport/(hi-lo+5)),2,36));
     ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-hi-2)*H);ui.scroll.dispatchEvent(new Event('scroll'));
     setStatus('Showing '+dock.track.name+' and enabled comparison tracks. Zoom in for detail.');
   }
@@ -1398,25 +1205,8 @@
     const top=(MIDI_MAX-midi)*H;if(top<ui.scroll.scrollTop)ui.scroll.scrollTop=top;else if(top+H>ui.scroll.scrollTop+ui.scroll.clientHeight)ui.scroll.scrollTop=top+H-ui.scroll.clientHeight;
     ui.scroll.dispatchEvent(new Event('scroll'));
   }
-  const rowPanel=()=>document.documentElement.dataset.panel==='row';
-  let openRowPanel=null;
-  function closeRowPanel(){if(!openRowPanel)return;const {t,panel}=openRowPanel;panel.remove();t.wrap.classList.remove('panel-open');openRowPanel=null;}
-  function toggleRowPanel(t,opener){
-    if(openRowPanel&&openRowPanel.t===t){closeRowPanel();return;}
-    closeRowPanel();
-    const panel=el('row-panel',null,'section');panel.setAttribute('aria-label',t.name+' panel');
-    t.wrap.insertBefore(panel,t.wrap.querySelector('.track-row').nextSibling);t.wrap.classList.add('panel-open');
-    openRowPanel={t,panel,opener};renderRowPanel();
-  }
-  function renderRowPanel(){
-    if(!openRowPanel)return;const {t,panel}=openRowPanel;panel.replaceChildren();
-    el('rp-chip',panel);const title=el('rp-title',panel);title.textContent=t.name;el('',title,'small').textContent=t.inst;
-    renderTrackTools(panel,t,renderRowPanel);
-    const close=el('rp-close',panel,'button');close.textContent='✕';close.setAttribute('aria-label','Close panel');close.addEventListener('click',closeRowPanel);
-  }
   function openDock(t,pane,opener) {
     if(isPortrait()||t.deleted)return;
-    if(rowPanel()&&(pane==='track'||(pane!=='notes')||t.kind!=='melodic')){toggleRowPanel(t,opener);return;}
     const switching=dock.track!==t,wasOpen=dock.open;
     if(ui.cancelDrag)ui.cancelDrag();
     if(!wasOpen)dock.opener=opener||t.nameEl;
@@ -1424,7 +1214,7 @@
     if(switching){dock.selectedStep=null;dock.cursorStep=0;dock.cursorMidi=BASE_MIDI+t.transpose;}if(switching||!wasOpen)dock.fitPending=true;
     if(!wasOpen){dock.pan=isLandscape();ui.hit.classList.toggle('pan',dock.pan);}
     ui.dock.classList.add('open');ui.dock.inert=false;ui.dock.setAttribute('aria-hidden','false');
-    tracks.forEach(o=>{o.wrap.classList.toggle('docked',o===t);o.tabEl.classList.toggle('active',o===t);o.tabEl.setAttribute('aria-pressed',String(o===t));syncRow(o);});renderSelectedBar();
+    tracks.forEach(o=>{o.wrap.classList.toggle('docked',o===t);o.tabEl.classList.toggle('active',o===t);o.tabEl.setAttribute('aria-pressed',String(o===t));syncRow(o);});
     applyClasses();drawNotes(switching&&wasOpen);drawGhosts();renderPane();updateMode();ui.fitHead();
     if(dock.pane==='notes'&&dock.fitPending)setTimeout(()=>{if(dock.track===t&&dock.pane==='notes'){fitComparison(true);dock.fitPending=false;}},0);
     if(!wasOpen)ui.paneChips[dock.pane].focus({preventScroll:true});
@@ -1437,7 +1227,7 @@
     if(ui.cancelDrag)ui.cancelDrag();
     dock.open=false;++paintVersion;ui.notesLayer.classList.remove('fading');ui.dock.classList.remove('open');ui.dock.inert=true;ui.dock.setAttribute('aria-hidden','true');
     tracks.forEach(o=>{o.wrap.classList.remove('docked');o.toggleEl.classList.remove('active');if(o.toolsEl)o.toolsEl.classList.remove('active');o.toggleEl.setAttribute('aria-expanded','false');o.tabEl.setAttribute('aria-pressed','false');syncRow(o);});
-    ui.selCol.classList.remove('on');updateMode();renderSelectedBar();
+    ui.selCol.classList.remove('on');updateMode();
     const opener=dock.opener;if(opener&&opener.isConnected&&!opener.closest('[inert]'))opener.focus({preventScroll:true});else (isPortrait()?document.getElementById('portraitPlay'):playBtn).focus({preventScroll:true});
   }
   function selectStep(t,i,opener) { openDock(t,'step',opener);dock.selectedStep=i;dock.cursorStep=i;dock.cursorMidi=stepMidi(t,i)||BASE_MIDI+t.transpose;renderPane();ensurePitchVisible(dock.cursorMidi);moveGridCursor(false); }
@@ -1448,7 +1238,7 @@
     ui.title.textContent=(inst?inst+' · ':'')+'Step '+(step+1)+' · '+noteName(effective)+' · v'+Math.round(stepVel(t,step)*127);
   }
   // The per-instrument controls: transpose, lane, preview, rename, mute, solo, copy/paste, clear, delete.
-  // Rendered into the dock's Track pane, or into the panel under the row (option U). `refresh` re-renders the host.
+  // Rendered into the dock's Track pane; `refresh` re-renders it.
   // The Track pane uses the tile's three classes: values and commands are solid chips, state is a hollow box that
   // fills when on, labels are bare text. Related controls share a tray. Actions show icon and word here (room allows).
   function renderTrackTools(p,t,refresh){
@@ -1468,8 +1258,8 @@
     const ac=group('Pattern');const pasting=copySource&&copySource!==t;
     const pc=button(ac,pasting?'Paste':copySource===t?'Copying…':'Copy',()=>{t.copyEl.click();refresh();},{icon:pasting?ICON.paste:ICON.copy});pc.disabled=t.copyEl.disabled;
     button(ac,'Clear',()=>{t.wrap.querySelector('.row-actions button:nth-child(2)').click();refresh();},{icon:ICON.clear});
-    button(ac,'Delete',()=>{closeRowPanel();t.wrap.querySelector('.row-actions button:nth-child(3)').click();},{icon:ICON.bin});
-    button(group('Name'),'Rename',()=>{closeDock();closeRowPanel();renameTrack(t);});
+    button(ac,'Delete',()=>{t.wrap.querySelector('.row-actions button:nth-child(3)').click();},{icon:ICON.bin});
+    button(group('Name'),'Rename',()=>{closeDock();renameTrack(t);});
   }
   function renderPane() {
     const t=dock.track;if(!t)return;
@@ -1677,7 +1467,6 @@
 
   // ---------- build ----------
   renderRuler(inner);
-  ui.selectedBar = el('selected-bar', inner); ui.selectedBar.setAttribute('role','group'); ui.selectedBar.setAttribute('aria-label','Selected track');
   const rowsEl = el('rows', inner); ui.rows = rowsEl;
   ui.copyStatus = document.getElementById('copyStatus');
   tracks.forEach(t => renderTrackRow(rowsEl, t));
@@ -1691,7 +1480,6 @@
   scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); syncScaleBtn(); applyClasses(); });
   window.addEventListener('keydown', e => {
     if(e.defaultPrevented)return;
-    if(e.key==='Escape'&&openRowPanel){closeRowPanel();return;}
     if(e.key==='Escape'){
       if(ui.cancelDrag&&ui.cancelDrag()){e.preventDefault();return;}
       if(copySource){copySource=null;copyData=null;syncActions();setCopyStatus(ICON.copy,'Copy cancelled.',2500);e.preventDefault();return;}
@@ -1701,11 +1489,9 @@
       const t=selection.track;selection.steps.forEach(i=>{t.steps[i]=false;t.locks[i]=null;t.tieOrigins?.delete(i);});trackChanged(t);clearSelection();e.preventDefault();
     }
   });
-  // ---------- audit switches ----------
-  const ROW_OPTS_OLD={reconciled:{row:58,pitch:60,inset:'11',col:154},r50:{row:50,pitch:52,inset:'7',col:154},r48two:{row:48,pitch:50,inset:'6',col:154},r48one:{row:48,pitch:50,inset:'6',col:154},r36one:{row:36,pitch:39,inset:'0',col:154},label:{row:48,pitch:50,inset:'6',col:154},caption:{row:48,pitch:50,inset:'12 / 0',col:64},quiet:{row:36,pitch:39,inset:'0',col:120},tiles:{row:36,pitch:39,inset:'0',col:75},tall:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:216},impeccable:{row:48,pitch:50,inset:'6',col:200}};
-  const ROW_OPTS={tallwho:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:231},tallfull:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:270},flatfull:{row:36,pitch:39,inset:'0',col:465},tallsimple:{row:50,pitch:53,inset:'0 (cells 36 × 50)',col:153},flatsimple:{row:36,pitch:39,inset:'0',col:153},tiles:{row:36,pitch:39,inset:'0',col:75}};
+  // ---------- marks legend ----------
   // Example strip: attack at +7, two ties, attack at −5, rest, attack at 0, tie, then a step at half volume on 0.
-  // Cells are real .step-cell elements and the mark is placed by the row formula, so the strip tracks every switch.
+  // Cells are real .step-cell elements decorated by the rows' own decorateCell, so the strip reads exactly as the rows do.
   const DEMO=[{on:1,p:7},{on:1,p:7,tie:1},{on:1,p:7,tie:1},{on:1,p:-5},{on:0},{on:1,p:0},{on:1,p:0,tie:1},{on:1,p:0,vol:.5},{on:1,p:12,vol:.3},{on:1,p:12,tie:1,vol:.3},{on:1,p:0,env:1},{on:0,p:-12}];
   const DEMO_CAPS=[[3,'one note, 3 steps'],[1,'note'],[1,'rest'],[2,'held 2 steps'],[1,'again'],[2,'quiet, held'],[1,'env.'],[1,'off']];
   function renderLegendDemo(){
@@ -1719,12 +1505,7 @@
     });
     DEMO_CAPS.forEach(([n,text])=>{const l=el('',cap,'span');l.style.width=(n*STEP_W+(n-1)*GAP)+'px';l.textContent=text;});
   }
-  function applyAudit(){
-    const root=document.documentElement,opt=ROW_OPTS[root.dataset.rows||'tallwho'];renderLegendDemo();
-    tracks.forEach(t=>{if(t.gripEl)t.gripEl.textContent=rowFix()?'⠿':'⋮⋮';syncRow(t);});
-    if(ui.drawLines)ui.drawLines();setPitchHeight(H);renderSelectedBar();if(ui.fitHead)ui.fitHead();
-  }
-  const root0=document.documentElement;root0.dataset.ui='one';root0.dataset.rows='tallwho';root0.dataset.panel='dock';root0.dataset.crap='on';root0.dataset.vel='fill';root0.dataset.rowfix='on';root0.dataset.dockfix='on';applyAudit();
+  renderLegendDemo();
   // The page opens with Piano docked so its first frame shows the working state. In the app the dock opens only on request.
   openDock(piano, 'notes');
 })();
