@@ -119,9 +119,16 @@ async function performAction(page: Page, action: StackAAction) {
 }
 
 async function settle(page: Page) {
-  await page.evaluate(() => new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  }));
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    // A menu animates open. Hovering an option mid-animation let the locator's
+    // scroll land on a moving target, leaving the list at 0px or 32px.
+    for (const animation of document.getAnimations()) {
+      if (Number.isFinite(animation.effect?.getTiming().iterations)) animation.finish();
+    }
+  });
 }
 
 async function settleForScreenshot(page: Page) {
