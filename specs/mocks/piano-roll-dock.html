@@ -232,6 +232,12 @@
   .key .lbl { opacity: 0; }
   .key.c .lbl, .key:hover .lbl, .key:focus-visible .lbl, .key.hover .lbl, .key.pressed .lbl { opacity: 1; }
   .keycol.overview .lbl { visibility: hidden; }
+  .key[hidden], .row[hidden] { display: none; }
+  /* Folded: a fold has no key proportions, so every row is a labelled bar with its note name. */
+  .keycol.folded .key { width: 100%; z-index: 1; color: var(--piano-key-label); background: var(--piano-key-white); border-bottom: 1px solid var(--piano-key-surface); border-radius: 0 2px 2px 0; }
+  .keycol.folded .key:hover, .keycol.folded .key.hover { background: var(--piano-key-white-hover); }
+  .keycol.folded .key .lbl { opacity: 1; }
+  .keycol.folded .key.c .lbl { color: var(--text); font-weight: 600; }
   .key.white:hover, .key.white.hover { background: var(--piano-key-white-hover); }
   .key.black:hover, .key.black.hover { background: var(--piano-key-black-hover); }
   .key.pressed { background: var(--accent) !important; transform: translateX(2px); }
@@ -833,6 +839,34 @@
   let paintVersion = 0;
   const dock = { open: false, track: null, pane: 'notes', ghosts: { piano: true, duo: true }, selectedStep: null, tall: false };
   const ui = { noteEls: [], keyEls: new Map() };
+
+  // ---------- pitch rows: chromatic, or folded ----------
+  // Chromatic shows all 97 rows. Fold shows the scale's rows (Scale) or only the pitches that hold a note or an
+  // enabled ghost (Used), and always keeps any row that holds one, so a fold never hides a note. Scale is the
+  // default while the scale lock is on; dock.fold records an explicit choice ('off', 'scale' or 'used').
+  let viewRows = [], rowIndex = new Map();
+  const effectiveFold = () => dock.fold ?? (scaleLocked ? 'scale' : 'off');
+  function contentMidis() {
+    const t = dock.track; if (!t || t.kind !== 'melodic') return [];
+    return [t, ...melodic.filter(o => o !== t && dock.ghosts[o.id])].flatMap(o => { computeBars(o); return o.bars.map(b => b.midi); });
+  }
+  function buildRows(keep) {
+    const fold = effectiveFold(); let set;
+    if (fold === 'off') set = new Set(Array.from({ length: ROWS }, (_, i) => MIDI_MAX - i));
+    else {
+      set = new Set(contentMidis());
+      if (fold === 'scale') for (let m = MIDI_MIN; m <= MIDI_MAX; m++) if (MAJOR.has(pc(m))) set.add(m);
+      if (keep) viewRows.forEach(m => set.add(m));
+      if (!set.size) set.add(BASE_MIDI + (dock.track?.transpose || 0));
+    }
+    viewRows = [...set].sort((a, b) => b - a); rowIndex = new Map(viewRows.map((m, i) => [m, i]));
+    ui.keycol?.classList.toggle('folded', fold !== 'off');
+  }
+  // A pitch that is not shown sits just above the next lower row.
+  function rowOf(midi) { if (rowIndex.has(midi)) return rowIndex.get(midi); const i = viewRows.findIndex(m => m < midi); return i < 0 ? viewRows.length - 1 : i; }
+  const yOf = midi => rowOf(midi) * H;
+  const midiAtY = y => viewRows[clamp(Math.floor(y / H), 0, viewRows.length - 1)];
+  const stepRow = (midi, up) => viewRows[clamp(rowOf(midi) - up, 0, viewRows.length - 1)];
   const inner = document.getElementById('inner');
   const tracksEl = document.getElementById('tracks');
 
@@ -1071,7 +1105,7 @@
     });
   }
   function trackChanged(t, refreshPane=true) {
-    syncRow(t);syncActions();if(dock.open){if(dock.track===t)drawNotes(false);drawGhosts();if(refreshPane&&dock.track===t&&dock.pane==='step')renderPane();}
+    syncRow(t);syncActions();if(dock.open){if(effectiveFold()!=='off'&&contentMidis().some(m=>!rowIndex.has(m))){buildRows(true);setPitchHeight(H);}if(dock.track===t)drawNotes(false);drawGhosts();if(refreshPane&&dock.track===t&&dock.pane==='step')renderPane();}
   }
 
   function displayMode(){if(innerWidth>=768&&innerHeight>=500)return 'desktop';if(innerHeight<500||innerWidth>innerHeight)return 'landscape';return 'portrait';}
@@ -1106,7 +1140,7 @@
     order.forEach(midi=>{
       const k=el('key',keycol,'button');k.innerHTML='<span class="lbl">'+noteName(midi)+'</span>';k.setAttribute('aria-label','Play '+noteName(midi));k.tabIndex=midi===60?0:-1;
       k.addEventListener('click',()=>{if(dock.track)audition(dock.track,midi,1);k.classList.add('pressed');setTimeout(()=>k.classList.remove('pressed'),160);});
-      k.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const next=clamp(midi+(e.key==='ArrowUp'?1:-1),MIDI_MIN,MIDI_MAX);k.tabIndex=-1;const target=ui.keyEls.get(next);target.tabIndex=0;target.focus();ensurePitchVisible(next);}});
+      k.addEventListener('keydown',e=>{if(e.key==='ArrowUp'||e.key==='ArrowDown'){e.preventDefault();const next=stepRow(midi,e.key==='ArrowUp'?1:-1);k.tabIndex=-1;const target=ui.keyEls.get(next);target.tabIndex=0;target.focus();ensurePitchVisible(next);}});
       ui.keyEls.set(midi,k);ui.keyList.push([midi,k]);
     });
     const scroll=el('dock-scroll',body);ui.scroll=scroll;
@@ -1143,7 +1177,7 @@
       ui.overflow();updateMode();if(changed&&dock.open){if(ui.cancelDrag)ui.cancelDrag();requestAnimationFrame(fitComparison);}
     };
     ui.fitHead=fitHead;if(window.ResizeObserver)new ResizeObserver(fitHead).observe(tracksEl);window.addEventListener('resize',fitHead);
-    setPitchHeight(18);fitHead();
+    buildRows(false);setPitchHeight(18);fitHead();
   }
   function updateMode() {
     const mode=displayMode();document.documentElement.dataset.displayMode=mode;
@@ -1165,7 +1199,8 @@
     const t=dock.track||tracks.find(t=>t.kind==='melodic')||piano;
     ui.rowEls.forEach((r,i)=>r.className='row '+rowClasses(MIDI_MAX-i,t));
     ui.keyList.forEach(([midi,k])=>{const hover=k.classList.contains('hover');k.className='key '+rowClasses(midi,t)+(hover?' hover':'');});
-    ui.bracket.style.top=(MIDI_MAX-t.range.optMax)*H+2+'px';ui.bracket.style.height=Math.max(2,(t.range.optMax-t.range.optMin+1)*H-4)+'px';
+    const inRange=viewRows.filter(m=>m>=t.range.optMin&&m<=t.range.optMax);ui.bracket.hidden=!inRange.length;
+    if(inRange.length){ui.bracket.style.top=yOf(inRange[0])+2+'px';ui.bracket.style.height=Math.max(2,(rowOf(inRange[inRange.length-1])-rowOf(inRange[0])+1)*H-4)+'px';}
   }
   function noteInk(node) {
     const value=getComputedStyle(node).backgroundColor;
@@ -1183,19 +1218,20 @@
   function drawNotes(fade) {
     const t=dock.track;if(!t)return;const layer=ui.notesLayer,version=++paintVersion;
     const paint=()=>{if(version!==paintVersion||t!==dock.track)return;computeBars(t);layer.replaceChildren();ui.noteEls=[];
-      (t.kind==='melodic'?t.bars:[]).forEach(b=>{const n=el('note',layer);n.style.left=stepX(b.start)+'px';n.style.width=spanWidth(b.start,b.len)+'px';const bh=barH();n.style.top=(MIDI_MAX-b.midi)*H+((H-bh)/2)+'px';n.style.height=bh+'px';n.style.borderRadius=barRadius(bh)+'px';n.style.setProperty('--note-velocity',String(b.vel));n.classList.toggle('has-vol',b.vel<1);const label=el('bar-label',n);label.textContent=noteName(b.midi);n._bar=b;ui.noteEls.push(n);noteInk(n);});syncRow(t);
+      (t.kind==='melodic'?t.bars:[]).forEach(b=>{const n=el('note',layer);n.style.left=stepX(b.start)+'px';n.style.width=spanWidth(b.start,b.len)+'px';const bh=barH();n.style.top=yOf(b.midi)+((H-bh)/2)+'px';n.style.height=bh+'px';n.style.borderRadius=barRadius(bh)+'px';n.style.setProperty('--note-velocity',String(b.vel));n.classList.toggle('has-vol',b.vel<1);const label=el('bar-label',n);label.textContent=noteName(b.midi);n._bar=b;ui.noteEls.push(n);noteInk(n);});syncRow(t);
     };
     if(fade&&!reduced){layer.classList.add('fading');setTimeout(()=>{paint();layer.classList.remove('fading');},120);}else paint();
   }
   function drawGhosts() {
     ui.ghostsLayer.replaceChildren();
-    melodic.forEach(o=>{if(o===dock.track||!dock.ghosts[o.id])return;computeBars(o);o.bars.forEach(b=>{const g=el('gnote',ui.ghostsLayer);g.style.setProperty('--gc',o.cat);g.style.left=stepX(b.start)+'px';g.style.width=spanWidth(b.start,b.len)+'px';const gh=ghostH();g.style.top=(MIDI_MAX-b.midi)*H+((H-gh)/2)+'px';g.style.height=gh+'px';g.style.borderRadius=barRadius(gh)+'px';});});
+    melodic.forEach(o=>{if(o===dock.track||!dock.ghosts[o.id])return;computeBars(o);o.bars.forEach(b=>{const g=el('gnote',ui.ghostsLayer);g.style.setProperty('--gc',o.cat);g.style.left=stepX(b.start)+'px';g.style.width=spanWidth(b.start,b.len)+'px';const gh=ghostH();g.style.top=yOf(b.midi)+((H-gh)/2)+'px';g.style.height=gh+'px';g.style.borderRadius=barRadius(gh)+'px';});});
   }
   function setPitchHeight(value) {
     H=clamp(value,2,36);document.documentElement.style.setProperty('--pitch-row-height',H+'px');
-    ui.grid.style.height=ui.rail.style.height=ui.keycol.style.height=ROWS*H+'px';
-    ui.rowEls.forEach((r,i)=>{r.style.top=i*H+'px';r.style.height=H+'px';});
-    ui.keyList.forEach(([midi,k])=>{let top,height,pad=0;if(isBlack(midi)){top=(MIDI_MAX-midi)*H;height=H;}else{const span=WHITE_SPAN[pc(midi)],rb=midi-MIDI_MIN;top=Math.max(0,(ROWS-rb-span[1])*H);height=Math.min(ROWS*H,(ROWS-rb-span[0])*H)-top;pad=(span[1]-1)*H;}k.style.top=top+'px';k.style.height=height+'px';k.style.paddingTop=pad+'px';});
+    ui.grid.style.height=ui.rail.style.height=ui.keycol.style.height=viewRows.length*H+'px';
+    ui.rowEls.forEach((r,i)=>{const midi=MIDI_MAX-i;r.hidden=!rowIndex.has(midi);r.style.top=yOf(midi)+'px';r.style.height=H+'px';});
+    const folded=effectiveFold()!=='off';
+    ui.keyList.forEach(([midi,k])=>{k.hidden=!rowIndex.has(midi);if(folded){k.style.top=yOf(midi)+'px';k.style.height=H+'px';k.style.paddingTop='0px';return;}let top,height,pad=0;if(isBlack(midi)){top=(MIDI_MAX-midi)*H;height=H;}else{const span=WHITE_SPAN[pc(midi)],rb=midi-MIDI_MIN;top=Math.max(0,(ROWS-rb-span[1])*H);height=Math.min(ROWS*H,(ROWS-rb-span[0])*H)-top;pad=(span[1]-1)*H;}k.style.top=top+'px';k.style.height=height+'px';k.style.paddingTop=pad+'px';});
     ui.hlRow.style.height=ui.focusMarker.style.height=H+'px';ui.ghost.style.height=barH()+'px';ui.ghost.style.width=STEP_W+'px';
     ui.grid.classList.toggle('overview',H<12);ui.keycol.classList.toggle('overview',H<12);
     applyClasses();if(dock.track){drawNotes(false);drawGhosts();}moveGridCursor(false);
@@ -1206,35 +1242,43 @@
   }
   function fitComparison(initial=false) {
     if(!dock.track||dock.track.kind!=='melodic')return;
+    buildRows(false);setPitchHeight(H);
     const mids=initial===true?(computeBars(dock.track),dock.track.bars.map(b=>b.midi)):comparisonMidis();if(!mids.length){setPitchHeight(18);centreOn(dock.track);return;}
-    const lo=Math.min(...mids),hi=Math.max(...mids),viewport=parseFloat(getComputedStyle(ui.scroll).height)||252;
+    // Work in rows, not semitones: chromatic rows are semitones; a fold's rows are its shown pitches.
+    const hiR=rowOf(Math.max(...mids)),loR=rowOf(Math.min(...mids)),need=loR-hiR+5,viewport=parseFloat(getComputedStyle(ui.scroll).height)||252;
+    const folded=effectiveFold()!=='off',unit=folded?'row':'semitone';
     if(initial===true){
       // Opening never squeezes the roll below the spec's default H (18px, a 36 × 18 cell). If the track's range does
       // not fit the compact body, the dock opens tall; if it still does not fit, it scrolls to centre the notes.
+      // A fold opens its rows as tall as the body allows, up to square 36px cells.
       // "Fit comparison" remains the way to trade cell height for a whole-range overview.
-      const need=hi-lo+5,h=18,fits=view=>need*h<=view;
-      if(!fits(252)&&!dock.tall){dock.tall=true;ui.dock.classList.add('tall');if(ui.detent)ui.detent.innerHTML=ICON.chevronDown+'<span>Compact</span>';}
-      setPitchHeight(h);
-      const view=dock.tall?432:252,centre=(MIDI_MAX-(hi+lo)/2)*H+H/2;
-      ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,fits(view)?(MIDI_MAX-hi-2)*H-Math.max(0,(view-need*H)/2):centre-view/2);ui.scroll.dispatchEvent(new Event('scroll'));
-      setStatus('Showing '+dock.track.name+' at '+H+'px per semitone'+(fits(view)?'.':'; scroll for the rest of its range, or Fit comparison for all of it.'));return;
+      const fits=(view,h)=>need*h<=view;
+      if(!fits(252,18)&&!dock.tall){dock.tall=true;ui.dock.classList.add('tall');if(ui.detent)ui.detent.innerHTML=ICON.chevronDown+'<span>Compact</span>';}
+      const view=isLandscape()?viewport:dock.tall?432:252;
+      setPitchHeight(folded?clamp(Math.floor(view/need),18,36):18);
+      const centre=((hiR+loR)/2)*H+H/2;
+      ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,fits(view,H)?(hiR-2)*H-Math.max(0,(view-need*H)/2):centre-view/2);ui.scroll.dispatchEvent(new Event('scroll'));
+      setStatus('Showing '+dock.track.name+' at '+H+'px per '+unit+(folded?', folded to '+(effectiveFold()==='scale'?'the scale':'the pitches in use')+' ('+viewRows.length+' rows)':'')+(fits(view,H)?'.':'; scroll for the rest of its range, or Fit comparison for all of it.'));return;
     }
-    setPitchHeight(clamp(Math.floor(viewport/(hi-lo+5)),2,36));
-    ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-hi-2)*H);ui.scroll.dispatchEvent(new Event('scroll'));
+    setPitchHeight(clamp(Math.floor(viewport/need),2,36));
+    ui.scroll.style.scrollBehavior='auto';ui.scroll.scrollTop=Math.max(0,(hiR-2)*H);ui.scroll.dispatchEvent(new Event('scroll'));
     setStatus('Showing '+dock.track.name+' and enabled comparison tracks. Zoom in for detail.');
   }
+  function setFold(mode) {
+    dock.fold=mode;fitComparison(true);renderPane();
+  }
   function zoomPitch(direction) {
-    const mid=MIDI_MAX-(ui.scroll.scrollTop+ui.scroll.clientHeight/2)/H;
+    const mid=(ui.scroll.scrollTop+ui.scroll.clientHeight/2)/H;
     const stops=[2,4,6,9,12,18,24,36],next=direction>0?stops.find(h=>h>H):[...stops].reverse().find(h=>h<H);
-    if(!next)return;setPitchHeight(next);ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-mid)*H-ui.scroll.clientHeight/2);ui.scroll.dispatchEvent(new Event('scroll'));
+    if(!next)return;setPitchHeight(next);ui.scroll.scrollTop=Math.max(0,mid*H-ui.scroll.clientHeight/2);ui.scroll.dispatchEvent(new Event('scroll'));
     setStatus('Pitch zoom changed. Arrow keys and Step controls remain available.');
   }
   function centreOn(t) {
-    computeBars(t);const mids=t.bars.map(b=>b.midi);const mid=mids.length?(Math.min(...mids)+Math.max(...mids))/2:BASE_MIDI;
-    ui.scroll.scrollTop=Math.max(0,(MIDI_MAX-mid)*H-ui.scroll.clientHeight/2);ui.scroll.dispatchEvent(new Event('scroll'));
+    computeBars(t);const mids=t.bars.map(b=>b.midi);const mid=mids.length?(rowOf(Math.min(...mids))+rowOf(Math.max(...mids)))/2:rowOf(BASE_MIDI);
+    ui.scroll.scrollTop=Math.max(0,mid*H-ui.scroll.clientHeight/2);ui.scroll.dispatchEvent(new Event('scroll'));
   }
   function ensurePitchVisible(midi) {
-    const top=(MIDI_MAX-midi)*H;if(top<ui.scroll.scrollTop)ui.scroll.scrollTop=top;else if(top+H>ui.scroll.scrollTop+ui.scroll.clientHeight)ui.scroll.scrollTop=top+H-ui.scroll.clientHeight;
+    const top=yOf(midi);if(top<ui.scroll.scrollTop)ui.scroll.scrollTop=top;else if(top+H>ui.scroll.scrollTop+ui.scroll.clientHeight)ui.scroll.scrollTop=top+H-ui.scroll.clientHeight;
     ui.scroll.dispatchEvent(new Event('scroll'));
   }
   function openDock(t,pane,opener) {
@@ -1247,7 +1291,7 @@
     if(!wasOpen){dock.pan=isLandscape();ui.hit.classList.toggle('pan',dock.pan);}
     ui.dock.classList.add('open');ui.dock.inert=false;ui.dock.setAttribute('aria-hidden','false');
     tracks.forEach(o=>{o.wrap.classList.toggle('docked',o===t);o.tabEl.classList.toggle('active',o===t);o.tabEl.setAttribute('aria-pressed',String(o===t));syncRow(o);});
-    applyClasses();drawNotes(switching&&wasOpen);drawGhosts();renderPane();updateMode();ui.fitHead();
+    buildRows(false);setPitchHeight(H);drawNotes(switching&&wasOpen);renderPane();updateMode();ui.fitHead();
     if(dock.pane==='notes'&&dock.fitPending)setTimeout(()=>{if(dock.track===t&&dock.pane==='notes'){fitComparison(true);dock.fitPending=false;}},0);
     if(!wasOpen)ui.paneChips[dock.pane].focus({preventScroll:true});
     const offset=t.wrap.offsetTop,viewTop=tracksEl.scrollTop+ui.ruler.parentElement.offsetHeight;
@@ -1311,6 +1355,8 @@
       melodic.filter(o=>o!==t).forEach(o=>{const b=button(g,o.name,()=>{dock.ghosts[o.id]=!dock.ghosts[o.id];b.setAttribute('aria-pressed',String(dock.ghosts[o.id]));drawGhosts();fitComparison();});b.classList.add('ghost-toggle');b.style.setProperty('--gc',o.cat);b.setAttribute('aria-pressed',String(!!dock.ghosts[o.id]));});
       const velocity=el('',group('Insertion volume'),'input');velocity.type='range';velocity.min=0;velocity.max=127;velocity.value=Math.round(t.defaultVelocity*127);velocity.setAttribute('aria-label','Default velocity');velocity.addEventListener('input',()=>t.defaultVelocity=Number(velocity.value)/127);
       const view=group('View');button(view,'Fit comparison',fitComparison);const zo=el('tray',view);button(zo,'−',()=>zoomPitch(-1),'Zoom pitch out').innerHTML=ICON.minus;button(zo,'+',()=>zoomPitch(1),'Zoom pitch in').innerHTML=ICON.plus;
+      el('k',view,'span').textContent='Fold';const fold=el('tray',view),current=effectiveFold();
+      [['scale','Scale','Show only the scale\u2019s rows, and any row that holds a note or ghost'],['used','Used','Show only the rows that hold a note or ghost']].forEach(([mode,label,title])=>{const b=button(fold,label,()=>setFold(current===mode?'off':mode));b.title=title;b.setAttribute('aria-pressed',String(current===mode));if(mode==='used'&&current!=='used'&&!contentMidis().length)b.disabled=true;});
       const pan=button(view,'Pan',()=>{ui.cancelDrag();dock.pan=!dock.pan;ui.hit.classList.toggle('pan',dock.pan);pan.setAttribute('aria-pressed',String(dock.pan));setStatus(dock.pan?'Pan: drag to scroll. Switch Pan off to draw.':'Draw: hold for Step; drag to paint or change pitch.');});ui.panButton=pan;pan.setAttribute('aria-pressed',String(!!dock.pan));
       el('value',view,'span').textContent=noteName(t.range.optMin)+'–'+noteName(t.range.optMax)+' best';
       const bounds=group('Loop');ui.loopInputs=[];
@@ -1360,14 +1406,14 @@
   function moveGridCursor(announce=true) {
     if(!ui.focusMarker)return;
     const t=dock.track,step=dock.cursorStep||0,midi=dock.cursorMidi||60;
-    ui.focusMarker.style.left=stepX(step)+'px';ui.focusMarker.style.top=(MIDI_MAX-midi)*H+'px';
+    ui.focusMarker.style.left=stepX(step)+'px';ui.focusMarker.style.top=yOf(midi)+'px';
     if(t&&announce)updateContext(step,midi);
     if(announce&&t){const active=!!barAt(t,step,midi),attack=attackStep(t,step);setStatus(t.name+' · Step '+(step+1)+' · '+noteName(midi)+' · '+(active?'active':'empty')+' · volume '+Math.round(stepVel(t,step)*127)+(active&&attack!==step?' · inherits attack step '+(attack+1):'')+'. Enter toggles; Shift+Enter edits Step; Space auditions.');}
   }
 
   function bindHit(hit,grid) {
     hit.tabIndex=0;hit.setAttribute('role','group');hit.setAttribute('aria-label','Piano roll note editor');hit.setAttribute('aria-describedby','editor-status');
-    const pos=e=>{const r=grid.getBoundingClientRect();const x=clamp(e.clientX-r.left,0,GRID_WIDTH-1),y=clamp(e.clientY-r.top,0,ROWS*H-1);return{x,y,step:xToIndex(x),midi:MIDI_MAX-Math.floor(y/H)};};
+    const pos=e=>{const r=grid.getBoundingClientRect();const x=clamp(e.clientX-r.left,0,GRID_WIDTH-1),y=clamp(e.clientY-r.top,0,viewRows.length*H-1);return{x,y,step:xToIndex(x),midi:midiAtY(y)};};
     const edge=(p,b)=>p.x>cellRight(b.start+b.len-1)-9;
     let pending=null,drag=null,suppress=false,hoverMidi=null,acceptedPointer=null;
     const snapshot=t=>({track:t,steps:t.steps.slice(),locks:t.locks.map(l=>l&&Object.assign({},l)),tieOrigins:new Map(t.tieOrigins||[])});
@@ -1384,8 +1430,8 @@
       const b=barAt(t,p.step,p.midi),target=editableMidi(t,p.midi);
       const preview=b?b.midi:target;
       grid.classList.add('hovering');grid.classList.toggle('empty',!b);
-      ui.hlRow.style.top=(MIDI_MAX-(preview===null?p.midi:preview))*H+'px';ui.hlCol.style.left=stepX(p.step)+'px';
-      ui.ghost.style.left=stepX(p.step)+'px';ui.ghost.style.top=(MIDI_MAX-(target===null?p.midi:target))*H+((H-barH())/2)+'px';ui.ghost.style.opacity=target===null?'0':'';
+      ui.hlRow.style.top=yOf(preview===null?p.midi:preview)+'px';ui.hlCol.style.left=stepX(p.step)+'px';
+      ui.ghost.style.left=stepX(p.step)+'px';ui.ghost.style.top=yOf(target===null?p.midi:target)+((H-barH())/2)+'px';ui.ghost.style.opacity=target===null?'0':'';
       ui.tip.style.left=p.x+'px';ui.tip.style.top=p.y+'px';
       ui.tip.replaceChildren();
       const strong=el('',ui.tip,'b');strong.textContent=noteName(preview===null?p.midi:preview);
@@ -1478,8 +1524,8 @@
         e.preventDefault();
         if(e.key==='ArrowLeft')dock.cursorStep=clamp(dock.cursorStep-1,0,STEPS-1);
         if(e.key==='ArrowRight')dock.cursorStep=clamp(dock.cursorStep+1,0,STEPS-1);
-        if(e.key==='ArrowUp')dock.cursorMidi=clamp(dock.cursorMidi+1,MIDI_MIN,MIDI_MAX);
-        if(e.key==='ArrowDown')dock.cursorMidi=clamp(dock.cursorMidi-1,MIDI_MIN,MIDI_MAX);
+        if(e.key==='ArrowUp')dock.cursorMidi=stepRow(dock.cursorMidi,1);
+        if(e.key==='ArrowDown')dock.cursorMidi=stepRow(dock.cursorMidi,-1);
         if(e.key==='Home')dock.cursorStep=0;if(e.key==='End')dock.cursorStep=STEPS-1;
         ensurePitchVisible(dock.cursorMidi);
         const scroller=isLandscape()?ui.body:tracksEl,x=(isLandscape()?92:162)+stepX(dock.cursorStep);
@@ -1510,7 +1556,7 @@
   const scaleBtn = document.getElementById('scaleBtn');
   const syncScaleBtn = () => { scaleBtn.innerHTML = scaleLocked ? ICON.lock : ICON.lockOpen; scaleBtn.title = scaleLocked ? 'Unlock scale (show all notes)' : 'Lock scale (constrain to scale notes only)'; };
   syncScaleBtn();
-  scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); syncScaleBtn(); applyClasses(); });
+  scaleBtn.addEventListener('click', () => { scaleLocked = !scaleLocked; scaleBtn.setAttribute('aria-pressed', String(scaleLocked)); syncScaleBtn(); applyClasses(); if (dock.open && dock.fold == null && dock.track?.kind === 'melodic') { fitComparison(true); renderPane(); } });
   window.addEventListener('keydown', e => {
     if(e.defaultPrevented)return;
     if(e.key==='Escape'){
