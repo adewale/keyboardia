@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { platform, release } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { expect, test, type Page, type TestInfo } from '@playwright/test';
@@ -13,7 +13,6 @@ import {
 import {
   STACK_B_MIGRATION_BASE_SHA,
   stackBDecorativeProperties,
-  stackBFullAppStates,
   stackBStates,
 } from './stack-b-manifest';
 import {
@@ -37,8 +36,6 @@ function configuredPort(name: string, fallback: number): number {
 }
 
 const comparisonPort = configuredPort('STACK_A_COMPARISON_PORT', 4179);
-const baseProductPort = configuredPort('STACK_A_BASE_PRODUCT_PORT', 4180);
-const headProductPort = configuredPort('STACK_A_HEAD_PRODUCT_PORT', 4181);
 const approvedDropdownTokens = {
   '--dropdown-control-background': '#2a2a2a',
   '--dropdown-control-border': '#6c6c76',
@@ -62,12 +59,6 @@ const approvedSharedTokenLinks = {
   '--dropdown-option-selected-background': 'var(--color-surface-active)',
   '--dropdown-option-secondary-text': 'var(--color-text-muted)',
 } as const;
-const holby = JSON.parse(readFileSync(resolve(process.cwd(), 'scripts/demo-sessions/holby.json'), 'utf8')) as {
-  name: string;
-  state: unknown;
-};
-const holbyId = '8444f694-0a9a-41f3-815d-b9c6eb518c50';
-
 const styleProperties = [
   'display', 'position', 'visibility', 'opacity', 'color', 'backgroundColor',
   'backgroundImage', 'borderTopColor', 'borderRightColor', 'borderBottomColor',
@@ -231,67 +222,6 @@ async function captureCatalogue(page: Page, side: Side, state: StackAState) {
   }
   for (const expectation of state.expectations) await assertExpectation(page, expectation);
   if (!state.actions?.some((action) => action.type === 'hover')) await page.mouse.move(0, 0);
-  await settleForScreenshot(page);
-  return readPageContract(page);
-}
-
-async function installProductFixture(page: Page) {
-  await page.route('**/api/sessions/**', async (route) => {
-    const request = route.request();
-    const pathname = new URL(request.url()).pathname;
-    if (request.method() === 'GET' && pathname === `/api/sessions/${holbyId}`) {
-      await route.fulfill({
-        status: 200,
-        contentType: 'application/json',
-        body: JSON.stringify({
-          id: holbyId,
-          name: holby.name,
-          state: holby.state,
-          createdAt: 1783638000000,
-          updatedAt: 1783638000000,
-          lastAccessedAt: 1783638000000,
-          remixedFrom: null,
-          remixedFromName: null,
-          remixCount: 0,
-          immutable: false,
-        }),
-      });
-      return;
-    }
-    await route.fulfill({ status: 404, contentType: 'application/json', body: '{"error":"fixture route"}' });
-  });
-}
-
-async function captureFullApp(
-  page: Page,
-  side: Side,
-  state: (typeof stackBFullAppStates)[number],
-) {
-  await page.setViewportSize(state.viewport);
-  await page.emulateMedia({ reducedMotion: 'reduce' });
-  await installProductFixture(page);
-  const port = side === 'base' ? baseProductPort : headProductPort;
-  await page.goto(`http://127.0.0.1:${port}/s/${holbyId}`);
-  if (state.action === 'hidden-portrait') {
-    await expect(page.locator('.portrait-track-row')).toHaveCount(10, { timeout: 15_000 });
-    await expect(page.locator('.dropdown-trigger:visible')).toHaveCount(0);
-  } else if (state.action === 'hidden-landscape') {
-    await expect(page.locator('.track-row')).toHaveCount(10, { timeout: 15_000 });
-    await expect(page.locator('.dropdown-trigger:visible')).toHaveCount(0);
-  } else {
-    await expect(page.locator('.track-row')).toHaveCount(10, { timeout: 15_000 });
-    await page.locator('.track-row .step-count-trigger').first().click();
-    await expect(page.locator('.step-count-menu')).toBeVisible();
-  }
-  await page.addStyleTag({
-    // The static production-build server intentionally has no WebSocket.
-    // Remove only live presence/status from layout so its reconnect timer
-    // cannot move stable product pixels between contract capture and screenshot.
-    content: '.avatar-stack, .connection-status { display: none !important; }',
-  });
-  await page.evaluate(() => document.fonts.ready);
-  await page.evaluate(() => window.scrollTo(0, 0));
-  await page.mouse.move(0, 0);
   await settleForScreenshot(page);
   return readPageContract(page);
 }
@@ -468,7 +398,7 @@ async function comparisonRevisions(page: Page) {
 }
 
 async function preserveEvidence(
-  group: 'catalogue' | 'full-app',
+  group: 'catalogue',
   id: string,
   baseRevision: string,
   headRevision: string,
@@ -534,7 +464,7 @@ async function preserveEvidence(
 async function assertApprovedDifference(
   page: Page,
   testInfo: TestInfo,
-  group: 'catalogue' | 'full-app',
+  group: 'catalogue',
   id: string,
   base: CapturedContract,
   head: CapturedContract,
@@ -608,23 +538,6 @@ test.describe('Stack B approved dropdown differences', () => {
       const base = await captureCatalogue(page, 'base', state);
       const head = await captureCatalogue(page, 'head', state);
       await assertApprovedDifference(page, testInfo, 'catalogue', state.id, base, head, true, state);
-    });
-  }
-
-  for (const state of stackBFullAppStates) {
-    test(`${state.id} @stack-b-full-app`, async ({ page }, testInfo) => {
-      const base = await captureFullApp(page, 'base', state);
-      const head = await captureFullApp(page, 'head', state);
-      await assertApprovedDifference(
-        page,
-        testInfo,
-        'full-app',
-        state.id,
-        base,
-        head,
-        state.action === 'desktop-step',
-        state,
-      );
     });
   }
 

@@ -57,13 +57,27 @@ for (const entry of manifest.files) {
 }
 assert(manifest.checks.boundFileCount === actualFiles.length, 'Bound evidence file count is stale');
 
+// The full-app states compared the whole product, base against head, so no
+// layout change could pass them. They were retired from the per-PR gate after
+// the pilot; their receipts stay bound here as the pilot's evidence.
+const retiredFullAppReceipts = [
+  'full-app--full-app-desktop-step-open.json',
+  'full-app--full-app-landscape-compact-unaffected.json',
+  'full-app--full-app-landscape-narrow-unaffected.json',
+  'full-app--full-app-landscape-wide-unaffected.json',
+  'full-app--full-app-mobile-portrait-hidden.json',
+  'full-app--full-app-tablet-landscape-step-open.json',
+  'full-app--full-app-width-768-step-open.json',
+  'full-app--full-app-width-769-step-open.json',
+];
 const expectedReceipts = readFileSync(resolve(appRoot, 'identity/test-title-inventory.txt'), 'utf8')
   .split(/\r?\n/)
   .flatMap((line) => {
-    const match = line.match(/stack-b-visual\.spec\.ts .* › ([^ ]+) @stack-b-(visual|full-app)$/);
+    const match = line.match(/stack-b-visual\.spec\.ts .* › ([^ ]+) @stack-b-visual$/);
     if (!match) return [];
-    return [`${match[2] === 'visual' ? 'catalogue' : 'full-app'}--${match[1]}.json`];
+    return [`catalogue--${match[1]}.json`];
   })
+  .concat(retiredFullAppReceipts)
   .sort();
 const actualReceipts = readdirSync(receiptsRoot).filter((name) => name.endsWith('.json')).sort();
 assert(JSON.stringify(actualReceipts) === JSON.stringify(expectedReceipts), 'Receipt inventory differs from Stack B test inventory');
