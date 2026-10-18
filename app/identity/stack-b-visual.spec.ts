@@ -494,6 +494,15 @@ async function assertApprovedDifference(
     head.screenshot,
     approvedRegions,
   );
+  // A failure here returns before preserveEvidence attaches the captures, so
+  // attach them now: the pixels are the only record of what changed.
+  if (changedOutsideTargets > 0) {
+    await Promise.all([
+      testInfo.attach(`${id}-before`, { body: base.screenshot, contentType: 'image/png' }),
+      testInfo.attach(`${id}-after`, { body: head.screenshot, contentType: 'image/png' }),
+      testInfo.attach(`${id}-diff`, { body: pixels.diff, contentType: 'image/png' }),
+    ]);
+  }
 
   expect(head.aria, 'accessibility-tree identity failed').toBe(base.aria);
   expect(violations, 'geometry or non-decorative style changed').toEqual([]);
