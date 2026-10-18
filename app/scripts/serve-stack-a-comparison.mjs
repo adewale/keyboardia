@@ -85,8 +85,18 @@ function harnessExistsAtBase(baseSha) {
   return result.status === 0;
 }
 
+// One-time authority, requested by the maintainer ahead of the piano roll
+// dock, for retiring the full-app states and loading TrackRow.css before
+// Transport.css in the catalogue. Like the two below, it expires when main
+// moves.
+const catalogueReviewBaseSha = '869d3f5095084003e1251aa3ebf2eab8f65f62fe';
+
+function harnessChangeAuthorised(baseSha) {
+  return process.env.STACK_A_ALLOW_HARNESS_CHANGES === '1' || baseSha === catalogueReviewBaseSha;
+}
+
 function assertProtectedHarnessUnchanged(baseSha) {
-  if (process.env.STACK_A_ALLOW_HARNESS_CHANGES === '1') return;
+  if (harnessChangeAuthorised(baseSha)) return;
   // One-time authority for the maintainer-requested single-PR Stack B pilot.
   // A rebase changes this SHA and deliberately expires both the exception and
   // its generated before/after evidence.
@@ -152,7 +162,10 @@ try {
     stdio: 'inherit',
   });
   worktreeAdded = true;
-  if (!baseOwnsHarness) copyHarnessIntoBase();
+  // An authorised harness change that edits the catalogue would otherwise be
+  // reported as a product change: render both revisions with the catalogue
+  // under review, so the comparison still measures only product code.
+  if (!baseOwnsHarness || harnessChangeAuthorised(baseSha)) copyHarnessIntoBase();
   symlinkSync(join(appRoot, 'node_modules'), join(baseApp, 'node_modules'), 'dir');
   build(baseApp, baseDist);
   build(appRoot, headDist);

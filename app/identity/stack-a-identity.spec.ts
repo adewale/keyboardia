@@ -97,10 +97,17 @@ async function performAction(page: Page, action: StackAAction) {
   else await locator.click();
 }
 
-async function settleReactEffects(page: Page) {
-  await page.evaluate(() => new Promise<void>((resolve) => {
-    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-  }));
+async function settleAfterAction(page: Page) {
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+    });
+    // A menu or panel animates open. Hovering it mid-animation lets the
+    // locator's scroll land on a moving target, so finish the opening first.
+    for (const animation of document.getAnimations()) {
+      if (Number.isFinite(animation.effect?.getTiming().iterations)) animation.finish();
+    }
+  });
 }
 
 async function assertExpectation(page: Page, expectation: StackAExpectation) {
@@ -130,9 +137,9 @@ async function captureContract(
 
   for (const action of state.actions ?? []) {
     await performAction(page, action);
-    // Effects such as dropdown auto-scroll must settle before the next action,
-    // otherwise locator scrolling can race the component's own effect.
-    await settleReactEffects(page);
+    // Effects such as dropdown auto-scroll, and opening animations, must
+    // settle before the next action, otherwise locator scrolling can race them.
+    await settleAfterAction(page);
   }
   for (const expectation of state.expectations) await assertExpectation(page, expectation);
 
