@@ -372,7 +372,7 @@
      above the rows; the lane is one row pitch. Proximity: 2px inside a group, 4px between groups, 8px between the
      column and the grid. Contrast: the docked row lifts to --surface-2 with its name in accent, instead of an edge
      the chip would hide. */
-  html[data-crap="on"] .track-left { position: relative; }
+  html[data-crap="on"] .track-left { position: sticky; }
   html[data-crap="on"] .track-name { padding: 0; font-weight: 600; }
   html[data-crap="on"] .track-row-wrapper.docked .track-left { background: var(--surface-2); box-shadow: 4px 0 8px -4px rgba(0,0,0,.2); }
   html[data-crap="on"] .track-row-wrapper.docked .track-name { color: var(--accent-text); }
@@ -412,7 +412,7 @@
      solid chip. Trays touch, and the solid trays keep a 1px seam so two values never read as one. One type style in
      every box: 11px, 600, tabular numbers. */
   html[data-rows="tallwho"] { --track-left-width: 231px; }
-  html[data-rows="tallwho"] .track-left { display: block; position: relative; padding: 0; }
+  html[data-rows="tallwho"] .track-left { display: block; position: sticky; left: 0; padding: 0; } /* sticky, as the spec's one scroller requires; still the containing block for the tile's positioned controls */
   html[data-rows="tallwho"] .track-name { position: absolute; left: 24px; top: 0; width: 120px; height: 24px; line-height: 24px; margin: 0; padding: 0; text-align: left; white-space: nowrap; overflow: hidden; }
   html[data-rows="tallwho"] .track-name .nm { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   html[data-rows="tallwho"] .line2 { display: contents; }
@@ -448,12 +448,11 @@
   /* The chip: a 6px straight line in the track's colour down the row's left edge, full height, with the drag
      grip inside it as three dark dots. It is the drag handle. It never changes with mute, solo or docking.
      The same mark is used on the dock's track tabs. */
-  html[data-rows^="tall"] .track-left { position: relative; padding-left: 24px; border-radius: 0 4px 4px 0; }
+  html[data-rows^="tall"] .track-left { position: sticky; padding-left: 24px; border-radius: 0 4px 4px 0; }
   html[data-rows^="tall"] .cat-chip { display: block; position: absolute; left: 0; top: 0; bottom: 0; width: 6px; border-radius: 0; background: var(--cat); cursor: grab; }
   html[data-rows^="tall"] .cat-chip::before { content: ''; position: absolute; left: 2px; top: 50%; width: 4px; height: 12px; margin-top: -6px; background-image: radial-gradient(circle at 1px 2px, rgba(0,0,0,.6) 1px, transparent 1.3px); background-size: 4px 4px; }
   /* Legend for the signals a cell carries. The badge swatch is hidden: it was caught by the tile's old .badge hide
      rule, and this cleanup keeps the page pixel-identical. Delete this rule to show it. */
-  .audit-legend i.badge { display: none; }
   .audit-legend { flex: 0 0 100%; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 12px; color: var(--muted); padding-top: 2px; }
   .audit-legend span { display: inline-flex; align-items: center; gap: 6px; margin-left: 6px; }
   .audit-legend i { display: inline-block; width: 16px; height: 16px; border-radius: 3px; background: var(--color-accent); border: 2px solid var(--accent-hi); position: relative; }
@@ -509,6 +508,9 @@
   /* Landscape row, as production: M | S | name with a chevron, 44px targets, nothing else in the row. A tap on the
      name opens the track's editor (production's drawer override); Copy, Clear and Delete live in its Track pane.
      216 = 4 + M 44 + 4 + S 44 + 4 + name 112 + 4. These rules beat the desktop tile's positioned layout. */
+  html[data-display-mode="landscape"][data-rows="tallwho"] .track-row { height: 48px; padding: 2px 0; }
+  html[data-display-mode="landscape"][data-rows="tallwho"] .step-cell { height: 44px; }
+  html[data-display-mode="landscape"] .tracks-inner .rows { gap: 2px; } /* 48px row on the spec's 50px pitch */
   html[data-display-mode="landscape"][data-rows="tallwho"] .track-left { display: flex; align-items: center; gap: 4px; height: 44px; padding: 0 4px; }
   html[data-display-mode="landscape"][data-rows="tallwho"] .track-left :is(.track-name, .line2 .group, .pill-tr, .pill-steps) { position: static; }
   html[data-display-mode="landscape"][data-rows="tallwho"] .track-left :is(.pill-tr, .pill-steps, .act-group, .line2 .group:nth-child(2)) { display: none; }
