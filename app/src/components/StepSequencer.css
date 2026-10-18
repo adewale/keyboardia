@@ -128,6 +128,10 @@
 /* Inner container that expands to fit widest track */
 .tracks-inner {
   display: inline-flex;
+  /* An inline-flex box sits on its first item's baseline. Since the ruler
+     row became that first item, baseline alignment pushed the whole grid
+     2.25px down the scroller and every cell landed on a quarter pixel. */
+  vertical-align: top;
   flex-direction: column;
   gap: 2px;
   min-width: 100%; /* At least fill the viewport */

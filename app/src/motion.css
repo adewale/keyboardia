@@ -75,7 +75,7 @@
   }
 
   .step-cell:active,
-    .control-group-btn:active:not(:disabled),
+  .control-group-btn:active:not(:disabled),
   .session-btn:active:not(:disabled),
   .play-button:active,
   .expand-toggle:active,

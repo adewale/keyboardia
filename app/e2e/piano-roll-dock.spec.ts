@@ -402,6 +402,15 @@ test.describe('Piano roll dock', () => {
       return inner.firstElementChild?.classList.contains('ruler-row') ?? false;
     });
     expect(placement).toBe(true);
+    // And it starts at the scroller's top edge. The rows sit in an inline-flex
+    // box, whose baseline alignment once pushed them 2.25px down so every cell
+    // landed on a quarter pixel.
+    const rulerOffset = await page.evaluate(() => {
+      const scroller = document.querySelector('.tracks')!;
+      const rulerRow = document.querySelector('.ruler-row')!;
+      return rulerRow.getBoundingClientRect().top - scroller.getBoundingClientRect().top + scroller.scrollTop;
+    });
+    expect(rulerOffset).toBe(0);
 
     const dockGrid = dock(page).locator('.piano-roll-editor .dock-scroll > :first-child');
     const expectPagesAligned = async () => {
