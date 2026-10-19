@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "description": "Reviewable project, file, and full-title identities collected by each Playwright lane.",
   "lanes": {
+    "envelope-editor": [
+      "chromium :: envelope-v2.spec.ts › Envelope v2 browser contract › edits a finite-sample AHD envelope with one committed exact value",
+      "chromium :: envelope-v2.spec.ts › Envelope v2 browser contract › keeps portrait consumption-only and exposes the same editor after rotating",
+      "chromium :: envelope-v2.spec.ts › Envelope v2 browser contract › renders loop-capable sample and oscillator models from the shared capability table"
+    ],
+    "envelope-headless": [
+      "chromium :: envelope-v2-headless.spec.ts › Envelope v2 headless correctness profile › preserves notation and runtime audio state while editor exposure is disabled"
+    ],
     "mock-required": [
       "chromium :: accessibility.spec.ts › Accessibility › focus indicators are visible",
       "chromium :: accessibility.spec.ts › Accessibility › focusable elements are keyboard accessible",
@@ -155,6 +163,7 @@
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › add track syncs to other client",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › mute/solo remain local (do not sync)",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › pan reaches the engine after a local edit, remote sync, and reload",
+      "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › sample envelope mode and release converge atomically and survive reload",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › scale unlock syncs to the other client and survives reload",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › step toggle syncs between clients",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › tempo change syncs between clients",
@@ -258,6 +267,7 @@
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › add track syncs to other client",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › mute/solo remain local (do not sync)",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › pan reaches the engine after a local edit, remote sync, and reload",
+      "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › sample envelope mode and release converge atomically and survive reload",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › scale unlock syncs to the other client and survives reload",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › step toggle syncs between clients",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › tempo change syncs between clients",
@@ -391,6 +401,10 @@
       "chromium :: drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should handle multiple paint operations in sequence",
       "chromium :: drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should maintain consistent state after rapid paint operations",
       "chromium :: drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should not leave paint mode stuck after interrupted drag",
+      "chromium :: envelope-v2-headless.spec.ts › Envelope v2 headless correctness profile › preserves notation and runtime audio state while editor exposure is disabled",
+      "chromium :: envelope-v2.spec.ts › Envelope v2 browser contract › edits a finite-sample AHD envelope with one committed exact value",
+      "chromium :: envelope-v2.spec.ts › Envelope v2 browser contract › keeps portrait consumption-only and exposes the same editor after rotating",
+      "chromium :: envelope-v2.spec.ts › Envelope v2 browser contract › renders loop-capable sample and oscillator models from the shared capability table",
       "chromium :: feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Ctrl+Click to toggle step selection",
       "chromium :: feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Shift+Click to extend selection",
       "chromium :: feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can drag to paint multiple steps",
@@ -485,6 +499,7 @@
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › add track syncs to other client",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › mute/solo remain local (do not sync)",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › pan reaches the engine after a local edit, remote sync, and reload",
+      "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › sample envelope mode and release converge atomically and survive reload",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › scale unlock syncs to the other client and survives reload",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › step toggle syncs between clients",
       "chromium :: multiplayer.spec.ts › Multiplayer real-time sync › tempo change syncs between clients",
@@ -622,6 +637,10 @@
       "webkit :: drag-to-paint.spec.ts › Drag-to-Paint: Sequential Drags › should handle multiple paint operations in sequence",
       "webkit :: drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should maintain consistent state after rapid paint operations",
       "webkit :: drag-to-paint.spec.ts › Drag-to-Paint: State Consistency › should not leave paint mode stuck after interrupted drag",
+      "webkit :: envelope-v2-headless.spec.ts › Envelope v2 headless correctness profile › preserves notation and runtime audio state while editor exposure is disabled",
+      "webkit :: envelope-v2.spec.ts › Envelope v2 browser contract › edits a finite-sample AHD envelope with one committed exact value",
+      "webkit :: envelope-v2.spec.ts › Envelope v2 browser contract › keeps portrait consumption-only and exposes the same editor after rotating",
+      "webkit :: envelope-v2.spec.ts › Envelope v2 browser contract › renders loop-capable sample and oscillator models from the shared capability table",
       "webkit :: feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Ctrl+Click to toggle step selection",
       "webkit :: feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can Shift+Click to extend selection",
       "webkit :: feature-flags.spec.ts › Feature Flags › Advanced Step Input (default: ON) › can drag to paint multiple steps",
@@ -714,6 +733,7 @@
       "webkit :: multiplayer.spec.ts › Multiplayer real-time sync › add track syncs to other client",
       "webkit :: multiplayer.spec.ts › Multiplayer real-time sync › mute/solo remain local (do not sync)",
       "webkit :: multiplayer.spec.ts › Multiplayer real-time sync › pan reaches the engine after a local edit, remote sync, and reload",
+      "webkit :: multiplayer.spec.ts › Multiplayer real-time sync › sample envelope mode and release converge atomically and survive reload",
       "webkit :: multiplayer.spec.ts › Multiplayer real-time sync › scale unlock syncs to the other client and survives reload",
       "webkit :: multiplayer.spec.ts › Multiplayer real-time sync › step toggle syncs between clients",
       "webkit :: multiplayer.spec.ts › Multiplayer real-time sync › tempo change syncs between clients",

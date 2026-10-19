@@ -227,7 +227,7 @@ describe('MCP v1 onboarding journeys', () => {
     }) as ToolResult;
 
     expect(result.isError).not.toBe(true);
-    expect(result.structuredContent).toEqual({
+    expect(result.structuredContent).toMatchObject({
       session_id: id,
       immutable: false,
       tempo: 124,
@@ -240,6 +240,12 @@ describe('MCP v1 onboarding journeys', () => {
         active_steps: [0, 4, 8, 12],
       }],
     });
+    expect((result.structuredContent as { tracks: Array<Record<string, unknown>> }).tracks[0])
+      .toMatchObject({
+        effective_envelope: { model: 'ahd' },
+        sample_playback_mode: 'trigger',
+        envelope_active: true,
+      });
 
     // The session API is what a returning browser reads, so it must show the
     // agents' work too. Asserting on the API rather than on the rendered SPA
