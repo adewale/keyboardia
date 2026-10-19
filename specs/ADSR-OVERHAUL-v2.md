@@ -37,6 +37,17 @@ The previous authoring head `bdf9bae2` completed all selected CI jobs successful
 on 2026-10-03. Those receipts remain bound to that old head, not this rebase.
 Fresh local lane/build results and new-head CI must establish current readiness.
 
+On committed integration revision `1913fdf9`, fresh local verification passes:
+product 4,938 tests plus one existing environment-gated skip; audio-render 26;
+verification-tooling 117; built Worker integration 131; editor browser contract
+3 and editor-disabled contract 1, each with exact identities and zero helper
+retries. Build, lint, Worker typecheck/dry-run bundle, documentation/resource,
+test-quality, and 375-file no-unrun inventory checks pass. Fresh same-toolchain
+builds against `869d3f50` reproduce the October 3 JS measurements below exactly;
+the audio catalogue hash is unchanged. All three lockfile installs report zero
+known vulnerabilities. This is package-audit evidence, not a security guarantee;
+browser heap and physical-device acceptance remain unmeasured.
+
 The next integration constraint is product ownership: open PR #127 redesigns
 the track row into a piano-roll dock. A read-only merge simulation finds conflicts
 with this candidate in TrackRow, ParameterLockEditor, PatternToolsPanel,
