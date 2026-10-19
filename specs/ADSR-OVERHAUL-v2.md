@@ -1,7 +1,7 @@
 # ADSR Overhaul v2 — Executable Specification
 
 **Status:** REBASED AUTHORING CANDIDATE — CORE CORRECTNESS IS ON MAIN; SHAPE UI AND PRODUCTION CUTOVER REMAIN
-**Date:** 2026-10-03 (historical evidence is dated separately below)
+**Date:** 2026-10-19 (historical evidence is dated separately below)
 **Supersedes:** `specs/ADSR-OVERHAUL.md`
 **Protocol capability:** `track-envelope-v2`
 **Operational sample requirements:** `docs/SAMPLE-INTAKE-REQUIREMENTS.md`
@@ -21,6 +21,36 @@ migration whose structural tests did not prove audible equivalence.
 The words **MUST**, **MUST NOT**, **SHOULD**, and **MAY** are normative.
 
 ## Implementation ledger
+
+### Latest-main integration (2026-10-19)
+
+Rebased the three authoring commits onto `869d3f50`. PR #122 is now merged,
+including the work from closed, unmerged PRs #123 and #126; PR #128's
+lockfile-pinned security updates are also retained. Main owns the three Vitest
+projects (`unit`, `audio-render`, `verification-tooling`), bounded API retry
+budget, fail-closed audio checks, and shared PCM audit fixtures. These are no
+longer pending authoring prerequisites. The only textual rebase conflict was
+Lessons Learned: main's Lesson 83 is preserved and this branch's historical
+ownership lesson is renumbered 84. No product/audio logic changed in this rebase.
+
+The previous authoring head `bdf9bae2` completed all selected CI jobs successfully
+on 2026-10-03. Those receipts remain bound to that old head, not this rebase.
+Fresh local lane/build results and new-head CI must establish current readiness.
+
+The next integration constraint is product ownership: open PR #127 redesigns
+the track row into a piano-roll dock. A read-only merge simulation finds conflicts
+with this candidate in TrackRow, ParameterLockEditor, PatternToolsPanel,
+StepSequencer, the track-row regression, lane contracts, and Lessons Learned.
+Review headless MCP/notation separately, then integrate envelope UI into the
+chosen dock rather than land two competing editor layouts. PR #130 is the
+green harness prerequisite for #127; its exception is pinned to current main
+and expires when main advances, so it should be reviewed before another merge.
+
+D2 Shape/Start/Tail, renderer-promotion PCM/listening/canary/rollback/retention,
+additional sample assets, and measured browser heap remain unfinished. This
+rebase neither merges #87/#127 nor promotes renderers/assets. Source certification
+(#106), mute/solo ownership (#75), and Safari background policy (#115) remain
+distinct acceptance decisions; none is closed by the completed timing stack.
 
 ### Reconsideration on latest main (2026-10-03)
 
@@ -997,20 +1027,21 @@ npm run test:e2e:full-stack:smoke
 npm run check:worker
 ```
 
-Current main owns the broad unit and native-render lanes; semantic, rolling,
-manifest, metric and migration tests run in the normal unit collector, and all
-six `*.render.test.ts` files run in `test:audio-render`. The candidate adds
+Current main owns three non-overlapping Vitest projects. Semantic, rolling,
+manifest, metric and migration tests run in `test:unit`; all six dotted render
+files plus `instrument-range-render.test.ts` run in `test:audio-render`; the
+six meta-verification files run in `test:verification-tooling`. The candidate adds
 `test:e2e:envelope` and `test:e2e:envelope:correctness` for the editor enabled and
 disabled contracts. CI fails if a discovered test is unrun, a
 fake has no real contract subject, generated schemas are stale, or a production
 export is dead.
 
 Native `OfflineAudioContext` render files MUST have exactly one authoritative
-lane. Main still collects renders in both unit and audio-render runs; PR #123
-owns removal of that duplication, including `instrument-range-render.test.ts`
-which the dotted filename glob misses. This candidate does not install a second
-lane architecture. Until #123 is reviewed and merged, CI retains main's full
-collection and the duplicate cost is explicitly acknowledged.
+lane. PR #123's project split, integrated through #122, removes duplicate
+collection and includes the range render missed by a dotted filename glob.
+CI executes all three projects in its required Unit Tests job; T0/pre-push
+executes the fast product lane. This candidate does not install a second lane
+architecture or omit heavy evidence from CI.
 
 All required validators MUST run in the restricted local/CI runner without
 opening a privileged listener or IPC socket. Slice A replaces the current

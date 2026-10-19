@@ -7004,3 +7004,11 @@ Name the remaining work and its owner, remeasure the final tree, and never
 reuse an earlier commit's receipts as evidence for the new head. Tests that
 require clean evidence subjects must run after committing, not with their
 clean-tree gate disabled to accommodate an in-progress merge.
+
+**2026-10-19 follow-up:** #122 now incorporates closed PRs #123/#126, and #128
+patches the independent dependency trees. The authoring rebase preserves all
+three test projects rather than restoring its older lane design. The remaining
+collision is product-level: #87's exact editor and #127's piano-roll dock modify
+the same row/editor wiring. Resolve that integration explicitly; another clean
+rebase on main does not prove the two feature branches compose. The old #87 CI
+run is green, but its results are not evidence for the new rebased head.

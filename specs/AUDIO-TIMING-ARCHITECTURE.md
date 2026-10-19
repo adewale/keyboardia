@@ -1,9 +1,11 @@
 # Audio timing architecture
 
-**Status (2026-10-03):** the timing refactoring stack through PR #114 is merged.
+**Status (2026-10-19):** the timing refactoring stack through PR #114 is merged.
 PR #98's integration and PR #116's envelope-runtime foundation are also merged;
 PRs #117 and #124 strengthen verification and hashing without replacing the
-timing authorities. PR #87 is an authoring candidate rebased onto `b80311eb`,
+timing authorities. PR #122 incorporates the #123/#126 verification work and
+PR #128 patches development dependencies. PR #87 is an authoring candidate
+rebased onto `869d3f50`,
 not unfinished work in this timing stack. The historical receipts below retain
 their original dates and subjects. Issue #115 (Safari background drops) remains
 open and is not evidence that the type/dispatch/readiness refactorings are absent.
@@ -163,7 +165,7 @@ heap receipt.
   receipts. The stack completes its absolute-timestamp direction without
   rewriting historical evidence.
 - **PR #87:** the runtime foundation is merged separately in PR #116. The
-  2026-10-03 authoring rebase preserves main's scheduler, readiness, automation,
+  2026-10-19 authoring rebase preserves main's scheduler, readiness, automation,
   graph, canonical hash, and verification authorities. Exact UI, XY, MCP and
   notation remain reviewable authoring work; beginner Shape UI and renderer
   promotion are separate unfinished ADSR outcomes, not missing timing types.
@@ -175,9 +177,13 @@ heap receipt.
 - **PR #102:** generated-instrument quality work remains separate. Because it
   changes `engine.ts`, `toneSynths.ts`, and audio evidence, it must rebase and
   rerun timing plus sound-quality gates if continued.
-- **PRs #122 and #123:** pending verification-audit fixes and heavy-suite lane
-  separation remain separately owned. PR #87 must not import its older
-  verification selector, pre-push policy, or competing native-render lane split.
+- **PRs #122/#123/#126/#128:** #122 and #128 are merged; #123 and #126 were
+  closed after their work was incorporated into #122. Main now owns the heavy
+  lane split, bounded retries, fail-closed checks, cheaper fixture reuse, and
+  patched lockfiles. #87 preserves those authorities.
+- **PRs #127 and #130:** the piano-roll dock and its harness prerequisite are
+  open. The dock and #87's exact editor conflict on shared UI/verification files.
+  Coordinate their product integration without reopening the timing stack.
 - **Issue #106:** authenticated source-sample remediation is unaffected. These
   refactorings neither repair nor weaken its sample-content requirements.
 - **Issue #92:** future pitched-pattern, scale, swing, and provenance work can
