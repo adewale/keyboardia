@@ -1,1 +1,0 @@
-export { KeyboardShortcutsPanel } from './KeyboardShortcutsPanel';

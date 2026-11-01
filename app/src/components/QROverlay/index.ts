@@ -1,1 +1,0 @@
-export { QROverlay } from './QROverlay';
