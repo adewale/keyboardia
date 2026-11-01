@@ -15,6 +15,13 @@ if [ ! -t 1 ] || [ ! -t 2 ]; then
 fi
 
 set -e
+
+# Hooks export repository-local Git overrides. Clear them before verification:
+# tests initialise throwaway repositories and must not write into this one.
+for git_env_name in $(git rev-parse --local-env-vars); do
+    unset "$git_env_name"
+done
+
 cd app
 
 echo "PRE-PUSH T0: manifests, E2E inventories, and unit tests"
