@@ -1,0 +1,1114 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-kick",
+  "hardErrors": 0,
+  "reviewFlags": 16,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl1_rr1.flac",
+      "message": "Estimated pitch is 368.4 cents from mapped note",
+      "value": 368.42268257195633,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl1_rr2.flac",
+      "message": "Estimated pitch is 466.4 cents from mapped note",
+      "value": 466.4432396844056,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl1_rr3.flac",
+      "message": "Estimated pitch is 346.3 cents from mapped note",
+      "value": 346.32823803530005,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl1_rr4.flac",
+      "message": "Estimated pitch is 340.1 cents from mapped note",
+      "value": 340.0669869100767,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl2_rr1.flac",
+      "message": "Estimated pitch is 321.4 cents from mapped note",
+      "value": 321.4179658351434,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl2_rr2.flac",
+      "message": "Estimated pitch is 299.9 cents from mapped note",
+      "value": 299.9116762384276,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl2_rr3.flac",
+      "message": "Estimated pitch is 299.9 cents from mapped note",
+      "value": 299.9116762384276,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl2_rr4.flac",
+      "message": "Estimated pitch is 275.7 cents from mapped note",
+      "value": 275.6558111710177,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl3_rr1.flac",
+      "message": "Estimated pitch is 210.7 cents from mapped note",
+      "value": 210.65304065133648,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl3_rr2.flac",
+      "message": "Estimated pitch is 219.4 cents from mapped note",
+      "value": 219.37464120818368,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl3_rr3.flac",
+      "message": "Estimated pitch is 234.0 cents from mapped note",
+      "value": 234.0089975725498,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl3_rr4.flac",
+      "message": "Estimated pitch is 225.2 cents from mapped note",
+      "value": 225.2135474143629,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl4_rr1.flac",
+      "message": "Estimated pitch is 231.1 cents from mapped note",
+      "value": 231.0722130700583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl4_rr2.flac",
+      "message": "Estimated pitch is 231.1 cents from mapped note",
+      "value": 231.0722130700583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl4_rr3.flac",
+      "message": "Estimated pitch is 234.0 cents from mapped note",
+      "value": 234.0089975725498,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-kick",
+      "file": "Samples/mid/kick/mid_kick_snon_vl4_rr4.flac",
+      "message": "Estimated pitch is 228.1 cents from mapped note",
+      "value": 228.1404019560639,
+      "threshold": 10
+    }
+  ],
+  "entries": [
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl1_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl1_rr1.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 31,
+        "durationSec": 2.4560544217687075,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.007190682925283909,
+        "peakDb": -42.86459722266847,
+        "rmsDb": -63.758412465520415,
+        "activeRmsDb": -61.26643789170981,
+        "loudnessKMax": -54.046053142815296,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000002487605931633536,
+        "dcOffsetDb": -112.08436832586105,
+        "crestFactorDb": 18.40184066904135,
+        "leadingSilenceMs": 9.002267573696146,
+        "effectiveLeadingSilenceMs": 9.002267573696146,
+        "trailingSilenceMs": 1069.0702947845805,
+        "attackMs": 9.1156462585034,
+        "tailLevelDbRelPeak": -63.60808942433094,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 9.002267573696146,
+        "activeEndMs": 1386.9614512471655,
+        "spectral": {
+          "centroidHz": 578.3340237650983,
+          "highFrequencyRatio": 0.02496526118053848
+        },
+        "pitch": {
+          "midi": 39.68422682571956,
+          "frequencyHz": 80.91743119266054,
+          "rawCents": 368.4226825719563,
+          "foldedCents": 368.42268257195633,
+          "confidence": 0.6537546338133705
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6642471244052969,
+          "monoLossDb": -1.0435314780341047,
+          "leftRightBalanceDb": -4.844347009628068
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl1_rr1.flac",
+          "message": "Estimated pitch is 368.4 cents from mapped note",
+          "value": 368.42268257195633,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl1_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl1_rr2.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 31,
+        "durationSec": 2.0462585034013605,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.009192349389195442,
+        "peakDb": -40.731469540799466,
+        "rmsDb": -61.7106889543441,
+        "activeRmsDb": -60.04455535810774,
+        "loudnessKMax": -52.74871323086701,
+        "playbackGainDb": 0,
+        "dcOffset": 3.310219097454915e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 19.31308581730828,
+        "leadingSilenceMs": 8.54875283446712,
+        "effectiveLeadingSilenceMs": 8.54875283446712,
+        "trailingSilenceMs": 647.4829931972789,
+        "attackMs": 16.462585034013607,
+        "tailLevelDbRelPeak": -58.371996862969056,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.54875283446712,
+        "activeEndMs": 1398.7528344671202,
+        "spectral": {
+          "centroidHz": 578.9917235091376,
+          "highFrequencyRatio": 0.02294713786228355
+        },
+        "pitch": {
+          "midi": 40.664432396844056,
+          "frequencyHz": 85.63106796116504,
+          "rawCents": 466.4432396844056,
+          "foldedCents": 466.4432396844056,
+          "confidence": 0.7284971340715298
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6454525959060585,
+          "monoLossDb": -1.0417326117576116,
+          "leftRightBalanceDb": -4.307856340696087
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl1_rr2.flac",
+          "message": "Estimated pitch is 466.4 cents from mapped note",
+          "value": 466.4432396844056,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl1_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl1_rr3.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 31,
+        "durationSec": 2.0502721088435374,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.008063572458922863,
+        "peakDb": -41.86945014290394,
+        "rmsDb": -62.30117115247796,
+        "activeRmsDb": -58.97153447292578,
+        "loudnessKMax": -53.36400770725156,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000002962352408549613,
+        "dcOffsetDb": -110.56726556055976,
+        "crestFactorDb": 17.102084330021835,
+        "leadingSilenceMs": 7.845804988662131,
+        "effectiveLeadingSilenceMs": 7.845804988662131,
+        "trailingSilenceMs": 1097.0975056689342,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -67.05589832831836,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.845804988662131,
+        "activeEndMs": 953.1519274376418,
+        "spectral": {
+          "centroidHz": 546.4242161037981,
+          "highFrequencyRatio": 0.022724613419867788
+        },
+        "pitch": {
+          "midi": 39.463282380353,
+          "frequencyHz": 79.8913043478261,
+          "rawCents": 346.32823803530005,
+          "foldedCents": 346.32823803530005,
+          "confidence": 0.742596747958403
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6630366827579721,
+          "monoLossDb": -1.0227219038041266,
+          "leftRightBalanceDb": -4.582792299860191
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl1_rr3.flac",
+          "message": "Estimated pitch is 346.3 cents from mapped note",
+          "value": 346.32823803530005,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl1_rr4.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl1_rr4.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 31,
+        "durationSec": 1.931360544217687,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.007106875069439411,
+        "peakDb": -42.96642637760133,
+        "rmsDb": -63.87998884332148,
+        "activeRmsDb": -59.39235617633248,
+        "loudnessKMax": -55.24002607876911,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000006585390713908181,
+        "dcOffsetDb": -103.6283690613925,
+        "crestFactorDb": 16.42592979873114,
+        "leadingSilenceMs": 8.798185941043084,
+        "effectiveLeadingSilenceMs": 8.798185941043084,
+        "trailingSilenceMs": 1244.625850340136,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -63.69631458793849,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.798185941043084,
+        "activeEndMs": 686.7120181405895,
+        "spectral": {
+          "centroidHz": 598.4896123742524,
+          "highFrequencyRatio": 0.027928843769709156
+        },
+        "pitch": {
+          "midi": 39.40066986910077,
+          "frequencyHz": 79.6028880866426,
+          "rawCents": 340.0669869100767,
+          "foldedCents": 340.0669869100767,
+          "confidence": 0.7746012624378484
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6664937637651394,
+          "monoLossDb": -1.0395134533232093,
+          "leftRightBalanceDb": -4.856618067593482
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl1_rr4.flac",
+          "message": "Estimated pitch is 340.1 cents from mapped note",
+          "value": 340.0669869100767,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl2_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl2_rr1.flac",
+        "note": 36,
+        "velocityMin": 32,
+        "velocityMax": 63,
+        "durationSec": 2.0776190476190477,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.027730584144592285,
+        "peakDb": -31.140819638301373,
+        "rmsDb": -51.05987884795653,
+        "activeRmsDb": -47.473679374135486,
+        "loudnessKMax": -42.0480579940665,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000014189490620223949,
+        "dcOffsetDb": -116.96066389465125,
+        "crestFactorDb": 16.332859735834113,
+        "leadingSilenceMs": 7.551020408163265,
+        "effectiveLeadingSilenceMs": 7.551020408163265,
+        "trailingSilenceMs": 1160.6575963718822,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -76.09182102847582,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.551020408163265,
+        "activeEndMs": 916.9387755102041,
+        "spectral": {
+          "centroidHz": 390.4313730402916,
+          "highFrequencyRatio": 0.011185696665884882
+        },
+        "pitch": {
+          "midi": 39.21417965835143,
+          "frequencyHz": 78.75,
+          "rawCents": 321.4179658351434,
+          "foldedCents": 321.4179658351434,
+          "confidence": 0.7567186067615025
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6908079796793939,
+          "monoLossDb": -0.9357541660883852,
+          "leftRightBalanceDb": -4.351772329615418
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl2_rr1.flac",
+          "message": "Estimated pitch is 321.4 cents from mapped note",
+          "value": 321.4179658351434,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl2_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl2_rr2.flac",
+        "note": 36,
+        "velocityMin": 32,
+        "velocityMax": 63,
+        "durationSec": 1.9707256235827664,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.027539296075701714,
+        "peakDb": -31.200943296357124,
+        "rmsDb": -51.08092886861002,
+        "activeRmsDb": -48.74343024890599,
+        "loudnessKMax": -42.282701962034466,
+        "playbackGainDb": 0,
+        "dcOffset": 3.740280817763501e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 17.542486952548867,
+        "leadingSilenceMs": 8.140589569160998,
+        "effectiveLeadingSilenceMs": 8.140589569160998,
+        "trailingSilenceMs": 812.4943310657596,
+        "attackMs": 22.244897959183675,
+        "tailLevelDbRelPeak": -67.9628511464393,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.140589569160998,
+        "activeEndMs": 1158.2086167800453,
+        "spectral": {
+          "centroidHz": 376.959433996892,
+          "highFrequencyRatio": 0.01072716475881967
+        },
+        "pitch": {
+          "midi": 38.999116762384276,
+          "frequencyHz": 77.77777777777777,
+          "rawCents": 299.91167623842756,
+          "foldedCents": 299.9116762384276,
+          "confidence": 0.731660654319102
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6886712066108308,
+          "monoLossDb": -0.9418310933429073,
+          "leftRightBalanceDb": -4.362881256587965
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl2_rr2.flac",
+          "message": "Estimated pitch is 299.9 cents from mapped note",
+          "value": 299.9116762384276,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl2_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl2_rr3.flac",
+        "note": 36,
+        "velocityMin": 32,
+        "velocityMax": 63,
+        "durationSec": 2.164920634920635,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03001990169286728,
+        "peakDb": -30.451814685769143,
+        "rmsDb": -50.75865077855358,
+        "activeRmsDb": -48.04743528749206,
+        "loudnessKMax": -41.56440582621423,
+        "playbackGainDb": 0,
+        "dcOffset": 0.0000031088715445415163,
+        "dcOffsetDb": -110.1479444439822,
+        "crestFactorDb": 17.59562060172291,
+        "leadingSilenceMs": 2.0861678004535147,
+        "effectiveLeadingSilenceMs": 2.0861678004535147,
+        "trailingSilenceMs": 1003.5374149659864,
+        "attackMs": 28.049886621315192,
+        "tailLevelDbRelPeak": -74.0071861303464,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.0861678004535147,
+        "activeEndMs": 1161.360544217687,
+        "spectral": {
+          "centroidHz": 383.3120046864973,
+          "highFrequencyRatio": 0.012060345326942312
+        },
+        "pitch": {
+          "midi": 38.999116762384276,
+          "frequencyHz": 77.77777777777777,
+          "rawCents": 299.91167623842756,
+          "foldedCents": 299.9116762384276,
+          "confidence": 0.7365317599300676
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6911921155273772,
+          "monoLossDb": -0.9229166022400387,
+          "leftRightBalanceDb": -4.2146894196501785
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl2_rr3.flac",
+          "message": "Estimated pitch is 299.9 cents from mapped note",
+          "value": 299.9116762384276,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl2_rr4.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl2_rr4.flac",
+        "note": 36,
+        "velocityMin": 32,
+        "velocityMax": 63,
+        "durationSec": 1.9896598639455783,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.026847930625081062,
+        "peakDb": -31.421783661294413,
+        "rmsDb": -51.38604021954472,
+        "activeRmsDb": -50.1722627488024,
+        "loudnessKMax": -42.56687482594574,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000004977382211862931,
+        "dcOffsetDb": -106.0599801723425,
+        "crestFactorDb": 18.75047908750799,
+        "leadingSilenceMs": 8.412698412698413,
+        "effectiveLeadingSilenceMs": 8.412698412698413,
+        "trailingSilenceMs": 476.9160997732426,
+        "attackMs": 22.267573696145124,
+        "tailLevelDbRelPeak": -75.36613419655441,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.412698412698413,
+        "activeEndMs": 1512.7210884353742,
+        "spectral": {
+          "centroidHz": 380.8843180011774,
+          "highFrequencyRatio": 0.010762890383840094
+        },
+        "pitch": {
+          "midi": 38.75655811171018,
+          "frequencyHz": 76.69565217391305,
+          "rawCents": 275.6558111710177,
+          "foldedCents": 275.6558111710177,
+          "confidence": 0.691456855986008
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6903585210482709,
+          "monoLossDb": -0.9353606859493125,
+          "leftRightBalanceDb": -4.334976649679266
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl2_rr4.flac",
+          "message": "Estimated pitch is 275.7 cents from mapped note",
+          "value": 275.6558111710177,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl3_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl3_rr1.flac",
+        "note": 36,
+        "velocityMin": 64,
+        "velocityMax": 95,
+        "durationSec": 2.349433106575964,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.11669035255908966,
+        "peakDb": -18.659300960248615,
+        "rmsDb": -40.17449522716212,
+        "activeRmsDb": -39.01148227322921,
+        "loudnessKMax": -30.709948861731544,
+        "playbackGainDb": 0,
+        "dcOffset": -0.0000048340081782788285,
+        "dcOffsetDb": -106.31385238358035,
+        "crestFactorDb": 20.352181312980598,
+        "leadingSilenceMs": 2.7437641723356005,
+        "effectiveLeadingSilenceMs": 2.7437641723356005,
+        "trailingSilenceMs": 549.251700680272,
+        "attackMs": 26.802721088435376,
+        "tailLevelDbRelPeak": -79.1717474651786,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.7437641723356005,
+        "activeEndMs": 1800.1587301587301,
+        "spectral": {
+          "centroidHz": 599.9782309774233,
+          "highFrequencyRatio": 0.03392688392994811
+        },
+        "pitch": {
+          "midi": 38.106530406513365,
+          "frequencyHz": 73.86934673366834,
+          "rawCents": 210.65304065133645,
+          "foldedCents": 210.65304065133648,
+          "confidence": 0.7634818721704821
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7417315018494716,
+          "monoLossDb": -0.6790092607723279,
+          "leftRightBalanceDb": -2.565020117605693
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl3_rr1.flac",
+          "message": "Estimated pitch is 210.7 cents from mapped note",
+          "value": 210.65304065133648,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl3_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl3_rr2.flac",
+        "note": 36,
+        "velocityMin": 64,
+        "velocityMax": 95,
+        "durationSec": 2.408798185941043,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.11847347766160965,
+        "peakDb": -18.52757726217835,
+        "rmsDb": -39.81862934143532,
+        "activeRmsDb": -38.29240028245101,
+        "loudnessKMax": -30.24368606386636,
+        "playbackGainDb": 0,
+        "dcOffset": -4.6922781244302447e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 19.764823020272658,
+        "leadingSilenceMs": 4.807256235827664,
+        "effectiveLeadingSilenceMs": 4.807256235827664,
+        "trailingSilenceMs": 709.0022675736961,
+        "attackMs": 24.875283446712018,
+        "tailLevelDbRelPeak": -81.49720272254832,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 4.807256235827664,
+        "activeEndMs": 1699.7732426303855,
+        "spectral": {
+          "centroidHz": 583.920376494875,
+          "highFrequencyRatio": 0.03295731555361516
+        },
+        "pitch": {
+          "midi": 38.193746412081836,
+          "frequencyHz": 74.24242424242425,
+          "rawCents": 219.37464120818362,
+          "foldedCents": 219.37464120818368,
+          "confidence": 0.7314807018528917
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7432143263993346,
+          "monoLossDb": -0.6762846596024031,
+          "leftRightBalanceDb": -2.579759642543337
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl3_rr2.flac",
+          "message": "Estimated pitch is 219.4 cents from mapped note",
+          "value": 219.37464120818368,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl3_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl3_rr3.flac",
+        "note": 36,
+        "velocityMin": 64,
+        "velocityMax": 95,
+        "durationSec": 2.4282539682539683,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.12757550179958344,
+        "peakDb": -17.884654295170506,
+        "rmsDb": -39.311110990896864,
+        "activeRmsDb": -37.01376805826197,
+        "loudnessKMax": -29.708486037871012,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000004330422604018354,
+        "dcOffsetDb": -107.26939437945748,
+        "crestFactorDb": 19.12911376309146,
+        "leadingSilenceMs": 0.7709750566893424,
+        "effectiveLeadingSilenceMs": 0.7709750566893424,
+        "trailingSilenceMs": 996.8027210884354,
+        "attackMs": 29.29705215419501,
+        "tailLevelDbRelPeak": -87.62826135909897,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.7709750566893424,
+        "activeEndMs": 1431.4285714285716,
+        "spectral": {
+          "centroidHz": 583.1542420857406,
+          "highFrequencyRatio": 0.03125529980054556
+        },
+        "pitch": {
+          "midi": 38.3400899757255,
+          "frequencyHz": 74.87266553480475,
+          "rawCents": 234.00899757254976,
+          "foldedCents": 234.0089975725498,
+          "confidence": 0.676700004599049
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7470100493237358,
+          "monoLossDb": -0.6584957939557513,
+          "leftRightBalanceDb": -2.433460249526913
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl3_rr3.flac",
+          "message": "Estimated pitch is 234.0 cents from mapped note",
+          "value": 234.0089975725498,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl3_rr4.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl3_rr4.flac",
+        "note": 36,
+        "velocityMin": 64,
+        "velocityMax": 95,
+        "durationSec": 2.1810430839002266,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.12152880430221558,
+        "peakDb": -18.30641550025875,
+        "rmsDb": -39.458334636283325,
+        "activeRmsDb": -38.150961323707484,
+        "loudnessKMax": -30.29587455489745,
+        "playbackGainDb": 0,
+        "dcOffset": -0.000002120501753331688,
+        "dcOffsetDb": -113.47122728217586,
+        "crestFactorDb": 19.844545823448737,
+        "leadingSilenceMs": 0.997732426303855,
+        "effectiveLeadingSilenceMs": 0.997732426303855,
+        "trailingSilenceMs": 565.9863945578231,
+        "attackMs": 29.478458049886623,
+        "tailLevelDbRelPeak": -81.90289867208921,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.997732426303855,
+        "activeEndMs": 1615.0340136054422,
+        "spectral": {
+          "centroidHz": 585.3196995888256,
+          "highFrequencyRatio": 0.032412462970482
+        },
+        "pitch": {
+          "midi": 38.25213547414363,
+          "frequencyHz": 74.49324324324324,
+          "rawCents": 225.21354741436284,
+          "foldedCents": 225.2135474143629,
+          "confidence": 0.7410285350481319
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7390369197622608,
+          "monoLossDb": -0.6925489789898988,
+          "leftRightBalanceDb": -2.680112143232807
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl3_rr4.flac",
+          "message": "Estimated pitch is 225.2 cents from mapped note",
+          "value": 225.2135474143629,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl4_rr1.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl4_rr1.flac",
+        "note": 36,
+        "velocityMin": 96,
+        "velocityMax": 127,
+        "durationSec": 2.359501133786848,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.22408273816108704,
+        "peakDb": -12.99183194650794,
+        "rmsDb": -34.02097810540849,
+        "activeRmsDb": -31.292784341105687,
+        "loudnessKMax": -24.402917009317594,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000005120897189737711,
+        "dcOffsetDb": -105.81307886479149,
+        "crestFactorDb": 18.300952394597747,
+        "leadingSilenceMs": 0,
+        "effectiveLeadingSilenceMs": 0,
+        "trailingSilenceMs": 1100.6122448979593,
+        "attackMs": 15.759637188208615,
+        "tailLevelDbRelPeak": -87.86674323058448,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 1258.8662131519275,
+        "spectral": {
+          "centroidHz": 779.1523355271231,
+          "highFrequencyRatio": 0.03848433346408725
+        },
+        "pitch": {
+          "midi": 38.31072213070058,
+          "frequencyHz": 74.7457627118644,
+          "rawCents": 231.0722130700583,
+          "foldedCents": 231.0722130700583,
+          "confidence": 0.7005783201161511
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7447649376908726,
+          "monoLossDb": -0.6692419176862938,
+          "leftRightBalanceDb": -2.5246626092699396
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl4_rr1.flac",
+          "message": "Estimated pitch is 231.1 cents from mapped note",
+          "value": 231.0722130700583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl4_rr2.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl4_rr2.flac",
+        "note": 36,
+        "velocityMin": 96,
+        "velocityMax": 127,
+        "durationSec": 2.4851020408163267,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.22694924473762512,
+        "peakDb": -12.881425164069487,
+        "rmsDb": -34.01743068453587,
+        "activeRmsDb": -31.04459912310956,
+        "loudnessKMax": -24.15743959522588,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000006159488271710509,
+        "dcOffsetDb": -104.2091073476334,
+        "crestFactorDb": 18.163173959040073,
+        "leadingSilenceMs": 1.1111111111111112,
+        "effectiveLeadingSilenceMs": 1.1111111111111112,
+        "trailingSilenceMs": 1230.7029478458048,
+        "attackMs": 15.4421768707483,
+        "tailLevelDbRelPeak": -90.72991162696928,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.1111111111111112,
+        "activeEndMs": 1254.37641723356,
+        "spectral": {
+          "centroidHz": 768.2573719657335,
+          "highFrequencyRatio": 0.03797362889049852
+        },
+        "pitch": {
+          "midi": 38.31072213070058,
+          "frequencyHz": 74.7457627118644,
+          "rawCents": 231.0722130700583,
+          "foldedCents": 231.0722130700583,
+          "confidence": 0.6922527847212111
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7420422992088395,
+          "monoLossDb": -0.6728150987613336,
+          "leftRightBalanceDb": -2.4723304846581513
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl4_rr2.flac",
+          "message": "Estimated pitch is 231.1 cents from mapped note",
+          "value": 231.0722130700583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl4_rr3.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl4_rr3.flac",
+        "note": 36,
+        "velocityMin": 96,
+        "velocityMax": 127,
+        "durationSec": 2.3233333333333333,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.2327871471643448,
+        "peakDb": -12.660820039695189,
+        "rmsDb": -33.642621855179,
+        "activeRmsDb": -30.78852380826907,
+        "loudnessKMax": -24.06766385194991,
+        "playbackGainDb": 0,
+        "dcOffset": 0.000005731258509799434,
+        "dcOffsetDb": -104.83500004285895,
+        "crestFactorDb": 18.127703768573877,
+        "leadingSilenceMs": 2.6077097505668934,
+        "effectiveLeadingSilenceMs": 2.6077097505668934,
+        "trailingSilenceMs": 1116.5532879818593,
+        "attackMs": 12.721088435374151,
+        "tailLevelDbRelPeak": -87.99616461899247,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.6077097505668934,
+        "activeEndMs": 1206.7573696145123,
+        "spectral": {
+          "centroidHz": 781.4141661825903,
+          "highFrequencyRatio": 0.03728247005530434
+        },
+        "pitch": {
+          "midi": 38.3400899757255,
+          "frequencyHz": 74.87266553480475,
+          "rawCents": 234.00899757254976,
+          "foldedCents": 234.0089975725498,
+          "confidence": 0.7023691608760189
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7380285506648656,
+          "monoLossDb": -0.6834500526360398,
+          "leftRightBalanceDb": -2.487014142927786
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl4_rr3.flac",
+          "message": "Estimated pitch is 234.0 cents from mapped note",
+          "value": 234.0089975725498,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/mid/kick/mid_kick_snon_vl4_rr4.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "Samples/mid/kick/mid_kick_snon_vl4_rr4.flac",
+        "note": 36,
+        "velocityMin": 96,
+        "velocityMax": 127,
+        "durationSec": 2.3496825396825396,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.21514296531677246,
+        "peakDb": -13.345456995723788,
+        "rmsDb": -34.19208416357432,
+        "activeRmsDb": -31.613105035441777,
+        "loudnessKMax": -24.59586556383334,
+        "playbackGainDb": 0,
+        "dcOffset": 2.7173633566665724e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 18.26764803971799,
+        "leadingSilenceMs": 7.27891156462585,
+        "effectiveLeadingSilenceMs": 7.27891156462585,
+        "trailingSilenceMs": 1044.920634920635,
+        "attackMs": 8.54875283446712,
+        "tailLevelDbRelPeak": -93.13067973473652,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.27891156462585,
+        "activeEndMs": 1304.7392290249434,
+        "spectral": {
+          "centroidHz": 768.1976453895652,
+          "highFrequencyRatio": 0.043087354634460236
+        },
+        "pitch": {
+          "midi": 38.28140401956064,
+          "frequencyHz": 74.61928934010152,
+          "rawCents": 228.14040195606395,
+          "foldedCents": 228.1404019560639,
+          "confidence": 0.6260004001962505
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7460478951202317,
+          "monoLossDb": -0.6666472749725776,
+          "leftRightBalanceDb": -2.5334990479614268
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "acoustic-kick",
+          "file": "Samples/mid/kick/mid_kick_snon_vl4_rr4.flac",
+          "message": "Estimated pitch is 228.1 cents from mapped note",
+          "value": 228.1404019560639,
+          "threshold": 10
+        }
+      ]
+    }
+  ]
+}

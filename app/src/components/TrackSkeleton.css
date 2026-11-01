@@ -1,0 +1,121 @@
+/* TrackSkeleton - Loading placeholder for track rows */
+/* Phase 34: Prevents CLS by reserving space during loading */
+
+.track-skeleton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  /* Match TrackRow height */
+  min-height: 44px;
+  /* Staggered fade-in animation */
+  animation: skeleton-fade-in 0.3s ease-out forwards;
+  animation-delay: var(--skeleton-delay, 0s);
+  opacity: 0;
+}
+
+@keyframes skeleton-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Shimmer animation for loading effect */
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Skeleton placeholder base styles */
+.skeleton-left,
+.skeleton-drag,
+.skeleton-name,
+.skeleton-btn,
+.skeleton-steps,
+.skeleton-step {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-elevated) 25%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* Left controls - matches .track-left positioning */
+.skeleton-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  /* Match sticky behavior of real track controls */
+  position: sticky;
+  left: 0;
+  background: var(--color-surface);
+  z-index: 1;
+  padding-right: 8px;
+}
+
+.skeleton-drag {
+  width: 20px;
+  height: 20px;
+}
+
+.skeleton-name {
+  width: 80px;
+  height: 24px;
+}
+
+.skeleton-btn {
+  width: 32px;
+  height: 28px;
+}
+
+/* Steps grid */
+.skeleton-steps {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.skeleton-step {
+  width: 40px;
+  height: 32px;
+  flex-shrink: 0;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .skeleton-left {
+    display: none;
+  }
+
+  .skeleton-step {
+    width: 36px;
+    height: 36px;
+  }
+
+  .track-skeleton {
+    min-height: 48px;
+  }
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .track-skeleton {
+    animation: none;
+    opacity: 1;
+  }
+
+  .skeleton-left,
+  .skeleton-drag,
+  .skeleton-name,
+  .skeleton-btn,
+  .skeleton-steps,
+  .skeleton-step {
+    animation: none;
+    background: var(--color-surface-elevated);
+  }
+}

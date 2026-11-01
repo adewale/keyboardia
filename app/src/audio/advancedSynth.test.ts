@@ -1,0 +1,1037 @@
+/**
+ * Tests for Advanced Synthesis Engine
+ *
+ * Tests dual oscillator, filter envelope, and LFO functionality
+ */
+
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import * as Tone from 'tone';
+import {
+  AdvancedSynthVoice,
+  AdvancedSynthEngine,
+  ADVANCED_SYNTH_PRESETS,
+  advancedVelocityFilterFrequency,
+  isAdvancedSynth,
+  getAdvancedSynthPresetId,
+} from './advancedSynth';
+import { semitoneToFrequency } from './constants';
+import { audioTime } from './audio-time';
+
+// Mock Tone.js
+vi.mock('tone', () => {
+  const automatable = (initial: number) => {
+    const param = {
+      value: initial,
+      cancelScheduledValues: vi.fn(),
+      setValueAtTime: vi.fn((value: number) => { param.value = value; }),
+      setTargetAtTime: vi.fn((value: number) => { param.value = value; }),
+    };
+    return param;
+  };
+
+  class MockOscillator {
+    type = 'sawtooth';
+    frequency = {
+      value: 440,
+      setValueAtTime: vi.fn((value: number) => { this.frequency.value = value; }),
+    };
+    detune = { value: 0 };
+    start = vi.fn();
+    stop = vi.fn();
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
+  class MockNoise {
+    start = vi.fn();
+    stop = vi.fn();
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
+  class MockGain {
+    gain = automatable(1);
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+    constructor(value?: number) {
+      if (value !== undefined) {
+        this.gain.value = value;
+      }
+    }
+  }
+
+  class MockFilter {
+    type = 'lowpass';
+    frequency = automatable(2000);
+    Q = automatable(1);
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
+  class MockAmplitudeEnvelope {
+    attack = 0.01;
+    decay = 0.2;
+    sustain = 0.5;
+    release = 0.5;
+    triggerAttack = vi.fn();
+    triggerRelease = vi.fn();
+    triggerAttackRelease = vi.fn();
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
+  class MockEnvelope {
+    attack = 0.01;
+    decay = 0.2;
+    sustain = 0.4;
+    release = 0.5;
+    triggerAttack = vi.fn();
+    triggerRelease = vi.fn();
+    triggerAttackRelease = vi.fn();
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
+  class MockFrequencyEnvelope {
+    attack = 0.01;
+    decay = 0.2;
+    sustain = 0.4;
+    release = 0.5;
+    baseFrequency = 200;
+    octaves = 4;
+    value = 0; // Current envelope value (for diagnostics)
+    triggerAttack = vi.fn();
+    triggerRelease = vi.fn();
+    triggerAttackRelease = vi.fn();
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
+  class MockMultiply {
+    private _value = 1;
+    private connectedParams: Array<{ value: number }> = [];
+    connect = vi.fn().mockImplementation((target: { value?: number }) => {
+      // Mock-fidelity guard: Tone signal operators override connected
+      // AudioParams. If production connects this Multiply directly to
+      // filter.frequency, changing envelopeAmount to 0 should pull that param
+      // to 0 and kill the sub-bass regression test.
+      if (target && typeof target.value === 'number') {
+        target.value = this._value;
+        this.connectedParams.push(target as { value: number });
+      }
+      return this;
+    });
+    dispose = vi.fn();
+    get value(): number {
+      return this._value;
+    }
+    set value(value: number) {
+      this._value = value;
+      for (const param of this.connectedParams) {
+        param.value = value;
+      }
+    }
+    constructor(value?: number) {
+      if (value !== undefined) {
+        this._value = value;
+      }
+    }
+  }
+
+  class MockAdd {
+    addend = automatable(0);
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+    constructor(value?: number) {
+      if (value !== undefined) {
+        this.addend.value = value;
+      }
+    }
+  }
+
+  class MockLFO {
+    frequency = automatable(5);
+    type = 'sine';
+    min = -1;
+    max = 1;
+    start = vi.fn();
+    stop = vi.fn();
+    // Track connected parameters to simulate real Tone.js behavior
+    private connectedParams: Array<{ value: number }> = [];
+    connect = vi.fn().mockImplementation((param: { value?: number }) => {
+      if (param && typeof param.value === 'number') {
+        this.connectedParams.push(param as { value: number });
+      }
+      return this;
+    });
+    disconnect = vi.fn().mockImplementation(() => {
+      // Simulate real Tone.js behavior: when LFO disconnects,
+      // the connected AudioParam is left at 0 (the default value)
+      for (const param of this.connectedParams) {
+        param.value = 0;
+      }
+      this.connectedParams = [];
+    });
+    dispose = vi.fn();
+  }
+
+  return {
+    Oscillator: MockOscillator,
+    Noise: MockNoise,
+    Gain: MockGain,
+    Filter: MockFilter,
+    AmplitudeEnvelope: MockAmplitudeEnvelope,
+    Envelope: MockEnvelope,
+    FrequencyEnvelope: MockFrequencyEnvelope,
+    Multiply: MockMultiply,
+    Add: MockAdd,
+    LFO: MockLFO,
+    Frequency: vi.fn().mockReturnValue({
+      toFrequency: () => 440,
+    }),
+    getContext: vi.fn().mockReturnValue({
+      state: 'running',
+      sampleRate: 44100,
+    }),
+    now: vi.fn().mockReturnValue(0),
+    immediate: vi.fn().mockReturnValue(0),
+  };
+});
+
+describe('advanced synth velocity timbre', () => {
+  it('keeps MIDI 90 near the authored cutoff and makes soft notes darker', () => {
+    const base = 4000;
+    const atDefault = advancedVelocityFilterFrequency(base, 90);
+    const soft = advancedVelocityFilterFrequency(base, Math.round(0.3 * 127));
+    const full = advancedVelocityFilterFrequency(base, 127);
+
+    expect(atDefault / base).toBeGreaterThanOrEqual(0.85);
+    expect(atDefault / base).toBeLessThanOrEqual(0.9);
+    expect(soft).toBeLessThan(atDefault);
+    expect(full).toBe(base);
+  });
+
+  it('clamps hostile velocity and frequency inputs to the filter domain', () => {
+    expect(advancedVelocityFilterFrequency(10, -100)).toBe(20);
+    expect(advancedVelocityFilterFrequency(40_000, 10_000)).toBe(20_000);
+    expect(advancedVelocityFilterFrequency(1000, Number.NaN)).toBe(1000);
+  });
+});
+
+describe('AdvancedSynthVoice', () => {
+  let voice: AdvancedSynthVoice;
+
+  beforeEach(() => {
+    voice = new AdvancedSynthVoice();
+    voice.initialize();
+  });
+
+  afterEach(() => {
+    voice.dispose();
+  });
+
+  describe('initialization', () => {
+    it('creates voice with output node', () => {
+      expect(voice.getOutput()).not.toBeNull();
+    });
+
+    it('starts inactive', () => {
+      expect(voice.isActive()).toBe(false);
+    });
+  });
+
+  describe('preset application', () => {
+    it('applies preset settings', () => {
+      const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+      voice.applyPreset(preset);
+      // Preset is stored and applied
+      expect(voice.isActive()).toBe(false);
+    });
+
+    it('handles all preset types', () => {
+      for (const presetId of Object.keys(ADVANCED_SYNTH_PRESETS)) {
+        const preset = ADVANCED_SYNTH_PRESETS[presetId];
+        expect(() => voice.applyPreset(preset)).not.toThrow();
+      }
+    });
+
+    it('keeps base filter cutoff for every zero-envelope preset', () => {
+      const zeroEnvelopePresetIds = Object.entries(ADVANCED_SYNTH_PRESETS)
+        .filter(([, preset]) => preset.filter.envelopeAmount === 0)
+        .map(([id]) => id);
+
+      // Regression coverage for the staging-silent Sub Bass bug. This also
+      // guards future advanced presets that intentionally use no filter sweep.
+      expect(zeroEnvelopePresetIds).toContain('sub-bass');
+
+      for (const presetId of zeroEnvelopePresetIds) {
+        const preset = ADVANCED_SYNTH_PRESETS[presetId];
+        voice.applyPreset(preset);
+
+        // Real Tone.js drives a connected Signal's target to the connected
+        // signal value. Route the envelope through an Add node so a zero
+        // envelope amount means "base cutoff", not "0 Hz cutoff".
+        expect(voice['filter']!.frequency.value).toBe(preset.filter.frequency);
+        expect(voice['filterEnvScaler']!.value).toBe(0);
+        expect(voice['filterEnvAdder']!.addend.value).toBe(preset.filter.frequency);
+      }
+    });
+
+    it('routes every filter LFO through the cutoff adder, not directly to filter.frequency', () => {
+      const filterLfoPresetIds = Object.entries(ADVANCED_SYNTH_PRESETS)
+        .filter(([, preset]) => preset.lfo.destination === 'filter' && preset.lfo.amount > 0)
+        .map(([id]) => id);
+
+      expect(filterLfoPresetIds).toEqual(expect.arrayContaining(['supersaw', 'wobble-bass', 'warm-pad']));
+
+      for (const presetId of filterLfoPresetIds) {
+        const preset = ADVANCED_SYNTH_PRESETS[presetId];
+        const lfo = voice['lfo'] as unknown as { connect: ReturnType<typeof vi.fn> };
+        lfo.connect.mockClear();
+
+        voice.applyPreset(preset);
+
+        // LFO is another cutoff modulation source. It must be summed with the
+        // same base cutoff as the filter envelope so it cannot reset the
+        // audible cutoff around 0 Hz.
+        expect(lfo.connect).toHaveBeenCalledWith(voice['filterEnvAdder']);
+        expect(lfo.connect).not.toHaveBeenCalledWith(voice['filter']!.frequency);
+      }
+    });
+
+    it('updates the raw filter cutoff and additive base through one public method', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['sub-bass']);
+
+      voice.setFilterFrequency(1234);
+
+      expect(voice['filter']!.frequency.value).toBe(1234);
+      expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
+      expect(voice['filter']!.frequency.setTargetAtTime).toHaveBeenLastCalledWith(1234, expect.any(Number), 0.04);
+      expect(voice['filterEnvAdder']!.addend.setTargetAtTime).toHaveBeenLastCalledWith(1234, expect.any(Number), 0.04);
+    });
+
+    it('anchors a timestamped filter update without reading local now', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['sub-bass']);
+      voice.setFilterFrequency(1234, audioTime(5.25));
+
+      expect(voice['filter']!.frequency.setValueAtTime).toHaveBeenLastCalledWith(1234, 5.25);
+      expect(voice['filterEnvAdder']!.addend.setValueAtTime).toHaveBeenLastCalledWith(1234, 5.25);
+    });
+
+    it('scales sync-enabled LFO rates from the sequencer tempo', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['wobble-bass']);
+      expect(voice['lfo']!.frequency.value).toBe(2);
+
+      voice.setTempo(180);
+      expect(voice['lfo']!.frequency.value).toBe(3);
+
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['warm-pad']);
+      voice.setTempo(60);
+      expect(voice['lfo']!.frequency.value).toBe(0.3);
+    });
+  });
+
+  describe('note triggering', () => {
+    it('triggers attack and becomes active', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['supersaw']);
+      voice.triggerAttack(440);
+      expect(voice.isActive()).toBe(true);
+    });
+
+    it('triggers attack and release', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['supersaw']);
+      voice.triggerAttackRelease(440, 0.5);
+      expect(voice.isActive()).toBe(true);
+    });
+
+    it('schedules oscillator retuning at the note timestamp', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['supersaw']);
+      const osc1 = voice['osc1']!;
+      const osc2 = voice['osc2']!;
+
+      voice.triggerAttackRelease(330, 0.5, 1.25);
+
+      expect(osc1.frequency.setValueAtTime).toHaveBeenCalledWith(330, 1.25);
+      expect(osc2.frequency.setValueAtTime).toHaveBeenCalledWith(330, 1.25);
+    });
+
+    it('triggers release', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['supersaw']);
+      voice.triggerAttack(440);
+      voice.triggerRelease();
+      // Voice is still technically active until envelope completes
+      expect(voice.isActive()).toBe(true);
+    });
+  });
+
+  describe('disposal', () => {
+    it('disposes all resources', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['supersaw']);
+      voice.triggerAttack(440);
+      voice.dispose();
+      expect(voice.getOutput()).toBeNull();
+      expect(voice.isActive()).toBe(false);
+    });
+  });
+});
+
+describe('AdvancedSynthEngine', () => {
+  let engine: AdvancedSynthEngine;
+
+  beforeEach(async () => {
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
+    engine = new AdvancedSynthEngine();
+    await engine.initialize();
+  });
+
+  afterEach(() => {
+    engine.dispose();
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
+  });
+
+  describe('initialization', () => {
+    it('initializes with output node', () => {
+      expect(engine.getOutput()).not.toBeNull();
+    });
+
+    it('reports ready after initialization', () => {
+      expect(engine.isReady()).toBe(true);
+    });
+
+    it('applies default preset on initialization', () => {
+      expect(engine.getCurrentPreset()).not.toBeNull();
+    });
+  });
+
+  describe('preset management', () => {
+    it('sets preset by name', () => {
+      engine.setPreset('wobble-bass');
+      expect(engine.getCurrentPreset()?.name).toBe('Wobble Bass');
+    });
+
+    it('returns available preset names', () => {
+      const names = engine.getPresetNames();
+      expect(names).toContain('supersaw');
+      expect(names).toContain('wobble-bass');
+      expect(names).toContain('acid-bass');
+    });
+
+    it('warns for unknown preset', () => {
+      const originalPreset = engine.getCurrentPreset();
+      engine.setPreset('unknown-preset');
+      // Should not change preset
+      expect(engine.getCurrentPreset()).toBe(originalPreset);
+    });
+
+    it('does not erase live overrides when the same preset is selected per note', () => {
+      engine.setPreset('supersaw');
+      engine.setFilterFrequency(1234);
+      engine.setEnvelope({ attack: 0.37, decay: 0.2, sustain: 0.7, release: 0.5 });
+      const applyPreset = vi.spyOn(engine['voices'][0], 'applyPreset');
+
+      // AudioEngine calls setPreset before each scheduled note. Selecting the
+      // already-active preset must be idempotent rather than restoring defaults.
+      engine.setPreset('supersaw');
+      expect(applyPreset).not.toHaveBeenCalled();
+
+      for (const voice of engine['voices']) {
+        expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
+        expect(voice['ampEnvelope']!.attack).toBe(0.37);
+      }
+    });
+
+    it('reapplies live overrides after an actual preset change', () => {
+      engine.setFilterFrequency(1234);
+      engine.setEnvelope({ attack: 0.37, decay: 0.2, sustain: 0.7, release: 0.5 });
+
+      engine.setPreset('wobble-bass');
+
+      for (const voice of engine['voices']) {
+        expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
+        expect(voice['ampEnvelope']!.attack).toBe(0.37);
+      }
+    });
+
+    it('bounds live envelope controls to the shared ADSR contract', () => {
+      engine.setAttack(99);
+      engine.setRelease(99);
+
+      for (const voice of engine['voices']) {
+        expect(voice['ampEnvelope']!.attack).toBe(4);
+        expect(voice['ampEnvelope']!.release).toBe(8);
+      }
+
+      engine.setAttack(0);
+      engine.setRelease(0);
+      for (const voice of engine['voices']) {
+        expect(voice['ampEnvelope']!.attack).toBe(0.001);
+        expect(voice['ampEnvelope']!.release).toBe(0);
+      }
+    });
+  });
+
+  describe('note playback', () => {
+    it('plays note by semitone', () => {
+      expect(() => engine.playNoteSemitone(0, 0.5)).not.toThrow();
+    });
+
+    it('plays note by frequency', () => {
+      expect(() => engine.playNoteFrequency(440, 0.5)).not.toThrow();
+    });
+
+    it('does not rebuild an already-selected preset on the note hot path', () => {
+      engine.setPreset('tremolo-strings');
+      const voice = engine['voices'][0];
+      const applyPreset = vi.spyOn(voice, 'applyPreset');
+
+      engine.playNoteFrequency(440, 0.5, 0.1);
+
+      expect(applyPreset).not.toHaveBeenCalled();
+    });
+
+    it('plays note by name', () => {
+      expect(() => engine.playNote('C4', 0.5)).not.toThrow();
+    });
+
+    it('plays with scheduled time', () => {
+      expect(() => engine.playNoteSemitone(0, 0.5, 0.1)).not.toThrow();
+    });
+
+    it('does not move a rejected event to a renderer-chosen retry time', () => {
+      const voice = engine['voices'][0];
+      const trigger = vi.spyOn(voice, 'triggerAttackRelease');
+      trigger.mockImplementationOnce(() => { throw new Error('timeline rejected'); });
+
+      expect(() => engine.playNoteSemitone(0, 0.5, 2)).not.toThrow();
+
+      expect(trigger).toHaveBeenCalledTimes(1);
+      expect(trigger).toHaveBeenCalledWith(expect.any(Number), 0.5, 2, 1);
+      expect(voice.isActive()).toBe(false);
+      expect(engine.getDiagnostics().failureReasons.at(-1)).toContain(
+        'Tone.js timing error at 2.000',
+      );
+    });
+
+    it('uses MIDI velocity for cutoff while preserving noteGain as amplitude', () => {
+      const voice = engine['voices'][0];
+      const trigger = vi.spyOn(voice, 'triggerAttackRelease');
+      vi.mocked(Tone.immediate).mockReturnValue(10);
+      vi.mocked(Tone.now).mockReturnValue(10.1);
+
+      engine.playNoteSemitone(0, 0.5, 10.25, 0.42, 90);
+
+      const expectedCutoff = advancedVelocityFilterFrequency(
+        ADVANCED_SYNTH_PRESETS.supersaw.filter.frequency,
+        90,
+      );
+      expect(voice['filterEnvAdder']!.addend.value).toBeCloseTo(expectedCutoff, 8);
+      expect(voice['filter']!.frequency.setValueAtTime).toHaveBeenLastCalledWith(expectedCutoff, 10.25);
+      expect(voice['filterEnvAdder']!.addend.setValueAtTime).toHaveBeenLastCalledWith(expectedCutoff, 10.25);
+      expect(trigger).toHaveBeenCalledWith(
+        expect.any(Number),
+        0.5,
+        10.25,
+        0.42,
+      );
+    });
+
+    it('applies velocity relative to a live filter-frequency override', () => {
+      engine.setFilterFrequency(2000);
+
+      engine.playNoteSemitone(0, 0.5, 0.1, 1, 90);
+
+      expect(engine['voices'][0]['filterEnvAdder']!.addend.value).toBeCloseTo(
+        advancedVelocityFilterFrequency(2000, 90),
+        8,
+      );
+    });
+  });
+
+  describe('frequency conversion', () => {
+    // Note: semitoneToFrequency is now a standalone function in constants.ts
+    it('converts semitone 0 to C4 frequency (~261.6 Hz)', () => {
+      const freq = semitoneToFrequency(0);
+      expect(freq).toBeCloseTo(261.625565, 2);
+    });
+
+    it('converts semitone 12 to C5 frequency (~523.3 Hz)', () => {
+      const freq = semitoneToFrequency(12);
+      expect(freq).toBeCloseTo(523.25, 1);
+    });
+
+    it('converts semitone -12 to C3 frequency (~130.8 Hz)', () => {
+      const freq = semitoneToFrequency(-12);
+      expect(freq).toBeCloseTo(130.81, 1);
+    });
+  });
+
+  describe('disposal', () => {
+    it('disposes all resources', () => {
+      engine.dispose();
+      expect(engine.getOutput()).toBeNull();
+      expect(engine.isReady()).toBe(false);
+      expect(engine.getCurrentPreset()).toBeNull();
+    });
+  });
+});
+
+describe('ADVANCED_SYNTH_PRESETS', () => {
+  it('has all expected presets', () => {
+    const expectedPresets = [
+      'supersaw',
+      'sub-bass',
+      'wobble-bass',
+      'warm-pad',
+      'vibrato-lead',
+      'tremolo-strings',
+      'acid-bass',
+      'thick-lead',
+    ];
+    for (const preset of expectedPresets) {
+      expect(ADVANCED_SYNTH_PRESETS[preset]).toBeDefined();
+    }
+  });
+
+  it('all presets have valid oscillator configs', () => {
+    for (const [_name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+      expect(preset.oscillator1.waveform).toMatch(/^(sine|sawtooth|square|triangle)$/);
+      expect(preset.oscillator1.level).toBeGreaterThanOrEqual(0);
+      expect(preset.oscillator1.level).toBeLessThanOrEqual(1);
+      expect(preset.oscillator2.waveform).toMatch(/^(sine|sawtooth|square|triangle)$/);
+      expect(preset.oscillator2.level).toBeGreaterThanOrEqual(0);
+      expect(preset.oscillator2.level).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('all presets have valid filter configs', () => {
+    for (const [_name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+      expect(preset.filter.frequency).toBeGreaterThanOrEqual(20);
+      expect(preset.filter.frequency).toBeLessThanOrEqual(20000);
+      expect(preset.filter.resonance).toBeGreaterThanOrEqual(0);
+      expect(preset.filter.type).toMatch(/^(lowpass|highpass|bandpass)$/);
+    }
+  });
+
+  it('all presets have valid LFO configs', () => {
+    for (const [_name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+      expect(preset.lfo.frequency).toBeGreaterThanOrEqual(0);
+      expect(preset.lfo.frequency).toBeLessThanOrEqual(20);
+      expect(preset.lfo.amount).toBeGreaterThanOrEqual(0);
+      expect(preset.lfo.amount).toBeLessThanOrEqual(1);
+      expect(preset.lfo.destination).toMatch(/^(filter|pitch|amplitude)$/);
+    }
+  });
+
+  it('all presets have valid envelope values', () => {
+    for (const [_name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+      // Amplitude envelope
+      expect(preset.amplitudeEnvelope.attack).toBeGreaterThan(0);
+      expect(preset.amplitudeEnvelope.decay).toBeGreaterThan(0);
+      expect(preset.amplitudeEnvelope.sustain).toBeGreaterThanOrEqual(0);
+      expect(preset.amplitudeEnvelope.sustain).toBeLessThanOrEqual(1);
+      expect(preset.amplitudeEnvelope.release).toBeGreaterThan(0);
+
+      // Filter envelope
+      expect(preset.filterEnvelope.attack).toBeGreaterThan(0);
+      expect(preset.filterEnvelope.decay).toBeGreaterThan(0);
+      expect(preset.filterEnvelope.sustain).toBeGreaterThanOrEqual(0);
+      expect(preset.filterEnvelope.sustain).toBeLessThanOrEqual(1);
+      expect(preset.filterEnvelope.release).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe('helper functions', () => {
+  describe('isAdvancedSynth', () => {
+    it('returns true for advanced synth sample IDs', () => {
+      expect(isAdvancedSynth('advanced:supersaw')).toBe(true);
+      expect(isAdvancedSynth('advanced:wobble-bass')).toBe(true);
+    });
+
+    it('returns false for other sample IDs', () => {
+      expect(isAdvancedSynth('kick')).toBe(false);
+      expect(isAdvancedSynth('synth:bass')).toBe(false);
+      expect(isAdvancedSynth('tone:fm-epiano')).toBe(false);
+    });
+  });
+
+  describe('getAdvancedSynthPresetId', () => {
+    it('extracts preset ID from sample ID', () => {
+      expect(getAdvancedSynthPresetId('advanced:supersaw')).toBe('supersaw');
+      expect(getAdvancedSynthPresetId('advanced:acid-bass')).toBe('acid-bass');
+    });
+
+    it('returns null for non-advanced synth IDs', () => {
+      expect(getAdvancedSynthPresetId('kick')).toBeNull();
+      expect(getAdvancedSynthPresetId('synth:bass')).toBeNull();
+    });
+
+    it('returns null for unknown presets', () => {
+      expect(getAdvancedSynthPresetId('advanced:unknown')).toBeNull();
+    });
+  });
+
+  // NOTE: getAdvancedSynthEngine singleton removed in Phase 22.
+  // Singletons cache Tone.js nodes across HMR, causing AudioContext mismatch errors.
+  // Always use `new AdvancedSynthEngine()` instead.
+  // See audio-context-safety.test.ts for comprehensive documentation.
+});
+
+describe('LFO destinations', () => {
+  let engine: AdvancedSynthEngine;
+
+  beforeEach(async () => {
+    engine = new AdvancedSynthEngine();
+    await engine.initialize();
+  });
+
+  afterEach(() => {
+    engine.dispose();
+  });
+
+  it('wobble-bass uses filter LFO', () => {
+    engine.setPreset('wobble-bass');
+    const preset = engine.getCurrentPreset();
+    expect(preset?.lfo.destination).toBe('filter');
+    expect(preset?.lfo.amount).toBeGreaterThan(0);
+  });
+
+  it('vibrato-lead uses pitch LFO', () => {
+    engine.setPreset('vibrato-lead');
+    const preset = engine.getCurrentPreset();
+    expect(preset?.lfo.destination).toBe('pitch');
+    expect(preset?.lfo.amount).toBeGreaterThan(0);
+  });
+
+  it('tremolo-strings uses amplitude LFO', () => {
+    engine.setPreset('tremolo-strings');
+    const preset = engine.getCurrentPreset();
+    expect(preset?.lfo.destination).toBe('amplitude');
+    expect(preset?.lfo.amount).toBeGreaterThan(0);
+  });
+
+  it('switching from amplitude LFO preset preserves output gain', () => {
+    // This test reproduces a bug where switching FROM a preset with
+    // lfo.destination='amplitude' (like tremolo-strings) TO another preset
+    // would leave the voice-local output gain at 0 instead of unity
+
+    // First apply a non-amplitude preset - voice output should be unity
+    engine.setPreset('supersaw');
+    const voice = engine['voices'][0];
+    const output = voice.getOutput();
+    expect(output).not.toBeNull();
+    expect(output!.gain.value).toBe(1);
+
+    // Apply tremolo-strings (amplitude LFO) - this connects LFO to output.gain
+    engine.setPreset('tremolo-strings');
+    // The LFO now controls output.gain, but we don't care about the exact value here
+
+    // Switch back to supersaw - voice output should be reset to unity
+    engine.setPreset('supersaw');
+    expect(output!.gain.value).toBe(1);
+  });
+});
+
+describe('dual oscillator features', () => {
+  it('supersaw has detuned oscillators', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    expect(preset.oscillator1.detune).toBeLessThan(0);
+    expect(preset.oscillator2.detune).toBeGreaterThan(0);
+  });
+
+  it('sub-bass has octave-layered oscillators', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['sub-bass'];
+    expect(preset.oscillator2.coarseDetune).toBe(-12); // One octave down
+  });
+
+  it('thick-lead has wide detuning', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['thick-lead'];
+    const detuneRange = Math.abs(preset.oscillator1.detune - preset.oscillator2.detune);
+    expect(detuneRange).toBeGreaterThanOrEqual(50); // Wide detuning
+  });
+});
+
+describe('filter envelope', () => {
+  it('acid-bass has high filter envelope amount', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['acid-bass'];
+    expect(preset.filter.envelopeAmount).toBeGreaterThan(0.8);
+  });
+
+  it('acid-bass has high resonance', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['acid-bass'];
+    expect(preset.filter.resonance).toBeGreaterThan(10);
+  });
+
+  it('warm-pad has slow filter envelope', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['warm-pad'];
+    expect(preset.filterEnvelope.attack).toBeGreaterThan(0.5);
+  });
+});
+
+describe('voice release tracking', () => {
+  let voice: AdvancedSynthVoice;
+
+  beforeEach(() => {
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
+    voice = new AdvancedSynthVoice();
+    voice.initialize();
+  });
+
+  afterEach(() => {
+    voice.dispose();
+    vi.mocked(Tone.now).mockReturnValue(0);
+    vi.mocked(Tone.immediate).mockReturnValue(0);
+  });
+
+  it('retires a voice from Tone audio time without scheduling a wall-clock timer', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    voice.applyPreset(preset);
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout');
+
+    // Trigger note with 0.5s duration
+    voice.triggerAttackRelease(440, 0.5);
+
+    // Voice should be active immediately
+    expect(voice.isActive()).toBe(true);
+
+    expect(setTimeoutSpy).not.toHaveBeenCalled();
+
+    // Advance the audio clock past duration + release + the tail guard.
+    vi.mocked(Tone.now).mockReturnValue(1.2);
+    vi.mocked(Tone.immediate).mockReturnValue(1.1);
+
+    // Voice should now be inactive
+    expect(voice.isActive()).toBe(false);
+    setTimeoutSpy.mockRestore();
+  });
+
+  it('reuses a retired voice without restarting its continuous sources', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS['warm-pad']);
+    const osc1Start = voice['osc1']!.start;
+    const osc2Start = voice['osc2']!.start;
+    const noiseStart = voice['noise']!.start;
+    const lfoStart = voice['lfo']!.start;
+    const ampTriggers = voice['ampEnvelope']!.triggerAttackRelease;
+    const filterTriggers = voice['filterEnvelope']!.triggerAttackRelease;
+
+    voice.triggerAttackRelease(440, 0.1);
+    vi.mocked(Tone.now).mockReturnValue(2.1);
+    vi.mocked(Tone.immediate).mockReturnValue(2);
+    expect(voice.isActive()).toBe(false);
+
+    voice.triggerAttackRelease(660, 0.1);
+
+    expect(osc1Start).toHaveBeenCalledTimes(1);
+    expect(osc2Start).toHaveBeenCalledTimes(1);
+    expect(noiseStart).toHaveBeenCalledTimes(1);
+    expect(lfoStart).toHaveBeenCalledTimes(1);
+    expect(ampTriggers).toHaveBeenCalledTimes(2);
+    expect(filterTriggers).toHaveBeenCalledTimes(2);
+    expect(voice.isActive()).toBe(true);
+  });
+
+  it('triggerAttack remains active until an explicit audio-time release', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    voice.applyPreset(preset);
+
+    // Trigger attack only (no duration)
+    voice.triggerAttack(440);
+
+    // Voice should be active
+    expect(voice.isActive()).toBe(true);
+
+    vi.mocked(Tone.now).mockReturnValue(5000);
+    vi.mocked(Tone.immediate).mockReturnValue(4999.9);
+
+    // Voice should still be active (no automatic release deadline).
+    expect(voice.isActive()).toBe(true);
+  });
+
+  it('tracks note start time on the Tone audio clock for voice stealing', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    voice.applyPreset(preset);
+    vi.mocked(Tone.now).mockReturnValue(12.5);
+    vi.mocked(Tone.immediate).mockReturnValue(12.4);
+
+    voice.triggerAttack(440);
+
+    expect(voice.getNoteStartTime()).toBe(12.4);
+  });
+
+  it('preserves an authored zero release instead of substituting 0.5 seconds', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    voice.applyPreset(preset);
+    voice['ampEnvelope']!.release = 0;
+
+    voice.triggerAttackRelease(440, 0.5);
+    expect(voice.isActive()).toBe(true);
+
+    vi.mocked(Tone.now).mockReturnValue(0.66);
+    vi.mocked(Tone.immediate).mockReturnValue(0.56);
+    expect(voice.isActive()).toBe(false);
+  });
+
+  it('scales notation-based retirement deadlines with the current tempo', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS.supersaw);
+    voice.setTempo(60);
+    voice.triggerAttackRelease(440, '4n');
+
+    expect(voice['ampEnvelope']!.triggerAttackRelease).toHaveBeenCalledWith(1, undefined, 1);
+    expect(voice['filterEnvelope']!.triggerAttackRelease).toHaveBeenCalledWith(1, undefined);
+
+    // A quarter note at 60 BPM lasts one second, plus 0.5s release and
+    // the 50ms tail guard. The old fixed-120 calculation retired at 1.05s.
+    vi.mocked(Tone.now).mockReturnValue(1.2);
+    vi.mocked(Tone.immediate).mockReturnValue(1.1);
+    expect(voice.isActive()).toBe(true);
+    vi.mocked(Tone.now).mockReturnValue(1.66);
+    vi.mocked(Tone.immediate).mockReturnValue(1.56);
+    expect(voice.isActive()).toBe(false);
+  });
+
+  it('does not retire a voice early because Tone.now includes lookahead', () => {
+    voice.applyPreset(ADVANCED_SYNTH_PRESETS.supersaw);
+    voice.triggerAttackRelease(440, 0.5, 10);
+
+    // The raw clock is still before the 10 + 0.5 + 0.5 + 0.05 deadline,
+    // although Tone.now() has already crossed it by adding 100 ms lookahead.
+    vi.mocked(Tone.now).mockReturnValue(11.06);
+    vi.mocked(Tone.immediate).mockReturnValue(10.96);
+    expect(voice.isActive()).toBe(true);
+
+    vi.mocked(Tone.immediate).mockReturnValue(11.06);
+    expect(voice.isActive()).toBe(false);
+  });
+});
+
+describe('voice stealing', () => {
+  let engine: AdvancedSynthEngine;
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    engine = new AdvancedSynthEngine();
+    await engine.initialize();
+  });
+
+  afterEach(() => {
+    engine.dispose();
+    vi.useRealTimers();
+  });
+
+  it('steals oldest voice when all voices are active', () => {
+    const voices = (engine as unknown as { voices: AdvancedSynthVoice[] }).voices;
+    const triggers = voices.map(voice => vi.spyOn(voice, 'triggerAttackRelease'));
+
+    // Fill all eight allocator slots with scheduler-owned absolute times.
+    // Voice age comes from those event timestamps, never from a renderer-owned
+    // monotonic cursor or fake wall-clock advancement.
+    for (let i = 0; i < 8; i++) {
+      engine.playNoteSemitone(i, 10, i / 100);
+    }
+    const orderedStartTimes = voices.map(voice => voice.getNoteStartTime());
+    expect(orderedStartTimes).toEqual([...orderedStartTimes].sort((a, b) => a - b));
+    expect(new Set(orderedStartTimes).size).toBe(voices.length);
+    triggers.forEach(trigger => trigger.mockClear());
+
+    engine.playNoteSemitone(10, 10, 0.1);
+
+    expect(triggers[0]).toHaveBeenCalledTimes(1);
+    triggers.slice(1).forEach(trigger => expect(trigger).not.toHaveBeenCalled());
+    expect(voices[0].getNoteStartTime()).toBeGreaterThan(orderedStartTimes.at(-1)!);
+  });
+});
+
+/**
+ * Auto-expanding preset transition tests
+ *
+ * These tests automatically cover ALL preset-to-preset transitions.
+ * When a new preset is added to ADVANCED_SYNTH_PRESETS, tests automatically
+ * expand to cover all transitions to/from the new preset.
+ *
+ * This catches bugs like the output.gain=0 issue that occurred when switching
+ * FROM tremolo-strings (amplitude LFO) TO any other preset.
+ *
+ * See docs/AUDIO-ENGINEERING-PATTERNS.md for the underlying WebAudio pitfall.
+ */
+describe('preset transition safety (auto-expanding)', () => {
+  let engine: AdvancedSynthEngine;
+
+  // Dynamically generate ALL preset combinations
+  // This automatically expands when new presets are added
+  const presetNames = Object.keys(ADVANCED_SYNTH_PRESETS);
+
+  // Generate all N×(N-1) transitions (exclude same→same)
+  const allTransitions: [string, string][] = presetNames.flatMap(from =>
+    presetNames
+      .filter(to => to !== from)
+      .map(to => [from, to] as [string, string])
+  );
+
+  beforeEach(async () => {
+    engine = new AdvancedSynthEngine();
+    await engine.initialize();
+  });
+
+  afterEach(() => {
+    engine.dispose();
+  });
+
+  // Meta-test: verify expected number of transitions
+  // This catches if someone accidentally breaks the test generation
+  it(`should test all ${allTransitions.length} preset transitions (${presetNames.length} presets × ${presetNames.length - 1} targets)`, () => {
+    expect(allTransitions.length).toBe(presetNames.length * (presetNames.length - 1));
+    // Sanity check: with 8 presets, we expect 8×7 = 56 transitions
+    expect(presetNames.length).toBeGreaterThanOrEqual(8);
+  });
+
+  describe('output.gain preserved after LFO disconnect', () => {
+    it.each(allTransitions)(
+      '%s → %s: voice output.gain should be unity',
+      (fromPreset, toPreset) => {
+        // Apply source preset
+        engine.setPreset(fromPreset);
+
+        // Trigger a note to activate LFO modulation (if any)
+        engine.playNoteFrequency(440, 0.1);
+
+        // Switch to target preset
+        engine.setPreset(toPreset);
+
+        // Verify output gain is reset correctly
+        // This catches the bug where amplitude LFO left gain at 0
+        const voice = engine['voices'][0];
+        const output = voice.getOutput();
+        expect(output).not.toBeNull();
+        expect(output!.gain.value).toBe(1);
+      }
+    );
+  });
+
+  describe('oscillator detune matches target preset config', () => {
+    it.each(allTransitions)(
+      '%s → %s: osc1.detune should match target preset',
+      (fromPreset, toPreset) => {
+        // Apply source preset
+        engine.setPreset(fromPreset);
+
+        // Trigger a note to activate LFO modulation (if any)
+        engine.playNoteFrequency(440, 0.1);
+
+        // Switch to target preset
+        engine.setPreset(toPreset);
+
+        // Verify oscillator detune matches the NEW preset's config
+        // This catches bugs where pitch LFO left detune at modulated value
+        const voice = engine['voices'][0];
+        const preset = ADVANCED_SYNTH_PRESETS[toPreset];
+        const expectedDetune = preset.oscillator1.detune + (preset.oscillator1.coarseDetune * 100);
+
+        const osc1 = voice['osc1'];
+        expect(osc1?.detune.value).toBe(expectedDetune);
+      }
+    );
+  });
+});

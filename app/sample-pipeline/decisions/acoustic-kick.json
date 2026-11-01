@@ -1,0 +1,38 @@
+{
+  "version": 1,
+  "candidateId": "acoustic-kick",
+  "buildReportSha256": "47f72c71eb51f77fe01c4ad6dc792b9b8cf3983a47c1e02877abedfc8bff09d9",
+  "outputHashes": [
+    "f6f12e513cfbeaff6d4d6b7e1518156c98fea0087db4b055041647938c2cbf24",
+    "0c6d46c3d2dafc22b5b2b0b75ad83a982afb3450f6f0aa09b7bd5c2f0415ad38",
+    "3246133db11314004bbc6ca8a304e586884154273ab2d4083440d384c67ad60f",
+    "a8db243e6d7b7ecedc82c23b771699cc0678ae597a2bc96ab9381d73c2ef2da2",
+    "72d458e68a7e4eee47ed9129a1e49dc892f4df6883f71c85031e49a483701baa",
+    "141452d866dfa52c3832fc86dedae7f9ea1ce107c92f03ae62037485b654e881",
+    "0e392ddd08fa0e0276dc55b667ef66b32a65e5df77cf8b6a76029a1468de0b76",
+    "26c5612f0055c6c6f09740e2aec852f903b27486b68c8456710c27b776aead5d",
+    "6691be67dc49883a7ae112f25feed17adb374e34c541653a1099c816ad03aee7",
+    "3848895fbe0c3247700af48c26cd99c07f1824fb7d0d9f292ebda73bb9c14463",
+    "b6cf5459b20c3bd43ecc78f5b9b5b67f4610e106d35b914869af7654ae19f8e1",
+    "22768aef7365491ca1e5028ea20f82ed98077f6044eb73d4974eaaa93c99502c",
+    "2da345375bc8a4cab4cb0d1a251d4e639503446d8d6909f9e2b8c3a0df398873",
+    "122c9ba8ac91cffd4ace64ed510394a1aff4fc1be65da8b23d9600eab5acca3f",
+    "25425c74bf99ac94c9403918625ff0074bfb343d616c03bbb33d8d7078edca5f",
+    "ae1430d1c62f7565153499d001f635e0901af37cd6ec2b648cc5cd0df0123190"
+  ],
+  "decision": "rejected",
+  "reviewer": "Human reviewer (user-provided decision)",
+  "reviewedAt": "2026-07-10T19:19:27.000Z",
+  "anchorsReviewed": [
+    "low-soft",
+    "mid-medium",
+    "high-loud"
+  ],
+  "pitchSpanSemitones": 12,
+  "reviewDispositions": {
+    "source-0003.m4a: VELOCITY_ENERGY_INVERSION": "Unresolved and not waived: the exact-hash candidate was rejected at the blinded-anchor gate because the human reviewer preferred the current production sample.",
+    "source-0006.m4a: VELOCITY_ENERGY_INVERSION": "Unresolved and not waived: the exact-hash candidate was rejected at the blinded-anchor gate because the human reviewer preferred the current production sample.",
+    "source-0010.m4a: VELOCITY_ENERGY_INVERSION": "Unresolved and not waived: the exact-hash candidate was rejected at the blinded-anchor gate because the human reviewer preferred the current production sample."
+  },
+  "notes": "Rejected at the blinded-anchor gate. Human reviewer statement: \u201cI kept preferring the current samples in all the blind tests.\u201d Runtime promotion review was therefore unnecessary; production remains unchanged."
+}

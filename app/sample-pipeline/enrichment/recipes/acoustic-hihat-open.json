@@ -1,0 +1,320 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "acoustic-hihat-open",
+    "name": "Acoustic Hi-Hat (Open)",
+    "releaseTime": 0.3,
+    "playbackNote": 46,
+    "playableRange": {
+      "min": 34,
+      "max": 73
+    },
+    "chokeGroup": "acoustic-hihat",
+    "gainDb": 10.891419141523805,
+    "credits": {
+      "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
+      "url": "https://github.com/sfzinstruments/virtuosity_drums",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "licenseUrl": "https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE",
+      "changes": "Complete same-mic velocity/variation mapping; deterministic round-robin selection; AAC-LC delivery and uniform group leveling."
+    }
+  },
+  "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "Samples/mid/hh/mid_hh_open_vl1_rr1.flac",
+      "sha256": "62b6d49fd321dc730ad4b95448e3f129655606e9958c1e30587aa7cca221cd9b"
+    },
+    {
+      "id": "source-0002",
+      "path": "Samples/mid/hh/mid_hh_open_vl1_rr2.flac",
+      "sha256": "01923636b2865dc88ea796fd0c1c7fc5ee438b4bd2f69ee6ffadee14af717056"
+    },
+    {
+      "id": "source-0003",
+      "path": "Samples/mid/hh/mid_hh_open_vl1_rr3.flac",
+      "sha256": "2c2cd7766da90c4b458f3a47103300aa994625317c44024d77a77d99500c635b"
+    },
+    {
+      "id": "source-0004",
+      "path": "Samples/mid/hh/mid_hh_open_vl2_rr1.flac",
+      "sha256": "b2ab26c09f890523c054a262993cb4f80f9de0b7272b8eb14e4770ccdb3d053a"
+    },
+    {
+      "id": "source-0005",
+      "path": "Samples/mid/hh/mid_hh_open_vl2_rr2.flac",
+      "sha256": "38ab2fc7e4da6d93d5cbac6e6e5a80b4c660c4d1cb6848dbb7bc4529ed64725c"
+    },
+    {
+      "id": "source-0006",
+      "path": "Samples/mid/hh/mid_hh_open_vl2_rr3.flac",
+      "sha256": "885cfd40c19fe64df50ea0da391890368b264e5c4ba2c6f45bfd702661133cdd"
+    },
+    {
+      "id": "source-0007",
+      "path": "Samples/mid/hh/mid_hh_open_vl3_rr1.flac",
+      "sha256": "58302f8eabd04050ddb00d0f6ba907edb7996a7d36ce437e98494eec3ae9da69"
+    },
+    {
+      "id": "source-0008",
+      "path": "Samples/mid/hh/mid_hh_open_vl3_rr2.flac",
+      "sha256": "1e0a8a27ca3d93d07285b23eacc271ed720fc63efb980ee06e871ff7ffb4b66c"
+    },
+    {
+      "id": "source-0009",
+      "path": "Samples/mid/hh/mid_hh_open_vl3_rr3.flac",
+      "sha256": "0f53562496f19753eed2184f8bdc8fd961ef60acafa83d880ab8d7852358b0a5"
+    },
+    {
+      "id": "source-0010",
+      "path": "Samples/mid/hh/mid_hh_open_vl4_rr1.flac",
+      "sha256": "006556df13c01419b77fc0c734f9b5db79ad2a007610225ff56c9e12b1b5fd70"
+    },
+    {
+      "id": "source-0011",
+      "path": "Samples/mid/hh/mid_hh_open_vl4_rr2.flac",
+      "sha256": "27cad3cbd3aa85a09f01f35c256a01a8fe782485748e682509befd6086aa68ab"
+    },
+    {
+      "id": "source-0012",
+      "path": "Samples/mid/hh/mid_hh_open_vl4_rr3.flac",
+      "sha256": "402f656b3007cf7cb8a7bd88ba8abdbfc32af6cf681de331ff05e55973e13a83"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 0,
+          "max": 31
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-0-31",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 0,
+          "max": 31
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-0-31",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 0,
+          "max": 31
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-0-31",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 32,
+          "max": 63
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-32-63",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 32,
+          "max": 63
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-32-63",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 32,
+          "max": 63
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-32-63",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 64,
+          "max": 95
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-64-95",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 64,
+          "max": 95
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-64-95",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 64,
+          "max": 95
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-64-95",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 96,
+          "max": 127
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-96-127",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 96,
+          "max": 127
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-96-127",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 46,
+        "velocity": {
+          "min": 96,
+          "max": 127
+        },
+        "articulation": "hihat-open",
+        "roundRobin": {
+          "group": "hihat-open-46-96-127",
+          "index": 2,
+          "count": 3
+        }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "group-relative",
+    "anchorSourceId": "source-0012",
+    "measuredPeakDb": -9.891419141523805,
+    "ceilingDb": -12.891419141523805,
+    "deliveryCeilingDb": -1,
+    "groupGainDb": -3
+  },
+  "evidence": {
+    "sampleLabSourceId": "virtuosity-drums",
+    "currentInstrumentDir": "public/instruments/acoustic-hihat-open",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 40,
+        "velocity": 24,
+        "currentFile": "hihat-open-vl1.mp3",
+        "currentRootMidi": 46,
+        "candidateOutput": "source-0001.m4a",
+        "candidateRootMidi": 46
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 46,
+        "velocity": 76,
+        "currentFile": "hihat-open-vl3.mp3",
+        "currentRootMidi": 46,
+        "candidateOutput": "source-0007.m4a",
+        "candidateRootMidi": 46
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 52,
+        "velocity": 116,
+        "currentFile": "hihat-open-vl4.mp3",
+        "currentRootMidi": 46,
+        "candidateOutput": "source-0010.m4a",
+        "candidateRootMidi": 46
+      }
+    ]
+  }
+}

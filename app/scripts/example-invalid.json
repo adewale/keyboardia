@@ -1,0 +1,15 @@
+{
+  "tracks": [
+    {
+      "id": "kick-1",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [true, false, false, false],
+      "parameterLocks": {"0": {"pitch": 5}, "3": {"pitch": -3}},
+      "volume": 1,
+      "muted": false
+    }
+  ],
+  "tempo": 200,
+  "swing": 150
+}

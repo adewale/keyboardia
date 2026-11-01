@@ -1,0 +1,319 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "acoustic-crash",
+    "name": "Crash Cymbal",
+    "releaseTime": 2,
+    "playbackNote": 49,
+    "playableRange": {
+      "min": 37,
+      "max": 73
+    },
+    "gainDb": 13.663475905545729,
+    "credits": {
+      "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
+      "url": "https://github.com/sfzinstruments/virtuosity_drums",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "licenseUrl": "https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE",
+      "changes": "Complete same-mic velocity/variation mapping; deterministic round-robin selection; AAC-LC delivery and uniform group leveling."
+    }
+  },
+  "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "Samples/mid/crash/mid_crash_crash_vl1_rr1.flac",
+      "sha256": "05d4849408a3ed79aa94a071482905facb948eaf5fc15650afe8b4291f73b816"
+    },
+    {
+      "id": "source-0002",
+      "path": "Samples/mid/crash/mid_crash_crash_vl1_rr2.flac",
+      "sha256": "61e223756a2c767f75e0ecf8ec208fe631973fdb03e6d76dd4fff153dceef1c4"
+    },
+    {
+      "id": "source-0003",
+      "path": "Samples/mid/crash/mid_crash_crash_vl1_rr3.flac",
+      "sha256": "4f2f1d8d8782ffa7e655487c56e32da77bc599e506144f07c70b89cdb5cb5284"
+    },
+    {
+      "id": "source-0004",
+      "path": "Samples/mid/crash/mid_crash_crash_vl1_rr4.flac",
+      "sha256": "1d926f33947c2cf9b8b472a5000c4ad2c0834085c7e23a2344bfb5b04dcd5e47"
+    },
+    {
+      "id": "source-0005",
+      "path": "Samples/mid/crash/mid_crash_crash_vl2_rr1.flac",
+      "sha256": "6e51e885a3f0fa3bfbad1349526e3781aefae4063f36691185bc176fad3ce588"
+    },
+    {
+      "id": "source-0006",
+      "path": "Samples/mid/crash/mid_crash_crash_vl2_rr2.flac",
+      "sha256": "2f1e15ddfb237e257b07bf5ad409a6a664644df5cd95fe11c9811d8d0cc6512b"
+    },
+    {
+      "id": "source-0007",
+      "path": "Samples/mid/crash/mid_crash_crash_vl2_rr3.flac",
+      "sha256": "9f4aac175d883860bf88bf16a5c93dc05428261634b3bf9737ab8fca9bce6b74"
+    },
+    {
+      "id": "source-0008",
+      "path": "Samples/mid/crash/mid_crash_crash_vl2_rr4.flac",
+      "sha256": "fa832501989a0da2b151d87fd59e0d22bfb4cf1b77e021d828ce4f7c8441d619"
+    },
+    {
+      "id": "source-0009",
+      "path": "Samples/mid/crash/mid_crash_crash_vl3_rr1.flac",
+      "sha256": "0469cb31e5228e084d839e425f76efaea093bc18b23fa3fe405d26705182024d"
+    },
+    {
+      "id": "source-0010",
+      "path": "Samples/mid/crash/mid_crash_crash_vl3_rr2.flac",
+      "sha256": "69922376a3428e169bc88299e11051e447b1ce150fdc89d9aa2e3ff759178e69"
+    },
+    {
+      "id": "source-0011",
+      "path": "Samples/mid/crash/mid_crash_crash_vl3_rr3.flac",
+      "sha256": "733e595a945995bd1dcf20729c30daf06d54ec31dfffb077b4763a602936ccfd"
+    },
+    {
+      "id": "source-0012",
+      "path": "Samples/mid/crash/mid_crash_crash_vl3_rr4.flac",
+      "sha256": "c15e14c4ff689dea2ec60c438b31ffcafeb043b35f7af07c88f80e20dd884972"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 0,
+          "max": 42
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-0-42",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 0,
+          "max": 42
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-0-42",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 0,
+          "max": 42
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-0-42",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 0,
+          "max": 42
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-0-42",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 43,
+          "max": 85
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-43-85",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 43,
+          "max": 85
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-43-85",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 43,
+          "max": 85
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-43-85",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 43,
+          "max": 85
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-43-85",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 86,
+          "max": 127
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-86-127",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 86,
+          "max": 127
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-86-127",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 86,
+          "max": 127
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-86-127",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 86,
+          "max": 127
+        },
+        "articulation": "crash",
+        "roundRobin": {
+          "group": "crash-49-86-127",
+          "index": 3,
+          "count": 4
+        }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "group-relative",
+    "anchorSourceId": "source-0010",
+    "measuredPeakDb": -12.663475905545729,
+    "ceilingDb": -15.663475905545729,
+    "deliveryCeilingDb": -1,
+    "groupGainDb": -3
+  },
+  "evidence": {
+    "sampleLabSourceId": "virtuosity-drums",
+    "currentInstrumentDir": "public/instruments/acoustic-crash",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 43,
+        "velocity": 24,
+        "currentFile": "crash-vl1.mp3",
+        "currentRootMidi": 49,
+        "candidateOutput": "source-0001.m4a",
+        "candidateRootMidi": 49
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 49,
+        "velocity": 76,
+        "currentFile": "crash-vl2.mp3",
+        "currentRootMidi": 49,
+        "candidateOutput": "source-0005.m4a",
+        "candidateRootMidi": 49
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 55,
+        "velocity": 116,
+        "currentFile": "crash-vl3.mp3",
+        "currentRootMidi": 49,
+        "candidateOutput": "source-0009.m4a",
+        "candidateRootMidi": 49
+      }
+    ]
+  }
+}

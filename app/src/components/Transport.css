@@ -1,0 +1,638 @@
+.transport {
+  display: flex;
+  flex-direction: column;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 16px;
+}
+
+/* Top row: Play, BPM, Swing, FX toggle */
+.transport-controls {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* ==========================================================================
+   Transport Control Group - Unified Unmute, FX, Mixer buttons
+   ========================================================================== */
+
+.transport-control-group {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  margin-left: auto;
+  background: var(--color-border-hover);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Base button styling for all control group buttons */
+.control-group-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.control-group-btn:hover:not(:disabled) {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+}
+
+.control-group-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Button label */
+.control-group-btn .btn-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Badge (count or status indicator) */
+.control-group-btn .btn-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--color-error);
+  color: var(--color-on-bright);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Unmute Button
+   ========================================================================== */
+
+.unmute-btn {
+  border-radius: 8px 0 0 8px;
+}
+
+.unmute-btn.has-muted {
+  color: var(--color-text);
+}
+
+.unmute-btn.has-muted:hover {
+  background: var(--color-error-muted, rgba(239, 83, 80, 0.15));
+}
+
+/* ==========================================================================
+   FX Button - Simple panel toggle (matches Mixer button style)
+   ========================================================================== */
+
+.fx-btn .btn-badge {
+  min-width: auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 11px;
+  background: var(--color-success);
+}
+
+.fx-btn .btn-badge.bypassed {
+  background: var(--color-warning);
+}
+
+/* FX button states */
+.fx-btn.has-effects {
+  color: var(--color-text);
+}
+
+.fx-btn.expanded {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   Mixer Button
+   ========================================================================== */
+
+.mixer-btn.active {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+}
+
+.mixer-btn.has-adjustments {
+  color: var(--color-text);
+}
+
+/* ==========================================================================
+   Pitch Button (Phase 31H)
+   - Last button in control group when melodic tracks exist
+   ========================================================================== */
+
+.pitch-btn {
+  border-radius: 0 8px 8px 0;
+}
+
+.pitch-btn.active {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+}
+
+/* Mixer loses rounded right corner when Pitch button is present */
+.transport-control-group:has(.pitch-btn) .mixer-btn {
+  border-radius: 0;
+}
+
+/* FX Panel - expands below controls with smooth animation */
+.transport-fx-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease-out;
+  overflow: hidden;
+}
+
+.transport-fx-panel.expanded {
+  grid-template-rows: 1fr;
+}
+
+.fx-panel-content {
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  /* Match Mixer/Pitch Overview panel styling */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0;
+  margin-top: 0;
+  transition: padding 0.25s ease-out, margin-top 0.25s ease-out;
+}
+
+.transport-fx-panel.expanded .fx-panel-content {
+  padding: 16px;
+  margin-top: 16px;
+}
+
+/* ==========================================================================
+   FX Header - matches Mixer/Pitch Overview panels
+   ========================================================================== */
+
+.fx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fx-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+/* Master toggle in header - compact button style */
+.fx-master-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 2px solid var(--color-success);
+  border-radius: 6px;
+  background: var(--color-fx-active-muted, rgba(78, 205, 196, 0.15));
+  color: var(--color-success-text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fx-master-toggle:hover:not(:disabled) {
+  background: var(--color-fx-active-muted-hover, rgba(78, 205, 196, 0.25));
+  filter: brightness(1.1);
+}
+
+.fx-master-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.fx-master-toggle.bypassed {
+  border-color: var(--color-warning);
+  background: var(--color-fx-bypassed-muted, rgba(255, 152, 0, 0.15));
+  color: var(--color-warning-text);
+}
+
+.fx-master-toggle.bypassed:hover:not(:disabled) {
+  background: var(--color-fx-bypassed-muted-hover, rgba(255, 152, 0, 0.25));
+}
+
+.master-indicator {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.master-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   FX Groups Grid - 4 columns for effects
+   ========================================================================== */
+
+.fx-groups {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+/* FX controls with XY Pad */
+.fx-controls-with-xy {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.fx-sliders {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* FX Group */
+.fx-group {
+  padding: 12px;
+  background: var(--color-surface);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.fx-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+/* Color-coded labels - using fx-groups container */
+.fx-groups > .fx-group:nth-child(1) .fx-label { color: var(--color-pink-text); } /* XY Pad - pink */
+.fx-groups > .fx-group:nth-child(2) .fx-label { color: var(--color-purple-text); } /* Reverb - purple */
+.fx-groups > .fx-group:nth-child(3) .fx-label { color: var(--color-blue-text); } /* Delay - blue */
+.fx-groups > .fx-group:nth-child(4) .fx-label { color: var(--color-green-text); } /* Chorus - green */
+.fx-groups > .fx-group:nth-child(5) .fx-label { color: var(--color-warning-text); } /* Distortion - orange */
+
+/* XY Pad controller section */
+.fx-group--xy-controller {
+  grid-column: span 2;
+}
+
+.fx-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.fx-label-row .fx-label {
+  margin-bottom: 0;
+}
+
+.xy-preset-select {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  cursor: pointer;
+}
+
+/* Old MASTER Bypass Column styles removed - now in header */
+
+.fx-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fx-param {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fx-param label {
+  font-size: 10px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 50px;
+}
+
+.fx-param input[type="range"] {
+  flex: 1;
+  min-width: 60px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-surface-hover);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.fx-param input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--color-cyan);
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.fx-param input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Color-coded slider thumbs */
+.fx-groups > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: var(--color-purple); }
+.fx-groups > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: var(--color-blue); }
+.fx-groups > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: var(--color-green); }
+.fx-groups > .fx-group:nth-child(5) input[type="range"]::-webkit-slider-thumb { background: var(--color-warning); }
+
+.fx-param select {
+  flex: 1;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
+  color: var(--color-text);
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.fx-param select:focus {
+  outline: none;
+  border-color: var(--color-cyan);
+}
+
+.fx-value {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  font-family: monospace;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* Hide desktop transport on mobile - use TransportBar instead */
+@media (max-width: 768px) {
+  .transport {
+    display: none;
+  }
+}
+
+.play-button {
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-success);
+  color: var(--color-on-bright);
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Phase 31E: Fill effect on hover - fills from left to right */
+.play-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 250ms ease-out;
+}
+
+.play-button:hover::before {
+  transform: scaleX(1);
+}
+
+/* Press: instant fill */
+.play-button:active::before {
+  transform: scaleX(1);
+  transition: transform 0ms;
+}
+
+.play-button:hover {
+  filter: brightness(1.1);
+  transform: scale(1.05);
+}
+
+.play-button.playing {
+  background: var(--color-error);
+}
+
+.play-button.playing:hover {
+  filter: brightness(1.15);
+}
+
+/* Phase 31: Primary Action Button Pattern
+ * Play button is the primary action when there are tracks and playback is stopped.
+ * Uses ring outline + glow for circular button (vs border for rectangular buttons).
+ */
+.play-button.primary-action {
+  box-shadow:
+    0 0 0 3px var(--color-accent),
+    0 4px 12px rgba(232, 90, 48, 0.3);
+  transform: scale(1.05);
+}
+
+.play-button.primary-action:hover {
+  box-shadow:
+    0 0 0 3px var(--color-accent-light),
+    0 4px 16px rgba(232, 90, 48, 0.4);
+  transform: scale(1.1);
+}
+
+/* Phase 31A: Metronome pulse animation on beat
+ * Uses subtle box-shadow pulse (like avatar-pulse) instead of scale transform
+ * Duration is set via CSS variable from JavaScript for tempo synchronization
+ */
+.play-button.beat-pulse {
+  animation: beat-pulse var(--beat-pulse-duration, 100ms) ease-out;
+}
+
+@keyframes beat-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(78, 205, 196, 0);
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .play-button.beat-pulse {
+    animation: none;
+  }
+  /* Phase 31E: Disable fill animation for reduced motion */
+  .play-button::before {
+    transition: none;
+  }
+}
+
+.tempo-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tempo-control label {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.tempo-control input[type="range"] {
+  width: 150px;
+  accent-color: var(--color-success);
+}
+
+.tempo-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: var(--color-text);
+  min-width: 40px;
+}
+
+.swing-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.swing-control label {
+  font-size: 14px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+.swing-control input[type="range"] {
+  width: 100px;
+  accent-color: var(--color-yellow);
+}
+
+.swing-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: var(--color-yellow-text);
+  min-width: 40px;
+}
+
+/* ==========================================================================
+   LANDSCAPE MOBILE - Simplified Transport
+
+   In landscape mobile mode, we hide elements that are too cramped:
+   - Scale Selector (complex dropdown)
+   - FX button + panel (multi-control panel)
+   - Mixer button + panel (vertical faders)
+   - Pitch button + panel (grid visualization)
+   - Unmute All button (rarely used)
+
+   This saves ~400px of horizontal space, allowing the step grid
+   to show 15-16 steps instead of 5-6.
+
+   Kept visible:
+   - Play button (primary action)
+   - BPM slider (essential)
+   - Swing slider (essential for groove)
+   ========================================================================== */
+
+/* Landscape styles driven by JS orientation detection (data-orientation attribute)
+   instead of CSS media queries, so CSS and JS use a single source of truth. */
+
+/* Show desktop transport in landscape mobile (TransportBar is portrait-only) */
+.step-sequencer[data-orientation="landscape"] .transport {
+  display: flex;
+  padding: 8px 0;
+  margin-bottom: 8px;
+}
+
+.step-sequencer[data-orientation="landscape"] .transport-controls {
+  gap: 12px;
+}
+
+/* Smaller play button in landscape mobile */
+.step-sequencer[data-orientation="landscape"] .play-button {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
+
+/* Compact tempo control */
+.step-sequencer[data-orientation="landscape"] .tempo-control {
+  gap: 8px;
+}
+
+.step-sequencer[data-orientation="landscape"] .tempo-control input[type="range"] {
+  width: 100px;
+}
+
+.step-sequencer[data-orientation="landscape"] .tempo-value {
+  font-size: 14px;
+  min-width: 32px;
+}
+
+/* Compact swing control */
+.step-sequencer[data-orientation="landscape"] .swing-control {
+  gap: 8px;
+}
+
+.step-sequencer[data-orientation="landscape"] .swing-control input[type="range"] {
+  width: 80px;
+}
+
+/* Hide Scale Selector in landscape mobile */
+.step-sequencer[data-orientation="landscape"] .scale-selector {
+  display: none !important;
+}
+
+/* Hide transport control group buttons in landscape mobile */
+.step-sequencer[data-orientation="landscape"] .transport-control-group {
+  display: none !important;
+}
+
+/* Also hide FX panel since button is hidden */
+.step-sequencer[data-orientation="landscape"] .transport-fx-panel {
+  display: none !important;
+}

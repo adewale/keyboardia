@@ -1,0 +1,123 @@
+{
+  "version": 1,
+  "generatedAt": "2026-08-12",
+  "acceptanceBasis": "owner-directed automatic enrichment; perceptual preference is intentionally not claimed",
+  "delivery": "AAC-LC 160 kbps, 44.1 kHz, source channel count preserved",
+  "licenseProfile": [
+    "CC0-1.0",
+    "Unlicense"
+  ],
+  "exclusions": [
+    {
+      "instrumentId": "steel-drums",
+      "source": "jsdb_061_Db4_1-1.flac",
+      "reason": "FLAT_TOP_CLIPPING: four flat-top runs"
+    }
+  ],
+  "instruments": [
+    {
+      "id": "acoustic-kick",
+      "sourceRoot": "virtuosity",
+      "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+      "sfzFile": "Programs/06-mid-mic.sfz",
+      "preprocessedSfzSha256": "4aa930e8cbdafb3dc25e102668cf40d3cea65feee7ada689beaadb880f58e82f",
+      "importSha256": "7e8709972a7d1d3d397d10812782b8787df5b6aeb71a7fdffc53dccd0123f406",
+      "selectedLosslessMasters": 16,
+      "explicitMappings": 16,
+      "velocityLayers": 4,
+      "roots": 1,
+      "maxRoundRobins": 4
+    },
+    {
+      "id": "acoustic-snare",
+      "sourceRoot": "virtuosity",
+      "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+      "sfzFile": "Programs/06-mid-mic.sfz",
+      "preprocessedSfzSha256": "4aa930e8cbdafb3dc25e102668cf40d3cea65feee7ada689beaadb880f58e82f",
+      "importSha256": "a14240fc29127724c19ae4149a6803fa62e39315f0b05e4bba63d0a9be407d26",
+      "selectedLosslessMasters": 36,
+      "explicitMappings": 36,
+      "velocityLayers": 36,
+      "roots": 1,
+      "maxRoundRobins": 1
+    },
+    {
+      "id": "acoustic-hihat-closed",
+      "sourceRoot": "virtuosity",
+      "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+      "sfzFile": "Programs/06-mid-mic.sfz",
+      "preprocessedSfzSha256": "4aa930e8cbdafb3dc25e102668cf40d3cea65feee7ada689beaadb880f58e82f",
+      "importSha256": "e29f8ba92f76ef407bf93722b6e73384e65f7c112ab74562e020f38477f62bc5",
+      "selectedLosslessMasters": 16,
+      "explicitMappings": 16,
+      "velocityLayers": 4,
+      "roots": 1,
+      "maxRoundRobins": 4
+    },
+    {
+      "id": "acoustic-hihat-open",
+      "sourceRoot": "virtuosity",
+      "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+      "sfzFile": "Programs/06-mid-mic.sfz",
+      "preprocessedSfzSha256": "4aa930e8cbdafb3dc25e102668cf40d3cea65feee7ada689beaadb880f58e82f",
+      "importSha256": "910e7066ebf910ccd983bfdf225bcc45bfc2aa35568d4acdfb5efd522e663991",
+      "selectedLosslessMasters": 12,
+      "explicitMappings": 12,
+      "velocityLayers": 4,
+      "roots": 1,
+      "maxRoundRobins": 3
+    },
+    {
+      "id": "acoustic-ride",
+      "sourceRoot": "virtuosity",
+      "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+      "sfzFile": "Programs/06-mid-mic.sfz",
+      "preprocessedSfzSha256": "4aa930e8cbdafb3dc25e102668cf40d3cea65feee7ada689beaadb880f58e82f",
+      "importSha256": "3b99de8a06af44f48c3e57af98db72d8db1c9f54772631c57c6e5f7e94aabde3",
+      "selectedLosslessMasters": 12,
+      "explicitMappings": 12,
+      "velocityLayers": 3,
+      "roots": 1,
+      "maxRoundRobins": 4
+    },
+    {
+      "id": "acoustic-crash",
+      "sourceRoot": "virtuosity",
+      "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+      "sfzFile": "Programs/06-mid-mic.sfz",
+      "preprocessedSfzSha256": "4aa930e8cbdafb3dc25e102668cf40d3cea65feee7ada689beaadb880f58e82f",
+      "importSha256": "8d499577d7e62ca960b4615eeeefb4f1fee4aef7977165471e172cadfb0744d6",
+      "selectedLosslessMasters": 12,
+      "explicitMappings": 12,
+      "velocityLayers": 3,
+      "roots": 1,
+      "maxRoundRobins": 4
+    },
+    {
+      "id": "finger-bass",
+      "sourceRoot": "meatbass",
+      "sourceRevision": "ac9e859564bda286ab5ec672d00ff1aa2fef2895",
+      "sfzFile": "Programs/pizz_basic_map.sfz",
+      "preprocessedSfzSha256": "3e9b7f18979f2d114ba69e5fee05f2af43ffa9c14f2853b30871b7bb934341cb",
+      "importSha256": "0592faa9bb9050336cf7374f3eb8986a2dfe84aebec76dcd1b0f58bf2e7f5d5b",
+      "selectedLosslessMasters": 224,
+      "explicitMappings": 224,
+      "velocityLayers": 4,
+      "roots": 14,
+      "maxRoundRobins": 4
+    },
+    {
+      "id": "steel-drums",
+      "sourceRoot": "steel/jSteelDrum-flac-sfz",
+      "sourceRevision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+      "sfzFile": "_jSteelDrum-flac-noxfade.sfz",
+      "preprocessedSfzSha256": "9ca0288a4b3cbce1d0e3cecd9a0d25111a417ffc595176bd35034daddf30455f",
+      "importSha256": "6857a179e8791e364bc6280b0506f51237d10c4b0873229ae4e9df0343552c99",
+      "selectedLosslessMasters": 367,
+      "explicitMappings": 401,
+      "velocityLayers": 5,
+      "roots": 24,
+      "maxRoundRobins": 6
+    }
+  ]
+}

@@ -1,0 +1,92 @@
+/* Shared interaction motion. Feature-specific transitions stay in their owning
+ * stylesheets; this file contains only cross-surface interaction feedback. */
+
+@keyframes kb-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes kb-paste-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.plock-inline {
+  animation: kb-panel-in var(--motion-panel-duration) var(--motion-ease-out);
+}
+
+.action-btn.paste,
+.drawer-action-btn-compact.primary,
+.drawer-action-btn.primary {
+  animation: kb-paste-in var(--motion-fast-duration) var(--motion-ease-out);
+}
+
+.action-btn,
+.control-group-btn,
+.session-btn,
+.play-button,
+.expand-toggle,
+.velocity-toggle,
+.pattern-tools-toggle {
+  transition-duration: var(--motion-press-duration);
+  transition-timing-function: var(--motion-ease-out);
+}
+
+/* Step state changes are intentionally immediate; only press scale animates. */
+.step-cell {
+  transition: scale var(--motion-press-duration) var(--motion-ease-out);
+}
+
+.step-cell:active,
+.action-btn:active:not(:disabled),
+.control-group-btn:active:not(:disabled),
+.session-btn:active:not(:disabled),
+.play-button:active,
+.expand-toggle:active,
+.velocity-toggle:active,
+.pattern-tools-toggle:active {
+  scale: var(--motion-press-scale);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plock-inline,
+  .action-btn.paste,
+  .drawer-action-btn-compact.primary,
+  .drawer-action-btn.primary {
+    animation: none;
+  }
+
+  .step-cell,
+  .action-btn,
+  .control-group-btn,
+  .session-btn,
+  .play-button,
+  .expand-toggle,
+  .velocity-toggle,
+  .pattern-tools-toggle {
+    transition: none;
+  }
+
+  .step-cell:active,
+  .action-btn:active:not(:disabled),
+  .control-group-btn:active:not(:disabled),
+  .session-btn:active:not(:disabled),
+  .play-button:active,
+  .expand-toggle:active,
+  .velocity-toggle:active,
+  .pattern-tools-toggle:active {
+    scale: 1;
+  }
+}

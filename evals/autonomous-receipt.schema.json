@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keyboardia.dev/schemas/autonomous-eval-receipt-v1.json",
+  "title": "Keyboardia autonomous discovery evaluation receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "version",
+    "kind",
+    "target_mcp_preconfigured",
+    "created_at",
+    "origin",
+    "prompt",
+    "prompt_sha256",
+    "agent",
+    "source",
+    "validation",
+    "trace_sha256",
+    "answer_sha256",
+    "cli_trace_sha256",
+    "adapter_argv_sha256",
+    "raw_answer_capability_scan",
+    "redacted_uuids",
+    "trace",
+    "answer",
+    "cli_trace",
+    "adapter_argv"
+  ],
+  "properties": {
+    "$schema": { "const": "../autonomous-receipt.schema.json" },
+    "version": { "const": 1 },
+    "kind": { "const": "origin-only-autonomous-skill-discovery" },
+    "target_mcp_preconfigured": { "const": false },
+    "created_at": { "type": "string", "format": "date-time" },
+    "origin": { "type": "string", "format": "uri" },
+    "prompt": { "type": "string", "minLength": 1 },
+    "prompt_sha256": { "$ref": "#/$defs/sha256" },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["adapter", "model", "usage"],
+      "properties": {
+        "adapter": { "const": "claude-discovery" },
+        "model": { "type": "string", "minLength": 1 },
+        "usage": { "type": ["object", "null"] }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "git_commit",
+        "git_tree",
+        "commit_content",
+        "tree_objects",
+        "bundle_sha256",
+        "files"
+      ],
+      "properties": {
+        "repository": { "const": "https://github.com/adewale/keyboardia.git" },
+        "git_commit": { "$ref": "#/$defs/gitObject" },
+        "git_tree": { "$ref": "#/$defs/gitObject" },
+        "commit_content": { "type": "string", "minLength": 1 },
+        "tree_objects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["object", "content_base64"],
+            "properties": {
+              "object": { "$ref": "#/$defs/gitObject" },
+              "content_base64": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "bundle_sha256": { "$ref": "#/$defs/sha256" },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["role", "path", "sha256", "git_blob", "encoding", "content"],
+            "properties": {
+              "role": { "type": "string", "minLength": 1 },
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": { "$ref": "#/$defs/sha256" },
+              "git_blob": { "$ref": "#/$defs/gitObject" },
+              "encoding": { "const": "utf-8" },
+              "content": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["passed", "endpoint", "skill_digest", "event_count", "target_call_count"],
+      "properties": {
+        "passed": { "const": true },
+        "endpoint": { "type": "string", "format": "uri" },
+        "skill_digest": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+        "event_count": { "type": "integer", "minimum": 1 },
+        "target_call_count": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "trace_sha256": { "$ref": "#/$defs/sha256" },
+    "answer_sha256": { "$ref": "#/$defs/sha256" },
+    "cli_trace_sha256": { "$ref": "#/$defs/sha256" },
+    "adapter_argv_sha256": { "$ref": "#/$defs/sha256" },
+    "raw_answer_capability_scan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registered_capabilities", "passed"],
+      "properties": {
+        "registered_capabilities": { "type": "integer", "minimum": 1 },
+        "passed": { "const": true }
+      }
+    },
+    "redacted_uuids": { "type": "integer", "minimum": 1 },
+    "trace": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["sequence", "request_id", "phase", "request", "response"],
+        "properties": {
+          "sequence": { "type": "integer", "minimum": 1 },
+          "request_id": { "type": "string", "minLength": 1 },
+          "phase": { "type": "string", "minLength": 1 },
+          "request": { "type": "object" },
+          "response": { "type": "object" }
+        }
+      }
+    },
+    "answer": { "type": "string" },
+    "cli_trace": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "name", "arguments"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "name": { "type": "string", "minLength": 1 },
+          "arguments": { "type": "object" }
+        }
+      }
+    },
+    "adapter_argv": { "type": "array", "minItems": 1, "items": { "type": "string" } }
+  },
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "gitObject": { "type": "string", "pattern": "^[0-9a-f]{40,64}$" }
+  }
+}

@@ -1,0 +1,5414 @@
+{
+  "version": 1,
+  "instrumentId": "alto-sax",
+  "hardErrors": 5,
+  "reviewFlags": 129,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db2_f_rr1_dnm.wav",
+      "message": "DC offset -42.6 dBFS should be reviewed",
+      "value": -42.622492222206596,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db2_f_rr1_dnm.wav",
+      "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+      "value": -1.026365897882168,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db2_f_rr2_dnm.wav",
+      "message": "DC offset -41.0 dBFS should be reviewed",
+      "value": -40.96672295535137,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db2_f_rr2_dnm.wav",
+      "message": "Tail remains -0.6 dB below peak at EOF; possible truncation",
+      "value": -0.5991634991893162,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb2_f_rr1_dnm.wav",
+      "message": "DC offset -45.4 dBFS should be reviewed",
+      "value": -45.421270815296005,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb2_f_rr1_dnm.wav",
+      "message": "Tail remains -0.5 dB below peak at EOF; possible truncation",
+      "value": -0.4944027293174704,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb2_f_rr2_dnm.wav",
+      "message": "DC offset -43.8 dBFS should be reviewed",
+      "value": -43.76989737454458,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb2_f_rr2_dnm.wav",
+      "message": "Tail remains -0.2 dB below peak at EOF; possible truncation",
+      "value": -0.21942995815017785,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f2_f_rr1_dnm.wav",
+      "message": "DC offset -42.0 dBFS should be reviewed",
+      "value": -41.99898142314947,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f2_f_rr1_dnm.wav",
+      "message": "Tail remains -0.3 dB below peak at EOF; possible truncation",
+      "value": -0.2895826853347764,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f2_f_rr2_dnm.wav",
+      "message": "DC offset -43.3 dBFS should be reviewed",
+      "value": -43.32568684465961,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f2_f_rr2_dnm.wav",
+      "message": "Tail remains -0.2 dB below peak at EOF; possible truncation",
+      "value": -0.1782731609851876,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g2_f_rr1_dnm.wav",
+      "message": "DC offset -40.6 dBFS should be reviewed",
+      "value": -40.5506527388406,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g2_f_rr1_dnm.wav",
+      "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+      "value": -1.2376078416107934,
+      "threshold": -35
+    },
+    {
+      "severity": "error",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g2_f_rr2_dnm.wav",
+      "message": "DC offset -39.5 dBFS is excessive",
+      "value": -39.54223117634002,
+      "threshold": -40
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g2_f_rr2_dnm.wav",
+      "message": "Tail remains -1.6 dB below peak at EOF; possible truncation",
+      "value": -1.576925172442491,
+      "threshold": -35
+    },
+    {
+      "severity": "error",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a2_f_rr1_dnm.wav",
+      "message": "DC offset -38.0 dBFS is excessive",
+      "value": -37.95506702344822,
+      "threshold": -40
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a2_f_rr1_dnm.wav",
+      "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+      "value": -1.1519663688499981,
+      "threshold": -35
+    },
+    {
+      "severity": "error",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a2_f_rr2_dnm.wav",
+      "message": "DC offset -36.5 dBFS is excessive",
+      "value": -36.47564088576553,
+      "threshold": -40
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a2_f_rr2_dnm.wav",
+      "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+      "value": -1.1532978788221895,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b2_f_rr1_dnm.wav",
+      "message": "DC offset -43.9 dBFS should be reviewed",
+      "value": -43.87864678743987,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b2_f_rr1_dnm.wav",
+      "message": "Tail remains -0.5 dB below peak at EOF; possible truncation",
+      "value": -0.5332178776936943,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b2_f_rr2_dnm.wav",
+      "message": "DC offset -43.3 dBFS should be reviewed",
+      "value": -43.31217759381001,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b2_f_rr2_dnm.wav",
+      "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+      "value": -0.6964408575804694,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db3_f_rr1_dnm.wav",
+      "message": "DC offset -47.2 dBFS should be reviewed",
+      "value": -47.243406436501594,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db3_f_rr1_dnm.wav",
+      "message": "Tail remains -0.5 dB below peak at EOF; possible truncation",
+      "value": -0.5291992972922486,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db3_f_rr2_dnm.wav",
+      "message": "DC offset -56.2 dBFS should be reviewed",
+      "value": -56.15212219876027,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db3_f_rr2_dnm.wav",
+      "message": "Tail remains -0.4 dB below peak at EOF; possible truncation",
+      "value": -0.35355417092794095,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb3_f_rr1_dnm.wav",
+      "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+      "value": -1.3533721059888084,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb3_f_rr2_dnm.wav",
+      "message": "DC offset -49.8 dBFS should be reviewed",
+      "value": -49.801999484594326,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb3_f_rr2_dnm.wav",
+      "message": "Tail remains -0.5 dB below peak at EOF; possible truncation",
+      "value": -0.5081077832924343,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f3_f_rr1_dnm.wav",
+      "message": "Tail remains -0.8 dB below peak at EOF; possible truncation",
+      "value": -0.81553266627243,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f3_f_rr2_dnm.wav",
+      "message": "DC offset -42.4 dBFS should be reviewed",
+      "value": -42.4063117793266,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f3_f_rr2_dnm.wav",
+      "message": "Tail remains -1.3 dB below peak at EOF; possible truncation",
+      "value": -1.3228366205728226,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g3_f_rr1_dnm.wav",
+      "message": "DC offset -45.1 dBFS should be reviewed",
+      "value": -45.067714839209174,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g3_f_rr1_dnm.wav",
+      "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+      "value": -2.1026976692074975,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g3_f_rr2_dnm.wav",
+      "message": "DC offset -51.4 dBFS should be reviewed",
+      "value": -51.41020206517442,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g3_f_rr2_dnm.wav",
+      "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+      "value": -1.4454071004888813,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a3_f_rr1_dnm.wav",
+      "message": "DC offset -40.7 dBFS should be reviewed",
+      "value": -40.719384259412905,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a3_f_rr1_dnm.wav",
+      "message": "Tail remains -1.3 dB below peak at EOF; possible truncation",
+      "value": -1.3317297004154274,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a3_f_rr2_dnm.wav",
+      "message": "DC offset -45.2 dBFS should be reviewed",
+      "value": -45.16007661453986,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a3_f_rr2_dnm.wav",
+      "message": "Tail remains -2.0 dB below peak at EOF; possible truncation",
+      "value": -1.9562916624984439,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b3_f_rr1_dnm.wav",
+      "message": "DC offset -43.6 dBFS should be reviewed",
+      "value": -43.645221496119845,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b3_f_rr1_dnm.wav",
+      "message": "Tail remains -1.6 dB below peak at EOF; possible truncation",
+      "value": -1.5680926443780208,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b3_f_rr2_dnm.wav",
+      "message": "DC offset -43.4 dBFS should be reviewed",
+      "value": -43.38269325562288,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b3_f_rr2_dnm.wav",
+      "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+      "value": -0.9993768403970069,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_f_rr1_dnm.wav",
+      "message": "DC offset -45.0 dBFS should be reviewed",
+      "value": -45.03171974724333,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_f_rr1_dnm.wav",
+      "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+      "value": -1.3531232813225476,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_f_rr2_dnm.wav",
+      "message": "DC offset -43.9 dBFS should be reviewed",
+      "value": -43.88869119307465,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_f_rr2_dnm.wav",
+      "message": "Tail remains -2.0 dB below peak at EOF; possible truncation",
+      "value": -1.9943533133002798,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb4_f_rr1_dnm.wav",
+      "message": "DC offset -43.0 dBFS should be reviewed",
+      "value": -42.98260390150978,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb4_f_rr1_dnm.wav",
+      "message": "Tail remains -1.8 dB below peak at EOF; possible truncation",
+      "value": -1.7605166901339229,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb4_f_rr2_dnm.wav",
+      "message": "DC offset -43.8 dBFS should be reviewed",
+      "value": -43.76297197796707,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb4_f_rr2_dnm.wav",
+      "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+      "value": -1.21566246711968,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f4_f_rr1_dnm.wav",
+      "message": "DC offset -45.3 dBFS should be reviewed",
+      "value": -45.30052278146957,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f4_f_rr1_dnm.wav",
+      "message": "Tail remains -1.1 dB below peak at EOF; possible truncation",
+      "value": -1.0888341472868843,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f4_f_rr2_dnm.wav",
+      "message": "DC offset -46.2 dBFS should be reviewed",
+      "value": -46.24022100386085,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f4_f_rr2_dnm.wav",
+      "message": "Tail remains -1.5 dB below peak at EOF; possible truncation",
+      "value": -1.4725339357874558,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g4_f_rr1_dnm.wav",
+      "message": "DC offset -48.4 dBFS should be reviewed",
+      "value": -48.38954057028937,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g4_f_rr1_dnm.wav",
+      "message": "Tail remains -1.3 dB below peak at EOF; possible truncation",
+      "value": -1.3189644012496036,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g4_f_rr2_dnm.wav",
+      "message": "DC offset -46.7 dBFS should be reviewed",
+      "value": -46.68495093707631,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g4_f_rr2_dnm.wav",
+      "message": "Tail remains -1.7 dB below peak at EOF; possible truncation",
+      "value": -1.7033906885728498,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/ab4_f_rr1_dnm.wav",
+      "message": "DC offset -51.8 dBFS should be reviewed",
+      "value": -51.834534198514184,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/ab4_f_rr1_dnm.wav",
+      "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+      "value": -1.199836944132537,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/ab4_f_rr2_dnm.wav",
+      "message": "DC offset -49.4 dBFS should be reviewed",
+      "value": -49.35505094877599,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/ab4_f_rr2_dnm.wav",
+      "message": "Tail remains -0.9 dB below peak at EOF; possible truncation",
+      "value": -0.8762399476330576,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db2_p_rr1_dnm.wav",
+      "message": "DC offset -49.6 dBFS should be reviewed",
+      "value": -49.63360979046425,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db2_p_rr1_dnm.wav",
+      "message": "Tail remains -0.8 dB below peak at EOF; possible truncation",
+      "value": -0.7832359962828744,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db2_p_rr2_dnm.wav",
+      "message": "DC offset -50.4 dBFS should be reviewed",
+      "value": -50.36855666078459,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db2_p_rr2_dnm.wav",
+      "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+      "value": -0.686180109115154,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb2_p_rr1_dnm.wav",
+      "message": "DC offset -46.2 dBFS should be reviewed",
+      "value": -46.230776286886936,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb2_p_rr1_dnm.wav",
+      "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+      "value": -1.4236843147982423,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb2_p_rr2_dnm.wav",
+      "message": "DC offset -48.2 dBFS should be reviewed",
+      "value": -48.17998641961972,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb2_p_rr2_dnm.wav",
+      "message": "Tail remains -1.6 dB below peak at EOF; possible truncation",
+      "value": -1.6262396268066235,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f2_p_rr1_dnm.wav",
+      "message": "DC offset -47.9 dBFS should be reviewed",
+      "value": -47.8890765492209,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f2_p_rr1_dnm.wav",
+      "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+      "value": -0.71284193375277,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f2_p_rr2_dnm.wav",
+      "message": "DC offset -45.4 dBFS should be reviewed",
+      "value": -45.44106238571583,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f2_p_rr2_dnm.wav",
+      "message": "Tail remains -0.8 dB below peak at EOF; possible truncation",
+      "value": -0.8191623887566003,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g2_p_rr1_dnm.wav",
+      "message": "DC offset -58.6 dBFS should be reviewed",
+      "value": -58.55204986236817,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g2_p_rr1_dnm.wav",
+      "message": "Tail remains -1.7 dB below peak at EOF; possible truncation",
+      "value": -1.6788419214022179,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g2_p_rr2_dnm.wav",
+      "message": "DC offset -47.2 dBFS should be reviewed",
+      "value": -47.24607872433667,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g2_p_rr2_dnm.wav",
+      "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+      "value": -2.0564724365617124,
+      "threshold": -35
+    },
+    {
+      "severity": "error",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a2_p_rr1_dnm.wav",
+      "message": "DC offset -38.1 dBFS is excessive",
+      "value": -38.10616900846566,
+      "threshold": -40
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a2_p_rr1_dnm.wav",
+      "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+      "value": -1.1998963796882538,
+      "threshold": -35
+    },
+    {
+      "severity": "error",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a2_p_rr2_dnm.wav",
+      "message": "DC offset -38.4 dBFS is excessive",
+      "value": -38.425983308957385,
+      "threshold": -40
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a2_p_rr2_dnm.wav",
+      "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+      "value": -1.1979526682634642,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b2_p_rr1_dnm.wav",
+      "message": "DC offset -42.9 dBFS should be reviewed",
+      "value": -42.935281352371774,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b2_p_rr1_dnm.wav",
+      "message": "Tail remains -1.8 dB below peak at EOF; possible truncation",
+      "value": -1.753322556058594,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b2_p_rr2_dnm.wav",
+      "message": "DC offset -44.9 dBFS should be reviewed",
+      "value": -44.920419403965724,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b2_p_rr2_dnm.wav",
+      "message": "Tail remains -0.6 dB below peak at EOF; possible truncation",
+      "value": -0.5960216371016867,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db3_p_rr1_dnm.wav",
+      "message": "DC offset -51.9 dBFS should be reviewed",
+      "value": -51.917660567472616,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db3_p_rr1_dnm.wav",
+      "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+      "value": -1.0051978480755228,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db3_p_rr2_dnm.wav",
+      "message": "DC offset -51.7 dBFS should be reviewed",
+      "value": -51.73349475090387,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db3_p_rr2_dnm.wav",
+      "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+      "value": -2.1276970475712895,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb3_p_rr1_dnm.wav",
+      "message": "DC offset -56.3 dBFS should be reviewed",
+      "value": -56.28285656077714,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb3_p_rr1_dnm.wav",
+      "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+      "value": -1.0270540166335778,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb3_p_rr2_dnm.wav",
+      "message": "DC offset -56.6 dBFS should be reviewed",
+      "value": -56.59088199165773,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb3_p_rr2_dnm.wav",
+      "message": "Tail remains -0.8 dB below peak at EOF; possible truncation",
+      "value": -0.7586918193536779,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f3_p_rr1_dnm.wav",
+      "message": "DC offset -57.4 dBFS should be reviewed",
+      "value": -57.43648440073383,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f3_p_rr1_dnm.wav",
+      "message": "Tail remains -2.3 dB below peak at EOF; possible truncation",
+      "value": -2.3261067256575347,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f3_p_rr2_dnm.wav",
+      "message": "DC offset -53.9 dBFS should be reviewed",
+      "value": -53.91121968731678,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f3_p_rr2_dnm.wav",
+      "message": "Tail remains -1.5 dB below peak at EOF; possible truncation",
+      "value": -1.5009995040415207,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g3_p_rr1_dnm.wav",
+      "message": "DC offset -51.1 dBFS should be reviewed",
+      "value": -51.1468342782804,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g3_p_rr1_dnm.wav",
+      "message": "Tail remains -1.8 dB below peak at EOF; possible truncation",
+      "value": -1.7938249862218156,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g3_p_rr2_dnm.wav",
+      "message": "DC offset -45.5 dBFS should be reviewed",
+      "value": -45.451309273247105,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g3_p_rr2_dnm.wav",
+      "message": "Tail remains -1.3 dB below peak at EOF; possible truncation",
+      "value": -1.3425563012934827,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a3_p_rr1_dnm.wav",
+      "message": "DC offset -42.5 dBFS should be reviewed",
+      "value": -42.49821943316614,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a3_p_rr1_dnm.wav",
+      "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+      "value": -0.7472763432921044,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a3_p_rr2_dnm.wav",
+      "message": "DC offset -44.7 dBFS should be reviewed",
+      "value": -44.700736149853824,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/a3_p_rr2_dnm.wav",
+      "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+      "value": -1.4484177548684871,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b3_p_rr1_dnm.wav",
+      "message": "DC offset -47.5 dBFS should be reviewed",
+      "value": -47.519406591459905,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b3_p_rr1_dnm.wav",
+      "message": "Tail remains -2.9 dB below peak at EOF; possible truncation",
+      "value": -2.887092962472546,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b3_p_rr2_dnm.wav",
+      "message": "DC offset -46.8 dBFS should be reviewed",
+      "value": -46.83745844761028,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/b3_p_rr2_dnm.wav",
+      "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+      "value": -2.0509446591145197,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_p_rr1_dnm.wav",
+      "message": "DC offset -53.6 dBFS should be reviewed",
+      "value": -53.644181152150274,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_p_rr1_dnm.wav",
+      "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+      "value": -1.0017293833018972,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_p_rr2_dnm.wav",
+      "message": "DC offset -54.5 dBFS should be reviewed",
+      "value": -54.504610695884736,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_p_rr2_dnm.wav",
+      "message": "Tail remains -2.2 dB below peak at EOF; possible truncation",
+      "value": -2.1748828205265074,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/db4_p_rr2_dnm.wav",
+      "message": "Estimated pitch is 12.0 cents from mapped note",
+      "value": 12.020688356579967,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb4_p_rr1_dnm.wav",
+      "message": "DC offset -57.6 dBFS should be reviewed",
+      "value": -57.632852110291914,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb4_p_rr1_dnm.wav",
+      "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+      "value": -0.674632005323736,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/eb4_p_rr2_dnm.wav",
+      "message": "Tail remains -1.6 dB below peak at EOF; possible truncation",
+      "value": -1.6012956893862262,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f4_p_rr1_dnm.wav",
+      "message": "DC offset -44.8 dBFS should be reviewed",
+      "value": -44.758579407564774,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f4_p_rr1_dnm.wav",
+      "message": "Tail remains -2.3 dB below peak at EOF; possible truncation",
+      "value": -2.3136600077972407,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f4_p_rr2_dnm.wav",
+      "message": "DC offset -48.0 dBFS should be reviewed",
+      "value": -48.00589989488004,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/f4_p_rr2_dnm.wav",
+      "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+      "value": -2.076967561040254,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g4_p_rr1_dnm.wav",
+      "message": "DC offset -48.4 dBFS should be reviewed",
+      "value": -48.43708570841852,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g4_p_rr1_dnm.wav",
+      "message": "Tail remains -0.9 dB below peak at EOF; possible truncation",
+      "value": -0.8698530371556339,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g4_p_rr2_dnm.wav",
+      "message": "DC offset -41.0 dBFS should be reviewed",
+      "value": -40.968428761307706,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/g4_p_rr2_dnm.wav",
+      "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+      "value": -1.230393424078071,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/ab4_p_rr1_dnm.wav",
+      "message": "DC offset -50.3 dBFS should be reviewed",
+      "value": -50.298226793868075,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/ab4_p_rr1_dnm.wav",
+      "message": "Tail remains -1.9 dB below peak at EOF; possible truncation",
+      "value": -1.9011655753689116,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/ab4_p_rr2_dnm.wav",
+      "message": "DC offset -58.5 dBFS should be reviewed",
+      "value": -58.483183101903684,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Samples/alto/ab4_p_rr2_dnm.wav",
+      "message": "Tail remains -2.0 dB below peak at EOF; possible truncation",
+      "value": -1.9545572824771538,
+      "threshold": -35
+    }
+  ],
+  "entries": [
+    {
+      "file": "Samples/alto/db2_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db2_f_rr1_dnm.wav",
+        "note": 49,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.19437641723356,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5220431089401245,
+        "peakDb": -5.645872652529857,
+        "rmsDb": -13.947007545861467,
+        "activeRmsDb": -13.946784970730143,
+        "dcOffset": 0.007393930922708158,
+        "dcOffsetDb": -42.622492222206596,
+        "crestFactorDb": 8.300912318200286,
+        "leadingSilenceMs": 0.31746031746031744,
+        "trailingSilenceMs": 0,
+        "attackMs": 104.37641723356009,
+        "tailLevelDbRelPeak": -1.026365897882168,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.31746031746031744,
+        "activeEndMs": 6194.353741496599,
+        "spectral": {
+          "centroidHz": 1336.0098775826277,
+          "highFrequencyRatio": 0.06239914223622
+        },
+        "pitch": {
+          "midi": 49.01098039827877,
+          "frequencyHz": 138.67924528301887,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.9602703374437478
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db2_f_rr1_dnm.wav",
+          "message": "DC offset -42.6 dBFS should be reviewed",
+          "value": -42.622492222206596,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db2_f_rr1_dnm.wav",
+          "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+          "value": -1.026365897882168,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db2_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db2_f_rr2_dnm.wav",
+        "note": 49,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.181043083900227,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.583071231842041,
+        "peakDb": -4.685567714212217,
+        "rmsDb": -13.02580148065722,
+        "activeRmsDb": -13.025658089218211,
+        "dcOffset": 0.008946720134399577,
+        "dcOffsetDb": -40.96672295535137,
+        "crestFactorDb": 8.340090375005992,
+        "leadingSilenceMs": 0.20408163265306123,
+        "trailingSilenceMs": 0,
+        "attackMs": 62.94784580498866,
+        "tailLevelDbRelPeak": -0.5991634991893162,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.20408163265306123,
+        "activeEndMs": 6181.0204081632655,
+        "spectral": {
+          "centroidHz": 1577.8967346347042,
+          "highFrequencyRatio": 0.08390012270988884
+        },
+        "pitch": {
+          "midi": 49.01098039827877,
+          "frequencyHz": 138.67924528301887,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.9608068380431388
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db2_f_rr2_dnm.wav",
+          "message": "DC offset -41.0 dBFS should be reviewed",
+          "value": -40.96672295535137,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db2_f_rr2_dnm.wav",
+          "message": "Tail remains -0.6 dB below peak at EOF; possible truncation",
+          "value": -0.5991634991893162,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb2_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb2_f_rr1_dnm.wav",
+        "note": 51,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.795170068027211,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6644821166992188,
+        "peakDb": -3.5503340558503753,
+        "rmsDb": -12.897324722453437,
+        "activeRmsDb": -12.897324722453437,
+        "dcOffset": 0.005357182719007841,
+        "dcOffsetDb": -45.421270815296005,
+        "crestFactorDb": 9.34699066660306,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 91.859410430839,
+        "tailLevelDbRelPeak": -0.4944027293174704,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 5795.14739229025,
+        "spectral": {
+          "centroidHz": 1077.7690615176195,
+          "highFrequencyRatio": 0.047801310861585525
+        },
+        "pitch": {
+          "midi": 51.02967694770844,
+          "frequencyHz": 155.8303886925795,
+          "rawCents": 2.9676947708438206,
+          "foldedCents": 2.9676947708437638,
+          "confidence": 0.9681111727806296
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb2_f_rr1_dnm.wav",
+          "message": "DC offset -45.4 dBFS should be reviewed",
+          "value": -45.421270815296005,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb2_f_rr1_dnm.wav",
+          "message": "Tail remains -0.5 dB below peak at EOF; possible truncation",
+          "value": -0.4944027293174704,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb2_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb2_f_rr2_dnm.wav",
+        "note": 51,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.175056689342403,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6500980854034424,
+        "peakDb": -3.7404222598885783,
+        "rmsDb": -12.565665770217699,
+        "activeRmsDb": -12.565617927036978,
+        "dcOffset": 0.006478957502363662,
+        "dcOffsetDb": -43.76989737454458,
+        "crestFactorDb": 8.825195667148401,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 0,
+        "attackMs": 85.91836734693878,
+        "tailLevelDbRelPeak": -0.21942995815017785,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 6175.034013605442,
+        "spectral": {
+          "centroidHz": 1115.3050222984887,
+          "highFrequencyRatio": 0.051509461522199526
+        },
+        "pitch": {
+          "midi": 51.02967694770844,
+          "frequencyHz": 155.8303886925795,
+          "rawCents": 2.9676947708438206,
+          "foldedCents": 2.9676947708437638,
+          "confidence": 0.967868710534183
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb2_f_rr2_dnm.wav",
+          "message": "DC offset -43.8 dBFS should be reviewed",
+          "value": -43.76989737454458,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb2_f_rr2_dnm.wav",
+          "message": "Tail remains -0.2 dB below peak at EOF; possible truncation",
+          "value": -0.21942995815017785,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f2_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f2_f_rr1_dnm.wav",
+        "note": 53,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.075963718820861,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5375138521194458,
+        "peakDb": -5.392206783725456,
+        "rmsDb": -13.49502485192396,
+        "activeRmsDb": -13.494306964779199,
+        "dcOffset": 0.007944213894645589,
+        "dcOffsetDb": -41.99898142314947,
+        "crestFactorDb": 8.102100181053743,
+        "leadingSilenceMs": 0.8390022675736961,
+        "trailingSilenceMs": 0,
+        "attackMs": 487.82312925170066,
+        "tailLevelDbRelPeak": -0.2895826853347764,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.8390022675736961,
+        "activeEndMs": 5075.941043083901,
+        "spectral": {
+          "centroidHz": 1112.0275354240368,
+          "highFrequencyRatio": 0.04590963500116577
+        },
+        "pitch": {
+          "midi": 52.9696529653593,
+          "frequencyHz": 174.3083003952569,
+          "rawCents": -3.034703464069821,
+          "foldedCents": -3.034703464069821,
+          "confidence": 0.9742870321342002
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f2_f_rr1_dnm.wav",
+          "message": "DC offset -42.0 dBFS should be reviewed",
+          "value": -41.99898142314947,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f2_f_rr1_dnm.wav",
+          "message": "Tail remains -0.3 dB below peak at EOF; possible truncation",
+          "value": -0.2895826853347764,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f2_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f2_f_rr2_dnm.wav",
+        "note": 53,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.000362811791383,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.509691596031189,
+        "peakDb": -5.853850542954899,
+        "rmsDb": -13.502320284276145,
+        "activeRmsDb": -13.502280896663416,
+        "dcOffset": 0.006818920980737179,
+        "dcOffsetDb": -43.32568684465961,
+        "crestFactorDb": 7.648430353708516,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": 58.73015873015873,
+        "tailLevelDbRelPeak": -0.1782731609851876,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 5000.340136054421,
+        "spectral": {
+          "centroidHz": 1137.7514757115675,
+          "highFrequencyRatio": 0.04900232771560537
+        },
+        "pitch": {
+          "midi": 53.03821677969203,
+          "frequencyHz": 175,
+          "rawCents": 3.8216779692028524,
+          "foldedCents": 3.821677969202824,
+          "confidence": 0.9742088263573182
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f2_f_rr2_dnm.wav",
+          "message": "DC offset -43.3 dBFS should be reviewed",
+          "value": -43.32568684465961,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f2_f_rr2_dnm.wav",
+          "message": "Tail remains -0.2 dB below peak at EOF; possible truncation",
+          "value": -0.1782731609851876,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g2_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g2_f_rr1_dnm.wav",
+        "note": 55,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 4.471904761904762,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5764058828353882,
+        "peakDb": -4.7854319079621686,
+        "rmsDb": -12.581546665150745,
+        "activeRmsDb": -12.581458577843332,
+        "dcOffset": 0.009385715009965394,
+        "dcOffsetDb": -40.5506527388406,
+        "crestFactorDb": 7.796026669881163,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.2376078416107934,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 4471.8820861678005,
+        "spectral": {
+          "centroidHz": 1512.7340634986465,
+          "highFrequencyRatio": 0.08425931963990278
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9801328918416319
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g2_f_rr1_dnm.wav",
+          "message": "DC offset -40.6 dBFS should be reviewed",
+          "value": -40.5506527388406,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g2_f_rr1_dnm.wav",
+          "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+          "value": -1.2376078416107934,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g2_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g2_f_rr2_dnm.wav",
+        "note": 55,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 4.4288208616780045,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5580153465270996,
+        "peakDb": -5.067077138797322,
+        "rmsDb": -12.811702423015225,
+        "activeRmsDb": -12.81096858500927,
+        "dcOffset": 0.010541160869440158,
+        "dcOffsetDb": -39.54223117634002,
+        "crestFactorDb": 7.743891446211948,
+        "leadingSilenceMs": 0.7482993197278912,
+        "trailingSilenceMs": 0,
+        "attackMs": 41.224489795918366,
+        "tailLevelDbRelPeak": -1.576925172442491,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.7482993197278912,
+        "activeEndMs": 4428.798185941044,
+        "spectral": {
+          "centroidHz": 1695.7351411191987,
+          "highFrequencyRatio": 0.09812785056087703
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9800899102725182
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "error",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g2_f_rr2_dnm.wav",
+          "message": "DC offset -39.5 dBFS is excessive",
+          "value": -39.54223117634002,
+          "threshold": -40
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g2_f_rr2_dnm.wav",
+          "message": "Tail remains -1.6 dB below peak at EOF; possible truncation",
+          "value": -1.576925172442491,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/a2_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/a2_f_rr1_dnm.wav",
+        "note": 57,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.820430839002268,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6161776781082153,
+        "peakDb": -4.2058807730923675,
+        "rmsDb": -12.551769993390916,
+        "activeRmsDb": -12.551719234863622,
+        "dcOffset": 0.012654548330811342,
+        "dcOffsetDb": -37.95506702344822,
+        "crestFactorDb": 8.345838461771255,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.1519663688499981,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 5820.408163265306,
+        "spectral": {
+          "centroidHz": 1803.335027385486,
+          "highFrequencyRatio": 0.09318388749729943
+        },
+        "pitch": {
+          "midi": 57.03930158439433,
+          "frequencyHz": 220.5,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9828268146486844
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "error",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a2_f_rr1_dnm.wav",
+          "message": "DC offset -38.0 dBFS is excessive",
+          "value": -37.95506702344822,
+          "threshold": -40
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a2_f_rr1_dnm.wav",
+          "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+          "value": -1.1519663688499981,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/a2_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/a2_f_rr2_dnm.wav",
+        "note": 57,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.482675736961451,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6561932563781738,
+        "peakDb": -3.659364742418994,
+        "rmsDb": -12.046379050770764,
+        "activeRmsDb": -12.046343127461485,
+        "dcOffset": 0.015004376585832308,
+        "dcOffsetDb": -36.47564088576553,
+        "crestFactorDb": 8.386978385042491,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.1532978788221895,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 5482.65306122449,
+        "spectral": {
+          "centroidHz": 1691.9156800247954,
+          "highFrequencyRatio": 0.08647348378378387
+        },
+        "pitch": {
+          "midi": 57.03930158439433,
+          "frequencyHz": 220.5,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9826994789633414
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "error",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a2_f_rr2_dnm.wav",
+          "message": "DC offset -36.5 dBFS is excessive",
+          "value": -36.47564088576553,
+          "threshold": -40
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a2_f_rr2_dnm.wav",
+          "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+          "value": -1.1532978788221895,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/b2_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/b2_f_rr1_dnm.wav",
+        "note": 59,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 7.168095238095238,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4465104341506958,
+        "peakDb": -7.003367759422529,
+        "rmsDb": -15.651714172318075,
+        "activeRmsDb": -15.651700434225138,
+        "dcOffset": 0.0063983451032189635,
+        "dcOffsetDb": -43.87864678743987,
+        "crestFactorDb": 8.648332674802608,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 42.56235827664399,
+        "tailLevelDbRelPeak": -0.5332178776936943,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 7168.072562358277,
+        "spectral": {
+          "centroidHz": 2104.2628035378443,
+          "highFrequencyRatio": 0.13912057923066248
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9854330566382039
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b2_f_rr1_dnm.wav",
+          "message": "DC offset -43.9 dBFS should be reviewed",
+          "value": -43.87864678743987,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b2_f_rr1_dnm.wav",
+          "message": "Tail remains -0.5 dB below peak at EOF; possible truncation",
+          "value": -0.5332178776936943,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/b2_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/b2_f_rr2_dnm.wav",
+        "note": 59,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.081337868480726,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4969226121902466,
+        "peakDb": -6.074224809464082,
+        "rmsDb": -15.198973308171674,
+        "activeRmsDb": -15.198940921701071,
+        "dcOffset": 0.006829534768324796,
+        "dcOffsetDb": -43.31217759381001,
+        "crestFactorDb": 9.12471611223699,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": 41.043083900226755,
+        "tailLevelDbRelPeak": -0.6964408575804694,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 6081.315192743764,
+        "spectral": {
+          "centroidHz": 2485.21391334486,
+          "highFrequencyRatio": 0.1754832027385719
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9840022375183467
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b2_f_rr2_dnm.wav",
+          "message": "DC offset -43.3 dBFS should be reviewed",
+          "value": -43.31217759381001,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b2_f_rr2_dnm.wav",
+          "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+          "value": -0.6964408575804694,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db3_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db3_f_rr1_dnm.wav",
+        "note": 61,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.673650793650793,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.45379745960235596,
+        "peakDb": -6.862758793251132,
+        "rmsDb": -16.245762335301706,
+        "activeRmsDb": -16.24555574875199,
+        "dcOffset": 0.004343398511472545,
+        "dcOffsetDb": -47.243406436501594,
+        "crestFactorDb": 9.382796955500858,
+        "leadingSilenceMs": 0.31746031746031744,
+        "trailingSilenceMs": 0,
+        "attackMs": 366.64399092970524,
+        "tailLevelDbRelPeak": -0.5291992972922486,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.31746031746031744,
+        "activeEndMs": 6673.628117913832,
+        "spectral": {
+          "centroidHz": 2669.1428683068552,
+          "highFrequencyRatio": 0.21840519101755415
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9897178242020268
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db3_f_rr1_dnm.wav",
+          "message": "DC offset -47.2 dBFS should be reviewed",
+          "value": -47.243406436501594,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db3_f_rr1_dnm.wav",
+          "message": "Tail remains -0.5 dB below peak at EOF; possible truncation",
+          "value": -0.5291992972922486,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db3_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db3_f_rr2_dnm.wav",
+        "note": 61,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 7.18891156462585,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.44658732414245605,
+        "peakDb": -7.001872160585449,
+        "rmsDb": -16.186603786243214,
+        "activeRmsDb": -16.186590087997384,
+        "dcOffset": 0.0015573774787246573,
+        "dcOffsetDb": -56.15212219876027,
+        "crestFactorDb": 9.184717927411935,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 196.0090702947846,
+        "tailLevelDbRelPeak": -0.35355417092794095,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 7188.888888888889,
+        "spectral": {
+          "centroidHz": 2569.2815377055076,
+          "highFrequencyRatio": 0.20019693996961557
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9896172296970326
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db3_f_rr2_dnm.wav",
+          "message": "DC offset -56.2 dBFS should be reviewed",
+          "value": -56.15212219876027,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db3_f_rr2_dnm.wav",
+          "message": "Tail remains -0.4 dB below peak at EOF; possible truncation",
+          "value": -0.35355417092794095,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb3_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb3_f_rr1_dnm.wav",
+        "note": 63,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.740113378684807,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.37277543544769287,
+        "peakDb": -8.571054276200675,
+        "rmsDb": -16.28922870768303,
+        "activeRmsDb": -16.28922870768303,
+        "dcOffset": 0.0004609439216471724,
+        "dcOffsetDb": -66.72703815166953,
+        "crestFactorDb": 7.718174431482357,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 46.75736961451247,
+        "tailLevelDbRelPeak": -1.3533721059888084,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 5740.090702947846,
+        "spectral": {
+          "centroidHz": 2858.7098806971744,
+          "highFrequencyRatio": 0.21982670871151058
+        },
+        "pitch": {
+          "midi": 62.96861042763484,
+          "frequencyHz": 310.5633802816901,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.989938530031791
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb3_f_rr1_dnm.wav",
+          "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+          "value": -1.3533721059888084,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb3_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb3_f_rr2_dnm.wav",
+        "note": 63,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.32328798185941,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.35681211948394775,
+        "peakDb": -8.951208055895183,
+        "rmsDb": -16.565473343744955,
+        "activeRmsDb": -16.565380848285955,
+        "dcOffset": 0.003235191745112773,
+        "dcOffsetDb": -49.801999484594326,
+        "crestFactorDb": 7.614172792390772,
+        "leadingSilenceMs": 0.11337868480725624,
+        "trailingSilenceMs": 0,
+        "attackMs": 28.20861678004535,
+        "tailLevelDbRelPeak": -0.5081077832924343,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.11337868480725624,
+        "activeEndMs": 5323.265306122449,
+        "spectral": {
+          "centroidHz": 2789.410548305942,
+          "highFrequencyRatio": 0.21740985428312873
+        },
+        "pitch": {
+          "midi": 62.96861042763484,
+          "frequencyHz": 310.5633802816901,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9907887799464847
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb3_f_rr2_dnm.wav",
+          "message": "DC offset -49.8 dBFS should be reviewed",
+          "value": -49.801999484594326,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb3_f_rr2_dnm.wav",
+          "message": "Tail remains -0.5 dB below peak at EOF; possible truncation",
+          "value": -0.5081077832924343,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f3_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f3_f_rr1_dnm.wav",
+        "note": 65,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.4990249433106575,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6025974750518799,
+        "peakDb": -4.3994538479871546,
+        "rmsDb": -11.381453359125995,
+        "activeRmsDb": -11.381226062405428,
+        "dcOffset": -0.0005633537618043222,
+        "dcOffsetDb": -64.98437602656841,
+        "crestFactorDb": 6.981772214418274,
+        "leadingSilenceMs": 0.3401360544217687,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -0.81553266627243,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.3401360544217687,
+        "activeEndMs": 6499.002267573696,
+        "spectral": {
+          "centroidHz": 1443.1041169826553,
+          "highFrequencyRatio": 0.08360295165985115
+        },
+        "pitch": {
+          "midi": 65.03821677969204,
+          "frequencyHz": 350,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.993475871357407
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f3_f_rr1_dnm.wav",
+          "message": "Tail remains -0.8 dB below peak at EOF; possible truncation",
+          "value": -0.81553266627243,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f3_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f3_f_rr2_dnm.wav",
+        "note": 65,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 7.288027210884354,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5041900873184204,
+        "peakDb": -5.9481139413481525,
+        "rmsDb": -12.18963274735872,
+        "activeRmsDb": -12.189619234836783,
+        "dcOffset": -0.007580265393567619,
+        "dcOffsetDb": -42.4063117793266,
+        "crestFactorDb": 6.241505293488632,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 37.573696145124714,
+        "tailLevelDbRelPeak": -1.3228366205728226,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 7288.004535147392,
+        "spectral": {
+          "centroidHz": 1366.1137432298945,
+          "highFrequencyRatio": 0.0715084627407804
+        },
+        "pitch": {
+          "midi": 65.03821677969204,
+          "frequencyHz": 350,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9931190641970828
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f3_f_rr2_dnm.wav",
+          "message": "DC offset -42.4 dBFS should be reviewed",
+          "value": -42.4063117793266,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f3_f_rr2_dnm.wav",
+          "message": "Tail remains -1.3 dB below peak at EOF; possible truncation",
+          "value": -1.3228366205728226,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g3_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g3_f_rr1_dnm.wav",
+        "note": 67,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.058480725623583,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5954282283782959,
+        "peakDb": -4.503411598746525,
+        "rmsDb": -11.080174000688142,
+        "activeRmsDb": -11.078954734730546,
+        "dcOffset": 0.005579743796752658,
+        "dcOffsetDb": -45.067714839209174,
+        "crestFactorDb": 6.575543135984021,
+        "leadingSilenceMs": 1.7006802721088434,
+        "trailingSilenceMs": 0,
+        "attackMs": 36.89342403628118,
+        "tailLevelDbRelPeak": -2.1026976692074975,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.7006802721088434,
+        "activeEndMs": 6058.458049886621,
+        "spectral": {
+          "centroidHz": 2046.245388901922,
+          "highFrequencyRatio": 0.12708970169704387
+        },
+        "pitch": {
+          "midi": 67.07731679699978,
+          "frequencyHz": 393.75,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.99371285042233
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g3_f_rr1_dnm.wav",
+          "message": "DC offset -45.1 dBFS should be reviewed",
+          "value": -45.067714839209174,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g3_f_rr1_dnm.wav",
+          "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+          "value": -2.1026976692074975,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g3_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g3_f_rr2_dnm.wav",
+        "note": 67,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.997392290249433,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6145132780075073,
+        "peakDb": -4.2293745744084585,
+        "rmsDb": -10.150438985236967,
+        "activeRmsDb": -10.1504061445215,
+        "dcOffset": 0.0026883753010147103,
+        "dcOffsetDb": -51.41020206517442,
+        "crestFactorDb": 5.921031570113041,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": 38.93424036281179,
+        "tailLevelDbRelPeak": -1.4454071004888813,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 5997.369614512472,
+        "spectral": {
+          "centroidHz": 2012.6397601745098,
+          "highFrequencyRatio": 0.129307658822638
+        },
+        "pitch": {
+          "midi": 67.07731679699978,
+          "frequencyHz": 393.75,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9934025081708565
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g3_f_rr2_dnm.wav",
+          "message": "DC offset -51.4 dBFS should be reviewed",
+          "value": -51.41020206517442,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g3_f_rr2_dnm.wav",
+          "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+          "value": -1.4454071004888813,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/a3_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/a3_f_rr1_dnm.wav",
+        "note": 69,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.239002267573696,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5035898685455322,
+        "peakDb": -5.958460316280707,
+        "rmsDb": -11.41419784788219,
+        "activeRmsDb": -11.41419784788219,
+        "dcOffset": 0.009205148245105132,
+        "dcOffsetDb": -40.719384259412905,
+        "crestFactorDb": 5.455737531601482,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 99.31972789115646,
+        "tailLevelDbRelPeak": -1.3317297004154274,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 6238.9795918367345,
+        "spectral": {
+          "centroidHz": 1788.1802541214602,
+          "highFrequencyRatio": 0.09771296120315824
+        },
+        "pitch": {
+          "midi": 69.03930158439434,
+          "frequencyHz": 441,
+          "rawCents": 3.9301584394337397,
+          "foldedCents": 3.9301584394337397,
+          "confidence": 0.9955193358987994
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a3_f_rr1_dnm.wav",
+          "message": "DC offset -40.7 dBFS should be reviewed",
+          "value": -40.719384259412905,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a3_f_rr1_dnm.wav",
+          "message": "Tail remains -1.3 dB below peak at EOF; possible truncation",
+          "value": -1.3317297004154274,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/a3_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/a3_f_rr2_dnm.wav",
+        "note": 69,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.852358276643991,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6349108219146729,
+        "peakDb": -3.945745408181521,
+        "rmsDb": -10.199813052922316,
+        "activeRmsDb": -10.199796226002109,
+        "dcOffset": 0.005520725696618468,
+        "dcOffsetDb": -45.16007661453986,
+        "crestFactorDb": 6.254050817820587,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.9562916624984439,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 5852.335600907029,
+        "spectral": {
+          "centroidHz": 1816.679504965836,
+          "highFrequencyRatio": 0.10175664528423342
+        },
+        "pitch": {
+          "midi": 69.03930158439434,
+          "frequencyHz": 441,
+          "rawCents": 3.9301584394337397,
+          "foldedCents": 3.9301584394337397,
+          "confidence": 0.9954682534575694
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a3_f_rr2_dnm.wav",
+          "message": "DC offset -45.2 dBFS should be reviewed",
+          "value": -45.16007661453986,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a3_f_rr2_dnm.wav",
+          "message": "Tail remains -2.0 dB below peak at EOF; possible truncation",
+          "value": -1.9562916624984439,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/b3_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/b3_f_rr1_dnm.wav",
+        "note": 71,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.360294784580499,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.39686715602874756,
+        "peakDb": -8.027096819825559,
+        "rmsDb": -15.237138257979332,
+        "activeRmsDb": -15.237107291964868,
+        "dcOffset": 0.00657262607155738,
+        "dcOffsetDb": -43.645221496119845,
+        "crestFactorDb": 7.2100104721393095,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": 55.85034013605442,
+        "tailLevelDbRelPeak": -1.5680926443780208,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 6360.272108843537,
+        "spectral": {
+          "centroidHz": 1872.1760821626126,
+          "highFrequencyRatio": 0.10760651599111222
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9961400584959268
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b3_f_rr1_dnm.wav",
+          "message": "DC offset -43.6 dBFS should be reviewed",
+          "value": -43.645221496119845,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b3_f_rr1_dnm.wav",
+          "message": "Tail remains -1.6 dB below peak at EOF; possible truncation",
+          "value": -1.5680926443780208,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/b3_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/b3_f_rr2_dnm.wav",
+        "note": 71,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.203514739229025,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.36162543296813965,
+        "peakDb": -8.834820667401228,
+        "rmsDb": -15.035480759144477,
+        "activeRmsDb": -15.035480759144477,
+        "dcOffset": 0.0067743142217841605,
+        "dcOffsetDb": -43.38269325562288,
+        "crestFactorDb": 6.2006600917432495,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 37.2562358276644,
+        "tailLevelDbRelPeak": -0.9993768403970069,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 6203.492063492064,
+        "spectral": {
+          "centroidHz": 1935.764051511729,
+          "highFrequencyRatio": 0.11510653211320232
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9962486904931347
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b3_f_rr2_dnm.wav",
+          "message": "DC offset -43.4 dBFS should be reviewed",
+          "value": -43.38269325562288,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b3_f_rr2_dnm.wav",
+          "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+          "value": -0.9993768403970069,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db4_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db4_f_rr1_dnm.wav",
+        "note": 73,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.263401360544218,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.40643084049224854,
+        "peakDb": -7.820266893054671,
+        "rmsDb": -15.251059763561361,
+        "activeRmsDb": -15.250996873234048,
+        "dcOffset": 0.005602914724695521,
+        "dcOffsetDb": -45.03171974724333,
+        "crestFactorDb": 7.430729980179375,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 0,
+        "attackMs": 19.727891156462583,
+        "tailLevelDbRelPeak": -1.3531232813225476,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 6263.378684807257,
+        "spectral": {
+          "centroidHz": 2708.68770974728,
+          "highFrequencyRatio": 0.17139736714982334
+        },
+        "pitch": {
+          "midi": 72.90243872304268,
+          "frequencyHz": 551.25,
+          "rawCents": -9.756127695732175,
+          "foldedCents": -9.756127695732175,
+          "confidence": 0.9927367148795486
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_f_rr1_dnm.wav",
+          "message": "DC offset -45.0 dBFS should be reviewed",
+          "value": -45.03171974724333,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_f_rr1_dnm.wav",
+          "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+          "value": -1.3531232813225476,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db4_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db4_f_rr2_dnm.wav",
+        "note": 73,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.900612244897959,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4355093240737915,
+        "peakDb": -7.220050849845153,
+        "rmsDb": -14.848458263813102,
+        "activeRmsDb": -14.848441574076599,
+        "dcOffset": 0.006390950301887767,
+        "dcOffsetDb": -43.88869119307465,
+        "crestFactorDb": 7.628390724231444,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 23.378684807256235,
+        "tailLevelDbRelPeak": -1.9943533133002798,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 5900.589569160998,
+        "spectral": {
+          "centroidHz": 2568.3497261859243,
+          "highFrequencyRatio": 0.1429763054789603
+        },
+        "pitch": {
+          "midi": 72.90243872304268,
+          "frequencyHz": 551.25,
+          "rawCents": -9.756127695732175,
+          "foldedCents": -9.756127695732175,
+          "confidence": 0.9927648019227002
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_f_rr2_dnm.wav",
+          "message": "DC offset -43.9 dBFS should be reviewed",
+          "value": -43.88869119307465,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_f_rr2_dnm.wav",
+          "message": "Tail remains -2.0 dB below peak at EOF; possible truncation",
+          "value": -1.9943533133002798,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb4_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb4_f_rr1_dnm.wav",
+        "note": 75,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.312789115646258,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.36533689498901367,
+        "peakDb": -8.746129332601324,
+        "rmsDb": -15.330809554511355,
+        "activeRmsDb": -15.330809554511355,
+        "dcOffset": -0.007093650789040329,
+        "dcOffsetDb": -42.98260390150978,
+        "crestFactorDb": 6.584680221910032,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 32.17687074829932,
+        "tailLevelDbRelPeak": -1.7605166901339229,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 5312.766439909297,
+        "spectral": {
+          "centroidHz": 2775.393775830987,
+          "highFrequencyRatio": 0.2207946398926968
+        },
+        "pitch": {
+          "midi": 74.96861042763484,
+          "frequencyHz": 621.1267605633802,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9972908748194198
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb4_f_rr1_dnm.wav",
+          "message": "DC offset -43.0 dBFS should be reviewed",
+          "value": -42.98260390150978,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb4_f_rr1_dnm.wav",
+          "message": "Tail remains -1.8 dB below peak at EOF; possible truncation",
+          "value": -1.7605166901339229,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb4_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb4_f_rr2_dnm.wav",
+        "note": 75,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.414081632653061,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.362754225730896,
+        "peakDb": -8.80775039512109,
+        "rmsDb": -15.96992572250783,
+        "activeRmsDb": -15.969907533692528,
+        "dcOffset": -0.006484125337122992,
+        "dcOffsetDb": -43.76297197796707,
+        "crestFactorDb": 7.162157138571437,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 32.17687074829932,
+        "tailLevelDbRelPeak": -1.21566246711968,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 5414.0589569161,
+        "spectral": {
+          "centroidHz": 2737.5870469100582,
+          "highFrequencyRatio": 0.22494973323577924
+        },
+        "pitch": {
+          "midi": 74.96861042763484,
+          "frequencyHz": 621.1267605633802,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9971170234344829
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb4_f_rr2_dnm.wav",
+          "message": "DC offset -43.8 dBFS should be reviewed",
+          "value": -43.76297197796707,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb4_f_rr2_dnm.wav",
+          "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+          "value": -1.21566246711968,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f4_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f4_f_rr1_dnm.wav",
+        "note": 77,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.965963718820862,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.41571855545043945,
+        "peakDb": -7.624011809616499,
+        "rmsDb": -14.50806632551343,
+        "activeRmsDb": -14.506993272712478,
+        "dcOffset": -0.00543217635629143,
+        "dcOffsetDb": -45.30052278146957,
+        "crestFactorDb": 6.88298146309598,
+        "leadingSilenceMs": 1.4739229024943312,
+        "trailingSilenceMs": 0,
+        "attackMs": 141.81405895691609,
+        "tailLevelDbRelPeak": -1.0888341472868843,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.4739229024943312,
+        "activeEndMs": 5965.9410430839,
+        "spectral": {
+          "centroidHz": 2954.316507544465,
+          "highFrequencyRatio": 0.18185487271691533
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9976881168746636
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f4_f_rr1_dnm.wav",
+          "message": "DC offset -45.3 dBFS should be reviewed",
+          "value": -45.30052278146957,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f4_f_rr1_dnm.wav",
+          "message": "Tail remains -1.1 dB below peak at EOF; possible truncation",
+          "value": -1.0888341472868843,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f4_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f4_f_rr2_dnm.wav",
+        "note": 77,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.970249433106576,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3898855447769165,
+        "peakDb": -8.181257324452407,
+        "rmsDb": -14.943603858174972,
+        "activeRmsDb": -14.942894535375846,
+        "dcOffset": -0.004875160855815296,
+        "dcOffsetDb": -46.24022100386085,
+        "crestFactorDb": 6.76163721092344,
+        "leadingSilenceMs": 0.9750566893424036,
+        "trailingSilenceMs": 0,
+        "attackMs": 81.97278911564626,
+        "tailLevelDbRelPeak": -1.4725339357874558,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.9750566893424036,
+        "activeEndMs": 5970.2267573696145,
+        "spectral": {
+          "centroidHz": 2791.908970616383,
+          "highFrequencyRatio": 0.18437673062295232
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9977519020994742
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f4_f_rr2_dnm.wav",
+          "message": "DC offset -46.2 dBFS should be reviewed",
+          "value": -46.24022100386085,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f4_f_rr2_dnm.wav",
+          "message": "Tail remains -1.5 dB below peak at EOF; possible truncation",
+          "value": -1.4725339357874558,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g4_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g4_f_rr1_dnm.wav",
+        "note": 79,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 6.57968253968254,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.38426458835601807,
+        "peakDb": -8.307392716134787,
+        "rmsDb": -14.221131236612614,
+        "activeRmsDb": -14.221116269780467,
+        "dcOffset": -0.0038064749096104996,
+        "dcOffsetDb": -48.38954057028937,
+        "crestFactorDb": 5.91372355364568,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 192.38095238095238,
+        "tailLevelDbRelPeak": -1.3189644012496036,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 6579.659863945579,
+        "spectral": {
+          "centroidHz": 2889.546365545854,
+          "highFrequencyRatio": 0.1894944800021515
+        },
+        "pitch": {
+          "midi": 79.07731679699978,
+          "frequencyHz": 787.5,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9971705309931351
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g4_f_rr1_dnm.wav",
+          "message": "DC offset -48.4 dBFS should be reviewed",
+          "value": -48.38954057028937,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g4_f_rr1_dnm.wav",
+          "message": "Tail remains -1.3 dB below peak at EOF; possible truncation",
+          "value": -1.3189644012496036,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g4_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g4_f_rr2_dnm.wav",
+        "note": 79,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 7.364036281179138,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3425995111465454,
+        "peakDb": -9.30426522125192,
+        "rmsDb": -14.60250856338466,
+        "activeRmsDb": -14.602134112032639,
+        "dcOffset": -0.004631828313321329,
+        "dcOffsetDb": -46.68495093707631,
+        "crestFactorDb": 5.297868890780717,
+        "leadingSilenceMs": 0.6349206349206349,
+        "trailingSilenceMs": 0,
+        "attackMs": 598.7301587301588,
+        "tailLevelDbRelPeak": -1.7033906885728498,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.6349206349206349,
+        "activeEndMs": 7364.013605442177,
+        "spectral": {
+          "centroidHz": 2501.9608621796715,
+          "highFrequencyRatio": 0.15524598567731873
+        },
+        "pitch": {
+          "midi": 79.07731679699978,
+          "frequencyHz": 787.5,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9968917432369093
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g4_f_rr2_dnm.wav",
+          "message": "DC offset -46.7 dBFS should be reviewed",
+          "value": -46.68495093707631,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g4_f_rr2_dnm.wav",
+          "message": "Tail remains -1.7 dB below peak at EOF; possible truncation",
+          "value": -1.7033906885728498,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/ab4_f_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/ab4_f_rr1_dnm.wav",
+        "note": 80,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.8119954648526075,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3004281520843506,
+        "peakDb": -10.445187470506006,
+        "rmsDb": -16.492136487605244,
+        "activeRmsDb": -16.49205176640364,
+        "dcOffset": -0.002560196444275927,
+        "dcOffsetDb": -51.834534198514184,
+        "crestFactorDb": 6.046864295897633,
+        "leadingSilenceMs": 0.11337868480725624,
+        "trailingSilenceMs": 0,
+        "attackMs": 44.35374149659864,
+        "tailLevelDbRelPeak": -1.199836944132537,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.11337868480725624,
+        "activeEndMs": 5811.972789115646,
+        "spectral": {
+          "centroidHz": 3133.589893632115,
+          "highFrequencyRatio": 0.2294277116466074
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9979233322807095
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/ab4_f_rr1_dnm.wav",
+          "message": "DC offset -51.8 dBFS should be reviewed",
+          "value": -51.834534198514184,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/ab4_f_rr1_dnm.wav",
+          "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+          "value": -1.199836944132537,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/ab4_f_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/ab4_f_rr2_dnm.wav",
+        "note": 80,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.435283446712019,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.34836065769195557,
+        "peakDb": -9.159417963762206,
+        "rmsDb": -16.23862101791056,
+        "activeRmsDb": -16.238403596522083,
+        "dcOffset": -0.003406022029435435,
+        "dcOffsetDb": -49.35505094877599,
+        "crestFactorDb": 7.078985632759878,
+        "leadingSilenceMs": 0.27210884353741494,
+        "trailingSilenceMs": 0,
+        "attackMs": 299.2063492063492,
+        "tailLevelDbRelPeak": -0.8762399476330576,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.27210884353741494,
+        "activeEndMs": 5435.260770975056,
+        "spectral": {
+          "centroidHz": 2977.6737254661302,
+          "highFrequencyRatio": 0.22010009772071223
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9982463652688978
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/ab4_f_rr2_dnm.wav",
+          "message": "DC offset -49.4 dBFS should be reviewed",
+          "value": -49.35505094877599,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/ab4_f_rr2_dnm.wav",
+          "message": "Tail remains -0.9 dB below peak at EOF; possible truncation",
+          "value": -0.8762399476330576,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db2_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db2_p_rr1_dnm.wav",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 8.427619047619048,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3419395685195923,
+        "peakDb": -9.321012813234113,
+        "rmsDb": -17.64564756293523,
+        "activeRmsDb": -17.645004855358817,
+        "dcOffset": 0.0032985229528604424,
+        "dcOffsetDb": -49.63360979046425,
+        "crestFactorDb": 8.323992042124704,
+        "leadingSilenceMs": 1.2471655328798186,
+        "trailingSilenceMs": 0,
+        "attackMs": 411.3605442176871,
+        "tailLevelDbRelPeak": -0.7832359962828744,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.2471655328798186,
+        "activeEndMs": 8427.596371882086,
+        "spectral": {
+          "centroidHz": 1333.465838303569,
+          "highFrequencyRatio": 0.0764934820758601
+        },
+        "pitch": {
+          "midi": 49.01098039827877,
+          "frequencyHz": 138.67924528301887,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.9611498297219702
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db2_p_rr1_dnm.wav",
+          "message": "DC offset -49.6 dBFS should be reviewed",
+          "value": -49.63360979046425,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db2_p_rr1_dnm.wav",
+          "message": "Tail remains -0.8 dB below peak at EOF; possible truncation",
+          "value": -0.7832359962828744,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db2_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db2_p_rr2_dnm.wav",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 7.359410430839002,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3517606258392334,
+        "peakDb": -9.075055494146135,
+        "rmsDb": -17.71834634846619,
+        "activeRmsDb": -17.71765049779696,
+        "dcOffset": 0.003030903902968367,
+        "dcOffsetDb": -50.36855666078459,
+        "crestFactorDb": 8.642595003650829,
+        "leadingSilenceMs": 1.179138321995465,
+        "trailingSilenceMs": 0,
+        "attackMs": 288.5487528344671,
+        "tailLevelDbRelPeak": -0.686180109115154,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.179138321995465,
+        "activeEndMs": 7359.387755102041,
+        "spectral": {
+          "centroidHz": 1051.6176626642248,
+          "highFrequencyRatio": 0.04985964475624523
+        },
+        "pitch": {
+          "midi": 49.01098039827877,
+          "frequencyHz": 138.67924528301887,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.9612032464925164
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db2_p_rr2_dnm.wav",
+          "message": "DC offset -50.4 dBFS should be reviewed",
+          "value": -50.36855666078459,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db2_p_rr2_dnm.wav",
+          "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+          "value": -0.686180109115154,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb2_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb2_p_rr1_dnm.wav",
+        "note": 51,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.504399092970521,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.441827654838562,
+        "peakDb": -7.094942085819412,
+        "rmsDb": -17.355886371232355,
+        "activeRmsDb": -17.355689544609557,
+        "dcOffset": 0.004880464809588264,
+        "dcOffsetDb": -46.230776286886936,
+        "crestFactorDb": 10.260747458790146,
+        "leadingSilenceMs": 0.29478458049886624,
+        "trailingSilenceMs": 0,
+        "attackMs": 289.22902494331066,
+        "tailLevelDbRelPeak": -1.4236843147982423,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.29478458049886624,
+        "activeEndMs": 6504.3764172335605,
+        "spectral": {
+          "centroidHz": 1127.484579734305,
+          "highFrequencyRatio": 0.05508956521469755
+        },
+        "pitch": {
+          "midi": 51.02967694770844,
+          "frequencyHz": 155.8303886925795,
+          "rawCents": 2.9676947708438206,
+          "foldedCents": 2.9676947708437638,
+          "confidence": 0.9683269123459985
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb2_p_rr1_dnm.wav",
+          "message": "DC offset -46.2 dBFS should be reviewed",
+          "value": -46.230776286886936,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb2_p_rr1_dnm.wav",
+          "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+          "value": -1.4236843147982423,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb2_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb2_p_rr2_dnm.wav",
+        "note": 51,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.638979591836734,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.38880646228790283,
+        "peakDb": -8.205330506980433,
+        "rmsDb": -17.975200012966837,
+        "activeRmsDb": -17.973924217481784,
+        "dcOffset": 0.0038994259635094903,
+        "dcOffsetDb": -48.17998641961972,
+        "crestFactorDb": 9.768593710501353,
+        "leadingSilenceMs": 1.9501133786848073,
+        "trailingSilenceMs": 0,
+        "attackMs": 134.55782312925172,
+        "tailLevelDbRelPeak": -1.6262396268066235,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.9501133786848073,
+        "activeEndMs": 6638.9569160997735,
+        "spectral": {
+          "centroidHz": 1256.2442250368208,
+          "highFrequencyRatio": 0.07080219648605993
+        },
+        "pitch": {
+          "midi": 51.02967694770844,
+          "frequencyHz": 155.8303886925795,
+          "rawCents": 2.9676947708438206,
+          "foldedCents": 2.9676947708437638,
+          "confidence": 0.9685498920707347
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb2_p_rr2_dnm.wav",
+          "message": "DC offset -48.2 dBFS should be reviewed",
+          "value": -48.17998641961972,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb2_p_rr2_dnm.wav",
+          "message": "Tail remains -1.6 dB below peak at EOF; possible truncation",
+          "value": -1.6262396268066235,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f2_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f2_p_rr1_dnm.wav",
+        "note": 53,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.999750566893424,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.34854745864868164,
+        "peakDb": -9.154761589427565,
+        "rmsDb": -17.8287303931233,
+        "activeRmsDb": -17.827365521511847,
+        "dcOffset": 0.004032238133882496,
+        "dcOffsetDb": -47.8890765492209,
+        "crestFactorDb": 8.67260393208428,
+        "leadingSilenceMs": 2.199546485260771,
+        "trailingSilenceMs": 0,
+        "attackMs": 154.98866213151928,
+        "tailLevelDbRelPeak": -0.71284193375277,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.199546485260771,
+        "activeEndMs": 6999.727891156463,
+        "spectral": {
+          "centroidHz": 1021.0028276460374,
+          "highFrequencyRatio": 0.03885961406712322
+        },
+        "pitch": {
+          "midi": 52.9696529653593,
+          "frequencyHz": 174.3083003952569,
+          "rawCents": -3.034703464069821,
+          "foldedCents": -3.034703464069821,
+          "confidence": 0.9747450526875067
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f2_p_rr1_dnm.wav",
+          "message": "DC offset -47.9 dBFS should be reviewed",
+          "value": -47.8890765492209,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f2_p_rr1_dnm.wav",
+          "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+          "value": -0.71284193375277,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f2_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f2_p_rr2_dnm.wav",
+        "note": 53,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.379773242630385,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3449134826660156,
+        "peakDb": -9.245796574640835,
+        "rmsDb": -18.31436974092198,
+        "activeRmsDb": -18.313752287622005,
+        "dcOffset": 0.005344989799328676,
+        "dcOffsetDb": -45.44106238571583,
+        "crestFactorDb": 9.06795571298117,
+        "leadingSilenceMs": 0.8843537414965986,
+        "trailingSilenceMs": 0.022675736961451247,
+        "attackMs": 194.80725623582768,
+        "tailLevelDbRelPeak": -0.8191623887566003,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.8843537414965986,
+        "activeEndMs": 6379.727891156463,
+        "spectral": {
+          "centroidHz": 1348.8136312790664,
+          "highFrequencyRatio": 0.08166196656127069
+        },
+        "pitch": {
+          "midi": 53.03821677969203,
+          "frequencyHz": 175,
+          "rawCents": 3.8216779692028524,
+          "foldedCents": 3.821677969202824,
+          "confidence": 0.9743977164871889
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f2_p_rr2_dnm.wav",
+          "message": "DC offset -45.4 dBFS should be reviewed",
+          "value": -45.44106238571583,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f2_p_rr2_dnm.wav",
+          "message": "Tail remains -0.8 dB below peak at EOF; possible truncation",
+          "value": -0.8191623887566003,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g2_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g2_p_rr1_dnm.wav",
+        "note": 55,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.666780045351474,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.34664785861968994,
+        "peakDb": -9.202229565298694,
+        "rmsDb": -17.174180984060595,
+        "activeRmsDb": -17.17386817844996,
+        "dcOffset": 0.001181401469927725,
+        "dcOffsetDb": -58.55204986236817,
+        "crestFactorDb": 7.971638613151266,
+        "leadingSilenceMs": 0.40816326530612246,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.6788419214022179,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.40816326530612246,
+        "activeEndMs": 5666.757369614513,
+        "spectral": {
+          "centroidHz": 1510.0667694949223,
+          "highFrequencyRatio": 0.10316546286315181
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9802556413162988
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g2_p_rr1_dnm.wav",
+          "message": "DC offset -58.6 dBFS should be reviewed",
+          "value": -58.55204986236817,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g2_p_rr1_dnm.wav",
+          "message": "Tail remains -1.7 dB below peak at EOF; possible truncation",
+          "value": -1.6788419214022179,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g2_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g2_p_rr2_dnm.wav",
+        "note": 55,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.2503401360544215,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.41312670707702637,
+        "peakDb": -7.6783345724476995,
+        "rmsDb": -16.62364756935378,
+        "activeRmsDb": -16.622728428491254,
+        "dcOffset": 0.004342062433511081,
+        "dcOffsetDb": -47.24607872433667,
+        "crestFactorDb": 8.944393856043556,
+        "leadingSilenceMs": 1.1111111111111112,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -2.0564724365617124,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.1111111111111112,
+        "activeEndMs": 5250.31746031746,
+        "spectral": {
+          "centroidHz": 1459.121553506483,
+          "highFrequencyRatio": 0.09670961664453254
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9802258726205769
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g2_p_rr2_dnm.wav",
+          "message": "DC offset -47.2 dBFS should be reviewed",
+          "value": -47.24607872433667,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g2_p_rr2_dnm.wav",
+          "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+          "value": -2.0564724365617124,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/a2_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/a2_p_rr1_dnm.wav",
+        "note": 57,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.500725623582767,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3673825263977051,
+        "peakDb": -8.697630072717493,
+        "rmsDb": -17.24152426904514,
+        "activeRmsDb": -17.24141685227806,
+        "dcOffset": 0.012436310298056301,
+        "dcOffsetDb": -38.10616900846566,
+        "crestFactorDb": 8.543786779560566,
+        "leadingSilenceMs": 0.13605442176870747,
+        "trailingSilenceMs": 0,
+        "attackMs": 153.83219954648524,
+        "tailLevelDbRelPeak": -1.1998963796882538,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.13605442176870747,
+        "activeEndMs": 5500.702947845805,
+        "spectral": {
+          "centroidHz": 1315.7165638372378,
+          "highFrequencyRatio": 0.06894532737707963
+        },
+        "pitch": {
+          "midi": 57.03930158439433,
+          "frequencyHz": 220.5,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9835449849386164
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "error",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a2_p_rr1_dnm.wav",
+          "message": "DC offset -38.1 dBFS is excessive",
+          "value": -38.10616900846566,
+          "threshold": -40
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a2_p_rr1_dnm.wav",
+          "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+          "value": -1.1998963796882538,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/a2_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/a2_p_rr2_dnm.wav",
+        "note": 57,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.999455782312925,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3754371404647827,
+        "peakDb": -8.509255332159642,
+        "rmsDb": -16.82965402652101,
+        "activeRmsDb": -16.82948987817438,
+        "dcOffset": 0.011986733079033203,
+        "dcOffsetDb": -38.425983308957385,
+        "crestFactorDb": 8.320234546014735,
+        "leadingSilenceMs": 0.22675736961451248,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.1979526682634642,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.22675736961451248,
+        "activeEndMs": 5999.433106575963,
+        "spectral": {
+          "centroidHz": 1266.3790878218076,
+          "highFrequencyRatio": 0.05757659659272506
+        },
+        "pitch": {
+          "midi": 57.03930158439433,
+          "frequencyHz": 220.5,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9831561180861851
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "error",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a2_p_rr2_dnm.wav",
+          "message": "DC offset -38.4 dBFS is excessive",
+          "value": -38.425983308957385,
+          "threshold": -40
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a2_p_rr2_dnm.wav",
+          "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+          "value": -1.1979526682634642,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/b2_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/b2_p_rr1_dnm.wav",
+        "note": 59,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.916553287981859,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.32852697372436523,
+        "peakDb": -9.668579337382418,
+        "rmsDb": -18.354711241811504,
+        "activeRmsDb": -18.35316310072238,
+        "dcOffset": 0.007132403958701057,
+        "dcOffsetDb": -42.935281352371774,
+        "crestFactorDb": 8.684583763339962,
+        "leadingSilenceMs": 2.1088435374149657,
+        "trailingSilenceMs": 0,
+        "attackMs": 65.89569160997732,
+        "tailLevelDbRelPeak": -1.753322556058594,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.1088435374149657,
+        "activeEndMs": 5916.530612244898,
+        "spectral": {
+          "centroidHz": 1642.0479038064284,
+          "highFrequencyRatio": 0.11417814399649236
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9862850060290355
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b2_p_rr1_dnm.wav",
+          "message": "DC offset -42.9 dBFS should be reviewed",
+          "value": -42.935281352371774,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b2_p_rr1_dnm.wav",
+          "message": "Tail remains -1.8 dB below peak at EOF; possible truncation",
+          "value": -1.753322556058594,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/b2_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/b2_p_rr2_dnm.wav",
+        "note": 59,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.0009977324263035,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.33682239055633545,
+        "peakDb": -9.451980922316688,
+        "rmsDb": -18.261044062719623,
+        "activeRmsDb": -18.259402804688794,
+        "dcOffset": 0.005675172018009128,
+        "dcOffsetDb": -44.920419403965724,
+        "crestFactorDb": 8.807421882372106,
+        "leadingSilenceMs": 2.2675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 77.18820861678005,
+        "tailLevelDbRelPeak": -0.5960216371016867,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.2675736961451247,
+        "activeEndMs": 6000.975056689343,
+        "spectral": {
+          "centroidHz": 1361.7997411776694,
+          "highFrequencyRatio": 0.07626036578459164
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9860121366738444
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b2_p_rr2_dnm.wav",
+          "message": "DC offset -44.9 dBFS should be reviewed",
+          "value": -44.920419403965724,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b2_p_rr2_dnm.wav",
+          "message": "Tail remains -0.6 dB below peak at EOF; possible truncation",
+          "value": -0.5960216371016867,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db3_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db3_p_rr1_dnm.wav",
+        "note": 61,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.448095238095238,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.25972211360931396,
+        "peakDb": -11.709821430237373,
+        "rmsDb": -18.34011665330204,
+        "activeRmsDb": -18.34011665330204,
+        "dcOffset": 0.002535811526710663,
+        "dcOffsetDb": -51.917660567472616,
+        "crestFactorDb": 6.630295223064666,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 67.3922902494331,
+        "tailLevelDbRelPeak": -1.0051978480755228,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 4448.072562358277,
+        "spectral": {
+          "centroidHz": 1453.0694845126336,
+          "highFrequencyRatio": 0.09151766097219895
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9898912748730022
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db3_p_rr1_dnm.wav",
+          "message": "DC offset -51.9 dBFS should be reviewed",
+          "value": -51.917660567472616,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db3_p_rr1_dnm.wav",
+          "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+          "value": -1.0051978480755228,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db3_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db3_p_rr2_dnm.wav",
+        "note": 61,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.8809070294784584,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.30833423137664795,
+        "peakDb": -10.219565141362558,
+        "rmsDb": -17.935005219780283,
+        "activeRmsDb": -17.935005219780283,
+        "dcOffset": 0.002590152068996947,
+        "dcOffsetDb": -51.73349475090387,
+        "crestFactorDb": 7.715440078417725,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 56.848072562358276,
+        "tailLevelDbRelPeak": -2.1276970475712895,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 4880.884353741497,
+        "spectral": {
+          "centroidHz": 1949.4024604973188,
+          "highFrequencyRatio": 0.13918225881178864
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9898773188330332
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db3_p_rr2_dnm.wav",
+          "message": "DC offset -51.7 dBFS should be reviewed",
+          "value": -51.73349475090387,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db3_p_rr2_dnm.wav",
+          "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+          "value": -2.1276970475712895,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb3_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb3_p_rr1_dnm.wav",
+        "note": 63,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.113582766439909,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.23349881172180176,
+        "peakDb": -12.634306504439401,
+        "rmsDb": -18.215405370233984,
+        "activeRmsDb": -18.215405370233984,
+        "dcOffset": 0.0015341123705953166,
+        "dcOffsetDb": -56.28285656077714,
+        "crestFactorDb": 5.581098865794582,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 54.285714285714285,
+        "tailLevelDbRelPeak": -1.0270540166335778,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 6113.5600907029475,
+        "spectral": {
+          "centroidHz": 2052.0616693773754,
+          "highFrequencyRatio": 0.14258772246620524
+        },
+        "pitch": {
+          "midi": 62.96861042763484,
+          "frequencyHz": 310.5633802816901,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.991237368982466
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb3_p_rr1_dnm.wav",
+          "message": "DC offset -56.3 dBFS should be reviewed",
+          "value": -56.28285656077714,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb3_p_rr1_dnm.wav",
+          "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+          "value": -1.0270540166335778,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb3_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb3_p_rr2_dnm.wav",
+        "note": 63,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.555283446712018,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.20730555057525635,
+        "peakDb": -13.667781391607258,
+        "rmsDb": -18.74860863398341,
+        "activeRmsDb": -18.74860863398341,
+        "dcOffset": 0.001480661896720301,
+        "dcOffsetDb": -56.59088199165773,
+        "crestFactorDb": 5.080827242376151,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": 54.26303854875283,
+        "tailLevelDbRelPeak": -0.7586918193536779,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 6555.260770975056,
+        "spectral": {
+          "centroidHz": 1905.0108658730712,
+          "highFrequencyRatio": 0.13726696277096678
+        },
+        "pitch": {
+          "midi": 62.96861042763484,
+          "frequencyHz": 310.5633802816901,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9913768239561241
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb3_p_rr2_dnm.wav",
+          "message": "DC offset -56.6 dBFS should be reviewed",
+          "value": -56.59088199165773,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb3_p_rr2_dnm.wav",
+          "message": "Tail remains -0.8 dB below peak at EOF; possible truncation",
+          "value": -0.7586918193536779,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f3_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f3_p_rr1_dnm.wav",
+        "note": 65,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.59671201814059,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.34742283821105957,
+        "peakDb": -9.182832722785273,
+        "rmsDb": -15.511895842747458,
+        "activeRmsDb": -15.511878246760112,
+        "dcOffset": -0.001343308553005811,
+        "dcOffsetDb": -57.43648440073383,
+        "crestFactorDb": 6.32904552397484,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 44.73922902494331,
+        "tailLevelDbRelPeak": -2.3261067256575347,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 5596.689342403628,
+        "spectral": {
+          "centroidHz": 1201.8064862675355,
+          "highFrequencyRatio": 0.06126334733799617
+        },
+        "pitch": {
+          "midi": 65.03821677969204,
+          "frequencyHz": 350,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9934825156269665
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f3_p_rr1_dnm.wav",
+          "message": "DC offset -57.4 dBFS should be reviewed",
+          "value": -57.43648440073383,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f3_p_rr1_dnm.wav",
+          "message": "Tail remains -2.3 dB below peak at EOF; possible truncation",
+          "value": -2.3261067256575347,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f3_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f3_p_rr2_dnm.wav",
+        "note": 65,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.835328798185941,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.35672271251678467,
+        "peakDb": -8.953384765479324,
+        "rmsDb": -15.14982550502825,
+        "activeRmsDb": -15.149184173902764,
+        "dcOffset": -0.0020157608942349874,
+        "dcOffsetDb": -53.91121968731678,
+        "crestFactorDb": 6.19579940842344,
+        "leadingSilenceMs": 0.8616780045351474,
+        "trailingSilenceMs": 0,
+        "attackMs": 47.43764172335601,
+        "tailLevelDbRelPeak": -1.5009995040415207,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.8616780045351474,
+        "activeEndMs": 5835.30612244898,
+        "spectral": {
+          "centroidHz": 1227.5007597881865,
+          "highFrequencyRatio": 0.07064602793889078
+        },
+        "pitch": {
+          "midi": 65.03821677969204,
+          "frequencyHz": 350,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9932351269116163
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f3_p_rr2_dnm.wav",
+          "message": "DC offset -53.9 dBFS should be reviewed",
+          "value": -53.91121968731678,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f3_p_rr2_dnm.wav",
+          "message": "Tail remains -1.5 dB below peak at EOF; possible truncation",
+          "value": -1.5009995040415207,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g3_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g3_p_rr1_dnm.wav",
+        "note": 67,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.414285714285715,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.48279619216918945,
+        "peakDb": -6.324723277145404,
+        "rmsDb": -11.748536484654515,
+        "activeRmsDb": -11.747918029953404,
+        "dcOffset": 0.0027711388442976676,
+        "dcOffsetDb": -51.1468342782804,
+        "crestFactorDb": 5.423194752808,
+        "leadingSilenceMs": 0.7709750566893424,
+        "trailingSilenceMs": 0,
+        "attackMs": 49.36507936507936,
+        "tailLevelDbRelPeak": -1.7938249862218156,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.7709750566893424,
+        "activeEndMs": 5414.263038548753,
+        "spectral": {
+          "centroidHz": 1709.5374455705587,
+          "highFrequencyRatio": 0.09447516015016248
+        },
+        "pitch": {
+          "midi": 66.92342831270878,
+          "frequencyHz": 390.2654867256637,
+          "rawCents": -7.657168729122077,
+          "foldedCents": -7.657168729122077,
+          "confidence": 0.9937264593102308
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g3_p_rr1_dnm.wav",
+          "message": "DC offset -51.1 dBFS should be reviewed",
+          "value": -51.1468342782804,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g3_p_rr1_dnm.wav",
+          "message": "Tail remains -1.8 dB below peak at EOF; possible truncation",
+          "value": -1.7938249862218156,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g3_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g3_p_rr2_dnm.wav",
+        "note": 67,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.403469387755102,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.40791046619415283,
+        "peakDb": -7.788703027658923,
+        "rmsDb": -13.289315274166235,
+        "activeRmsDb": -13.28927882388662,
+        "dcOffset": 0.005338687944474065,
+        "dcOffsetDb": -45.451309273247105,
+        "crestFactorDb": 5.500575796227699,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": 41.97278911564626,
+        "tailLevelDbRelPeak": -1.3425563012934827,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 5403.44671201814,
+        "spectral": {
+          "centroidHz": 1607.9693813259146,
+          "highFrequencyRatio": 0.08017075821872366
+        },
+        "pitch": {
+          "midi": 66.92342831270878,
+          "frequencyHz": 390.2654867256637,
+          "rawCents": -7.657168729122077,
+          "foldedCents": -7.657168729122077,
+          "confidence": 0.9940823395771501
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g3_p_rr2_dnm.wav",
+          "message": "DC offset -45.5 dBFS should be reviewed",
+          "value": -45.451309273247105,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g3_p_rr2_dnm.wav",
+          "message": "Tail remains -1.3 dB below peak at EOF; possible truncation",
+          "value": -1.3425563012934827,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/a3_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/a3_p_rr1_dnm.wav",
+        "note": 69,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.816666666666666,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4085078239440918,
+        "peakDb": -7.775992424579589,
+        "rmsDb": -13.400471044107576,
+        "activeRmsDb": -13.400348369449912,
+        "dcOffset": 0.007500479499027012,
+        "dcOffsetDb": -42.49821943316614,
+        "crestFactorDb": 5.6243559448703255,
+        "leadingSilenceMs": 0.13605442176870747,
+        "trailingSilenceMs": 0,
+        "attackMs": 186.03174603174602,
+        "tailLevelDbRelPeak": -0.7472763432921044,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.13605442176870747,
+        "activeEndMs": 4816.643990929705,
+        "spectral": {
+          "centroidHz": 1494.5727208781154,
+          "highFrequencyRatio": 0.07900049471233303
+        },
+        "pitch": {
+          "midi": 69.03930158439434,
+          "frequencyHz": 441,
+          "rawCents": 3.9301584394337397,
+          "foldedCents": 3.9301584394337397,
+          "confidence": 0.9956629052847352
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a3_p_rr1_dnm.wav",
+          "message": "DC offset -42.5 dBFS should be reviewed",
+          "value": -42.49821943316614,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a3_p_rr1_dnm.wav",
+          "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+          "value": -0.7472763432921044,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/a3_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/a3_p_rr2_dnm.wav",
+        "note": 69,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.528344671201814,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4371175765991211,
+        "peakDb": -7.18803460154824,
+        "rmsDb": -12.881114764275969,
+        "activeRmsDb": -12.881061323876775,
+        "dcOffset": 0.005820538852259965,
+        "dcOffsetDb": -44.700736149853824,
+        "crestFactorDb": 5.693026722328534,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 0,
+        "attackMs": 99.79591836734694,
+        "tailLevelDbRelPeak": -1.4484177548684871,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 5528.321995464853,
+        "spectral": {
+          "centroidHz": 1588.3870679241977,
+          "highFrequencyRatio": 0.08745355406560099
+        },
+        "pitch": {
+          "midi": 69.03930158439434,
+          "frequencyHz": 441,
+          "rawCents": 3.9301584394337397,
+          "foldedCents": 3.9301584394337397,
+          "confidence": 0.9957861722991226
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a3_p_rr2_dnm.wav",
+          "message": "DC offset -44.7 dBFS should be reviewed",
+          "value": -44.700736149853824,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/a3_p_rr2_dnm.wav",
+          "message": "Tail remains -1.4 dB below peak at EOF; possible truncation",
+          "value": -1.4484177548684871,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/b3_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/b3_p_rr1_dnm.wav",
+        "note": 71,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.999569160997733,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.323722243309021,
+        "peakDb": -9.796549174476812,
+        "rmsDb": -16.71263651193622,
+        "activeRmsDb": -16.712587270726882,
+        "dcOffset": 0.004207553728554476,
+        "dcOffsetDb": -47.519406591459905,
+        "crestFactorDb": 6.91603809625007,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 0,
+        "attackMs": 39.72789115646259,
+        "tailLevelDbRelPeak": -2.887092962472546,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 5999.546485260771,
+        "spectral": {
+          "centroidHz": 1927.0569181698154,
+          "highFrequencyRatio": 0.11479063642842573
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9962828345469571
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b3_p_rr1_dnm.wav",
+          "message": "DC offset -47.5 dBFS should be reviewed",
+          "value": -47.519406591459905,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b3_p_rr1_dnm.wav",
+          "message": "Tail remains -2.9 dB below peak at EOF; possible truncation",
+          "value": -2.887092962472546,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/b3_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/b3_p_rr2_dnm.wav",
+        "note": 71,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.250748299319728,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.32264840602874756,
+        "peakDb": -9.825409521698363,
+        "rmsDb": -16.692792543089336,
+        "activeRmsDb": -16.692761034808104,
+        "dcOffset": 0.004551212123357354,
+        "dcOffsetDb": -46.83745844761028,
+        "crestFactorDb": 6.867351513109739,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": 39.70521541950114,
+        "tailLevelDbRelPeak": -2.0509446591145197,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 6250.725623582767,
+        "spectral": {
+          "centroidHz": 1973.7658493785282,
+          "highFrequencyRatio": 0.11145007991049122
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9963006881995541
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b3_p_rr2_dnm.wav",
+          "message": "DC offset -46.8 dBFS should be reviewed",
+          "value": -46.83745844761028,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/b3_p_rr2_dnm.wav",
+          "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+          "value": -2.0509446591145197,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db4_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db4_p_rr1_dnm.wav",
+        "note": 73,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.9373696145124715,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2927370071411133,
+        "peakDb": -10.670447431662993,
+        "rmsDb": -17.437919075462716,
+        "activeRmsDb": -17.437839291928153,
+        "dcOffset": -0.002078695818329481,
+        "dcOffsetDb": -53.644181152150274,
+        "crestFactorDb": 6.76739186026516,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 0,
+        "attackMs": 101.42857142857142,
+        "tailLevelDbRelPeak": -1.0017293833018972,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 4937.34693877551,
+        "spectral": {
+          "centroidHz": 2296.7735836062784,
+          "highFrequencyRatio": 0.13857131412424215
+        },
+        "pitch": {
+          "midi": 72.90243872304268,
+          "frequencyHz": 551.25,
+          "rawCents": -9.756127695732175,
+          "foldedCents": -9.756127695732175,
+          "confidence": 0.991724123513721
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_p_rr1_dnm.wav",
+          "message": "DC offset -53.6 dBFS should be reviewed",
+          "value": -53.644181152150274,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_p_rr1_dnm.wav",
+          "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+          "value": -1.0017293833018972,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/db4_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/db4_p_rr2_dnm.wav",
+        "note": 73,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.9399319727891156,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.30993831157684326,
+        "peakDb": -10.174494743169937,
+        "rmsDb": -17.346281305530105,
+        "activeRmsDb": -17.3461486713735,
+        "dcOffset": 0.0018826494649515281,
+        "dcOffsetDb": -54.504610695884736,
+        "crestFactorDb": 7.171653928203562,
+        "leadingSilenceMs": 0.18140589569160998,
+        "trailingSilenceMs": 0,
+        "attackMs": 35.35147392290249,
+        "tailLevelDbRelPeak": -2.1748828205265074,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.18140589569160998,
+        "activeEndMs": 5939.909297052154,
+        "spectral": {
+          "centroidHz": 2678.892102589843,
+          "highFrequencyRatio": 0.17248341229016348
+        },
+        "pitch": {
+          "midi": 73.1202068835658,
+          "frequencyHz": 558.2278481012659,
+          "rawCents": 12.020688356579967,
+          "foldedCents": 12.020688356579967,
+          "confidence": 0.9927516507595266
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_p_rr2_dnm.wav",
+          "message": "DC offset -54.5 dBFS should be reviewed",
+          "value": -54.504610695884736,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_p_rr2_dnm.wav",
+          "message": "Tail remains -2.2 dB below peak at EOF; possible truncation",
+          "value": -2.1748828205265074,
+          "threshold": -35
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/db4_p_rr2_dnm.wav",
+          "message": "Estimated pitch is 12.0 cents from mapped note",
+          "value": 12.020688356579967,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb4_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb4_p_rr1_dnm.wav",
+        "note": 75,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.250566893424036,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.26231884956359863,
+        "peakDb": -11.62341001988731,
+        "rmsDb": -17.482687805113567,
+        "activeRmsDb": -17.48263153730575,
+        "dcOffset": -0.0013132801937188001,
+        "dcOffsetDb": -57.632852110291914,
+        "crestFactorDb": 5.859221517418441,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 0,
+        "attackMs": 34.013605442176875,
+        "tailLevelDbRelPeak": -0.674632005323736,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 5250.544217687075,
+        "spectral": {
+          "centroidHz": 1884.392781810079,
+          "highFrequencyRatio": 0.11412705180808189
+        },
+        "pitch": {
+          "midi": 74.96861042763484,
+          "frequencyHz": 621.1267605633802,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9974288875138109
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb4_p_rr1_dnm.wav",
+          "message": "DC offset -57.6 dBFS should be reviewed",
+          "value": -57.632852110291914,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb4_p_rr1_dnm.wav",
+          "message": "Tail remains -0.7 dB below peak at EOF; possible truncation",
+          "value": -0.674632005323736,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/eb4_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/eb4_p_rr2_dnm.wav",
+        "note": 75,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.863718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2712594270706177,
+        "peakDb": -11.332303197164507,
+        "rmsDb": -16.577912374550895,
+        "activeRmsDb": -16.57789557980548,
+        "dcOffset": 0.0008774643572880515,
+        "dcOffsetDb": -61.13541031200068,
+        "crestFactorDb": 5.245592382640975,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0,
+        "attackMs": 36.621315192743765,
+        "tailLevelDbRelPeak": -1.6012956893862262,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 5863.696145124717,
+        "spectral": {
+          "centroidHz": 2130.340088212158,
+          "highFrequencyRatio": 0.15270555286001244
+        },
+        "pitch": {
+          "midi": 74.96861042763484,
+          "frequencyHz": 621.1267605633802,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9976518508899124
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/eb4_p_rr2_dnm.wav",
+          "message": "Tail remains -1.6 dB below peak at EOF; possible truncation",
+          "value": -1.6012956893862262,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f4_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f4_p_rr1_dnm.wav",
+        "note": 77,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.807709750566893,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.29952049255371094,
+        "peakDb": -10.471469175106948,
+        "rmsDb": -17.021409371177604,
+        "activeRmsDb": -17.021273716184297,
+        "dcOffset": -0.005781906037571325,
+        "dcOffsetDb": -44.758579407564774,
+        "crestFactorDb": 6.549804541077346,
+        "leadingSilenceMs": 0.18140589569160998,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -2.3136600077972407,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.18140589569160998,
+        "activeEndMs": 5807.6870748299325,
+        "spectral": {
+          "centroidHz": 2361.0091313817898,
+          "highFrequencyRatio": 0.1430971256079096
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9980111956482255
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f4_p_rr1_dnm.wav",
+          "message": "DC offset -44.8 dBFS should be reviewed",
+          "value": -44.758579407564774,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f4_p_rr1_dnm.wav",
+          "message": "Tail remains -2.3 dB below peak at EOF; possible truncation",
+          "value": -2.3136600077972407,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/f4_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/f4_p_rr2_dnm.wav",
+        "note": 77,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.000272108843538,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.30906784534454346,
+        "peakDb": -10.198923510240068,
+        "rmsDb": -16.564942501260287,
+        "activeRmsDb": -16.56490967640948,
+        "dcOffset": -0.00397836847877625,
+        "dcOffsetDb": -48.00589989488004,
+        "crestFactorDb": 6.365986166169413,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -2.076967561040254,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 6000.249433106575,
+        "spectral": {
+          "centroidHz": 2520.1843043735826,
+          "highFrequencyRatio": 0.15218177336408678
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9979497961913948
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f4_p_rr2_dnm.wav",
+          "message": "DC offset -48.0 dBFS should be reviewed",
+          "value": -48.00589989488004,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/f4_p_rr2_dnm.wav",
+          "message": "Tail remains -2.1 dB below peak at EOF; possible truncation",
+          "value": -2.076967561040254,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g4_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g4_p_rr1_dnm.wav",
+        "note": 79,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.001201814058957,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.27564525604248047,
+        "peakDb": -11.192989549803588,
+        "rmsDb": -16.909150341295533,
+        "activeRmsDb": -16.909035470678614,
+        "dcOffset": 0.003785695811592149,
+        "dcOffsetDb": -48.43708570841852,
+        "crestFactorDb": 5.716045920875024,
+        "leadingSilenceMs": 0.15873015873015872,
+        "trailingSilenceMs": 0,
+        "attackMs": 647.9138321995465,
+        "tailLevelDbRelPeak": -0.8698530371556339,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.15873015873015872,
+        "activeEndMs": 6001.179138321995,
+        "spectral": {
+          "centroidHz": 1891.1543702237843,
+          "highFrequencyRatio": 0.10241385017143635
+        },
+        "pitch": {
+          "midi": 79.07731679699978,
+          "frequencyHz": 787.5,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.997660957145143
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g4_p_rr1_dnm.wav",
+          "message": "DC offset -48.4 dBFS should be reviewed",
+          "value": -48.43708570841852,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g4_p_rr1_dnm.wav",
+          "message": "Tail remains -0.9 dB below peak at EOF; possible truncation",
+          "value": -0.8698530371556339,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/g4_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/g4_p_rr2_dnm.wav",
+        "note": 79,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.750226757369615,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2921738624572754,
+        "peakDb": -10.687172763126975,
+        "rmsDb": -16.889627378197247,
+        "activeRmsDb": -16.889583611352325,
+        "dcOffset": 0.008944963276938493,
+        "dcOffsetDb": -40.968428761307706,
+        "crestFactorDb": 6.20241084822535,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 0,
+        "attackMs": 326.21315192743765,
+        "tailLevelDbRelPeak": -1.230393424078071,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 6750.204081632653,
+        "spectral": {
+          "centroidHz": 2320.710284698424,
+          "highFrequencyRatio": 0.18555904456288902
+        },
+        "pitch": {
+          "midi": 79.07731679699978,
+          "frequencyHz": 787.5,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.998228494512135
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g4_p_rr2_dnm.wav",
+          "message": "DC offset -41.0 dBFS should be reviewed",
+          "value": -40.968428761307706,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/g4_p_rr2_dnm.wav",
+          "message": "Tail remains -1.2 dB below peak at EOF; possible truncation",
+          "value": -1.230393424078071,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/ab4_p_rr1_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/ab4_p_rr1_dnm.wav",
+        "note": 80,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.528662131519274,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2157294750213623,
+        "peakDb": -13.321810267665803,
+        "rmsDb": -19.507204803855803,
+        "activeRmsDb": -19.507096074438326,
+        "dcOffset": -0.00305554483260972,
+        "dcOffsetDb": -50.298226793868075,
+        "crestFactorDb": 6.185285806772524,
+        "leadingSilenceMs": 0.11337868480725624,
+        "trailingSilenceMs": 0,
+        "attackMs": 143.74149659863946,
+        "tailLevelDbRelPeak": -1.9011655753689116,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.11337868480725624,
+        "activeEndMs": 4528.639455782313,
+        "spectral": {
+          "centroidHz": 2479.2801809683233,
+          "highFrequencyRatio": 0.22769842909346066
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9982122690675417
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/ab4_p_rr1_dnm.wav",
+          "message": "DC offset -50.3 dBFS should be reviewed",
+          "value": -50.298226793868075,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/ab4_p_rr1_dnm.wav",
+          "message": "Tail remains -1.9 dB below peak at EOF; possible truncation",
+          "value": -1.9011655753689116,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/alto/ab4_p_rr2_dnm.wav",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "Samples/alto/ab4_p_rr2_dnm.wav",
+        "note": 80,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 6.063582766439909,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.21953356266021729,
+        "peakDb": -13.169981493506363,
+        "rmsDb": -19.010197248286286,
+        "activeRmsDb": -19.010164766331748,
+        "dcOffset": -0.001190805535754391,
+        "dcOffsetDb": -58.483183101903684,
+        "crestFactorDb": 5.840183272825387,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.9545572824771538,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 6063.560090702948,
+        "spectral": {
+          "centroidHz": 1990.3702627521873,
+          "highFrequencyRatio": 0.10629227748090267
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.998584334862198
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/ab4_p_rr2_dnm.wav",
+          "message": "DC offset -58.5 dBFS should be reviewed",
+          "value": -58.483183101903684,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "Samples/alto/ab4_p_rr2_dnm.wav",
+          "message": "Tail remains -2.0 dB below peak at EOF; possible truncation",
+          "value": -1.9545572824771538,
+          "threshold": -35
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1024 @@
+{
+  "version": 1,
+  "instrumentId": "finger-bass",
+  "hardErrors": 0,
+  "reviewFlags": 27,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0008.m4a",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0655904591887691,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0008.m4a",
+      "message": "Leading silence 15.6ms may feel late",
+      "value": 15.646258503401363,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0009.m4a",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.07167965296453785,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0009.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0010.m4a",
+      "message": "Peak -0.2 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.19277890930349595,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0010.m4a",
+      "message": "Leading silence 13.7ms may feel late",
+      "value": 13.673469387755102,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0011.m4a",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.03284192999275614,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0011.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.174603174603174,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0012.m4a",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.05621949288754344,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0012.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0001.m4a",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.06640426142187408,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0001.m4a",
+      "message": "Leading silence 21.0ms may feel late",
+      "value": 20.952380952380953,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0002.m4a",
+      "message": "Peak -0.8 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.8249039802736313,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0002.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0003.m4a",
+      "message": "Peak -0.6 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.5631339013688759,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0003.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0004.m4a",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.006802907247627677,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "source-0004.m4a",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0004.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0005.m4a",
+      "message": "Peak -0.3 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.31443945465039597,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0005.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0006.m4a",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0366582632547712,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0006.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "finger-bass",
+      "file": "source-0006.m4a",
+      "message": "Tail remains -31.7 dB below peak at EOF; possible truncation",
+      "value": -31.682007467120595,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "source-0007.m4a",
+      "message": "Peak 0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": 0.034543864175526226,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "source-0007.m4a",
+      "message": "8 samples are at/near full scale",
+      "value": 8,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "finger-bass",
+      "file": "source-0007.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.197278911564624,
+      "threshold": 10
+    }
+  ],
+  "entries": [
+    {
+      "file": "source-0008.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0008.m4a",
+        "note": 28,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 5.7817687074829935,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9924770593643188,
+        "peakDb": -0.0655904591887691,
+        "rmsDb": -14.447320547603134,
+        "activeRmsDb": -14.388778837654845,
+        "dcOffset": -0.0005137322924028496,
+        "dcOffsetDb": -65.7852626870091,
+        "crestFactorDb": 14.323188378466076,
+        "leadingSilenceMs": 15.646258503401363,
+        "trailingSilenceMs": 61.7687074829932,
+        "attackMs": 11.020408163265307,
+        "tailLevelDbRelPeak": -91.8113798437301,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 15.646258503401363,
+        "activeEndMs": 5719.977324263039,
+        "spectral": {
+          "centroidHz": 208.3318007898962,
+          "highFrequencyRatio": 0.0024877156542334406
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0008.m4a",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0655904591887691,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0008.m4a",
+          "message": "Leading silence 15.6ms may feel late",
+          "value": 15.646258503401363,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0009.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0009.m4a",
+        "note": 29,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 3.5062131519274375,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9917815327644348,
+        "peakDb": -0.07167965296453785,
+        "rmsDb": -14.187980996875215,
+        "activeRmsDb": -14.1228105967058,
+        "dcOffset": 0.00039097175259091417,
+        "dcOffsetDb": -68.15709237827443,
+        "crestFactorDb": 14.051130943741263,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 29.002267573696145,
+        "attackMs": 6.462585034013605,
+        "tailLevelDbRelPeak": -63.048368399494464,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 3477.1882086167802,
+        "spectral": {
+          "centroidHz": 171.239507583682,
+          "highFrequencyRatio": 0.002156043902288492
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0009.m4a",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.07167965296453785,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0009.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0010.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0010.m4a",
+        "note": 30,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.295691609977324,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9780499935150146,
+        "peakDb": -0.19277890930349595,
+        "rmsDb": -17.34083983434218,
+        "activeRmsDb": -17.288486748441038,
+        "dcOffset": 0.000041799824900501426,
+        "dcOffsetDb": -87.57651074962143,
+        "crestFactorDb": 17.095707839137543,
+        "leadingSilenceMs": 13.673469387755102,
+        "trailingSilenceMs": 37.800453514739225,
+        "attackMs": 15.396825396825397,
+        "tailLevelDbRelPeak": -67.44216209360043,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 13.673469387755102,
+        "activeEndMs": 4257.868480725624,
+        "spectral": {
+          "centroidHz": 306.44543301116653,
+          "highFrequencyRatio": 0.0032924657225948386
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0010.m4a",
+          "message": "Peak -0.2 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.19277890930349595,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0010.m4a",
+          "message": "Leading silence 13.7ms may feel late",
+          "value": 13.673469387755102,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0011.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0011.m4a",
+        "note": 31,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.760090702947846,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9962260723114014,
+        "peakDb": -0.03284192999275614,
+        "rmsDb": -16.0684928354368,
+        "activeRmsDb": -16.017196140855095,
+        "dcOffset": 0.00013488114367017049,
+        "dcOffsetDb": -77.40097520558203,
+        "crestFactorDb": 15.984354210862339,
+        "leadingSilenceMs": 23.174603174603174,
+        "trailingSilenceMs": 32.72108843537415,
+        "attackMs": 3.854875283446712,
+        "tailLevelDbRelPeak": -53.769016148800326,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 23.174603174603174,
+        "activeEndMs": 4727.34693877551,
+        "spectral": {
+          "centroidHz": 211.66816578920916,
+          "highFrequencyRatio": 0.0020776990691946844
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0011.m4a",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.03284192999275614,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0011.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.174603174603174,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0012.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0012.m4a",
+        "note": 32,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.133151927437642,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9935483932495117,
+        "peakDb": -0.05621949288754344,
+        "rmsDb": -14.951759524514895,
+        "activeRmsDb": -14.879831533030565,
+        "dcOffset": -0.000001999444783107135,
+        "dcOffsetDb": -113.98181169780598,
+        "crestFactorDb": 14.823612040143022,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 44.67120181405896,
+        "attackMs": 2.4489795918367347,
+        "tailLevelDbRelPeak": -76.56221072585346,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 4088.458049886621,
+        "spectral": {
+          "centroidHz": 223.45765795770137,
+          "highFrequencyRatio": 0.002336889849008912
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0012.m4a",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.05621949288754344,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0012.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0001.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0001.m4a",
+        "note": 33,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.08671201814059,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9923840761184692,
+        "peakDb": -0.06640426142187408,
+        "rmsDb": -14.280385552375582,
+        "activeRmsDb": -14.219085358896198,
+        "dcOffset": 0.0004886512787914356,
+        "dcOffsetDb": -66.22001920703009,
+        "crestFactorDb": 14.152681097474321,
+        "leadingSilenceMs": 20.952380952380953,
+        "trailingSilenceMs": 36.326530612244895,
+        "attackMs": 3.8775510204081636,
+        "tailLevelDbRelPeak": -73.05387737987675,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 20.952380952380953,
+        "activeEndMs": 4050.362811791383,
+        "spectral": {
+          "centroidHz": 253.92019006913756,
+          "highFrequencyRatio": 0.005307146847768167
+        },
+        "pitch": {
+          "midi": 33.060955546555306,
+          "frequencyHz": 55.19399249061327,
+          "rawCents": 6.095554655530577,
+          "foldedCents": 6.095554655530577,
+          "confidence": 0.7852721650891927
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0001.m4a",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.06640426142187408,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0001.m4a",
+          "message": "Leading silence 21.0ms may feel late",
+          "value": 20.952380952380953,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0002.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0002.m4a",
+        "note": 34,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 3.900952380952381,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.909399688243866,
+        "peakDb": -0.8249039802736313,
+        "rmsDb": -15.00265038992453,
+        "activeRmsDb": -14.910934606374838,
+        "dcOffset": -0.00013628920100653747,
+        "dcOffsetDb": -77.3107710900669,
+        "crestFactorDb": 14.086030626101206,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 58.29931972789116,
+        "attackMs": 10.317460317460318,
+        "tailLevelDbRelPeak": -72.8181237012623,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 3842.630385487528,
+        "spectral": {
+          "centroidHz": 255.96406284423335,
+          "highFrequencyRatio": 0.0024535496931038583
+        },
+        "pitch": {
+          "midi": 34.064527302467056,
+          "frequencyHz": 58.48806366047745,
+          "rawCents": 6.452730246705585,
+          "foldedCents": 6.4527302467056415,
+          "confidence": 0.8095883871254891
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0002.m4a",
+          "message": "Peak -0.8 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.8249039802736313,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0002.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0003.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0003.m4a",
+        "note": 35,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 3.599092970521542,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9372237920761108,
+        "peakDb": -0.5631339013688759,
+        "rmsDb": -14.967927996836412,
+        "activeRmsDb": -14.887649861847216,
+        "dcOffset": 0.00017786120853834002,
+        "dcOffsetDb": -74.99837522098181,
+        "crestFactorDb": 14.32451596047834,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 42.6984126984127,
+        "attackMs": 8.843537414965986,
+        "tailLevelDbRelPeak": -63.940143599835636,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 3556.3718820861677,
+        "spectral": {
+          "centroidHz": 223.6588923106473,
+          "highFrequencyRatio": 0.0025528265091711915
+        },
+        "pitch": {
+          "midi": 35.08110686625804,
+          "frequencyHz": 62.0253164556962,
+          "rawCents": 8.110686625803964,
+          "foldedCents": 8.110686625803964,
+          "confidence": 0.8260933933797756
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0003.m4a",
+          "message": "Peak -0.6 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.5631339013688759,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0003.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0004.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0004.m4a",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 3.2275736961451247,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9992170929908752,
+        "peakDb": -0.006802907247627677,
+        "rmsDb": -14.672103321762002,
+        "activeRmsDb": -14.59244358619908,
+        "dcOffset": 0.00033339751006568536,
+        "dcOffsetDb": -69.54075295931271,
+        "crestFactorDb": 14.58564067895145,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 35.4421768707483,
+        "attackMs": 33.51473922902495,
+        "tailLevelDbRelPeak": -91.04573711443862,
+        "clippingSamples": 1,
+        "flatTopRuns": 1,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 3192.108843537415,
+        "spectral": {
+          "centroidHz": 205.31810668901628,
+          "highFrequencyRatio": 0.0020407308656196135
+        },
+        "pitch": {
+          "midi": 36.0577667883459,
+          "frequencyHz": 65.625,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.8363186343258742
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0004.m4a",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.006802907247627677,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "source-0004.m4a",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0004.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0005.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0005.m4a",
+        "note": 37,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 2.948934240362812,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9644462466239929,
+        "peakDb": -0.31443945465039597,
+        "rmsDb": -13.995892316531862,
+        "activeRmsDb": -13.834021333675183,
+        "dcOffset": 0.0002272556260334722,
+        "dcOffsetDb": -72.86970712801232,
+        "crestFactorDb": 13.519581879024788,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 84.67120181405896,
+        "attackMs": 20.317460317460316,
+        "tailLevelDbRelPeak": -112.7269985402153,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 2864.2403628117913,
+        "spectral": {
+          "centroidHz": 207.52794095215572,
+          "highFrequencyRatio": 0.0024371355591684134
+        },
+        "pitch": {
+          "midi": 37.01098039827877,
+          "frequencyHz": 69.33962264150944,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.855749311110064
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0005.m4a",
+          "message": "Peak -0.3 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.31443945465039597,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0005.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0006.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0006.m4a",
+        "note": 38,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 2.6006349206349206,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9957884550094604,
+        "peakDb": -0.0366582632547712,
+        "rmsDb": -13.565416739430313,
+        "activeRmsDb": -13.51874200971028,
+        "dcOffset": 0.0008089465899110147,
+        "dcOffsetDb": -61.84160302814138,
+        "crestFactorDb": 13.482083746455508,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 4.580498866213152,
+        "attackMs": 1.4058956916099772,
+        "tailLevelDbRelPeak": -31.682007467120595,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 2596.031746031746,
+        "spectral": {
+          "centroidHz": 218.31253386154864,
+          "highFrequencyRatio": 0.0035203071112578565
+        },
+        "pitch": {
+          "midi": 38.048629548225605,
+          "frequencyHz": 73.62270450751252,
+          "rawCents": 4.862954822560539,
+          "foldedCents": 4.862954822560596,
+          "confidence": 0.8697702515563355
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0006.m4a",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0366582632547712,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0006.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "finger-bass",
+          "file": "source-0006.m4a",
+          "message": "Tail remains -31.7 dB below peak at EOF; possible truncation",
+          "value": -31.682007467120595,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "source-0007.m4a",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "source-0007.m4a",
+        "note": 39,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 5.410249433106576,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 1.0039849281311035,
+        "peakDb": 0.034543864175526226,
+        "rmsDb": -16.62352436986972,
+        "activeRmsDb": -16.519879336928017,
+        "dcOffset": 0.00008020208778099949,
+        "dcOffsetDb": -81.91628652459956,
+        "crestFactorDb": 16.554423201103546,
+        "leadingSilenceMs": 23.197278911564624,
+        "trailingSilenceMs": 104.39909297052154,
+        "attackMs": 27.233560090702948,
+        "tailLevelDbRelPeak": -65.27593284696115,
+        "clippingSamples": 8,
+        "flatTopRuns": 1,
+        "activeStartMs": 23.197278911564624,
+        "activeEndMs": 5305.827664399093,
+        "spectral": {
+          "centroidHz": 233.7960447357034,
+          "highFrequencyRatio": 0.0025905634335338843
+        },
+        "pitch": {
+          "midi": 38.999116762384276,
+          "frequencyHz": 77.77777777777777,
+          "rawCents": -0.08832376157243971,
+          "foldedCents": -0.08832376157238286,
+          "confidence": 0.8837212829082831
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "source-0007.m4a",
+          "message": "Peak 0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": 0.034543864175526226,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "source-0007.m4a",
+          "message": "8 samples are at/near full scale",
+          "value": 8,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "finger-bass",
+          "file": "source-0007.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.197278911564624,
+          "threshold": 10
+        }
+      ]
+    }
+  ]
+}

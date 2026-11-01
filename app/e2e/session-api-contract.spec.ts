@@ -1,0 +1,437 @@
+/**
+ * Black-box session API contract.
+ *
+ * This exact journey runs against whichever backend Playwright starts:
+ * Vite's offline backend in normal CI, or the real Worker in a full-stack run.
+ * The test never reaches into either implementation's storage.
+ */
+import { test, expect, getBaseUrl } from './global-setup';
+import { MAX_MESSAGE_SIZE } from '../src/shared/constants';
+
+const API_BASE = getBaseUrl();
+
+function state(tempo: number, activeSteps: number[] = []) {
+  const steps = Array(128).fill(false);
+  for (const step of activeSteps) steps[step] = true;
+  return {
+    tracks: [{
+      id: 'contract-track',
+      name: 'Contract Track',
+      sampleId: 'sampled:808-kick',
+      steps,
+      parameterLocks: Array(128).fill(null),
+      volume: 1,
+      muted: false,
+      soloed: false,
+      transpose: 0,
+      stepCount: 16,
+    }],
+    tempo,
+    swing: 12,
+    version: 1,
+  };
+}
+
+function activeStepIndices(steps: boolean[]): number[] {
+  return steps.flatMap((active, index) => active ? [index] : []);
+}
+
+/**
+ * A track whose arrays are shorter than MAX_STEPS. Validation accepts this
+ * (only oversized arrays are rejected), so it reaches the state-repair layer.
+ */
+function shortTrack(id: string, name: string) {
+  return {
+    id,
+    name,
+    sampleId: 'sampled:808-kick',
+    steps: [true, ...Array(15).fill(false)],
+    parameterLocks: Array(16).fill(null),
+    volume: 1,
+    muted: false,
+    soloed: false,
+    transpose: 0,
+    stepCount: 16,
+  };
+}
+
+test('create, read, replace, rename, remix, and publish share one HTTP contract', async ({ request }) => {
+  const create = await request.post(`${API_BASE}/api/sessions`, {
+    data: {
+      name: 'Working Copy',
+      state: { ...state(120, [0]), loopRegion: { start: 0, end: 8 } },
+    },
+  });
+  expect(create.status()).toBe(201);
+  const created = await create.json() as { id: string; url: string };
+  expect(created.url).toBe(`/s/${created.id}`);
+
+  const initial = await request.get(`${API_BASE}/api/sessions/${created.id}`);
+  expect(initial.status()).toBe(200);
+  await expect(initial.json()).resolves.toMatchObject({
+    id: created.id,
+    name: 'Working Copy',
+    immutable: false,
+    remixedFrom: null,
+    state: {
+      tempo: 120,
+      tracks: [{ id: 'contract-track' }],
+    },
+  });
+
+  const replace = await request.put(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { state: { ...state(132, [0, 4]), loopRegion: null } },
+  });
+  expect(replace.status()).toBe(200);
+  await expect(replace.json()).resolves.toMatchObject({
+    id: created.id,
+    trackCount: 1,
+  });
+
+  const rename = await request.patch(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { name: 'Renamed Working Copy' },
+  });
+  expect(rename.status()).toBe(200);
+  await expect(rename.json()).resolves.toMatchObject({
+    id: created.id,
+    name: 'Renamed Working Copy',
+  });
+
+  const updated = await request.get(`${API_BASE}/api/sessions/${created.id}`);
+  expect(updated.status()).toBe(200);
+  const updatedSession = await updated.json() as {
+    name: string | null;
+    state: { tempo: number; loopRegion?: { start: number; end: number } | null; tracks: Array<{ steps: boolean[] }> };
+  };
+  expect(updatedSession).toMatchObject({
+    name: 'Renamed Working Copy',
+    state: {
+      tempo: 132,
+      loopRegion: null,
+    },
+  });
+  expect(activeStepIndices(updatedSession.state.tracks[0].steps)).toEqual([0, 4]);
+
+  const remix = await request.post(`${API_BASE}/api/sessions/${created.id}/remix?contract=query`);
+  expect(remix.status()).toBe(201);
+  const remixed = await remix.json() as { id: string; remixedFrom: string; url: string };
+  expect(remixed).toMatchObject({
+    remixedFrom: created.id,
+    url: `/s/${remixed.id}`,
+  });
+  const remixedResponse = await request.get(`${API_BASE}/api/sessions/${remixed.id}`);
+  expect(remixedResponse.status()).toBe(200);
+  const remixedSession = await remixedResponse.json() as {
+    id: string;
+    immutable: boolean;
+    remixedFrom: string;
+    state: { tempo: number; loopRegion?: { start: number; end: number } | null; tracks: Array<{ steps: boolean[] }> };
+  };
+  expect(remixedSession).toMatchObject({
+    id: remixed.id,
+    immutable: false,
+    remixedFrom: created.id,
+    state: { tempo: 132, loopRegion: null },
+  });
+  expect(activeStepIndices(remixedSession.state.tracks[0].steps)).toEqual([0, 4]);
+
+  const publish = await request.post(`${API_BASE}/api/sessions/${created.id}/publish?contract=query`);
+  expect(publish.status()).toBe(201);
+  const published = await publish.json() as {
+    id: string;
+    immutable: boolean;
+    sourceId: string;
+    url: string;
+  };
+  expect(published).toMatchObject({
+    immutable: true,
+    sourceId: created.id,
+    url: `/s/${published.id}`,
+  });
+
+  const publishedResponse = await request.get(`${API_BASE}/api/sessions/${published.id}`);
+  expect(publishedResponse.status()).toBe(200);
+  const publishedSession = await publishedResponse.json() as {
+    id: string;
+    immutable: boolean;
+    remixedFrom: string;
+    state: { tempo: number; loopRegion?: { start: number; end: number } | null; tracks: Array<{ steps: boolean[] }> };
+  };
+  expect(publishedSession).toMatchObject({
+    id: published.id,
+    immutable: true,
+    remixedFrom: created.id,
+    state: { tempo: 132, loopRegion: null },
+  });
+  expect(activeStepIndices(publishedSession.state.tracks[0].steps)).toEqual([0, 4]);
+
+  const forbidden = await request.put(`${API_BASE}/api/sessions/${published.id}`, {
+    data: { state: state(140) },
+  });
+  expect(forbidden.status()).toBe(403);
+
+  const sourceStillEditable = await request.patch(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { name: 'Still Editable' },
+  });
+  expect(sourceStillEditable.status()).toBe(200);
+});
+
+test('invalid requests are rejected without changing the session contract', async ({ request }) => {
+  const unsafeCreate = await request.post(`${API_BASE}/api/sessions`, {
+    data: {
+      name: '<script>alert("contract")</script>',
+      state: state(120),
+    },
+  });
+  expect(unsafeCreate.status()).toBe(400);
+
+  const create = await request.post(`${API_BASE}/api/sessions`, {
+    data: { name: 'Validation Control', state: state(120, [2]) },
+  });
+  expect(create.status()).toBe(201);
+  const created = await create.json() as { id: string };
+
+  const invalidState = {
+    ...state(132, [2, 6]),
+    tempo: 'fast',
+  };
+  const invalidPut = await request.put(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { state: invalidState },
+  });
+  expect(invalidPut.status()).toBe(400);
+
+  const invalidName = await request.patch(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { name: 42 },
+  });
+  expect(invalidName.status()).toBe(400);
+
+  const overlongName = await request.patch(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { name: 'x'.repeat(101) },
+  });
+  expect(overlongName.status()).toBe(400);
+
+  const partialPut = await request.put(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { state: { tempo: 130 } },
+  });
+  expect(partialPut.status()).toBe(400);
+
+  const partialPatch = await request.patch(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { state: { tempo: 130 } },
+  });
+  expect(partialPatch.status()).toBe(400);
+
+  // Every JSON write boundary shares the same 64KB application limit. These
+  // controls distinguish a real 413 from downstream schema/name validation.
+  const oversized = 'x'.repeat(MAX_MESSAGE_SIZE);
+  const oversizedCreate = await request.post(`${API_BASE}/api/sessions`, {
+    data: { padding: oversized },
+  });
+  expect(oversizedCreate.status()).toBe(413);
+  const oversizedPut = await request.put(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { padding: oversized },
+  });
+  expect(oversizedPut.status()).toBe(413);
+  const oversizedPatch = await request.patch(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { name: oversized },
+  });
+  expect(oversizedPatch.status()).toBe(413);
+
+  const unchanged = await request.get(`${API_BASE}/api/sessions/${created.id}`);
+  expect(unchanged.status()).toBe(200);
+  const unchangedSession = await unchanged.json() as {
+    name: string | null;
+    state: { tempo: number; tracks: Array<{ steps: boolean[] }> };
+  };
+  expect(unchangedSession.name).toBe('Validation Control');
+  expect(unchangedSession.state.tempo).toBe(120);
+  expect(activeStepIndices(unchangedSession.state.tracks[0].steps)).toEqual([2]);
+
+  const invalidUuid = await request.get(
+    `${API_BASE}/api/sessions/------------------------------------`,
+  );
+  expect(invalidUuid.status()).toBe(400);
+
+  const invalidSuffix = await request.get(
+    `${API_BASE}/api/sessions/${created.id}/publish`,
+  );
+  expect(invalidSuffix.status()).toBe(404);
+
+  const malformedCreate = await request.post(`${API_BASE}/api/sessions`, {
+    headers: { 'Content-Type': 'application/json' },
+    data: Buffer.from('{'),
+  });
+  expect(malformedCreate.status()).toBe(400);
+  await expect(malformedCreate.json()).resolves.toMatchObject({
+    error: 'Invalid JSON',
+  });
+
+  // A body the caller never declared as JSON is ignored rather than rejected,
+  // and still produces a usable session.
+  const undeclaredBody = await request.post(`${API_BASE}/api/sessions`, {
+    headers: { 'Content-Type': 'text/plain' },
+    data: 'not json at all',
+  });
+  expect(undeclaredBody.status()).toBe(201);
+  const undeclared = await undeclaredBody.json() as { id: string };
+  const undeclaredRead = await request.get(`${API_BASE}/api/sessions/${undeclared.id}`);
+  expect(undeclaredRead.status()).toBe(200);
+  await expect(undeclaredRead.json()).resolves.toMatchObject({
+    state: { tracks: [], tempo: 120, swing: 0 },
+  });
+});
+
+test('hostile persisted metadata is rejected identically by both backends', async ({ request }) => {
+  const invalidStates = [
+    { label: 'prototype scale: toString', state: { ...state(120), scale: { root: 'C', scaleId: 'toString', locked: false } }, field: 'scale.scaleId' },
+    { label: 'prototype scale: constructor', state: { ...state(120), scale: { root: 'C', scaleId: 'constructor', locked: false } }, field: 'scale.scaleId' },
+    { label: 'prototype scale: __proto__', state: { ...state(120), scale: { root: 'C', scaleId: '__proto__', locked: false } }, field: 'scale.scaleId' },
+    { label: 'array effects state', state: { ...state(120), effects: [] }, field: 'effects' },
+    { label: 'incomplete effects state', state: { ...state(120), effects: {} }, field: 'effects.reverb' },
+    { label: 'non-numeric loop start', state: { ...state(120), loopRegion: { start: 'bad', end: 8 } }, field: 'loopRegion.start' },
+    { label: 'fractional loop start', state: { ...state(120), loopRegion: { start: 4.5, end: 8 } }, field: 'loopRegion.start' },
+    { label: 'fractional loop end', state: { ...state(120), loopRegion: { start: 4, end: 8.5 } }, field: 'loopRegion.end' },
+    { label: 'out-of-range loop end', state: { ...state(120), loopRegion: { start: 0, end: 128 } }, field: 'loopRegion.end' },
+    { label: 'backwards loop', state: { ...state(120), loopRegion: { start: 9, end: 8 } }, field: 'loopRegion.start' },
+  ];
+
+  for (const invalid of invalidStates) {
+    const response = await request.post(`${API_BASE}/api/sessions`, {
+      data: { state: invalid.state },
+    });
+    expect(response.status(), invalid.label).toBe(400);
+    const body = await response.json() as { error?: string; details?: string[] };
+    expect(body.error, invalid.label).toBe('Validation failed');
+    expect(body.details, invalid.label).toEqual(
+      expect.arrayContaining([expect.stringContaining(invalid.field)]),
+    );
+  }
+
+  // State replacement is a separate HTTP boundary from create. Prove failed
+  // PUT/PATCH validation is atomic rather than merely checking the parser.
+  const control = await request.post(`${API_BASE}/api/sessions`, {
+    data: { name: 'Metadata Control', state: state(120, [3]) },
+  });
+  expect(control.status()).toBe(201);
+  const { id } = await control.json() as { id: string };
+
+  const invalidScale = invalidStates.find(entry => entry.label === 'prototype scale: toString')!;
+  const invalidLoop = invalidStates.find(entry => entry.label === 'out-of-range loop end')!;
+  const invalidPatch = await request.patch(`${API_BASE}/api/sessions/${id}`, {
+    data: { state: invalidScale.state },
+  });
+  expect(invalidPatch.status()).toBe(400);
+  const invalidPut = await request.put(`${API_BASE}/api/sessions/${id}`, {
+    data: { state: invalidLoop.state },
+  });
+  expect(invalidPut.status()).toBe(400);
+
+  const unchanged = await request.get(`${API_BASE}/api/sessions/${id}`);
+  expect(unchanged.status()).toBe(200);
+  const unchangedSession = await unchanged.json() as {
+    name: string | null;
+    state: { tempo: number; scale?: unknown; loopRegion?: unknown; tracks: Array<{ steps: boolean[] }> };
+  };
+  expect(unchangedSession.name).toBe('Metadata Control');
+  expect(unchangedSession.state.tempo).toBe(120);
+  expect(unchangedSession.state.scale).toEqual({
+    root: 'C',
+    scaleId: 'minor-pentatonic',
+    locked: true,
+  });
+  expect(unchangedSession.state.loopRegion ?? null).toBeNull();
+  expect(activeStepIndices(unchangedSession.state.tracks[0].steps)).toEqual([3]);
+});
+
+test('stored state is normalized identically by both backends', async ({ request }) => {
+  // A create that omits tracks must not persist an absent tracks array; a
+  // session in that shape fails invariant checks on the next read.
+  const partialCreate = await request.post(`${API_BASE}/api/sessions`, {
+    data: { tempo: 140 },
+  });
+  expect(partialCreate.status()).toBe(201);
+  const partial = await partialCreate.json() as { id: string };
+
+  const partialRead = await request.get(`${API_BASE}/api/sessions/${partial.id}`);
+  expect(partialRead.status()).toBe(200);
+  await expect(partialRead.json()).resolves.toMatchObject({
+    state: { tracks: [], tempo: 140, swing: 0, version: 1 },
+  });
+
+  const create = await request.post(`${API_BASE}/api/sessions`, {
+    data: { state: state(120) },
+  });
+  expect(create.status()).toBe(201);
+  const created = await create.json() as { id: string };
+
+  // Short step arrays and duplicate track ids are accepted by validation and
+  // repaired by the Durable Object. The offline backend must repair them too,
+  // or a browser test can only reproduce a state production never stores.
+  const replace = await request.put(`${API_BASE}/api/sessions/${created.id}`, {
+    data: {
+      state: {
+        tracks: [shortTrack('repair-track', 'Original'), shortTrack('repair-track', 'Duplicate')],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    },
+  });
+  expect(replace.status()).toBe(200);
+
+  const read = await request.get(`${API_BASE}/api/sessions/${created.id}`);
+  expect(read.status()).toBe(200);
+  const session = await read.json() as {
+    state: { tracks: Array<{ id: string; name: string; steps: boolean[]; parameterLocks: unknown[] }> };
+  };
+  expect(session.state.tracks).toHaveLength(1);
+  expect(session.state.tracks[0].name).toBe('Original');
+  expect(session.state.tracks[0].steps).toHaveLength(128);
+  expect(session.state.tracks[0].parameterLocks).toHaveLength(128);
+  expect(activeStepIndices(session.state.tracks[0].steps)).toEqual([0]);
+});
+
+test('a direct-format create keeps its collaborative fields', async ({ request }) => {
+  // Seed sessions such as scripts/sessions/advanced-features-showcase.json are
+  // posted with the session fields at the top level rather than under `state`,
+  // and exist to demonstrate effects and loop regions. Dropping those fields on
+  // create left the reference session unable to show the features it documents.
+  const create = await request.post(`${API_BASE}/api/sessions`, {
+    data: {
+      tracks: state(120, [0]).tracks,
+      tempo: 120,
+      swing: 0,
+      version: 1,
+      effects: {
+        bypass: false,
+        reverb: { decay: 4, wet: 0.5 },
+        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+        chorus: { frequency: 2, depth: 0.4, wet: 0.1 },
+        distortion: { amount: 0.25, wet: 0.3 },
+      },
+      loopRegion: { start: 0, end: 8 },
+    },
+  });
+  expect(create.status()).toBe(201);
+  const created = await create.json() as { id: string };
+
+  const read = await request.get(`${API_BASE}/api/sessions/${created.id}`);
+  expect(read.status()).toBe(200);
+  await expect(read.json()).resolves.toMatchObject({
+    state: {
+      effects: { reverb: { decay: 4, wet: 0.5 } },
+      loopRegion: { start: 0, end: 8 },
+    },
+  });
+});
+
+test('unknown API routes answer with JSON on both backends', async ({ request }) => {
+  const health = await request.get(`${API_BASE}/api/health`);
+  expect(health.status()).toBe(200);
+  await expect(health.json()).resolves.toMatchObject({ status: 'ok' });
+
+  // Without this the offline backend serves the SPA shell with a 200, and a
+  // broken request reads as a successful one.
+  const unknown = await request.get(`${API_BASE}/api/definitely-not-a-route`);
+  expect(unknown.status()).toBe(404);
+  await expect(unknown.json()).resolves.toMatchObject({ error: 'Not found' });
+});

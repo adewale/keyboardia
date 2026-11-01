@@ -1,0 +1,924 @@
+name: CI
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      verification_tier:
+        description: Verification depth
+        required: true
+        default: t2
+        type: choice
+        options:
+          - t1
+          - t2
+
+env:
+  NODE_VERSION: '24'
+
+jobs:
+  verification-scope:
+    name: Verification Scope
+    runs-on: ubuntu-latest
+    outputs:
+      browser: ${{ steps.scope.outputs.browser }}
+      worker: ${{ steps.scope.outputs.worker }}
+      audio: ${{ steps.scope.outputs.audio }}
+      visual: ${{ steps.scope.outputs.visual }}
+      samples: ${{ steps.scope.outputs.samples }}
+      mobile: ${{ steps.scope.outputs.mobile }}
+      full: ${{ steps.scope.outputs.full }}
+    steps:
+      - name: Checkout repository with merge-base history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Select verification profiles
+        id: scope
+        working-directory: ./app
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            node scripts/select-verification-scope.mjs \
+              --base "${{ github.event.pull_request.base.sha }}" \
+              --head "${{ github.event.pull_request.head.sha }}" \
+              --github-output "$GITHUB_OUTPUT"
+          elif [[ "${{ github.event_name }}" == "workflow_dispatch" && "${{ inputs.verification_tier }}" == "t1" ]]; then
+            node scripts/select-verification-scope.mjs --tier t1 --github-output "$GITHUB_OUTPUT"
+          else
+            node scripts/select-verification-scope.mjs --tier t2 --github-output "$GITHUB_OUTPUT"
+          fi
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            app/package-lock.json
+            app/test/integration/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      # validate:unrun-tests asks the integration runner what it collects.
+      # That runner has an independent lockfile and loads the Workers pool from
+      # its Vitest config, so the inventory is not available after installing
+      # only app/package-lock.json.
+      - name: Install integration test dependencies
+        run: npm ci
+        working-directory: ./app/test/integration
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check CSS consistency invariants
+        run: npm run validate:css-consistency
+
+      # Catches the always-green patterns from the July 2026 audit: assertions
+      # nullified by .catch(), runtime self-skips, tautologies, and tests with
+      # no assertion at all. Gating — every one of these shipped here as a
+      # passing test that could not fail, so a warning would not be enough.
+      - name: Check for always-green test patterns
+        run: npm run validate:test-antipatterns
+
+      # Reports tests that name a module they never import, tests that
+      # reimplement the logic they claim to cover, and modules imported only by
+      # their own tests. Advisory while a backlog existed; the backlog is zero,
+      # and a clean checker left on continue-on-error silently refills.
+      - name: Check test/subject linkage
+        run: npm run validate:test-links
+
+      # The linkage check above asks whether anything imports a *module*; this
+      # asks the same of each exported symbol, which is the granularity two bugs
+      # in this repo hid at — slicer.ts had one live export and four dead ones
+      # carrying a units bug, and instrument-types.ts had one dead export
+      # answering "is this melodic?" wrongly for 24 of 99 catalogue ids. Both
+      # had passing tests, which is what kept them alive. Also advisory until
+      # the backlog cleared; now at zero dead runtime exports, so it blocks.
+      - name: Check for unreachable exports
+        run: npm run validate:dead-exports
+
+      # The two checks above ask whether production reaches the code a test
+      # covers. This asks the mirror question: does any lane reach the test?
+      # Six staging files — 103 tests, 226 assertions — were collected by
+      # nothing, which is how an always-green try/catch survived for months.
+      # They were deleted after their claims were mapped to maintained lanes.
+      # There is no allowlist: any future uncollected file fails here.
+      - name: Check every test file is run by a lane
+        run: npm run validate:unrun-tests
+
+  unit-tests:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Three Vitest lanes (see app/vitest.config.ts). They are split so the
+      # fast unit lane has its own budget; every lane still runs on every
+      # PR and push, in this required job.
+      - name: Run unit tests
+        run: npm run test:unit
+
+      - name: Run required offline audio renders
+        run: npm run test:audio-render
+
+      - name: Run verification-tooling tests
+        run: npm run test:verification-tooling
+
+  stack-a-identity:
+    name: Stack A Identity
+    needs: verification-scope
+    if: github.event_name == 'pull_request' && (needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository with merge-base history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore canonical browser binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-webkit-${{ hashFiles('app/package-lock.json') }}
+
+      - name: Install canonical browser system dependencies
+        run: npx playwright install-deps chromium webkit
+
+      - name: Install canonical browser binaries
+        run: npx playwright install chromium webkit
+
+      - name: Verify committed Stack B approval evidence
+        run: npm run validate:stack-b-evidence
+
+      - name: Compare merge-base and head identity contracts
+        run: |
+          npm run test:identity
+          node scripts/assert-playwright-stats.mjs test-results/stack-a-identity-results.json inventory 0 identity/test-title-inventory.txt
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/stack-a-identity'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/stack-a-identity-results.json'
+
+      - name: Upload identity evidence
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: stack-a-identity
+          path: |
+            app/test-results/stack-a-identity/
+            app/test-results/stack-a-identity-results.json
+          retention-days: 7
+
+  integration-tests:
+    name: Integration Tests
+    needs: verification-scope
+    if: needs.verification-scope.outputs.worker == 'true' || needs.verification-scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Install integration test dependencies
+        run: npm ci
+        working-directory: ./app/test/integration
+
+      - name: Validate synchronization source contract
+        run: npm run validate:sync
+
+      - name: Run integration tests
+        run: npm run test:integration:built
+
+  eval-manifest:
+    name: Eval Manifest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: evals/package-lock.json
+
+      - name: Install eval validation dependencies
+        run: npm ci --ignore-scripts --audit=false
+        working-directory: ./evals
+
+      - name: Audit eval validation dependencies
+        run: npm audit --audit-level=high
+        working-directory: ./evals
+
+      # Proves the eval pipeline runs end to end with no provider, no
+      # credentials, and no spend. The stub adapter is a fixed string, so this
+      # gates the plumbing, never the scores.
+      - name: Run the eval pipeline offline
+        run: node evals/run-benchmark.mjs --agent stub --repeats 1 --quiet --out "$RUNNER_TEMP/stub-run.json"
+
+      # There is deliberately no "verify committed eval receipts" step.
+      # Receipts are uploaded as run artifacts, not committed
+      # (evals/receipts/README.md), so that step verified zero files on every
+      # run and passed. verify-receipts.mjs now fails on an empty set; run it
+      # against a downloaded receipt when a release gate needs one.
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: '0.12.0'
+          enable-cache: true
+          # The harness pin lives in this workflow, so its bytes invalidate the
+          # tool cache without an unrelated Python-project glob scan.
+          cache-dependency-glob: .github/workflows/ci.yml
+
+      - name: Install skill-eval-harness
+        run: uv tool install skill-eval-harness==0.6.0
+
+      # Model-free and agent-free: shape, fixture paths, regex compilation,
+      # prompt leakage, and ablation targets. No API key is involved.
+      - name: Validate eval manifest
+        run: skill-benchmark validate evals/shared-benchmark.json --strict-leakage --leakage-min-chars 1 --check-ablations
+
+      - name: Audit eval manifest
+        run: skill-benchmark audit-manifest evals/shared-benchmark.json --fail-on-blockers --format markdown
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Type-check and dry-run the Worker bundle
+        run: npm run check:worker
+
+  instrument-validation:
+    name: Instrument Validation
+    needs: verification-scope
+    if: needs.verification-scope.outputs.samples == 'true' || needs.verification-scope.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install real audio toolchain
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Restore sample-decode browser binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-webkit-${{ hashFiles('app/package-lock.json') }}
+
+      - name: Install sample-decode browser system dependencies
+        run: npx playwright install-deps chromium webkit
+
+      - name: Install sample-decode browser binaries
+        run: npx playwright install chromium webkit
+
+      - name: Verify Pipeline v2 real encode/decode contract
+        run: npx vitest run test/sample-pipeline-real-contract.test.ts
+        env:
+          RUN_REAL_SAMPLE_PIPELINE: '1'
+
+      - name: Run all instrument validators
+        run: npm run validate:instruments
+
+      - name: Verify browser sample decode
+        run: npx playwright test e2e/sample-browser-decode.spec.ts --project=chromium --retries=0
+        env:
+          USE_MOCK_API: '1'
+          CI: 'true'
+
+      - name: Verify WebKit TrackBus dynamics
+        run: npx playwright test e2e/capture-session.spec.ts --project=webkit --no-deps --grep "keeps the per-track ceiling" --retries=0
+        env:
+          USE_MOCK_API: '1'
+          E2E_WEBKIT_AUDIO_PROBE: '1'
+          CI: 'true'
+
+  # E2E is split by runtime and dependency, replacing a single
+  # `continue-on-error: true` job whose comment read "E2E tests are advisory -
+  # many require real backend". Exempting all 35 spec files because some of them
+  # need a backend meant no E2E failure could ever break the build, and the
+  # backend-dependent specs still never ran anywhere in CI.
+  #
+  #   T1 pull requests   affected functional/audio/Worker/mobile/visual contracts
+  #   T2 main/scheduled  parallel offline, Chromium, WebKit, mobile, and visual
+  #
+  # See docs/TEST-AUDIT-2026-07.md for the audit and lane ownership rationale.
+  e2e-tests:
+    name: E2E Tests (mock API)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.browser == 'true' || needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Validate E2E backend inventories
+        run: npm run validate:e2e-inventories
+
+      # The reviewed mock-compatible manifest is the strict release subset:
+      # zero retries and no skipped/flaky/unexpected results are accepted.
+      - name: Run required mock-compatible E2E tests (Chromium)
+        shell: bash
+        run: |
+          required_specs=()
+          while IFS= read -r spec; do required_specs+=("$spec"); done < e2e/mock-compatible-files.txt
+          npx playwright test "${required_specs[@]}" --project=chromium --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/blocking-results.json lane mock-required
+        env:
+          USE_MOCK_API: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/blocking-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/blocking-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-blocking'
+
+      - name: Summarize Playwright results
+        if: always()
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const readStats = path => fs.existsSync(path)
+            ? JSON.parse(fs.readFileSync(path, 'utf8')).stats
+            : null;
+          const blocking = readStats('test-results/blocking-results.json');
+          const rows = (label, stats) => stats ? [
+            `#### ${label}`,
+            `- Passed: ${stats.expected}`,
+            `- Failed: ${stats.unexpected}`,
+            `- Flaky: ${stats.flaky}`,
+            `- Skipped: ${stats.skipped}`,
+          ] : [`#### ${label}`, '- Not run'];
+          const summary = [
+            '### Playwright E2E result',
+            '',
+            ...rows('Blocking (zero retries)', blocking),
+            '',
+          ].join('\n');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          NODE
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report
+          path: |
+            app/playwright-report-blocking/
+            app/test-results/
+          retention-days: 7
+
+  e2e-offline-functional:
+    name: E2E Tests (offline functional)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.browser == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run offline functional E2E tests
+        shell: bash
+        run: |
+          comm -23 \
+            <(find e2e -type f -name '*.spec.ts' | sort) \
+            <(sort e2e/mock-compatible-files.txt) > "$RUNNER_TEMP/non-mock-specs.txt"
+          comm -23 \
+            "$RUNNER_TEMP/non-mock-specs.txt" \
+            <(sort e2e/audio-matrix-files.txt) > "$RUNNER_TEMP/offline-functional-with-pcm-specs.txt"
+          comm -23 \
+            "$RUNNER_TEMP/offline-functional-with-pcm-specs.txt" \
+            <(printf '%s\n' 'e2e/capture-session.spec.ts') > "$RUNNER_TEMP/offline-functional-specs.txt"
+          functional_specs=()
+          while IFS= read -r spec; do functional_specs+=("$spec"); done < "$RUNNER_TEMP/offline-functional-specs.txt"
+          npx playwright test "${functional_specs[@]}" --project=chromium --workers=2 --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/offline-functional-results.json lane offline-functional
+        env:
+          USE_MOCK_API: '1'
+          E2E_FUNCTIONAL_ONLY: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/offline-functional-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/offline-functional-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-offline-functional'
+
+      - name: Upload offline functional diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-offline-functional
+          path: |
+            app/playwright-report-offline-functional/
+            app/test-results/
+          retention-days: 7
+
+  e2e-offline-audio:
+    name: E2E Tests (offline audio)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      - name: Run CPU-bound audio matrix
+        shell: bash
+        run: |
+          audio_specs=()
+          while IFS= read -r spec; do audio_specs+=("$spec"); done < e2e/audio-matrix-files.txt
+          npx playwright test "${audio_specs[@]}" --project=chromium --workers=1 --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/offline-audio-results.json lane offline-audio
+        env:
+          USE_MOCK_API: '1'
+          E2E_FUNCTIONAL_ONLY: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/offline-audio-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/offline-audio-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-offline-audio'
+
+      - name: Upload offline audio diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-offline-audio
+          path: |
+            app/playwright-report-offline-audio/
+            app/test-results/
+          retention-days: 7
+
+  e2e-pcm:
+    name: E2E Tests (PCM capture)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # PCM capture owns real-time browser audio and is deliberately isolated
+      # from the two-worker functional lane. Sharing that process caused
+      # missed sampled hits and non-repeatable null residuals under CI load.
+      - name: Run dev-only PCM capture contract
+        run: |
+          npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/pcm-results.json lane pcm
+        env:
+          USE_MOCK_API: '1'
+          E2E_FUNCTIONAL_ONLY: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/pcm-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/pcm-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-pcm'
+
+      - name: Upload PCM diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-report-pcm
+          path: |
+            app/playwright-report-pcm/
+            app/test-results/pcm-results.json
+          retention-days: 7
+
+  visual-tests-macos:
+    name: Visual Tests (macOS)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 30
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Run deterministic Holby visual tests
+        shell: bash
+        run: |
+          npx playwright test e2e/populated-visual.spec.ts --project=chromium --retries=0
+          node scripts/assert-playwright-stats.mjs test-results/visual-results.json lane visual-macos
+        env:
+          USE_MOCK_API: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/visual-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/visual-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-visual'
+
+      - name: Upload visual diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-visual-report-macos
+          path: |
+            app/playwright-report-visual/
+            app/test-results/
+          retention-days: 7
+
+  e2e-real-backend:
+    name: E2E Tests (real backend)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.worker == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        run: npx playwright install --with-deps chromium
+
+      # 12 spec files still carry `test.skip(useMockAPI, ...)` — the multiplayer,
+      # session-persistence, race-condition and publish flows. Under USE_MOCK_API
+      # every one of them skips, so they run in no other CI job.
+      #
+      # --workers=2 matters too: every worker shares one wrangler dev instance.
+      # Running the default worker count against it produced a wave of
+      # ECONNREFUSED partway through a local trial — the backend, not the tests,
+      # was the bottleneck.
+      # Screenshot contracts have a separate real-Worker lane below. Keeping
+      # them out here prevents Linux pixel diffs from being reported as backend
+      # failures, which previously hid ten failed tests behind continue-on-error.
+      - name: Run functional E2E tests against wrangler dev
+        if: needs.verification-scope.outputs.full == 'true'
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=chromium --workers=2
+          node scripts/assert-playwright-stats.mjs test-results/real-backend-results.json lane real-chromium
+        env:
+          CI: 'true'
+          E2E_FUNCTIONAL_ONLY: '1'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/real-backend-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/real-backend-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-real-backend'
+
+      - name: Run affected collaboration contract against real Worker
+        if: needs.verification-scope.outputs.full != 'true'
+        shell: bash
+        run: |
+          npm run test:e2e:collaboration:worker
+          node scripts/assert-playwright-stats.mjs test-results/worker-results.json lane worker
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/worker-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/worker-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-worker'
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-real-backend
+          path: |
+            app/playwright-report-real-backend/
+            app/playwright-report-worker/
+            app/test-results/real-backend-results.json
+            app/test-results/worker-results.json
+          retention-days: 7
+
+  e2e-real-backend-webkit:
+    name: E2E Tests (real backend, WebKit)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: Run broad WebKit contract against wrangler dev
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
+          node scripts/assert-playwright-stats.mjs test-results/webkit-results.json lane real-webkit
+        env:
+          CI: 'true'
+          E2E_FUNCTIONAL_ONLY: '1'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/webkit-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/webkit-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-webkit'
+
+      - name: Upload WebKit diagnostics
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-real-backend-webkit
+          path: |
+            app/playwright-report-webkit/
+            app/test-results/webkit-results.json
+          retention-days: 7
+
+  e2e-mobile-safari:
+    name: E2E Tests (Mobile Safari)
+    needs: verification-scope
+    if: needs.verification-scope.outputs.mobile == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright WebKit
+        run: npx playwright install --with-deps webkit
+
+      - name: Run Mobile Safari contract against wrangler dev
+        run: |
+          npm run test:e2e:full-stack -- e2e/mobile-iphone.spec.ts --project=mobile-safari
+          node scripts/assert-playwright-stats.mjs test-results/mobile-safari-results.json lane mobile-safari
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/mobile-safari-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/mobile-safari-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-mobile-safari'
+
+      - name: Upload Mobile Safari diagnostics
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-mobile-safari
+          path: |
+            app/playwright-report-mobile-safari/
+            app/test-results/mobile-safari-results.json
+          retention-days: 7
+
+  e2e-visual:
+    name: E2E Visual Regression
+    needs: verification-scope
+    if: needs.verification-scope.outputs.visual == 'true' || needs.verification-scope.outputs.full == 'true'
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Restore visual-test browser binaries
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-${{ hashFiles('app/package-lock.json') }}
+
+      - name: Install visual-test browser system dependencies
+        run: npx playwright install-deps chromium
+
+      - name: Install visual-test browser binary
+        run: npx playwright install chromium
+
+      # visual.spec.ts used to skip in CI, then ran against Vite's mock backend
+      # with developer-generated Linux baselines under continue-on-error. Nine
+      # of eleven tests failed on every run while the check stayed green. The
+      # baselines now come from this runner and the production-like Worker path;
+      # every image and the exact result inventory gate.
+      - name: Run visual regression tests
+        shell: bash
+        run: |
+          npm run test:e2e:full-stack -- --project=chromium --grep @visual --workers=1
+          node scripts/assert-playwright-stats.mjs test-results/visual-results.json lane visual-linux
+        env:
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/visual-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/visual-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-visual'
+
+      - name: Upload visual diff report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-visual
+          path: |
+            app/playwright-report-visual/
+            app/test-results/visual-results.json
+          retention-days: 7

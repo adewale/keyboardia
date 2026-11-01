@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "fixture": "cold-cache Hammond background plus contending 12-file acoustic-crash foreground",
+  "networkProfile": {
+    "name": "1.6 Mbps / 150 ms RTT",
+    "bitsPerSecond": 1600000,
+    "roundTripSeconds": 0.15,
+    "priorityReadySeconds": 20,
+    "backgroundTransferSeconds": 60
+  },
+  "initialStates": {
+    "hammond": "idle",
+    "acousticCrash": "idle"
+  },
+  "hammond": {
+    "prioritySeconds": 2.2166000003814696,
+    "backgroundSeconds": 41.66670000076294,
+    "state": "complete"
+  },
+  "acousticCrash": {
+    "prioritySeconds": 15.5095,
+    "backgroundSeconds": 0.00010000038146972657,
+    "state": "complete"
+  },
+  "scenarioSeconds": 43.883300001144406,
+  "resources": [
+    {
+      "name": "/instruments/hammond-organ/manifest.json",
+      "durationSeconds": 0.17139999961853028,
+      "encodedBodyBytes": 2167,
+      "transferBytes": 2467
+    },
+    {
+      "name": "/instruments/hammond-organ/C4.wav",
+      "durationSeconds": 2.0252999992370606,
+      "encodedBodyBytes": 372420,
+      "transferBytes": 372720
+    },
+    {
+      "name": "/instruments/hammond-organ/C2.wav",
+      "durationSeconds": 0.2835,
+      "encodedBodyBytes": 0,
+      "transferBytes": 300
+    },
+    {
+      "name": "/instruments/hammond-organ/E2.wav",
+      "durationSeconds": 0.2833999996185303,
+      "encodedBodyBytes": 0,
+      "transferBytes": 300
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs2.wav",
+      "durationSeconds": 0.2833999996185303,
+      "encodedBodyBytes": 0,
+      "transferBytes": 300
+    },
+    {
+      "name": "/instruments/hammond-organ/C3.wav",
+      "durationSeconds": 0.2833999996185303,
+      "encodedBodyBytes": 0,
+      "transferBytes": 300
+    },
+    {
+      "name": "/instruments/hammond-organ/E3.wav",
+      "durationSeconds": 0.2833000011444092,
+      "encodedBodyBytes": 0,
+      "transferBytes": 300
+    },
+    {
+      "name": "/instruments/acoustic-crash/manifest.json",
+      "durationSeconds": 0.281,
+      "encodedBodyBytes": 3467,
+      "transferBytes": 3767
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0001.m4a",
+      "durationSeconds": 7.00979999923706,
+      "encodedBodyBytes": 230538,
+      "transferBytes": 230838
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0002.m4a",
+      "durationSeconds": 7.250800001144409,
+      "encodedBodyBytes": 240309,
+      "transferBytes": 240609
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0003.m4a",
+      "durationSeconds": 6.792800001144409,
+      "encodedBodyBytes": 220567,
+      "transferBytes": 220867
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0004.m4a",
+      "durationSeconds": 7.29539999961853,
+      "encodedBodyBytes": 241807,
+      "transferBytes": 242107
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0005.m4a",
+      "durationSeconds": 7.58810000038147,
+      "encodedBodyBytes": 254477,
+      "transferBytes": 254777
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0006.m4a",
+      "durationSeconds": 7.086,
+      "encodedBodyBytes": 232190,
+      "transferBytes": 232490
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0007.m4a",
+      "durationSeconds": 6.5005,
+      "encodedBodyBytes": 217911,
+      "transferBytes": 218211
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0008.m4a",
+      "durationSeconds": 7.58770000076294,
+      "encodedBodyBytes": 259382,
+      "transferBytes": 259682
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0009.m4a",
+      "durationSeconds": 7.9982999992370605,
+      "encodedBodyBytes": 283675,
+      "transferBytes": 283975
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0010.m4a",
+      "durationSeconds": 7.86180000114441,
+      "encodedBodyBytes": 277793,
+      "transferBytes": 278093
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0011.m4a",
+      "durationSeconds": 7.61980000114441,
+      "encodedBodyBytes": 262450,
+      "transferBytes": 262750
+    },
+    {
+      "name": "/instruments/acoustic-crash/source-0012.m4a",
+      "durationSeconds": 7.55960000038147,
+      "encodedBodyBytes": 271781,
+      "transferBytes": 272081
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs3.wav",
+      "durationSeconds": 9.079,
+      "encodedBodyBytes": 356554,
+      "transferBytes": 356854
+    },
+    {
+      "name": "/instruments/hammond-organ/C2.wav",
+      "durationSeconds": 17.638,
+      "encodedBodyBytes": 705874,
+      "transferBytes": 706174
+    },
+    {
+      "name": "/instruments/hammond-organ/E2.wav",
+      "durationSeconds": 10.489199998855591,
+      "encodedBodyBytes": 414282,
+      "transferBytes": 414582
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs2.wav",
+      "durationSeconds": 12.47680000114441,
+      "encodedBodyBytes": 497578,
+      "transferBytes": 497878
+    },
+    {
+      "name": "/instruments/hammond-organ/C3.wav",
+      "durationSeconds": 11.15020000076294,
+      "encodedBodyBytes": 441178,
+      "transferBytes": 441478
+    },
+    {
+      "name": "/instruments/hammond-organ/E3.wav",
+      "durationSeconds": 11.01860000038147,
+      "encodedBodyBytes": 441410,
+      "transferBytes": 441710
+    },
+    {
+      "name": "/instruments/hammond-organ/E4.wav",
+      "durationSeconds": 9.14039999961853,
+      "encodedBodyBytes": 363594,
+      "transferBytes": 363894
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs4.wav",
+      "durationSeconds": 10.220700000762939,
+      "encodedBodyBytes": 408338,
+      "transferBytes": 408638
+    },
+    {
+      "name": "/instruments/hammond-organ/C5.wav",
+      "durationSeconds": 9.72510000038147,
+      "encodedBodyBytes": 395338,
+      "transferBytes": 395638
+    },
+    {
+      "name": "/instruments/hammond-organ/E5.wav",
+      "durationSeconds": 7.62010000038147,
+      "encodedBodyBytes": 390672,
+      "transferBytes": 390972
+    },
+    {
+      "name": "/instruments/hammond-organ/Gs5.wav",
+      "durationSeconds": 6.458,
+      "encodedBodyBytes": 391688,
+      "transferBytes": 391988
+    },
+    {
+      "name": "/instruments/hammond-organ/C6.wav",
+      "durationSeconds": 6.0367999992370605,
+      "encodedBodyBytes": 379978,
+      "transferBytes": 380278
+    }
+  ]
+}

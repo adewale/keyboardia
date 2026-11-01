@@ -1,0 +1,23 @@
+{
+  "id": "808-hihat-open",
+  "name": "808 Hi-Hat (Open)",
+  "type": "sampled",
+  "releaseTime": 0.2,
+  "playableRange": {
+    "min": 34,
+    "max": 73
+  },
+  "credits": {
+    "source": "TR-808 by Michael Fischer (1994), CC0 repackage (oh8/OH50.WAV)",
+    "url": "https://github.com/tidalcycles/sounds-tr808-fischer",
+    "license": "CC0 1.0 Universal (Public Domain)"
+  },
+  "samples": [
+    {
+      "note": 46,
+      "file": "hihat-open.mp3"
+    }
+  ],
+  "playbackNote": 46,
+  "chokeGroup": "808-hihat"
+}

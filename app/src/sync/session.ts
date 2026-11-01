@@ -1,0 +1,577 @@
+/**
+ * Session sync layer - handles saving/loading sessions from the API
+ *
+ * Phase 13A: Added request timeouts with AbortController
+ * Phase 14: Added exponential backoff with jitter for retries
+ */
+
+import type { GridState, Track } from '../types';
+import { logger } from '../utils/logger';
+// Import Session types from canonical source (shared/state.ts)
+import type { Session, SessionState } from '../shared/state';
+import { DEFAULT_STEP_COUNT } from '../shared/constants';
+import { normalizeSessionScale } from '../shared/scale-defaults';
+import { normalizeSessionEffects } from '../shared/effects-defaults';
+
+// Re-export for consumers that import from here
+export type { Session, SessionState } from '../shared/state';
+
+interface CreateSessionResponse {
+  id: string;
+  url: string;
+}
+
+interface RemixSessionResponse {
+  id: string;
+  remixedFrom: string;
+  url: string;
+}
+
+interface PublishSessionResponse {
+  id: string;
+  immutable: boolean;
+  url: string;
+  sourceId: string;
+}
+
+const API_BASE = '/api/sessions';
+const SAVE_DEBOUNCE_MS = 5000;
+
+// Phase 13A: Request timeout configuration
+const DEFAULT_TIMEOUT_MS = 10000; // 10 seconds for most operations
+const SAVE_TIMEOUT_MS = 15000;    // 15 seconds for saves (may be larger payloads)
+
+// Phase 14: Retry configuration with exponential backoff + jitter
+const RETRY_BASE_DELAY_MS = 1000;   // Starting delay: 1 second
+const RETRY_MAX_DELAY_MS = 30000;   // Cap at 30 seconds
+const RETRY_JITTER = 0.25;          // ±25% jitter
+const MAX_RETRIES = 3;              // Max retry attempts for transient errors
+const RETRYABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504]; // Status codes worth retrying
+
+/**
+ * Phase 14: Calculate retry delay with exponential backoff + jitter
+ * Jitter prevents the "thundering herd" problem when server recovers
+ */
+function calculateRetryDelay(attempt: number, retryAfterSeconds?: number): number {
+  // If server provided Retry-After, use it (with jitter)
+  if (retryAfterSeconds !== undefined && retryAfterSeconds > 0) {
+    const baseDelay = retryAfterSeconds * 1000;
+    // Don't apply jitter if Retry-After is very long (quota reset)
+    if (baseDelay > 60000) {
+      return baseDelay;
+    }
+    const jitterRange = baseDelay * RETRY_JITTER;
+    const jitter = (Math.random() * 2 - 1) * jitterRange;
+    return Math.round(baseDelay + jitter);
+  }
+
+  // Exponential backoff: 1s, 2s, 4s, 8s, ... capped at 30s
+  const exponentialDelay = Math.min(
+    RETRY_BASE_DELAY_MS * Math.pow(2, attempt),
+    RETRY_MAX_DELAY_MS
+  );
+
+  // Add jitter: ±25% randomization
+  const jitterRange = exponentialDelay * RETRY_JITTER;
+  const jitter = (Math.random() * 2 - 1) * jitterRange;
+
+  return Math.round(exponentialDelay + jitter);
+}
+
+/**
+ * Phase 14: Check if an error is retryable
+ */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof Error) {
+    // Network errors are retryable
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      return true;
+    }
+    // Timeout errors are retryable
+    if (error.name === 'AbortError') {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Phase 14: Parse Retry-After header (supports both seconds and HTTP-date)
+ */
+function parseRetryAfter(response: Response): number | undefined {
+  const retryAfter = response.headers.get('Retry-After');
+  if (!retryAfter) return undefined;
+
+  // Try parsing as seconds
+  const seconds = parseInt(retryAfter, 10);
+  if (!isNaN(seconds)) {
+    return seconds;
+  }
+
+  // Try parsing as HTTP-date
+  const date = Date.parse(retryAfter);
+  if (!isNaN(date)) {
+    return Math.max(0, Math.ceil((date - Date.now()) / 1000));
+  }
+
+  return undefined;
+}
+
+/**
+ * Phase 14: Sleep for a given duration
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Phase 13A: Fetch with timeout using AbortController
+ * Phase 14: Added retry with exponential backoff + jitter
+ * Prevents hung connections from blocking indefinitely
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+/**
+ * Phase 14: Fetch with retry, timeout, and exponential backoff
+ * Retries on transient errors (5xx, 429, network errors)
+ * Respects Retry-After header from server
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = DEFAULT_TIMEOUT_MS,
+  maxRetries: number = MAX_RETRIES
+): Promise<Response> {
+  let lastError: Error | null = null;
+  let lastResponse: Response | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetchWithTimeout(url, options, timeoutMs);
+
+      // Success or non-retryable error
+      if (response.ok || !RETRYABLE_STATUS_CODES.includes(response.status)) {
+        return response;
+      }
+
+      // Retryable status code - check if we should retry
+      lastResponse = response;
+
+      // Don't retry if this was the last attempt
+      if (attempt >= maxRetries) {
+        return response;
+      }
+
+      // Parse Retry-After header for backoff timing
+      const retryAfterSeconds = parseRetryAfter(response);
+
+      // For quota errors (503 with long Retry-After), don't retry
+      if (response.status === 503 && retryAfterSeconds && retryAfterSeconds > 300) {
+        logger.session.warn(`Quota exceeded, retry after ${retryAfterSeconds}s - not retrying`);
+        return response;
+      }
+
+      const delay = calculateRetryDelay(attempt, retryAfterSeconds);
+      logger.session.log(`Retrying ${options.method || 'GET'} ${url} in ${delay}ms (attempt ${attempt + 1}/${maxRetries}, status: ${response.status})`);
+      await sleep(delay);
+
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry if this was the last attempt
+      if (attempt >= maxRetries) {
+        throw lastError;
+      }
+
+      // Only retry on retryable errors
+      if (!isRetryableError(error)) {
+        throw lastError;
+      }
+
+      const delay = calculateRetryDelay(attempt);
+      logger.session.log(`Retrying ${options.method || 'GET'} ${url} in ${delay}ms (attempt ${attempt + 1}/${maxRetries}, error: ${lastError.message})`);
+      await sleep(delay);
+    }
+  }
+
+  // Should not reach here, but just in case
+  if (lastResponse) return lastResponse;
+  throw lastError || new Error('Fetch failed after retries');
+}
+
+interface PendingSessionSave {
+  timeout: ReturnType<typeof setTimeout>;
+  sessionState: SessionState;
+  stateJson: string;
+}
+
+const pendingSessionSaves = new Map<string, PendingSessionSave>();
+const inFlightSessionSaves = new Map<string, Promise<boolean>>();
+const lastSavedStates = new Map<string, string>();
+let currentSessionId: string | null = null;
+
+function gridStateToSessionState(state: GridState): SessionState {
+  return {
+    tracks: state.tracks,
+    tempo: state.tempo,
+    swing: state.swing,
+    ...(state.effects ? { effects: state.effects } : {}),
+    ...(state.scale ? { scale: state.scale } : {}),
+    // `null` is an intentional persisted value: it clears an existing loop.
+    // Only `undefined` means the caller does not own this optional field.
+    ...(state.loopRegion !== undefined ? { loopRegion: state.loopRegion } : {}),
+    version: 1,
+  };
+}
+
+/**
+ * Get session ID from URL path
+ * Matches /s/{uuid}
+ */
+export function getSessionIdFromUrl(): string | null {
+  const match = window.location.pathname.match(/^\/s\/([a-f0-9-]{36})$/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Update URL to reflect current session
+ */
+export function updateUrlWithSession(sessionId: string): void {
+  const newUrl = `/s/${sessionId}`;
+  if (window.location.pathname !== newUrl) {
+    window.history.pushState({ sessionId }, '', newUrl);
+  }
+}
+
+/**
+ * Create a new session
+ * Phase 14: Uses retry with exponential backoff
+ */
+export async function createSession(initialState?: Partial<SessionState>): Promise<Session> {
+  const response = await fetchWithRetry(API_BASE, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: initialState }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create session');
+  }
+
+  const data = await response.json() as CreateSessionResponse;
+  currentSessionId = data.id;
+
+  // Load the full session to get timestamps
+  const session = await loadSession(data.id);
+  if (!session) throw new Error('Session created but not found');
+
+  return session;
+}
+
+/**
+ * Load an existing session
+ * Phase 14: Uses retry with exponential backoff
+ */
+export async function loadSession(
+  sessionId: string,
+  apiBase: string = API_BASE,
+): Promise<Session | null> {
+  const response = await fetchWithRetry(`${apiBase}/${sessionId}`);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw new Error('Failed to load session');
+  }
+
+  const session = await response.json() as Session;
+  session.state.scale = normalizeSessionScale(session.state.scale, 'legacy-session');
+  currentSessionId = session.id;
+  lastSavedStates.set(session.id, JSON.stringify(session.state));
+
+  return session;
+}
+
+/**
+ * Persist a state to the destination captured when the save was requested.
+ * Never resolve the destination through mutable currentSessionId here.
+ */
+async function persistSessionState(
+  sessionId: string,
+  sessionState: SessionState,
+  stateJson: string,
+): Promise<boolean> {
+  if (stateJson === lastSavedStates.get(sessionId)) return true;
+
+  try {
+    const response = await fetchWithRetry(
+      `${API_BASE}/${sessionId}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: sessionState }),
+      },
+      SAVE_TIMEOUT_MS,
+    );
+
+    if (!response.ok) {
+      logger.session.error('Failed to save session:', response.status);
+      return false;
+    }
+
+    lastSavedStates.set(sessionId, stateJson);
+    return true;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      logger.session.error('Save session timed out after retries');
+    } else {
+      logger.session.error('Failed to save session:', error);
+    }
+    return false;
+  }
+}
+
+/** Serialize writes per session so an older request can never finish after a
+ * newer request and overwrite it. Different sessions remain independent. */
+function queueSessionStateSave(
+  sessionId: string,
+  sessionState: SessionState,
+  stateJson: string,
+): Promise<boolean> {
+  const previous = inFlightSessionSaves.get(sessionId) ?? Promise.resolve(true);
+  const queued = previous
+    .catch(() => false)
+    .then(() => persistSessionState(sessionId, sessionState, stateJson));
+  inFlightSessionSaves.set(sessionId, queued);
+  void queued.finally(() => {
+    if (inFlightSessionSaves.get(sessionId) === queued) {
+      inFlightSessionSaves.delete(sessionId);
+    }
+  });
+  return queued;
+}
+
+/**
+ * Save session state (debounced independently per captured session ID).
+ */
+export function saveSession(state: GridState): void {
+  const sessionId = currentSessionId;
+  if (!sessionId) return;
+
+  const existing = pendingSessionSaves.get(sessionId);
+  if (existing) clearTimeout(existing.timeout);
+
+  const sessionState = gridStateToSessionState(state);
+  const stateJson = JSON.stringify(sessionState);
+  const timeout = setTimeout(() => {
+    const pending = pendingSessionSaves.get(sessionId);
+    if (!pending || pending.timeout !== timeout) return;
+    pendingSessionSaves.delete(sessionId);
+    void queueSessionStateSave(sessionId, pending.sessionState, pending.stateJson);
+  }, SAVE_DEBOUNCE_MS);
+
+  pendingSessionSaves.set(sessionId, { timeout, sessionState, stateJson });
+}
+
+/**
+ * Flush every captured save before navigating, publishing, remixing, or
+ * unmounting. Each write retains the session ID it was scheduled for.
+ */
+export async function flushPendingSessionSave(): Promise<boolean> {
+  const active = [...inFlightSessionSaves.values()];
+  const pending = [...pendingSessionSaves.entries()];
+  pendingSessionSaves.clear();
+
+  const queued = pending.map(([sessionId, save]) => {
+    clearTimeout(save.timeout);
+    return queueSessionStateSave(sessionId, save.sessionState, save.stateJson);
+  });
+  const results = await Promise.all([...active, ...queued]);
+  return results.every(Boolean);
+}
+
+/**
+ * Save session immediately (bypass debounce).
+ * Phase 14: Uses retry with exponential backoff.
+ */
+export async function saveSessionNow(sessionId: string, state: GridState): Promise<boolean> {
+  const pending = pendingSessionSaves.get(sessionId);
+  if (pending) {
+    clearTimeout(pending.timeout);
+    pendingSessionSaves.delete(sessionId);
+  }
+
+  const sessionState = gridStateToSessionState(state);
+  return queueSessionStateSave(sessionId, sessionState, JSON.stringify(sessionState));
+}
+
+/**
+ * Remix a session (create a copy and switch to it)
+ * Phase 14: Uses retry with exponential backoff
+ */
+export async function remixSession(
+  sourceId: string,
+  apiBase: string = API_BASE,
+): Promise<Session> {
+  const response = await fetchWithRetry(`${apiBase}/${sourceId}/remix`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to remix session');
+  }
+
+  const data = await response.json() as RemixSessionResponse;
+  currentSessionId = data.id;
+
+  // Load the full session
+  const session = await loadSession(data.id, apiBase);
+  if (!session) throw new Error('Remixed session not found');
+
+  return session;
+}
+
+/**
+ * Send a copy (create a remix but don't switch to it)
+ * Returns the URL of the new session for clipboard
+ * Phase 14: Uses retry with exponential backoff
+ */
+export async function sendCopy(sourceId: string): Promise<string> {
+  const response = await fetchWithRetry(`${API_BASE}/${sourceId}/remix`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create copy');
+  }
+
+  const data = await response.json() as RemixSessionResponse;
+  return `${window.location.origin}/s/${data.id}`;
+}
+
+/**
+ * Phase 21: Publish a session (make it immutable)
+ *
+ * Publishing creates a permanent, frozen snapshot that cannot be edited.
+ * Returns the published session data including its URL.
+ */
+export async function publishSession(sessionId: string): Promise<PublishSessionResponse> {
+  const response = await fetchWithRetry(`${API_BASE}/${sessionId}/publish`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to publish session');
+  }
+
+  const data = await response.json() as PublishSessionResponse;
+  return data;
+}
+
+/**
+ * Update session name via REST API
+ * Used as fallback when WebSocket is not connected (single-player mode)
+ */
+export async function updateSessionNameViaApi(sessionId: string, name: string | null): Promise<boolean> {
+  try {
+    const response = await fetchWithRetry(
+      `${API_BASE}/${sessionId}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      }
+    );
+
+    if (!response.ok) {
+      logger.session.error('Failed to update session name:', response.status);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.session.error('Failed to update session name:', error);
+    return false;
+  }
+}
+
+/**
+ * Get current session ID
+ */
+export function getCurrentSessionId(): string | null {
+  return currentSessionId;
+}
+
+/**
+ * Normalize a track to ensure parameterLocks is always an array
+ * and convert SessionTrack (optional fields) to Track (required fields).
+ * API may return objects for parameterLocks when created via curl.
+ */
+function normalizeTrack(track: import('../shared/state').SessionTrack): Track {
+  // If parameterLocks is an object (from API), convert to array
+  let parameterLocks = track.parameterLocks;
+  if (!Array.isArray(parameterLocks)) {
+    // Convert object to sparse array
+    const arr: (typeof track.parameterLocks[number])[] = [];
+    const obj = parameterLocks as Record<string, typeof track.parameterLocks[number]>;
+    for (const key of Object.keys(obj)) {
+      const idx = parseInt(key, 10);
+      if (!isNaN(idx)) {
+        arr[idx] = obj[key];
+      }
+    }
+    parameterLocks = arr;
+  }
+
+  return {
+    ...track,
+    parameterLocks,
+    // Ensure required fields have defaults (converting SessionTrack -> Track)
+    soloed: track.soloed ?? false,
+    stepCount: track.stepCount ?? DEFAULT_STEP_COUNT,
+    transpose: track.transpose ?? 0,
+  };
+}
+
+/**
+ * Convert session state to grid state
+ *
+ * Carries the collaborative fields as well as the core pattern. They are
+ * written only over the WebSocket, but they are part of the persisted session
+ * (see specs/SESSION-NOTATION.md), so a session opened over HTTP — single
+ * player, or any load before the socket connects — must restore them too.
+ */
+export function sessionToGridState(session: Session): Partial<GridState> {
+  // Defensive null checks for malformed session data
+  if (!session.state) {
+    return {};
+  }
+
+  return {
+    tracks: session.state.tracks?.map(normalizeTrack) ?? [],
+    tempo: session.state.tempo,
+    swing: session.state.swing,
+    effects: normalizeSessionEffects(session.state.effects, 'legacy-session'),
+    scale: normalizeSessionScale(session.state.scale, 'legacy-session'),
+    loopRegion: session.state.loopRegion ?? null,
+  };
+}

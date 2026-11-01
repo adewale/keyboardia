@@ -1,0 +1,234 @@
+name: Publish MCP Registry metadata
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - server.json
+      - .github/workflows/publish-mcp-registry.yml
+  workflow_dispatch:
+
+# Validation stays unprivileged. Only the final publication job may request an
+# OIDC token, and it never checks out or executes repository code.
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-mcp-registry
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install verified MCP Registry publisher
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.0
+          MCP_PUBLISHER_SHA256: 1370446bbe74d562608e8005a6ccce02d146a661fbd78674e11cc70b9618d6cf
+        run: |
+          curl --fail --location --silent --show-error \
+            --output mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum --check --strict
+          tar --extract --gzip --file mcp-publisher.tar.gz mcp-publisher
+
+      - name: Validate canonical metadata
+        run: ./mcp-publisher validate
+
+      - name: Upload the validated manifest
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: mcp-registry-manifest-${{ github.sha }}
+          path: server.json
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+          overwrite: true
+
+  publish:
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Download the validated manifest
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: mcp-registry-manifest-${{ github.sha }}
+          path: registry-artifact
+
+      - name: Verify the publication input
+        run: |
+          test "$(find registry-artifact -mindepth 1 -maxdepth 1 -exec printf x \; | wc -c)" -eq 1
+          test -f registry-artifact/server.json
+          test ! -L registry-artifact/server.json
+          cp registry-artifact/server.json server.json
+          jq -e '
+            type == "object"
+            and .name == "io.github.adewale/keyboardia"
+            and (.version | type == "string" and length > 0)
+            and (.remotes | length == 1)
+            and .remotes[0].url == "https://keyboardia.dev/mcp"
+          ' server.json >/dev/null
+
+      - name: Install verified MCP Registry publisher
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.0
+          MCP_PUBLISHER_SHA256: 1370446bbe74d562608e8005a6ccce02d146a661fbd78674e11cc70b9618d6cf
+        run: |
+          curl --fail --location --silent --show-error \
+            --output mcp-publisher.tar.gz \
+            "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/mcp-publisher_linux_amd64.tar.gz"
+          echo "${MCP_PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum --check --strict
+          tar --extract --gzip --file mcp-publisher.tar.gz mcp-publisher
+          ./mcp-publisher validate
+
+      - name: Require production to advertise the manifest version
+        run: |
+          response_file="$(mktemp)"
+          payload_file="$(mktemp)"
+          trap 'rm -f "$response_file" "$payload_file"' EXIT
+          curl --fail --silent --show-error --location \
+            --connect-timeout 5 --max-time 20 \
+            --request POST \
+            --header 'Content-Type: application/json' \
+            --header 'Accept: application/json, text/event-stream' \
+            --header 'MCP-Protocol-Version: 2026-07-28' \
+            --header 'Mcp-Method: server/discover' \
+            --header 'Mcp-Name: keyboardia-registry-gate' \
+            --data '{"jsonrpc":"2.0","id":1,"method":"server/discover","params":{"_meta":{"io.modelcontextprotocol/protocolVersion":"2026-07-28","io.modelcontextprotocol/clientInfo":{"name":"keyboardia-registry-gate","version":"1.0.0"},"io.modelcontextprotocol/clientCapabilities":{}}}}' \
+            --output "$response_file" \
+            https://keyboardia.dev/mcp
+
+          if jq -e . "$response_file" >/dev/null 2>&1; then
+            cp "$response_file" "$payload_file"
+          else
+            sed -n 's/^data: //p' "$response_file" | head -n 1 > "$payload_file"
+          fi
+          live_protocol_supported="$(
+            jq -er '.result.supportedVersions | index("2026-07-28") != null' "$payload_file"
+          )"
+          live_name="$(
+            jq -er '.result._meta["io.modelcontextprotocol/serverInfo"].name' "$payload_file"
+          )"
+          live_version="$(
+            jq -er '.result._meta["io.modelcontextprotocol/serverInfo"].version' "$payload_file"
+          )"
+          manifest_version="$(jq -er '.version' server.json)"
+          test "$live_protocol_supported" = true
+          test "$live_name" = keyboardia
+          if [ "$live_version" != "$manifest_version" ]; then
+            echo "Production identifies as keyboardia@$live_version, but server.json declares $manifest_version" >&2
+            exit 1
+          fi
+
+      - name: Publish or recover the exact immutable metadata
+        env:
+          MCP_REGISTRY_API_BASE: https://registry.modelcontextprotocol.io/v0.1
+          MCP_REGISTRY_RETRY_DELAYS: 0 1 2 4 8
+        run: |
+          server_name="$(jq -er '.name' server.json)"
+          server_version="$(jq -er '.version' server.json)"
+          encoded_server_name="$(jq -rn --arg value "$server_name" '$value | @uri')"
+          encoded_server_version="$(jq -rn --arg value "$server_version" '$value | @uri')"
+          server_url="$MCP_REGISTRY_API_BASE/servers/$encoded_server_name/versions/$encoded_server_version"
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+
+          # Return: 0=active exact match, 1=absent, 2=mismatch/inactive,
+          # 3=unavailable/unexpected HTTP, 4=malformed response.
+          registry_state() {
+            if http_status="$(curl \
+              --silent --show-error --location \
+              --connect-timeout 5 --max-time 10 \
+              --output "$response_file" \
+              --write-out '%{http_code}' \
+              "$server_url")"; then
+              curl_status=0
+            else
+              curl_status=$?
+            fi
+            if [ "$curl_status" -ne 0 ]; then
+              echo "Could not read immutable MCP Registry identity $server_name@$server_version" >&2
+              return 3
+            fi
+
+            case "$http_status" in
+              200)
+                if ! jq -e \
+                  --arg name "$server_name" \
+                  --arg version "$server_version" '
+                    type == "object"
+                    and (.server | type == "object")
+                    and .server.name == $name
+                    and .server.version == $version
+                    and (._meta["io.modelcontextprotocol.registry/official"].status == "active")
+                  ' "$response_file" >/dev/null; then
+                  echo "MCP Registry returned malformed or inactive metadata for $server_name@$server_version" >&2
+                  return 4
+                fi
+                if jq -e --slurpfile expected server.json '.server == $expected[0]' "$response_file" >/dev/null; then
+                  return 0
+                fi
+                echo "MCP Registry already contains different metadata for $server_name@$server_version" >&2
+                return 2
+                ;;
+              404) return 1 ;;
+              *)
+                echo "MCP Registry returned unexpected HTTP $http_status for $server_name@$server_version" >&2
+                return 3
+                ;;
+            esac
+          }
+
+          set +e
+          registry_state
+          registry_status=$?
+          set -e
+          for retry_delay in $MCP_REGISTRY_RETRY_DELAYS; do
+            [ "$registry_status" -eq 3 ] || break
+            sleep "$retry_delay"
+            set +e
+            registry_state
+            registry_status=$?
+            set -e
+          done
+          case "$registry_status" in
+            0)
+              echo "$server_name@$server_version already contains the verified metadata; recovering publication"
+              exit 0
+              ;;
+            1) ;;
+            *) exit 1 ;;
+          esac
+
+          ./mcp-publisher login github-oidc
+          set +e
+          ./mcp-publisher publish
+          publish_status=$?
+          set -e
+          if [ "$publish_status" -eq 0 ]; then
+            exit 0
+          fi
+
+          for retry_delay in $MCP_REGISTRY_RETRY_DELAYS; do
+            sleep "$retry_delay"
+            set +e
+            registry_state
+            registry_status=$?
+            set -e
+            case "$registry_status" in
+              0)
+                echo "$server_name@$server_version contains the verified metadata after an ambiguous publish; recovering publication"
+                exit 0
+                ;;
+              1|3) ;;
+              *) exit 1 ;;
+            esac
+          done
+          exit "$publish_status"

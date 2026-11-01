@@ -1,0 +1,340 @@
+{
+  "version": 1,
+  "buildId": "a2d2bbcb-814c-4a71-b964-c29fd37e8df5",
+  "generatedAt": "2026-08-12T01:14:50.175Z",
+  "recipeSha256": "e1468370967130a7b5384fffe366b67ae1e9e6dcf52b44ca0512576a12c76df0",
+  "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "Samples/mid/hh/mid_hh_open_vl1_rr1.flac",
+      "sha256": "62b6d49fd321dc730ad4b95448e3f129655606e9958c1e30587aa7cca221cd9b",
+      "sizeBytes": 1036001
+    },
+    {
+      "id": "source-0002",
+      "path": "Samples/mid/hh/mid_hh_open_vl1_rr2.flac",
+      "sha256": "01923636b2865dc88ea796fd0c1c7fc5ee438b4bd2f69ee6ffadee14af717056",
+      "sizeBytes": 890035
+    },
+    {
+      "id": "source-0003",
+      "path": "Samples/mid/hh/mid_hh_open_vl1_rr3.flac",
+      "sha256": "2c2cd7766da90c4b458f3a47103300aa994625317c44024d77a77d99500c635b",
+      "sizeBytes": 913193
+    },
+    {
+      "id": "source-0004",
+      "path": "Samples/mid/hh/mid_hh_open_vl2_rr1.flac",
+      "sha256": "b2ab26c09f890523c054a262993cb4f80f9de0b7272b8eb14e4770ccdb3d053a",
+      "sizeBytes": 953760
+    },
+    {
+      "id": "source-0005",
+      "path": "Samples/mid/hh/mid_hh_open_vl2_rr2.flac",
+      "sha256": "38ab2fc7e4da6d93d5cbac6e6e5a80b4c660c4d1cb6848dbb7bc4529ed64725c",
+      "sizeBytes": 881035
+    },
+    {
+      "id": "source-0006",
+      "path": "Samples/mid/hh/mid_hh_open_vl2_rr3.flac",
+      "sha256": "885cfd40c19fe64df50ea0da391890368b264e5c4ba2c6f45bfd702661133cdd",
+      "sizeBytes": 982806
+    },
+    {
+      "id": "source-0007",
+      "path": "Samples/mid/hh/mid_hh_open_vl3_rr1.flac",
+      "sha256": "58302f8eabd04050ddb00d0f6ba907edb7996a7d36ce437e98494eec3ae9da69",
+      "sizeBytes": 1187356
+    },
+    {
+      "id": "source-0008",
+      "path": "Samples/mid/hh/mid_hh_open_vl3_rr2.flac",
+      "sha256": "1e0a8a27ca3d93d07285b23eacc271ed720fc63efb980ee06e871ff7ffb4b66c",
+      "sizeBytes": 1259600
+    },
+    {
+      "id": "source-0009",
+      "path": "Samples/mid/hh/mid_hh_open_vl3_rr3.flac",
+      "sha256": "0f53562496f19753eed2184f8bdc8fd961ef60acafa83d880ab8d7852358b0a5",
+      "sizeBytes": 1275587
+    },
+    {
+      "id": "source-0010",
+      "path": "Samples/mid/hh/mid_hh_open_vl4_rr1.flac",
+      "sha256": "006556df13c01419b77fc0c734f9b5db79ad2a007610225ff56c9e12b1b5fd70",
+      "sizeBytes": 1493113
+    },
+    {
+      "id": "source-0011",
+      "path": "Samples/mid/hh/mid_hh_open_vl4_rr2.flac",
+      "sha256": "27cad3cbd3aa85a09f01f35c256a01a8fe782485748e682509befd6086aa68ab",
+      "sizeBytes": 1599469
+    },
+    {
+      "id": "source-0012",
+      "path": "Samples/mid/hh/mid_hh_open_vl4_rr3.flac",
+      "sha256": "402f656b3007cf7cb8a7bd88ba8abdbfc32af6cf681de331ff05e55973e13a83",
+      "sizeBytes": 1511470
+    }
+  ],
+  "outputs": [
+    {
+      "file": "source-0001.m4a",
+      "sha256": "ff6d8f38ad70ccc319f93c82adf2db5df4e8d3533cdb51033d1a32683191c71c",
+      "sizeBytes": 175722
+    },
+    {
+      "file": "source-0002.m4a",
+      "sha256": "14a4807cdead377ffa551e1fa1f877da1f06e38eda3e501150d00f81f6c9d1c3",
+      "sizeBytes": 149420
+    },
+    {
+      "file": "source-0003.m4a",
+      "sha256": "24ffc895a1ff22403789c4880ee86341e8d207ca47d775ccf7774e8e60effd1f",
+      "sizeBytes": 153450
+    },
+    {
+      "file": "source-0004.m4a",
+      "sha256": "c12df6cd6e2a6f3ab519afc17b3a9cc38c2e043b3a2141cb8f8482285a039383",
+      "sizeBytes": 157001
+    },
+    {
+      "file": "source-0005.m4a",
+      "sha256": "f18b281afea9f575139d0108c9f43a2cfddec8ae4913286a3f51cf42de6ea847",
+      "sizeBytes": 144061
+    },
+    {
+      "file": "source-0006.m4a",
+      "sha256": "a5ce0126addcf5748098e48ab0ce6fbae025ba05b0d774bc360611d7e2c9e171",
+      "sizeBytes": 161242
+    },
+    {
+      "file": "source-0007.m4a",
+      "sha256": "be8c0f295b4546dbac8aa8796027ef87c741e042d512ccf30e04443f3e7d8b62",
+      "sizeBytes": 191825
+    },
+    {
+      "file": "source-0008.m4a",
+      "sha256": "ae5814f2244a85357e6a1171abed95bf1847aea9c5050b2f8737f686eea1b464",
+      "sizeBytes": 203165
+    },
+    {
+      "file": "source-0009.m4a",
+      "sha256": "8d682d8fa426d6fa7afbb2172a25435bea0a89c040aa082ba30577a552ff8cb3",
+      "sizeBytes": 206789
+    },
+    {
+      "file": "source-0010.m4a",
+      "sha256": "5d9155f0dffffdcbe00a128de1428ba2cfb9aff3244987baf9f120ff5371c4c2",
+      "sizeBytes": 229685
+    },
+    {
+      "file": "source-0011.m4a",
+      "sha256": "96504ee083c53e9d70f3e56419b550d9ff59f613bdbfd68f9688072ee21db7aa",
+      "sizeBytes": 246444
+    },
+    {
+      "file": "source-0012.m4a",
+      "sha256": "a52b5ae89a83043695f67dcd7e4d4efbfca89678bb5e5abf711dc563fe0ab746",
+      "sizeBytes": 230379
+    }
+  ],
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    },
+    "bitrateKbps": 160
+  },
+  "toolchain": {
+    "encoder": "ffmpeg",
+    "fingerprint": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers",
+    "node": "v26.0.0"
+  },
+  "measurements": [
+    {
+      "file": "source-0001.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 8.771521
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 8.770998
+      }
+    },
+    {
+      "file": "source-0002.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 7.460104
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 7.46
+      }
+    },
+    {
+      "file": "source-0003.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 7.671687
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 7.670998
+      }
+    },
+    {
+      "file": "source-0004.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 7.841479
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 7.840998
+      }
+    },
+    {
+      "file": "source-0005.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 7.199687
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 7.199002
+      }
+    },
+    {
+      "file": "source-0006.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 8.052083
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 8.051995
+      }
+    },
+    {
+      "file": "source-0007.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 9.561792
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 9.561995
+      }
+    },
+    {
+      "file": "source-0008.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 10.128687
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 10.128005
+      }
+    },
+    {
+      "file": "source-0009.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 10.279021
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 10.279002
+      }
+    },
+    {
+      "file": "source-0010.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 11.414375
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 11.413991
+      }
+    },
+    {
+      "file": "source-0011.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 12.231208
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 12.230998
+      }
+    },
+    {
+      "file": "source-0012.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 48000,
+        "channels": 2,
+        "durationSec": 11.455792
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 11.456009
+      }
+    }
+  ],
+  "manifestSha256": "4c007af85acd64526971497730f5e7efa6356a8f3217272c60248ba9be150142"
+}

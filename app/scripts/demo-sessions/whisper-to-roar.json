@@ -1,0 +1,478 @@
+{
+  "name": "Whisper to Roar",
+  "description": "A dynamics demo for the Phase 44 sound changes. Every melodic line is written on the velocity lane: soft string and Hammond steps render through the new per-voice lowpass and come out darker as well as quieter, while their accents bypass it entirely. The steel-drum melody and finger bass instead expose their recorded velocity zones, as does the acoustic kit with its ghost-note layers. The tied string chords lean on the sustain guard, and the whole session sits in the new default bass-protected room (reverb wet 0.15).",
+  "state": {
+    "tempo": 88,
+    "swing": 8,
+    "effects": {
+      "bypass": false,
+      "reverb": {
+        "decay": 2.2,
+        "wet": 0.15
+      },
+      "delay": {
+        "time": "8n",
+        "feedback": 0.3,
+        "wet": 0
+      },
+      "chorus": {
+        "frequency": 1.5,
+        "depth": 0.5,
+        "wet": 0
+      },
+      "distortion": {
+        "amount": 0.4,
+        "wet": 0
+      }
+    },
+    "scale": {
+      "root": "D",
+      "scaleId": "natural-minor",
+      "locked": true
+    },
+    "version": 1,
+    "tracks": [
+      {
+        "id": "track-1",
+        "name": "String Swells",
+        "sampleId": "sampled:string-section",
+        "steps": [
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true,
+          true
+        ],
+        "parameterLocks": [
+          {
+            "pitch": 2,
+            "volume": 0.3
+          },
+          {
+            "tie": true
+          },
+          {
+            "tie": true
+          },
+          {
+            "tie": true
+          },
+          {
+            "pitch": 5,
+            "volume": 0.45
+          },
+          {
+            "tie": true
+          },
+          {
+            "tie": true
+          },
+          {
+            "tie": true
+          },
+          {
+            "pitch": 9,
+            "volume": 0.6
+          },
+          {
+            "tie": true
+          },
+          {
+            "tie": true
+          },
+          {
+            "tie": true
+          },
+          {
+            "pitch": 14,
+            "volume": 1
+          },
+          {
+            "tie": true
+          },
+          {
+            "tie": true
+          },
+          {
+            "tie": true
+          }
+        ],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      },
+      {
+        "id": "track-2",
+        "name": "Hammond Comp",
+        "sampleId": "sampled:hammond-organ",
+        "steps": [
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false
+        ],
+        "parameterLocks": [
+          null,
+          null,
+          {
+            "pitch": 9,
+            "volume": 0.35
+          },
+          null,
+          null,
+          null,
+          {
+            "pitch": 5,
+            "volume": 1
+          },
+          null,
+          null,
+          null,
+          {
+            "pitch": 9,
+            "volume": 0.35
+          },
+          null,
+          null,
+          null,
+          {
+            "pitch": 12,
+            "volume": 0.55
+          },
+          null
+        ],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      },
+      {
+        "id": "track-3",
+        "name": "Steel Melody",
+        "sampleId": "sampled:steel-drums",
+        "steps": [
+          true,
+          false,
+          false,
+          true,
+          false,
+          true,
+          true,
+          false,
+          false,
+          false,
+          true,
+          true,
+          false,
+          true,
+          false,
+          false
+        ],
+        "parameterLocks": [
+          {
+            "pitch": 14,
+            "volume": 1
+          },
+          null,
+          null,
+          {
+            "pitch": 12,
+            "volume": 0.3
+          },
+          null,
+          {
+            "pitch": 9,
+            "volume": 0.3
+          },
+          {
+            "pitch": 17,
+            "volume": 1
+          },
+          null,
+          null,
+          null,
+          {
+            "pitch": 14,
+            "volume": 1
+          },
+          {
+            "pitch": 12,
+            "volume": 0.3
+          },
+          null,
+          {
+            "pitch": 9,
+            "volume": 0.45
+          },
+          null,
+          null
+        ],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      },
+      {
+        "id": "track-4",
+        "name": "Finger Bass",
+        "sampleId": "sampled:finger-bass",
+        "steps": [
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false
+        ],
+        "parameterLocks": [
+          {
+            "pitch": -10,
+            "volume": 1
+          },
+          null,
+          null,
+          {
+            "pitch": -10,
+            "volume": 0.4
+          },
+          null,
+          null,
+          {
+            "pitch": -5,
+            "volume": 1
+          },
+          null,
+          {
+            "pitch": -10,
+            "volume": 1
+          },
+          null,
+          null,
+          {
+            "pitch": -3,
+            "volume": 0.4
+          },
+          null,
+          null,
+          {
+            "pitch": -5,
+            "volume": 0.6
+          },
+          null
+        ],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      },
+      {
+        "id": "track-5",
+        "name": "Kick",
+        "sampleId": "sampled:acoustic-kick",
+        "steps": [
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false
+        ],
+        "parameterLocks": [
+          {
+            "volume": 1
+          },
+          null,
+          null,
+          null,
+          {
+            "volume": 1
+          },
+          null,
+          null,
+          null,
+          {
+            "volume": 1
+          },
+          null,
+          null,
+          null,
+          {
+            "volume": 1
+          },
+          null,
+          null,
+          null
+        ],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      },
+      {
+        "id": "track-6",
+        "name": "Snare + Ghosts",
+        "sampleId": "sampled:acoustic-snare",
+        "steps": [
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true,
+          false,
+          false,
+          false,
+          false,
+          true,
+          false,
+          false,
+          true
+        ],
+        "parameterLocks": [
+          null,
+          null,
+          null,
+          null,
+          {
+            "volume": 1
+          },
+          null,
+          null,
+          {
+            "volume": 0.28
+          },
+          null,
+          null,
+          null,
+          null,
+          {
+            "volume": 1
+          },
+          null,
+          null,
+          {
+            "volume": 0.28
+          }
+        ],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      },
+      {
+        "id": "track-7",
+        "name": "Hats",
+        "sampleId": "sampled:acoustic-hihat-closed",
+        "steps": [
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+          true,
+          false,
+          true,
+          false
+        ],
+        "parameterLocks": [
+          {
+            "volume": 0.85
+          },
+          null,
+          {
+            "volume": 0.35
+          },
+          null,
+          {
+            "volume": 0.85
+          },
+          null,
+          {
+            "volume": 0.35
+          },
+          null,
+          {
+            "volume": 0.85
+          },
+          null,
+          {
+            "volume": 0.35
+          },
+          null,
+          {
+            "volume": 0.85
+          },
+          null,
+          {
+            "volume": 0.35
+          },
+          null
+        ],
+        "volume": 0.9,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      }
+    ]
+  }
+}

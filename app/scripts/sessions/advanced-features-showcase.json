@@ -1,0 +1,121 @@
+{
+  "name": "Advanced Features Showcase",
+  "description": "Demonstrates all advanced SessionState features: effects (reverb, delay, chorus, distortion), fmParams, loopRegion, and per-track swing. Use this as a reference for the full JSON data model.",
+  "tracks": [
+    {
+      "id": "fm-bass-1",
+      "name": "FM Bass",
+      "sampleId": "tone:fm-bass",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, true, false],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, null, {"pitch": 0}, null, null, null, {"pitch": 5}, null, null, null, {"pitch": 3}, null, {"pitch": 7}, null
+      ],
+      "volume": 0.7,
+      "muted": false,
+      "transpose": -12,
+      "stepCount": 16,
+      "fmParams": {
+        "harmonicity": 2.5,
+        "modulationIndex": 8
+      },
+      "swing": 15
+    },
+    {
+      "id": "fm-lead-1",
+      "name": "FM Lead",
+      "sampleId": "tone:fm-bell",
+      "steps": [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, true],
+      "parameterLocks": [
+        null, null, {"pitch": 12}, null, null, null, {"pitch": 7}, null, null, null, {"pitch": 5}, null, null, null, {"pitch": 0}, {"pitch": 3}
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "transpose": 0,
+      "stepCount": 16,
+      "fmParams": {
+        "harmonicity": 3.5,
+        "modulationIndex": 12
+      },
+      "swing": 0
+    },
+    {
+      "id": "kick-swing",
+      "name": "Kick (Swing)",
+      "sampleId": "kick",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "parameterLocks": [
+        {"volume": 1.0}, null, null, null, {"volume": 0.9}, null, null, null, {"volume": 1.0}, null, null, null, {"volume": 0.9}, null, null, null
+      ],
+      "volume": 0.85,
+      "muted": false,
+      "transpose": 0,
+      "stepCount": 16,
+      "swing": 25
+    },
+    {
+      "id": "hihat-swing",
+      "name": "HiHat (Swing)",
+      "sampleId": "hihat",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "parameterLocks": [
+        {"volume": 0.9}, null, {"volume": 0.5}, null, {"volume": 0.7}, null, {"volume": 0.5}, null,
+        {"volume": 0.9}, null, {"volume": 0.5}, null, {"volume": 0.7}, null, {"volume": 0.5}, null
+      ],
+      "volume": 0.6,
+      "muted": false,
+      "transpose": 0,
+      "stepCount": 16,
+      "swing": 40
+    },
+    {
+      "id": "snare-1",
+      "name": "Snare",
+      "sampleId": "snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, {"volume": 1.0}, null, null, null, null, null, null, null, {"volume": 0.95}, null, null, null],
+      "volume": 0.75,
+      "muted": false,
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "pad-effects",
+      "name": "Pad (Reverb)",
+      "sampleId": "synth:warmpad",
+      "steps": [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      "parameterLocks": [{"pitch": 0, "volume": 0.8}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.4,
+      "muted": false,
+      "transpose": 0,
+      "stepCount": 16
+    }
+  ],
+  "tempo": 110,
+  "swing": 10,
+  "effects": {
+    "bypass": false,
+    "reverb": {
+      "decay": 2.5,
+      "wet": 0.35
+    },
+    "delay": {
+      "time": "8n",
+      "feedback": 0.4,
+      "wet": 0.25
+    },
+    "chorus": {
+      "frequency": 1.5,
+      "depth": 0.6,
+      "wet": 0.2
+    },
+    "distortion": {
+      "amount": 0.1,
+      "wet": 0.15
+    }
+  },
+  "loopRegion": {
+    "start": 0,
+    "end": 32
+  },
+  "version": 1
+}

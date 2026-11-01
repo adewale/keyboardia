@@ -1,0 +1,142 @@
+/* Phase 31G: Loop Selection Ruler */
+.loop-ruler {
+  height: 24px;
+  background: var(--color-surface-elevated);
+  border-radius: 4px;
+  margin-bottom: 8px;
+  position: relative;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.loop-ruler.dragging {
+  cursor: ew-resize;
+}
+
+/* Step markers container */
+.ruler-markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Individual markers */
+.ruler-marker {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  pointer-events: none;
+}
+
+/* Beat marker (every 4 steps) */
+.ruler-marker.beat {
+  width: 1px;
+  background: var(--color-border);
+  opacity: 0.3;
+}
+
+/* Page marker (every 16 steps) */
+.ruler-marker.page {
+  width: 2px;
+  background: var(--color-border-light);
+  opacity: 0.6;
+}
+
+.ruler-marker.page .marker-label {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 10px;
+  color: var(--color-text-muted);
+  font-weight: 500;
+}
+
+/* Loop region highlight */
+.loop-region {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  background: rgba(74, 158, 206, 0.3);
+  border-radius: 2px;
+  pointer-events: none;
+}
+
+.loop-region.preview {
+  background: rgba(74, 158, 206, 0.2);
+  border: 1px dashed var(--color-info);
+}
+
+/* Loop brackets */
+.loop-bracket {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--color-info);
+}
+
+.loop-bracket.start {
+  left: 0;
+  border-radius: 2px 0 0 2px;
+}
+
+.loop-bracket.end {
+  right: 0;
+  border-radius: 0 2px 2px 0;
+}
+
+/* Shift+click pending marker */
+.shift-click-marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-warning);
+  animation: marker-pulse 1s ease-in-out infinite;
+}
+
+@keyframes marker-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* Playhead indicator on ruler */
+.ruler-playhead {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--color-playhead);
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Has loop state - slightly brighter */
+.loop-ruler.has-loop {
+  background: var(--color-surface-hover);
+}
+
+/* Hover state */
+.loop-ruler:hover {
+  background: var(--color-surface-hover);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .shift-click-marker {
+    animation: none;
+  }
+}
+
+/* Mobile: slightly taller for easier touch */
+@media (max-width: 768px) {
+  .loop-ruler {
+    height: 32px;
+  }
+
+  .ruler-marker.page .marker-label {
+    font-size: 11px;
+    top: 6px;
+  }
+}

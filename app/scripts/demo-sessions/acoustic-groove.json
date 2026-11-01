@@ -1,0 +1,47 @@
+{
+  "name": "Acoustic Groove",
+  "tempo": 100,
+  "swing": 25,
+  "tracks": [
+    {
+      "id": "track-1",
+      "name": "Acoustic Kick",
+      "sampleId": "sampled:acoustic-kick",
+      "steps": [true, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 1,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-2",
+      "name": "Acoustic Snare",
+      "sampleId": "sampled:acoustic-snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.85,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-3",
+      "name": "Hi-Hat",
+      "sampleId": "sampled:acoustic-hihat-closed",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "parameterLocks": [null, null, {"volume": 0.5}, null, null, null, {"volume": 0.5}, null, null, null, {"volume": 0.5}, null, null, null, {"volume": 0.5}, null],
+      "volume": 0.7,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-4",
+      "name": "Ride",
+      "sampleId": "sampled:acoustic-ride",
+      "steps": [false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.5,
+      "muted": false,
+      "stepCount": 16
+    }
+  ]
+}

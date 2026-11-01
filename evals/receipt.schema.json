@@ -1,0 +1,332 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keyboardia.dev/schemas/eval-receipt-v2.json",
+  "title": "Keyboardia sanitized evaluation receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "$schema",
+    "schema_version",
+    "receipt_id",
+    "generated_at",
+    "source",
+    "harness",
+    "invocation",
+    "redaction",
+    "artifacts",
+    "runs",
+    "summary"
+  ],
+  "properties": {
+    "$schema": { "const": "../receipt.schema.json" },
+    "schema_version": { "const": 2 },
+    "receipt_id": { "type": "string", "minLength": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository",
+        "git_commit",
+        "git_tree",
+        "commit_content",
+        "tree_objects",
+        "bundle_sha256",
+        "files"
+      ],
+      "properties": {
+        "repository": { "type": "string", "minLength": 1 },
+        "git_commit": { "$ref": "#/$defs/gitObject" },
+        "git_tree": { "$ref": "#/$defs/gitObject" },
+        "commit_content": { "type": "string", "minLength": 1 },
+        "tree_objects": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["object", "content_base64"],
+            "properties": {
+              "object": { "$ref": "#/$defs/gitObject" },
+              "content_base64": { "type": "string", "minLength": 1 }
+            }
+          }
+        },
+        "bundle_sha256": { "$ref": "#/$defs/sha256" },
+        "files": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["role", "path", "sha256", "git_blob", "encoding", "content"],
+            "properties": {
+              "role": { "type": "string", "minLength": 1 },
+              "path": { "type": "string", "minLength": 1 },
+              "sha256": { "$ref": "#/$defs/sha256" },
+              "git_blob": { "$ref": "#/$defs/gitObject" },
+              "encoding": { "const": "utf-8" },
+              "content": { "type": "string" }
+            }
+          }
+        }
+      }
+    },
+    "harness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "repository", "version", "git_commit", "mode"],
+      "allOf": [
+        {
+          "if": { "properties": { "mode": { "const": "patched-local-checkout" } } },
+          "then": {
+            "required": [
+              "git_tree",
+              "parent_git_commit",
+              "parent_git_tree",
+              "patch_ref",
+              "parent_tree_ref",
+              "commit_ref",
+              "parent_commit_ref"
+            ]
+          }
+        }
+      ],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "repository": { "type": "string", "minLength": 1 },
+        "version": { "type": "string", "minLength": 1 },
+        "git_commit": { "$ref": "#/$defs/gitObject" },
+        "git_tree": { "$ref": "#/$defs/gitObject" },
+        "parent_git_commit": { "$ref": "#/$defs/gitObject" },
+        "parent_git_tree": { "$ref": "#/$defs/gitObject" },
+        "patch_ref": { "$ref": "#/$defs/artifactKey" },
+        "parent_tree_ref": { "$ref": "#/$defs/artifactKey" },
+        "commit_ref": { "$ref": "#/$defs/artifactKey" },
+        "parent_commit_ref": { "$ref": "#/$defs/artifactKey" },
+        "mode": { "type": "string", "minLength": 1 }
+      }
+    },
+    "invocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["suite", "models", "adapters", "splits", "repeats", "judge"],
+      "properties": {
+        "suite": { "type": "string", "minLength": 1 },
+        "models": { "type": "array", "minItems": 1, "items": { "type": "string", "minLength": 1 } },
+        "adapters": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["role", "id", "path"],
+            "properties": {
+              "role": { "enum": ["answer", "judge"] },
+              "id": { "type": "string", "minLength": 1 },
+              "path": { "type": ["string", "null"] }
+            }
+          }
+        },
+        "splits": { "type": "array", "items": { "type": "string" } },
+        "repeats": { "type": "integer", "minimum": 1 },
+        "judge": { "type": "boolean" },
+        "judge_model": { "type": ["string", "null"] },
+        "timeout_ms": { "type": "integer", "minimum": 1 },
+        "manifest_revision": { "$ref": "#/$defs/sha256" },
+        "skill_tree_hash": { "$ref": "#/$defs/sha256" },
+        "benchmark_ref": { "$ref": "#/$defs/artifactKey" },
+        "audit_ref": { "$ref": "#/$defs/artifactKey" },
+        "benchmark_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/artifactKey" }
+        },
+        "audit_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/artifactKey" }
+        },
+        "prepared_tasks_refs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/artifactKey" }
+        },
+        "system_under_test": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["base_url", "mcp_endpoint", "launch", "tools_list", "tools_list_sha256"],
+          "properties": {
+            "base_url": { "type": "string", "format": "uri" },
+            "mcp_endpoint": { "type": "string", "format": "uri" },
+            "launch": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "mode",
+                "wrangler_version",
+                "wrangler_lock_version",
+                "wrangler_lock_integrity",
+                "source_git_commit",
+                "source_git_tree"
+              ],
+              "properties": {
+                "mode": { "const": "runner-owned-wrangler-local" },
+                "wrangler_version": { "type": "string", "minLength": 1 },
+                "wrangler_lock_version": { "type": "string", "minLength": 1 },
+                "wrangler_lock_integrity": { "type": "string", "minLength": 1 },
+                "source_git_commit": { "$ref": "#/$defs/gitObject" },
+                "source_git_tree": { "$ref": "#/$defs/gitObject" }
+              }
+            },
+            "tools_list": { "type": "array", "minItems": 1 },
+            "tools_list_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        },
+        "execution_replay": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["version", "input", "input_sha256", "projection", "projection_sha256"],
+          "properties": {
+            "version": { "const": 1 },
+            "input": { "type": "object" },
+            "input_sha256": { "$ref": "#/$defs/sha256" },
+            "projection": { "type": "object" },
+            "projection_sha256": { "$ref": "#/$defs/sha256" }
+          }
+        }
+      }
+    },
+    "redaction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["policy", "replacement", "verified_in_process", "registered_capabilities"],
+      "properties": {
+        "policy": { "enum": ["keyboardia-capability-v1", "offline-eval-no-live-capability-registry-v1"] },
+        "replacement": { "const": "<redacted-session-id>" },
+        "verified_in_process": { "type": "boolean" },
+        "registered_capabilities": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "propertyNames": { "pattern": "^sha256:[0-9a-f]{64}$" },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["media_type", "encoding", "content"],
+        "properties": {
+          "media_type": { "enum": ["text/plain", "application/json"] },
+          "encoding": { "const": "utf-8" },
+          "content": { "type": "string" }
+        }
+      }
+    },
+    "runs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["model", "case", "kind", "split", "variant", "repeat", "ok", "assertions", "prompt_ref", "output_ref", "trace_ref", "execution_ref"],
+        "properties": {
+          "model": { "type": "string", "minLength": 1 },
+          "case": { "type": "string", "minLength": 1 },
+          "kind": { "type": "string", "minLength": 1 },
+          "split": { "type": "string", "minLength": 1 },
+          "variant": { "type": "string", "minLength": 1 },
+          "repeat": { "type": "integer", "minimum": 0 },
+          "ok": { "type": "boolean" },
+          "assertions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "type", "passed"],
+              "properties": {
+                "name": { "type": "string", "minLength": 1 },
+                "type": { "type": "string", "minLength": 1 },
+                "passed": { "type": "boolean" },
+                "severity": { "type": "string" },
+                "oracle": { "type": "string" },
+                "score": { "type": "number" },
+                "evidence": { "type": "string" }
+              }
+            }
+          },
+          "attempts": { "type": "array", "items": { "type": "object" } },
+          "usage": { "type": ["object", "null"] },
+          "passed": { "type": "boolean" },
+          "scorable": { "type": "boolean" },
+          "passRate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "gradedScore": { "type": ["number", "null"] },
+          "objective_passed": { "type": "integer", "minimum": 0 },
+          "objective_total": { "type": "integer", "minimum": 0 },
+          "objective_pass_rate": { "type": "number", "minimum": 0, "maximum": 1 },
+          "critical_failures": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "vetoed": { "type": "boolean" },
+          "input_bundle_hash": { "$ref": "#/$defs/sha256" },
+          "complete_input_bundle_hash": { "$ref": "#/$defs/sha256" },
+          "prompt_ref": { "$ref": "#/$defs/artifactRef" },
+          "output_ref": { "$ref": "#/$defs/artifactRef" },
+          "trace_ref": { "$ref": "#/$defs/artifactRef" },
+          "execution_ref": { "$ref": "#/$defs/artifactRef" }
+        }
+      }
+    },
+    "summary": { "type": "object" }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "invocation": { "properties": { "suite": { "const": "keyboardia-answer-matrix" } } }
+        }
+      },
+      "then": {
+        "properties": {
+          "harness": {
+            "properties": {
+              "name": { "const": "skill-eval-harness" },
+              "mode": { "const": "patched-local-checkout" }
+            }
+          },
+          "invocation": {
+            "required": ["prepared_tasks_refs", "manifest_revision", "skill_tree_hash"],
+            "oneOf": [
+              { "required": ["benchmark_ref", "audit_ref"] },
+              { "required": ["benchmark_refs", "audit_refs"] }
+            ]
+          },
+          "runs": { "items": { "required": ["input_bundle_hash", "complete_input_bundle_hash"] } }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "runs": { "contains": { "properties": { "kind": { "const": "execution" } } } }
+        }
+      },
+      "then": {
+        "properties": {
+          "invocation": { "required": ["system_under_test", "execution_replay"] }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "gitObject": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+    "artifactKey": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "artifactRef": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" }
+      ]
+    }
+  }
+}

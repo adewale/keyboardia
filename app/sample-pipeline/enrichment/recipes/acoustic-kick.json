@@ -1,0 +1,399 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "acoustic-kick",
+    "name": "Acoustic Kick",
+    "releaseTime": 0.2,
+    "playbackNote": 36,
+    "playableRange": {
+      "min": 24,
+      "max": 73
+    },
+    "gainDb": 12.660820039695189,
+    "credits": {
+      "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
+      "url": "https://github.com/sfzinstruments/virtuosity_drums",
+      "license": "CC0 1.0 Universal (Public Domain)",
+      "licenseUrl": "https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE",
+      "changes": "Complete same-mic velocity/variation mapping; deterministic round-robin selection; AAC-LC delivery and uniform group leveling."
+    }
+  },
+  "sourceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "Samples/mid/kick/mid_kick_snon_vl1_rr1.flac",
+      "sha256": "c077a384ddf42eeba8430fa3bf7a46d4153960a497c5f57a832b4f0c18e1f6b5"
+    },
+    {
+      "id": "source-0002",
+      "path": "Samples/mid/kick/mid_kick_snon_vl1_rr2.flac",
+      "sha256": "053a7b4d0746d76003b99c81b150ab7a72c557a8c2ecdebc64740ef63f6f694f"
+    },
+    {
+      "id": "source-0003",
+      "path": "Samples/mid/kick/mid_kick_snon_vl1_rr3.flac",
+      "sha256": "707cf2ad5650d2bb3019d6424b1c0a3f0a0d4985363d1bc7fd8e6ad938cbaa3e"
+    },
+    {
+      "id": "source-0004",
+      "path": "Samples/mid/kick/mid_kick_snon_vl1_rr4.flac",
+      "sha256": "6aed6fa70732430875571eb551ce1a1378d4fa961f44dcdf58f7da5a7136b900"
+    },
+    {
+      "id": "source-0005",
+      "path": "Samples/mid/kick/mid_kick_snon_vl2_rr1.flac",
+      "sha256": "fb2da719f0ae30f668ada98df7503e6def1ee26c53a5e183de50075e43fa597a"
+    },
+    {
+      "id": "source-0006",
+      "path": "Samples/mid/kick/mid_kick_snon_vl2_rr2.flac",
+      "sha256": "30da88d84b4e37df87510b40ad115943056a3b5ed9b2dbcbe1266a267848c6f4"
+    },
+    {
+      "id": "source-0007",
+      "path": "Samples/mid/kick/mid_kick_snon_vl2_rr3.flac",
+      "sha256": "299f699a43b8433d742c17a96dcc64e9ae2b328ab2813e7a28737d705ef701c4"
+    },
+    {
+      "id": "source-0008",
+      "path": "Samples/mid/kick/mid_kick_snon_vl2_rr4.flac",
+      "sha256": "5acb1dffc5e1ca23e8085549dd39bc639d61b9757405a78c4a419a9f6d1ee371"
+    },
+    {
+      "id": "source-0009",
+      "path": "Samples/mid/kick/mid_kick_snon_vl3_rr1.flac",
+      "sha256": "f3f6dac8ff6dae56a4c1f238e05d563a1be1ee38db60e5e97ac9081cf33d025c"
+    },
+    {
+      "id": "source-0010",
+      "path": "Samples/mid/kick/mid_kick_snon_vl3_rr2.flac",
+      "sha256": "672384c968cea5ff84b8ebe4f3d86c75d152b4365f2f944d4afae9a4762c2dac"
+    },
+    {
+      "id": "source-0011",
+      "path": "Samples/mid/kick/mid_kick_snon_vl3_rr3.flac",
+      "sha256": "fa75918ef535e0323bf27b37d4b88b18bba2f642c5a42c8fb28decc4bc25d7cf"
+    },
+    {
+      "id": "source-0012",
+      "path": "Samples/mid/kick/mid_kick_snon_vl3_rr4.flac",
+      "sha256": "023d4fed5e47d8d733f08320d1e3e40061260d0c1f1e20e405cf0e88cfc32d06"
+    },
+    {
+      "id": "source-0013",
+      "path": "Samples/mid/kick/mid_kick_snon_vl4_rr1.flac",
+      "sha256": "14b76405040ba7e6b9fca95c4f73cf99a27f36e3ec6f071050c26a46cdd3350c"
+    },
+    {
+      "id": "source-0014",
+      "path": "Samples/mid/kick/mid_kick_snon_vl4_rr2.flac",
+      "sha256": "1fde8aeb9ed8af4e90c2df124376c88a28c218de76e4db6500f3cb8f791186d7"
+    },
+    {
+      "id": "source-0015",
+      "path": "Samples/mid/kick/mid_kick_snon_vl4_rr3.flac",
+      "sha256": "5da7c40bc8a75426d50c6ee66daf47378a3c536cc716fd0a6b0875978ea298ba"
+    },
+    {
+      "id": "source-0016",
+      "path": "Samples/mid/kick/mid_kick_snon_vl4_rr4.flac",
+      "sha256": "63e2730bc745ae94c4bdb0d42d6055ba6aff7765ac29358cc48c53eb44f2c6f2"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 31
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-0-31",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 31
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-0-31",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 31
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-0-31",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 31
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-0-31",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 32,
+          "max": 63
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-32-63",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 32,
+          "max": 63
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-32-63",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 32,
+          "max": 63
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-32-63",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 32,
+          "max": 63
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-32-63",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 64,
+          "max": 95
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-64-95",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 64,
+          "max": 95
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-64-95",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 64,
+          "max": 95
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-64-95",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 64,
+          "max": 95
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-64-95",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0013",
+        "output": "source-0013.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 96,
+          "max": 127
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-96-127",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0014",
+        "output": "source-0014.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 96,
+          "max": 127
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-96-127",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0015",
+        "output": "source-0015.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 96,
+          "max": 127
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-96-127",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 96,
+          "max": 127
+        },
+        "articulation": "kick",
+        "roundRobin": {
+          "group": "kick-36-96-127",
+          "index": 3,
+          "count": 4
+        }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "group-relative",
+    "anchorSourceId": "source-0015",
+    "measuredPeakDb": -12.660820039695189,
+    "ceilingDb": -15.660820039695189,
+    "deliveryCeilingDb": -1,
+    "groupGainDb": -3
+  },
+  "evidence": {
+    "sampleLabSourceId": "virtuosity-drums",
+    "currentInstrumentDir": "public/instruments/acoustic-kick",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 30,
+        "velocity": 24,
+        "currentFile": "kick-vl1.mp3",
+        "currentRootMidi": 36,
+        "candidateOutput": "source-0001.m4a",
+        "candidateRootMidi": 36
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 36,
+        "velocity": 76,
+        "currentFile": "kick-vl3.mp3",
+        "currentRootMidi": 36,
+        "candidateOutput": "source-0009.m4a",
+        "candidateRootMidi": 36
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 42,
+        "velocity": 116,
+        "currentFile": "kick-vl4.mp3",
+        "currentRootMidi": 36,
+        "candidateOutput": "source-0013.m4a",
+        "candidateRootMidi": 36
+      }
+    ]
+  }
+}

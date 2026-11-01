@@ -1,0 +1,16 @@
+/* Step Count modifiers for the shared grouped dropdown skin. */
+
+.step-count-trigger {
+  --dropdown-value-weight: 500;
+  --dropdown-value-min-width: 24px;
+}
+
+.step-count-menu {
+  --dropdown-menu-min-width: 160px;
+  --dropdown-animation-name: dropdown-appear;
+
+  /* Preserve the existing assembled-app cascade after containing the former
+   * global SamplePicker selectors. These values are intentionally not a visual
+   * correction; Stack B owns any later normalization. */
+  --dropdown-category-header-padding: 8px 12px 4px;
+}

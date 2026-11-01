@@ -1,0 +1,47 @@
+{
+  "name": "Legato Dreams",
+  "tempo": 85,
+  "swing": 0,
+  "tracks": [
+    {
+      "id": "track-1",
+      "name": "Pad",
+      "sampleId": "am-synth",
+      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      "parameterLocks": [{"pitch": 0}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"pitch": 5}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}],
+      "volume": 0.6,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-2",
+      "name": "Bass",
+      "sampleId": "mono-synth",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "parameterLocks": [{"pitch": -12}, {"tie": true}, {"tie": true}, null, {"pitch": -12}, {"tie": true}, {"tie": true}, null, {"pitch": -7}, {"tie": true}, {"tie": true}, null, {"pitch": -7}, {"tie": true}, {"tie": true}, null],
+      "volume": 0.7,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-3",
+      "name": "Kick",
+      "sampleId": "sampled:808-kick",
+      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.8,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-4",
+      "name": "Snare",
+      "sampleId": "sampled:808-snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.6,
+      "muted": false,
+      "stepCount": 16
+    }
+  ]
+}

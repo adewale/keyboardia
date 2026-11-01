@@ -1,0 +1,53 @@
+{
+  "name": "Math Rock 7",
+  "tempo": 135,
+  "swing": 0,
+  "scale": {
+    "root": "D",
+    "scaleId": "lydian",
+    "locked": false
+  },
+  "tracks": [
+    {
+      "id": "track-1",
+      "name": "7-Step Guitar",
+      "sampleId": "sampled:clean-guitar",
+      "steps": [true, false, true, false, true, true, false],
+      "parameterLocks": [{"pitch": 0}, null, {"pitch": 4}, null, {"pitch": 7}, {"pitch": 11}, null],
+      "volume": 0.55,
+      "muted": false,
+      "stepCount": 7
+    },
+    {
+      "id": "track-2",
+      "name": "7-Step Bass",
+      "sampleId": "sampled:finger-bass",
+      "steps": [true, false, false, true, false, false, true],
+      "parameterLocks": [{"pitch": 0}, null, null, {"pitch": 5}, null, null, {"pitch": 7}],
+      "volume": 0.6,
+      "muted": false,
+      "stepCount": 7,
+      "transpose": -12
+    },
+    {
+      "id": "track-3",
+      "name": "Kick",
+      "sampleId": "sampled:acoustic-kick",
+      "steps": [true, false, false, false, true, false, false],
+      "parameterLocks": [null, null, null, null, {"volume": 0.8}, null, null],
+      "volume": 0.7,
+      "muted": false,
+      "stepCount": 7
+    },
+    {
+      "id": "track-4",
+      "name": "Snare",
+      "sampleId": "sampled:acoustic-snare",
+      "steps": [false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null],
+      "volume": 0.5,
+      "muted": false,
+      "stepCount": 7
+    }
+  ]
+}

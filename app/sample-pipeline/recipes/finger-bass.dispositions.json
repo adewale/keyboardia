@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "instrumentId": "finger-bass",
+  "status": "mapping-reviewed-candidate-not-listening-approved",
+  "source": {
+    "revision": "FingerBassYR-SFZ+FLAC-20190930@sha256:36f87ec9eb086ef25050312522aacf71213c582f46989e0c5a12681304596587",
+    "archiveSha256": "36f87ec9eb086ef25050312522aacf71213c582f46989e0c5a12681304596587",
+    "license": "CC0 1.0",
+    "licenseEvidence": "https://freepats.zenvoid.org/ElectricGuitar/clean-electric-bass.html#BassYR",
+    "sfzPath": "FingerBassYR 20190930.sfz",
+    "sfzSha256": "ba8c6ad0cd3c26f908382fa6331debedc578c4fc210d6e6bfd65d99775c70d90",
+    "preprocessedSfzSha256": "988d1785122e43b95e56d7870bd3eb3fc3a9c4f7ff25f4f68624ce633c43d985"
+  },
+  "import": {
+    "commandOptions": "no random conversion; exact SFZ regions",
+    "selectedLosslessSources": 12,
+    "explicitMappings": 12,
+    "warnings": [
+      "sfz region 1 key range 26-28 imported as root 28; review nearest-root boundaries",
+      "sfz region 2 key range 29-29 imported as root 29; review nearest-root boundaries",
+      "sfz region 3 key range 30-30 imported as root 30; review nearest-root boundaries",
+      "sfz region 4 key range 31-31 imported as root 31; review nearest-root boundaries",
+      "sfz region 5 key range 32-32 imported as root 32; review nearest-root boundaries",
+      "sfz region 6 key range 33-33 imported as root 33; review nearest-root boundaries",
+      "sfz region 7 key range 34-34 imported as root 34; review nearest-root boundaries",
+      "sfz region 8 key range 35-35 imported as root 35; review nearest-root boundaries",
+      "sfz region 9 key range 36-36 imported as root 36; review nearest-root boundaries",
+      "sfz region 10 key range 37-37 imported as root 37; review nearest-root boundaries",
+      "sfz region 11 key range 38-38 imported as root 38; review nearest-root boundaries",
+      "sfz region 12 key range 39-45 imported as root 39; review nearest-root boundaries"
+    ]
+  },
+  "decisions": [
+    "The current Meatbass payload is an upright bass identity mismatch for finger-bass.",
+    "This candidate is a correctly identified electric finger bass with 12 chromatic roots and explicit SFZ coverage 26..45.",
+    "The smaller playable range is deliberate and visible; no octave duplication or filename-derived production mapping is used.",
+    "Candidate is not authorized for production until exact-hash blind listening and review dispositions are complete."
+  ]
+}

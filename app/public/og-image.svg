@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <linearGradient id="glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f07048;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#e85a30;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="#0a0a0a"/>
+
+  <!-- Logo - 4x4 Step grid centered, scaled up -->
+  <g transform="translate(500, 140) scale(4)">
+    <!-- Background -->
+    <rect width="50" height="50" rx="8" fill="#1e1e1e"/>
+
+    <!-- Row 1: HiHat (all on) -->
+    <rect x="4" y="4" width="9" height="9" rx="2" fill="url(#glow)"/>
+    <rect x="15" y="4" width="9" height="9" rx="2" fill="url(#glow)"/>
+    <rect x="26" y="4" width="9" height="9" rx="2" fill="url(#glow)"/>
+    <rect x="37" y="4" width="9" height="9" rx="2" fill="url(#glow)"/>
+
+    <!-- Row 2: Snare (beats 2 and 4) -->
+    <rect x="4" y="15" width="9" height="9" rx="2" fill="#3a3a3a"/>
+    <rect x="15" y="15" width="9" height="9" rx="2" fill="url(#glow)"/>
+    <rect x="26" y="15" width="9" height="9" rx="2" fill="#3a3a3a"/>
+    <rect x="37" y="15" width="9" height="9" rx="2" fill="url(#glow)"/>
+
+    <!-- Row 3: Tom (silent) -->
+    <rect x="4" y="26" width="9" height="9" rx="2" fill="#3a3a3a"/>
+    <rect x="15" y="26" width="9" height="9" rx="2" fill="#3a3a3a"/>
+    <rect x="26" y="26" width="9" height="9" rx="2" fill="#3a3a3a"/>
+    <rect x="37" y="26" width="9" height="9" rx="2" fill="#3a3a3a"/>
+
+    <!-- Row 4: Kick (beats 1 and 3) -->
+    <rect x="4" y="37" width="9" height="9" rx="2" fill="url(#glow)"/>
+    <rect x="15" y="37" width="9" height="9" rx="2" fill="#3a3a3a"/>
+    <rect x="26" y="37" width="9" height="9" rx="2" fill="url(#glow)"/>
+    <rect x="37" y="37" width="9" height="9" rx="2" fill="#3a3a3a"/>
+  </g>
+
+  <!-- Title -->
+  <text x="600" y="420" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="64" font-weight="700" fill="#ff6b35">Keyboardia</text>
+
+  <!-- Tagline -->
+  <text x="600" y="480" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#888888">Collaborative Step Sequencer</text>
+
+  <!-- Colored tagline words -->
+  <g transform="translate(600, 540)">
+    <text x="-120" y="0" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#ff6b35">Create</text>
+    <text x="-60" y="0" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#666666">·</text>
+    <text x="0" y="0" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#9b59b6">Remix</text>
+    <text x="60" y="0" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#666666">·</text>
+    <text x="120" y="0" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="22" fill="#4ecdc4">Share</text>
+  </g>
+</svg>

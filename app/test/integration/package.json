@@ -1,0 +1,17 @@
+{
+  "name": "keyboardia-integration-tests",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.0",
+    "@cloudflare/workers-types": "^5.20261009.1",
+    "fast-check": "^4.5.3",
+    "vitest": "^4.1.11",
+    "typescript": "^5.7.3"
+  }
+}

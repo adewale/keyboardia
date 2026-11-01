@@ -1,0 +1,53 @@
+{
+  "name": "Afrobeat 3:4",
+  "tempo": 115,
+  "swing": 25,
+  "scale": {
+    "root": "G",
+    "scaleId": "major-pentatonic",
+    "locked": false
+  },
+  "tracks": [
+    {
+      "id": "track-1",
+      "name": "3-Step Shaker",
+      "sampleId": "shaker",
+      "steps": [true, false, true],
+      "parameterLocks": [{"volume": 0.8}, null, {"volume": 0.6}],
+      "volume": 0.5,
+      "muted": false,
+      "stepCount": 3
+    },
+    {
+      "id": "track-2",
+      "name": "4-Step Conga",
+      "sampleId": "conga",
+      "steps": [true, false, true, false],
+      "parameterLocks": [{"pitch": 0}, null, {"pitch": 5}, null],
+      "volume": 0.55,
+      "muted": false,
+      "stepCount": 4
+    },
+    {
+      "id": "track-3",
+      "name": "6-Step Bell",
+      "sampleId": "sampled:vibraphone",
+      "steps": [true, false, false, true, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, {"pitch": 7}, null, null],
+      "volume": 0.4,
+      "muted": false,
+      "stepCount": 6
+    },
+    {
+      "id": "track-4",
+      "name": "12-Step Bass",
+      "sampleId": "sampled:finger-bass",
+      "steps": [true, false, false, false, false, false, true, false, false, true, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, {"pitch": 5}, null, null, {"pitch": 7}, null, null],
+      "volume": 0.6,
+      "muted": false,
+      "stepCount": 12,
+      "transpose": -12
+    }
+  ]
+}

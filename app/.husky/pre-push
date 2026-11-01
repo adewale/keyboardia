@@ -1,0 +1,56 @@
+#!/bin/sh
+
+# Fast by default: deterministic static contracts plus the unit suite.
+# Opt into browser confidence with KEYBOARDIA_VERIFY_T1=1, or the complete
+# cross-browser release matrix with KEYBOARDIA_VERIFY_T2=1 (which includes T1).
+
+# Browser helpers can inherit git's stdout pipe after their npm parent exits,
+# leaving a non-interactive push waiting forever for EOF. Redirect such runs to
+# a stable diagnostic log before any child process starts.
+if [ ! -t 1 ] || [ ! -t 2 ]; then
+    PREPUSH_LOG=/tmp/keyboardia-last-prepush.log
+    rm -f "$PREPUSH_LOG"
+    exec </dev/null >"$PREPUSH_LOG" 2>&1
+    trap 'if ( : > /dev/tty ) 2>/dev/null; then cat "$PREPUSH_LOG" > /dev/tty || :; fi' EXIT
+fi
+
+set -e
+cd app
+
+echo "PRE-PUSH T0: manifests, E2E inventories, and unit tests"
+npm run validate:manifests
+npm run validate:e2e-inventories
+npm run test:unit
+
+if [ "${KEYBOARDIA_VERIFY_T1:-0}" = "1" ] || [ "${KEYBOARDIA_VERIFY_T2:-0}" = "1" ]; then
+    echo "PRE-PUSH T1: targeted browser confidence"
+
+    USE_MOCK_API=1 E2E_FUNCTIONAL_ONLY=1 CI=true E2E_PORT=5176 \
+      PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-pcm.json \
+      npx playwright test e2e/capture-session.spec.ts --project=chromium --workers=1 --retries=0
+    node scripts/assert-playwright-stats.mjs test-results/prepush-pcm.json lane pcm
+
+    E2E_WORKER_PORT=8791 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-worker-smoke.json \
+      npm run test:e2e:full-stack:smoke
+    node scripts/assert-playwright-stats.mjs test-results/prepush-worker-smoke.json lane worker-smoke
+
+    E2E_WORKER_PORT=8792 PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-mobile-safari.json \
+      npm run test:e2e:full-stack -- e2e/mobile-iphone.spec.ts --project=mobile-safari
+    node scripts/assert-playwright-stats.mjs test-results/prepush-mobile-safari.json lane mobile-safari
+fi
+
+if [ "${KEYBOARDIA_VERIFY_T2:-0}" = "1" ]; then
+    echo "PRE-PUSH T2: complete desktop browser matrix"
+
+    E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8793 \
+      PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-chromium.json \
+      npm run test:e2e:full-stack -- --project=chromium --workers=2
+    node scripts/assert-playwright-stats.mjs test-results/prepush-chromium.json lane real-chromium
+
+    E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8794 \
+      PLAYWRIGHT_JSON_OUTPUT_FILE=test-results/prepush-webkit.json \
+      npm run test:e2e:full-stack -- --project=webkit --no-deps --workers=1
+    node scripts/assert-playwright-stats.mjs test-results/prepush-webkit.json lane real-webkit
+fi
+
+echo "PRE-PUSH verification passed"

@@ -1,0 +1,35 @@
+{
+  "id": "step-count-header-hover-mobile-portrait",
+  "group": "catalogue",
+  "baseRevision": "58264dd5ae274f63b1cd80b72aa823b76b21f28b",
+  "headRevision": "26e4d91a30db5bd2537a74c39afb0fc770ab7e77",
+  "generator": {
+    "name": "app/identity/stack-b-visual.spec.ts",
+    "version": 6
+  },
+  "inputConfigSha256": "1cb6dd008db7ead541ac760005427f0aca94e5a6da96c036366bac4a9d18289e",
+  "environment": {
+    "browser": "chromium",
+    "browserVersion": "143.0.7499.4",
+    "platform": "darwin",
+    "platformRelease": "25.5.0"
+  },
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "differentPixels": 8189,
+  "rawDifferentPixels": 27873,
+  "maxObservedChannelDelta": 240,
+  "beforeSha256": "1999124781688cc7d7f1193de28090e42cfd0083b31620555789389f9703d52d",
+  "afterSha256": "cc4e7b146e958bd37adb27847bbea0199b2219aa3e2676e0148b69a707424416",
+  "diffSha256": "11c82b1ffc8af16a4385d596d332e7f9a740c205130a914b16a0a69dbcecaac5",
+  "checks": {
+    "accessibilityTreeIdentity": true,
+    "geometryAndStyleViolations": 0,
+    "targetGeometryIdentity": true,
+    "unexpectedChangedPixels": 0,
+    "pixelExpectation": "changed",
+    "result": "passed"
+  }
+}

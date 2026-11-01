@@ -1,0 +1,144 @@
+/**
+ * Phase 31G: Velocity Lane Styles
+ *
+ * Visual velocity editing with vertical bars.
+ * Matches step cell alignment and track-left width.
+ */
+
+.velocity-lane {
+  display: flex;
+  gap: 8px; /* Match .track-row gap for step alignment */
+  padding: 4px 0;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 4px;
+  margin-top: 2px;
+  min-width: max-content;
+  cursor: ns-resize;
+  user-select: none;
+  /* LOW-3: Prevent browser scroll interception on touch devices */
+  touch-action: none;
+}
+
+/* Spacer to align with track-left (includes drag handle and velocity toggle) */
+.velocity-lane-spacer {
+  /* MEDIUM-6: Use CSS variable instead of magic number */
+  width: var(--track-left-width);
+  min-width: var(--track-left-width);
+  flex-shrink: 0;
+  /* Sticky positioning to match track-left */
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* Velocity bars container */
+.velocity-bars {
+  display: flex;
+  gap: 3px; /* Match step cell gap */
+  height: 40px;
+  align-items: flex-end;
+}
+
+/* Individual velocity step (container for bar) */
+.velocity-step {
+  /* Match step cell sizing: 36px width */
+  width: 36px;
+  min-width: 36px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  position: relative;
+}
+
+/* Inactive step - no bar, just subtle background */
+.velocity-step.inactive {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 2px;
+}
+
+/* Active step container */
+.velocity-step.active {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 2px;
+}
+
+/* Velocity bar itself - accent with warning extremes */
+.velocity-bar {
+  width: 100%;
+  background: var(--color-accent);
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+  transition: height 0.05s ease-out, background 0.1s ease;
+}
+
+.velocity-bar:hover {
+  filter: brightness(1.2);
+}
+
+/* Extreme low velocity (< 20%) - purple warning */
+.velocity-bar.extreme-low {
+  background: var(--color-purple);
+  box-shadow: 0 0 4px rgba(155, 89, 182, 0.4);
+}
+
+/* Normal velocity range (20-80%) - accent */
+.velocity-bar.normal {
+  background: var(--color-accent);
+}
+
+/* Extreme high velocity (> 80%) - red warning */
+.velocity-bar.extreme-high {
+  background: var(--color-red);
+  box-shadow: 0 0 4px rgba(231, 76, 60, 0.4);
+}
+
+/* Velocity lane toggle button (in track controls) */
+/* Phase 31: Unified button size of 36px to match mute/solo buttons */
+.velocity-toggle {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border-hover);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.velocity-toggle:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+}
+
+.velocity-toggle.expanded {
+  background: var(--color-surface-active);
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+.velocity-toggle.expanded:hover {
+  background: var(--color-surface-active);
+  filter: brightness(1.1);
+}
+
+/* Mobile: Hide velocity lane (use per-step p-lock instead) */
+@media (max-width: 768px) {
+  .velocity-lane {
+    display: none;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .velocity-bar {
+    transition: none;
+  }
+}

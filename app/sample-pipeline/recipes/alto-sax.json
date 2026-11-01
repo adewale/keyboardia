@@ -1,0 +1,1678 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "alto-sax",
+    "name": "Alto Sax",
+    "releaseTime": 0.4,
+    "playableRange": {
+      "min": 47,
+      "max": 83
+    },
+    "gainDb": 0,
+    "velocityCrossfade": 8,
+    "priorityNotes": [
+      61
+    ],
+    "credits": {
+      "source": "Karoryfer Weresax \u2014 dynamic microphone sustain",
+      "url": "https://github.com/sfzinstruments/karoryfer.weresax",
+      "license": "CC0 1.0"
+    }
+  },
+  "sourceRevision": "a4d756b21d2a573aca0d840cce7e71ba5effd4c6",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "Samples/alto/a2_f_rr1_dnm.wav",
+      "sha256": "872337535eae6e924270acb5050dc70954663a7fd84c6aec829be458b9aeffe2"
+    },
+    {
+      "id": "source-0002",
+      "path": "Samples/alto/a2_f_rr2_dnm.wav",
+      "sha256": "885be822fcdb4447824507492e455ee6393133b9c6e53dbf08b24d0b96e91265"
+    },
+    {
+      "id": "source-0003",
+      "path": "Samples/alto/a2_p_rr1_dnm.wav",
+      "sha256": "1ad370431de7172314c131b2d6cd21a0f756bee949381bc0644cf72c594f09b9"
+    },
+    {
+      "id": "source-0004",
+      "path": "Samples/alto/a2_p_rr2_dnm.wav",
+      "sha256": "3f3258946ccc15b0948e03c60a3d36853a9a8363bfeea6af74f29d6e6b121ffa"
+    },
+    {
+      "id": "source-0005",
+      "path": "Samples/alto/a3_f_rr1_dnm.wav",
+      "sha256": "fa3b067702154a66949f0cee3032f587eaff6b488f21517ef5f0a380c5c3af30"
+    },
+    {
+      "id": "source-0006",
+      "path": "Samples/alto/a3_f_rr2_dnm.wav",
+      "sha256": "0f4d8b6ef2da45677e1c8aa4cfc9abbce188a6e7563b71a1ab2e2f21ce39e387"
+    },
+    {
+      "id": "source-0007",
+      "path": "Samples/alto/a3_p_rr1_dnm.wav",
+      "sha256": "d1248e6837c610f929bce14c1f80214c199f37a080e64f7b5d379785de52ac5e"
+    },
+    {
+      "id": "source-0008",
+      "path": "Samples/alto/a3_p_rr2_dnm.wav",
+      "sha256": "08014e3f218e953106e6d150e54868d2fc1230a755c98c5b998b3636d0812779"
+    },
+    {
+      "id": "source-0017",
+      "path": "Samples/alto/ab4_f_rr1_dnm.wav",
+      "sha256": "547c78ef6c2794050484bb63d10052e3b59556d16d64fde0c023d5eca9515bc6"
+    },
+    {
+      "id": "source-0018",
+      "path": "Samples/alto/ab4_f_rr2_dnm.wav",
+      "sha256": "12405e4a20aa286e6f87b6a6cb5f5570e9705fc576ff2c8ad67c543ae3cf87a3"
+    },
+    {
+      "id": "source-0019",
+      "path": "Samples/alto/ab4_p_rr1_dnm.wav",
+      "sha256": "141a56795774e9bf9965f35a4a6136f93e92aa77c0c1c64d3b1d0b9923e22ea1"
+    },
+    {
+      "id": "source-0020",
+      "path": "Samples/alto/ab4_p_rr2_dnm.wav",
+      "sha256": "c663199915448cf8967ddc08c59a6f48a274a4e129b935d938c7dcf64f340426"
+    },
+    {
+      "id": "source-0021",
+      "path": "Samples/alto/b2_f_rr1_dnm.wav",
+      "sha256": "b1fe7e56af912acdc1da9eaf7b496acf3bf936d1d896f0cda0fb604cd431ffb4"
+    },
+    {
+      "id": "source-0022",
+      "path": "Samples/alto/b2_f_rr2_dnm.wav",
+      "sha256": "25003f2b662dcecd6aa809ab829478afe3111a1420df7e4a46b09cb975a659ec"
+    },
+    {
+      "id": "source-0023",
+      "path": "Samples/alto/b2_p_rr1_dnm.wav",
+      "sha256": "0ac1ef861c36d67a327239a8d91d0dc7db216c9dc6488f4e78034a9bdaf025e7"
+    },
+    {
+      "id": "source-0024",
+      "path": "Samples/alto/b2_p_rr2_dnm.wav",
+      "sha256": "0c2eb40f1ac8bcf9abf16c63fd7dbf107d471580fd86243eb94a6aa3694b0625"
+    },
+    {
+      "id": "source-0025",
+      "path": "Samples/alto/b3_f_rr1_dnm.wav",
+      "sha256": "5ad4b2ace0a3aebc9fe42261b145a89845708cd7a3c16ddfe32a7ea4c42cc111"
+    },
+    {
+      "id": "source-0026",
+      "path": "Samples/alto/b3_f_rr2_dnm.wav",
+      "sha256": "17c86ac5bfc1e09f4d802f5e46e00f3af68b8bd7c7df5e7b4dbf9c71b0b4b5a8"
+    },
+    {
+      "id": "source-0027",
+      "path": "Samples/alto/b3_p_rr1_dnm.wav",
+      "sha256": "5ac17fb2fcccae67663f7b6ebeccadb945bc600de124c5c4e8e904942e257173"
+    },
+    {
+      "id": "source-0028",
+      "path": "Samples/alto/b3_p_rr2_dnm.wav",
+      "sha256": "1193d47fcef53db8c0896605ba650a3c3b463aa14a610809631e1b8527deaa94"
+    },
+    {
+      "id": "source-0057",
+      "path": "Samples/alto/db2_f_rr1_dnm.wav",
+      "sha256": "7b927a2deb135910759c26e15ded8d553acada0acddeb363abdf81753fa9e2db"
+    },
+    {
+      "id": "source-0058",
+      "path": "Samples/alto/db2_f_rr2_dnm.wav",
+      "sha256": "42f657831e6d542a46115cc2ff7f4882e34d48904f4ec52625a7e0065112309c"
+    },
+    {
+      "id": "source-0059",
+      "path": "Samples/alto/db2_p_rr1_dnm.wav",
+      "sha256": "4930676f0e1fb9fdd8f6146822c43d0266764c2d32236f3df3bad37337335520"
+    },
+    {
+      "id": "source-0060",
+      "path": "Samples/alto/db2_p_rr2_dnm.wav",
+      "sha256": "0cd03557e7c30668b2e13148cf8a4a916f19e31e8efb04a641e7bc6e4e602a01"
+    },
+    {
+      "id": "source-0061",
+      "path": "Samples/alto/db3_f_rr1_dnm.wav",
+      "sha256": "4493319e276268de9776e486bb9110e2f77bbc59331219bb1ffbf531867d4f04"
+    },
+    {
+      "id": "source-0062",
+      "path": "Samples/alto/db3_f_rr2_dnm.wav",
+      "sha256": "1724680089284f6e468f135b6b6efea526409246fda233291b7d40a23f4fe50f"
+    },
+    {
+      "id": "source-0063",
+      "path": "Samples/alto/db3_p_rr1_dnm.wav",
+      "sha256": "34d49e27b05b239ab97622d58f5684f0e93334020aca06d0ae2dc0983ea6eee3"
+    },
+    {
+      "id": "source-0064",
+      "path": "Samples/alto/db3_p_rr2_dnm.wav",
+      "sha256": "8a38a2367c30c152760d7dadcd59b957292fdf1e198ca0075c5edfe8a46f6cc6"
+    },
+    {
+      "id": "source-0065",
+      "path": "Samples/alto/db4_f_rr1_dnm.wav",
+      "sha256": "3730de1298059e50c09bb3d78509c0ea8c520d16e254272e12c50e35e263d044"
+    },
+    {
+      "id": "source-0066",
+      "path": "Samples/alto/db4_f_rr2_dnm.wav",
+      "sha256": "31c059180ee0010f051fb7f55a0b9b722b12440d00b9ce14208d8c1ee0961cd0"
+    },
+    {
+      "id": "source-0067",
+      "path": "Samples/alto/db4_p_rr1_dnm.wav",
+      "sha256": "c245401358760769aae8e859798c612712126ee4f31ae2162f29dc546b0acd72"
+    },
+    {
+      "id": "source-0068",
+      "path": "Samples/alto/db4_p_rr2_dnm.wav",
+      "sha256": "3eea1c34345ed24918232f2200363f3bf0dc0ad0e0219de899109b9df9050b16"
+    },
+    {
+      "id": "source-0081",
+      "path": "Samples/alto/eb2_f_rr1_dnm.wav",
+      "sha256": "25fc110bc30390c4dd904d598aab0fce7b17561843454ea02b37d5665853bca8"
+    },
+    {
+      "id": "source-0082",
+      "path": "Samples/alto/eb2_f_rr2_dnm.wav",
+      "sha256": "ff5cfcd25d0e391dd7ce1f9a483411112d9c0a12906378831bc82fe28be9437f"
+    },
+    {
+      "id": "source-0083",
+      "path": "Samples/alto/eb2_p_rr1_dnm.wav",
+      "sha256": "0aa9a13462fbd1f0c904e4a551c15de3989ca604b77bda039a58e75697cbf0c4"
+    },
+    {
+      "id": "source-0084",
+      "path": "Samples/alto/eb2_p_rr2_dnm.wav",
+      "sha256": "cd3f399a36cdacc8f8c7392a4dd398d25f9951de039c4f49b096d27c0dda31a5"
+    },
+    {
+      "id": "source-0085",
+      "path": "Samples/alto/eb3_f_rr1_dnm.wav",
+      "sha256": "e5237dba37fcc01766cdb0ce88dadc55743e9cfd1deca6abe7430fb3c53fccee"
+    },
+    {
+      "id": "source-0086",
+      "path": "Samples/alto/eb3_f_rr2_dnm.wav",
+      "sha256": "d0058d2a7378125cccc68d77857c660ffca1a414ab8dffdd7d9f31ce4cfe8f0b"
+    },
+    {
+      "id": "source-0087",
+      "path": "Samples/alto/eb3_p_rr1_dnm.wav",
+      "sha256": "e01c75f429ddf005763cb5cc0cab77edf34b4159e1e74b3884cfa450db02609b"
+    },
+    {
+      "id": "source-0088",
+      "path": "Samples/alto/eb3_p_rr2_dnm.wav",
+      "sha256": "2c63a9420f54a5e00b4fd4b22dc216768239a88b959152aa86e4f2e54896ddee"
+    },
+    {
+      "id": "source-0089",
+      "path": "Samples/alto/eb4_f_rr1_dnm.wav",
+      "sha256": "ce84a3390a235a85daf7e56d7938aeca86ae7a126e29be4dd1155a30729339ee"
+    },
+    {
+      "id": "source-0090",
+      "path": "Samples/alto/eb4_f_rr2_dnm.wav",
+      "sha256": "105a8304571548be3628245397b15f8a61679ab39d742155b130196374c725bf"
+    },
+    {
+      "id": "source-0091",
+      "path": "Samples/alto/eb4_p_rr1_dnm.wav",
+      "sha256": "a8780f970d33d84ed831066bc009b6d277269d8c1a54a02a688b6f1195e53a84"
+    },
+    {
+      "id": "source-0092",
+      "path": "Samples/alto/eb4_p_rr2_dnm.wav",
+      "sha256": "1ad100e6f564c546036f53d9f971ef7f8a6e4180c5d8ccab884c493668ed4313"
+    },
+    {
+      "id": "source-0093",
+      "path": "Samples/alto/f2_f_rr1_dnm.wav",
+      "sha256": "2a6357738b01905b74b7cc6cbdfc12bd31f1d3907932cc202675f23fc96896d1"
+    },
+    {
+      "id": "source-0094",
+      "path": "Samples/alto/f2_f_rr2_dnm.wav",
+      "sha256": "95241e99fc47e07e0a2f6d932159cb505f0f3f01b74a5379a39c9c00fd14ace3"
+    },
+    {
+      "id": "source-0095",
+      "path": "Samples/alto/f2_p_rr1_dnm.wav",
+      "sha256": "f3b45827d5e40c824764cb578cbe750f02e7182102dca2cf5fcaca7d68f67fde"
+    },
+    {
+      "id": "source-0096",
+      "path": "Samples/alto/f2_p_rr2_dnm.wav",
+      "sha256": "ed8a5b1f34b526b2c053e3f75cb26db04a21cf4603c48aa52b9cea62a683b76b"
+    },
+    {
+      "id": "source-0097",
+      "path": "Samples/alto/f3_f_rr1_dnm.wav",
+      "sha256": "c1d3c8bd23d47b2392641288caad593b08cb10edbe9daf97854be6586f6094c7"
+    },
+    {
+      "id": "source-0098",
+      "path": "Samples/alto/f3_f_rr2_dnm.wav",
+      "sha256": "4e6e7c810976c3b3277f2a0733be1691a634ea03a24d5c102f8455ece074d869"
+    },
+    {
+      "id": "source-0099",
+      "path": "Samples/alto/f3_p_rr1_dnm.wav",
+      "sha256": "78ebda343940009b43d8f2963d772c09d837bf4f023aa8834b5e7609f3aa9acb"
+    },
+    {
+      "id": "source-0100",
+      "path": "Samples/alto/f3_p_rr2_dnm.wav",
+      "sha256": "da74572af5ca09158dcf2db67e778cb06fd236f7bc027b4a1f5fa8026aacac7c"
+    },
+    {
+      "id": "source-0101",
+      "path": "Samples/alto/f4_f_rr1_dnm.wav",
+      "sha256": "bac3c2fa55c0fc162abff622005e7804a3bddbb1d24ff8c04ad0d089aaba4011"
+    },
+    {
+      "id": "source-0102",
+      "path": "Samples/alto/f4_f_rr2_dnm.wav",
+      "sha256": "3f3314ed310f82fb89f13f6a46e28891df2d386121362c49f250131dce1e7cbb"
+    },
+    {
+      "id": "source-0103",
+      "path": "Samples/alto/f4_p_rr1_dnm.wav",
+      "sha256": "4a1173f672c10d74fa4916441a9e2df4974541f2c894cfde83276b606d1eeeb3"
+    },
+    {
+      "id": "source-0104",
+      "path": "Samples/alto/f4_p_rr2_dnm.wav",
+      "sha256": "4c2244a91e69bae451ef4dbdcda43ff05ca4ef74c43f23ebcdb0d06994c43221"
+    },
+    {
+      "id": "source-0105",
+      "path": "Samples/alto/g2_f_rr1_dnm.wav",
+      "sha256": "8fee51672816ced12ebe3ebd7fe2295ddb3ea82fd03d098c4d7bb8bc6aa39016"
+    },
+    {
+      "id": "source-0106",
+      "path": "Samples/alto/g2_f_rr2_dnm.wav",
+      "sha256": "077c5ed2d8d385024940a79698de2b50fcbe3436133225d81c5243a6f6bc3d7d"
+    },
+    {
+      "id": "source-0107",
+      "path": "Samples/alto/g2_p_rr1_dnm.wav",
+      "sha256": "0e414f1dea5fe9121feed2b1081ddb0a8e1e9ec8fdf320ff9dcdefc2d089218d"
+    },
+    {
+      "id": "source-0108",
+      "path": "Samples/alto/g2_p_rr2_dnm.wav",
+      "sha256": "c19706a3ea4adc6c3956179eaf86dbca936f425820661bae972d305ffa225056"
+    },
+    {
+      "id": "source-0109",
+      "path": "Samples/alto/g3_f_rr1_dnm.wav",
+      "sha256": "c2198825a5496fb87dc602c3a92a3e5492b68910bde83a8bbc9d6278dfd463d4"
+    },
+    {
+      "id": "source-0110",
+      "path": "Samples/alto/g3_f_rr2_dnm.wav",
+      "sha256": "a75f6aa22eb3234a4c32d72773a94eebca636f4c91c98d573529f4a400c244a2"
+    },
+    {
+      "id": "source-0111",
+      "path": "Samples/alto/g3_p_rr1_dnm.wav",
+      "sha256": "866e4e55c9830589fdad6e0f6e326d9bb31db897d3b482d07922b279048e09a6"
+    },
+    {
+      "id": "source-0112",
+      "path": "Samples/alto/g3_p_rr2_dnm.wav",
+      "sha256": "e2dd1281f289fd394cd4463d112f4842756e661935cdb6c37b226560ab7bc3d0"
+    },
+    {
+      "id": "source-0113",
+      "path": "Samples/alto/g4_f_rr1_dnm.wav",
+      "sha256": "ab3197dc0662b7de648cf34d2964b77851dc7bb2a988d9c4df9b6bf3db9228b9"
+    },
+    {
+      "id": "source-0114",
+      "path": "Samples/alto/g4_f_rr2_dnm.wav",
+      "sha256": "2c7e137c8bf1f564246654193caa22da90e43054b6e22632cdf624da2a97cc92"
+    },
+    {
+      "id": "source-0115",
+      "path": "Samples/alto/g4_p_rr1_dnm.wav",
+      "sha256": "0e0db9bbc1a8f679887a1c8c673212a99b774653c6e1a09f85c5fa152da1efc1"
+    },
+    {
+      "id": "source-0116",
+      "path": "Samples/alto/g4_p_rr2_dnm.wav",
+      "sha256": "517b0191e870cfa921fab73f41f39e9ae39cd0bb496de67f322c96cf99a8b044"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0057",
+        "output": "source-0057.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-49-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0058",
+        "output": "source-0058.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-49-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0081",
+        "output": "source-0081.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-51-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0082",
+        "output": "source-0082.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-51-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0093",
+        "output": "source-0093.m4a",
+        "rootMidi": 53,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-53-64-127",
+          "index": 0,
+          "count": 2
+        }
+      },
+      {
+        "sourceId": "source-0094",
+        "output": "source-0094.m4a",
+        "rootMidi": 53,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-53-64-127",
+          "index": 1,
+          "count": 2
+        }
+      },
+      {
+        "sourceId": "source-0105",
+        "output": "source-0105.m4a",
+        "rootMidi": 55,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-55-64-127",
+          "index": 0,
+          "count": 2
+        }
+      },
+      {
+        "sourceId": "source-0106",
+        "output": "source-0106.m4a",
+        "rootMidi": 55,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-55-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "removeDc": true
+        }
+      },
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 57,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-57-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "removeDc": true,
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 57,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-57-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "removeDc": true,
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0021",
+        "output": "source-0021.m4a",
+        "rootMidi": 59,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-59-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0022",
+        "output": "source-0022.m4a",
+        "rootMidi": 59,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-59-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0061",
+        "output": "source-0061.m4a",
+        "rootMidi": 61,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-61-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0062",
+        "output": "source-0062.m4a",
+        "rootMidi": 61,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-61-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0085",
+        "output": "source-0085.m4a",
+        "rootMidi": 63,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-63-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0086",
+        "output": "source-0086.m4a",
+        "rootMidi": 63,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-63-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0097",
+        "output": "source-0097.m4a",
+        "rootMidi": 65,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-65-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0098",
+        "output": "source-0098.m4a",
+        "rootMidi": 65,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-65-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0109",
+        "output": "source-0109.m4a",
+        "rootMidi": 67,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-67-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0110",
+        "output": "source-0110.m4a",
+        "rootMidi": 67,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-67-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 69,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-69-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 69,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-69-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0025",
+        "output": "source-0025.m4a",
+        "rootMidi": 71,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-71-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0026",
+        "output": "source-0026.m4a",
+        "rootMidi": 71,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-71-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0065",
+        "output": "source-0065.m4a",
+        "rootMidi": 73,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-73-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0066",
+        "output": "source-0066.m4a",
+        "rootMidi": 73,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-73-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0089",
+        "output": "source-0089.m4a",
+        "rootMidi": 75,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-75-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0090",
+        "output": "source-0090.m4a",
+        "rootMidi": 75,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-75-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0101",
+        "output": "source-0101.m4a",
+        "rootMidi": 77,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-77-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0102",
+        "output": "source-0102.m4a",
+        "rootMidi": 77,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-77-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0113",
+        "output": "source-0113.m4a",
+        "rootMidi": 79,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-79-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0114",
+        "output": "source-0114.m4a",
+        "rootMidi": 79,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-79-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0017",
+        "output": "source-0017.m4a",
+        "rootMidi": 80,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-80-64-127",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0018",
+        "output": "source-0018.m4a",
+        "rootMidi": 80,
+        "velocity": {
+          "min": 64,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-80-64-127",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0059",
+        "output": "source-0059.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-49-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0060",
+        "output": "source-0060.m4a",
+        "rootMidi": 49,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-49-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0083",
+        "output": "source-0083.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-51-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0084",
+        "output": "source-0084.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-51-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0095",
+        "output": "source-0095.m4a",
+        "rootMidi": 53,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-53-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0096",
+        "output": "source-0096.m4a",
+        "rootMidi": 53,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-53-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0107",
+        "output": "source-0107.m4a",
+        "rootMidi": 55,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-55-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0108",
+        "output": "source-0108.m4a",
+        "rootMidi": 55,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-55-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 57,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-57-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "removeDc": true,
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 57,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-57-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "removeDc": true,
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0023",
+        "output": "source-0023.m4a",
+        "rootMidi": 59,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-59-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0024",
+        "output": "source-0024.m4a",
+        "rootMidi": 59,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-59-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0063",
+        "output": "source-0063.m4a",
+        "rootMidi": 61,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-61-0-63",
+          "index": 0,
+          "count": 2
+        }
+      },
+      {
+        "sourceId": "source-0064",
+        "output": "source-0064.m4a",
+        "rootMidi": 61,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-61-0-63",
+          "index": 1,
+          "count": 2
+        }
+      },
+      {
+        "sourceId": "source-0087",
+        "output": "source-0087.m4a",
+        "rootMidi": 63,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-63-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0088",
+        "output": "source-0088.m4a",
+        "rootMidi": 63,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-63-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0099",
+        "output": "source-0099.m4a",
+        "rootMidi": 65,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-65-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0100",
+        "output": "source-0100.m4a",
+        "rootMidi": 65,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-65-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0111",
+        "output": "source-0111.m4a",
+        "rootMidi": 67,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-67-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0112",
+        "output": "source-0112.m4a",
+        "rootMidi": 67,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-67-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 69,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-69-0-63",
+          "index": 0,
+          "count": 2
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 69,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-69-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0027",
+        "output": "source-0027.m4a",
+        "rootMidi": 71,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-71-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0028",
+        "output": "source-0028.m4a",
+        "rootMidi": 71,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-71-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0067",
+        "output": "source-0067.m4a",
+        "rootMidi": 73,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-73-0-63",
+          "index": 0,
+          "count": 2
+        }
+      },
+      {
+        "sourceId": "source-0068",
+        "output": "source-0068.m4a",
+        "rootMidi": 73,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-73-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0091",
+        "output": "source-0091.m4a",
+        "rootMidi": 75,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-75-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0092",
+        "output": "source-0092.m4a",
+        "rootMidi": 75,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-75-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0103",
+        "output": "source-0103.m4a",
+        "rootMidi": 77,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-77-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0104",
+        "output": "source-0104.m4a",
+        "rootMidi": 77,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-77-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0115",
+        "output": "source-0115.m4a",
+        "rootMidi": 79,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-79-0-63",
+          "index": 0,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0116",
+        "output": "source-0116.m4a",
+        "rootMidi": 79,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-79-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      },
+      {
+        "sourceId": "source-0019",
+        "output": "source-0019.m4a",
+        "rootMidi": 80,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-80-0-63",
+          "index": 0,
+          "count": 2
+        }
+      },
+      {
+        "sourceId": "source-0020",
+        "output": "source-0020.m4a",
+        "rootMidi": 80,
+        "velocity": {
+          "min": 0,
+          "max": 63
+        },
+        "articulation": "sustain",
+        "roundRobin": {
+          "group": "sustain-80-0-63",
+          "index": 1,
+          "count": 2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.08
+        }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "preserve-source"
+  },
+  "evidence": {
+    "sampleLabSourceId": "karoryfer-weresax",
+    "currentInstrumentDir": "public/instruments/alto-sax",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 50,
+        "velocity": 32,
+        "currentFile": "D3-soft.m4a",
+        "currentRootMidi": 50,
+        "candidateOutput": "source-0059.m4a",
+        "candidateRootMidi": 49
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 64,
+        "velocity": 80,
+        "currentFile": "Gb4-soft.m4a",
+        "currentRootMidi": 66,
+        "candidateOutput": "source-0085.m4a",
+        "candidateRootMidi": 63
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 80,
+        "velocity": 120,
+        "currentFile": "Ab5-loud.m4a",
+        "currentRootMidi": 80,
+        "candidateOutput": "source-0017.m4a",
+        "candidateRootMidi": 80
+      }
+    ]
+  }
+}

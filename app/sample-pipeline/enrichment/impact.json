@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "measuredAt": "2026-08-12",
+  "scope": {
+    "instrumentIds": [
+      "acoustic-kick",
+      "acoustic-snare",
+      "acoustic-hihat-closed",
+      "acoustic-hihat-open",
+      "acoustic-ride",
+      "acoustic-crash",
+      "finger-bass",
+      "steel-drums"
+    ],
+    "definitionOfComplete": "Every usable mapping in the pinned mid-mic Virtuosity kit tranche, Meatbass basic pizzicato map, and jSteelDrum no-crossfade map is represented in production.",
+    "usableSourceMasters": 695,
+    "explicitMappings": 729,
+    "excludedSourceMasters": 1,
+    "exclusion": "jSteelDrum jsdb_061_Db4_1-1.flac: four objectively detected flat-top clipping runs",
+    "affectedLibrariesLicenseClassesBefore": ["CC0-1.0", "Unlicense"],
+    "affectedLibrariesLicenseClassesAfter": ["CC0-1.0", "Unlicense"],
+    "licensingProfileChanged": false,
+    "outOfScope": [
+      "additional acoustic-kit microphone mixes and articulations",
+      "Meatbass percussion, release, and legato maps",
+      "new instrument IDs",
+      "subjective timbre preference"
+    ]
+  },
+  "automaticVerification": {
+    "sourceAndDeliveryHashesPinned": true,
+    "productionMatchesCompletenessLock": true,
+    "objectiveHardErrors": 0,
+    "chromiumDecodes": 695,
+    "webkitDecodes": 695,
+    "runtimeEventsChecked": 43136,
+    "runtimeSilentEvents": 0,
+    "perceptualPreferenceClaimed": false
+  },
+  "coverage": {
+    "before": {
+      "deliveryFiles": 52,
+      "mappings": 52,
+      "deterministicRoundRobinGroups": 0,
+      "fingerBassRoots": 6,
+      "fingerBassMeanPitchShiftSemitones": 2.326530612244898,
+      "steelDrumRoots": 8,
+      "steelDrumMeanPitchShiftSemitones": 1.6470588235294117
+    },
+    "after": {
+      "deliveryFiles": 695,
+      "mappings": 729,
+      "deterministicRoundRobinGroups": 192,
+      "fingerBassRoots": 14,
+      "fingerBassMeanPitchShiftSemitones": 1.0816326530612246,
+      "steelDrumRoots": 24,
+      "steelDrumMeanPitchShiftSemitones": 0.9117647058823529
+    }
+  },
+  "bundle": {
+    "builtWebBeforeBytes": 15021222,
+    "builtWebAfterBytes": 50040999,
+    "builtWebDeltaBytes": 35019777,
+    "builtWebDeltaMiB": 33.40,
+    "builtWebMultiplier": 3.331,
+    "audioBeforeBytes": 13769061,
+    "audioAfterBytes": 48618347,
+    "audioDeltaBytes": 34849286,
+    "audioDeltaMiB": 33.23,
+    "affectedLibrariesBeforeBytes": 1805760,
+    "affectedLibrariesAfterBytes": 36662990,
+    "affectedLibrariesDeltaBytes": 34857230,
+    "affectedLibrariesDeltaMiB": 33.24
+  },
+  "canonicalQualityAudit": {
+    "before": {
+      "instruments": 26,
+      "mappings": 223,
+      "uniqueFiles": 223,
+      "unwaivedErrors": 0,
+      "unwaivedReviewFlags": 81,
+      "waivedIssues": 154,
+      "reviewFlagsByCode": {
+        "LEADING_SILENCE": 43,
+        "NOTE_LEVEL_STEP": 11,
+        "PITCH_DEVIATION": 9,
+        "DC_OFFSET": 8,
+        "TAIL_TRUNCATION": 8,
+        "HOT_PEAK": 2
+      }
+    },
+    "after": {
+      "instruments": 26,
+      "mappings": 900,
+      "uniqueFiles": 866,
+      "unwaivedErrors": 0,
+      "unwaivedReviewFlags": 727,
+      "waivedIssues": 125,
+      "reviewFlagsByCode": {
+        "LEADING_SILENCE": 416,
+        "PITCH_DEVIATION": 229,
+        "VELOCITY_RMS_INVERSION": 39,
+        "NOTE_LEVEL_STEP": 25,
+        "DC_OFFSET": 8,
+        "TAIL_TRUNCATION": 8,
+        "HOT_PEAK": 2
+      },
+      "newEnrichmentReviewFlags": 646
+    }
+  }
+}

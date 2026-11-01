@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "candidateId": "acoustic-crash",
+  "buildReportSha256": "0b8814c0250aac8d8919f9436c7895b5ead0c44943489f0ccd5c316ca4f92ac9",
+  "outputHashes": [
+    "e650a51f112922308232bc46ef95847689b159784d780952826f30ece9f45a75",
+    "7ba9a990a87d45b7a5e8b78b2f51c9a3d263714bfe41e8ac959deefb91314828",
+    "4c611e0de0bed223cbf690bd60df3d3bca162e43ab0cad69720eeb6d7849f255",
+    "41d6273ccb0fa98c4c7a351de6313eaca5ec2971d3ffd3d554d0e218da7fd374",
+    "0d285d6762527ee5d3e14bf7fec8f9d53fe7f0f54d94e0b7f52cdfdf3d6d3838",
+    "2ae7865636a80fe3f38be619e6f634b29782724c97b9f5a11da141cf28ecef28",
+    "f349f1975a95c9d37ecca5dde772cdbda87073fb4eeff8ffb7c5d0f6e4b75080",
+    "b303694f30ba80af76132812d341b000169219cb661e650c0e24536dd756c2bb",
+    "b435d5fe83e75d4e016dfd4aa621c932fcf43dee28ed8689ff36bc0d9ba0ba40",
+    "4e73c43c44986879b0dbed8ad66a3374ba087502c4594ab8ef849d5bd9f77f33",
+    "3242b8351394d024c7d9bf54024c0d6f1fcc3fdba82f99c5939c031bf1a9896e",
+    "7b63f0ff7c1c07adbfdd3579158886fca509a02a6d80af3043d2b43d3baaf797"
+  ],
+  "decision": "rejected",
+  "reviewer": "Human reviewer (user-provided decision)",
+  "reviewedAt": "2026-07-10T19:19:27.000Z",
+  "anchorsReviewed": [
+    "low-soft",
+    "mid-medium",
+    "high-loud"
+  ],
+  "pitchSpanSemitones": 12,
+  "reviewDispositions": {
+    "source-0001.m4a: MONO_LOSS": "Unresolved and not waived: the exact-hash candidate was rejected at the blinded-anchor gate because the human reviewer preferred the current production sample.",
+    "source-0005.m4a: MONO_LOSS": "Unresolved and not waived: the exact-hash candidate was rejected at the blinded-anchor gate because the human reviewer preferred the current production sample.",
+    "source-0006.m4a: MONO_LOSS": "Unresolved and not waived: the exact-hash candidate was rejected at the blinded-anchor gate because the human reviewer preferred the current production sample.",
+    "source-0007.m4a: MONO_LOSS": "Unresolved and not waived: the exact-hash candidate was rejected at the blinded-anchor gate because the human reviewer preferred the current production sample.",
+    "source-0008.m4a: MONO_LOSS": "Unresolved and not waived: the exact-hash candidate was rejected at the blinded-anchor gate because the human reviewer preferred the current production sample."
+  },
+  "notes": "Rejected at the blinded-anchor gate. Human reviewer statement: \u201cI kept preferring the current samples in all the blind tests.\u201d Runtime promotion review was therefore unnecessary; production remains unchanged."
+}

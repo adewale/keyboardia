@@ -1,0 +1,318 @@
+{
+  "before": {
+    "instrumentId": "acoustic-ride",
+    "buildReportSha256": "0f92705f71c8214142d3c2f86c8cd2cfca95c8f1080f39cb2b355d4c14578b8d",
+    "outputHashes": [
+      "a324d783458c9941ff4af9a94f61c2e5ff75e9d5bb5aba0b9bdc53dbd41b31dd",
+      "e4e740990949bcf3d0da8827e569101c8f387dced814c21eff34d1057ae9917f",
+      "6071d1e3043f5bb6e3dca476da38289fdacee0ebe93e6fdf7eb0f5753efc3814"
+    ],
+    "coverage": {
+      "mappings": 3,
+      "roots": 1,
+      "largestRootGap": 0,
+      "worstShiftSemitones": 22,
+      "meanShiftSemitones": 9.457142857142857,
+      "completeVelocityRoots": 1,
+      "velocityRootCompleteness": 1,
+      "maxRoundRobins": 1,
+      "orphanFiles": 0,
+      "payloadBytes": 225829
+    },
+    "quality": {
+      "hardErrors": 0,
+      "reviewFlags": 0
+    },
+    "runtime": {
+      "eventsChecked": 4480,
+      "silentEvents": 0,
+      "maxPitchShiftSemitones": 22,
+      "deterministicRoundRobinGroups": 0
+    },
+    "reviewFindings": [],
+    "requiredAnchorIds": [
+      "low-soft",
+      "mid-medium",
+      "high-loud"
+    ],
+    "pitchSpanSemitones": 12,
+    "browser": {
+      "chromium": true,
+      "webkit": true
+    }
+  },
+  "after": {
+    "instrumentId": "acoustic-ride",
+    "buildReportSha256": "885d48d6c0c230c19657813a7f9112bd146df6c9743b5338767a4545daeaadb2",
+    "outputHashes": [
+      "e100d42962288aa7c2c4984d4b49f1bcbbb0b838f3e10fc4be2c8ebb341919f6",
+      "a8cabf88bb197b0728dede3f34ffee57f67ec929af715c79d69c9ee745067055",
+      "f491c31a60c9c800dd8797ddf238c748461fc60dfd9a6d97ac80dd6863ccc994",
+      "3a701c166bf803bfefd08de1ad330ab817ad49423001eb6b4c1b98f1155651e9",
+      "ab394725d62080b6355bcb4bf8f4b60f15f69a63c828ba49559c5c2436cecbe4",
+      "f5482bca94847357c3fe48e1a5ff546d50188357014064f3c13f547117772ed4",
+      "e5d88fc04cd3c0f77c37abeaea2436c13312289de3fefd5d2e020403fd3af5ca",
+      "4e7537aadca4da43aef0d5da8406121545ffef3534cc7584c6617401e5bb81cd",
+      "188c6874ce97a0b6c81d0930e790e2dde4f41954252d9247a1e5f79bc1c75377",
+      "082ad9ffe8d772affe3ba2abacdff76298fbafbd0c60be1b8a91e35f029ad214"
+    ],
+    "coverage": {
+      "mappings": 25,
+      "roots": 1,
+      "largestRootGap": 0,
+      "worstShiftSemitones": 22,
+      "meanShiftSemitones": 9.457142857142857,
+      "completeVelocityRoots": 1,
+      "velocityRootCompleteness": 1,
+      "maxRoundRobins": 4,
+      "orphanFiles": 0,
+      "payloadBytes": 2957679
+    },
+    "quality": {
+      "hardErrors": 0,
+      "reviewFlags": 0
+    },
+    "runtime": {
+      "eventsChecked": 4480,
+      "silentEvents": 0,
+      "maxPitchShiftSemitones": 22,
+      "deterministicRoundRobinGroups": 8
+    },
+    "reviewFindings": [],
+    "requiredAnchorIds": [
+      "low-soft",
+      "mid-medium",
+      "high-loud"
+    ],
+    "pitchSpanSemitones": 12,
+    "browser": {
+      "version": 1,
+      "chromium": true,
+      "webkit": true,
+      "entries": [
+        {
+          "browser": "chromium",
+          "file": "source-0001.m4a",
+          "ok": true,
+          "durationSec": 11.95360544217687,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.13740329444408417,
+          "energy": 0.00344049001987497
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0003.m4a",
+          "ok": true,
+          "durationSec": 14.598979591836734,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.11053244024515152,
+          "energy": 0.003925043517713488
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0004.m4a",
+          "ok": true,
+          "durationSec": 15.641609977324263,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.13230805099010468,
+          "energy": 0.004366135864310877
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0005.m4a",
+          "ok": true,
+          "durationSec": 11.375351473922903,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.19336429238319397,
+          "energy": 0.006203466867705032
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0006.m4a",
+          "ok": true,
+          "durationSec": 13.026893424036281,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.266216516494751,
+          "energy": 0.007335211905140867
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0007.m4a",
+          "ok": true,
+          "durationSec": 15.753492063492063,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.2397269308567047,
+          "energy": 0.007492655898031428
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0008.m4a",
+          "ok": true,
+          "durationSec": 16.921201814058957,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.31416940689086914,
+          "energy": 0.008920763145642729
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0009.m4a",
+          "ok": true,
+          "durationSec": 15.146598639455782,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.30531421303749084,
+          "energy": 0.009728259993269478
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0010.m4a",
+          "ok": true,
+          "durationSec": 16.253151927437642,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.323311984539032,
+          "energy": 0.009170646839147195
+        },
+        {
+          "browser": "chromium",
+          "file": "source-0002.m4a",
+          "ok": true,
+          "durationSec": 15.724240362811791,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.2996348738670349,
+          "energy": 0.010074898056213222
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0001.m4a",
+          "ok": true,
+          "durationSec": 11.95299319727891,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.12371615320444107,
+          "energy": 0.0034417003589935725
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0003.m4a",
+          "ok": true,
+          "durationSec": 14.598979591836734,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.10169822722673416,
+          "energy": 0.003924984211984576
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0004.m4a",
+          "ok": true,
+          "durationSec": 15.640997732426303,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.12535837292671204,
+          "energy": 0.004365390821086113
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0005.m4a",
+          "ok": true,
+          "durationSec": 11.37498866213152,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.1733056604862213,
+          "energy": 0.006203987634278224
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0006.m4a",
+          "ok": true,
+          "durationSec": 13.026984126984127,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.3169931471347809,
+          "energy": 0.0073426967168537674
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0007.m4a",
+          "ok": true,
+          "durationSec": 15.752993197278911,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.2543209195137024,
+          "energy": 0.007495711721542273
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0008.m4a",
+          "ok": true,
+          "durationSec": 16.920997732426304,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.2894667088985443,
+          "energy": 0.00892268534382641
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0009.m4a",
+          "ok": true,
+          "durationSec": 15.145986394557823,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.3053141236305237,
+          "energy": 0.009730173753228061
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0010.m4a",
+          "ok": true,
+          "durationSec": 16.25299319727891,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.31208935379981995,
+          "energy": 0.009174900620266126
+        },
+        {
+          "browser": "webkit",
+          "file": "source-0002.m4a",
+          "ok": true,
+          "durationSec": 15.723990929705215,
+          "channels": 2,
+          "sampleRate": 44100,
+          "peak": 0.31633079051971436,
+          "energy": 0.01007563100445125
+        }
+      ]
+    }
+  },
+  "coverageDelta": {
+    "mappings": 22,
+    "roots": 0,
+    "largestRootGap": 0,
+    "worstShiftSemitones": 0,
+    "meanShiftSemitones": 0,
+    "completeVelocityRoots": 0,
+    "velocityRootCompleteness": 0,
+    "maxRoundRobins": 3,
+    "orphanFiles": 0,
+    "payloadBytes": 2731850
+  },
+  "qualityDelta": {
+    "hardErrors": 0,
+    "reviewFlags": 0
+  },
+  "runtimeDelta": {
+    "eventsChecked": 0,
+    "silentEvents": 0,
+    "maxPitchShiftSemitones": 0,
+    "deterministicRoundRobinGroups": 8
+  }
+}

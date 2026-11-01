@@ -1,0 +1,5396 @@
+{
+  "version": 1,
+  "instrumentId": "alto-sax",
+  "hardErrors": 0,
+  "reviewFlags": 133,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0057.m4a",
+      "message": "DC offset -42.6 dBFS should be reviewed",
+      "value": -42.57208080504579,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0057.m4a",
+      "message": "Leading silence 23.5ms may feel late",
+      "value": 23.537414965986393,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0058.m4a",
+      "message": "DC offset -41.0 dBFS should be reviewed",
+      "value": -41.044927488404326,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0058.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0081.m4a",
+      "message": "DC offset -44.4 dBFS should be reviewed",
+      "value": -44.4264980469448,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0081.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0082.m4a",
+      "message": "DC offset -44.7 dBFS should be reviewed",
+      "value": -44.71234114797362,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0082.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0093.m4a",
+      "message": "DC offset -42.0 dBFS should be reviewed",
+      "value": -42.03278699787752,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0093.m4a",
+      "message": "Leading silence 24.1ms may feel late",
+      "value": 24.05895691609977,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0094.m4a",
+      "message": "DC offset -43.4 dBFS should be reviewed",
+      "value": -43.35385655337123,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0094.m4a",
+      "message": "Leading silence 23.1ms may feel late",
+      "value": 23.10657596371882,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0105.m4a",
+      "message": "DC offset -40.6 dBFS should be reviewed",
+      "value": -40.61982217371689,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0105.m4a",
+      "message": "Leading silence 24.0ms may feel late",
+      "value": 24.03628117913832,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0106.m4a",
+      "message": "Leading silence 24.0ms may feel late",
+      "value": 23.990929705215418,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "source-0106.m4a",
+      "message": "Tail remains -1.8 dB below peak at EOF; possible truncation",
+      "value": -1.785658555857029,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0001.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0002.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.26530612244898,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0021.m4a",
+      "message": "DC offset -43.9 dBFS should be reviewed",
+      "value": -43.94580077977706,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0021.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0022.m4a",
+      "message": "DC offset -43.2 dBFS should be reviewed",
+      "value": -43.15025637086637,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0022.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0061.m4a",
+      "message": "DC offset -46.3 dBFS should be reviewed",
+      "value": -46.26900944527344,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0061.m4a",
+      "message": "Leading silence 20.9ms may feel late",
+      "value": 20.907029478458053,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0062.m4a",
+      "message": "DC offset -53.5 dBFS should be reviewed",
+      "value": -53.50557543175769,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0062.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0085.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0086.m4a",
+      "message": "DC offset -49.8 dBFS should be reviewed",
+      "value": -49.768214049470515,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0086.m4a",
+      "message": "Leading silence 16.6ms may feel late",
+      "value": 16.643990929705218,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0097.m4a",
+      "message": "DC offset -59.6 dBFS should be reviewed",
+      "value": -59.5508733722032,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0097.m4a",
+      "message": "Leading silence 23.5ms may feel late",
+      "value": 23.514739229024944,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0098.m4a",
+      "message": "DC offset -42.8 dBFS should be reviewed",
+      "value": -42.782211258076146,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0098.m4a",
+      "message": "Leading silence 23.5ms may feel late",
+      "value": 23.49206349206349,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0109.m4a",
+      "message": "DC offset -45.8 dBFS should be reviewed",
+      "value": -45.82576471431472,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0109.m4a",
+      "message": "Leading silence 24.9ms may feel late",
+      "value": 24.89795918367347,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0110.m4a",
+      "message": "DC offset -51.9 dBFS should be reviewed",
+      "value": -51.94113015105419,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0110.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.26530612244898,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0005.m4a",
+      "message": "DC offset -41.1 dBFS should be reviewed",
+      "value": -41.051311210433575,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0005.m4a",
+      "message": "Leading silence 21.1ms may feel late",
+      "value": 21.088435374149658,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0006.m4a",
+      "message": "DC offset -45.8 dBFS should be reviewed",
+      "value": -45.77815438814326,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0006.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0025.m4a",
+      "message": "DC offset -43.6 dBFS should be reviewed",
+      "value": -43.64250565984295,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0025.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0026.m4a",
+      "message": "DC offset -43.3 dBFS should be reviewed",
+      "value": -43.33096495762014,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0026.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0065.m4a",
+      "message": "DC offset -44.4 dBFS should be reviewed",
+      "value": -44.391799242499744,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0065.m4a",
+      "message": "Leading silence 20.7ms may feel late",
+      "value": 20.725623582766442,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0066.m4a",
+      "message": "DC offset -43.7 dBFS should be reviewed",
+      "value": -43.65453113336517,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0066.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0089.m4a",
+      "message": "DC offset -43.2 dBFS should be reviewed",
+      "value": -43.19744094096849,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0089.m4a",
+      "message": "Leading silence 14.8ms may feel late",
+      "value": 14.784580498866212,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0090.m4a",
+      "message": "DC offset -43.7 dBFS should be reviewed",
+      "value": -43.68904886393862,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0090.m4a",
+      "message": "Leading silence 10.4ms may feel late",
+      "value": 10.408163265306122,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0101.m4a",
+      "message": "DC offset -45.7 dBFS should be reviewed",
+      "value": -45.65016841768092,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0101.m4a",
+      "message": "Leading silence 23.6ms may feel late",
+      "value": 23.560090702947846,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0102.m4a",
+      "message": "DC offset -46.3 dBFS should be reviewed",
+      "value": -46.33539303219401,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0102.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.310657596371883,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0113.m4a",
+      "message": "DC offset -49.0 dBFS should be reviewed",
+      "value": -48.95416371416414,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0113.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0114.m4a",
+      "message": "DC offset -46.8 dBFS should be reviewed",
+      "value": -46.825128108314175,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0114.m4a",
+      "message": "Leading silence 19.2ms may feel late",
+      "value": 19.160997732426303,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0017.m4a",
+      "message": "DC offset -49.8 dBFS should be reviewed",
+      "value": -49.80784477201799,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0017.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0018.m4a",
+      "message": "DC offset -48.9 dBFS should be reviewed",
+      "value": -48.92015291968801,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0018.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.356009070294785,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0059.m4a",
+      "message": "DC offset -50.3 dBFS should be reviewed",
+      "value": -50.2807813127675,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0059.m4a",
+      "message": "Leading silence 23.7ms may feel late",
+      "value": 23.741496598639454,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0060.m4a",
+      "message": "DC offset -50.2 dBFS should be reviewed",
+      "value": -50.24185252279578,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0060.m4a",
+      "message": "Leading silence 23.9ms may feel late",
+      "value": 23.877551020408163,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0083.m4a",
+      "message": "DC offset -47.2 dBFS should be reviewed",
+      "value": -47.20516399333023,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0083.m4a",
+      "message": "Leading silence 24.7ms may feel late",
+      "value": 24.671201814058957,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0084.m4a",
+      "message": "DC offset -48.3 dBFS should be reviewed",
+      "value": -48.31573958264033,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0084.m4a",
+      "message": "Leading silence 23.6ms may feel late",
+      "value": 23.560090702947846,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0095.m4a",
+      "message": "DC offset -49.1 dBFS should be reviewed",
+      "value": -49.08097787798063,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0095.m4a",
+      "message": "Leading silence 25.4ms may feel late",
+      "value": 25.419501133786845,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0096.m4a",
+      "message": "DC offset -46.3 dBFS should be reviewed",
+      "value": -46.32508297750626,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0096.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0107.m4a",
+      "message": "DC offset -59.1 dBFS should be reviewed",
+      "value": -59.05750165913125,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0107.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.333333333333336,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0108.m4a",
+      "message": "DC offset -47.5 dBFS should be reviewed",
+      "value": -47.488656811133225,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0108.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0003.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.333333333333336,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0004.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.424036281179138,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0023.m4a",
+      "message": "DC offset -42.7 dBFS should be reviewed",
+      "value": -42.73510823404382,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0023.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.378684807256235,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0024.m4a",
+      "message": "DC offset -44.7 dBFS should be reviewed",
+      "value": -44.744096808785834,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0024.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.424036281179138,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0063.m4a",
+      "message": "DC offset -52.0 dBFS should be reviewed",
+      "value": -51.974675412614474,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0063.m4a",
+      "message": "Leading silence 16.7ms may feel late",
+      "value": 16.73469387755102,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "source-0063.m4a",
+      "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+      "value": -0.9891308964768177,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0064.m4a",
+      "message": "DC offset -51.8 dBFS should be reviewed",
+      "value": -51.76785800546247,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0064.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0087.m4a",
+      "message": "DC offset -56.2 dBFS should be reviewed",
+      "value": -56.15119579499468,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0087.m4a",
+      "message": "Leading silence 20.6ms may feel late",
+      "value": 20.634920634920636,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0088.m4a",
+      "message": "DC offset -55.7 dBFS should be reviewed",
+      "value": -55.7370475182103,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0088.m4a",
+      "message": "Leading silence 13.0ms may feel late",
+      "value": 12.993197278911566,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0099.m4a",
+      "message": "DC offset -55.4 dBFS should be reviewed",
+      "value": -55.36959846718269,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0099.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0100.m4a",
+      "message": "DC offset -53.9 dBFS should be reviewed",
+      "value": -53.90807981905168,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0100.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.378684807256235,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0111.m4a",
+      "message": "DC offset -51.4 dBFS should be reviewed",
+      "value": -51.42680247351151,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0111.m4a",
+      "message": "Leading silence 24.0ms may feel late",
+      "value": 23.990929705215418,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0112.m4a",
+      "message": "DC offset -45.7 dBFS should be reviewed",
+      "value": -45.733595201218336,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0112.m4a",
+      "message": "Leading silence 23.5ms may feel late",
+      "value": 23.537414965986393,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0007.m4a",
+      "message": "DC offset -42.5 dBFS should be reviewed",
+      "value": -42.52934965712684,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0007.m4a",
+      "message": "Leading silence 23.6ms may feel late",
+      "value": 23.60544217687075,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0008.m4a",
+      "message": "DC offset -45.3 dBFS should be reviewed",
+      "value": -45.27236903384589,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0008.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0027.m4a",
+      "message": "DC offset -47.9 dBFS should be reviewed",
+      "value": -47.864386569737235,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0027.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0028.m4a",
+      "message": "DC offset -46.5 dBFS should be reviewed",
+      "value": -46.518754682481855,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0028.m4a",
+      "message": "Leading silence 14.9ms may feel late",
+      "value": 14.94331065759637,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0067.m4a",
+      "message": "DC offset -53.7 dBFS should be reviewed",
+      "value": -53.696278544908054,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0067.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.333333333333336,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "source-0067.m4a",
+      "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+      "value": -1.0006011269513546,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "alto-sax",
+      "file": "source-0067.m4a",
+      "message": "Estimated pitch is 12.0 cents from mapped note",
+      "value": 12.020688356579967,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0068.m4a",
+      "message": "DC offset -53.8 dBFS should be reviewed",
+      "value": -53.84472005620807,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0068.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0091.m4a",
+      "message": "DC offset -58.5 dBFS should be reviewed",
+      "value": -58.49610710645442,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0091.m4a",
+      "message": "Leading silence 14.9ms may feel late",
+      "value": 14.89795918367347,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0092.m4a",
+      "message": "DC offset -60.0 dBFS should be reviewed",
+      "value": -59.97351990181247,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0092.m4a",
+      "message": "Leading silence 15.1ms may feel late",
+      "value": 15.10204081632653,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0103.m4a",
+      "message": "DC offset -44.5 dBFS should be reviewed",
+      "value": -44.482767042109266,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0103.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0104.m4a",
+      "message": "DC offset -47.0 dBFS should be reviewed",
+      "value": -47.039723512131104,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0104.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0115.m4a",
+      "message": "DC offset -49.6 dBFS should be reviewed",
+      "value": -49.59251804217541,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0115.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.378684807256235,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0116.m4a",
+      "message": "DC offset -41.0 dBFS should be reviewed",
+      "value": -41.04526097967799,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0116.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "source-0019.m4a",
+      "message": "DC offset -50.3 dBFS should be reviewed",
+      "value": -50.31984633564127,
+      "threshold": -60
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0019.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.378684807256235,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "alto-sax",
+      "file": "source-0020.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.26530612244898,
+      "threshold": 10
+    }
+  ],
+  "entries": [
+    {
+      "file": "source-0057.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0057.m4a",
+        "note": 49,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5300437808036804,
+        "peakDb": -5.513765137185112,
+        "rmsDb": -13.930177702187068,
+        "activeRmsDb": -13.895287840886336,
+        "dcOffset": 0.007436968804000866,
+        "dcOffsetDb": -42.57208080504579,
+        "crestFactorDb": 8.381522703701222,
+        "leadingSilenceMs": 23.537414965986393,
+        "trailingSilenceMs": 16.780045351473923,
+        "attackMs": 538.185941043084,
+        "tailLevelDbRelPeak": -32.263621776147716,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.537414965986393,
+        "activeEndMs": 5021.927437641723,
+        "spectral": {
+          "centroidHz": 1342.3702646240206,
+          "highFrequencyRatio": 0.06400896137307184
+        },
+        "pitch": {
+          "midi": 49.01098039827877,
+          "frequencyHz": 138.67924528301887,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.9592237627916774
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0057.m4a",
+          "message": "DC offset -42.6 dBFS should be reviewed",
+          "value": -42.57208080504579,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0057.m4a",
+          "message": "Leading silence 23.5ms may feel late",
+          "value": 23.537414965986393,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0058.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0058.m4a",
+        "note": 49,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5884367823600769,
+        "peakDb": -4.606003759109917,
+        "rmsDb": -12.983831057480433,
+        "activeRmsDb": -12.94955192334169,
+        "dcOffset": 0.008866528728753823,
+        "dcOffsetDb": -41.044927488404326,
+        "crestFactorDb": 8.343548164231771,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 16.213151927437643,
+        "attackMs": 55.759637188208615,
+        "tailLevelDbRelPeak": -34.687682299426434,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 5022.49433106576,
+        "spectral": {
+          "centroidHz": 1585.446622730368,
+          "highFrequencyRatio": 0.08418551766102926
+        },
+        "pitch": {
+          "midi": 49.01098039827877,
+          "frequencyHz": 138.67924528301887,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.9586534674227538
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0058.m4a",
+          "message": "DC offset -41.0 dBFS should be reviewed",
+          "value": -41.044927488404326,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0058.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0081.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0081.m4a",
+        "note": 51,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6679379940032959,
+        "peakDb": -3.505277041270656,
+        "rmsDb": -12.963264168493565,
+        "activeRmsDb": -12.928669865286935,
+        "dcOffset": 0.006007241584009102,
+        "dcOffsetDb": -44.4264980469448,
+        "crestFactorDb": 9.423392824016279,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 16.757369614512474,
+        "attackMs": 98.27664399092971,
+        "tailLevelDbRelPeak": -29.849157444764714,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 5021.950113378684,
+        "spectral": {
+          "centroidHz": 1078.162960575548,
+          "highFrequencyRatio": 0.04673735477857428
+        },
+        "pitch": {
+          "midi": 51.02967694770844,
+          "frequencyHz": 155.8303886925795,
+          "rawCents": 2.9676947708438206,
+          "foldedCents": 2.9676947708437638,
+          "confidence": 0.9666636748352052
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0081.m4a",
+          "message": "DC offset -44.4 dBFS should be reviewed",
+          "value": -44.4264980469448,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0081.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0082.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0082.m4a",
+        "note": 51,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6860512495040894,
+        "peakDb": -3.2728688069883303,
+        "rmsDb": -12.604530886854713,
+        "activeRmsDb": -12.570330545849199,
+        "dcOffset": 0.005812767369868569,
+        "dcOffsetDb": -44.71234114797362,
+        "crestFactorDb": 9.297461738860871,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 16.235827664399093,
+        "attackMs": 98.79818594104309,
+        "tailLevelDbRelPeak": -30.782404431379877,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5022.471655328798,
+        "spectral": {
+          "centroidHz": 1121.6296907340543,
+          "highFrequencyRatio": 0.05110430838187096
+        },
+        "pitch": {
+          "midi": 50.96861042763484,
+          "frequencyHz": 155.28169014084506,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9671660695693693
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0082.m4a",
+          "message": "DC offset -44.7 dBFS should be reviewed",
+          "value": -44.71234114797362,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0082.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0093.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0093.m4a",
+        "note": 53,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.108390022675737,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5465589761734009,
+        "peakDb": -5.247259377131254,
+        "rmsDb": -13.561284095166954,
+        "activeRmsDb": -13.534695689286249,
+        "dcOffset": 0.007913355020275526,
+        "dcOffsetDb": -42.03278699787752,
+        "crestFactorDb": 8.287436312154995,
+        "leadingSilenceMs": 24.05895691609977,
+        "trailingSilenceMs": 7.120181405895692,
+        "attackMs": 608.0725623582766,
+        "tailLevelDbRelPeak": -0.3855740466515425,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.05895691609977,
+        "activeEndMs": 5101.24716553288,
+        "spectral": {
+          "centroidHz": 1119.9053774949239,
+          "highFrequencyRatio": 0.04614844389816756
+        },
+        "pitch": {
+          "midi": 52.9696529653593,
+          "frequencyHz": 174.3083003952569,
+          "rawCents": -3.034703464069821,
+          "foldedCents": -3.034703464069821,
+          "confidence": 0.9720128608566834
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0093.m4a",
+          "message": "DC offset -42.0 dBFS should be reviewed",
+          "value": -42.03278699787752,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0093.m4a",
+          "message": "Leading silence 24.1ms may feel late",
+          "value": 24.05895691609977,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0094.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0094.m4a",
+        "note": 53,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.544276773929596,
+        "peakDb": -5.283603961074705,
+        "rmsDb": -13.56626247360121,
+        "activeRmsDb": -13.537003847488078,
+        "dcOffset": 0.006796841967766555,
+        "dcOffsetDb": -43.35385655337123,
+        "crestFactorDb": 8.253399886413373,
+        "leadingSilenceMs": 23.10657596371882,
+        "trailingSilenceMs": 10.72562358276644,
+        "attackMs": 64.58049886621316,
+        "tailLevelDbRelPeak": -0.8029385280017955,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.10657596371882,
+        "activeEndMs": 5027.981859410431,
+        "spectral": {
+          "centroidHz": 1151.8768162697288,
+          "highFrequencyRatio": 0.04983792147934434
+        },
+        "pitch": {
+          "midi": 53.03821677969203,
+          "frequencyHz": 175,
+          "rawCents": 3.8216779692028524,
+          "foldedCents": 3.821677969202824,
+          "confidence": 0.9734786522520698
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0094.m4a",
+          "message": "DC offset -43.4 dBFS should be reviewed",
+          "value": -43.35385655337123,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0094.m4a",
+          "message": "Leading silence 23.1ms may feel late",
+          "value": 23.10657596371882,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0105.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0105.m4a",
+        "note": 55,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 4.504671201814059,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5926370620727539,
+        "peakDb": -4.54422384583428,
+        "rmsDb": -12.634532673061559,
+        "activeRmsDb": -12.604918780134467,
+        "dcOffset": 0.009311269382414196,
+        "dcOffsetDb": -40.61982217371689,
+        "crestFactorDb": 8.060694934300187,
+        "leadingSilenceMs": 24.03628117913832,
+        "trailingSilenceMs": 6.575963718820862,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.352577059279685,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.03628117913832,
+        "activeEndMs": 4498.072562358277,
+        "spectral": {
+          "centroidHz": 1539.84561433178,
+          "highFrequencyRatio": 0.08669840084677784
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9801448155469272
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0105.m4a",
+          "message": "DC offset -40.6 dBFS should be reviewed",
+          "value": -40.61982217371689,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0105.m4a",
+          "message": "Leading silence 24.0ms may feel late",
+          "value": 24.03628117913832,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0106.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0106.m4a",
+        "note": 55,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 4.458231292517007,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5932846069335938,
+        "peakDb": -4.534738390086369,
+        "rmsDb": -12.866738423917624,
+        "activeRmsDb": -12.842949447255329,
+        "dcOffset": -0.00000843725282603921,
+        "dcOffsetDb": -101.4759787374041,
+        "crestFactorDb": 8.30821105716896,
+        "leadingSilenceMs": 23.990929705215418,
+        "trailingSilenceMs": 0.36281179138321995,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -1.785658555857029,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.990929705215418,
+        "activeEndMs": 4457.845804988662,
+        "spectral": {
+          "centroidHz": 1762.671924413367,
+          "highFrequencyRatio": 0.10448416755928966
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9800960637782027
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0106.m4a",
+          "message": "Leading silence 24.0ms may feel late",
+          "value": 23.990929705215418,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "source-0106.m4a",
+          "message": "Tail remains -1.8 dB below peak at EOF; possible truncation",
+          "value": -1.785658555857029,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "source-0001.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0001.m4a",
+        "note": 57,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.56045001745224,
+        "peakDb": -5.029262259510677,
+        "rmsDb": -12.713425279126572,
+        "activeRmsDb": -12.679402222587095,
+        "dcOffset": -0.000011102543123762905,
+        "dcOffsetDb": -99.09155062586277,
+        "crestFactorDb": 7.650139963076416,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 16.03174603174603,
+        "attackMs": 139.63718820861678,
+        "tailLevelDbRelPeak": -35.68060350923033,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5022.675736961452,
+        "spectral": {
+          "centroidHz": 1783.4990591888966,
+          "highFrequencyRatio": 0.09481240245327058
+        },
+        "pitch": {
+          "midi": 57.03930158439433,
+          "frequencyHz": 220.5,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9832867805123717
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0001.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0002.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0002.m4a",
+        "note": 57,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6085751056671143,
+        "peakDb": -4.313716336715318,
+        "rmsDb": -12.251293869065183,
+        "activeRmsDb": -12.216738933872886,
+        "dcOffset": 0.00001400857141983829,
+        "dcOffsetDb": -97.07212302749684,
+        "crestFactorDb": 7.903022597157569,
+        "leadingSilenceMs": 23.26530612244898,
+        "trailingSilenceMs": 16.666666666666668,
+        "attackMs": 120.18140589569161,
+        "tailLevelDbRelPeak": -31.536297681319002,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.26530612244898,
+        "activeEndMs": 5022.04081632653,
+        "spectral": {
+          "centroidHz": 1681.2322031424471,
+          "highFrequencyRatio": 0.0858286432026838
+        },
+        "pitch": {
+          "midi": 57.03930158439433,
+          "frequencyHz": 220.5,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9834289577518507
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0002.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.26530612244898,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0021.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0021.m4a",
+        "note": 59,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.44674789905548096,
+        "peakDb": -6.99874962393408,
+        "rmsDb": -15.521319162001411,
+        "activeRmsDb": -15.48731583668079,
+        "dcOffset": 0.006349067744405924,
+        "dcOffsetDb": -43.94580077977706,
+        "crestFactorDb": 8.48856621274671,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 16.05442176870748,
+        "attackMs": 42.56235827664399,
+        "tailLevelDbRelPeak": -28.89226489374693,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 5022.65306122449,
+        "spectral": {
+          "centroidHz": 2103.43624219558,
+          "highFrequencyRatio": 0.139056177744376
+        },
+        "pitch": {
+          "midi": 59.05677469009426,
+          "frequencyHz": 247.75280898876406,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9843447625268239
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0021.m4a",
+          "message": "DC offset -43.9 dBFS should be reviewed",
+          "value": -43.94580077977706,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0021.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0022.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0022.m4a",
+        "note": 59,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.49748122692108154,
+        "peakDb": -6.064466065135502,
+        "rmsDb": -15.175786676475397,
+        "activeRmsDb": -15.14190154322385,
+        "dcOffset": 0.006958044171827124,
+        "dcOffsetDb": -43.15025637086637,
+        "crestFactorDb": 9.077435478088349,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 15.918367346938776,
+        "attackMs": 53.197278911564624,
+        "tailLevelDbRelPeak": -32.50479135531024,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 5022.789115646258,
+        "spectral": {
+          "centroidHz": 2597.9847050420717,
+          "highFrequencyRatio": 0.20541093754720768
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9843291988254861
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0022.m4a",
+          "message": "DC offset -43.2 dBFS should be reviewed",
+          "value": -43.15025637086637,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0022.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0061.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0061.m4a",
+        "note": 61,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.45407459139823914,
+        "peakDb": -6.85745598374983,
+        "rmsDb": -16.13854523544445,
+        "activeRmsDb": -16.106629454031168,
+        "dcOffset": 0.004859029410372126,
+        "dcOffsetDb": -46.26900944527344,
+        "crestFactorDb": 9.24917347028134,
+        "leadingSilenceMs": 20.907029478458053,
+        "trailingSilenceMs": 15.986394557823129,
+        "attackMs": 369.27437641723355,
+        "tailLevelDbRelPeak": -28.479725820930835,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 20.907029478458053,
+        "activeEndMs": 5022.721088435374,
+        "spectral": {
+          "centroidHz": 2647.6089094193107,
+          "highFrequencyRatio": 0.21588522510580224
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9897640694690525
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0061.m4a",
+          "message": "DC offset -46.3 dBFS should be reviewed",
+          "value": -46.26900944527344,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0061.m4a",
+          "message": "Leading silence 20.9ms may feel late",
+          "value": 20.907029478458053,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0062.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0062.m4a",
+        "note": 61,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4457811117172241,
+        "peakDb": -7.017566740927505,
+        "rmsDb": -15.999416225553897,
+        "activeRmsDb": -15.965491710464722,
+        "dcOffset": 0.0021121328364667033,
+        "dcOffsetDb": -53.50557543175769,
+        "crestFactorDb": 8.947924969537215,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 15.96371882086168,
+        "attackMs": 199.61451247165533,
+        "tailLevelDbRelPeak": -31.940793954427278,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 5022.743764172335,
+        "spectral": {
+          "centroidHz": 2510.6513397635417,
+          "highFrequencyRatio": 0.19314952553844408
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9895686749254015
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0062.m4a",
+          "message": "DC offset -53.5 dBFS should be reviewed",
+          "value": -53.50557543175769,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0062.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0085.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0085.m4a",
+        "note": 63,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3703571856021881,
+        "peakDb": -8.627584496575206,
+        "rmsDb": -16.262303116490052,
+        "activeRmsDb": -16.228260406200576,
+        "dcOffset": 0.0005926951246975576,
+        "dcOffsetDb": -64.54337290201082,
+        "crestFactorDb": 7.6006759096253695,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 16.122448979591837,
+        "attackMs": 46.75736961451247,
+        "tailLevelDbRelPeak": -28.382739323659074,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 5022.585034013606,
+        "spectral": {
+          "centroidHz": 2834.726449665591,
+          "highFrequencyRatio": 0.21785314674489584
+        },
+        "pitch": {
+          "midi": 62.96861042763484,
+          "frequencyHz": 310.5633802816901,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9893156056798271
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0085.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0086.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0086.m4a",
+        "note": 63,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.36398959159851074,
+        "peakDb": -8.778220699324457,
+        "rmsDb": -16.60739181181717,
+        "activeRmsDb": -16.579215211291928,
+        "dcOffset": 0.0032478001499538713,
+        "dcOffsetDb": -49.768214049470515,
+        "crestFactorDb": 7.8009945119674695,
+        "leadingSilenceMs": 16.643990929705218,
+        "trailingSilenceMs": 15.941043083900226,
+        "attackMs": 38.140589569161,
+        "tailLevelDbRelPeak": -33.145417359727006,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 16.643990929705218,
+        "activeEndMs": 5022.766439909297,
+        "spectral": {
+          "centroidHz": 2851.436720029965,
+          "highFrequencyRatio": 0.22790447290936086
+        },
+        "pitch": {
+          "midi": 62.96861042763484,
+          "frequencyHz": 310.5633802816901,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9904819176063964
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0086.m4a",
+          "message": "DC offset -49.8 dBFS should be reviewed",
+          "value": -49.768214049470515,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0086.m4a",
+          "message": "Leading silence 16.6ms may feel late",
+          "value": 16.643990929705218,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0097.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0097.m4a",
+        "note": 65,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6031256914138794,
+        "peakDb": -4.39184342886862,
+        "rmsDb": -11.300962103963826,
+        "activeRmsDb": -11.266860242478657,
+        "dcOffset": -0.0010530677951118043,
+        "dcOffsetDb": -59.5508733722032,
+        "crestFactorDb": 6.875016813610038,
+        "leadingSilenceMs": 23.514739229024944,
+        "trailingSilenceMs": 15.895691609977325,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -29.860758278328664,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.514739229024944,
+        "activeEndMs": 5022.81179138322,
+        "spectral": {
+          "centroidHz": 1414.9226894796195,
+          "highFrequencyRatio": 0.08044353917030476
+        },
+        "pitch": {
+          "midi": 65.03821677969204,
+          "frequencyHz": 350,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9931948187026757
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0097.m4a",
+          "message": "DC offset -59.6 dBFS should be reviewed",
+          "value": -59.5508733722032,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0097.m4a",
+          "message": "Leading silence 23.5ms may feel late",
+          "value": 23.514739229024944,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0098.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0098.m4a",
+        "note": 65,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.49902042746543884,
+        "peakDb": -6.037633522244099,
+        "rmsDb": -12.031273254607875,
+        "activeRmsDb": -11.997072895717258,
+        "dcOffset": -0.007259211285496225,
+        "dcOffsetDb": -42.782211258076146,
+        "crestFactorDb": 5.959439373473156,
+        "leadingSilenceMs": 23.49206349206349,
+        "trailingSilenceMs": 16.03174603174603,
+        "attackMs": 37.32426303854875,
+        "tailLevelDbRelPeak": -29.615219735741185,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.49206349206349,
+        "activeEndMs": 5022.675736961452,
+        "spectral": {
+          "centroidHz": 1358.7492743274238,
+          "highFrequencyRatio": 0.07028694588300037
+        },
+        "pitch": {
+          "midi": 65.03821677969204,
+          "frequencyHz": 350,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9932118970027933
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0098.m4a",
+          "message": "DC offset -42.8 dBFS should be reviewed",
+          "value": -42.782211258076146,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0098.m4a",
+          "message": "Leading silence 23.5ms may feel late",
+          "value": 23.49206349206349,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0109.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0109.m4a",
+        "note": 67,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5953564643859863,
+        "peakDb": -4.504458528761211,
+        "rmsDb": -11.163463588419326,
+        "activeRmsDb": -11.127765859203457,
+        "dcOffset": 0.005113423514917788,
+        "dcOffsetDb": -45.82576471431472,
+        "crestFactorDb": 6.623307330442247,
+        "leadingSilenceMs": 24.89795918367347,
+        "trailingSilenceMs": 16.349206349206348,
+        "attackMs": 42.01814058956916,
+        "tailLevelDbRelPeak": -28.251939907388778,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.89795918367347,
+        "activeEndMs": 5022.358276643991,
+        "spectral": {
+          "centroidHz": 2006.9674255729326,
+          "highFrequencyRatio": 0.12448633535988475
+        },
+        "pitch": {
+          "midi": 66.92342831270878,
+          "frequencyHz": 390.2654867256637,
+          "rawCents": -7.657168729122077,
+          "foldedCents": -7.657168729122077,
+          "confidence": 0.9938001805451286
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0109.m4a",
+          "message": "DC offset -45.8 dBFS should be reviewed",
+          "value": -45.82576471431472,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0109.m4a",
+          "message": "Leading silence 24.9ms may feel late",
+          "value": 24.89795918367347,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0110.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0110.m4a",
+        "note": 67,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6252663135528564,
+        "peakDb": -4.0786993692043545,
+        "rmsDb": -10.261269260069955,
+        "activeRmsDb": -10.227029529552398,
+        "dcOffset": 0.002528968922170475,
+        "dcOffsetDb": -51.94113015105419,
+        "crestFactorDb": 6.148330160348044,
+        "leadingSilenceMs": 23.26530612244898,
+        "trailingSilenceMs": 16.303854875283445,
+        "attackMs": 46.507936507936506,
+        "tailLevelDbRelPeak": -27.456304498145073,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.26530612244898,
+        "activeEndMs": 5022.403628117914,
+        "spectral": {
+          "centroidHz": 2025.2688020799221,
+          "highFrequencyRatio": 0.13027458707939438
+        },
+        "pitch": {
+          "midi": 67.07731679699978,
+          "frequencyHz": 393.75,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9933079446031874
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0110.m4a",
+          "message": "DC offset -51.9 dBFS should be reviewed",
+          "value": -51.94113015105419,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0110.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.26530612244898,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0005.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0005.m4a",
+        "note": 69,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.464438259601593,
+        "peakDb": -6.661440220984639,
+        "rmsDb": -11.47818516796648,
+        "activeRmsDb": -11.446269304392917,
+        "dcOffset": 0.008860014639522658,
+        "dcOffsetDb": -41.051311210433575,
+        "crestFactorDb": 4.784829083408279,
+        "leadingSilenceMs": 21.088435374149658,
+        "trailingSilenceMs": 15.80498866213152,
+        "attackMs": 41.88208616780045,
+        "tailLevelDbRelPeak": -28.491788451141513,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 21.088435374149658,
+        "activeEndMs": 5022.902494331066,
+        "spectral": {
+          "centroidHz": 1739.3606917752782,
+          "highFrequencyRatio": 0.0937378792419072
+        },
+        "pitch": {
+          "midi": 69.03930158439434,
+          "frequencyHz": 441,
+          "rawCents": 3.9301584394337397,
+          "foldedCents": 3.9301584394337397,
+          "confidence": 0.9956748536022629
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0005.m4a",
+          "message": "DC offset -41.1 dBFS should be reviewed",
+          "value": -41.051311210433575,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0005.m4a",
+          "message": "Leading silence 21.1ms may feel late",
+          "value": 21.088435374149658,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0006.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0006.m4a",
+        "note": 69,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.635890543460846,
+        "peakDb": -3.932352670112604,
+        "rmsDb": -10.24218711332156,
+        "activeRmsDb": -10.208380721117562,
+        "dcOffset": 0.005141528891964565,
+        "dcOffsetDb": -45.77815438814326,
+        "crestFactorDb": 6.276028051004959,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 15.850340136054422,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -29.969965718809274,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 5022.857142857143,
+        "spectral": {
+          "centroidHz": 1795.9752319032057,
+          "highFrequencyRatio": 0.09866362403035461
+        },
+        "pitch": {
+          "midi": 69.03930158439434,
+          "frequencyHz": 441,
+          "rawCents": 3.9301584394337397,
+          "foldedCents": 3.9301584394337397,
+          "confidence": 0.9953822904822351
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0006.m4a",
+          "message": "DC offset -45.8 dBFS should be reviewed",
+          "value": -45.77815438814326,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0006.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0025.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0025.m4a",
+        "note": 71,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3962641656398773,
+        "peakDb": -8.040303987003426,
+        "rmsDb": -15.33777805489352,
+        "activeRmsDb": -15.303755023571002,
+        "dcOffset": 0.006574681470368707,
+        "dcOffsetDb": -43.64250565984295,
+        "crestFactorDb": 7.263451036567576,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 16.077097505668934,
+        "attackMs": 51.8140589569161,
+        "tailLevelDbRelPeak": -29.764656375866938,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 5022.630385487529,
+        "spectral": {
+          "centroidHz": 1875.5427943562759,
+          "highFrequencyRatio": 0.10747855455595298
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9958126541403153
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0025.m4a",
+          "message": "DC offset -43.6 dBFS should be reviewed",
+          "value": -43.64250565984295,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0025.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0026.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0026.m4a",
+        "note": 71,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3578939437866211,
+        "peakDb": -8.924913011931977,
+        "rmsDb": -15.14943117497735,
+        "activeRmsDb": -15.115486936225045,
+        "dcOffset": 0.006814778618392134,
+        "dcOffsetDb": -43.33096495762014,
+        "crestFactorDb": 6.1905739242930675,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 16.00907029478458,
+        "attackMs": 37.2562358276644,
+        "tailLevelDbRelPeak": -30.347332101389213,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 5022.6984126984125,
+        "spectral": {
+          "centroidHz": 1944.3698619715626,
+          "highFrequencyRatio": 0.11510605522596955
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9959396736584893
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0026.m4a",
+          "message": "DC offset -43.3 dBFS should be reviewed",
+          "value": -43.33096495762014,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0026.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0065.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0065.m4a",
+        "note": 73,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.40463516116142273,
+        "peakDb": -7.858727629776831,
+        "rmsDb": -15.174973879265362,
+        "activeRmsDb": -15.142939913198369,
+        "dcOffset": 0.006031287596087536,
+        "dcOffsetDb": -44.391799242499744,
+        "crestFactorDb": 7.284212283421539,
+        "leadingSilenceMs": 20.725623582766442,
+        "trailingSilenceMs": 16.303854875283445,
+        "attackMs": 22.312925170068027,
+        "tailLevelDbRelPeak": -30.650378933942267,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 20.725623582766442,
+        "activeEndMs": 5022.403628117914,
+        "spectral": {
+          "centroidHz": 2750.539152846683,
+          "highFrequencyRatio": 0.17224661313965214
+        },
+        "pitch": {
+          "midi": 72.90243872304268,
+          "frequencyHz": 551.25,
+          "rawCents": -9.756127695732175,
+          "foldedCents": -9.756127695732175,
+          "confidence": 0.9921792006059779
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0065.m4a",
+          "message": "DC offset -44.4 dBFS should be reviewed",
+          "value": -44.391799242499744,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0065.m4a",
+          "message": "Leading silence 20.7ms may feel late",
+          "value": 20.725623582766442,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0066.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0066.m4a",
+        "note": 73,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4354426860809326,
+        "peakDb": -7.221379993692473,
+        "rmsDb": -14.799883656963175,
+        "activeRmsDb": -14.765900013255253,
+        "dcOffset": 0.006565585228612984,
+        "dcOffsetDb": -43.65453113336517,
+        "crestFactorDb": 7.544520019562782,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 16.03174603174603,
+        "attackMs": 23.378684807256235,
+        "tailLevelDbRelPeak": -29.92600609835254,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 5022.675736961452,
+        "spectral": {
+          "centroidHz": 2570.8364138821858,
+          "highFrequencyRatio": 0.1462155858716463
+        },
+        "pitch": {
+          "midi": 72.90243872304268,
+          "frequencyHz": 551.25,
+          "rawCents": -9.756127695732175,
+          "foldedCents": -9.756127695732175,
+          "confidence": 0.9927213159752245
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0066.m4a",
+          "message": "DC offset -43.7 dBFS should be reviewed",
+          "value": -43.65453113336517,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0066.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0089.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0089.m4a",
+        "note": 75,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3628842830657959,
+        "peakDb": -8.80463682367756,
+        "rmsDb": -15.465356735577632,
+        "activeRmsDb": -15.43875356067377,
+        "dcOffset": -0.006920348299591775,
+        "dcOffsetDb": -43.19744094096849,
+        "crestFactorDb": 6.6341167369962095,
+        "leadingSilenceMs": 14.784580498866212,
+        "trailingSilenceMs": 15.986394557823129,
+        "attackMs": 39.002267573696145,
+        "tailLevelDbRelPeak": -26.749954295541233,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 14.784580498866212,
+        "activeEndMs": 5022.721088435374,
+        "spectral": {
+          "centroidHz": 2775.7847761342964,
+          "highFrequencyRatio": 0.23148734519528372
+        },
+        "pitch": {
+          "midi": 74.96861042763484,
+          "frequencyHz": 621.1267605633802,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9975088115728304
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0089.m4a",
+          "message": "DC offset -43.2 dBFS should be reviewed",
+          "value": -43.19744094096849,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0089.m4a",
+          "message": "Leading silence 14.8ms may feel late",
+          "value": 14.784580498866212,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0090.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0090.m4a",
+        "note": 75,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3648439347743988,
+        "peakDb": -8.757857382684533,
+        "rmsDb": -16.10224230681478,
+        "activeRmsDb": -16.079432745918364,
+        "dcOffset": -0.00653954536450792,
+        "dcOffsetDb": -43.68904886393862,
+        "crestFactorDb": 7.321575363233833,
+        "leadingSilenceMs": 10.408163265306122,
+        "trailingSilenceMs": 15.986394557823129,
+        "attackMs": 44.98866213151927,
+        "tailLevelDbRelPeak": -28.1160093488567,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 10.408163265306122,
+        "activeEndMs": 5022.721088435374,
+        "spectral": {
+          "centroidHz": 2962.7064629972147,
+          "highFrequencyRatio": 0.25925242659754
+        },
+        "pitch": {
+          "midi": 74.96861042763484,
+          "frequencyHz": 621.1267605633802,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9973307682250127
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0090.m4a",
+          "message": "DC offset -43.7 dBFS should be reviewed",
+          "value": -43.68904886393862,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0090.m4a",
+          "message": "Leading silence 10.4ms may feel late",
+          "value": 10.408163265306122,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0101.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0101.m4a",
+        "note": 77,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.41504380106925964,
+        "peakDb": -7.638121364125095,
+        "rmsDb": -14.40518492288562,
+        "activeRmsDb": -14.370787605179835,
+        "dcOffset": -0.005217849868332952,
+        "dcOffsetDb": -45.65016841768092,
+        "crestFactorDb": 6.73266624105474,
+        "leadingSilenceMs": 23.560090702947846,
+        "trailingSilenceMs": 16.19047619047619,
+        "attackMs": 141.51927437641723,
+        "tailLevelDbRelPeak": -27.332675890304152,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.560090702947846,
+        "activeEndMs": 5022.517006802721,
+        "spectral": {
+          "centroidHz": 2909.427156963168,
+          "highFrequencyRatio": 0.17608409132611755
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9974074143363599
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0101.m4a",
+          "message": "DC offset -45.7 dBFS should be reviewed",
+          "value": -45.65016841768092,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0101.m4a",
+          "message": "Leading silence 23.6ms may feel late",
+          "value": 23.560090702947846,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0102.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0102.m4a",
+        "note": 77,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3906548321247101,
+        "peakDb": -8.164135988095726,
+        "rmsDb": -14.937554112847355,
+        "activeRmsDb": -14.903176478532352,
+        "dcOffset": -0.004822034889830918,
+        "dcOffsetDb": -46.33539303219401,
+        "crestFactorDb": 6.7390404904366275,
+        "leadingSilenceMs": 23.310657596371883,
+        "trailingSilenceMs": 16.417233560090704,
+        "attackMs": 77.14285714285714,
+        "tailLevelDbRelPeak": -26.750263982263263,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.310657596371883,
+        "activeEndMs": 5022.290249433107,
+        "spectral": {
+          "centroidHz": 2838.6512137622503,
+          "highFrequencyRatio": 0.1940563622787093
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.997152024748143
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0102.m4a",
+          "message": "DC offset -46.3 dBFS should be reviewed",
+          "value": -46.33539303219401,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0102.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.310657596371883,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0113.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0113.m4a",
+        "note": 79,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.38368669152259827,
+        "peakDb": -8.32046528778428,
+        "rmsDb": -14.153795159211764,
+        "activeRmsDb": -14.11992969340105,
+        "dcOffset": -0.0035669072313629408,
+        "dcOffsetDb": -48.95416371416414,
+        "crestFactorDb": 5.79946440561677,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 15.895691609977325,
+        "attackMs": 39.43310657596372,
+        "tailLevelDbRelPeak": -28.886535922195197,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 5022.81179138322,
+        "spectral": {
+          "centroidHz": 2878.558207805035,
+          "highFrequencyRatio": 0.1920721581988913
+        },
+        "pitch": {
+          "midi": 79.07731679699978,
+          "frequencyHz": 787.5,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9970351651436608
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0113.m4a",
+          "message": "DC offset -49.0 dBFS should be reviewed",
+          "value": -48.95416371416414,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0113.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0114.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0114.m4a",
+        "note": 79,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3419659733772278,
+        "peakDb": -9.320342107514113,
+        "rmsDb": -14.662494315936073,
+        "activeRmsDb": -14.632192628431334,
+        "dcOffset": -0.004557677533689551,
+        "dcOffsetDb": -46.825128108314175,
+        "crestFactorDb": 5.311850520917219,
+        "leadingSilenceMs": 19.160997732426303,
+        "trailingSilenceMs": 15.873015873015872,
+        "attackMs": 603.4240362811792,
+        "tailLevelDbRelPeak": -28.54844110382235,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 19.160997732426303,
+        "activeEndMs": 5022.834467120181,
+        "spectral": {
+          "centroidHz": 2518.389784255103,
+          "highFrequencyRatio": 0.1596503598505725
+        },
+        "pitch": {
+          "midi": 79.07731679699978,
+          "frequencyHz": 787.5,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9970428711788485
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0114.m4a",
+          "message": "DC offset -46.8 dBFS should be reviewed",
+          "value": -46.825128108314175,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0114.m4a",
+          "message": "Leading silence 19.2ms may feel late",
+          "value": 19.160997732426303,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0017.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0017.m4a",
+        "note": 80,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.299324095249176,
+        "peakDb": -10.477166430816725,
+        "rmsDb": -16.4427196299448,
+        "activeRmsDb": -16.408676883069752,
+        "dcOffset": -0.003233015311292577,
+        "dcOffsetDb": -49.80784477201799,
+        "crestFactorDb": 5.931510452253028,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 15.941043083900226,
+        "attackMs": 49.09297052154195,
+        "tailLevelDbRelPeak": -26.794945168776415,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 5022.766439909297,
+        "spectral": {
+          "centroidHz": 3121.368457040891,
+          "highFrequencyRatio": 0.22839383178786243
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9978094143653341
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0017.m4a",
+          "message": "DC offset -49.8 dBFS should be reviewed",
+          "value": -49.80784477201799,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0017.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0018.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0018.m4a",
+        "note": 80,
+        "velocityMin": 64,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3492991328239441,
+        "peakDb": -9.136049850959829,
+        "rmsDb": -16.32147932808808,
+        "activeRmsDb": -16.287259287332333,
+        "dcOffset": -0.0035809013268067306,
+        "dcOffsetDb": -48.92015291968801,
+        "crestFactorDb": 7.151209436372506,
+        "leadingSilenceMs": 23.356009070294785,
+        "trailingSilenceMs": 16.19047619047619,
+        "attackMs": 299.34240362811795,
+        "tailLevelDbRelPeak": -30.280763097156125,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.356009070294785,
+        "activeEndMs": 5022.517006802721,
+        "spectral": {
+          "centroidHz": 2948.214381417438,
+          "highFrequencyRatio": 0.21746870566859877
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9984305633692976
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0018.m4a",
+          "message": "DC offset -48.9 dBFS should be reviewed",
+          "value": -48.92015291968801,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0018.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.356009070294785,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0059.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0059.m4a",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.34417980909347534,
+        "peakDb": -9.264292212794908,
+        "rmsDb": -17.372125014721693,
+        "activeRmsDb": -17.335934641096465,
+        "dcOffset": 0.0030616880164762127,
+        "dcOffsetDb": -50.2807813127675,
+        "crestFactorDb": 8.07164242830156,
+        "leadingSilenceMs": 23.741496598639454,
+        "trailingSilenceMs": 18.072562358276645,
+        "attackMs": 412.10884353741494,
+        "tailLevelDbRelPeak": -31.842345106385793,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.741496598639454,
+        "activeEndMs": 5020.6349206349205,
+        "spectral": {
+          "centroidHz": 1364.2879809737208,
+          "highFrequencyRatio": 0.0794103864394851
+        },
+        "pitch": {
+          "midi": 49.01098039827877,
+          "frequencyHz": 138.67924528301887,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.9605544257773801
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0059.m4a",
+          "message": "DC offset -50.3 dBFS should be reviewed",
+          "value": -50.2807813127675,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0059.m4a",
+          "message": "Leading silence 23.7ms may feel late",
+          "value": 23.741496598639454,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0060.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0060.m4a",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3541521728038788,
+        "peakDb": -9.01620178724604,
+        "rmsDb": -17.61134859620121,
+        "activeRmsDb": -17.57492172707034,
+        "dcOffset": 0.0030754408160968234,
+        "dcOffsetDb": -50.24185252279578,
+        "crestFactorDb": 8.5587199398243,
+        "leadingSilenceMs": 23.877551020408163,
+        "trailingSilenceMs": 18.20861678004535,
+        "attackMs": 281.8140589569161,
+        "tailLevelDbRelPeak": -32.925609701298804,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.877551020408163,
+        "activeEndMs": 5020.498866213152,
+        "spectral": {
+          "centroidHz": 1038.7396348701632,
+          "highFrequencyRatio": 0.04885459416783022
+        },
+        "pitch": {
+          "midi": 49.01098039827877,
+          "frequencyHz": 138.67924528301887,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.9612172122607842
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0060.m4a",
+          "message": "DC offset -50.2 dBFS should be reviewed",
+          "value": -50.24185252279578,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0060.m4a",
+          "message": "Leading silence 23.9ms may feel late",
+          "value": 23.877551020408163,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0083.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0083.m4a",
+        "note": 51,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4409070909023285,
+        "peakDb": -7.113058331253569,
+        "rmsDb": -17.381567161936,
+        "activeRmsDb": -17.345219123903806,
+        "dcOffset": 0.0043625638905215565,
+        "dcOffsetDb": -47.20516399333023,
+        "crestFactorDb": 10.232160792650236,
+        "leadingSilenceMs": 24.671201814058957,
+        "trailingSilenceMs": 17.324263038548754,
+        "attackMs": 288.0725623582767,
+        "tailLevelDbRelPeak": -34.43771594595594,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.671201814058957,
+        "activeEndMs": 5021.383219954649,
+        "spectral": {
+          "centroidHz": 1121.5208946209416,
+          "highFrequencyRatio": 0.05404159087604059
+        },
+        "pitch": {
+          "midi": 51.02967694770844,
+          "frequencyHz": 155.8303886925795,
+          "rawCents": 2.9676947708438206,
+          "foldedCents": 2.9676947708437638,
+          "confidence": 0.968394732904465
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0083.m4a",
+          "message": "DC offset -47.2 dBFS should be reviewed",
+          "value": -47.20516399333023,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0083.m4a",
+          "message": "Leading silence 24.7ms may feel late",
+          "value": 24.671201814058957,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0084.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0084.m4a",
+        "note": 51,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.388698548078537,
+        "peakDb": -8.207741632070181,
+        "rmsDb": -17.956797489950574,
+        "activeRmsDb": -17.92222284704098,
+        "dcOffset": 0.003838954995532343,
+        "dcOffsetDb": -48.31573958264033,
+        "crestFactorDb": 9.7144812149708,
+        "leadingSilenceMs": 23.560090702947846,
+        "trailingSilenceMs": 16.394557823129254,
+        "attackMs": 136.16780045351473,
+        "tailLevelDbRelPeak": -36.45398173021849,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.560090702947846,
+        "activeEndMs": 5022.312925170068,
+        "spectral": {
+          "centroidHz": 1257.801745392076,
+          "highFrequencyRatio": 0.07123833575520307
+        },
+        "pitch": {
+          "midi": 51.02967694770844,
+          "frequencyHz": 155.8303886925795,
+          "rawCents": 2.9676947708438206,
+          "foldedCents": 2.9676947708437638,
+          "confidence": 0.9684465077527872
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0084.m4a",
+          "message": "DC offset -48.3 dBFS should be reviewed",
+          "value": -48.31573958264033,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0084.m4a",
+          "message": "Leading silence 23.6ms may feel late",
+          "value": 23.560090702947846,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0095.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0095.m4a",
+        "note": 53,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.34775808453559875,
+        "peakDb": -9.174455298414248,
+        "rmsDb": -17.86490679340075,
+        "activeRmsDb": -17.828558754301742,
+        "dcOffset": 0.0035152086325104252,
+        "dcOffsetDb": -49.08097787798063,
+        "crestFactorDb": 8.654103455887496,
+        "leadingSilenceMs": 25.419501133786845,
+        "trailingSilenceMs": 16.575963718820862,
+        "attackMs": 154.98866213151928,
+        "tailLevelDbRelPeak": -27.9281271539894,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 25.419501133786845,
+        "activeEndMs": 5022.131519274376,
+        "spectral": {
+          "centroidHz": 1027.3216881735045,
+          "highFrequencyRatio": 0.038966317805859955
+        },
+        "pitch": {
+          "midi": 53.03821677969203,
+          "frequencyHz": 175,
+          "rawCents": 3.8216779692028524,
+          "foldedCents": 3.821677969202824,
+          "confidence": 0.9746615552127859
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0095.m4a",
+          "message": "DC offset -49.1 dBFS should be reviewed",
+          "value": -49.08097787798063,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0095.m4a",
+          "message": "Leading silence 25.4ms may feel late",
+          "value": 25.419501133786845,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0096.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0096.m4a",
+        "note": 53,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3453958332538605,
+        "peakDb": -9.233658118565817,
+        "rmsDb": -18.321410079039797,
+        "activeRmsDb": -18.287130927569116,
+        "dcOffset": 0.004827761990106317,
+        "dcOffsetDb": -46.32508297750626,
+        "crestFactorDb": 9.053472809003297,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 16.3265306122449,
+        "attackMs": 201.33786848072563,
+        "tailLevelDbRelPeak": -35.340896563249636,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5022.380952380952,
+        "spectral": {
+          "centroidHz": 1363.543505464007,
+          "highFrequencyRatio": 0.08290944925478506
+        },
+        "pitch": {
+          "midi": 52.9696529653593,
+          "frequencyHz": 174.3083003952569,
+          "rawCents": -3.034703464069821,
+          "foldedCents": -3.034703464069821,
+          "confidence": 0.9747234188099897
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0096.m4a",
+          "message": "DC offset -46.3 dBFS should be reviewed",
+          "value": -46.32508297750626,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0096.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0107.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0107.m4a",
+        "note": 55,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3146302103996277,
+        "peakDb": -10.04399158594306,
+        "rmsDb": -17.33876327643506,
+        "activeRmsDb": -17.304385686442167,
+        "dcOffset": 0.0011146150865915096,
+        "dcOffsetDb": -59.05750165913125,
+        "crestFactorDb": 7.260394100499107,
+        "leadingSilenceMs": 23.333333333333336,
+        "trailingSilenceMs": 16.394557823129254,
+        "attackMs": 691.1111111111111,
+        "tailLevelDbRelPeak": -30.485055495271148,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.333333333333336,
+        "activeEndMs": 5022.312925170068,
+        "spectral": {
+          "centroidHz": 1566.809952711622,
+          "highFrequencyRatio": 0.1082895757279026
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.98017025222976
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0107.m4a",
+          "message": "DC offset -59.1 dBFS should be reviewed",
+          "value": -59.05750165913125,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0107.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.333333333333336,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0108.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0108.m4a",
+        "note": 55,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.39620068669319153,
+        "peakDb": -8.041695521592777,
+        "rmsDb": -16.816706022033635,
+        "activeRmsDb": -16.78254506830163,
+        "dcOffset": 0.004222475705076046,
+        "dcOffsetDb": -47.488656811133225,
+        "crestFactorDb": 8.740849546708851,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 16.077097505668934,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -28.13703966974095,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 5022.630385487529,
+        "spectral": {
+          "centroidHz": 1477.8791450075264,
+          "highFrequencyRatio": 0.09742601089262312
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9802196054661372
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0108.m4a",
+          "message": "DC offset -47.5 dBFS should be reviewed",
+          "value": -47.488656811133225,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0108.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0003.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0003.m4a",
+        "note": 57,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3563421368598938,
+        "peakDb": -8.962656400370467,
+        "rmsDb": -17.452042581351225,
+        "activeRmsDb": -17.418236195582722,
+        "dcOffset": 0.000006973682144400142,
+        "dcOffsetDb": -103.13075702700974,
+        "crestFactorDb": 8.455579795212255,
+        "leadingSilenceMs": 23.333333333333336,
+        "trailingSilenceMs": 15.736961451247165,
+        "attackMs": 76.68934240362813,
+        "tailLevelDbRelPeak": -29.522570386975282,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.333333333333336,
+        "activeEndMs": 5022.97052154195,
+        "spectral": {
+          "centroidHz": 1285.2965177789988,
+          "highFrequencyRatio": 0.067142378485079
+        },
+        "pitch": {
+          "midi": 57.03930158439433,
+          "frequencyHz": 220.5,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9836369107579535
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0003.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.333333333333336,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0004.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0004.m4a",
+        "note": 57,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3461180329322815,
+        "peakDb": -9.215515462891586,
+        "rmsDb": -16.987911197117707,
+        "activeRmsDb": -16.953632042403207,
+        "dcOffset": -4.192399367662946e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 7.7381165795116225,
+        "leadingSilenceMs": 23.424036281179138,
+        "trailingSilenceMs": 16.19047619047619,
+        "attackMs": 98.27664399092971,
+        "tailLevelDbRelPeak": -35.533017116852236,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.424036281179138,
+        "activeEndMs": 5022.517006802721,
+        "spectral": {
+          "centroidHz": 1280.7506298890676,
+          "highFrequencyRatio": 0.05968221596136044
+        },
+        "pitch": {
+          "midi": 57.03930158439433,
+          "frequencyHz": 220.5,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9835745511448829
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0004.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.424036281179138,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0023.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0023.m4a",
+        "note": 59,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.33198606967926025,
+        "peakDb": -9.577602783049059,
+        "rmsDb": -18.391130023351607,
+        "activeRmsDb": -18.356929695478513,
+        "dcOffset": 0.007298684457568235,
+        "dcOffsetDb": -42.73510823404382,
+        "crestFactorDb": 8.779326912429454,
+        "leadingSilenceMs": 23.378684807256235,
+        "trailingSilenceMs": 16.14512471655329,
+        "attackMs": 67.86848072562358,
+        "tailLevelDbRelPeak": -28.027824081916236,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.378684807256235,
+        "activeEndMs": 5022.562358276644,
+        "spectral": {
+          "centroidHz": 1623.1179072316595,
+          "highFrequencyRatio": 0.11107563684548354
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9862279299350929
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0023.m4a",
+          "message": "DC offset -42.7 dBFS should be reviewed",
+          "value": -42.73510823404382,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0023.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.378684807256235,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0024.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0024.m4a",
+        "note": 59,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.33654266595840454,
+        "peakDb": -9.459197385668723,
+        "rmsDb": -18.25606108260351,
+        "activeRmsDb": -18.222136507503876,
+        "dcOffset": 0.005791554660563733,
+        "dcOffsetDb": -44.744096808785834,
+        "crestFactorDb": 8.762939121835151,
+        "leadingSilenceMs": 23.424036281179138,
+        "trailingSilenceMs": 15.78231292517007,
+        "attackMs": 79.25170068027211,
+        "tailLevelDbRelPeak": -26.42410672426205,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.424036281179138,
+        "activeEndMs": 5022.925170068027,
+        "spectral": {
+          "centroidHz": 1403.6035880431252,
+          "highFrequencyRatio": 0.08361740515619348
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9856780202191511
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0024.m4a",
+          "message": "DC offset -44.7 dBFS should be reviewed",
+          "value": -44.744096808785834,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0024.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.424036281179138,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0063.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0063.m4a",
+        "note": 61,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.481451247165533,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.25934529304504395,
+        "peakDb": -11.722432595444893,
+        "rmsDb": -18.377296425553283,
+        "activeRmsDb": -18.36058542047573,
+        "dcOffset": 0.00251922077659049,
+        "dcOffsetDb": -51.974675412614474,
+        "crestFactorDb": 6.638152825030837,
+        "leadingSilenceMs": 16.73469387755102,
+        "trailingSilenceMs": 0.47619047619047616,
+        "attackMs": 73.87755102040816,
+        "tailLevelDbRelPeak": -0.9891308964768177,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 16.73469387755102,
+        "activeEndMs": 4480.952380952381,
+        "spectral": {
+          "centroidHz": 1745.2457293735167,
+          "highFrequencyRatio": 0.13303244716282284
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.989899466539656
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0063.m4a",
+          "message": "DC offset -52.0 dBFS should be reviewed",
+          "value": -51.974675412614474,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0063.m4a",
+          "message": "Leading silence 16.7ms may feel late",
+          "value": 16.73469387755102,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "source-0063.m4a",
+          "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+          "value": -0.9891308964768177,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "source-0064.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0064.m4a",
+        "note": 61,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.922630385487528,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3086526095867157,
+        "peakDb": -10.210600936430897,
+        "rmsDb": -17.977628044098832,
+        "activeRmsDb": -17.94098400734835,
+        "dcOffset": 0.002579925111602577,
+        "dcOffsetDb": -51.76785800546247,
+        "crestFactorDb": 7.730383070917457,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 18.140589569160998,
+        "attackMs": 60.430839002267575,
+        "tailLevelDbRelPeak": -5.6012362004039415,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 4904.467120181405,
+        "spectral": {
+          "centroidHz": 1963.418915943674,
+          "highFrequencyRatio": 0.14228467154656446
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9898815554789546
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0064.m4a",
+          "message": "DC offset -51.8 dBFS should be reviewed",
+          "value": -51.76785800546247,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0064.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0087.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0087.m4a",
+        "note": 63,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2352406084537506,
+        "peakDb": -12.569754119172774,
+        "rmsDb": -18.124980761159645,
+        "activeRmsDb": -18.09308461648997,
+        "dcOffset": 0.0015575435915079446,
+        "dcOffsetDb": -56.15119579499468,
+        "crestFactorDb": 5.5233304973171995,
+        "leadingSilenceMs": 20.634920634920636,
+        "trailingSilenceMs": 16.235827664399093,
+        "attackMs": 63.151927437641724,
+        "tailLevelDbRelPeak": -30.084250776779307,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 20.634920634920636,
+        "activeEndMs": 5022.471655328798,
+        "spectral": {
+          "centroidHz": 1983.4723389124463,
+          "highFrequencyRatio": 0.13468567565488948
+        },
+        "pitch": {
+          "midi": 62.96861042763484,
+          "frequencyHz": 310.5633802816901,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9909908441085139
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0087.m4a",
+          "message": "DC offset -56.2 dBFS should be reviewed",
+          "value": -56.15119579499468,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0087.m4a",
+          "message": "Leading silence 20.6ms may feel late",
+          "value": 20.634920634920636,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0088.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0088.m4a",
+        "note": 63,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2074832022190094,
+        "peakDb": -13.660341157726199,
+        "rmsDb": -18.69310815866614,
+        "activeRmsDb": -18.668058212064246,
+        "dcOffset": 0.0016336071444137611,
+        "dcOffsetDb": -55.7370475182103,
+        "crestFactorDb": 5.007717054338045,
+        "leadingSilenceMs": 12.993197278911566,
+        "trailingSilenceMs": 15.986394557823129,
+        "attackMs": 67.68707482993197,
+        "tailLevelDbRelPeak": -28.260400186001128,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 12.993197278911566,
+        "activeEndMs": 5022.721088435374,
+        "spectral": {
+          "centroidHz": 1771.4057766970222,
+          "highFrequencyRatio": 0.12006970059002835
+        },
+        "pitch": {
+          "midi": 62.96861042763484,
+          "frequencyHz": 310.5633802816901,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9913954343213001
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0088.m4a",
+          "message": "DC offset -55.7 dBFS should be reviewed",
+          "value": -55.7370475182103,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0088.m4a",
+          "message": "Leading silence 13.0ms may feel late",
+          "value": 12.993197278911566,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0099.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0099.m4a",
+        "note": 65,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.34736016392707825,
+        "peakDb": -9.184399778725352,
+        "rmsDb": -15.357500022211415,
+        "activeRmsDb": -15.323161775825723,
+        "dcOffset": -0.0017041980994608199,
+        "dcOffsetDb": -55.36959846718269,
+        "crestFactorDb": 6.138761997100371,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 16.394557823129254,
+        "attackMs": 44.69387755102041,
+        "tailLevelDbRelPeak": -29.649056665979188,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5022.312925170068,
+        "spectral": {
+          "centroidHz": 1194.3233406729896,
+          "highFrequencyRatio": 0.05986147591571376
+        },
+        "pitch": {
+          "midi": 65.03821677969204,
+          "frequencyHz": 350,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9933448369073931
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0099.m4a",
+          "message": "DC offset -55.4 dBFS should be reviewed",
+          "value": -55.36959846718269,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0099.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0100.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0100.m4a",
+        "note": 65,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3563445210456848,
+        "peakDb": -8.96259828570134,
+        "rmsDb": -15.132893565798089,
+        "activeRmsDb": -15.098909892058106,
+        "dcOffset": -0.002016489704758862,
+        "dcOffsetDb": -53.90807981905168,
+        "crestFactorDb": 6.136311606356767,
+        "leadingSilenceMs": 23.378684807256235,
+        "trailingSilenceMs": 15.895691609977325,
+        "attackMs": 48.140589569161,
+        "tailLevelDbRelPeak": -29.495230336242308,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.378684807256235,
+        "activeEndMs": 5022.81179138322,
+        "spectral": {
+          "centroidHz": 1215.8056514977059,
+          "highFrequencyRatio": 0.06929755187320803
+        },
+        "pitch": {
+          "midi": 65.03821677969204,
+          "frequencyHz": 350,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9932151199209568
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0100.m4a",
+          "message": "DC offset -53.9 dBFS should be reviewed",
+          "value": -53.90807981905168,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0100.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.378684807256235,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0111.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0111.m4a",
+        "note": 67,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.48348748683929443,
+        "peakDb": -6.312295228598657,
+        "rmsDb": -11.841965300090177,
+        "activeRmsDb": -11.807272444101438,
+        "dcOffset": 0.002683242204659706,
+        "dcOffsetDb": -51.42680247351151,
+        "crestFactorDb": 5.4949772155027805,
+        "leadingSilenceMs": 23.990929705215418,
+        "trailingSilenceMs": 16.099773242630384,
+        "attackMs": 46.802721088435376,
+        "tailLevelDbRelPeak": -29.324875232802796,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.990929705215418,
+        "activeEndMs": 5022.607709750567,
+        "spectral": {
+          "centroidHz": 1681.7458406886503,
+          "highFrequencyRatio": 0.09186145013499697
+        },
+        "pitch": {
+          "midi": 67.07731679699978,
+          "frequencyHz": 393.75,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9935453660611381
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0111.m4a",
+          "message": "DC offset -51.4 dBFS should be reviewed",
+          "value": -51.42680247351151,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0111.m4a",
+          "message": "Leading silence 24.0ms may feel late",
+          "value": 23.990929705215418,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0112.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0112.m4a",
+        "note": 67,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.40836700797080994,
+        "peakDb": -7.77898703762808,
+        "rmsDb": -13.422091609324136,
+        "activeRmsDb": -13.387970048703979,
+        "dcOffset": 0.005167973046543904,
+        "dcOffsetDb": -45.733595201218336,
+        "crestFactorDb": 5.608983011075898,
+        "leadingSilenceMs": 23.537414965986393,
+        "trailingSilenceMs": 15.895691609977325,
+        "attackMs": 41.70068027210885,
+        "tailLevelDbRelPeak": -26.79880681871255,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.537414965986393,
+        "activeEndMs": 5022.81179138322,
+        "spectral": {
+          "centroidHz": 1602.6830396780815,
+          "highFrequencyRatio": 0.07980988084034542
+        },
+        "pitch": {
+          "midi": 66.92342831270878,
+          "frequencyHz": 390.2654867256637,
+          "rawCents": -7.657168729122077,
+          "foldedCents": -7.657168729122077,
+          "confidence": 0.9937037722685945
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0112.m4a",
+          "message": "DC offset -45.7 dBFS should be reviewed",
+          "value": -45.733595201218336,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0112.m4a",
+          "message": "Leading silence 23.5ms may feel late",
+          "value": 23.537414965986393,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0007.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0007.m4a",
+        "note": 69,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.85297052154195,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.4087754189968109,
+        "peakDb": -7.770304552721835,
+        "rmsDb": -13.435621671059506,
+        "activeRmsDb": -13.408037812110575,
+        "dcOffset": 0.007473645898917875,
+        "dcOffsetDb": -42.52934965712684,
+        "crestFactorDb": 5.63773325938874,
+        "leadingSilenceMs": 23.60544217687075,
+        "trailingSilenceMs": 7.120181405895692,
+        "attackMs": 185.78231292517006,
+        "tailLevelDbRelPeak": -0.8610257042198304,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.60544217687075,
+        "activeEndMs": 4845.827664399093,
+        "spectral": {
+          "centroidHz": 1477.2902676517942,
+          "highFrequencyRatio": 0.07647563836838002
+        },
+        "pitch": {
+          "midi": 69.03930158439434,
+          "frequencyHz": 441,
+          "rawCents": 3.9301584394337397,
+          "foldedCents": 3.9301584394337397,
+          "confidence": 0.9956639687016501
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0007.m4a",
+          "message": "DC offset -42.5 dBFS should be reviewed",
+          "value": -42.52934965712684,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0007.m4a",
+          "message": "Leading silence 23.6ms may feel late",
+          "value": 23.60544217687075,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0008.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0008.m4a",
+        "note": 69,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.40640613436698914,
+        "peakDb": -7.820794907119215,
+        "rmsDb": -13.034678730555312,
+        "activeRmsDb": -13.000360177359891,
+        "dcOffset": 0.005449812344547311,
+        "dcOffsetDb": -45.27236903384589,
+        "crestFactorDb": 5.179565270240677,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 16.3718820861678,
+        "attackMs": 49.84126984126984,
+        "tailLevelDbRelPeak": -27.423612215558634,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5022.33560090703,
+        "spectral": {
+          "centroidHz": 1578.8148019022192,
+          "highFrequencyRatio": 0.08627795842081995
+        },
+        "pitch": {
+          "midi": 69.03930158439434,
+          "frequencyHz": 441,
+          "rawCents": 3.9301584394337397,
+          "foldedCents": 3.9301584394337397,
+          "confidence": 0.9952130200547402
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0008.m4a",
+          "message": "DC offset -45.3 dBFS should be reviewed",
+          "value": -45.27236903384589,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0008.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0027.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0027.m4a",
+        "note": 71,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3418929874897003,
+        "peakDb": -9.32219613708127,
+        "rmsDb": -16.85619428134675,
+        "activeRmsDb": -16.82230916623784,
+        "dcOffset": 0.004043716233518285,
+        "dcOffsetDb": -47.864386569737235,
+        "crestFactorDb": 7.500113029156568,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 15.873015873015872,
+        "attackMs": 39.750566893424036,
+        "tailLevelDbRelPeak": -29.612710471358703,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5022.834467120181,
+        "spectral": {
+          "centroidHz": 1928.3113664766329,
+          "highFrequencyRatio": 0.11046103163688925
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.995968764481356
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0027.m4a",
+          "message": "DC offset -47.9 dBFS should be reviewed",
+          "value": -47.864386569737235,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0027.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0028.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0028.m4a",
+        "note": 71,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3221900463104248,
+        "peakDb": -9.837757614725268,
+        "rmsDb": -16.69839127233862,
+        "activeRmsDb": -16.6714537993191,
+        "dcOffset": 0.004721307269634485,
+        "dcOffsetDb": -46.518754682481855,
+        "crestFactorDb": 6.8336961845938315,
+        "leadingSilenceMs": 14.94331065759637,
+        "trailingSilenceMs": 16.213151927437643,
+        "attackMs": 48.02721088435374,
+        "tailLevelDbRelPeak": -28.939894964608136,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 14.94331065759637,
+        "activeEndMs": 5022.49433106576,
+        "spectral": {
+          "centroidHz": 1898.924042290191,
+          "highFrequencyRatio": 0.10977251943017459
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9962876981325778
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0028.m4a",
+          "message": "DC offset -46.5 dBFS should be reviewed",
+          "value": -46.518754682481855,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0028.m4a",
+          "message": "Leading silence 14.9ms may feel late",
+          "value": 14.94331065759637,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0067.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0067.m4a",
+        "note": 73,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.96907029478458,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.29262033104896545,
+        "peakDb": -10.67391005391815,
+        "rmsDb": -17.469585130692423,
+        "activeRmsDb": -17.44894478064952,
+        "dcOffset": -0.0020662652541282847,
+        "dcOffsetDb": -53.696278544908054,
+        "crestFactorDb": 6.775034726731368,
+        "leadingSilenceMs": 23.333333333333336,
+        "trailingSilenceMs": 0.22675736961451248,
+        "attackMs": 50.9297052154195,
+        "tailLevelDbRelPeak": -1.0006011269513546,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.333333333333336,
+        "activeEndMs": 4968.820861678005,
+        "spectral": {
+          "centroidHz": 2249.6169718882566,
+          "highFrequencyRatio": 0.1348274511457075
+        },
+        "pitch": {
+          "midi": 73.1202068835658,
+          "frequencyHz": 558.2278481012659,
+          "rawCents": 12.020688356579967,
+          "foldedCents": 12.020688356579967,
+          "confidence": 0.9917543551571552
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0067.m4a",
+          "message": "DC offset -53.7 dBFS should be reviewed",
+          "value": -53.696278544908054,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0067.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.333333333333336,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "alto-sax",
+          "file": "source-0067.m4a",
+          "message": "Tail remains -1.0 dB below peak at EOF; possible truncation",
+          "value": -1.0006011269513546,
+          "threshold": -35
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "alto-sax",
+          "file": "source-0067.m4a",
+          "message": "Estimated pitch is 12.0 cents from mapped note",
+          "value": 12.020688356579967,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0068.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0068.m4a",
+        "note": 73,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.3132718801498413,
+        "peakDb": -10.081571728528573,
+        "rmsDb": -17.223797969081467,
+        "activeRmsDb": -17.189637048634104,
+        "dcOffset": 0.0020312528945193287,
+        "dcOffsetDb": -53.84472005620807,
+        "crestFactorDb": 7.108065320105531,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 16.077097505668934,
+        "attackMs": 35.35147392290249,
+        "tailLevelDbRelPeak": -31.058984133680305,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 5022.630385487529,
+        "spectral": {
+          "centroidHz": 2608.2244472106945,
+          "highFrequencyRatio": 0.16521500924450974
+        },
+        "pitch": {
+          "midi": 72.90243872304268,
+          "frequencyHz": 551.25,
+          "rawCents": -9.756127695732175,
+          "foldedCents": -9.756127695732175,
+          "confidence": 0.9924842373947633
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0068.m4a",
+          "message": "DC offset -53.8 dBFS should be reviewed",
+          "value": -53.84472005620807,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0068.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0091.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0091.m4a",
+        "note": 75,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2618744969367981,
+        "peakDb": -11.63813587944662,
+        "rmsDb": -17.594766967250735,
+        "activeRmsDb": -17.568163800658215,
+        "dcOffset": -0.0011890350168013342,
+        "dcOffsetDb": -58.49610710645442,
+        "crestFactorDb": 5.930027921211596,
+        "leadingSilenceMs": 14.89795918367347,
+        "trailingSilenceMs": 15.873015873015872,
+        "attackMs": 42.40362811791383,
+        "tailLevelDbRelPeak": -27.24479919439154,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 14.89795918367347,
+        "activeEndMs": 5022.834467120181,
+        "spectral": {
+          "centroidHz": 1876.8574369680284,
+          "highFrequencyRatio": 0.1141934561261521
+        },
+        "pitch": {
+          "midi": 74.96861042763484,
+          "frequencyHz": 621.1267605633802,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9970207021744142
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0091.m4a",
+          "message": "DC offset -58.5 dBFS should be reviewed",
+          "value": -58.49610710645442,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0091.m4a",
+          "message": "Leading silence 14.9ms may feel late",
+          "value": 14.89795918367347,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0092.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0092.m4a",
+        "note": 75,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2635675072669983,
+        "peakDb": -11.582162616343556,
+        "rmsDb": -16.8128713617112,
+        "activeRmsDb": -16.786150197293324,
+        "dcOffset": 0.0010030532857779357,
+        "dcOffsetDb": -59.97351990181247,
+        "crestFactorDb": 5.203987580949767,
+        "leadingSilenceMs": 15.10204081632653,
+        "trailingSilenceMs": 15.80498866213152,
+        "attackMs": 43.17460317460318,
+        "tailLevelDbRelPeak": -26.436982808632333,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 15.10204081632653,
+        "activeEndMs": 5022.902494331066,
+        "spectral": {
+          "centroidHz": 2086.1388897405523,
+          "highFrequencyRatio": 0.1478279264079298
+        },
+        "pitch": {
+          "midi": 74.96861042763484,
+          "frequencyHz": 621.1267605633802,
+          "rawCents": -3.1389572365156937,
+          "foldedCents": -3.1389572365156937,
+          "confidence": 0.9977889493182069
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0092.m4a",
+          "message": "DC offset -60.0 dBFS should be reviewed",
+          "value": -59.97351990181247,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0092.m4a",
+          "message": "Leading silence 15.1ms may feel late",
+          "value": 15.10204081632653,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0103.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0103.m4a",
+        "note": 77,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2991103529930115,
+        "peakDb": -10.483371092772384,
+        "rmsDb": -17.04047302694123,
+        "activeRmsDb": -17.006351479491865,
+        "dcOffset": -0.005968451208397113,
+        "dcOffsetDb": -44.482767042109266,
+        "crestFactorDb": 6.522980386719479,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 16.03174603174603,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -28.55743711724972,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 5022.675736961452,
+        "spectral": {
+          "centroidHz": 2413.8292760957756,
+          "highFrequencyRatio": 0.16863129347822295
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9979492207451803
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0103.m4a",
+          "message": "DC offset -44.5 dBFS should be reviewed",
+          "value": -44.482767042109266,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0103.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0104.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0104.m4a",
+        "note": 77,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.30856773257255554,
+        "peakDb": -10.212989815513758,
+        "rmsDb": -16.454339705565978,
+        "activeRmsDb": -16.420513645386684,
+        "dcOffset": -0.004446454211267484,
+        "dcOffsetDb": -47.039723512131104,
+        "crestFactorDb": 6.207523829872926,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 15.80498866213152,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -27.399221600323326,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5022.902494331066,
+        "spectral": {
+          "centroidHz": 2491.160108013074,
+          "highFrequencyRatio": 0.1489229947933998
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9972407170813858
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0104.m4a",
+          "message": "DC offset -47.0 dBFS should be reviewed",
+          "value": -47.039723512131104,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0104.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0115.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0115.m4a",
+        "note": 79,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.26266127824783325,
+        "peakDb": -11.612078931244469,
+        "rmsDb": -17.03822299081914,
+        "activeRmsDb": -17.004259017735762,
+        "dcOffset": 0.0033141647814133373,
+        "dcOffsetDb": -49.59251804217541,
+        "crestFactorDb": 5.392180086491295,
+        "leadingSilenceMs": 23.378684807256235,
+        "trailingSilenceMs": 15.873015873015872,
+        "attackMs": 614.7845804988661,
+        "tailLevelDbRelPeak": -27.614990990733972,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.378684807256235,
+        "activeEndMs": 5022.834467120181,
+        "spectral": {
+          "centroidHz": 1897.6184089243147,
+          "highFrequencyRatio": 0.10184710449191782
+        },
+        "pitch": {
+          "midi": 79.07731679699978,
+          "frequencyHz": 787.5,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9974063129357897
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0115.m4a",
+          "message": "DC offset -49.6 dBFS should be reviewed",
+          "value": -49.59251804217541,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0115.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.378684807256235,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0116.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0116.m4a",
+        "note": 79,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.2737038731575012,
+        "peakDb": -11.254381137728933,
+        "rmsDb": -17.0164496942439,
+        "activeRmsDb": -16.98232815808651,
+        "dcOffset": 0.008866188308449402,
+        "dcOffsetDb": -41.04526097967799,
+        "crestFactorDb": 5.7279470203575755,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 16.14512471655329,
+        "attackMs": 201.24716553287982,
+        "tailLevelDbRelPeak": -28.31366042179317,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5022.562358276644,
+        "spectral": {
+          "centroidHz": 2274.706091693647,
+          "highFrequencyRatio": 0.1767111643560702
+        },
+        "pitch": {
+          "midi": 79.07731679699978,
+          "frequencyHz": 787.5,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9974719282640169
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0116.m4a",
+          "message": "DC offset -41.0 dBFS should be reviewed",
+          "value": -41.04526097967799,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0116.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0019.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0019.m4a",
+        "note": 80,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 4.574331065759637,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.21625399589538574,
+        "peakDb": -13.300717179757015,
+        "rmsDb": -19.555542857817887,
+        "activeRmsDb": -19.514053271751198,
+        "dcOffset": -0.003047948911217075,
+        "dcOffsetDb": -50.31984633564127,
+        "crestFactorDb": 6.21333609199418,
+        "leadingSilenceMs": 23.378684807256235,
+        "trailingSilenceMs": 20.11337868480726,
+        "attackMs": 152.69841269841268,
+        "tailLevelDbRelPeak": -52.54600614194885,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.378684807256235,
+        "activeEndMs": 4554.195011337868,
+        "spectral": {
+          "centroidHz": 2438.1585752401556,
+          "highFrequencyRatio": 0.22287385341252694
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9982232663179816
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "DC_OFFSET",
+          "instrumentId": "alto-sax",
+          "file": "source-0019.m4a",
+          "message": "DC offset -50.3 dBFS should be reviewed",
+          "value": -50.31984633564127,
+          "threshold": -60
+        },
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0019.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.378684807256235,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0020.m4a",
+      "metrics": {
+        "instrumentId": "alto-sax",
+        "instrumentName": "Alto Sax",
+        "file": "source-0020.m4a",
+        "note": 80,
+        "velocityMin": 0,
+        "velocityMax": 63,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.21922965347766876,
+        "peakDb": -13.18201405204668,
+        "rmsDb": -18.826735377175474,
+        "activeRmsDb": -18.792771421049366,
+        "dcOffset": -0.0008486424618493011,
+        "dcOffsetDb": -61.425504841784274,
+        "crestFactorDb": 5.610757369002686,
+        "leadingSilenceMs": 23.26530612244898,
+        "trailingSilenceMs": 15.986394557823129,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -27.55882737602378,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.26530612244898,
+        "activeEndMs": 5022.721088435374,
+        "spectral": {
+          "centroidHz": 1924.0889709425305,
+          "highFrequencyRatio": 0.10458679847462189
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9982021966718162
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "alto-sax",
+          "file": "source-0020.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.26530612244898,
+          "threshold": 10
+        }
+      ]
+    }
+  ]
+}

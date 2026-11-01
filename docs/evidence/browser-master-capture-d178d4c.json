@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "fixture": "two-track deterministic capture probe plus controlled master-chain canary",
+  "sampleRate": 48000,
+  "startFrame": 115840,
+  "frameCount": 36000,
+  "maxRenderFrameDrift": 0,
+  "summaries": {
+    "preCompressor": {
+      "channels": 2,
+      "frames": 36000,
+      "peak": 0.8291333317756653,
+      "peakDbfs": -1.6275125108678081,
+      "rms": 0.12957789397638952
+    },
+    "postMakeup": {
+      "channels": 2,
+      "frames": 36000,
+      "peak": 0.8291333317756653,
+      "peakDbfs": -1.6275125108678081,
+      "rms": 0.1298314709867152
+    },
+    "userOutput": {
+      "channels": 2,
+      "frames": 36000,
+      "peak": 0.6800031661987305,
+      "peakDbfs": -3.3497813029506855,
+      "rms": 0.10673190832829632
+    }
+  },
+  "sameBuildRepeatNullResidualDb": -267.29937432899635,
+  "repeatAlignmentFrames": 9344,
+  "calibration": {
+    "latencyFrames": 288,
+    "throughGainDb": -3.930748811919181e-8,
+    "maxAttenuationDb": 0.0022149635879076435,
+    "recoveryMonotonic": true,
+    "controlledHatDeltaDb": -0.059457987645897624,
+    "capacityPrePeakDbfs": -0.9195051529437379,
+    "capacityPostPeakDbfs": -0.9574654864550514
+  }
+}

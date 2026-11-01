@@ -1,0 +1,22 @@
+/* Transpose modifiers for the shared grouped dropdown skin. */
+
+.transpose-trigger {
+  --dropdown-trigger-color: var(--color-text-muted, #888);
+  --dropdown-trigger-font: monospace;
+  --dropdown-trigger-transition: border-color 0.15s, background 0.15s, color 0.15s;
+  --dropdown-value-min-width: 28px;
+}
+
+.transpose-trigger.active:not(.open) {
+  color: var(--dropdown-transpose-active-color);
+}
+
+.transpose-menu {
+  --dropdown-menu-min-width: 140px;
+  --dropdown-animation-name: transpose-dropdown-appear;
+  --dropdown-option-value-font: monospace;
+  --dropdown-option-value-min-width: 32px;
+
+  /* These non-visual-header properties previously arrived from the unscoped
+   * SamplePicker rule. Retaining them makes containment an identity refactor. */
+}

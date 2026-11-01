@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "before": {
+    "eventsChecked": 6144,
+    "silentEvents": 0,
+    "maxPitchShiftSemitones": 35,
+    "deterministicRoundRobinGroups": 0
+  },
+  "after": {
+    "eventsChecked": 6144,
+    "silentEvents": 0,
+    "maxPitchShiftSemitones": 35,
+    "deterministicRoundRobinGroups": 0
+  },
+  "delta": {
+    "eventsChecked": 0,
+    "silentEvents": 0,
+    "maxPitchShiftSemitones": 0,
+    "deterministicRoundRobinGroups": 0
+  }
+}

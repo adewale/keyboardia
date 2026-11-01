@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "candidateId": "acoustic-hihat-closed",
+  "buildReportSha256": "fdece81851d736c2d1c3d9fdadf4a790ebc3dbd1305ad083986902fafaed6553",
+  "outputHashes": [
+    "29e2755115f379ab9e3e28d5d053a87f851dda9fea7075b1caeea02b51d1f848",
+    "0af2cfbc2002cd960a681bbab6f88a39abe9dde87f1828ab99fead9f26e38e1f",
+    "2cfaf6013a5b087ec3ba9d93fa12965d7ca1a10a95600518977879482704c0b2",
+    "7a19bb4f244e6b0acaf4d73f5d09f62bdec95a751ffed49dd888fe768113ef39",
+    "629e06d5a7ec7972e686a462309cc474e005ac95bcdd832e818b3187136e8bcb",
+    "22abfdfabe0c254956cd22e8bc80f0f808c6739eb03edcb9c0a41d4f7340059c",
+    "64db50656103dc3f7b851737d5891fa44cb334811e4eecd7e095982f2bfc7846",
+    "d96e1e95561d67e858d286261c0b025837b2945bed26bb637448295c954f80ff",
+    "7f1f02f3db71169bd7655d126e3c67c5fc8befbf9d47f416dbd5e5c0849625f4",
+    "2c00ef6a7611368cd0a4dc58b2fc0545b2c981314d299301e985cfe2d47d0b06",
+    "2796c9aa37f4b3c2a6a447188ac88a985b24ba8e534d6c9233f3296da69ae9fd",
+    "cc47fbd2cede5dd5750383fb2fc3a4771cd4e1aba9a6952279a913562e774e80",
+    "4e77597bd9c88a534e30b0d5ad6436b5bcda0ced1b63b6f23ca112682e0a3bb6",
+    "d09a97a8aafb974e1bab96dacfac483743f618f736018d35bc72505d7af34b06",
+    "708e55a71f039a3ad09c0ed0ab72e8ea9bef33ad92c7aa51dcf5234f9fd028c6",
+    "2076d1c42ce0126054264905016be12dbd336af7f1651a065e3c698c5d1a93b8"
+  ],
+  "decision": "rejected",
+  "reviewer": "Human reviewer (user-provided decision)",
+  "reviewedAt": "2026-07-10T19:19:27.000Z",
+  "anchorsReviewed": [
+    "low-soft",
+    "mid-medium",
+    "high-loud"
+  ],
+  "pitchSpanSemitones": 12,
+  "reviewDispositions": {},
+  "notes": "Rejected at the blinded-anchor gate. Human reviewer statement: \u201cI kept preferring the current samples in all the blind tests.\u201d Runtime promotion review was therefore unnecessary; production remains unchanged."
+}

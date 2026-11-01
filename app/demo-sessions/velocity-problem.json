@@ -1,0 +1,46 @@
+{
+  "name": "Velocity Limitation Demo",
+  "description": "Demonstrates the lack of velocity layers. All notes play at same dynamic level regardless of intended intensity. Compare soft vs loud passages - they sound identical except for volume.",
+  "bpm": 80,
+  "tracks": [
+    {
+      "name": "Piano - Should be expressive",
+      "sampleId": "synth:piano",
+      "steps": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 80,
+      "_comment": "Real piano: soft notes have rounder tone, loud notes have brighter attack. Here: all identical timbre."
+    },
+    {
+      "name": "Vibraphone - Mallet intensity missing",
+      "sampleId": "synth:vibraphone",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [0, 0, 2, 0, 4, 0, 5, 0, 7, 0, 9, 0, 11, 0, 12, 0],
+      "volume": 75,
+      "_comment": "Real vibraphone: soft mallets produce warm tone, hard strikes produce bright shimmer. Here: uniform."
+    },
+    {
+      "name": "Strings - No bow pressure variation",
+      "sampleId": "synth:strings",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 7, 0, 0, 0, 12, 0, 0, 0, 7, 0, 0, 0],
+      "volume": 70,
+      "_comment": "Real strings: light bow = airy, heavy bow = rich harmonics. Here: same sample always."
+    },
+    {
+      "name": "808 Kick - Impact variation missing",
+      "sampleId": "synth:808-kick",
+      "steps": [true, false, false, false, true, false, true, false, true, false, false, false, true, false, true, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 90,
+      "_comment": "Pattern alternates between accented and ghost notes - but all sound identical in character."
+    }
+  ],
+  "listenFor": [
+    "Piano: Every note has identical attack character regardless of musical context",
+    "Vibraphone: No timbral difference between gentle and struck notes",
+    "Strings: Uniform texture without expressive bow pressure variation",
+    "808 Kick: Ghost notes and accents have same impact character (only volume differs)"
+  ],
+  "whyItMatters": "Velocity layers are essential for musical expression. Without them, performances sound mechanical and lifeless. Real instruments change their timbral character based on playing intensity - soft piano notes are rounder, loud notes are brighter with more harmonics. This demo shows how current samples lack this dynamic expression."
+}

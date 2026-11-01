@@ -1,0 +1,1 @@
+export { KeyboardShortcutsPanel } from './KeyboardShortcutsPanel';

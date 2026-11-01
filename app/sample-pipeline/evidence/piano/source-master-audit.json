@@ -1,0 +1,3096 @@
+{
+  "version": 1,
+  "instrumentId": "piano",
+  "hardErrors": 0,
+  "reviewFlags": 52,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 30.flac",
+      "message": "Tail remains -34.1 dB below peak at EOF; possible truncation",
+      "value": -34.13134372173081,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 36.flac",
+      "message": "Tail remains -25.5 dB below peak at EOF; possible truncation",
+      "value": -25.52523889534185,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 42.flac",
+      "message": "Tail remains -32.9 dB below peak at EOF; possible truncation",
+      "value": -32.900835085994345,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 48.flac",
+      "message": "Tail remains -34.1 dB below peak at EOF; possible truncation",
+      "value": -34.10015918666672,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 48.flac",
+      "message": "Estimated pitch is 10.9 cents from mapped note",
+      "value": 10.936843754940583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 54.flac",
+      "message": "Estimated pitch is 10.1 cents from mapped note",
+      "value": 10.065687491191966,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+      "message": "Stereo correlation -0.354 may collapse poorly to mono",
+      "value": -0.35371870071113726,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+      "message": "Mono fold-down loses 4.9 dB",
+      "value": -4.894645179762126,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 72.flac",
+      "message": "Stereo correlation -0.370 may collapse poorly to mono",
+      "value": -0.36970817598317723,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 72.flac",
+      "message": "Mono fold-down loses 4.0 dB",
+      "value": -3.9914336658276675,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 78.flac",
+      "message": "Tail remains -31.1 dB below peak at EOF; possible truncation",
+      "value": -31.092706827996484,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 78.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 36.flac",
+      "message": "Estimated pitch is 10.9 cents from mapped note",
+      "value": 10.936843754940583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 42.flac",
+      "message": "Estimated pitch is 13.7 cents from mapped note",
+      "value": 13.721938161828007,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 48.flac",
+      "message": "Estimated pitch is 10.9 cents from mapped note",
+      "value": 10.936843754940583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 54.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+      "message": "Stereo correlation -0.287 may collapse poorly to mono",
+      "value": -0.2871194770144074,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+      "message": "Mono fold-down loses 4.5 dB",
+      "value": -4.476753871058353,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 72.flac",
+      "message": "Stereo correlation -0.405 may collapse poorly to mono",
+      "value": -0.40538469119031734,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 72.flac",
+      "message": "Mono fold-down loses 3.9 dB",
+      "value": -3.936377561653411,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 78.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 36.flac",
+      "message": "Estimated pitch is 10.9 cents from mapped note",
+      "value": 10.936843754940583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 42.flac",
+      "message": "Estimated pitch is 13.7 cents from mapped note",
+      "value": 13.721938161828007,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 48.flac",
+      "message": "Estimated pitch is 10.9 cents from mapped note",
+      "value": 10.936843754940583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 54.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+      "message": "Stereo correlation -0.248 may collapse poorly to mono",
+      "value": -0.24776864950674438,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+      "message": "Mono fold-down loses 4.2 dB",
+      "value": -4.246561264452926,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 72.flac",
+      "message": "Stereo correlation -0.286 may collapse poorly to mono",
+      "value": -0.28612007447308485,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 72.flac",
+      "message": "Mono fold-down loses 3.7 dB",
+      "value": -3.711696990332372,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 78.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 36.flac",
+      "message": "Estimated pitch is 13.5 cents from mapped note",
+      "value": 13.522705399349661,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 42.flac",
+      "message": "Estimated pitch is 13.7 cents from mapped note",
+      "value": 13.721938161828007,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 48.flac",
+      "message": "Estimated pitch is 10.9 cents from mapped note",
+      "value": 10.936843754940583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 54.flac",
+      "message": "Estimated pitch is 10.1 cents from mapped note",
+      "value": 10.065687491191966,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 66.flac",
+      "message": "Stereo correlation -0.217 may collapse poorly to mono",
+      "value": -0.2171986726993744,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 66.flac",
+      "message": "Mono fold-down loses 4.1 dB",
+      "value": -4.072545402404021,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 72.flac",
+      "message": "Stereo correlation -0.333 may collapse poorly to mono",
+      "value": -0.33266496140113794,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 72.flac",
+      "message": "Mono fold-down loses 3.8 dB",
+      "value": -3.844110189275626,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 78.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 36.flac",
+      "message": "Estimated pitch is 13.5 cents from mapped note",
+      "value": 13.522705399349661,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 42.flac",
+      "message": "Estimated pitch is 24.7 cents from mapped note",
+      "value": 24.737250291103464,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 54.flac",
+      "message": "Estimated pitch is 10.1 cents from mapped note",
+      "value": 10.065687491191966,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+      "message": "Stereo correlation -0.201 may collapse poorly to mono",
+      "value": -0.20119593565774088,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+      "message": "Mono fold-down loses 4.0 dB",
+      "value": -3.9834545264960903,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 72.flac",
+      "message": "Stereo correlation -0.395 may collapse poorly to mono",
+      "value": -0.39543608805848623,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 72.flac",
+      "message": "Mono fold-down loses 4.0 dB",
+      "value": -4.04561474208323,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 78.flac",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 78.flac",
+      "message": "Mono fold-down loses 3.2 dB",
+      "value": -3.1769761831521555,
+      "threshold": -3
+    }
+  ],
+  "entries": [
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 30.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 30.flac",
+        "note": 30,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 17.566439909297053,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.05279541015625,
+        "peakDb": -25.548076636618447,
+        "rmsDb": -48.16301334032018,
+        "activeRmsDb": -48.16301334032018,
+        "dcOffset": -0.00002940019308249656,
+        "dcOffsetDb": -90.63299634795585,
+        "crestFactorDb": 22.61493670370172,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -34.13134372173081,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 17566.417233560092,
+        "spectral": {
+          "centroidHz": 317.7675521524274,
+          "highFrequencyRatio": 0.005144076069862692
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9310884223205319,
+          "monoLossDb": -0.23194530103663663,
+          "leftRightBalanceDb": 2.4236194310344796
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 30.flac",
+          "message": "Tail remains -34.1 dB below peak at EOF; possible truncation",
+          "value": -34.13134372173081,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 36.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 36.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 14.512154195011338,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.026519775390625,
+        "peakDb": -31.52860317022103,
+        "rmsDb": -52.81511034326475,
+        "activeRmsDb": -52.81509695130162,
+        "dcOffset": -0.000029015527367249123,
+        "dcOffsetDb": -90.74739063150489,
+        "crestFactorDb": 21.286493781080587,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -25.52523889534185,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 14512.131519274377,
+        "spectral": {
+          "centroidHz": 468.98333055873684,
+          "highFrequencyRatio": 0.011452785932138478
+        },
+        "pitch": {
+          "midi": 36.0577667883459,
+          "frequencyHz": 65.625,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.7213508221915924
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6534391446829975,
+          "monoLossDb": -0.826914514546655,
+          "leftRightBalanceDb": 0.23302783857236137
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 36.flac",
+          "message": "Tail remains -25.5 dB below peak at EOF; possible truncation",
+          "value": -25.52523889534185,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 42.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 42.flac",
+        "note": 42,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 20.412562358276645,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.041778564453125,
+        "peakDb": -27.58092973651456,
+        "rmsDb": -53.46743902052539,
+        "activeRmsDb": -53.46743902052539,
+        "dcOffset": -0.00003093503642513447,
+        "dcOffsetDb": -90.19098736548308,
+        "crestFactorDb": 25.886509284010838,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -32.900835085994345,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 20412.539682539686,
+        "spectral": {
+          "centroidHz": 343.2447591671816,
+          "highFrequencyRatio": 0.007853226396327365
+        },
+        "pitch": {
+          "midi": 42.0641714230713,
+          "frequencyHz": 92.84210526315789,
+          "rawCents": 6.417142307130064,
+          "foldedCents": 6.417142307130007,
+          "confidence": 0.6392273916122226
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7992300878893156,
+          "monoLossDb": -0.5652966842032763,
+          "leftRightBalanceDb": 2.9286411363043614
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 42.flac",
+          "message": "Tail remains -32.9 dB below peak at EOF; possible truncation",
+          "value": -32.900835085994345,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 48.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 48.flac",
+        "note": 48,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 16.515668934240363,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.046417236328125,
+        "peakDb": -26.66641441813439,
+        "rmsDb": -51.54940012347416,
+        "activeRmsDb": -51.54913858265729,
+        "dcOffset": -0.00003057969881143742,
+        "dcOffsetDb": -90.29133592796704,
+        "crestFactorDb": 24.882724164522898,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0.997732426303855,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -34.10015918666672,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 16514.648526077097,
+        "spectral": {
+          "centroidHz": 512.6328534533243,
+          "highFrequencyRatio": 0.005308419870725245
+        },
+        "pitch": {
+          "midi": 48.109368437549406,
+          "frequencyHz": 131.6417910447761,
+          "rawCents": 10.93684375494064,
+          "foldedCents": 10.936843754940583,
+          "confidence": 0.7007076237477878
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.721124105925992,
+          "monoLossDb": -0.65789446402235,
+          "leftRightBalanceDb": 0.6940743243418126
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 48.flac",
+          "message": "Tail remains -34.1 dB below peak at EOF; possible truncation",
+          "value": -34.10015918666672,
+          "threshold": -35
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 48.flac",
+          "message": "Estimated pitch is 10.9 cents from mapped note",
+          "value": 10.936843754940583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 54.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 54.flac",
+        "note": 54,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 12.489410430839003,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03302001953125,
+        "peakDb": -29.624453483783345,
+        "rmsDb": -55.14892078930744,
+        "activeRmsDb": -55.148750732409056,
+        "dcOffset": -0.00003040268582463344,
+        "dcOffsetDb": -90.34176096776336,
+        "crestFactorDb": 25.524297248625718,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0.4988662131519275,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -36.07556678784553,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 12488.888888888889,
+        "spectral": {
+          "centroidHz": 587.1891040525447,
+          "highFrequencyRatio": 0.012525708589213
+        },
+        "pitch": {
+          "midi": 54.10065687491192,
+          "frequencyHz": 186.0759493670886,
+          "rawCents": 10.065687491191966,
+          "foldedCents": 10.065687491191966,
+          "confidence": 0.9164499390797256
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.2715352139135708,
+          "monoLossDb": -2.145442408774636,
+          "leftRightBalanceDb": 5.820639447037243
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 54.flac",
+          "message": "Estimated pitch is 10.1 cents from mapped note",
+          "value": 10.065687491191966,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 60.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 60.flac",
+        "note": 60,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 17.933424036281178,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.0386962890625,
+        "peakDb": -28.24661362828008,
+        "rmsDb": -53.26847115648008,
+        "activeRmsDb": -53.266738908901786,
+        "dcOffset": -0.000029050543879744025,
+        "dcOffsetDb": -90.73691464808192,
+        "crestFactorDb": 25.02012528062171,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 7.188208616780045,
+        "attackMs": 34.6031746031746,
+        "tailLevelDbRelPeak": -39.13982435734952,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 17926.213151927437,
+        "spectral": {
+          "centroidHz": 595.6968824199307,
+          "highFrequencyRatio": 0.006957004616503535
+        },
+        "pitch": {
+          "midi": 60.0577667883459,
+          "frequencyHz": 262.5,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.917816587220624
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9512119661890391,
+          "monoLossDb": -0.1072617291740955,
+          "leftRightBalanceDb": 0.03974999953357674
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+        "note": 66,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 14.014399092970521,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.0684814453125,
+        "peakDb": -23.288541647511884,
+        "rmsDb": -55.39657678060384,
+        "activeRmsDb": -55.39629021103338,
+        "dcOffset": -0.000031003494581577984,
+        "dcOffsetDb": -90.17178703172772,
+        "crestFactorDb": 32.1077485635215,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0.9523809523809523,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -40.576071157004094,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 14013.42403628118,
+        "spectral": {
+          "centroidHz": 991.6803075905738,
+          "highFrequencyRatio": 0.008829758650937554
+        },
+        "pitch": {
+          "midi": 66.17385926934894,
+          "frequencyHz": 373.728813559322,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9336872725768114
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.35371870071113726,
+          "monoLossDb": -4.894645179762126,
+          "leftRightBalanceDb": 0.816895122339284
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+          "message": "Stereo correlation -0.354 may collapse poorly to mono",
+          "value": -0.35371870071113726,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+          "message": "Mono fold-down loses 4.9 dB",
+          "value": -4.894645179762126,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 72.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 72.flac",
+        "note": 72,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 14.046984126984126,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.08990478515625,
+        "peakDb": -20.92434384906212,
+        "rmsDb": -53.640613931044314,
+        "activeRmsDb": -53.640613931044314,
+        "dcOffset": -0.000028198161985945792,
+        "dcOffsetDb": -90.99558397926971,
+        "crestFactorDb": 32.716270081982195,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -41.25385124145314,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 14046.961451247165,
+        "spectral": {
+          "centroidHz": 895.3870418494291,
+          "highFrequencyRatio": 0.010519753873870165
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9763344196898741
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.36970817598317723,
+          "monoLossDb": -3.9914336658276675,
+          "leftRightBalanceDb": -10.519409430331718
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 72.flac",
+          "message": "Stereo correlation -0.370 may collapse poorly to mono",
+          "value": -0.36970817598317723,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 72.flac",
+          "message": "Mono fold-down loses 4.0 dB",
+          "value": -3.9914336658276675,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 78.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 78.flac",
+        "note": 78,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 9.816507936507936,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03173828125,
+        "peakDb": -29.968331913218755,
+        "rmsDb": -55.479749710684494,
+        "activeRmsDb": -55.479660644835334,
+        "dcOffset": -0.0000312566917470032,
+        "dcOffsetDb": -90.10113980468131,
+        "crestFactorDb": 25.511328731616587,
+        "leadingSilenceMs": 0.20408163265306123,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -31.092706827996484,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.20408163265306123,
+        "activeEndMs": 9816.485260770974,
+        "spectral": {
+          "centroidHz": 907.987789025009,
+          "highFrequencyRatio": 0.014588932306374588
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9907785162331357
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.41560430649676516,
+          "monoLossDb": -1.7342542851182687,
+          "leftRightBalanceDb": -5.6282015075199645
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 78.flac",
+          "message": "Tail remains -31.1 dB below peak at EOF; possible truncation",
+          "value": -31.092706827996484,
+          "threshold": -35
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL1 CLOSE 78.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 30.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 30.flac",
+        "note": 30,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 18.639387755102042,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.096923828125,
+        "peakDb": -20.271388824093183,
+        "rmsDb": -43.939136409952404,
+        "activeRmsDb": -43.9389939086964,
+        "dcOffset": -0.00003053731131814992,
+        "dcOffsetDb": -90.30338406798504,
+        "crestFactorDb": 23.66760508460321,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 0.5442176870748299,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -38.21631773457119,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 18638.820861678007,
+        "spectral": {
+          "centroidHz": 410.04527149451826,
+          "highFrequencyRatio": 0.0029193949605203326
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8972567408029066,
+          "monoLossDb": -0.3067705387885806,
+          "leftRightBalanceDb": 2.417245666269373
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 36.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 36.flac",
+        "note": 36,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 25.24049886621315,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.077606201171875,
+        "peakDb": -22.202071495680183,
+        "rmsDb": -48.20473708427328,
+        "activeRmsDb": -48.20468269858908,
+        "dcOffset": -0.00003105482679999581,
+        "dcOffsetDb": -90.15741777146367,
+        "crestFactorDb": 26.00261120290891,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0.31746031746031744,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -40.148127030073425,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 25240.158730158728,
+        "spectral": {
+          "centroidHz": 678.616369616244,
+          "highFrequencyRatio": 0.004072905436439667
+        },
+        "pitch": {
+          "midi": 36.109368437549406,
+          "frequencyHz": 65.82089552238806,
+          "rawCents": 10.93684375494064,
+          "foldedCents": 10.936843754940583,
+          "confidence": 0.7338467622106359
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.603451082832662,
+          "monoLossDb": -0.9614909921381293,
+          "leftRightBalanceDb": 0.40813084322342974
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 36.flac",
+          "message": "Estimated pitch is 10.9 cents from mapped note",
+          "value": 10.936843754940583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 42.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 42.flac",
+        "note": 42,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 21.076145124716554,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.12109375,
+        "peakDb": -18.337565429551535,
+        "rmsDb": -45.695183263510096,
+        "activeRmsDb": -45.69482396242286,
+        "dcOffset": -0.00003168356783389294,
+        "dcOffsetDb": -89.98331838298547,
+        "crestFactorDb": 27.357258532871324,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 1.746031746031746,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -43.671966310226466,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 21074.376417233558,
+        "spectral": {
+          "centroidHz": 495.42664160650924,
+          "highFrequencyRatio": 0.0034370503031790362
+        },
+        "pitch": {
+          "midi": 42.13721938161828,
+          "frequencyHz": 93.23467230443974,
+          "rawCents": 13.721938161828007,
+          "foldedCents": 13.721938161828007,
+          "confidence": 0.78358914619314
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.683057818206322,
+          "monoLossDb": -0.86226103215348,
+          "leftRightBalanceDb": 3.1748215419481984
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 42.flac",
+          "message": "Estimated pitch is 13.7 cents from mapped note",
+          "value": 13.721938161828007,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 48.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 48.flac",
+        "note": 48,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 21.15621315192744,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.0853271484375,
+        "peakDb": -21.378255357721482,
+        "rmsDb": -48.33987727707402,
+        "activeRmsDb": -48.33941219556066,
+        "dcOffset": -0.000029533915207514974,
+        "dcOffsetDb": -90.59357952645571,
+        "crestFactorDb": 26.961156837839184,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 2.2675736961451247,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -42.082289725028744,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 21153.92290249433,
+        "spectral": {
+          "centroidHz": 647.7805538755409,
+          "highFrequencyRatio": 0.004308016128972406
+        },
+        "pitch": {
+          "midi": 48.109368437549406,
+          "frequencyHz": 131.6417910447761,
+          "rawCents": 10.93684375494064,
+          "foldedCents": 10.936843754940583,
+          "confidence": 0.87453531262519
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6788746898514345,
+          "monoLossDb": -0.7651275791095529,
+          "leftRightBalanceDb": 0.6594461371655097
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 48.flac",
+          "message": "Estimated pitch is 10.9 cents from mapped note",
+          "value": 10.936843754940583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 54.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 54.flac",
+        "note": 54,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 19.59668934240363,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.099090576171875,
+        "peakDb": -20.07935292667433,
+        "rmsDb": -48.636031373700916,
+        "activeRmsDb": -48.636031373700916,
+        "dcOffset": -0.000029869911111516506,
+        "dcOffsetDb": -90.49532139581521,
+        "crestFactorDb": 28.55667844702659,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -46.14724611940154,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 19596.666666666668,
+        "spectral": {
+          "centroidHz": 764.6863473109898,
+          "highFrequencyRatio": 0.00675764426264453
+        },
+        "pitch": {
+          "midi": 54.17385926934894,
+          "frequencyHz": 186.864406779661,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.737864081757107
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.16451827419292694,
+          "monoLossDb": -2.4560528770511927,
+          "leftRightBalanceDb": 5.520864431157785
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 54.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 60.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 60.flac",
+        "note": 60,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 13.170816326530613,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.100311279296875,
+        "peakDb": -19.97300461756187,
+        "rmsDb": -44.13480341252288,
+        "activeRmsDb": -44.13451224250942,
+        "dcOffset": -0.000029814163801919226,
+        "dcOffsetDb": -90.51154733616187,
+        "crestFactorDb": 24.161507624947554,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0.8843537414965986,
+        "attackMs": 12.947845804988662,
+        "tailLevelDbRelPeak": -46.81416890051886,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 13169.909297052154,
+        "spectral": {
+          "centroidHz": 717.1384021267198,
+          "highFrequencyRatio": 0.004698596649094464
+        },
+        "pitch": {
+          "midi": 60.0577667883459,
+          "frequencyHz": 262.5,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9788438548553468
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9538115885850393,
+          "monoLossDb": -0.10193351451302671,
+          "leftRightBalanceDb": 0.18147614922170238
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+        "note": 66,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 16.427868480725625,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.10247802734375,
+        "peakDb": -19.787384863153758,
+        "rmsDb": -52.37592390107808,
+        "activeRmsDb": -52.37570468869223,
+        "dcOffset": -0.00002782630275879068,
+        "dcOffsetDb": -91.11088987843858,
+        "crestFactorDb": 32.58831982553848,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0.8390022675736961,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -46.4392141829221,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 16427.006802721087,
+        "spectral": {
+          "centroidHz": 1075.401013047661,
+          "highFrequencyRatio": 0.009644324165553312
+        },
+        "pitch": {
+          "midi": 66.17385926934894,
+          "frequencyHz": 373.728813559322,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9489224048376906
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.2871194770144074,
+          "monoLossDb": -4.476753871058353,
+          "leftRightBalanceDb": 0.5095955682175878
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+          "message": "Stereo correlation -0.287 may collapse poorly to mono",
+          "value": -0.2871194770144074,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+          "message": "Mono fold-down loses 4.5 dB",
+          "value": -4.476753871058353,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 72.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 72.flac",
+        "note": 72,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 15.275056689342403,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.181915283203125,
+        "peakDb": -14.802616262604806,
+        "rmsDb": -48.15088644091455,
+        "activeRmsDb": -47.872584871227026,
+        "dcOffset": -0.000030230600234713858,
+        "dcOffsetDb": -90.39106459462681,
+        "crestFactorDb": 33.06996860862222,
+        "leadingSilenceMs": 0.11337868480725624,
+        "trailingSilenceMs": 950.2267573696145,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -61.52698234986918,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.11337868480725624,
+        "activeEndMs": 14324.807256235827,
+        "spectral": {
+          "centroidHz": 1098.0107332298796,
+          "highFrequencyRatio": 0.01682078830289018
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9906918011891487
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.40538469119031734,
+          "monoLossDb": -3.936377561653411,
+          "leftRightBalanceDb": -11.974625956525543
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 72.flac",
+          "message": "Stereo correlation -0.405 may collapse poorly to mono",
+          "value": -0.40538469119031734,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 72.flac",
+          "message": "Mono fold-down loses 3.9 dB",
+          "value": -3.936377561653411,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 78.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 78.flac",
+        "note": 78,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 12.33031746031746,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.09124755859375,
+        "peakDb": -20.79557493270577,
+        "rmsDb": -48.91977754223946,
+        "activeRmsDb": -48.91977754223946,
+        "dcOffset": -0.000030858803089001125,
+        "dcOffsetDb": -90.21241845588054,
+        "crestFactorDb": 28.1242026095337,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -47.23455672035186,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 12330.2947845805,
+        "spectral": {
+          "centroidHz": 1189.2716797826292,
+          "highFrequencyRatio": 0.031014299459202217
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.996498275920498
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.21968738266335944,
+          "monoLossDb": -2.3747877283675263,
+          "leftRightBalanceDb": -7.4813472838810435
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL2 CLOSE 78.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 30.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 30.flac",
+        "note": 30,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 22.69063492063492,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.1617431640625,
+        "peakDb": -15.823481307178577,
+        "rmsDb": -40.709736153426626,
+        "activeRmsDb": -40.709445610694644,
+        "dcOffset": -0.000030590411130089496,
+        "dcOffsetDb": -90.28829372259517,
+        "crestFactorDb": 24.885964303516065,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 1.5192743764172334,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -44.115238594458035,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 22689.092970521542,
+        "spectral": {
+          "centroidHz": 571.9761715087724,
+          "highFrequencyRatio": 0.0032772679635248133
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8566537764655885,
+          "monoLossDb": -0.4011699278936254,
+          "leftRightBalanceDb": 2.4554081851288756
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 36.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 36.flac",
+        "note": 36,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 29.934784580498867,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.124359130859375,
+        "peakDb": -18.10644643767445,
+        "rmsDb": -45.20237494370616,
+        "activeRmsDb": -45.202361816256065,
+        "dcOffset": -0.000029626765460804463,
+        "dcOffsetDb": -90.5663152115084,
+        "crestFactorDb": 27.095915378581612,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -45.35409864507578,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 29934.761904761905,
+        "spectral": {
+          "centroidHz": 908.9309917355585,
+          "highFrequencyRatio": 0.007513493792035625
+        },
+        "pitch": {
+          "midi": 36.109368437549406,
+          "frequencyHz": 65.82089552238806,
+          "rawCents": 10.93684375494064,
+          "foldedCents": 10.936843754940583,
+          "confidence": 0.80947544281203
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.583747336922872,
+          "monoLossDb": -1.01554803053553,
+          "leftRightBalanceDb": 0.4486246170658514
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 36.flac",
+          "message": "Estimated pitch is 10.9 cents from mapped note",
+          "value": 10.936843754940583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 42.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 42.flac",
+        "note": 42,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 28.650022675736963,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.18890380859375,
+        "peakDb": -14.475185718791998,
+        "rmsDb": -43.65522551668234,
+        "activeRmsDb": -43.653313815271886,
+        "dcOffset": -0.000030946111558896464,
+        "dcOffsetDb": -90.18787826380205,
+        "crestFactorDb": 29.178128096479888,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 12.630385487528345,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -49.38942708572397,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 28637.369614512474,
+        "spectral": {
+          "centroidHz": 682.4965549262125,
+          "highFrequencyRatio": 0.005950412657630708
+        },
+        "pitch": {
+          "midi": 42.13721938161828,
+          "frequencyHz": 93.23467230443974,
+          "rawCents": 13.721938161828007,
+          "foldedCents": 13.721938161828007,
+          "confidence": 0.811696464164051
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6534609102109276,
+          "monoLossDb": -0.9294647742232127,
+          "leftRightBalanceDb": 3.0701641496128
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 42.flac",
+          "message": "Estimated pitch is 13.7 cents from mapped note",
+          "value": 13.721938161828007,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 48.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 48.flac",
+        "note": 48,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 19.026371882086167,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.14093017578125,
+        "peakDb": -17.019920127571208,
+        "rmsDb": -43.91430033623851,
+        "activeRmsDb": -43.914253831778474,
+        "dcOffset": -0.00003018483426885181,
+        "dcOffsetDb": -90.40422408633489,
+        "crestFactorDb": 26.89433370420727,
+        "leadingSilenceMs": 0.20408163265306123,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -42.65950023077805,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.20408163265306123,
+        "activeEndMs": 19026.349206349205,
+        "spectral": {
+          "centroidHz": 839.5975546114286,
+          "highFrequencyRatio": 0.011341915147942794
+        },
+        "pitch": {
+          "midi": 48.109368437549406,
+          "frequencyHz": 131.6417910447761,
+          "rawCents": 10.93684375494064,
+          "foldedCents": 10.936843754940583,
+          "confidence": 0.934997863195872
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6690067006760873,
+          "monoLossDb": -0.7892598511195692,
+          "leftRightBalanceDb": 0.5556028464202716
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 48.flac",
+          "message": "Estimated pitch is 10.9 cents from mapped note",
+          "value": 10.936843754940583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 54.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 54.flac",
+        "note": 54,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 22.966938775510204,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.158050537109375,
+        "peakDb": -16.024080478836478,
+        "rmsDb": -45.65850651387706,
+        "activeRmsDb": -45.65701211858739,
+        "dcOffset": -0.000029598849502848413,
+        "dcOffsetDb": -90.57450338981782,
+        "crestFactorDb": 29.632931639750915,
+        "leadingSilenceMs": 0.18140589569160998,
+        "trailingSilenceMs": 7.732426303854875,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -47.63614902204577,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.18140589569160998,
+        "activeEndMs": 22959.183673469386,
+        "spectral": {
+          "centroidHz": 940.8363968851392,
+          "highFrequencyRatio": 0.013968180560162219
+        },
+        "pitch": {
+          "midi": 54.17385926934894,
+          "frequencyHz": 186.864406779661,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.8023538403994152
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.17078464171263716,
+          "monoLossDb": -2.4391641123168215,
+          "leftRightBalanceDb": 5.601698699007218
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 54.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 60.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 60.flac",
+        "note": 60,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 20.585510204081633,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.159942626953125,
+        "peakDb": -15.920715505142491,
+        "rmsDb": -42.39051139286592,
+        "activeRmsDb": -42.390090953348015,
+        "dcOffset": -0.000029824342932561804,
+        "dcOffsetDb": -90.50858231201647,
+        "crestFactorDb": 26.469375448205522,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 1.99546485260771,
+        "attackMs": 16.689342403628117,
+        "tailLevelDbRelPeak": -46.429483020611116,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 20583.492063492064,
+        "spectral": {
+          "centroidHz": 826.6397039115587,
+          "highFrequencyRatio": 0.010970602343701652
+        },
+        "pitch": {
+          "midi": 60.0577667883459,
+          "frequencyHz": 262.5,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9860658181503608
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9500872187919125,
+          "monoLossDb": -0.11031334650317913,
+          "leftRightBalanceDb": 0.19902301821213925
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+        "note": 66,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 18.019274376417233,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.170257568359375,
+        "peakDb": -15.377871470986975,
+        "rmsDb": -48.173613998537135,
+        "activeRmsDb": -48.03058671455336,
+        "dcOffset": -0.00002973366043922309,
+        "dcOffsetDb": -90.53503245115229,
+        "crestFactorDb": 32.652715243566384,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 584.829931972789,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -58.02916642792225,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 17434.421768707485,
+        "spectral": {
+          "centroidHz": 1217.1506675040343,
+          "highFrequencyRatio": 0.024023545714554118
+        },
+        "pitch": {
+          "midi": 66.17385926934894,
+          "frequencyHz": 373.728813559322,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.950664779775198
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.24776864950674438,
+          "monoLossDb": -4.246561264452926,
+          "leftRightBalanceDb": -0.08732617957885354
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+          "message": "Stereo correlation -0.248 may collapse poorly to mono",
+          "value": -0.24776864950674438,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+          "message": "Mono fold-down loses 4.2 dB",
+          "value": -4.246561264452926,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 72.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 72.flac",
+        "note": 72,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 18.82439909297052,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.27301025390625,
+        "peakDb": -11.276420822461596,
+        "rmsDb": -45.33573181507168,
+        "activeRmsDb": -42.34617114352573,
+        "dcOffset": -0.00003174382497399708,
+        "dcOffsetDb": -89.96681488179654,
+        "crestFactorDb": 31.069750321064127,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 9374.897959183674,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -59.94772768794626,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 9449.478458049887,
+        "spectral": {
+          "centroidHz": 1284.8333199469243,
+          "highFrequencyRatio": 0.03430876294649546
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9954261505300424
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.28612007447308485,
+          "monoLossDb": -3.711696990332372,
+          "leftRightBalanceDb": -11.018202813099204
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 72.flac",
+          "message": "Stereo correlation -0.286 may collapse poorly to mono",
+          "value": -0.28612007447308485,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 72.flac",
+          "message": "Mono fold-down loses 3.7 dB",
+          "value": -3.711696990332372,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 78.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 78.flac",
+        "note": 78,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 13.870997732426304,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.112030029296875,
+        "peakDb": -19.013311009114624,
+        "rmsDb": -47.99362074474995,
+        "activeRmsDb": -47.99362074474995,
+        "dcOffset": -0.00003186527639341229,
+        "dcOffsetDb": -89.93364620358301,
+        "crestFactorDb": 28.980309735635323,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -47.21328803696124,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 13870.975056689342,
+        "spectral": {
+          "centroidHz": 1265.2002847998865,
+          "highFrequencyRatio": 0.03968474037257684
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9963588545796052
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.18418313701384054,
+          "monoLossDb": -2.4661682888379715,
+          "leftRightBalanceDb": -7.352645875857062
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL3 CLOSE 78.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 30.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 30.flac",
+        "note": 30,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 25.93,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.241729736328125,
+        "peakDb": -12.333398433397846,
+        "rmsDb": -37.82516900804584,
+        "activeRmsDb": -37.825157626279605,
+        "dcOffset": -0.00003081651967458609,
+        "dcOffsetDb": -90.22432821531801,
+        "crestFactorDb": 25.49175919288176,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 0,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -43.16834647591164,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 25929.97732426304,
+        "spectral": {
+          "centroidHz": 742.0495051354277,
+          "highFrequencyRatio": 0.010280489184504719
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8397591354330016,
+          "monoLossDb": -0.4384567971103165,
+          "leftRightBalanceDb": 2.4297785075178537
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 36.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 36.flac",
+        "note": 36,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 35.03467120181406,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.209075927734375,
+        "peakDb": -13.593919348806692,
+        "rmsDb": -41.92847168882413,
+        "activeRmsDb": -41.88564761800896,
+        "dcOffset": -0.000029660025522275117,
+        "dcOffsetDb": -90.55656959199327,
+        "crestFactorDb": 28.291728269202267,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 343.968253968254,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -53.79251863682291,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 34690.680272108846,
+        "spectral": {
+          "centroidHz": 1187.934597462157,
+          "highFrequencyRatio": 0.02827213942647866
+        },
+        "pitch": {
+          "midi": 36.135227053993496,
+          "frequencyHz": 65.91928251121077,
+          "rawCents": 13.522705399349633,
+          "foldedCents": 13.522705399349661,
+          "confidence": 0.7789656810424624
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.5765841708659888,
+          "monoLossDb": -1.0351909389579605,
+          "leftRightBalanceDb": 0.44418718873226964
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 36.flac",
+          "message": "Estimated pitch is 13.5 cents from mapped note",
+          "value": 13.522705399349661,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 42.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 42.flac",
+        "note": 42,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 25.011043083900226,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.292449951171875,
+        "peakDb": -10.67896893622942,
+        "rmsDb": -39.585624158663755,
+        "activeRmsDb": -39.42956296530734,
+        "dcOffset": -0.0000322582409310965,
+        "dcOffsetDb": -89.82718637486627,
+        "crestFactorDb": 28.750594029077913,
+        "leadingSilenceMs": 0.40816326530612246,
+        "trailingSilenceMs": 883.2426303854876,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -57.3511627168282,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.40816326530612246,
+        "activeEndMs": 24127.777777777777,
+        "spectral": {
+          "centroidHz": 949.1427926804535,
+          "highFrequencyRatio": 0.02382437518960293
+        },
+        "pitch": {
+          "midi": 42.13721938161828,
+          "frequencyHz": 93.23467230443974,
+          "rawCents": 13.721938161828007,
+          "foldedCents": 13.721938161828007,
+          "confidence": 0.8053967488521796
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6261687071147272,
+          "monoLossDb": -0.9935661441089056,
+          "leftRightBalanceDb": 2.9814421650818894
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 42.flac",
+          "message": "Estimated pitch is 13.7 cents from mapped note",
+          "value": 13.721938161828007,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 48.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 48.flac",
+        "note": 48,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 25.75002267573696,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.203887939453125,
+        "peakDb": -13.812169264120346,
+        "rmsDb": -42.4222148374304,
+        "activeRmsDb": -42.4207715501976,
+        "dcOffset": -0.00003080154372195698,
+        "dcOffsetDb": -90.2285503367919,
+        "crestFactorDb": 28.608602286077254,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 8.503401360544219,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -48.19736247565765,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 25741.496598639453,
+        "spectral": {
+          "centroidHz": 1025.6094131886214,
+          "highFrequencyRatio": 0.030629883549434297
+        },
+        "pitch": {
+          "midi": 48.109368437549406,
+          "frequencyHz": 131.6417910447761,
+          "rawCents": 10.93684375494064,
+          "foldedCents": 10.936843754940583,
+          "confidence": 0.9497757610229733
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6744275388223667,
+          "monoLossDb": -0.7738329744959137,
+          "leftRightBalanceDb": 0.4366240159822934
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 48.flac",
+          "message": "Estimated pitch is 10.9 cents from mapped note",
+          "value": 10.936843754940583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 54.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 54.flac",
+        "note": 54,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 23.149455782312923,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.27081298828125,
+        "peakDb": -11.346610211583636,
+        "rmsDb": -41.51281610621611,
+        "activeRmsDb": -41.456357586440845,
+        "dcOffset": -0.000030442652615081863,
+        "dcOffsetDb": -90.33035016161612,
+        "crestFactorDb": 30.10974737485721,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 299.70521541950114,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -52.9417885743311,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 22849.72789115646,
+        "spectral": {
+          "centroidHz": 1237.0809960639594,
+          "highFrequencyRatio": 0.04395029144514046
+        },
+        "pitch": {
+          "midi": 54.10065687491192,
+          "frequencyHz": 186.0759493670886,
+          "rawCents": 10.065687491191966,
+          "foldedCents": 10.065687491191966,
+          "confidence": 0.8776199233193902
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.143180937571078,
+          "monoLossDb": -2.524485190249886,
+          "leftRightBalanceDb": 5.532118877374472
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 54.flac",
+          "message": "Estimated pitch is 10.1 cents from mapped note",
+          "value": 10.065687491191966,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 60.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 60.flac",
+        "note": 60,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 23.98702947845805,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.30072021484375,
+        "peakDb": -10.436747540416551,
+        "rmsDb": -38.25629324022409,
+        "activeRmsDb": -36.381857143083764,
+        "dcOffset": -0.000031060221543244434,
+        "dcOffsetDb": -90.15590901808261,
+        "crestFactorDb": 25.945109602667213,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 8410.430839002269,
+        "attackMs": 17.2108843537415,
+        "tailLevelDbRelPeak": -61.81045141893893,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 15576.57596371882,
+        "spectral": {
+          "centroidHz": 1083.7072593920539,
+          "highFrequencyRatio": 0.039414542589413355
+        },
+        "pitch": {
+          "midi": 60.0577667883459,
+          "frequencyHz": 262.5,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9774112446337806
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9442168740366008,
+          "monoLossDb": -0.12299933444735997,
+          "leftRightBalanceDb": 0.1025328001199294
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 66.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 66.flac",
+        "note": 66,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 19.54297052154195,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.2750244140625,
+        "peakDb": -11.212575038158494,
+        "rmsDb": -44.295015290878155,
+        "activeRmsDb": -44.24703245228372,
+        "dcOffset": -0.00003269041295947709,
+        "dcOffsetDb": -89.71159186377386,
+        "crestFactorDb": 33.03445741412522,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 215.71428571428572,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -53.07582374775624,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 19327.233560090703,
+        "spectral": {
+          "centroidHz": 1460.2969207377273,
+          "highFrequencyRatio": 0.057374394651721894
+        },
+        "pitch": {
+          "midi": 66.0277627019957,
+          "frequencyHz": 370.5882352941176,
+          "rawCents": 2.776270199569808,
+          "foldedCents": 2.776270199569808,
+          "confidence": 0.9850114985605158
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.2171986726993744,
+          "monoLossDb": -4.072545402404021,
+          "leftRightBalanceDb": -0.38195734833917205
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 66.flac",
+          "message": "Stereo correlation -0.217 may collapse poorly to mono",
+          "value": -0.2171986726993744,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 66.flac",
+          "message": "Mono fold-down loses 4.1 dB",
+          "value": -4.072545402404021,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 72.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 72.flac",
+        "note": 72,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 15.095283446712019,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.415069580078125,
+        "peakDb": -7.637581886913571,
+        "rmsDb": -41.212773705622645,
+        "activeRmsDb": -39.998499687404056,
+        "dcOffset": -0.0000317008768731607,
+        "dcOffsetDb": -89.97857449324242,
+        "crestFactorDb": 32.36091780049049,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 3691.428571428571,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -52.30113801472304,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 11403.832199546485,
+        "spectral": {
+          "centroidHz": 1537.8097132556402,
+          "highFrequencyRatio": 0.06306218529444016
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9953629622246621
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.33266496140113794,
+          "monoLossDb": -3.844110189275626,
+          "leftRightBalanceDb": -10.942955557967235
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 72.flac",
+          "message": "Stereo correlation -0.333 may collapse poorly to mono",
+          "value": -0.33266496140113794,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 72.flac",
+          "message": "Mono fold-down loses 3.8 dB",
+          "value": -3.844110189275626,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 78.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 78.flac",
+        "note": 78,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 13.19829931972789,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.158782958984375,
+        "peakDb": -15.983922181273627,
+        "rmsDb": -45.316463577756856,
+        "activeRmsDb": -45.31573597772592,
+        "dcOffset": -0.00003212658305297508,
+        "dcOffsetDb": -89.86270926123936,
+        "crestFactorDb": 29.3318137964523,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 2.2222222222222223,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -46.02560955850437,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 13196.054421768707,
+        "spectral": {
+          "centroidHz": 1562.8508955677373,
+          "highFrequencyRatio": 0.06901094013962304
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9964832235153606
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.0651142726472139,
+          "monoLossDb": -2.7948146759059234,
+          "leftRightBalanceDb": -6.362323364807654
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL4 CLOSE 78.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 30.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 30.flac",
+        "note": 30,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 23.292517006802722,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.359893798828125,
+        "peakDb": -8.876512728399327,
+        "rmsDb": -34.342821165890584,
+        "activeRmsDb": -34.34196738526335,
+        "dcOffset": -0.00003107405699404052,
+        "dcOffsetDb": -90.15204084085346,
+        "crestFactorDb": 25.465454656864026,
+        "leadingSilenceMs": 0.15873015873015872,
+        "trailingSilenceMs": 4.421768707482993,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -43.479944144986206,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.15873015873015872,
+        "activeEndMs": 23288.072562358277,
+        "spectral": {
+          "centroidHz": 907.9655001391,
+          "highFrequencyRatio": 0.02386612963985574
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8401604079224724,
+          "monoLossDb": -0.4433527108933494,
+          "leftRightBalanceDb": 2.5236737216722376
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 36.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 36.flac",
+        "note": 36,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 34.05555555555556,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.29449462890625,
+        "peakDb": -10.618452432318506,
+        "rmsDb": -39.0512664786777,
+        "activeRmsDb": -39.05071854588358,
+        "dcOffset": -0.00002876368007556013,
+        "dcOffsetDb": -90.82311100676793,
+        "crestFactorDb": 28.432266113565078,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 4.240362811791384,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -48.094874334539654,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 34051.2925170068,
+        "spectral": {
+          "centroidHz": 1343.0182472846989,
+          "highFrequencyRatio": 0.05024713593514805
+        },
+        "pitch": {
+          "midi": 36.135227053993496,
+          "frequencyHz": 65.91928251121077,
+          "rawCents": 13.522705399349633,
+          "foldedCents": 13.522705399349661,
+          "confidence": 0.80886602928661
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.5800271569535367,
+          "monoLossDb": -1.0261388824818236,
+          "leftRightBalanceDb": 0.48574579459441053
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 36.flac",
+          "message": "Estimated pitch is 13.5 cents from mapped note",
+          "value": 13.522705399349661,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 42.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 42.flac",
+        "note": 42,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 34.72120181405896,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.39776611328125,
+        "peakDb": -8.007444366002744,
+        "rmsDb": -38.691848190862956,
+        "activeRmsDb": -36.78486757904829,
+        "dcOffset": -0.000033076457736993945,
+        "dcOffsetDb": -89.60962013211734,
+        "crestFactorDb": 28.777423213045545,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 12350.884353741498,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -56.28095441991199,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 22370.2947845805,
+        "spectral": {
+          "centroidHz": 1175.5937849382797,
+          "highFrequencyRatio": 0.04655252177776868
+        },
+        "pitch": {
+          "midi": 42.247372502911034,
+          "frequencyHz": 93.82978723404256,
+          "rawCents": 24.737250291103408,
+          "foldedCents": 24.737250291103464,
+          "confidence": 0.7975505537517392
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6133493807515973,
+          "monoLossDb": -1.0229955310479748,
+          "leftRightBalanceDb": 2.919336974676004
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 42.flac",
+          "message": "Estimated pitch is 24.7 cents from mapped note",
+          "value": 24.737250291103464,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 48.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 48.flac",
+        "note": 48,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 26.91015873015873,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.339752197265625,
+        "peakDb": -9.376754517825447,
+        "rmsDb": -38.612308573134214,
+        "activeRmsDb": -38.609569343039766,
+        "dcOffset": -0.00003044383085360581,
+        "dcOffsetDb": -90.33001399341573,
+        "crestFactorDb": 29.23281482521432,
+        "leadingSilenceMs": 0.6122448979591837,
+        "trailingSilenceMs": 16.394557823129254,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -48.891044354809665,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.6122448979591837,
+        "activeEndMs": 26893.74149659864,
+        "spectral": {
+          "centroidHz": 1359.9079993324046,
+          "highFrequencyRatio": 0.07016279177104352
+        },
+        "pitch": {
+          "midi": 48.0577667883459,
+          "frequencyHz": 131.25,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9538026775988209
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6665029973014794,
+          "monoLossDb": -0.7925015094352814,
+          "leftRightBalanceDb": 0.15242466075641664
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 54.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 54.flac",
+        "note": 54,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 27.11956916099773,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3831787109375,
+        "peakDb": -8.331972558634263,
+        "rmsDb": -39.52798920911347,
+        "activeRmsDb": -37.82383456383508,
+        "dcOffset": -0.000029464723285945444,
+        "dcOffsetDb": -90.61395266337817,
+        "crestFactorDb": 29.49186200520082,
+        "leadingSilenceMs": 0.47619047619047616,
+        "trailingSilenceMs": 8809.22902494331,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -54.19370445326945,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.47619047619047616,
+        "activeEndMs": 18310.31746031746,
+        "spectral": {
+          "centroidHz": 1428.2340193474809,
+          "highFrequencyRatio": 0.06858752082676817
+        },
+        "pitch": {
+          "midi": 54.10065687491192,
+          "frequencyHz": 186.0759493670886,
+          "rawCents": 10.065687491191966,
+          "foldedCents": 10.065687491191966,
+          "confidence": 0.9089088145768001
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.16321668751018745,
+          "monoLossDb": -2.4650830639440042,
+          "leftRightBalanceDb": 5.663714316871985
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 54.flac",
+          "message": "Estimated pitch is 10.1 cents from mapped note",
+          "value": 10.065687491191966,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 60.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 60.flac",
+        "note": 60,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 23.940975056689343,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.45623779296875,
+        "peakDb": -6.81617484598539,
+        "rmsDb": -35.25107580284093,
+        "activeRmsDb": -32.420802256950225,
+        "dcOffset": -0.00002844440535512221,
+        "dcOffsetDb": -90.92006281900242,
+        "crestFactorDb": 25.604627410964834,
+        "leadingSilenceMs": 0.27210884353741494,
+        "trailingSilenceMs": 11468.730158730159,
+        "attackMs": 35.28344671201814,
+        "tailLevelDbRelPeak": -57.91775183415239,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.27210884353741494,
+        "activeEndMs": 12472.22222222222,
+        "spectral": {
+          "centroidHz": 1429.4119789525685,
+          "highFrequencyRatio": 0.07717639312988343
+        },
+        "pitch": {
+          "midi": 60.0577667883459,
+          "frequencyHz": 262.5,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9880082834455631
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9401500291388342,
+          "monoLossDb": -0.13287955358463577,
+          "leftRightBalanceDb": 0.2586645075006253
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+        "note": 66,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 24.17310657596372,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.46240234375,
+        "peakDb": -6.699599466010396,
+        "rmsDb": -40.89458754500845,
+        "activeRmsDb": -36.39333617617131,
+        "dcOffset": -0.00003204529449079649,
+        "dcOffsetDb": -89.88471465938565,
+        "crestFactorDb": 29.693736710160916,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 15605.192743764173,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -65.54759949334509,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 8567.891156462585,
+        "spectral": {
+          "centroidHz": 1716.6135135520963,
+          "highFrequencyRatio": 0.09696222062483321
+        },
+        "pitch": {
+          "midi": 66.17385926934894,
+          "frequencyHz": 373.728813559322,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9910613216411644
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.20119593565774088,
+          "monoLossDb": -3.9834545264960903,
+          "leftRightBalanceDb": -0.5797127358771057
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+          "message": "Stereo correlation -0.201 may collapse poorly to mono",
+          "value": -0.20119593565774088,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+          "message": "Mono fold-down loses 4.0 dB",
+          "value": -3.9834545264960903,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 72.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 72.flac",
+        "note": 72,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 18.604036281179138,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.690673828125,
+        "peakDb": -3.2145400102156705,
+        "rmsDb": -38.38961002128289,
+        "activeRmsDb": -33.851277339304275,
+        "dcOffset": -0.00003285183927985465,
+        "dcOffsetDb": -89.66880621052834,
+        "crestFactorDb": 30.636737329088604,
+        "leadingSilenceMs": 1.0657596371882085,
+        "trailingSilenceMs": 12064.013605442178,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -61.51938666992211,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.0657596371882085,
+        "activeEndMs": 6540,
+        "spectral": {
+          "centroidHz": 1784.6668590007107,
+          "highFrequencyRatio": 0.09673824664093511
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9937367350820051
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.39543608805848623,
+          "monoLossDb": -4.04561474208323,
+          "leftRightBalanceDb": -10.725563375154564
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 72.flac",
+          "message": "Stereo correlation -0.395 may collapse poorly to mono",
+          "value": -0.39543608805848623,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 72.flac",
+          "message": "Mono fold-down loses 4.0 dB",
+          "value": -4.04561474208323,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 78.flac",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 78.flac",
+        "note": 78,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 14.409183673469387,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.318817138671875,
+        "peakDb": -9.929166805082133,
+        "rmsDb": -41.11409127698457,
+        "activeRmsDb": -40.744257146862864,
+        "dcOffset": -0.00003060189585422237,
+        "dcOffsetDb": -90.28503334388324,
+        "crestFactorDb": 30.815090341780728,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 1179.1836734693877,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -54.3592319808326,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 13229.97732426304,
+        "spectral": {
+          "centroidHz": 2031.4307939968714,
+          "highFrequencyRatio": 0.11466393103593563
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9980226527771849
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.043675282063326985,
+          "monoLossDb": -3.1769761831521555,
+          "leftRightBalanceDb": -4.847530414825988
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 78.flac",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "Samples/HEADROOM PIANO LEVEL5 CLOSE 78.flac",
+          "message": "Mono fold-down loses 3.2 dB",
+          "value": -3.1769761831521555,
+          "threshold": -3
+        }
+      ]
+    }
+  ]
+}

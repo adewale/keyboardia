@@ -1,0 +1,81 @@
+/**
+ * Hook for managing QR code display mode via URL parameter
+ *
+ * The ?qr=1 URL parameter transforms any Keyboardia URL into a QR-prominent
+ * display mode. This is a composable modifier that works on any existing URL.
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+
+// Custom event name for cross-instance sync
+const QR_MODE_CHANGE_EVENT = 'qrmodechange';
+
+export interface QRModeState {
+  /** Whether QR mode is currently active */
+  isActive: boolean;
+  /** The URL to encode in the QR code (current URL without ?qr=1) */
+  targetURL: string;
+  /** Activate QR mode by adding ?qr=1 to URL */
+  activate: () => void;
+  /** Deactivate QR mode by removing ?qr=1 from URL */
+  deactivate: () => void;
+}
+
+/**
+ * Get the QR target URL (current URL without the qr parameter)
+ */
+function getQRTargetURL(): string {
+  const target = new URL(window.location.href);
+  target.searchParams.delete('qr');
+  return target.toString();
+}
+
+/**
+ * Check if QR mode is active from URL
+ */
+function isQRModeActive(): boolean {
+  const params = new URLSearchParams(window.location.search);
+  return params.get('qr') === '1';
+}
+
+export function useQRMode(): QRModeState {
+  const [isActive, setIsActive] = useState(() => isQRModeActive());
+
+  // Listen for popstate (browser back/forward) and custom qrmodechange events
+  useEffect(() => {
+    const handleChange = () => {
+      setIsActive(isQRModeActive());
+    };
+
+    window.addEventListener('popstate', handleChange);
+    window.addEventListener(QR_MODE_CHANGE_EVENT, handleChange);
+    return () => {
+      window.removeEventListener('popstate', handleChange);
+      window.removeEventListener(QR_MODE_CHANGE_EVENT, handleChange);
+    };
+  }, []);
+
+  const activate = useCallback(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('qr', '1');
+    window.history.pushState({}, '', url.toString());
+    setIsActive(true);
+    // Notify other instances
+    window.dispatchEvent(new Event(QR_MODE_CHANGE_EVENT));
+  }, []);
+
+  const deactivate = useCallback(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('qr');
+    window.history.pushState({}, '', url.toString());
+    setIsActive(false);
+    // Notify other instances
+    window.dispatchEvent(new Event(QR_MODE_CHANGE_EVENT));
+  }, []);
+
+  // Session navigation uses history.pushState without necessarily changing QR
+  // mode, so derive the target from the current location on every render.
+  const targetURL = getQRTargetURL();
+
+  return { isActive, targetURL, activate, deactivate };
+}

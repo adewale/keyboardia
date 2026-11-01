@@ -1,0 +1,20 @@
+{
+  "id": "sample-pipeline-fixture",
+  "name": "Sample Pipeline Fixture",
+  "type": "sampled",
+  "releaseTime": 0.2,
+  "playableRange": { "min": 48, "max": 72 },
+  "credits": {
+    "source": "Generated sine fixture",
+    "url": "https://example.com/keyboardia-test-fixture",
+    "license": "Test fixture"
+  },
+  "samples": [
+    {
+      "note": 60,
+      "file": "C4.wav",
+      "velocityMin": 0,
+      "velocityMax": 127
+    }
+  ]
+}

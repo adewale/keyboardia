@@ -1,0 +1,47 @@
+{
+  "name": "808 Trap Beat",
+  "tempo": 140,
+  "swing": 0,
+  "tracks": [
+    {
+      "id": "track-1",
+      "name": "808 Kick",
+      "sampleId": "sampled:808-kick",
+      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, true, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 1,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-2",
+      "name": "808 Snare",
+      "sampleId": "sampled:808-snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.9,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-3",
+      "name": "808 Hi-Hat",
+      "sampleId": "sampled:808-hihat-closed",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, true],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, {"volume": 0.6}],
+      "volume": 0.7,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-4",
+      "name": "808 Open Hat",
+      "sampleId": "sampled:808-hihat-open",
+      "steps": [false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.6,
+      "muted": false,
+      "stepCount": 16
+    }
+  ]
+}

@@ -1,0 +1,830 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-kick",
+  "hardErrors": 0,
+  "reviewFlags": 4,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-kick",
+      "file": "samples/KdrumL/20-KdrumL.flac",
+      "message": "36:kick-left higher velocity 109-122 is 0.01 dB quieter than 99-108"
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-kick",
+      "file": "samples/KdrumL/21-KdrumL.flac",
+      "message": "36:kick-left higher velocity 123-127 is 0.02 dB quieter than 109-122"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-kick",
+      "file": "samples/KdrumL/24-KdrumL.flac",
+      "message": "Peak -1.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -1.0808666813187986,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-kick",
+      "file": "samples/KdrumL/25-KdrumL.flac",
+      "message": "Peak -1.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.9541527182808675,
+      "threshold": -2.5
+    }
+  ],
+  "entries": [
+    {
+      "file": "samples/KdrumL/2-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/2-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 8,
+        "durationSec": 1.43421768707483,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3295520544052124,
+        "peakDb": -9.641519533059004,
+        "rmsDb": -36.95149442745421,
+        "activeRmsDb": -33.375234316875336,
+        "dcOffset": -0.000007203407176277817,
+        "dcOffsetDb": -102.84924071623159,
+        "crestFactorDb": 23.733714783816325,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 804.7845804988663,
+        "attackMs": 10.884353741496598,
+        "tailLevelDbRelPeak": -83.65474588492972,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 629.4104308390023,
+        "spectral": {
+          "centroidHz": 3061.398527196599,
+          "highFrequencyRatio": 0.3652429277112885
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9319076307265514,
+          "monoLossDb": -0.15801804584154575,
+          "leftRightBalanceDb": 0.7397628063139747
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/4-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/4-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 9,
+        "velocityMax": 17,
+        "durationSec": 1.281700680272109,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3396247625350952,
+        "peakDb": -9.38001304463432,
+        "rmsDb": -36.16748536438748,
+        "activeRmsDb": -33.07510308172119,
+        "dcOffset": -0.000013142633938523685,
+        "dcOffsetDb": -97.62635176655544,
+        "crestFactorDb": 23.695090037086864,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 652.9024943310658,
+        "attackMs": 9.863945578231291,
+        "tailLevelDbRelPeak": -89.49371752912211,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 628.7755102040816,
+        "spectral": {
+          "centroidHz": 3286.3929108667976,
+          "highFrequencyRatio": 0.39101277455219513
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9015507051920353,
+          "monoLossDb": -0.22717869613376512,
+          "leftRightBalanceDb": 0.7645338097743116
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/6-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/6-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 18,
+        "velocityMax": 26,
+        "durationSec": 1.410952380952381,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3743823766708374,
+        "peakDb": -8.533692060577536,
+        "rmsDb": -34.927183220902535,
+        "activeRmsDb": -31.059801498371527,
+        "dcOffset": -0.000020724769578839972,
+        "dcOffsetDb": -93.67020578606727,
+        "crestFactorDb": 22.52610943779399,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 831.9047619047619,
+        "attackMs": 11.655328798185941,
+        "tailLevelDbRelPeak": -81.20095933146482,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 579.0249433106576,
+        "spectral": {
+          "centroidHz": 3179.8236722689344,
+          "highFrequencyRatio": 0.3768446231050427
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8970280885824434,
+          "monoLossDb": -0.23749977001908507,
+          "leftRightBalanceDb": 0.7645674548158601
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/8-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/8-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 27,
+        "velocityMax": 35,
+        "durationSec": 1.629705215419501,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5064172744750977,
+        "peakDb": -5.909829769085087,
+        "rmsDb": -30.741637835261713,
+        "activeRmsDb": -27.964642226777634,
+        "dcOffset": -0.000005900510844707439,
+        "dcOffsetDb": -104.58220774195885,
+        "crestFactorDb": 22.05481245769255,
+        "leadingSilenceMs": 0.24943310657596374,
+        "trailingSilenceMs": 769.6825396825396,
+        "attackMs": 9.841269841269842,
+        "tailLevelDbRelPeak": -86.9660686361135,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.24943310657596374,
+        "activeEndMs": 860,
+        "spectral": {
+          "centroidHz": 1444.2926624261852,
+          "highFrequencyRatio": 0.15459855289486205
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.890273002501497,
+          "monoLossDb": -0.25163039695778866,
+          "leftRightBalanceDb": 0.6971537774294292
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/10-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/10-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 36,
+        "velocityMax": 44,
+        "durationSec": 1.6662358276643991,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5209869146347046,
+        "peakDb": -5.663463690374507,
+        "rmsDb": -30.69672215155514,
+        "activeRmsDb": -27.324571189472998,
+        "dcOffset": -0.000012135002049555888,
+        "dcOffsetDb": -98.31920291962695,
+        "crestFactorDb": 21.661107499098485,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 899.6825396825396,
+        "attackMs": 11.11111111111111,
+        "tailLevelDbRelPeak": -87.37350218432687,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 766.530612244898,
+        "spectral": {
+          "centroidHz": 1581.805791104775,
+          "highFrequencyRatio": 0.17688992659328204
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8941267461871582,
+          "monoLossDb": -0.24408594056685018,
+          "leftRightBalanceDb": 0.762261564733574
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/12-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/12-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 45,
+        "velocityMax": 53,
+        "durationSec": 1.4980498866213152,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.572116494178772,
+        "peakDb": -4.850310625963918,
+        "rmsDb": -29.50704921180492,
+        "activeRmsDb": -26.61635883931175,
+        "dcOffset": -0.000009794248150385965,
+        "dcOffsetDb": -100.18057793492852,
+        "crestFactorDb": 21.766048213347826,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 728.0952380952381,
+        "attackMs": 10.204081632653061,
+        "tailLevelDbRelPeak": -84.54184196484563,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 769.9319727891157,
+        "spectral": {
+          "centroidHz": 1347.0719436028166,
+          "highFrequencyRatio": 0.14423956070942473
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8694194348480755,
+          "monoLossDb": -0.3021299767824729,
+          "leftRightBalanceDb": 0.8163697243329895
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/13-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/13-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 54,
+        "velocityMax": 62,
+        "durationSec": 1.5986848072562359,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5579921007156372,
+        "peakDb": -5.067438983251744,
+        "rmsDb": -30.292922842516262,
+        "activeRmsDb": -27.576560611180838,
+        "dcOffset": -0.000010204133128725416,
+        "dcOffsetDb": -99.82447767961878,
+        "crestFactorDb": 22.509121627929094,
+        "leadingSilenceMs": 0.3854875283446712,
+        "trailingSilenceMs": 743.0612244897959,
+        "attackMs": 11.020408163265307,
+        "tailLevelDbRelPeak": -85.82024866716796,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.3854875283446712,
+        "activeEndMs": 855.6009070294784,
+        "spectral": {
+          "centroidHz": 2066.2287651768256,
+          "highFrequencyRatio": 0.2250098417582607
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7903098332395431,
+          "monoLossDb": -0.4980757204129186,
+          "leftRightBalanceDb": 1.1618509271753852
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/15-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/15-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 63,
+        "velocityMax": 71,
+        "durationSec": 2.067437641723356,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6762748956680298,
+        "peakDb": -3.397534678676518,
+        "rmsDb": -30.446404922356578,
+        "activeRmsDb": -26.62983008192291,
+        "dcOffset": -0.000021152335876563185,
+        "dcOffsetDb": -93.4928333201184,
+        "crestFactorDb": 23.232295403246393,
+        "leadingSilenceMs": 0.3854875283446712,
+        "trailingSilenceMs": 1208.5714285714287,
+        "attackMs": 9.387755102040817,
+        "tailLevelDbRelPeak": -98.75143732691917,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.3854875283446712,
+        "activeEndMs": 858.843537414966,
+        "spectral": {
+          "centroidHz": 1647.3529417220864,
+          "highFrequencyRatio": 0.16796640343756378
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7934440114168145,
+          "monoLossDb": -0.480502776346161,
+          "leftRightBalanceDb": 0.7465606613788646
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/16-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/16-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 72,
+        "velocityMax": 80,
+        "durationSec": 1.5631292517006803,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.7103986740112305,
+        "peakDb": -2.969957157149443,
+        "rmsDb": -28.100715674368285,
+        "activeRmsDb": -25.047760426029132,
+        "dcOffset": -0.000013218277921069394,
+        "dcOffsetDb": -97.57650242210956,
+        "crestFactorDb": 22.077803268879688,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 789.2290249433107,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -91.02354462082462,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 773.8775510204081,
+        "spectral": {
+          "centroidHz": 1108.5577990749352,
+          "highFrequencyRatio": 0.11377229046097084
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8237132105033949,
+          "monoLossDb": -0.4096802577111844,
+          "leftRightBalanceDb": 0.8306891021804562
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/17-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/17-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 90,
+        "velocityMax": 98,
+        "durationSec": 1.5661224489795917,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.7245097160339355,
+        "peakDb": -2.7991157209953874,
+        "rmsDb": -28.026636344579927,
+        "activeRmsDb": -25.461621574859663,
+        "dcOffset": -0.00001633853221133442,
+        "dcOffsetDb": -95.73573922675789,
+        "crestFactorDb": 22.662505853864275,
+        "leadingSilenceMs": 0.18140589569160998,
+        "trailingSilenceMs": 698.3900226757369,
+        "attackMs": 9.024943310657596,
+        "tailLevelDbRelPeak": -89.71947206245329,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.18140589569160998,
+        "activeEndMs": 867.7097505668935,
+        "spectral": {
+          "centroidHz": 1474.455999960349,
+          "highFrequencyRatio": 0.13779492226653192
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7571423671837987,
+          "monoLossDb": -0.5622536977215717,
+          "leftRightBalanceDb": -0.043335720078397366
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/19-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/19-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 99,
+        "velocityMax": 108,
+        "durationSec": 1.4247845804988661,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6878335475921631,
+        "peakDb": -3.250332924486183,
+        "rmsDb": -26.777367817532067,
+        "activeRmsDb": -24.620126783291564,
+        "dcOffset": -0.000010731366291005734,
+        "dcOffsetDb": -99.38689962429794,
+        "crestFactorDb": 21.369793858805384,
+        "leadingSilenceMs": 0.31746031746031744,
+        "trailingSilenceMs": 557.5056689342404,
+        "attackMs": 3.696145124716553,
+        "tailLevelDbRelPeak": -84.70961459084495,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.31746031746031744,
+        "activeEndMs": 867.2562358276645,
+        "spectral": {
+          "centroidHz": 888.9998418815923,
+          "highFrequencyRatio": 0.07977094060718919
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7649602058241783,
+          "monoLossDb": -0.543035833608802,
+          "leftRightBalanceDb": 0.08258181878580037
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/20-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/20-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 109,
+        "velocityMax": 122,
+        "durationSec": 1.8303854875283447,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.718403697013855,
+        "peakDb": -2.8726288278009706,
+        "rmsDb": -27.925111904818895,
+        "activeRmsDb": -24.662002180867848,
+        "dcOffset": -0.000021796870984318264,
+        "dcOffsetDb": -93.23211692770434,
+        "crestFactorDb": 21.78937335306688,
+        "leadingSilenceMs": 0.3401360544217687,
+        "trailingSilenceMs": 966.6893424036282,
+        "attackMs": 3.6734693877551017,
+        "tailLevelDbRelPeak": -88.46154115776775,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.3401360544217687,
+        "activeEndMs": 863.6734693877552,
+        "spectral": {
+          "centroidHz": 1032.537421028156,
+          "highFrequencyRatio": 0.09367592441846416
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7612926067838859,
+          "monoLossDb": -0.552050511004472,
+          "leftRightBalanceDb": 0.07269770837741985
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-kick",
+          "file": "samples/KdrumL/20-KdrumL.flac",
+          "message": "36:kick-left higher velocity 109-122 is 0.01 dB quieter than 99-108"
+        }
+      ]
+    },
+    {
+      "file": "samples/KdrumL/21-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/21-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 2.1556462585034013,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.7160190343856812,
+        "peakDb": -2.901508648290107,
+        "rmsDb": -28.80695106322409,
+        "activeRmsDb": -24.852801143686627,
+        "dcOffset": -0.00001247251232969048,
+        "dcOffsetDb": -98.08092116134324,
+        "crestFactorDb": 21.951292495396515,
+        "leadingSilenceMs": 0.31746031746031744,
+        "trailingSilenceMs": 1288.140589569161,
+        "attackMs": 3.650793650793651,
+        "tailLevelDbRelPeak": -90.3947567696986,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.31746031746031744,
+        "activeEndMs": 867.4829931972789,
+        "spectral": {
+          "centroidHz": 1164.3484855874563,
+          "highFrequencyRatio": 0.1069161141126507
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7550451306671083,
+          "monoLossDb": -0.5674225515960503,
+          "leftRightBalanceDb": 0.021085888257431094
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-kick",
+          "file": "samples/KdrumL/21-KdrumL.flac",
+          "message": "36:kick-left higher velocity 123-127 is 0.02 dB quieter than 109-122"
+        }
+      ]
+    },
+    {
+      "file": "samples/KdrumL/23-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/23-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 1.645873015873016,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.7208081483840942,
+        "peakDb": -2.843606250284467,
+        "rmsDb": -27.489557221129985,
+        "activeRmsDb": -24.705165576583635,
+        "dcOffset": -0.000009768909071538746,
+        "dcOffsetDb": -100.20307865533684,
+        "crestFactorDb": 21.861559326299165,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 779.0249433106576,
+        "attackMs": 3.650793650793651,
+        "tailLevelDbRelPeak": -87.67139158170613,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 866.8253968253969,
+        "spectral": {
+          "centroidHz": 865.9470780886492,
+          "highFrequencyRatio": 0.08119637973024212
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7463511198313867,
+          "monoLossDb": -0.5899941496092636,
+          "leftRightBalanceDb": 0.28657548362742225
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/KdrumL/24-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/24-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 1.9629024943310658,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.8829917907714844,
+        "peakDb": -1.0808666813187986,
+        "rmsDb": -28.47941440416932,
+        "activeRmsDb": -24.931287074196504,
+        "dcOffset": -0.000001357319433891463,
+        "dcOffsetDb": -117.34635865401488,
+        "crestFactorDb": 23.85042039287771,
+        "leadingSilenceMs": 0.24943310657596374,
+        "trailingSilenceMs": 1095.6462585034014,
+        "attackMs": 3.5374149659863945,
+        "tailLevelDbRelPeak": -93.92920595586708,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.24943310657596374,
+        "activeEndMs": 867.233560090703,
+        "spectral": {
+          "centroidHz": 1421.4520427142409,
+          "highFrequencyRatio": 0.14045702834119492
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.691552119858811,
+          "monoLossDb": -0.727472593771108,
+          "leftRightBalanceDb": -0.047433234789545656
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-kick",
+          "file": "samples/KdrumL/24-KdrumL.flac",
+          "message": "Peak -1.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -1.0808666813187986,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/KdrumL/25-KdrumL.flac",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "samples/KdrumL/25-KdrumL.flac",
+        "note": 36,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 1.5620861678004536,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.8959677219390869,
+        "peakDb": -0.9541527182808675,
+        "rmsDb": -26.855931877980517,
+        "activeRmsDb": -24.64685891951612,
+        "dcOffset": -0.000001070775375323845,
+        "dcOffsetDb": -119.40603249725424,
+        "crestFactorDb": 23.692706201235254,
+        "leadingSilenceMs": 0.40816326530612246,
+        "trailingSilenceMs": 622.4716553287982,
+        "attackMs": 3.4240362811791383,
+        "tailLevelDbRelPeak": -92.24692391538832,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.40816326530612246,
+        "activeEndMs": 939.591836734694,
+        "spectral": {
+          "centroidHz": 1400.7883596701138,
+          "highFrequencyRatio": 0.13553728411592803
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6967819478227846,
+          "monoLossDb": -0.7157549397927241,
+          "leftRightBalanceDb": -0.38107211795961615
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-kick",
+          "file": "samples/KdrumL/25-KdrumL.flac",
+          "message": "Peak -1.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.9541527182808675,
+          "threshold": -2.5
+        }
+      ]
+    }
+  ]
+}

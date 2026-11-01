@@ -1,0 +1,214 @@
+.recorder {
+  background: var(--color-surface);
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.recorder-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mic-button {
+  padding: 12px 24px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 8px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.mic-button:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
+}
+
+.mic-button.recording {
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-on-bright);
+}
+
+.mic-button.request {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-on-bright);
+}
+
+.mic-button.request:hover {
+  filter: brightness(1.1);
+}
+
+.mic-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: var(--color-surface-hover);
+  border-color: var(--color-surface-active);
+}
+
+/* Recording progress bar */
+.recording-bar {
+  height: 4px;
+  background: var(--color-surface-hover);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.recording-progress {
+  height: 100%;
+  background: var(--color-error);
+  transition: width 0.1s linear;
+}
+
+/* Recorder edit mode with waveform */
+.recorder-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.waveform-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.waveform-hint {
+  font-size: 11px;
+  color: var(--color-text-muted);
+  text-align: center;
+}
+
+/* Slice controls - always visible, inline */
+.slice-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.slice-toggle {
+  padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 2px solid var(--color-yellow);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-yellow-text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.slice-toggle:hover {
+  background: var(--color-yellow-muted);
+}
+
+.slice-toggle.active {
+  background: var(--color-yellow);
+  color: var(--color-bg);
+}
+
+.sensitivity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sensitivity-label {
+  font-size: 12px;
+  color: var(--color-text-muted);
+}
+
+.sensitivity-slider {
+  width: 100px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: var(--color-surface-active);
+  border-radius: 2px;
+  outline: none;
+}
+
+.sensitivity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-yellow);
+  cursor: pointer;
+}
+
+.sensitivity-value {
+  font-size: 12px;
+  color: var(--color-yellow-text);
+  min-width: 24px;
+  font-family: monospace;
+}
+
+/* Actions */
+.recorder-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-button {
+  padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 2px solid var(--color-text-muted);
+  border-radius: 6px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-button:hover {
+  background: var(--color-surface-hover);
+}
+
+.action-button.add {
+  border-color: var(--color-success);
+  color: var(--color-success-text);
+}
+
+.action-button.add:hover {
+  background: var(--color-success);
+  color: var(--color-on-bright);
+}
+
+.action-button.discard {
+  border-color: var(--color-error);
+  color: var(--color-error-text);
+}
+
+.action-button.discard:hover {
+  background: var(--color-error);
+  color: var(--color-on-bright);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.track-count {
+  color: var(--color-text-muted);
+  font-size: 13px;
+  align-self: flex-end;
+}

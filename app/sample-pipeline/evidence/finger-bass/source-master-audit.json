@@ -1,0 +1,988 @@
+{
+  "version": 1,
+  "instrumentId": "finger-bass",
+  "hardErrors": 0,
+  "reviewFlags": 25,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/E.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/E.flac",
+      "message": "6 samples are at/near full scale",
+      "value": 6,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/F.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/F.flac",
+      "message": "2 samples are at/near full scale",
+      "value": 2,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/F#.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/F#.flac",
+      "message": "3 samples are at/near full scale",
+      "value": 3,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/G.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/G.flac",
+      "message": "2 samples are at/near full scale",
+      "value": 2,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/G#.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/G#.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/A.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.000028992332906568943,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/A.flac",
+      "message": "2 samples are at/near full scale",
+      "value": 2,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/A#.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/A#.flac",
+      "message": "3 samples are at/near full scale",
+      "value": 3,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/B.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/B.flac",
+      "message": "4 samples are at/near full scale",
+      "value": 4,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/C.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/C.flac",
+      "message": "3 samples are at/near full scale",
+      "value": 3,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/C#.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/C#.flac",
+      "message": "5 samples are at/near full scale",
+      "value": 5,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/D.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0002640408901084229,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/D.flac",
+      "message": "2 samples are at/near full scale",
+      "value": 2,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/D.flac",
+      "message": "Tail remains -31.7 dB below peak at EOF; possible truncation",
+      "value": -31.737857309937098,
+      "threshold": -35
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/D#.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0000010354387945871882,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "finger-bass",
+      "file": "samples/finger/D#.flac",
+      "message": "4 samples are at/near full scale",
+      "value": 4,
+      "threshold": 0
+    }
+  ],
+  "entries": [
+    {
+      "file": "samples/finger/E.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/E.flac",
+        "note": 28,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 5.740045351473923,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -14.395950653590923,
+        "activeRmsDb": -14.363057998562919,
+        "dcOffset": -0.0004770573489489259,
+        "dcOffsetDb": -66.42858819131692,
+        "crestFactorDb": 14.363056963124123,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 43.31065759637188,
+        "attackMs": 3.4467120181405897,
+        "tailLevelDbRelPeak": -67.42530005591084,
+        "clippingSamples": 6,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 5696.712018140589,
+        "spectral": {
+          "centroidHz": 208.3578972012433,
+          "highFrequencyRatio": 0.0019331411857229771
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/E.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/E.flac",
+          "message": "6 samples are at/near full scale",
+          "value": 6,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/F.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/F.flac",
+        "note": 29,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 3.465578231292517,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -14.09562454087365,
+        "activeRmsDb": -14.081051539467031,
+        "dcOffset": 0.0004307325819835943,
+        "dcOffsetDb": -67.31584551155603,
+        "crestFactorDb": 14.081050504028239,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 11.609977324263038,
+        "attackMs": 6.4852607709750565,
+        "tailLevelDbRelPeak": -45.22922090453036,
+        "clippingSamples": 2,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 3453.9455782312925,
+        "spectral": {
+          "centroidHz": 163.8635148734176,
+          "highFrequencyRatio": 0.0015416019474549928
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/F.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/F.flac",
+          "message": "2 samples are at/near full scale",
+          "value": 2,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/F#.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/F#.flac",
+        "note": 30,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.255056689342403,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -17.274685531556948,
+        "activeRmsDb": -17.253760278008173,
+        "dcOffset": 0.00003769014712891515,
+        "dcOffsetDb": -88.47544334432112,
+        "crestFactorDb": 17.253759242569377,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 20.453514739229025,
+        "attackMs": 5.873015873015873,
+        "tailLevelDbRelPeak": -51.56946004136566,
+        "clippingSamples": 3,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 4234.580498866213,
+        "spectral": {
+          "centroidHz": 280.10513564879375,
+          "highFrequencyRatio": 0.0016120199912962132
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/F#.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/F#.flac",
+          "message": "3 samples are at/near full scale",
+          "value": 3,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/G.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/G.flac",
+        "note": 31,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.73687074829932,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -15.994225444614594,
+        "activeRmsDb": -15.964122723048565,
+        "dcOffset": 0.00012379786371452097,
+        "dcOffsetDb": -78.14573699080917,
+        "crestFactorDb": 15.964121687609769,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 32.72108843537415,
+        "attackMs": 3.8095238095238093,
+        "tailLevelDbRelPeak": -53.76322803184158,
+        "clippingSamples": 2,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 4704.126984126984,
+        "spectral": {
+          "centroidHz": 198.9373142933464,
+          "highFrequencyRatio": 0.0011486086066769476
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/G.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/G.flac",
+          "message": "2 samples are at/near full scale",
+          "value": 2,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/G#.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/G#.flac",
+        "note": 32,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.095056689342403,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -14.886019147089177,
+        "activeRmsDb": -14.854304990900085,
+        "dcOffset": 0.000025705172821192336,
+        "dcOffsetDb": -91.79958943871048,
+        "crestFactorDb": 14.854303955461287,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 29.79591836734694,
+        "attackMs": 2.4489795918367347,
+        "tailLevelDbRelPeak": -52.64064904794894,
+        "clippingSamples": 1,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 4065.2380952380954,
+        "spectral": {
+          "centroidHz": 212.80746262064622,
+          "highFrequencyRatio": 0.0012160340614992716
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/G#.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/G#.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/A.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/A.flac",
+        "note": 33,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.049319727891157,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999966621398926,
+        "peakDb": -0.000028992332906568943,
+        "rmsDb": -14.225482700250737,
+        "activeRmsDb": -14.201583735358692,
+        "dcOffset": 0.0004815313366942284,
+        "dcOffsetDb": -66.34750889932286,
+        "crestFactorDb": 14.201554743025785,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 22.19954648526077,
+        "attackMs": 1.5873015873015872,
+        "tailLevelDbRelPeak": -58.12308582435448,
+        "clippingSamples": 2,
+        "flatTopRuns": 1,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 4027.0975056689344,
+        "spectral": {
+          "centroidHz": 247.50051718398785,
+          "highFrequencyRatio": 0.004711242061266546
+        },
+        "pitch": {
+          "midi": 33.060955546555306,
+          "frequencyHz": 55.19399249061327,
+          "rawCents": 6.095554655530577,
+          "foldedCents": 6.095554655530577,
+          "confidence": 0.7853490812086519
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/A.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.000028992332906568943,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/A.flac",
+          "message": "2 samples are at/near full scale",
+          "value": 2,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/A#.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/A#.flac",
+        "note": 34,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 3.866122448979592,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -14.934827923950479,
+        "activeRmsDb": -14.881907603824555,
+        "dcOffset": -0.00014446184863925625,
+        "dcOffsetDb": -76.80493663781981,
+        "crestFactorDb": 14.88190656838576,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 46.82539682539682,
+        "attackMs": 24.217687074829932,
+        "tailLevelDbRelPeak": -55.69070380185447,
+        "clippingSamples": 3,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 3819.2743764172333,
+        "spectral": {
+          "centroidHz": 253.60502919631043,
+          "highFrequencyRatio": 0.002247512542332377
+        },
+        "pitch": {
+          "midi": 34.064527302467056,
+          "frequencyHz": 58.48806366047745,
+          "rawCents": 6.452730246705585,
+          "foldedCents": 6.4527302467056415,
+          "confidence": 0.8095866342844361
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/A#.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/A#.flac",
+          "message": "3 samples are at/near full scale",
+          "value": 3,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/B.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/B.flac",
+        "note": 35,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 3.566802721088435,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -14.900384139726302,
+        "activeRmsDb": -14.859217619374874,
+        "dcOffset": 0.00011989542389058015,
+        "dcOffsetDb": -78.42394785044934,
+        "crestFactorDb": 14.859216583936078,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 33.65079365079365,
+        "attackMs": 37.32426303854875,
+        "tailLevelDbRelPeak": -52.38958924128789,
+        "clippingSamples": 4,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 3533.1292517006805,
+        "spectral": {
+          "centroidHz": 213.82837985695548,
+          "highFrequencyRatio": 0.0013408729209832863
+        },
+        "pitch": {
+          "midi": 35.08110686625804,
+          "frequencyHz": 62.0253164556962,
+          "rawCents": 8.110686625803964,
+          "foldedCents": 8.110686625803964,
+          "confidence": 0.8261655251497744
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/B.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/B.flac",
+          "message": "4 samples are at/near full scale",
+          "value": 4,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/C.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/C.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 3.1829478458049887,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -14.568886194142877,
+        "activeRmsDb": -14.549692632638545,
+        "dcOffset": 0.00025549196490826955,
+        "dcOffsetDb": -71.85245507308028,
+        "crestFactorDb": 14.54969159719975,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 14.03628117913832,
+        "attackMs": 33.49206349206349,
+        "tailLevelDbRelPeak": -46.69156768198064,
+        "clippingSamples": 3,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 3168.888888888889,
+        "spectral": {
+          "centroidHz": 199.93753461577663,
+          "highFrequencyRatio": 0.0014387715734742903
+        },
+        "pitch": {
+          "midi": 36.0577667883459,
+          "frequencyHz": 65.625,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.8398136373799248
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/C.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/C.flac",
+          "message": "3 samples are at/near full scale",
+          "value": 3,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/C#.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/C#.flac",
+        "note": 37,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 2.904671201814059,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -13.907769976725927,
+        "activeRmsDb": -13.811475950360855,
+        "dcOffset": 0.00028630699175465833,
+        "dcOffsetDb": -70.8633609233689,
+        "crestFactorDb": 13.811474914922059,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 63.69614512471655,
+        "attackMs": 20.453514739229025,
+        "tailLevelDbRelPeak": -62.49664233504284,
+        "clippingSamples": 5,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 2840.9523809523807,
+        "spectral": {
+          "centroidHz": 199.71744386461808,
+          "highFrequencyRatio": 0.0015441576891483291
+        },
+        "pitch": {
+          "midi": 37.01098039827877,
+          "frequencyHz": 69.33962264150944,
+          "rawCents": 1.0980398278768178,
+          "foldedCents": 1.0980398278768462,
+          "confidence": 0.8557633753226731
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/C#.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/C#.flac",
+          "message": "5 samples are at/near full scale",
+          "value": 5,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/D.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/D.flac",
+        "note": 38,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 2.5748979591836734,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999696016311646,
+        "peakDb": -0.0002640408901084229,
+        "rmsDb": -13.498792210042561,
+        "activeRmsDb": -13.497223947830046,
+        "dcOffset": 0.0008930138788344921,
+        "dcOffsetDb": -60.98283582884953,
+        "crestFactorDb": 13.496959906939935,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 0.9070294784580499,
+        "attackMs": 1.383219954648526,
+        "tailLevelDbRelPeak": -31.737857309937098,
+        "clippingSamples": 2,
+        "flatTopRuns": 1,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 2573.968253968254,
+        "spectral": {
+          "centroidHz": 196.82659477787925,
+          "highFrequencyRatio": 0.0016273592262552542
+        },
+        "pitch": {
+          "midi": 38.048629548225605,
+          "frequencyHz": 73.62270450751252,
+          "rawCents": 4.862954822560539,
+          "foldedCents": 4.862954822560596,
+          "confidence": 0.8698729464548209
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/D.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0002640408901084229,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/D.flac",
+          "message": "2 samples are at/near full scale",
+          "value": 2,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "TAIL_TRUNCATION",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/D.flac",
+          "message": "Tail remains -31.7 dB below peak at EOF; possible truncation",
+          "value": -31.737857309937098,
+          "threshold": -35
+        }
+      ]
+    },
+    {
+      "file": "samples/finger/D#.flac",
+      "metrics": {
+        "instrumentId": "finger-bass",
+        "instrumentName": "Finger Electric Bass",
+        "file": "samples/finger/D#.flac",
+        "note": 39,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 5.385215419501134,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999998807907104,
+        "peakDb": -0.0000010354387945871882,
+        "rmsDb": -16.56594587529358,
+        "activeRmsDb": -16.482386931066568,
+        "dcOffset": 0.00007993375193439123,
+        "dcOffsetDb": -81.94539603231759,
+        "crestFactorDb": 16.482385895627772,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 102.63038548752834,
+        "attackMs": 27.210884353741495,
+        "tailLevelDbRelPeak": -65.23186806163409,
+        "clippingSamples": 4,
+        "flatTopRuns": 1,
+        "activeStartMs": 0,
+        "activeEndMs": 5282.562358276645,
+        "spectral": {
+          "centroidHz": 226.1121328299017,
+          "highFrequencyRatio": 0.0017182877672998727
+        },
+        "pitch": {
+          "midi": 38.999116762384276,
+          "frequencyHz": 77.77777777777777,
+          "rawCents": -0.08832376157243971,
+          "foldedCents": -0.08832376157238286,
+          "confidence": 0.8837781149403046
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/D#.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0000010354387945871882,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "finger-bass",
+          "file": "samples/finger/D#.flac",
+          "message": "4 samples are at/near full scale",
+          "value": 4,
+          "threshold": 0
+        }
+      ]
+    }
+  ]
+}

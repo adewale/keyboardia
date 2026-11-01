@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://keyboardia.dev/test-schemas/agent-skills-discovery-0.2.0.json",
+  "$comment": "Vendored validation schema for Cloudflare agent-skills-discovery-rfc v0.2.0 at commit 1bd1167983fa5ac9cd47987710c525308eda1a98. The normative $schema URI is explicitly opaque and need not resolve; this schema encodes the index MUSTs in that pinned RFC.",
+  "type": "object",
+  "required": ["$schema", "skills"],
+  "properties": {
+    "$schema": {
+      "const": "https://schemas.agentskills.io/discovery/0.2.0/schema.json"
+    },
+    "skills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type", "description", "url", "digest"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          },
+          "type": {
+            "enum": ["skill-md", "archive"]
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1024
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

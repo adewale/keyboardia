@@ -1,0 +1,517 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+/* Mobile: tighter padding */
+@media (max-width: 768px) {
+  .app {
+    padding: 12px;
+  }
+}
+
+.app-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    margin-bottom: 16px;
+  }
+
+  .app-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+  }
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0;
+  color: var(--color-brand-text);
+}
+
+.subtitle {
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  margin-top: 8px;
+}
+
+/* Published session subtitle - subtle purple tint */
+.subtitle.published {
+  color: var(--color-purple-text);
+}
+
+/* Header title group - Keyboardia / Session Name */
+.header-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.title-separator {
+  color: var(--color-border-hover);
+  font-size: 1.5rem;
+  font-weight: 300;
+  margin: 0 4px;
+}
+
+.session-name {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-name:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-text);
+}
+
+.session-name:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-accent-muted);
+}
+
+.session-name-disabled {
+  cursor: default;
+}
+
+.session-name-disabled:hover {
+  background: none;
+  color: var(--color-text-muted);
+}
+
+.session-name-saving {
+  color: var(--color-text-muted);
+  font-size: 0.9em;
+  margin-left: 4px;
+}
+
+.session-name-input {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--color-accent-muted);
+  border-radius: 4px;
+  padding: 2px 8px;
+  outline: none;
+  max-width: 300px;
+  width: auto;
+  min-width: 150px;
+}
+
+.session-name-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-muted);
+}
+
+.session-name-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* Mobile adjustments for session name */
+@media (max-width: 768px) {
+  .header-title-group {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .title-separator {
+    display: none;
+  }
+
+  .session-name,
+  .session-name-input {
+    font-size: 1rem;
+    max-width: 200px;
+  }
+}
+
+/* Hide editing UI in portrait mode - playback only */
+@media (max-width: 768px) and (orientation: portrait) {
+  .app-header {
+    display: none;
+  }
+
+  .cloudflare-footer {
+    display: none;
+  }
+
+  .controls-row {
+    display: none;
+  }
+}
+
+/* Session controls */
+.session-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.session-controls.session-loading,
+.session-controls.session-error {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+.session-controls.session-error {
+  color: var(--color-error-text);
+}
+
+.session-controls.session-not-found {
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.not-found-text {
+  font-size: 0.85rem;
+  color: var(--color-error-text);
+}
+
+/* Orphan banner */
+.orphan-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--color-yellow-muted);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: var(--color-warning-text);
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  max-width: 600px;
+}
+
+.orphan-dismiss {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
+  background: none;
+  border: none;
+  color: var(--color-warning-text);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.orphan-dismiss:hover {
+  opacity: 1;
+}
+
+/* Remix lineage */
+.remix-lineage {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  margin-right: 8px;
+}
+
+.lineage-arrow {
+  color: var(--color-text-muted);
+}
+
+/* Phase 21: Lineage is text-only, no links (spec lines 472-479) */
+.lineage-text {
+  color: var(--color-text-muted);
+}
+
+.remix-count,
+.remix-count-standalone {
+  color: var(--color-text-muted);
+  font-size: 0.75rem;
+}
+
+.remix-count-standalone {
+  margin-right: 8px;
+}
+
+.player-count {
+  color: var(--color-success-text);
+  font-size: 0.75rem;
+  font-weight: 500;
+  margin-right: 12px;
+  padding: 2px 8px;
+  background: rgba(74, 222, 128, 0.15);
+  border-radius: 4px;
+}
+
+.session-btn {
+  font-size: 0.85rem;
+  padding: 6px 12px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 6px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.session-btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
+}
+
+.session-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Phase 21: Publish button - primary action style */
+.publish-btn {
+  background: var(--color-purple);
+  border-color: var(--color-purple);
+  color: var(--color-on-purple);
+}
+
+.publish-btn:hover:not(:disabled) {
+  background: var(--color-purple-dark);
+  border-color: var(--color-purple-dark);
+  color: var(--color-on-purple);
+}
+
+.remix-btn:hover:not(:disabled) {
+  border-color: var(--color-orange);
+  color: var(--color-orange-text);
+}
+
+/* Phase 31: Primary Action Button Pattern (PHASE-31-UI-ENHANCEMENTS.md)
+ * On published sessions, Remix is the primary action with elevated visual treatment.
+ * Uses static elevation (not animation) for accessibility and reduced-motion compliance.
+ */
+.session-btn.remix-btn.primary-action {
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 2px 8px rgba(232, 90, 48, 0.15);
+  transform: scale(1.02);
+  font-weight: 500;
+  color: var(--color-accent-text);
+}
+
+.session-btn.remix-btn.primary-action:hover:not(:disabled) {
+  border-color: var(--color-accent-light);
+  box-shadow: 0 2px 12px rgba(232, 90, 48, 0.25);
+  color: var(--color-accent-text);
+}
+
+.new-btn:hover:not(:disabled) {
+  border-color: var(--color-teal);
+  color: var(--color-teal-text);
+}
+
+/* Phase 27: MIDI download button */
+.download-btn:hover:not(:disabled) {
+  border-color: var(--color-info);
+  color: var(--color-info-text);
+}
+
+/* Phase 21: Invite button - outline style (visually distinct) */
+.invite-btn {
+  background: transparent;
+  border-color: var(--color-border-light);
+  color: var(--color-text-muted);
+}
+
+.invite-btn:hover:not(:disabled) {
+  border-color: var(--color-brand);
+  color: var(--color-brand-text);
+  background: var(--color-accent-muted);
+}
+
+/* Phase 21: Published badge */
+.published-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--color-purple-text);
+  background: var(--color-purple-muted);
+  border: 1px solid rgba(155, 89, 182, 0.3);
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-right: 8px;
+}
+
+/* Share dropdown container */
+.share-dropdown-container {
+  position: relative;
+}
+
+.share-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: 4px;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-surface-active);
+  border-radius: 6px;
+  min-width: 140px;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: dropdown-fade-in 150ms ease-out;
+}
+
+@keyframes dropdown-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.share-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 14px;
+  border: none;
+  background: transparent;
+  color: var(--color-text);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.share-dropdown-item:first-child {
+  border-radius: 5px 5px 0 0;
+}
+
+.share-dropdown-item:last-child {
+  border-radius: 0 0 5px 5px;
+}
+
+.share-dropdown-item:hover {
+  background: var(--color-surface-hover);
+}
+
+.share-dropdown-item:active {
+  background: var(--color-surface-active);
+}
+
+/* QR Mode layout adjustment */
+.app.qr-mode-large {
+  margin-right: 280px;
+  transition: margin-right 250ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Controls row - sample picker and effects panel */
+.controls-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .controls-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Mobile-only effects wrapper - hidden on desktop where FX is in transport bar */
+.mobile-effects-wrapper {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-effects-wrapper {
+    display: block;
+    width: 100%;
+  }
+}
+
+/* Cloudflare footer - very subtle, appears on all pages */
+.cloudflare-footer {
+  margin-top: auto;
+  padding: 24px 0 12px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--color-text-muted, #999);
+  letter-spacing: 0.3px;
+}
+
+.cloudflare-footer a {
+  color: var(--color-text-muted, #888);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.cloudflare-footer a:hover {
+  color: var(--color-text, #fff);
+}
+
+/* Phase 34: Suspense loading fallback styles */
+.qr-loading,
+.sample-picker-loading,
+.effects-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--color-text-muted, #888);
+  font-size: 0.875rem;
+}
+
+.sample-picker-loading {
+  min-height: 100px;
+  background: var(--surface-secondary, #1a1a2e);
+  border-radius: 8px;
+}
+
+.effects-loading {
+  min-height: 60px;
+}

@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "sample-pipeline-fixture",
+    "name": "Sample Pipeline Fixture",
+    "releaseTime": 0.2,
+    "playableRange": { "min": 48, "max": 72 },
+    "velocityCrossfade": 0,
+    "credits": {
+      "source": "Generated sine fixture",
+      "url": "https://example.com/keyboardia-test-fixture",
+      "license": "Test fixture"
+    }
+  },
+  "sourceRevision": "generated-sine-v1",
+  "sources": [
+    {
+      "id": "c4",
+      "path": "masters/C4.wav",
+      "sha256": "1ee61b14e152b38506327dc1492f196a78586e7fabf1b677d2576b1c0ac42348"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "c4",
+        "output": "C4.wav",
+        "rootMidi": 60,
+        "velocity": { "min": 0, "max": 127 },
+        "processing": { "fadeInSec": 0.003, "fadeOutSec": 0.02 }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "wav",
+    "container": "wav",
+    "sampleRate": 44100,
+    "channels": { "mode": "preserve" }
+  },
+  "leveling": { "mode": "preserve-source" },
+  "evidence": {
+    "sampleLabSourceId": "vcsl",
+    "currentInstrumentDir": "public/__sample-pipeline-fixtures/current",
+    "anchors": [
+      {
+        "id": "low",
+        "targetMidi": 48,
+        "currentFile": "C4.wav",
+        "currentRootMidi": 60,
+        "candidateOutput": "C4.wav",
+        "candidateRootMidi": 60,
+        "velocity": 32
+      },
+      {
+        "id": "mid",
+        "targetMidi": 60,
+        "currentFile": "C4.wav",
+        "currentRootMidi": 60,
+        "candidateOutput": "C4.wav",
+        "candidateRootMidi": 60,
+        "velocity": 80
+      },
+      {
+        "id": "high",
+        "targetMidi": 72,
+        "currentFile": "C4.wav",
+        "currentRootMidi": 60,
+        "candidateOutput": "C4.wav",
+        "candidateRootMidi": 60,
+        "velocity": 127
+      }
+    ]
+  }
+}

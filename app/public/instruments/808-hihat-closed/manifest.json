@@ -1,0 +1,23 @@
+{
+  "id": "808-hihat-closed",
+  "name": "808 Hi-Hat (Closed)",
+  "type": "sampled",
+  "releaseTime": 0.05,
+  "playableRange": {
+    "min": 30,
+    "max": 73
+  },
+  "credits": {
+    "source": "TR-808 by Michael Fischer (1994), CC0 repackage (ch8/CH.WAV)",
+    "url": "https://github.com/tidalcycles/sounds-tr808-fischer",
+    "license": "CC0 1.0 Universal (Public Domain)"
+  },
+  "samples": [
+    {
+      "note": 42,
+      "file": "hihat.mp3"
+    }
+  ],
+  "playbackNote": 42,
+  "chokeGroup": "808-hihat"
+}

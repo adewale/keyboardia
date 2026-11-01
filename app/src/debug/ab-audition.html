@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Keyboardia A/B Audition Lab</title>
+    <style>
+      :root { color-scheme: dark; font-family: system-ui, sans-serif; background: #11131a; color: #f7f7fb; }
+      body { max-width: 760px; margin: 3rem auto; padding: 0 1rem; }
+      main { display: grid; gap: 1.25rem; padding: 1.5rem; border: 1px solid #34394a; border-radius: 16px; background: #191c26; }
+      h1, p { margin: 0; }
+      .files, .controls { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+      label { display: grid; gap: .4rem; }
+      button { min-height: 48px; border: 1px solid #535b76; border-radius: 9px; color: inherit; background: #252a39; font-weight: 700; }
+      button[aria-pressed="true"] { background: #626cff; border-color: #8d94ff; }
+      output { min-height: 1.5em; color: #aeb6d5; }
+      kbd { padding: .1rem .35rem; border-radius: 4px; background: #34394a; }
+      @media (max-width: 560px) { .files, .controls { grid-template-columns: 1fr; } }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>A/B Audition Lab</h1>
+      <p>Comparison is RMS level-matched. Null is raw unity gain after onset alignment.</p>
+      <section class="files" aria-label="Audio files">
+        <label>A (before)<input id="file-a" type="file" accept="audio/*,.wav" /></label>
+        <label>B (after)<input id="file-b" type="file" accept="audio/*,.wav" /></label>
+      </section>
+      <section class="controls" aria-label="Audition mode">
+        <button id="mode-a" type="button" aria-pressed="false"><kbd>A</kbd> Before</button>
+        <button id="mode-b" type="button" aria-pressed="false"><kbd>B</kbd> After</button>
+        <button id="mode-x" type="button" aria-pressed="false"><kbd>X</kbd> Blind</button>
+        <button id="mode-n" type="button" aria-pressed="false"><kbd>N</kbd> Raw null</button>
+      </section>
+      <label>Loop start <input id="loop-start" type="range" min="0" max="100" value="0" /></label>
+      <label>Loop end <input id="loop-end" type="range" min="0" max="100" value="100" /></label>
+      <output id="status" aria-live="polite">Load both WAV files to begin.</output>
+    </main>
+    <script type="module" src="./ab-audition.ts"></script>
+  </body>
+</html>

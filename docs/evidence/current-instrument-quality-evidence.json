@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 1,
+  "subjectCommit": "d178d4c033a0d8d25267b625880d8c69a59f7c84",
+  "claim": "Current PR acceptance evidence, captured from one clean measured implementation commit. The publication commit may be later but must not relabel these receipts.",
+  "artifacts": {
+    "browserDecodeChromium": {
+      "path": "browser-decode-chromium-d178d4c.json",
+      "sha256": "4f85026b8d7f2f1764f846e0dae39ad635eb9d426cf09f068a8b2b9ae39b6c9f"
+    },
+    "browserDecodeWebKit": {
+      "path": "browser-decode-webkit-d178d4c.json",
+      "sha256": "a863173644571461eba0dbc6b64257ea9d2be58f1576c93d3980e81163ea9f55"
+    },
+    "candidateLivePrimary": {
+      "path": "candidate-live-primary-d178d4c.json",
+      "sha256": "3fa6bffc0f3d19eced0d076ce3ffba5cba2bfc4fae7b313693111e6e373ade6b"
+    },
+    "candidateLiveConfirmation": {
+      "path": "candidate-live-confirmation-d178d4c.json",
+      "sha256": "e9337be9dec934bafaacaaa3989a7133125ee4e9b8a589ef5ba9590ff9552a5e"
+    },
+    "candidateSampleQuality": {
+      "path": "candidate-sample-quality-d178d4c.json",
+      "sha256": "fe9cf3ffe1da210a624beb92e8b370c19f8dfc89e3728a015154c119c4fe37ee"
+    },
+    "candidateInstrumentQualityPrimary": {
+      "path": "candidate-instrument-quality-primary-d178d4c.json",
+      "sha256": "6e9809737f8f105700985e162d1d3803586bb1f7a8b6fcd962c793d2afc3a809"
+    },
+    "candidateInstrumentQualityConfirmation": {
+      "path": "candidate-instrument-quality-confirmation-d178d4c.json",
+      "sha256": "cce1b6ddc3a6f4fcf13097ba805d31d2aa5f0e51e71e289f55f9ba66db4f2aa1"
+    },
+    "trackBusDynamicsChromium": {
+      "path": "track-bus-dynamics-chromium-d178d4c.json",
+      "sha256": "a0387f383270b925bccda551a229fe46b91172b9b340043b3b2ba675a25c54bc"
+    },
+    "trackBusDynamicsWebKit": {
+      "path": "track-bus-dynamics-webkit-d178d4c.json",
+      "sha256": "67952cd28f19bfbb705e667f1180c5fa96e73e3694837c4fdbe44a46aa01ebe4"
+    },
+    "browserMasterCapture": {
+      "path": "browser-master-capture-d178d4c.json",
+      "sha256": "e966db885e58c224bb7df3e29864ba71e7328cd15382f011d96a04dd0d745326"
+    },
+    "browserCapacityCapture": {
+      "path": "browser-capacity-capture-d178d4c.json",
+      "sha256": "b811555179428c01888d5ca4d8fbc34bd0155709a5acf7bf73ccf0fe8acef610"
+    },
+    "sampleLoadNetworkReadiness": {
+      "path": "sample-load-network-readiness-d178d4c.json",
+      "sha256": "ae594e5814430f99f705d0fdcdbc2ae401916caa6f7c437a847f805b21c42e0c"
+    }
+  }
+}

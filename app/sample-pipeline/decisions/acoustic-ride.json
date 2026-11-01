@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "candidateId": "acoustic-ride",
+  "buildReportSha256": "885d48d6c0c230c19657813a7f9112bd146df6c9743b5338767a4545daeaadb2",
+  "outputHashes": [
+    "e100d42962288aa7c2c4984d4b49f1bcbbb0b838f3e10fc4be2c8ebb341919f6",
+    "a8cabf88bb197b0728dede3f34ffee57f67ec929af715c79d69c9ee745067055",
+    "f491c31a60c9c800dd8797ddf238c748461fc60dfd9a6d97ac80dd6863ccc994",
+    "3a701c166bf803bfefd08de1ad330ab817ad49423001eb6b4c1b98f1155651e9",
+    "ab394725d62080b6355bcb4bf8f4b60f15f69a63c828ba49559c5c2436cecbe4",
+    "f5482bca94847357c3fe48e1a5ff546d50188357014064f3c13f547117772ed4",
+    "e5d88fc04cd3c0f77c37abeaea2436c13312289de3fefd5d2e020403fd3af5ca",
+    "4e7537aadca4da43aef0d5da8406121545ffef3534cc7584c6617401e5bb81cd",
+    "188c6874ce97a0b6c81d0930e790e2dde4f41954252d9247a1e5f79bc1c75377",
+    "082ad9ffe8d772affe3ba2abacdff76298fbafbd0c60be1b8a91e35f029ad214"
+  ],
+  "decision": "rejected",
+  "reviewer": "Human reviewer (user-provided decision)",
+  "reviewedAt": "2026-07-10T19:19:27.000Z",
+  "anchorsReviewed": [
+    "low-soft",
+    "mid-medium",
+    "high-loud"
+  ],
+  "pitchSpanSemitones": 12,
+  "reviewDispositions": {},
+  "notes": "Rejected at the blinded-anchor gate. Human reviewer statement: \u201cI kept preferring the current samples in all the blind tests.\u201d Runtime promotion review was therefore unnecessary; production remains unchanged."
+}

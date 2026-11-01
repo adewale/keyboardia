@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "baselineCommit": "4b7ffc266c1351bddd26ec8a1ebda027491fde2b",
+  "capturedAt": "2026-08-10",
+  "sampleRate": 44100,
+  "seed": 4390913,
+  "lane": "offline-component",
+  "fixture": "S1 procedural proxy",
+  "description": "Tone-free pre-master component sum using the S1 rhythm with procedural equivalents for sampled hits. Dynamics claims are intentionally excluded from this offline baseline.",
+  "metrics": {
+    "peakDbfs": 8.129407318989372,
+    "rmsDb": -11.374865656257588,
+    "hatBand6to12kDb": -59.21152246330795,
+    "hatCentroidHz": 8097.624383004305,
+    "adjacentHitCorrelation": 0.45409614659219455
+  },
+  "reproducibility": {
+    "renderer": "node-web-audio-api@2.0.0",
+    "node": ">=22",
+    "pcmCopy": "AudioBuffer.copyFromChannel",
+    "proceduralRng": "mulberry32"
+  }
+}

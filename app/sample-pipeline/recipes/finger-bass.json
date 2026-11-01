@@ -1,0 +1,255 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "finger-bass",
+    "name": "Finger Electric Bass",
+    "releaseTime": 0.3,
+    "playableRange": {
+      "min": 26,
+      "max": 45
+    },
+    "gainDb": 0,
+    "velocityCrossfade": 0,
+    "priorityNotes": [
+      36
+    ],
+    "credits": {
+      "source": "FreePats Finger Bass YR",
+      "url": "https://freepats.zenvoid.org/ElectricGuitar/clean-electric-bass.html#BassYR",
+      "license": "CC0 1.0"
+    }
+  },
+  "sourceRevision": "FingerBassYR-SFZ+FLAC-20190930@sha256:36f87ec9eb086ef25050312522aacf71213c582f46989e0c5a12681304596587",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "samples/finger/A.flac",
+      "sha256": "c7efb91b6f7a668939b3237e8ca82955697cc7c6c59736768d02c535169dd7e2"
+    },
+    {
+      "id": "source-0002",
+      "path": "samples/finger/A#.flac",
+      "sha256": "561c1c7dacf11e30ad0170cf8dd2027deb81d90b8043fc7fa8935f6be371f0b8"
+    },
+    {
+      "id": "source-0003",
+      "path": "samples/finger/B.flac",
+      "sha256": "a06bf84c78e0e001280c540561ff973756753eed2fc82edb8cf2f29efc69f286"
+    },
+    {
+      "id": "source-0004",
+      "path": "samples/finger/C.flac",
+      "sha256": "e612eaeec3e502fa6a90382c698b2c4fa41d9ca5ed8f775a9a207beb9609a6f9"
+    },
+    {
+      "id": "source-0005",
+      "path": "samples/finger/C#.flac",
+      "sha256": "be3b898339dea26b5e7627e87dd353401d66273827599a0e7404017ff6b057fc"
+    },
+    {
+      "id": "source-0006",
+      "path": "samples/finger/D.flac",
+      "sha256": "bd93958974c455a09d9b887479285535374729a45fb544c8a4bff8206d8158ac"
+    },
+    {
+      "id": "source-0007",
+      "path": "samples/finger/D#.flac",
+      "sha256": "f0ed805d30d9db76b59152162ea8d33cf43866b41b270ee9049243b501dcbc22"
+    },
+    {
+      "id": "source-0008",
+      "path": "samples/finger/E.flac",
+      "sha256": "1e6ccfc378443626e2d581ea8ff7c8c455e55467fccdb85d8321344a43e26d46"
+    },
+    {
+      "id": "source-0009",
+      "path": "samples/finger/F.flac",
+      "sha256": "1ae547465673989bc6d99a4a109fc39a06bad130f6bfb9e1142cb5cb7e1fbcbf"
+    },
+    {
+      "id": "source-0010",
+      "path": "samples/finger/F#.flac",
+      "sha256": "a314889f2f58f87c5db479b88fb19448d83fab6aa7023094d8ddfeb0a4dc3b36"
+    },
+    {
+      "id": "source-0011",
+      "path": "samples/finger/G.flac",
+      "sha256": "48c14de530c005366b51a534fd7d3179a8765a4fa3c12dd3194c0eab4f87bb51"
+    },
+    {
+      "id": "source-0012",
+      "path": "samples/finger/G#.flac",
+      "sha256": "0e3093804ce12bfeff996aa3dd5a304aa18e29e22bfd3dfa1b7b7edc4874910d"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 28,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 29,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 30,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 31,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 32,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 33,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 34,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 35,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 37,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 38,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 39,
+        "velocity": {
+          "min": 0,
+          "max": 127
+        },
+        "articulation": "sustain"
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "preserve-source"
+  },
+  "evidence": {
+    "sampleLabSourceId": "freepats-finger-bass-yr",
+    "currentInstrumentDir": "public/instruments/finger-bass",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 28,
+        "velocity": 32,
+        "currentFile": "C1.mp3",
+        "currentRootMidi": 24,
+        "candidateOutput": "source-0008.m4a",
+        "candidateRootMidi": 28
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 36,
+        "velocity": 80,
+        "currentFile": "C2.mp3",
+        "currentRootMidi": 36,
+        "candidateOutput": "source-0004.m4a",
+        "candidateRootMidi": 36
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 40,
+        "velocity": 120,
+        "currentFile": "Gb2.mp3",
+        "currentRootMidi": 42,
+        "candidateOutput": "source-0007.m4a",
+        "candidateRootMidi": 39
+      }
+    ]
+  }
+}

@@ -1,0 +1,356 @@
+.step-cell {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--color-border);
+  border-radius: 4px;
+  background: var(--color-surface-elevated);
+  cursor: pointer;
+  position: relative;
+  /* No transitions on playing state to prevent flickering */
+  /* Prevent text selection on long press */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Mobile: larger touch targets (48px minimum) */
+@media (max-width: 768px) {
+  .step-cell {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
+}
+
+/* Mobile portrait: even larger cells for easier tapping */
+@media (max-width: 480px) and (orientation: portrait) {
+  .step-cell {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border-width: 2px;
+    /* Scroll snap alignment - allows partial visibility at edges */
+    scroll-snap-align: start;
+  }
+
+  .step-cell.beat-start {
+    border-left-width: 4px;
+  }
+
+  .step-cell.playing {
+    border-width: 4px;
+  }
+
+  .step-cell.active.playing {
+    border-width: 4px;
+  }
+}
+
+.step-cell:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-light);
+}
+
+/* Beat boundaries - every 4 steps */
+.step-cell.beat-start {
+  border-left-color: var(--color-border-light);
+  border-left-width: 3px;
+}
+
+/* Active step (has a note) */
+.step-cell.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent-light);
+}
+
+.step-cell.active:hover {
+  background: var(--color-accent-light);
+  /* Subtle glow hint that step is editable */
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+}
+
+/* Playing state - simple border highlight (no animations to prevent flickering) */
+.step-cell.playing {
+  border-color: var(--color-playhead);
+  border-width: 3px;
+}
+
+.step-cell.active.playing {
+  border-color: var(--color-playhead);
+  border-width: 3px;
+}
+
+/* Playing indicator dot - no animation */
+.playing-indicator {
+  position: absolute;
+  inset: 4px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 2px;
+}
+
+/* Selected state for p-lock editing and multi-select */
+.step-cell.selected {
+  border-color: var(--color-info);
+  box-shadow: 0 0 0 2px rgba(74, 158, 206, 0.4);
+  background: rgba(74, 158, 206, 0.15);
+}
+
+.step-cell.active.selected {
+  border-color: var(--color-info);
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(74, 158, 206, 0.5);
+}
+
+/* Phase 31F: Selection anchor indicator (shows extend-from point) */
+.step-cell.anchor::after {
+  content: '▲';
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  color: var(--color-info-text);
+  line-height: 1;
+}
+
+.step-cell.anchor {
+  border-width: 3px;
+}
+
+/* Parameter Lock indicator - color coded badges */
+.step-cell.has-lock {
+  border-color: var(--color-purple);
+}
+
+.step-cell.active.has-lock {
+  border-color: var(--color-purple);
+}
+
+.lock-badges {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  display: flex;
+  gap: 1px;
+}
+
+.lock-badge {
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+  font-size: 8px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-on-bright);
+}
+
+/* Pitch lock - blue */
+.lock-badge.pitch {
+  background: var(--color-info);
+}
+
+/* Volume lock - accent color (matches velocity bars) */
+.lock-badge.volume {
+  background: var(--color-accent);
+}
+
+/* Phase 29B: Tie lock - blue */
+.lock-badge.tie {
+  background: var(--color-blue);
+}
+
+/* Phase 29B: Visual tie indicator - left border curve effect */
+.step-cell.has-tie {
+  border-left-style: double;
+  border-left-width: 4px;
+  border-left-color: var(--color-blue);
+}
+
+.step-cell.active.has-tie {
+  border-left-color: var(--color-blue);
+}
+
+/* Velocity indicator - fill height based on volume p-lock */
+.step-cell .velocity-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 0 0 2px 2px;
+  pointer-events: none;
+}
+
+.step-cell.active .velocity-fill {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Phase 31C: Inactive steps within track - reduce visual noise */
+.step-cell:not(.active):not(.dimmed) {
+  opacity: 0.65;
+}
+
+.step-cell:not(.active):not(.dimmed):hover {
+  opacity: 1;
+}
+
+/* Dimmed steps - beyond track's stepCount (Phase 31C: 30-40% opacity) */
+.step-cell.dimmed {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* Dimmed active steps use muted warm tones that are intentionally distinct from
+   the vibrant accent color. These are derived from --color-accent (#e85a30) but
+   desaturated and warmed to visually communicate "beyond loop boundary". */
+.step-cell.dimmed.active {
+  background: #4a3a32;
+  border-color: #3a2a22;
+}
+
+/* Page separator - visual break every 16 steps */
+.step-cell.page-end {
+  margin-right: 8px;
+}
+
+/* Phase 11: Remote change attribution flash */
+@keyframes remote-flash {
+  0% {
+    box-shadow: 0 0 0 4px var(--flash-color, transparent),
+                0 0 12px var(--flash-color, transparent);
+    transform: scale(1.1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent,
+                0 0 0 transparent;
+    transform: scale(1);
+  }
+}
+
+.step-cell.remote-flash {
+  animation: remote-flash 600ms ease-out;
+  z-index: 10;
+}
+
+/* ==========================================================================
+   Phase 31H: Range Warnings
+   Visual indicators for notes outside instrument range
+   ========================================================================== */
+
+/* Out of range - notes that can't be played by the instrument */
+.step-cell.out-of-range {
+  border-color: var(--color-error) !important;
+  background: rgba(238, 85, 85, 0.15);
+}
+
+.step-cell.active.out-of-range {
+  background: linear-gradient(135deg, var(--color-accent) 50%, rgba(238, 85, 85, 0.4) 50%);
+  border-color: var(--color-error) !important;
+}
+
+.step-cell.out-of-range::before {
+  content: '⚠';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  color: var(--color-error-text);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.step-cell.active.out-of-range::before {
+  font-size: 10px;
+  top: 2px;
+  left: 2px;
+  transform: none;
+}
+
+/* Suboptimal range - notes that work but may not sound ideal */
+.step-cell.suboptimal-range {
+  border-color: var(--color-warning) !important;
+}
+
+.step-cell.active.suboptimal-range {
+  border-color: var(--color-warning) !important;
+  /* Subtle corner indicator */
+  background: linear-gradient(135deg, var(--color-accent) 85%, rgba(255, 193, 7, 0.4) 85%);
+}
+
+/* ==========================================================================
+   MOBILE INTERFACE SIMPLIFICATION - Animation Polish
+
+   Enhanced animations for mobile playback experience:
+   - Cell pulse animation (60fps, subtle scale/opacity)
+   - Playhead glow effect (box-shadow, smooth interpolation)
+   - will-change optimizations for GPU acceleration
+   ========================================================================== */
+
+/* will-change optimization for animated elements */
+.step-cell.playing {
+  will-change: transform, box-shadow;
+}
+
+/* Cell pulse animation - 60fps smooth */
+@keyframes step-pulse {
+  0% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.4);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 12px 2px rgba(78, 205, 196, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0);
+  }
+}
+
+/* Apply pulse to active playing cells */
+.step-cell.active.playing {
+  animation: step-pulse 0.2s ease-out;
+}
+
+/* Playhead glow effect - smooth box-shadow */
+.step-cell.playing:not(.active) {
+  box-shadow: inset 0 0 8px rgba(78, 205, 196, 0.3);
+}
+
+/* Portrait mode - larger pulse for visibility */
+@media (max-width: 768px) and (orientation: portrait) {
+  .step-cell.active.playing {
+    animation: step-pulse-portrait 0.25s ease-out;
+  }
+
+  @keyframes step-pulse-portrait {
+    0% {
+      transform: scale(1.12);
+      box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.5);
+    }
+    50% {
+      transform: scale(1.06);
+      box-shadow: 0 0 16px 4px rgba(78, 205, 196, 0.4);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 8px 0 rgba(78, 205, 196, 0.2);
+    }
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .step-cell.playing,
+  .step-cell.active.playing {
+    animation: none !important;
+    will-change: auto;
+  }
+
+  .step-cell.playing:not(.active) {
+    box-shadow: none;
+  }
+}

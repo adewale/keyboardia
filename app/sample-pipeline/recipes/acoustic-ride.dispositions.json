@@ -1,0 +1,67 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-ride",
+  "status": "mapping-reviewed-candidate-not-listening-approved",
+  "source": {
+    "revision": "719fe72bc6693b94f1229674e202881145ab44ed",
+    "license": "CC BY 4.0",
+    "licenseEvidence": "https://github.com/freepats/muldjordkit/blob/719fe72bc6693b94f1229674e202881145ab44ed/LICENSE.txt",
+    "sfzPath": "MuldjordKit 20201018.sfz",
+    "sfzSha256": "ecf062bdaf554253e7001b174ff7934bfcc61b1b6225c16a1caea173d0d12edb",
+    "preprocessedSfzSha256": "44dbb72bb5bb94cd19effce0bbbb8118d68bfd08a7496f03a77f667b236dfef7"
+  },
+  "import": {
+    "commandOptions": "--random-as-round-robin --include-roots 56 --mapped-root 51",
+    "selectedLosslessSources": 10,
+    "explicitMappings": 25,
+    "warnings": [
+      "ride-bow-right:51:0-15: explicitly converted 3 contiguous SFZ random ranges to deterministic round robin",
+      "ride-bow-right:51:16-31: explicitly converted 3 contiguous SFZ random ranges to deterministic round robin",
+      "ride-bow-right:51:32-47: explicitly converted 3 contiguous SFZ random ranges to deterministic round robin",
+      "ride-bow-right:51:48-63: explicitly converted 3 contiguous SFZ random ranges to deterministic round robin",
+      "ride-bow-right:51:64-79: explicitly converted 3 contiguous SFZ random ranges to deterministic round robin",
+      "ride-bow-right:51:80-95: explicitly converted 3 contiguous SFZ random ranges to deterministic round robin",
+      "ride-bow-right:51:96-122: explicitly converted 4 contiguous SFZ random ranges to deterministic round robin",
+      "ride-bow-right:51:123-127: explicitly converted 3 contiguous SFZ random ranges to deterministic round robin",
+      "sfz region 1 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 2 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 3 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 4 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 5 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 6 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 7 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 8 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 9 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 10 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 11 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 12 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 13 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 14 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 15 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 16 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 17 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 18 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 19 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 20 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 21 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 22 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 23 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 24 key range 56-56 imported as root 51; review nearest-root boundaries",
+      "sfz region 25 key range 56-56 imported as root 51; review nearest-root boundaries"
+    ]
+  },
+  "decisions": [
+    "Mapping identity comes only from the pinned SFZ opcodes; filenames were not used to infer pitch or velocity.",
+    "Every selected lossless source is SHA-256 pinned and maps to exactly one delivery output.",
+    "SFZ key-range warnings are retained as evidence; runtime nearest-root selection uses the declared pitch_keycenter roots.",
+    "Contiguous lorand/hirand ranges are explicitly converted, in source order, to complete deterministic round-robin indices.",
+    "Shipping gain preserves source relationships plus any inherited SFZ volume/group_volume adjustment.",
+    "Candidate is not authorized for production until exact-hash blind listening and all objective review findings are dispositioned."
+  ],
+  "authorityEvidence": {
+    "url": "https://github.com/freepats/muldjordkit/blob/719fe72bc6693b94f1229674e202881145ab44ed/README.txt",
+    "sha256": "614dd76366aa4d08d4a4e90bf65c55ff8a449aab42459563d35d3d15e21b5fa6",
+    "finding": "The pinned README identifies Lars Muldjord, the DrumGizmo credit requirement, Roberto\u2019s FreePats derivative, and CC BY 4.0 redistribution terms.",
+    "localPath": "sample-pipeline/rights/muldjordkit/README.txt"
+  }
+}

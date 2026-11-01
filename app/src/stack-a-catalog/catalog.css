@@ -1,0 +1,95 @@
+html,
+body,
+#root {
+  min-width: 100%;
+  min-height: 100%;
+}
+
+body {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.stack-a-catalog {
+  min-height: 100vh;
+  padding: 24px;
+}
+
+.stack-a-catalog-header {
+  margin-bottom: 20px;
+}
+
+.stack-a-catalog-title {
+  margin: 0;
+  font-size: 18px;
+}
+
+.stack-a-catalog-description {
+  margin: 4px 0 0;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.stack-a-stage {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 20px;
+  min-height: 120px;
+  padding: 20px;
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  background: var(--color-surface);
+}
+
+.stack-a-stage--column {
+  flex-direction: column;
+}
+
+.stack-a-surface {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stack-a-surface-label {
+  color: var(--color-text-muted);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.stack-a-drawer-host {
+  width: 100%;
+}
+
+.stack-a-drawer-host .track-drawer {
+  display: block;
+  position: static;
+  width: 100%;
+  max-width: 100%;
+}
+
+.stack-a-event-log {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+@media (max-width: 768px) {
+  .stack-a-catalog {
+    padding: 8px;
+  }
+
+  .stack-a-catalog-header {
+    margin-bottom: 8px;
+  }
+
+  .stack-a-stage {
+    gap: 8px;
+    padding: 8px;
+  }
+}
