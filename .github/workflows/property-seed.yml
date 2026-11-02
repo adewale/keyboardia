@@ -14,7 +14,7 @@ env:
 jobs:
   randomized-properties:
     name: Unit tests with a rotating fast-check seed
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -56,6 +56,7 @@ jobs:
         if: steps.unit_properties.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
+          retention-days: 7
           name: pbt-unit-counterexample-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/pbt-known-failures.patch
@@ -67,7 +68,7 @@ jobs:
 
   integration-fuzz-rotating-seed:
     name: Integration fuzz lanes with a rotating soak seed
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
@@ -125,6 +126,7 @@ jobs:
         if: steps.integration_properties.outcome == 'failure'
         uses: actions/upload-artifact@v7
         with:
+          retention-days: 7
           name: pbt-integration-counterexample-${{ github.run_id }}
           path: |
             ${{ runner.temp }}/pbt-known-failures.patch

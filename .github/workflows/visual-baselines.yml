@@ -28,7 +28,7 @@ env:
 jobs:
   regenerate:
     name: Regenerate baselines on the CI image
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     defaults:

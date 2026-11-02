@@ -28,7 +28,7 @@ env:
 jobs:
   verification-scope:
     name: Verification Scope
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       browser: ${{ steps.scope.outputs.browser }}
       worker: ${{ steps.scope.outputs.worker }}
@@ -61,7 +61,7 @@ jobs:
 
   lint:
     name: Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -130,7 +130,7 @@ jobs:
 
   unit-tests:
     name: Unit Tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -223,7 +223,7 @@ jobs:
     name: Integration Tests
     needs: verification-scope
     if: needs.verification-scope.outputs.worker == 'true' || needs.verification-scope.outputs.full == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -256,7 +256,7 @@ jobs:
 
   eval-manifest:
     name: Eval Manifest
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
@@ -310,7 +310,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -338,7 +338,7 @@ jobs:
     name: Instrument Validation
     needs: verification-scope
     if: needs.verification-scope.outputs.samples == 'true' || needs.verification-scope.outputs.full == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     defaults:
       run:
@@ -408,7 +408,7 @@ jobs:
     needs: verification-scope
     if: needs.verification-scope.outputs.browser == 'true' || needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -489,7 +489,7 @@ jobs:
     needs: verification-scope
     if: needs.verification-scope.outputs.browser == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -549,7 +549,7 @@ jobs:
     needs: verification-scope
     if: needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -600,7 +600,7 @@ jobs:
     needs: verification-scope
     if: needs.verification-scope.outputs.audio == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -699,7 +699,7 @@ jobs:
     needs: verification-scope
     if: needs.verification-scope.outputs.worker == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -773,7 +773,7 @@ jobs:
     needs: verification-scope
     if: needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -821,7 +821,7 @@ jobs:
     needs: verification-scope
     if: needs.verification-scope.outputs.mobile == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
@@ -867,7 +867,7 @@ jobs:
     needs: verification-scope
     if: needs.verification-scope.outputs.visual == 'true' || needs.verification-scope.outputs.full == 'true'
     timeout-minutes: 45
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     defaults:
       run:
         working-directory: ./app
